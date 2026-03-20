@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Westmere — New Job</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',Arial,sans-serif;background:#f0ece4;padding:1rem}
+.wrap{max-width:540px;margin:0 auto;background:#ffffff;border-radius:6px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.12)}
+
+/* Header */
+.hd{background:#1c2a3e;padding:1.2rem 1.6rem;display:flex;align-items:center;justify-content:space-between}
+.hd-logo{font-size:1.4rem;font-weight:700;letter-spacing:.12em;color:#ece8df;text-transform:uppercase}
+.hd-logo span{color:#c9a84c}
+.hd-tag{font-size:.6rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:#c9a84c;
+  border:1px solid #8a6830;padding:.22rem .7rem;border-radius:2px}
+
+/* Alert strip */
+.alert{background:#c9a84c;padding:.7rem 1.6rem;text-align:center;
+  font-size:.72rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#1c2a3e}
+
+/* Body */
+.body{padding:1.4rem 1.6rem}
+
+/* Ref row */
+.ref-row{display:flex;align-items:center;justify-content:space-between;
+  padding-bottom:1rem;margin-bottom:1rem;border-bottom:1px solid #ede9e2}
+.ref-num{font-size:1.1rem;font-weight:600;letter-spacing:.1em;color:#1c2a3e}
+.ref-date{font-size:.75rem;color:#888}
+
+/* Section title */
+.st{font-size:.58rem;font-weight:600;letter-spacing:.22em;text-transform:uppercase;
+  color:#c9a84c;margin-bottom:.7rem;padding-bottom:.4rem;border-bottom:1px solid #f0ece4}
+
+/* Info rows */
+.info-block{margin-bottom:1.1rem}
+.ir{display:flex;padding:.38rem 0;border-bottom:1px solid #f7f4ef}
+.ir:last-child{border-bottom:none}
+.ik{font-size:.75rem;color:#888;width:38%;flex-shrink:0}
+.iv{font-size:.8rem;color:#1c2a3e;font-weight:500;flex:1;line-height:1.4}
+.iv.big{font-size:1rem;font-weight:600;color:#1c2a3e}
+.iv.gold{color:#c9a84c;font-weight:600}
+.iv.green{color:#16a34a;font-weight:500}
+.iv.orange{color:#ea580c;font-weight:500}
+
+/* Route visual */
+.route-box{background:#f7f4ef;border-radius:4px;padding:1rem;margin-bottom:1.1rem}
+.route-row{display:flex;align-items:flex-start;gap:.8rem}
+.route-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:.3rem}
+.rd-pu{background:#16a34a}
+.rd-do{background:#ef4444}
+.route-connector{width:10px;border-left:2px dashed #ccc;height:14px;margin:.1rem 0 .1rem 4px}
+.route-addr{font-size:.85rem;font-weight:500;color:#1c2a3e;line-height:1.4}
+.route-sub{font-size:.7rem;color:#888;margin-top:.1rem}
+
+/* Big action buttons */
+.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.7rem}
+.btn-row.single{grid-template-columns:1fr}
+.abtn{display:flex;align-items:center;gap:.7rem;padding:.85rem 1rem;border-radius:4px;
+  text-decoration:none;border:1px solid #ddd;transition:opacity .2s}
+.abtn:hover{opacity:.85}
+.abtn-waze{background:#f7f4ef;border-color:#dbd7d0}
+.abtn-mapto{background:#e8f5e9;border-color:#c3e6cb}
+.abtn-flight{background:#e3f2fd;border-color:#bbdefb}
+.abtn-cal{background:#fff8e1;border-color:#ffe082}
+.abtn-wa{background:#e8f5e9;border-color:#a5d6a7}
+.abtn-icon{font-size:1.4rem;flex-shrink:0}
+.abtn-body .abtn-title{font-size:.78rem;font-weight:600;color:#1c2a3e}
+.abtn-body .abtn-sub{font-size:.65rem;color:#888;margin-top:.06rem}
+
+/* Flight panel */
+.flight-panel{background:#1c2a3e;border-radius:4px;padding:1rem;margin-bottom:1rem}
+.fp-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem}
+.fp-title{font-size:.6rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#c9a84c}
+.fp-live{display:flex;align-items:center;gap:.3rem;font-size:.6rem;color:#22c55e}
+.fp-live .dot{width:5px;height:5px;border-radius:50%;background:#22c55e;animation:pulse 1.5s infinite}
+.fp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem}
+.fp-item .lbl{font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(236,232,223,.4);margin-bottom:.15rem}
+.fp-item .val{font-size:.85rem;color:#ece8df;font-weight:500}
+.fp-item .val.ok{color:#22c55e}
+.fp-item .val.late{color:#f97316}
+.fp-bar{margin-top:.8rem;background:rgba(255,255,255,.1);border-radius:10px;height:3px}
+.fp-prog{height:100%;border-radius:10px;background:linear-gradient(90deg,#c9a84c,#22c55e);width:15%}
+
+/* Fare box */
+.fare-box{background:#1c2a3e;border-radius:4px;padding:.9rem 1rem;
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.fare-label{font-size:.58rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:rgba(201,168,76,.7)}
+.fare-amt{font-size:1.8rem;font-weight:700;color:#c9a84c;letter-spacing:.05em}
+.fare-pay{font-size:.68rem;color:rgba(236,232,223,.5);margin-top:.1rem}
+
+/* Notes */
+.notes{background:#fffbf0;border-left:3px solid #c9a84c;padding:.8rem 1rem;
+  margin-bottom:1rem;border-radius:0 3px 3px 0;font-size:.78rem;color:#5a4010;line-height:1.7}
+.notes strong{color:#1c2a3e}
+
+/* Footer */
+.ft{background:#1c2a3e;padding:.9rem 1.6rem;text-align:center;
+  font-size:.65rem;color:rgba(236,232,223,.35);line-height:1.8}
+.ft a{color:#c9a84c;text-decoration:none}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* Preview toggle */
+.preview-bar{background:#141820;padding:.6rem 1rem;text-align:center;margin-bottom:1rem;border-radius:4px;
+  font-size:.65rem;color:#58677a;letter-spacing:.15em;text-transform:uppercase}
+.preview-bar strong{color:#c9a84c}
+</style>
+</head>
+<body>
+
+<div style="max-width:540px;margin:0 auto 1rem;display:flex;gap:.5rem;flex-wrap:wrap">
+  <button onclick="setJob('airport-drop')" style="flex:1;padding:.5rem;background:#1c2a3e;color:#c9a84c;border:1px solid #c9a84c;border-radius:3px;cursor:pointer;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase">✈ Airport Drop-off</button>
+  <button onclick="setJob('airport-pick')" style="flex:1;padding:.5rem;background:#141820;color:#7a8a9d;border:1px solid #1d2330;border-radius:3px;cursor:pointer;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase">✈ Airport Pickup</button>
+  <button onclick="setJob('general')" style="flex:1;padding:.5rem;background:#141820;color:#7a8a9d;border:1px solid #1d2330;border-radius:3px;cursor:pointer;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase">🚗 General</button>
+</div>
+
+<div class="wrap" id="email-wrap">
+
+  <!-- HEADER -->
+  <div class="hd">
+    <div class="hd-logo">WESTMERE<span>.</span></div>
+    <div class="hd-tag" id="job-type-tag">AIRPORT DROP-OFF</div>
+  </div>
+
+  <!-- ALERT -->
+  <div class="alert" id="alert-bar">🔔 NEW JOB — TUE 25 MAR · PICKUP 04:30</div>
+
+  <div class="body">
+
+    <!-- Ref + date -->
+    <div class="ref-row">
+      <div class="ref-num" id="ref-num">WPH-241903</div>
+      <div class="ref-date" id="ref-date">Tuesday 25 March 2025</div>
+    </div>
+
+    <!-- PASSENGER -->
+    <div class="info-block">
+      <div class="st">Passenger</div>
+      <div class="ir"><div class="ik">Name</div><div class="iv big" id="pax-name">Sarah Jones</div></div>
+      <div class="ir"><div class="ik">Mobile</div><div class="iv" id="pax-mob">+44 7700 123456</div></div>
+      <div class="ir"><div class="ik">Passengers</div><div class="iv" id="pax-num">1 passenger</div></div>
+      <div class="ir"><div class="ik">Luggage</div><div class="iv" id="pax-lugg">1 medium suitcase</div></div>
+      <div class="ir" id="special-row"><div class="ik">Special</div><div class="iv" id="pax-special">Call on arrival, do not ring doorbell</div></div>
+    </div>
+
+    <!-- ROUTE -->
+    <div class="st">Route</div>
+    <div class="route-box">
+      <div class="route-row">
+        <div class="route-dot rd-pu"></div>
+        <div>
+          <div class="route-addr" id="pu-addr">14 Friars Walk, Lewes BN7 2JR</div>
+          <div class="route-sub" id="pu-time">Pickup: 04:30</div>
+        </div>
+      </div>
+      <div class="route-connector"></div>
+      <div class="route-row">
+        <div class="route-dot rd-do"></div>
+        <div>
+          <div class="route-addr" id="de-addr">Gatwick Airport — South Terminal</div>
+          <div class="route-sub" id="de-sub">Drop-off · ~28 miles · ~38 min</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NAVIGATION BUTTONS -->
+    <div class="btn-row" id="nav-btns">
+      <a class="abtn abtn-waze" id="waze-pu" href="https://waze.com/ul?q=14+Friars+Walk,+Lewes+BN7+2JR&navigate=yes" target="_blank">
+        <div class="abtn-icon">🔵</div>
+        <div class="abtn-body">
+          <div class="abtn-title">Waze to Pickup</div>
+          <div class="abtn-sub">14 Friars Walk, Lewes</div>
+        </div>
+      </a>
+      <a class="abtn abtn-mapto" id="waze-de" href="https://waze.com/ul?q=Gatwick+Airport+South+Terminal&navigate=yes" target="_blank">
+        <div class="abtn-icon">🔵</div>
+        <div class="abtn-body">
+          <div class="abtn-title">Waze to Drop-off</div>
+          <div class="abtn-sub">Gatwick South Terminal</div>
+        </div>
+      </a>
+    </div>
+
+    <!-- FLIGHT SECTION (airport only) -->
+    <div id="flight-section">
+      <div class="st">Flight Details</div>
+
+      <div class="flight-panel">
+        <div class="fp-top">
+          <div class="fp-title" id="fp-title">✈ EZY1234 — Gatwick · Departs 08:15</div>
+          <div class="fp-live"><div class="dot"></div>Live</div>
+        </div>
+        <div class="fp-grid">
+          <div class="fp-item"><div class="lbl">Status</div><div class="val ok" id="fp-status">On Time</div></div>
+          <div class="fp-item"><div class="lbl">Dep / Arr</div><div class="val" id="fp-time">08:15</div></div>
+          <div class="fp-item"><div class="lbl">Terminal</div><div class="val" id="fp-term">South</div></div>
+          <div class="fp-item"><div class="lbl">Gate</div><div class="val" id="fp-gate">TBC</div></div>
+        </div>
+        <div class="fp-bar"><div class="fp-prog" id="fp-prog"></div></div>
+      </div>
+
+      <a class="abtn abtn-flight btn-row single" id="flight-link" href="https://www.flightradar24.com/data/flights/ezy1234" target="_blank">
+        <div class="abtn-icon">📡</div>
+        <div class="abtn-body">
+          <div class="abtn-title" id="flight-link-title">Track EZY1234 — Live Status</div>
+          <div class="abtn-sub">Opens Flightradar24</div>
+        </div>
+      </a>
+    </div>
+
+    <!-- DATE / TIME + CALENDAR -->
+    <div class="info-block" style="margin-top:1rem">
+      <div class="st">Date & Time</div>
+      <div class="ir"><div class="ik">Pickup Time</div><div class="iv big gold" id="job-time">04:30</div></div>
+      <div class="ir"><div class="ik">Date</div><div class="iv" id="job-date-full">Tuesday 25 March 2025</div></div>
+      <div class="ir" id="flight-time-row"><div class="ik">Flight Time</div><div class="iv" id="job-flight-time">EZY1234 departs 08:15 — allow 90 min to airport</div></div>
+    </div>
+
+    <!-- CALENDAR BUTTON -->
+    <a class="abtn abtn-cal btn-row single" id="cal-btn" href="#" onclick="addCal();return false" style="margin-bottom:1rem;display:flex">
+      <div class="abtn-icon">📅</div>
+      <div class="abtn-body">
+        <div class="abtn-title" id="cal-title">Add to Calendar — Tue 25 Mar, 04:30</div>
+        <div class="abtn-sub">Google · Apple · Outlook</div>
+      </div>
+    </a>
+
+    <!-- FARE -->
+    <div class="st">Fare & Payment</div>
+    <div class="fare-box">
+      <div>
+        <div class="fare-label">Fixed Fare</div>
+        <div class="fare-amt" id="fare-amt">£85.00</div>
+        <div class="fare-pay" id="fare-pay">Cash on the day</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:.6rem;color:rgba(201,168,76,.5);letter-spacing:.12em;text-transform:uppercase">Includes</div>
+        <div style="font-size:.72rem;color:rgba(236,232,223,.6);margin-top:.2rem" id="fare-includes">Gatwick £10 drop-off charge</div>
+      </div>
+    </div>
+
+    <!-- CUSTOMER CONTACT -->
+    <div class="btn-row" style="margin-bottom:1rem">
+      <a class="abtn abtn-wa" id="wa-cust" href="https://wa.me/447700123456?text=Hi%20Sarah%2C%20this%20is%20your%20Westmere%20driver.%20I%27m%20on%20my%20way%20to%20pick%20you%20up." target="_blank">
+        <div class="abtn-icon">💬</div>
+        <div class="abtn-body">
+          <div class="abtn-title">WhatsApp Passenger</div>
+          <div class="abtn-sub" id="wa-sub">Sarah Jones</div>
+        </div>
+      </a>
+      <a class="abtn" style="background:#e8f0fe;border-color:#c5d2f6" id="call-cust" href="tel:+447700123456">
+        <div class="abtn-icon">📞</div>
+        <div class="abtn-body">
+          <div class="abtn-title">Call Passenger</div>
+          <div class="abtn-sub" id="call-sub">+44 7700 123456</div>
+        </div>
+      </a>
+    </div>
+
+    <!-- NOTES -->
+    <div class="notes" id="job-notes">
+      <strong>Notes:</strong> Call on arrival — do not ring doorbell (early morning). Customer has 1 medium suitcase. Quiet journey requested.
+    </div>
+
+  </div><!-- end body -->
+
+  <!-- FOOTER -->
+  <div class="ft">
+    Westmere Private Hire · Sussex<br>
+    <a href="westmere-booking.html">Booking System</a> ·
+    <a href="westmere-account.html">Account Portal</a>
+  </div>
+
+</div><!-- end wrap -->
+
+<!-- Calendar picker modal -->
+<div id="cal-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:#1c2a3e;border:1px solid #8a6830;border-radius:6px;padding:1.5rem;max-width:320px;width:100%">
+    <div style="font-size:1rem;font-weight:600;color:#ece8df;margin-bottom:.3rem" id="cal-modal-title">Add to Calendar</div>
+    <div style="font-size:.72rem;color:#7a8a9d;margin-bottom:1.2rem" id="cal-modal-sub">Tue 25 Mar 2025 · 04:30 — Lewes to Gatwick</div>
+    <div style="display:flex;flex-direction:column;gap:.5rem" id="cal-links"></div>
+    <button onclick="document.getElementById('cal-modal').style.display='none'" style="width:100%;margin-top:.8rem;padding:.6rem;background:transparent;border:1px solid #252d3a;color:#58677a;border-radius:3px;cursor:pointer;font-size:.7rem">Close</button>
+  </div>
+</div>
+
+<script>
+// ── JOB DATA ──
+const JOBS = {
+  'airport-drop': {
+    typeTag:'AIRPORT DROP-OFF',
+    alert:'🔔 NEW JOB — TUE 25 MAR · PICKUP 04:30',
+    ref:'WPH-241903', date:'Tuesday 25 March 2025',
+    paxName:'Sarah Jones', paxMob:'+44 7700 123456',
+    paxNum:'1 passenger', paxLugg:'1 medium suitcase',
+    paxSpecial:'Call on arrival — do not ring doorbell',
+    puAddr:'14 Friars Walk, Lewes BN7 2JR', puTime:'Pickup: 04:30',
+    deAddr:'Gatwick Airport — South Terminal', deSub:'Drop-off · ~28 miles · ~38 min',
+    wazeDestLabel:'Gatwick South Terminal',
+    showFlight:true,
+    flightTitle:'✈ EZY1234 — Gatwick · Departs 08:15',
+    flightNum:'EZY1234', flightStatus:'On Time', flightStatusClass:'ok',
+    flightTime:'08:15 dep', flightTerm:'South', flightGate:'TBC',
+    flightProg:'15%',
+    flightLink:'https://www.flightradar24.com/data/flights/ezy1234',
+    flightLinkTitle:'Track EZY1234 — Live Departure Status',
+    flightTimeNote:'EZY1234 departs 08:15 — allow 90 min to airport',
+    jobTime:'04:30', jobDateFull:'Tuesday 25 March 2025',
+    calTitle:'Add to Calendar — Tue 25 Mar, 04:30',
+    calStart:'20250325T043000', calEnd:'20250325T051500',
+    calSummary:'Westmere Job — Lewes to Gatwick (EZY1234)',
+    calLocation:'14 Friars Walk, Lewes BN7 2JR',
+    calDesc:'Passenger: Sarah Jones | Flight: EZY1234 | Fare: £85 | Ref: WPH-241903',
+    fareAmt:'£85.00', farePay:'Cash on the day',
+    fareIncludes:'Includes Gatwick £10 drop-off charge',
+    wazeDestQ:'Gatwick+Airport+South+Terminal',
+    waPaxNum:'447700123456',
+    notes:'Call on arrival — do not ring doorbell (early morning). Customer has 1 medium suitcase. Quiet journey requested.',
+  },
+  'airport-pick': {
+    typeTag:'AIRPORT PICKUP',
+    alert:'🔔 NEW JOB — SAT 29 MAR · COLLECT ~17:20',
+    ref:'WPH-241907', date:'Saturday 29 March 2025',
+    paxName:'John Smith', paxMob:'+44 7700 654321',
+    paxNum:'2 passengers', paxLugg:'2 large suitcases',
+    paxSpecial:'Meet in arrivals with name board',
+    puAddr:'Heathrow Airport — Terminal 5 Arrivals', puTime:'Flight lands: ~17:20',
+    deAddr:'22 Pelham Court, Lewes BN7 2TU', deSub:'~62 miles · ~80 min',
+    wazeDestLabel:'Lewes BN7',
+    showFlight:true,
+    flightTitle:'✈ BA0492 — Heathrow T5 · Arrives ~17:20',
+    flightNum:'BA0492', flightStatus:'On Time', flightStatusClass:'ok',
+    flightTime:'17:20 arr', flightTerm:'T5', flightGate:'B22',
+    flightProg:'72%',
+    flightLink:'https://www.flightradar24.com/data/flights/ba0492',
+    flightLinkTitle:'Track BA0492 — Live Arrivals Status',
+    flightTimeNote:'BA0492 arrives ~17:20 — allow 30 min for bags & customs',
+    jobTime:'Depart ~15:30',
+    jobDateFull:'Saturday 29 March 2025',
+    calTitle:'Add to Calendar — Sat 29 Mar, depart ~15:30',
+    calStart:'20250329T153000', calEnd:'20250329T192000',
+    calSummary:'Westmere Job — Heathrow T5 Pickup → Lewes (BA0492)',
+    calLocation:'Heathrow Airport Terminal 5',
+    calDesc:'Passenger: John Smith | Flight: BA0492 arr 17:20 | Fare: £145 | Ref: WPH-241907',
+    fareAmt:'£145.00', farePay:'Account — Invoice to Smith & Co',
+    fareIncludes:'Includes Heathrow ~£10 short-stay parking',
+    wazeDestQ:'22+Pelham+Court,+Lewes+BN7',
+    waPaxNum:'447700654321',
+    notes:'Corporate account — Smith & Co Ltd. Meet inside T5 Arrivals with NAME BOARD. Park in Terminal Parking (short stay). Invoice to accounts@smithco.com.',
+  },
+  'general': {
+    typeTag:'GENERAL HIRE',
+    alert:'🔔 NEW JOB — WED 2 APR · PICKUP 19:30',
+    ref:'WPH-241912', date:'Wednesday 2 April 2025',
+    paxName:'Mrs Patricia Williams', paxMob:'+44 7700 789012',
+    paxNum:'2 passengers', paxLugg:'No luggage',
+    paxSpecial:'',
+    puAddr:'The Star Inn, High Street, Lewes BN7 2LU', puTime:'Pickup: 19:30',
+    deAddr:'14 Cliffe High Street, Lewes BN7 2AH', deSub:'~2 miles · ~8 min',
+    wazeDestLabel:'Cliffe High St, Lewes',
+    showFlight:false,
+    jobTime:'19:30', jobDateFull:'Wednesday 2 April 2025',
+    calTitle:'Add to Calendar — Wed 2 Apr, 19:30',
+    calStart:'20250402T193000', calEnd:'20250402T194500',
+    calSummary:'Westmere Job — Lewes local',
+    calLocation:'The Star Inn, High Street, Lewes BN7 2LU',
+    calDesc:'Passenger: Mrs Williams | Fare: £12 | Ref: WPH-241912',
+    fareAmt:'£12.00', farePay:'Cash on the day',
+    fareIncludes:'Local journey',
+    wazeDestQ:'14+Cliffe+High+Street,+Lewes+BN7',
+    waPaxNum:'447700789012',
+    notes:'Local run. 2 passengers, no luggage.',
+  }
+};
+
+function setJob(type) {
+  const j = JOBS[type];
+
+  // Buttons highlight
+  document.querySelectorAll('[onclick^="setJob"]').forEach(b=>{
+    b.style.background='#141820';b.style.color='#7a8a9d';b.style.borderColor='#1d2330';
+  });
+  event.target.style.background='#1c2a3e';event.target.style.color='#c9a84c';event.target.style.borderColor='#c9a84c';
+
+  set('job-type-tag', j.typeTag);
+  set('alert-bar', j.alert);
+  set('ref-num', j.ref);
+  set('ref-date', j.date);
+  set('pax-name', j.paxName);
+  set('pax-mob', j.paxMob);
+  set('pax-num', j.paxNum);
+  set('pax-lugg', j.paxLugg);
+  set('pax-special', j.paxSpecial);
+  vis('special-row', !!j.paxSpecial);
+  set('pu-addr', j.puAddr);
+  set('pu-time', j.puTime);
+  set('de-addr', j.deAddr);
+  set('de-sub', j.deSub);
+  set('job-time', j.jobTime);
+  set('job-date-full', j.jobDateFull);
+  set('fare-amt', j.fareAmt);
+  set('fare-pay', j.farePay);
+  set('fare-includes', j.fareIncludes);
+  set('job-notes', '<strong>Notes:</strong> ' + j.notes);
+  set('wa-sub', j.paxName);
+  set('call-sub', j.paxMob);
+  set('cal-title', j.calTitle);
+
+  // Waze links
+  href('waze-pu', `https://waze.com/ul?q=${encodeURIComponent(j.puAddr)}&navigate=yes`);
+  document.querySelector('#waze-pu .abtn-sub').textContent = j.puAddr.split(',')[0];
+  href('waze-de', `https://waze.com/ul?q=${j.wazeDestQ}&navigate=yes`);
+  document.querySelector('#waze-de .abtn-sub').textContent = j.wazeDestLabel;
+
+  // WhatsApp & Call
+  const waMsg = `Hi ${j.paxName.split(' ')[0]}, this is your Westmere driver. I'm on my way.`;
+  href('wa-cust', `https://wa.me/${j.waPaxNum}?text=${encodeURIComponent(waMsg)}`);
+  href('call-cust', `tel:${j.paxMob.replace(/\s/g,'')}`);
+
+  // Flight section
+  vis('flight-section', j.showFlight);
+  vis('flight-time-row', j.showFlight);
+  if(j.showFlight){
+    set('fp-title', j.flightTitle);
+    set('fp-status', j.flightStatus);
+    document.getElementById('fp-status').className = 'val ' + j.flightStatusClass;
+    set('fp-time', j.flightTime);
+    set('fp-term', j.flightTerm);
+    set('fp-gate', j.flightGate);
+    document.getElementById('fp-prog').style.width = j.flightProg;
+    href('flight-link', j.flightLink);
+    set('flight-link-title', j.flightLinkTitle);
+    set('job-flight-time', j.flightTimeNote);
+  }
+}
+
+function set(id, html){ const el=document.getElementById(id); if(el) el.innerHTML=html; }
+function vis(id, show){ const el=document.getElementById(id); if(el) el.style.display=show?'':'none'; }
+function href(id, url){ const el=document.getElementById(id); if(el) el.href=url; }
+
+function addCal(){
+  const type = Object.keys(JOBS).find(k => document.getElementById('job-type-tag').textContent.includes(JOBS[k].typeTag.split(' ')[1])) || 'airport-drop';
+  // Find active job
+  let j;
+  for(const k of Object.keys(JOBS)){
+    if(JOBS[k].typeTag === document.getElementById('job-type-tag').textContent){ j=JOBS[k]; break; }
+  }
+  if(!j) j = JOBS['airport-drop'];
+
+  const gUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(j.calSummary)}&dates=${j.calStart}/${j.calEnd}&details=${encodeURIComponent(j.calDesc)}&location=${encodeURIComponent(j.calLocation)}`;
+
+  const icsContent = `BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Westmere//EN\r\nBEGIN:VEVENT\r\nDTSTART:${j.calStart}Z\r\nDTEND:${j.calEnd}Z\r\nSUMMARY:${j.calSummary}\r\nDESCRIPTION:${j.calDesc}\r\nLOCATION:${j.calLocation}\r\nEND:VEVENT\r\nEND:VCALENDAR`;
+
+  document.getElementById('cal-modal-title').textContent = 'Add to Calendar';
+  document.getElementById('cal-modal-sub').textContent = j.jobDateFull + ' · ' + j.jobTime;
+  document.getElementById('cal-links').innerHTML = `
+    <a href="${gUrl}" target="_blank" style="display:flex;align-items:center;gap:.7rem;padding:.75rem;background:#141820;border-radius:3px;text-decoration:none;color:#ece8df;font-size:.8rem;border:1px solid #252d3a">🗓️ <span>Google Calendar</span></a>
+    <a href="#" onclick="dlICS('${encodeURIComponent(icsContent)}')" style="display:flex;align-items:center;gap:.7rem;padding:.75rem;background:#141820;border-radius:3px;text-decoration:none;color:#ece8df;font-size:.8rem;border:1px solid #252d3a">🍎 <span>Apple Calendar (.ics)</span></a>
+    <a href="#" onclick="dlICS('${encodeURIComponent(icsContent)}')" style="display:flex;align-items:center;gap:.7rem;padding:.75rem;background:#141820;border-radius:3px;text-decoration:none;color:#ece8df;font-size:.8rem;border:1px solid #252d3a">📧 <span>Outlook (.ics)</span></a>
+  `;
+  document.getElementById('cal-modal').style.display='flex';
+}
+
+function dlICS(encoded){
+  const blob = new Blob([decodeURIComponent(encoded)],{type:'text/calendar'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'westmere-job.ics';
+  a.click();
+  document.getElementById('cal-modal').style.display='none';
+}
+
+// Close modal on backdrop click
+document.getElementById('cal-modal').addEventListener('click', function(e){
+  if(e.target===this) this.style.display='none';
+});
+</script>
+</body>
+</html>
