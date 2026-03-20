@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Westmere · Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1C2A3E;--navy-deep:#111D2C;--navy-mid:#243350;
+  --cream:#F8F5EF;--white:#FDFCFA;--cream-dark:#EDE8DE;
+  --gold:#B8985A;--gold-pale:#F5EDD8;--rule:#DDD8CE;
+  --text:#1C2A3E;--text-mid:#4A5568;--text-light:#718096;
+  --green:#2D6E47;--green-bg:#F0FAF4;
+  --red:#8B2222;--red-bg:#FEF2F2;
+  --amber:#7A5C18;--amber-bg:#FEF9EC;
+  --purple:#6B46A0;--purple-bg:#F5F0FF;
+  --serif:'Cormorant Garamond',Georgia,serif;
+  --sans:'Jost','Helvetica Neue',sans-serif;
+  --sidebar:220px;
+}
+html{font-size:16px}
+body{font-family:var(--sans);font-weight:300;color:var(--text);background:var(--cream);line-height:1.75;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex}
+
+/* ═══ SIDEBAR ═══ */
+.sidebar{
+  width:var(--sidebar);flex-shrink:0;
+  background:var(--navy-deep);
+  display:flex;flex-direction:column;
+  position:fixed;top:0;left:0;bottom:0;z-index:50;
+  overflow-y:auto;border-right:1px solid rgba(184,152,90,.08);
+  transition:transform .3s;
+}
+.sb-logo{padding:1.4rem 1.2rem 1.1rem;border-bottom:1px solid rgba(184,152,90,.08);flex-shrink:0}
+.sb-crest{width:36px;height:36px;border:1px solid rgba(184,152,90,.35);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1rem;font-weight:500;color:rgba(248,245,239,.6);margin-bottom:.6rem}
+.sb-name{font-family:var(--serif);font-size:1.1rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(248,245,239,.9);display:block;line-height:1.1}
+.sb-sub{font-size:.52rem;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);display:block;margin-top:.15rem}
+.sb-section{padding:.6rem 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.sb-label{font-size:.52rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:rgba(248,245,239,.2);padding:.4rem 1.2rem .4rem;display:block}
+.sb-item{display:flex;align-items:center;gap:.65rem;padding:.55rem 1.2rem;cursor:pointer;font-family:var(--sans);font-size:.75rem;font-weight:300;color:rgba(248,245,239,.4);transition:all .15s;border:none;background:transparent;width:100%;text-align:left;text-decoration:none;letter-spacing:.02em}
+.sb-item:hover{color:rgba(248,245,239,.85);background:rgba(255,255,255,.04)}
+.sb-item.on{color:var(--gold);background:rgba(184,152,90,.08);font-weight:400}
+.sb-icon{font-size:.9rem;width:18px;text-align:center;flex-shrink:0}
+.sb-badge{margin-left:auto;background:var(--gold);color:var(--navy-deep);font-size:.5rem;font-weight:700;padding:.12rem .4rem;border-radius:10px}
+.sb-badge.red{background:var(--red);color:white}
+.sb-bottom{margin-top:auto;padding:1rem 1.2rem;border-top:1px solid rgba(255,255,255,.04);flex-shrink:0}
+.sb-version{font-size:.55rem;color:rgba(248,245,239,.2);letter-spacing:.08em}
+
+/* ═══ MAIN ═══ */
+.main{margin-left:var(--sidebar);flex:1;min-height:100vh;display:flex;flex-direction:column}
+.topbar{background:rgba(253,252,250,.97);backdrop-filter:blur(16px);border-bottom:1px solid var(--rule);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:64px;position:sticky;top:0;z-index:40;flex-shrink:0}
+.tb-left{display:flex;align-items:center;gap:1rem}
+.mob-menu-btn{display:none;background:none;border:none;cursor:pointer;flex-direction:column;gap:4px;padding:4px}
+.mob-menu-btn span{display:block;width:20px;height:1.5px;background:var(--navy)}
+.tb-title{font-family:var(--serif);font-size:1.2rem;font-weight:500;letter-spacing:.04em;color:var(--navy)}
+.tb-right{display:flex;align-items:center;gap:.8rem}
+.tb-clock{font-family:var(--serif);font-size:1.1rem;color:var(--gold)}
+.tb-live{display:flex;align-items:center;gap:.35rem;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text-light)}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;flex-shrink:0}
+.btn-new{font-family:var(--sans);font-size:.65rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;background:var(--navy);color:var(--white);padding:.6rem 1.2rem;border:none;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn-new:hover{background:var(--gold);color:var(--navy-deep)}
+.content{padding:1.8rem 2rem;flex:1}
+
+/* ═══ VIEWS ═══ */
+.view{display:none}.view.on{display:block;animation:up .3s ease}
+
+/* ═══ PAGE HEADER ═══ */
+.page-hd{margin-bottom:1.8rem}
+.page-title{font-family:var(--serif);font-size:2rem;font-weight:400;color:var(--navy);line-height:1}
+.page-title em{font-style:italic;color:var(--gold)}
+.page-sub{font-size:.82rem;color:var(--text-light);font-weight:300;margin-top:.3rem}
+
+/* ═══ STATS ═══ */
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:1.8rem}
+.stat{background:var(--white);border:1px solid var(--rule);padding:1.1rem 1.2rem;cursor:pointer;transition:border-color .2s;position:relative;overflow:hidden}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.stat.s-gold::before{background:var(--gold)}
+.stat.s-green::before{background:var(--green)}
+.stat.s-blue::before{background:#3B82F6}
+.stat.s-red::before{background:var(--red)}
+.stat.s-purple::before{background:var(--purple)}
+.stat:hover{border-color:var(--rule)}
+.sv{font-family:var(--serif);font-size:2rem;color:var(--navy);line-height:1}
+.sl{font-size:.56rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--text-light);margin-top:.25rem}
+.ss{font-size:.7rem;color:var(--text-light);margin-top:.12rem;font-weight:300}
+
+/* ═══ CARD ═══ */
+.card{background:var(--white);border:1px solid var(--rule);margin-bottom:1.2rem}
+.ch{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.3rem;border-bottom:1px solid var(--rule)}
+.ct{font-size:.58rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+.cb{padding:1.2rem 1.3rem}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem}
+
+/* ═══ TIMELINE ═══ */
+.timeline{display:flex;flex-direction:column;gap:.7rem}
+.tl-item{display:flex;gap:.9rem;align-items:stretch}
+.tl-time-col{display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:40px}
+.tl-time{font-family:var(--serif);font-size:.9rem;color:var(--gold);line-height:1}
+.tl-line{flex:1;width:1px;background:var(--rule);margin:.2rem 0}
+.tl-card{flex:1;background:var(--cream);border:1px solid var(--rule);padding:.8rem 1rem;cursor:pointer;transition:border-color .2s;position:relative}
+.tl-card:hover{border-color:var(--rule)}
+.tl-card.active{border-left:3px solid var(--gold);background:var(--gold-pale)}
+.tl-card.done{border-left:3px solid var(--green);opacity:.65}
+.tl-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem}
+.tl-name{font-size:.85rem;font-weight:500;color:var(--navy)}
+.tl-route{font-size:.78rem;color:var(--text-mid);margin-bottom:.4rem}
+.tl-actions{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.5rem}
+
+/* ═══ TAGS ═══ */
+.tag{display:inline-flex;align-items:center;font-size:.54rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.15rem .5rem}
+.tag-upcoming{background:rgba(184,152,90,.1);color:var(--amber)}
+.tag-done{background:var(--green-bg);color:var(--green)}
+.tag-cancel{background:var(--red-bg);color:var(--red)}
+.tag-account{background:var(--purple-bg);color:var(--purple)}
+.tag-cash{background:var(--green-bg);color:var(--green)}
+.tag-card{background:rgba(59,130,246,.08);color:#3B82F6}
+
+/* ═══ BUTTONS ═══ */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;font-family:var(--sans);font-size:.62rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;padding:.6rem 1.2rem;cursor:pointer;border:none;transition:all .2s;text-decoration:none;white-space:nowrap}
+.btn:active{transform:scale(.97)}
+.btn-gold{background:var(--gold);color:var(--navy-deep);border:1px solid var(--gold)}.btn-gold:hover{background:#caa96a}
+.btn-navy{background:var(--navy);color:var(--white);border:1px solid var(--navy)}.btn-navy:hover{background:var(--gold);border-color:var(--gold);color:var(--navy-deep)}
+.btn-ghost{background:transparent;color:var(--text-light);border:1px solid var(--rule)}.btn-ghost:hover{color:var(--navy);border-color:var(--navy)}
+.btn-green{background:var(--green-bg);color:var(--green);border:1px solid #a8d5b5}.btn-green:hover{background:#dcf0e5}
+.btn-red{background:var(--red-bg);color:var(--red);border:1px solid #f0b8b8}.btn-red:hover{background:#fce0e0}
+.btn-blue{background:rgba(59,130,246,.08);color:#3B82F6;border:1px solid rgba(59,130,246,.2)}.btn-blue:hover{background:rgba(59,130,246,.15)}
+.btn-full{width:100%;padding:.85rem}
+.btn-sm{padding:.38rem .8rem;font-size:.58rem}
+.btn-lg{padding:.9rem 2rem;font-size:.72rem}
+
+/* ═══ FORMS ═══ */
+.fg{display:flex;flex-direction:column;gap:.38rem;margin-bottom:.9rem}
+.fg:last-of-type{margin-bottom:0}
+.fl{font-size:.58rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--text-light)}
+.fi{font-family:var(--sans);font-size:.92rem;font-weight:300;color:var(--navy);background:var(--cream);border:1px solid var(--rule);padding:.78rem 1rem;outline:none;width:100%;transition:border-color .2s;min-height:50px;-webkit-appearance:none}
+.fi:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,152,90,.1)}
+.fi::placeholder{color:var(--text-light)}
+select.fi{cursor:pointer}
+select.fi option{background:var(--cream)}
+textarea.fi{resize:vertical;min-height:80px}
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
+.r3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.9rem}
+.full{grid-column:1/-1}
+
+/* ═══ AVAILABILITY ═══ */
+.avail{display:none;padding:.9rem 1rem;margin-top:.7rem;font-size:.82rem;line-height:1.75}
+.avail.show{display:block;animation:up .3s ease}
+.avail.free{background:var(--green-bg);border:1px solid #a8d5b5}
+.avail.tight{background:var(--amber-bg);border:1px solid #e8d098}
+.avail.no{background:var(--red-bg);border:1px solid #f0b8b8}
+.avail-title{font-family:var(--serif);font-size:1.1rem;font-weight:500;margin-bottom:.15rem}
+.avail.free .avail-title{color:var(--green)}
+.avail.tight .avail-title{color:var(--amber)}
+.avail.no .avail-title{color:var(--red)}
+.avail-detail{font-weight:300;color:var(--text-mid);font-size:.8rem}
+.sub-offer{display:none;margin-top:.6rem;padding:.8rem;background:var(--purple-bg);border:1px solid rgba(107,70,160,.2);font-size:.82rem;font-weight:300;color:var(--text-mid);line-height:1.7}
+.sub-offer.show{display:block}
+.sub-offer strong{color:var(--navy)}
+
+/* ═══ PRICE BOX ═══ */
+.price-box{display:none;background:var(--navy);padding:1.4rem 1.6rem;margin-top:1rem}
+.price-box.show{display:block;animation:up .35s ease}
+.pb-label{font-size:.58rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(184,152,90,.6);margin-bottom:.3rem;display:flex;align-items:center;gap:.35rem}
+.pb-dot{width:5px;height:5px;border-radius:50%;background:var(--gold);animation:pulse 1.8s infinite}
+.pb-amount{font-family:var(--serif);font-size:3.5rem;color:var(--gold);line-height:1;margin-bottom:.2rem}
+.pb-sub{font-size:.65rem;color:rgba(248,245,239,.28);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem;font-weight:300}
+.pb-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,.06)}
+.pb-item .pbi-l{font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(248,245,239,.28);margin-bottom:.12rem}
+.pb-item .pbi-v{font-size:.86rem;color:rgba(248,245,239,.7);font-weight:300}
+
+/* ═══ NOTIFICATION OPTIONS ═══ */
+.notify-list{display:flex;flex-direction:column;gap:.6rem;margin-top:.5rem}
+.notify-opt{display:flex;align-items:center;gap:.8rem;padding:.9rem 1rem;background:var(--cream);border:1px solid var(--rule);cursor:pointer;transition:all .2s}
+.notify-opt.on{border-color:var(--gold);background:var(--gold-pale)}
+.notify-opt:hover{border-color:var(--gold)}
+.no-icon{font-size:1rem;flex-shrink:0}
+.no-name{font-size:.86rem;font-weight:400;color:var(--navy)}
+.no-sub{font-size:.72rem;color:var(--text-light);margin-top:.05rem}
+.no-chk{width:18px;height:18px;border-radius:50%;border:1px solid var(--rule);background:var(--white);display:flex;align-items:center;justify-content:center;font-size:.58rem;margin-left:auto;flex-shrink:0;transition:all .2s;color:transparent}
+.notify-opt.on .no-chk{background:var(--gold);border-color:var(--gold);color:white;font-weight:700}
+
+/* ═══ JOBS TABLE ═══ */
+.jtable{width:100%;border-collapse:collapse}
+.jtable th{font-size:.56rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--text-light);padding:.6rem .8rem;border-bottom:1px solid var(--rule);text-align:left;white-space:nowrap;background:var(--cream)}
+.jtable td{font-size:.8rem;padding:.65rem .8rem;border-bottom:1px solid rgba(221,216,206,.5);color:var(--text-mid);vertical-align:middle}
+.jtable tr:last-child td{border-bottom:none}
+.jtable tr:hover td{background:var(--cream)}
+.jtable .main-v{color:var(--navy);font-weight:400}
+.jtable .sub-v{font-size:.66rem;color:var(--text-light);margin-top:.08rem}
+
+/* ═══ FARE TABLE ═══ */
+.fare-table{width:100%;border-collapse:collapse}
+.fare-table th{font-size:.56rem;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);padding:.5rem .7rem;background:var(--navy);text-align:center}
+.fare-table td{padding:.4rem .5rem;border:1px solid var(--rule);text-align:center}
+.fare-table tr:first-child td{background:var(--cream-dark);font-size:.75rem;font-weight:500;color:var(--navy);text-align:left}
+.fare-input{background:transparent;border:none;outline:none;font-family:var(--sans);font-size:.84rem;font-weight:500;color:var(--gold);text-align:center;width:100%;padding:.18rem}
+.fare-input:focus{background:var(--gold-pale)}
+
+/* ═══ NOTIFICATIONS LIST ═══ */
+.notif{display:flex;align-items:flex-start;gap:.65rem;padding:.7rem 0;border-bottom:1px solid rgba(221,216,206,.4)}
+.notif:last-child{border-bottom:none}
+.notif-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:.35rem}
+.notif-text{font-size:.78rem;color:var(--text-mid);line-height:1.55}
+.notif-text strong{color:var(--navy)}
+.notif-time{font-size:.62rem;color:var(--text-light);margin-top:.12rem}
+
+/* ═══ AUTOMATION ═══ */
+.auto-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+.auto-card{background:var(--cream);border:1px solid var(--rule);padding:1.2rem;transition:border-color .2s}
+.auto-card.armed{border-color:rgba(184,152,90,.35)}
+.ac-icon{font-size:1.5rem;margin-bottom:.5rem}
+.ac-title{font-size:.78rem;font-weight:500;color:var(--navy);margin-bottom:.18rem}
+.ac-sub{font-size:.7rem;color:var(--text-light);line-height:1.6;margin-bottom:.8rem;font-weight:300}
+.ac-status{display:flex;align-items:center;gap:.35rem;font-size:.62rem;color:var(--green)}
+.ac-status.off{color:var(--text-light)}
+.ac-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0}
+.ac-status.off .ac-dot{background:var(--text-light)}
+.toggle{display:flex;align-items:center;gap:.55rem;cursor:pointer;margin-top:.6rem}
+.toggle-track{width:30px;height:17px;border-radius:9px;background:var(--rule);position:relative;transition:background .2s;flex-shrink:0}
+.toggle-track.on{background:var(--gold)}
+.toggle-thumb{width:13px;height:13px;border-radius:50%;background:var(--white);position:absolute;top:2px;left:2px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.toggle-track.on .toggle-thumb{left:15px}
+.toggle-label{font-size:.65rem;color:var(--text-light)}
+
+/* ═══ SETTING ROW ═══ */
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:.9rem 0;border-bottom:1px solid rgba(221,216,206,.5)}
+.setting-row:last-child{border-bottom:none}
+.sr-title{font-size:.84rem;color:var(--navy);font-weight:400}
+.sr-sub{font-size:.7rem;color:var(--text-light);margin-top:.08rem;font-weight:300}
+
+/* ═══ MODAL ═══ */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:none;align-items:center;justify-content:center;padding:1.5rem}
+.overlay.on{display:flex;animation:fadeIn .2s ease}
+.modal{background:var(--white);border:1px solid var(--rule);width:100%;max-width:600px;max-height:90vh;overflow-y:auto}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.5rem;border-bottom:1px solid var(--rule);position:sticky;top:0;background:var(--white);z-index:1}
+.modal-title{font-family:var(--serif);font-size:1.3rem;font-weight:500;color:var(--navy)}
+.modal-x{background:none;border:none;color:var(--text-light);cursor:pointer;font-size:1.1rem;line-height:1}
+.modal-x:hover{color:var(--navy)}
+.modal-body{padding:1.5rem}
+.modal-foot{padding:1rem 1.5rem;border-top:1px solid var(--rule);display:flex;gap:.6rem;justify-content:flex-end}
+
+/* ═══ TOAST ═══ */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:300;background:var(--white);border:1px solid var(--gold);padding:.85rem 1.2rem;font-size:.78rem;color:var(--navy);display:none;max-width:340px;box-shadow:0 8px 28px rgba(0,0,0,.12);font-weight:300}
+.toast.on{display:flex;align-items:center;gap:.5rem;animation:sl .3s ease}
+.toast .ti{color:var(--gold);flex-shrink:0}
+
+/* ═══ CUSTOMER CARDS ═══ */
+.cust-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+.cust-card{background:var(--white);border:1px solid var(--rule);padding:1.1rem;cursor:pointer;transition:border-color .2s}
+.cust-card:hover{border-color:var(--gold)}
+.cc-name{font-size:.92rem;font-weight:500;color:var(--navy);margin-bottom:.2rem}
+.cc-type{display:inline-block;font-size:.54rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.12rem .45rem;margin-bottom:.4rem}
+.cc-business{background:var(--purple-bg);color:var(--purple)}
+.cc-personal{background:rgba(59,130,246,.08);color:#3B82F6}
+.cc-meta{font-size:.72rem;color:var(--text-light);font-weight:300}
+.cc-stats{display:flex;gap:.8rem;margin-top:.45rem}
+.cc-stat{font-size:.68rem;color:var(--text-mid)}
+.cc-stat span{color:var(--gold);font-weight:500}
+
+/* ═══ INVOICE TABLE ═══ */
+.inv-table{width:100%;border-collapse:collapse}
+.inv-table th{font-size:.56rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--text-light);padding:.6rem .8rem;border-bottom:1px solid var(--rule);text-align:left;background:var(--cream)}
+.inv-table td{font-size:.82rem;padding:.7rem .8rem;border-bottom:1px solid rgba(221,216,206,.5);color:var(--text-mid);vertical-align:middle}
+.inv-table tr:last-child td{border-bottom:none}
+.inv-table tr:hover td{background:var(--cream)}
+
+@keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes sl{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}
+  .mob-menu-btn{display:flex}
+  .stats{grid-template-columns:1fr 1fr}
+  .auto-grid{grid-template-columns:1fr 1fr}
+  .cust-grid{grid-template-columns:1fr 1fr}
+  .g2{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  .content{padding:1.2rem 1rem}
+  .stats{grid-template-columns:1fr 1fr}
+  .auto-grid{grid-template-columns:1fr}
+  .cust-grid{grid-template-columns:1fr}
+  .r2,.r3{grid-template-columns:1fr}
+  .pb-row{grid-template-columns:1fr 1fr}
+  .topbar{padding:0 1rem}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ═══ -->
+<div class="sidebar" id="sidebar">
+  <div class="sb-logo">
+    <div class="sb-crest">W</div>
+    <span class="sb-name">Westmere</span>
+    <span class="sb-sub">Admin Panel</span>
+  </div>
+
+  <div class="sb-section">
+    <span class="sb-label">Overview</span>
+    <button class="sb-item on" onclick="nav('dashboard',this)"><span class="sb-icon">🏠</span>Dashboard</button>
+    <button class="sb-item" onclick="nav('today',this)"><span class="sb-icon">📅</span>Today's Jobs<span class="sb-badge">2</span></button>
+    <button class="sb-item" onclick="nav('notifications',this)"><span class="sb-icon">🔔</span>Notifications<span class="sb-badge red">3</span></button>
+  </div>
+
+  <div class="sb-section">
+    <span class="sb-label">Bookings</span>
+    <button class="sb-item" onclick="openModal('modal-book')"><span class="sb-icon">➕</span>New Booking</button>
+    <button class="sb-item" onclick="nav('all-jobs',this)"><span class="sb-icon">🗂</span>All Journeys</button>
+  </div>
+
+  <div class="sb-section">
+    <span class="sb-label">Customers</span>
+    <button class="sb-item" onclick="nav('customers',this)"><span class="sb-icon">👥</span>Customers</button>
+    <button class="sb-item" onclick="nav('invoices',this)"><span class="sb-icon">📄</span>Invoices<span class="sb-badge red">1</span></button>
+  </div>
+
+  <div class="sb-section">
+    <span class="sb-label">Operations</span>
+    <button class="sb-item" onclick="nav('automation',this)"><span class="sb-icon">⚡</span>Automation</button>
+    <button class="sb-item" onclick="nav('fares',this)"><span class="sb-icon">💷</span>Fare Editor</button>
+    <button class="sb-item" onclick="nav('settings',this)"><span class="sb-icon">⚙️</span>Settings</button>
+  </div>
+
+  <div class="sb-section">
+    <span class="sb-label">Your Sites</span>
+    <a class="sb-item" href="westmere-booking.html" target="_blank"><span class="sb-icon">🌐</span>Booking Site</a>
+    <a class="sb-item" href="westmere-account.html" target="_blank"><span class="sb-icon">👤</span>Account Portal</a>
+    <a class="sb-item" href="westmere-trip-check.html" target="_blank"><span class="sb-icon">📍</span>Trip Checker</a>
+  </div>
+
+  <div class="sb-bottom">
+    <div class="sb-version">Westmere Admin · 2025</div>
+  </div>
+</div>
+
+<!-- ═══ MAIN ═══ -->
+<div class="main">
+  <div class="topbar">
+    <div class="tb-left">
+      <button class="mob-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="tb-title" id="page-title">Dashboard</div>
+    </div>
+    <div class="tb-right">
+      <div class="tb-live"><div class="live-dot"></div>Live</div>
+      <div class="tb-clock" id="clock">--:--</div>
+      <button class="btn-new" onclick="openModal('modal-book')">+ New Job</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══ DASHBOARD ══ -->
+    <div class="view on" id="view-dashboard">
+      <div class="page-hd">
+        <div class="page-title">Good morning, <em>Westmere</em></div>
+        <div class="page-sub">Here is your operation at a glance</div>
+      </div>
+
+      <div class="stats">
+        <div class="stat s-gold" onclick="nav('today',document.querySelector('[onclick*=today]'))">
+          <div class="sv">2</div><div class="sl">Today's Jobs</div><div class="ss">Next: 04:30 →</div>
+        </div>
+        <div class="stat s-green">
+          <div class="sv">£230</div><div class="sl">Today's Earnings</div><div class="ss">Cash + Card</div>
+        </div>
+        <div class="stat s-blue">
+          <div class="sv">11</div><div class="sl">This Month</div><div class="ss">£842 total</div>
+        </div>
+        <div class="stat s-red" onclick="nav('invoices',document.querySelector('[onclick*=invoices]'))">
+          <div class="sv">1</div><div class="sl">Overdue Invoice</div><div class="ss">£192 due</div>
+        </div>
+        <div class="stat s-purple">
+          <div class="sv">8</div><div class="sl">Account Customers</div><div class="ss">3 business · 5 personal</div>
+        </div>
+      </div>
+
+      <div class="g2">
+        <div class="card">
+          <div class="ch"><div class="ct">Today's Jobs</div><button class="btn btn-ghost btn-sm" onclick="nav('today',document.querySelector('[onclick*=today]'))">View All</button></div>
+          <div class="cb">
+            <div class="timeline">
+              <div class="tl-item">
+                <div class="tl-time-col"><div class="tl-time">04:30</div><div class="tl-line"></div></div>
+                <div class="tl-card active">
+                  <div class="tl-top"><div class="tl-name">Sarah Jones</div><span class="tag tag-upcoming">Upcoming</span></div>
+                  <div class="tl-route">Lewes BN7 → Gatwick · EZY1234 · £75 Cash</div>
+                  <div class="tl-actions">
+                    <button class="btn btn-blue btn-sm" onclick="showToast('Confirmation sent to Sarah Jones')">📧 Send Confirmation</button>
+                    <button class="btn btn-ghost btn-sm">✏️ Edit</button>
+                  </div>
+                </div>
+              </div>
+              <div class="tl-item">
+                <div class="tl-time-col"><div class="tl-time">17:20</div></div>
+                <div class="tl-card">
+                  <div class="tl-top"><div class="tl-name">John Smith</div><span class="tag tag-account">Account</span></div>
+                  <div class="tl-route">Heathrow T5 → Lewes · BA0492 · £145 Invoice</div>
+                  <div class="tl-actions">
+                    <button class="btn btn-blue btn-sm" onclick="showToast('Confirmation sent to John Smith')">📧 Send Confirmation</button>
+                    <button class="btn btn-ghost btn-sm">✏️ Edit</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="ch"><div class="ct">Recent Activity</div></div>
+          <div class="cb">
+            <div class="notif"><div class="notif-dot" style="background:var(--gold)"></div><div><div class="notif-text"><strong>New booking</strong> — Mrs Williams, Lewes → Brighton, Wed 2 Apr 19:30</div><div class="notif-time">2 minutes ago</div></div></div>
+            <div class="notif"><div class="notif-dot" style="background:#3B82F6"></div><div><div class="notif-text"><strong>Card payment received</strong> — John Smith, £127.00</div><div class="notif-time">1 hour ago</div></div></div>
+            <div class="notif"><div class="notif-dot" style="background:var(--red)"></div><div><div class="notif-text"><strong>Invoice overdue</strong> — Smith &amp; Co Ltd, INV-2025-003, £192</div><div class="notif-time">3 days overdue</div></div></div>
+            <div class="notif"><div class="notif-dot" style="background:var(--green)"></div><div><div class="notif-text"><strong>Journey completed</strong> — Dr Foster, Brighton → Heathrow, £127</div><div class="notif-time">Yesterday 08:45</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><div class="ct">Automation Status</div><button class="btn btn-ghost btn-sm" onclick="nav('automation',document.querySelector('[onclick*=auto]'))">Manage</button></div>
+        <div class="cb">
+          <div class="auto-grid">
+            <div class="auto-card armed"><div class="ac-icon">📧</div><div class="ac-title">Customer Email</div><div class="ac-sub">Confirmation with Maps, flight tracker and calendar link</div><div class="ac-status"><div class="ac-dot"></div>Active</div></div>
+            <div class="auto-card armed"><div class="ac-icon">💬</div><div class="ac-title">WhatsApp</div><div class="ac-sub">Instant WhatsApp confirmation to customer on booking</div><div class="ac-status"><div class="ac-dot"></div>Active</div></div>
+            <div class="auto-card armed"><div class="ac-icon">📅</div><div class="ac-title">Calendar Sync</div><div class="ac-sub">Every booking added to Google and Apple Calendar</div><div class="ac-status"><div class="ac-dot"></div>Active</div></div>
+            <div class="auto-card armed"><div class="ac-icon">✉️</div><div class="ac-title">Your Job Email</div><div class="ac-sub">Your job sheet with Waze, flight tracker and calendar</div><div class="ac-status"><div class="ac-dot"></div>Active</div></div>
+            <div class="auto-card armed"><div class="ac-icon">📒</div><div class="ac-title">Record Book</div><div class="ac-sub">Every booking logged to operator record spreadsheet</div><div class="ac-status"><div class="ac-dot"></div>Active</div></div>
+            <div class="auto-card"><div class="ac-icon">📄</div><div class="ac-title">Monthly Invoice</div><div class="ac-sub">Account customers invoiced automatically on the 1st</div><div class="ac-status off"><div class="ac-dot"></div>Connect Stripe to activate</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TODAY ══ -->
+    <div class="view" id="view-today">
+      <div class="page-hd">
+        <div class="page-title">Today's <em>Jobs</em></div>
+        <div class="page-sub">Tuesday 25 March 2025</div>
+      </div>
+      <div class="card">
+        <div class="ch"><div class="ct">Schedule</div><button class="btn btn-navy btn-sm" onclick="openModal('modal-book')">+ Add Job</button></div>
+        <div class="cb">
+          <div class="timeline">
+            <div class="tl-item">
+              <div class="tl-time-col"><div class="tl-time">04:30</div><div class="tl-line"></div></div>
+              <div class="tl-card active">
+                <div class="tl-top"><div class="tl-name">Sarah Jones</div><span class="tag tag-upcoming">Upcoming</span></div>
+                <div class="tl-route">📍 14 Friars Walk, Lewes BN7 → ✈ Gatwick South Terminal</div>
+                <div class="tl-route" style="margin-top:.2rem">Flight EZY1234 · 08:15 · 1 passenger · 1 case · £75 Cash</div>
+                <div class="tl-actions">
+                  <button class="btn btn-blue btn-sm" onclick="showToast('Confirmation sent via WhatsApp + Email')">📧 Confirm</button>
+                  <a class="btn btn-ghost btn-sm" href="https://waze.com/ul?q=14+Friars+Walk+Lewes&navigate=yes" target="_blank">🔵 Waze</a>
+                  <a class="btn btn-ghost btn-sm" href="https://www.flightradar24.com/data/flights/ezy1234" target="_blank">✈ Track</a>
+                  <button class="btn btn-green btn-sm" onclick="markDone(this)">✓ Done</button>
+                  <button class="btn btn-red btn-sm">✕ Cancel</button>
+                </div>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-time-col"><div class="tl-time">17:20</div></div>
+              <div class="tl-card">
+                <div class="tl-top"><div class="tl-name">John Smith · Smith &amp; Co</div><span class="tag tag-account">Account</span></div>
+                <div class="tl-route">📍 Heathrow T5 Arrivals → 22 Pelham Court, Lewes BN7</div>
+                <div class="tl-route" style="margin-top:.2rem">Flight BA0492 · Lands ~17:20 · 2 passengers · 2 cases · £145 Invoice</div>
+                <div class="tl-actions">
+                  <button class="btn btn-blue btn-sm" onclick="showToast('Confirmation sent to John Smith')">📧 Confirm</button>
+                  <a class="btn btn-ghost btn-sm" href="https://www.flightradar24.com/data/flights/ba0492" target="_blank">✈ Track</a>
+                  <button class="btn btn-green btn-sm" onclick="markDone(this)">✓ Done</button>
+                  <button class="btn btn-red btn-sm">✕ Cancel</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ALL JOBS ══ -->
+    <div class="view" id="view-all-jobs">
+      <div class="page-hd">
+        <div class="page-title">All <em>Journeys</em></div>
+      </div>
+      <div class="card">
+        <div class="ch">
+          <div class="ct">Journey History</div>
+          <div style="display:flex;gap:.5rem">
+            <input class="fi" type="text" placeholder="Search…" style="width:160px;padding:.4rem .8rem;min-height:auto">
+            <button class="btn btn-navy btn-sm" onclick="openModal('modal-book')">+ New</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="jtable">
+            <thead><tr><th>Ref</th><th>Date</th><th>Time</th><th>Passenger</th><th>Route</th><th>Type</th><th>Fare</th><th>Payment</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>
+              <tr><td><div class="main-v">WPH-241903</div></td><td>25/03/25</td><td>04:30</td><td><div class="main-v">Sarah Jones</div></td><td><div class="main-v">Lewes → Gatwick</div><div class="sub-v">EZY1234</div></td><td><span class="tag tag-upcoming" style="font-size:.5rem">Airport</span></td><td><span style="color:var(--gold);font-family:var(--serif);font-size:1.1rem">£75</span></td><td><span class="tag tag-cash">Cash</span></td><td><span class="tag tag-upcoming">Upcoming</span></td><td><button class="btn btn-blue btn-sm" onclick="showToast('Confirmation sent')">📧</button> <button class="btn btn-ghost btn-sm">✏️</button></td></tr>
+              <tr><td><div class="main-v">WPH-241902</div></td><td>14/03/25</td><td>07:30</td><td><div class="main-v">Mrs Linda Patel</div></td><td><div class="main-v">Lewes → Heathrow T5</div><div class="sub-v">BA0117</div></td><td><span class="tag tag-upcoming" style="font-size:.5rem">Airport</span></td><td><span style="color:var(--gold);font-family:var(--serif);font-size:1.1rem">£122</span></td><td><span class="tag tag-card">Card</span></td><td><span class="tag tag-done">Done</span></td><td><button class="btn btn-ghost btn-sm">Receipt</button></td></tr>
+              <tr><td><div class="main-v">WPH-241901</div></td><td>10/03/25</td><td>05:15</td><td><div class="main-v">Mr James Cooper</div></td><td><div class="main-v">Horsham → Gatwick</div></td><td><span class="tag tag-upcoming" style="font-size:.5rem">Airport</span></td><td><span style="color:var(--gold);font-family:var(--serif);font-size:1.1rem">£45</span></td><td><span class="tag tag-cash">Cash</span></td><td><span class="tag tag-done">Done</span></td><td><button class="btn btn-ghost btn-sm">Receipt</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ CUSTOMERS ══ -->
+    <div class="view" id="view-customers">
+      <div class="page-hd"><div class="page-title">Customers</div></div>
+      <div class="cust-grid">
+        <div class="cust-card"><div class="cc-name">Smith &amp; Co Ltd</div><div class="cc-type cc-business">Business</div><div class="cc-meta">John Smith · accounts@smithco.com</div><div class="cc-stats"><div class="cc-stat">Jobs: <span>12</span></div><div class="cc-stat">Spent: <span>£1,240</span></div></div></div>
+        <div class="cust-card"><div class="cc-name">Sarah Jones</div><div class="cc-type cc-personal">Personal</div><div class="cc-meta">+44 7700 123456</div><div class="cc-stats"><div class="cc-stat">Jobs: <span>4</span></div><div class="cc-stat">Spent: <span>£310</span></div></div></div>
+        <div class="cust-card"><div class="cc-name">Mrs Linda Patel</div><div class="cc-type cc-personal">Personal</div><div class="cc-meta">+44 7700 654321</div><div class="cc-stats"><div class="cc-stat">Jobs: <span>3</span></div><div class="cc-stat">Spent: <span>£366</span></div></div></div>
+      </div>
+      <button class="btn btn-navy" onclick="showToast('Add customer — coming soon')">+ Add Customer</button>
+    </div>
+
+    <!-- ══ INVOICES ══ -->
+    <div class="view" id="view-invoices">
+      <div class="page-hd"><div class="page-title">Invoices</div></div>
+      <div class="card">
+        <div class="ch"><div class="ct">Outstanding</div><button class="btn btn-navy btn-sm" onclick="showToast('Invoice created!')">+ New Invoice</button></div>
+        <div style="overflow-x:auto">
+          <table class="inv-table">
+            <thead><tr><th>Invoice No.</th><th>Customer</th><th>Issued</th><th>Due</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>
+              <tr><td class="main-v">INV-2025-003</td><td><div class="main-v">Smith &amp; Co Ltd</div></td><td>01/03/2025</td><td>31/03/2025</td><td><span style="color:var(--red);font-family:var(--serif);font-size:1.1rem">£192.00</span></td><td><span class="tag tag-cancel">Overdue</span></td><td><button class="btn btn-blue btn-sm" onclick="showToast('Invoice sent to accounts@smithco.com')">📧 Chase</button> <button class="btn btn-green btn-sm" onclick="showToast('Marked as paid')">✓ Paid</button></td></tr>
+              <tr><td class="main-v">INV-2025-002</td><td><div class="main-v">Smith &amp; Co Ltd</div></td><td>01/02/2025</td><td>28/02/2025</td><td><span style="color:var(--green);font-family:var(--serif);font-size:1.1rem">£77.00</span></td><td><span class="tag tag-done">Paid</span></td><td><button class="btn btn-ghost btn-sm">View</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ AUTOMATION ══ -->
+    <div class="view" id="view-automation">
+      <div class="page-hd"><div class="page-title">Automation</div></div>
+      <div class="card">
+        <div class="ch"><div class="ct">What Happens When a Booking Is Confirmed</div></div>
+        <div class="cb">
+          <div class="auto-grid">
+            <div class="auto-card armed"><div class="ac-icon">✉️</div><div class="ac-title">Customer Email</div><div class="ac-sub">Full confirmation with Google Maps route, flight tracker, Add to Calendar and WhatsApp link.</div><div class="toggle" onclick="togToggle(this)"><div class="toggle-track on"><div class="toggle-thumb"></div></div><div class="toggle-label">Enabled</div></div></div>
+            <div class="auto-card armed"><div class="ac-icon">💬</div><div class="ac-title">Customer WhatsApp</div><div class="ac-sub">Instant WhatsApp message with booking summary and your contact number.</div><div class="toggle" onclick="togToggle(this)"><div class="toggle-track on"><div class="toggle-thumb"></div></div><div class="toggle-label">Enabled</div></div></div>
+            <div class="auto-card armed"><div class="ac-icon">📱</div><div class="ac-title">SMS Reminder</div><div class="ac-sub">Text message to customer 2 hours before pickup time.</div><div class="toggle" onclick="togToggle(this)"><div class="toggle-track on"><div class="toggle-thumb"></div></div><div class="toggle-label">Enabled</div></div></div>
+            <div class="auto-card armed"><div class="ac-icon">🔔</div><div class="ac-title">Your Job Email</div><div class="ac-sub">Your personal job sheet sent to your inbox with Waze, flight tracker and calendar.</div><div class="toggle" onclick="togToggle(this)"><div class="toggle-track on"><div class="toggle-thumb"></div></div><div class="toggle-label">Enabled</div></div></div>
+            <div class="auto-card armed"><div class="ac-icon">📅</div><div class="ac-title">Google &amp; Apple Calendar</div><div class="ac-sub">Job added to both your Google Calendar and Apple Calendar automatically.</div><div class="toggle" onclick="togToggle(this)"><div class="toggle-track on"><div class="toggle-thumb"></div></div><div class="toggle-label">Enabled</div></div></div>
+            <div class="auto-card armed"><div class="ac-icon">📒</div><div class="ac-title">Record Book</div><div class="ac-sub">Every booking auto-logged to your statutory operator journey record.</div><div class="toggle" onclick="togToggle(this)"><div class="toggle-track on"><div class="toggle-thumb"></div></div><div class="toggle-label">Enabled</div></div></div>
+            <div class="auto-card"><div class="ac-icon">📄</div><div class="ac-title">Monthly Invoice</div><div class="ac-sub">Account customers invoiced automatically on the 1st of each month.</div><div class="toggle" onclick="togToggle(this)"><div class="toggle-track"><div class="toggle-thumb"></div></div><div class="toggle-label">Connect Stripe to enable</div></div></div>
+            <div class="auto-card"><div class="ac-icon">✈️</div><div class="ac-title">Flight Delay Alert</div><div class="ac-sub">Notifies you if a tracked flight is delayed more than 20 minutes.</div><div class="toggle" onclick="togToggle(this)"><div class="toggle-track"><div class="toggle-thumb"></div></div><div class="toggle-label">Connect Flightradar to enable</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ FARE EDITOR ══ -->
+    <div class="view" id="view-fares">
+      <div class="page-hd"><div class="page-title">Fare <em>Editor</em></div></div>
+      <div class="card">
+        <div class="ch"><div class="ct">Airport Fixed Fares — Town Centre Rates</div><button class="btn btn-navy btn-sm" onclick="showToast('Fares saved. Estimator updated.')">💾 Save Fares</button></div>
+        <div class="cb" style="overflow-x:auto">
+          <table class="fare-table" id="fare-tbody-wrap" style="min-width:560px">
+            <thead><tr><th style="text-align:left">From</th><th>Gatwick</th><th>Heathrow</th><th>Stansted</th><th>Luton</th><th>Southampton</th><th>City</th></tr></thead>
+            <tbody id="fare-tbody"></tbody>
+          </table>
+          <p style="font-size:.72rem;color:var(--text-light);margin-top:1rem">Click any fare to edit it. Address adjustments calculated at <strong style="color:var(--gold)">£2.80/mile</strong> above town centre rates.</p>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.2rem" class="g3r">
+        <div class="card"><div class="ch"><div class="ct">Airport Surcharges</div></div><div class="cb"><div class="fg"><label class="fl">Gatwick Drop-off</label><input class="fi" value="£10.00"></div><div class="fg"><label class="fl">Heathrow Drop-off</label><input class="fi" value="£7.00"></div><div class="fg"><label class="fl">Night Rate (23:00–05:00)</label><input class="fi" value="+£15 Gatwick / £20 Heathrow"></div></div></div>
+        <div class="card"><div class="ch"><div class="ct">Local Rate</div></div><div class="cb"><div class="fg"><label class="fl">Base Fare</label><input class="fi" value="£3.50"></div><div class="fg"><label class="fl">Per Mile</label><input class="fi" value="£2.80"></div><div class="fg"><label class="fl">Minimum Fare</label><input class="fi" value="£8.00"></div></div></div>
+        <div class="card"><div class="ch"><div class="ct">Premiums</div></div><div class="cb"><div class="fg"><label class="fl">Corporate</label><input class="fi" value="+10%"></div><div class="fg"><label class="fl">Return Journey</label><input class="fi" value="×1.85"></div></div></div>
+      </div>
+    </div>
+
+    <!-- ══ SETTINGS ══ -->
+    <div class="view" id="view-settings">
+      <div class="page-hd"><div class="page-title">Settings</div></div>
+      <div class="g2">
+        <div class="card">
+          <div class="ch"><div class="ct">Business Details</div></div>
+          <div class="cb">
+            <div class="fg"><label class="fl">Business Name</label><input class="fi" value="Westmere Private Hire"></div>
+            <div class="fg"><label class="fl">Your Name</label><input class="fi" placeholder="Your legal name"></div>
+            <div class="fg"><label class="fl">Mobile</label><input class="fi" placeholder="+44 7700 000000"></div>
+            <div class="fg"><label class="fl">Email</label><input class="fi" placeholder="info@westemereprivatehire.co.uk"></div>
+            <div class="fg"><label class="fl">WhatsApp Number</label><input class="fi" placeholder="+44 7700 000000"></div>
+            <div class="fg"><label class="fl">Operator Licence No.</label><input class="fi" placeholder="[Enter when received]"></div>
+            <button class="btn btn-navy btn-full" style="margin-top:.5rem" onclick="showToast('Settings saved!')">Save Changes</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch"><div class="ct">Integrations</div></div>
+          <div class="cb">
+            <div class="setting-row"><div><div class="sr-title">Google Calendar</div><div class="sr-sub">Auto-add bookings to your calendar</div></div><button class="btn btn-green btn-sm" onclick="showToast('Google Calendar connected!')">✓ Connect</button></div>
+            <div class="setting-row"><div><div class="sr-title">SendGrid (Email)</div><div class="sr-sub">Send automated customer emails</div></div><button class="btn btn-ghost btn-sm" onclick="showToast('Enter your SendGrid API key')">Connect</button></div>
+            <div class="setting-row"><div><div class="sr-title">Twilio (WhatsApp &amp; SMS)</div><div class="sr-sub">Automated WhatsApp and text messages</div></div><button class="btn btn-ghost btn-sm" onclick="showToast('Enter your Twilio credentials')">Connect</button></div>
+            <div class="setting-row"><div><div class="sr-title">Stripe (Card Payments)</div><div class="sr-sub">Accept card payments online</div></div><button class="btn btn-ghost btn-sm" onclick="showToast('Enter your Stripe publishable key')">Connect</button></div>
+            <div class="setting-row"><div><div class="sr-title">Flightradar24 API</div><div class="sr-sub">Live flight delay alerts</div></div><button class="btn btn-ghost btn-sm" onclick="showToast('Enter your FR24 API key')">Connect</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ NOTIFICATIONS ══ -->
+    <div class="view" id="view-notifications">
+      <div class="page-hd"><div class="page-title">Notifications</div></div>
+      <div class="card">
+        <div class="ch"><div class="ct">All Activity</div></div>
+        <div class="cb">
+          <div class="notif"><div class="notif-dot" style="background:var(--gold)"></div><div><div class="notif-text"><strong>New booking</strong> — Mrs Williams, Lewes → Brighton, Wed 2 Apr 19:30. £12 cash.</div><div class="notif-time">2 minutes ago</div></div></div>
+          <div class="notif"><div class="notif-dot" style="background:#3B82F6"></div><div><div class="notif-text"><strong>Card payment confirmed</strong> — John Smith, £127.00 via Stripe</div><div class="notif-time">1 hour ago</div></div></div>
+          <div class="notif"><div class="notif-dot" style="background:var(--red)"></div><div><div class="notif-text"><strong>Invoice overdue</strong> — Smith &amp; Co Ltd, INV-2025-003, £192.00. Due 31 March.</div><div class="notif-time">3 days ago</div></div></div>
+          <div class="notif"><div class="notif-dot" style="background:var(--green)"></div><div><div class="notif-text"><strong>Journey completed</strong> — Dr Amelia Foster, Brighton → Heathrow T2, £127.00 card.</div><div class="notif-time">Yesterday 08:45</div></div></div>
+          <div class="notif"><div class="notif-dot" style="background:var(--gold)"></div><div><div class="notif-text"><strong>New account signup</strong> — Mrs Patricia Williams registered as Personal account.</div><div class="notif-time">Yesterday 14:22</div></div></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end content -->
+</div><!-- end main -->
+
+<!-- ═══ MODAL: NEW BOOKING ═══ -->
+<div class="overlay" id="modal-book">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">New Booking</div>
+      <button class="modal-x" onclick="closeModal('modal-book')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="r2">
+        <div class="fg"><label class="fl">Date</label><input class="fi" type="date" id="nb-date" onchange="nbCheck()"></div>
+        <div class="fg"><label class="fl">Pickup Time</label><input class="fi" type="time" id="nb-time" onchange="nbCheck()"></div>
+      </div>
+      <div class="fg"><label class="fl">Pickup Address</label><input class="fi" type="text" id="nb-pu" placeholder="Full address or postcode" oninput="nbCheck()"></div>
+      <div class="fg"><label class="fl">Destination</label><input class="fi" type="text" id="nb-de" placeholder="Airport, address or town" oninput="nbCheck()"></div>
+      <div class="r2">
+        <div class="fg"><label class="fl">Journey Type</label>
+          <select class="fi" id="nb-jt" onchange="nbCheck()">
+            <option value="">Select…</option>
+            <option value="ad">✈ Airport Drop-off</option>
+            <option value="ap">✈ Airport Pickup</option>
+            <option value="co">💼 Corporate</option>
+            <option value="ge">🚗 General</option>
+          </select></div>
+        <div class="fg"><label class="fl">Passengers</label>
+          <select class="fi"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+      </div>
+      <div class="r2">
+        <div class="fg"><label class="fl">Passenger Name</label><input class="fi" type="text" placeholder="Full name"></div>
+        <div class="fg"><label class="fl">Mobile</label><input class="fi" type="tel" placeholder="+44 7700…"></div>
+      </div>
+      <div class="fg"><label class="fl">Email</label><input class="fi" type="email" placeholder="customer@email.com"></div>
+      <div class="fg"><label class="fl">Payment Method</label>
+        <select class="fi"><option>💵 Cash on the Day</option><option>💳 Card — Pre-paid</option><option>📄 Account / Monthly Invoice</option></select></div>
+
+      <!-- Availability check -->
+      <div class="avail" id="nb-avail">
+        <div class="avail-title" id="nb-av-title"></div>
+        <div class="avail-detail" id="nb-av-detail"></div>
+        <div class="sub-offer" id="nb-sub-offer">
+          <strong>Hold job — find a driver, keep commission.</strong> Accept the booking, subcontract to a licensed driver and take your operator's fee.
+          <div style="margin-top:.6rem;display:flex;gap:.5rem">
+            <button class="btn btn-sm" style="background:var(--purple-bg);color:var(--purple);border:1px solid rgba(107,70,160,.2)" onclick="showToast('Job held. Find a licensed driver.')">📋 Hold &amp; Find Driver</button>
+            <button class="btn btn-ghost btn-sm" onclick="showToast('Job declined.')">Decline</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Price -->
+      <div class="price-box" id="nb-price">
+        <div class="pb-label"><div class="pb-dot"></div>Estimated Fixed Fare</div>
+        <div class="pb-amount" id="nb-pb-amount">£—</div>
+        <div class="pb-sub">Fixed price · No meters · No surge pricing</div>
+        <div class="pb-row">
+          <div class="pb-item"><div class="pbi-l">Distance</div><div class="pbi-v" id="nb-pb-dist">—</div></div>
+          <div class="pb-item"><div class="pbi-l">Duration</div><div class="pbi-v" id="nb-pb-time">—</div></div>
+          <div class="pb-item"><div class="pbi-l">Payment</div><div class="pbi-v">Cash or Card</div></div>
+        </div>
+      </div>
+
+      <!-- Send options -->
+      <div style="margin-top:1rem">
+        <label class="fl" style="display:block;margin-bottom:.5rem">Send Confirmation To Customer</label>
+        <div class="notify-list">
+          <div class="notify-opt on" onclick="this.classList.toggle('on');this.querySelector('.no-chk').textContent=this.classList.contains('on')?'✓':''">
+            <span class="no-icon">💬</span><div><div class="no-name">WhatsApp</div><div class="no-sub">Instant booking summary</div></div><div class="no-chk">✓</div>
+          </div>
+          <div class="notify-opt on" onclick="this.classList.toggle('on');this.querySelector('.no-chk').textContent=this.classList.contains('on')?'✓':''">
+            <span class="no-icon">✉️</span><div><div class="no-name">Email</div><div class="no-sub">Full confirmation with Maps, flight &amp; calendar</div></div><div class="no-chk">✓</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-book')">Cancel</button>
+      <button class="btn btn-navy" onclick="closeModal('modal-book');showToast('✓ Booking confirmed! Customer notified. Calendar updated. Record book logged.')">Confirm &amp; Send</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span class="ti">✓</span><span id="toast-msg"></span></div>
+
+<script>
+// ── CLOCK ──
+function tick(){const n=new Date();document.getElementById('clock').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')}
+tick();setInterval(tick,10000);
+
+// ── NAV ──
+const TITLES={dashboard:'Dashboard',today:"Today's Jobs",notifications:'Notifications','all-jobs':'All Journeys',customers:'Customers',invoices:'Invoices',automation:'Automation',fares:'Fare Editor',settings:'Settings'};
+function nav(id,btn){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+  document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('on'));
+  document.getElementById('view-'+id).classList.add('on');
+  if(btn)btn.classList.add('on');
+  document.getElementById('page-title').textContent=TITLES[id]||id;
+  document.getElementById('sidebar').classList.remove('open');
+  window.scrollTo(0,0);
+}
+
+// ── MODALS ──
+function openModal(id){document.getElementById(id).classList.add('on')}
+function closeModal(id){document.getElementById(id).classList.remove('on')}
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('on')}));
+
+// ── TOAST ──
+let tt;
+function showToast(msg){
+  const el=document.getElementById('toast');
+  document.getElementById('toast-msg').textContent=msg;
+  el.classList.add('on');
+  clearTimeout(tt);
+  tt=setTimeout(()=>el.classList.remove('on'),3500);
+}
+
+// ── MARK DONE ──
+function markDone(btn){
+  const card=btn.closest('.tl-card');
+  card.classList.remove('active');card.classList.add('done');
+  const tag=card.querySelector('.tag');if(tag){tag.className='tag tag-done';tag.textContent='Completed'}
+  btn.remove();
+  showToast('Journey marked complete. Record book updated.');
+}
+
+// ── TOGGLE ──
+function togToggle(el){
+  const t=el.querySelector('.toggle-track');
+  t.classList.toggle('on');
+  el.querySelector('.toggle-label').textContent=t.classList.contains('on')?'Enabled':'Disabled';
+  showToast(t.classList.contains('on')?'Automation enabled':'Automation disabled');
+}
+
+// ── FARE DATA ──
+const CF={Horsham:{ga:45,he:115,st:185,lu:175,so:130,ci:155},Lewes:{ga:75,he:135,st:220,lu:210,so:155,ci:170},Brighton:{ga:70,he:120,st:210,lu:200,so:148,ci:162},Crawley:{ga:22,he:98,st:175,lu:165,so:125,ci:148},Worthing:{ga:60,he:138,st:205,lu:195,so:120,ci:160}};
+const RD={horsham_ga:{m:12,t:22},horsham_he:{m:38,t:55},lewes_ga:{m:28,t:38},lewes_he:{m:62,t:80},brighton_ga:{m:27,t:40},brighton_he:{m:58,t:75},crawley_ga:{m:4,t:12},crawley_he:{m:32,t:44},worthing_ga:{m:28,t:42},worthing_he:{m:55,t:70}};
+const APK={gatwick:'ga',heathrow:'he',stansted:'st',luton:'lu',southampton:'so',city:'ci'};
+const TWN={horsham:'horsham',rh12:'horsham',lewes:'lewes',bn7:'lewes',brighton:'brighton',bn1:'brighton',bn2:'brighton',crawley:'crawley',rh10:'crawley',worthing:'worthing',bn11:'worthing'};
+const DT={gatwick:{heathrow:55,horsham:28,lewes:44,brighton:48,crawley:14,worthing:52},heathrow:{horsham:58,lewes:90,brighton:85,crawley:48,worthing:75},horsham:{lewes:50,brighton:42,crawley:22,worthing:38},lewes:{brighton:22,crawley:48,worthing:42},brighton:{crawley:45,worthing:28}};
+function dtDrive(a,b){if(!a||!b)return 25;if(a===b)return 8;return(DT[a]&&DT[a][b])||(DT[b]&&DT[b][a])||30}
+function nTown(s){const l=s.toLowerCase();for(const[k,v]of Object.entries(TWN)){if(l.includes(k))return v}if(l.includes('gatwick'))return'gatwick';if(l.includes('heathrow'))return'heathrow';return null}
+const CONFIRMED=[{date:'2025-03-25',pickupTime:'04:30',dest:'Gatwick Airport',journeyMins:45,name:'Sarah Jones'},{date:'2025-03-25',pickupTime:'15:30',dest:'Lewes',journeyMins:105,name:'John Smith'}];
+function toM(t){if(!t)return 0;const[h,m]=t.split(':').map(Number);return h*60+m}
+function fmM(m){return String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0')}
+
+let nbTimer=null;
+function nbCheck(){
+  clearTimeout(nbTimer);
+  const jt=document.getElementById('nb-jt').value;
+  const pu=document.getElementById('nb-pu').value;
+  const de=document.getElementById('nb-de').value;
+  const dt=document.getElementById('nb-date').value;
+  const tm=document.getElementById('nb-time').value;
+  // Fare estimate
+  if(pu.length>3&&de.length>3){
+    const puN=nTown(pu),deN=nTown(de);
+    const apk=deN&&APK[deN]?APK[deN]:null;
+    const town=puN&&CF[puN.charAt(0).toUpperCase()+puN.slice(1)]?puN:null;
+    if(apk&&town){
+      const base=CF[town.charAt(0).toUpperCase()+town.slice(1)][apk]||0;
+      if(base){
+        let fare=base;
+        const h=parseInt((tm||'10:00').split(':')[0]);
+        if(jt==='ad')fare+=(deN==='heathrow'?7:10);
+        if(h>=23||h<5)fare+=(deN==='heathrow'?20:15);
+        if(jt==='co')fare=Math.round(fare*1.1);
+        fare=Math.ceil(fare/0.5)*0.5;
+        const rd=RD[town+'_'+apk]||{};
+        document.getElementById('nb-pb-amount').textContent='£'+fare;
+        document.getElementById('nb-pb-dist').textContent=rd.m?rd.m+' miles':'—';
+        document.getElementById('nb-pb-time').textContent=rd.t?'~'+rd.t+' min':'—';
+        document.getElementById('nb-price').classList.add('show');
+      }
+    }
+  }
+  // Availability check
+  if(dt&&tm&&pu.length>3){
+    nbTimer=setTimeout(()=>{
+      const puN=nTown(pu)||'unknown';
+      const puM=toM(tm);
+      const dayJobs=CONFIRMED.filter(j=>j.date===dt).sort((a,b)=>toM(a.pickupTime)-toM(b.pickupTime));
+      const before=dayJobs.filter(j=>(toM(j.pickupTime)+j.journeyMins)<=puM);
+      const av=document.getElementById('nb-avail');
+      let status,title,detail,showSub=false;
+      if(before.length===0){
+        const drive=dtDrive('lewes',puN);
+        status='free';title='Available';detail='No prior journeys on this date. Drive from home to pickup ~'+drive+' min.';
+      } else {
+        const last=before[before.length-1];
+        const endsAt=toM(last.pickupTime)+last.journeyMins;
+        const lastN=nTown(last.dest)||'unknown';
+        const drive=dtDrive(lastN,puN);
+        const freeAt=endsAt+10;
+        const mustLeave=puM-drive;
+        const spare=mustLeave-freeAt;
+        if(spare>=15){status='free';title='Available — you can make it';detail='Finishing '+last.dest.split(',')[0]+' at ~'+fmM(endsAt)+'. Drive to pickup ~'+drive+' min. '+spare+' min to spare.'}
+        else if(spare>=0){status='tight';title='Very tight — caution';detail='Only '+spare+' min to spare after the drive from '+last.dest.split(',')[0]+'. Any delay and you may not make it.'}
+        else{status='no';title="Can't make it — "+Math.abs(spare)+' min short';detail='Finishing in '+last.dest.split(',')[0]+' at ~'+fmM(endsAt)+'. Need to leave by '+fmM(mustLeave)+' but won\'t be free until '+fmM(freeAt)+'.';showSub=true}
+      }
+      av.className='avail show '+status;
+      document.getElementById('nb-av-title').textContent=title;
+      document.getElementById('nb-av-detail').textContent=detail;
+      document.getElementById('nb-sub-offer').classList.toggle('show',showSub);
+    },500);
+  }
+}
+
+// ── FARE TABLE ──
+const FARES={Horsham:{ga:45,he:115,st:185,lu:175,so:130,ci:155},Lewes:{ga:75,he:135,st:220,lu:210,so:155,ci:170},Brighton:{ga:70,he:120,st:210,lu:200,so:148,ci:162},Crawley:{ga:22,he:98,st:175,lu:165,so:125,ci:148},Worthing:{ga:60,he:138,st:205,lu:195,so:120,ci:160},Seaford:{ga:82,he:148,st:225,lu:215,so:165,ci:178},Ringmer:{ga:68,he:138,st:218,lu:208,so:155,ci:168}};
+const APS=['ga','he','st','lu','so','ci'];
+function buildFares(){
+  const tb=document.getElementById('fare-tbody');
+  if(!tb)return;
+  for(const[town,fares]of Object.entries(FARES)){
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td style="text-align:left;font-size:.78rem;font-weight:500;color:var(--navy);background:var(--cream-dark);padding:.5rem .8rem">${town}</td>`;
+    APS.forEach(ap=>{tr.innerHTML+=`<td><input class="fare-input" value="£${fares[ap]}"></td>`});
+    tb.appendChild(tr);
+  }
+}
+buildFares();
+
+// Min date
+document.querySelectorAll('input[type=date]').forEach(d=>d.min=new Date().toISOString().split('T')[0]);
+</script>
+</body>
+</html>
