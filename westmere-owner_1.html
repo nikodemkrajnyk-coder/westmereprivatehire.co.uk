@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Westmere">
+<meta name="theme-color" content="#111D2C">
+<title>Westmere · Owner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --navy:#1C2A3E;--navy-deep:#111D2C;
+  --cream:#F2F2F0;--white:#FAFAFA;
+  --gold:#B8985A;
+  --rule:#DEDEDE;--text:#1C2A3E;--text-mid:#4A5568;--text-light:#718096;
+  --green:#2D6E47;--green-bg:#F0FAF4;
+  --red:#8B2222;--red-bg:#FEF2F2;
+  --amber:#7A5C18;--amber-bg:#FEF9EC;
+  --serif:'Cormorant Garamond',Georgia,serif;
+  --sans:'Jost','Helvetica Neue',sans-serif;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+html{height:100%;font-size:16px}
+body{font-family:var(--sans);font-weight:300;color:var(--text);background:var(--cream);-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden}
+
+/* ── APP SHELL ── */
+.app{display:flex;flex-direction:column;min-height:100vh}
+
+/* ── TOP BAR ── */
+.topbar{background:var(--navy-deep);padding:calc(var(--safe-top) + .7rem) 1.2rem .7rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid rgba(184,152,90,.1);position:sticky;top:0;z-index:60}
+.tb-left{display:flex;align-items:center;gap:.65rem}
+.tb-crest{width:28px;height:28px;border:1px solid rgba(184,152,90,.28);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:.82rem;color:rgba(248,245,239,.55);flex-shrink:0}
+.tb-name{font-family:var(--serif);font-size:.95rem;font-weight:400;letter-spacing:.08em;color:var(--white)}
+.tb-mode-label{font-size:.48rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+
+/* Mode toggle — the key element */
+.mode-toggle{display:flex;background:rgba(255,255,255,.06);border:1px solid rgba(184,152,90,.18);gap:1px}
+.mode-btn{padding:.4rem .9rem;background:transparent;border:none;font-family:var(--sans);font-size:.55rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(248,245,239,.4);cursor:pointer;transition:all .2s;white-space:nowrap}
+.mode-btn.on{background:var(--gold);color:var(--navy-deep)}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse 2.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav{background:var(--navy-deep);border-top:1px solid rgba(184,152,90,.1);display:flex;padding-bottom:var(--safe-bottom);flex-shrink:0;position:sticky;bottom:0;z-index:60}
+.bn{flex:1;display:flex;flex-direction:column;align-items:center;gap:.22rem;padding:.65rem .3rem;background:none;border:none;cursor:pointer;transition:color .2s;color:rgba(248,245,239,.28);font-family:var(--sans);min-height:52px;position:relative}
+.bn.on{color:var(--gold)}
+.bn-bar{width:18px;height:1px;background:currentColor;opacity:0;transition:opacity .2s}
+.bn.on .bn-bar{opacity:1}
+.bn-label{font-size:.44rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;margin-top:.1rem}
+.bn-dot{position:absolute;top:.38rem;right:calc(50% - 16px);background:var(--red);color:var(--white);font-size:.46rem;font-weight:700;min-width:13px;height:13px;border-radius:7px;padding:0 2px;display:none;align-items:center;justify-content:center}
+
+/* ── SCROLL ── */
+.page-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.pg{display:none;padding:1.2rem 1rem;max-width:560px;margin:0 auto;padding-bottom:1.5rem}
+.pg.on{display:block}
+
+/* ── SECTION HEADER ── */
+.sec-title{font-family:var(--serif);font-size:1.55rem;font-weight:300;color:var(--navy-deep);line-height:1;margin-bottom:.2rem}
+.sec-title em{font-style:italic;color:var(--gold)}
+.sec-sub{font-size:.7rem;color:var(--text-light);font-weight:300;margin-bottom:1rem}
+
+/* ── SHARED CARD ── */
+.card{background:var(--white);border:1px solid var(--rule);margin-bottom:.85rem}
+.ch{padding:.82rem 1.1rem;border-bottom:1px solid var(--rule);font-size:.54rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;justify-content:space-between}
+.cb{padding:0 1.1rem}
+
+/* ── ROW PATTERN ── */
+.row{display:flex;justify-content:space-between;align-items:baseline;padding:.88rem 0;border-bottom:1px solid rgba(221,216,206,.45)}
+.row:last-child{border-bottom:none}
+.row-k{font-size:.56rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--text-light);flex-shrink:0}
+.row-v{font-size:.85rem;color:var(--navy);font-weight:300;text-align:right;max-width:66%}
+.row-v.serif{font-family:var(--serif);font-size:.98rem}
+
+/* ── JOB CARD (DRIVE MODE) ── */
+.job-card{background:var(--white);border:1px solid var(--rule);margin-bottom:.85rem;overflow:hidden}
+.job-card.active-job{border-color:var(--gold)}
+.job-card.done-job{opacity:.6}
+.jc-bar{height:3px;background:var(--rule)}
+.job-card.active-job .jc-bar{background:var(--gold)}
+.job-card.done-job .jc-bar{background:var(--green)}
+.jc-header{display:flex;align-items:center;justify-content:space-between;padding:.95rem 1.1rem .8rem;border-bottom:1px solid rgba(221,216,206,.5)}
+.jc-time{font-family:var(--serif);font-size:1.7rem;font-weight:300;color:var(--gold);line-height:1}
+.jc-name{font-size:1rem;font-weight:500;color:var(--navy);font-family:var(--serif);text-align:right}
+.jc-pax{font-size:.62rem;color:var(--text-light);font-weight:300;margin-top:.1rem;text-align:right}
+.jc-details{padding:.8rem 1.1rem;border-bottom:1px solid rgba(221,216,206,.5)}
+.jd-row{display:flex;align-items:baseline;gap:.8rem;padding:.28rem 0}
+.jd-key{font-size:.52rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--text-light);width:50px;flex-shrink:0}
+.jd-val{font-size:.84rem;color:var(--navy);font-weight:300;line-height:1.45;flex:1}
+.jd-val.accent{font-family:var(--serif);font-size:.95rem}
+.fp{display:inline-block;font-size:.54rem;font-weight:500;letter-spacing:.08em;padding:.14rem .52rem;border:1px solid}
+.fp-ontime{color:var(--green);border-color:#a8d5b5;background:var(--green-bg)}
+.fp-landed{color:#2563EB;border-color:rgba(37,99,235,.25);background:rgba(37,99,235,.06)}
+.fp-delayed{color:var(--amber);border-color:#e8d098;background:var(--amber-bg)}
+.jc-contact{display:flex;gap:1px;border-bottom:1px solid rgba(221,216,206,.5);background:var(--rule)}
+.jcc{flex:1;padding:.75rem;background:var(--white);border:none;font-family:var(--sans);font-size:.6rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--text-mid);cursor:pointer;transition:all .2s;text-decoration:none;display:flex;align-items:center;justify-content:center}
+.jcc:hover,.jcc:active{background:var(--navy);color:var(--white)}
+.jc-actions{padding:.8rem 1rem;display:flex;flex-wrap:wrap;gap:.5rem}
+.sbt{font-family:var(--sans);font-size:.6rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.65rem 1rem;cursor:pointer;border:none;transition:all .2s;flex:1;min-width:100px;min-height:44px}
+.sbt-enroute{background:var(--navy);color:var(--white)}.sbt-enroute:hover{background:var(--gold);color:var(--navy-deep)}
+.sbt-atpickup{background:rgba(37,99,235,.08);color:#2563EB;border:1px solid rgba(37,99,235,.2)}
+.sbt-onboard{background:var(--amber-bg);color:var(--amber);border:1px solid #e8d098}
+.sbt-dropoff{background:var(--green-bg);color:var(--green);border:1px solid #a8d5b5}
+.sbt-cancel{background:transparent;color:var(--text-light);border:1px solid var(--rule)}
+.jc-links{padding:.6rem 1rem;border-top:1px solid var(--rule);display:flex;gap:.5rem;flex-wrap:wrap}
+.jl{font-family:var(--sans);font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;padding:.45rem .85rem;cursor:pointer;background:var(--cream);border:1px solid var(--rule);color:var(--text-mid);transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;min-height:34px}
+.jl:hover{border-color:var(--navy);color:var(--navy)}
+
+/* Score strip */
+.score-strip{padding:.55rem 1.1rem;border-bottom:1px solid rgba(221,216,206,.5);display:flex;justify-content:space-between;align-items:center;gap:.8rem}
+.ss-v{font-size:.58rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase}
+.ss-d{font-size:.64rem;color:var(--text-mid);font-weight:300;margin-top:.1rem}
+.ss-n{font-size:.72rem;font-weight:500;flex-shrink:0}
+.offer-btns{padding:.8rem 1rem;display:flex;gap:.6rem}
+.btn-accept{flex:1;padding:.75rem;background:var(--navy);color:var(--white);border:none;font-family:var(--sans);font-size:.62rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:background .2s;min-height:44px}
+.btn-accept:hover{background:var(--gold);color:var(--navy-deep)}
+.btn-decline{padding:.75rem 1.1rem;background:transparent;color:var(--text-light);border:1px solid var(--rule);font-family:var(--sans);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;min-height:44px}
+
+/* ── ADMIN: INBOX MESSAGE ── */
+.msg-item{padding:1rem 1.1rem;border-bottom:1px solid rgba(221,216,206,.45)}
+.msg-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.5rem}
+.msg-from{font-size:.88rem;font-weight:500;color:var(--navy)}
+.msg-time{font-size:.62rem;color:var(--text-light)}
+.msg-pill{font-size:.52rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .6rem;border:1px solid}
+.pill-ok{color:var(--green);border-color:#a8d5b5;background:var(--green-bg)}
+.pill-flag{color:var(--amber);border-color:#e8d098;background:var(--amber-bg)}
+.pill-enquiry{color:var(--text-light);border-color:var(--rule);background:var(--cream)}
+.msg-text{font-size:.8rem;color:var(--text-mid);font-weight:300;line-height:1.6;font-style:italic;border-left:2px solid var(--rule);padding-left:.75rem;margin:.5rem 0}
+.msg-extract{font-size:.75rem;color:var(--text-mid);font-weight:300;background:var(--cream);padding:.6rem .8rem;margin:.5rem 0;line-height:1.75}
+.msg-conflict{font-size:.74rem;color:var(--amber);font-weight:300;background:var(--amber-bg);border:1px solid #e8d098;padding:.5rem .8rem;margin:.5rem 0}
+.msg-actions{display:flex;gap:.5rem;margin-top:.7rem;flex-wrap:wrap}
+.ma-btn{font-family:var(--sans);font-size:.6rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.5rem .9rem;cursor:pointer;border:none;min-height:38px;transition:all .2s}
+.ma-accept{background:var(--navy);color:var(--white)}.ma-accept:hover{background:var(--gold);color:var(--navy-deep)}
+.ma-pass{background:transparent;color:var(--text-light);border:1px solid var(--rule)}.ma-pass:hover{border-color:var(--navy);color:var(--navy)}
+
+/* ── ADMIN: ASSISTANT ── */
+.assist-feed{padding:.9rem 1.1rem;min-height:240px;max-height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:.2rem;scroll-behavior:smooth}
+.msg-user{display:flex;justify-content:flex-end;margin-bottom:.5rem}
+.msg-user div{background:var(--navy);color:rgba(248,245,239,.85);padding:.7rem .95rem;font-size:.82rem;font-weight:300;max-width:82%;line-height:1.6}
+.msg-w{display:flex;gap:.6rem;align-items:flex-start;margin-bottom:.5rem}
+.msg-w-crest{width:20px;height:20px;border:1px solid rgba(184,152,90,.3);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:.62rem;color:var(--gold);flex-shrink:0;margin-top:.1rem}
+.msg-w div{background:var(--white);border:1px solid var(--rule);padding:.75rem .95rem;font-size:.82rem;color:var(--navy);font-weight:300;max-width:85%;line-height:1.7}
+.thinking{font-size:.74rem;color:var(--text-light);font-style:italic;animation:blink 1.2s ease infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.assist-input-row{border-top:1px solid var(--rule);padding:.75rem 1rem;display:flex;gap:.5rem;align-items:flex-end;background:var(--cream)}
+.assist-input{flex:1;font-family:var(--sans);font-size:.86rem;font-weight:300;color:var(--navy);background:var(--white);border:1px solid var(--rule);padding:.62rem .85rem;outline:none;resize:none;height:42px;min-height:42px;-webkit-appearance:none;transition:border-color .2s}
+.assist-input:focus{border-color:var(--gold)}
+.btn-speak{font-family:var(--sans);font-size:.58rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;background:transparent;border:1px solid var(--rule);color:var(--text-light);padding:.55rem .85rem;cursor:pointer;min-height:42px;transition:all .2s;white-space:nowrap}
+.btn-speak.listening{background:var(--gold);border-color:var(--gold);color:var(--navy-deep)}
+.btn-send{font-family:var(--sans);font-size:.58rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;background:var(--navy);border:none;color:var(--white);padding:.55rem 1rem;cursor:pointer;min-height:42px;transition:background .2s;white-space:nowrap}
+.btn-send:hover{background:var(--gold);color:var(--navy-deep)}
+
+/* ── SMART DAY ── */
+.verdict-row{display:flex;align-items:flex-start;justify-content:space-between;padding:.9rem 1.1rem;border-bottom:1px solid rgba(221,216,206,.4);gap:.8rem}
+.verdict-row:last-child{border-bottom:none}
+.vr-info{flex:1}
+.vr-job{font-size:.85rem;font-weight:500;color:var(--navy)}
+.vr-detail{font-size:.7rem;color:var(--text-light);margin-top:.1rem}
+.vr-net{font-size:.68rem;color:var(--text-light);margin-top:.08rem}
+.verdict-chip{font-size:.56rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.22rem .65rem;border-width:1px;border-style:solid;white-space:nowrap;flex-shrink:0}
+
+/* ── SCORECARD ── */
+.scorecard{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);margin-bottom:.85rem}
+.sc-stat{background:var(--white);padding:.85rem .7rem;text-align:center}
+.sc-val{font-family:var(--serif);font-size:1.5rem;font-weight:300;line-height:1}
+.sc-label{font-size:.48rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text-light);margin-top:.2rem}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:2.5rem 1rem}
+.empty-title{font-family:var(--serif);font-size:1.3rem;font-weight:300;color:var(--navy-deep);margin-bottom:.35rem}
+.empty-sub{font-size:.76rem;color:var(--text-light);font-weight:300;line-height:1.7}
+
+/* ── NAME BOARD ── */
+.nb-overlay{position:fixed;inset:0;background:var(--white);z-index:200;display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center}
+.nb-overlay.on{display:flex}
+.nb-eyebrow{font-size:.6rem;font-weight:500;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:1.4rem}
+.nb-name-text{font-family:var(--serif);font-size:clamp(2.8rem,11vw,5.5rem);font-weight:500;color:var(--navy-deep);line-height:1.1}
+.nb-sub{font-size:.8rem;color:var(--text-light);margin-top:.75rem;font-weight:300}
+.nb-close{position:absolute;top:1.5rem;right:1.5rem;font-family:var(--sans);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-light);background:transparent;border:1px solid var(--rule);padding:.5rem 1rem;cursor:pointer}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:calc(4.5rem + var(--safe-bottom));left:1rem;right:1rem;background:var(--navy-deep);border:1px solid rgba(184,152,90,.25);padding:.8rem 1.1rem;font-size:.76rem;color:var(--white);display:none;font-family:var(--sans);font-weight:300;z-index:300;max-width:400px;margin:0 auto}
+#toast.on{display:flex;align-items:center;gap:.5rem;animation:tIn .25s ease}
+@keyframes tIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="tb-left">
+      <div class="tb-crest">W</div>
+      <div>
+        <div class="tb-mode-label" id="tb-mode-label">Drive Mode</div>
+        <div class="tb-name">Westmere</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:.7rem">
+      <div class="mode-toggle">
+        <button class="mode-btn on" id="mode-drive" onclick="setMode('drive')">Drive</button>
+        <button class="mode-btn" id="mode-admin" onclick="setMode('admin')">Admin</button>
+      </div>
+      <div class="status-dot"></div>
+    </div>
+  </div>
+
+  <!-- PAGE SCROLL -->
+  <div class="page-scroll" id="page-scroll">
+
+    <!-- ══ DRIVE MODE PAGES ══ -->
+
+    <!-- Today's Jobs -->
+    <div class="pg on" id="pg-today">
+      <div class="sec-title">Today's <em>Jobs</em></div>
+      <div class="sec-sub" id="today-sub"></div>
+      <div id="today-list"></div>
+    </div>
+
+    <!-- Offered Jobs -->
+    <div class="pg" id="pg-offered">
+      <div class="sec-title"><em>Offered</em> Jobs</div>
+      <div class="sec-sub">Scored against your location and battery</div>
+      <div id="offered-list"></div>
+    </div>
+
+    <!-- Tesla -->
+    <div class="pg" id="pg-tesla">
+      <div class="sec-title">Tesla <em>Model S</em></div>
+      <div class="sec-sub">Battery · Range · Job feasibility</div>
+      <div style="background:var(--navy-deep);padding:1.4rem;margin-bottom:.85rem;border:1px solid rgba(184,152,90,.1);position:relative;overflow:hidden">
+        <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(-45deg,transparent,transparent 60px,rgba(184,152,90,.02) 60px,rgba(184,152,90,.02) 61px);pointer-events:none"></div>
+        <div style="font-size:.5rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:rgba(248,245,239,.3);margin-bottom:.8rem;position:relative">XX21 WPH</div>
+        <div style="display:flex;gap:2rem;flex-wrap:wrap;margin-bottom:1rem;position:relative">
+          <div><div style="font-size:.5rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(248,245,239,.3);margin-bottom:.2rem">Battery</div><div style="font-family:var(--serif);font-size:3.2rem;color:var(--white);line-height:1" id="tesla-pct">78<span style="font-size:.85rem;font-family:var(--sans);font-weight:300;color:rgba(248,245,239,.4)">%</span></div></div>
+          <div><div style="font-size:.5rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(248,245,239,.3);margin-bottom:.2rem">Range</div><div style="font-family:var(--serif);font-size:1.8rem;color:var(--gold);line-height:1" id="tesla-range">218 <span style="font-size:.85rem;font-family:var(--sans);font-weight:300;color:rgba(248,245,239,.4)">mi</span></div></div>
+          <div><div style="font-size:.5rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(248,245,239,.3);margin-bottom:.2rem">Status</div><div id="tesla-status" style="font-size:.78rem;color:rgba(248,245,239,.65);margin-top:.25rem">Parked · Horsham</div></div>
+        </div>
+        <div style="height:7px;background:rgba(255,255,255,.08);margin-bottom:.4rem;position:relative"><div id="tesla-bar" style="height:100%;width:78%;background:linear-gradient(to right,var(--gold),#7ecfa0);transition:width 1s ease"></div></div>
+        <div style="font-size:.58rem;color:rgba(248,245,239,.28);position:relative" id="tesla-last">Last charged today 06:15</div>
+      </div>
+      <div class="card"><div class="ch">Range Check — Today's Jobs</div><div id="tesla-rc"></div></div>
+      <div class="card">
+        <div class="ch">Nearest Superchargers</div>
+        <div>
+          <div style="padding:.82rem 1rem;border-bottom:1px solid rgba(221,216,206,.4)"><div style="font-size:.85rem;font-weight:500;color:var(--navy)">Gatwick Airport</div><div style="font-size:.7rem;color:var(--text-light);margin-top:.1rem">12 mi · ~15 min · 16 stalls</div><div style="font-size:.7rem;color:var(--green);margin-top:.1rem">Available · 0–80% in ~30 min</div></div>
+          <div style="padding:.82rem 1rem;border-bottom:1px solid rgba(221,216,206,.4)"><div style="font-size:.85rem;font-weight:500;color:var(--navy)">Crawley</div><div style="font-size:.7rem;color:var(--text-light);margin-top:.1rem">14 mi · ~20 min · 12 stalls</div><div style="font-size:.7rem;color:var(--green);margin-top:.1rem">Available · 0–80% in ~28 min</div></div>
+          <div style="padding:.82rem 1rem"><div style="font-size:.85rem;font-weight:500;color:var(--navy)">Brighton Marina</div><div style="font-size:.7rem;color:var(--text-light);margin-top:.1rem">18 mi · ~25 min · 8 stalls</div><div style="font-size:.7rem;color:var(--amber);margin-top:.1rem">Moderate · 0–80% in ~35 min</div></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:.6rem;margin-top:.2rem">
+        <button onclick="refreshTesla()" style="font-family:var(--sans);font-size:.62rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;background:var(--navy);color:var(--white);border:none;padding:.65rem 1.2rem;cursor:pointer;min-height:42px">Refresh</button>
+        <button onclick="showToast('Tesla OAuth ready — connect when live')" style="font-family:var(--sans);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;background:transparent;color:var(--text-light);border:1px solid var(--rule);padding:.65rem 1.2rem;cursor:pointer;min-height:42px">Connect Tesla</button>
+      </div>
+    </div>
+
+    <!-- ══ ADMIN MODE PAGES ══ -->
+
+    <!-- WhatsApp Inbox -->
+    <div class="pg" id="pg-inbox">
+      <div class="sec-title"><em>WhatsApp</em> Inbox</div>
+      <div class="sec-sub">Claude reading every message — booking automatically or flagging to you</div>
+      <div class="card" style="margin-bottom:.85rem">
+        <div class="ch">Incoming Messages <button onclick="simMsg()" style="font-family:var(--sans);font-size:.56rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;background:var(--navy);color:var(--white);border:none;padding:.3rem .75rem;cursor:pointer">+ Simulate</button></div>
+        <div id="inbox-feed"></div>
+      </div>
+    </div>
+
+    <!-- Assistant -->
+    <div class="pg" id="pg-assistant">
+      <div class="sec-title">Westmere <em>Assistant</em></div>
+      <div class="sec-sub">Talk to me — I handle it</div>
+
+      <div style="background:var(--navy-deep);padding:1rem 1.2rem;margin-bottom:.85rem;border:1px solid rgba(184,152,90,.12)">
+        <div style="font-size:.54rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem">Direct line to Claude</div>
+        <div style="font-size:.78rem;color:rgba(248,245,239,.6);font-weight:300;line-height:1.75">Speak or type. I'll create bookings from calls or WhatsApp messages, calculate fares, block your calendar, and tell you what your day looks like. No third party — this is me.</div>
+      </div>
+
+      <!-- Big speak button -->
+      <button id="speak-btn" onclick="toggleVoice()" style="width:100%;padding:1.3rem;background:var(--navy);border:2px solid rgba(184,152,90,.2);color:var(--white);font-family:var(--sans);font-size:.82rem;font-weight:400;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;transition:all .3s;margin-bottom:.85rem">
+        <span id="speak-label">Tap to Speak</span>
+      </button>
+
+      <div class="card">
+        <div class="ch">Conversation <button onclick="clearAssist()" style="font-family:var(--sans);font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;background:none;border:1px solid var(--rule);color:var(--text-light);padding:.28rem .65rem;cursor:pointer">Clear</button></div>
+        <div class="assist-feed" id="assist-feed"></div>
+        <div class="assist-input-row">
+          <textarea class="assist-input" id="assist-input" placeholder="Type a booking, question, or paste a WhatsApp message..." onkeydown="assistKey(event)" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,130)+'px'"></textarea>
+          <button class="btn-send" onclick="assistSend()">Send</button>
+        </div>
+      </div>
+
+      <!-- Quick examples -->
+      <div class="card" style="margin-top:.85rem">
+        <div class="ch">Quick Commands</div>
+        <div style="padding:.75rem 1rem;display:flex;flex-direction:column;gap:.45rem">
+          <button onclick="assistQuick('What jobs do I have today?')" style="text-align:left;background:var(--cream);border:1px solid var(--rule);padding:.65rem .9rem;cursor:pointer;font-family:var(--sans);font-size:.76rem;font-weight:300;color:var(--navy);width:100%">What jobs do I have today?</button>
+          <button onclick="assistQuick('Book Mrs Williams, Lewes to Gatwick, tomorrow 4:30am, cash, 1 passenger')" style="text-align:left;background:var(--cream);border:1px solid var(--rule);padding:.65rem .9rem;cursor:pointer;font-family:var(--sans);font-size:.76rem;font-weight:300;color:var(--navy);width:100%">Book Mrs Williams, Lewes to Gatwick, tomorrow 4:30am, cash</button>
+          <button onclick="assistQuick('What is the fare from Brighton to Heathrow at 3am?')" style="text-align:left;background:var(--cream);border:1px solid var(--rule);padding:.65rem .9rem;cursor:pointer;font-family:var(--sans);font-size:.76rem;font-weight:300;color:var(--navy);width:100%">Fare from Brighton to Heathrow at 3am?</button>
+          <button onclick="assistQuick('Block me off this Sunday')" style="text-align:left;background:var(--cream);border:1px solid var(--rule);padding:.65rem .9rem;cursor:pointer;font-family:var(--sans);font-size:.76rem;font-weight:300;color:var(--navy);width:100%">Block me off this Sunday</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Smart Day -->
+    <div class="pg" id="pg-smart">
+      <div class="sec-title">Smart <em>Day</em></div>
+      <div class="sec-sub">Is today's schedule worth it?</div>
+
+      <div style="display:flex;gap:.7rem;align-items:center;margin-bottom:.85rem;flex-wrap:wrap">
+        <input type="date" id="sd-date" style="font-family:var(--sans);font-size:.82rem;font-weight:300;color:var(--navy);background:var(--white);border:1px solid var(--rule);padding:.6rem .85rem;outline:none;flex:1;min-width:150px;-webkit-appearance:none">
+        <input id="sd-loc" placeholder="Your location now" style="font-family:var(--sans);font-size:.82rem;font-weight:300;color:var(--navy);background:var(--white);border:1px solid var(--rule);padding:.6rem .85rem;outline:none;width:150px;-webkit-appearance:none" value="Horsham">
+        <button onclick="runSmartDay()" id="sd-btn" style="font-family:var(--sans);font-size:.62rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;background:var(--navy);color:var(--white);border:none;padding:.65rem 1.2rem;cursor:pointer;min-height:42px;white-space:nowrap">Score Day</button>
+        <button onclick="loadSample()" style="font-family:var(--sans);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;background:transparent;color:var(--text-light);border:1px solid var(--rule);padding:.65rem .9rem;cursor:pointer;min-height:42px;white-space:nowrap">Example</button>
+      </div>
+
+      <div class="card" style="margin-bottom:.85rem">
+        <div class="ch">Bookings <button onclick="addSDJob()" style="font-family:var(--sans);font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;background:var(--navy);color:var(--white);border:none;padding:.3rem .7rem;cursor:pointer">+ Add</button></div>
+        <div id="sd-jobs"><div style="padding:1rem 1.1rem;font-size:.78rem;color:var(--text-light);text-align:center">Load example or add bookings</div></div>
+      </div>
+
+      <div id="sd-loading" style="display:none;text-align:center;padding:2.5rem;font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--text-light);animation:blink 1.2s ease infinite">Scoring your day...</div>
+
+      <div id="sd-output" style="display:none">
+        <div id="sd-scorecard" style="margin-bottom:.85rem"></div>
+        <div class="card" style="margin-bottom:.85rem">
+          <div class="ch">Job Verdicts</div>
+          <div id="sd-verdicts"></div>
+        </div>
+        <div class="card">
+          <div class="ch">Recommendation <span style="display:inline-flex;align-items:center;gap:.35rem;font-size:.52rem;color:var(--gold)"><span style="width:5px;height:5px;border-radius:50%;background:var(--gold);display:inline-block;animation:blink 2s infinite"></span>Claude</span></div>
+          <div class="cb" style="padding-top:.9rem;padding-bottom:1rem"><div id="sd-rec" style="font-size:.84rem;color:var(--navy);font-weight:300;line-height:1.85;white-space:pre-wrap"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Earnings (shared) -->
+    <div class="pg" id="pg-earnings">
+      <div class="sec-title">Your <em>Earnings</em></div>
+      <div class="sec-sub">Weekly summary</div>
+      <div style="background:var(--navy-deep);padding:1.5rem;margin-bottom:.85rem;position:relative;overflow:hidden">
+        <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(-45deg,transparent,transparent 60px,rgba(184,152,90,.02) 60px,rgba(184,152,90,.02) 61px);pointer-events:none"></div>
+        <span style="font-size:.52rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(248,245,239,.3);margin-bottom:.2rem;display:block;position:relative">This Week · 24–30 Mar</span>
+        <span style="font-family:var(--serif);font-size:3rem;color:var(--gold);line-height:1;display:block;position:relative">£318.75</span>
+        <div style="font-size:.72rem;color:rgba(248,245,239,.45);font-weight:300;margin-top:.3rem;position:relative">Next payment Monday 31 March</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(184,152,90,.1);margin-top:1.2rem;border:1px solid rgba(184,152,90,.1);position:relative">
+          <div style="padding:.7rem;background:var(--navy-deep);text-align:center"><div style="font-family:var(--serif);font-size:1.3rem;color:var(--white);font-weight:300">5</div><div style="font-size:.48rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(248,245,239,.3);margin-top:.15rem">Jobs</div></div>
+          <div style="padding:.7rem;background:var(--navy-deep);text-align:center"><div style="font-family:var(--serif);font-size:1.3rem;color:var(--white);font-weight:300">£63.75</div><div style="font-size:.48rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(248,245,239,.3);margin-top:.15rem">Avg</div></div>
+          <div style="padding:.7rem;background:var(--navy-deep);text-align:center"><div style="font-family:var(--serif);font-size:1.3rem;color:var(--white);font-weight:300">182</div><div style="font-size:.48rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(248,245,239,.3);margin-top:.15rem">Miles</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ch">Previous Weeks</div>
+        <div class="cb">
+          <div class="row"><span class="row-k">17–23 Mar</span><span class="row-v">£241.50 · 4 jobs</span></div>
+          <div class="row"><span class="row-k">10–16 Mar</span><span class="row-v">£185.00 · 3 jobs</span></div>
+          <div class="row"><span class="row-k">03–09 Mar</span><span class="row-v">£297.25 · 5 jobs</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /page-scroll -->
+
+  <!-- BOTTOM NAV — changes with mode -->
+  <div class="bottom-nav" id="bottom-nav">
+    <!-- Drive nav -->
+    <button class="bn on" id="bn-today" onclick="goPage('today',this)"><div class="bn-bar"></div><div class="bn-label">Today</div></button>
+    <button class="bn" id="bn-offered" onclick="goPage('offered',this)"><div class="bn-bar"></div><div class="bn-label">Offered</div><div class="bn-dot" id="offered-dot"></div></button>
+    <button class="bn" id="bn-tesla" onclick="goPage('tesla',this)"><div class="bn-bar"></div><div class="bn-label">Tesla</div></button>
+    <!-- Admin nav (hidden in drive mode) -->
+    <button class="bn" id="bn-inbox" onclick="goPage('inbox',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Inbox</div><div class="bn-dot" id="inbox-dot">2</div></button>
+    <button class="bn" id="bn-assistant" onclick="goPage('assistant',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Assistant</div></button>
+    <button class="bn" id="bn-smart" onclick="goPage('smart',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Smart Day</div></button>
+    <!-- Shared -->
+    <button class="bn" id="bn-earnings" onclick="goPage('earnings',this)"><div class="bn-bar"></div><div class="bn-label">Earnings</div></button>
+  </div>
+
+</div><!-- /app -->
+
+<!-- Name board -->
+<div class="nb-overlay" id="nb-overlay">
+  <button class="nb-close" onclick="document.getElementById('nb-overlay').classList.remove('on')">Close</button>
+  <div class="nb-eyebrow">Passenger</div>
+  <div class="nb-name-text" id="nb-name"></div>
+  <div class="nb-sub" id="nb-sub"></div>
+  <div style="position:absolute;bottom:2rem;left:0;right:0;text-align:center">
+    <div style="font-family:var(--serif);font-size:1.1rem;font-weight:300;letter-spacing:.12em;color:var(--gold);margin-bottom:.2rem">Westmere</div>
+    <div style="font-size:.48rem;font-weight:500;letter-spacing:.3em;text-transform:uppercase;color:var(--text-light)">Private Hire · Sussex</div>
+  </div>
+</div>
+
+<div id="toast"><span style="color:var(--gold);font-size:.8rem;flex-shrink:0">✓</span><span id="toast-msg"></span></div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────────
+var TODAY_JOBS = [
+  {id:'j1',time:'04:30',name:'Sarah Jones',phone:'+447700100001',email:'sarah.jones@email.com',
+   contactPref:'whatsapp',pax:1,bags:1,pickup:'14 Friars Walk, Lewes BN7 2PL',
+   dest:'Gatwick South Terminal',type:'Airport Drop-off',flight:'EZY1234',
+   flightStatus:'ontime',flightDeparts:'08:15',fare:85,payment:'Cash',status:'upcoming',
+   note:'One large suitcase. Quiet journey.'},
+  {id:'j2',time:'17:20',name:'John Smith',phone:'+447700100002',email:'john.smith@smithco.co.uk',
+   contactPref:'email',pax:2,bags:2,pickup:'Heathrow T5 Arrivals',
+   dest:'22 Pelham Court, Lewes BN7 1PH',type:'Airport Pickup',flight:'BA0492',
+   flightStatus:'landed',flightDeparts:'lands ~17:20',fare:145,payment:'Account Invoice',
+   status:'upcoming',note:'Business account. Two passengers, two cases.'}
+];
+var OFFERED_JOBS = [
+  {id:'o1',date:'Sat 29 Mar',time:'05:00',name:'Private Booking',phone:'+447700100010',
+   contactPref:'whatsapp',pax:2,bags:2,pickup:'Horsham RH12',dest:'Gatwick Airport',
+   type:'Airport Drop-off',flight:'FR9920',driverFare:45,fare:45,payment:'Cash'},
+  {id:'o2',date:'Sun 30 Mar',time:'07:00',name:'Mrs Taylor',phone:'+447700100011',
+   contactPref:'sms',pax:1,bags:1,pickup:'Lewes BN7',dest:'Heathrow T3',
+   type:'Airport Drop-off',flight:'EK009',driverFare:135,fare:135,payment:'Card'}
+];
+var INBOX_MSGS = [
+  {id:'m1',from:'Sarah Jones',phone:'+447700100001',time:'08:14',
+   text:'Hi, can I book a car from Lewes to Gatwick on Friday morning, around 5am? Just me and one bag. Cash please.',
+   status:'accepted',analysis:{name:'Sarah Jones',pickup:'Lewes',dest:'Gatwick South Terminal',date:'Friday',time:'05:00',fare:75,conflict:false}},
+  {id:'m2',from:'Robert Hall',phone:'+447700100003',time:'11:32',
+   text:'Hello I need a taxi from Brighton to Heathrow on Saturday at 3am. 2 of us. Can you do it?',
+   status:'flagged',analysis:{name:'Robert Hall',pickup:'Brighton',dest:'Heathrow',date:'Sat',time:'03:00',fare:120,conflict:true,conflictReason:'Existing job at 04:30 — only 90 min gap.'}}
+];
+var SD_JOBS = [];
+var TESLA = {battery:78,rangeMiles:218,location:'Horsham',status:'Parked'};
+var ASSIST_HISTORY = [];
+var ASSIST_BUSY = false;
+var VOICE_ACTIVE = false;
+var voiceRec = null;
+var currentMode = 'drive';
+var HOME_BASE = 'Horsham';
+
+// ── MODE ─────────────────────────────────────────────────────────────────────
+function setMode(mode){
+  currentMode = mode;
+  document.getElementById('mode-drive').classList.toggle('on', mode==='drive');
+  document.getElementById('mode-admin').classList.toggle('on', mode==='admin');
+  document.getElementById('tb-mode-label').textContent = mode==='drive' ? 'Drive Mode' : 'Admin Mode';
+  // Show/hide nav items
+  var driveItems = ['bn-today','bn-offered','bn-tesla'];
+  var adminItems = ['bn-inbox','bn-assistant','bn-smart'];
+  driveItems.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=mode==='drive'?'':'none';});
+  adminItems.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=mode==='admin'?'':'none';});
+  if(mode==='drive') goPage('today', document.getElementById('bn-today'));
+  else goPage('inbox', document.getElementById('bn-inbox'));
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────────
+function goPage(id,btn){
+  document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('on');});
+  document.querySelectorAll('.bn').forEach(function(b){b.classList.remove('on');});
+  var pg=document.getElementById('pg-'+id);if(pg)pg.classList.add('on');
+  if(btn)btn.classList.add('on');
+  document.getElementById('page-scroll').scrollTo(0,0);
+  if(id==='today')buildToday();
+  if(id==='offered')buildOffered();
+  if(id==='tesla'){updateTeslaUI();buildTeslaRC();}
+  if(id==='inbox')renderInbox();
+  if(id==='assistant'&&!ASSIST_HISTORY.length)greetAssist();
+  if(id==='smart'){var d=new Date();document.getElementById('sd-date').value=d.toISOString().split('T')[0];}
+}
+
+// ── DISTANCES ─────────────────────────────────────────────────────────────────
+function getDist(a,b){
+  var D={'horsham-lewes':22,'horsham-brighton':18,'horsham-gatwick':12,'horsham-heathrow':42,
+    'lewes-gatwick':22,'lewes-brighton':9,'lewes-heathrow':56,'lewes-horsham':22,
+    'brighton-gatwick':22,'brighton-heathrow':52,'brighton-horsham':18,
+    'gatwick-heathrow':31,'gatwick-horsham':12,'heathrow-horsham':42,'heathrow-lewes':56};
+  var clean=function(s){return(s||'').toLowerCase().replace(/,.*$/,'').replace(/\s+(airport|terminal|t\d+|arrivals|south|north)/gi,'').trim();};
+  var ka=clean(a),kb=clean(b);
+  for(var k in D){var pts=k.split('-');if((ka.includes(pts[0])&&kb.includes(pts[1]))||(ka.includes(pts[1])&&kb.includes(pts[0])))return D[k];}
+  return 16;
+}
+
+// ── TODAY ─────────────────────────────────────────────────────────────────────
+function buildToday(){
+  var rem=TODAY_JOBS.filter(function(j){return j.status!=='done';}).length;
+  var d=new Date();
+  document.getElementById('today-sub').textContent=d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})+(rem?' · '+rem+(rem===1?' job':' jobs')+' remaining':'');
+  var list=document.getElementById('today-list');
+  if(!TODAY_JOBS.length){list.innerHTML='<div class="empty"><div class="empty-title">No jobs today</div><div class="empty-sub">Check Offered Jobs for new work</div></div>';return;}
+  list.innerHTML=TODAY_JOBS.map(function(j){return buildCard(j,false);}).join('');
+}
+
+// ── JOB CARD ──────────────────────────────────────────────────────────────────
+function buildCard(j,isOffered){
+  var isDone=j.status==='done';var isActive=j.status==='enroute'||j.status==='atpickup'||j.status==='onboard';
+  var cls=isDone?'done-job':isActive?'active-job':'';
+  var fb='';
+  if(j.flight){var fCls=j.flightStatus==='ontime'?'fp-ontime':j.flightStatus==='landed'?'fp-landed':'fp-delayed';var fTxt=j.flightStatus==='ontime'?'On Time':j.flightStatus==='landed'?'Landed':'Delayed';fb='<span class="fp '+fCls+'">'+j.flight+' · '+fTxt+(j.flightDeparts?' · '+j.flightDeparts:'')+'</span>';}
+  var p=j.phone,wm=encodeURIComponent('Hi '+j.name.split(' ')[0]+', this is your Westmere driver — I\'m on my way.');
+  var contact='<div class="jc-contact"><a href="tel:'+p+'" class="jcc">Call</a><a href="https://wa.me/'+p.replace(/\D/g,'')+'?text='+wm+'" target="_blank" class="jcc">WhatsApp</a><a href="sms:'+p+'" class="jcc">Text</a></div>';
+  var actions='';
+  if(!isDone&&!isOffered){
+    actions='<div class="jc-actions">';
+    if(j.status==='upcoming') actions+='<button class="sbt sbt-enroute" onclick="updStat(\''+j.id+'\',\'enroute\')">En Route</button>';
+    if(j.status==='enroute')  actions+='<button class="sbt sbt-atpickup" onclick="updStat(\''+j.id+'\',\'atpickup\')">At Pickup</button>';
+    if(j.status==='atpickup') actions+='<button class="sbt sbt-onboard" onclick="updStat(\''+j.id+'\',\'onboard\')">On Board</button>';
+    if(j.status==='onboard')  actions+='<button class="sbt sbt-dropoff" onclick="updStat(\''+j.id+'\',\'dropoff\')">Dropped Off</button>';
+    if(j.status!=='onboard')  actions+='<button class="sbt sbt-cancel" onclick="cancelJ(\''+j.id+'\')">Can\'t Make It</button>';
+    actions+='</div>';
+  }
+  var links='<div class="jc-links"><button class="jl" onclick="showNB(\''+j.name.replace(/'/g,"\\'")+'\',\''+j.fare+'\')">Name Board</button><a class="jl" href="https://maps.google.com/?q='+encodeURIComponent(j.dest)+'" target="_blank">Maps</a><a class="jl" href="waze://?q='+encodeURIComponent(j.dest)+'" target="_blank">Waze</a>'+(j.flight?'<a class="jl" href="https://www.flightradar24.com/data/flights/'+j.flight.toLowerCase()+'" target="_blank">Flight</a>':'')+'</div>';
+  return '<div class="job-card '+cls+'" id="jc-'+j.id+'"><div class="jc-bar"></div>'
+    +'<div class="jc-header"><div class="jc-time">'+j.time+'</div><div><div class="jc-name">'+j.name+'</div><div class="jc-pax">'+j.pax+' pax'+(j.bags?' · '+j.bags+' bag'+(j.bags>1?'s':''):'')+'</div></div></div>'
+    +'<div class="jc-details"><div class="jd-row"><span class="jd-key">Pickup</span><span class="jd-val">'+j.pickup+'</span></div><div class="jd-row"><span class="jd-key">Drop-off</span><span class="jd-val">'+j.dest+'</span></div>'+(j.flight?'<div class="jd-row"><span class="jd-key">Flight</span><span class="jd-val">'+fb+'</span></div>':'')+'<div class="jd-row"><span class="jd-key">Fare</span><span class="jd-val accent">£'+j.fare+' · '+j.payment+'</span></div>'+(j.note?'<div class="jd-row"><span class="jd-key">Note</span><span class="jd-val" style="color:var(--text-light);font-size:.78rem">'+j.note+'</span></div>':'')+'</div>'
+    +contact+actions+(!isDone?links:'')+'</div>';
+}
+
+// ── OFFERED ───────────────────────────────────────────────────────────────────
+function scoreJob(j){
+  var loc=TESLA.location||HOME_BASE;var done=TODAY_JOBS.filter(function(x){return x.status==='done';}).pop();if(done)loc=done.dest||loc;
+  var dead=getDist(loc,j.pickup||'');var jmi=getDist(j.pickup||'',j.dest||'');
+  var fare=parseFloat(j.driverFare||j.fare||0);var net=Math.round(fare-(dead+jmi)*0.18-(dead/28)*8);
+  var rangeOk=TESLA.battery>5&&TESLA.rangeMiles>dead+jmi+20;
+  var v,col,bg;
+  if(!rangeOk){v='Charge needed';col='var(--red)';bg='var(--red-bg)';}
+  else if(net>=55){v='Good job';col='var(--green)';bg='var(--green-bg)';}
+  else if(net>=20){v='Marginal';col='var(--amber)';bg='var(--amber-bg)';}
+  else{v='Not worth it';col='var(--red)';bg='var(--red-bg)';}
+  return{net,dead,jmi,rangeOk,v,col,bg};
+}
+function checkConflict(offered){
+  // Check if offered job time clashes within 2 hours of any existing job
+  var BUFFER=120; // minutes
+  var parse=function(t){if(!t)return null;var p=t.split(':');return parseInt(p[0])*60+parseInt(p[1]);};
+  var oTime=parse(offered.time);if(oTime===null)return null;
+  for(var i=0;i<TODAY_JOBS.length;i++){
+    var j=TODAY_JOBS[i];if(j.status==='done')continue;
+    var jTime=parse(j.time);if(jTime===null)continue;
+    var diff=Math.abs(oTime-jTime);
+    if(diff<BUFFER){
+      var gap=diff<60?(diff+' min gap'):(Math.floor(diff/60)+'h '+((diff%60)||'')+(diff%60?'m':'') + ' gap');
+      return j.time+' · '+j.name+' ('+gap+')';
+    }
+  }
+  return null;
+}
+function buildOffered(){
+  var list=document.getElementById('offered-list');var dot=document.getElementById('offered-dot');
+  dot.textContent=OFFERED_JOBS.length||'';dot.style.display=OFFERED_JOBS.length?'flex':'none';
+  if(!OFFERED_JOBS.length){list.innerHTML='<div class="empty"><div class="empty-title">No offered jobs</div><div class="empty-sub">New jobs will appear here</div></div>';return;}
+  list.innerHTML=OFFERED_JOBS.map(function(j){
+    // Score runs silently in background — only surfaces a conflict alert if timing clashes
+    scoreJob(j);
+    var conflict=checkConflict(j);
+    var alertBanner=conflict?'<div style="padding:.6rem 1.1rem;background:var(--amber-bg);border-bottom:1px solid #e8d098;font-size:.74rem;color:var(--amber);font-weight:300">Close booking: '+conflict+'</div>':'';
+    return alertBanner+buildCard(j,true)+'<div class="offer-btns"><button class="btn-accept" onclick="acceptJob(\''+j.id+'\')">Accept</button><button class="btn-decline" onclick="declineJob(\''+j.id+'\')">Decline</button></div>';
+  }).join('');
+}
+function acceptJob(id){var idx=OFFERED_JOBS.findIndex(function(j){return j.id===id;});if(idx<0)return;var job=OFFERED_JOBS.splice(idx,1)[0];job.status='upcoming';TODAY_JOBS.push(job);showToast('Job accepted — added to today');buildOffered();buildToday();}
+function declineJob(id){OFFERED_JOBS=OFFERED_JOBS.filter(function(j){return j.id!==id;});buildOffered();showToast('Declined');}
+
+// ── STATUS ────────────────────────────────────────────────────────────────────
+function updStat(id,status){
+  var job=TODAY_JOBS.find(function(j){return j.id===id;});if(!job)return;
+  if(status==='dropoff'){job.status='done';showToast('Journey complete');buildToday();return;}
+  job.status=status;
+  if(status==='atpickup')sendArrival(job);else{var L={enroute:'En route',onboard:'Passenger on board'};showToast(L[status]||status);}
+  buildToday();
+}
+function sendArrival(job){
+  var fn=job.name.split(' ')[0];var msg='Hi '+fn+', your Westmere driver is outside and waiting. — Westmere Private Hire';
+  var pref=(job.contactPref||'whatsapp').toLowerCase();var p=job.phone.replace(/[\s\-\(\)]/g,'').replace(/^\+/,'');
+  if(pref==='whatsapp'){window.open('https://wa.me/'+p+'?text='+encodeURIComponent(msg),'_blank');setTimeout(function(){showToast('WhatsApp opened — send to '+fn);},400);}
+  else if(pref==='sms'){window.location.href='sms:'+job.phone+'?body='+encodeURIComponent(msg);setTimeout(function(){showToast('SMS ready — send to '+fn);},400);}
+  else if(pref==='email'&&job.email){window.location.href='mailto:'+job.email+'?subject='+encodeURIComponent('Your driver has arrived')+'&body='+encodeURIComponent(msg);setTimeout(function(){showToast('Email ready — send to '+fn);},400);}
+  else{window.open('https://wa.me/'+p+'?text='+encodeURIComponent(msg),'_blank');setTimeout(function(){showToast('Message ready — send to '+fn);},400);}
+}
+function cancelJ(id){var job=TODAY_JOBS.find(function(j){return j.id===id;});if(!job||!confirm('Cancel job for '+job.name+'?'))return;TODAY_JOBS=TODAY_JOBS.filter(function(j){return j.id!==id;});buildToday();showToast('Job cancelled');}
+
+// ── NAME BOARD ────────────────────────────────────────────────────────────────
+function showNB(name,fare){document.getElementById('nb-name').textContent=name;document.getElementById('nb-sub').textContent='Westmere Private Hire · Sussex';document.getElementById('nb-overlay').classList.add('on');if(navigator.wakeLock)navigator.wakeLock.request('screen').catch(function(){});}
+
+// ── TESLA ─────────────────────────────────────────────────────────────────────
+function refreshTesla(){TESLA.battery=Math.max(10,Math.min(100,TESLA.battery-Math.floor(Math.random()*3)));TESLA.rangeMiles=Math.round(TESLA.battery*(218/78));updateTeslaUI();buildTeslaRC();showToast('Tesla refreshed');}
+function updateTeslaUI(){
+  var p=document.getElementById('tesla-pct');var r=document.getElementById('tesla-range');var b=document.getElementById('tesla-bar');var s=document.getElementById('tesla-status');
+  if(p)p.innerHTML=TESLA.battery+'<span style="font-size:.85rem;font-family:var(--sans);font-weight:300;color:rgba(248,245,239,.4)">%</span>';
+  if(r)r.innerHTML=TESLA.rangeMiles+' <span style="font-size:.85rem;font-family:var(--sans);font-weight:300;color:rgba(248,245,239,.4)">mi</span>';
+  if(b){b.style.width=TESLA.battery+'%';b.style.background=TESLA.battery>50?'linear-gradient(to right,var(--gold),#7ecfa0)':TESLA.battery>25?'linear-gradient(to right,var(--amber),var(--gold))':'linear-gradient(to right,var(--red),var(--amber))';}
+  if(s)s.textContent=TESLA.status+' · '+TESLA.location;
+}
+function buildTeslaRC(){
+  var el=document.getElementById('tesla-rc');if(!el)return;
+  if(!TODAY_JOBS.length){el.innerHTML='<div style="padding:.82rem 1rem;font-size:.78rem;color:var(--text-light)">No jobs today</div>';return;}
+  var cum=0,prev=TESLA.location;
+  el.innerHTML=TODAY_JOBS.map(function(j){var dead=getDist(prev,j.pickup);var jmi=getDist(j.pickup,j.dest);cum+=dead+jmi;prev=j.dest;var left=Math.max(0,TESLA.rangeMiles-cum);var ok=TESLA.rangeMiles>cum+20;var col=ok?'var(--green)':left<15?'var(--red)':'var(--amber)';var lbl=ok?'Range OK':left<15?'Charge first':'Low';return '<div style="display:flex;justify-content:space-between;align-items:center;padding:.8rem 1rem;border-bottom:1px solid rgba(221,216,206,.4)"><div><div style="font-size:.82rem;font-weight:500;color:var(--navy)">'+j.time+' · '+j.name+'</div><div style="font-size:.68rem;color:var(--text-light);margin-top:.08rem">~'+cum+' mi cumulative · '+left+' mi after</div></div><div style="font-size:.56rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .65rem;border:1px solid '+col+';color:'+col+'">'+lbl+'</div></div>';}).join('');
+}
+
+// ── INBOX ─────────────────────────────────────────────────────────────────────
+var SIM_MSGS=['Hi, can I book a car from Seaford to Gatwick this Thursday at 6am? 2 people, cash','Do you go to Southampton Airport? Need Sunday morning around 7am, 1 passenger','My wife needs Ringmer to Heathrow T3 on the 15th at 4am. Flight BA211','Are you available Saturday afternoon for a short local trip in Lewes?','Picking up from Gatwick arrivals Friday ~9pm, going to Haywards Heath, 3 of us'];
+function renderInbox(){
+  var feed=document.getElementById('inbox-feed');var dot=document.getElementById('inbox-dot');
+  var flagged=INBOX_MSGS.filter(function(m){return m.status==='flagged';}).length;
+  dot.textContent=flagged||'';dot.style.display=flagged?'flex':'none';
+  feed.innerHTML=INBOX_MSGS.map(function(m){
+    var pCls=m.status==='accepted'?'pill-ok':m.status==='flagged'?'pill-flag':'pill-enquiry';
+    var pTxt=m.status==='accepted'?'Auto-accepted':m.status==='flagged'?'Needs your decision':'Enquiry';
+    var extract='';
+    if(m.analysis&&m.analysis.name){extract='<div class="msg-extract">'+m.analysis.name+' · '+m.analysis.pickup+' → '+m.analysis.dest+' · '+m.analysis.date+' '+m.analysis.time+' · <strong style="color:var(--gold)">£'+m.analysis.fare+'</strong></div>';}
+    if(m.analysis&&m.analysis.conflict){extract+='<div class="msg-conflict">Conflict: '+m.analysis.conflictReason+'</div>';}
+    var btns='';
+    if(m.status==='flagged'){btns='<div class="msg-actions"><button class="ma-btn ma-accept" onclick="confirmMsg(\''+m.id+'\')">Accept — add to calendar</button><button class="ma-btn ma-pass" onclick="passMsg(\''+m.id+'\')">Pass to operator</button></div>';}
+    return '<div class="msg-item"><div class="msg-header"><div><div class="msg-from">'+m.from+'</div><div style="font-size:.62rem;color:var(--text-light);margin-top:.1rem">'+m.phone+' · Today '+m.time+'</div></div><span class="msg-pill '+pCls+'">'+pTxt+'</span></div><div class="msg-text">"'+m.text+'"</div>'+extract+btns+'</div>';
+  }).join('');
+}
+function confirmMsg(id){var m=INBOX_MSGS.find(function(x){return x.id===id;});if(!m)return;m.status='accepted';renderInbox();showToast('Booking confirmed — added to calendar');}
+function passMsg(id){var m=INBOX_MSGS.find(function(x){return x.id===id;});if(!m)return;m.status='passed';renderInbox();showToast('Passed to operators — they will be notified');}
+function simMsg(){
+  var text=SIM_MSGS[Math.floor(Math.random()*SIM_MSGS.length)];
+  var id='s'+Date.now();
+  INBOX_MSGS.unshift({id:id,from:'New Customer',phone:'+4477'+Math.floor(10000000+Math.random()*90000000),time:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),text:text,status:'processing',analysis:null});
+  renderInbox();analyseMsg(id,text);
+}
+async function analyseMsg(id,text){
+  var sys='You are the booking intake for Westmere Private Hire (Horsham base). Analyse this WhatsApp message. Extract booking details if it is a booking request. Existing jobs: 04:30 Lewes→Gatwick, 17:20 Heathrow→Lewes. 90 min conflict buffer.\n\nFare rates: Gatwick from Lewes £75, Horsham £45, Brighton £70. Heathrow from Lewes £135, Horsham £115, Brighton £120.\n\nRespond ONLY with JSON: {"isBooking":true,"name":"...","pickup":"...","dest":"...","date":"...","time":"...","fare":0,"conflict":false,"conflictReason":"","note":"..."} or {"isBooking":false,"note":"..."}';
+  try{
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,system:sys,messages:[{role:'user',content:text}]})});
+    var data=await resp.json();
+    var raw=(data.content&&data.content[0]&&data.content[0].text)||'{}';
+    raw=raw.replace(/```json|```/g,'').trim();
+    var parsed=JSON.parse(raw);
+    var m=INBOX_MSGS.find(function(x){return x.id===id;});if(!m)return;
+    m.analysis=parsed;
+    m.status=!parsed.isBooking?'enquiry':parsed.conflict?'flagged':'accepted';
+    renderInbox();
+    if(m.status==='accepted')showToast('Auto-accepted: '+(parsed.name||'booking')+' · £'+(parsed.fare||0));
+    if(m.status==='flagged')showToast('Conflict — needs your decision: '+(parsed.name||'customer'));
+  }catch(e){var m=INBOX_MSGS.find(function(x){return x.id===id;});if(m){m.status='enquiry';m.analysis={isBooking:false,note:'Could not analyse — message saved.'};renderInbox();}}
+}
+
+// ── ASSISTANT ─────────────────────────────────────────────────────────────────
+function greetAssist(){
+  var h=new Date().getHours();var g=h<12?'morning':h<17?'afternoon':'evening';
+  appendW('Good '+g+'. Ready.\n\nSpeak or type — booking from a call, fare estimate, block calendar, anything. What do you need?');
+}
+function assistKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();assistSend();}}
+function assistQuick(text){sendToAssist(text);}
+function assistSend(){var inp=document.getElementById('assist-input');var msg=inp.value.trim();if(!msg||ASSIST_BUSY)return;inp.value='';inp.style.height='auto';sendToAssist(msg);}
+function clearAssist(){ASSIST_HISTORY=[];document.getElementById('assist-feed').innerHTML='';greetAssist();}
+function appendU(text){var f=document.getElementById('assist-feed');var el=document.createElement('div');el.className='msg-user';el.innerHTML='<div>'+escH(text)+'</div>';f.appendChild(el);f.scrollTop=f.scrollHeight;}
+function appendW(text,id){var f=document.getElementById('assist-feed');var el=document.createElement('div');el.className='msg-w';if(id)el.id=id;el.innerHTML='<div class="msg-w-crest">W</div><div>'+text.replace(/\n/g,'<br>')+'</div>';f.appendChild(el);f.scrollTop=f.scrollHeight;}
+function appendThink(id){var f=document.getElementById('assist-feed');var el=document.createElement('div');el.id=id;el.className='msg-w';el.innerHTML='<div class="msg-w-crest">W</div><div class="thinking">Thinking...</div>';f.appendChild(el);f.scrollTop=f.scrollHeight;}
+function escH(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function buildAssistCtx(){
+  return 'You are the business assistant for Westmere Private Hire (Horsham base). Sole operator/driver.\nFares: Gatwick from Lewes £75, Horsham £45, Brighton £70. Heathrow from Lewes £135, Horsham £115, Brighton £120. Night rate (00:00-05:59) +15%.\nToday: 04:30 Sarah Jones Lewes→Gatwick £85 Cash. 17:20 John Smith Heathrow→Lewes £145 Account.\nBe direct and short — driver may be in the car. Confirm all actions clearly.';
+}
+async function sendToAssist(msg){
+  if(ASSIST_BUSY)return;ASSIST_BUSY=true;
+  appendU(msg);ASSIST_HISTORY.push({role:'user',content:msg});
+  var tid='t'+Date.now();appendThink(tid);
+  try{
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,system:buildAssistCtx(),messages:ASSIST_HISTORY.slice(-12)})});
+    var data=await resp.json();var reply=(data.content&&data.content[0]&&data.content[0].text)||'Sorry, no response.';
+    var tel=document.getElementById(tid);if(tel)tel.remove();
+    ASSIST_HISTORY.push({role:'assistant',content:reply});
+    appendW(reply);
+  }catch(e){var tel=document.getElementById(tid);if(tel)tel.remove();appendW('Connection issue — check internet and try again.');}
+  ASSIST_BUSY=false;
+}
+
+// ── VOICE ─────────────────────────────────────────────────────────────────────
+function toggleVoice(){
+  var btn=document.getElementById('speak-btn');var lbl=document.getElementById('speak-label');
+  if(VOICE_ACTIVE){if(voiceRec)voiceRec.stop();return;}
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){showToast('Voice not supported — use Chrome or Safari');return;}
+  voiceRec=new SR();voiceRec.lang='en-GB';voiceRec.continuous=false;voiceRec.interimResults=false;
+  voiceRec.onstart=function(){VOICE_ACTIVE=true;btn.style.background='var(--gold)';btn.style.borderColor='var(--gold)';btn.style.color='var(--navy-deep)';lbl.textContent='Listening — tap to stop';};
+  voiceRec.onresult=function(e){var t=e.results[0][0].transcript;VOICE_ACTIVE=false;btn.style.background='var(--navy)';btn.style.borderColor='rgba(184,152,90,.2)';btn.style.color='var(--white)';lbl.textContent='Tap to Speak';setTimeout(function(){sendToAssist(t);},300);};
+  voiceRec.onerror=voiceRec.onend=function(){VOICE_ACTIVE=false;btn.style.background='var(--navy)';btn.style.borderColor='rgba(184,152,90,.2)';btn.style.color='var(--white)';lbl.textContent='Tap to Speak';};
+  voiceRec.start();
+}
+
+// ── SMART DAY ─────────────────────────────────────────────────────────────────
+var SAMPLE=[
+  {id:'sd1',time:'07:00',name:'Mr Patterson',pickup:'Horsham',dest:'Heathrow T5',pax:1,fare:115,payment:'Card'},
+  {id:'sd2',time:'12:00',name:'Mrs Clarke',pickup:'Lewes',dest:'Brighton',pax:2,fare:22,payment:'Cash'},
+  {id:'sd3',time:'14:30',name:'James Ford',pickup:'Brighton',dest:'Gatwick',pax:1,fare:70,payment:'Account'},
+  {id:'sd4',time:'17:00',name:'Private',pickup:'Seaford',dest:'Eastbourne',pax:1,fare:18,payment:'Cash'},
+  {id:'sd5',time:'20:00',name:'Mr Okafor',pickup:'Lewes',dest:'Gatwick',pax:3,fare:75,payment:'Cash'}
+];
+function loadSample(){SD_JOBS=SAMPLE.slice();renderSDJobs();}
+function renderSDJobs(){
+  var el=document.getElementById('sd-jobs');if(!el)return;
+  if(!SD_JOBS.length){el.innerHTML='<div style="padding:1rem 1.1rem;font-size:.78rem;color:var(--text-light);text-align:center">No bookings — tap Example or add manually</div>';return;}
+  el.innerHTML=SD_JOBS.map(function(j){return '<div style="display:flex;align-items:center;gap:.8rem;padding:.82rem 1.1rem;border-bottom:1px solid rgba(221,216,206,.4)"><div style="font-family:var(--serif);font-size:1rem;color:var(--gold);flex-shrink:0;width:44px">'+j.time+'</div><div style="flex:1"><div style="font-size:.84rem;font-weight:500;color:var(--navy)">'+j.name+'</div><div style="font-size:.7rem;color:var(--text-light)">'+j.pickup+' → '+j.dest+'</div></div><div style="font-family:var(--serif);font-size:1.1rem;color:var(--gold)">£'+j.fare+'</div><button onclick="SD_JOBS=SD_JOBS.filter(function(x){return x.id!==\''+j.id+'\'});renderSDJobs()" style="background:none;border:1px solid var(--rule);color:var(--text-light);font-size:.58rem;padding:.22rem .55rem;cursor:pointer;font-family:var(--sans)">✕</button></div>';}).join('');
+}
+function addSDJob(){var t=prompt('Time (HH:MM):','09:00');if(!t)return;var pu=prompt('Pickup:','Lewes');if(!pu)return;var dst=prompt('Destination:','Gatwick');if(!dst)return;var f=parseFloat(prompt('Fare £:','75')||0);var n=prompt('Name:','Customer')||'Customer';SD_JOBS.push({id:'sd'+Date.now(),time:t,name:n,pickup:pu,dest:dst,pax:1,fare:f,payment:'Cash'});renderSDJobs();}
+function tmins(t){var p=t.split(':');return parseInt(p[0])*60+parseInt(p[1]);}
+async function runSmartDay(){
+  if(!SD_JOBS.length){showToast('Add bookings first');return;}
+  document.getElementById('sd-output').style.display='none';
+  document.getElementById('sd-loading').style.display='block';
+  document.getElementById('sd-btn').textContent='Running...';
+  var loc=document.getElementById('sd-loc').value||HOME_BASE;
+  var sorted=SD_JOBS.slice().sort(function(a,b){return tmins(a.time)-tmins(b.time);});
+  var total=sorted.reduce(function(s,j){return s+parseFloat(j.fare||0);},0);
+  var prev=loc;var deadTotal=0;var netTotal=0;
+  var segs=sorted.map(function(j){
+    var dead=getDist(prev,j.pickup);var jmi=getDist(j.pickup,j.dest);var fare=parseFloat(j.fare||0);
+    var net=Math.round(fare-(dead+jmi)*0.18-(dead/28)*8);deadTotal+=dead;netTotal+=net;prev=j.dest;
+    var h=parseInt(j.time.split(':')[0]);var rush=(h>=7&&h<=9)||(h>=16&&h<=19);
+    var v,col;
+    if(net<5){v='Pass to operator';col='var(--red)';}
+    else if(net<25||dead>25){v='Marginal';col='var(--amber)';}
+    else{v='Keep';col='var(--green)';}
+    return{j,dead,jmi,net,v,col,rush};
+  });
+  var retHome=getDist(prev,HOME_BASE);
+  var dayH=((tmins(sorted[sorted.length-1].time)+45)-tmins(sorted[0].time))/60;
+  // Scorecard
+  document.getElementById('sd-scorecard').innerHTML='<div class="scorecard"><div class="sc-stat"><div class="sc-val" style="color:var(--navy)">£'+total+'</div><div class="sc-label">Gross</div></div><div class="sc-stat"><div class="sc-val" style="color:'+(netTotal>150?'var(--green)':netTotal>80?'var(--amber)':'var(--red)')+'">£'+netTotal+'</div><div class="sc-label">Net est.</div></div><div class="sc-stat"><div class="sc-val" style="color:var(--text-mid)">'+Math.round(deadTotal+retHome)+' mi</div><div class="sc-label">Dead miles</div></div><div class="sc-stat"><div class="sc-val" style="color:var(--navy)">'+dayH.toFixed(1)+'h</div><div class="sc-label">Day length</div></div><div class="sc-stat"><div class="sc-val" style="color:'+(netTotal/dayH>20?'var(--green)':'var(--amber)')+'">£'+Math.round(netTotal/dayH)+'</div><div class="sc-label">Net/hr</div></div><div class="sc-stat"><div class="sc-val" style="color:var(--text-mid)">'+retHome+' mi</div><div class="sc-label">Home</div></div></div>';
+  // Verdicts
+  document.getElementById('sd-verdicts').innerHTML=segs.map(function(s){return '<div class="verdict-row"><div class="vr-info"><div class="vr-job">'+s.j.time+' · '+s.j.name+'</div><div class="vr-detail">'+s.j.pickup+' → '+s.j.dest+(s.rush?' · Rush hour':'')+'</div><div class="vr-net">'+s.dead+' dead mi · net £'+s.net+'</div></div><div class="verdict-chip" style="color:'+s.col+';border-color:'+s.col+'">'+s.v+'</div></div>';}).join('');
+  // Claude recommendation
+  var prompt='Westmere Private Hire, sole operator, base Horsham.\n\nDay:\n'+segs.map(function(s){return s.j.time+' '+s.j.name+': '+s.j.pickup+'→'+s.j.dest+' £'+s.j.fare+' dead:'+s.dead+'mi net:£'+s.net+(s.rush?' rush':'');}).join('\n')+'\n\nGross £'+total+' Net £'+netTotal+' Dead '+Math.round(deadTotal+retHome)+'mi Net/hr £'+Math.round(netTotal/dayH)+'\n\nGive: 1) Is this day worth it? 2) Which jobs to keep/pass and why 3) Optimised version. Direct, practical, no padding.';
+  try{
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:prompt}]})});
+    var data=await resp.json();document.getElementById('sd-rec').textContent=(data.content&&data.content[0]&&data.content[0].text)||'Analysis unavailable.';
+  }catch(e){document.getElementById('sd-rec').textContent='Could not connect — check internet.';}
+  document.getElementById('sd-loading').style.display='none';
+  document.getElementById('sd-output').style.display='block';
+  document.getElementById('sd-btn').textContent='Score Day';
+  document.getElementById('sd-output').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+var _tt;
+function showToast(msg){var el=document.getElementById('toast');document.getElementById('toast-msg').textContent=msg;el.classList.add('on');clearTimeout(_tt);_tt=setTimeout(function(){el.classList.remove('on');},3000);}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+document.getElementById('sd-date').value=new Date().toISOString().split('T')[0];
+setMode('drive');
+buildToday();
+</script>
+</body>
+</html>
