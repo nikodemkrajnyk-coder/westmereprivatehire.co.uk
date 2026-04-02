@@ -14,183 +14,299 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-:root{
-  --navy:#1C2A3E;--navy-deep:#111D2C;
-  --cream:#F2F2F0;--white:#FAFAFA;
-  --gold:#B8985A;
-  --rule:#DEDEDE;--text:#1C2A3E;--text-mid:#4A5568;--text-light:#718096;
-  --green:#2D6E47;--green-bg:#F0FAF4;
-  --red:#8B2222;--red-bg:#FEF2F2;
-  --amber:#7A5C18;--amber-bg:#FEF9EC;
-  --serif:'Cormorant Garamond',Georgia,serif;
-  --sans:'Jost','Helvetica Neue',sans-serif;
-  --safe-top:env(safe-area-inset-top,0px);
-  --safe-bottom:env(safe-area-inset-bottom,0px);
-}
-html{height:100%;font-size:16px}
-body{font-family:var(--sans);font-weight:300;color:var(--text);background:var(--cream);-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden}
+:root{--navy:#111D2C;--navy-deep:#0d1520;--gold:#B8985A;--gold2:#C9A96E;--rule:rgba(255,255,255,.1);--text:#fff;--text-mid:rgba(255,255,255,.65);--text-light:rgba(255,255,255,.4);--white:rgba(255,255,255,.85);--cream:rgba(255,255,255,.04);--cream-dark:rgba(255,255,255,.07);--green:#2D6E47;--green-bg:rgba(45,110,71,.18);--red:#8B2222;--red-bg:rgba(139,34,34,.15);--amber:#B8985A;--amber-bg:rgba(184,152,90,.1);--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',sans-serif;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);}
+html{height:100%;font-size:16px;scroll-behavior:smooth}
+body{font-family:var(--sans);font-weight:300;color:#fff;background:var(--navy-deep);background-attachment:fixed;background-size:cover;background-position:center 55%;line-height:1.7;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;background:rgba(10,8,4,.35);z-index:0;pointer-events:none}
+h1,h2,h3,h4{font-family:var(--serif);font-weight:300;color:#fff;letter-spacing:.05em}
+p{color:rgba(255,255,255,.72);line-height:1.8}
+a{color:var(--gold)}
+
+/* ── HIDE SITE NAV ── */
+nav#nav{display:none}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:.9rem 6%;display:flex;align-items:center;justify-content:space-between;transition:background .3s}
+nav.solid{background:rgba(17,29,44,.25);backdrop-filter:blur(20px)}
+.brand{text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:.3rem}
+.brand-name{font-family:var(--serif);font-size:2rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:#fff;line-height:1}
+.brand-sub{font-size:1rem;font-weight:300;letter-spacing:.28em;text-transform:uppercase;color:#fff}
+.brand-sub2{font-size:.8rem;color:#fff;letter-spacing:.38em;text-transform:uppercase;font-weight:300}
+.nav-r{display:flex;align-items:center;gap:1.6rem}
+.nav-links{display:flex;align-items:center;gap:1.6rem}
+.nav-r a{text-decoration:none;font-size:.72rem;font-weight:400;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.82);transition:color .2s}
+.nav-r a:hover,.nav-r a.on{color:var(--gold)}
+.nav-book{background:none!important;color:#fff!important;padding:.4rem 0;border-radius:0;font-weight:400!important;font-family:var(--serif);font-size:1.8rem;font-style:italic;text-decoration:none;letter-spacing:.06em;border:none}
+.nav-book:hover{color:#fff!important;background:none!important}
+.nav-socials{display:flex;align-items:center;gap:.7rem}
+.nav-socials a{display:flex;align-items:center;justify-content:center;width:20px;height:20px;color:rgba(255,255,255,.7);transition:color .2s}
+.nav-socials a:hover{color:var(--gold)}
+.nav-socials svg{width:16px;height:16px}
+.burger{display:none;flex-direction:column;gap:5px;cursor:pointer;border:none;background:none;padding:4px;min-width:40px;min-height:40px;justify-content:center;align-items:center}
+.burger span{display:block;width:20px;height:1.5px;background:#fff}
+.mmenu{display:none;position:fixed;inset:0;background:rgba(17,29,44,.97);backdrop-filter:blur(20px);z-index:99;flex-direction:column;align-items:center;justify-content:center;gap:2.4rem}
+.mmenu.open{display:flex}
+.mmenu a{font-family:var(--serif);font-size:2rem;font-weight:300;color:rgba(255,255,255,.65);text-decoration:none;transition:color .2s}
+.mmenu a:hover{color:var(--gold)}
+@media(max-width:780px){.nav-r{display:none}.burger{display:flex}}
 
 /* ── APP SHELL ── */
-.app{display:flex;flex-direction:column;min-height:100vh}
-
-/* ── TOP BAR ── */
-.topbar{background:var(--navy-deep);padding:calc(var(--safe-top) + .7rem) 1.2rem .7rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid rgba(184,152,90,.1);position:sticky;top:0;z-index:60}
-.tb-left{display:flex;align-items:center;gap:.65rem}
-.tb-crest{width:28px;height:28px;border:1px solid rgba(184,152,90,.28);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:.82rem;color:rgba(248,245,239,.55);flex-shrink:0}
-.tb-name{font-family:var(--serif);font-size:.95rem;font-weight:400;letter-spacing:.08em;color:var(--white)}
+.app{display:flex;flex-direction:column;min-height:100vh;position:relative;z-index:1}
+.topbar{background:rgba(13,21,32,.92);backdrop-filter:blur(24px);padding:calc(var(--safe-top) + .7rem) 1.2rem .7rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid rgba(184,152,90,.08);position:sticky;top:0;z-index:60;height:64px}
+.tb-left{display:flex;align-items:center;gap:.8rem}
+.tb-crest{width:36px;height:36px;border:1px solid rgba(184,152,90,.22);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1rem;color:rgba(255,255,255,.5);flex-shrink:0}
+.tb-name{font-family:var(--serif);font-size:1rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#fff}
 .tb-mode-label{font-size:.48rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
-
-/* Mode toggle — the key element */
-.mode-toggle{display:flex;background:rgba(255,255,255,.06);border:1px solid rgba(184,152,90,.18);gap:1px}
-.mode-btn{padding:.4rem .9rem;background:transparent;border:none;font-family:var(--sans);font-size:.55rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(248,245,239,.4);cursor:pointer;transition:all .2s;white-space:nowrap}
-.mode-btn.on{background:var(--gold);color:var(--navy-deep)}
+.mode-toggle{display:flex;background:rgba(255,255,255,.04);border:1px solid rgba(184,152,90,.15);gap:1px}
+.mode-btn{padding:.44rem .9rem;background:transparent;border:none;font-family:var(--sans);font-size:.55rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.4);cursor:pointer;transition:all .25s;white-space:nowrap}
+.mode-btn.on{background:var(--gold);color:var(--navy)}
 .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse 2.5s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
 /* ── BOTTOM NAV ── */
-.bottom-nav{background:var(--navy-deep);border-top:1px solid rgba(184,152,90,.1);display:flex;padding-bottom:var(--safe-bottom);flex-shrink:0;position:sticky;bottom:0;z-index:60}
-.bn{flex:1;display:flex;flex-direction:column;align-items:center;gap:.22rem;padding:.65rem .3rem;background:none;border:none;cursor:pointer;transition:color .2s;color:rgba(248,245,239,.28);font-family:var(--sans);min-height:52px;position:relative}
+.bottom-nav{background:rgba(13,21,32,.92);backdrop-filter:blur(24px);border-top:1px solid rgba(184,152,90,.08);display:flex;padding-bottom:var(--safe-bottom);flex-shrink:0;position:sticky;bottom:0;z-index:60}
+.bn{flex:1;display:flex;flex-direction:column;align-items:center;gap:.22rem;padding:.65rem .3rem;background:none;border:none;cursor:pointer;transition:color .2s;color:rgba(255,255,255,.28);font-family:var(--sans);min-height:52px;position:relative}
 .bn.on{color:var(--gold)}
 .bn-bar{width:18px;height:1px;background:currentColor;opacity:0;transition:opacity .2s}
 .bn.on .bn-bar{opacity:1}
 .bn-label{font-size:.44rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;margin-top:.1rem}
-.bn-dot{position:absolute;top:.38rem;right:calc(50% - 16px);background:var(--red);color:var(--white);font-size:.46rem;font-weight:700;min-width:13px;height:13px;border-radius:7px;padding:0 2px;display:none;align-items:center;justify-content:center}
+.bn-dot{position:absolute;top:.38rem;right:calc(50% - 16px);background:var(--red);color:#fff;font-size:.46rem;font-weight:700;min-width:13px;height:13px;border-radius:7px;padding:0 2px;display:none;align-items:center;justify-content:center}
 
-/* ── SCROLL ── */
+/* ── PAGES ── */
 .page-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .pg{display:none;padding:1.2rem 1rem;max-width:560px;margin:0 auto;padding-bottom:1.5rem}
 .pg.on{display:block}
-
-/* ── SECTION HEADER ── */
-.sec-title{font-family:var(--serif);font-size:1.55rem;font-weight:300;color:var(--navy-deep);line-height:1;margin-bottom:.2rem}
+.sec-title{font-family:var(--serif);font-size:1.55rem;font-weight:300;color:#fff;line-height:1;margin-bottom:.2rem}
 .sec-title em{font-style:italic;color:var(--gold)}
-.sec-sub{font-size:.7rem;color:var(--text-light);font-weight:300;margin-bottom:1rem}
+.sec-sub{font-size:.7rem;color:rgba(255,255,255,.4);font-weight:300;margin-bottom:1rem}
 
-/* ── SHARED CARD ── */
-.card{background:var(--white);border:1px solid var(--rule);margin-bottom:.85rem}
-.ch{padding:.82rem 1.1rem;border-bottom:1px solid var(--rule);font-size:.54rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;justify-content:space-between}
+/* ── CARDS ── */
+.card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);margin-bottom:.85rem}
+.ch{padding:.9rem 1.4rem;border-bottom:1px solid rgba(184,152,90,.12);font-size:.56rem;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;justify-content:space-between}
 .cb{padding:0 1.1rem}
-
-/* ── ROW PATTERN ── */
-.row{display:flex;justify-content:space-between;align-items:baseline;padding:.88rem 0;border-bottom:1px solid rgba(221,216,206,.45)}
+.row{display:flex;justify-content:space-between;align-items:baseline;padding:.88rem 0;border-bottom:1px solid rgba(255,255,255,.06)}
 .row:last-child{border-bottom:none}
-.row-k{font-size:.56rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--text-light);flex-shrink:0}
-.row-v{font-size:.85rem;color:var(--navy);font-weight:300;text-align:right;max-width:66%}
+.row-k{font-size:.56rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.4);flex-shrink:0}
+.row-v{font-size:.85rem;color:#fff;font-weight:300;text-align:right;max-width:66%}
 .row-v.serif{font-family:var(--serif);font-size:.98rem}
 
-/* ── JOB CARD (DRIVE MODE) ── */
-.job-card{background:var(--white);border:1px solid var(--rule);margin-bottom:.85rem;overflow:hidden}
+/* ── JOB CARDS ── */
+.job-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);margin-bottom:.85rem;overflow:hidden}
 .job-card.active-job{border-color:var(--gold)}
 .job-card.done-job{opacity:.6}
-.jc-bar{height:3px;background:var(--rule)}
+.jc-bar{height:3px;background:rgba(255,255,255,.1)}
 .job-card.active-job .jc-bar{background:var(--gold)}
 .job-card.done-job .jc-bar{background:var(--green)}
-.jc-header{display:flex;align-items:center;justify-content:space-between;padding:.95rem 1.1rem .8rem;border-bottom:1px solid rgba(221,216,206,.5)}
+.jc-header{display:flex;align-items:center;justify-content:space-between;padding:.95rem 1.1rem .8rem;border-bottom:1px solid rgba(184,152,90,.12)}
 .jc-time{font-family:var(--serif);font-size:1.7rem;font-weight:300;color:var(--gold);line-height:1}
-.jc-name{font-size:1rem;font-weight:500;color:var(--navy);font-family:var(--serif);text-align:right}
-.jc-pax{font-size:.62rem;color:var(--text-light);font-weight:300;margin-top:.1rem;text-align:right}
-.jc-details{padding:.8rem 1.1rem;border-bottom:1px solid rgba(221,216,206,.5)}
+.jc-name{font-size:1rem;font-weight:500;color:#fff;font-family:var(--serif);text-align:right}
+.jc-pax{font-size:.62rem;color:rgba(255,255,255,.4);font-weight:300;margin-top:.1rem;text-align:right}
+.jc-details{padding:.8rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.06)}
 .jd-row{display:flex;align-items:baseline;gap:.8rem;padding:.28rem 0}
-.jd-key{font-size:.52rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--text-light);width:50px;flex-shrink:0}
-.jd-val{font-size:.84rem;color:var(--navy);font-weight:300;line-height:1.45;flex:1}
+.jd-key{font-size:.52rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.4);width:50px;flex-shrink:0}
+.jd-val{font-size:.84rem;color:#fff;font-weight:300;line-height:1.45;flex:1}
 .jd-val.accent{font-family:var(--serif);font-size:.95rem}
 .fp{display:inline-block;font-size:.54rem;font-weight:500;letter-spacing:.08em;padding:.14rem .52rem;border:1px solid}
-.fp-ontime{color:var(--green);border-color:#a8d5b5;background:var(--green-bg)}
-.fp-landed{color:#2563EB;border-color:rgba(37,99,235,.25);background:rgba(37,99,235,.06)}
-.fp-delayed{color:var(--amber);border-color:#e8d098;background:var(--amber-bg)}
-.jc-contact{display:flex;gap:1px;border-bottom:1px solid rgba(221,216,206,.5);background:var(--rule)}
-.jcc{flex:1;padding:.75rem;background:var(--white);border:none;font-family:var(--sans);font-size:.6rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--text-mid);cursor:pointer;transition:all .2s;text-decoration:none;display:flex;align-items:center;justify-content:center}
-.jcc:hover,.jcc:active{background:var(--navy);color:var(--white)}
+.fp-ontime{color:var(--green);border-color:rgba(45,110,71,.4);background:var(--green-bg)}
+.fp-landed{color:#60A5FA;border-color:rgba(96,165,250,.25);background:rgba(96,165,250,.06)}
+.fp-delayed{color:var(--gold);border-color:rgba(184,152,90,.3);background:var(--amber-bg)}
+.jc-contact{display:flex;gap:1px;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.06)}
+.jcc{flex:1;padding:.75rem;background:rgba(13,21,32,.4);border:none;font-family:var(--sans);font-size:.6rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.55);cursor:pointer;transition:all .25s;text-decoration:none;display:flex;align-items:center;justify-content:center}
+.jcc:hover,.jcc:active{background:rgba(184,152,90,.15);color:#fff}
 .jc-actions{padding:.8rem 1rem;display:flex;flex-wrap:wrap;gap:.5rem}
 .sbt{font-family:var(--sans);font-size:.6rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.65rem 1rem;cursor:pointer;border:none;transition:all .2s;flex:1;min-width:100px;min-height:44px}
-.sbt-enroute{background:var(--navy);color:var(--white)}.sbt-enroute:hover{background:var(--gold);color:var(--navy-deep)}
-.sbt-atpickup{background:rgba(37,99,235,.08);color:#2563EB;border:1px solid rgba(37,99,235,.2)}
-.sbt-onboard{background:var(--amber-bg);color:var(--amber);border:1px solid #e8d098}
-.sbt-dropoff{background:var(--green-bg);color:var(--green);border:1px solid #a8d5b5}
-.sbt-cancel{background:transparent;color:var(--text-light);border:1px solid var(--rule)}
-.jc-links{padding:.6rem 1rem;border-top:1px solid var(--rule);display:flex;gap:.5rem;flex-wrap:wrap}
-.jl{font-family:var(--sans);font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;padding:.45rem .85rem;cursor:pointer;background:var(--cream);border:1px solid var(--rule);color:var(--text-mid);transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;min-height:34px}
-.jl:hover{border-color:var(--navy);color:var(--navy)}
+.sbt-enroute{background:var(--gold);color:var(--navy)}.sbt-enroute:hover{background:var(--gold2);color:var(--navy)}
+.sbt-atpickup{background:rgba(96,165,250,.1);color:#60A5FA;border:1px solid rgba(96,165,250,.2)}
+.sbt-onboard{background:var(--amber-bg);color:var(--gold);border:1px solid rgba(184,152,90,.3)}
+.sbt-dropoff{background:var(--green-bg);color:var(--green);border:1px solid rgba(45,110,71,.3)}
+.sbt-cancel{background:transparent;color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.12)}
+.jc-links{padding:.6rem 1rem;border-top:1px solid rgba(255,255,255,.06);display:flex;gap:.5rem;flex-wrap:wrap}
+.jl{font-family:var(--sans);font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;padding:.45rem .85rem;cursor:pointer;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.55);transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;min-height:34px}
+.jl:hover{border-color:var(--gold);color:#fff}
 
-/* Score strip */
-.score-strip{padding:.55rem 1.1rem;border-bottom:1px solid rgba(221,216,206,.5);display:flex;justify-content:space-between;align-items:center;gap:.8rem}
-.ss-v{font-size:.58rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase}
-.ss-d{font-size:.64rem;color:var(--text-mid);font-weight:300;margin-top:.1rem}
+/* ── SCORE STRIP ── */
+.score-strip{padding:.55rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;gap:.8rem}
+.ss-v{font-size:.58rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.ss-d{font-size:.64rem;color:rgba(255,255,255,.4);font-weight:300;margin-top:.1rem}
 .ss-n{font-size:.72rem;font-weight:500;flex-shrink:0}
 .offer-btns{padding:.8rem 1rem;display:flex;gap:.6rem}
-.btn-accept{flex:1;padding:.75rem;background:var(--navy);color:var(--white);border:none;font-family:var(--sans);font-size:.62rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:background .2s;min-height:44px}
-.btn-accept:hover{background:var(--gold);color:var(--navy-deep)}
-.btn-decline{padding:.75rem 1.1rem;background:transparent;color:var(--text-light);border:1px solid var(--rule);font-family:var(--sans);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;min-height:44px}
+.btn-accept{flex:1;padding:.75rem;background:var(--gold);color:var(--navy);border:none;font-family:var(--sans);font-size:.62rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:background .2s;min-height:44px}
+.btn-accept:hover{background:var(--gold2)}
+.btn-decline{padding:.75rem 1.1rem;background:transparent;color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.12);font-family:var(--sans);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;min-height:44px}
 
-/* ── ADMIN: INBOX MESSAGE ── */
-.msg-item{padding:1rem 1.1rem;border-bottom:1px solid rgba(221,216,206,.45)}
+/* ── INBOX ── */
+.msg-item{padding:1rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.05)}
 .msg-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.5rem}
-.msg-from{font-size:.88rem;font-weight:500;color:var(--navy)}
-.msg-time{font-size:.62rem;color:var(--text-light)}
+.msg-from{font-size:.88rem;font-weight:500;color:#fff}
+.msg-time{font-size:.62rem;color:rgba(255,255,255,.35)}
 .msg-pill{font-size:.52rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .6rem;border:1px solid}
-.pill-ok{color:var(--green);border-color:#a8d5b5;background:var(--green-bg)}
-.pill-flag{color:var(--amber);border-color:#e8d098;background:var(--amber-bg)}
-.pill-enquiry{color:var(--text-light);border-color:var(--rule);background:var(--cream)}
-.msg-text{font-size:.8rem;color:var(--text-mid);font-weight:300;line-height:1.6;font-style:italic;border-left:2px solid var(--rule);padding-left:.75rem;margin:.5rem 0}
-.msg-extract{font-size:.75rem;color:var(--text-mid);font-weight:300;background:var(--cream);padding:.6rem .8rem;margin:.5rem 0;line-height:1.75}
-.msg-conflict{font-size:.74rem;color:var(--amber);font-weight:300;background:var(--amber-bg);border:1px solid #e8d098;padding:.5rem .8rem;margin:.5rem 0}
+.pill-ok{color:var(--green);border-color:rgba(45,110,71,.4);background:var(--green-bg)}
+.pill-flag{color:var(--gold);border-color:rgba(184,152,90,.3);background:var(--amber-bg)}
+.pill-enquiry{color:rgba(255,255,255,.4);border-color:rgba(255,255,255,.1);background:rgba(255,255,255,.04)}
+.msg-text{font-size:.8rem;color:rgba(255,255,255,.55);font-weight:300;line-height:1.6;font-style:italic;border-left:2px solid rgba(255,255,255,.12);padding-left:.75rem;margin:.5rem 0}
+.msg-extract{font-size:.75rem;color:rgba(255,255,255,.55);font-weight:300;background:rgba(255,255,255,.04);padding:.6rem .8rem;margin:.5rem 0;line-height:1.75}
+.msg-conflict{font-size:.74rem;color:var(--gold);font-weight:300;background:var(--amber-bg);border:1px solid rgba(184,152,90,.25);padding:.5rem .8rem;margin:.5rem 0}
 .msg-actions{display:flex;gap:.5rem;margin-top:.7rem;flex-wrap:wrap}
 .ma-btn{font-family:var(--sans);font-size:.6rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.5rem .9rem;cursor:pointer;border:none;min-height:38px;transition:all .2s}
-.ma-accept{background:var(--navy);color:var(--white)}.ma-accept:hover{background:var(--gold);color:var(--navy-deep)}
-.ma-pass{background:transparent;color:var(--text-light);border:1px solid var(--rule)}.ma-pass:hover{border-color:var(--navy);color:var(--navy)}
+.ma-accept{background:var(--gold);color:var(--navy)}.ma-accept:hover{background:var(--gold2);color:var(--navy)}
+.ma-pass{background:transparent;color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.15)}.ma-pass:hover{border-color:rgba(255,255,255,.3);color:#fff}
 
-/* ── ADMIN: ASSISTANT ── */
+/* ── ASSISTANT ── */
 .assist-feed{padding:.9rem 1.1rem;min-height:240px;max-height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:.2rem;scroll-behavior:smooth}
 .msg-user{display:flex;justify-content:flex-end;margin-bottom:.5rem}
-.msg-user div{background:var(--navy);color:rgba(248,245,239,.85);padding:.7rem .95rem;font-size:.82rem;font-weight:300;max-width:82%;line-height:1.6}
+.msg-user div{background:rgba(184,152,90,.1);color:#fff;padding:.7rem .95rem;font-size:.82rem;font-weight:300;max-width:82%;line-height:1.6;border:1px solid rgba(184,152,90,.15)}
 .msg-w{display:flex;gap:.6rem;align-items:flex-start;margin-bottom:.5rem}
 .msg-w-crest{width:20px;height:20px;border:1px solid rgba(184,152,90,.3);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:.62rem;color:var(--gold);flex-shrink:0;margin-top:.1rem}
-.msg-w div{background:var(--white);border:1px solid var(--rule);padding:.75rem .95rem;font-size:.82rem;color:var(--navy);font-weight:300;max-width:85%;line-height:1.7}
-.thinking{font-size:.74rem;color:var(--text-light);font-style:italic;animation:blink 1.2s ease infinite}
+.msg-w div{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);padding:.75rem .95rem;font-size:.82rem;color:#fff;font-weight:300;max-width:85%;line-height:1.7}
+.thinking{font-size:.74rem;color:rgba(255,255,255,.4);font-style:italic;animation:blink 1.2s ease infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-.assist-input-row{border-top:1px solid var(--rule);padding:.75rem 1rem;display:flex;gap:.5rem;align-items:flex-end;background:var(--cream)}
-.assist-input{flex:1;font-family:var(--sans);font-size:.86rem;font-weight:300;color:var(--navy);background:var(--white);border:1px solid var(--rule);padding:.62rem .85rem;outline:none;resize:none;height:42px;min-height:42px;-webkit-appearance:none;transition:border-color .2s}
-.assist-input:focus{border-color:var(--gold)}
-.btn-speak{font-family:var(--sans);font-size:.58rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;background:transparent;border:1px solid var(--rule);color:var(--text-light);padding:.55rem .85rem;cursor:pointer;min-height:42px;transition:all .2s;white-space:nowrap}
-.btn-speak.listening{background:var(--gold);border-color:var(--gold);color:var(--navy-deep)}
-.btn-send{font-family:var(--sans);font-size:.58rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;background:var(--navy);border:none;color:var(--white);padding:.55rem 1rem;cursor:pointer;min-height:42px;transition:background .2s;white-space:nowrap}
-.btn-send:hover{background:var(--gold);color:var(--navy-deep)}
+.assist-input-row{border-top:1px solid rgba(255,255,255,.06);padding:.75rem 1rem;display:flex;gap:.5rem;align-items:flex-end;background:rgba(13,21,32,.6)}
+.assist-input{flex:1;font-family:var(--sans);font-size:.86rem;font-weight:300;color:#fff;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.15);padding:.62rem 0;outline:none;resize:none;height:42px;min-height:42px;-webkit-appearance:none;transition:border-color .3s}
+.assist-input:focus{border-bottom-color:var(--gold)}
+.assist-input::placeholder{color:rgba(255,255,255,.25)}
+.btn-speak{font-family:var(--sans);font-size:.58rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;background:transparent;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.5);padding:.55rem .85rem;cursor:pointer;min-height:42px;transition:all .25s;white-space:nowrap}
+.btn-speak.listening{background:var(--gold);border-color:var(--gold);color:var(--navy)}
+.btn-send{font-family:var(--sans);font-size:.58rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;background:var(--gold);border:none;color:var(--navy);padding:.55rem 1rem;cursor:pointer;min-height:42px;transition:all .25s;white-space:nowrap}
+.btn-send:hover{background:var(--gold2)}
 
 /* ── SMART DAY ── */
-.verdict-row{display:flex;align-items:flex-start;justify-content:space-between;padding:.9rem 1.1rem;border-bottom:1px solid rgba(221,216,206,.4);gap:.8rem}
+.verdict-row{display:flex;align-items:flex-start;justify-content:space-between;padding:.9rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.06);gap:.8rem}
 .verdict-row:last-child{border-bottom:none}
 .vr-info{flex:1}
-.vr-job{font-size:.85rem;font-weight:500;color:var(--navy)}
-.vr-detail{font-size:.7rem;color:var(--text-light);margin-top:.1rem}
-.vr-net{font-size:.68rem;color:var(--text-light);margin-top:.08rem}
+.vr-job{font-size:.85rem;font-weight:500;color:#fff}
+.vr-detail{font-size:.7rem;color:rgba(255,255,255,.4);margin-top:.1rem}
+.vr-net{font-size:.68rem;color:rgba(255,255,255,.35);margin-top:.08rem}
 .verdict-chip{font-size:.56rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.22rem .65rem;border-width:1px;border-style:solid;white-space:nowrap;flex-shrink:0}
 
 /* ── SCORECARD ── */
-.scorecard{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);margin-bottom:.85rem}
-.sc-stat{background:var(--white);padding:.85rem .7rem;text-align:center}
-.sc-val{font-family:var(--serif);font-size:1.5rem;font-weight:300;line-height:1}
-.sc-label{font-size:.48rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text-light);margin-top:.2rem}
+.scorecard{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);margin-bottom:.85rem;position:relative;overflow:hidden}
+.scorecard::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,var(--gold),transparent);z-index:1}
+.sc-stat{background:rgba(255,255,255,.03);padding:.85rem .7rem;text-align:center}
+.sc-val{font-family:var(--serif);font-size:1.5rem;font-weight:300;line-height:1;color:#fff}
+.sc-label{font-size:.48rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:.2rem}
 
-/* ── EMPTY ── */
+/* ── EMPTY STATE ── */
 .empty{text-align:center;padding:2.5rem 1rem}
-.empty-title{font-family:var(--serif);font-size:1.3rem;font-weight:300;color:var(--navy-deep);margin-bottom:.35rem}
-.empty-sub{font-size:.76rem;color:var(--text-light);font-weight:300;line-height:1.7}
+.empty-title{font-family:var(--serif);font-size:1.3rem;font-weight:300;color:#fff;margin-bottom:.35rem}
+.empty-sub{font-size:.76rem;color:rgba(255,255,255,.4);font-weight:300;line-height:1.7}
 
 /* ── NAME BOARD ── */
-.nb-overlay{position:fixed;inset:0;background:var(--white);z-index:200;display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center}
+.nb-overlay{position:fixed;inset:0;background:rgba(13,21,32,.97);backdrop-filter:blur(20px);z-index:200;display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center}
 .nb-overlay.on{display:flex}
 .nb-eyebrow{font-size:.6rem;font-weight:500;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:1.4rem}
-.nb-name-text{font-family:var(--serif);font-size:clamp(2.8rem,11vw,5.5rem);font-weight:500;color:var(--navy-deep);line-height:1.1}
-.nb-sub{font-size:.8rem;color:var(--text-light);margin-top:.75rem;font-weight:300}
-.nb-close{position:absolute;top:1.5rem;right:1.5rem;font-family:var(--sans);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-light);background:transparent;border:1px solid var(--rule);padding:.5rem 1rem;cursor:pointer}
+.nb-name-text{font-family:var(--serif);font-size:clamp(2.8rem,11vw,5.5rem);font-weight:500;color:#fff;line-height:1.1}
+.nb-sub{font-size:.8rem;color:rgba(255,255,255,.45);margin-top:.75rem;font-weight:300}
+.nb-close{position:absolute;top:1.5rem;right:1.5rem;font-family:var(--sans);font-size:.6rem;font-weight:400;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.4);background:transparent;border:1px solid rgba(255,255,255,.08);padding:.5rem 1rem;cursor:pointer;transition:all .25s}
+.nb-close:hover{color:#fff;border-color:rgba(255,255,255,.25)}
 
 /* ── TOAST ── */
-#toast{position:fixed;bottom:calc(4.5rem + var(--safe-bottom));left:1rem;right:1rem;background:var(--navy-deep);border:1px solid rgba(184,152,90,.25);padding:.8rem 1.1rem;font-size:.76rem;color:var(--white);display:none;font-family:var(--sans);font-weight:300;z-index:300;max-width:400px;margin:0 auto}
-#toast.on{display:flex;align-items:center;gap:.5rem;animation:tIn .25s ease}
+#toast{position:fixed;bottom:calc(4.5rem + var(--safe-bottom));left:1rem;right:1rem;background:rgba(13,21,32,.95);backdrop-filter:blur(16px);border:1px solid rgba(184,152,90,.25);padding:.88rem 1.3rem;font-size:.78rem;color:#fff;display:none;font-family:var(--sans);font-weight:300;z-index:300;max-width:320px;margin:0 auto}
+#toast.on{display:flex;align-items:center;gap:.6rem;animation:tIn .25s ease}
 @keyframes tIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── INLINE FORM OVERRIDES ── */
+input[type=date],input[type=text]{background:transparent!important;border:none!important;border-bottom:1px solid rgba(255,255,255,.15)!important;color:#fff!important;padding:.78rem 0!important;-webkit-appearance:none;transition:border-color .3s}
+input[type=date]:focus,input[type=text]:focus{border-bottom-color:var(--gold)!important}
+input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1) brightness(.7)}
+input[type=date]::placeholder,input[type=text]::placeholder{color:rgba(255,255,255,.25)}
+
+/* ── TESLA SUPERCHARGER LIST FIX ── */
+.tesla-charger{padding:.82rem 1rem;border-bottom:1px solid rgba(255,255,255,.06)}
+.tesla-charger:last-child{border-bottom:none}
+.tesla-charger .tc-name{font-size:.85rem;font-weight:500;color:#fff}
+.tesla-charger .tc-dist{font-size:.7rem;color:rgba(255,255,255,.4);margin-top:.1rem}
+.tesla-charger .tc-avail{font-size:.7rem;margin-top:.1rem}
+
+/* ── QUICK CMD BUTTONS ── */
+.qcmd{text-align:left;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);padding:.65rem .9rem;cursor:pointer;font-family:var(--sans);font-size:.76rem;font-weight:300;color:rgba(255,255,255,.55);width:100%;transition:all .25s}
+.qcmd:hover{border-color:rgba(184,152,90,.3);color:#fff}
+
+/* ── INLINE BTN OVERRIDES ── */
+.ibtn-primary{font-family:var(--sans);font-size:.62rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;background:var(--gold);color:var(--navy);border:none;padding:.65rem 1.2rem;cursor:pointer;min-height:44px;transition:all .25s}
+.ibtn-primary:hover{background:var(--gold2)}
+.ibtn-ghost{font-family:var(--sans);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;background:transparent;color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.15);padding:.65rem 1.2rem;cursor:pointer;min-height:44px;transition:all .25s}
+.ibtn-ghost:hover{border-color:rgba(255,255,255,.3);color:#fff}
+.ibtn-sm{font-family:var(--sans);font-size:.56rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);border:none;padding:.3rem .75rem;cursor:pointer;transition:all .2s}
+.ibtn-sm:hover{background:rgba(184,152,90,.15);color:#fff}
+.ibtn-sm-outline{font-family:var(--sans);font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;background:none;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);padding:.28rem .65rem;cursor:pointer;transition:all .2s}
+.ibtn-sm-outline:hover{border-color:var(--gold);color:#fff}
+
+/* ── SD JOB ROW ── */
+.sd-row{display:flex;align-items:center;gap:.8rem;padding:.82rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.06)}
+.sd-row:last-child{border-bottom:none}
+.sd-time{font-family:var(--serif);font-size:1rem;color:var(--gold);flex-shrink:0;width:44px}
+.sd-info{flex:1}
+.sd-name{font-size:.84rem;font-weight:500;color:#fff}
+.sd-route{font-size:.7rem;color:rgba(255,255,255,.4)}
+.sd-fare{font-family:var(--serif);font-size:1.1rem;color:var(--gold)}
+.sd-del{background:none;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);font-size:.58rem;padding:.22rem .55rem;cursor:pointer;font-family:var(--sans);transition:all .2s}
+.sd-del:hover{border-color:var(--gold);color:#fff}
+
+/* ── WHATSAPP FAB ── */
+.wa-fab{position:fixed;top:4.8rem;right:1.4rem;z-index:200;width:42px;height:42px;border-radius:50%;background:#25D366;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(37,211,102,.35);text-decoration:none;transition:transform .2s}
+.wa-fab:hover{transform:scale(1.08)}
+
+/* ── FOOTER ── */
+footer{background:transparent;padding:1.5rem 6%;border-top:none;position:relative;z-index:1}
+.foot-inner{max-width:960px;margin:0 auto;display:flex;align-items:center;justify-content:center}
+.foot-copy{font-size:.65rem;color:rgba(255,255,255,.3);font-weight:300}
+
+/* ── RESPONSIVE ── */
+@media(max-width:560px){
+  .topbar{padding-left:.8rem;padding-right:.8rem}
+  .pg{padding:1.2rem .8rem}
+  .jc-actions{flex-direction:column}
+  .sbt{min-width:100%}
+  .jc-links{flex-wrap:wrap}
+  .jl{flex:1;min-width:70px}
+  .mode-toggle{gap:0}
+  .mode-btn{padding:.4rem .65rem;font-size:.5rem}
+  .scorecard{grid-template-columns:repeat(3,1fr)}
+  .assist-feed{max-height:320px}
+}
+@media(max-width:380px){
+  .bn-label{font-size:.42rem;letter-spacing:.08em}
+  .sec-title{font-size:1.4rem}
+  .jc-time{font-size:1.5rem}
+  .jc-name{font-size:.9rem}
+  .mode-btn{padding:.35rem .55rem;font-size:.48rem}
+}
 </style>
 </head>
 <body>
+
+<nav id="nav">
+  <a href="index.html" class="brand">
+    <span class="brand-name">Westmere</span>
+    <span class="brand-sub">Private Hire</span>
+    <span class="brand-sub2">Sussex</span>
+  </a>
+  <div class="nav-r">
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="westmere-fares.html">Airport Fares</a>
+      <a href="westmere-coverage.html">Coverage</a>
+      <a href="westmere-fleet.html">Fleet</a>
+      <a href="westmere-about.html">About</a>
+    </div>
+    <a href="index.html?skip=1" class="nav-book">Book Now</a>
+    <div class="nav-socials">
+      <a href="tel:+447930342593"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></a>
+      <a href="https://wa.me/447930342593" target="_blank"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>
+      <a href="mailto:bookings@westmere.co.uk"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg></a>
+      <a href="https://instagram.com/westmereprivatehire" target="_blank"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></a>
+    </div>
+  </div>
+  <button class="burger" onclick="toggleMenu()"><span></span><span></span><span></span></button>
+</nav>
+<div class="mmenu" id="mmenu">
+  <a href="index.html" onclick="closeMenu()">Home</a>
+  <a href="westmere-fares.html" onclick="closeMenu()">Airport Fares</a>
+  <a href="westmere-coverage.html" onclick="closeMenu()">Coverage</a>
+  <a href="westmere-fleet.html" onclick="closeMenu()">Fleet</a>
+  <a href="westmere-about.html" onclick="closeMenu()">About</a>
+  <a href="index.html?skip=1" onclick="closeMenu()">Book Now</a>
+</div>
 
 <div class="app">
 
@@ -215,8 +331,6 @@ body{font-family:var(--sans);font-weight:300;color:var(--text);background:var(--
   <!-- PAGE SCROLL -->
   <div class="page-scroll" id="page-scroll">
 
-    <!-- ══ DRIVE MODE PAGES ══ -->
-
     <!-- Today's Jobs -->
     <div class="pg on" id="pg-today">
       <div class="sec-title">Today's <em>Jobs</em></div>
@@ -235,40 +349,38 @@ body{font-family:var(--sans);font-weight:300;color:var(--text);background:var(--
     <div class="pg" id="pg-tesla">
       <div class="sec-title">Tesla <em>Model S</em></div>
       <div class="sec-sub">Battery · Range · Job feasibility</div>
-      <div style="background:var(--navy-deep);padding:1.4rem;margin-bottom:.85rem;border:1px solid rgba(184,152,90,.1);position:relative;overflow:hidden">
+      <div style="background:rgba(255,255,255,.03);padding:1.4rem;margin-bottom:.85rem;border:1px solid rgba(184,152,90,.1);position:relative;overflow:hidden">
         <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(-45deg,transparent,transparent 60px,rgba(184,152,90,.02) 60px,rgba(184,152,90,.02) 61px);pointer-events:none"></div>
-        <div style="font-size:.5rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:rgba(248,245,239,.3);margin-bottom:.8rem;position:relative">XX21 WPH</div>
+        <div style="font-size:.5rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:.8rem;position:relative">XX21 WPH</div>
         <div style="display:flex;gap:2rem;flex-wrap:wrap;margin-bottom:1rem;position:relative">
-          <div><div style="font-size:.5rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(248,245,239,.3);margin-bottom:.2rem">Battery</div><div style="font-family:var(--serif);font-size:3.2rem;color:var(--white);line-height:1" id="tesla-pct">78<span style="font-size:.85rem;font-family:var(--sans);font-weight:300;color:rgba(248,245,239,.4)">%</span></div></div>
-          <div><div style="font-size:.5rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(248,245,239,.3);margin-bottom:.2rem">Range</div><div style="font-family:var(--serif);font-size:1.8rem;color:var(--gold);line-height:1" id="tesla-range">218 <span style="font-size:.85rem;font-family:var(--sans);font-weight:300;color:rgba(248,245,239,.4)">mi</span></div></div>
-          <div><div style="font-size:.5rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(248,245,239,.3);margin-bottom:.2rem">Status</div><div id="tesla-status" style="font-size:.78rem;color:rgba(248,245,239,.65);margin-top:.25rem">Parked · Horsham</div></div>
+          <div><div style="font-size:.5rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:.2rem">Battery</div><div style="font-family:var(--serif);font-size:3.2rem;color:#fff;line-height:1" id="tesla-pct">78<span style="font-size:.85rem;font-family:var(--sans);font-weight:300;color:rgba(255,255,255,.4)">%</span></div></div>
+          <div><div style="font-size:.5rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:.2rem">Range</div><div style="font-family:var(--serif);font-size:1.8rem;color:var(--gold);line-height:1" id="tesla-range">218 <span style="font-size:.85rem;font-family:var(--sans);font-weight:300;color:rgba(255,255,255,.4)">mi</span></div></div>
+          <div><div style="font-size:.5rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:.2rem">Status</div><div id="tesla-status" style="font-size:.78rem;color:rgba(255,255,255,.65);margin-top:.25rem">Parked · Horsham</div></div>
         </div>
         <div style="height:7px;background:rgba(255,255,255,.08);margin-bottom:.4rem;position:relative"><div id="tesla-bar" style="height:100%;width:78%;background:linear-gradient(to right,var(--gold),#7ecfa0);transition:width 1s ease"></div></div>
-        <div style="font-size:.58rem;color:rgba(248,245,239,.28);position:relative" id="tesla-last">Last charged today 06:15</div>
+        <div style="font-size:.58rem;color:rgba(255,255,255,.28);position:relative" id="tesla-last">Last charged today 06:15</div>
       </div>
       <div class="card"><div class="ch">Range Check — Today's Jobs</div><div id="tesla-rc"></div></div>
       <div class="card">
         <div class="ch">Nearest Superchargers</div>
         <div>
-          <div style="padding:.82rem 1rem;border-bottom:1px solid rgba(221,216,206,.4)"><div style="font-size:.85rem;font-weight:500;color:var(--navy)">Gatwick Airport</div><div style="font-size:.7rem;color:var(--text-light);margin-top:.1rem">12 mi · ~15 min · 16 stalls</div><div style="font-size:.7rem;color:var(--green);margin-top:.1rem">Available · 0–80% in ~30 min</div></div>
-          <div style="padding:.82rem 1rem;border-bottom:1px solid rgba(221,216,206,.4)"><div style="font-size:.85rem;font-weight:500;color:var(--navy)">Crawley</div><div style="font-size:.7rem;color:var(--text-light);margin-top:.1rem">14 mi · ~20 min · 12 stalls</div><div style="font-size:.7rem;color:var(--green);margin-top:.1rem">Available · 0–80% in ~28 min</div></div>
-          <div style="padding:.82rem 1rem"><div style="font-size:.85rem;font-weight:500;color:var(--navy)">Brighton Marina</div><div style="font-size:.7rem;color:var(--text-light);margin-top:.1rem">18 mi · ~25 min · 8 stalls</div><div style="font-size:.7rem;color:var(--amber);margin-top:.1rem">Moderate · 0–80% in ~35 min</div></div>
+          <div class="tesla-charger"><div class="tc-name">Gatwick Airport</div><div class="tc-dist">12 mi · ~15 min · 16 stalls</div><div class="tc-avail" style="color:var(--green)">Available · 0–80% in ~30 min</div></div>
+          <div class="tesla-charger"><div class="tc-name">Crawley</div><div class="tc-dist">14 mi · ~20 min · 12 stalls</div><div class="tc-avail" style="color:var(--green)">Available · 0–80% in ~28 min</div></div>
+          <div class="tesla-charger"><div class="tc-name">Brighton Marina</div><div class="tc-dist">18 mi · ~25 min · 8 stalls</div><div class="tc-avail" style="color:var(--amber)">Moderate · 0–80% in ~35 min</div></div>
         </div>
       </div>
       <div style="display:flex;gap:.6rem;margin-top:.2rem">
-        <button onclick="refreshTesla()" style="font-family:var(--sans);font-size:.62rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;background:var(--navy);color:var(--white);border:none;padding:.65rem 1.2rem;cursor:pointer;min-height:42px">Refresh</button>
-        <button onclick="showToast('Tesla OAuth ready — connect when live')" style="font-family:var(--sans);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;background:transparent;color:var(--text-light);border:1px solid var(--rule);padding:.65rem 1.2rem;cursor:pointer;min-height:42px">Connect Tesla</button>
+        <button onclick="refreshTesla()" class="ibtn-primary">Refresh</button>
+        <button onclick="showToast('Tesla OAuth ready — connect when live')" class="ibtn-ghost">Connect Tesla</button>
       </div>
     </div>
-
-    <!-- ══ ADMIN MODE PAGES ══ -->
 
     <!-- WhatsApp Inbox -->
     <div class="pg" id="pg-inbox">
       <div class="sec-title"><em>WhatsApp</em> Inbox</div>
       <div class="sec-sub">Claude reading every message — booking automatically or flagging to you</div>
       <div class="card" style="margin-bottom:.85rem">
-        <div class="ch">Incoming Messages <button onclick="simMsg()" style="font-family:var(--sans);font-size:.56rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;background:var(--navy);color:var(--white);border:none;padding:.3rem .75rem;cursor:pointer">+ Simulate</button></div>
+        <div class="ch">Incoming Messages <button onclick="simMsg()" class="ibtn-sm">+ Simulate</button></div>
         <div id="inbox-feed"></div>
       </div>
     </div>
@@ -278,18 +390,18 @@ body{font-family:var(--sans);font-weight:300;color:var(--text);background:var(--
       <div class="sec-title">Westmere <em>Assistant</em></div>
       <div class="sec-sub">Talk to me — I handle it</div>
 
-      <div style="background:var(--navy-deep);padding:1rem 1.2rem;margin-bottom:.85rem;border:1px solid rgba(184,152,90,.12)">
+      <div style="background:rgba(255,255,255,.03);padding:1rem 1.2rem;margin-bottom:.85rem;border:1px solid rgba(184,152,90,.12)">
         <div style="font-size:.54rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem">Direct line to Claude</div>
-        <div style="font-size:.78rem;color:rgba(248,245,239,.6);font-weight:300;line-height:1.75">Speak or type. I'll create bookings from calls or WhatsApp messages, calculate fares, block your calendar, and tell you what your day looks like. No third party — this is me.</div>
+        <div style="font-size:.78rem;color:rgba(255,255,255,.6);font-weight:300;line-height:1.75">Speak or type. I'll create bookings from calls or WhatsApp messages, calculate fares, block your calendar, and tell you what your day looks like. No third party — this is me.</div>
       </div>
 
       <!-- Big speak button -->
-      <button id="speak-btn" onclick="toggleVoice()" style="width:100%;padding:1.3rem;background:var(--navy);border:2px solid rgba(184,152,90,.2);color:var(--white);font-family:var(--sans);font-size:.82rem;font-weight:400;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;transition:all .3s;margin-bottom:.85rem">
+      <button id="speak-btn" onclick="toggleVoice()" style="width:100%;padding:1.3rem;background:rgba(255,255,255,.04);border:2px solid rgba(184,152,90,.2);color:rgba(255,255,255,.65);font-family:var(--sans);font-size:.82rem;font-weight:400;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;transition:all .3s;margin-bottom:.85rem">
         <span id="speak-label">Tap to Speak</span>
       </button>
 
       <div class="card">
-        <div class="ch">Conversation <button onclick="clearAssist()" style="font-family:var(--sans);font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;background:none;border:1px solid var(--rule);color:var(--text-light);padding:.28rem .65rem;cursor:pointer">Clear</button></div>
+        <div class="ch">Conversation <button onclick="clearAssist()" class="ibtn-sm-outline">Clear</button></div>
         <div class="assist-feed" id="assist-feed"></div>
         <div class="assist-input-row">
           <textarea class="assist-input" id="assist-input" placeholder="Type a booking, question, or paste a WhatsApp message..." onkeydown="assistKey(event)" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,130)+'px'"></textarea>
@@ -301,10 +413,10 @@ body{font-family:var(--sans);font-weight:300;color:var(--text);background:var(--
       <div class="card" style="margin-top:.85rem">
         <div class="ch">Quick Commands</div>
         <div style="padding:.75rem 1rem;display:flex;flex-direction:column;gap:.45rem">
-          <button onclick="assistQuick('What jobs do I have today?')" style="text-align:left;background:var(--cream);border:1px solid var(--rule);padding:.65rem .9rem;cursor:pointer;font-family:var(--sans);font-size:.76rem;font-weight:300;color:var(--navy);width:100%">What jobs do I have today?</button>
-          <button onclick="assistQuick('Book Mrs Williams, Lewes to Gatwick, tomorrow 4:30am, cash, 1 passenger')" style="text-align:left;background:var(--cream);border:1px solid var(--rule);padding:.65rem .9rem;cursor:pointer;font-family:var(--sans);font-size:.76rem;font-weight:300;color:var(--navy);width:100%">Book Mrs Williams, Lewes to Gatwick, tomorrow 4:30am, cash</button>
-          <button onclick="assistQuick('What is the fare from Brighton to Heathrow at 3am?')" style="text-align:left;background:var(--cream);border:1px solid var(--rule);padding:.65rem .9rem;cursor:pointer;font-family:var(--sans);font-size:.76rem;font-weight:300;color:var(--navy);width:100%">Fare from Brighton to Heathrow at 3am?</button>
-          <button onclick="assistQuick('Block me off this Sunday')" style="text-align:left;background:var(--cream);border:1px solid var(--rule);padding:.65rem .9rem;cursor:pointer;font-family:var(--sans);font-size:.76rem;font-weight:300;color:var(--navy);width:100%">Block me off this Sunday</button>
+          <button onclick="assistQuick('What jobs do I have today?')" class="qcmd">What jobs do I have today?</button>
+          <button onclick="assistQuick('Book Mrs Williams, Lewes to Gatwick, tomorrow 4:30am, cash, 1 passenger')" class="qcmd">Book Mrs Williams, Lewes to Gatwick, tomorrow 4:30am, cash</button>
+          <button onclick="assistQuick('What is the fare from Brighton to Heathrow at 3am?')" class="qcmd">Fare from Brighton to Heathrow at 3am?</button>
+          <button onclick="assistQuick('Block me off this Sunday')" class="qcmd">Block me off this Sunday</button>
         </div>
       </div>
     </div>
@@ -315,18 +427,18 @@ body{font-family:var(--sans);font-weight:300;color:var(--text);background:var(--
       <div class="sec-sub">Is today's schedule worth it?</div>
 
       <div style="display:flex;gap:.7rem;align-items:center;margin-bottom:.85rem;flex-wrap:wrap">
-        <input type="date" id="sd-date" style="font-family:var(--sans);font-size:.82rem;font-weight:300;color:var(--navy);background:var(--white);border:1px solid var(--rule);padding:.6rem .85rem;outline:none;flex:1;min-width:150px;-webkit-appearance:none">
-        <input id="sd-loc" placeholder="Your location now" style="font-family:var(--sans);font-size:.82rem;font-weight:300;color:var(--navy);background:var(--white);border:1px solid var(--rule);padding:.6rem .85rem;outline:none;width:150px;-webkit-appearance:none" value="Horsham">
-        <button onclick="runSmartDay()" id="sd-btn" style="font-family:var(--sans);font-size:.62rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;background:var(--navy);color:var(--white);border:none;padding:.65rem 1.2rem;cursor:pointer;min-height:42px;white-space:nowrap">Score Day</button>
-        <button onclick="loadSample()" style="font-family:var(--sans);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;background:transparent;color:var(--text-light);border:1px solid var(--rule);padding:.65rem .9rem;cursor:pointer;min-height:42px;white-space:nowrap">Example</button>
+        <input type="date" id="sd-date" style="font-family:var(--sans);font-size:.82rem;font-weight:300;color:#fff;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);padding:.6rem .85rem;outline:none;flex:1;min-width:150px;-webkit-appearance:none">
+        <input id="sd-loc" placeholder="Your location now" style="font-family:var(--sans);font-size:.82rem;font-weight:300;color:#fff;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);padding:.6rem .85rem;outline:none;width:150px;-webkit-appearance:none" value="Horsham">
+        <button onclick="runSmartDay()" id="sd-btn" class="ibtn-primary" style="white-space:nowrap">Score Day</button>
+        <button onclick="loadSample()" class="ibtn-ghost" style="white-space:nowrap">Example</button>
       </div>
 
       <div class="card" style="margin-bottom:.85rem">
-        <div class="ch">Bookings <button onclick="addSDJob()" style="font-family:var(--sans);font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;background:var(--navy);color:var(--white);border:none;padding:.3rem .7rem;cursor:pointer">+ Add</button></div>
-        <div id="sd-jobs"><div style="padding:1rem 1.1rem;font-size:.78rem;color:var(--text-light);text-align:center">Load example or add bookings</div></div>
+        <div class="ch">Bookings <button onclick="addSDJob()" class="ibtn-sm">+ Add</button></div>
+        <div id="sd-jobs"><div style="padding:1rem 1.1rem;font-size:.78rem;color:rgba(255,255,255,.4);text-align:center">Load example or add bookings</div></div>
       </div>
 
-      <div id="sd-loading" style="display:none;text-align:center;padding:2.5rem;font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--text-light);animation:blink 1.2s ease infinite">Scoring your day...</div>
+      <div id="sd-loading" style="display:none;text-align:center;padding:2.5rem;font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.4);animation:blink 1.2s ease infinite">Scoring your day...</div>
 
       <div id="sd-output" style="display:none">
         <div id="sd-scorecard" style="margin-bottom:.85rem"></div>
@@ -336,24 +448,24 @@ body{font-family:var(--sans);font-weight:300;color:var(--text);background:var(--
         </div>
         <div class="card">
           <div class="ch">Recommendation <span style="display:inline-flex;align-items:center;gap:.35rem;font-size:.52rem;color:var(--gold)"><span style="width:5px;height:5px;border-radius:50%;background:var(--gold);display:inline-block;animation:blink 2s infinite"></span>Claude</span></div>
-          <div class="cb" style="padding-top:.9rem;padding-bottom:1rem"><div id="sd-rec" style="font-size:.84rem;color:var(--navy);font-weight:300;line-height:1.85;white-space:pre-wrap"></div></div>
+          <div class="cb" style="padding-top:.9rem;padding-bottom:1rem"><div id="sd-rec" style="font-size:.84rem;color:rgba(255,255,255,.65);font-weight:300;line-height:1.85;white-space:pre-wrap"></div></div>
         </div>
       </div>
     </div>
 
-    <!-- Earnings (shared) -->
+    <!-- Earnings -->
     <div class="pg" id="pg-earnings">
       <div class="sec-title">Your <em>Earnings</em></div>
       <div class="sec-sub">Weekly summary</div>
-      <div style="background:var(--navy-deep);padding:1.5rem;margin-bottom:.85rem;position:relative;overflow:hidden">
+      <div style="background:rgba(255,255,255,.03);padding:1.5rem;margin-bottom:.85rem;position:relative;overflow:hidden">
         <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(-45deg,transparent,transparent 60px,rgba(184,152,90,.02) 60px,rgba(184,152,90,.02) 61px);pointer-events:none"></div>
-        <span style="font-size:.52rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(248,245,239,.3);margin-bottom:.2rem;display:block;position:relative">This Week · 24–30 Mar</span>
+        <span style="font-size:.52rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:.2rem;display:block;position:relative">This Week · 24–30 Mar</span>
         <span style="font-family:var(--serif);font-size:3rem;color:var(--gold);line-height:1;display:block;position:relative">£318.75</span>
-        <div style="font-size:.72rem;color:rgba(248,245,239,.45);font-weight:300;margin-top:.3rem;position:relative">Next payment Monday 31 March</div>
+        <div style="font-size:.72rem;color:rgba(255,255,255,.45);font-weight:300;margin-top:.3rem;position:relative">Next payment Monday 31 March</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(184,152,90,.1);margin-top:1.2rem;border:1px solid rgba(184,152,90,.1);position:relative">
-          <div style="padding:.7rem;background:var(--navy-deep);text-align:center"><div style="font-family:var(--serif);font-size:1.3rem;color:var(--white);font-weight:300">5</div><div style="font-size:.48rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(248,245,239,.3);margin-top:.15rem">Jobs</div></div>
-          <div style="padding:.7rem;background:var(--navy-deep);text-align:center"><div style="font-family:var(--serif);font-size:1.3rem;color:var(--white);font-weight:300">£63.75</div><div style="font-size:.48rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(248,245,239,.3);margin-top:.15rem">Avg</div></div>
-          <div style="padding:.7rem;background:var(--navy-deep);text-align:center"><div style="font-family:var(--serif);font-size:1.3rem;color:var(--white);font-weight:300">182</div><div style="font-size:.48rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(248,245,239,.3);margin-top:.15rem">Miles</div></div>
+          <div style="padding:.7rem;background:rgba(13,21,32,.8);text-align:center"><div style="font-family:var(--serif);font-size:1.3rem;color:#fff;font-weight:300">5</div><div style="font-size:.48rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:.15rem">Jobs</div></div>
+          <div style="padding:.7rem;background:rgba(13,21,32,.8);text-align:center"><div style="font-family:var(--serif);font-size:1.3rem;color:#fff;font-weight:300">£63.75</div><div style="font-size:.48rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:.15rem">Avg</div></div>
+          <div style="padding:.7rem;background:rgba(13,21,32,.8);text-align:center"><div style="font-family:var(--serif);font-size:1.3rem;color:#fff;font-weight:300">182</div><div style="font-size:.48rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:.15rem">Miles</div></div>
         </div>
       </div>
       <div class="card">
@@ -368,17 +480,14 @@ body{font-family:var(--sans);font-weight:300;color:var(--text);background:var(--
 
   </div><!-- /page-scroll -->
 
-  <!-- BOTTOM NAV — changes with mode -->
+  <!-- BOTTOM NAV -->
   <div class="bottom-nav" id="bottom-nav">
-    <!-- Drive nav -->
     <button class="bn on" id="bn-today" onclick="goPage('today',this)"><div class="bn-bar"></div><div class="bn-label">Today</div></button>
     <button class="bn" id="bn-offered" onclick="goPage('offered',this)"><div class="bn-bar"></div><div class="bn-label">Offered</div><div class="bn-dot" id="offered-dot"></div></button>
     <button class="bn" id="bn-tesla" onclick="goPage('tesla',this)"><div class="bn-bar"></div><div class="bn-label">Tesla</div></button>
-    <!-- Admin nav (hidden in drive mode) -->
     <button class="bn" id="bn-inbox" onclick="goPage('inbox',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Inbox</div><div class="bn-dot" id="inbox-dot">2</div></button>
     <button class="bn" id="bn-assistant" onclick="goPage('assistant',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Assistant</div></button>
     <button class="bn" id="bn-smart" onclick="goPage('smart',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Smart Day</div></button>
-    <!-- Shared -->
     <button class="bn" id="bn-earnings" onclick="goPage('earnings',this)"><div class="bn-bar"></div><div class="bn-label">Earnings</div></button>
   </div>
 
@@ -392,7 +501,7 @@ body{font-family:var(--sans);font-weight:300;color:var(--text);background:var(--
   <div class="nb-sub" id="nb-sub"></div>
   <div style="position:absolute;bottom:2rem;left:0;right:0;text-align:center">
     <div style="font-family:var(--serif);font-size:1.1rem;font-weight:300;letter-spacing:.12em;color:var(--gold);margin-bottom:.2rem">Westmere</div>
-    <div style="font-size:.48rem;font-weight:500;letter-spacing:.3em;text-transform:uppercase;color:var(--text-light)">Private Hire · Sussex</div>
+    <div style="font-size:.48rem;font-weight:500;letter-spacing:.3em;text-transform:uppercase;color:rgba(255,255,255,.4)">Private Hire · Sussex</div>
   </div>
 </div>
 
@@ -510,7 +619,7 @@ function buildCard(j,isOffered){
   var links='<div class="jc-links"><button class="jl" onclick="showNB(\''+j.name.replace(/'/g,"\\'")+'\',\''+j.fare+'\')">Name Board</button><a class="jl" href="https://maps.google.com/?q='+encodeURIComponent(j.dest)+'" target="_blank">Maps</a><a class="jl" href="waze://?q='+encodeURIComponent(j.dest)+'" target="_blank">Waze</a>'+(j.flight?'<a class="jl" href="https://www.flightradar24.com/data/flights/'+j.flight.toLowerCase()+'" target="_blank">Flight</a>':'')+'</div>';
   return '<div class="job-card '+cls+'" id="jc-'+j.id+'"><div class="jc-bar"></div>'
     +'<div class="jc-header"><div class="jc-time">'+j.time+'</div><div><div class="jc-name">'+j.name+'</div><div class="jc-pax">'+j.pax+' pax'+(j.bags?' · '+j.bags+' bag'+(j.bags>1?'s':''):'')+'</div></div></div>'
-    +'<div class="jc-details"><div class="jd-row"><span class="jd-key">Pickup</span><span class="jd-val">'+j.pickup+'</span></div><div class="jd-row"><span class="jd-key">Drop-off</span><span class="jd-val">'+j.dest+'</span></div>'+(j.flight?'<div class="jd-row"><span class="jd-key">Flight</span><span class="jd-val">'+fb+'</span></div>':'')+'<div class="jd-row"><span class="jd-key">Fare</span><span class="jd-val accent">£'+j.fare+' · '+j.payment+'</span></div>'+(j.note?'<div class="jd-row"><span class="jd-key">Note</span><span class="jd-val" style="color:var(--text-light);font-size:.78rem">'+j.note+'</span></div>':'')+'</div>'
+    +'<div class="jc-details"><div class="jd-row"><span class="jd-key">Pickup</span><span class="jd-val">'+j.pickup+'</span></div><div class="jd-row"><span class="jd-key">Drop-off</span><span class="jd-val">'+j.dest+'</span></div>'+(j.flight?'<div class="jd-row"><span class="jd-key">Flight</span><span class="jd-val">'+fb+'</span></div>':'')+'<div class="jd-row"><span class="jd-key">Fare</span><span class="jd-val accent">£'+j.fare+' · '+j.payment+'</span></div>'+(j.note?'<div class="jd-row"><span class="jd-key">Note</span><span class="jd-val" style="color:rgba(255,255,255,.4);font-size:.78rem">'+j.note+'</span></div>':'')+'</div>'
     +contact+actions+(!isDone?links:'')+'</div>';
 }
 
@@ -551,7 +660,7 @@ function buildOffered(){
     // Score runs silently in background — only surfaces a conflict alert if timing clashes
     scoreJob(j);
     var conflict=checkConflict(j);
-    var alertBanner=conflict?'<div style="padding:.6rem 1.1rem;background:var(--amber-bg);border-bottom:1px solid #e8d098;font-size:.74rem;color:var(--amber);font-weight:300">Close booking: '+conflict+'</div>':'';
+    var alertBanner=conflict?'<div style="padding:.6rem 1.1rem;background:var(--amber-bg);border-bottom:1px solid rgba(184,152,90,.25);font-size:.74rem;color:var(--amber);font-weight:300">Close booking: '+conflict+'</div>':'';
     return alertBanner+buildCard(j,true)+'<div class="offer-btns"><button class="btn-accept" onclick="acceptJob(\''+j.id+'\')">Accept</button><button class="btn-decline" onclick="declineJob(\''+j.id+'\')">Decline</button></div>';
   }).join('');
 }
@@ -583,16 +692,16 @@ function showNB(name,fare){document.getElementById('nb-name').textContent=name;d
 function refreshTesla(){TESLA.battery=Math.max(10,Math.min(100,TESLA.battery-Math.floor(Math.random()*3)));TESLA.rangeMiles=Math.round(TESLA.battery*(218/78));updateTeslaUI();buildTeslaRC();showToast('Tesla refreshed');}
 function updateTeslaUI(){
   var p=document.getElementById('tesla-pct');var r=document.getElementById('tesla-range');var b=document.getElementById('tesla-bar');var s=document.getElementById('tesla-status');
-  if(p)p.innerHTML=TESLA.battery+'<span style="font-size:.85rem;font-family:var(--sans);font-weight:300;color:rgba(248,245,239,.4)">%</span>';
-  if(r)r.innerHTML=TESLA.rangeMiles+' <span style="font-size:.85rem;font-family:var(--sans);font-weight:300;color:rgba(248,245,239,.4)">mi</span>';
+  if(p)p.innerHTML=TESLA.battery+'<span style="font-size:.85rem;font-family:var(--sans);font-weight:300;color:rgba(255,255,255,.4)">%</span>';
+  if(r)r.innerHTML=TESLA.rangeMiles+' <span style="font-size:.85rem;font-family:var(--sans);font-weight:300;color:rgba(255,255,255,.4)">mi</span>';
   if(b){b.style.width=TESLA.battery+'%';b.style.background=TESLA.battery>50?'linear-gradient(to right,var(--gold),#7ecfa0)':TESLA.battery>25?'linear-gradient(to right,var(--amber),var(--gold))':'linear-gradient(to right,var(--red),var(--amber))';}
   if(s)s.textContent=TESLA.status+' · '+TESLA.location;
 }
 function buildTeslaRC(){
   var el=document.getElementById('tesla-rc');if(!el)return;
-  if(!TODAY_JOBS.length){el.innerHTML='<div style="padding:.82rem 1rem;font-size:.78rem;color:var(--text-light)">No jobs today</div>';return;}
+  if(!TODAY_JOBS.length){el.innerHTML='<div style="padding:.82rem 1rem;font-size:.78rem;color:rgba(255,255,255,.4)">No jobs today</div>';return;}
   var cum=0,prev=TESLA.location;
-  el.innerHTML=TODAY_JOBS.map(function(j){var dead=getDist(prev,j.pickup);var jmi=getDist(j.pickup,j.dest);cum+=dead+jmi;prev=j.dest;var left=Math.max(0,TESLA.rangeMiles-cum);var ok=TESLA.rangeMiles>cum+20;var col=ok?'var(--green)':left<15?'var(--red)':'var(--amber)';var lbl=ok?'Range OK':left<15?'Charge first':'Low';return '<div style="display:flex;justify-content:space-between;align-items:center;padding:.8rem 1rem;border-bottom:1px solid rgba(221,216,206,.4)"><div><div style="font-size:.82rem;font-weight:500;color:var(--navy)">'+j.time+' · '+j.name+'</div><div style="font-size:.68rem;color:var(--text-light);margin-top:.08rem">~'+cum+' mi cumulative · '+left+' mi after</div></div><div style="font-size:.56rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .65rem;border:1px solid '+col+';color:'+col+'">'+lbl+'</div></div>';}).join('');
+  el.innerHTML=TODAY_JOBS.map(function(j){var dead=getDist(prev,j.pickup);var jmi=getDist(j.pickup,j.dest);cum+=dead+jmi;prev=j.dest;var left=Math.max(0,TESLA.rangeMiles-cum);var ok=TESLA.rangeMiles>cum+20;var col=ok?'var(--green)':left<15?'var(--red)':'var(--amber)';var lbl=ok?'Range OK':left<15?'Charge first':'Low';return '<div style="display:flex;justify-content:space-between;align-items:center;padding:.8rem 1rem;border-bottom:1px solid rgba(255,255,255,.06)"><div><div style="font-size:.82rem;font-weight:500;color:#fff">'+j.time+' · '+j.name+'</div><div style="font-size:.68rem;color:rgba(255,255,255,.4);margin-top:.08rem">~'+cum+' mi cumulative · '+left+' mi after</div></div><div style="font-size:.56rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .65rem;border:1px solid '+col+';color:'+col+'">'+lbl+'</div></div>';}).join('');
 }
 
 // ── INBOX ─────────────────────────────────────────────────────────────────────
@@ -609,7 +718,7 @@ function renderInbox(){
     if(m.analysis&&m.analysis.conflict){extract+='<div class="msg-conflict">Conflict: '+m.analysis.conflictReason+'</div>';}
     var btns='';
     if(m.status==='flagged'){btns='<div class="msg-actions"><button class="ma-btn ma-accept" onclick="confirmMsg(\''+m.id+'\')">Accept — add to calendar</button><button class="ma-btn ma-pass" onclick="passMsg(\''+m.id+'\')">Pass to operator</button></div>';}
-    return '<div class="msg-item"><div class="msg-header"><div><div class="msg-from">'+m.from+'</div><div style="font-size:.62rem;color:var(--text-light);margin-top:.1rem">'+m.phone+' · Today '+m.time+'</div></div><span class="msg-pill '+pCls+'">'+pTxt+'</span></div><div class="msg-text">"'+m.text+'"</div>'+extract+btns+'</div>';
+    return '<div class="msg-item"><div class="msg-header"><div><div class="msg-from">'+m.from+'</div><div style="font-size:.62rem;color:rgba(255,255,255,.4);margin-top:.1rem">'+m.phone+' · Today '+m.time+'</div></div><span class="msg-pill '+pCls+'">'+pTxt+'</span></div><div class="msg-text">"'+m.text+'"</div>'+extract+btns+'</div>';
   }).join('');
 }
 function confirmMsg(id){var m=INBOX_MSGS.find(function(x){return x.id===id;});if(!m)return;m.status='accepted';renderInbox();showToast('Booking confirmed — added to calendar');}
@@ -674,9 +783,9 @@ function toggleVoice(){
   var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){showToast('Voice not supported — use Chrome or Safari');return;}
   voiceRec=new SR();voiceRec.lang='en-GB';voiceRec.continuous=false;voiceRec.interimResults=false;
-  voiceRec.onstart=function(){VOICE_ACTIVE=true;btn.style.background='var(--gold)';btn.style.borderColor='var(--gold)';btn.style.color='var(--navy-deep)';lbl.textContent='Listening — tap to stop';};
-  voiceRec.onresult=function(e){var t=e.results[0][0].transcript;VOICE_ACTIVE=false;btn.style.background='var(--navy)';btn.style.borderColor='rgba(184,152,90,.2)';btn.style.color='var(--white)';lbl.textContent='Tap to Speak';setTimeout(function(){sendToAssist(t);},300);};
-  voiceRec.onerror=voiceRec.onend=function(){VOICE_ACTIVE=false;btn.style.background='var(--navy)';btn.style.borderColor='rgba(184,152,90,.2)';btn.style.color='var(--white)';lbl.textContent='Tap to Speak';};
+  voiceRec.onstart=function(){VOICE_ACTIVE=true;btn.style.background='var(--gold)';btn.style.borderColor='var(--gold)';btn.style.color='var(--navy)';lbl.textContent='Listening — tap to stop';};
+  voiceRec.onresult=function(e){var t=e.results[0][0].transcript;VOICE_ACTIVE=false;btn.style.background='rgba(255,255,255,.04)';btn.style.borderColor='rgba(184,152,90,.2)';btn.style.color='rgba(255,255,255,.65)';lbl.textContent='Tap to Speak';setTimeout(function(){sendToAssist(t);},300);};
+  voiceRec.onerror=voiceRec.onend=function(){VOICE_ACTIVE=false;btn.style.background='rgba(255,255,255,.04)';btn.style.borderColor='rgba(184,152,90,.2)';btn.style.color='rgba(255,255,255,.65)';lbl.textContent='Tap to Speak';};
   voiceRec.start();
 }
 
@@ -691,8 +800,8 @@ var SAMPLE=[
 function loadSample(){SD_JOBS=SAMPLE.slice();renderSDJobs();}
 function renderSDJobs(){
   var el=document.getElementById('sd-jobs');if(!el)return;
-  if(!SD_JOBS.length){el.innerHTML='<div style="padding:1rem 1.1rem;font-size:.78rem;color:var(--text-light);text-align:center">No bookings — tap Example or add manually</div>';return;}
-  el.innerHTML=SD_JOBS.map(function(j){return '<div style="display:flex;align-items:center;gap:.8rem;padding:.82rem 1.1rem;border-bottom:1px solid rgba(221,216,206,.4)"><div style="font-family:var(--serif);font-size:1rem;color:var(--gold);flex-shrink:0;width:44px">'+j.time+'</div><div style="flex:1"><div style="font-size:.84rem;font-weight:500;color:var(--navy)">'+j.name+'</div><div style="font-size:.7rem;color:var(--text-light)">'+j.pickup+' → '+j.dest+'</div></div><div style="font-family:var(--serif);font-size:1.1rem;color:var(--gold)">£'+j.fare+'</div><button onclick="SD_JOBS=SD_JOBS.filter(function(x){return x.id!==\''+j.id+'\'});renderSDJobs()" style="background:none;border:1px solid var(--rule);color:var(--text-light);font-size:.58rem;padding:.22rem .55rem;cursor:pointer;font-family:var(--sans)">✕</button></div>';}).join('');
+  if(!SD_JOBS.length){el.innerHTML='<div style="padding:1rem 1.1rem;font-size:.78rem;color:rgba(255,255,255,.4);text-align:center">No bookings — tap Example or add manually</div>';return;}
+  el.innerHTML=SD_JOBS.map(function(j){return '<div class="sd-row"><div class="sd-time">'+j.time+'</div><div class="sd-info"><div class="sd-name">'+j.name+'</div><div class="sd-route">'+j.pickup+' → '+j.dest+'</div></div><div class="sd-fare">£'+j.fare+'</div><button onclick="SD_JOBS=SD_JOBS.filter(function(x){return x.id!==\''+j.id+'\'});renderSDJobs()" class="sd-del">✕</button></div>';}).join('');
 }
 function addSDJob(){var t=prompt('Time (HH:MM):','09:00');if(!t)return;var pu=prompt('Pickup:','Lewes');if(!pu)return;var dst=prompt('Destination:','Gatwick');if(!dst)return;var f=parseFloat(prompt('Fare £:','75')||0);var n=prompt('Name:','Customer')||'Customer';SD_JOBS.push({id:'sd'+Date.now(),time:t,name:n,pickup:pu,dest:dst,pax:1,fare:f,payment:'Cash'});renderSDJobs();}
 function tmins(t){var p=t.split(':');return parseInt(p[0])*60+parseInt(p[1]);}
@@ -718,7 +827,7 @@ async function runSmartDay(){
   var retHome=getDist(prev,HOME_BASE);
   var dayH=((tmins(sorted[sorted.length-1].time)+45)-tmins(sorted[0].time))/60;
   // Scorecard
-  document.getElementById('sd-scorecard').innerHTML='<div class="scorecard"><div class="sc-stat"><div class="sc-val" style="color:var(--navy)">£'+total+'</div><div class="sc-label">Gross</div></div><div class="sc-stat"><div class="sc-val" style="color:'+(netTotal>150?'var(--green)':netTotal>80?'var(--amber)':'var(--red)')+'">£'+netTotal+'</div><div class="sc-label">Net est.</div></div><div class="sc-stat"><div class="sc-val" style="color:var(--text-mid)">'+Math.round(deadTotal+retHome)+' mi</div><div class="sc-label">Dead miles</div></div><div class="sc-stat"><div class="sc-val" style="color:var(--navy)">'+dayH.toFixed(1)+'h</div><div class="sc-label">Day length</div></div><div class="sc-stat"><div class="sc-val" style="color:'+(netTotal/dayH>20?'var(--green)':'var(--amber)')+'">£'+Math.round(netTotal/dayH)+'</div><div class="sc-label">Net/hr</div></div><div class="sc-stat"><div class="sc-val" style="color:var(--text-mid)">'+retHome+' mi</div><div class="sc-label">Home</div></div></div>';
+  document.getElementById('sd-scorecard').innerHTML='<div class="scorecard"><div class="sc-stat"><div class="sc-val">£'+total+'</div><div class="sc-label">Gross</div></div><div class="sc-stat"><div class="sc-val" style="color:'+(netTotal>150?'var(--green)':netTotal>80?'var(--amber)':'var(--red)')+'">£'+netTotal+'</div><div class="sc-label">Net est.</div></div><div class="sc-stat"><div class="sc-val" style="color:rgba(255,255,255,.65)">'+Math.round(deadTotal+retHome)+' mi</div><div class="sc-label">Dead miles</div></div><div class="sc-stat"><div class="sc-val">'+dayH.toFixed(1)+'h</div><div class="sc-label">Day length</div></div><div class="sc-stat"><div class="sc-val" style="color:'+(netTotal/dayH>20?'var(--green)':'var(--amber)')+'">£'+Math.round(netTotal/dayH)+'</div><div class="sc-label">Net/hr</div></div><div class="sc-stat"><div class="sc-val" style="color:rgba(255,255,255,.65)">'+retHome+' mi</div><div class="sc-label">Home</div></div></div>';
   // Verdicts
   document.getElementById('sd-verdicts').innerHTML=segs.map(function(s){return '<div class="verdict-row"><div class="vr-info"><div class="vr-job">'+s.j.time+' · '+s.j.name+'</div><div class="vr-detail">'+s.j.pickup+' → '+s.j.dest+(s.rush?' · Rush hour':'')+'</div><div class="vr-net">'+s.dead+' dead mi · net £'+s.net+'</div></div><div class="verdict-chip" style="color:'+s.col+';border-color:'+s.col+'">'+s.v+'</div></div>';}).join('');
   // Claude recommendation
@@ -741,6 +850,28 @@ function showToast(msg){var el=document.getElementById('toast');document.getElem
 document.getElementById('sd-date').value=new Date().toISOString().split('T')[0];
 setMode('drive');
 buildToday();
+</script>
+
+<!-- WhatsApp FAB -->
+<a href="https://wa.me/447930342593?text=Hi" target="_blank" class="wa-fab"><svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg></a>
+
+<footer style="background:transparent;padding:1.5rem 6%;border-top:none;position:relative;z-index:1">
+  <div style="max-width:960px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem">
+    <span style="font-family:var(--serif);font-size:.85rem;font-weight:500;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.4)">Westmere</span>
+    <ul style="display:flex;gap:1.4rem;list-style:none;flex-wrap:wrap">
+      <li><a href="index.html" style="text-decoration:none;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.4)">Home</a></li>
+      <li><a href="westmere-fares.html" style="text-decoration:none;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.4)">Airport Fares</a></li>
+      <li><a href="westmere-coverage.html" style="text-decoration:none;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.4)">Coverage</a></li>
+      <li><a href="westmere-fleet.html" style="text-decoration:none;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.4)">Fleet</a></li>
+      <li><a href="westmere-about.html" style="text-decoration:none;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.4)">About</a></li>
+    </ul>
+    <span style="font-size:.65rem;color:rgba(255,255,255,.3);font-weight:300">Licensed by Lewes District Council</span>
+  </div>
+</footer>
+<script>
+window.addEventListener('scroll',function(){var n=document.getElementById('nav');if(n)n.classList.toggle('solid',window.scrollY>50);},{passive:true});
+function toggleMenu(){var m=document.getElementById('mmenu');if(m){m.classList.toggle('open');document.body.style.overflow=m.classList.contains('open')?'hidden':'';}}
+function closeMenu(){var m=document.getElementById('mmenu');if(m){m.classList.remove('open');document.body.style.overflow='';}}
 </script>
 </body>
 </html>

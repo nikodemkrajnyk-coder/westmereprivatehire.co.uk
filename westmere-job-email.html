@@ -4,114 +4,112 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Westmere — New Job</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',Arial,sans-serif;background:#f0ece4;padding:1rem}
-.wrap{max-width:540px;margin:0 auto;background:#ffffff;border-radius:6px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.12)}
-
+:root{--navy:#111D2C;--gold:#B8985A;--gold2:#C9A96E;--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif;--green:#2D6E47;}
+body{font-family:var(--sans);background:#0d1520;padding:1rem;color:#fff;min-height:100vh}
+body::before{content:"";position:fixed;inset:0;background:rgba(17,29,44,.3);z-index:0;pointer-events:none}
+/* Toggle buttons */
+.toggle-row{max-width:540px;margin:0 auto 1rem;display:flex;gap:.5rem;flex-wrap:wrap;position:relative;z-index:1}
+/* Email wrap */
+.wrap{max-width:540px;margin:0 auto;background:rgba(17,29,44,.75);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.08);overflow:hidden;position:relative;z-index:1}
 /* Header */
-.hd{background:#1c2a3e;padding:1.2rem 1.6rem;display:flex;align-items:center;justify-content:space-between}
-.hd-logo{font-size:1.4rem;font-weight:700;letter-spacing:.12em;color:#ece8df;text-transform:uppercase}
-.hd-logo span{color:#c9a84c}
-.hd-tag{font-size:.6rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:#c9a84c;
-  border:1px solid #8a6830;padding:.22rem .7rem;border-radius:2px}
-
-/* Alert strip */
-.alert{background:#c9a84c;padding:.7rem 1.6rem;text-align:center;
-  font-size:.72rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#1c2a3e}
-
+.hd{background:rgba(17,29,44,.9);padding:1.2rem 1.6rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(184,152,90,.15)}
+.hd-logo{font-family:var(--serif);font-size:1.4rem;font-weight:500;letter-spacing:.18em;color:#fff;text-transform:uppercase}
+.hd-logo span{color:var(--gold)}
+.hd-tag{font-size:.6rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);border:1px solid rgba(184,152,90,.4);padding:.22rem .7rem}
+/* Alert */
+.alert{background:var(--gold);padding:.7rem 1.6rem;text-align:center;font-size:.72rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--navy)}
 /* Body */
 .body{padding:1.4rem 1.6rem}
-
 /* Ref row */
-.ref-row{display:flex;align-items:center;justify-content:space-between;
-  padding-bottom:1rem;margin-bottom:1rem;border-bottom:1px solid #ede9e2}
-.ref-num{font-size:1.1rem;font-weight:600;letter-spacing:.1em;color:#1c2a3e}
-.ref-date{font-size:.75rem;color:#888}
-
+.ref-row{display:flex;align-items:center;justify-content:space-between;padding-bottom:1rem;margin-bottom:1rem;border-bottom:1px solid rgba(255,255,255,.08)}
+.ref-num{font-size:1.1rem;font-weight:600;letter-spacing:.1em;color:#fff}
+.ref-date{font-size:.75rem;color:rgba(255,255,255,.45)}
 /* Section title */
-.st{font-size:.58rem;font-weight:600;letter-spacing:.22em;text-transform:uppercase;
-  color:#c9a84c;margin-bottom:.7rem;padding-bottom:.4rem;border-bottom:1px solid #f0ece4}
-
+.st{font-size:.58rem;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:.7rem;padding-bottom:.4rem;border-bottom:1px solid rgba(255,255,255,.06)}
 /* Info rows */
 .info-block{margin-bottom:1.1rem}
-.ir{display:flex;padding:.38rem 0;border-bottom:1px solid #f7f4ef}
+.ir{display:flex;padding:.38rem 0;border-bottom:1px solid rgba(255,255,255,.04)}
 .ir:last-child{border-bottom:none}
-.ik{font-size:.75rem;color:#888;width:38%;flex-shrink:0}
-.iv{font-size:.8rem;color:#1c2a3e;font-weight:500;flex:1;line-height:1.4}
-.iv.big{font-size:1rem;font-weight:600;color:#1c2a3e}
-.iv.gold{color:#c9a84c;font-weight:600}
-.iv.green{color:#16a34a;font-weight:500}
-.iv.orange{color:#ea580c;font-weight:500}
-
+.ik{font-size:.75rem;color:rgba(255,255,255,.4);width:38%;flex-shrink:0}
+.iv{font-size:.8rem;color:#fff;font-weight:400;flex:1;line-height:1.4}
+.iv.big{font-size:1rem;font-weight:600;color:#fff}
+.iv.gold{color:var(--gold);font-weight:600}
+.iv.green{color:#4ADE80;font-weight:500}
+.iv.orange{color:#FB923C;font-weight:500}
 /* Route visual */
-.route-box{background:#f7f4ef;border-radius:4px;padding:1rem;margin-bottom:1.1rem}
+.route-box{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);padding:1rem;margin-bottom:1.1rem}
 .route-row{display:flex;align-items:flex-start;gap:.8rem}
 .route-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:.3rem}
-.rd-pu{background:#16a34a}
-.rd-do{background:#ef4444}
-.route-connector{width:10px;border-left:2px dashed #ccc;height:14px;margin:.1rem 0 .1rem 4px}
-.route-addr{font-size:.85rem;font-weight:500;color:#1c2a3e;line-height:1.4}
-.route-sub{font-size:.7rem;color:#888;margin-top:.1rem}
-
-/* Big action buttons */
+.rd-pu{background:#4ADE80}
+.rd-do{background:#F87171}
+.route-connector{width:10px;border-left:2px dashed rgba(255,255,255,.2);height:14px;margin:.1rem 0 .1rem 4px}
+.route-addr{font-size:.85rem;font-weight:500;color:#fff;line-height:1.4}
+.route-sub{font-size:.7rem;color:rgba(255,255,255,.4);margin-top:.1rem}
+/* Action buttons */
 .btn-row{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.7rem}
 .btn-row.single{grid-template-columns:1fr}
-.abtn{display:flex;align-items:center;gap:.7rem;padding:.85rem 1rem;border-radius:4px;
-  text-decoration:none;border:1px solid #ddd;transition:opacity .2s}
-.abtn:hover{opacity:.85}
-.abtn-waze{background:#f7f4ef;border-color:#dbd7d0}
-.abtn-mapto{background:#e8f5e9;border-color:#c3e6cb}
-.abtn-flight{background:#e3f2fd;border-color:#bbdefb}
-.abtn-cal{background:#fff8e1;border-color:#ffe082}
-.abtn-wa{background:#e8f5e9;border-color:#a5d6a7}
+.abtn{display:flex;align-items:center;gap:.7rem;padding:.85rem 1rem;text-decoration:none;border:1px solid rgba(255,255,255,.1);transition:opacity .2s;background:rgba(255,255,255,.04)}
+.abtn:hover{opacity:.85;border-color:var(--gold)}
+.abtn-waze{background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.2)}
+.abtn-mapto{background:rgba(74,222,128,.06);border-color:rgba(74,222,128,.15)}
+.abtn-flight{background:rgba(96,165,250,.06);border-color:rgba(96,165,250,.15)}
+.abtn-cal{background:rgba(251,191,36,.06);border-color:rgba(251,191,36,.15)}
+.abtn-wa{background:rgba(74,222,128,.06);border-color:rgba(37,211,102,.2)}
 .abtn-icon{font-size:1.4rem;flex-shrink:0}
-.abtn-body .abtn-title{font-size:.78rem;font-weight:600;color:#1c2a3e}
-.abtn-body .abtn-sub{font-size:.65rem;color:#888;margin-top:.06rem}
-
+.abtn-body .abtn-title{font-size:.78rem;font-weight:600;color:#fff}
+.abtn-body .abtn-sub{font-size:.65rem;color:rgba(255,255,255,.4);margin-top:.06rem}
 /* Flight panel */
-.flight-panel{background:#1c2a3e;border-radius:4px;padding:1rem;margin-bottom:1rem}
+.flight-panel{background:rgba(17,29,44,.8);border:1px solid rgba(184,152,90,.15);padding:1rem;margin-bottom:1rem}
 .fp-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem}
-.fp-title{font-size:.6rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#c9a84c}
-.fp-live{display:flex;align-items:center;gap:.3rem;font-size:.6rem;color:#22c55e}
-.fp-live .dot{width:5px;height:5px;border-radius:50%;background:#22c55e;animation:pulse 1.5s infinite}
+.fp-title{font-size:.6rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
+.fp-live{display:flex;align-items:center;gap:.3rem;font-size:.6rem;color:#4ADE80}
+.fp-live .dot{width:5px;height:5px;border-radius:50%;background:#4ADE80;animation:pulse 1.5s infinite}
 .fp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem}
-.fp-item .lbl{font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(236,232,223,.4);margin-bottom:.15rem}
-.fp-item .val{font-size:.85rem;color:#ece8df;font-weight:500}
-.fp-item .val.ok{color:#22c55e}
-.fp-item .val.late{color:#f97316}
+.fp-item .lbl{font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:.15rem}
+.fp-item .val{font-size:.85rem;color:#fff;font-weight:500}
+.fp-item .val.ok{color:#4ADE80}
+.fp-item .val.late{color:#FB923C}
 .fp-bar{margin-top:.8rem;background:rgba(255,255,255,.1);border-radius:10px;height:3px}
-.fp-prog{height:100%;border-radius:10px;background:linear-gradient(90deg,#c9a84c,#22c55e);width:15%}
-
+.fp-prog{height:100%;border-radius:10px;background:linear-gradient(90deg,var(--gold),#4ADE80);width:15%}
 /* Fare box */
-.fare-box{background:#1c2a3e;border-radius:4px;padding:.9rem 1rem;
-  display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
-.fare-label{font-size:.58rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:rgba(201,168,76,.7)}
-.fare-amt{font-size:1.8rem;font-weight:700;color:#c9a84c;letter-spacing:.05em}
-.fare-pay{font-size:.68rem;color:rgba(236,232,223,.5);margin-top:.1rem}
-
+.fare-box{background:rgba(17,29,44,.8);border:1px solid rgba(184,152,90,.15);padding:.9rem 1rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.fare-label{font-size:.58rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:rgba(184,152,90,.7)}
+.fare-amt{font-family:var(--serif);font-size:1.8rem;font-weight:300;color:var(--gold);letter-spacing:.05em}
+.fare-pay{font-size:.68rem;color:rgba(255,255,255,.4);margin-top:.1rem}
 /* Notes */
-.notes{background:#fffbf0;border-left:3px solid #c9a84c;padding:.8rem 1rem;
-  margin-bottom:1rem;border-radius:0 3px 3px 0;font-size:.78rem;color:#5a4010;line-height:1.7}
-.notes strong{color:#1c2a3e}
-
+.notes{background:rgba(184,152,90,.06);border-left:3px solid var(--gold);padding:.8rem 1rem;margin-bottom:1rem;font-size:.78rem;color:rgba(255,255,255,.7);line-height:1.7}
+.notes strong{color:#fff}
 /* Footer */
-.ft{background:#1c2a3e;padding:.9rem 1.6rem;text-align:center;
-  font-size:.65rem;color:rgba(236,232,223,.35);line-height:1.8}
-.ft a{color:#c9a84c;text-decoration:none}
-
+.ft{background:rgba(17,29,44,.8);padding:.9rem 1.6rem;text-align:center;border-top:1px solid rgba(255,255,255,.06);font-size:.65rem;color:rgba(255,255,255,.35);line-height:1.8}
+.ft a{color:var(--gold);text-decoration:none}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-
-/* Preview toggle */
-.preview-bar{background:#141820;padding:.6rem 1rem;text-align:center;margin-bottom:1rem;border-radius:4px;
-  font-size:.65rem;color:#58677a;letter-spacing:.15em;text-transform:uppercase}
-.preview-bar strong{color:#c9a84c}
+.preview-bar{background:rgba(255,255,255,.04);padding:.6rem 1rem;text-align:center;margin-bottom:1rem;border:1px solid rgba(255,255,255,.06);position:relative;z-index:1;font-size:.65rem;color:rgba(255,255,255,.35);letter-spacing:.15em;text-transform:uppercase}
+.preview-bar strong{color:var(--gold)}
 </style>
 </head>
 <body>
+<nav id="nav" style="position:fixed;top:0;left:0;right:0;z-index:100;padding:.9rem 6%;display:flex;align-items:center;justify-content:space-between;transition:background .3s">
+  <a href="index.html" style="text-decoration:none;display:flex;flex-direction:column;gap:.18rem">
+    <span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:1.15rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:#fff;line-height:1">Westmere</span>
+    <span style="font-size:.52rem;font-weight:300;letter-spacing:.3em;text-transform:uppercase;color:rgba(255,255,255,.45)">Private Hire &nbsp;&middot;&nbsp; Sussex</span>
+  </a>
+  <div style="display:flex;align-items:center;gap:1.6rem">
+    <a href="index.html" style="text-decoration:none;font-size:.72rem;font-weight:400;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.82)">Home</a>
+    <a href="westmere-fares.html" style="text-decoration:none;font-size:.72rem;font-weight:400;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.82)">Airport Fares</a>
+    <a href="westmere-coverage.html" style="text-decoration:none;font-size:.72rem;font-weight:400;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.82)">Coverage</a>
+    <a href="westmere-fleet.html" style="text-decoration:none;font-size:.72rem;font-weight:400;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.82)">Fleet</a>
+    <a href="westmere-about.html" style="text-decoration:none;font-size:.72rem;font-weight:400;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.82)">About</a>
+    <a href="index.html?skip=1" style="text-decoration:none;font-size:.72rem;font-weight:500;letter-spacing:.15em;text-transform:uppercase;background:#B8985A;color:#111D2C;padding:.4rem 1rem;border-radius:2px">Book Now</a>
+  </div>
+</nav>
 
-<div style="max-width:540px;margin:0 auto 1rem;display:flex;gap:.5rem;flex-wrap:wrap">
+
+<div class="toggle-row">
   <button onclick="setJob('airport-drop')" style="flex:1;padding:.5rem;background:#1c2a3e;color:#c9a84c;border:1px solid #c9a84c;border-radius:3px;cursor:pointer;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase">✈ Airport Drop-off</button>
   <button onclick="setJob('airport-pick')" style="flex:1;padding:.5rem;background:#141820;color:#7a8a9d;border:1px solid #1d2330;border-radius:3px;cursor:pointer;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase">✈ Airport Pickup</button>
   <button onclick="setJob('general')" style="flex:1;padding:.5rem;background:#141820;color:#7a8a9d;border:1px solid #1d2330;border-radius:3px;cursor:pointer;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase">🚗 General</button>
@@ -270,7 +268,7 @@ body{font-family:'DM Sans',Arial,sans-serif;background:#f0ece4;padding:1rem}
   <!-- FOOTER -->
   <div class="ft">
     Westmere Private Hire · Sussex<br>
-    <a href="westmere-booking.html">Booking System</a> ·
+    <a href="westmere-account.html">Booking System</a> ·
     <a href="westmere-account.html">Account Portal</a>
   </div>
 
@@ -476,6 +474,24 @@ function dlICS(encoded){
 document.getElementById('cal-modal').addEventListener('click', function(e){
   if(e.target===this) this.style.display='none';
 });
+</script>
+<footer style="background:transparent;padding:1.5rem 6%;border-top:none;position:relative;z-index:1">
+  <div class="foot-inner" style="max-width:960px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem">
+    <span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:.85rem;font-weight:500;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.4)">Westmere</span>
+    <ul style="display:flex;gap:1.4rem;list-style:none;flex-wrap:wrap">
+      <li><a href="index.html" style="text-decoration:none;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.4)">Home</a></li>
+      <li><a href="westmere-fares.html" style="text-decoration:none;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.4)">Airport Fares</a></li>
+      <li><a href="westmere-coverage.html" style="text-decoration:none;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.4)">Coverage</a></li>
+      <li><a href="westmere-fleet.html" style="text-decoration:none;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.4)">Fleet</a></li>
+    </ul>
+    <span style="font-size:.65rem;color:rgba(255,255,255,.3);font-weight:300">&copy; 2025 Westmere Private Hire Ltd</span>
+  </div>
+</footer>
+<a href="https://wa.me/447930342593?text=Hi" target="_blank" style="position:fixed;top:4.8rem;right:1.4rem;z-index:200;width:42px;height:42px;border-radius:50%;background:#25D366;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(37,211,102,.35);text-decoration:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg></a>
+<script>
+window.addEventListener('scroll',function(){var n=document.getElementById('nav');if(n)n.classList.toggle('solid',window.scrollY>50);},{passive:true});
+function toggleMenu(){var m=document.getElementById('mmenu');if(m){m.classList.toggle('open');document.body.style.overflow=m.classList.contains('open')?'hidden':'';}}
+function closeMenu(){var m=document.getElementById('mmenu');if(m){m.classList.remove('open');document.body.style.overflow='';}}
 </script>
 </body>
 </html>
