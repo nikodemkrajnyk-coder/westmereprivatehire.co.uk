@@ -756,19 +756,19 @@ select.fi option{background:var(--navy);color:#fff}
 <div class="toast" id="toast"><span class="ti">✓</span><span id="toast-msg"></span></div>
 
 <script>
-/* ── Fare config (homepage engine) ── */
+/* ── Fare config — out = town→airport (drop-off), ret = airport→town (pickup) ── */
 var CF={
-horsham:{ga:55,he:99.5,st:178,lo:120},
-lewes:{ga:68,he:121,st:199,lo:160},
-brighton:{ga:68,he:125,st:201.5,lo:160},
-crawley:{ga:32,he:82,st:160,lo:110},
-worthing:{ga:80,he:132,st:210,lo:170},
-haywards:{ga:48.5,he:105,st:182,lo:140},
-burgess:{ga:49.5,he:106,st:184,lo:145},
-seaford:{ga:79.5,he:132,st:215,lo:240},
-eastbourne:{ga:90.5,he:143,st:226,lo:260},
-uckfield:{ga:57.5,he:110.5,st:182,lo:180},
-eastgrinstead:{ga:42,he:90.5,st:163,lo:115}
+  brighton:{ga:{out:72,ret:68},he:{out:128,ret:133},st:{out:215,ret:220},lu:{out:205,ret:210},so:{out:152,ret:147},ci:{out:166,ret:171}},
+  lewes:{ga:{out:78,ret:74},he:{out:140,ret:145},st:{out:225,ret:230},lu:{out:215,ret:220},so:{out:160,ret:155},ci:{out:175,ret:180}},
+  horsham:{ga:{out:55,ret:50},he:{out:120,ret:125},st:{out:180,ret:185},lu:{out:155,ret:160},so:{out:135,ret:130},ci:{out:160,ret:165}},
+  crawley:{ga:{out:35,ret:32},he:{out:95,ret:100}},
+  worthing:{ga:{out:72,ret:68},he:{out:130,ret:135}},
+  haywards:{ga:{out:52,ret:48}},
+  burgess:{ga:{out:48,ret:44}},
+  eastbourne:{ga:{out:98,ret:94},he:{out:162,ret:167}},
+  seaford:{ga:{out:92,ret:88}},
+  uckfield:{ga:{out:62,ret:58}},
+  eastgrinstead:{ga:{out:42,ret:38}}
 };
 var APC={ga:[10,10],he:[7,10],st:[10,10],lu:[7,7],so:[5,5],ci:[8,8],lo:[0,0]};
 var APNAMES={ga:'gatwick',he:'heathrow',st:'stansted',lu:'luton',so:'southampton',ci:'cityairport',lo:'london'};
@@ -800,16 +800,19 @@ function geocode(a){
 }
 function _geocodeNom(a){return fetch('https://nominatim.openstreetmap.org/search?format=json&countrycodes=gb&limit=1&q='+encodeURIComponent(a),{headers:{'Accept-Language':'en'}}).then(function(r){return r.json();}).then(function(d){var r=d&&d[0]?{lat:parseFloat(d[0].lat),lon:parseFloat(d[0].lon)}:null;if(r)_gc[a]=r;return r;});}
 function haverMiles(a,b,c,d){var R=3958.8,dL=(c-a)*Math.PI/180,dn=(d-b)*Math.PI/180,x=Math.sin(dL/2)*Math.sin(dL/2)+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dn/2)*Math.sin(dn/2);return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
+var TOWN_CENTRE_RADIUS=3;
 function nearestTown(coord){var best=null,bd=999;Object.keys(TC).forEach(function(k){var d=haverMiles(coord.lat,coord.lon,TC[k].lat,TC[k].lon);if(d<bd){bd=d;best=k;}});return best;}
+function nearestTownWithDist(coord){var best=null,bd=999;Object.keys(TC).forEach(function(k){var d=haverMiles(coord.lat,coord.lon,TC[k].lat,TC[k].lon);if(d<bd){bd=d;best=k;}});return {town:best,dist:bd};}
+function _calcRoute(lat1,lon1,lat2,lon2){return fetch('https://router.project-osrm.org/route/v1/driving/'+lon1+','+lat1+';'+lon2+','+lat2+'?overview=false').then(function(r){return r.json();}).then(function(d){if(d.routes&&d.routes.length)return{distance:d.routes[0].distance,duration:d.routes[0].duration};return null;});}
 
 /* ── Address autocomplete ── */
 var AIRPORTS=[
-  {name:'Gatwick Airport',sub:'London Gatwick \u00b7 LGW \u00b7 South & North Terminal',key:'ga'},
-  {name:'Heathrow Airport',sub:'London Heathrow \u00b7 LHR \u00b7 Terminals 2-5',key:'he'},
-  {name:'Stansted Airport',sub:'London Stansted \u00b7 STN',key:'st'},
-  {name:'Luton Airport',sub:'London Luton \u00b7 LTN',key:'lu'},
-  {name:'Southampton Airport',sub:'Southampton \u00b7 SOU',key:'so'},
-  {name:'London City Airport',sub:'London City \u00b7 LCY',key:'ci'}
+  {name:'Gatwick Airport',sub:'London Gatwick \u00b7 LGW \u00b7 South & North Terminal',key:'ga',lat:51.1537,lon:-0.1821},
+  {name:'Heathrow Airport',sub:'London Heathrow \u00b7 LHR \u00b7 Terminals 2-5',key:'he',lat:51.47,lon:-0.4543},
+  {name:'Stansted Airport',sub:'London Stansted \u00b7 STN',key:'st',lat:51.885,lon:0.235},
+  {name:'Luton Airport',sub:'London Luton \u00b7 LTN',key:'lu',lat:51.8747,lon:-0.3684},
+  {name:'Southampton Airport',sub:'Southampton \u00b7 SOU',key:'so',lat:50.9503,lon:-1.3568},
+  {name:'London City Airport',sub:'London City \u00b7 LCY',key:'ci',lat:51.5048,lon:0.0495}
 ];
 var _st={};
 var _placesService=null;
@@ -945,43 +948,80 @@ function qbRunCalc(from,to){
   var tm=(document.getElementById('qb-time').value)||'08:00';
   var h=parseInt(tm.split(':')[0]),night=isNight(h);
   var puAP=nAP(from),deAP=nAP(to),puT=nT(from),deT=nT(to);
-  // destination is airport -> drop-off
-  if(deAP&&!puAP){
-    var rt=sh(puT),base=rt&&CF[rt]&&CF[rt][deAP]?CF[rt][deAP]:null;
-    if(base){qbShowFare(base+APC[deAP][0],null,null,'Fixed price',APC[deAP][0]>0?APFULL[deAP]+' drop-off +\u00a3'+APC[deAP][0]:'');return;}
-    document.getElementById('fr-amt').textContent='Calculating\u2026';document.getElementById('fare-reveal').classList.add('show');
-    geocode(from+' UK').then(function(c){if(!c){qbShowFare(calcMile(20,night,deAP),null,null,'Estimated');return;}var nn=nearestTown(c);var b2=nn&&CF[nn]&&CF[nn][deAP]?CF[nn][deAP]+APC[deAP][0]:calcMile(20,night,deAP);qbShowFare(Math.ceil(b2/0.5)*0.5,null,null,'Fixed price');}).catch(function(){qbShowFare(calcMile(20,night,deAP),null,null,'Estimated');});
-    return;
-  }
-  // pickup is airport -> pickup
-  if(puAP&&!deAP){
-    var rt2=sh(deT),base2=rt2&&CF[rt2]&&CF[rt2][puAP]?CF[rt2][puAP]:null;
-    if(base2){qbShowFare(base2+APC[puAP][1],null,null,'Fixed price',APFULL[puAP]+' pickup +\u00a3'+APC[puAP][1]);return;}
-    qbShowFare(calcMile(20,night,puAP),null,null,'Estimated');return;
-  }
-  // airport to airport
-  if(puAP&&deAP){
-    document.getElementById('fr-amt').textContent='Calculating\u2026';document.getElementById('fare-reveal').classList.add('show');
-    Promise.all([geocode(from+' UK'),geocode(to+' UK')]).then(function(cs){
-      if(!cs[0]||!cs[1]){qbShowFare(calcMile(40,night,null)+APC[puAP][1]+APC[deAP][0],null,null,'Estimated');return;}
-      fetch('https://router.project-osrm.org/route/v1/driving/'+cs[0].lon+','+cs[0].lat+';'+cs[1].lon+','+cs[1].lat+'?overview=false')
-      .then(function(r){return r.json();}).then(function(data){
-        if(!data||!data.routes||!data.routes[0]){qbShowFare(calcMile(40,night,null)+APC[puAP][1]+APC[deAP][0],null,null,'Estimated');return;}
-        var mi=Math.round(data.routes[0].distance/1609.34*10)/10,ti=Math.round(data.routes[0].duration/60);
-        qbShowFare(calcMile(mi,night,null)+APC[puAP][1]+APC[deAP][0],mi,ti,(night?'Night rate \u00b7 ':'')+'Fixed price',APFULL[puAP]+' pickup +\u00a3'+APC[puAP][1]+' \u00b7 '+APFULL[deAP]+' drop-off +\u00a3'+APC[deAP][0]);
-      }).catch(function(){qbShowFare(calcMile(40,night,null)+APC[puAP][1]+APC[deAP][0],null,null,'Estimated');});
-    }).catch(function(){qbShowFare(calcMile(40,night,null)+APC[puAP][1]+APC[deAP][0],null,null,'Estimated');});
-    return;
-  }
-  // Town-to-town: live routing
   document.getElementById('fr-amt').textContent='Calculating\u2026';document.getElementById('fare-reveal').classList.add('show');
+
+  /* ── Town → Airport (drop-off) ── */
+  if(deAP&&!puAP){
+    var rt=sh(puT);
+    if(rt&&CF[rt]&&CF[rt][deAP]){
+      qbShowFare(CF[rt][deAP].out,null,null,'Fixed price',APFULL[deAP]+' drop-off');return;
+    }
+    geocode(from+' UK').then(function(c){
+      if(!c){qbShowFare(calcMile(20,night,deAP),null,null,'Estimated');return;}
+      var nt=nearestTownWithDist(c);
+      if(nt.town&&nt.dist<=TOWN_CENTRE_RADIUS&&CF[nt.town]&&CF[nt.town][deAP]){
+        qbShowFare(CF[nt.town][deAP].out,null,null,'Fixed price',APFULL[deAP]+' drop-off');
+      } else {
+        var apCoord=null;
+        AIRPORTS.forEach(function(a){if(a.key===deAP)apCoord={lat:a.lat,lon:a.lon};});
+        if(apCoord){
+          _calcRoute(c.lat,c.lon,apCoord.lat,apCoord.lon).then(function(r){
+            if(!r){qbShowFare(calcMile(20,night,deAP),null,null,'Estimated');return;}
+            var mi=Math.round(r.distance/1609.34*10)/10,ti=Math.round(r.duration/60);
+            qbShowFare(calcMile(mi,night,null),mi,ti,(night?'Night rate \u00b7 ':'')+'Per mile');
+          }).catch(function(){qbShowFare(calcMile(20,night,deAP),null,null,'Estimated');});
+        } else {qbShowFare(calcMile(20,night,deAP),null,null,'Estimated');}
+      }
+    }).catch(function(){qbShowFare(calcMile(20,night,deAP),null,null,'Estimated');});
+    return;
+  }
+
+  /* ── Airport → Town (pickup) ── */
+  if(puAP&&!deAP){
+    var rt2=sh(deT);
+    if(rt2&&CF[rt2]&&CF[rt2][puAP]){
+      qbShowFare(CF[rt2][puAP].ret,null,null,'Fixed price',APFULL[puAP]+' pickup');return;
+    }
+    geocode(to+' UK').then(function(c){
+      if(!c){qbShowFare(calcMile(20,night,puAP),null,null,'Estimated');return;}
+      var nt=nearestTownWithDist(c);
+      if(nt.town&&nt.dist<=TOWN_CENTRE_RADIUS&&CF[nt.town]&&CF[nt.town][puAP]){
+        qbShowFare(CF[nt.town][puAP].ret,null,null,'Fixed price',APFULL[puAP]+' pickup');
+      } else {
+        var apCoord=null;
+        AIRPORTS.forEach(function(a){if(a.key===puAP)apCoord={lat:a.lat,lon:a.lon};});
+        if(apCoord){
+          _calcRoute(apCoord.lat,apCoord.lon,c.lat,c.lon).then(function(r){
+            if(!r){qbShowFare(calcMile(20,night,puAP),null,null,'Estimated');return;}
+            var mi=Math.round(r.distance/1609.34*10)/10,ti=Math.round(r.duration/60);
+            qbShowFare(calcMile(mi,night,null),mi,ti,(night?'Night rate \u00b7 ':'')+'Per mile');
+          }).catch(function(){qbShowFare(calcMile(20,night,puAP),null,null,'Estimated');});
+        } else {qbShowFare(calcMile(20,night,puAP),null,null,'Estimated');}
+      }
+    }).catch(function(){qbShowFare(calcMile(20,night,puAP),null,null,'Estimated');});
+    return;
+  }
+
+  /* ── Airport → Airport ── */
+  if(puAP&&deAP){
+    Promise.all([geocode(from+' UK'),geocode(to+' UK')]).then(function(cs){
+      if(!cs[0]||!cs[1]){qbShowFare(calcMile(40,night,null),null,null,'Estimated');return;}
+      _calcRoute(cs[0].lat,cs[0].lon,cs[1].lat,cs[1].lon).then(function(r){
+        if(!r){qbShowFare(calcMile(40,night,null),null,null,'Estimated');return;}
+        var mi=Math.round(r.distance/1609.34*10)/10,ti=Math.round(r.duration/60);
+        qbShowFare(calcMile(mi,night,null),mi,ti,(night?'Night rate \u00b7 ':'')+'Per mile');
+      }).catch(function(){qbShowFare(calcMile(40,night,null),null,null,'Estimated');});
+    }).catch(function(){qbShowFare(calcMile(40,night,null),null,null,'Estimated');});
+    return;
+  }
+
+  /* ── Town → Town: per mile via routing ── */
   Promise.all([geocode(from+' UK'),geocode(to+' UK')]).then(function(cs){
     if(!cs[0]||!cs[1]){qbShowFare(calcMile(8,night,null),null,null,'Estimated');return;}
-    fetch('https://router.project-osrm.org/route/v1/driving/'+cs[0].lon+','+cs[0].lat+';'+cs[1].lon+','+cs[1].lat+'?overview=false')
-    .then(function(r){return r.json();}).then(function(data){
-      if(!data||!data.routes||!data.routes[0]){qbShowFare(calcMile(8,night,null),null,null,'Estimated');return;}
-      var mi=Math.round(data.routes[0].distance/1609.34*10)/10,ti=Math.round(data.routes[0].duration/60);
-      qbShowFare(calcMile(mi,night,puAP||deAP||null),mi,ti,(night?'Night rate \u00b7 ':'')+'Fixed price');
+    _calcRoute(cs[0].lat,cs[0].lon,cs[1].lat,cs[1].lon).then(function(r){
+      if(!r){qbShowFare(calcMile(8,night,null),null,null,'Estimated');return;}
+      var mi=Math.round(r.distance/1609.34*10)/10,ti=Math.round(r.duration/60);
+      qbShowFare(calcMile(mi,night,null),mi,ti,(night?'Night rate \u00b7 ':'')+'Per mile');
     }).catch(function(){qbShowFare(calcMile(8,night,null),null,null,'Estimated');});
   }).catch(function(){qbShowFare(calcMile(8,night,null),null,null,'Estimated');});
 }
