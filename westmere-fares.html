@@ -15,7 +15,8 @@ body::before{content:"";position:fixed;inset:0;background:rgba(10,8,4,.35);z-ind
 /* NAV */
 nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:.9rem 6%;display:flex;align-items:center;justify-content:space-between;transition:background .3s}
 nav.solid{background:transparent;backdrop-filter:none}
-.brand{text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:.3rem}
+.brand{text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:.3rem;transition:opacity .3s ease}
+nav.solid .brand{opacity:0;pointer-events:none}
 .brand-name{font-family:var(--serif);font-size:2rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:#fff;line-height:1}
 .brand-sub{font-size:1rem;font-weight:300;letter-spacing:.28em;text-transform:uppercase;color:#fff}
 .brand-sub2{font-size:.8rem;color:#fff;letter-spacing:.38em;text-transform:uppercase;font-weight:300}
@@ -69,7 +70,7 @@ nav.solid{background:transparent;backdrop-filter:none}
 <body>
 
 <nav id="nav">
-<a href="index.html" class="brand"><span class="brand-name">Westmere</span><span class="brand-sub">Private Hire</span><span class="brand-sub brand-sub2">Sussex</span></a>
+<a href="index.html" class="brand"><span class="brand-name">Westmere</span></a>
 <div class="nav-r">
 <div class="nav-links"><a href="index.html">Home</a><a href="westmere-fares.html" class="on">Airport Fares</a><a href="westmere-coverage.html">Coverage</a><a href="westmere-fleet.html">Fleet</a><a href="westmere-about.html">About</a></div>
 <a href="index.html?skip=1" class="nav-book">Book Now</a>
