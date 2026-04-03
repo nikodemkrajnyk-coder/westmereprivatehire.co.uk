@@ -16,7 +16,7 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{--navy:#111D2C;--navy-deep:#0d1520;--gold:#B8985A;--gold2:#C9A96E;--rule:rgba(255,255,255,.1);--text:#fff;--text-mid:rgba(255,255,255,.65);--text-light:rgba(255,255,255,.4);--white:rgba(255,255,255,.85);--cream:rgba(255,255,255,.04);--cream-dark:rgba(255,255,255,.07);--green:#2D6E47;--green-bg:rgba(45,110,71,.18);--red:#8B2222;--red-bg:rgba(139,34,34,.15);--amber:#B8985A;--amber-bg:rgba(184,152,90,.1);--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',sans-serif;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);}
 html{height:100%;font-size:16px;scroll-behavior:smooth}
-body{font-family:var(--sans);font-weight:300;color:#fff;background:var(--navy-deep);background-attachment:fixed;background-size:cover;background-position:center 55%;line-height:1.7;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden}
+body{font-family:var(--sans);font-weight:300;color:#fff;background:var(--navy-deep);background-attachment:fixed;background-size:cover;background-repeat:no-repeat;background-position:center 55%;line-height:1.7;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden}
 body::before{content:"";position:fixed;inset:0;background:rgba(10,8,4,.35);z-index:0;pointer-events:none}
 h1,h2,h3,h4{font-family:var(--serif);font-weight:300;color:#fff;letter-spacing:.05em}
 p{color:rgba(255,255,255,.72);line-height:1.8}
@@ -48,7 +48,7 @@ nav.solid{background:rgba(17,29,44,.25);backdrop-filter:blur(20px)}
 .mmenu.open{display:flex}
 .mmenu a{font-family:var(--serif);font-size:2rem;font-weight:300;color:rgba(255,255,255,.65);text-decoration:none;transition:color .2s}
 .mmenu a:hover{color:var(--gold)}
-@media(max-width:780px){.nav-r{display:none}.burger{display:flex}}
+@media(max-width:780px){.nav-r{display:none}.burger{display:flex}body{background-attachment:scroll}}
 
 /* ── APP SHELL ── */
 .app{display:flex;flex-direction:column;min-height:100vh;position:relative;z-index:1}

@@ -77,7 +77,7 @@ nav.solid{background:transparent;backdrop-filter:none}
 </div>
 <button class="burger" onclick="document.getElementById('mm').classList.toggle('open');document.body.style.overflow=document.getElementById('mm').classList.contains('open')?'hidden':'';" aria-label="Menu"><span></span><span></span><span></span></button>
 </nav>
-<div class="mmenu" id="mm"><a href="index.html">Home</a><a href="westmere-fares.html">Airport Fares</a><a href="westmere-coverage.html">Coverage</a><a href="westmere-fleet.html">Fleet</a><a href="westmere-about.html">About</a></div>
+<div class="mmenu" id="mm"><a href="index.html" onclick="document.getElementById('mm').classList.remove('open')">Home</a><a href="westmere-fares.html" onclick="document.getElementById('mm').classList.remove('open')">Airport Fares</a><a href="westmere-coverage.html" onclick="document.getElementById('mm').classList.remove('open')">Coverage</a><a href="westmere-fleet.html" onclick="document.getElementById('mm').classList.remove('open')">Fleet</a><a href="westmere-about.html" onclick="document.getElementById('mm').classList.remove('open')">About</a></div>
 
 <section id="fares">
 <div class="fw">
