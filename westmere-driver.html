@@ -305,7 +305,32 @@ footer{background:transparent;padding:1.5rem 6%;border-top:none;position:relativ
   <a href="index.html?skip=1" onclick="closeMenu()">Book Now</a>
 </div>
 
-<div class="screen on" id="scr-app">
+<!-- ═══ DRIVER LOGIN ═══ -->
+<div id="login-screen">
+  <div class="ls-inner">
+    <div class="ls-hd">
+      <div class="ls-crest">W</div>
+      <div class="ls-title">Driver Portal</div>
+      <div class="ls-sub">Westmere Private Hire</div>
+    </div>
+    <div class="ls-body">
+      <div class="ls-fg">
+        <label class="ls-label">Username / Email</label>
+        <input class="ls-input" type="text" id="drv-user" placeholder="Username" autocomplete="username" autocapitalize="none">
+      </div>
+      <div class="ls-fg">
+        <label class="ls-label">Password</label>
+        <input class="ls-input" type="password" id="drv-pass" placeholder="Password" autocomplete="current-password">
+      </div>
+      <button class="ls-btn" onclick="driverLogin()">Sign In</button>
+      <div class="ls-err" id="drv-err"></div>
+      <div style="text-align:center;margin-top:.4rem;font-size:.7rem;color:rgba(255,255,255,.3)" id="drv-att"></div>
+    </div>
+    <div class="ls-foot">Westmere Private Hire &middot; Sussex</div>
+  </div>
+</div>
+
+<div class="screen" id="scr-app">
 
   <div class="topbar">
     <div class="tb-brand">
@@ -448,6 +473,79 @@ footer{background:transparent;padding:1.5rem 6%;border-top:none;position:relativ
 </div>
 
 <script>
+// ─── XSS ESCAPE ──────────────────────────────────────────────────────────────
+function esc(s){
+  if(s==null) return '';
+  var d=document.createElement('div');
+  d.appendChild(document.createTextNode(String(s)));
+  return d.innerHTML;
+}
+
+// ─── DRIVER AUTH (SHA-256 hashed — no plaintext credentials) ─────────────────
+const DRIVER_HASH='1e5d84aa4e47390e9dc0c9c0668c238c0cb62a19b57dabf68155861d8229353b';
+let drvLoginAttempts=0;
+const DRV_MAX_ATTEMPTS=5;
+let _drvLockoutUntil=parseInt(localStorage.getItem('wph_drv_lockout')||'0');
+
+async function sha256(str){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function driverLogin(){
+  var user=(document.getElementById('drv-user').value||'').trim();
+  var pass=document.getElementById('drv-pass').value||'';
+  var errEl=document.getElementById('drv-err');
+  var attEl=document.getElementById('drv-att');
+
+  if(Date.now()<_drvLockoutUntil){
+    var secs=Math.ceil((_drvLockoutUntil-Date.now())/1000);
+    errEl.textContent='Account locked. Try again in '+Math.ceil(secs/60)+' minute'+(secs>60?'s':'')+'.';
+    errEl.classList.add('show');
+    return;
+  }
+
+  if(!user||!pass){
+    errEl.textContent='Please enter username and password.';
+    errEl.classList.add('show');
+    return;
+  }
+
+  if(drvLoginAttempts>=DRV_MAX_ATTEMPTS){
+    _drvLockoutUntil=Date.now()+300000;
+    localStorage.setItem('wph_drv_lockout',String(_drvLockoutUntil));
+    errEl.textContent='Account locked for 5 minutes. Too many failed attempts.';
+    errEl.classList.add('show');
+    attEl.textContent='';
+    return;
+  }
+
+  var hash=await sha256(user+':'+pass);
+  if(hash===DRIVER_HASH){
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('scr-app').classList.add('on');
+    sessionStorage.setItem('wph_driver','1');
+    drvLoginAttempts=0;
+    localStorage.removeItem('wph_drv_lockout');
+    initApp();
+  } else {
+    drvLoginAttempts++;
+    errEl.textContent='Incorrect username or password.';
+    errEl.classList.add('show');
+    document.getElementById('drv-pass').value='';
+    var rem=DRV_MAX_ATTEMPTS-drvLoginAttempts;
+    attEl.textContent=rem>0?rem+' attempt'+(rem===1?'':'s')+' remaining':'';
+    document.getElementById('drv-pass').focus();
+  }
+}
+
+// Allow Enter key to submit login
+document.addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none'){
+    driverLogin();
+  }
+});
+
 // ─── DATA ─────────────────────────────────────────────────────────────────────
 var DRIVER = {
   name:'Driver Name', vehicle:'Tesla Model S · Midnight Silver',
@@ -526,7 +624,7 @@ function buildTeslaRangeCheck(){
     var ok=TESLA.rangeMiles>cum+20;
     var col=ok?'var(--green)':left<15?'var(--red)':'var(--amber)';
     var lbl=ok?'Range OK':left<15?'Charge first':'Low — monitor';
-    return '<div class="range-row"><div class="rr-info"><div class="rr-job">'+j.time+' · '+j.name+'</div><div class="rr-detail">~'+cum+' mi cumulative · '+left+' mi remaining after</div></div><div class="rr-verdict" style="color:'+col+';border-color:'+col+'">'+lbl+'</div></div>';
+    return '<div class="range-row"><div class="rr-info"><div class="rr-job">'+esc(j.time)+' · '+esc(j.name)+'</div><div class="rr-detail">~'+cum+' mi cumulative · '+left+' mi remaining after</div></div><div class="rr-verdict" style="color:'+col+';border-color:'+col+'">'+lbl+'</div></div>';
   }).join('');
 }
 
@@ -598,12 +696,12 @@ function buildCard(j,isOffered){
   if(j.flight){
     var fCls=j.flightStatus==='ontime'?'fp-ontime':j.flightStatus==='landed'?'fp-landed':'fp-delayed';
     var fTxt=j.flightStatus==='ontime'?'On Time':j.flightStatus==='landed'?'Landed':'Delayed';
-    fb='<span class="flight-pill '+fCls+'">'+j.flight+' · '+fTxt+(j.flightDeparts?' · '+j.flightDeparts:'')+'</span>';
+    fb='<span class="flight-pill '+fCls+'">'+esc(j.flight)+' · '+fTxt+(j.flightDeparts?' · '+esc(j.flightDeparts):'')+'</span>';
   }
 
   // Contact strip
   var phone=j.phone;
-  var waMsg=encodeURIComponent('Hi '+j.name.split(' ')[0]+', this is your Westmere driver — I\'m on my way.');
+  var waMsg=encodeURIComponent('Hi '+esc(j.name.split(' ')[0])+', this is your Westmere driver — I\'m on my way.');
   var contact='<div class="jc-contact">'
     +'<a href="tel:'+phone+'" class="jcc">Call</a>'
     +'<a href="https://wa.me/'+phone.replace(/\D/g,'')+'?text='+waMsg+'" target="_blank" class="jcc">WhatsApp</a>'
@@ -633,15 +731,15 @@ function buildCard(j,isOffered){
   return '<div class="job-card '+cls+'" id="jcard-'+j.id+'">'
     +'<div class="jc-bar"></div>'
     +'<div class="jc-header">'
-    +  '<div class="jc-time">'+j.time+'</div>'
-    +  '<div class="jc-nameblock"><div class="jc-name">'+j.name+'</div><div class="jc-pax">'+j.pax+(j.pax>1?' pax':' pax')+(j.bags?' · '+j.bags+(j.bags>1?' bags':' bag'):'')+'</div></div>'
+    +  '<div class="jc-time">'+esc(j.time)+'</div>'
+    +  '<div class="jc-nameblock"><div class="jc-name">'+esc(j.name)+'</div><div class="jc-pax">'+j.pax+(j.pax>1?' pax':' pax')+(j.bags?' · '+j.bags+(j.bags>1?' bags':' bag'):'')+'</div></div>'
     +'</div>'
     +'<div class="jc-details">'
-    +  '<div class="jd-row"><span class="jd-key">Pickup</span><span class="jd-val">'+j.pickup+'</span></div>'
-    +  '<div class="jd-row"><span class="jd-key">Drop-off</span><span class="jd-val">'+j.dest+'</span></div>'
+    +  '<div class="jd-row"><span class="jd-key">Pickup</span><span class="jd-val">'+esc(j.pickup)+'</span></div>'
+    +  '<div class="jd-row"><span class="jd-key">Drop-off</span><span class="jd-val">'+esc(j.dest)+'</span></div>'
     +  (j.flight?'<div class="jd-row"><span class="jd-key">Flight</span><span class="jd-val">'+fb+'</span></div>':'')
-    +  '<div class="jd-row"><span class="jd-key">Fare</span><span class="jd-val accent">£'+j.fare+' · '+j.payment+'</span></div>'
-    +  (j.note?'<div class="jd-row"><span class="jd-key">Note</span><span class="jd-val" style="color:rgba(255,255,255,.5);font-size:.78rem">'+j.note+'</span></div>':'')
+    +  '<div class="jd-row"><span class="jd-key">Fare</span><span class="jd-val accent">£'+esc(j.fare)+' · '+esc(j.payment)+'</span></div>'
+    +  (j.note?'<div class="jd-row"><span class="jd-key">Note</span><span class="jd-val" style="color:rgba(255,255,255,.5);font-size:.78rem">'+esc(j.note)+'</span></div>':'')
     +'</div>'
     +contact+actions
     +(!isDone?links:'')
@@ -657,11 +755,13 @@ function buildOffered(){
   if(!OFFERED_JOBS.length){list.innerHTML='<div class="empty"><div class="empty-title">No offered jobs</div><div class="empty-sub">New jobs will appear here</div></div>';return;}
   list.innerHTML=OFFERED_JOBS.map(function(j){
     var s=scoreJob(j);
+    var conflict=checkConflict(j);
     var strip='<div class="score-strip" style="background:'+s.bg+';border-bottom:1px solid '+s.col+'30">'
-      +'<div><div class="ss-v" style="color:'+s.col+'">'+s.v+'</div><div class="ss-d">'+s.dead+' dead mi · ~'+s.jmi+' mi job'+(s.rangeOk?'':' · charge needed')+'</div></div>'
-      +'<div class="ss-n" style="color:'+s.col+'">£'+s.net+' net</div></div>';
+      +'<div><div class="ss-v" style="color:'+s.col+'">'+esc(s.v)+'</div><div class="ss-d">'+esc(s.dead)+' dead mi · ~'+esc(s.jmi)+' mi job'+(s.rangeOk?'':' · charge needed')+'</div></div>'
+      +'<div class="ss-n" style="color:'+s.col+'">£'+esc(s.net)+' net</div></div>';
+    var conflictHtml=conflict?'<div class="conflict-warn"><strong>Conflict</strong> '+esc(conflict)+'</div>':'';
     var offerBtns='<div class="jc-offer-btns"><button class="btn-accept" onclick="acceptJob(\''+j.id+'\')">Accept</button><button class="btn-decline" onclick="declineJob(\''+j.id+'\')">Decline</button></div>';
-    return strip+buildCard(j,true)+offerBtns;
+    return '<div class="job-card" style="margin-bottom:1rem;overflow:hidden">'+strip+conflictHtml+buildCard(j,true)+offerBtns+'</div>';
   }).join('');
 }
 
@@ -718,7 +818,7 @@ function buildProfile(){
   var el=document.getElementById('profile-body');if(!el)return;
   var rows=[['Name',DRIVER.name],['Mobile',DRIVER.mobile],['Email',DRIVER.email],
     ['Vehicle',DRIVER.vehicle],['Registration',DRIVER.reg],['PHV Licence',DRIVER.phv]];
-  el.innerHTML=rows.map(function(r){return '<div class="p-row"><span class="p-label">'+r[0]+'</span><span class="p-val">'+r[1]+'</span></div>';}).join('');
+  el.innerHTML=rows.map(function(r){return '<div class="p-row"><span class="p-label">'+esc(r[0])+'</span><span class="p-val">'+esc(r[1])+'</span></div>';}).join('');
 }
 
 // ─── TESLA VISIBILITY ─────────────────────────────────────────────────────────
@@ -747,17 +847,29 @@ function showToast(msg){
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
-document.getElementById('tb-dname').textContent=DRIVER.name.split(' ')[0];
-document.getElementById('today-date').textContent=new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
-applyTeslaVisibility();
-buildProfile();
-goPage('today',document.getElementById('bn-today'));
-setTimeout(function(){
-  if(!sessionStorage.getItem('drv_pwa_shown')){
-    document.getElementById('pwa-banner').style.display='block';
-    sessionStorage.setItem('drv_pwa_shown','1');
-  }
-},3500);
+function initApp(){
+  document.getElementById('tb-dname').textContent=DRIVER.name.split(' ')[0];
+  document.getElementById('today-date').textContent=new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+  applyTeslaVisibility();
+  buildProfile();
+  goPage('today',document.getElementById('bn-today'));
+  setTimeout(function(){
+    if(!sessionStorage.getItem('drv_pwa_shown')){
+      document.getElementById('pwa-banner').style.display='block';
+      sessionStorage.setItem('drv_pwa_shown','1');
+    }
+  },3500);
+}
+
+// Check if already authenticated in this session
+if(sessionStorage.getItem('wph_driver')==='1'){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('scr-app').classList.add('on');
+  initApp();
+} else {
+  document.getElementById('login-screen').style.display='';
+  document.getElementById('scr-app').classList.remove('on');
+}
 </script>
 <footer style="background:transparent;padding:1.5rem 6%;border-top:none;position:relative;z-index:1">
   <div style="max-width:960px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem">

@@ -953,16 +953,35 @@ function searchAdmin(q){
   var q2=q.toLowerCase();
   renderAdmin(ADMIN_DATA.filter(function(b){return b.ref.toLowerCase().includes(q2)||b.name.toLowerCase().includes(q2)||b.route.toLowerCase().includes(q2);}));
 }
-var ADMIN_EMAIL='admin@westmere.co.uk';
-function doLogin(){
-  var email=(document.getElementById('l-email').value||'guest').trim();
-  var admin=email.toLowerCase()===ADMIN_EMAIL;
-  bootDash(email.split('@')[0],admin,'Personal · Pay per journey',email,false);
+/* ── Hashed Auth (SHA-256) ── */
+var ADMIN_HASH_AC='b4a472e7f11a5e5179e9192d87691b4237f50e779867524c80334882cd9511f5';
+var _acAttempts=0,_acMaxAttempts=5;
+async function _sha256(s){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0')}).join('');}
+
+async function doLogin(){
+  var email=(document.getElementById('l-email').value||'').trim();
+  var pass=(document.getElementById('l-pass').value||'').trim();
+  if(!email||!pass){showToast('Please enter email and password');return;}
+  if(_acAttempts>=_acMaxAttempts){showToast('Too many attempts. Please try again later.');return;}
+  var hash=await _sha256(email.toLowerCase()+':'+pass);
+  var admin=hash===ADMIN_HASH_AC;
+  if(admin||email.includes('@')){
+    sessionStorage.setItem('wph_ac_user',email);
+    _acAttempts=0;
+    bootDash(email.split('@')[0],admin,'Personal · Pay per journey',email,false);
+  } else {
+    _acAttempts++;
+    showToast('Incorrect credentials. '+((_acMaxAttempts-_acAttempts))+' attempts remaining.');
+  }
 }
 function doLoginReg(){
-  var name=(document.getElementById('r-name').value||'Guest').trim();
+  var name=(document.getElementById('r-name').value||'').trim();
   var email=(document.getElementById('r-email').value||'').trim();
+  var pass=(document.getElementById('r-pass').value||'').trim();
+  if(!name||!email||!pass){showToast('Please fill in all fields');return;}
+  if(pass.length<8){showToast('Password must be at least 8 characters');return;}
   var t=document.querySelector('.type-opt.on .type-name');
+  sessionStorage.setItem('wph_ac_user',email);
   bootDash(name,false,(t?t.textContent:'Personal')+' · Account',email,true);
 }
 function bootDash(name,admin,actype,email,showWelcome){

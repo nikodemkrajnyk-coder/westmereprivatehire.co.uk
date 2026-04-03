@@ -271,9 +271,54 @@ footer{background:transparent;padding:1.5rem 6%;border-top:none;position:relativ
   .jc-name{font-size:.9rem}
   .mode-btn{padding:.35rem .55rem;font-size:.48rem}
 }
+
+/* ── LOGIN SCREEN ── */
+#login-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1rem;position:relative;z-index:1;padding-top:6rem}
+.ls-inner{width:100%;max-width:420px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
+.ls-crest{width:56px;height:56px;border:1px solid rgba(184,152,90,.3);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.4rem;font-weight:500;color:rgba(255,255,255,.6);margin:0 auto 1.1rem;position:relative}
+.ls-crest::before{content:'';position:absolute;inset:-8px;border:1px solid rgba(184,152,90,.1)}
+.ls-title{font-family:var(--serif);font-size:1.6rem;font-weight:300;color:#fff;text-align:center;margin-bottom:.2rem}
+.ls-sub{font-size:.58rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);text-align:center;margin-bottom:2rem}
+.ls-fg{display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem}
+.ls-label{font-family:var(--sans);font-size:.58rem;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.45)}
+.ls-input{font-family:var(--sans);font-size:.92rem;font-weight:300;color:#fff;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.15);padding:.78rem 0;outline:none;width:100%;min-height:48px;-webkit-appearance:none;transition:border-color .3s}
+.ls-input:focus{border-bottom-color:var(--gold)}
+.ls-input::placeholder{color:rgba(255,255,255,.25)}
+.ls-btn{width:100%;padding:1rem;background:var(--gold);color:var(--navy);border:none;font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;transition:all .25s;margin-top:.8rem;min-height:52px}
+.ls-btn:hover{background:var(--gold2)}
+.ls-err{display:none;font-size:.78rem;color:var(--red);text-align:center;margin-top:.5rem;padding:.5rem;background:var(--red-bg);border:1px solid rgba(139,34,34,.3)}
+.ls-err.show{display:block}
+.ls-hd{padding:2.5rem 2.2rem 2rem;text-align:center;border-bottom:1px solid rgba(184,152,90,.12)}
+.ls-body{padding:2.2rem 2.2rem 1.8rem}
+.ls-foot{text-align:center;padding:1.4rem 2.2rem;border-top:1px solid rgba(255,255,255,.06);font-size:.78rem;color:rgba(255,255,255,.3)}
 </style>
 </head>
 <body>
+
+<!-- ═══ OWNER LOGIN ═══ -->
+<div id="login-screen">
+  <div class="ls-inner">
+    <div class="ls-hd">
+      <div class="ls-crest">W</div>
+      <div class="ls-title">Owner Portal</div>
+      <div class="ls-sub">Westmere Private Hire</div>
+    </div>
+    <div class="ls-body">
+      <div class="ls-fg">
+        <label class="ls-label">Username</label>
+        <input class="ls-input" type="text" id="owner-user" placeholder="Username" autocomplete="username" autocapitalize="none">
+      </div>
+      <div class="ls-fg">
+        <label class="ls-label">Password</label>
+        <input class="ls-input" type="password" id="owner-pass" placeholder="Password" autocomplete="current-password">
+      </div>
+      <button class="ls-btn" onclick="ownerLogin()">Sign In</button>
+      <div class="ls-err" id="owner-err"></div>
+      <div style="text-align:center;margin-top:.4rem;font-size:.7rem;color:rgba(255,255,255,.3)" id="owner-att"></div>
+    </div>
+    <div class="ls-foot">Westmere Private Hire &middot; Sussex</div>
+  </div>
+</div>
 
 <nav id="nav">
   <a href="index.html" class="brand">
@@ -308,7 +353,7 @@ footer{background:transparent;padding:1.5rem 6%;border-top:none;position:relativ
   <a href="index.html?skip=1" onclick="closeMenu()">Book Now</a>
 </div>
 
-<div class="app">
+<div class="app" id="scr-app" style="display:none">
 
   <!-- TOP BAR -->
   <div class="topbar">
@@ -508,6 +553,80 @@ footer{background:transparent;padding:1.5rem 6%;border-top:none;position:relativ
 <div id="toast"><span style="color:var(--gold);font-size:.8rem;flex-shrink:0">✓</span><span id="toast-msg"></span></div>
 
 <script>
+// ── AUTH ──────────────────────────────────────────────────────────────────────
+const OWNER_HASH='61be0c150f162d465173770adfd29ffe0a609aa18d8c76b201ddca83382e72d5';
+let ownerLoginAttempts=0;
+const OWNER_MAX_ATTEMPTS=5;
+let _ownerLockoutUntil=parseInt(localStorage.getItem('wph_owner_lockout')||'0');
+
+function esc(s){if(!s)return '';var d=document.createElement('div');d.appendChild(document.createTextNode(s));return d.innerHTML;}
+
+async function sha256(str){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function ownerLogin(){
+  var user=(document.getElementById('owner-user').value||'').trim();
+  var pass=document.getElementById('owner-pass').value||'';
+  var errEl=document.getElementById('owner-err');
+  var attEl=document.getElementById('owner-att');
+
+  if(Date.now()<_ownerLockoutUntil){
+    var secs=Math.ceil((_ownerLockoutUntil-Date.now())/1000);
+    errEl.textContent='Account locked. Try again in '+Math.ceil(secs/60)+' minute'+(secs>60?'s':'')+'.';
+    errEl.classList.add('show');
+    return;
+  }
+
+  if(!user||!pass){
+    errEl.textContent='Please enter username and password.';
+    errEl.classList.add('show');
+    return;
+  }
+
+  if(ownerLoginAttempts>=OWNER_MAX_ATTEMPTS){
+    _ownerLockoutUntil=Date.now()+300000;
+    localStorage.setItem('wph_owner_lockout',String(_ownerLockoutUntil));
+    errEl.textContent='Account locked for 5 minutes. Too many failed attempts.';
+    errEl.classList.add('show');
+    attEl.textContent='';
+    return;
+  }
+
+  var hash=await sha256(user+':'+pass);
+  if(hash===OWNER_HASH){
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('scr-app').style.display='';
+    sessionStorage.setItem('wph_owner','1');
+    ownerLoginAttempts=0;
+    localStorage.removeItem('wph_owner_lockout');
+    initApp();
+  } else {
+    ownerLoginAttempts++;
+    errEl.textContent='Incorrect username or password.';
+    errEl.classList.add('show');
+    document.getElementById('owner-pass').value='';
+    var rem=OWNER_MAX_ATTEMPTS-ownerLoginAttempts;
+    attEl.textContent=rem>0?rem+' attempt'+(rem===1?'':'s')+' remaining':'';
+    document.getElementById('owner-pass').focus();
+  }
+}
+
+// Allow Enter key to submit login
+document.addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none'){
+    ownerLogin();
+  }
+});
+
+// Resume session
+if(sessionStorage.getItem('wph_owner')){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('scr-app').style.display='';
+  // initApp called at bottom of script
+}
+
 // ── DATA ─────────────────────────────────────────────────────────────────────
 var TODAY_JOBS = [
   {id:'j1',time:'04:30',name:'Sarah Jones',phone:'+447700100001',email:'sarah.jones@email.com',
@@ -617,9 +736,9 @@ function buildCard(j,isOffered){
     actions+='</div>';
   }
   var links='<div class="jc-links"><button class="jl" onclick="showNB(\''+j.name.replace(/'/g,"\\'")+'\',\''+j.fare+'\')">Name Board</button><a class="jl" href="https://maps.google.com/?q='+encodeURIComponent(j.dest)+'" target="_blank">Maps</a><a class="jl" href="waze://?q='+encodeURIComponent(j.dest)+'" target="_blank">Waze</a>'+(j.flight?'<a class="jl" href="https://www.flightradar24.com/data/flights/'+j.flight.toLowerCase()+'" target="_blank">Flight</a>':'')+'</div>';
-  return '<div class="job-card '+cls+'" id="jc-'+j.id+'"><div class="jc-bar"></div>'
-    +'<div class="jc-header"><div class="jc-time">'+j.time+'</div><div><div class="jc-name">'+j.name+'</div><div class="jc-pax">'+j.pax+' pax'+(j.bags?' · '+j.bags+' bag'+(j.bags>1?'s':''):'')+'</div></div></div>'
-    +'<div class="jc-details"><div class="jd-row"><span class="jd-key">Pickup</span><span class="jd-val">'+j.pickup+'</span></div><div class="jd-row"><span class="jd-key">Drop-off</span><span class="jd-val">'+j.dest+'</span></div>'+(j.flight?'<div class="jd-row"><span class="jd-key">Flight</span><span class="jd-val">'+fb+'</span></div>':'')+'<div class="jd-row"><span class="jd-key">Fare</span><span class="jd-val accent">£'+j.fare+' · '+j.payment+'</span></div>'+(j.note?'<div class="jd-row"><span class="jd-key">Note</span><span class="jd-val" style="color:rgba(255,255,255,.4);font-size:.78rem">'+j.note+'</span></div>':'')+'</div>'
+  return '<div class="job-card '+cls+'" id="jc-'+escH(j.id)+'"><div class="jc-bar"></div>'
+    +'<div class="jc-header"><div class="jc-time">'+escH(j.time)+'</div><div><div class="jc-name">'+escH(j.name)+'</div><div class="jc-pax">'+escH(String(j.pax))+' pax'+(j.bags?' · '+escH(String(j.bags))+' bag'+(j.bags>1?'s':''):'')+'</div></div></div>'
+    +'<div class="jc-details"><div class="jd-row"><span class="jd-key">Pickup</span><span class="jd-val">'+escH(j.pickup)+'</span></div><div class="jd-row"><span class="jd-key">Drop-off</span><span class="jd-val">'+escH(j.dest)+'</span></div>'+(j.flight?'<div class="jd-row"><span class="jd-key">Flight</span><span class="jd-val">'+fb+'</span></div>':'')+'<div class="jd-row"><span class="jd-key">Fare</span><span class="jd-val accent">£'+escH(String(j.fare))+' · '+escH(j.payment)+'</span></div>'+(j.note?'<div class="jd-row"><span class="jd-key">Note</span><span class="jd-val" style="color:rgba(255,255,255,.4);font-size:.78rem">'+escH(j.note)+'</span></div>':'')+'</div>'
     +contact+actions+(!isDone?links:'')+'</div>';
 }
 
@@ -714,11 +833,11 @@ function renderInbox(){
     var pCls=m.status==='accepted'?'pill-ok':m.status==='flagged'?'pill-flag':'pill-enquiry';
     var pTxt=m.status==='accepted'?'Auto-accepted':m.status==='flagged'?'Needs your decision':'Enquiry';
     var extract='';
-    if(m.analysis&&m.analysis.name){extract='<div class="msg-extract">'+m.analysis.name+' · '+m.analysis.pickup+' → '+m.analysis.dest+' · '+m.analysis.date+' '+m.analysis.time+' · <strong style="color:var(--gold)">£'+m.analysis.fare+'</strong></div>';}
-    if(m.analysis&&m.analysis.conflict){extract+='<div class="msg-conflict">Conflict: '+m.analysis.conflictReason+'</div>';}
+    if(m.analysis&&m.analysis.name){extract='<div class="msg-extract">'+escH(m.analysis.name)+' · '+escH(m.analysis.pickup)+' → '+escH(m.analysis.dest)+' · '+escH(m.analysis.date)+' '+escH(m.analysis.time)+' · <strong style="color:var(--gold)">£'+escH(String(m.analysis.fare))+'</strong></div>';}
+    if(m.analysis&&m.analysis.conflict){extract+='<div class="msg-conflict">Conflict: '+escH(m.analysis.conflictReason)+'</div>';}
     var btns='';
     if(m.status==='flagged'){btns='<div class="msg-actions"><button class="ma-btn ma-accept" onclick="confirmMsg(\''+m.id+'\')">Accept — add to calendar</button><button class="ma-btn ma-pass" onclick="passMsg(\''+m.id+'\')">Pass to operator</button></div>';}
-    return '<div class="msg-item"><div class="msg-header"><div><div class="msg-from">'+m.from+'</div><div style="font-size:.62rem;color:rgba(255,255,255,.4);margin-top:.1rem">'+m.phone+' · Today '+m.time+'</div></div><span class="msg-pill '+pCls+'">'+pTxt+'</span></div><div class="msg-text">"'+m.text+'"</div>'+extract+btns+'</div>';
+    return '<div class="msg-item"><div class="msg-header"><div><div class="msg-from">'+escH(m.from)+'</div><div style="font-size:.62rem;color:rgba(255,255,255,.4);margin-top:.1rem">'+escH(m.phone)+' · Today '+escH(m.time)+'</div></div><span class="msg-pill '+pCls+'">'+pTxt+'</span></div><div class="msg-text">"'+escH(m.text)+'"</div>'+extract+btns+'</div>';
   }).join('');
 }
 function confirmMsg(id){var m=INBOX_MSGS.find(function(x){return x.id===id;});if(!m)return;m.status='accepted';renderInbox();showToast('Booking confirmed — added to calendar');}
@@ -729,10 +848,14 @@ function simMsg(){
   INBOX_MSGS.unshift({id:id,from:'New Customer',phone:'+4477'+Math.floor(10000000+Math.random()*90000000),time:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),text:text,status:'processing',analysis:null});
   renderInbox();analyseMsg(id,text);
 }
+// TODO: Route through backend proxy at /api/claude to keep API key server-side
 async function analyseMsg(id,text){
   var sys='You are the booking intake for Westmere Private Hire (Horsham base). Analyse this WhatsApp message. Extract booking details if it is a booking request. Existing jobs: 04:30 Lewes→Gatwick, 17:20 Heathrow→Lewes. 90 min conflict buffer.\n\nFare rates: Gatwick from Lewes £75, Horsham £45, Brighton £70. Heathrow from Lewes £135, Horsham £115, Brighton £120.\n\nRespond ONLY with JSON: {"isBooking":true,"name":"...","pickup":"...","dest":"...","date":"...","time":"...","fare":0,"conflict":false,"conflictReason":"","note":"..."} or {"isBooking":false,"note":"..."}';
   try{
-    var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,system:sys,messages:[{role:'user',content:text}]})});
+    // NOTE: Direct client-side calls to api.anthropic.com will return 401 (no API key).
+    // In production, route through a backend proxy (e.g. /api/claude) that adds the auth header server-side.
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':'REPLACE_WITH_BACKEND_PROXY','anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,system:sys,messages:[{role:'user',content:text}]})});
+    if(!resp.ok)throw new Error('API returned '+resp.status);
     var data=await resp.json();
     var raw=(data.content&&data.content[0]&&data.content[0].text)||'{}';
     raw=raw.replace(/```json|```/g,'').trim();
@@ -743,7 +866,12 @@ async function analyseMsg(id,text){
     renderInbox();
     if(m.status==='accepted')showToast('Auto-accepted: '+(parsed.name||'booking')+' · £'+(parsed.fare||0));
     if(m.status==='flagged')showToast('Conflict — needs your decision: '+(parsed.name||'customer'));
-  }catch(e){var m=INBOX_MSGS.find(function(x){return x.id===id;});if(m){m.status='enquiry';m.analysis={isBooking:false,note:'Could not analyse — message saved.'};renderInbox();}}
+  }catch(e){
+    console.warn('analyseMsg failed:',e.message||e);
+    var m=INBOX_MSGS.find(function(x){return x.id===id;});
+    if(m){m.status='enquiry';m.analysis={isBooking:false,note:'AI analysis unavailable — backend proxy not configured. Message saved for manual review.'};renderInbox();}
+    showToast('AI analysis unavailable — review message manually');
+  }
 }
 
 // ── ASSISTANT ─────────────────────────────────────────────────────────────────
@@ -756,9 +884,10 @@ function assistQuick(text){sendToAssist(text);}
 function assistSend(){var inp=document.getElementById('assist-input');var msg=inp.value.trim();if(!msg||ASSIST_BUSY)return;inp.value='';inp.style.height='auto';sendToAssist(msg);}
 function clearAssist(){ASSIST_HISTORY=[];document.getElementById('assist-feed').innerHTML='';greetAssist();}
 function appendU(text){var f=document.getElementById('assist-feed');var el=document.createElement('div');el.className='msg-user';el.innerHTML='<div>'+escH(text)+'</div>';f.appendChild(el);f.scrollTop=f.scrollHeight;}
-function appendW(text,id){var f=document.getElementById('assist-feed');var el=document.createElement('div');el.className='msg-w';if(id)el.id=id;el.innerHTML='<div class="msg-w-crest">W</div><div>'+text.replace(/\n/g,'<br>')+'</div>';f.appendChild(el);f.scrollTop=f.scrollHeight;}
+function appendW(text,id){var f=document.getElementById('assist-feed');var el=document.createElement('div');el.className='msg-w';if(id)el.id=id;el.innerHTML='<div class="msg-w-crest">W</div><div>'+escH(text).replace(/\n/g,'<br>')+'</div>';f.appendChild(el);f.scrollTop=f.scrollHeight;}
 function appendThink(id){var f=document.getElementById('assist-feed');var el=document.createElement('div');el.id=id;el.className='msg-w';el.innerHTML='<div class="msg-w-crest">W</div><div class="thinking">Thinking...</div>';f.appendChild(el);f.scrollTop=f.scrollHeight;}
-function escH(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function escAttr(s){return encodeURIComponent(String(s));}
 function buildAssistCtx(){
   return 'You are the business assistant for Westmere Private Hire (Horsham base). Sole operator/driver.\nFares: Gatwick from Lewes £75, Horsham £45, Brighton £70. Heathrow from Lewes £135, Horsham £115, Brighton £120. Night rate (00:00-05:59) +15%.\nToday: 04:30 Sarah Jones Lewes→Gatwick £85 Cash. 17:20 John Smith Heathrow→Lewes £145 Account.\nBe direct and short — driver may be in the car. Confirm all actions clearly.';
 }
@@ -767,12 +896,20 @@ async function sendToAssist(msg){
   appendU(msg);ASSIST_HISTORY.push({role:'user',content:msg});
   var tid='t'+Date.now();appendThink(tid);
   try{
-    var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,system:buildAssistCtx(),messages:ASSIST_HISTORY.slice(-12)})});
+    // NOTE: Direct client-side calls to api.anthropic.com will return 401 (no API key).
+    // In production, route through a backend proxy (e.g. /api/claude) that adds the auth header server-side.
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':'REPLACE_WITH_BACKEND_PROXY','anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,system:buildAssistCtx(),messages:ASSIST_HISTORY.slice(-12)})});
+    if(!resp.ok)throw new Error('API returned '+resp.status);
     var data=await resp.json();var reply=(data.content&&data.content[0]&&data.content[0].text)||'Sorry, no response.';
     var tel=document.getElementById(tid);if(tel)tel.remove();
     ASSIST_HISTORY.push({role:'assistant',content:reply});
     appendW(reply);
-  }catch(e){var tel=document.getElementById(tid);if(tel)tel.remove();appendW('Connection issue — check internet and try again.');}
+  }catch(e){
+    console.warn('sendToAssist failed:',e.message||e);
+    var tel=document.getElementById(tid);if(tel)tel.remove();
+    appendW('Assistant unavailable — backend proxy not configured. Check console for details.');
+    ASSIST_HISTORY.push({role:'assistant',content:'[Error: assistant unavailable]'});
+  }
   ASSIST_BUSY=false;
 }
 
@@ -833,9 +970,15 @@ async function runSmartDay(){
   // Claude recommendation
   var prompt='Westmere Private Hire, sole operator, base Horsham.\n\nDay:\n'+segs.map(function(s){return s.j.time+' '+s.j.name+': '+s.j.pickup+'→'+s.j.dest+' £'+s.j.fare+' dead:'+s.dead+'mi net:£'+s.net+(s.rush?' rush':'');}).join('\n')+'\n\nGross £'+total+' Net £'+netTotal+' Dead '+Math.round(deadTotal+retHome)+'mi Net/hr £'+Math.round(netTotal/dayH)+'\n\nGive: 1) Is this day worth it? 2) Which jobs to keep/pass and why 3) Optimised version. Direct, practical, no padding.';
   try{
-    var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:prompt}]})});
+    // NOTE: Direct client-side calls to api.anthropic.com will return 401 (no API key).
+    // In production, route through a backend proxy (e.g. /api/claude) that adds the auth header server-side.
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':'REPLACE_WITH_BACKEND_PROXY','anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:prompt}]})});
+    if(!resp.ok)throw new Error('API returned '+resp.status);
     var data=await resp.json();document.getElementById('sd-rec').textContent=(data.content&&data.content[0]&&data.content[0].text)||'Analysis unavailable.';
-  }catch(e){document.getElementById('sd-rec').textContent='Could not connect — check internet.';}
+  }catch(e){
+    console.warn('runSmartDay AI failed:',e.message||e);
+    document.getElementById('sd-rec').textContent='AI recommendation unavailable — backend proxy not configured. The scorecard and verdicts above are calculated locally and still valid.';
+  }
   document.getElementById('sd-loading').style.display='none';
   document.getElementById('sd-output').style.display='block';
   document.getElementById('sd-btn').textContent='Score Day';
@@ -847,9 +990,13 @@ var _tt;
 function showToast(msg){var el=document.getElementById('toast');document.getElementById('toast-msg').textContent=msg;el.classList.add('on');clearTimeout(_tt);_tt=setTimeout(function(){el.classList.remove('on');},3000);}
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
-document.getElementById('sd-date').value=new Date().toISOString().split('T')[0];
-setMode('drive');
-buildToday();
+function initApp(){
+  document.getElementById('sd-date').value=new Date().toISOString().split('T')[0];
+  setMode('drive');
+  buildToday();
+}
+// Auto-init if session already authenticated
+if(sessionStorage.getItem('wph_owner')){initApp();}
 </script>
 
 <!-- WhatsApp FAB -->
