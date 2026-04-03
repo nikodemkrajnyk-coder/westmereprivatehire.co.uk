@@ -463,6 +463,7 @@ function calcMile(mi,night,ap){// Day:   £4.00/mi (0-10, min £40) · £2.50/mi
 var f;if(night){f=mi<=10?Math.max(mi,10)*3.80:mi<=20?38+(mi-10)*3.10:69+(mi-20)*2.80;}else{f=mi<=10?Math.max(mi,10)*4.00:mi<=20?40+(mi-10)*2.50:65+(mi-20)*2.25;}if(ap&&APC[ap])f+=APC[ap][0];return Math.ceil(f/0.5)*0.5;}
 function sh(t){return t?t.replace('haywards heath','haywards').replace('burgess hill','burgess').replace('east grinstead','eastgrinstead'):t;}
 var TOWN_CENTRE_RADIUS=3;
+var PER_MILE_ADJ=2.50;
 function nearestTown(coord){var best=null,bd=999;Object.keys(TC).forEach(function(k){var d=haverMiles(coord.lat,coord.lon,TC[k].lat,TC[k].lon);if(d<bd){bd=d;best=k;}});return best;}
 function nearestTownWithDist(coord){var best=null,bd=999;Object.keys(TC).forEach(function(k){var d=haverMiles(coord.lat,coord.lon,TC[k].lat,TC[k].lon);if(d<bd){bd=d;best=k;}});return {town:best,dist:bd};}
 var AIRPORTS=[
@@ -652,18 +653,30 @@ function runCalc(from,to){
       var nt=nearestTownWithDist(c);
       if(nt.town&&nt.dist<=TOWN_CENTRE_RADIUS&&CF[nt.town]&&CF[nt.town][deAP]){
         showFare(CF[nt.town][deAP].out,null,null,'Fixed price',APFULL[deAP]+' drop-off');
-      } else {
+      } else if(nt.town&&CF[nt.town]&&CF[nt.town][deAP]){
         var apCoord=null;
         AIRPORTS.forEach(function(a){if(a.key===deAP)apCoord={lat:a.lat,lon:a.lon};});
-        if(apCoord){
-          _calcRoute(c.lat,c.lon,apCoord.lat,apCoord.lon).then(function(r){
-            if(!r){showFare(calcMile(20,night,deAP),null,null,'Estimated');return;}
+        if(!apCoord){showFare(calcMile(20,night,null),null,null,'Estimated');return;}
+        var townCoord=TC[nt.town];
+        Promise.all([_calcRoute(c.lat,c.lon,apCoord.lat,apCoord.lon),_calcRoute(townCoord.lat,townCoord.lon,apCoord.lat,apCoord.lon)]).then(function(rs){
+          if(!rs[0]||!rs[1]){showFare(calcMile(20,night,null),null,null,'Estimated');return;}
+          var actualMi=Math.round(rs[0].distance/1609.34*10)/10,baseMi=Math.round(rs[1].distance/1609.34*10)/10;
+          var baseFare=CF[nt.town][deAP].out,adj=(actualMi-baseMi)*PER_MILE_ADJ;
+          var fare=Math.max(baseFare+adj,baseFare*0.7);
+          showFare(Math.ceil(fare/0.5)*0.5,actualMi,Math.round(rs[0].duration/60),'Fixed price + adjustment',APFULL[deAP]+' drop-off');
+        }).catch(function(){showFare(calcMile(20,night,null),null,null,'Estimated');});
+      } else {
+        var apCoord2=null;
+        AIRPORTS.forEach(function(a){if(a.key===deAP)apCoord2={lat:a.lat,lon:a.lon};});
+        if(apCoord2){
+          _calcRoute(c.lat,c.lon,apCoord2.lat,apCoord2.lon).then(function(r){
+            if(!r){showFare(calcMile(20,night,null),null,null,'Estimated');return;}
             var mi=Math.round(r.distance/1609.34*10)/10,ti=Math.round(r.duration/60);
             showFare(calcMile(mi,night,null),mi,ti,(night?'Night rate \u00b7 ':'')+'Per mile');
-          }).catch(function(){showFare(calcMile(20,night,deAP),null,null,'Estimated');});
-        } else {showFare(calcMile(20,night,deAP),null,null,'Estimated');}
+          }).catch(function(){showFare(calcMile(20,night,null),null,null,'Estimated');});
+        } else {showFare(calcMile(20,night,null),null,null,'Estimated');}
       }
-    }).catch(function(){showFare(calcMile(20,night,deAP),null,null,'Estimated');});
+    }).catch(function(){showFare(calcMile(20,night,null),null,null,'Estimated');});
     return;
   }
 
@@ -679,18 +692,30 @@ function runCalc(from,to){
       var nt=nearestTownWithDist(c);
       if(nt.town&&nt.dist<=TOWN_CENTRE_RADIUS&&CF[nt.town]&&CF[nt.town][puAP]){
         showFare(CF[nt.town][puAP].ret,null,null,'Fixed price',APFULL[puAP]+' pickup');
-      } else {
+      } else if(nt.town&&CF[nt.town]&&CF[nt.town][puAP]){
         var apCoord=null;
         AIRPORTS.forEach(function(a){if(a.key===puAP)apCoord={lat:a.lat,lon:a.lon};});
-        if(apCoord){
-          _calcRoute(apCoord.lat,apCoord.lon,c.lat,c.lon).then(function(r){
-            if(!r){showFare(calcMile(20,night,puAP),null,null,'Estimated');return;}
+        if(!apCoord){showFare(calcMile(20,night,null),null,null,'Estimated');return;}
+        var townCoord=TC[nt.town];
+        Promise.all([_calcRoute(apCoord.lat,apCoord.lon,c.lat,c.lon),_calcRoute(apCoord.lat,apCoord.lon,townCoord.lat,townCoord.lon)]).then(function(rs){
+          if(!rs[0]||!rs[1]){showFare(calcMile(20,night,null),null,null,'Estimated');return;}
+          var actualMi=Math.round(rs[0].distance/1609.34*10)/10,baseMi=Math.round(rs[1].distance/1609.34*10)/10;
+          var baseFare=CF[nt.town][puAP].ret,adj=(actualMi-baseMi)*PER_MILE_ADJ;
+          var fare=Math.max(baseFare+adj,baseFare*0.7);
+          showFare(Math.ceil(fare/0.5)*0.5,actualMi,Math.round(rs[0].duration/60),'Fixed price + adjustment',APFULL[puAP]+' pickup');
+        }).catch(function(){showFare(calcMile(20,night,null),null,null,'Estimated');});
+      } else {
+        var apCoord2=null;
+        AIRPORTS.forEach(function(a){if(a.key===puAP)apCoord2={lat:a.lat,lon:a.lon};});
+        if(apCoord2){
+          _calcRoute(apCoord2.lat,apCoord2.lon,c.lat,c.lon).then(function(r){
+            if(!r){showFare(calcMile(20,night,null),null,null,'Estimated');return;}
             var mi=Math.round(r.distance/1609.34*10)/10,ti=Math.round(r.duration/60);
             showFare(calcMile(mi,night,null),mi,ti,(night?'Night rate \u00b7 ':'')+'Per mile');
-          }).catch(function(){showFare(calcMile(20,night,puAP),null,null,'Estimated');});
-        } else {showFare(calcMile(20,night,puAP),null,null,'Estimated');}
+          }).catch(function(){showFare(calcMile(20,night,null),null,null,'Estimated');});
+        } else {showFare(calcMile(20,night,null),null,null,'Estimated');}
       }
-    }).catch(function(){showFare(calcMile(20,night,puAP),null,null,'Estimated');});
+    }).catch(function(){showFare(calcMile(20,night,null),null,null,'Estimated');});
     return;
   }
 
