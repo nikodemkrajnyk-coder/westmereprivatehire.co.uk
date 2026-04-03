@@ -12,13 +12,15 @@ html{font-size:16px;scroll-behavior:smooth}
 body{font-family:var(--sans);font-weight:300;color:#fff;background:#0d1520;background-attachment:fixed;background-size:cover;background-repeat:no-repeat;background-position:center 55%;line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden;height:100vh;overflow:hidden}
 body::before{display:none}
 nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:.9rem 6%;display:flex;align-items:center;justify-content:space-between;transition:background .3s}
-nav.solid{background:rgba(17,29,44,.25);backdrop-filter:blur(20px)}
+nav.solid{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none}
 .brand{text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:.3rem;transition:opacity .3s ease}
 nav.solid .brand{opacity:0;pointer-events:none}
+nav.solid .nav-r{opacity:0;pointer-events:none;transition:opacity .3s ease}
+nav.solid .burger{display:flex}
 .brand-name{font-family:var(--serif);font-size:2rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:#fff;line-height:1}
 .brand-sub{font-size:1rem;font-weight:300;letter-spacing:.28em;text-transform:uppercase;color:#fff}
 .brand-sub2{font-size:.8rem;color:#fff;letter-spacing:.38em;text-transform:uppercase;font-weight:300}
-.nav-r{display:flex;align-items:center;gap:1.6rem}
+.nav-r{display:flex;align-items:center;gap:1.6rem;transition:opacity .3s ease}
 .nav-links{display:flex;align-items:center;gap:1.6rem}
 .nav-r a{text-decoration:none;font-size:.72rem;font-weight:400;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.82);transition:color .2s}
 .nav-r a:hover,.nav-r a.on{color:var(--gold)}
