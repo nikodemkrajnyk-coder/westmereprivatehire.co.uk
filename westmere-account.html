@@ -369,7 +369,7 @@ select.fi option{background:var(--navy);color:#fff}
       <div class="lb-title">Welcome back</div>
       <p class="lb-desc">Sign in to manage your bookings and account</p>
       <div class="fg"><label class="fl">Email Address</label><input class="fi" type="email" id="l-email" placeholder="your@email.com"></div>
-      <div class="fg"><label class="fl">Password</label><input class="fi" type="password" placeholder="Your password"></div>
+      <div class="fg"><label class="fl">Password</label><input class="fi" type="password" id="l-pass" placeholder="Your password"></div>
       <button class="btn-main" onclick="doLogin()">Sign In</button>
       <div class="lb-switch">No account? <button onclick="swFrm('register')">Create one here</button></div>
     </div>
@@ -383,8 +383,8 @@ select.fi option{background:var(--navy);color:#fff}
       </div>
       <div class="fg"><label class="fl">Full Name</label><input class="fi" type="text" id="r-name" placeholder="Your full name"></div>
       <div class="fg"><label class="fl">Email</label><input class="fi" type="email" id="r-email" placeholder="your@email.com"></div>
-      <div class="fg"><label class="fl">Mobile</label><input class="fi" type="tel" placeholder="+44 7700 000 000"></div>
-      <div class="fg"><label class="fl">Password</label><input class="fi" type="password" placeholder="Choose a secure password"></div>
+      <div class="fg"><label class="fl">Mobile</label><input class="fi" type="tel" id="r-mobile" placeholder="+44 7700 000 000"></div>
+      <div class="fg"><label class="fl">Password</label><input class="fi" type="password" id="r-pass" placeholder="Choose a secure password"></div>
       <button class="btn-main" onclick="doLoginReg()">Create Account</button>
       <div class="lb-switch">Already have an account? <button onclick="swFrm('login')">Sign in</button></div>
     </div>
@@ -561,10 +561,10 @@ select.fi option{background:var(--navy);color:#fff}
               </div>
             </div>
             <div class="fg"><label class="fl">Passengers</label>
-              <select class="fi"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+              <select class="fi" id="qb-pax"><option>1</option><option>2</option><option>3</option><option>4</option></select>
             </div>
-            <div class="fg" id="qb-flight-wrap" style="grid-column:1/-1"><label class="fl">Flight Number (optional)</label><input class="fi" type="text" placeholder="e.g. EZY1234"></div>
-            <div class="fg" style="grid-column:1/-1"><label class="fl">Special Requirements</label><input class="fi" type="text" placeholder="Child seat, meet &amp; greet, additional requirements…"></div>
+            <div class="fg" id="qb-flight-wrap" style="grid-column:1/-1"><label class="fl">Flight Number (optional)</label><input class="fi" type="text" id="qb-flight" placeholder="e.g. EZY1234"></div>
+            <div class="fg" style="grid-column:1/-1"><label class="fl">Special Requirements</label><input class="fi" type="text" id="qb-notes" placeholder="Child seat, meet &amp; greet, additional requirements…"></div>
           </div>
           <div class="fare-reveal" id="fare-reveal">
             <div class="fr-lbl">Fixed Fare</div>

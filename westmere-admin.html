@@ -999,7 +999,7 @@ function buildDrivers(){
   var grid=document.getElementById('driver-grid');
   if(!grid)return;
   grid.innerHTML=DRIVERS.map(function(d){
-    return '<div class="driver-card '+d.status+'" onclick="showToast(d.name+' · '+d.mobile)">'
+    return '<div class="driver-card '+d.status+'" onclick="showToast('"+d.name+" · "+d.mobile+"')">'
       +'<div class="dc-avatar">'+d.initials+'</div>'
       +'<div class="dc-name">'+d.name+'</div>'
       +'<div class="dc-role">'+d.role+'</div>'
