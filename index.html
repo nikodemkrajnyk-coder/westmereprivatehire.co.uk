@@ -433,6 +433,7 @@ var APC={ga:[10,10],he:[7,10],st:[10,10],lu:[7,7],so:[5,5],ci:[8,8],lo:[0,0]};
 var APNAMES={ga:'gatwick',he:'heathrow',st:'stansted',lu:'luton',so:'southampton',ci:'cityairport',lo:'london'};
 var APFULL={ga:'Gatwick',he:'Heathrow',st:'Stansted',lu:'Luton',so:'Southampton',ci:'London City',lo:'London Central'};
 var TC={horsham:{lat:51.0632,lon:-0.3234},lewes:{lat:50.874,lon:0.0131},brighton:{lat:50.8225,lon:-0.1372},worthing:{lat:50.8185,lon:-0.3788},burgess:{lat:50.9578,lon:-0.132},haywards:{lat:51.0024,lon:-0.0993},seaford:{lat:50.7716,lon:0.1028},crawley:{lat:51.1087,lon:-0.1872},eastgrinstead:{lat:51.1252,lon:-0.0076},uckfield:{lat:50.9688,lon:0.0983},eastbourne:{lat:50.768,lon:0.2904}};
+function esc(s){if(!s)return '';var d=document.createElement('div');d.appendChild(document.createTextNode(s));return d.innerHTML;}
 var _gc={};
 function geocode(a){if(_gc[a])return Promise.resolve(_gc[a]);return fetch('https://nominatim.openstreetmap.org/search?format=json&countrycodes=gb&limit=1&q='+encodeURIComponent(a),{headers:{'Accept-Language':'en'}}).then(function(r){return r.json();}).then(function(d){var r=d&&d[0]?{lat:parseFloat(d[0].lat),lon:parseFloat(d[0].lon)}:null;if(r)_gc[a]=r;return r;});}
 function haverMiles(a,b,c,d){var R=3958.8,dL=(c-a)*Math.PI/180,dn=(d-b)*Math.PI/180,x=Math.sin(dL/2)*Math.sin(dL/2)+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dn/2)*Math.sin(dn/2);return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
@@ -490,7 +491,7 @@ function addrSearch(inp,sid){
           if(!l2&&county)l2=county;
           var full=l2?l1+', '+l2:l1;
           var d=document.createElement('div');d.className='sug-item';
-          d.innerHTML='<div class="si-main">'+l1+'</div>'+(l2?'<div class="si-sub">'+l2+'</div>':'');
+          d.innerHTML='<div class="si-main">'+esc(l1)+'</div>'+(l2?'<div class="si-sub">'+esc(l2)+'</div>':'');
           d.onclick=function(){inp.value=full;s.classList.remove('open');s.innerHTML='';checkFlight();doEstimate();};
           s.appendChild(d);
         });

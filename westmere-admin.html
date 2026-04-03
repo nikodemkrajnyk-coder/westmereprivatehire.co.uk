@@ -10,7 +10,7 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{--navy:#111D2C;--navy2:#1C2A3E;--cream:#F5F2ED;--gold:#B8985A;--gold2:#C9A96E;--text:#fff;--muted:rgba(255,255,255,.55);--border:rgba(255,255,255,.15);--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif;
---green:#2D6E47;--green-bg:rgba(45,110,71,.18);--red:#8B2222;--red-bg:rgba(139,34,34,.15);--amber:#B8985A;--amber-bg:rgba(184,152,90,.1);--purple:#9B7FD4;--purple-bg:rgba(155,127,212,.1);}
+--green:#2D6E47;--green-bg:rgba(45,110,71,.18);--red:#8B2222;--red-bg:rgba(139,34,34,.15);--amber:#B8985A;--amber-bg:rgba(184,152,90,.1);--purple:#9B7FD4;--purple-bg:rgba(155,127,212,.1);--text-light:rgba(255,255,255,.45);--text-mid:rgba(255,255,255,.65);--cream-dark:rgba(255,255,255,.04);--rule:rgba(255,255,255,.08);}
 html{font-size:16px;scroll-behavior:smooth}
 body{font-family:var(--sans);font-weight:300;color:#fff;background:#0d1520;background-attachment:fixed;background-size:cover;background-position:center 55%;line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh;display:flex}
 body::before{content:"";position:fixed;inset:0;background:rgba(17,29,44,.25);z-index:0;pointer-events:none}
@@ -938,30 +938,50 @@ textarea.fi{resize:vertical;min-height:80px}
 
 <script>
 
-// ── ADMIN AUTH ──────────────────────────────────────────────────────────
-// Change these credentials to your own
-const ADMIN_CREDS = {username: 'westmere', password: 'W3stm3re2025!'};
+// ── ADMIN AUTH (SHA-256 hashed — no plaintext credentials) ──────────────
+// To change credentials: hash 'username:password' with SHA-256 and replace the hash below
+// Current: westmere / W3stm3re2025!
+const ADMIN_HASH='74f01baaf1baa1f342d3f3e84f4032f63c175d526b0ade0844079e99c5d1b5de';
 let loginAttempts = 0;
 const MAX_ATTEMPTS = 5;
+let _lockoutUntil = parseInt(localStorage.getItem('wph_lockout')||'0');
 
-function adminLogin(){
+async function sha256(str){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function adminLogin(){
   const user = document.getElementById('al-user').value.trim();
   const pass = document.getElementById('al-pass').value;
   const errEl = document.getElementById('al-err');
   const attEl = document.getElementById('al-attempts');
 
+  // Check lockout
+  if(Date.now() < _lockoutUntil){
+    var secs=Math.ceil((_lockoutUntil-Date.now())/1000);
+    errEl.textContent='Too many failed attempts. Try again in '+secs+' seconds.';
+    errEl.classList.add('show');
+    return;
+  }
+
   if(loginAttempts >= MAX_ATTEMPTS){
-    errEl.textContent = 'Too many failed attempts. Please reload the page.';
+    _lockoutUntil=Date.now()+300000; // 5 min lockout
+    localStorage.setItem('wph_lockout',String(_lockoutUntil));
+    errEl.textContent = 'Account locked for 5 minutes. Too many failed attempts.';
     errEl.classList.add('show');
     document.getElementById('al-user').disabled = true;
     document.getElementById('al-pass').disabled = true;
     return;
   }
 
-  if(user === ADMIN_CREDS.username && pass === ADMIN_CREDS.password){
+  const hash = await sha256(user+':'+pass);
+  if(hash === ADMIN_HASH){
     document.getElementById('admin-login').style.display = 'none';
     document.getElementById('admin-app').style.display = 'flex';
     sessionStorage.setItem('wph_admin','1');
+    loginAttempts=0;
+    localStorage.removeItem('wph_lockout');
     tick();
     setTimeout(function(){buildFares();buildRecordBook();},50);
   } else {
@@ -999,7 +1019,7 @@ function buildDrivers(){
   var grid=document.getElementById('driver-grid');
   if(!grid)return;
   grid.innerHTML=DRIVERS.map(function(d){
-    return '<div class="driver-card '+d.status+'" onclick="showToast('"+d.name+" · "+d.mobile+"')">'
+    return '<div class="driver-card '+d.status+'" onclick="showToast(&quot;'+d.name+' \u00b7 '+d.mobile+'&quot;)">'
       +'<div class="dc-avatar">'+d.initials+'</div>'
       +'<div class="dc-name">'+d.name+'</div>'
       +'<div class="dc-role">'+d.role+'</div>'
@@ -1263,7 +1283,7 @@ function printRecordBook(){
     + '<style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{--navy:#111D2C;--navy2:#1C2A3E;--cream:#F5F2ED;--gold:#B8985A;--gold2:#C9A96E;--text:#fff;--muted:rgba(255,255,255,.55);--border:rgba(255,255,255,.15);--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif;
---green:#2D6E47;--green-bg:rgba(45,110,71,.18);--red:#8B2222;--red-bg:rgba(139,34,34,.15);--amber:#B8985A;--amber-bg:rgba(184,152,90,.1);--purple:#9B7FD4;--purple-bg:rgba(155,127,212,.1);}
+--green:#2D6E47;--green-bg:rgba(45,110,71,.18);--red:#8B2222;--red-bg:rgba(139,34,34,.15);--amber:#B8985A;--amber-bg:rgba(184,152,90,.1);--purple:#9B7FD4;--purple-bg:rgba(155,127,212,.1);--text-light:rgba(255,255,255,.45);--text-mid:rgba(255,255,255,.65);--cream-dark:rgba(255,255,255,.04);--rule:rgba(255,255,255,.08);}
 html{font-size:16px;scroll-behavior:smooth}
 body{font-family:var(--sans);font-weight:300;color:#fff;background:#0d1520;background-attachment:fixed;background-size:cover;background-position:center 55%;line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh;display:flex}
 body::before{content:"";position:fixed;inset:0;background:rgba(17,29,44,.25);z-index:0;pointer-events:none}

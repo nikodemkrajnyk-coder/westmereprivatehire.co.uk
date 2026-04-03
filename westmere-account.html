@@ -141,20 +141,7 @@ select.fi option{background:var(--navy);color:#fff}
 .ba-btn:hover{border-color:rgba(255,255,255,.3);color:#fff}
 .ba-btn.danger:hover{border-color:var(--red);color:var(--red)}
 
-/* ── BALANCE ── */
-.bal-box{background:rgba(255,255,255,.03);padding:2.2rem;text-align:center;margin-bottom:1.2rem;position:relative;overflow:hidden;border:1px solid rgba(184,152,90,.1)}
-.bal-box::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
-.bal-lbl{font-size:.56rem;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:.4rem}
-.bal-amt{font-family:var(--serif);font-size:3.8rem;font-weight:300;color:var(--gold);line-height:1;position:relative}
-.bal-sub{font-size:.74rem;color:rgba(255,255,255,.22);margin-top:.3rem;font-weight:300;position:relative}
-.topup{display:grid;grid-template-columns:1fr auto;gap:.7rem;margin-top:1rem}
-.topup-fi{font-family:var(--sans);font-size:1rem;font-weight:300;color:#fff;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.15);padding:.85rem 0;outline:none;min-height:50px;-webkit-appearance:none;width:100%;transition:border-color .3s}
-.topup-fi:focus{border-color:var(--gold)}
-.topup-btn{font-family:var(--sans);font-size:.62rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;background:var(--gold);color:var(--navy);border:none;padding:.85rem 1.4rem;cursor:pointer;transition:all .25s;white-space:nowrap}
-.topup-btn:hover{background:var(--gold2)}
-.quick-amounts{display:flex;gap:.5rem;margin-top:.8rem;flex-wrap:wrap}
-.qa{font-family:var(--sans);font-size:.64rem;font-weight:300;padding:.4rem .8rem;background:transparent;border:1px solid rgba(255,255,255,.1);cursor:pointer;color:rgba(255,255,255,.4);transition:all .25s}
-.qa:hover{border-color:var(--gold);color:var(--gold)}
+/* ── BALANCE (removed) ── */
 
 /* ── INVOICES ── */
 .inv-row{display:flex;align-items:center;justify-content:space-between;padding:.95rem 0;border-bottom:1px solid rgba(255,255,255,.05);gap:.8rem;flex-wrap:wrap}
@@ -277,12 +264,8 @@ select.fi option{background:var(--navy);color:#fff}
   .type-row{grid-template-columns:1fr}
   .wc-perks{grid-template-columns:1fr}
   .inv-row{flex-direction:column;align-items:flex-start}
-  .topup{grid-template-columns:1fr}
-  .topup-btn{width:100%}
-  .quick-amounts{justify-content:center}
   .prow{flex-direction:column;align-items:flex-start;gap:.3rem}
   .pl{width:100%}
-  .bal-amt{font-size:2.8rem}
 }
 
 /* ── CUSTOM DATE & TIME PICKERS ── */
@@ -412,7 +395,7 @@ select.fi option{background:var(--navy);color:#fff}
     <button class="nav-tab on" onclick="sv('overview',this)">Overview</button>
     <button class="nav-tab" onclick="sv('bookings',this)">My Bookings</button>
     <button class="nav-tab" onclick="sv('quickbook',this)">New Journey</button>
-    <button class="nav-tab" onclick="sv('balance',this)">Balance &amp; Invoices</button>
+    <button class="nav-tab" onclick="sv('balance',this)">Invoices</button>
     <button class="nav-tab" onclick="sv('recurring',this)">Recurring Trips</button>
     <button class="nav-tab" onclick="sv('profile',this)">Profile</button>
     <button class="nav-tab admin-tab" id="admin-tab" style="display:none" onclick="sv('admin',this)">⚙ Admin</button>
@@ -436,14 +419,6 @@ select.fi option{background:var(--navy);color:#fff}
               <div class="binfo"><div class="broute">Lewes → Gatwick Airport</div><div class="bmeta">04:30 · 1 passenger · EZY1234</div></div>
               <div class="bright"><span class="bfare">£85</span><span class="btag t-up">Upcoming</span></div>
             </div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="ch"><div class="ct">Account Credit</div><button onclick="sv('balance',document.querySelectorAll('.nav-tab')[3])" style="font-size:.58rem;color:var(--gold);background:none;border:none;cursor:pointer;font-family:var(--sans);letter-spacing:.1em;text-transform:uppercase;opacity:.7">Top up →</button></div>
-          <div class="cb" style="text-align:center;padding:1.5rem">
-            <div style="font-size:.56rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:.3rem">Available Balance</div>
-            <div style="font-family:var(--serif);font-size:2.8rem;font-weight:300;color:var(--gold);line-height:1;margin:.15rem 0">£25.00</div>
-            <div style="font-size:.72rem;color:rgba(255,255,255,.25);margin-top:.2rem">Applied automatically to your next journey</div>
           </div>
         </div>
       </div>
@@ -582,28 +557,8 @@ select.fi option{background:var(--navy);color:#fff}
       </div>
     </div>
 
-    <!-- BALANCE & INVOICES -->
+    <!-- INVOICES -->
     <div class="view" id="view-balance">
-      <div class="bal-box">
-        <div class="bal-lbl">Account Credit Balance</div>
-        <div class="bal-amt">£25.00</div>
-        <div class="bal-sub">Deducted automatically when you book</div>
-      </div>
-      <div class="card">
-        <div class="ch"><div class="ct">Top Up Credit</div></div>
-        <div class="cb">
-          <div class="topup">
-            <input class="topup-fi" type="number" id="topup-amt" placeholder="Amount in £  e.g. 50">
-            <button class="topup-btn" onclick="showToast('Redirecting to secure payment…')">Top Up</button>
-          </div>
-          <div class="quick-amounts">
-            <button class="qa" onclick="setTopup(20)">£20</button>
-            <button class="qa" onclick="setTopup(50)">£50</button>
-            <button class="qa" onclick="setTopup(100)">£100</button>
-            <button class="qa" onclick="setTopup(200)">£200</button>
-          </div>
-        </div>
-      </div>
       <div class="card">
         <div class="ch"><div class="ct">Invoices</div></div>
         <div class="cb">
@@ -822,6 +777,9 @@ function isNight(h){return h>=22||h<6;}
 function calcMile(mi,night,ap){var f;if(night){f=mi<=10?Math.max(mi,10)*3.80:mi<=20?38+(mi-10)*3.10:69+(mi-20)*2.80;}else{f=mi<=10?Math.max(mi,10)*4.00:mi<=20?40+(mi-10)*2.50:65+(mi-20)*2.25;}if(ap&&APC[ap])f+=APC[ap][0];return Math.ceil(f/0.5)*0.5;}
 function sh(t){return t?t.replace('haywards heath','haywards').replace('burgess hill','burgess').replace('east grinstead','eastgrinstead'):t;}
 
+/* ── Security: HTML escape to prevent XSS ── */
+function esc(s){if(!s)return '';var d=document.createElement('div');d.appendChild(document.createTextNode(s));return d.innerHTML;}
+
 /* ── Geocoding & routing ── */
 var _gc={};
 function geocode(a){if(_gc[a])return Promise.resolve(_gc[a]);return fetch('https://nominatim.openstreetmap.org/search?format=json&countrycodes=gb&limit=1&q='+encodeURIComponent(a),{headers:{'Accept-Language':'en'}}).then(function(r){return r.json();}).then(function(d){var r=d&&d[0]?{lat:parseFloat(d[0].lat),lon:parseFloat(d[0].lon)}:null;if(r)_gc[a]=r;return r;});}
@@ -871,7 +829,7 @@ function addrSearch(inp,sid){
           if(!l2&&county)l2=county;
           var full=l2?l1+', '+l2:l1;
           var d=document.createElement('div');d.className='sug-item';
-          d.innerHTML='<div class="si-main">'+l1+'</div>'+(l2?'<div class="si-sub">'+l2+'</div>':'');
+          d.innerHTML='<div class="si-main">'+esc(l1)+'</div>'+(l2?'<div class="si-sub">'+esc(l2)+'</div>':'');
           d.onclick=function(){inp.value=full;s.classList.remove('open');s.innerHTML='';checkFlight();qbCalc();};
           s.appendChild(d);
         });
@@ -1036,7 +994,6 @@ function sv(id,btn){
   if(btn)btn.classList.add('on');
   if(id==='admin')renderAdmin(ADMIN_DATA);
 }
-function setTopup(n){document.getElementById('topup-amt').value=n;}
 function submitBooking(){
   var d=document.getElementById('qb-dest').value;
   if(!d){showToast('Please enter a destination');return;}
