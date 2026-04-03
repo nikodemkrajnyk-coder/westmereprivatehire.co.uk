@@ -104,8 +104,10 @@ tr:hover td{color:#fff}
 /* ── MOBILE: coverage page fixes ── */
 @media(max-width:780px){
   body{overflow:auto;height:auto;background-attachment:scroll;background-size:cover}
-  #intro{height:auto;min-height:100vh;padding:5rem 5% 3rem}
+  #intro{height:auto;min-height:100vh;padding:5rem 5% 8rem}
   .wa-fab{top:auto;bottom:1.4rem;right:1.4rem}
+  .page-footer{position:relative;margin-top:1rem}
+  [style*="position:fixed;bottom:3.5rem"]{position:relative!important;bottom:auto!important;margin-top:2rem;padding-bottom:1rem}
 }
 @media(max-width:600px){
   #intro .intro-inner [style*="grid-template-columns:1fr 1fr 1fr"]{grid-template-columns:1fr!important}
