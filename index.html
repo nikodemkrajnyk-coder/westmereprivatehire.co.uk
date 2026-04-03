@@ -990,19 +990,19 @@ function bkConfirm(type) {
     if(!drop||!drop.classList.contains('open'))return;
     var firstDay=new Date(_calY,_calM,1).getDay();firstDay=(firstDay+6)%7;
     var dim=new Date(_calY,_calM+1,0).getDate();
-    var h='<div class="cal-header"><button class="cal-arrow" onclick="window._calPrev()" type="button">&#8249;</button><span class="cal-month-label">'+_MONTHS[_calM]+' '+_calY+'</span><button class="cal-arrow" onclick="window._calNext()" type="button">&#8250;</button></div><div class="cal-grid">';
+    var h='<div class="cal-header"><button class="cal-arrow" onclick="event.stopPropagation();window._calPrev()" type="button">&#8249;</button><span class="cal-month-label">'+_MONTHS[_calM]+' '+_calY+'</span><button class="cal-arrow" onclick="event.stopPropagation();window._calNext()" type="button">&#8250;</button></div><div class="cal-grid">';
     _DAYS.forEach(function(n){h+='<div class="cal-day-name">'+n+'</div>';});
     for(var i=0;i<firstDay;i++)h+='<div class="cal-day cal-empty"></div>';
     for(var d=1;d<=dim;d++){
       var dt=new Date(_calY,_calM,d);var isPast=dt<_today;var isTod=(dt.getTime()===_today.getTime());
       var dv=_dateVal(_calY,_calM,d);var isSel=(_selDateStr===dv);
       var cls='cal-day'+(isPast?' cal-past':'')+(isTod?' cal-today':'')+(isSel?' cal-sel':'');
-      h+='<div class="'+cls+'"'+(isPast?'':' onclick="window._calSel('+d+')" tabindex="0"')+'>'+d+'</div>';
+      h+='<div class="'+cls+'"'+(isPast?'':' onclick="event.stopPropagation();window._calSel('+d+')" tabindex="0"')+'>'+d+'</div>';
     }
     h+='</div>';drop.innerHTML=h;
   }
-  window._calPrev=function(){_calM--;if(_calM<0){_calM=11;_calY--;}_renderCal();};
-  window._calNext=function(){_calM++;if(_calM>11){_calM=0;_calY++;}_renderCal();};
+  window._calPrev=function(){_calM--;if(_calM<0){_calM=11;_calY--;}var drop=document.getElementById('cal-drop');if(drop)drop.classList.add('open');_renderCal();};
+  window._calNext=function(){_calM++;if(_calM>11){_calM=0;_calY++;}var drop=document.getElementById('cal-drop');if(drop)drop.classList.add('open');_renderCal();};
   window._calSel=function(d){
     _selDateStr=_dateVal(_calY,_calM,d);
     var hid=document.getElementById('b-date');var disp=document.getElementById('cdt-display');
