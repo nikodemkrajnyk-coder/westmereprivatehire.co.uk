@@ -65,7 +65,7 @@ tr:hover td{color:#fff}
 .page-title{font-family:var(--serif);font-size:clamp(2.5rem,6vw,4rem);font-weight:300;color:#fff;letter-spacing:.08em;margin-bottom:.3rem}
 .page-title em{font-style:italic;color:var(--gold)}
 .page-sub{font-size:1rem;color:rgba(255,255,255,.6);margin-bottom:2.5rem;letter-spacing:.04em}
-@media(max-width:780px){.nav-r{display:none}.burger{display:flex}}
+@media(max-width:780px){.nav-r{display:none}.burger{display:flex}.brand-name{font-size:1.3rem;letter-spacing:.12em}}
 @media(max-width:540px){.page-content{padding:6rem 5% 3rem}}
 #page-header{padding:7rem 6% 3.5rem;position:relative;z-index:1}
 .ph-title{font-family:var(--serif);font-size:clamp(3rem,9vw,6.5rem);font-weight:300;color:#fff;letter-spacing:.08em;line-height:.95;margin-bottom:.42rem}
@@ -80,7 +80,7 @@ tr:hover td{color:#fff}
 .carousel-dots{position:absolute;bottom:1.5rem;left:50%;transform:translateX(-50%);display:flex;gap:.5rem;z-index:2}
 .carousel-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3);cursor:pointer;border:none;padding:0;transition:background .3s}
 .carousel-dot.active{background:var(--gold)}
-.right-panel{position:fixed;right:0;top:0;bottom:0;width:50%;z-index:1;display:flex;flex-direction:column;justify-content:center;padding:7rem 4% 2rem;box-sizing:border-box;overflow:hidden;background:rgba(13,10,6,.75);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.right-panel{position:fixed;right:0;top:0;bottom:0;width:50%;z-index:1;display:flex;flex-direction:column;justify-content:center;padding:7rem 4% 2rem;box-sizing:border-box;overflow:hidden;background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none}
 #specs{border-bottom:1px solid rgba(184,152,90,.15);padding-bottom:1rem;margin-bottom:1rem}
 .specs-inner{max-width:100%;margin:0;padding:0;display:flex;flex-wrap:wrap}
 .spec{flex:0 0 33.33%;min-width:0;padding:.3rem .6rem;border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;gap:0;box-sizing:border-box}
@@ -91,15 +91,15 @@ tr:hover td{color:#fff}
 #features{position:relative;z-index:1;padding:1rem 0 0;margin:0}
 .feat-wrap{max-width:100%;margin:0}
 .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem;margin-top:1.8rem}
-.feat{padding:1.3rem;background:rgba(255,255,255,.04);border-top:1px solid rgba(255,255,255,.1)}
+.feat{padding:1.3rem;background:transparent;border-top:none}
 .feat-name{font-size:.8rem;font-weight:500;color:#fff;margin-bottom:.28rem}
 .feat-desc{font-size:.7rem;color:rgba(255,255,255,.55);line-height:1.72;font-weight:300}
-.fleet-cta{margin-top:2.8rem;text-align:center;padding:2.3rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
+.fleet-cta{margin-top:2.8rem;text-align:center;padding:2.3rem;background:transparent;border:none}
 .fleet-cta h3{font-family:var(--serif);font-size:1.55rem;font-weight:300;color:#fff;margin-bottom:.35rem}
 .fleet-cta h3 em{font-style:italic;color:var(--gold)}
 .fleet-cta p{font-size:.72rem;color:rgba(255,255,255,.35);margin-bottom:1.2rem}
-.fleet-cta a{display:inline-block;background:var(--gold);color:var(--navy);text-decoration:none;font-family:var(--sans);font-size:.62rem;font-weight:500;letter-spacing:.17em;text-transform:uppercase;padding:.75rem 1.9rem;transition:background .2s}
-.fleet-cta a:hover{background:var(--gold2)}
+.fleet-cta a{display:inline-block;background:none;color:#fff;text-decoration:none;font-family:var(--serif);font-size:1.8rem;font-weight:400;font-style:italic;letter-spacing:.06em;text-transform:none;padding:.4rem 0;border:none;transition:color .2s}
+.fleet-cta a:hover{color:var(--gold)}
 .fleet-cta,footer,#features{display:none}
 .stitle{font-family:var(--serif);font-size:clamp(1.8rem,3.5vw,2.6rem);font-weight:300;color:#fff;line-height:1.1}
 .stitle em{font-style:italic;color:var(--gold)}
@@ -109,7 +109,7 @@ tr:hover td{color:#fff}
 @media(max-width:780px){
   body{overflow:auto;height:auto;background-attachment:scroll;background-size:cover}
   #photo-band{position:relative;width:100%;height:55vw;min-height:280px;max-height:420px}
-  .right-panel{position:relative;width:100%;padding:2rem 5% 3rem;background:rgba(13,10,6,.92);backdrop-filter:blur(12px)}
+  .right-panel{position:relative;width:100%;padding:2rem 5% 3rem;background:transparent;backdrop-filter:none}
   .fleet-cta,footer,#features{display:block}
   .specs-inner{flex-wrap:wrap}
   .spec{flex:0 0 33.33%;margin-bottom:.5rem}

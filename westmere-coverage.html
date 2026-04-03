@@ -13,7 +13,7 @@
 :root{--navy:#111D2C;--navy2:#1C2A3E;--cream:#F5F2ED;--gold:#B8985A;--gold2:#C9A96E;--text:#fff;--muted:rgba(255,255,255,.55);--border:rgba(255,255,255,.15);--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif;}
 html{font-size:16px;scroll-behavior:smooth}
 body{font-family:var(--sans);font-weight:300;color:#fff;background:#0d1520;background-attachment:fixed;background-size:cover;background-repeat:no-repeat;background-position:center 55%;line-height:1.7;-webkit-font-smoothing:antialiased;overflow:hidden;height:100vh}
-body::before{display:none}
+body::before{content:"";position:fixed;inset:0;background:rgba(10,8,4,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:0;pointer-events:none}
 nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:.9rem 6%;display:flex;align-items:center;justify-content:space-between;transition:background .3s}
 nav.solid{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none}
 .brand{text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:.3rem;transition:opacity .3s ease}
@@ -66,7 +66,7 @@ tr:hover td{color:#fff}
 .page-title{font-family:var(--serif);font-size:clamp(2.5rem,6vw,4rem);font-weight:300;color:#fff;letter-spacing:.08em;margin-bottom:.3rem}
 .page-title em{font-style:italic;color:var(--gold)}
 .page-sub{font-size:1rem;color:rgba(255,255,255,.6);margin-bottom:2.5rem;letter-spacing:.04em}
-@media(max-width:780px){.nav-r{display:none}.burger{display:flex}}
+@media(max-width:780px){.nav-r{display:none}.burger{display:flex}.brand-name{font-size:1.3rem;letter-spacing:.12em}}
 @media(max-width:540px){.page-content{padding:6rem 5% 3rem}}
 
 #hero{position:fixed;inset:0;z-index:0;overflow:hidden}
@@ -320,14 +320,7 @@ function toggleMenu(){var m=document.getElementById('mm');if(m){m.classList.togg
 function closeMenu(){var m=document.getElementById('mm');if(m){m.classList.remove('open');document.body.style.overflow='';}}
 </script>
 
-<div style="position:fixed;bottom:3.5rem;left:0;right:0;z-index:5;padding:0 6%">
-  <div style="max-width:800px;margin:0 auto;display:flex;justify-content:center;gap:3rem">
-    <div style="text-align:center"><span style="font-family:var(--serif);font-size:1.6rem;color:#fff;display:block">24/7</span><span style="font-size:.55rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.4)">Available</span></div>
-    <div style="text-align:center"><span style="font-family:var(--serif);font-size:1.6rem;color:#fff;display:block">Sussex</span><span style="font-size:.55rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.4)">Wide</span></div>
-    <div style="text-align:center"><span style="font-family:var(--serif);font-size:1.6rem;color:#fff;display:block">6</span><span style="font-size:.55rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.4)">Airports</span></div>
-    
-  </div>
-</div>
+
 <div class="page-footer">
   <p>Airport transfers &amp; private hire across Sussex and beyond</p>
 </div>
