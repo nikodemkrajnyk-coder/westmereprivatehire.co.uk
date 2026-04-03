@@ -12,7 +12,7 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--navy:#111D2C;--navy2:#1C2A3E;--cream:#F5F2ED;--gold:#B8985A;--gold2:#C9A96E;--text:#fff;--muted:rgba(255,255,255,.55);--border:rgba(255,255,255,.15);--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif;}
 html{font-size:16px;scroll-behavior:smooth}
-body{font-family:var(--sans);font-weight:300;color:#fff;background:#0d1520;background-attachment:fixed;background-size:cover;background-position:center 55%;line-height:1.7;-webkit-font-smoothing:antialiased;overflow:hidden;height:100vh}
+body{font-family:var(--sans);font-weight:300;color:#fff;background:#0d1520;background-attachment:fixed;background-size:cover;background-repeat:no-repeat;background-position:center 55%;line-height:1.7;-webkit-font-smoothing:antialiased;overflow:hidden;height:100vh}
 body::before{display:none}
 nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:.9rem 6%;display:flex;align-items:center;justify-content:space-between;transition:background .3s}
 nav.solid{background:rgba(17,29,44,.25);backdrop-filter:blur(20px)}
@@ -32,7 +32,7 @@ nav.solid{background:rgba(17,29,44,.25);backdrop-filter:blur(20px)}
 .nav-socials svg{width:16px;height:16px}
 .burger{display:none;flex-direction:column;gap:5px;cursor:pointer;border:none;background:none;padding:4px;min-width:40px;min-height:40px;justify-content:center;align-items:center}
 .burger span{display:block;width:20px;height:1.5px;background:#fff}
-.mmenu{display:none;position:fixed;inset:0;background:rgba(17,29,44,.97);backdrop-filter:blur(20px);z-index:99;flex-direction:column;align-items:center;justify-content:center;gap:2.4rem}
+.mmenu{display:none;position:fixed;inset:0;background:rgba(17,29,44,.85);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);z-index:99;flex-direction:column;align-items:center;justify-content:center;gap:2.4rem}
 .mmenu.open{display:flex}
 .mmenu a{font-family:var(--serif);font-size:2rem;font-weight:300;color:rgba(255,255,255,.65);text-decoration:none;transition:color .2s}
 .mmenu a:hover{color:var(--gold)}
@@ -103,7 +103,7 @@ tr:hover td{color:#fff}
 @media(max-width:640px){.promise-inner{grid-template-columns:1fr}}
 /* ── MOBILE: coverage page fixes ── */
 @media(max-width:780px){
-  body{overflow:auto;height:auto}
+  body{overflow:auto;height:auto;background-attachment:scroll;background-size:cover}
   #intro{height:auto;min-height:100vh;padding:5rem 5% 3rem}
   .wa-fab{top:auto;bottom:1.4rem;right:1.4rem}
 }

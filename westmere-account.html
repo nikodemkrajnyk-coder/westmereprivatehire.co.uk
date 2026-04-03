@@ -12,12 +12,12 @@
 :root{--navy:#111D2C;--navy2:#1C2A3E;--cream:#F5F2ED;--gold:#B8985A;--gold2:#C9A96E;--text:#fff;--muted:rgba(255,255,255,.55);--border:rgba(255,255,255,.15);--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif;
 --green:#2D6E47;--green-bg:rgba(45,110,71,.15);--red:#8B2222;--red-bg:rgba(139,34,34,.15);--amber:#B8985A;--amber-bg:rgba(184,152,90,.1);--purple:#9B7FD4;--purple-bg:rgba(155,127,212,.1);}
 html{font-size:16px;scroll-behavior:smooth}
-body{font-family:var(--sans);font-weight:300;color:#fff;background:#0d1520;background-attachment:fixed;background-size:cover;background-position:center 55%;line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh}
+body{font-family:var(--sans);font-weight:300;color:#fff;background:#0d1520;background-attachment:fixed;background-size:cover;background-repeat:no-repeat;background-position:center 55%;line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh}
 body::before{content:"";position:fixed;inset:0;background:rgba(10,8,4,.35);z-index:0;pointer-events:none}
 
 /* ── NAV HIDDEN on account page ── */
 nav#nav{display:none}
-.mmenu{display:none}
+.mmenu{display:none;position:fixed;inset:0;background:rgba(17,29,44,.85);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);z-index:99;flex-direction:column;align-items:center;justify-content:center;gap:2.4rem}
 
 /* ── FOOTER (matches public pages) ── */
 footer{background:transparent;padding:1.5rem 6%;border-top:none;position:relative;z-index:1}
@@ -261,6 +261,7 @@ select.fi option{background:var(--navy);color:#fff}
 @keyframes ringPulse{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
 
 /* ── RESPONSIVE ── */
+@media(max-width:780px){body{background-attachment:scroll;background-size:cover}}
 @media(max-width:800px){.stats{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}
 @media(max-width:560px){.bdate{display:none}.r2{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.r2f{grid-template-columns:1fr}.pl{width:auto;min-width:100px}}
 @media(max-width:480px){
