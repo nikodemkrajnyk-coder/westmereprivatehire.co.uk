@@ -920,6 +920,7 @@ function _renderSuggestions(inp,s,apItems,results,isGoogle){
 }
 
 document.addEventListener('click',function(e){document.querySelectorAll('.sug-drop').forEach(function(s){if(!s.contains(e.target))s.classList.remove('open');});});
+['qb-from','qb-dest'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('focus',function(){this.select();});});
 
 /* ── Fare calculator (smart engine) ── */
 function checkFlight(){

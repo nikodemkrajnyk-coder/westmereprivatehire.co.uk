@@ -1009,6 +1009,7 @@ function _renderSuggestions(inp,drop,apItems,results,isGoogle){
   else drop.classList.remove('open');
 }
 document.addEventListener('click',function(e){document.querySelectorAll('.sug-drop').forEach(function(s){if(!s.contains(e.target))s.classList.remove('open');});});
+['home-from','home-dest','bk-from','bk-dest'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('focus',function(){this.select();});});
 
 /* ── FLIGHT FIELD VISIBILITY ── */
 function checkFlightField(){
