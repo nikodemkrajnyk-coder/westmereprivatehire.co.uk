@@ -15,11 +15,11 @@ html{font-size:16px;scroll-behavior:smooth}
 body{font-family:var(--sans);font-weight:300;color:#fff;background:#0d1520;background-attachment:fixed;background-size:cover;background-repeat:no-repeat;background-position:center 55%;line-height:1.7;-webkit-font-smoothing:antialiased;overflow:hidden;height:100vh}
 body::before{content:"";position:fixed;inset:0;background:rgba(10,8,4,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:0;pointer-events:none}
 nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:.9rem 6%;display:flex;align-items:center;justify-content:space-between;transition:background .3s}
-nav.solid{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none}
+nav.solid{background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;padding-left:0;padding-right:0}
 .brand{text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:.3rem;transition:opacity .3s ease}
-nav.solid .brand{opacity:0;pointer-events:none}
-nav.solid .nav-r{opacity:0;pointer-events:none;transition:opacity .3s ease}
-nav.solid .burger{display:flex}
+nav.solid .brand{opacity:0;pointer-events:none;width:0;overflow:hidden;padding:0;margin:0}
+nav.solid .nav-r{opacity:0;pointer-events:none;width:0;overflow:hidden;transition:opacity .3s ease}
+nav.solid .burger{display:flex;position:fixed;top:1rem;right:6%;z-index:101}
 .brand-name{font-family:var(--serif);font-size:1.4rem;font-weight:500;letter-spacing:.15em;text-transform:uppercase;color:#fff;line-height:1}
 .brand-sub{font-size:1rem;font-weight:300;letter-spacing:.28em;text-transform:uppercase;color:#fff}
 .brand-sub2{font-size:.8rem;color:#fff;letter-spacing:.38em;text-transform:uppercase;font-weight:300}
@@ -27,7 +27,7 @@ nav.solid .burger{display:flex}
 .nav-links{display:flex;align-items:center;gap:1.6rem}
 .nav-r a{text-decoration:none;font-size:.72rem;font-weight:400;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.82);transition:color .2s}
 .nav-r a:hover,.nav-r a.on{color:var(--gold)}
-.nav-book{background:none!important;color:#fff!important;padding:.4rem 0;border-radius:0;font-weight:400!important;font-family:var(--serif);font-size:1.8rem;font-style:italic;text-decoration:none;letter-spacing:.06em;border:none}
+.nav-book{background:none!important;color:#fff!important;padding:.4rem 0;border-radius:0;font-weight:300!important;font-family:var(--serif);font-size:1.8rem;font-style:italic;text-decoration:none;letter-spacing:.04em;border:none}
 .nav-book:hover{color:#fff!important;background:none!important}
 .nav-socials{display:flex;align-items:center;gap:.7rem}
 .nav-socials a{display:flex;align-items:center;justify-content:center;width:20px;height:20px;color:rgba(255,255,255,.7);transition:color .2s}
@@ -35,7 +35,7 @@ nav.solid .burger{display:flex}
 .nav-socials svg{width:16px;height:16px}
 .burger{display:none;flex-direction:column;gap:5px;cursor:pointer;border:none;background:none;padding:4px;min-width:40px;min-height:40px;justify-content:center;align-items:center}
 .burger span{display:block;width:20px;height:1.5px;background:#fff}
-.mmenu{display:none;position:fixed;inset:0;background:rgba(17,29,44,.5);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);z-index:99;flex-direction:column;align-items:center;justify-content:center;gap:2.4rem}
+.mmenu{display:none;position:fixed;inset:0;background:rgba(17,29,44,.55);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);z-index:99;flex-direction:column;align-items:center;justify-content:center;gap:2.4rem}
 .mmenu.open{display:flex}
 .mmenu a{font-family:var(--serif);font-size:2rem;font-weight:300;color:rgba(255,255,255,.65);text-decoration:none;transition:color .2s}
 .mmenu a:hover{color:var(--gold)}
@@ -109,7 +109,6 @@ tr:hover td{color:#fff}
   body{overflow:auto;height:auto;background-attachment:scroll;background-size:cover}
   #intro{height:auto;min-height:100vh;padding:5rem 5% 8rem}
   .wa-fab{top:auto;bottom:1.4rem;right:1.4rem}
-  .page-footer{position:relative;margin-top:1rem}
   [style*="position:fixed;bottom:3.5rem"]{position:relative!important;bottom:auto!important;margin-top:2rem;padding-bottom:1rem}
 }
 @media(max-width:600px){
@@ -119,7 +118,6 @@ tr:hover td{color:#fff}
 }
 @media(max-width:540px){
   #intro{padding:5rem 5% 2rem}
-  .page-footer{position:relative}
 }
 #cta{padding:5rem 6%;text-align:center;position:relative;z-index:1}
 .cta-inner{max-width:560px;margin:0 auto}
@@ -130,7 +128,6 @@ tr:hover td{color:#fff}
 .stitle em{font-style:italic;color:var(--gold)}
 #towns,#airports,#promise,#cta{display:none}
 
-.page-footer{position:fixed;bottom:0;left:0;right:0;z-index:10;padding:1rem 6%;text-align:center}.page-footer p{font-size:.72rem;color:rgba(255,255,255,.4);font-weight:300;letter-spacing:.08em;margin:0}
 </style>
 </head>
 <body>
@@ -172,7 +169,6 @@ tr:hover td{color:#fff}
       </div>
     </div>
 
-    <p style="font-size:.9rem;color:rgba(255,255,255,.65);font-style:italic;letter-spacing:.04em">Available 24/7 · Every town in Sussex · All major airports served</p>
   </div>
 </section>
 
@@ -321,8 +317,5 @@ function closeMenu(){var m=document.getElementById('mm');if(m){m.classList.remov
 </script>
 
 
-<div class="page-footer">
-  <p>Airport transfers &amp; private hire across Sussex and beyond</p>
-</div>
 </body>
 </html>

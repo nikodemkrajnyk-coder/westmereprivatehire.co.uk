@@ -14,17 +14,17 @@ body{font-family:var(--sans);font-weight:300;color:var(--text);background-color:
 body::before{content:"";position:fixed;inset:0;background:rgba(17,29,44,.22);z-index:0;pointer-events:none}
 nav,#booking,#contact,footer,.wa-fab{position:relative;z-index:1}
 nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:1rem 6%;display:flex;align-items:flex-start;justify-content:space-between;transition:background .3s}
-nav.solid{background:transparent;backdrop-filter:none}
+nav.solid{background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;padding-left:0;padding-right:0}
 .brand{text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:.3rem;transition:opacity .3s ease}
-nav.solid .brand{opacity:0;pointer-events:none}
-nav.solid .nav-r{opacity:0;pointer-events:none;transition:opacity .3s ease}
-nav.solid .burger{display:flex}
+nav.solid .brand{opacity:0;pointer-events:none;width:0;overflow:hidden;padding:0;margin:0}
+nav.solid .nav-r{opacity:0;pointer-events:none;width:0;overflow:hidden;transition:opacity .3s ease}
+nav.solid .burger{display:flex;position:fixed;top:1rem;right:6%;z-index:101}
 .brand-name{font-family:var(--serif);font-size:1.4rem;font-weight:500;letter-spacing:.15em;text-transform:uppercase;color:#fff;line-height:1}
 .brand-sub{font-size:1rem;font-weight:300;letter-spacing:.28em;text-transform:uppercase;color:#fff}.brand-sub2{font-size:.8rem;color:#fff;letter-spacing:.38em;text-transform:uppercase;font-weight:300}
 .nav-r{display:flex;flex-direction:column;align-items:flex-end;gap:.5rem;transition:opacity .3s ease}
 .nav-links{display:flex;align-items:center;gap:1.6rem}.nav-links a{text-decoration:none;font-size:.72rem;font-weight:400;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.82);transition:color .2s}
 .nav-links a:hover,.nav-links a.on{color:var(--gold)}.nav-socials{display:flex;gap:.85rem;align-items:center}.nav-socials a{color:rgba(255,255,255,.5);text-decoration:none;transition:color .25s;display:flex}.nav-socials a:hover{color:var(--gold)}.nav-socials svg{width:20px;height:20px}
-.nav-book{background:none!important;color:#fff!important;padding:.4rem 0;border-radius:0;font-weight:400!important;font-family:var(--serif);font-size:1.8rem;font-style:italic;text-decoration:none;letter-spacing:.06em;border:none}
+.nav-book{background:none!important;color:#fff!important;padding:.4rem 0;border-radius:0;font-weight:300!important;font-family:var(--serif);font-size:1.8rem;font-style:italic;text-decoration:none;letter-spacing:.04em;border:none}
 .nav-book:hover{color:var(--gold)!important;background:none!important}
 .burger{display:none;flex-direction:column;gap:5px;cursor:pointer;border:none;background:none;padding:4px;min-width:40px;min-height:40px;justify-content:center;align-items:center}
 .burger span{display:block;width:20px;height:1.5px;background:#fff}
@@ -111,7 +111,7 @@ input[type="time"].fi,input[type="date"].fi{-webkit-appearance:auto;appearance:a
 .cr .cr-val a{color:#fff;text-decoration:none;border-bottom:1px solid rgba(184,152,90,.22);transition:border-color .2s}
 .cr .cr-val a:hover{border-color:var(--gold)}
 .licence-bar{margin-top:1.8rem;padding-top:1.3rem;border-top:1px solid rgba(255,255,255,.08);font-size:.68rem;color:rgba(255,255,255,.5);font-weight:300;line-height:1.9}
-@media(max-width:780px){body{background-attachment:scroll;background-size:cover}.nav-r{display:none}.burger{display:flex}nav .brand{transition:opacity .3s ease}.brand-name{font-size:1.3rem;letter-spacing:.12em}.intro-w{font-size:clamp(2.8rem,9vw,4.5rem);letter-spacing:.08em}nav.solid{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none}.brand-hero{position:relative!important;right:auto!important;top:auto!important;text-align:center;margin:0 auto 2rem}.wa-fab{top:auto;bottom:1.4rem;right:1.4rem}.foot-inner{flex-direction:column;text-align:center;gap:1rem}.ci-based{border-left:none;padding-left:0}}
+@media(max-width:780px){body{background-attachment:scroll;background-size:cover}.nav-r{display:none}.burger{display:flex}nav .brand{transition:opacity .3s ease}.brand-name{font-size:1.3rem;letter-spacing:.12em}.intro-w{font-size:clamp(2rem,7vw,3.2rem);letter-spacing:.06em}nav.solid{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none}.brand-hero{position:relative!important;right:auto!important;top:auto!important;text-align:center;margin:0 auto 2rem}.wa-fab{top:auto;bottom:1.4rem;right:1.4rem}.foot-inner{flex-direction:column;text-align:center;gap:1rem}.ci-based{border-left:none;padding-left:0}}
 @media(max-width:540px){.date-time-row{grid-template-columns:1fr}.contact-strip{flex-direction:column;gap:1.2rem}}
 @media(max-width:420px){.main-content{padding:5rem 4% 2rem}.bk-title{font-size:clamp(1.4rem,5vw,2rem)}}
 /* ===== BOOKING MODAL ===== */
