@@ -310,12 +310,29 @@ textarea.fi{resize:vertical;min-height:80px}
 </div>
 
 
-<!-- Admin login disabled — mockup -->
-<div id="admin-login" style="display:none"></div>
+<!-- ═══ ADMIN LOGIN ═══ -->
+<div id="admin-login">
+  <div class="al-box">
+    <div class="al-hd">
+      <div class="al-crest">W</div>
+      <span class="al-name">Westmere</span>
+      <span class="al-sub">Admin Panel</span>
+    </div>
+    <div class="al-body">
+      <div class="al-title">Sign In</div>
+      <p class="al-desc">Enter your credentials to continue.</p>
+      <div class="al-err" id="al-err">Incorrect email or password.</div>
+      <div class="fg"><label class="fl">Email</label><input class="fi" type="email" id="al-user" placeholder="Email" autocomplete="email" onkeydown="if(event.key==='Enter')adminLogin()"></div>
+      <div class="fg"><label class="fl">Password</label><input class="fi" type="password" id="al-pass" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')adminLogin()"></div>
+      <button class="btn btn-navy btn-full" style="margin-top:.5rem;width:100%;padding:1rem" onclick="adminLogin()">Sign In</button>
+      <div class="al-attempts" id="al-attempts"></div>
+    </div>
+  </div>
+</div>
 
 
 <!-- ═══ APP ═══ -->
-<div id="admin-app" style="flex:1;width:100%;min-height:100vh">
+<div id="admin-app" style="display:none;flex:1;width:100%;min-height:100vh">
 
 <!-- ═══ SIDEBAR ═══ -->
 <div class="sidebar" id="sidebar">
@@ -934,7 +951,7 @@ textarea.fi{resize:vertical;min-height:80px}
 // ── ADMIN AUTH (SHA-256 hashed — no plaintext credentials) ──────────────
 // To change credentials: hash 'username:password' with SHA-256 and replace the hash below
 // Current: westmere / W3stm3re2025!
-const ADMIN_HASH='74f01baaf1baa1f342d3f3e84f4032f63c175d526b0ade0844079e99c5d1b5de';
+const ADMIN_HASH='10273666a1ed732a634350728e46c16e8bdd7f64f2eee9f0e86d85d1fd58e674';
 let loginAttempts = 0;
 const MAX_ATTEMPTS = 5;
 let _lockoutUntil = parseInt(localStorage.getItem('wph_lockout')||'0');
