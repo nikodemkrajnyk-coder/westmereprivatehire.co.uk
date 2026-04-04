@@ -33,7 +33,7 @@ a{color:var(--gold)}
 /* ══════════════════════════════════════════════
    ACCOUNT PAGE — LOGIN
    ══════════════════════════════════════════════ */
-#login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem 1rem;position:relative;z-index:1;padding-top:6rem}
+#login-page{min-height:100vh;display:none;align-items:center;justify-content:center;padding:2rem 1rem;position:relative;z-index:1;padding-top:6rem}
 .login-box{width:100%;max-width:420px;position:relative;z-index:1;animation:up .5s ease}
 .lb-hd{padding:2.5rem 2.2rem 2rem;text-align:center;border-bottom:1px solid rgba(184,152,90,.12)}
 .lb-crest{width:56px;height:56px;border:1px solid rgba(184,152,90,.3);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.4rem;font-weight:500;color:rgba(255,255,255,.6);margin:0 auto 1.1rem;position:relative}
@@ -74,7 +74,7 @@ select.fi option{background:var(--navy);color:#fff}
 /* ══════════════════════════════════════════════
    DASHBOARD
    ══════════════════════════════════════════════ */
-#dashboard{display:none;position:relative;z-index:1}
+#dashboard{display:block;position:relative;z-index:1}
 .topbar{background:rgba(13,21,32,.92);backdrop-filter:blur(24px);height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 5%;position:sticky;top:0;z-index:90;border-bottom:1px solid rgba(184,152,90,.08)}
 .tb-brand{display:flex;align-items:center;gap:.8rem;text-decoration:none}
 .tb-crest{width:36px;height:36px;border:1px solid rgba(184,152,90,.22);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1rem;color:rgba(255,255,255,.5);flex-shrink:0}
@@ -754,17 +754,17 @@ select.fi option{background:var(--navy);color:#fff}
 <script>
 /* ── Fare config (homepage engine) ── */
 var CF={
-horsham:{ga:55,he:99.5,st:178,lo:120},
-lewes:{ga:68,he:121,st:199,lo:160},
-brighton:{ga:68,he:125,st:201.5,lo:160},
-crawley:{ga:32,he:82,st:160,lo:110},
-worthing:{ga:80,he:132,st:210,lo:170},
-haywards:{ga:48.5,he:105,st:182,lo:140},
-burgess:{ga:49.5,he:106,st:184,lo:145},
-seaford:{ga:79.5,he:132,st:215,lo:240},
-eastbourne:{ga:90.5,he:143,st:226,lo:260},
-uckfield:{ga:57.5,he:110.5,st:182,lo:180},
-eastgrinstead:{ga:42,he:90.5,st:163,lo:115}
+  brighton:{ga:{out:72,ret:68},he:{out:128,ret:133},st:{out:215,ret:220},lu:{out:168,ret:173},so:{out:92,ret:88},ci:{out:185,ret:190},lo:{out:155,ret:160}},
+  lewes:{ga:{out:78,ret:74},he:{out:140,ret:145},st:{out:225,ret:230},lu:{out:180,ret:185},so:{out:105,ret:100},ci:{out:195,ret:200},lo:{out:168,ret:173}},
+  horsham:{ga:{out:55,ret:50},he:{out:120,ret:125},st:{out:205,ret:210},lu:{out:160,ret:165},so:{out:85,ret:80},ci:{out:175,ret:180},lo:{out:142,ret:147}},
+  crawley:{ga:{out:35,ret:32},he:{out:95,ret:100},st:{out:190,ret:195},lu:{out:145,ret:150},so:{out:78,ret:75},ci:{out:160,ret:165},lo:{out:128,ret:133}},
+  worthing:{ga:{out:82,ret:78},he:{out:138,ret:143},st:{out:228,ret:233},lu:{out:178,ret:183},so:{out:75,ret:72},ci:{out:198,ret:203},lo:{out:165,ret:170}},
+  haywards:{ga:{out:52,ret:48},he:{out:115,ret:120},st:{out:200,ret:205},lu:{out:155,ret:160},so:{out:95,ret:90},ci:{out:172,ret:177},lo:{out:140,ret:145}},
+  burgess:{ga:{out:55,ret:50},he:{out:118,ret:123},st:{out:202,ret:207},lu:{out:158,ret:163},so:{out:92,ret:88},ci:{out:175,ret:180},lo:{out:143,ret:148}},
+  seaford:{ga:{out:85,ret:80},he:{out:148,ret:153},st:{out:235,ret:240},lu:{out:188,ret:193},so:{out:112,ret:108},ci:{out:205,ret:210},lo:{out:175,ret:180}},
+  eastbourne:{ga:{out:95,ret:90},he:{out:158,ret:163},st:{out:245,ret:250},lu:{out:198,ret:203},so:{out:122,ret:118},ci:{out:215,ret:220},lo:{out:185,ret:190}},
+  uckfield:{ga:{out:60,ret:55},he:{out:125,ret:130},st:{out:208,ret:213},lu:{out:162,ret:167},so:{out:98,ret:94},ci:{out:178,ret:183},lo:{out:148,ret:153}},
+  eastgrinstead:{ga:{out:42,ret:38},he:{out:105,ret:110},st:{out:192,ret:197},lu:{out:148,ret:153},so:{out:88,ret:84},ci:{out:165,ret:170},lo:{out:135,ret:140}}
 };
 var APC={ga:[10,10],he:[7,10],st:[10,10],lu:[7,7],so:[5,5],ci:[8,8],lo:[0,0]};
 var APNAMES={ga:'gatwick',he:'heathrow',st:'stansted',lu:'luton',so:'southampton',ci:'cityairport',lo:'london'};
@@ -879,18 +879,18 @@ function qbRunCalc(from,to){
   var tm=(document.getElementById('qb-time').value)||'08:00';
   var h=parseInt(tm.split(':')[0]),night=isNight(h);
   var puAP=nAP(from),deAP=nAP(to),puT=nT(from),deT=nT(to);
-  // destination is airport -> drop-off
+  // destination is airport -> drop-off (use .out)
   if(deAP&&!puAP){
-    var rt=sh(puT),base=rt&&CF[rt]&&CF[rt][deAP]?CF[rt][deAP]:null;
-    if(base){qbShowFare(base+APC[deAP][0],null,null,'Fixed price',APC[deAP][0]>0?APFULL[deAP]+' drop-off +\u00a3'+APC[deAP][0]:'');return;}
+    var rt=sh(puT),base=rt&&CF[rt]&&CF[rt][deAP]?CF[rt][deAP].out:null;
+    if(base){qbShowFare(base,null,null,'Fixed price','');return;}
     document.getElementById('fr-amt').textContent='Calculating\u2026';document.getElementById('fare-reveal').classList.add('show');
-    geocode(from+' UK').then(function(c){if(!c){qbShowFare(calcMile(20,night,deAP),null,null,'Estimated');return;}var nn=nearestTown(c);var b2=nn&&CF[nn]&&CF[nn][deAP]?CF[nn][deAP]+APC[deAP][0]:calcMile(20,night,deAP);qbShowFare(Math.ceil(b2/0.5)*0.5,null,null,'Fixed price');}).catch(function(){qbShowFare(calcMile(20,night,deAP),null,null,'Estimated');});
+    geocode(from+' UK').then(function(c){if(!c){qbShowFare(calcMile(20,night,deAP),null,null,'Estimated');return;}var nn=nearestTown(c);var b2=nn&&CF[nn]&&CF[nn][deAP]?CF[nn][deAP].out:calcMile(20,night,deAP);qbShowFare(Math.ceil(b2/0.5)*0.5,null,null,'Fixed price');}).catch(function(){qbShowFare(calcMile(20,night,deAP),null,null,'Estimated');});
     return;
   }
-  // pickup is airport -> pickup
+  // pickup is airport -> pickup (use .ret)
   if(puAP&&!deAP){
-    var rt2=sh(deT),base2=rt2&&CF[rt2]&&CF[rt2][puAP]?CF[rt2][puAP]:null;
-    if(base2){qbShowFare(base2+APC[puAP][1],null,null,'Fixed price',APFULL[puAP]+' pickup +\u00a3'+APC[puAP][1]);return;}
+    var rt2=sh(deT),base2=rt2&&CF[rt2]&&CF[rt2][puAP]?CF[rt2][puAP].ret:null;
+    if(base2){qbShowFare(base2,null,null,'Fixed price','');return;}
     qbShowFare(calcMile(20,night,puAP),null,null,'Estimated');return;
   }
   // airport to airport
@@ -1043,6 +1043,20 @@ function showToast(msg){
   tt=setTimeout(function(){el.classList.remove('on')},3200);
 }
 document.querySelectorAll('input[type=date]').forEach(function(d){d.min=new Date().toISOString().split('T')[0]});
+
+/* ── Auto-boot with demo user (mockup mode) ── */
+(function(){
+  var demoName='Sarah Jones',demoEmail='sarah.jones@email.com',demoAccType='Business · Monthly invoicing';
+  document.getElementById('login-page').style.display='none';
+  document.getElementById('dashboard').style.display='block';
+  document.getElementById('tb-user').textContent=demoName;
+  document.getElementById('pv-name').textContent=demoName;
+  document.getElementById('pv-email').textContent=demoEmail;
+  document.getElementById('pv-actype').textContent=demoAccType;
+  renderAdmin(ADMIN_DATA);
+  document.getElementById('tb-badge').style.display='inline-block';
+  document.getElementById('admin-tab').style.display='inline-block';
+})();
 </script>
 <footer>
   <div class="foot-inner">
@@ -1136,5 +1150,8 @@ function closeMenu(){var m=document.getElementById('mmenu');if(m){m.classList.re
   });
 })();
 </script>
+<script>var _gmLoaded=false;</script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCmh0E1VjW0dkSjGCahKYBVVh-KFOcxN4Y&libraries=places&language=en&callback=_gmReady" async defer></script>
+<script>function _gmReady(){_gmLoaded=true;}</script>
 </body>
 </html>
