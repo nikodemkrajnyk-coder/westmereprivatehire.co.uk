@@ -291,6 +291,11 @@ footer{background:transparent;padding:1.5rem 6%;border-top:none;position:relativ
 .ls-hd{padding:2.5rem 2.2rem 2rem;text-align:center;border-bottom:1px solid rgba(184,152,90,.12)}
 .ls-body{padding:2.2rem 2.2rem 1.8rem}
 .ls-foot{text-align:center;padding:1.4rem 2.2rem;border-top:1px solid rgba(255,255,255,.06);font-size:.78rem;color:rgba(255,255,255,.3)}
+/* ── SUGGESTION DROPDOWN ── */
+.sug-drop{position:absolute;left:0;right:0;top:100%;background:rgba(13,21,32,.97);backdrop-filter:blur(18px);border:1px solid rgba(184,152,90,.18);z-index:300;max-height:220px;overflow-y:auto;display:none}
+.sug-drop.on{display:block}
+.sug-drop div{padding:.72rem 1rem;font-size:.82rem;color:rgba(255,255,255,.7);cursor:pointer;border-bottom:1px solid rgba(255,255,255,.05);transition:background .15s}
+.sug-drop div:hover,.sug-drop div:active{background:rgba(184,152,90,.12);color:#fff}
 </style>
 </head>
 <body>
@@ -459,7 +464,7 @@ footer{background:transparent;padding:1.5rem 6%;border-top:none;position:relativ
         <div class="ch">Quick Commands</div>
         <div style="padding:.75rem 1rem;display:flex;flex-direction:column;gap:.45rem">
           <button onclick="assistQuick('What jobs do I have today?')" class="qcmd">What jobs do I have today?</button>
-          <button onclick="assistQuick('Book Mrs Williams, Lewes to Gatwick, tomorrow 4:30am, cash, 1 passenger')" class="qcmd">Book Mrs Williams, Lewes to Gatwick, tomorrow 4:30am, cash</button>
+          <button onclick="assistQuick('Book Mrs Williams, Lewes to Gatwick, tomorrow 4:30am, cash, 1 passenger, £78')" class="qcmd">Book Mrs Williams, Lewes to Gatwick, tomorrow 4:30am, cash, £78</button>
           <button onclick="assistQuick('What is the fare from Brighton to Heathrow at 3am?')" class="qcmd">Fare from Brighton to Heathrow at 3am?</button>
           <button onclick="assistQuick('Block me off this Sunday')" class="qcmd">Block me off this Sunday</button>
         </div>
@@ -473,7 +478,7 @@ footer{background:transparent;padding:1.5rem 6%;border-top:none;position:relativ
 
       <div style="display:flex;gap:.7rem;align-items:center;margin-bottom:.85rem;flex-wrap:wrap">
         <input type="date" id="sd-date" style="font-family:var(--sans);font-size:.82rem;font-weight:300;color:#fff;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);padding:.6rem .85rem;outline:none;flex:1;min-width:150px;-webkit-appearance:none">
-        <input id="sd-loc" placeholder="Your location now" style="font-family:var(--sans);font-size:.82rem;font-weight:300;color:#fff;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);padding:.6rem .85rem;outline:none;width:150px;-webkit-appearance:none" value="Horsham">
+        <div style="position:relative;width:150px"><input id="sd-loc" placeholder="Your location now" style="font-family:var(--sans);font-size:.82rem;font-weight:300;color:#fff;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);padding:.6rem .85rem;outline:none;width:100%;-webkit-appearance:none" value="Horsham" oninput="addrSearch('sd-loc','sug-sd-loc')" onfocus="this.select()"><div class="sug-drop" id="sug-sd-loc"></div></div>
         <button onclick="runSmartDay()" id="sd-btn" class="ibtn-primary" style="white-space:nowrap">Score Day</button>
         <button onclick="loadSample()" class="ibtn-ghost" style="white-space:nowrap">Example</button>
       </div>
@@ -632,7 +637,7 @@ var TODAY_JOBS = [
   {id:'j1',time:'04:30',name:'Sarah Jones',phone:'+447700100001',email:'sarah.jones@email.com',
    contactPref:'whatsapp',pax:1,bags:1,pickup:'14 Friars Walk, Lewes BN7 2PL',
    dest:'Gatwick South Terminal',type:'Airport Drop-off',flight:'EZY1234',
-   flightStatus:'ontime',flightDeparts:'08:15',fare:85,payment:'Cash',status:'upcoming',
+   flightStatus:'ontime',flightDeparts:'08:15',fare:78,payment:'Cash',status:'upcoming',
    note:'One large suitcase. Quiet journey.'},
   {id:'j2',time:'17:20',name:'John Smith',phone:'+447700100002',email:'john.smith@smithco.co.uk',
    contactPref:'email',pax:2,bags:2,pickup:'Heathrow T5 Arrivals',
@@ -643,18 +648,18 @@ var TODAY_JOBS = [
 var OFFERED_JOBS = [
   {id:'o1',date:'Sat 29 Mar',time:'05:00',name:'Private Booking',phone:'+447700100010',
    contactPref:'whatsapp',pax:2,bags:2,pickup:'Horsham RH12',dest:'Gatwick Airport',
-   type:'Airport Drop-off',flight:'FR9920',driverFare:45,fare:45,payment:'Cash'},
+   type:'Airport Drop-off',flight:'FR9920',driverFare:55,fare:55,payment:'Cash'},
   {id:'o2',date:'Sun 30 Mar',time:'07:00',name:'Mrs Taylor',phone:'+447700100011',
    contactPref:'sms',pax:1,bags:1,pickup:'Lewes BN7',dest:'Heathrow T3',
-   type:'Airport Drop-off',flight:'EK009',driverFare:135,fare:135,payment:'Card'}
+   type:'Airport Drop-off',flight:'EK009',driverFare:140,fare:140,payment:'Card'}
 ];
 var INBOX_MSGS = [
   {id:'m1',from:'Sarah Jones',phone:'+447700100001',time:'08:14',
    text:'Hi, can I book a car from Lewes to Gatwick on Friday morning, around 5am? Just me and one bag. Cash please.',
-   status:'accepted',analysis:{name:'Sarah Jones',pickup:'Lewes',dest:'Gatwick South Terminal',date:'Friday',time:'05:00',fare:75,conflict:false}},
+   status:'accepted',analysis:{name:'Sarah Jones',pickup:'Lewes',dest:'Gatwick South Terminal',date:'Friday',time:'05:00',fare:78,conflict:false}},
   {id:'m2',from:'Robert Hall',phone:'+447700100003',time:'11:32',
    text:'Hello I need a taxi from Brighton to Heathrow on Saturday at 3am. 2 of us. Can you do it?',
-   status:'flagged',analysis:{name:'Robert Hall',pickup:'Brighton',dest:'Heathrow',date:'Sat',time:'03:00',fare:120,conflict:true,conflictReason:'Existing job at 04:30 — only 90 min gap.'}}
+   status:'flagged',analysis:{name:'Robert Hall',pickup:'Brighton',dest:'Heathrow',date:'Sat',time:'03:00',fare:128,conflict:true,conflictReason:'Existing job at 04:30 — only 90 min gap.'}}
 ];
 var SD_JOBS = [];
 var TESLA = {battery:78,rangeMiles:218,location:'Horsham',status:'Parked'};
@@ -850,7 +855,8 @@ function simMsg(){
 }
 // TODO: Route through backend proxy at /api/claude to keep API key server-side
 async function analyseMsg(id,text){
-  var sys='You are the booking intake for Westmere Private Hire (Horsham base). Analyse this WhatsApp message. Extract booking details if it is a booking request. Existing jobs: 04:30 Lewes→Gatwick, 17:20 Heathrow→Lewes. 90 min conflict buffer.\n\nFare rates: Gatwick from Lewes £75, Horsham £45, Brighton £70. Heathrow from Lewes £135, Horsham £115, Brighton £120.\n\nRespond ONLY with JSON: {"isBooking":true,"name":"...","pickup":"...","dest":"...","date":"...","time":"...","fare":0,"conflict":false,"conflictReason":"","note":"..."} or {"isBooking":false,"note":"..."}';
+  var jobs=TODAY_JOBS.map(function(j){return j.time+' '+j.pickup+'→'+j.dest;}).join(', ');
+  var sys='You are the booking intake for Westmere Private Hire (Horsham base). Analyse this WhatsApp message. Extract booking details if it is a booking request. Existing jobs: '+jobs+'. 90 min conflict buffer.\n\nDrop-off/Pickup fares: Brighton→Gatwick £72/£68, Lewes→Gatwick £78/£74, Horsham→Gatwick £55/£50, Crawley→Gatwick £35/£32, Worthing→Gatwick £72/£68, Haywards Heath→Gatwick £52/£48, Burgess Hill→Gatwick £48/£44, Eastbourne→Gatwick £98/£94, Seaford→Gatwick £92/£88, Uckfield→Gatwick £62/£58, East Grinstead→Gatwick £42/£38. Brighton→Heathrow £128/£133, Lewes→Heathrow £140/£145, Horsham→Heathrow £120/£125, Crawley→Heathrow £95/£100, Worthing→Heathrow £130/£135, Eastbourne→Heathrow £162/£167. Horsham→Stansted £180/£185, Lewes→Stansted £225/£230, Brighton→Stansted £215/£220. Horsham→Luton £155/£160, Lewes→Luton £215/£220, Brighton→Luton £205/£210. Horsham→Southampton £135/£130, Brighton→Southampton £152/£147, Lewes→Southampton £160/£155. For locations outside town centre: nearest town fare + £2.50/extra mile.\n\nRespond ONLY with JSON: {"isBooking":true,"name":"...","pickup":"...","dest":"...","date":"...","time":"...","fare":0,"conflict":false,"conflictReason":"","note":"..."} or {"isBooking":false,"note":"..."}';
   try{
     // NOTE: Direct client-side calls to api.anthropic.com will return 401 (no API key).
     // In production, route through a backend proxy (e.g. /api/claude) that adds the auth header server-side.
@@ -889,7 +895,18 @@ function appendThink(id){var f=document.getElementById('assist-feed');var el=doc
 function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function escAttr(s){return encodeURIComponent(String(s));}
 function buildAssistCtx(){
-  return 'You are the business assistant for Westmere Private Hire (Horsham base). Sole operator/driver.\nFares: Gatwick from Lewes £75, Horsham £45, Brighton £70. Heathrow from Lewes £135, Horsham £115, Brighton £120. Night rate (00:00-05:59) +15%.\nToday: 04:30 Sarah Jones Lewes→Gatwick £85 Cash. 17:20 John Smith Heathrow→Lewes £145 Account.\nBe direct and short — driver may be in the car. Confirm all actions clearly.';
+  var fares='Fixed airport fares (drop-off / pickup):\n';
+  fares+='Brighton→Gatwick £72/£68, Brighton→Heathrow £128/£133, Brighton→Stansted £215/£220, Brighton→Luton £205/£210, Brighton→Southampton £152/£147, Brighton→City £166/£171\n';
+  fares+='Lewes→Gatwick £78/£74, Lewes→Heathrow £140/£145, Lewes→Stansted £225/£230, Lewes→Luton £215/£220, Lewes→Southampton £160/£155, Lewes→City £175/£180\n';
+  fares+='Horsham→Gatwick £55/£50, Horsham→Heathrow £120/£125, Horsham→Stansted £180/£185, Horsham→Luton £155/£160, Horsham→Southampton £135/£130, Horsham→City £160/£165\n';
+  fares+='Crawley→Gatwick £35/£32, Crawley→Heathrow £95/£100\n';
+  fares+='Worthing→Gatwick £72/£68, Worthing→Heathrow £130/£135\n';
+  fares+='Haywards Heath→Gatwick £52/£48\nBurgess Hill→Gatwick £48/£44\n';
+  fares+='Eastbourne→Gatwick £98/£94, Eastbourne→Heathrow £162/£167\n';
+  fares+='Seaford→Gatwick £92/£88\nUckfield→Gatwick £62/£58\nEast Grinstead→Gatwick £42/£38\n';
+  fares+='For locations outside a town centre: use nearest town fixed price + £2.50 per extra mile.\n';
+  var jobs=TODAY_JOBS.map(function(j){return j.time+' '+j.name+' '+j.pickup+'→'+j.dest+' £'+j.fare+' '+j.payment;}).join('. ');
+  return 'You are the business assistant for Westmere Private Hire (Horsham base). Sole operator/driver.\n'+fares+'\nToday: '+jobs+'\nBe direct and short — driver may be in the car. Confirm all actions clearly.';
 }
 async function sendToAssist(msg){
   if(ASSIST_BUSY)return;ASSIST_BUSY=true;
@@ -928,11 +945,11 @@ function toggleVoice(){
 
 // ── SMART DAY ─────────────────────────────────────────────────────────────────
 var SAMPLE=[
-  {id:'sd1',time:'07:00',name:'Mr Patterson',pickup:'Horsham',dest:'Heathrow T5',pax:1,fare:115,payment:'Card'},
+  {id:'sd1',time:'07:00',name:'Mr Patterson',pickup:'Horsham',dest:'Heathrow T5',pax:1,fare:120,payment:'Card'},
   {id:'sd2',time:'12:00',name:'Mrs Clarke',pickup:'Lewes',dest:'Brighton',pax:2,fare:22,payment:'Cash'},
-  {id:'sd3',time:'14:30',name:'James Ford',pickup:'Brighton',dest:'Gatwick',pax:1,fare:70,payment:'Account'},
+  {id:'sd3',time:'14:30',name:'James Ford',pickup:'Brighton',dest:'Gatwick',pax:1,fare:72,payment:'Account'},
   {id:'sd4',time:'17:00',name:'Private',pickup:'Seaford',dest:'Eastbourne',pax:1,fare:18,payment:'Cash'},
-  {id:'sd5',time:'20:00',name:'Mr Okafor',pickup:'Lewes',dest:'Gatwick',pax:3,fare:75,payment:'Cash'}
+  {id:'sd5',time:'20:00',name:'Mr Okafor',pickup:'Lewes',dest:'Gatwick',pax:3,fare:78,payment:'Cash'}
 ];
 function loadSample(){SD_JOBS=SAMPLE.slice();renderSDJobs();}
 function renderSDJobs(){
@@ -985,6 +1002,77 @@ async function runSmartDay(){
   document.getElementById('sd-output').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
+// ── AIRPORTS & PLACES AUTOCOMPLETE ──────────────────────────────────────────
+var AIRPORTS=[
+  {n:'gatwick',lat:51.1537,lon:-0.1821},{n:'heathrow',lat:51.4700,lon:-0.4543},
+  {n:'stansted',lat:51.8860,lon:0.2389},{n:'luton',lat:51.8747,lon:-0.3685},
+  {n:'southampton',lat:50.9503,lon:-1.3568},{n:'city',lat:51.5048,lon:0.0495}
+];
+var _gSess=null,_gAuto=null,_gPlaces=null;
+function _initGoogleServices(){
+  if(!window.google||!google.maps||!google.maps.places)return false;
+  if(!_gAuto)_gAuto=new google.maps.places.AutocompleteService();
+  if(!_gSess)_gSess=new google.maps.places.AutocompleteSessionToken();
+  if(!_gPlaces){var d=document.createElement('div');_gPlaces=new google.maps.places.PlacesService(d);}
+  return true;
+}
+function addrSearch(inputId,sugId,cb){
+  var inp=document.getElementById(inputId);
+  var sug=document.getElementById(sugId);
+  if(!inp||!sug)return;
+  var q=(inp.value||'').trim();
+  if(q.length<2){sug.innerHTML='';sug.classList.remove('on');return;}
+  if(_initGoogleServices()){
+    _gAuto.getPlacePredictions({input:q,componentRestrictions:{country:'gb'},sessionToken:_gSess},function(preds,status){
+      if(status!=='OK'||!preds||!preds.length){_nomFallback(q,sug,inp,cb);return;}
+      _renderSuggestions(sug,preds.map(function(p){return{label:p.description,placeId:p.place_id};}),inp,cb);
+    });
+  }else{_nomFallback(q,sug,inp,cb);}
+}
+function _nomFallback(q,sug,inp,cb){
+  fetch('https://nominatim.openstreetmap.org/search?format=json&countrycodes=gb&limit=5&q='+encodeURIComponent(q))
+  .then(function(r){return r.json();}).then(function(data){
+    _renderSuggestions(sug,data.map(function(d){return{label:d.display_name,lat:parseFloat(d.lat),lon:parseFloat(d.lon)};}),inp,cb);
+  }).catch(function(){sug.innerHTML='';sug.classList.remove('on');});
+}
+function _renderSuggestions(sug,items,inp,cb){
+  if(!items.length){sug.innerHTML='';sug.classList.remove('on');return;}
+  sug.innerHTML=items.map(function(it,i){return '<div data-idx="'+i+'">'+esc(it.label)+'</div>';}).join('');
+  sug.classList.add('on');
+  Array.from(sug.children).forEach(function(el,i){
+    el.onclick=function(){
+      var it=items[i];
+      if(it.placeId&&_gPlaces){
+        _gPlaces.getDetails({placeId:it.placeId,fields:['formatted_address','geometry'],sessionToken:_gSess},function(place){
+          _gSess=new google.maps.places.AutocompleteSessionToken();
+          inp.value=place&&place.formatted_address?place.formatted_address:it.label;
+          sug.innerHTML='';sug.classList.remove('on');
+          if(cb)cb(inp.value,place&&place.geometry?{lat:place.geometry.location.lat(),lon:place.geometry.location.lng()}:null);
+        });
+      }else{
+        inp.value=it.label;
+        sug.innerHTML='';sug.classList.remove('on');
+        if(cb)cb(inp.value,it.lat&&it.lon?{lat:it.lat,lon:it.lon}:null);
+      }
+    };
+  });
+}
+
+// ── FARE TABLE (matching fares page) ────────────────────────────────────────
+var CF={
+  brighton:{ga:{out:72,ret:68},he:{out:128,ret:133},st:{out:215,ret:220},lu:{out:205,ret:210},so:{out:152,ret:147},ci:{out:166,ret:171}},
+  lewes:{ga:{out:78,ret:74},he:{out:140,ret:145},st:{out:225,ret:230},lu:{out:215,ret:220},so:{out:160,ret:155},ci:{out:175,ret:180}},
+  horsham:{ga:{out:55,ret:50},he:{out:120,ret:125},st:{out:180,ret:185},lu:{out:155,ret:160},so:{out:135,ret:130},ci:{out:160,ret:165}},
+  crawley:{ga:{out:35,ret:32},he:{out:95,ret:100}},
+  worthing:{ga:{out:72,ret:68},he:{out:130,ret:135}},
+  haywards:{ga:{out:52,ret:48}},
+  burgess:{ga:{out:48,ret:44}},
+  eastbourne:{ga:{out:98,ret:94},he:{out:162,ret:167}},
+  seaford:{ga:{out:92,ret:88}},
+  uckfield:{ga:{out:62,ret:58}},
+  eastgrinstead:{ga:{out:42,ret:38}}
+};
+
 // ── TOAST ─────────────────────────────────────────────────────────────────────
 var _tt;
 function showToast(msg){var el=document.getElementById('toast');document.getElementById('toast-msg').textContent=msg;el.classList.add('on');clearTimeout(_tt);_tt=setTimeout(function(){el.classList.remove('on');},3000);}
@@ -995,6 +1083,20 @@ function initApp(){
   setMode('drive');
   buildToday();
 }
+// Select-on-focus for inputs
+['owner-user','owner-pass','assist-input'].forEach(function(id){
+  var el=document.getElementById(id);if(el)el.addEventListener('focus',function(){this.select();});
+});
+// Close suggestion dropdowns on outside click
+document.addEventListener('click',function(e){
+  document.querySelectorAll('.sug-drop.on').forEach(function(d){
+    if(!d.contains(e.target)&&d.previousElementSibling!==e.target)d.classList.remove('on');
+  });
+});
+// Close suggestion dropdowns on Escape
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape')document.querySelectorAll('.sug-drop.on').forEach(function(d){d.classList.remove('on');});
+});
 // Auto-init if session already authenticated
 if(sessionStorage.getItem('wph_owner')){initApp();}
 </script>
@@ -1020,5 +1122,6 @@ window.addEventListener('scroll',function(){var n=document.getElementById('nav')
 function toggleMenu(){var m=document.getElementById('mmenu');if(m){m.classList.toggle('open');document.body.style.overflow=m.classList.contains('open')?'hidden':'';}}
 function closeMenu(){var m=document.getElementById('mmenu');if(m){m.classList.remove('open');document.body.style.overflow='';}}
 </script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDG4xfW0CbRhbq1cUM1Qa_0IuVJR-bLq2U&libraries=places&language=en&region=gb" async defer></script>
 </body>
 </html>
