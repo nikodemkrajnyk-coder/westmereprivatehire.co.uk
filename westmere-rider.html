@@ -301,15 +301,16 @@ textarea.fi:focus{border-color:var(--gold)}
   .quick-actions{grid-template-columns:1fr}
 }
 </style>
-<!-- Google Places API – replace AIzaSyDG4xfW0CbRhbq1cUM1Qa_0IuVJR-bLq2U with your key from https://console.cloud.google.com -->
-<script>window._GOOGLE_API_KEY='AIzaSyDG4xfW0CbRhbq1cUM1Qa_0IuVJR-bLq2U';</script>
-<script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDG4xfW0CbRhbq1cUM1Qa_0IuVJR-bLq2U&libraries=places&language=en&region=gb&callback=_gmReady"></script>
-<script>var _gmLoaded=false;function _gmReady(){_gmLoaded=true;}</script>
+<!-- Google Places API -->
+<script>window._GOOGLE_API_KEY='AIzaSyCmh0E1VjW0dkSjGCahKYBVVh-KFOcxN4Y';</script>
+<script>var _gmLoaded=false;</script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCmh0E1VjW0dkSjGCahKYBVVh-KFOcxN4Y&libraries=places&language=en&callback=_gmReady" async defer></script>
+<script>function _gmReady(){_gmLoaded=true;}</script>
 </head>
 <body>
 
 <!-- ═══ LOGIN SCREEN ═══ -->
-<div id="login-screen">
+<div id="login-screen" style="display:none">
   <div class="ls-inner">
     <div class="ls-hd">
       <div class="ls-crest">W</div>
@@ -832,17 +833,17 @@ function toggleSwitch(el){
 
 /* Fixed fare tables (matching main website) */
 var CF={
-  horsham:{ga:55,he:99.5,st:178,lo:120},
-  lewes:{ga:68,he:121,st:199,lo:160},
-  brighton:{ga:68,he:125,st:201.5,lo:160},
-  crawley:{ga:32,he:82,st:160,lo:110},
-  worthing:{ga:80,he:132,st:210,lo:170},
-  haywards:{ga:48.5,he:105,st:182,lo:140},
-  burgess:{ga:49.5,he:106,st:184,lo:145},
-  seaford:{ga:79.5,he:132,st:215,lo:240},
-  eastbourne:{ga:90.5,he:143,st:226,lo:260},
-  uckfield:{ga:57.5,he:110.5,st:182,lo:180},
-  eastgrinstead:{ga:42,he:90.5,st:163,lo:115}
+  brighton:{ga:{out:72,ret:68},he:{out:128,ret:133},st:{out:215,ret:220},lu:{out:168,ret:173},so:{out:92,ret:88},ci:{out:185,ret:190},lo:{out:155,ret:160}},
+  lewes:{ga:{out:78,ret:74},he:{out:140,ret:145},st:{out:225,ret:230},lu:{out:180,ret:185},so:{out:105,ret:100},ci:{out:195,ret:200},lo:{out:168,ret:173}},
+  horsham:{ga:{out:55,ret:50},he:{out:120,ret:125},st:{out:205,ret:210},lu:{out:160,ret:165},so:{out:85,ret:80},ci:{out:175,ret:180},lo:{out:142,ret:147}},
+  crawley:{ga:{out:35,ret:32},he:{out:95,ret:100},st:{out:190,ret:195},lu:{out:145,ret:150},so:{out:78,ret:75},ci:{out:160,ret:165},lo:{out:128,ret:133}},
+  worthing:{ga:{out:82,ret:78},he:{out:138,ret:143},st:{out:228,ret:233},lu:{out:178,ret:183},so:{out:75,ret:72},ci:{out:198,ret:203},lo:{out:165,ret:170}},
+  haywards:{ga:{out:52,ret:48},he:{out:115,ret:120},st:{out:200,ret:205},lu:{out:155,ret:160},so:{out:95,ret:90},ci:{out:172,ret:177},lo:{out:140,ret:145}},
+  burgess:{ga:{out:55,ret:50},he:{out:118,ret:123},st:{out:202,ret:207},lu:{out:158,ret:163},so:{out:92,ret:88},ci:{out:175,ret:180},lo:{out:143,ret:148}},
+  seaford:{ga:{out:85,ret:80},he:{out:148,ret:153},st:{out:235,ret:240},lu:{out:188,ret:193},so:{out:112,ret:108},ci:{out:205,ret:210},lo:{out:175,ret:180}},
+  eastbourne:{ga:{out:95,ret:90},he:{out:158,ret:163},st:{out:245,ret:250},lu:{out:198,ret:203},so:{out:122,ret:118},ci:{out:215,ret:220},lo:{out:185,ret:190}},
+  uckfield:{ga:{out:60,ret:55},he:{out:125,ret:130},st:{out:208,ret:213},lu:{out:162,ret:167},so:{out:98,ret:94},ci:{out:178,ret:183},lo:{out:148,ret:153}},
+  eastgrinstead:{ga:{out:42,ret:38},he:{out:105,ret:110},st:{out:192,ret:197},lu:{out:148,ret:153},so:{out:88,ret:84},ci:{out:165,ret:170},lo:{out:135,ret:140}}
 };
 var APC={ga:[10,10],he:[7,10],st:[10,10],lu:[7,7],so:[5,5],ci:[8,8],lo:[0,0]};
 var APNAMES={ga:'gatwick',he:'heathrow',st:'stansted',lu:'luton',so:'southampton',ci:'cityairport',lo:'london'};
@@ -1102,12 +1103,12 @@ function bkRunCalc(from,to){
 
   // Destination is airport
   if(deAP&&!puAP){
-    var rt=sh(puT),base=rt&&CF[rt]&&CF[rt][deAP]?CF[rt][deAP]:null;
+    var rt=sh(puT),base=rt&&CF[rt]&&CF[rt][deAP]?CF[rt][deAP].out:null;
     if(base){bkSetFare(base+APC[deAP][0],null,null,'Fixed price',APC[deAP][0]>0?APFULL[deAP]+' drop-off +\u00a3'+APC[deAP][0]:'');return;}
     geocode(from+' UK').then(function(c){
       if(!c){bkSetFare(calcMile(20,night,deAP),null,null,'Estimated');return;}
       var nn=nearestTown(c);
-      var b2=nn&&CF[nn]&&CF[nn][deAP]?CF[nn][deAP]+APC[deAP][0]:calcMile(20,night,deAP);
+      var b2=nn&&CF[nn]&&CF[nn][deAP]?CF[nn][deAP].out+APC[deAP][0]:calcMile(20,night,deAP);
       bkSetFare(Math.ceil(b2/0.5)*0.5,null,null,'Fixed price');
     }).catch(function(){bkSetFare(calcMile(20,night,deAP),null,null,'Estimated');});
     return;
@@ -1115,7 +1116,7 @@ function bkRunCalc(from,to){
 
   // Pickup is airport
   if(puAP&&!deAP){
-    var rt2=sh(deT),base2=rt2&&CF[rt2]&&CF[rt2][puAP]?CF[rt2][puAP]:null;
+    var rt2=sh(deT),base2=rt2&&CF[rt2]&&CF[rt2][puAP]?CF[rt2][puAP].ret:null;
     if(base2){bkSetFare(base2+APC[puAP][1],null,null,'Fixed price',APFULL[puAP]+' pickup +\u00a3'+APC[puAP][1]);return;}
     bkSetFare(calcMile(20,night,puAP),null,null,'Estimated');
     return;
@@ -1563,14 +1564,11 @@ function loadPrefs(){
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   AUTO-LOGIN CHECK
+   AUTO-BOOT (no login required — open as mockup)
    ═══════════════════════════════════════════════════════════════════════════ */
 (function(){
-  var email=sessionStorage.getItem('wph_rider');
-  if(email){
-    _currentUser={name:email.split('@')[0].replace(/[._]/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();}),email:email,phone:'+44 7700 000 000'};
-    bootApp();
-  }
+  _currentUser={name:'Demo Rider',email:'demo@westmereprivatehire.co.uk',phone:'+44 7700 000 000'};
+  bootApp();
 })();
 </script>
 </body>
