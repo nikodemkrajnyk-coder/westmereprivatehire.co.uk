@@ -15,8 +15,8 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{--navy:#111D2C;--navy-deep:#0d1520;--gold:#B8985A;--gold2:#C9A96E;--rule:rgba(255,255,255,.1);--text:#fff;--text-mid:rgba(255,255,255,.65);--text-light:rgba(255,255,255,.4);--white:rgba(255,255,255,.85);--cream:rgba(255,255,255,.04);--cream-dark:rgba(255,255,255,.07);--green:#2D6E47;--green-bg:rgba(45,110,71,.18);--red:#8B2222;--red-bg:rgba(139,34,34,.15);--amber:#B8985A;--amber-bg:rgba(184,152,90,.1);--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',sans-serif;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);}
-html{height:100%;font-size:18px;scroll-behavior:smooth}
-body{font-family:var(--sans);font-weight:300;color:#fff;background:var(--navy-deep);background-attachment:fixed;background-size:cover;background-repeat:no-repeat;background-position:center 55%;line-height:1.7;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden}
+html{height:100%;font-size:18px;scroll-behavior:smooth;overflow-x:hidden}
+body{font-family:var(--sans);font-weight:300;color:#fff;background:var(--navy-deep);background-attachment:fixed;background-size:cover;background-repeat:no-repeat;background-position:center 55%;line-height:1.7;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden;overscroll-behavior-x:none;touch-action:pan-y;max-width:100vw}
 body::before{content:"";position:fixed;inset:0;background:rgba(10,8,4,.35);z-index:0;pointer-events:none}
 h1,h2,h3,h4{font-family:var(--serif);font-weight:300;color:#fff;letter-spacing:.05em}
 p{color:rgba(255,255,255,.72);line-height:1.8}
@@ -51,7 +51,7 @@ nav.solid{background:rgba(17,29,44,.25);backdrop-filter:blur(20px)}
 @media(max-width:780px){.nav-r{display:none}.burger{display:flex}body{background-attachment:scroll}}
 
 /* ── APP SHELL ── */
-.app{display:flex;flex-direction:column;min-height:100vh;position:relative;z-index:1}
+.app{display:flex;flex-direction:column;min-height:100vh;position:relative;z-index:1;overflow-x:hidden;max-width:100vw}
 .topbar{background:rgba(13,21,32,.92);backdrop-filter:blur(24px);padding:calc(var(--safe-top) + .7rem) 1.2rem .7rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid rgba(184,152,90,.08);position:sticky;top:0;z-index:60;height:64px}
 .tb-left{display:flex;align-items:center;gap:.8rem}
 .tb-crest{width:36px;height:36px;border:1px solid rgba(184,152,90,.22);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1rem;color:rgba(255,255,255,.5);flex-shrink:0}
@@ -73,7 +73,7 @@ nav.solid{background:rgba(17,29,44,.25);backdrop-filter:blur(20px)}
 .bn-dot{position:absolute;top:.38rem;right:calc(50% - 16px);background:var(--red);color:#fff;font-size:.46rem;font-weight:700;min-width:13px;height:13px;border-radius:7px;padding:0 2px;display:none;align-items:center;justify-content:center}
 
 /* ── PAGES ── */
-.page-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.page-scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
 .pg{display:none;padding:1.2rem 1rem;max-width:560px;margin:0 auto;padding-bottom:1.5rem}
 .pg.on{display:block}
 .sec-title{font-family:var(--serif);font-size:1.8rem;font-weight:300;color:#fff;line-height:1;margin-bottom:.3rem}
@@ -283,6 +283,44 @@ input[type=date]::placeholder,input[type=text]::placeholder{color:rgba(255,255,2
 .ls-hd{padding:2.5rem 2.2rem 2rem;text-align:center;border-bottom:1px solid rgba(184,152,90,.12)}
 .ls-body{padding:2.2rem 2.2rem 1.8rem}
 .ls-foot{text-align:center;padding:1.4rem 2.2rem;border-top:1px solid rgba(255,255,255,.06);font-size:.78rem;color:rgba(255,255,255,.3)}
+/* ── CALENDAR ── */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:rgba(255,255,255,.06)}
+.cal-hd{padding:.5rem .2rem;text-align:center;font-size:.6rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);background:rgba(13,21,32,.8)}
+.cal-day{min-height:52px;padding:.35rem .3rem;background:rgba(13,21,32,.6);cursor:pointer;transition:background .2s;position:relative}
+.cal-day:hover{background:rgba(184,152,90,.08)}
+.cal-day.today{background:rgba(184,152,90,.12);border:1px solid rgba(184,152,90,.3)}
+.cal-day.other{opacity:.3}
+.cal-day.has-jobs::after{content:'';position:absolute;bottom:4px;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:var(--gold)}
+.cal-num{font-size:.82rem;font-weight:400;color:#fff}
+.cal-job-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--gold);margin:1px}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;padding:.8rem 0;margin-bottom:.5rem}
+.cal-nav-btn{background:none;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.6);font-family:var(--sans);font-size:.78rem;padding:.45rem .85rem;cursor:pointer;transition:all .2s;min-height:40px}
+.cal-nav-btn:hover{border-color:var(--gold);color:#fff}
+.cal-month{font-family:var(--serif);font-size:1.3rem;font-weight:300;color:#fff}
+.cal-day-detail{margin-top:.85rem}
+.cal-detail-job{padding:.9rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:.8rem}
+.cal-detail-job:last-child{border-bottom:none}
+.cdj-time{font-family:var(--serif);font-size:1.15rem;color:var(--gold);flex-shrink:0;width:50px}
+.cdj-info{flex:1}
+.cdj-name{font-size:1rem;font-weight:500;color:#fff}
+.cdj-route{font-size:.85rem;color:rgba(255,255,255,.55)}
+.cdj-fare{font-family:var(--serif);font-size:1.1rem;color:var(--gold);flex-shrink:0}
+
+/* ── CONFLICT BANNER ── */
+.conflict-banner{padding:.85rem 1.1rem;background:var(--amber-bg);border:1px solid rgba(184,152,90,.25);margin-bottom:.5rem}
+.conflict-title{font-size:.85rem;font-weight:500;color:var(--amber);margin-bottom:.4rem}
+.conflict-vs{display:flex;gap:.6rem;align-items:stretch}
+.conflict-side{flex:1;padding:.6rem .7rem;background:rgba(13,21,32,.5);border:1px solid rgba(255,255,255,.08)}
+.conflict-side-label{font-size:.6rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:.25rem}
+.conflict-side-time{font-family:var(--serif);font-size:1.1rem;color:var(--gold)}
+.conflict-side-name{font-size:.88rem;font-weight:400;color:#fff}
+.conflict-side-route{font-size:.78rem;color:rgba(255,255,255,.5)}
+
+/* ── MSG SOURCE ICON ── */
+.msg-source{display:inline-flex;align-items:center;gap:.3rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;padding:.18rem .55rem;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5)}
+.msg-source.wa{color:#25D366;border-color:rgba(37,211,102,.3)}
+.msg-source.email{color:#60A5FA;border-color:rgba(96,165,250,.25)}
+
 /* ── SUGGESTION DROPDOWN ── */
 .sug-drop{position:absolute;left:0;right:0;top:100%;background:rgba(13,21,32,.97);backdrop-filter:blur(18px);border:1px solid rgba(184,152,90,.18);z-index:300;max-height:220px;overflow-y:auto;display:none}
 .sug-drop.on{display:block}
@@ -363,14 +401,29 @@ input[type=date]::placeholder,input[type=text]::placeholder{color:rgba(255,255,2
       </div>
     </div>
 
-    <!-- WhatsApp Inbox -->
+    <!-- Inbox (WhatsApp + Email) -->
     <div class="pg" id="pg-inbox">
-      <div class="sec-title"><em>WhatsApp</em> Inbox</div>
-      <div class="sec-sub">Claude reading every message — booking automatically or flagging to you</div>
+      <div class="sec-title"><em>Inbox</em></div>
+      <div class="sec-sub">WhatsApp &amp; Email — auto-reads and books, or flags to you</div>
       <div class="card" style="margin-bottom:.85rem">
-        <div class="ch">Incoming Messages <button onclick="simMsg()" class="ibtn-sm">+ Simulate</button></div>
+        <div class="ch">Incoming <button onclick="simMsg()" class="ibtn-sm">+ Simulate</button></div>
         <div id="inbox-feed"></div>
       </div>
+    </div>
+
+    <!-- Calendar -->
+    <div class="pg" id="pg-calendar">
+      <div class="sec-title"><em>Calendar</em></div>
+      <div class="sec-sub" id="cal-sub">Your booked jobs at a glance</div>
+      <div class="card" style="margin-bottom:.85rem">
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="calNav(-1)">&larr; Prev</button>
+          <div class="cal-month" id="cal-month"></div>
+          <button class="cal-nav-btn" onclick="calNav(1)">Next &rarr;</button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+      <div id="cal-detail"></div>
     </div>
 
     <!-- Assistant -->
@@ -473,6 +526,7 @@ input[type=date]::placeholder,input[type=text]::placeholder{color:rgba(255,255,2
     <button class="bn on" id="bn-today" onclick="goPage('today',this)"><div class="bn-bar"></div><div class="bn-label">Today</div></button>
     <button class="bn" id="bn-offered" onclick="goPage('offered',this)"><div class="bn-bar"></div><div class="bn-label">Offered</div><div class="bn-dot" id="offered-dot"></div></button>
     <button class="bn" id="bn-tesla" onclick="goPage('tesla',this)"><div class="bn-bar"></div><div class="bn-label">Tesla</div></button>
+    <button class="bn" id="bn-calendar" onclick="goPage('calendar',this)"><div class="bn-bar"></div><div class="bn-label">Calendar</div></button>
     <button class="bn" id="bn-inbox" onclick="goPage('inbox',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Inbox</div><div class="bn-dot" id="inbox-dot">2</div></button>
     <button class="bn" id="bn-assistant" onclick="goPage('assistant',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Assistant</div></button>
     <button class="bn" id="bn-smart" onclick="goPage('smart',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Smart Day</div></button>
@@ -587,12 +641,15 @@ var OFFERED_JOBS = [
    type:'Airport Drop-off',flight:'EK009',driverFare:140,fare:140,payment:'Card'}
 ];
 var INBOX_MSGS = [
-  {id:'m1',from:'Sarah Jones',phone:'+447700100001',time:'08:14',
+  {id:'m1',from:'Sarah Jones',phone:'+447700100001',time:'08:14',source:'whatsapp',
    text:'Hi, can I book a car from Lewes to Gatwick on Friday morning, around 5am? Just me and one bag. Cash please.',
    status:'accepted',analysis:{name:'Sarah Jones',pickup:'Lewes',dest:'Gatwick South Terminal',date:'Friday',time:'05:00',fare:78,conflict:false}},
-  {id:'m2',from:'Robert Hall',phone:'+447700100003',time:'11:32',
+  {id:'m2',from:'Robert Hall',phone:'+447700100003',time:'11:32',source:'whatsapp',
    text:'Hello I need a taxi from Brighton to Heathrow on Saturday at 3am. 2 of us. Can you do it?',
-   status:'flagged',analysis:{name:'Robert Hall',pickup:'Brighton',dest:'Heathrow',date:'Sat',time:'03:00',fare:128,conflict:true,conflictReason:'Existing job at 04:30 — only 90 min gap.'}}
+   status:'flagged',analysis:{name:'Robert Hall',pickup:'Brighton',dest:'Heathrow',date:'Sat',time:'03:00',fare:128,conflict:true,conflictJob:{time:'04:30',name:'Sarah Jones',pickup:'Lewes',dest:'Gatwick South Terminal',fare:78},conflictReason:'Only 90 min gap between jobs'}},
+  {id:'m3',from:'bookings@westmere.co.uk',phone:'',time:'09:45',source:'email',
+   text:'Subject: Booking enquiry - Haywards Heath to Gatwick, next Tuesday 6am. 1 passenger, card payment. Regards, Mrs Palmer',
+   status:'accepted',analysis:{name:'Mrs Palmer',pickup:'Haywards Heath',dest:'Gatwick',date:'Tuesday',time:'06:00',fare:52,conflict:false}}
 ];
 var SD_JOBS = [];
 var TESLA = {battery:78,rangeMiles:218,location:'Horsham',status:'Parked'};
@@ -610,7 +667,7 @@ function setMode(mode){
   document.getElementById('mode-admin').classList.toggle('on', mode==='admin');
   document.getElementById('tb-mode-label').textContent = mode==='drive' ? 'Drive Mode' : 'Admin Mode';
   // Show/hide nav items
-  var driveItems = ['bn-today','bn-offered','bn-tesla'];
+  var driveItems = ['bn-today','bn-offered','bn-tesla','bn-calendar'];
   var adminItems = ['bn-inbox','bn-assistant','bn-smart'];
   driveItems.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=mode==='drive'?'':'none';});
   adminItems.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=mode==='admin'?'':'none';});
@@ -629,6 +686,7 @@ function goPage(id,btn){
   if(id==='offered')buildOffered();
   if(id==='tesla'){updateTeslaUI();buildTeslaRC();}
   if(id==='inbox')renderInbox();
+  if(id==='calendar')buildCalendar();
   if(id==='assistant'&&!ASSIST_HISTORY.length)greetAssist();
   if(id==='smart'){var d=new Date();document.getElementById('sd-date').value=d.toISOString().split('T')[0];}
 }
@@ -694,8 +752,7 @@ function scoreJob(j){
   return{net,dead,jmi,rangeOk,v,col,bg};
 }
 function checkConflict(offered){
-  // Check if offered job time clashes within 2 hours of any existing job
-  var BUFFER=120; // minutes
+  var BUFFER=120;
   var parse=function(t){if(!t)return null;var p=t.split(':');return parseInt(p[0])*60+parseInt(p[1]);};
   var oTime=parse(offered.time);if(oTime===null)return null;
   for(var i=0;i<TODAY_JOBS.length;i++){
@@ -704,7 +761,7 @@ function checkConflict(offered){
     var diff=Math.abs(oTime-jTime);
     if(diff<BUFFER){
       var gap=diff<60?(diff+' min gap'):(Math.floor(diff/60)+'h '+((diff%60)||'')+(diff%60?'m':'') + ' gap');
-      return j.time+' · '+j.name+' ('+gap+')';
+      return {gap:gap,job:j,offered:offered};
     }
   }
   return null;
@@ -714,10 +771,16 @@ function buildOffered(){
   dot.textContent=OFFERED_JOBS.length||'';dot.style.display=OFFERED_JOBS.length?'flex':'none';
   if(!OFFERED_JOBS.length){list.innerHTML='<div class="empty"><div class="empty-title">No offered jobs</div><div class="empty-sub">New jobs will appear here</div></div>';return;}
   list.innerHTML=OFFERED_JOBS.map(function(j){
-    // Score runs silently in background — only surfaces a conflict alert if timing clashes
     scoreJob(j);
     var conflict=checkConflict(j);
-    var alertBanner=conflict?'<div style="padding:.6rem 1.1rem;background:var(--amber-bg);border-bottom:1px solid rgba(184,152,90,.25);font-size:.74rem;color:var(--amber);font-weight:300">Close booking: '+conflict+'</div>':'';
+    var alertBanner='';
+    if(conflict){
+      var c=conflict;
+      alertBanner='<div class="conflict-banner"><div class="conflict-title">Scheduling Conflict — '+escH(c.gap)+'</div><div class="conflict-vs">'
+        +'<div class="conflict-side"><div class="conflict-side-label">This offer</div><div class="conflict-side-time">'+escH(j.time)+'</div><div class="conflict-side-name">'+escH(j.name)+'</div><div class="conflict-side-route">'+escH(j.pickup)+' → '+escH(j.dest)+'</div></div>'
+        +'<div class="conflict-side"><div class="conflict-side-label">Existing job</div><div class="conflict-side-time">'+escH(c.job.time)+'</div><div class="conflict-side-name">'+escH(c.job.name)+'</div><div class="conflict-side-route">'+escH(c.job.pickup)+' → '+escH(c.job.dest)+' · £'+escH(String(c.job.fare))+'</div></div>'
+        +'</div></div>';
+    }
     return alertBanner+buildCard(j,true)+'<div class="offer-btns"><button class="btn-accept" onclick="acceptJob(\''+j.id+'\')">Accept</button><button class="btn-decline" onclick="declineJob(\''+j.id+'\')">Decline</button></div>';
   }).join('');
 }
@@ -770,12 +833,26 @@ function renderInbox(){
   feed.innerHTML=INBOX_MSGS.map(function(m){
     var pCls=m.status==='accepted'?'pill-ok':m.status==='flagged'?'pill-flag':'pill-enquiry';
     var pTxt=m.status==='accepted'?'Auto-accepted':m.status==='flagged'?'Needs your decision':'Enquiry';
+    var srcCls=m.source==='email'?'email':'wa';
+    var srcLabel=m.source==='email'?'Email':'WhatsApp';
     var extract='';
     if(m.analysis&&m.analysis.name){extract='<div class="msg-extract">'+escH(m.analysis.name)+' · '+escH(m.analysis.pickup)+' → '+escH(m.analysis.dest)+' · '+escH(m.analysis.date)+' '+escH(m.analysis.time)+' · <strong style="color:var(--gold)">£'+escH(String(m.analysis.fare))+'</strong></div>';}
-    if(m.analysis&&m.analysis.conflict){extract+='<div class="msg-conflict">Conflict: '+escH(m.analysis.conflictReason)+'</div>';}
+    if(m.analysis&&m.analysis.conflict){
+      var cj=m.analysis.conflictJob;
+      var conflictHtml='<div class="conflict-banner"><div class="conflict-title">Scheduling Conflict — '+escH(m.analysis.conflictReason)+'</div>';
+      if(cj){
+        conflictHtml+='<div class="conflict-vs">';
+        conflictHtml+='<div class="conflict-side"><div class="conflict-side-label">New request</div><div class="conflict-side-time">'+escH(m.analysis.time)+'</div><div class="conflict-side-name">'+escH(m.analysis.name)+'</div><div class="conflict-side-route">'+escH(m.analysis.pickup)+' → '+escH(m.analysis.dest)+'</div></div>';
+        conflictHtml+='<div class="conflict-side"><div class="conflict-side-label">Existing job</div><div class="conflict-side-time">'+escH(cj.time)+'</div><div class="conflict-side-name">'+escH(cj.name)+'</div><div class="conflict-side-route">'+escH(cj.pickup)+' → '+escH(cj.dest)+' · £'+escH(String(cj.fare))+'</div></div>';
+        conflictHtml+='</div>';
+      }
+      conflictHtml+='</div>';
+      extract+=conflictHtml;
+    }
     var btns='';
-    if(m.status==='flagged'){btns='<div class="msg-actions"><button class="ma-btn ma-accept" onclick="confirmMsg(\''+m.id+'\')">Accept — add to calendar</button><button class="ma-btn ma-pass" onclick="passMsg(\''+m.id+'\')">Pass to operator</button></div>';}
-    return '<div class="msg-item"><div class="msg-header"><div><div class="msg-from">'+escH(m.from)+'</div><div style="font-size:.62rem;color:rgba(255,255,255,.4);margin-top:.1rem">'+escH(m.phone)+' · Today '+escH(m.time)+'</div></div><span class="msg-pill '+pCls+'">'+pTxt+'</span></div><div class="msg-text">"'+escH(m.text)+'"</div>'+extract+btns+'</div>';
+    if(m.status==='flagged'){btns='<div class="msg-actions"><button class="ma-btn ma-accept" onclick="confirmMsg(\''+m.id+'\')">Accept ��� add to calendar</button><button class="ma-btn ma-pass" onclick="passMsg(\''+m.id+'\')">Pass</button></div>';}
+    var contactLine=m.phone?escH(m.phone)+' · ':'';
+    return '<div class="msg-item"><div class="msg-header"><div><div class="msg-from">'+escH(m.from)+'</div><div style="font-size:.78rem;color:rgba(255,255,255,.5);margin-top:.15rem;display:flex;align-items:center;gap:.5rem"><span class="msg-source '+srcCls+'">'+srcLabel+'</span> '+contactLine+'Today '+escH(m.time)+'</div></div><span class="msg-pill '+pCls+'">'+pTxt+'</span></div><div class="msg-text">"'+escH(m.text)+'"</div>'+extract+btns+'</div>';
   }).join('');
 }
 function confirmMsg(id){var m=INBOX_MSGS.find(function(x){return x.id===id;});if(!m)return;m.status='accepted';renderInbox();showToast('Booking confirmed — added to calendar');}
@@ -783,7 +860,10 @@ function passMsg(id){var m=INBOX_MSGS.find(function(x){return x.id===id;});if(!m
 function simMsg(){
   var text=SIM_MSGS[Math.floor(Math.random()*SIM_MSGS.length)];
   var id='s'+Date.now();
-  INBOX_MSGS.unshift({id:id,from:'New Customer',phone:'+4477'+Math.floor(10000000+Math.random()*90000000),time:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),text:text,status:'processing',analysis:null});
+  var src=Math.random()>0.3?'whatsapp':'email';
+  var from=src==='email'?'customer'+Math.floor(Math.random()*999)+'@gmail.com':'New Customer';
+  var phone=src==='whatsapp'?'+4477'+Math.floor(10000000+Math.random()*90000000):'';
+  INBOX_MSGS.unshift({id:id,from:from,phone:phone,time:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),source:src,text:text,status:'processing',analysis:null});
   renderInbox();analyseMsg(id,text);
 }
 // TODO: Route through backend proxy at /api/claude to keep API key server-side
@@ -933,6 +1013,77 @@ async function runSmartDay(){
   document.getElementById('sd-output').style.display='block';
   document.getElementById('sd-btn').textContent='Score Day';
   document.getElementById('sd-output').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ── CALENDAR ─────────────────────────────────────────────────────────────────
+var calMonth=new Date().getMonth(),calYear=new Date().getFullYear();
+// Sample booked jobs across dates for the calendar mockup
+var CAL_JOBS={};
+(function(){
+  var now=new Date();var y=now.getFullYear();var m=now.getMonth();
+  function dk(y,m,d){return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');}
+  var td=now.getDate();
+  // Today's jobs from TODAY_JOBS
+  CAL_JOBS[dk(y,m,td)]=TODAY_JOBS.map(function(j){return{time:j.time,name:j.name,pickup:j.pickup,dest:j.dest,fare:j.fare};});
+  // Some future mock bookings
+  CAL_JOBS[dk(y,m,Math.min(td+1,28))]=[{time:'05:00',name:'Sarah Jones',pickup:'Lewes',dest:'Gatwick South Terminal',fare:78}];
+  CAL_JOBS[dk(y,m,Math.min(td+3,28))]=[{time:'07:00',name:'Mr Patterson',pickup:'Horsham',dest:'Heathrow T5',fare:120},{time:'14:30',name:'James Ford',pickup:'Brighton',dest:'Gatwick',fare:72}];
+  CAL_JOBS[dk(y,m,Math.min(td+5,28))]=[{time:'06:00',name:'Mrs Palmer',pickup:'Haywards Heath',dest:'Gatwick',fare:52}];
+  CAL_JOBS[dk(y,m,Math.min(td+7,28))]=[{time:'03:30',name:'Mr Okafor',pickup:'Lewes',dest:'Gatwick',fare:78},{time:'17:00',name:'Mrs Taylor',pickup:'Lewes',dest:'Heathrow T3',fare:140}];
+})();
+
+function calNav(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}buildCalendar();}
+function buildCalendar(){
+  var grid=document.getElementById('cal-grid');var mEl=document.getElementById('cal-month');
+  var months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  mEl.textContent=months[calMonth]+' '+calYear;
+  var first=new Date(calYear,calMonth,1);var startDay=first.getDay()||7;// Mon=1
+  var daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  var daysInPrev=new Date(calYear,calMonth,0).getDate();
+  var today=new Date();var todayKey=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+  var html='';
+  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(function(d){html+='<div class="cal-hd">'+d+'</div>';});
+  // Previous month fill
+  for(var i=startDay-1;i>0;i--){
+    var d=daysInPrev-i+1;
+    html+='<div class="cal-day other"><div class="cal-num">'+d+'</div></div>';
+  }
+  // Current month
+  for(var d=1;d<=daysInMonth;d++){
+    var key=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var isToday=key===todayKey;
+    var jobs=CAL_JOBS[key];
+    var hasJobs=jobs&&jobs.length>0;
+    var cls='cal-day'+(isToday?' today':'')+(hasJobs?' has-jobs':'');
+    var dots='';if(hasJobs){for(var j=0;j<Math.min(jobs.length,3);j++)dots+='<span class="cal-job-dot"></span>';}
+    html+='<div class="'+cls+'" onclick="showCalDay(\''+key+'\')">'
+      +'<div class="cal-num">'+d+'</div>'
+      +(dots?'<div>'+dots+'</div>':'')
+      +'</div>';
+  }
+  // Next month fill
+  var total=startDay-1+daysInMonth;var fill=total%7?7-total%7:0;
+  for(var d=1;d<=fill;d++){
+    html+='<div class="cal-day other"><div class="cal-num">'+d+'</div></div>';
+  }
+  grid.innerHTML=html;
+  document.getElementById('cal-detail').innerHTML='';
+}
+function showCalDay(key){
+  var detail=document.getElementById('cal-detail');
+  var jobs=CAL_JOBS[key];
+  var parts=key.split('-');var label=parseInt(parts[2])+' '+['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(parts[1])]+' '+parts[0];
+  if(!jobs||!jobs.length){
+    detail.innerHTML='<div class="card cal-day-detail"><div class="ch">'+label+'</div><div style="padding:1.2rem 1.1rem;font-size:.92rem;color:rgba(255,255,255,.45);text-align:center">No jobs booked</div></div>';
+    return;
+  }
+  var html='<div class="card cal-day-detail"><div class="ch">'+label+' · '+jobs.length+' job'+(jobs.length>1?'s':'')+'</div>';
+  html+=jobs.map(function(j){
+    return '<div class="cal-detail-job"><div class="cdj-time">'+escH(j.time)+'</div><div class="cdj-info"><div class="cdj-name">'+escH(j.name)+'</div><div class="cdj-route">'+escH(j.pickup)+' → '+escH(j.dest)+'</div></div><div class="cdj-fare">£'+escH(String(j.fare))+'</div></div>';
+  }).join('');
+  html+='</div>';
+  detail.innerHTML=html;
+  detail.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 // ── AIRPORTS & PLACES AUTOCOMPLETE ──────────────────────────────────────────
