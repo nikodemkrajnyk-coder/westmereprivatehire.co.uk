@@ -300,29 +300,12 @@ textarea.fi{resize:vertical;min-height:80px}
 </div>
 
 
-<!-- ═══ ADMIN LOGIN ═══ -->
-<div id="admin-login">
-  <div class="al-box">
-    <div class="al-hd">
-      <div class="al-crest">W</div>
-      <span class="al-name">Westmere</span>
-      <span class="al-sub">Admin Panel · Restricted Access</span>
-    </div>
-    <div class="al-body">
-      <div class="al-title">Administrator Login</div>
-      <p class="al-desc">This area is restricted. Enter your credentials to continue.</p>
-      <div class="al-err" id="al-err">Incorrect username or password. Please try again.</div>
-      <div class="fg"><label class="fl">Username</label><input class="fi" type="text" id="al-user" placeholder="Username" autocomplete="off" onkeydown="if(event.key==='Enter')adminLogin()"></div>
-      <div class="fg"><label class="fl">Password</label><input class="fi" type="password" id="al-pass" placeholder="Password" onkeydown="if(event.key==='Enter')adminLogin()"></div>
-      <button class="btn btn-navy btn-full" style="margin-top:.5rem;width:100%;padding:1rem" onclick="adminLogin()">Sign In</button>
-      <div class="al-attempts" id="al-attempts"></div>
-    </div>
-  </div>
-</div>
+<!-- Admin login disabled — mockup -->
+<div id="admin-login" style="display:none"></div>
 
 
 <!-- ═══ APP ═══ -->
-<div id="admin-app" style="display:none;flex:1;width:100%;min-height:100vh">
+<div id="admin-app" style="flex:1;width:100%;min-height:100vh">
 
 <!-- ═══ SIDEBAR ═══ -->
 <div class="sidebar" id="sidebar">
