@@ -284,37 +284,49 @@ input[type=date]::placeholder,input[type=text]::placeholder{color:rgba(255,255,2
 .ls-body{padding:2.2rem 2.2rem 1.8rem}
 .ls-foot{text-align:center;padding:1.4rem 2.2rem;border-top:1px solid rgba(255,255,255,.06);font-size:.78rem;color:rgba(255,255,255,.3)}
 /* ── CALENDAR ── */
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:rgba(255,255,255,.06)}
-.cal-hd{padding:.5rem .2rem;text-align:center;font-size:.6rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);background:rgba(13,21,32,.8)}
-.cal-day{min-height:52px;padding:.35rem .3rem;background:rgba(13,21,32,.6);cursor:pointer;transition:background .2s;position:relative}
-.cal-day:hover{background:rgba(184,152,90,.08)}
-.cal-day.today{background:rgba(184,152,90,.12);border:1px solid rgba(184,152,90,.3)}
-.cal-day.other{opacity:.3}
-.cal-day.has-jobs::after{content:'';position:absolute;bottom:4px;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:var(--gold)}
-.cal-num{font-size:.82rem;font-weight:400;color:#fff}
-.cal-job-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--gold);margin:1px}
-.cal-nav{display:flex;align-items:center;justify-content:space-between;padding:.8rem 0;margin-bottom:.5rem}
-.cal-nav-btn{background:none;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.6);font-family:var(--sans);font-size:.78rem;padding:.45rem .85rem;cursor:pointer;transition:all .2s;min-height:40px}
-.cal-nav-btn:hover{border-color:var(--gold);color:#fff}
-.cal-month{font-family:var(--serif);font-size:1.3rem;font-weight:300;color:#fff}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:rgba(255,255,255,.06);overflow:hidden}
+.cal-hd{padding:.55rem .2rem;text-align:center;font-size:.65rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5);background:rgba(13,21,32,.8)}
+.cal-day{min-height:56px;padding:.4rem .35rem;background:rgba(13,21,32,.6);cursor:pointer;transition:background .2s;position:relative;overflow:hidden}
+.cal-day:active{background:rgba(184,152,90,.15)}
+.cal-day.today{background:rgba(184,152,90,.15);border:2px solid var(--gold)}
+.cal-day.selected{background:rgba(184,152,90,.1);border:1px solid rgba(184,152,90,.4)}
+.cal-day.other{opacity:.25;pointer-events:none}
+.cal-num{font-size:.88rem;font-weight:400;color:#fff;line-height:1}
+.cal-today-label{font-size:.5rem;font-weight:500;color:var(--gold);text-transform:uppercase;letter-spacing:.08em}
+.cal-job-count{position:absolute;bottom:3px;right:4px;font-size:.6rem;font-weight:500;color:var(--gold)}
+.cal-dots{display:flex;gap:2px;margin-top:3px}
+.cal-dots span{width:5px;height:5px;border-radius:50%;background:var(--gold)}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;padding:.6rem 0;margin-bottom:.4rem}
+.cal-nav-btn{background:none;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.6);font-family:var(--sans);font-size:.85rem;padding:.5rem 1rem;cursor:pointer;transition:all .2s;min-height:44px}
+.cal-nav-btn:active{border-color:var(--gold);color:#fff}
+.cal-month{font-family:var(--serif);font-size:1.4rem;font-weight:300;color:#fff}
+.cal-summary{padding:.8rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.06);font-size:.88rem;color:rgba(255,255,255,.5);display:flex;justify-content:space-between}
+.cal-summary strong{color:var(--gold);font-weight:400}
 .cal-day-detail{margin-top:.85rem}
-.cal-detail-job{padding:.9rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:.8rem}
+.cal-detail-job{padding:.95rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:.8rem}
 .cal-detail-job:last-child{border-bottom:none}
-.cdj-time{font-family:var(--serif);font-size:1.15rem;color:var(--gold);flex-shrink:0;width:50px}
+.cdj-time{font-family:var(--serif);font-size:1.2rem;color:var(--gold);flex-shrink:0;width:55px}
 .cdj-info{flex:1}
-.cdj-name{font-size:1rem;font-weight:500;color:#fff}
-.cdj-route{font-size:.85rem;color:rgba(255,255,255,.55)}
-.cdj-fare{font-family:var(--serif);font-size:1.1rem;color:var(--gold);flex-shrink:0}
+.cdj-name{font-size:1.05rem;font-weight:500;color:#fff}
+.cdj-route{font-size:.88rem;color:rgba(255,255,255,.55)}
+.cdj-fare{font-family:var(--serif);font-size:1.15rem;color:var(--gold);flex-shrink:0}
+.cal-empty{padding:1.5rem 1.1rem;text-align:center;font-size:.95rem;color:rgba(255,255,255,.4)}
 
-/* ── CONFLICT BANNER ── */
-.conflict-banner{padding:.85rem 1.1rem;background:var(--amber-bg);border:1px solid rgba(184,152,90,.25);margin-bottom:.5rem}
-.conflict-title{font-size:.85rem;font-weight:500;color:var(--amber);margin-bottom:.4rem}
-.conflict-vs{display:flex;gap:.6rem;align-items:stretch}
-.conflict-side{flex:1;padding:.6rem .7rem;background:rgba(13,21,32,.5);border:1px solid rgba(255,255,255,.08)}
-.conflict-side-label{font-size:.6rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:.25rem}
-.conflict-side-time{font-family:var(--serif);font-size:1.1rem;color:var(--gold)}
-.conflict-side-name{font-size:.88rem;font-weight:400;color:#fff}
-.conflict-side-route{font-size:.78rem;color:rgba(255,255,255,.5)}
+/* ── FEASIBILITY BANNER ── */
+.feas-banner{padding:.95rem 1.1rem;margin-bottom:.5rem;border:1px solid}
+.feas-banner.no-go{background:var(--red-bg);border-color:rgba(139,34,34,.3)}
+.feas-banner.tight{background:var(--amber-bg);border-color:rgba(184,152,90,.25)}
+.feas-verdict{font-size:1rem;font-weight:500;margin-bottom:.4rem}
+.feas-banner.no-go .feas-verdict{color:var(--red)}
+.feas-banner.tight .feas-verdict{color:var(--amber)}
+.feas-explain{font-size:.88rem;color:rgba(255,255,255,.6);font-weight:300;line-height:1.6;margin-bottom:.5rem}
+.feas-route{display:flex;gap:.5rem;align-items:stretch;margin-top:.5rem}
+.feas-leg{flex:1;padding:.55rem .7rem;background:rgba(13,21,32,.5);border:1px solid rgba(255,255,255,.08)}
+.feas-leg-label{font-size:.58rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:.2rem}
+.feas-leg-time{font-family:var(--serif);font-size:1.05rem;color:var(--gold)}
+.feas-leg-name{font-size:.85rem;font-weight:400;color:#fff}
+.feas-leg-detail{font-size:.78rem;color:rgba(255,255,255,.5)}
+.feas-arrow{display:flex;align-items:center;color:rgba(255,255,255,.25);font-size:1.2rem;flex-shrink:0}
 
 /* ── MSG SOURCE ICON ── */
 .msg-source{display:inline-flex;align-items:center;gap:.3rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;padding:.18rem .55rem;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5)}
@@ -646,7 +658,7 @@ var INBOX_MSGS = [
    status:'accepted',analysis:{name:'Sarah Jones',pickup:'Lewes',dest:'Gatwick South Terminal',date:'Friday',time:'05:00',fare:78,conflict:false}},
   {id:'m2',from:'Robert Hall',phone:'+447700100003',time:'11:32',source:'whatsapp',
    text:'Hello I need a taxi from Brighton to Heathrow on Saturday at 3am. 2 of us. Can you do it?',
-   status:'flagged',analysis:{name:'Robert Hall',pickup:'Brighton',dest:'Heathrow',date:'Sat',time:'03:00',fare:128,conflict:true,conflictJob:{time:'04:30',name:'Sarah Jones',pickup:'Lewes',dest:'Gatwick South Terminal',fare:78},conflictReason:'Only 90 min gap between jobs'}},
+   status:'flagged',analysis:{name:'Robert Hall',pickup:'Brighton',dest:'Heathrow',date:'Sat',time:'03:00',fare:128,conflict:true,conflictJob:{time:'04:30',name:'Sarah Jones',pickup:'Lewes',dest:'Gatwick South Terminal',fare:78},conflictReason:'Brighton to Heathrow takes ~90 min. You would still be driving when Sarah Jones needs pickup at 04:30 in Lewes.'}},
   {id:'m3',from:'bookings@westmere.co.uk',phone:'',time:'09:45',source:'email',
    text:'Subject: Booking enquiry - Haywards Heath to Gatwick, next Tuesday 6am. 1 passenger, card payment. Regards, Mrs Palmer',
    status:'accepted',analysis:{name:'Mrs Palmer',pickup:'Haywards Heath',dest:'Gatwick',date:'Tuesday',time:'06:00',fare:52,conflict:false}}
@@ -751,17 +763,67 @@ function scoreJob(j){
   else{v='Not worth it';col='var(--red)';bg='var(--red-bg)';}
   return{net,dead,jmi,rangeOk,v,col,bg};
 }
-function checkConflict(offered){
-  var BUFFER=120;
-  var parse=function(t){if(!t)return null;var p=t.split(':');return parseInt(p[0])*60+parseInt(p[1]);};
-  var oTime=parse(offered.time);if(oTime===null)return null;
-  for(var i=0;i<TODAY_JOBS.length;i++){
-    var j=TODAY_JOBS[i];if(j.status==='done')continue;
-    var jTime=parse(j.time);if(jTime===null)continue;
-    var diff=Math.abs(oTime-jTime);
-    if(diff<BUFFER){
-      var gap=diff<60?(diff+' min gap'):(Math.floor(diff/60)+'h '+((diff%60)||'')+(diff%60?'m':'') + ' gap');
-      return {gap:gap,job:j,offered:offered};
+// Estimate drive time in minutes (avg 30mph local, 45mph motorway mix)
+function driveTime(miles){return Math.round(miles*1.7);}// ~35mph average + buffer
+function toMins(t){if(!t)return null;var p=t.split(':');return parseInt(p[0])*60+parseInt(p[1]);}
+function fmtMins(m){return m<60?m+' min':Math.floor(m/60)+'h '+((m%60)?m%60+'m':'');}
+
+function checkFeasibility(offered){
+  // For each existing job, figure out where I'll be when it finishes,
+  // and whether I can physically reach the new job's pickup in time
+  var oTime=toMins(offered.time);if(oTime===null)return null;
+
+  // Sort today's jobs by time
+  var sorted=TODAY_JOBS.filter(function(j){return j.status!=='done';}).slice().sort(function(a,b){return toMins(a.time)-toMins(b.time);});
+
+  for(var i=0;i<sorted.length;i++){
+    var j=sorted[i];
+    var jTime=toMins(j.time);if(jTime===null)continue;
+
+    // Estimate job duration: drive time for the job itself + 10min pickup wait
+    var jobMiles=getDist(j.pickup,j.dest);
+    var jobDuration=driveTime(jobMiles)+10;
+    var jobFinish=jTime+jobDuration;
+
+    // Distance from where I'll be (job destination) to the new pickup
+    var deadMiles=getDist(j.dest,offered.pickup);
+    var driveToNext=driveTime(deadMiles);
+
+    // Can I finish this job and drive to the new pickup in time?
+    var arriveBy=jobFinish+driveToNext;
+
+    // Check: does the offered job fall within a window where I'm busy or can't reach?
+    if(oTime>=jTime-15 && oTime<=jobFinish+15){
+      // I'm literally doing this job at that time
+      return {canMake:false,job:j,reason:'You\'ll be mid-journey with '+j.name+' ('+j.pickup+' → '+j.dest+')',deadMiles:0,driveMin:0};
+    }
+
+    // If offered is after this job, can I get there in time?
+    if(oTime>jTime && oTime<arriveBy+15){
+      var shortfall=arriveBy-oTime;
+      if(shortfall>10){
+        return {canMake:false,job:j,reason:'After dropping '+j.name+' at '+j.dest+', it\'s '+deadMiles+' miles ('+fmtMins(driveToNext)+') to '+offered.pickup+'. You won\'t make it.',deadMiles:deadMiles,driveMin:driveToNext};
+      } else {
+        return {canMake:'tight',job:j,reason:'Tight — '+deadMiles+' mi from '+j.dest+' to '+offered.pickup+' ('+fmtMins(driveToNext)+'). Possible if '+j.name+'\'s job runs on time.',deadMiles:deadMiles,driveMin:driveToNext};
+      }
+    }
+
+    // If offered is before this job, can I do the offered and get to the existing?
+    if(oTime<jTime){
+      var offeredMiles=getDist(offered.pickup,offered.dest);
+      var offeredDuration=driveTime(offeredMiles)+10;
+      var offeredFinish=oTime+offeredDuration;
+      var deadBack=getDist(offered.dest,j.pickup);
+      var driveBack=driveTime(deadBack);
+      var backBy=offeredFinish+driveBack;
+      if(backBy>jTime-10){
+        var shortfall2=backBy-jTime;
+        if(shortfall2>10){
+          return {canMake:false,job:j,reason:'After this job you\'d be at '+offered.dest+'. It\'s '+deadBack+' mi ('+fmtMins(driveBack)+') back to '+j.pickup+' for '+j.name+' at '+j.time+'. You won\'t make it.',deadMiles:deadBack,driveMin:driveBack};
+        } else {
+          return {canMake:'tight',job:j,reason:'Doable but tight — you\'d finish at '+offered.dest+', then '+deadBack+' mi ('+fmtMins(driveBack)+') to reach '+j.name+' at '+j.time+'.',deadMiles:deadBack,driveMin:driveBack};
+        }
+      }
     }
   }
   return null;
@@ -772,14 +834,20 @@ function buildOffered(){
   if(!OFFERED_JOBS.length){list.innerHTML='<div class="empty"><div class="empty-title">No offered jobs</div><div class="empty-sub">New jobs will appear here</div></div>';return;}
   list.innerHTML=OFFERED_JOBS.map(function(j){
     scoreJob(j);
-    var conflict=checkConflict(j);
+    var feas=checkFeasibility(j);
     var alertBanner='';
-    if(conflict){
-      var c=conflict;
-      alertBanner='<div class="conflict-banner"><div class="conflict-title">Scheduling Conflict — '+escH(c.gap)+'</div><div class="conflict-vs">'
-        +'<div class="conflict-side"><div class="conflict-side-label">This offer</div><div class="conflict-side-time">'+escH(j.time)+'</div><div class="conflict-side-name">'+escH(j.name)+'</div><div class="conflict-side-route">'+escH(j.pickup)+' → '+escH(j.dest)+'</div></div>'
-        +'<div class="conflict-side"><div class="conflict-side-label">Existing job</div><div class="conflict-side-time">'+escH(c.job.time)+'</div><div class="conflict-side-name">'+escH(c.job.name)+'</div><div class="conflict-side-route">'+escH(c.job.pickup)+' → '+escH(c.job.dest)+' · £'+escH(String(c.job.fare))+'</div></div>'
-        +'</div></div>';
+    if(feas){
+      var cls=feas.canMake==='tight'?'tight':'no-go';
+      alertBanner='<div class="feas-banner '+cls+'">'
+        +'<div class="feas-verdict">'+(feas.canMake==='tight'?'Tight — but possible':'You won\'t make it')+'</div>'
+        +'<div class="feas-explain">'+escH(feas.reason)+'</div>'
+        +'<div class="feas-route">'
+        +'<div class="feas-leg"><div class="feas-leg-label">'+(feas.canMake?'Existing':'You\'re with')+'</div><div class="feas-leg-time">'+escH(feas.job.time)+'</div><div class="feas-leg-name">'+escH(feas.job.name)+'</div><div class="feas-leg-detail">'+escH(feas.job.pickup)+' → '+escH(feas.job.dest)+'</div></div>'
+        +'<div class="feas-arrow">→</div>'
+        +'<div class="feas-leg"><div class="feas-leg-label">This offer</div><div class="feas-leg-time">'+escH(j.time)+'</div><div class="feas-leg-name">'+escH(j.name)+'</div><div class="feas-leg-detail">'+escH(j.pickup)+' → '+escH(j.dest)+'</div></div>'
+        +'</div>'
+        +(!feas.canMake?'<div style="margin-top:.6rem;font-size:.85rem;color:var(--red);font-weight:400">Pass to another driver or operator.</div>':'')
+        +'</div>';
     }
     return alertBanner+buildCard(j,true)+'<div class="offer-btns"><button class="btn-accept" onclick="acceptJob(\''+j.id+'\')">Accept</button><button class="btn-decline" onclick="declineJob(\''+j.id+'\')">Decline</button></div>';
   }).join('');
@@ -839,15 +907,29 @@ function renderInbox(){
     if(m.analysis&&m.analysis.name){extract='<div class="msg-extract">'+escH(m.analysis.name)+' · '+escH(m.analysis.pickup)+' → '+escH(m.analysis.dest)+' · '+escH(m.analysis.date)+' '+escH(m.analysis.time)+' · <strong style="color:var(--gold)">£'+escH(String(m.analysis.fare))+'</strong></div>';}
     if(m.analysis&&m.analysis.conflict){
       var cj=m.analysis.conflictJob;
-      var conflictHtml='<div class="conflict-banner"><div class="conflict-title">Scheduling Conflict — '+escH(m.analysis.conflictReason)+'</div>';
+      // Calculate feasibility from the conflict job's drop-off to new pickup
+      var canMake=false;var driveInfo='';
       if(cj){
-        conflictHtml+='<div class="conflict-vs">';
-        conflictHtml+='<div class="conflict-side"><div class="conflict-side-label">New request</div><div class="conflict-side-time">'+escH(m.analysis.time)+'</div><div class="conflict-side-name">'+escH(m.analysis.name)+'</div><div class="conflict-side-route">'+escH(m.analysis.pickup)+' → '+escH(m.analysis.dest)+'</div></div>';
-        conflictHtml+='<div class="conflict-side"><div class="conflict-side-label">Existing job</div><div class="conflict-side-time">'+escH(cj.time)+'</div><div class="conflict-side-name">'+escH(cj.name)+'</div><div class="conflict-side-route">'+escH(cj.pickup)+' → '+escH(cj.dest)+' · £'+escH(String(cj.fare))+'</div></div>';
-        conflictHtml+='</div>';
+        var deadMi=getDist(cj.dest||cj.pickup,m.analysis.pickup);
+        var driveMin=driveTime(deadMi);
+        var cjFinish=toMins(cj.time)+driveTime(getDist(cj.pickup,cj.dest))+10;
+        var reqTime=toMins(m.analysis.time);
+        canMake=reqTime>cjFinish+driveMin-10;
+        driveInfo=deadMi+' mi ('+fmtMins(driveMin)+') from '+escH(cj.dest)+' to '+escH(m.analysis.pickup);
       }
-      conflictHtml+='</div>';
-      extract+=conflictHtml;
+      var feasHtml='<div class="feas-banner '+(canMake?'tight':'no-go')+'">'
+        +'<div class="feas-verdict">'+(canMake?'Tight — check timing':'You won\'t make it')+'</div>'
+        +'<div class="feas-explain">'+(cj?'After '+escH(cj.name)+' ('+escH(cj.time)+' '+escH(cj.pickup)+' → '+escH(cj.dest)+'), it\'s '+driveInfo+'.':'')
+        +(!canMake?' Pass to another driver or operator.':'')+'</div>';
+      if(cj){
+        feasHtml+='<div class="feas-route">'
+          +'<div class="feas-leg"><div class="feas-leg-label">Existing</div><div class="feas-leg-time">'+escH(cj.time)+'</div><div class="feas-leg-name">'+escH(cj.name)+'</div><div class="feas-leg-detail">'+escH(cj.pickup)+' → '+escH(cj.dest)+'</div></div>'
+          +'<div class="feas-arrow">→</div>'
+          +'<div class="feas-leg"><div class="feas-leg-label">Requested</div><div class="feas-leg-time">'+escH(m.analysis.time)+'</div><div class="feas-leg-name">'+escH(m.analysis.name)+'</div><div class="feas-leg-detail">'+escH(m.analysis.pickup)+' → '+escH(m.analysis.dest)+'</div></div>'
+          +'</div>';
+      }
+      feasHtml+='</div>';
+      extract+=feasHtml;
     }
     var btns='';
     if(m.status==='flagged'){btns='<div class="msg-actions"><button class="ma-btn ma-accept" onclick="confirmMsg(\''+m.id+'\')">Accept ��� add to calendar</button><button class="ma-btn ma-pass" onclick="passMsg(\''+m.id+'\')">Pass</button></div>';}
@@ -971,14 +1053,13 @@ function renderSDJobs(){
   el.innerHTML=SD_JOBS.map(function(j){return '<div class="sd-row"><div class="sd-time">'+j.time+'</div><div class="sd-info"><div class="sd-name">'+j.name+'</div><div class="sd-route">'+j.pickup+' → '+j.dest+'</div></div><div class="sd-fare">£'+j.fare+'</div><button onclick="SD_JOBS=SD_JOBS.filter(function(x){return x.id!==\''+j.id+'\'});renderSDJobs()" class="sd-del">✕</button></div>';}).join('');
 }
 function addSDJob(){var t=prompt('Time (HH:MM):','09:00');if(!t)return;var pu=prompt('Pickup:','Lewes');if(!pu)return;var dst=prompt('Destination:','Gatwick');if(!dst)return;var f=parseFloat(prompt('Fare £:','75')||0);var n=prompt('Name:','Customer')||'Customer';SD_JOBS.push({id:'sd'+Date.now(),time:t,name:n,pickup:pu,dest:dst,pax:1,fare:f,payment:'Cash'});renderSDJobs();}
-function tmins(t){var p=t.split(':');return parseInt(p[0])*60+parseInt(p[1]);}
 async function runSmartDay(){
   if(!SD_JOBS.length){showToast('Add bookings first');return;}
   document.getElementById('sd-output').style.display='none';
   document.getElementById('sd-loading').style.display='block';
   document.getElementById('sd-btn').textContent='Running...';
   var loc=document.getElementById('sd-loc').value||HOME_BASE;
-  var sorted=SD_JOBS.slice().sort(function(a,b){return tmins(a.time)-tmins(b.time);});
+  var sorted=SD_JOBS.slice().sort(function(a,b){return toMins(a.time)-toMins(b.time);});
   var total=sorted.reduce(function(s,j){return s+parseFloat(j.fare||0);},0);
   var prev=loc;var deadTotal=0;var netTotal=0;
   var segs=sorted.map(function(j){
@@ -992,7 +1073,7 @@ async function runSmartDay(){
     return{j,dead,jmi,net,v,col,rush};
   });
   var retHome=getDist(prev,HOME_BASE);
-  var dayH=((tmins(sorted[sorted.length-1].time)+45)-tmins(sorted[0].time))/60;
+  var dayH=((toMins(sorted[sorted.length-1].time)+45)-toMins(sorted[0].time))/60;
   // Scorecard
   document.getElementById('sd-scorecard').innerHTML='<div class="scorecard"><div class="sc-stat"><div class="sc-val">£'+total+'</div><div class="sc-label">Gross</div></div><div class="sc-stat"><div class="sc-val" style="color:'+(netTotal>150?'var(--green)':netTotal>80?'var(--amber)':'var(--red)')+'">£'+netTotal+'</div><div class="sc-label">Net est.</div></div><div class="sc-stat"><div class="sc-val" style="color:rgba(255,255,255,.65)">'+Math.round(deadTotal+retHome)+' mi</div><div class="sc-label">Dead miles</div></div><div class="sc-stat"><div class="sc-val">'+dayH.toFixed(1)+'h</div><div class="sc-label">Day length</div></div><div class="sc-stat"><div class="sc-val" style="color:'+(netTotal/dayH>20?'var(--green)':'var(--amber)')+'">£'+Math.round(netTotal/dayH)+'</div><div class="sc-label">Net/hr</div></div><div class="sc-stat"><div class="sc-val" style="color:rgba(255,255,255,.65)">'+retHome+' mi</div><div class="sc-label">Home</div></div></div>';
   // Verdicts
@@ -1016,74 +1097,90 @@ async function runSmartDay(){
 }
 
 // ── CALENDAR ─────────────────────────────────────────────────────────────────
-var calMonth=new Date().getMonth(),calYear=new Date().getFullYear();
-// Sample booked jobs across dates for the calendar mockup
+var calMonth=new Date().getMonth(),calYear=new Date().getFullYear(),calSelected=null;
+var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+var MONTHS_S=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function dk(y,m,d){return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');}
+
+// Calendar job store
 var CAL_JOBS={};
 (function(){
-  var now=new Date();var y=now.getFullYear();var m=now.getMonth();
-  function dk(y,m,d){return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');}
-  var td=now.getDate();
-  // Today's jobs from TODAY_JOBS
+  var now=new Date();var y=now.getFullYear();var m=now.getMonth();var td=now.getDate();
   CAL_JOBS[dk(y,m,td)]=TODAY_JOBS.map(function(j){return{time:j.time,name:j.name,pickup:j.pickup,dest:j.dest,fare:j.fare};});
-  // Some future mock bookings
-  CAL_JOBS[dk(y,m,Math.min(td+1,28))]=[{time:'05:00',name:'Sarah Jones',pickup:'Lewes',dest:'Gatwick South Terminal',fare:78}];
-  CAL_JOBS[dk(y,m,Math.min(td+3,28))]=[{time:'07:00',name:'Mr Patterson',pickup:'Horsham',dest:'Heathrow T5',fare:120},{time:'14:30',name:'James Ford',pickup:'Brighton',dest:'Gatwick',fare:72}];
-  CAL_JOBS[dk(y,m,Math.min(td+5,28))]=[{time:'06:00',name:'Mrs Palmer',pickup:'Haywards Heath',dest:'Gatwick',fare:52}];
-  CAL_JOBS[dk(y,m,Math.min(td+7,28))]=[{time:'03:30',name:'Mr Okafor',pickup:'Lewes',dest:'Gatwick',fare:78},{time:'17:00',name:'Mrs Taylor',pickup:'Lewes',dest:'Heathrow T3',fare:140}];
+  // Future bookings
+  var add=function(offset,jobs){var d=new Date(y,m,td+offset);CAL_JOBS[dk(d.getFullYear(),d.getMonth(),d.getDate())]=jobs;};
+  add(1,[{time:'05:00',name:'Sarah Jones',pickup:'Lewes',dest:'Gatwick South Terminal',fare:78}]);
+  add(3,[{time:'07:00',name:'Mr Patterson',pickup:'Horsham',dest:'Heathrow T5',fare:120},{time:'14:30',name:'James Ford',pickup:'Brighton',dest:'Gatwick',fare:72}]);
+  add(5,[{time:'06:00',name:'Mrs Palmer',pickup:'Haywards Heath',dest:'Gatwick',fare:52}]);
+  add(7,[{time:'03:30',name:'Mr Okafor',pickup:'Lewes',dest:'Gatwick',fare:78},{time:'17:00',name:'Mrs Taylor',pickup:'Lewes',dest:'Heathrow T3',fare:140}]);
+  add(10,[{time:'04:00',name:'Private',pickup:'Crawley',dest:'Heathrow T2',fare:95}]);
+  add(14,[{time:'08:00',name:'Mrs Clarke',pickup:'Lewes',dest:'Brighton',fare:22},{time:'12:00',name:'Business',pickup:'Horsham',dest:'Gatwick',fare:55},{time:'18:00',name:'Airport Return',pickup:'Gatwick',dest:'Horsham',fare:50}]);
 })();
 
-function calNav(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}buildCalendar();}
+function calNav(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}calSelected=null;buildCalendar();}
 function buildCalendar(){
   var grid=document.getElementById('cal-grid');var mEl=document.getElementById('cal-month');
-  var months=['January','February','March','April','May','June','July','August','September','October','November','December'];
-  mEl.textContent=months[calMonth]+' '+calYear;
-  var first=new Date(calYear,calMonth,1);var startDay=first.getDay()||7;// Mon=1
+  mEl.textContent=MONTHS[calMonth]+' '+calYear;
+  var first=new Date(calYear,calMonth,1);
+  var startDay=(first.getDay()+6)%7;// Monday=0
   var daysInMonth=new Date(calYear,calMonth+1,0).getDate();
   var daysInPrev=new Date(calYear,calMonth,0).getDate();
-  var today=new Date();var todayKey=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+  var today=new Date();var todayKey=dk(today.getFullYear(),today.getMonth(),today.getDate());
+  // Count jobs this month
+  var monthJobs=0,monthEarn=0;
+  for(var d=1;d<=daysInMonth;d++){var k=dk(calYear,calMonth,d);var jj=CAL_JOBS[k];if(jj){monthJobs+=jj.length;jj.forEach(function(j){monthEarn+=j.fare||0;});}}
+
   var html='';
-  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(function(d){html+='<div class="cal-hd">'+d+'</div>';});
-  // Previous month fill
-  for(var i=startDay-1;i>0;i--){
-    var d=daysInPrev-i+1;
-    html+='<div class="cal-day other"><div class="cal-num">'+d+'</div></div>';
-  }
-  // Current month
+  ['M','T','W','T','F','S','S'].forEach(function(d){html+='<div class="cal-hd">'+d+'</div>';});
+  for(var i=startDay-1;i>=0;i--){html+='<div class="cal-day other"><div class="cal-num">'+(daysInPrev-i)+'</div></div>';}
   for(var d=1;d<=daysInMonth;d++){
-    var key=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var key=dk(calYear,calMonth,d);
     var isToday=key===todayKey;
-    var jobs=CAL_JOBS[key];
-    var hasJobs=jobs&&jobs.length>0;
-    var cls='cal-day'+(isToday?' today':'')+(hasJobs?' has-jobs':'');
-    var dots='';if(hasJobs){for(var j=0;j<Math.min(jobs.length,3);j++)dots+='<span class="cal-job-dot"></span>';}
-    html+='<div class="'+cls+'" onclick="showCalDay(\''+key+'\')">'
+    var isSel=key===calSelected;
+    var jobs=CAL_JOBS[key];var n=jobs?jobs.length:0;
+    var cls='cal-day'+(isToday?' today':'')+(isSel?' selected':'');
+    var dots='';if(n>0){dots='<div class="cal-dots">';for(var j=0;j<Math.min(n,4);j++)dots+='<span></span>';dots+='</div>';}
+    html+='<div class="'+cls+'" onclick="selectCalDay(\''+key+'\')">'
       +'<div class="cal-num">'+d+'</div>'
-      +(dots?'<div>'+dots+'</div>':'')
+      +(isToday?'<div class="cal-today-label">Today</div>':'')
+      +dots
+      +(n>1?'<div class="cal-job-count">'+n+'</div>':'')
       +'</div>';
   }
-  // Next month fill
-  var total=startDay-1+daysInMonth;var fill=total%7?7-total%7:0;
-  for(var d=1;d<=fill;d++){
-    html+='<div class="cal-day other"><div class="cal-num">'+d+'</div></div>';
-  }
+  var totalCells=startDay+daysInMonth;var fill=totalCells%7?7-totalCells%7:0;
+  for(var d=1;d<=fill;d++){html+='<div class="cal-day other"><div class="cal-num">'+d+'</div></div>';}
   grid.innerHTML=html;
-  document.getElementById('cal-detail').innerHTML='';
+
+  // Month summary
+  document.getElementById('cal-sub').innerHTML=monthJobs?'<strong>'+monthJobs+' job'+(monthJobs>1?'s':'')+'</strong> this month · <strong>£'+monthEarn+'</strong> booked':'No jobs booked this month';
+
+  // Auto-show today or selected
+  if(calSelected)showCalDay(calSelected);
+  else if(calMonth===today.getMonth()&&calYear===today.getFullYear())showCalDay(todayKey);
+  else document.getElementById('cal-detail').innerHTML='';
 }
+function selectCalDay(key){calSelected=key;buildCalendar();}
 function showCalDay(key){
   var detail=document.getElementById('cal-detail');
   var jobs=CAL_JOBS[key];
-  var parts=key.split('-');var label=parseInt(parts[2])+' '+['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(parts[1])]+' '+parts[0];
+  var parts=key.split('-');
+  var dayNum=parseInt(parts[2]);var mon=MONTHS_S[parseInt(parts[1])-1];
+  var dateObj=new Date(parseInt(parts[0]),parseInt(parts[1])-1,dayNum);
+  var dayName=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dateObj.getDay()];
+  var label=dayName+' '+dayNum+' '+mon;
+
   if(!jobs||!jobs.length){
-    detail.innerHTML='<div class="card cal-day-detail"><div class="ch">'+label+'</div><div style="padding:1.2rem 1.1rem;font-size:.92rem;color:rgba(255,255,255,.45);text-align:center">No jobs booked</div></div>';
+    detail.innerHTML='<div class="card cal-day-detail"><div class="ch">'+label+'</div><div class="cal-empty">No jobs booked</div></div>';
     return;
   }
-  var html='<div class="card cal-day-detail"><div class="ch">'+label+' · '+jobs.length+' job'+(jobs.length>1?'s':'')+'</div>';
-  html+=jobs.map(function(j){
+  var sorted=jobs.slice().sort(function(a,b){return toMins(a.time)-toMins(b.time);});
+  var totalFare=sorted.reduce(function(s,j){return s+(j.fare||0);},0);
+  var html='<div class="card cal-day-detail"><div class="ch">'+label+' · '+sorted.length+' job'+(sorted.length>1?'s':'')+'<span style="color:#fff;font-size:.78rem;font-family:var(--serif)">£'+totalFare+'</span></div>';
+  html+=sorted.map(function(j){
     return '<div class="cal-detail-job"><div class="cdj-time">'+escH(j.time)+'</div><div class="cdj-info"><div class="cdj-name">'+escH(j.name)+'</div><div class="cdj-route">'+escH(j.pickup)+' → '+escH(j.dest)+'</div></div><div class="cdj-fare">£'+escH(String(j.fare))+'</div></div>';
   }).join('');
   html+='</div>';
   detail.innerHTML=html;
-  detail.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 // ── AIRPORTS & PLACES AUTOCOMPLETE ──────────────────────────────────────────
