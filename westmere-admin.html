@@ -260,6 +260,85 @@ textarea.fi{resize:vertical;min-height:80px}
 .dc-status.off .dc-dot{background:rgba(255,255,255,.3)}
 .dc-status.on{color:var(--green)}
 .dc-status.off{color:rgba(255,255,255,.3)}
+/* ── INVOICE & EMAIL PREVIEW MODALS ── */
+.modal-doc{max-width:700px}
+.inv-doc{background:var(--cream);color:var(--navy);padding:2.5rem 2.8rem;font-family:var(--sans);font-weight:300;line-height:1.7}
+.inv-doc *{color:var(--navy)}
+.inv-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:2px solid var(--gold)}
+.inv-crest{width:62px;height:62px;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.6rem;font-weight:500;color:var(--navy);flex-shrink:0}
+.inv-brand{margin-left:.9rem}
+.inv-brand-name{font-family:var(--serif);font-size:1.4rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--navy);line-height:1.1}
+.inv-brand-sub{font-size:.5rem;font-weight:400;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-top:.1rem;display:block}
+.inv-title-block{text-align:right}
+.inv-title{font-family:var(--serif);font-size:2rem;font-weight:400;letter-spacing:.18em;text-transform:uppercase;color:var(--navy);line-height:1}
+.inv-meta{margin-top:.4rem;font-size:.78rem;color:#556677;line-height:1.8}
+.inv-meta strong{color:var(--navy);font-weight:500}
+.inv-status{display:inline-block;font-size:.58rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:.2rem .65rem;margin-top:.3rem}
+.inv-status.paid{background:rgba(45,110,71,.12);color:#2D6E47;border:1px solid rgba(45,110,71,.25)}
+.inv-status.overdue{background:rgba(139,34,34,.1);color:#8B2222;border:1px solid rgba(139,34,34,.2)}
+.inv-status.pending{background:rgba(184,152,90,.12);color:#8B7230;border:1px solid rgba(184,152,90,.25)}
+.inv-parties{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:1.8rem}
+.inv-party-label{font-size:.52rem;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:.3rem}
+.inv-party-name{font-size:.95rem;font-weight:500;color:var(--navy)}
+.inv-party-detail{font-size:.78rem;color:#556677;line-height:1.7}
+.inv-table-doc{width:100%;border-collapse:collapse;margin-bottom:1.2rem}
+.inv-table-doc thead th{font-size:.52rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);padding:.6rem .5rem;border-bottom:2px solid var(--gold);text-align:left}
+.inv-table-doc thead th:last-child{text-align:right}
+.inv-table-doc tbody td{font-size:.82rem;padding:.65rem .5rem;border-bottom:1px solid rgba(17,29,44,.08);color:#334155}
+.inv-table-doc tbody td:last-child{text-align:right;font-family:var(--serif);font-size:.95rem;color:var(--navy)}
+.inv-totals{display:flex;flex-direction:column;align-items:flex-end;margin-bottom:1.8rem}
+.inv-total-row{display:flex;justify-content:space-between;width:240px;padding:.35rem 0;font-size:.82rem;color:#556677}
+.inv-total-row.grand{border-top:2px solid var(--gold);padding-top:.6rem;margin-top:.3rem}
+.inv-total-row.grand span:last-child{font-family:var(--serif);font-size:1.4rem;font-weight:500;color:var(--navy)}
+.inv-payment{background:rgba(17,29,44,.04);border:1px solid rgba(17,29,44,.08);padding:1rem 1.2rem;margin-bottom:1.5rem;font-size:.78rem;color:#556677;line-height:1.8}
+.inv-payment strong{color:var(--navy);font-weight:500}
+.inv-footer{text-align:center;padding-top:1.2rem;border-top:1px solid rgba(17,29,44,.1);font-size:.68rem;color:#8899AA;letter-spacing:.04em}
+/* EMAIL PREVIEW */
+.email-preview{background:#E8E5E0;padding:1.2rem}
+.email-bar{background:#fff;border:1px solid rgba(17,29,44,.1);padding:.8rem 1.2rem;margin-bottom:1px;font-size:.75rem;color:#556677;line-height:1.7}
+.email-bar strong{color:var(--navy);font-weight:500}
+.email-bar-subject{font-size:.88rem;font-weight:500;color:var(--navy)}
+.email-body{background:#fff;border:1px solid rgba(17,29,44,.1);max-width:600px;margin:0 auto}
+.email-brand{background:var(--navy);padding:1.5rem 2rem;text-align:center}
+.email-brand-crest{width:48px;height:48px;border:1.5px solid var(--gold);display:inline-flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.2rem;font-weight:500;color:rgba(255,255,255,.8);margin-bottom:.5rem}
+.email-brand-name{font-family:var(--serif);font-size:1.15rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#fff;display:block}
+.email-brand-sub{font-size:.48rem;font-weight:400;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);display:block;margin-top:.1rem}
+.email-content{padding:2rem 2rem 1.5rem;color:var(--navy);font-family:var(--sans);font-weight:300}
+.email-content *{color:var(--navy)}
+.email-heading{font-family:var(--serif);font-size:1.5rem;font-weight:400;color:var(--navy);margin-bottom:.3rem;text-align:center}
+.email-subtext{font-size:.82rem;color:#556677;text-align:center;margin-bottom:1.5rem}
+.email-detail-card{background:#F9F7F4;border:1px solid rgba(17,29,44,.08);padding:1.2rem 1.4rem;margin-bottom:1.2rem}
+.email-detail-title{font-size:.52rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:.6rem}
+.email-detail-row{display:flex;justify-content:space-between;padding:.3rem 0;font-size:.82rem;border-bottom:1px solid rgba(17,29,44,.05)}
+.email-detail-row:last-child{border-bottom:none}
+.email-detail-row .edl{color:#778899;font-weight:400}
+.email-detail-row .edv{color:var(--navy);font-weight:500;text-align:right}
+.email-fare-total{display:flex;justify-content:space-between;padding:.6rem 0;margin-top:.3rem;border-top:2px solid var(--gold);font-size:.95rem}
+.email-fare-total .edl{font-weight:500;color:var(--navy)}
+.email-fare-total .edv{font-family:var(--serif);font-size:1.2rem;color:var(--navy);font-weight:500}
+.email-btn{display:inline-block;font-family:var(--sans);font-size:.62rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;padding:.7rem 1.4rem;text-decoration:none;text-align:center;cursor:pointer;border:none;transition:opacity .2s}
+.email-btn-gold{background:var(--gold);color:var(--navy)!important}
+.email-btn-navy{background:var(--navy);color:#fff!important}
+.email-btn-outline{background:transparent;color:var(--navy)!important;border:1px solid rgba(17,29,44,.2)}
+.email-btn-green{background:#2D6E47;color:#fff!important}
+.email-buttons{display:flex;gap:.5rem;justify-content:center;margin:1.2rem 0;flex-wrap:wrap}
+.email-map-placeholder{background:#E8E5E0;border:1px solid rgba(17,29,44,.1);padding:2rem;text-align:center;margin:1rem 0;font-size:.78rem;color:#778899}
+.email-map-placeholder svg{display:block;margin:0 auto .5rem;opacity:.3}
+.email-section{margin-bottom:1.2rem}
+.email-section-title{font-size:.52rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:.5rem}
+.email-driver-card{display:flex;gap:1rem;align-items:center;background:#F9F7F4;border:1px solid rgba(17,29,44,.08);padding:1rem 1.2rem}
+.email-driver-avatar{width:44px;height:44px;background:var(--navy);border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.1rem;color:rgba(255,255,255,.8);flex-shrink:0}
+.email-driver-info{font-size:.82rem;line-height:1.6}
+.email-driver-info strong{color:var(--navy);font-weight:500}
+.email-driver-info span{color:#556677}
+.email-footer{background:var(--navy);padding:1.2rem 2rem;text-align:center}
+.email-footer-text{font-size:.65rem;color:rgba(255,255,255,.45);letter-spacing:.06em;line-height:1.8}
+.email-footer-text a{color:var(--gold)!important;text-decoration:none}
+.email-footer-brand{font-family:var(--serif);font-size:.82rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:.2rem}
+.email-flight{background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);padding:.8rem 1rem;margin-bottom:1rem;font-size:.78rem;display:flex;align-items:center;gap:.6rem}
+.email-flight svg{flex-shrink:0;color:#3B82F6}
+.email-flight strong{color:var(--navy)}
+.email-flight span{color:#556677}
 @keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes sl{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}
@@ -407,7 +486,8 @@ textarea.fi{resize:vertical;min-height:80px}
                   <div class="tl-top"><div class="tl-name">Sarah Jones</div><span class="tag tag-upcoming">Upcoming</span></div>
                   <div class="tl-route">Lewes BN7 → Gatwick · EZY1234 · £78 Cash</div>
                   <div class="tl-actions">
-                    <button class="btn btn-blue btn-sm" onclick="showToast('Confirmation sent to Sarah Jones')">📧 Send Confirmation</button>
+                    <button class="btn btn-blue btn-sm" onclick="openModal('modal-email-customer')">📧 Send Confirmation</button>
+                    <button class="btn btn-ghost btn-sm" onclick="openModal('modal-email-driver')">📋 Driver Sheet</button>
                     <button class="btn btn-ghost btn-sm">✏️ Edit</button>
                   </div>
                 </div>
@@ -418,7 +498,8 @@ textarea.fi{resize:vertical;min-height:80px}
                   <div class="tl-top"><div class="tl-name">John Smith</div><span class="tag tag-account">Account</span></div>
                   <div class="tl-route">Heathrow T5 → Lewes · BA0492 · £145 Invoice</div>
                   <div class="tl-actions">
-                    <button class="btn btn-blue btn-sm" onclick="showToast('Confirmation sent to John Smith')">📧 Send Confirmation</button>
+                    <button class="btn btn-blue btn-sm" onclick="openModal('modal-email-customer')">📧 Send Confirmation</button>
+                    <button class="btn btn-ghost btn-sm" onclick="openModal('modal-email-driver')">📋 Driver Sheet</button>
                     <button class="btn btn-ghost btn-sm">✏️ Edit</button>
                   </div>
                 </div>
@@ -442,10 +523,10 @@ textarea.fi{resize:vertical;min-height:80px}
         <div class="ch"><div class="ct">Automation Status</div><button class="btn btn-ghost btn-sm" onclick="nav('automation',document.querySelector('[onclick*=auto]'))">Manage</button></div>
         <div class="cb">
           <div class="auto-grid">
-            <div class="auto-card armed"><div class="ac-icon">📧</div><div class="ac-title">Customer Email</div><div class="ac-sub">Confirmation with Maps, flight tracker and calendar link</div><div class="ac-status"><div class="ac-dot"></div>Active</div></div>
+            <div class="auto-card armed" style="cursor:pointer" onclick="openModal('modal-email-customer')"><div class="ac-icon">📧</div><div class="ac-title">Customer Email</div><div class="ac-sub">Confirmation with Maps, flight tracker and calendar link</div><div class="ac-status"><div class="ac-dot"></div>Active · <span style="color:var(--gold);margin-left:.2rem;font-size:.55rem">Preview →</span></div></div>
             <div class="auto-card armed"><div class="ac-icon">💬</div><div class="ac-title">WhatsApp</div><div class="ac-sub">Instant WhatsApp confirmation to customer on booking</div><div class="ac-status"><div class="ac-dot"></div>Active</div></div>
             <div class="auto-card armed"><div class="ac-icon">📅</div><div class="ac-title">Calendar Sync</div><div class="ac-sub">Every booking added to Google and Apple Calendar</div><div class="ac-status"><div class="ac-dot"></div>Active</div></div>
-            <div class="auto-card armed"><div class="ac-icon">✉️</div><div class="ac-title">Your Job Email</div><div class="ac-sub">Your job sheet with Waze, flight tracker and calendar</div><div class="ac-status"><div class="ac-dot"></div>Active</div></div>
+            <div class="auto-card armed" style="cursor:pointer" onclick="openModal('modal-email-driver')"><div class="ac-icon">✉️</div><div class="ac-title">Your Job Email</div><div class="ac-sub">Your job sheet with Waze, flight tracker and calendar</div><div class="ac-status"><div class="ac-dot"></div>Active · <span style="color:var(--gold);margin-left:.2rem;font-size:.55rem">Preview →</span></div></div>
             <div class="auto-card armed"><div class="ac-icon">📒</div><div class="ac-title">Record Book</div><div class="ac-sub">Every booking logged to operator record spreadsheet</div><div class="ac-status"><div class="ac-dot"></div>Active</div></div>
             <div class="auto-card"><div class="ac-icon">📄</div><div class="ac-title">Monthly Invoice</div><div class="ac-sub">Account customers invoiced automatically on the 1st</div><div class="ac-status off"><div class="ac-dot"></div>Connect Stripe to activate</div></div>
           </div>
@@ -470,7 +551,8 @@ textarea.fi{resize:vertical;min-height:80px}
                 <div class="tl-route">📍 14 Friars Walk, Lewes BN7 → ✈ Gatwick South Terminal</div>
                 <div class="tl-route" style="margin-top:.2rem">Flight EZY1234 · 08:15 · 1 passenger · 1 case · £78 Cash</div>
                 <div class="tl-actions">
-                  <button class="btn btn-blue btn-sm" onclick="showToast('Confirmation sent via WhatsApp + Email')">📧 Confirm</button>
+                  <button class="btn btn-blue btn-sm" onclick="openModal('modal-email-customer')">📧 Confirm</button>
+                  <button class="btn btn-ghost btn-sm" onclick="openModal('modal-email-driver')">📋 Driver Sheet</button>
                   <a class="btn btn-ghost btn-sm" href="https://waze.com/ul?q=14+Friars+Walk+Lewes&navigate=yes" target="_blank">🔵 Waze</a>
                   <a class="btn btn-ghost btn-sm" href="https://maps.google.com/?q=14+Friars+Walk+Lewes+BN7&directionsmode=driving" target="_blank">🗺 Maps</a>
                   <a class="btn btn-ghost btn-sm" href="https://www.flightradar24.com/data/flights/ezy1234" target="_blank">✈ Track</a>
@@ -486,7 +568,8 @@ textarea.fi{resize:vertical;min-height:80px}
                 <div class="tl-route">📍 Heathrow T5 Arrivals → 22 Pelham Court, Lewes BN7</div>
                 <div class="tl-route" style="margin-top:.2rem">Flight BA0492 · Lands ~17:20 · 2 passengers · 2 cases · £145 Invoice</div>
                 <div class="tl-actions">
-                  <button class="btn btn-blue btn-sm" onclick="showToast('Confirmation sent to John Smith')">📧 Confirm</button>
+                  <button class="btn btn-blue btn-sm" onclick="openModal('modal-email-customer')">📧 Confirm</button>
+                  <button class="btn btn-ghost btn-sm" onclick="openModal('modal-email-driver')">📋 Driver Sheet</button>
                   <a class="btn btn-ghost btn-sm" href="https://www.flightradar24.com/data/flights/ba0492" target="_blank">✈ Track</a>
                   <button class="btn btn-green btn-sm" onclick="markDone(this)">✓ Done</button>
                   <button class="btn btn-red btn-sm">✕ Cancel</button>
@@ -544,7 +627,7 @@ textarea.fi{resize:vertical;min-height:80px}
           <table class="inv-table">
             <thead><tr><th>Invoice No.</th><th>Customer</th><th>Issued</th><th>Due</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
-              <tr><td class="main-v">INV-2025-003</td><td><div class="main-v">Smith &amp; Co Ltd</div></td><td>01/03/2025</td><td>31/03/2025</td><td><span style="color:var(--red);font-family:var(--serif);font-size:1.1rem">£192.00</span></td><td><span class="tag tag-cancel">Overdue</span></td><td><button class="btn btn-blue btn-sm" onclick="showToast('Invoice sent to accounts@smithco.com')">📧 Chase</button> <button class="btn btn-green btn-sm" onclick="showToast('Marked as paid')">✓ Paid</button></td></tr>
+              <tr><td class="main-v">INV-2025-003</td><td><div class="main-v">Smith &amp; Co Ltd</div></td><td>01/03/2025</td><td>31/03/2025</td><td><span style="color:var(--red);font-family:var(--serif);font-size:1.1rem">£192.00</span></td><td><span class="tag tag-cancel">Overdue</span></td><td><button class="btn btn-ghost btn-sm" onclick="openModal('modal-inv-002')">Preview</button> <button class="btn btn-blue btn-sm" onclick="showToast('Invoice sent to accounts@smithco.com')">📧 Chase</button> <button class="btn btn-green btn-sm" onclick="showToast('Marked as paid')">✓ Paid</button></td></tr>
               <tr><td class="main-v">INV-2025-002</td><td><div class="main-v">Smith &amp; Co Ltd</div></td><td>01/02/2025</td><td>28/02/2025</td><td><span style="color:var(--green);font-family:var(--serif);font-size:1.1rem">£152.00</span></td><td><span class="tag tag-done">Paid</span></td><td><button class="btn btn-ghost btn-sm" onclick="openModal('modal-inv-002')">View</button></td></tr>
             </tbody>
           </table>
@@ -818,57 +901,312 @@ textarea.fi{resize:vertical;min-height:80px}
 
 <!-- ═══ MODAL: INVOICE VIEW INV-2025-002 ═══ -->
 <div class="overlay" id="modal-inv-002">
-  <div class="modal">
+  <div class="modal modal-doc">
     <div class="modal-hd">
       <div class="modal-title">Invoice INV-2025-002</div>
       <button class="modal-x" onclick="closeModal('modal-inv-002')">✕</button>
     </div>
-    <div class="modal-body">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
-        <div>
-          <div style="font-size:.58rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--text-light);margin-bottom:.3rem">Billed To</div>
-          <div style="font-size:.92rem;font-weight:500;color:var(--navy)">Smith &amp; Co Ltd</div>
-          <div style="font-size:.78rem;color:var(--text-light)">accounts@smithco.com</div>
+    <div class="inv-doc">
+      <!-- Invoice Header -->
+      <div class="inv-header">
+        <div style="display:flex;align-items:center">
+          <div class="inv-crest">W</div>
+          <div class="inv-brand">
+            <div class="inv-brand-name">Westmere Private Hire</div>
+            <span class="inv-brand-sub">Sussex</span>
+          </div>
         </div>
-        <div style="text-align:right">
-          <div style="font-size:.58rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--text-light);margin-bottom:.3rem">Details</div>
-          <div style="font-size:.82rem;color:var(--navy)">Issued: 01 Feb 2025</div>
-          <div style="font-size:.82rem;color:var(--navy)">Paid: 14 Feb 2025</div>
-          <span class="tag tag-done" style="margin-top:.3rem;display:inline-block">Paid</span>
+        <div class="inv-title-block">
+          <div class="inv-title">Invoice</div>
+          <div class="inv-meta">
+            <strong>Invoice No.</strong> INV-2025-002<br>
+            <strong>Issued:</strong> 01 February 2025<br>
+            <strong>Due:</strong> 28 February 2025
+          </div>
+          <span class="inv-status paid">Paid</span>
         </div>
       </div>
-      <table style="width:100%;border-collapse:collapse;font-size:.82rem;margin-bottom:1rem">
+
+      <!-- Billed To / From -->
+      <div class="inv-parties">
+        <div>
+          <div class="inv-party-label">Billed To</div>
+          <div class="inv-party-name">Smith &amp; Co Ltd</div>
+          <div class="inv-party-detail">
+            Mr John Smith<br>
+            22 Pelham Court<br>
+            Lewes, East Sussex BN7 1UL<br>
+            accounts@smithco.com
+          </div>
+        </div>
+        <div>
+          <div class="inv-party-label">From</div>
+          <div class="inv-party-name">Westmere Private Hire</div>
+          <div class="inv-party-detail">
+            Lewes, East Sussex<br>
+            info@westmereprivatehire.co.uk<br>
+            +44 7930 342 593<br>
+            Licensed Operator · Lewes District Council
+          </div>
+        </div>
+      </div>
+
+      <!-- Line Items -->
+      <table class="inv-table-doc">
         <thead>
-          <tr style="border-bottom:2px solid var(--rule)">
-            <th style="text-align:left;padding:.5rem .4rem;font-size:.56rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-light)">Journey</th>
-            <th style="padding:.5rem .4rem;font-size:.56rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-light)">Date</th>
-            <th style="text-align:right;padding:.5rem .4rem;font-size:.56rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-light)">Fare</th>
+          <tr>
+            <th>Date</th>
+            <th>Journey</th>
+            <th>Ref</th>
+            <th>Fare</th>
           </tr>
         </thead>
         <tbody>
-          <tr style="border-bottom:1px solid var(--rule)">
-            <td style="padding:.6rem .4rem;color:var(--navy)">Lewes → Gatwick (Drop-off)</td>
-            <td style="padding:.6rem .4rem;color:var(--text-mid);text-align:center">03 Feb</td>
-            <td style="padding:.6rem .4rem;text-align:right;font-family:var(--serif)">£78.00</td>
+          <tr>
+            <td>03 Feb 2025</td>
+            <td>14 Friars Walk, Lewes BN7 → Gatwick South Terminal</td>
+            <td style="font-size:.72rem;color:#778899">WPH-241801</td>
+            <td>£78.00</td>
           </tr>
-          <tr style="border-bottom:1px solid var(--rule)">
-            <td style="padding:.6rem .4rem;color:var(--navy)">Gatwick → Lewes (Pickup)</td>
-            <td style="padding:.6rem .4rem;color:var(--text-mid);text-align:center">07 Feb</td>
-            <td style="padding:.6rem .4rem;text-align:right;font-family:var(--serif)">£74.00</td>
+          <tr>
+            <td>07 Feb 2025</td>
+            <td>Gatwick South Terminal → 22 Pelham Court, Lewes BN7</td>
+            <td style="font-size:.72rem;color:#778899">WPH-241802</td>
+            <td>£74.00</td>
           </tr>
         </tbody>
-        <tfoot>
-          <tr style="border-top:2px solid var(--rule)">
-            <td colspan="2" style="padding:.7rem .4rem;font-weight:500;color:var(--navy)">Total</td>
-            <td style="padding:.7rem .4rem;text-align:right;font-family:var(--serif);font-size:1.2rem;color:var(--green)">£152.00</td>
-          </tr>
-        </tfoot>
       </table>
+
+      <!-- Totals -->
+      <div class="inv-totals">
+        <div class="inv-total-row">
+          <span>Subtotal</span>
+          <span>£152.00</span>
+        </div>
+        <div class="inv-total-row">
+          <span>Airport surcharges</span>
+          <span>£0.00</span>
+        </div>
+        <div class="inv-total-row grand">
+          <span>Total Due</span>
+          <span>£152.00</span>
+        </div>
+      </div>
+
+      <!-- Payment Terms -->
+      <div class="inv-payment">
+        <strong>Payment Terms</strong><br>
+        Payment due within 30 days of invoice date.<br>
+        <strong>Bank:</strong> Westmere Private Hire Ltd · Sort: 00-00-00 · Acc: 00000000<br>
+        <strong>Reference:</strong> INV-2025-002<br>
+        <strong>Status:</strong> Paid on 14 February 2025 — Thank you.
+      </div>
+
+      <!-- Footer -->
+      <div class="inv-footer">
+        Westmere Private Hire Ltd · Licensed by Lewes District Council · Lewes, East Sussex
+      </div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-inv-002')">Close</button>
-      <button class="btn btn-navy" onclick="showToast('Downloading invoice PDF…');closeModal('modal-inv-002')">📄 Download PDF</button>
-      <button class="btn btn-blue" onclick="showToast('Invoice resent to accounts@smithco.com');closeModal('modal-inv-002')">📧 Resend</button>
+      <button class="btn btn-navy" onclick="showToast('Downloading invoice PDF…')">📄 Download PDF</button>
+      <button class="btn btn-blue" onclick="showToast('Invoice resent to accounts@smithco.com')">📧 Resend</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══ MODAL: EMAIL PREVIEW — CUSTOMER BOOKING CONFIRMATION ═══ -->
+<div class="overlay" id="modal-email-customer">
+  <div class="modal modal-doc">
+    <div class="modal-hd">
+      <div class="modal-title">Customer Email Preview</div>
+      <button class="modal-x" onclick="closeModal('modal-email-customer')">✕</button>
+    </div>
+    <div class="email-preview">
+      <!-- Email Header Bar -->
+      <div class="email-bar">
+        <strong>From:</strong> Westmere Private Hire &lt;bookings@westmereprivatehire.co.uk&gt;<br>
+        <strong>To:</strong> Sarah Jones &lt;sarah.jones@email.com&gt;<br>
+        <div class="email-bar-subject">Your Booking Confirmation — Lewes → Gatwick · 25 Mar 2025</div>
+      </div>
+
+      <!-- Email Body -->
+      <div class="email-body">
+        <!-- Brand Header -->
+        <div class="email-brand">
+          <div class="email-brand-crest">W</div>
+          <span class="email-brand-name">Westmere Private Hire</span>
+          <span class="email-brand-sub">Sussex</span>
+        </div>
+
+        <div class="email-content">
+          <div class="email-heading">Your booking is confirmed</div>
+          <div class="email-subtext">Thank you, Sarah. Everything is arranged for your journey.</div>
+
+          <!-- Booking Details Card -->
+          <div class="email-detail-card">
+            <div class="email-detail-title">Journey Details</div>
+            <div class="email-detail-row"><span class="edl">Date</span><span class="edv">Tuesday 25 March 2025</span></div>
+            <div class="email-detail-row"><span class="edl">Pickup Time</span><span class="edv">04:30</span></div>
+            <div class="email-detail-row"><span class="edl">Pickup</span><span class="edv">14 Friars Walk, Lewes BN7 2PL</span></div>
+            <div class="email-detail-row"><span class="edl">Destination</span><span class="edv">Gatwick South Terminal</span></div>
+            <div class="email-detail-row"><span class="edl">Vehicle</span><span class="edv">Tesla Model S · Midnight Silver</span></div>
+            <div class="email-detail-row"><span class="edl">Payment</span><span class="edv">Cash on the day</span></div>
+            <div class="email-fare-total"><span class="edl">Fare</span><span class="edv">£78.00</span></div>
+          </div>
+
+          <!-- Flight Tracking -->
+          <div class="email-flight">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1l6.2 3.5-3.5 3.5-2.7-.7c-.3-.1-.7 0-.9.2l-.5.5c-.2.2-.2.5 0 .7l3.8 2.5 2.5 3.8c.2.2.5.3.7 0l.5-.5c.2-.2.3-.6.2-.9l-.7-2.7 3.5-3.5 3.5 6.2c.2.4.7.5 1.1.3l.5-.3c.4-.2.6-.6.5-1.1z"/></svg>
+            <div><strong>Flight EZY1234</strong> <span>· Departing 08:15 · Track live on </span><a href="https://www.flightradar24.com/data/flights/ezy1234" target="_blank" style="color:#3B82F6!important">Flightradar24</a></div>
+          </div>
+
+          <!-- Driver Details -->
+          <div class="email-section">
+            <div class="email-section-title">Your Driver</div>
+            <div class="email-driver-card">
+              <div class="email-driver-avatar">W</div>
+              <div class="email-driver-info">
+                <strong>Westmere Private Hire</strong><br>
+                <span>+44 7930 342 593 · Tesla Model S · Midnight Silver</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="email-buttons">
+            <a class="email-btn email-btn-gold" href="#">Add to Calendar</a>
+            <a class="email-btn email-btn-green" href="#">Track on WhatsApp</a>
+          </div>
+
+          <!-- Map Placeholder -->
+          <div class="email-map-placeholder">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Google Maps Route Preview<br>
+            <span style="font-size:.68rem;color:#99AABB">Lewes BN7 → Gatwick South Terminal · ~28 miles · ~38 min</span>
+          </div>
+
+          <!-- Contact -->
+          <div style="text-align:center;font-size:.78rem;color:#556677;line-height:1.8;margin-top:1rem">
+            Questions? Reply to this email or call <strong style="color:var(--navy)">+44 7930 342 593</strong><br>
+            <span style="font-size:.72rem">We are available 24/7 for airport bookings.</span>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="email-footer">
+          <div class="email-footer-brand">Westmere Private Hire · Sussex</div>
+          <div class="email-footer-text">
+            Licensed by Lewes District Council<br>
+            <a href="https://westmereprivatehire.co.uk">westmereprivatehire.co.uk</a> · <a href="mailto:bookings@westmereprivatehire.co.uk">bookings@westmereprivatehire.co.uk</a><br>
+            <span style="font-size:.55rem;color:rgba(255,255,255,.25);margin-top:.3rem;display:inline-block">You are receiving this email because a booking was made with Westmere Private Hire.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-email-customer')">Close</button>
+      <button class="btn btn-navy" onclick="showToast('Customer email sent to sarah.jones@email.com')">📧 Send Email</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══ MODAL: EMAIL PREVIEW — DRIVER JOB SHEET ═══ -->
+<div class="overlay" id="modal-email-driver">
+  <div class="modal modal-doc">
+    <div class="modal-hd">
+      <div class="modal-title">Driver Email Preview</div>
+      <button class="modal-x" onclick="closeModal('modal-email-driver')">✕</button>
+    </div>
+    <div class="email-preview">
+      <!-- Email Header Bar -->
+      <div class="email-bar">
+        <strong>From:</strong> Westmere Admin &lt;admin@westmereprivatehire.co.uk&gt;<br>
+        <strong>To:</strong> Driver &lt;driver@westmere.co.uk&gt;<br>
+        <div class="email-bar-subject">New Job Assignment — Sarah Jones · 04:30 · 25 Mar 2025</div>
+      </div>
+
+      <!-- Email Body -->
+      <div class="email-body">
+        <!-- Brand Header -->
+        <div class="email-brand">
+          <div class="email-brand-crest">W</div>
+          <span class="email-brand-name">Westmere Private Hire</span>
+          <span class="email-brand-sub">Driver Job Sheet</span>
+        </div>
+
+        <div class="email-content">
+          <div class="email-heading">New Job Assignment</div>
+          <div class="email-subtext">You have a new booking. Please review the details below.</div>
+
+          <!-- Passenger & Job Details -->
+          <div class="email-detail-card">
+            <div class="email-detail-title">Passenger</div>
+            <div class="email-detail-row"><span class="edl">Name</span><span class="edv">Sarah Jones</span></div>
+            <div class="email-detail-row"><span class="edl">Phone</span><span class="edv">+44 7700 123 456</span></div>
+            <div class="email-detail-row"><span class="edl">Contact Preference</span><span class="edv">WhatsApp</span></div>
+          </div>
+
+          <div class="email-detail-card">
+            <div class="email-detail-title">Journey Details</div>
+            <div class="email-detail-row"><span class="edl">Date</span><span class="edv">Tuesday 25 March 2025</span></div>
+            <div class="email-detail-row"><span class="edl">Pickup Time</span><span class="edv">04:30</span></div>
+            <div class="email-detail-row"><span class="edl">Pickup Address</span><span class="edv">14 Friars Walk, Lewes BN7 2PL</span></div>
+            <div class="email-detail-row"><span class="edl">Destination</span><span class="edv">Gatwick South Terminal</span></div>
+            <div class="email-detail-row"><span class="edl">Passengers</span><span class="edv">1 passenger · 1 suitcase</span></div>
+          </div>
+
+          <!-- Flight Info -->
+          <div class="email-flight">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1l6.2 3.5-3.5 3.5-2.7-.7c-.3-.1-.7 0-.9.2l-.5.5c-.2.2-.2.5 0 .7l3.8 2.5 2.5 3.8c.2.2.5.3.7 0l.5-.5c.2-.2.3-.6.2-.9l-.7-2.7 3.5-3.5 3.5 6.2c.2.4.7.5 1.1.3l.5-.3c.4-.2.6-.6.5-1.1z"/></svg>
+            <div><strong>Flight EZY1234</strong> <span>· Departs 08:15 · </span><a href="https://www.flightradar24.com/data/flights/ezy1234" target="_blank" style="color:#3B82F6!important">Track on Flightradar24</a></div>
+          </div>
+
+          <!-- Fare & Payment -->
+          <div class="email-detail-card">
+            <div class="email-detail-title">Fare &amp; Payment</div>
+            <div class="email-detail-row"><span class="edl">Payment Method</span><span class="edv">Cash on the day</span></div>
+            <div class="email-fare-total"><span class="edl">Fare</span><span class="edv">£78.00</span></div>
+          </div>
+
+          <!-- Special Instructions -->
+          <div class="email-detail-card" style="background:rgba(184,152,90,.06);border-color:rgba(184,152,90,.2)">
+            <div class="email-detail-title">Special Instructions</div>
+            <div style="font-size:.82rem;color:#334155;line-height:1.7">
+              Passenger will be outside the front door. One large suitcase. Please ring doorbell on arrival.
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="email-buttons">
+            <a class="email-btn email-btn-navy" href="https://waze.com/ul?q=14+Friars+Walk+Lewes+BN7&navigate=yes" target="_blank">Open in Waze</a>
+            <a class="email-btn email-btn-outline" href="https://maps.google.com/?q=14+Friars+Walk+Lewes+BN7&directionsmode=driving" target="_blank">Open in Google Maps</a>
+            <a class="email-btn email-btn-gold" href="#">Add to Calendar</a>
+          </div>
+
+          <!-- Map Placeholder -->
+          <div class="email-map-placeholder">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Route Preview<br>
+            <span style="font-size:.68rem;color:#99AABB">Home → Lewes BN7 (~15 min) → Gatwick South Terminal (~38 min)</span>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="email-footer">
+          <div class="email-footer-brand">Westmere Private Hire · Sussex</div>
+          <div class="email-footer-text">
+            This is an automated job sheet from the Westmere Admin Panel.<br>
+            <a href="https://westmereprivatehire.co.uk/westmere-admin.html">Open Admin Panel</a> · <a href="https://westmereprivatehire.co.uk/westmere-driver.html">Open Driver App</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-email-driver')">Close</button>
+      <button class="btn btn-navy" onclick="showToast('Job sheet sent to driver@westmere.co.uk')">📧 Send to Driver</button>
     </div>
   </div>
 </div>
