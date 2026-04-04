@@ -310,29 +310,12 @@ textarea.fi{resize:vertical;min-height:80px}
 </div>
 
 
-<!-- ═══ ADMIN LOGIN ═══ -->
-<div id="admin-login">
-  <div class="al-box">
-    <div class="al-hd">
-      <div class="al-crest">W</div>
-      <span class="al-name">Westmere</span>
-      <span class="al-sub">Admin Panel</span>
-    </div>
-    <div class="al-body">
-      <div class="al-title">Sign In</div>
-      <p class="al-desc">Enter your credentials to continue.</p>
-      <div class="al-err" id="al-err">Incorrect email or password.</div>
-      <div class="fg"><label class="fl">Email</label><input class="fi" type="email" id="al-user" placeholder="Email" autocomplete="email" onkeydown="if(event.key==='Enter')adminLogin()"></div>
-      <div class="fg"><label class="fl">Password</label><input class="fi" type="password" id="al-pass" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')adminLogin()"></div>
-      <button class="btn btn-navy btn-full" style="margin-top:.5rem;width:100%;padding:1rem" onclick="adminLogin()">Sign In</button>
-      <div class="al-attempts" id="al-attempts"></div>
-    </div>
-  </div>
-</div>
+<!-- Admin login disabled — mockup -->
+<div id="admin-login" style="display:none"></div>
 
 
 <!-- ═══ APP ═══ -->
-<div id="admin-app" style="display:none;flex:1;width:100%;min-height:100vh">
+<div id="admin-app" style="flex:1;width:100%;min-height:100vh">
 
 <!-- ═══ SIDEBAR ═══ -->
 <div class="sidebar" id="sidebar">
@@ -434,7 +417,7 @@ textarea.fi{resize:vertical;min-height:80px}
                 <div class="tl-time-col"><div class="tl-time">04:30</div><div class="tl-line"></div></div>
                 <div class="tl-card active">
                   <div class="tl-top"><div class="tl-name">Sarah Jones</div><span class="tag tag-upcoming">Upcoming</span></div>
-                  <div class="tl-route">Lewes BN7 → Gatwick · EZY1234 · £75 Cash</div>
+                  <div class="tl-route">Lewes BN7 → Gatwick · EZY1234 · £78 Cash</div>
                   <div class="tl-actions">
                     <button class="btn btn-blue btn-sm" onclick="showToast('Confirmation sent to Sarah Jones')">📧 Send Confirmation</button>
                     <button class="btn btn-ghost btn-sm">✏️ Edit</button>
@@ -460,9 +443,9 @@ textarea.fi{resize:vertical;min-height:80px}
           <div class="ch"><div class="ct">Recent Activity</div></div>
           <div class="cb">
             <div class="notif"><div class="notif-dot" style="background:var(--gold)"></div><div><div class="notif-text"><strong>New booking</strong> — Mrs Williams, Lewes → Brighton, Wed 2 Apr 19:30</div><div class="notif-time">2 minutes ago</div></div></div>
-            <div class="notif"><div class="notif-dot" style="background:#3B82F6"></div><div><div class="notif-text"><strong>Card payment received</strong> — John Smith, £127.00</div><div class="notif-time">1 hour ago</div></div></div>
+            <div class="notif"><div class="notif-dot" style="background:#3B82F6"></div><div><div class="notif-text"><strong>Card payment received</strong> — John Smith, £128.00</div><div class="notif-time">1 hour ago</div></div></div>
             <div class="notif"><div class="notif-dot" style="background:var(--red)"></div><div><div class="notif-text"><strong>Invoice overdue</strong> — Smith &amp; Co Ltd, INV-2025-003, £192</div><div class="notif-time">3 days overdue</div></div></div>
-            <div class="notif"><div class="notif-dot" style="background:var(--green)"></div><div><div class="notif-text"><strong>Journey completed</strong> — Dr Foster, Brighton → Heathrow, £127</div><div class="notif-time">Yesterday 08:45</div></div></div>
+            <div class="notif"><div class="notif-dot" style="background:var(--green)"></div><div><div class="notif-text"><strong>Journey completed</strong> — Dr Foster, Brighton → Heathrow, £128</div><div class="notif-time">Yesterday 08:45</div></div></div>
           </div>
         </div>
       </div>
@@ -497,7 +480,7 @@ textarea.fi{resize:vertical;min-height:80px}
               <div class="tl-card active">
                 <div class="tl-top"><div class="tl-name">Sarah Jones</div><span class="tag tag-upcoming">Upcoming</span></div>
                 <div class="tl-route">📍 14 Friars Walk, Lewes BN7 → ✈ Gatwick South Terminal</div>
-                <div class="tl-route" style="margin-top:.2rem">Flight EZY1234 · 08:15 · 1 passenger · 1 case · £75 Cash</div>
+                <div class="tl-route" style="margin-top:.2rem">Flight EZY1234 · 08:15 · 1 passenger · 1 case · £78 Cash</div>
                 <div class="tl-actions">
                   <button class="btn btn-blue btn-sm" onclick="showToast('Confirmation sent via WhatsApp + Email')">📧 Confirm</button>
                   <a class="btn btn-ghost btn-sm" href="https://waze.com/ul?q=14+Friars+Walk+Lewes&navigate=yes" target="_blank">🔵 Waze</a>
@@ -544,9 +527,9 @@ textarea.fi{resize:vertical;min-height:80px}
           <table class="jtable">
             <thead><tr><th>Ref</th><th>Date</th><th>Time</th><th>Passenger</th><th>Route</th><th>Type</th><th>Fare</th><th>Payment</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody id="jobs-tbody">
-              <tr data-status="upcoming"><td><div class="main-v">WPH-241903</div></td><td>25/03/25</td><td>04:30</td><td><div class="main-v">Sarah Jones</div></td><td><div class="main-v">Lewes → Gatwick</div><div class="sub-v">EZY1234</div></td><td><span class="tag tag-upcoming" style="font-size:.5rem">Airport</span></td><td><span style="color:var(--gold);font-family:var(--serif);font-size:1.1rem">£75</span></td><td><span class="tag tag-cash">Cash</span></td><td><span class="tag tag-upcoming">Upcoming</span></td><td><button class="btn btn-blue btn-sm" onclick="showToast('Confirmation sent')">📧</button> <button class="btn btn-ghost btn-sm">✏️</button></td></tr>
-              <tr data-status="completed"><td><div class="main-v">WPH-241902</div></td><td>14/03/25</td><td>07:30</td><td><div class="main-v">Mrs Linda Patel</div></td><td><div class="main-v">Lewes → Heathrow T5</div><div class="sub-v">BA0117</div></td><td><span class="tag tag-upcoming" style="font-size:.5rem">Airport</span></td><td><span style="color:var(--gold);font-family:var(--serif);font-size:1.1rem">£122</span></td><td><span class="tag tag-card">Card</span></td><td><span class="tag tag-done">Done</span></td><td><button class="btn btn-ghost btn-sm">Receipt</button></td></tr>
-              <tr data-status="completed"><td><div class="main-v">WPH-241901</div></td><td>10/03/25</td><td>05:15</td><td><div class="main-v">Mr James Cooper</div></td><td><div class="main-v">Horsham → Gatwick</div></td><td><span class="tag tag-upcoming" style="font-size:.5rem">Airport</span></td><td><span style="color:var(--gold);font-family:var(--serif);font-size:1.1rem">£45</span></td><td><span class="tag tag-cash">Cash</span></td><td><span class="tag tag-done">Done</span></td><td><button class="btn btn-ghost btn-sm">Receipt</button></td></tr>
+              <tr data-status="upcoming"><td><div class="main-v">WPH-241903</div></td><td>25/03/25</td><td>04:30</td><td><div class="main-v">Sarah Jones</div></td><td><div class="main-v">Lewes → Gatwick</div><div class="sub-v">EZY1234</div></td><td><span class="tag tag-upcoming" style="font-size:.5rem">Airport</span></td><td><span style="color:var(--gold);font-family:var(--serif);font-size:1.1rem">£78</span></td><td><span class="tag tag-cash">Cash</span></td><td><span class="tag tag-upcoming">Upcoming</span></td><td><button class="btn btn-blue btn-sm" onclick="showToast('Confirmation sent')">📧</button> <button class="btn btn-ghost btn-sm">✏️</button></td></tr>
+              <tr data-status="completed"><td><div class="main-v">WPH-241902</div></td><td>14/03/25</td><td>07:30</td><td><div class="main-v">Mrs Linda Patel</div></td><td><div class="main-v">Lewes → Heathrow T5</div><div class="sub-v">BA0117</div></td><td><span class="tag tag-upcoming" style="font-size:.5rem">Airport</span></td><td><span style="color:var(--gold);font-family:var(--serif);font-size:1.1rem">£140</span></td><td><span class="tag tag-card">Card</span></td><td><span class="tag tag-done">Done</span></td><td><button class="btn btn-ghost btn-sm">Receipt</button></td></tr>
+              <tr data-status="completed"><td><div class="main-v">WPH-241901</div></td><td>10/03/25</td><td>05:15</td><td><div class="main-v">Mr James Cooper</div></td><td><div class="main-v">Horsham → Gatwick</div></td><td><span class="tag tag-upcoming" style="font-size:.5rem">Airport</span></td><td><span style="color:var(--gold);font-family:var(--serif);font-size:1.1rem">£55</span></td><td><span class="tag tag-cash">Cash</span></td><td><span class="tag tag-done">Done</span></td><td><button class="btn btn-ghost btn-sm">Receipt</button></td></tr>
             </tbody>
           </table>
         </div>
@@ -574,7 +557,7 @@ textarea.fi{resize:vertical;min-height:80px}
             <thead><tr><th>Invoice No.</th><th>Customer</th><th>Issued</th><th>Due</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
               <tr><td class="main-v">INV-2025-003</td><td><div class="main-v">Smith &amp; Co Ltd</div></td><td>01/03/2025</td><td>31/03/2025</td><td><span style="color:var(--red);font-family:var(--serif);font-size:1.1rem">£192.00</span></td><td><span class="tag tag-cancel">Overdue</span></td><td><button class="btn btn-blue btn-sm" onclick="showToast('Invoice sent to accounts@smithco.com')">📧 Chase</button> <button class="btn btn-green btn-sm" onclick="showToast('Marked as paid')">✓ Paid</button></td></tr>
-              <tr><td class="main-v">INV-2025-002</td><td><div class="main-v">Smith &amp; Co Ltd</div></td><td>01/02/2025</td><td>28/02/2025</td><td><span style="color:var(--green);font-family:var(--serif);font-size:1.1rem">£77.00</span></td><td><span class="tag tag-done">Paid</span></td><td><button class="btn btn-ghost btn-sm" onclick="openModal('modal-inv-002')">View</button></td></tr>
+              <tr><td class="main-v">INV-2025-002</td><td><div class="main-v">Smith &amp; Co Ltd</div></td><td>01/02/2025</td><td>28/02/2025</td><td><span style="color:var(--green);font-family:var(--serif);font-size:1.1rem">£152.00</span></td><td><span class="tag tag-done">Paid</span></td><td><button class="btn btn-ghost btn-sm" onclick="openModal('modal-inv-002')">View</button></td></tr>
             </tbody>
           </table>
         </div>
@@ -657,9 +640,9 @@ textarea.fi{resize:vertical;min-height:80px}
         <div class="ch"><div class="ct">All Activity</div></div>
         <div class="cb">
           <div class="notif"><div class="notif-dot" style="background:var(--gold)"></div><div><div class="notif-text"><strong>New booking</strong> — Mrs Williams, Lewes → Brighton, Wed 2 Apr 19:30. £12 cash.</div><div class="notif-time">2 minutes ago</div></div></div>
-          <div class="notif"><div class="notif-dot" style="background:#3B82F6"></div><div><div class="notif-text"><strong>Card payment confirmed</strong> — John Smith, £127.00 via Stripe</div><div class="notif-time">1 hour ago</div></div></div>
+          <div class="notif"><div class="notif-dot" style="background:#3B82F6"></div><div><div class="notif-text"><strong>Card payment confirmed</strong> — John Smith, £128.00 via Stripe</div><div class="notif-time">1 hour ago</div></div></div>
           <div class="notif"><div class="notif-dot" style="background:var(--red)"></div><div><div class="notif-text"><strong>Invoice overdue</strong> — Smith &amp; Co Ltd, INV-2025-003, £192.00. Due 31 March.</div><div class="notif-time">3 days ago</div></div></div>
-          <div class="notif"><div class="notif-dot" style="background:var(--green)"></div><div><div class="notif-text"><strong>Journey completed</strong> — Dr Amelia Foster, Brighton → Heathrow T2, £127.00 card.</div><div class="notif-time">Yesterday 08:45</div></div></div>
+          <div class="notif"><div class="notif-dot" style="background:var(--green)"></div><div><div class="notif-text"><strong>Journey completed</strong> — Dr Amelia Foster, Brighton → Heathrow T2, £128.00 card.</div><div class="notif-time">Yesterday 08:45</div></div></div>
           <div class="notif"><div class="notif-dot" style="background:var(--gold)"></div><div><div class="notif-text"><strong>New account signup</strong> — Mrs Patricia Williams registered as Personal account.</div><div class="notif-time">Yesterday 14:22</div></div></div>
         </div>
       </div>
@@ -878,18 +861,18 @@ textarea.fi{resize:vertical;min-height:80px}
           <tr style="border-bottom:1px solid var(--rule)">
             <td style="padding:.6rem .4rem;color:var(--navy)">Lewes → Gatwick (Drop-off)</td>
             <td style="padding:.6rem .4rem;color:var(--text-mid);text-align:center">03 Feb</td>
-            <td style="padding:.6rem .4rem;text-align:right;font-family:var(--serif)">£75.00</td>
+            <td style="padding:.6rem .4rem;text-align:right;font-family:var(--serif)">£78.00</td>
           </tr>
           <tr style="border-bottom:1px solid var(--rule)">
-            <td style="padding:.6rem .4rem;color:var(--navy)">Gatwick → Lewes (Pickup +£8)</td>
+            <td style="padding:.6rem .4rem;color:var(--navy)">Gatwick → Lewes (Pickup)</td>
             <td style="padding:.6rem .4rem;color:var(--text-mid);text-align:center">07 Feb</td>
-            <td style="padding:.6rem .4rem;text-align:right;font-family:var(--serif)">£83.00</td>
+            <td style="padding:.6rem .4rem;text-align:right;font-family:var(--serif)">£74.00</td>
           </tr>
         </tbody>
         <tfoot>
           <tr style="border-top:2px solid var(--rule)">
             <td colspan="2" style="padding:.7rem .4rem;font-weight:500;color:var(--navy)">Total</td>
-            <td style="padding:.7rem .4rem;text-align:right;font-family:var(--serif);font-size:1.2rem;color:var(--green)">£77.00</td>
+            <td style="padding:.7rem .4rem;text-align:right;font-family:var(--serif);font-size:1.2rem;color:var(--green)">£152.00</td>
           </tr>
         </tfoot>
       </table>
@@ -1095,11 +1078,23 @@ function togToggle(el){
   showToast(t.classList.contains('on')?'Automation enabled':'Automation disabled');
 }
 
-// ── FARE DATA ──
-const CF={Horsham:{ga:45,he:115,st:175,lu:150,so:130,ci:155},Lewes:{ga:75,he:135,st:220,lu:210,so:155,ci:170},Brighton:{ga:70,he:120,st:210,lu:200,so:148,ci:162},Worthing:{ga:60,he:138,st:205,lu:195,so:120,ci:160}};
-const RD={horsham_ga:{m:12,t:22},horsham_he:{m:38,t:55},lewes_ga:{m:28,t:38},lewes_he:{m:62,t:80},brighton_ga:{m:27,t:40},brighton_he:{m:58,t:75},worthing_ga:{m:28,t:42},worthing_he:{m:55,t:70},burgess_ga:{m:10,t:18},burgess_he:{m:42,t:58},haywards_ga:{m:12,t:22},haywards_he:{m:44,t:60}};
-const APK={gatwick:'ga',heathrow:'he',stansted:'st',luton:'lu',southampton:'so',city:'ci'};
-const TWN={horsham:'horsham',rh12:'horsham',lewes:'lewes',bn7:'lewes',brighton:'brighton',bn1:'brighton',bn2:'brighton',worthing:'worthing',bn11:'worthing','burgess hill':'burgess',rh15:'burgess','haywards heath':'haywards',rh16:'haywards'};
+// ── FARE DATA (directional: out=drop-off, ret=pickup) ──
+const CF={
+  Brighton:{ga:{out:72,ret:68},he:{out:128,ret:133},st:{out:215,ret:220},lu:{out:205,ret:210},so:{out:152,ret:147},ci:{out:166,ret:171}},
+  Lewes:{ga:{out:78,ret:74},he:{out:140,ret:145},st:{out:225,ret:230},lu:{out:215,ret:220},so:{out:160,ret:155},ci:{out:175,ret:180}},
+  Horsham:{ga:{out:55,ret:50},he:{out:120,ret:125},st:{out:180,ret:185},lu:{out:155,ret:160},so:{out:135,ret:130},ci:{out:160,ret:165}},
+  Crawley:{ga:{out:35,ret:32},he:{out:95,ret:100}},
+  Worthing:{ga:{out:72,ret:68},he:{out:130,ret:135}},
+  Haywards:{ga:{out:52,ret:48}},
+  Burgess:{ga:{out:48,ret:44}},
+  Eastbourne:{ga:{out:98,ret:94},he:{out:162,ret:167}},
+  Seaford:{ga:{out:92,ret:88}},
+  Uckfield:{ga:{out:62,ret:58}},
+  Eastgrinstead:{ga:{out:42,ret:38}}
+};
+const RD={horsham_ga:{m:12,t:22},horsham_he:{m:38,t:55},lewes_ga:{m:28,t:38},lewes_he:{m:62,t:80},brighton_ga:{m:27,t:40},brighton_he:{m:58,t:75},worthing_ga:{m:28,t:42},worthing_he:{m:55,t:70},burgess_ga:{m:10,t:18},burgess_he:{m:42,t:58},haywards_ga:{m:12,t:22},haywards_he:{m:44,t:60},crawley_ga:{m:8,t:15},crawley_he:{m:32,t:48},eastbourne_ga:{m:40,t:55},eastbourne_he:{m:72,t:95},seaford_ga:{m:35,t:48},uckfield_ga:{m:18,t:28},eastgrinstead_ga:{m:14,t:22}};
+const APK={gatwick:'ga',heathrow:'he',stansted:'st',luton:'lu',southampton:'so',city:'ci',lgw:'ga',lhr:'he',stn:'st',ltn:'lu'};
+const TWN={horsham:'horsham',rh12:'horsham',rh13:'horsham',lewes:'lewes',bn7:'lewes',brighton:'brighton',bn1:'brighton',bn2:'brighton',bn3:'brighton',worthing:'worthing',bn11:'worthing',bn12:'worthing','burgess hill':'burgess',rh15:'burgess','haywards heath':'haywards',rh16:'haywards',crawley:'crawley',rh10:'crawley',rh11:'crawley',eastbourne:'eastbourne',bn20:'eastbourne',bn21:'eastbourne',seaford:'seaford',bn25:'seaford',uckfield:'uckfield',tn22:'uckfield','east grinstead':'eastgrinstead',rh19:'eastgrinstead'};
 const DT={gatwick:{heathrow:55,horsham:28,lewes:44,brighton:48,worthing:52,burgess:20,haywards:22},heathrow:{horsham:58,lewes:90,brighton:85,worthing:75,burgess:60,haywards:62},horsham:{lewes:50,brighton:42,worthing:38,burgess:28,haywards:30},lewes:{brighton:22,worthing:42,burgess:25,haywards:28},brighton:{worthing:28,burgess:20,haywards:25}};
 function dtDrive(a,b){if(!a||!b)return 25;if(a===b)return 8;return(DT[a]&&DT[a][b])||(DT[b]&&DT[b][a])||30}
 function nTown(s){const l=s.toLowerCase();for(const[k,v]of Object.entries(TWN)){if(l.includes(k))return v}if(l.includes('gatwick'))return'gatwick';if(l.includes('heathrow'))return'heathrow';return null}
@@ -1226,18 +1221,15 @@ function nbCheck(){
   // Fare estimate
   if(pu.length>3&&de.length>3){
     const puN=nTown(pu),deN=nTown(de);
-    const apk=deN&&APK[deN]?APK[deN]:null;
-    const town=puN&&CF[puN.charAt(0).toUpperCase()+puN.slice(1)]?puN:null;
-    if(apk&&town){
-      const base=CF[town.charAt(0).toUpperCase()+town.slice(1)][apk]||0;
-      if(base){
-        let fare=base;
-        const h=parseInt((tm||'10:00').split(':')[0]);
-        const apC={ga:[10,8],he:[7,12],st:[6,6],lu:[5,5],so:[4,4],ci:[6,6]};
-        if(apC[apk]) fare+=(jt==='ad'?apC[apk][0]:apC[apk][1]);
-        if(h>=23||h<5)fare+=(deN==='heathrow'?20:15);
-        if(jt==='co')fare=Math.round(fare*1.1);
-        fare=Math.ceil(fare/0.5)*0.5;
+    // Determine which is town and which is airport
+    let apk=null,town=null,isDropOff=true;
+    if(deN&&APK[deN]){apk=APK[deN];town=puN;isDropOff=true;}
+    else if(puN&&APK[puN]){apk=APK[puN];town=deN;isDropOff=false;}
+    const townKey=town?town.charAt(0).toUpperCase()+town.slice(1):null;
+    if(apk&&townKey&&CF[townKey]&&CF[townKey][apk]){
+      const fp=CF[townKey][apk];
+      let fare=isDropOff?fp.out:fp.ret;
+      if(fare){
         const rd=RD[town+'_'+apk]||{};
         document.getElementById('nb-pb-amount').textContent='£'+fare;
         document.getElementById('nb-pb-dist').textContent=rd.m?rd.m+' miles':'—';
@@ -1278,18 +1270,30 @@ function nbCheck(){
   }
 }
 
-// ── FARE TABLE ──
-const FARES={Horsham:{ga:45,he:115,st:175,lu:150,so:130,ci:155},Lewes:{ga:75,he:135,st:220,lu:210,so:155,ci:170},Brighton:{ga:70,he:120,st:210,lu:200,so:148,ci:162},Worthing:{ga:60,he:138,st:205,lu:195,so:120,ci:160},'Burgess Hill':{ga:38,he:120,st:215,lu:205,so:150,ci:165},'Haywards Heath':{ga:42,he:118,st:213,lu:203,so:148,ci:163},Seaford:{ga:82,he:148,st:225,lu:215,so:165,ci:178},Ringmer:{ga:68,he:138,st:218,lu:208,so:155,ci:168}};
+// ── FARE TABLE (drop-off / pickup) ──
+const FARES={
+  Brighton:{ga:'72 / 68',he:'128 / 133',st:'215 / 220',lu:'205 / 210',so:'152 / 147',ci:'166 / 171'},
+  Lewes:{ga:'78 / 74',he:'140 / 145',st:'225 / 230',lu:'215 / 220',so:'160 / 155',ci:'175 / 180'},
+  Horsham:{ga:'55 / 50',he:'120 / 125',st:'180 / 185',lu:'155 / 160',so:'135 / 130',ci:'160 / 165'},
+  Crawley:{ga:'35 / 32',he:'95 / 100',st:'—',lu:'—',so:'—',ci:'—'},
+  Worthing:{ga:'72 / 68',he:'130 / 135',st:'—',lu:'—',so:'—',ci:'—'},
+  'Haywards Heath':{ga:'52 / 48',he:'—',st:'—',lu:'—',so:'—',ci:'—'},
+  'Burgess Hill':{ga:'48 / 44',he:'—',st:'—',lu:'—',so:'—',ci:'—'},
+  Eastbourne:{ga:'98 / 94',he:'162 / 167',st:'—',lu:'—',so:'—',ci:'—'},
+  Seaford:{ga:'92 / 88',he:'—',st:'—',lu:'—',so:'—',ci:'—'},
+  Uckfield:{ga:'62 / 58',he:'—',st:'—',lu:'—',so:'—',ci:'—'},
+  'East Grinstead':{ga:'42 / 38',he:'—',st:'—',lu:'—',so:'—',ci:'—'}
+};
 const APS=['ga','he','st','lu','so','ci'];
 function buildFares(){
   const tb=document.getElementById('fare-tbody');
   if(!tb)return;
   for(const[town,fares]of Object.entries(FARES)){
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td style="text-align:left;font-size:.78rem;font-weight:500;color:var(--navy);background:var(--cream-dark);padding:.5rem .8rem">${town}</td>`;
+    tr.innerHTML=`<td style="text-align:left;font-size:.78rem;font-weight:500;color:#fff;background:var(--cream-dark);padding:.5rem .8rem">${town}</td>`;
     APS.forEach(ap=>{
       const v=fares[ap]||'—';
-      tr.innerHTML+=`<td><input class="fare-input" value="£${v}" onchange="showToast('Fare updated — remember to save')"></td>`;
+      tr.innerHTML+=`<td><input class="fare-input" value="${v==='—'?'—':'£'+v}" onchange="showToast('Fare updated — remember to save')" style="${v==='—'?'color:rgba(255,255,255,.2)':''}"></td>`;
     });
     tb.appendChild(tr);
   }
@@ -1324,22 +1328,22 @@ if(nbDate)nbDate.value=tom.toISOString().split('T')[0];
 // ── RECORD BOOK ──────────────────────────────────────────────────────
 const RB_DATA = {
   '2025-03': [
-    {n:1, date:'25/03/2025', time:'04:30', passenger:'Sarah Jones',      pickup:'14 Friars Walk, Lewes BN7 2PL',    dest:'Gatwick South Terminal',  type:'Airport Drop-off', fare:75,  pay:'Cash',    flight:'EZY1234'},
+    {n:1, date:'25/03/2025', time:'04:30', passenger:'Sarah Jones',      pickup:'14 Friars Walk, Lewes BN7 2PL',    dest:'Gatwick South Terminal',  type:'Airport Drop-off', fare:78,  pay:'Cash',    flight:'EZY1234'},
     {n:2, date:'25/03/2025', time:'17:20', passenger:'John Smith',        pickup:'Heathrow T5 Arrivals',              dest:'22 Pelham Court, Lewes BN7', type:'Airport Pickup',   fare:145, pay:'Account', flight:'BA0492'},
-    {n:3, date:'14/03/2025', time:'07:30', passenger:'Mrs Linda Patel',   pickup:'8 Station Road, Lewes BN7 1PH',    dest:'Heathrow T5',              type:'Airport Drop-off', fare:147, pay:'Card',    flight:'BA0117'},
+    {n:3, date:'14/03/2025', time:'07:30', passenger:'Mrs Linda Patel',   pickup:'8 Station Road, Lewes BN7 1PH',    dest:'Heathrow T5',              type:'Airport Drop-off', fare:140, pay:'Card',    flight:'BA0117'},
     {n:4, date:'10/03/2025', time:'05:15', passenger:'Mr James Cooper',   pickup:'Horsham Town Centre RH12',          dest:'Gatwick North Terminal',   type:'Airport Drop-off', fare:55,  pay:'Cash',    flight:'FR9920'},
-    {n:5, date:'05/03/2025', time:'14:20', passenger:'Tom Ashworth',      pickup:'Gatwick South Terminal',            dest:'Lewes BN7 2AL',            type:'Airport Pickup',   fare:83,  pay:'Account', flight:'EZY5512'},
-    {n:6, date:'02/03/2025', time:'05:15', passenger:'Sarah Jones',       pickup:'14 Friars Walk, Lewes BN7 2PL',    dest:'Gatwick South Terminal',   type:'Airport Drop-off', fare:85,  pay:'Cash',    flight:'EZY2214'},
+    {n:5, date:'05/03/2025', time:'14:20', passenger:'Tom Ashworth',      pickup:'Gatwick South Terminal',            dest:'Lewes BN7 2AL',            type:'Airport Pickup',   fare:74,  pay:'Account', flight:'EZY5512'},
+    {n:6, date:'02/03/2025', time:'05:15', passenger:'Sarah Jones',       pickup:'14 Friars Walk, Lewes BN7 2PL',    dest:'Gatwick South Terminal',   type:'Airport Drop-off', fare:78,  pay:'Cash',    flight:'EZY2214'},
   ],
   '2025-02': [
-    {n:1, date:'18/02/2025', time:'06:00', passenger:'Priya Sharma',      pickup:'Brighton BN1 3AG',                  dest:'Gatwick South Terminal',   type:'Airport Drop-off', fare:80,  pay:'Cash',    flight:'FR1084'},
-    {n:2, date:'12/02/2025', time:'08:45', passenger:'Dr Amelia Foster',  pickup:'Lewes BN7 1XP',                     dest:'Heathrow T2',              type:'Airport Drop-off', fare:127, pay:'Card',    flight:'BA0026'},
-    {n:3, date:'05/02/2025', time:'14:20', passenger:'Tom Ashworth',      pickup:'Gatwick South Terminal',            dest:'Lewes BN7 2AL',            type:'Airport Pickup',   fare:83,  pay:'Account', flight:'EZY5512'},
+    {n:1, date:'18/02/2025', time:'06:00', passenger:'Priya Sharma',      pickup:'Brighton BN1 3AG',                  dest:'Gatwick South Terminal',   type:'Airport Drop-off', fare:72,  pay:'Cash',    flight:'FR1084'},
+    {n:2, date:'12/02/2025', time:'08:45', passenger:'Dr Amelia Foster',  pickup:'Lewes BN7 1XP',                     dest:'Heathrow T2',              type:'Airport Drop-off', fare:140, pay:'Card',    flight:'BA0026'},
+    {n:3, date:'05/02/2025', time:'14:20', passenger:'Tom Ashworth',      pickup:'Gatwick South Terminal',            dest:'Lewes BN7 2AL',            type:'Airport Pickup',   fare:74,  pay:'Account', flight:'EZY5512'},
   ],
   '2025-01': [
-    {n:1, date:'20/01/2025', time:'05:00', passenger:'Sarah Jones',       pickup:'14 Friars Walk, Lewes BN7 2PL',    dest:'Gatwick South Terminal',   type:'Airport Drop-off', fare:85,  pay:'Cash',    flight:'EZY0022'},
+    {n:1, date:'20/01/2025', time:'05:00', passenger:'Sarah Jones',       pickup:'14 Friars Walk, Lewes BN7 2PL',    dest:'Gatwick South Terminal',   type:'Airport Drop-off', fare:78,  pay:'Cash',    flight:'EZY0022'},
     {n:2, date:'14/01/2025', time:'09:15', passenger:'Mrs Williams',      pickup:'Ringmer BN8 5QJ',                   dest:'Brighton Station BN1',     type:'Private Hire',     fare:28,  pay:'Cash',    flight:'—'},
-    {n:3, date:'08/01/2025', time:'11:30', passenger:'John Smith',        pickup:'Lewes BN7 2DB',                     dest:'Heathrow T5',              type:'Airport Drop-off', fare:142, pay:'Account', flight:'BA0117'},
+    {n:3, date:'08/01/2025', time:'11:30', passenger:'John Smith',        pickup:'Lewes BN7 2DB',                     dest:'Heathrow T5',              type:'Airport Drop-off', fare:140, pay:'Account', flight:'BA0117'},
   ]
 };
 
