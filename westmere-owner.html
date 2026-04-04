@@ -300,30 +300,8 @@ footer{background:transparent;padding:1.5rem 6%;border-top:none;position:relativ
 </head>
 <body>
 
-<!-- ═══ OWNER LOGIN ═══ -->
-<div id="login-screen">
-  <div class="ls-inner">
-    <div class="ls-hd">
-      <div class="ls-crest">W</div>
-      <div class="ls-title">Owner Portal</div>
-      <div class="ls-sub">Westmere Private Hire</div>
-    </div>
-    <div class="ls-body">
-      <div class="ls-fg">
-        <label class="ls-label">Username</label>
-        <input class="ls-input" type="text" id="owner-user" placeholder="Username" autocomplete="username" autocapitalize="none">
-      </div>
-      <div class="ls-fg">
-        <label class="ls-label">Password</label>
-        <input class="ls-input" type="password" id="owner-pass" placeholder="Password" autocomplete="current-password">
-      </div>
-      <button class="ls-btn" onclick="ownerLogin()">Sign In</button>
-      <div class="ls-err" id="owner-err"></div>
-      <div style="text-align:center;margin-top:.4rem;font-size:.7rem;color:rgba(255,255,255,.3)" id="owner-att"></div>
-    </div>
-    <div class="ls-foot">Westmere Private Hire &middot; Sussex</div>
-  </div>
-</div>
+<!-- ═══ OWNER LOGIN (disabled — mockup) ═══ -->
+<div id="login-screen" style="display:none"></div>
 
 <nav id="nav">
   <a href="index.html" class="brand">
@@ -358,7 +336,7 @@ footer{background:transparent;padding:1.5rem 6%;border-top:none;position:relativ
   <a href="index.html?skip=1" onclick="closeMenu()">Book Now</a>
 </div>
 
-<div class="app" id="scr-app" style="display:none">
+<div class="app" id="scr-app">
 
   <!-- TOP BAR -->
   <div class="topbar">
@@ -625,12 +603,7 @@ document.addEventListener('keydown',function(e){
   }
 });
 
-// Resume session
-if(sessionStorage.getItem('wph_owner')){
-  document.getElementById('login-screen').style.display='none';
-  document.getElementById('scr-app').style.display='';
-  // initApp called at bottom of script
-}
+// Mockup — skip login, go straight to app
 
 // ── DATA ─────────────────────────────────────────────────────────────────────
 var TODAY_JOBS = [
@@ -1098,7 +1071,8 @@ document.addEventListener('keydown',function(e){
   if(e.key==='Escape')document.querySelectorAll('.sug-drop.on').forEach(function(d){d.classList.remove('on');});
 });
 // Auto-init if session already authenticated
-if(sessionStorage.getItem('wph_owner')){initApp();}
+// Mockup — always init
+initApp();
 </script>
 
 <!-- WhatsApp FAB -->
