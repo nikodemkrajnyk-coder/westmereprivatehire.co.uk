@@ -313,20 +313,16 @@ input[type=date]::placeholder,input[type=text]::placeholder{color:rgba(255,255,2
 .cal-empty{padding:1.5rem 1.1rem;text-align:center;font-size:.95rem;color:rgba(255,255,255,.4)}
 
 /* ── FEASIBILITY BANNER ── */
-.feas-banner{padding:.95rem 1.1rem;margin-bottom:.5rem;border:1px solid}
-.feas-banner.no-go{background:var(--red-bg);border-color:rgba(139,34,34,.3)}
-.feas-banner.tight{background:var(--amber-bg);border-color:rgba(184,152,90,.25)}
-.feas-verdict{font-size:1rem;font-weight:500;margin-bottom:.4rem}
-.feas-banner.no-go .feas-verdict{color:var(--red)}
-.feas-banner.tight .feas-verdict{color:var(--amber)}
-.feas-explain{font-size:.88rem;color:rgba(255,255,255,.6);font-weight:300;line-height:1.6;margin-bottom:.5rem}
-.feas-route{display:flex;gap:.5rem;align-items:stretch;margin-top:.5rem}
-.feas-leg{flex:1;padding:.55rem .7rem;background:rgba(13,21,32,.5);border:1px solid rgba(255,255,255,.08)}
-.feas-leg-label{font-size:.58rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:.2rem}
-.feas-leg-time{font-family:var(--serif);font-size:1.05rem;color:var(--gold)}
-.feas-leg-name{font-size:.85rem;font-weight:400;color:#fff}
-.feas-leg-detail{font-size:.78rem;color:rgba(255,255,255,.5)}
-.feas-arrow{display:flex;align-items:center;color:rgba(255,255,255,.25);font-size:1.2rem;flex-shrink:0}
+.feas-banner{padding:1.1rem 1.2rem;margin-bottom:.6rem;border:2px solid}
+.feas-banner.no-go{background:rgba(139,34,34,.2);border-color:rgba(200,60,60,.5)}
+.feas-banner.tight{background:rgba(184,152,90,.12);border-color:rgba(184,152,90,.4)}
+.feas-verdict{font-family:var(--serif);font-size:1.5rem;font-weight:500;margin-bottom:.3rem;line-height:1.2}
+.feas-banner.no-go .feas-verdict{color:#E85555}
+.feas-banner.tight .feas-verdict{color:var(--gold)}
+.feas-explain{font-size:1rem;color:rgba(255,255,255,.75);font-weight:300;line-height:1.65;margin-bottom:.1rem}
+.feas-action{font-size:1rem;font-weight:500;margin-top:.5rem}
+.feas-banner.no-go .feas-action{color:#E85555}
+.feas-banner.tight .feas-action{color:var(--gold)}
 
 /* ── MSG SOURCE ICON ── */
 .msg-source{display:inline-flex;align-items:center;gap:.3rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;padding:.18rem .55rem;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5)}
@@ -541,7 +537,6 @@ input[type=date]::placeholder,input[type=text]::placeholder{color:rgba(255,255,2
     <button class="bn" id="bn-calendar" onclick="goPage('calendar',this)"><div class="bn-bar"></div><div class="bn-label">Calendar</div></button>
     <button class="bn" id="bn-inbox" onclick="goPage('inbox',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Inbox</div><div class="bn-dot" id="inbox-dot">2</div></button>
     <button class="bn" id="bn-assistant" onclick="goPage('assistant',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Assistant</div></button>
-    <button class="bn" id="bn-smart" onclick="goPage('smart',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Smart Day</div></button>
     <button class="bn" id="bn-earnings" onclick="goPage('earnings',this)"><div class="bn-bar"></div><div class="bn-label">Earnings</div></button>
   </div>
 
@@ -680,7 +675,7 @@ function setMode(mode){
   document.getElementById('tb-mode-label').textContent = mode==='drive' ? 'Drive Mode' : 'Admin Mode';
   // Show/hide nav items
   var driveItems = ['bn-today','bn-offered','bn-tesla','bn-calendar'];
-  var adminItems = ['bn-inbox','bn-assistant','bn-smart'];
+  var adminItems = ['bn-inbox','bn-assistant'];
   driveItems.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=mode==='drive'?'':'none';});
   adminItems.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=mode==='admin'?'':'none';});
   if(mode==='drive') goPage('today', document.getElementById('bn-today'));
@@ -839,14 +834,9 @@ function buildOffered(){
     if(feas){
       var cls=feas.canMake==='tight'?'tight':'no-go';
       alertBanner='<div class="feas-banner '+cls+'">'
-        +'<div class="feas-verdict">'+(feas.canMake==='tight'?'Tight — but possible':'You won\'t make it')+'</div>'
+        +'<div class="feas-verdict">'+(feas.canMake==='tight'?'Tight — possible if on time':'You won\'t make it')+'</div>'
         +'<div class="feas-explain">'+escH(feas.reason)+'</div>'
-        +'<div class="feas-route">'
-        +'<div class="feas-leg"><div class="feas-leg-label">'+(feas.canMake?'Existing':'You\'re with')+'</div><div class="feas-leg-time">'+escH(feas.job.time)+'</div><div class="feas-leg-name">'+escH(feas.job.name)+'</div><div class="feas-leg-detail">'+escH(feas.job.pickup)+' → '+escH(feas.job.dest)+'</div></div>'
-        +'<div class="feas-arrow">→</div>'
-        +'<div class="feas-leg"><div class="feas-leg-label">This offer</div><div class="feas-leg-time">'+escH(j.time)+'</div><div class="feas-leg-name">'+escH(j.name)+'</div><div class="feas-leg-detail">'+escH(j.pickup)+' → '+escH(j.dest)+'</div></div>'
-        +'</div>'
-        +(!feas.canMake?'<div style="margin-top:.6rem;font-size:.85rem;color:var(--red);font-weight:400">Pass to another driver or operator.</div>':'')
+        +'<div class="feas-action">'+(feas.canMake==='tight'?'Your call.':'Pass to another driver.')+'</div>'
         +'</div>';
     }
     return alertBanner+buildCard(j,true)+'<div class="offer-btns"><button class="btn-accept" onclick="acceptJob(\''+j.id+'\')">Accept</button><button class="btn-decline" onclick="declineJob(\''+j.id+'\')">Decline</button></div>';
@@ -907,29 +897,20 @@ function renderInbox(){
     if(m.analysis&&m.analysis.name){extract='<div class="msg-extract">'+escH(m.analysis.name)+' · '+escH(m.analysis.pickup)+' → '+escH(m.analysis.dest)+' · '+escH(m.analysis.date)+' '+escH(m.analysis.time)+' · <strong style="color:var(--gold)">£'+escH(String(m.analysis.fare))+'</strong></div>';}
     if(m.analysis&&m.analysis.conflict){
       var cj=m.analysis.conflictJob;
-      // Calculate feasibility from the conflict job's drop-off to new pickup
-      var canMake=false;var driveInfo='';
+      var canMake=false;var reason='';
       if(cj){
         var deadMi=getDist(cj.dest||cj.pickup,m.analysis.pickup);
         var driveMin=driveTime(deadMi);
         var cjFinish=toMins(cj.time)+driveTime(getDist(cj.pickup,cj.dest))+10;
         var reqTime=toMins(m.analysis.time);
         canMake=reqTime>cjFinish+driveMin-10;
-        driveInfo=deadMi+' mi ('+fmtMins(driveMin)+') from '+escH(cj.dest)+' to '+escH(m.analysis.pickup);
+        reason='You\'ll be at '+escH(cj.dest)+' after '+escH(cj.name)+' ('+escH(cj.time)+'). It\'s '+deadMi+' miles / '+fmtMins(driveMin)+' to '+escH(m.analysis.pickup)+'.';
       }
-      var feasHtml='<div class="feas-banner '+(canMake?'tight':'no-go')+'">'
-        +'<div class="feas-verdict">'+(canMake?'Tight — check timing':'You won\'t make it')+'</div>'
-        +'<div class="feas-explain">'+(cj?'After '+escH(cj.name)+' ('+escH(cj.time)+' '+escH(cj.pickup)+' → '+escH(cj.dest)+'), it\'s '+driveInfo+'.':'')
-        +(!canMake?' Pass to another driver or operator.':'')+'</div>';
-      if(cj){
-        feasHtml+='<div class="feas-route">'
-          +'<div class="feas-leg"><div class="feas-leg-label">Existing</div><div class="feas-leg-time">'+escH(cj.time)+'</div><div class="feas-leg-name">'+escH(cj.name)+'</div><div class="feas-leg-detail">'+escH(cj.pickup)+' → '+escH(cj.dest)+'</div></div>'
-          +'<div class="feas-arrow">→</div>'
-          +'<div class="feas-leg"><div class="feas-leg-label">Requested</div><div class="feas-leg-time">'+escH(m.analysis.time)+'</div><div class="feas-leg-name">'+escH(m.analysis.name)+'</div><div class="feas-leg-detail">'+escH(m.analysis.pickup)+' → '+escH(m.analysis.dest)+'</div></div>'
-          +'</div>';
-      }
-      feasHtml+='</div>';
-      extract+=feasHtml;
+      extract+='<div class="feas-banner '+(canMake?'tight':'no-go')+'">'
+        +'<div class="feas-verdict">'+(canMake?'Tight — possible if on time':'You won\'t make it')+'</div>'
+        +'<div class="feas-explain">'+reason+'</div>'
+        +'<div class="feas-action">'+(canMake?'Your call.':'Pass to another driver.')+'</div>'
+        +'</div>';
     }
     var btns='';
     if(m.status==='flagged'){btns='<div class="msg-actions"><button class="ma-btn ma-accept" onclick="confirmMsg(\''+m.id+'\')">Accept ��� add to calendar</button><button class="ma-btn ma-pass" onclick="passMsg(\''+m.id+'\')">Pass</button></div>';}
