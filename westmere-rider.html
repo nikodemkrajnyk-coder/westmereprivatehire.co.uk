@@ -257,7 +257,6 @@ textarea.fi:focus{border-color:var(--gold)}
   .topbar{padding-left:.8rem;padding-right:.8rem}
   .page-content{padding:1.2rem .8rem}
   .quick-actions{grid-template-columns:1fr 1fr}
-  .veh-grid{grid-template-columns:1fr}
   .r2{grid-template-columns:1fr}
   .ls-inner{max-width:100%}
   .ls-hd{padding:2rem 1.4rem 1.5rem}
@@ -593,6 +592,7 @@ textarea.fi:focus{border-color:var(--gold)}
         </div>
       </div>
 
+      <a href="westmere-account.html" class="btn-main" style="display:block;text-align:center;text-decoration:none;margin-top:.5rem;background:transparent;color:var(--gold);border:1px solid var(--gold)">My Account</a>
       <button class="btn-main" onclick="doLogout()" style="background:transparent;color:var(--red);border:1px solid rgba(139,34,34,.3);margin-top:.5rem">Sign Out</button>
 
       <div style="text-align:center;margin-top:1.5rem;font-size:.62rem;color:rgba(255,255,255,.15);font-weight:300">Westmere Rider v1.0.0</div>
@@ -742,17 +742,14 @@ function bootApp(){
   document.getElementById('home-date').textContent=dateStr;
   renderTrips('upcoming');
   renderHomeUpcoming();
-  renderMessages();
   loadPrefs();
   initCalendar();
   initTimePicker();
-  // Show message badge
-  document.getElementById('msg-badge').style.display='flex';
 }
 
 /* ── PAGE NAVIGATION ── */
 function goPage(id){
-  var pages=['home','book','trips','messages','profile'];
+  var pages=['home','book','trips','profile'];
   pages.forEach(function(p){
     var el=document.getElementById('pg-'+p);
     if(el){el.classList.remove('on');el.style.display='none';}
@@ -766,12 +763,6 @@ function goPage(id){
   // Scroll to top
   var ps=document.getElementById('page-scroll');
   if(ps)ps.scrollTop=0;
-  // Close chat view when leaving messages
-  if(id==='messages'){
-    document.getElementById('msg-list-view').style.display='block';
-    document.getElementById('chat-view').classList.remove('on');
-    document.getElementById('chat-view').style.display='none';
-  }
 }
 
 /* ── TOAST ── */
@@ -988,26 +979,9 @@ var _fareTime=null;
 var _fareLabel='';
 var _fareSurcharge='';
 
-function selVeh(el,mult,name){
-  document.querySelectorAll('.veh-card').forEach(function(c){c.classList.remove('on');});
-  el.classList.add('on');
-  _selectedVehMult=mult;
-  _selectedVehName=el.getAttribute('data-name')||name;
-  updateVehPrices();
-  updateFareDisplay();
-}
 
-function updateVehPrices(){
-  if(_baseFare===null)return;
-  var ids={1:'veh-price-std',1.4:'veh-price-exec',1.6:'veh-price-mpv',2:'veh-price-vip'};
-  var mults=[1,1.4,1.6,2];
-  mults.forEach(function(m){
-    var el=document.getElementById(ids[m]);
-    if(el){
-      var f=Math.ceil((_baseFare*m)/0.5)*0.5;
-      el.textContent='\u00a3'+f.toFixed(0);
-    }
-  });
+
+);
 }
 
 function updateFareDisplay(){
@@ -1282,12 +1256,10 @@ function confirmBooking(){
   document.getElementById('fare-reveal').classList.remove('show');
   document.getElementById('bk-calc-btn').style.display='block';
   _baseFare=null;
-  document.querySelectorAll('.veh-price').forEach(function(el){el.textContent='--';});
   // Refresh trips
   renderTrips('upcoming');
   renderHomeUpcoming();
   // Add to messages
-  addSystemMessage('Your booking '+ref+' is confirmed. '+dateDisp+' at '+time+'. '+from+' to '+dest+'.');
   // Switch to trips
   setTimeout(function(){goPage('trips');},600);
 }
@@ -1398,116 +1370,6 @@ function renderHomeUpcoming(){
     html+='</div>';
   });
   el.innerHTML=html;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   MESSAGES
-   ═══════════════════════════════════════════════════════════════════════════ */
-var _messages=[];
-function initMessages(){
-  var stored=JSON.parse(localStorage.getItem('wph_rider_messages')||'null');
-  if(stored){_messages=stored;return;}
-  _messages=[
-    {
-      id:1,
-      sender:'Westmere',
-      avatar:'W',
-      unread:true,
-      lastTime:'10:30',
-      messages:[
-        {from:'them',text:'Welcome to Westmere Private Hire. Your account is ready. Book your first journey anytime.',time:'10:30'}
-      ]
-    },
-    {
-      id:2,
-      sender:'Driver John',
-      avatar:'J',
-      unread:true,
-      lastTime:'Yesterday',
-      messages:[
-        {from:'them',text:'Your booking WPH-12345 is confirmed. I will be your driver for the Lewes to Gatwick trip on 10 April.',time:'Yesterday 14:20'},
-        {from:'them',text:'I drive a Tesla Model S, registration XX21 WPH. I will be outside at 05:15.',time:'Yesterday 14:21'},
-        {from:'me',text:'Thank you John, see you then!',time:'Yesterday 14:35'}
-      ]
-    },
-    {
-      id:3,
-      sender:'System',
-      avatar:'S',
-      unread:false,
-      lastTime:'Mon',
-      messages:[
-        {from:'them',text:'Your booking WPH-12290 has been confirmed. Brighton Station to Heathrow T5 on 15 April at 06:00.',time:'Mon 09:15'}
-      ]
-    }
-  ];
-  localStorage.setItem('wph_rider_messages',JSON.stringify(_messages));
-}
-
-function addSystemMessage(text){
-  initMessages();
-  var thread=_messages.find(function(m){return m.sender==='Westmere';});
-  if(!thread){
-    thread={id:Date.now(),sender:'Westmere',avatar:'W',unread:true,lastTime:'Now',messages:[]};
-    _messages.unshift(thread);
-  }
-  thread.messages.push({from:'them',text:text,time:'Just now'});
-  thread.unread=true;
-  thread.lastTime='Now';
-  localStorage.setItem('wph_rider_messages',JSON.stringify(_messages));
-  renderMessages();
-  updateMsgBadge();
-}
-
-function renderMessages(){
-  initMessages();
-  var list=document.getElementById('msg-list');
-  var html='';
-  _messages.forEach(function(t){
-    var lastMsg=t.messages[t.messages.length-1];
-    html+='<div class="msg-item" onclick="openChat('+t.id+')">';
-    html+='<div class="msg-avatar">'+esc(t.avatar)+'</div>';
-    html+='<div class="msg-body">';
-    html+='<div class="msg-sender">'+esc(t.sender)+(t.unread?' <span class="msg-unread-dot"></span>':'')+'</div>';
-    html+='<div class="msg-preview">'+esc(lastMsg.text)+'</div>';
-    html+='</div>';
-    html+='<div class="msg-time">'+esc(t.lastTime)+'</div>';
-    html+='</div>';
-  });
-  list.innerHTML=html;
-  updateMsgBadge();
-}
-
-function updateMsgBadge(){
-  var count=_messages.filter(function(m){return m.unread;}).length;
-  var badge=document.getElementById('msg-badge');
-  if(count>0){badge.textContent=count;badge.style.display='flex';}
-  else{badge.style.display='none';}
-}
-
-function openChat(id){
-  var thread=_messages.find(function(m){return m.id===id;});
-  if(!thread)return;
-  thread.unread=false;
-  localStorage.setItem('wph_rider_messages',JSON.stringify(_messages));
-  updateMsgBadge();
-  document.getElementById('msg-list-view').style.display='none';
-  var cv=document.getElementById('chat-view');
-  cv.style.display='block';
-  setTimeout(function(){cv.classList.add('on');},10);
-  document.getElementById('chat-name').textContent=esc(thread.sender);
-  var html='';
-  thread.messages.forEach(function(m){
-    html+='<div class="chat-bubble '+m.from+'">'+esc(m.text)+'<div class="chat-ts">'+esc(m.time)+'</div></div>';
-  });
-  document.getElementById('chat-messages').innerHTML=html;
-}
-
-function closeChat(){
-  document.getElementById('chat-view').classList.remove('on');
-  document.getElementById('chat-view').style.display='none';
-  document.getElementById('msg-list-view').style.display='block';
-  renderMessages();
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
