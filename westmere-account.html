@@ -386,7 +386,6 @@ select.fi option{background:var(--navy);color:#fff}
       <span class="tb-name">Westmere</span>
     </a>
     <div class="tb-right">
-      <span class="tb-badge" id="tb-badge" style="display:none">Admin</span>
       <span class="tb-user" id="tb-user"></span>
       <button class="tb-out" onclick="doLogout()">Sign Out</button>
     </div>
@@ -398,7 +397,6 @@ select.fi option{background:var(--navy);color:#fff}
     <button class="nav-tab" onclick="sv('balance',this)">Invoices</button>
     <button class="nav-tab" onclick="sv('recurring',this)">Recurring Trips</button>
     <button class="nav-tab" onclick="sv('profile',this)">Profile</button>
-    <button class="nav-tab admin-tab" id="admin-tab" style="display:none" onclick="sv('admin',this)">⚙ Admin</button>
   </div>
   <div class="content">
 
@@ -620,38 +618,6 @@ select.fi option{background:var(--navy);color:#fff}
       </div>
     </div>
 
-    <!-- ADMIN -->
-    <div class="view" id="view-admin">
-      <div class="admin-bar">⚙&nbsp;&nbsp;<span>You are viewing the <strong style="font-weight:400;color:rgba(255,255,255,.75)">Admin Panel</strong> — Westmere Private Hire · Licensed by Lewes District Council</span></div>
-      <div class="stats">
-        <div class="stat s-gold"><div class="stat-v">7</div><div class="stat-l">This Week</div><div class="stat-s">Confirmed bookings</div></div>
-        <div class="stat s-green"><div class="stat-v">43</div><div class="stat-l">This Month</div><div class="stat-s">Total journeys</div></div>
-        <div class="stat s-navy"><div class="stat-v">£3,840</div><div class="stat-l">Revenue</div><div class="stat-s">March 2025</div></div>
-        <div class="stat s-red"><div class="stat-v">2</div><div class="stat-l">Pending</div><div class="stat-s">Awaiting confirmation</div></div>
-      </div>
-      <div class="card">
-        <div class="ch"><div class="ct">All Bookings</div></div>
-        <div class="cb" style="padding:0">
-          <div style="padding:.9rem 1.4rem;border-bottom:1px solid rgba(255,255,255,.05)">
-            <div class="filter-row">
-              <button class="filter-btn on" onclick="filterAdmin('all',this)">All</button>
-              <button class="filter-btn" onclick="filterAdmin('upcoming',this)">Upcoming</button>
-              <button class="filter-btn" onclick="filterAdmin('completed',this)">Completed</button>
-              <button class="filter-btn" onclick="filterAdmin('pending',this)">Pending</button>
-              <input class="fsearch" type="text" placeholder="Search name, route, ref…" oninput="searchAdmin(this.value)">
-            </div>
-          </div>
-          <div style="overflow-x:auto">
-            <table class="abt">
-              <thead><tr>
-                <th>Ref</th><th>Date / Time</th><th>Customer</th><th>Route</th><th>Type</th><th>Fare</th><th>Payment</th><th>Status</th><th></th>
-              </tr></thead>
-              <tbody id="admin-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
 
 
     <!-- RECURRING TRIPS -->
@@ -982,29 +948,6 @@ var ADMIN_DATA=[
   {ref:'WPH-240211',date:'28 Mar',time:'09:00',name:'Claire Dupont',route:'Horsham → Gatwick',type:'Drop-off',fare:'£55',pay:'Card',status:'pending'},
   {ref:'WPH-240208',date:'30 Mar',time:'16:30',name:'David Chen',route:'Lewes → London City',type:'Drop-off',fare:'£195',pay:'Account',status:'pending'},
 ];
-function renderAdmin(data){
-  var tb=document.getElementById('admin-tbody');if(!tb)return;
-  var sc={upcoming:'t-up',completed:'t-done',pending:'t-up'};
-  var sl={upcoming:'Upcoming',completed:'Completed',pending:'Pending'};
-  tb.innerHTML=data.map(function(b){return'<tr>'
-    +'<td style="font-family:var(--serif);color:var(--gold);font-size:.82rem">'+b.ref+'</td>'
-    +'<td><strong style="font-weight:500">'+b.date+'</strong> <span style="color:rgba(255,255,255,.4)">'+b.time+'</span></td>'
-    +'<td>'+b.name+'</td><td>'+b.route+'</td>'
-    +'<td style="color:rgba(255,255,255,.45)">'+b.type+'</td>'
-    +'<td style="font-family:var(--serif)">'+b.fare+'</td>'
-    +'<td style="color:rgba(255,255,255,.45)">'+b.pay+'</td>'
-    +'<td><span class="btag '+sc[b.status]+'">'+sl[b.status]+'</span></td>'
-    +'<td><button class="ba-btn" onclick="showToast(\''+b.ref+'\')">View</button></td>'
-    +'</tr>';}).join('');
-}
-function filterAdmin(f,btn){
-  document.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('on')});btn.classList.add('on');
-  renderAdmin(f==='all'?ADMIN_DATA:ADMIN_DATA.filter(function(b){return b.status===f}));
-}
-function searchAdmin(q){
-  var q2=q.toLowerCase();
-  renderAdmin(ADMIN_DATA.filter(function(b){return b.ref.toLowerCase().includes(q2)||b.name.toLowerCase().includes(q2)||b.route.toLowerCase().includes(q2);}));
-}
 /* ── Hashed Auth (SHA-256) ── */
 var ADMIN_HASH_AC='b4a472e7f11a5e5179e9192d87691b4237f50e779867524c80334882cd9511f5';
 var _acAttempts=0,_acMaxAttempts=5;
@@ -1042,7 +985,6 @@ function bootDash(name,admin,actype,email,showWelcome){
   document.getElementById('pv-name').textContent=name;
   document.getElementById('pv-email').textContent=email||'—';
   document.getElementById('pv-actype').textContent=actype;
-  if(admin){document.getElementById('tb-badge').style.display='inline-block';document.getElementById('admin-tab').style.display='inline-block';renderAdmin(ADMIN_DATA);}
   if(showWelcome){
     var ws=document.getElementById('welcome-screen');
     if(ws)ws.classList.add('show');
@@ -1063,7 +1005,6 @@ function sv(id,btn){
   document.querySelectorAll('.nav-tab').forEach(function(t){t.classList.remove('on')});
   var v=document.getElementById('view-'+id);if(v)v.classList.add('on');
   if(btn)btn.classList.add('on');
-  if(id==='admin')renderAdmin(ADMIN_DATA);
 }
 function submitBooking(){
   var d=document.getElementById('qb-dest').value;
@@ -1105,9 +1046,6 @@ document.querySelectorAll('input[type=date]').forEach(function(d){d.min=new Date
   document.getElementById('pv-name').textContent=demoName;
   document.getElementById('pv-email').textContent=demoEmail;
   document.getElementById('pv-actype').textContent=demoAccType;
-  renderAdmin(ADMIN_DATA);
-  document.getElementById('tb-badge').style.display='inline-block';
-  document.getElementById('admin-tab').style.display='inline-block';
 })();
 </script>
 <footer>
