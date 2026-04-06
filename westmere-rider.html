@@ -979,11 +979,6 @@ var _fareTime=null;
 var _fareLabel='';
 var _fareSurcharge='';
 
-
-
-);
-}
-
 function updateFareDisplay(){
   if(_baseFare===null)return;
   var fare=Math.ceil((_baseFare*_selectedVehMult)/0.5)*0.5;
@@ -1025,7 +1020,6 @@ function bkSetFare(fare,mi,ti,lbl,surNote){
   _fareTime=ti;
   _fareLabel=lbl||'Fixed price';
   _fareSurcharge=surNote||'';
-  updateVehPrices();
   updateFareDisplay();
 }
 
