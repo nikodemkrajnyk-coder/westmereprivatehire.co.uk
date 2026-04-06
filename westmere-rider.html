@@ -1382,13 +1382,34 @@ function loadPrefs(){
   if(prefs.notes){var n=document.getElementById('pref-notes');if(n)n.value=prefs.notes;}
 }
 
+/* ── DRIVER CHAT (in-app sync) ── */
+function toggleDriverChat(){
+  var c=document.getElementById('aj-chat');if(!c)return;
+  c.style.display=c.style.display==='none'?'block':'none';
+}
+function sendDriverMsg(){
+  var inp=document.getElementById('aj-chat-input');if(!inp||!inp.value.trim())return;
+  var msgs=document.getElementById('aj-chat-msgs');
+  var t=new Date(),hh=String(t.getHours()).padStart(2,'0'),mm=String(t.getMinutes()).padStart(2,'0');
+  var b=document.createElement('div');
+  b.className='aj-chat-bubble me';
+  b.innerHTML=esc(inp.value)+'<span class="aj-chat-time">'+hh+':'+mm+'</span>';
+  msgs.appendChild(b);
+  inp.value='';
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    AUTO-BOOT (no login required — open as mockup)
    ═══════════════════════════════════════════════════════════════════════════ */
-(function(){
-  _currentUser={name:'Demo Rider',email:'demo@westmereprivatehire.co.uk',phone:'+44 7700 000 000'};
-  bootApp();
-})();
+function _autoBoot(){
+  try{
+    _currentUser={name:'Demo Rider',email:'demo@westmereprivatehire.co.uk',phone:'+44 7700 000 000'};
+    bootApp();
+  }catch(e){console.error('Rider auto-boot failed:',e);}
+}
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',_autoBoot);}
+else{_autoBoot();}
 </script>
 </body>
 </html>
