@@ -879,6 +879,11 @@ function addrSearch(inputId,dropId){
         input:q,
         sessionToken:_sessionToken,
         componentRestrictions:{country:'gb'},
+        /* Bias to West Sussex / Surrey operating area so ambiguous names
+           (e.g. "Jackets Hill" — exists near Newdigate AND near Thakeham)
+           prefer the local one */
+        location:new google.maps.LatLng(50.95,-0.35),
+        radius:30000,
         types:['geocode','establishment']
       },function(predictions,status){
         _renderSuggestions(inp,drop,apItems,predictions||[],true);
@@ -1037,7 +1042,7 @@ function bkRunCalc(from,to){
     if(base){bkSetFare(base+APC[deAP][0],null,null,'Fixed price',APC[deAP][0]>0?APFULL[deAP]+' drop-off +\u00a3'+APC[deAP][0]:'');return;}
     /* Unknown town – live route from actual coords to airport, then per-mile calc */
     var ap1=null;for(var i=0;i<AIRPORTS.length;i++){if(AIRPORTS[i].key===deAP){ap1=AIRPORTS[i];break;}}
-    geocode(from+' UK').then(function(c){
+    geocode(/\bUK\b/i.test(from)?from:from+' UK').then(function(c){
       if(!c||!ap1){bkSetFare(calcMile(15,night,deAP),null,null,'Estimated',APFULL[deAP]+' drop-off +\u00a3'+APC[deAP][0]);return;}
       calcRoute(c.lat,c.lon,ap1.lat,ap1.lon).then(function(rtR){
         if(!rtR){bkSetFare(calcMile(15,night,deAP),null,null,'Estimated',APFULL[deAP]+' drop-off +\u00a3'+APC[deAP][0]);return;}
@@ -1054,7 +1059,7 @@ function bkRunCalc(from,to){
     if(base2){bkSetFare(base2+APC[puAP][1],null,null,'Fixed price',APFULL[puAP]+' pickup +\u00a3'+APC[puAP][1]);return;}
     /* Unknown town – live route from airport to actual coords, then per-mile calc */
     var ap2=null;for(var j=0;j<AIRPORTS.length;j++){if(AIRPORTS[j].key===puAP){ap2=AIRPORTS[j];break;}}
-    geocode(to+' UK').then(function(c){
+    geocode(/\bUK\b/i.test(to)?to:to+' UK').then(function(c){
       if(!c||!ap2){bkSetFare(calcMile(15,night,puAP),null,null,'Estimated',APFULL[puAP]+' pickup +\u00a3'+APC[puAP][1]);return;}
       calcRoute(ap2.lat,ap2.lon,c.lat,c.lon).then(function(rtR){
         if(!rtR){bkSetFare(calcMile(15,night,puAP),null,null,'Estimated',APFULL[puAP]+' pickup +\u00a3'+APC[puAP][1]);return;}
@@ -1069,7 +1074,7 @@ function bkRunCalc(from,to){
 
   // Airport to airport
   if(puAP&&deAP){
-    Promise.all([geocode(from+' UK'),geocode(to+' UK')]).then(function(cs){
+    Promise.all([geocode(/\bUK\b/i.test(from)?from:from+' UK'),geocode(/\bUK\b/i.test(to)?to:to+' UK')]).then(function(cs){
       if(!cs[0]||!cs[1]){bkSetFare(calcMile(40,night,null)+APC[puAP][1]+APC[deAP][0],null,null,'Estimated');return;}
       calcRoute(cs[0].lat,cs[0].lon,cs[1].lat,cs[1].lon).then(function(rt){
         if(!rt){bkSetFare(calcMile(40,night,null)+APC[puAP][1]+APC[deAP][0],null,null,'Estimated');return;}
@@ -1081,7 +1086,7 @@ function bkRunCalc(from,to){
   }
 
   // Town-to-town: live routing
-  Promise.all([geocode(from+' UK'),geocode(to+' UK')]).then(function(cs){
+  Promise.all([geocode(/\bUK\b/i.test(from)?from:from+' UK'),geocode(/\bUK\b/i.test(to)?to:to+' UK')]).then(function(cs){
     if(!cs[0]||!cs[1]){bkSetFare(calcMile(8,night,null),null,null,'Estimated');return;}
     calcRoute(cs[0].lat,cs[0].lon,cs[1].lat,cs[1].lon).then(function(rt){
       if(!rt){bkSetFare(calcMile(8,night,null),null,null,'Estimated');return;}

@@ -498,6 +498,11 @@ function addrSearch(inp,sid){
         input:v,
         sessionToken:_sessionToken,
         componentRestrictions:{country:'gb'},
+        /* Bias to West Sussex operating area so ambiguous place names
+           prefer the local match (e.g. "Jackets Hill" near Thakeham, not
+           the unrelated one near Newdigate). */
+        location:new google.maps.LatLng(50.95,-0.35),
+        radius:30000,
         types:['geocode','establishment']
       },function(predictions,status){
         _renderSuggestions(inp,s,apItems,predictions||[],true);
@@ -636,7 +641,7 @@ function runCalc(from,to){
     document.getElementById('fr-price').textContent='Calculating…';document.getElementById('fare-reveal').classList.add('show');
     /* Unknown town – live route from actual coords to airport, custom calc engine */
     var ap1=null;for(var i=0;i<AIRPORTS.length;i++){if(AIRPORTS[i].key===deAP){ap1=AIRPORTS[i];break;}}
-    geocode(from+' UK').then(function(c){
+    geocode(/\bUK\b/i.test(from)?from:from+' UK').then(function(c){
       if(!c||!ap1){showFare(calcMile(15,night,deAP),null,null,'Estimated',APFULL[deAP]+' drop-off +£'+APC[deAP][0]);return;}
       fetch('https://router.project-osrm.org/route/v1/driving/'+c.lon+','+c.lat+';'+ap1.lon+','+ap1.lat+'?overview=false')
       .then(function(r){return r.json();}).then(function(data){
@@ -655,7 +660,7 @@ function runCalc(from,to){
     document.getElementById('fr-price').textContent='Calculating…';document.getElementById('fare-reveal').classList.add('show');
     /* Unknown town – live route from airport to actual coords, custom calc engine */
     var ap2=null;for(var k=0;k<AIRPORTS.length;k++){if(AIRPORTS[k].key===puAP){ap2=AIRPORTS[k];break;}}
-    geocode(to+' UK').then(function(c){
+    geocode(/\bUK\b/i.test(to)?to:to+' UK').then(function(c){
       if(!c||!ap2){showFare(calcMile(15,night,puAP),null,null,'Estimated',APFULL[puAP]+' pickup +£'+APC[puAP][1]);return;}
       fetch('https://router.project-osrm.org/route/v1/driving/'+ap2.lon+','+ap2.lat+';'+c.lon+','+c.lat+'?overview=false')
       .then(function(r){return r.json();}).then(function(data){
@@ -671,7 +676,7 @@ function runCalc(from,to){
   if(puAP&&deAP){
     // airport to airport - use OSRM routing with per-mile calc
     document.getElementById('fr-price').textContent='Calculating…';document.getElementById('fare-reveal').classList.add('show');
-    Promise.all([geocode(from+' UK'),geocode(to+' UK')]).then(function(cs){
+    Promise.all([geocode(/\bUK\b/i.test(from)?from:from+' UK'),geocode(/\bUK\b/i.test(to)?to:to+' UK')]).then(function(cs){
       if(!cs[0]||!cs[1]){showFare(calcMile(40,night,null)+APC[puAP][1]+APC[deAP][0],null,null,'Estimated');return;}
       fetch('https://router.project-osrm.org/route/v1/driving/'+cs[0].lon+','+cs[0].lat+';'+cs[1].lon+','+cs[1].lat+'?overview=false')
       .then(function(r){return r.json();}).then(function(data){
@@ -684,7 +689,7 @@ function runCalc(from,to){
   }
   // Town-to-town: no fixed prices — fall through to live routing below
   document.getElementById('fr-price').textContent='Calculating…';document.getElementById('fare-reveal').classList.add('show');
-  Promise.all([geocode(from+' UK'),geocode(to+' UK')]).then(function(cs){
+  Promise.all([geocode(/\bUK\b/i.test(from)?from:from+' UK'),geocode(/\bUK\b/i.test(to)?to:to+' UK')]).then(function(cs){
     if(!cs[0]||!cs[1]){showFare(calcMile(8,night,null),null,null,'Estimated');return;}
     fetch('https://router.project-osrm.org/route/v1/driving/'+cs[0].lon+','+cs[0].lat+';'+cs[1].lon+','+cs[1].lat+'?overview=false')
     .then(function(r){return r.json();}).then(function(data){
