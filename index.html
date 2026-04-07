@@ -276,7 +276,6 @@ input[type="time"].fi,input[type="date"].fi{-webkit-appearance:auto;appearance:a
     <div id="booking">
   <div class="bk-wrap">
     <h2 class="bk-title">Plan your <em>journey</em></h2>
-    <p class="bk-sub">Fixed fares across Sussex &mdash; from your door to any departure.</p>
 
     <div class="field">
       <label class="fl">Journey begins</label>
@@ -303,7 +302,6 @@ input[type="time"].fi,input[type="date"].fi{-webkit-appearance:auto;appearance:a
       <div class="fr-left">
         <div class="frl"><div class="fr-pulse"></div>Fixed Fare</div>
         <div class="fr-price" id="fr-price">&#163;&mdash;</div>
-        <div class="fr-note" id="fr-note">Fixed price &middot; No meters &middot; No surprises</div>
         <div class="fr-ap" id="fr-ap" style="display:none;font-size:.72rem;color:var(--gold);margin-top:.35rem;letter-spacing:.03em"></div>
       </div>
       <div class="fr-meta">
@@ -629,7 +627,7 @@ function showFare(fare,mi,ti,lbl,apNote){
   document.getElementById('fr-price').textContent='£'+fare;
   var d=document.getElementById('fr-dist');if(d)d.textContent=mi?mi+' mi':'—';
   var t=document.getElementById('fr-dur');if(t)t.textContent=ti?'~'+ti+' min':'—';
-  var n=document.getElementById('fr-note');if(n)n.textContent=(lbl||'Fixed price')+' · No meters · No surprises';
+  var n=document.getElementById('fr-note');if(n)n.textContent='';
   var ap=document.getElementById('fr-ap');if(ap){if(apNote){ap.textContent=apNote;ap.style.display='block';}else{ap.style.display='none';}}
   var r=document.getElementById('fare-reveal');if(r)r.classList.add('show');
   var btn=document.getElementById('btn-book-j');if(btn)btn.classList.add('show');

@@ -444,69 +444,6 @@ body.mode-day .modal-fare-amt{color:#7A6230}
     <!-- ─── BOOK ─── -->
     <div class="page-content on" id="pg-book">
 
-      <!-- Active Journey -->
-      <div class="aj-card" id="aj-card">
-        <div class="aj-bar"></div>
-        <div class="aj-body">
-          <div class="aj-status">
-            <div class="aj-dot"></div>
-            <span class="aj-label" id="aj-status-label">Current Trip &middot; En route to pickup</span>
-          </div>
-
-          <div class="aj-eta" id="aj-eta">Driver arrives in <strong>~12 min</strong></div>
-
-          <div class="aj-meta-grid">
-            <div class="aj-meta-cell">
-              <div class="aj-meta-k">Waiting time</div>
-              <div class="aj-meta-v" id="aj-wait">8 min</div>
-            </div>
-            <div class="aj-meta-cell">
-              <div class="aj-meta-k">Distance</div>
-              <div class="aj-meta-v" id="aj-dist">28.4 mi</div>
-            </div>
-            <div class="aj-meta-cell">
-              <div class="aj-meta-k">Fare</div>
-              <div class="aj-meta-v aj-fare" id="aj-fare">&pound;78</div>
-            </div>
-          </div>
-
-          <div class="aj-progress">
-            <div class="aj-step on"><div class="aj-step-dot"></div><span>Booked</span></div>
-            <div class="aj-step-line"></div>
-            <div class="aj-step on"><div class="aj-step-dot"></div><span>En route</span></div>
-            <div class="aj-step-line"></div>
-            <div class="aj-step"><div class="aj-step-dot"></div><span>Arrived</span></div>
-          </div>
-
-          <div class="aj-route">
-            <div class="aj-from"><div class="aj-dot-sm" style="background:var(--gold)"></div><span id="aj-from-text">14 High Street, Lewes</span></div>
-            <div class="aj-line"></div>
-            <div class="aj-to"><div class="aj-dot-sm" style="background:var(--green)"></div><span id="aj-to-text">Gatwick Airport</span></div>
-          </div>
-
-          <div class="aj-driver-info">
-            <div class="aj-driver-avatar" id="aj-driver-avatar">J</div>
-            <div class="aj-driver-details">
-              <div class="aj-driver-name" id="aj-driver-name">John Carter</div>
-              <div class="aj-driver-vehicle" id="aj-driver-vehicle">Tesla Model S &middot; XX21 WPH</div>
-            </div>
-            <a href="tel:+447930342593" class="aj-call-btn" title="Call driver">Call</a>
-          </div>
-
-          <button class="aj-chat-toggle" id="aj-chat-toggle" onclick="toggleDriverChat()">Message driver</button>
-
-          <div class="aj-chat" id="aj-chat" style="display:none">
-            <div class="aj-chat-messages" id="aj-chat-msgs">
-              <div class="aj-chat-bubble them">I'm on my way. Will be there in about 12 minutes.<span class="aj-chat-time">10:18</span></div>
-            </div>
-            <div class="aj-chat-input">
-              <input type="text" id="aj-chat-input" placeholder="Type a message..." class="fi">
-              <button onclick="sendDriverMsg()" class="aj-send-btn">Send</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div class="sec-title">Book a <em>Journey</em></div>
       <div class="sec-sub">Airport transfers &middot; Fixed fares &middot; No surprises</div>
 
@@ -578,6 +515,70 @@ body.mode-day .modal-fare-amt{color:#7A6230}
     <div class="page-content" id="pg-trips">
       <div class="sec-title">My <em>Trips</em></div>
       <div class="sec-sub">Your journey history</div>
+
+      <!-- Active Journey -->
+      <div class="aj-card" id="aj-card">
+        <div class="aj-bar"></div>
+        <div class="aj-body">
+          <div class="aj-status">
+            <div class="aj-dot"></div>
+            <span class="aj-label" id="aj-status-label">Current Trip &middot; En route to pickup</span>
+          </div>
+
+          <div class="aj-eta" id="aj-eta">Driver arrives in <strong>~12 min</strong></div>
+
+          <div class="aj-meta-grid">
+            <div class="aj-meta-cell">
+              <div class="aj-meta-k">Waiting time</div>
+              <div class="aj-meta-v" id="aj-wait">8 min</div>
+            </div>
+            <div class="aj-meta-cell">
+              <div class="aj-meta-k">Distance</div>
+              <div class="aj-meta-v" id="aj-dist">28.4 mi</div>
+            </div>
+            <div class="aj-meta-cell">
+              <div class="aj-meta-k">Fare</div>
+              <div class="aj-meta-v aj-fare" id="aj-fare">&pound;78</div>
+            </div>
+          </div>
+
+          <div class="aj-progress">
+            <div class="aj-step on"><div class="aj-step-dot"></div><span>Booked</span></div>
+            <div class="aj-step-line"></div>
+            <div class="aj-step on"><div class="aj-step-dot"></div><span>En route</span></div>
+            <div class="aj-step-line"></div>
+            <div class="aj-step"><div class="aj-step-dot"></div><span>Arrived</span></div>
+          </div>
+
+          <div class="aj-route">
+            <div class="aj-from"><div class="aj-dot-sm" style="background:var(--gold)"></div><span id="aj-from-text">14 High Street, Lewes</span></div>
+            <div class="aj-line"></div>
+            <div class="aj-to"><div class="aj-dot-sm" style="background:var(--green)"></div><span id="aj-to-text">Gatwick Airport</span></div>
+          </div>
+
+          <div class="aj-driver-info">
+            <div class="aj-driver-avatar" id="aj-driver-avatar">J</div>
+            <div class="aj-driver-details">
+              <div class="aj-driver-name" id="aj-driver-name">John Carter</div>
+              <div class="aj-driver-vehicle" id="aj-driver-vehicle">Tesla Model S &middot; XX21 WPH</div>
+            </div>
+            <a href="tel:+447930342593" class="aj-call-btn" title="Call driver">Call</a>
+          </div>
+
+          <button class="aj-chat-toggle" id="aj-chat-toggle" onclick="toggleDriverChat()">Message driver</button>
+
+          <div class="aj-chat" id="aj-chat" style="display:none">
+            <div class="aj-chat-messages" id="aj-chat-msgs">
+              <div class="aj-chat-bubble them">I'm on my way. Will be there in about 12 minutes.<span class="aj-chat-time">10:18</span></div>
+            </div>
+            <div class="aj-chat-input">
+              <input type="text" id="aj-chat-input" placeholder="Type a message..." class="fi">
+              <button onclick="sendDriverMsg()" class="aj-send-btn">Send</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="filter-row">
         <button class="filter-btn on" onclick="filterTrips('upcoming',this)">Upcoming</button>
         <button class="filter-btn" onclick="filterTrips('past',this)">Past</button>
