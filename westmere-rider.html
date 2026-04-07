@@ -18,7 +18,7 @@
 --green:#2D6E47;--green-bg:rgba(45,110,71,.15);--red:#8B2222;--red-bg:rgba(139,34,34,.15);--amber:#B8985A;--amber-bg:rgba(184,152,90,.1)}
 html{height:100%;font-size:18px;scroll-behavior:smooth}
 body{font-family:var(--sans);font-weight:200;color:#fff;background-color:#111D2C;background-image:url("https://images.unsplash.com/photo-1543418219-44e30b057fea?w=2000&q=85&fm=jpg&fit=crop");background-attachment:fixed;background-size:cover;background-repeat:no-repeat;background-position:center 55%;line-height:1.7;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden;overflow-y:hidden}
-body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg,rgba(17,29,44,.35),rgba(17,29,44,.55));z-index:0;pointer-events:none}
+body::before{content:"";position:fixed;inset:0;background:linear-gradient(180deg,rgba(17,29,44,.18),rgba(17,29,44,.32));z-index:0;pointer-events:none}
 h1,h2,h3,h4{font-family:var(--serif);font-weight:300;color:#fff;letter-spacing:.05em}
 em{color:var(--gold);font-style:italic;font-weight:300}
 p{color:rgba(255,255,255,.72);line-height:1.8}
@@ -80,8 +80,8 @@ nav#nav{display:none}
 .sec-sub{font-size:.82rem;color:rgba(255,255,255,.55);font-weight:300;margin-bottom:.7rem;letter-spacing:.04em;font-style:italic;font-family:var(--serif)}
 
 /* ── CARDS ── */
-.card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);margin-bottom:.7rem;overflow:hidden}
-.ch{padding:.65rem 1.2rem;border-bottom:1px solid rgba(184,152,90,.18);font-size:.7rem;font-weight:300;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;justify-content:space-between}
+.card{background:rgba(13,21,32,.78);border:1px solid rgba(184,152,90,.22);margin-bottom:.7rem;overflow:hidden;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.ch{padding:.65rem 1.2rem;border-bottom:1px solid rgba(184,152,90,.22);font-size:.7rem;font-weight:300;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;justify-content:space-between}
 .cb{padding:.8rem 1.1rem .55rem}
 
 /* ── FORM FIELDS ── */
@@ -116,7 +116,7 @@ textarea.fi:focus{border-color:var(--gold)}
 /* ── WELCOME CARD ── */
 
 /* ── ACTIVE JOURNEY CARD ── */
-.aj-card{background:rgba(255,255,255,.04);border:1px solid rgba(184,152,90,.35);margin-bottom:1rem;overflow:hidden}
+.aj-card{background:rgba(13,21,32,.82);border:1px solid rgba(184,152,90,.4);margin-bottom:1rem;overflow:hidden;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .aj-bar{height:3px;background:linear-gradient(90deg,var(--gold),var(--gold2))}
 .aj-body{padding:1rem 1.2rem}
 .aj-status{display:flex;align-items:center;gap:.5rem;margin-bottom:.7rem}
@@ -169,7 +169,7 @@ body.mode-day .aj-meta-grid{border-top:1px solid rgba(26,38,56,.12);border-botto
 .aj-send-btn{padding:.5rem 1rem;background:var(--gold);color:var(--navy);border:none;font-family:var(--sans);font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;cursor:pointer}
 
 /* ── TRIP CARDS ── */
-.trip-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);margin-bottom:.75rem;padding:1rem 1.2rem;transition:border-color .2s}
+.trip-card{background:rgba(13,21,32,.78);border:1px solid rgba(184,152,90,.22);margin-bottom:.75rem;padding:1rem 1.2rem;transition:border-color .2s;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .trip-card:hover{border-color:rgba(255,255,255,.15)}
 .tc-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.4rem}
 .tc-date{font-family:var(--serif);font-size:1rem;color:var(--gold);font-weight:300}
@@ -184,7 +184,7 @@ body.mode-day .aj-meta-grid{border-top:1px solid rgba(26,38,56,.12);border-botto
 .badge-cancelled{background:var(--red-bg);color:var(--red)}
 
 /* ── FARE REVEAL ── */
-.fare-reveal{background:rgba(255,255,255,.03);padding:1.8rem;text-align:center;margin-top:1rem;display:none;border:1px solid rgba(184,152,90,.1);position:relative}
+.fare-reveal{background:rgba(13,21,32,.82);padding:1.8rem;text-align:center;margin-top:1rem;display:none;border:1px solid rgba(184,152,90,.3);position:relative;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .fare-reveal::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
 .fare-reveal.show{display:block}
 .fr-lbl{font-size:.56rem;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:.3rem}
@@ -227,7 +227,7 @@ body.mode-day .aj-meta-grid{border-top:1px solid rgba(26,38,56,.12);border-botto
 .filter-btn:hover:not(.on){border-color:var(--gold);color:var(--gold)}
 
 /* ── PROFILE ── */
-.prof-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);margin-bottom:1rem;overflow:hidden}
+.prof-card{background:rgba(13,21,32,.78);border:1px solid rgba(184,152,90,.22);margin-bottom:1rem;overflow:hidden;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .prof-ch{padding:.9rem 1.4rem;border-bottom:1px solid rgba(184,152,90,.12);font-size:.56rem;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:var(--gold)}
 .prof-cb{padding:.2rem 1.1rem}
 .prof-row{display:flex;align-items:center;justify-content:space-between;padding:.85rem 0;border-bottom:1px solid rgba(255,255,255,.06);gap:.5rem}
@@ -300,7 +300,7 @@ body.mode-day .prof-acc-link{color:#7A6230}
    Lighter cream wash over the vineyard, dark navy text
    ───────────────────────────────────────────────────────────── */
 body.mode-day{color:#1A2638}
-body.mode-day::before{background:linear-gradient(180deg,rgba(245,242,237,.4),rgba(245,242,237,.6))}
+body.mode-day::before{background:linear-gradient(180deg,rgba(245,242,237,.22),rgba(245,242,237,.38))}
 body.mode-day h1,body.mode-day h2,body.mode-day h3,body.mode-day h4,
 body.mode-day .sec-title,body.mode-day .wc-greeting,
 body.mode-day .modal-title,body.mode-day .empty-title{color:#1A2638}
