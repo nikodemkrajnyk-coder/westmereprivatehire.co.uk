@@ -1035,12 +1035,16 @@ function bkRunCalc(from,to){
   if(deAP&&!puAP){
     var rt=sh(puT),base=rt&&CF[rt]&&CF[rt][deAP]?CF[rt][deAP].out:null;
     if(base){bkSetFare(base+APC[deAP][0],null,null,'Fixed price',APC[deAP][0]>0?APFULL[deAP]+' drop-off +\u00a3'+APC[deAP][0]:'');return;}
+    /* Unknown town – live route from actual coords to airport, then per-mile calc */
+    var ap1=null;for(var i=0;i<AIRPORTS.length;i++){if(AIRPORTS[i].key===deAP){ap1=AIRPORTS[i];break;}}
     geocode(from+' UK').then(function(c){
-      if(!c){bkSetFare(calcMile(20,night,deAP),null,null,'Estimated');return;}
-      var nn=nearestTown(c);
-      var b2=nn&&CF[nn]&&CF[nn][deAP]?CF[nn][deAP].out+APC[deAP][0]:calcMile(20,night,deAP);
-      bkSetFare(Math.ceil(b2/0.5)*0.5,null,null,'Fixed price');
-    }).catch(function(){bkSetFare(calcMile(20,night,deAP),null,null,'Estimated');});
+      if(!c||!ap1){bkSetFare(calcMile(15,night,deAP),null,null,'Estimated',APFULL[deAP]+' drop-off +\u00a3'+APC[deAP][0]);return;}
+      calcRoute(c.lat,c.lon,ap1.lat,ap1.lon).then(function(rtR){
+        if(!rtR){bkSetFare(calcMile(15,night,deAP),null,null,'Estimated',APFULL[deAP]+' drop-off +\u00a3'+APC[deAP][0]);return;}
+        var mi=Math.round(rtR.distance/1609.34*10)/10,ti=Math.round(rtR.duration/60);
+        bkSetFare(calcMile(mi,night,deAP),mi,ti,(night?'Night rate \u00b7 ':'')+'Custom quote',APFULL[deAP]+' drop-off +\u00a3'+APC[deAP][0]);
+      }).catch(function(){bkSetFare(calcMile(15,night,deAP),null,null,'Estimated',APFULL[deAP]+' drop-off +\u00a3'+APC[deAP][0]);});
+    }).catch(function(){bkSetFare(calcMile(15,night,deAP),null,null,'Estimated',APFULL[deAP]+' drop-off +\u00a3'+APC[deAP][0]);});
     return;
   }
 
@@ -1048,12 +1052,18 @@ function bkRunCalc(from,to){
   if(puAP&&!deAP){
     var rt2=sh(deT),base2=rt2&&CF[rt2]&&CF[rt2][puAP]?CF[rt2][puAP].ret:null;
     if(base2){bkSetFare(base2+APC[puAP][1],null,null,'Fixed price',APFULL[puAP]+' pickup +\u00a3'+APC[puAP][1]);return;}
+    /* Unknown town – live route from airport to actual coords, then per-mile calc */
+    var ap2=null;for(var j=0;j<AIRPORTS.length;j++){if(AIRPORTS[j].key===puAP){ap2=AIRPORTS[j];break;}}
     geocode(to+' UK').then(function(c){
-      if(!c){bkSetFare(calcMile(20,night,puAP),null,null,'Estimated');return;}
-      var nn=nearestTown(c);
-      var b3=nn&&CF[nn]&&CF[nn][puAP]?CF[nn][puAP].ret+APC[puAP][1]:calcMile(20,night,puAP);
-      bkSetFare(Math.ceil(b3/0.5)*0.5,null,null,'Fixed price',APFULL[puAP]+' pickup +\u00a3'+APC[puAP][1]);
-    }).catch(function(){bkSetFare(calcMile(20,night,puAP),null,null,'Estimated');});
+      if(!c||!ap2){bkSetFare(calcMile(15,night,puAP),null,null,'Estimated',APFULL[puAP]+' pickup +\u00a3'+APC[puAP][1]);return;}
+      calcRoute(ap2.lat,ap2.lon,c.lat,c.lon).then(function(rtR){
+        if(!rtR){bkSetFare(calcMile(15,night,puAP),null,null,'Estimated',APFULL[puAP]+' pickup +\u00a3'+APC[puAP][1]);return;}
+        var mi=Math.round(rtR.distance/1609.34*10)/10,ti=Math.round(rtR.duration/60);
+        /* Use APC[puAP][1] (pickup surcharge) instead of [0] which calcMile would add */
+        var fare=calcMile(mi,night,null)+APC[puAP][1];
+        bkSetFare(Math.ceil(fare/0.5)*0.5,mi,ti,(night?'Night rate \u00b7 ':'')+'Custom quote',APFULL[puAP]+' pickup +\u00a3'+APC[puAP][1]);
+      }).catch(function(){bkSetFare(calcMile(15,night,puAP),null,null,'Estimated',APFULL[puAP]+' pickup +\u00a3'+APC[puAP][1]);});
+    }).catch(function(){bkSetFare(calcMile(15,night,puAP),null,null,'Estimated',APFULL[puAP]+' pickup +\u00a3'+APC[puAP][1]);});
     return;
   }
 
