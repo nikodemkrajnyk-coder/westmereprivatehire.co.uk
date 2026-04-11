@@ -12,7 +12,7 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--navy:#111D2C;--navy2:#1C2A3E;--cream:#F5F2ED;--gold:#B8985A;--gold2:#C9A96E;--text:#fff;--muted:rgba(255,255,255,.55);--border:rgba(255,255,255,.15);--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif;}
 html{font-size:16px;scroll-behavior:smooth}
-body{font-family:var(--sans);font-weight:300;color:#fff;background:#0d1520;background-attachment:fixed;background-size:cover;background-repeat:no-repeat;background-position:center 55%;line-height:1.7;-webkit-font-smoothing:antialiased;overflow:hidden;height:100vh}
+body{font-family:var(--sans);font-weight:300;color:#fff;background:#0d1520;background-attachment:fixed;background-size:cover;background-repeat:no-repeat;background-position:center 55%;line-height:1.7;-webkit-font-smoothing:antialiased;min-height:100vh}
 body::before{content:"";position:fixed;inset:0;background:rgba(10,8,4,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:0;pointer-events:none}
 nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:.9rem 6%;display:flex;align-items:center;justify-content:space-between;transition:background .3s}
 nav.solid{background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;padding-left:0;padding-right:0}
@@ -80,7 +80,7 @@ tr:hover td{color:#fff}
 .hero-scroll span{font-size:.52rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.4)}
 .hero-scroll-line{width:1px;height:42px;background:linear-gradient(to bottom,rgba(255,255,255,.3),transparent);animation:scrollpulse 2s ease-in-out infinite}
 @keyframes scrollpulse{0%,100%{opacity:.4;transform:scaleY(1)}50%{opacity:1;transform:scaleY(.7)}}
-#intro{position:relative;z-index:1;height:100vh;overflow:hidden;box-sizing:border-box;background:rgba(10,8,4,.4);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:0 6%}
+#intro{position:relative;z-index:1;min-height:100vh;box-sizing:border-box;background:rgba(10,8,4,.4);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:0 6%}
 .intro-inner{max-width:960px;margin:0 auto;text-align:center}
 #towns{padding:4rem 6% 5rem;position:relative;z-index:1}
 .towns-header{max-width:900px;margin:0 auto 2.8rem}
