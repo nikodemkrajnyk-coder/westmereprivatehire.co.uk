@@ -25,8 +25,8 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com", "https://fonts.googleapis.com"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
-      connectSrc: ["'self'", "https://photon.komoot.io", "https://nominatim.openstreetmap.org",
-        "https://api.anthropic.com", "https://api.emailjs.com"],
+      connectSrc: ["'self'", "https://photon.komoot.io", "https://api.postcodes.io",
+        "https://nominatim.openstreetmap.org", "https://api.anthropic.com", "https://api.emailjs.com"],
       frameSrc: ["https://js.stripe.com", "https://www.google.com"],
     }
   }

@@ -1185,12 +1185,36 @@ var AIRPORTS=[
   {n:'stansted',lat:51.8860,lon:0.2389},{n:'luton',lat:51.8747,lon:-0.3685},
   {n:'southampton',lat:50.9503,lon:-1.3568},{n:'city',lat:51.5048,lon:0.0495}
 ];
+var _pcRe=/^[A-Za-z]{1,2}\d/;
+function _isPostcode(v){return _pcRe.test(v.trim());}
+
 function addrSearch(inputId,sugId,cb){
   var inp=document.getElementById(inputId);
   var sug=document.getElementById(sugId);
   if(!inp||!sug)return;
   var q=(inp.value||'').trim();
   if(q.length<2){sug.innerHTML='';sug.classList.remove('on');return;}
+  if(_isPostcode(q)){
+    fetch('https://api.postcodes.io/postcodes/'+encodeURIComponent(q.replace(/\s/g,''))+'/autocomplete')
+    .then(function(r){return r.json();})
+    .then(function(d){
+      var pcs=(d.result||[]).slice(0,6);
+      if(!pcs.length){_photonSearchOwner(q,sug,inp,cb);return;}
+      Promise.all(pcs.map(function(pc){
+        return fetch('https://api.postcodes.io/postcodes/'+encodeURIComponent(pc.replace(/\s/g,''))).then(function(r){return r.json();});
+      })).then(function(results){
+        var items=results.filter(function(r){return r.result;}).map(function(r){
+          var d=r.result;return{label:d.postcode+', '+d.admin_ward+', '+d.admin_district,lat:d.latitude,lon:d.longitude};
+        });
+        _renderSuggestions(sug,items,inp,cb);
+      });
+    }).catch(function(){_photonSearchOwner(q,sug,inp,cb);});
+  } else {
+    _photonSearchOwner(q,sug,inp,cb);
+  }
+}
+
+function _photonSearchOwner(q,sug,inp,cb){
   fetch('https://photon.komoot.io/api/?q='+encodeURIComponent(q)+'&lang=en&limit=6&lat=50.95&lon=-0.35')
   .then(function(r){return r.json();}).then(function(data){
     var items=(data.features||[]).map(function(f){

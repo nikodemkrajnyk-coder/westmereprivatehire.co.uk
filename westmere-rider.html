@@ -831,12 +831,24 @@ function sh(t){return t?t.replace('haywards heath','haywards').replace('burgess 
 
 /* Geocoding – Photon primary, Nominatim fallback */
 var _gc={};
+var _pcRe=/^[A-Za-z]{1,2}\d/;
+function _isPostcode(v){return _pcRe.test(v.trim());}
 function geocode(a){
   if(_gc[a])return Promise.resolve(_gc[a]);
+  var pc=a.replace(/[^A-Za-z0-9 ]/g,'').trim();
+  if(_isPostcode(pc)){
+    return fetch('https://api.postcodes.io/postcodes/'+encodeURIComponent(pc.replace(/\s/g,'')))
+      .then(function(r){return r.json();})
+      .then(function(d){if(d.result){var r={lat:d.result.latitude,lon:d.result.longitude};_gc[a]=r;return r;}return _geocodePhoton(a);})
+      .catch(function(){return _geocodePhoton(a);});
+  }
+  return _geocodePhoton(a);
+}
+function _geocodePhoton(a){
   return fetch('https://photon.komoot.io/api/?q='+encodeURIComponent(a)+'&lang=en&limit=1&lat=50.95&lon=-0.35')
     .then(function(r){return r.json();})
     .then(function(d){if(d.features&&d.features[0]){var c=d.features[0].geometry.coordinates;var r={lat:c[1],lon:c[0]};_gc[a]=r;return r;}return null;})
-    .catch(function(){return fetch('https://nominatim.openstreetmap.org/search?format=json&countrycodes=gb&limit=1&q='+encodeURIComponent(a),{headers:{'Accept-Language':'en'}}).then(function(r){return r.json();}).then(function(d){var r=d&&d[0]?{lat:parseFloat(d[0].lat),lon:parseFloat(d[0].lon)}:null;if(r)_gc[a]=r;return r;});});
+    .catch(function(){return null;});
 }
 function haverMiles(a,b,c,d){var R=3958.8,dL=(c-a)*Math.PI/180,dn=(d-b)*Math.PI/180,x=Math.sin(dL/2)*Math.sin(dL/2)+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dn/2)*Math.sin(dn/2);return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
 function nearestTown(coord){var best=null,bd=999;Object.keys(TC).forEach(function(k){var d=haverMiles(coord.lat,coord.lon,TC[k].lat,TC[k].lon);if(d<bd){bd=d;best=k;}});return best;}
@@ -850,7 +862,7 @@ function calcRoute(lat1,lon1,lat2,lon2){
     });
 }
 
-/* ── ADDRESS AUTOCOMPLETE (Photon / OpenStreetMap) ── */
+/* ── ADDRESS AUTOCOMPLETE (Photon + Postcodes.io) ── */
 var _addrTimers={};
 
 function addrSearch(inputId,dropId){
@@ -866,14 +878,50 @@ function addrSearch(inputId,dropId){
       return ap.name.toLowerCase().includes(ql)||ap.sub.toLowerCase().includes(ql);
     }).slice(0,3);
 
-    fetch('https://photon.komoot.io/api/?q='+encodeURIComponent(q)+'&lang=en&limit=6&lat=50.95&lon=-0.35')
-    .then(function(r){return r.json();})
-    .then(function(data){_renderSuggestions(inp,drop,apItems,data.features||[]);})
-    .catch(function(){_renderSuggestions(inp,drop,apItems,[]);});
+    if(_isPostcode(q)){
+      fetch('https://api.postcodes.io/postcodes/'+encodeURIComponent(q.replace(/\s/g,''))+'/autocomplete')
+      .then(function(r){return r.json();})
+      .then(function(d){
+        var pcs=(d.result||[]).slice(0,6);
+        if(!pcs.length){_photonSearch(q,inp,drop,apItems);return;}
+        Promise.all(pcs.map(function(pc){
+          return fetch('https://api.postcodes.io/postcodes/'+encodeURIComponent(pc.replace(/\s/g,''))).then(function(r){return r.json();});
+        })).then(function(results){
+          var items=results.filter(function(r){return r.result;}).map(function(r){
+            var d=r.result;return{main:d.postcode,sub:d.admin_ward+', '+d.admin_district,lat:d.latitude,lon:d.longitude};
+          });
+          _renderSuggestions(inp,drop,apItems,items);
+        });
+      }).catch(function(){_photonSearch(q,inp,drop,apItems);});
+    } else {
+      _photonSearch(q,inp,drop,apItems);
+    }
   },300);
 }
 
-function _renderSuggestions(inp,drop,apItems,features){
+function _photonSearch(v,inp,drop,apItems){
+  fetch('https://photon.komoot.io/api/?q='+encodeURIComponent(v)+'&lang=en&limit=6&lat=50.95&lon=-0.35')
+  .then(function(r){return r.json();})
+  .then(function(data){
+    var items=(data.features||[]).map(function(f){
+      var p=f.properties||{},l1='',l2='';
+      if(p.housenumber&&p.street)l1=p.housenumber+' '+p.street;
+      else if(p.name)l1=p.name;
+      else if(p.street)l1=p.street;
+      var town=p.city||p.town||p.village||p.district||'';
+      var pc=p.postcode||'';
+      l2=[town,pc].filter(Boolean).join(', ');
+      if(!l2&&p.county)l2=p.county;
+      if(!l1&&l2){l1=l2;l2=p.county||p.state||'';}
+      if(!l1)l1=town||p.county||p.country||'';
+      var coords=f.geometry?f.geometry.coordinates:null;
+      return{main:l1,sub:l2,lat:coords?coords[1]:null,lon:coords?coords[0]:null};
+    });
+    _renderSuggestions(inp,drop,apItems,items);
+  }).catch(function(){_renderSuggestions(inp,drop,apItems,[]);});
+}
+
+function _renderSuggestions(inp,drop,apItems,items){
   drop.innerHTML='';
   apItems.forEach(function(ap){
     var d=document.createElement('div');d.className='sug-item';
@@ -882,24 +930,13 @@ function _renderSuggestions(inp,drop,apItems,features){
     drop.appendChild(d);
   });
 
-  features.forEach(function(f){
-    var p=f.properties||{},l1='',l2='';
-    if(p.housenumber&&p.street)l1=p.housenumber+' '+p.street;
-    else if(p.name)l1=p.name;
-    else if(p.street)l1=p.street;
-    var town=p.city||p.town||p.village||p.district||'';
-    var pc=p.postcode||'';
-    l2=[town,pc].filter(Boolean).join(', ');
-    if(!l2&&p.county)l2=p.county;
-    if(!l1&&l2){l1=l2;l2=p.county||p.state||'';}
-    if(!l1)l1=town||p.county||p.country||'';
-    var full=l2?l1+', '+l2:l1;
-    var coords=f.geometry?f.geometry.coordinates:null;
+  items.forEach(function(it){
+    var full=it.sub?it.main+', '+it.sub:it.main;
     var d=document.createElement('div');d.className='sug-item';
-    d.innerHTML='<div class="si-main">'+esc(l1)+'</div>'+(l2?'<div class="si-sub">'+esc(l2)+'</div>':'');
+    d.innerHTML='<div class="si-main">'+esc(it.main)+'</div>'+(it.sub?'<div class="si-sub">'+esc(it.sub)+'</div>':'');
     d.onclick=function(){
       inp.value=full;
-      if(coords)_gc[full]={lat:coords[1],lon:coords[0]};
+      if(it.lat&&it.lon)_gc[full]={lat:it.lat,lon:it.lon};
       drop.classList.remove('open');drop.innerHTML='';checkFlightField();bkCalcFare();
     };
     drop.appendChild(d);

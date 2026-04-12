@@ -777,6 +777,9 @@ var AIRPORTS=[
   {name:'London City Airport',sub:'London City \u00b7 LCY',key:'ci'}
 ];
 var _st={};
+var _pcRe=/^[A-Za-z]{1,2}\d/;
+function _isPostcode(v){return _pcRe.test(v.trim());}
+
 function addrSearch(inp,sid){
   var v=inp.value.trim(),s=document.getElementById(sid);
   if(!s)return;clearTimeout(_st[sid]);
@@ -787,13 +790,50 @@ function addrSearch(inp,sid){
       return ap.name.toLowerCase().includes(vl)||ap.sub.toLowerCase().includes(vl);
     }).slice(0,3);
 
-    fetch('https://photon.komoot.io/api/?q='+encodeURIComponent(v)+'&lang=en&limit=6&lat=50.95&lon=-0.35')
-    .then(function(r){return r.json();})
-    .then(function(data){_renderSuggestions(inp,s,apItems,data.features||[]);})
-    .catch(function(){_renderSuggestions(inp,s,apItems,[]);});
+    if(_isPostcode(v)){
+      fetch('https://api.postcodes.io/postcodes/'+encodeURIComponent(v.replace(/\s/g,''))+'/autocomplete')
+      .then(function(r){return r.json();})
+      .then(function(d){
+        var pcs=(d.result||[]).slice(0,6);
+        if(!pcs.length){_photonSearch(v,inp,s,apItems);return;}
+        Promise.all(pcs.map(function(pc){
+          return fetch('https://api.postcodes.io/postcodes/'+encodeURIComponent(pc.replace(/\s/g,''))).then(function(r){return r.json();});
+        })).then(function(results){
+          var items=results.filter(function(r){return r.result;}).map(function(r){
+            var d=r.result;return{main:d.postcode,sub:d.admin_ward+', '+d.admin_district,lat:d.latitude,lon:d.longitude};
+          });
+          _renderSuggestions(inp,s,apItems,items);
+        });
+      }).catch(function(){_photonSearch(v,inp,s,apItems);});
+    } else {
+      _photonSearch(v,inp,s,apItems);
+    }
   },300);
 }
-function _renderSuggestions(inp,drop,apItems,features){
+
+function _photonSearch(v,inp,s,apItems){
+  fetch('https://photon.komoot.io/api/?q='+encodeURIComponent(v)+'&lang=en&limit=6&lat=50.95&lon=-0.35')
+  .then(function(r){return r.json();})
+  .then(function(data){
+    var items=(data.features||[]).map(function(f){
+      var p=f.properties||{},l1='',l2='';
+      if(p.housenumber&&p.street)l1=p.housenumber+' '+p.street;
+      else if(p.name)l1=p.name;
+      else if(p.street)l1=p.street;
+      var town=p.city||p.town||p.village||p.district||'';
+      var pc=p.postcode||'';
+      l2=[town,pc].filter(Boolean).join(', ');
+      if(!l2&&p.county)l2=p.county;
+      if(!l1&&l2){l1=l2;l2=p.county||p.state||'';}
+      if(!l1)l1=town||p.county||p.country||'';
+      var coords=f.geometry?f.geometry.coordinates:null;
+      return{main:l1,sub:l2,lat:coords?coords[1]:null,lon:coords?coords[0]:null};
+    });
+    _renderSuggestions(inp,s,apItems,items);
+  }).catch(function(){_renderSuggestions(inp,s,apItems,[]);});
+}
+
+function _renderSuggestions(inp,drop,apItems,items){
   drop.innerHTML='';
   apItems.forEach(function(ap){
     var d=document.createElement('div');d.className='sug-item';
@@ -802,24 +842,13 @@ function _renderSuggestions(inp,drop,apItems,features){
     drop.appendChild(d);
   });
 
-  features.forEach(function(f){
-    var p=f.properties||{},l1='',l2='';
-    if(p.housenumber&&p.street)l1=p.housenumber+' '+p.street;
-    else if(p.name)l1=p.name;
-    else if(p.street)l1=p.street;
-    var town=p.city||p.town||p.village||p.district||'';
-    var pc=p.postcode||'';
-    l2=[town,pc].filter(Boolean).join(', ');
-    if(!l2&&p.county)l2=p.county;
-    if(!l1&&l2){l1=l2;l2=p.county||p.state||'';}
-    if(!l1)l1=town||p.county||p.country||'';
-    var full=l2?l1+', '+l2:l1;
-    var coords=f.geometry?f.geometry.coordinates:null;
+  items.forEach(function(it){
+    var full=it.sub?it.main+', '+it.sub:it.main;
     var d=document.createElement('div');d.className='sug-item';
-    d.innerHTML='<div class="si-main">'+esc(l1)+'</div>'+(l2?'<div class="si-sub">'+esc(l2)+'</div>':'');
+    d.innerHTML='<div class="si-main">'+esc(it.main)+'</div>'+(it.sub?'<div class="si-sub">'+esc(it.sub)+'</div>':'');
     d.onclick=function(){
       inp.value=full;
-      if(coords)_gc[full]={lat:coords[1],lon:coords[0]};
+      if(it.lat&&it.lon)_gc[full]={lat:it.lat,lon:it.lon};
       drop.classList.remove('open');drop.innerHTML='';checkFlight();qbCalc();
     };
     drop.appendChild(d);
