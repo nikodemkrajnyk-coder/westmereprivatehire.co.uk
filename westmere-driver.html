@@ -493,7 +493,7 @@ function esc(s){
 }
 
 // ─── DRIVER AUTH (SHA-256 hashed — no plaintext credentials) ─────────────────
-const DRIVER_HASH='1e5d84aa4e47390e9dc0c9c0668c238c0cb62a19b57dabf68155861d8229353b';
+const DRIVER_HASH='fe3c915f6a832cb6392616d99a70bf5668a369138d17ba782d01e2a87e8a0a85';
 let drvLoginAttempts=0;
 const DRV_MAX_ATTEMPTS=5;
 let _drvLockoutUntil=parseInt(localStorage.getItem('wph_drv_lockout')||'0');
@@ -872,19 +872,15 @@ function initApp(){
   },3500);
 }
 
-// TEMP: Auto-login for preview (bypass auth)
-document.getElementById('login-screen').style.display='none';
-document.getElementById('scr-app').classList.add('on');
-initApp();
-// Original auth check (re-enable later):
-// if(sessionStorage.getItem('wph_driver')==='1'){
-//   document.getElementById('login-screen').style.display='none';
-//   document.getElementById('scr-app').classList.add('on');
-//   initApp();
-// } else {
-//   document.getElementById('login-screen').style.display='';
-//   document.getElementById('scr-app').classList.remove('on');
-// }
+// Auth check
+if(sessionStorage.getItem('wph_driver')==='1'){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('scr-app').classList.add('on');
+  initApp();
+} else {
+  document.getElementById('login-screen').style.display='';
+  document.getElementById('scr-app').classList.remove('on');
+}
 </script>
 <footer style="background:transparent;padding:1.5rem 6%;border-top:none;position:relative;z-index:1">
   <div style="max-width:960px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem">

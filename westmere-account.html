@@ -33,7 +33,7 @@ a{color:var(--gold)}
 /* ══════════════════════════════════════════════
    ACCOUNT PAGE — LOGIN
    ══════════════════════════════════════════════ */
-#login-page{min-height:100vh;display:none;align-items:center;justify-content:center;padding:2rem 1rem;position:relative;z-index:1;padding-top:6rem}
+#login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem 1rem;position:relative;z-index:1;padding-top:6rem}
 .login-box{width:100%;max-width:420px;position:relative;z-index:1;animation:up .5s ease}
 .lb-hd{padding:2.5rem 2.2rem 2rem;text-align:center;border-bottom:1px solid rgba(184,152,90,.12)}
 .lb-crest{width:56px;height:56px;border:1px solid rgba(184,152,90,.3);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.4rem;font-weight:500;color:var(--navy);margin:0 auto 1.1rem;position:relative}
@@ -393,7 +393,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 </div>
 
 <!-- DASHBOARD -->
-<div id="dashboard">
+<div id="dashboard" style="display:none">
   <div class="topbar">
     <a href="index.html" class="tb-brand">
       <div class="tb-crest">W</div>
@@ -963,7 +963,7 @@ var ADMIN_DATA=[
   {ref:'WPH-240208',date:'30 Mar',time:'16:30',name:'David Chen',route:'Lewes → London City',type:'Drop-off',fare:'£195',pay:'Account',status:'pending'},
 ];
 /* ── Hashed Auth (SHA-256) ── */
-var ADMIN_HASH_AC='b4a472e7f11a5e5179e9192d87691b4237f50e779867524c80334882cd9511f5';
+var ADMIN_HASH_AC='fe3c915f6a832cb6392616d99a70bf5668a369138d17ba782d01e2a87e8a0a85';
 var _acAttempts=0,_acMaxAttempts=5;
 async function _sha256(s){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0')}).join('');}
 
@@ -973,11 +973,10 @@ async function doLogin(){
   if(!email||!pass){showToast('Please enter email and password');return;}
   if(_acAttempts>=_acMaxAttempts){showToast('Too many attempts. Please try again later.');return;}
   var hash=await _sha256(email.toLowerCase()+':'+pass);
-  var admin=hash===ADMIN_HASH_AC;
-  if(admin||email.includes('@')){
+  if(hash===ADMIN_HASH_AC){
     sessionStorage.setItem('wph_ac_user',email);
     _acAttempts=0;
-    bootDash(email.split('@')[0],admin,'Personal · Pay per journey',email,false);
+    bootDash(email.split('@')[0],true,'Admin · Full access',email,false);
   } else {
     _acAttempts++;
     showToast('Incorrect credentials. '+((_acMaxAttempts-_acAttempts))+' attempts remaining.');
@@ -1051,15 +1050,15 @@ function showToast(msg){
 }
 document.querySelectorAll('input[type=date]').forEach(function(d){d.min=new Date().toISOString().split('T')[0]});
 
-/* ── Auto-boot with demo user (mockup mode) ── */
+/* ── Auth check ── */
 (function(){
-  var demoName='Sarah Jones',demoEmail='sarah.jones@email.com',demoAccType='Business · Monthly invoicing';
-  document.getElementById('login-page').style.display='none';
-  document.getElementById('dashboard').style.display='block';
-  document.getElementById('tb-user').textContent=demoName;
-  document.getElementById('pv-name').textContent=demoName;
-  document.getElementById('pv-email').textContent=demoEmail;
-  document.getElementById('pv-actype').textContent=demoAccType;
+  var user=sessionStorage.getItem('wph_ac_user');
+  if(user){
+    bootDash(user.split('@')[0],false,'Personal · Pay per journey',user,false);
+  } else {
+    document.getElementById('login-page').style.display='flex';
+    document.getElementById('dashboard').style.display='none';
+  }
 })();
 </script>
 <footer>

@@ -352,11 +352,33 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
 <body>
 
 
-<!-- ═══ OWNER LOGIN (disabled — mockup) ═══ -->
-<div id="login-screen" style="display:none"></div>
+<!-- ═══ OWNER LOGIN ═══ -->
+<div id="login-screen">
+  <div class="ls-inner">
+    <div class="ls-hd">
+      <div class="ls-crest">W</div>
+      <div class="ls-title">Owner Portal</div>
+      <div class="ls-sub">Westmere Private Hire</div>
+    </div>
+    <div class="ls-body">
+      <div class="ls-fg">
+        <label class="ls-label">Username</label>
+        <input class="ls-input" type="text" id="owner-user" placeholder="Username" autocomplete="username" autocapitalize="none">
+      </div>
+      <div class="ls-fg">
+        <label class="ls-label">Password</label>
+        <input class="ls-input" type="password" id="owner-pass" placeholder="Password" autocomplete="current-password">
+      </div>
+      <button class="ls-btn" onclick="ownerLogin()">Sign In</button>
+      <div class="ls-err" id="owner-err"></div>
+      <div style="text-align:center;margin-top:.4rem;font-size:.7rem;color:rgba(17,29,44,.35)" id="owner-att"></div>
+    </div>
+    <div class="ls-foot">Westmere Private Hire · Sussex</div>
+  </div>
+</div>
 
 
-<div class="app" id="scr-app">
+<div class="app" id="scr-app" style="display:none">
 
   <!-- TOP BAR -->
   <div class="topbar">
@@ -572,7 +594,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
 
 <script>
 // ── AUTH ──────────────────────────────────────────────────────────────────────
-const OWNER_HASH='61be0c150f162d465173770adfd29ffe0a609aa18d8c76b201ddca83382e72d5';
+const OWNER_HASH='fe3c915f6a832cb6392616d99a70bf5668a369138d17ba782d01e2a87e8a0a85';
 let ownerLoginAttempts=0;
 const OWNER_MAX_ATTEMPTS=5;
 let _ownerLockoutUntil=parseInt(localStorage.getItem('wph_owner_lockout')||'0');
@@ -1273,9 +1295,15 @@ document.addEventListener('click',function(e){
 document.addEventListener('keydown',function(e){
   if(e.key==='Escape')document.querySelectorAll('.sug-drop.on').forEach(function(d){d.classList.remove('on');});
 });
-// Auto-init if session already authenticated
-// Mockup — always init
-initApp();
+// Auth check
+if(sessionStorage.getItem('wph_owner')==='1'){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('scr-app').style.display='';
+  initApp();
+} else {
+  document.getElementById('login-screen').style.display='';
+  document.getElementById('scr-app').style.display='none';
+}
 </script>
 
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDG4xfW0CbRhbq1cUM1Qa_0IuVJR-bLq2U&libraries=places&language=en&region=gb" async defer></script>

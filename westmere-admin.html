@@ -21,6 +21,15 @@ a{color:var(--gold)}
 /* ── HIDE SITE NAV / FOOTER / WHATSAPP FAB ── */
 #nav,.mmenu{display:none!important}
 
+
+/* ── LOGIN FORM ── */
+.fg{display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem}
+.fl{font-family:var(--sans);font-size:.58rem;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:rgba(17,29,44,.5)}
+.fi{font-family:var(--sans);font-size:.92rem;font-weight:300;color:var(--navy);background:transparent;border:none;border-bottom:1px solid rgba(17,29,44,.15);padding:.78rem 0;outline:none;width:100%;transition:border-color .3s;min-height:48px;-webkit-appearance:none}
+.fi:focus{border-bottom-color:var(--gold)}
+.fi::placeholder{color:rgba(17,29,44,.3)}
+.btn-main{width:100%;padding:1rem;background:var(--gold);color:var(--navy);border:none;font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;transition:all .25s;min-height:52px}
+.btn-main:hover{background:var(--gold2)}
 /* ── ADMIN APP ── */
 #admin-login{position:fixed;inset:0;background:rgba(245,242,237,.97);backdrop-filter:blur(20px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem}
 .al-box{width:100%;max-width:400px;background:#fff;border:1px solid rgba(17,29,44,.08);box-shadow:0 4px 24px rgba(17,29,44,.06);position:relative;z-index:1;animation:up .4s ease}
@@ -391,12 +400,29 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 <div class="mmenu" id="mmenu" style="display:none"></div>
 
 
-<!-- Admin login disabled — mockup -->
-<div id="admin-login" style="display:none"></div>
+<!-- ═══ ADMIN LOGIN ═══ -->
+<div id="admin-login">
+  <div class="al-box">
+    <div class="al-hd">
+      <div class="al-crest">W</div>
+      <span class="al-name">Westmere</span>
+      <span class="al-sub">Admin Panel</span>
+    </div>
+    <div class="al-body">
+      <div class="al-title">Admin Sign In</div>
+      <p class="al-desc">Authorised personnel only</p>
+      <div class="al-err" id="al-err"></div>
+      <div class="fg"><label class="fl">Username</label><input class="fi" type="text" id="al-user" placeholder="Username" autocomplete="username" autocapitalize="none"></div>
+      <div class="fg"><label class="fl">Password</label><input class="fi" type="password" id="al-pass" placeholder="Password" autocomplete="current-password"></div>
+      <button class="btn-main" onclick="adminLogin()" style="margin-top:.8rem">Sign In</button>
+      <div class="al-attempts" id="al-attempts"></div>
+    </div>
+  </div>
+</div>
 
 
 <!-- ═══ APP ═══ -->
-<div id="admin-app" style="flex:1;width:100%;min-height:100vh">
+<div id="admin-app" style="display:none;flex:1;width:100%;min-height:100vh">
 
 <!-- ═══ SIDEBAR ═══ -->
 <div class="sidebar" id="sidebar">
@@ -1272,8 +1298,8 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 
 // ── ADMIN AUTH (SHA-256 hashed — no plaintext credentials) ──────────────
 // To change credentials: hash 'username:password' with SHA-256 and replace the hash below
-// Current: westmere / W3stm3re2025!
-const ADMIN_HASH='10273666a1ed732a634350728e46c16e8bdd7f64f2eee9f0e86d85d1fd58e674';
+// Current: westmere / sussex
+const ADMIN_HASH='fe3c915f6a832cb6392616d99a70bf5668a369138d17ba782d01e2a87e8a0a85';
 let loginAttempts = 0;
 const MAX_ATTEMPTS = 5;
 let _lockoutUntil = parseInt(localStorage.getItem('wph_lockout')||'0');
@@ -1327,10 +1353,20 @@ async function adminLogin(){
   }
 }
 
+// Allow Enter key to submit admin login
+document.addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&document.getElementById('admin-login').style.display!=='none'){
+    adminLogin();
+  }
+});
+
 // Check if already authenticated in this session
 if(sessionStorage.getItem('wph_admin')==='1'){
   document.getElementById('admin-login').style.display='none';
   document.getElementById('admin-app').style.display='flex';
+} else {
+  document.getElementById('admin-login').style.display='flex';
+  document.getElementById('admin-app').style.display='none';
 }
 
 // Always initialize on page load — clock, fares, record book, drivers
@@ -1769,8 +1805,7 @@ function printRecordBook(){
   const total = data.reduce(function(s,r){return s+r.fare;},0);
   w.document.write('</tbody></table>');
   w.document.write('<div class="footer"><span>Total journeys: <strong>'+data.length+'</strong></span><span>Total revenue: <strong style="color:#B8985A">£'+total.toFixed(2)+'</strong></span><span>Westmere Private Hire · Lewes District Council Licence</span></div>');
-  w.document.write('<footer class="mini-foot">&copy; 2026 Westmere Private Hire &middot; All rights reserved &middot; Licensed by Lewes District Council<span class="mini-legal"><a href="westmere-terms.html">Terms</a><a href="westmere-privacy.html">Privacy</a><a href="westmere-cookies.html">Cookies</a></span></footer>
-</body><\/html>');
+  w.document.write('<footer class="mini-foot">&copy; 2026 Westmere Private Hire &middot; All rights reserved &middot; Licensed by Lewes District Council<span class="mini-legal"><a href="westmere-terms.html">Terms</a><a href="westmere-privacy.html">Privacy</a><a href="westmere-cookies.html">Cookies</a></span></footer></body><\/html>');
   w.document.close();
   w.focus();
   setTimeout(function(){w.print();},600);
