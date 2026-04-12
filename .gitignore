@@ -1,1 +1,4 @@
 node_modules_link
+node_modules/
+package-lock.json
+package.json
