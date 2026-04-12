@@ -872,15 +872,19 @@ function initApp(){
   },3500);
 }
 
-// Check if already authenticated in this session
-if(sessionStorage.getItem('wph_driver')==='1'){
-  document.getElementById('login-screen').style.display='none';
-  document.getElementById('scr-app').classList.add('on');
-  initApp();
-} else {
-  document.getElementById('login-screen').style.display='';
-  document.getElementById('scr-app').classList.remove('on');
-}
+// TEMP: Auto-login for preview (bypass auth)
+document.getElementById('login-screen').style.display='none';
+document.getElementById('scr-app').classList.add('on');
+initApp();
+// Original auth check (re-enable later):
+// if(sessionStorage.getItem('wph_driver')==='1'){
+//   document.getElementById('login-screen').style.display='none';
+//   document.getElementById('scr-app').classList.add('on');
+//   initApp();
+// } else {
+//   document.getElementById('login-screen').style.display='';
+//   document.getElementById('scr-app').classList.remove('on');
+// }
 </script>
 <footer style="background:transparent;padding:1.5rem 6%;border-top:none;position:relative;z-index:1">
   <div style="max-width:960px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem">
