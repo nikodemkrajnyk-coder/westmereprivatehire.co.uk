@@ -1296,60 +1296,40 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 
 <script>
 
-// ── ADMIN AUTH (SHA-256 hashed — no plaintext credentials) ──────────────
-// To change credentials: hash 'username:password' with SHA-256 and replace the hash below
-// Current: westmere / sussex
-const ADMIN_HASH='fe3c915f6a832cb6392616d99a70bf5668a369138d17ba782d01e2a87e8a0a85';
-let loginAttempts = 0;
-const MAX_ATTEMPTS = 5;
-let _lockoutUntil = parseInt(localStorage.getItem('wph_lockout')||'0');
-
-async function sha256(str){
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-
+// ── ADMIN AUTH (backend API) ─────────────────────────────────────────────
 async function adminLogin(){
   const user = document.getElementById('al-user').value.trim();
   const pass = document.getElementById('al-pass').value;
   const errEl = document.getElementById('al-err');
   const attEl = document.getElementById('al-attempts');
 
-  // Check lockout
-  if(Date.now() < _lockoutUntil){
-    var secs=Math.ceil((_lockoutUntil-Date.now())/1000);
-    errEl.textContent='Too many failed attempts. Try again in '+secs+' seconds.';
+  if(!user||!pass){
+    errEl.textContent='Please enter username and password.';
     errEl.classList.add('show');
     return;
   }
 
-  if(loginAttempts >= MAX_ATTEMPTS){
-    _lockoutUntil=Date.now()+300000; // 5 min lockout
-    localStorage.setItem('wph_lockout',String(_lockoutUntil));
-    errEl.textContent = 'Account locked for 5 minutes. Too many failed attempts.';
+  try{
+    const res=await fetch('/api/auth/login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username:user,password:pass})
+    });
+    const data=await res.json();
+    if(res.ok&&data.ok){
+      document.getElementById('admin-login').style.display='none';
+      document.getElementById('admin-app').style.display='flex';
+      tick();
+      setTimeout(function(){buildFares();buildRecordBook();},50);
+    } else {
+      errEl.textContent=data.error||'Incorrect username or password.';
+      errEl.classList.add('show');
+      document.getElementById('al-pass').value='';
+      document.getElementById('al-pass').focus();
+    }
+  }catch(e){
+    errEl.textContent='Connection error. Please try again.';
     errEl.classList.add('show');
-    document.getElementById('al-user').disabled = true;
-    document.getElementById('al-pass').disabled = true;
-    return;
-  }
-
-  const hash = await sha256(user+':'+pass);
-  if(hash === ADMIN_HASH){
-    document.getElementById('admin-login').style.display = 'none';
-    document.getElementById('admin-app').style.display = 'flex';
-    sessionStorage.setItem('wph_admin','1');
-    loginAttempts=0;
-    localStorage.removeItem('wph_lockout');
-    tick();
-    setTimeout(function(){buildFares();buildRecordBook();},50);
-  } else {
-    loginAttempts++;
-    errEl.textContent = 'Incorrect username or password. Please try again.';
-    errEl.classList.add('show');
-    document.getElementById('al-pass').value = '';
-    const rem = MAX_ATTEMPTS - loginAttempts;
-    attEl.textContent = rem > 0 ? rem + ' attempt' + (rem===1?'':'s') + ' remaining' : '';
-    document.getElementById('al-pass').focus();
   }
 }
 
@@ -1360,14 +1340,23 @@ document.addEventListener('keydown',function(e){
   }
 });
 
-// Check if already authenticated in this session
-if(sessionStorage.getItem('wph_admin')==='1'){
-  document.getElementById('admin-login').style.display='none';
-  document.getElementById('admin-app').style.display='flex';
-} else {
-  document.getElementById('admin-login').style.display='flex';
-  document.getElementById('admin-app').style.display='none';
-}
+// Auth check via backend
+(async function(){
+  try{
+    const res=await fetch('/api/auth/me');
+    const data=await res.json();
+    if(res.ok&&data.ok){
+      document.getElementById('admin-login').style.display='none';
+      document.getElementById('admin-app').style.display='flex';
+    } else {
+      document.getElementById('admin-login').style.display='flex';
+      document.getElementById('admin-app').style.display='none';
+    }
+  }catch(e){
+    document.getElementById('admin-login').style.display='flex';
+    document.getElementById('admin-app').style.display='none';
+  }
+})();
 
 // Always initialize on page load — clock, fares, record book, drivers
 tick();

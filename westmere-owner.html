@@ -593,18 +593,8 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
 <div id="toast"><span style="color:var(--gold);font-size:.8rem;flex-shrink:0">✓</span><span id="toast-msg"></span></div>
 
 <script>
-// ── AUTH ──────────────────────────────────────────────────────────────────────
-const OWNER_HASH='fe3c915f6a832cb6392616d99a70bf5668a369138d17ba782d01e2a87e8a0a85';
-let ownerLoginAttempts=0;
-const OWNER_MAX_ATTEMPTS=5;
-let _ownerLockoutUntil=parseInt(localStorage.getItem('wph_owner_lockout')||'0');
-
+// ── AUTH (backend API) ────────────────────────────────────────────────────────
 function esc(s){if(!s)return '';var d=document.createElement('div');d.appendChild(document.createTextNode(s));return d.innerHTML;}
-
-async function sha256(str){
-  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
 
 async function ownerLogin(){
   var user=(document.getElementById('owner-user').value||'').trim();
@@ -612,44 +602,32 @@ async function ownerLogin(){
   var errEl=document.getElementById('owner-err');
   var attEl=document.getElementById('owner-att');
 
-  if(Date.now()<_ownerLockoutUntil){
-    var secs=Math.ceil((_ownerLockoutUntil-Date.now())/1000);
-    errEl.textContent='Account locked. Try again in '+Math.ceil(secs/60)+' minute'+(secs>60?'s':'')+'.';
-    errEl.classList.add('show');
-    return;
-  }
-
   if(!user||!pass){
     errEl.textContent='Please enter username and password.';
     errEl.classList.add('show');
     return;
   }
 
-  if(ownerLoginAttempts>=OWNER_MAX_ATTEMPTS){
-    _ownerLockoutUntil=Date.now()+300000;
-    localStorage.setItem('wph_owner_lockout',String(_ownerLockoutUntil));
-    errEl.textContent='Account locked for 5 minutes. Too many failed attempts.';
+  try{
+    var res=await fetch('/api/auth/login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username:user,password:pass})
+    });
+    var data=await res.json();
+    if(res.ok&&data.ok){
+      document.getElementById('login-screen').style.display='none';
+      document.getElementById('scr-app').style.display='';
+      initApp();
+    } else {
+      errEl.textContent=data.error||'Incorrect username or password.';
+      errEl.classList.add('show');
+      document.getElementById('owner-pass').value='';
+      document.getElementById('owner-pass').focus();
+    }
+  }catch(e){
+    errEl.textContent='Connection error. Please try again.';
     errEl.classList.add('show');
-    attEl.textContent='';
-    return;
-  }
-
-  var hash=await sha256(user+':'+pass);
-  if(hash===OWNER_HASH){
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('scr-app').style.display='';
-    sessionStorage.setItem('wph_owner','1');
-    ownerLoginAttempts=0;
-    localStorage.removeItem('wph_owner_lockout');
-    initApp();
-  } else {
-    ownerLoginAttempts++;
-    errEl.textContent='Incorrect username or password.';
-    errEl.classList.add('show');
-    document.getElementById('owner-pass').value='';
-    var rem=OWNER_MAX_ATTEMPTS-ownerLoginAttempts;
-    attEl.textContent=rem>0?rem+' attempt'+(rem===1?'':'s')+' remaining':'';
-    document.getElementById('owner-pass').focus();
   }
 }
 
@@ -1295,15 +1273,24 @@ document.addEventListener('click',function(e){
 document.addEventListener('keydown',function(e){
   if(e.key==='Escape')document.querySelectorAll('.sug-drop.on').forEach(function(d){d.classList.remove('on');});
 });
-// Auth check
-if(sessionStorage.getItem('wph_owner')==='1'){
-  document.getElementById('login-screen').style.display='none';
-  document.getElementById('scr-app').style.display='';
-  initApp();
-} else {
-  document.getElementById('login-screen').style.display='';
-  document.getElementById('scr-app').style.display='none';
-}
+// Auth check via backend
+(async function(){
+  try{
+    var res=await fetch('/api/auth/me');
+    var data=await res.json();
+    if(res.ok&&data.ok){
+      document.getElementById('login-screen').style.display='none';
+      document.getElementById('scr-app').style.display='';
+      initApp();
+    } else {
+      document.getElementById('login-screen').style.display='';
+      document.getElementById('scr-app').style.display='none';
+    }
+  }catch(e){
+    document.getElementById('login-screen').style.display='';
+    document.getElementById('scr-app').style.display='none';
+  }
+})();
 </script>
 
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDG4xfW0CbRhbq1cUM1Qa_0IuVJR-bLq2U&libraries=places&language=en&region=gb" async defer></script>

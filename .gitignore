@@ -1,4 +1,7 @@
 node_modules_link
 node_modules/
 package-lock.json
-package.json
+data/*.db
+data/*.db-wal
+data/*.db-shm
+.env

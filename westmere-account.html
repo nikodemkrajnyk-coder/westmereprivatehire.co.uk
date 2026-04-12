@@ -962,35 +962,65 @@ var ADMIN_DATA=[
   {ref:'WPH-240211',date:'28 Mar',time:'09:00',name:'Claire Dupont',route:'Horsham → Gatwick',type:'Drop-off',fare:'£55',pay:'Card',status:'pending'},
   {ref:'WPH-240208',date:'30 Mar',time:'16:30',name:'David Chen',route:'Lewes → London City',type:'Drop-off',fare:'£195',pay:'Account',status:'pending'},
 ];
-/* ── Hashed Auth (SHA-256) ── */
-var ADMIN_HASH_AC='fe3c915f6a832cb6392616d99a70bf5668a369138d17ba782d01e2a87e8a0a85';
-var _acAttempts=0,_acMaxAttempts=5;
-async function _sha256(s){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0')}).join('');}
-
+/* ── Auth (backend API) ── */
 async function doLogin(){
   var email=(document.getElementById('l-email').value||'').trim();
   var pass=(document.getElementById('l-pass').value||'').trim();
   if(!email||!pass){showToast('Please enter email and password');return;}
-  if(_acAttempts>=_acMaxAttempts){showToast('Too many attempts. Please try again later.');return;}
-  var hash=await _sha256(email.toLowerCase()+':'+pass);
-  if(hash===ADMIN_HASH_AC){
-    sessionStorage.setItem('wph_ac_user',email);
-    _acAttempts=0;
-    bootDash(email.split('@')[0],true,'Admin · Full access',email,false);
-  } else {
-    _acAttempts++;
-    showToast('Incorrect credentials. '+((_acMaxAttempts-_acAttempts))+' attempts remaining.');
+
+  try{
+    // Try customer login first
+    var res=await fetch('/api/auth/customer/login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email:email,password:pass})
+    });
+    var data=await res.json();
+    if(res.ok&&data.ok){
+      bootDash(data.customer.full_name,false,data.customer.account_type+' · Account',data.customer.email,false);
+      return;
+    }
+    // Try admin/owner login
+    var res2=await fetch('/api/auth/login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username:email,password:pass})
+    });
+    var data2=await res2.json();
+    if(res2.ok&&data2.ok){
+      bootDash(data2.user.full_name||data2.user.username,true,'Admin · Full access',data2.user.email||email,false);
+      return;
+    }
+    showToast(data.error||'Incorrect credentials.');
+  }catch(e){
+    showToast('Connection error. Please try again.');
   }
 }
-function doLoginReg(){
+async function doLoginReg(){
   var name=(document.getElementById('r-name').value||'').trim();
   var email=(document.getElementById('r-email').value||'').trim();
   var pass=(document.getElementById('r-pass').value||'').trim();
+  var phone=(document.getElementById('r-mobile').value||'').trim();
   if(!name||!email||!pass){showToast('Please fill in all fields');return;}
   if(pass.length<8){showToast('Password must be at least 8 characters');return;}
   var t=document.querySelector('.type-opt.on .type-name');
-  sessionStorage.setItem('wph_ac_user',email);
-  bootDash(name,false,(t?t.textContent:'Personal')+' · Account',email,true);
+  var acType=(t?t.textContent:'Personal').toLowerCase();
+
+  try{
+    var res=await fetch('/api/auth/customer/register',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({full_name:name,email:email,password:pass,phone:phone,account_type:acType})
+    });
+    var data=await res.json();
+    if(res.ok&&data.ok){
+      bootDash(data.customer.full_name,false,data.customer.account_type+' · Account',data.customer.email,true);
+    } else {
+      showToast(data.error||'Registration failed.');
+    }
+  }catch(e){
+    showToast('Connection error. Please try again.');
+  }
 }
 function bootDash(name,admin,actype,email,showWelcome){
   document.getElementById('login-page').style.display='none';
@@ -1010,7 +1040,7 @@ function bootDash(name,admin,actype,email,showWelcome){
     document.getElementById('dashboard').style.display='block';
   }
 }
-function doLogout(){document.getElementById('dashboard').style.display='none';document.getElementById('login-page').style.display='flex';}
+async function doLogout(){await fetch('/api/auth/logout',{method:'POST'});document.getElementById('dashboard').style.display='none';document.getElementById('login-page').style.display='flex';}
 function swFrm(f){document.getElementById('frm-login').style.display=f==='login'?'block':'none';document.getElementById('frm-register').style.display=f==='register'?'block':'none';}
 function selType(el){document.querySelectorAll('.type-opt').forEach(function(o){o.classList.remove('on')});el.classList.add('on');}
 function sv(id,btn){
@@ -1050,12 +1080,22 @@ function showToast(msg){
 }
 document.querySelectorAll('input[type=date]').forEach(function(d){d.min=new Date().toISOString().split('T')[0]});
 
-/* ── Auth check ── */
-(function(){
-  var user=sessionStorage.getItem('wph_ac_user');
-  if(user){
-    bootDash(user.split('@')[0],false,'Personal · Pay per journey',user,false);
-  } else {
+/* ── Auth check via backend ── */
+(async function(){
+  try{
+    var res=await fetch('/api/auth/me');
+    var data=await res.json();
+    if(res.ok&&data.ok){
+      if(data.type==='customer'){
+        bootDash(data.customer.full_name,false,data.customer.account_type+' · Account',data.customer.email,false);
+      } else {
+        bootDash(data.user.full_name||data.user.username,true,'Admin · Full access',data.user.email||'',false);
+      }
+    } else {
+      document.getElementById('login-page').style.display='flex';
+      document.getElementById('dashboard').style.display='none';
+    }
+  }catch(e){
     document.getElementById('login-page').style.display='flex';
     document.getElementById('dashboard').style.display='none';
   }
