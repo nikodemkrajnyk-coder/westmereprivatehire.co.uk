@@ -6,10 +6,13 @@ const { getDb } = require('./db');
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'wph_' + require('crypto').randomBytes(32).toString('hex');
 const JWT_EXPIRY = '8h';
+const JWT_EXPIRY_REMEMBER = '30d';
+const COOKIE_MAX_AGE = 8 * 3600000; // 8 hours
+const COOKIE_MAX_AGE_REMEMBER = 30 * 24 * 3600000; // 30 days
 
 // ── Login (admin / owner / driver) ──────────────────────────────────────
 router.post('/login', (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, remember } = req.body;
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and password required' });
   }
@@ -24,14 +27,17 @@ router.post('/login', (req, res) => {
     return res.status(401).json({ error: 'Invalid credentials' });
   }
 
+  const expiry = remember ? JWT_EXPIRY_REMEMBER : JWT_EXPIRY;
+  const maxAge = remember ? COOKIE_MAX_AGE_REMEMBER : COOKIE_MAX_AGE;
+
   const token = jwt.sign(
     { id: user.id, username: user.username, role: user.role, type: 'user' },
     JWT_SECRET,
-    { expiresIn: JWT_EXPIRY }
+    { expiresIn: expiry }
   );
 
   // Log session
-  const expires = new Date(Date.now() + 8 * 3600000).toISOString();
+  const expires = new Date(Date.now() + maxAge).toISOString();
   db.prepare('INSERT INTO sessions (user_id, role, ip, user_agent, expires_at) VALUES (?,?,?,?,?)')
     .run(user.id, user.role, req.ip, req.get('User-Agent'), expires);
 
@@ -42,7 +48,7 @@ router.post('/login', (req, res) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
-    maxAge: 8 * 3600000
+    maxAge
   });
 
   res.json({
@@ -53,7 +59,7 @@ router.post('/login', (req, res) => {
 
 // ── Customer login (account page) ───────────────────────────────────────
 router.post('/customer/login', (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, remember } = req.body;
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password required' });
   }
@@ -67,14 +73,17 @@ router.post('/customer/login', (req, res) => {
     return res.status(401).json({ error: 'Invalid credentials' });
   }
 
+  const expiry = remember ? JWT_EXPIRY_REMEMBER : JWT_EXPIRY;
+  const maxAge = remember ? COOKIE_MAX_AGE_REMEMBER : COOKIE_MAX_AGE;
+
   const token = jwt.sign(
     { id: customer.id, email: customer.email, role: 'customer', type: 'customer' },
     JWT_SECRET,
-    { expiresIn: JWT_EXPIRY }
+    { expiresIn: expiry }
   );
 
   db.prepare('INSERT INTO sessions (customer_id, role, ip, user_agent, expires_at) VALUES (?,?,?,?,?)')
-    .run(customer.id, 'customer', req.ip, req.get('User-Agent'), new Date(Date.now() + 8 * 3600000).toISOString());
+    .run(customer.id, 'customer', req.ip, req.get('User-Agent'), new Date(Date.now() + maxAge).toISOString());
 
   db.prepare('INSERT INTO audit_log (user_type, user_id, action, ip) VALUES (?,?,?,?)')
     .run('customer', customer.id, 'login_success', req.ip);
@@ -83,7 +92,7 @@ router.post('/customer/login', (req, res) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
-    maxAge: 8 * 3600000
+    maxAge
   });
 
   res.json({

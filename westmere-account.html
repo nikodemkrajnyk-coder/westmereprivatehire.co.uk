@@ -368,6 +368,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
       <p class="lb-desc">Sign in to manage your bookings and account</p>
       <div class="fg"><label class="fl">Email Address</label><input class="fi" type="email" id="l-email" placeholder="your@email.com"></div>
       <div class="fg"><label class="fl">Password</label><input class="fi" type="password" id="l-pass" placeholder="Your password"></div>
+      <label style="display:flex;align-items:center;gap:.5rem;margin-top:.6rem;cursor:pointer;font-size:.78rem;color:rgba(17,29,44,.5);font-weight:300"><input type="checkbox" id="l-remember" style="accent-color:var(--gold)"> Keep me logged in</label>
       <button class="btn-main" onclick="doLogin()">Sign In</button>
       <div class="lb-switch">No account? <button onclick="swFrm('register')">Create one here</button></div>
     </div>
@@ -973,7 +974,7 @@ async function doLogin(){
     var res=await fetch('/api/auth/customer/login',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({email:email,password:pass})
+      body:JSON.stringify({email:email,password:pass,remember:document.getElementById('l-remember').checked})
     });
     var data=await res.json();
     if(res.ok&&data.ok){
@@ -984,7 +985,7 @@ async function doLogin(){
     var res2=await fetch('/api/auth/login',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({username:email,password:pass})
+      body:JSON.stringify({username:email,password:pass,remember:document.getElementById('l-remember').checked})
     });
     var data2=await res2.json();
     if(res2.ok&&data2.ok){

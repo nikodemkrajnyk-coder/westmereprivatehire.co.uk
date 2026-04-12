@@ -414,6 +414,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
       <div class="al-err" id="al-err"></div>
       <div class="fg"><label class="fl">Username</label><input class="fi" type="text" id="al-user" placeholder="Username" autocomplete="username" autocapitalize="none"></div>
       <div class="fg"><label class="fl">Password</label><input class="fi" type="password" id="al-pass" placeholder="Password" autocomplete="current-password"></div>
+      <label style="display:flex;align-items:center;gap:.5rem;margin-top:.8rem;cursor:pointer;font-size:.78rem;color:rgba(17,29,44,.5);font-weight:300"><input type="checkbox" id="al-remember" style="accent-color:var(--gold)"> Keep me logged in</label>
       <button class="btn-main" onclick="adminLogin()" style="margin-top:.8rem">Sign In</button>
       <div class="al-attempts" id="al-attempts"></div>
     </div>
@@ -857,6 +858,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
   </div><!-- end content -->
 </div><!-- end main -->
 
+<footer class="mini-foot">&copy; 2026 Westmere Private Hire &middot; All rights reserved &middot; Licensed by Lewes District Council<span class="mini-legal"><a href="westmere-terms.html">Terms</a><a href="westmere-privacy.html">Privacy</a><a href="westmere-cookies.html">Cookies</a></span></footer>
 </div><!-- end admin-app -->
 
 <!-- ═══ MODAL: NEW BOOKING ═══ -->
@@ -1313,7 +1315,7 @@ async function adminLogin(){
     const res=await fetch('/api/auth/login',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({username:user,password:pass})
+      body:JSON.stringify({username:user,password:pass,remember:document.getElementById('al-remember').checked})
     });
     const data=await res.json();
     if(res.ok&&data.ok){
@@ -1801,6 +1803,5 @@ function printRecordBook(){
 }
 
 </script>
-<footer class="mini-foot">&copy; 2026 Westmere Private Hire &middot; All rights reserved &middot; Licensed by Lewes District Council<span class="mini-legal"><a href="westmere-terms.html">Terms</a><a href="westmere-privacy.html">Privacy</a><a href="westmere-cookies.html">Cookies</a></span></footer>
 </body>
 </html>
