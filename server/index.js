@@ -19,14 +19,14 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'",
         "https://fonts.googleapis.com", "https://fonts.gstatic.com",
-        "https://maps.googleapis.com", "https://js.stripe.com",
+        "https://js.stripe.com",
         "https://cdn.jsdelivr.net", "https://www.google.com",
         "https://www.gstatic.com"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com", "https://fonts.googleapis.com"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
-      connectSrc: ["'self'", "https://maps.googleapis.com", "https://api.anthropic.com",
-        "https://api.emailjs.com"],
+      connectSrc: ["'self'", "https://photon.komoot.io", "https://nominatim.openstreetmap.org",
+        "https://api.anthropic.com", "https://api.emailjs.com"],
       frameSrc: ["https://js.stripe.com", "https://www.google.com"],
     }
   }

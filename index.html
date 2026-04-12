@@ -253,10 +253,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 </style>
 <script src="https://js.stripe.com/v3/" async></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js" async></script>
-<!-- Google Places API – replace AIzaSyDG4xfW0CbRhbq1cUM1Qa_0IuVJR-bLq2U with your key from https://console.cloud.google.com -->
-<script>window._GOOGLE_API_KEY='AIzaSyDG4xfW0CbRhbq1cUM1Qa_0IuVJR-bLq2U';</script>
-<script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDG4xfW0CbRhbq1cUM1Qa_0IuVJR-bLq2U&libraries=places&language=en&region=gb&callback=_gmReady"></script>
-<script>var _gmLoaded=false;function _gmReady(){_gmLoaded=true;}</script>
+<!-- Photon (Komoot) – free address autocomplete, no API key needed -->
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23111D2C'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='38' font-weight='500' text-anchor='middle' fill='%23B8985A'%3EW%3C/text%3E%3C/svg%3E">
 <meta name="robots" content="index,follow">
 <meta property="og:title" content="Westmere Private Hire | Sussex Airport Transfers">
@@ -453,17 +450,11 @@ function esc(s){if(!s)return '';var d=document.createElement('div');d.appendChil
 var _gc={};
 function geocode(a){
   if(_gc[a])return Promise.resolve(_gc[a]);
-  if(_gmLoaded&&google.maps.Geocoder){
-    return new Promise(function(ok){
-      new google.maps.Geocoder().geocode({address:a,region:'gb'},function(res,st){
-        if(st==='OK'&&res[0]){var loc=res[0].geometry.location;var r={lat:loc.lat(),lon:loc.lng()};_gc[a]=r;ok(r);}
-        else{_geocodeNom(a).then(ok);}
-      });
-    });
-  }
-  return _geocodeNom(a);
+  return fetch('https://photon.komoot.io/api/?q='+encodeURIComponent(a)+'&lang=en&limit=1&lat=50.95&lon=-0.35')
+    .then(function(r){return r.json();})
+    .then(function(d){if(d.features&&d.features[0]){var c=d.features[0].geometry.coordinates;var r={lat:c[1],lon:c[0]};_gc[a]=r;return r;}return null;})
+    .catch(function(){return fetch('https://nominatim.openstreetmap.org/search?format=json&countrycodes=gb&limit=1&q='+encodeURIComponent(a),{headers:{'Accept-Language':'en'}}).then(function(r){return r.json();}).then(function(d){var r=d&&d[0]?{lat:parseFloat(d[0].lat),lon:parseFloat(d[0].lon)}:null;if(r)_gc[a]=r;return r;});});
 }
-function _geocodeNom(a){return fetch('https://nominatim.openstreetmap.org/search?format=json&countrycodes=gb&limit=1&q='+encodeURIComponent(a),{headers:{'Accept-Language':'en'}}).then(function(r){return r.json();}).then(function(d){var r=d&&d[0]?{lat:parseFloat(d[0].lat),lon:parseFloat(d[0].lon)}:null;if(r)_gc[a]=r;return r;});}
 function haverMiles(a,b,c,d){var R=3958.8,dL=(c-a)*Math.PI/180,dn=(d-b)*Math.PI/180,x=Math.sin(dL/2)*Math.sin(dL/2)+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dn/2)*Math.sin(dn/2);return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
 function nAP(s){if(!s)return null;var l=s.toLowerCase();if(l.includes('gatwick')||l.includes('lgw'))return 'ga';if(l.includes('heathrow')||l.includes('lhr'))return 'he';if(l.includes('stansted')||l.includes('stn'))return 'st';if(l.includes('luton')||l.match(/\bltn\b/))return 'lu';if(l.includes('southampton airport')||l.includes('southampton sou'))return 'so';if(l.includes('london city')||l.includes('city airport')||l.includes('lcy'))return 'ci';return null;}
 function nT(s){if(!s)return null;var l=s.toLowerCase();var m={'horsham':'horsham','lewes':'lewes','brighton':'brighton','hove':'brighton','crawley':'crawley','worthing':'worthing','haywards heath':'haywards','haywards':'haywards','burgess hill':'burgess','burgess':'burgess','east grinstead':'eastgrinstead','seaford':'seaford','uckfield':'uckfield','eastbourne':'eastbourne','polegate':'eastbourne','rh12':'horsham','rh13':'horsham','bn7':'lewes','bn8':'lewes','bn1':'brighton','bn2':'brighton','bn3':'brighton','rh10':'crawley','rh11':'crawley','bn11':'worthing','rh16':'haywards','rh15':'burgess','rh19':'eastgrinstead','bn25':'seaford','tn22':'uckfield','bn21':'eastbourne','bn22':'eastbourne','rh14':'horsham','bn5':'horsham','bn6':'haywards','bn26':'eastbourne','rh17':'haywards','tn21':'uckfield','tn20':'uckfield','bn18':'worthing','bn9':'lewes','bn43':'worthing','bn44':'worthing'};for(var k in m){if(l.includes(k))return m[k];}return null;}
@@ -485,17 +476,6 @@ var AIRPORTS=[
   {name:'London City Airport',sub:'London City · LCY',key:'ci',lat:51.5048,lon:0.0495}
 ];
 var _st={};
-var _placesService=null;
-var _autocompleteService=null;
-var _sessionToken=null;
-
-function _ensurePlacesServices(){
-  if(!_gmLoaded)return false;
-  if(!_autocompleteService)_autocompleteService=new google.maps.places.AutocompleteService();
-  if(!_placesService){var div=document.createElement('div');_placesService=new google.maps.places.PlacesService(div);}
-  if(!_sessionToken)_sessionToken=new google.maps.places.AutocompleteSessionToken();
-  return true;
-}
 
 function addrSearch(inp,sid){
   var v=inp.value.trim(),s=document.getElementById(sid);
@@ -507,30 +487,14 @@ function addrSearch(inp,sid){
       return ap.name.toLowerCase().includes(vl)||ap.sub.toLowerCase().includes(vl);
     }).slice(0,3);
 
-    if(_ensurePlacesServices()){
-      _autocompleteService.getPlacePredictions({
-        input:v,
-        sessionToken:_sessionToken,
-        componentRestrictions:{country:'gb'},
-        /* Bias to West Sussex operating area so ambiguous place names
-           prefer the local match (e.g. "Jackets Hill" near Thakeham, not
-           the unrelated one near Newdigate). */
-        location:new google.maps.LatLng(50.95,-0.35),
-        radius:30000,
-        types:['geocode','establishment']
-      },function(predictions,status){
-        _renderSuggestions(inp,s,apItems,predictions||[],true);
-      });
-    } else {
-      fetch('https://nominatim.openstreetmap.org/search?format=json&countrycodes=gb&limit=6&addressdetails=1&q='+encodeURIComponent(v),{headers:{'Accept-Language':'en','User-Agent':'WestmerePrivateHire/1.0'}})
-      .then(function(r){return r.json();})
-      .then(function(data){_renderSuggestions(inp,s,apItems,data||[],false);})
-      .catch(function(){_renderSuggestions(inp,s,apItems,[],false);});
-    }
+    fetch('https://photon.komoot.io/api/?q='+encodeURIComponent(v)+'&lang=en&limit=6&lat=50.95&lon=-0.35')
+    .then(function(r){return r.json();})
+    .then(function(data){_renderSuggestions(inp,s,apItems,data.features||[]);})
+    .catch(function(){_renderSuggestions(inp,s,apItems,[]);});
   },300);
 }
 
-function _renderSuggestions(inp,s,apItems,results,isGoogle){
+function _renderSuggestions(inp,s,apItems,features){
   s.innerHTML='';
   apItems.forEach(function(ap){
     var d=document.createElement('div');d.className='sug-item';
@@ -539,55 +503,28 @@ function _renderSuggestions(inp,s,apItems,results,isGoogle){
     s.appendChild(d);
   });
 
-  if(isGoogle){
-    results.forEach(function(p){
-      var main=p.structured_formatting?p.structured_formatting.main_text:p.description;
-      var sub=p.structured_formatting?p.structured_formatting.secondary_text:'';
-      var d=document.createElement('div');d.className='sug-item';
-      d.innerHTML='<div class="si-main">'+esc(main)+'</div>'+(sub?'<div class="si-sub">'+esc(sub)+'</div>':'');
-      d.onclick=function(){
-        if(_placesService&&p.place_id){
-          _placesService.getDetails({placeId:p.place_id,fields:['formatted_address','geometry'],sessionToken:_sessionToken},function(place,st){
-            _sessionToken=new google.maps.places.AutocompleteSessionToken();
-            if(st==='OK'&&place){
-              inp.value=place.formatted_address||p.description;
-              if(place.geometry&&place.geometry.location){
-                _gc[inp.value]={lat:place.geometry.location.lat(),lon:place.geometry.location.lng()};
-              }
-            } else {
-              inp.value=p.description;
-            }
-            s.classList.remove('open');s.innerHTML='';checkFlight();doEstimate();
-          });
-        } else {
-          inp.value=p.description;
-          s.classList.remove('open');s.innerHTML='';checkFlight();doEstimate();
-        }
-      };
-      s.appendChild(d);
-    });
-  } else {
-    results.forEach(function(p){
-      var a=p.address||{},l1='',l2='';
-      var town=a.town||a.city||a.village||a.suburb||'';
-      var county=a.county||a.state_district||'';
-      var pc=a.postcode||'';
-      if(a.house_number&&a.road)l1=a.house_number+' '+a.road;
-      else if(a.road)l1=a.road;
-      else if(town)l1=town;
-      else{var pts=p.display_name.split(',');l1=pts[0].trim();}
-      if(!l2)l2=[town,pc].filter(Boolean).join(', ');
-      if(!l2&&county)l2=county;
-      var full=l2?l1+', '+l2:l1;
-      var d=document.createElement('div');d.className='sug-item';
-      d.innerHTML='<div class="si-main">'+esc(l1)+'</div>'+(l2?'<div class="si-sub">'+esc(l2)+'</div>':'');
-      d.onclick=function(){inp.value=full;s.classList.remove('open');s.innerHTML='';checkFlight();doEstimate();};
-      s.appendChild(d);
-    });
-  }
-
-  /* Google attribution */
-  if(isGoogle&&results.length>0){var pb=document.createElement('div');pb.className='sug-powered';pb.textContent='Powered by Google';s.appendChild(pb);}
+  features.forEach(function(f){
+    var p=f.properties||{},l1='',l2='';
+    if(p.housenumber&&p.street)l1=p.housenumber+' '+p.street;
+    else if(p.name)l1=p.name;
+    else if(p.street)l1=p.street;
+    var town=p.city||p.town||p.village||p.district||'';
+    var pc=p.postcode||'';
+    l2=[town,pc].filter(Boolean).join(', ');
+    if(!l2&&p.county)l2=p.county;
+    if(!l1&&l2){l1=l2;l2=p.county||p.state||'';}
+    if(!l1)l1=town||p.county||p.country||'';
+    var full=l2?l1+', '+l2:l1;
+    var coords=f.geometry?f.geometry.coordinates:null;
+    var d=document.createElement('div');d.className='sug-item';
+    d.innerHTML='<div class="si-main">'+esc(l1)+'</div>'+(l2?'<div class="si-sub">'+esc(l2)+'</div>':'');
+    d.onclick=function(){
+      inp.value=full;
+      if(coords)_gc[full]={lat:coords[1],lon:coords[0]};
+      s.classList.remove('open');s.innerHTML='';checkFlight();doEstimate();
+    };
+    s.appendChild(d);
+  });
 
   if(s.children.length>0)s.classList.add('open');
   else s.classList.remove('open');
@@ -601,22 +538,12 @@ function useLocation(){
   var orig=inp.placeholder;inp.placeholder='Getting location…';
   navigator.geolocation.getCurrentPosition(function(pos){
     var lat=pos.coords.latitude,lng=pos.coords.longitude;
-    /* Try Google reverse geocoding first */
-    if(_gmLoaded&&google.maps.Geocoder){
-      new google.maps.Geocoder().geocode({location:{lat:lat,lng:lng}},function(res,st){
-        if(st==='OK'&&res[0]){
-          inp.value=res[0].formatted_address;
-          _gc[inp.value]={lat:lat,lon:lng};
-        }
-        inp.placeholder=orig;checkFlight();doEstimate();
-      });
-    } else {
-      fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat='+lat+'&lon='+lng+'&addressdetails=1',{headers:{'Accept-Language':'en'}})
-      .then(function(r){return r.json();}).then(function(d){
-        if(d&&d.address){var a=d.address,pts=[];if(a.house_number&&a.road)pts.push(a.house_number+' '+a.road);else if(a.road)pts.push(a.road);if(a.town)pts.push(a.town);else if(a.city)pts.push(a.city);else if(a.village)pts.push(a.village);if(a.postcode)pts.push(a.postcode);inp.value=pts.length?pts.join(', '):d.display_name;}
-        inp.placeholder=orig;checkFlight();doEstimate();
-      }).catch(function(){inp.placeholder=orig;});
-    }
+    fetch('https://photon.komoot.io/reverse?lat='+lat+'&lon='+lng)
+    .then(function(r){return r.json();}).then(function(d){
+      if(d.features&&d.features[0]){var p=d.features[0].properties||{},pts=[];if(p.housenumber&&p.street)pts.push(p.housenumber+' '+p.street);else if(p.street)pts.push(p.street);if(p.city)pts.push(p.city);else if(p.town)pts.push(p.town);else if(p.village)pts.push(p.village);if(p.postcode)pts.push(p.postcode);inp.value=pts.length?pts.join(', '):(p.name||'');}
+      _gc[inp.value]={lat:lat,lon:lng};
+      inp.placeholder=orig;checkFlight();doEstimate();
+    }).catch(function(){inp.placeholder=orig;});
   },function(){inp.placeholder='Location unavailable – type your address';setTimeout(function(){inp.placeholder=orig;},3500);},{timeout:8000});
 }
 function checkFlight(){

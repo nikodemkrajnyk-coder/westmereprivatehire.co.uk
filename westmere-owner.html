@@ -1185,31 +1185,30 @@ var AIRPORTS=[
   {n:'stansted',lat:51.8860,lon:0.2389},{n:'luton',lat:51.8747,lon:-0.3685},
   {n:'southampton',lat:50.9503,lon:-1.3568},{n:'city',lat:51.5048,lon:0.0495}
 ];
-var _gSess=null,_gAuto=null,_gPlaces=null;
-function _initGoogleServices(){
-  if(!window.google||!google.maps||!google.maps.places)return false;
-  if(!_gAuto)_gAuto=new google.maps.places.AutocompleteService();
-  if(!_gSess)_gSess=new google.maps.places.AutocompleteSessionToken();
-  if(!_gPlaces){var d=document.createElement('div');_gPlaces=new google.maps.places.PlacesService(d);}
-  return true;
-}
 function addrSearch(inputId,sugId,cb){
   var inp=document.getElementById(inputId);
   var sug=document.getElementById(sugId);
   if(!inp||!sug)return;
   var q=(inp.value||'').trim();
   if(q.length<2){sug.innerHTML='';sug.classList.remove('on');return;}
-  if(_initGoogleServices()){
-    _gAuto.getPlacePredictions({input:q,componentRestrictions:{country:'gb'},sessionToken:_gSess},function(preds,status){
-      if(status!=='OK'||!preds||!preds.length){_nomFallback(q,sug,inp,cb);return;}
-      _renderSuggestions(sug,preds.map(function(p){return{label:p.description,placeId:p.place_id};}),inp,cb);
-    });
-  }else{_nomFallback(q,sug,inp,cb);}
-}
-function _nomFallback(q,sug,inp,cb){
-  fetch('https://nominatim.openstreetmap.org/search?format=json&countrycodes=gb&limit=5&q='+encodeURIComponent(q))
+  fetch('https://photon.komoot.io/api/?q='+encodeURIComponent(q)+'&lang=en&limit=6&lat=50.95&lon=-0.35')
   .then(function(r){return r.json();}).then(function(data){
-    _renderSuggestions(sug,data.map(function(d){return{label:d.display_name,lat:parseFloat(d.lat),lon:parseFloat(d.lon)};}),inp,cb);
+    var items=(data.features||[]).map(function(f){
+      var p=f.properties||{},l1='',l2='';
+      if(p.housenumber&&p.street)l1=p.housenumber+' '+p.street;
+      else if(p.name)l1=p.name;
+      else if(p.street)l1=p.street;
+      var town=p.city||p.town||p.village||p.district||'';
+      var pc=p.postcode||'';
+      l2=[town,pc].filter(Boolean).join(', ');
+      if(!l2&&p.county)l2=p.county;
+      if(!l1&&l2){l1=l2;l2=p.county||p.state||'';}
+      if(!l1)l1=town||p.county||p.country||'';
+      var full=l2?l1+', '+l2:l1;
+      var coords=f.geometry?f.geometry.coordinates:null;
+      return{label:full,lat:coords?coords[1]:null,lon:coords?coords[0]:null};
+    });
+    _renderSuggestions(sug,items,inp,cb);
   }).catch(function(){sug.innerHTML='';sug.classList.remove('on');});
 }
 function _renderSuggestions(sug,items,inp,cb){
@@ -1219,18 +1218,9 @@ function _renderSuggestions(sug,items,inp,cb){
   Array.from(sug.children).forEach(function(el,i){
     el.onclick=function(){
       var it=items[i];
-      if(it.placeId&&_gPlaces){
-        _gPlaces.getDetails({placeId:it.placeId,fields:['formatted_address','geometry'],sessionToken:_gSess},function(place){
-          _gSess=new google.maps.places.AutocompleteSessionToken();
-          inp.value=place&&place.formatted_address?place.formatted_address:it.label;
-          sug.innerHTML='';sug.classList.remove('on');
-          if(cb)cb(inp.value,place&&place.geometry?{lat:place.geometry.location.lat(),lon:place.geometry.location.lng()}:null);
-        });
-      }else{
-        inp.value=it.label;
-        sug.innerHTML='';sug.classList.remove('on');
-        if(cb)cb(inp.value,it.lat&&it.lon?{lat:it.lat,lon:it.lon}:null);
-      }
+      inp.value=it.label;
+      sug.innerHTML='';sug.classList.remove('on');
+      if(cb)cb(inp.value,it.lat&&it.lon?{lat:it.lat,lon:it.lon}:null);
     };
   });
 }
@@ -1294,8 +1284,7 @@ document.addEventListener('keydown',function(e){
 })();
 </script>
 
-<script>window._GOOGLE_API_KEY='AIzaSyDG4xfW0CbRhbq1cUM1Qa_0IuVJR-bLq2U';var _gmLoaded=false;function _gmReady(){_gmLoaded=true;}</script>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDG4xfW0CbRhbq1cUM1Qa_0IuVJR-bLq2U&libraries=places&language=en&region=gb&callback=_gmReady" async defer></script>
+<!-- Photon (Komoot) – free address autocomplete, no API key needed -->
 <footer class="mini-foot">&copy; 2026 Westmere Private Hire &middot; All rights reserved &middot; Licensed by Lewes District Council<span class="mini-legal"><a href="westmere-terms.html">Terms</a><a href="westmere-privacy.html">Privacy</a><a href="westmere-cookies.html">Cookies</a></span></footer>
 </body>
 </html>
