@@ -78,6 +78,9 @@ for (const page of protectedPages) {
   });
 }
 
+// ── Health check (Railway uses this) ─────────────────────────────────────
+app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
+
 // ── Static files (public pages, CSS, JS, images) ────────────────────────
 app.use(express.static(path.join(__dirname, '..'), {
   index: 'index.html',
