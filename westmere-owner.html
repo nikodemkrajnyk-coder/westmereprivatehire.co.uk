@@ -987,15 +987,15 @@ function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 function escAttr(s){return encodeURIComponent(String(s));}
 function buildAssistCtx(){
   var fares='Fixed airport fares (drop-off / pickup):\n';
-  fares+='Brighton→Gatwick £72/£68, Brighton→Heathrow £128/£133, Brighton→Stansted £215/£220, Brighton→Luton £205/£210, Brighton→Southampton £152/£147, Brighton→City £166/£171\n';
-  fares+='Lewes→Gatwick £78/£74, Lewes→Heathrow £140/£145, Lewes→Stansted £225/£230, Lewes→Luton £215/£220, Lewes→Southampton £160/£155, Lewes→City £175/£180\n';
-  fares+='Horsham→Gatwick £55/£50, Horsham→Heathrow £120/£125, Horsham→Stansted £180/£185, Horsham→Luton £155/£160, Horsham→Southampton £135/£130, Horsham→City £160/£165\n';
-  fares+='Crawley→Gatwick £35/£32, Crawley→Heathrow £95/£100\n';
-  fares+='Worthing→Gatwick £72/£68, Worthing→Heathrow £130/£135\n';
-  fares+='Haywards Heath→Gatwick £52/£48\nBurgess Hill→Gatwick £48/£44\n';
-  fares+='Eastbourne→Gatwick £98/£94, Eastbourne→Heathrow £162/£167\n';
-  fares+='Seaford→Gatwick £92/£88\nUckfield→Gatwick £62/£58\nEast Grinstead→Gatwick £42/£38\n';
-  fares+='For locations outside a town centre: use nearest town fixed price + £2.50 per extra mile.\n';
+  fares+='Brighton→Gatwick £65/£61, Brighton→Heathrow £115/£120, Brighton→Stansted £194/£198, Brighton→Luton £185/£189, Brighton→Southampton £137/£132, Brighton→City £149/£154\n';
+  fares+='Lewes→Gatwick £70/£67, Lewes→Heathrow £126/£131, Lewes→Stansted £203/£207, Lewes→Luton £194/£198, Lewes→Southampton £144/£140, Lewes→City £158/£162\n';
+  fares+='Horsham→Gatwick £50/£45, Horsham→Heathrow £108/£113, Horsham→Stansted £162/£167, Horsham→Luton £140/£144, Horsham→Southampton £122/£117, Horsham→City £144/£149\n';
+  fares+='Crawley→Gatwick £32/£29, Crawley→Heathrow £86/£90\n';
+  fares+='Worthing→Gatwick £65/£61, Worthing→Heathrow £117/£122\n';
+  fares+='Haywards Heath→Gatwick £47/£43\nBurgess Hill→Gatwick £43/£40\n';
+  fares+='Eastbourne→Gatwick £88/£85, Eastbourne→Heathrow £146/£150\n';
+  fares+='Seaford→Gatwick £83/£79\nUckfield→Gatwick £56/£52\nEast Grinstead→Gatwick £38/£34\n';
+  fares+='For locations outside a town centre: use nearest town fixed price + £2.25 per extra mile.\n';
   var jobs=TODAY_JOBS.map(function(j){return j.time+' '+j.name+' '+j.pickup+'→'+j.dest+' £'+j.fare+' '+j.payment;}).join('. ');
   return 'You are the business assistant for Westmere Private Hire (Horsham base). Sole operator/driver.\n'+fares+'\nToday: '+jobs+'\nBe direct and short — driver may be in the car. Confirm all actions clearly.';
 }
@@ -1235,17 +1235,17 @@ function _renderSuggestions(sug,items,inp,cb){
 
 // ── FARE TABLE (matching fares page) ────────────────────────────────────────
 var CF={
-  brighton:{ga:{out:72,ret:68},he:{out:128,ret:133},st:{out:215,ret:220},lu:{out:205,ret:210},so:{out:152,ret:147},ci:{out:166,ret:171}},
-  lewes:{ga:{out:78,ret:74},he:{out:140,ret:145},st:{out:225,ret:230},lu:{out:215,ret:220},so:{out:160,ret:155},ci:{out:175,ret:180}},
-  horsham:{ga:{out:55,ret:50},he:{out:120,ret:125},st:{out:180,ret:185},lu:{out:155,ret:160},so:{out:135,ret:130},ci:{out:160,ret:165}},
-  crawley:{ga:{out:35,ret:32},he:{out:95,ret:100}},
-  worthing:{ga:{out:72,ret:68},he:{out:130,ret:135}},
-  haywards:{ga:{out:52,ret:48}},
-  burgess:{ga:{out:48,ret:44}},
-  eastbourne:{ga:{out:98,ret:94},he:{out:162,ret:167}},
-  seaford:{ga:{out:92,ret:88}},
-  uckfield:{ga:{out:62,ret:58}},
-  eastgrinstead:{ga:{out:42,ret:38}}
+  brighton:{ga:{out:65,ret:61},he:{out:115,ret:120},st:{out:194,ret:198},lu:{out:185,ret:189},so:{out:137,ret:132},ci:{out:149,ret:154}},
+  lewes:{ga:{out:70,ret:67},he:{out:126,ret:131},st:{out:203,ret:207},lu:{out:194,ret:198},so:{out:144,ret:140},ci:{out:158,ret:162}},
+  horsham:{ga:{out:50,ret:45},he:{out:108,ret:113},st:{out:162,ret:167},lu:{out:140,ret:144},so:{out:122,ret:117},ci:{out:144,ret:149}},
+  crawley:{ga:{out:32,ret:29},he:{out:86,ret:90}},
+  worthing:{ga:{out:65,ret:61},he:{out:117,ret:122}},
+  haywards:{ga:{out:47,ret:43}},
+  burgess:{ga:{out:43,ret:40}},
+  eastbourne:{ga:{out:88,ret:85},he:{out:146,ret:150}},
+  seaford:{ga:{out:83,ret:79}},
+  uckfield:{ga:{out:56,ret:52}},
+  eastgrinstead:{ga:{out:38,ret:34}}
 };
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────

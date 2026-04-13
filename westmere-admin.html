@@ -704,12 +704,12 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
             <thead><tr><th style="text-align:left">From</th><th>Gatwick</th><th>Heathrow</th><th>Stansted</th><th>Luton</th><th>Southampton</th><th>City</th></tr></thead>
             <tbody id="fare-tbody"></tbody>
           </table>
-          <p style="font-size:.72rem;color:var(--text-light);margin-top:1rem">Click any fare to edit it. Address adjustments calculated at <strong style="color:var(--gold)">£2.80/mile</strong> above town centre rates.</p>
+          <p style="font-size:.72rem;color:var(--text-light);margin-top:1rem">Click any fare to edit it. Address adjustments calculated at <strong style="color:var(--gold)">£2.50/mile</strong> above town centre rates.</p>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.2rem" class="g3r">
-        <div class="card"><div class="ch"><div class="ct">Airport Surcharges</div></div><div class="cb"><div class="fg"><label class="fl">Gatwick Drop-off</label><input class="fi" value="£10.00"></div><div class="fg"><label class="fl">Heathrow Drop-off</label><input class="fi" value="£7.00"></div><div class="fg"><label class="fl">Night Rate (23:00–05:00)</label><input class="fi" value="Gatwick +£10/+£8 · Heathrow +£7/+£12 · Stansted +£6/+£6 · Luton +£5/+£5"></div></div></div>
-        <div class="card"><div class="ch"><div class="ct">Local Rate</div></div><div class="cb"><div class="fg"><label class="fl">Base Fare</label><input class="fi" value="£3.00 flag + £3.50/mi (first 10), £2.80/mi after"></div><div class="fg"><label class="fl">Per Mile</label><input class="fi" value="£2.80 (miles 11+)"></div><div class="fg"><label class="fl">Minimum Fare</label><input class="fi" value="10 miles (£38.00 day)"></div></div></div>
+        <div class="card"><div class="ch"><div class="ct">Airport Surcharges</div></div><div class="cb"><div class="fg"><label class="fl">Gatwick Drop-off</label><input class="fi" value="£9.00"></div><div class="fg"><label class="fl">Heathrow Drop-off</label><input class="fi" value="£6.30"></div><div class="fg"><label class="fl">Night Rate (23:00–05:00)</label><input class="fi" value="Gatwick +£9/+£7 · Heathrow +£6/+£11 · Stansted +£5/+£5 · Luton +£5/+£5"></div></div></div>
+        <div class="card"><div class="ch"><div class="ct">Local Rate</div></div><div class="cb"><div class="fg"><label class="fl">Base Fare</label><input class="fi" value="£2.70 flag + £3.15/mi (first 10), £2.50/mi after"></div><div class="fg"><label class="fl">Per Mile</label><input class="fi" value="£2.50 (miles 11+)"></div><div class="fg"><label class="fl">Minimum Fare</label><input class="fi" value="10 miles (£34.00 day)"></div></div></div>
         <div class="card"><div class="ch"><div class="ct">Premiums</div></div><div class="cb"><div class="fg"><label class="fl">Corporate</label><input class="fi" value="+10%"></div><div class="fg"><label class="fl">Return Journey</label><input class="fi" value="×1.85"></div></div></div>
       </div>
     </div>
@@ -1447,17 +1447,17 @@ function togToggle(el){
 
 // ── FARE DATA (directional: out=drop-off, ret=pickup) ──
 const CF={
-  Brighton:{ga:{out:72,ret:68},he:{out:128,ret:133},st:{out:215,ret:220},lu:{out:205,ret:210},so:{out:152,ret:147},ci:{out:166,ret:171}},
-  Lewes:{ga:{out:78,ret:74},he:{out:140,ret:145},st:{out:225,ret:230},lu:{out:215,ret:220},so:{out:160,ret:155},ci:{out:175,ret:180}},
-  Horsham:{ga:{out:55,ret:50},he:{out:120,ret:125},st:{out:180,ret:185},lu:{out:155,ret:160},so:{out:135,ret:130},ci:{out:160,ret:165}},
-  Crawley:{ga:{out:35,ret:32},he:{out:95,ret:100}},
-  Worthing:{ga:{out:72,ret:68},he:{out:130,ret:135}},
-  Haywards:{ga:{out:52,ret:48}},
-  Burgess:{ga:{out:48,ret:44}},
-  Eastbourne:{ga:{out:98,ret:94},he:{out:162,ret:167}},
-  Seaford:{ga:{out:92,ret:88}},
-  Uckfield:{ga:{out:62,ret:58}},
-  Eastgrinstead:{ga:{out:42,ret:38}}
+  Brighton:{ga:{out:65,ret:61},he:{out:115,ret:120},st:{out:194,ret:198},lu:{out:185,ret:189},so:{out:137,ret:132},ci:{out:149,ret:154}},
+  Lewes:{ga:{out:70,ret:67},he:{out:126,ret:131},st:{out:203,ret:207},lu:{out:194,ret:198},so:{out:144,ret:140},ci:{out:158,ret:162}},
+  Horsham:{ga:{out:50,ret:45},he:{out:108,ret:113},st:{out:162,ret:167},lu:{out:140,ret:144},so:{out:122,ret:117},ci:{out:144,ret:149}},
+  Crawley:{ga:{out:32,ret:29},he:{out:86,ret:90}},
+  Worthing:{ga:{out:65,ret:61},he:{out:117,ret:122}},
+  Haywards:{ga:{out:47,ret:43}},
+  Burgess:{ga:{out:43,ret:40}},
+  Eastbourne:{ga:{out:88,ret:85},he:{out:146,ret:150}},
+  Seaford:{ga:{out:83,ret:79}},
+  Uckfield:{ga:{out:56,ret:52}},
+  Eastgrinstead:{ga:{out:38,ret:34}}
 };
 const RD={horsham_ga:{m:12,t:22},horsham_he:{m:38,t:55},lewes_ga:{m:28,t:38},lewes_he:{m:62,t:80},brighton_ga:{m:27,t:40},brighton_he:{m:58,t:75},worthing_ga:{m:28,t:42},worthing_he:{m:55,t:70},burgess_ga:{m:10,t:18},burgess_he:{m:42,t:58},haywards_ga:{m:12,t:22},haywards_he:{m:44,t:60},crawley_ga:{m:8,t:15},crawley_he:{m:32,t:48},eastbourne_ga:{m:40,t:55},eastbourne_he:{m:72,t:95},seaford_ga:{m:35,t:48},uckfield_ga:{m:18,t:28},eastgrinstead_ga:{m:14,t:22}};
 const APK={gatwick:'ga',heathrow:'he',stansted:'st',luton:'lu',southampton:'so',city:'ci',lgw:'ga',lhr:'he',stn:'st',ltn:'lu'};
@@ -1595,17 +1595,17 @@ function nbCheck(){
 
 // ── FARE TABLE (drop-off / pickup) ──
 const FARES={
-  Brighton:{ga:'72 / 68',he:'128 / 133',st:'215 / 220',lu:'205 / 210',so:'152 / 147',ci:'166 / 171'},
-  Lewes:{ga:'78 / 74',he:'140 / 145',st:'225 / 230',lu:'215 / 220',so:'160 / 155',ci:'175 / 180'},
-  Horsham:{ga:'55 / 50',he:'120 / 125',st:'180 / 185',lu:'155 / 160',so:'135 / 130',ci:'160 / 165'},
-  Crawley:{ga:'35 / 32',he:'95 / 100',st:'—',lu:'—',so:'—',ci:'—'},
-  Worthing:{ga:'72 / 68',he:'130 / 135',st:'—',lu:'—',so:'—',ci:'—'},
-  'Haywards Heath':{ga:'52 / 48',he:'—',st:'—',lu:'—',so:'—',ci:'—'},
-  'Burgess Hill':{ga:'48 / 44',he:'—',st:'—',lu:'—',so:'—',ci:'—'},
-  Eastbourne:{ga:'98 / 94',he:'162 / 167',st:'—',lu:'—',so:'—',ci:'—'},
-  Seaford:{ga:'92 / 88',he:'—',st:'—',lu:'—',so:'—',ci:'—'},
-  Uckfield:{ga:'62 / 58',he:'—',st:'—',lu:'—',so:'—',ci:'—'},
-  'East Grinstead':{ga:'42 / 38',he:'—',st:'—',lu:'—',so:'—',ci:'—'}
+  Brighton:{ga:'65 / 61',he:'115 / 120',st:'194 / 198',lu:'185 / 189',so:'137 / 132',ci:'149 / 154'},
+  Lewes:{ga:'70 / 67',he:'126 / 131',st:'203 / 207',lu:'194 / 198',so:'144 / 140',ci:'158 / 162'},
+  Horsham:{ga:'50 / 45',he:'108 / 113',st:'162 / 167',lu:'140 / 144',so:'122 / 117',ci:'144 / 149'},
+  Crawley:{ga:'32 / 29',he:'86 / 90',st:'—',lu:'—',so:'—',ci:'—'},
+  Worthing:{ga:'65 / 61',he:'117 / 122',st:'—',lu:'—',so:'—',ci:'—'},
+  'Haywards Heath':{ga:'47 / 43',he:'—',st:'—',lu:'—',so:'—',ci:'—'},
+  'Burgess Hill':{ga:'43 / 40',he:'—',st:'—',lu:'—',so:'—',ci:'—'},
+  Eastbourne:{ga:'88 / 85',he:'146 / 150',st:'—',lu:'—',so:'—',ci:'—'},
+  Seaford:{ga:'83 / 79',he:'—',st:'—',lu:'—',so:'—',ci:'—'},
+  Uckfield:{ga:'56 / 52',he:'—',st:'—',lu:'—',so:'—',ci:'—'},
+  'East Grinstead':{ga:'38 / 34',he:'—',st:'—',lu:'—',so:'—',ci:'—'}
 };
 const APS=['ga','he','st','lu','so','ci'];
 function buildFares(){

@@ -503,7 +503,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
             <input class="fi" type="text" id="bk-flight" placeholder="e.g. BA2431" autocomplete="off">
           </div>
           <div class="r2">
-          <div class="fg"><label class="fl">Passengers</label><div class="pax-trigger" id="bk-pax-wrap"><input class="fi cdt-val" type="text" id="bk-pax-display" placeholder="Passengers" readonly><input type="hidden" id="bk-pax" value="4"><div class="pick-drop" id="bk-pax-drop"></div></div></div>
+          <div class="fg"><label class="fl">Passengers</label><div class="pax-trigger" id="bk-pax-wrap"><input class="fi cdt-val" type="text" id="bk-pax-display" placeholder="Passengers" readonly><input type="hidden" id="bk-pax" value="1"><div class="pick-drop" id="bk-pax-drop"></div></div></div>
           <div class="fg" id="bk-bags-wrap" style="display:none"><label class="fl">Luggage</label><div class="bags-trigger" id="bk-bags-inner"><input class="fi cdt-val" type="text" id="bk-bags-display" placeholder="Luggage" readonly><input type="hidden" id="bk-bags" value="2"><div class="pick-drop" id="bk-bags-drop"></div></div></div>
           </div>
         </div>
@@ -790,23 +790,23 @@ function showToast(msg,type){
 
 /* Fixed fare tables (matching main website) */
 var CF={
-  brighton:{ga:{out:72,ret:68},he:{out:128,ret:133},st:{out:215,ret:220},lu:{out:168,ret:173},so:{out:92,ret:88},ci:{out:185,ret:190},lo:{out:155,ret:160}},
-  lewes:{ga:{out:78,ret:74},he:{out:140,ret:145},st:{out:225,ret:230},lu:{out:180,ret:185},so:{out:105,ret:100},ci:{out:195,ret:200},lo:{out:168,ret:173}},
-  horsham:{ga:{out:55,ret:50},he:{out:120,ret:125},st:{out:205,ret:210},lu:{out:160,ret:165},so:{out:85,ret:80},ci:{out:175,ret:180},lo:{out:142,ret:147}},
-  crawley:{ga:{out:35,ret:32},he:{out:95,ret:100},st:{out:190,ret:195},lu:{out:145,ret:150},so:{out:78,ret:75},ci:{out:160,ret:165},lo:{out:128,ret:133}},
-  worthing:{ga:{out:82,ret:78},he:{out:138,ret:143},st:{out:228,ret:233},lu:{out:178,ret:183},so:{out:75,ret:72},ci:{out:198,ret:203},lo:{out:165,ret:170}},
-  haywards:{ga:{out:52,ret:48},he:{out:115,ret:120},st:{out:200,ret:205},lu:{out:155,ret:160},so:{out:95,ret:90},ci:{out:172,ret:177},lo:{out:140,ret:145}},
-  burgess:{ga:{out:55,ret:50},he:{out:118,ret:123},st:{out:202,ret:207},lu:{out:158,ret:163},so:{out:92,ret:88},ci:{out:175,ret:180},lo:{out:143,ret:148}},
-  seaford:{ga:{out:85,ret:80},he:{out:148,ret:153},st:{out:235,ret:240},lu:{out:188,ret:193},so:{out:112,ret:108},ci:{out:205,ret:210},lo:{out:175,ret:180}},
-  eastbourne:{ga:{out:95,ret:90},he:{out:158,ret:163},st:{out:245,ret:250},lu:{out:198,ret:203},so:{out:122,ret:118},ci:{out:215,ret:220},lo:{out:185,ret:190}},
-  uckfield:{ga:{out:60,ret:55},he:{out:125,ret:130},st:{out:208,ret:213},lu:{out:162,ret:167},so:{out:98,ret:94},ci:{out:178,ret:183},lo:{out:148,ret:153}},
-  eastgrinstead:{ga:{out:42,ret:38},he:{out:105,ret:110},st:{out:192,ret:197},lu:{out:148,ret:153},so:{out:88,ret:84},ci:{out:165,ret:170},lo:{out:135,ret:140}},
-  pulborough:{ga:{out:68,ret:64},he:{out:118,ret:123},st:{out:205,ret:210},lu:{out:158,ret:163},so:{out:75,ret:72},ci:{out:172,ret:177},lo:{out:138,ret:143}},
-  arundel:{ga:{out:78,ret:74},he:{out:128,ret:133},st:{out:215,ret:220},lu:{out:168,ret:173},so:{out:72,ret:68},ci:{out:182,ret:187},lo:{out:148,ret:153}},
-  chichester:{ga:{out:88,ret:84},he:{out:135,ret:140},st:{out:228,ret:233},lu:{out:178,ret:183},so:{out:55,ret:50},ci:{out:195,ret:200},lo:{out:158,ret:163}},
-  midhurst:{ga:{out:82,ret:78},he:{out:115,ret:120},st:{out:208,ret:213},lu:{out:158,ret:163},so:{out:65,ret:60},ci:{out:178,ret:183},lo:{out:138,ret:143}}
+  brighton:{ga:{out:65,ret:61},he:{out:115,ret:120},st:{out:194,ret:198},lu:{out:151,ret:156},so:{out:83,ret:79},ci:{out:167,ret:171},lo:{out:140,ret:144}},
+  lewes:{ga:{out:70,ret:67},he:{out:126,ret:131},st:{out:203,ret:207},lu:{out:162,ret:167},so:{out:95,ret:90},ci:{out:176,ret:180},lo:{out:151,ret:156}},
+  horsham:{ga:{out:50,ret:45},he:{out:108,ret:113},st:{out:185,ret:189},lu:{out:144,ret:149},so:{out:77,ret:72},ci:{out:158,ret:162},lo:{out:128,ret:132}},
+  crawley:{ga:{out:32,ret:29},he:{out:86,ret:90},st:{out:171,ret:176},lu:{out:131,ret:135},so:{out:70,ret:68},ci:{out:144,ret:149},lo:{out:115,ret:120}},
+  worthing:{ga:{out:74,ret:70},he:{out:124,ret:129},st:{out:205,ret:210},lu:{out:160,ret:165},so:{out:68,ret:65},ci:{out:178,ret:183},lo:{out:149,ret:153}},
+  haywards:{ga:{out:47,ret:43},he:{out:104,ret:108},st:{out:180,ret:185},lu:{out:140,ret:144},so:{out:86,ret:81},ci:{out:155,ret:159},lo:{out:126,ret:131}},
+  burgess:{ga:{out:50,ret:45},he:{out:106,ret:111},st:{out:182,ret:186},lu:{out:142,ret:147},so:{out:83,ret:79},ci:{out:158,ret:162},lo:{out:129,ret:133}},
+  seaford:{ga:{out:77,ret:72},he:{out:133,ret:138},st:{out:212,ret:216},lu:{out:169,ret:174},so:{out:101,ret:97},ci:{out:185,ret:189},lo:{out:158,ret:162}},
+  eastbourne:{ga:{out:86,ret:81},he:{out:142,ret:147},st:{out:221,ret:225},lu:{out:178,ret:183},so:{out:110,ret:106},ci:{out:194,ret:198},lo:{out:167,ret:171}},
+  uckfield:{ga:{out:54,ret:50},he:{out:113,ret:117},st:{out:187,ret:192},lu:{out:146,ret:150},so:{out:88,ret:85},ci:{out:160,ret:165},lo:{out:133,ret:138}},
+  eastgrinstead:{ga:{out:38,ret:34},he:{out:95,ret:99},st:{out:173,ret:177},lu:{out:133,ret:138},so:{out:79,ret:76},ci:{out:149,ret:153},lo:{out:122,ret:126}},
+  pulborough:{ga:{out:61,ret:58},he:{out:106,ret:111},st:{out:185,ret:189},lu:{out:142,ret:147},so:{out:68,ret:65},ci:{out:155,ret:159},lo:{out:124,ret:129}},
+  arundel:{ga:{out:70,ret:67},he:{out:115,ret:120},st:{out:194,ret:198},lu:{out:151,ret:156},so:{out:65,ret:61},ci:{out:164,ret:168},lo:{out:133,ret:138}},
+  chichester:{ga:{out:79,ret:76},he:{out:122,ret:126},st:{out:205,ret:210},lu:{out:160,ret:165},so:{out:50,ret:45},ci:{out:176,ret:180},lo:{out:142,ret:147}},
+  midhurst:{ga:{out:74,ret:70},he:{out:104,ret:108},st:{out:187,ret:192},lu:{out:142,ret:147},so:{out:59,ret:54},ci:{out:160,ret:165},lo:{out:124,ret:129}}
 };
-var APC={ga:[10,10],he:[7,10],st:[10,10],lu:[7,7],so:[5,5],ci:[8,8],lo:[0,0]};
+var APC={ga:[9,9],he:[6,9],st:[9,9],lu:[6,6],so:[5,5],ci:[7,7],lo:[0,0]};
 var APNAMES={ga:'gatwick',he:'heathrow',st:'stansted',lu:'luton',so:'southampton',ci:'cityairport',lo:'london'};
 var APFULL={ga:'Gatwick',he:'Heathrow',st:'Stansted',lu:'Luton',so:'Southampton',ci:'London City',lo:'London Central'};
 var TC={horsham:{lat:51.0632,lon:-0.3234},lewes:{lat:50.874,lon:0.0131},brighton:{lat:50.8225,lon:-0.1372},worthing:{lat:50.8185,lon:-0.3788},burgess:{lat:50.9578,lon:-0.132},haywards:{lat:51.0024,lon:-0.0993},seaford:{lat:50.7716,lon:0.1028},crawley:{lat:51.1087,lon:-0.1872},eastgrinstead:{lat:51.1252,lon:-0.0076},uckfield:{lat:50.9688,lon:0.0983},eastbourne:{lat:50.768,lon:0.2904},pulborough:{lat:50.9605,lon:-0.5141},arundel:{lat:50.8554,lon:-0.5547},chichester:{lat:50.8365,lon:-0.7792},midhurst:{lat:50.9866,lon:-0.7367}};
@@ -831,7 +831,7 @@ function nT(s){if(!s)return null;var l=s.toLowerCase();
   return null;
 }
 function isNight(h){return h>=22||h<6;}
-function calcMile(mi,night,ap){var f;if(night){f=mi<=10?Math.max(mi,10)*3.80:mi<=20?38+(mi-10)*3.10:69+(mi-20)*2.80;}else{f=mi<=10?Math.max(mi,10)*4.00:mi<=20?40+(mi-10)*2.50:65+(mi-20)*2.25;}if(ap&&APC[ap])f+=APC[ap][0];return Math.ceil(f/0.5)*0.5;}
+function calcMile(mi,night,ap){var f;if(night){f=mi<=10?Math.max(mi,10)*3.42:mi<=20?34.2+(mi-10)*2.79:62.1+(mi-20)*2.52;}else{f=mi<=10?Math.max(mi,10)*3.60:mi<=20?36+(mi-10)*2.25:58.5+(mi-20)*2.03;}if(ap&&APC[ap])f+=APC[ap][0];return Math.ceil(f/0.5)*0.5;}
 function sh(t){return t?t.replace('haywards heath','haywards').replace('burgess hill','burgess').replace('east grinstead','eastgrinstead'):t;}
 
 /* Geocoding – Mapbox */
@@ -979,7 +979,7 @@ function bkCalcFare(){
 }
 
 function bkSetFare(fare,mi,ti,lbl,surNote){
-  _baseFare=fare;
+  _baseFare=Math.ceil(fare/0.5)*0.5;
   _fareDistance=mi;
   _fareTime=ti;
   _fareLabel=lbl||'Fixed price';
@@ -1092,13 +1092,13 @@ function initCalendar(){
     var drop=document.getElementById('bk-cal-drop');if(drop)drop.classList.remove('open');
     bkCalcFare();
   };
-  // Set default to tomorrow
-  var tom=new Date(_today);tom.setDate(tom.getDate()+1);
-  _selDateStr=_dateVal(tom.getFullYear(),tom.getMonth(),tom.getDate());
+  // Set default to today
+  var _now=new Date();
+  _selDateStr=_dateVal(_now.getFullYear(),_now.getMonth(),_now.getDate());
   var hid=document.getElementById('bk-date');
   if(hid)hid.value=_selDateStr;
   var disp=document.getElementById('bk-cdt-display');
-  if(disp)disp.value=_dateDisp(tom.getFullYear(),tom.getMonth(),tom.getDate());
+  if(disp)disp.value=_dateDisp(_now.getFullYear(),_now.getMonth(),_now.getDate());
   // Trigger
   var trigger=document.getElementById('bk-cdt-display');var drop=document.getElementById('bk-cal-drop');
   if(trigger&&drop){
@@ -1118,7 +1118,7 @@ function initCalendar(){
    TIME PICKER
    ═══════════════════════════════════════════════════════════════════════════ */
 function initTimePicker(){
-  var _tH=8,_tM=0;
+  var _tnow=new Date(),_tH=_tnow.getHours(),_tM=Math.ceil(_tnow.getMinutes()/5)*5;if(_tM>=60){_tM=0;_tH=(_tH+1)%24;}
   var _MINS=[0,5,10,15,20,25,30,35,40,45,50,55];
   function _f2(n){return String(n).padStart(2,'0');}
   function _tStr(h,m){return _f2(h)+':'+_f2(m);}
@@ -1165,7 +1165,7 @@ function initTimePicker(){
 /* ═══════════════════════════════════════════════════════════════════════════
    PASSENGER PICKER
    ═══════════════════════════════════════════════════════════════════════════ */
-var _rPax=4;
+var _rPax=1;
 var _rPAX_OPTS=[
   {v:1,label:'1 passenger',icon:'👤'},{v:2,label:'2 passengers',icon:'👥'},
   {v:3,label:'3 passengers',icon:'👥'},{v:4,label:'4 passengers',icon:'👥'},
