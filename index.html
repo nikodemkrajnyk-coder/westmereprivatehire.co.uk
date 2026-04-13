@@ -265,7 +265,6 @@ input[type="time"].fi,input[type="date"].fi{-webkit-appearance:auto;appearance:a
 footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);font-size:.66rem;letter-spacing:.1em;color:rgba(255,255,255,.38);background:rgba(13,10,6,.55);border-top:1px solid rgba(184,152,90,.12);position:relative;z-index:1}.mini-legal{margin-left:.6rem}.mini-legal a{color:rgba(255,255,255,.28);text-decoration:none;margin-left:.5rem;transition:color .2s;letter-spacing:.08em}.mini-legal a:hover{color:rgba(184,152,90,.7)}
 </style>
 <script src="https://js.stripe.com/v3/" async></script>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js" async></script>
 <script src="/config.js"></script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23111D2C'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='38' font-weight='500' text-anchor='middle' fill='%23B8985A'%3EW%3C/text%3E%3C/svg%3E">
 <meta name="robots" content="index,follow">
@@ -747,20 +746,11 @@ function setAddr(fieldId,val){var inp=document.getElementById(fieldId);if(inp){i
 // =====================================================
 // WESTMERE BOOKING ENGINE — Configuration
 // =====================================================
-// EmailJS — sign up free at emailjs.com, create a
-// service + template, paste your IDs below.
-// Template variables: {{ref}} {{name}} {{phone}}
-// {{email}} {{from}} {{to}} {{date}} {{time}}
-// {{flight}} {{fare}} {{payment}}
-var EJS_SVC  = "YOUR_EMAILJS_SERVICE_ID";
-var EJS_TPL  = "YOUR_EMAILJS_TEMPLATE_ID";
-var EJS_KEY  = "YOUR_EMAILJS_PUBLIC_KEY";
-// Stripe — paste your publishable key below
-var STRIPE_KEY = "pk_live_YOUR_STRIPE_KEY";
-// Payment intent endpoint — replace with your server URL
-var PAYMENT_INTENT_URL = "YOUR_PAYMENT_INTENT_URL";
-// Optional webhook (Zapier / Make.com)
-var BOOKING_WEBHOOK_URL = "";
+// Stripe publishable key — served from backend via /config.js
+var STRIPE_KEY = window._SK || "";
+// Backend API endpoints
+var PAYMENT_INTENT_URL = "/api/public/create-payment-intent";
+var BOOKING_API_URL = "/api/public/book";
 // =====================================================
 
 var _bk = { step:0, pay:"", method:"", stripe:null, cardEl:null, fare:0, j:{} };
@@ -780,18 +770,19 @@ function bkToast(msg, type) {
   }, 4000);
 }
 
-// ── SILENT BACKGROUND NOTIFICATION (EmailJS) ──────────
-function bkNotifyDriver(params) {
-  // Initialise and send — fully silent, no redirect, no popup
-  try {
-    if (typeof emailjs === "undefined") return;
-    if (EJS_KEY.indexOf("YOUR") !== -1) return; // not configured yet
-    emailjs.init({ publicKey: EJS_KEY });
-    emailjs.send(EJS_SVC, EJS_TPL, params).then(
-      function(){ bkToast("Booking notification sent to driver.", "ok"); },
-      function(){ /* silently fail */ }
-    );
-  } catch(e) { /* silently fail */ }
+// ── SUBMIT BOOKING TO BACKEND ─────────────────────────
+function bkSubmitBooking(data) {
+  fetch(BOOKING_API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.ok) {
+      console.log("[BOOK] Saved:", d.ref);
+    } else {
+      console.warn("[BOOK] Server:", d.error);
+    }
+  }).catch(function(e){ console.warn("[BOOK] Submit error:", e); });
 }
 
 // ── NIGHT DETECTION ───────────────────────────────────
@@ -1077,36 +1068,24 @@ function bkConfirm(type) {
   var dn = document.getElementById("bk-driver-note");
   if (dn) dn.style.display = type==="driver" ? "block" : "none";
 
-  // ── Silent email to driver via EmailJS ──
-  // No window.open, no redirect, no client WhatsApp
-  bkNotifyDriver({
-    ref:     ref,
-    name:    name,
-    phone:   phone,
-    email:   email,
-    from:    j.from,
-    to:      j.to,
-    date:    j.date  || "Not specified",
-    time:    j.time  || "Not specified",
-    flight:  j.flight|| "None",
-    fare:    j.price || "TBC",
-    payment: type==="driver" ? "Pay Driver" : "Paid online"
+  // ── Submit to backend (email + WhatsApp notifications sent server-side) ──
+  bkSubmitBooking({
+    ref:        ref,
+    name:       name,
+    email:      email,
+    phone:      phone,
+    pickup:     j.from,
+    destination:j.to,
+    date:       j.date  || "",
+    time:       j.time  || "",
+    flight:     j.flight|| "",
+    fare:       _bk.fare || null,
+    passengers: parseInt(document.getElementById("b-pax").value) || 1,
+    bags:       document.getElementById("b-bags").value || "",
+    notes:      document.getElementById("bk-notes") ? document.getElementById("bk-notes").value : "",
+    payment:    type==="driver" ? "cash" : "card",
+    source:     "website"
   });
-
-  // ── Webhook — admin inbox / owner app pick this up ──
-  if (BOOKING_WEBHOOK_URL) {
-    fetch(BOOKING_WEBHOOK_URL, {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({
-        ref:ref, name:name, email:email, phone:phone,
-        pickup:j.from, dest:j.to, date:j.date, time:j.time,
-        flight:j.flight||"", fare:_bk.fare,
-        payment:type==="driver"?"Pay Driver":"Card",
-        source:"website"
-      })
-    }).catch(function(){});
-  }
 
   bkGoS(6);
   bkToast("Ref: " + ref, "ok");

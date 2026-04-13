@@ -1279,6 +1279,7 @@ function confirmBooking(){
   var time=(document.getElementById('bk-ctt-display')||{}).value||'';
   var flight=(document.getElementById('bk-flight')||{}).value||'';
   var pax=(document.getElementById('bk-pax')||{}).value||'1';
+  var bags=(document.getElementById('bk-bags')||{}).value||'';
   var fare=Math.ceil((_baseFare*_selectedVehMult)/0.5)*0.5;
   var ref='WPH-'+String(Math.floor(10000+Math.random()*90000));
   var booking={
@@ -1290,14 +1291,22 @@ function confirmBooking(){
     time:time,
     flight:flight,
     pax:pax,
+    bags:bags,
     vehicle:_selectedVehName,
     fare:fare,
     status:'confirmed',
     created:new Date().toISOString()
   };
+  // Save to localStorage for offline display
   var bookings=JSON.parse(localStorage.getItem('wph_rider_bookings')||'[]');
   bookings.unshift(booking);
   localStorage.setItem('wph_rider_bookings',JSON.stringify(bookings));
+  // Also save to backend API
+  fetch('/api/bookings',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({pickup:from,destination:dest,date:date,time:time,passengers:parseInt(pax)||1,bags:bags,flight:flight,fare:fare,payment:'cash',notes:_selectedVehName?'Vehicle: '+_selectedVehName:''})
+  }).catch(function(){});
   closeModal();
   showToast('Booking confirmed: '+ref,'success');
   // Reset form
@@ -1310,7 +1319,6 @@ function confirmBooking(){
   // Refresh trips
   renderTrips('upcoming');
   renderHomeUpcoming();
-  // Add to messages
   // Switch to trips
   setTimeout(function(){goPage('trips');},600);
 }

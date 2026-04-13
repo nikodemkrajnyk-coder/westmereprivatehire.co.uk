@@ -7,6 +7,7 @@ const path = require('path');
 const { getDb } = require('./db');
 const { router: authRouter, JWT_SECRET } = require('./auth');
 const apiRouter = require('./api');
+const publicApiRouter = require('./public-api');
 const { createAuthMiddleware } = require('./middleware');
 
 const app = express();
@@ -27,7 +28,7 @@ app.use(helmet({
       imgSrc: ["'self'", "data:", "https:", "blob:"],
       connectSrc: ["'self'", "https://api.mapbox.com",
         "https://nominatim.openstreetmap.org", "https://router.project-osrm.org",
-        "https://api.anthropic.com", "https://api.emailjs.com"],
+        "https://api.anthropic.com", "https://api.stripe.com"],
       frameSrc: ["https://js.stripe.com", "https://www.google.com"],
       scriptSrcAttr: ["'unsafe-inline'"],
     }
@@ -59,15 +60,18 @@ const { requireAuth, requireRole, protectPage } = createAuthMiddleware(JWT_SECRE
 
 // ── Routes ──────────────────────────────────────────────────────────────
 
-// Public config (serves Mapbox token from env var — no auth needed)
+// Public config (serves tokens from env vars — no auth needed)
 app.get('/config.js', (req, res) => {
   res.type('application/javascript');
   res.set('Cache-Control', 'public, max-age=300');
-  res.send(`window._MB='${process.env.MAPBOX_TOKEN || ''}';`);
+  res.send(`window._MB='${process.env.MAPBOX_TOKEN || ''}';\nwindow._SK='${process.env.STRIPE_PUBLISHABLE_KEY || ''}';`);
 });
 
 // Auth routes (login, register, logout, etc.)
 app.use('/api/auth', authLimiter, authRouter);
+
+// Public API routes (booking, payment — no auth needed)
+app.use('/api/public', apiLimiter, publicApiRouter);
 
 // Protected API routes
 app.use('/api', apiLimiter, requireAuth, apiRouter);
@@ -105,7 +109,12 @@ app.use((req, res) => {
 // Initialize database
 getDb();
 
+// Log service status
+const { isConfigured: stripeOk } = require('./stripe');
+const { isConfigured: waOk } = require('./whatsapp');
+
 app.listen(PORT, () => {
+  const gmailOk = !!(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD);
   console.log(`
 ╔═══════════════════════════════════════════════╗
 ║  Westmere Private Hire — Backend Server       ║
@@ -113,6 +122,10 @@ app.listen(PORT, () => {
 ║                                               ║
 ║  Admin login: westmere / sussex               ║
 ║  Database: data/westmere.db                   ║
+║                                               ║
+║  Stripe:   ${stripeOk() ? 'ACTIVE' : 'NOT CONFIGURED'}                        ║
+║  Gmail:    ${gmailOk ? 'ACTIVE' : 'NOT CONFIGURED'}                        ║
+║  WhatsApp: ${waOk() ? 'ACTIVE' : 'NOT CONFIGURED'}                        ║
 ╚═══════════════════════════════════════════════╝
   `);
 });

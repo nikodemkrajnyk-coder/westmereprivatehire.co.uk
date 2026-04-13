@@ -1018,9 +1018,39 @@ function sv(id,btn){
   if(btn)btn.classList.add('on');
 }
 function submitBooking(){
-  var d=document.getElementById('qb-dest').value;
-  if(!d){showToast('Please enter a destination');return;}
-  showToast('Booking submitted — confirmation shortly');
+  var from=document.getElementById('qb-from').value;
+  var dest=document.getElementById('qb-dest').value;
+  if(!from||!dest){showToast('Please enter pickup and destination');return;}
+  var date=document.getElementById('qb-date')?document.getElementById('qb-date').value:'';
+  var time=(document.getElementById('qb-time')||{}).value||'';
+  var pax=(document.getElementById('qb-pax')||{}).value||'1';
+  var bags=(document.getElementById('qb-bags')||{}).value||'';
+  var flight=(document.getElementById('qb-flight')||{}).value||'';
+  var notes=(document.getElementById('qb-notes')||{}).value||'';
+  var fareEl=document.getElementById('fr-amt');
+  var fare=fareEl?parseFloat(fareEl.textContent.replace(/[^0-9.]/g,'')):null;
+  var btn=document.querySelector('.btn-book');
+  if(btn){btn.disabled=true;btn.textContent='Submitting\u2026';}
+  fetch('/api/bookings',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({pickup:from,destination:dest,date:date,time:time,passengers:parseInt(pax)||1,bags:bags,flight:flight,fare:fare,payment:'cash',notes:notes})
+  }).then(function(r){return r.json();}).then(function(d){
+    if(btn){btn.disabled=false;btn.textContent='Book This Journey';}
+    if(d.ok){
+      showToast('Booking confirmed \u2014 Ref: '+d.booking.ref);
+      document.getElementById('qb-from').value='';
+      document.getElementById('qb-dest').value='';
+      if(document.getElementById('qb-flight'))document.getElementById('qb-flight').value='';
+      if(document.getElementById('qb-notes'))document.getElementById('qb-notes').value='';
+      document.getElementById('fare-reveal').classList.remove('show');
+    } else {
+      showToast(d.error||'Booking failed');
+    }
+  }).catch(function(){
+    if(btn){btn.disabled=false;btn.textContent='Book This Journey';}
+    showToast('Connection error \u2014 please try again');
+  });
 }
 function toggleNewRecur(){
   var f=document.getElementById('new-recur-form');

@@ -1,5 +1,7 @@
 const express = require('express');
 const { getDb } = require('./db');
+const { sendAdminAlert } = require('./email');
+const { sendAdminBookingWhatsApp } = require('./whatsapp');
 
 const router = express.Router();
 
@@ -65,6 +67,20 @@ router.post('/bookings', (req, res) => {
 
   db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
     .run(req.auth.type, req.auth.id, 'booking_created', ref, req.ip);
+
+  // Send admin notifications in background
+  const customerName = customerId
+    ? (db.prepare('SELECT full_name, email, phone FROM customers WHERE id = ?').get(customerId) || {})
+    : {};
+  const notifData = {
+    ref, name: customerName.full_name || 'Guest', email: customerName.email || '',
+    phone: customerName.phone || '', pickup, destination, date, time,
+    passengers, bags, flight, fare, payment, notes
+  };
+  Promise.allSettled([
+    sendAdminAlert(notifData),
+    sendAdminBookingWhatsApp(notifData)
+  ]).catch(() => {});
 
   res.status(201).json({ ok: true, booking: { id: result.lastInsertRowid, ref } });
 });
