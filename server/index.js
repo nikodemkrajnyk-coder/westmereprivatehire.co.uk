@@ -29,6 +29,7 @@ app.use(helmet({
         "https://nominatim.openstreetmap.org", "https://router.project-osrm.org",
         "https://api.anthropic.com", "https://api.emailjs.com"],
       frameSrc: ["https://js.stripe.com", "https://www.google.com"],
+      scriptSrcAttr: ["'unsafe-inline'"],
     }
   }
 }));
