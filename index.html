@@ -219,7 +219,10 @@ input[type="time"].fi,input[type="date"].fi{-webkit-appearance:auto;appearance:a
 .pick-opt{font-family:var(--sans);font-size:.95rem;font-weight:300;color:rgba(255,255,255,.75);padding:.5rem .6rem;border-radius:5px;cursor:pointer;text-align:center;transition:background .12s,color .12s;display:flex;align-items:center;justify-content:center;gap:.5rem}
 .pick-opt:hover{background:rgba(184,152,90,.25);color:#fff}
 .pick-opt.p-sel{background:var(--gold);color:#111;font-weight:500}
-.pick-opt .pick-icon{font-size:1rem;line-height:1}
+.pick-counter{display:flex;align-items:center;justify-content:center;gap:1rem;padding:.4rem 0}
+.pick-btn{width:36px;height:36px;border-radius:50%;border:1px solid rgba(184,152,90,.4);background:rgba(184,152,90,.12);color:var(--gold);font-size:1.2rem;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.pick-btn:hover{background:rgba(184,152,90,.3)}
+.pick-count{font-family:var(--serif);font-size:1.3rem;color:#fff;min-width:1.5rem;text-align:center}
 
 
 
@@ -317,7 +320,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
     </div>
     <div class="date-time-row">
       <div class="field"><label class="fl">Passengers</label><div class="pax-trigger" id="pax-wrap"><input class="fi cdt-val" type="text" id="pax-display" placeholder="Passengers" readonly><input type="hidden" id="b-pax" value="1"><div class="pick-drop" id="pax-drop"></div></div></div>
-      <div class="field" id="bags-wrap" style="display:none"><label class="fl">Luggage</label><div class="bags-trigger" id="bags-inner"><input class="fi cdt-val" type="text" id="bags-display" placeholder="Luggage" readonly><input type="hidden" id="b-bags" value="2"><div class="pick-drop" id="bags-drop"></div></div></div>
+      <div class="field" id="bags-wrap" style="display:none"><label class="fl">Luggage</label><div class="bags-trigger" id="bags-inner"><input class="fi cdt-val" type="text" id="bags-display" placeholder="Luggage" readonly><input type="hidden" id="b-bags" value="0s+0l"><div class="pick-drop" id="bags-drop"></div></div></div>
     </div>
     <div class="fare-reveal" id="fare-reveal">
       <div class="fr-left">
@@ -444,19 +447,19 @@ uckfield_gatwick:{m:22,t:32,d:52},uckfield_heathrow:{m:55,t:72,d:115}
 };
 /* Fixed fare tables — out = town→airport (drop-off), ret = airport→town (pickup) */
 var CF={
-  brighton:{ga:{out:62,ret:58},he:{out:109,ret:114},st:{out:184,ret:188},lu:{out:176,ret:180},so:{out:130,ret:125},ci:{out:142,ret:146}},
-  lewes:{ga:{out:67,ret:64},he:{out:120,ret:124},st:{out:193,ret:197},lu:{out:184,ret:188},so:{out:137,ret:133},ci:{out:150,ret:154}},
-  horsham:{ga:{out:48,ret:43},he:{out:103,ret:107},st:{out:154,ret:159},lu:{out:133,ret:137},so:{out:116,ret:111},ci:{out:137,ret:142}},
-  crawley:{ga:{out:30,ret:28},he:{out:82,ret:86}},
-  worthing:{ga:{out:62,ret:58},he:{out:111,ret:116}},
-  haywards:{ga:{out:45,ret:41}},
-  burgess:{ga:{out:41,ret:38}},
-  eastbourne:{ga:{out:84,ret:81},he:{out:139,ret:143}},
-  seaford:{ga:{out:79,ret:75}},
-  uckfield:{ga:{out:53,ret:49}},
-  eastgrinstead:{ga:{out:36,ret:32}}
+  brighton:{ga:{out:72,ret:68},he:{out:128,ret:133},st:{out:215,ret:220},lu:{out:205,ret:210},so:{out:152,ret:147},ci:{out:166,ret:171}},
+  lewes:{ga:{out:78,ret:74},he:{out:140,ret:145},st:{out:225,ret:230},lu:{out:215,ret:220},so:{out:160,ret:155},ci:{out:175,ret:180}},
+  horsham:{ga:{out:55,ret:50},he:{out:120,ret:125},st:{out:180,ret:185},lu:{out:155,ret:160},so:{out:135,ret:130},ci:{out:160,ret:165}},
+  crawley:{ga:{out:35,ret:32},he:{out:95,ret:100}},
+  worthing:{ga:{out:72,ret:68},he:{out:130,ret:135}},
+  haywards:{ga:{out:52,ret:48}},
+  burgess:{ga:{out:48,ret:44}},
+  eastbourne:{ga:{out:98,ret:94},he:{out:162,ret:167}},
+  seaford:{ga:{out:92,ret:88}},
+  uckfield:{ga:{out:62,ret:58}},
+  eastgrinstead:{ga:{out:42,ret:38}}
 };
-var APC={ga:[9,9],he:[6,9],st:[9,9],lu:[6,6],so:[5,5],ci:[7,7],lo:[0,0]};
+var APC={ga:[10,10],he:[7,10],st:[10,10],lu:[7,7],so:[5,5],ci:[8,8],lo:[0,0]};
 var APNAMES={ga:'gatwick',he:'heathrow',st:'stansted',lu:'luton',so:'southampton',ci:'cityairport',lo:'london'};
 var APFULL={ga:'Gatwick',he:'Heathrow',st:'Stansted',lu:'Luton',so:'Southampton',ci:'London City',lo:'London Central'};
 var TC={horsham:{lat:51.0632,lon:-0.3234},lewes:{lat:50.874,lon:0.0131},brighton:{lat:50.8225,lon:-0.1372},worthing:{lat:50.8185,lon:-0.3788},burgess:{lat:50.9578,lon:-0.132},haywards:{lat:51.0024,lon:-0.0993},seaford:{lat:50.7716,lon:0.1028},crawley:{lat:51.1087,lon:-0.1872},eastgrinstead:{lat:51.1252,lon:-0.0076},uckfield:{lat:50.9688,lon:0.0983},eastbourne:{lat:50.768,lon:0.2904}};
@@ -499,12 +502,15 @@ var AIRPORTS=[
 var _st={};
 
 function _nominatim(q){
-  return fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q)+',UK&format=json&addressdetails=1&limit=10&countrycodes=gb&viewbox=-1.5,50.5,0.5,51.5&bounded=0',{headers:{'Accept':'application/json'}})
+  return fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q)+'&format=json&addressdetails=1&extratags=1&limit=10&countrycodes=gb&viewbox=-1.5,50.5,0.5,51.5&bounded=0',{headers:{'Accept':'application/json'}})
   .then(function(r){return r.json();})
   .then(function(arr){
     return(arr||[]).map(function(r){
       var parts=(r.display_name||'').split(', ');
-      return{main:parts[0]||'',sub:parts.slice(1,3).join(', '),lat:parseFloat(r.lat),lon:parseFloat(r.lon)};
+      var poiClasses=['amenity','shop','tourism','leisure','sport','craft'];
+      var isPoi=poiClasses.indexOf(r.class)!==-1;
+      var cat=isPoi?(r.type||'').replace(/_/g,' '):'';
+      return{main:parts[0]||'',sub:parts.slice(1,3).join(', '),lat:parseFloat(r.lat),lon:parseFloat(r.lon),isPoi:isPoi,cat:cat};
     });
   });
 }
@@ -1206,21 +1212,21 @@ function bkConfirm(type) {
 (function(){
   var _pax=1;
   var PAX_OPTS=[
-    {v:1,label:'1 passenger',icon:'👤'},
-    {v:2,label:'2 passengers',icon:'👥'},
-    {v:3,label:'3 passengers',icon:'👥'},
-    {v:4,label:'4 passengers',icon:'👥'},
-    {v:5,label:'5 passengers',icon:'👥'},
-    {v:6,label:'6 passengers',icon:'👥'},
-    {v:7,label:'7 passengers',icon:'👥'},
-    {v:8,label:'8 passengers',icon:'👥'}
+    {v:1,label:'1 passenger'},
+    {v:2,label:'2 passengers'},
+    {v:3,label:'3 passengers'},
+    {v:4,label:'4 passengers'},
+    {v:5,label:'5 passengers'},
+    {v:6,label:'6 passengers'},
+    {v:7,label:'7 passengers'},
+    {v:8,label:'8 passengers'}
   ];
   function _renderPax(){
     var drop=document.getElementById('pax-drop');if(!drop||!drop.classList.contains('open'))return;
     var h='<div class="pick-col-label">Passengers</div>';
     PAX_OPTS.forEach(function(o){
       var s=(_pax===o.v)?' p-sel':'';
-      h+='<div class="pick-opt'+s+'" onclick="event.stopPropagation();window._paxSel('+o.v+')"><span class="pick-icon">'+o.icon+'</span>'+o.label+'</div>';
+      h+='<div class="pick-opt'+s+'" onclick="event.stopPropagation();window._paxSel('+o.v+')">'+o.label+'</div>';
     });
     drop.innerHTML='<div class="pick-col" id="pc-pax">'+h+'</div>';
     setTimeout(function(){var c=document.getElementById('pc-pax');if(c){var se=c.querySelector('.p-sel');if(se)se.scrollIntoView({block:'center'});}},0);
@@ -1248,35 +1254,36 @@ function bkConfirm(type) {
 // WESTMERE CUSTOM LUGGAGE PICKER
 // =====================================================
 (function(){
-  var _bags=2;
-  var BAG_OPTS=[
-    {v:0,label:'No luggage',icon:'—'},
-    {v:1,label:'1 bag',icon:'🧳'},
-    {v:2,label:'2 bags',icon:'🧳'},
-    {v:3,label:'3 bags',icon:'🧳'},
-    {v:4,label:'4 bags',icon:'🧳'},
-    {v:5,label:'5+ bags',icon:'🧳'}
-  ];
+  var _small=0,_large=0;
+  function _bagLabel(){
+    if(!_small&&!_large)return 'No luggage';
+    var p=[];
+    if(_small)p.push(_small+' small');
+    if(_large)p.push(_large+' large');
+    return p.join(', ');
+  }
   function _renderBags(){
     var drop=document.getElementById('bags-drop');if(!drop||!drop.classList.contains('open'))return;
-    var h='<div class="pick-col-label">Luggage</div>';
-    BAG_OPTS.forEach(function(o){
-      var s=(_bags===o.v)?' p-sel':'';
-      h+='<div class="pick-opt'+s+'" onclick="event.stopPropagation();window._bagsSel('+o.v+')"><span class="pick-icon">'+o.icon+'</span>'+o.label+'</div>';
-    });
-    drop.innerHTML='<div class="pick-col" id="pc-bags">'+h+'</div>';
-    setTimeout(function(){var c=document.getElementById('pc-bags');if(c){var se=c.querySelector('.p-sel');if(se)se.scrollIntoView({block:'center'});}},0);
+    var h='<div class="pick-col-label">Small suitcases / cabin bags</div><div class="pick-counter">';
+    h+='<button type="button" class="pick-btn" onclick="event.stopPropagation();window._bagsAdj(\'s\',-1)">−</button>';
+    h+='<span class="pick-count" id="cnt-small">'+_small+'</span>';
+    h+='<button type="button" class="pick-btn" onclick="event.stopPropagation();window._bagsAdj(\'s\',1)">+</button></div>';
+    h+='<div class="pick-col-label" style="margin-top:.8rem">Large suitcases</div><div class="pick-counter">';
+    h+='<button type="button" class="pick-btn" onclick="event.stopPropagation();window._bagsAdj(\'l\',-1)">−</button>';
+    h+='<span class="pick-count" id="cnt-large">'+_large+'</span>';
+    h+='<button type="button" class="pick-btn" onclick="event.stopPropagation();window._bagsAdj(\'l\',1)">+</button></div>';
+    drop.innerHTML=h;
   }
-  window._bagsSel=function(v){
-    _bags=v;
-    var hid=document.getElementById('b-bags');if(hid)hid.value=v;
-    var disp=document.getElementById('bags-display');if(disp)disp.value=BAG_OPTS[v].label;
-    var drop=document.getElementById('bags-drop');if(drop)drop.classList.remove('open');
+  window._bagsAdj=function(type,delta){
+    if(type==='s'){_small=Math.max(0,Math.min(10,_small+delta));var el=document.getElementById('cnt-small');if(el)el.textContent=_small;}
+    else{_large=Math.max(0,Math.min(10,_large+delta));var el2=document.getElementById('cnt-large');if(el2)el2.textContent=_large;}
+    var hid=document.getElementById('b-bags');if(hid)hid.value=_small+'s+'+_large+'l';
+    var disp=document.getElementById('bags-display');if(disp)disp.value=_bagLabel();
   };
   document.addEventListener('DOMContentLoaded',function(){
     var trigger=document.getElementById('bags-display');var drop=document.getElementById('bags-drop');
     if(!trigger||!drop)return;
-    trigger.value=BAG_OPTS[_bags].label;
+    trigger.value=_bagLabel();
     trigger.addEventListener('click',function(e){
       e.stopPropagation();
       document.querySelectorAll('.pick-drop.open,.cal-drop.open,.time-drop.open').forEach(function(d){d.classList.remove('open');});

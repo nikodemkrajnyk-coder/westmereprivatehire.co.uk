@@ -987,15 +987,15 @@ function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 function escAttr(s){return encodeURIComponent(String(s));}
 function buildAssistCtx(){
   var fares='Fixed airport fares (drop-off / pickup):\n';
-  fares+='Brighton→Gatwick £62/£58, Brighton→Heathrow £109/£114, Brighton→Stansted £184/£188, Brighton→Luton £176/£180, Brighton→Southampton £130/£125, Brighton→City £142/£146\n';
-  fares+='Lewes→Gatwick £67/£64, Lewes→Heathrow £120/£124, Lewes→Stansted £193/£197, Lewes→Luton £184/£188, Lewes→Southampton £137/£133, Lewes→City £150/£154\n';
-  fares+='Horsham→Gatwick £48/£43, Horsham→Heathrow £103/£107, Horsham→Stansted £154/£159, Horsham→Luton £133/£137, Horsham→Southampton £116/£111, Horsham→City £137/£142\n';
-  fares+='Crawley→Gatwick £30/£28, Crawley→Heathrow £82/£86\n';
-  fares+='Worthing→Gatwick £62/£58, Worthing→Heathrow £111/£116\n';
-  fares+='Haywards Heath→Gatwick £45/£41\nBurgess Hill→Gatwick £41/£38\n';
-  fares+='Eastbourne→Gatwick £84/£81, Eastbourne→Heathrow £139/£143\n';
-  fares+='Seaford→Gatwick £79/£75\nUckfield→Gatwick £53/£49\nEast Grinstead→Gatwick £36/£32\n';
-  fares+='For locations outside a town centre: use nearest town fixed price + £2.25 per extra mile.\n';
+  fares+='Brighton→Gatwick £72/£68, Brighton→Heathrow £128/£133, Brighton→Stansted £215/£220, Brighton→Luton £205/£210, Brighton→Southampton £152/£147, Brighton→City £166/£171\n';
+  fares+='Lewes→Gatwick £78/£74, Lewes→Heathrow £140/£145, Lewes→Stansted £225/£230, Lewes→Luton £215/£220, Lewes→Southampton £160/£155, Lewes→City £175/£180\n';
+  fares+='Horsham→Gatwick £55/£50, Horsham→Heathrow £120/£125, Horsham→Stansted £180/£185, Horsham→Luton £155/£160, Horsham→Southampton £135/£130, Horsham→City £160/£165\n';
+  fares+='Crawley→Gatwick £35/£32, Crawley→Heathrow £95/£100\n';
+  fares+='Worthing→Gatwick £72/£68, Worthing→Heathrow £130/£135\n';
+  fares+='Haywards Heath→Gatwick £52/£48\nBurgess Hill→Gatwick £48/£44\n';
+  fares+='Eastbourne→Gatwick £98/£94, Eastbourne→Heathrow £162/£167\n';
+  fares+='Seaford→Gatwick £92/£88\nUckfield→Gatwick £62/£58\nEast Grinstead→Gatwick £42/£38\n';
+  fares+='For locations outside a town centre: use nearest town fixed price + £2.50 per extra mile.\n';
   var jobs=TODAY_JOBS.map(function(j){return j.time+' '+j.name+' '+j.pickup+'→'+j.dest+' £'+j.fare+' '+j.payment;}).join('. ');
   return 'You are the business assistant for Westmere Private Hire (Horsham base). Sole operator/driver.\n'+fares+'\nToday: '+jobs+'\nBe direct and short — driver may be in the car. Confirm all actions clearly.';
 }
@@ -1187,9 +1187,9 @@ var AIRPORTS=[
 ];
 var _st={};
 function _nominatim(q){
-  return fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q)+',UK&format=json&addressdetails=1&limit=10&countrycodes=gb&viewbox=-1.5,50.5,0.5,51.5&bounded=0',{headers:{'Accept':'application/json'}})
+  return fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q)+'&format=json&addressdetails=1&extratags=1&limit=10&countrycodes=gb&viewbox=-1.5,50.5,0.5,51.5&bounded=0',{headers:{'Accept':'application/json'}})
   .then(function(r){return r.json();})
-  .then(function(arr){return(arr||[]).map(function(r){var parts=(r.display_name||'').split(', ');return{label:parts[0]||'',sub:parts.slice(1,3).join(', '),lat:parseFloat(r.lat),lon:parseFloat(r.lon)};});});
+  .then(function(arr){return(arr||[]).map(function(r){var parts=(r.display_name||'').split(', ');var poiClasses=['amenity','shop','tourism','leisure','sport','craft'];var isPoi=poiClasses.indexOf(r.class)!==-1;var cat=isPoi?(r.type||'').replace(/_/g,' '):'';return{label:parts[0]||'',sub:parts.slice(1,3).join(', '),lat:parseFloat(r.lat),lon:parseFloat(r.lon),isPoi:isPoi,cat:cat};});});
 }
 function addrSearch(inputId,sugId,cb){
   var inp=document.getElementById(inputId);
@@ -1237,17 +1237,17 @@ function _renderSuggestions(sug,items,inp,cb){
 
 // ── FARE TABLE (matching fares page) ────────────────────────────────────────
 var CF={
-  brighton:{ga:{out:62,ret:58},he:{out:109,ret:114},st:{out:184,ret:188},lu:{out:176,ret:180},so:{out:130,ret:125},ci:{out:142,ret:146}},
-  lewes:{ga:{out:67,ret:64},he:{out:120,ret:124},st:{out:193,ret:197},lu:{out:184,ret:188},so:{out:137,ret:133},ci:{out:150,ret:154}},
-  horsham:{ga:{out:48,ret:43},he:{out:103,ret:107},st:{out:154,ret:159},lu:{out:133,ret:137},so:{out:116,ret:111},ci:{out:137,ret:142}},
-  crawley:{ga:{out:30,ret:28},he:{out:82,ret:86}},
-  worthing:{ga:{out:62,ret:58},he:{out:111,ret:116}},
-  haywards:{ga:{out:45,ret:41}},
-  burgess:{ga:{out:41,ret:38}},
-  eastbourne:{ga:{out:84,ret:81},he:{out:139,ret:143}},
-  seaford:{ga:{out:79,ret:75}},
-  uckfield:{ga:{out:53,ret:49}},
-  eastgrinstead:{ga:{out:36,ret:32}}
+  brighton:{ga:{out:72,ret:68},he:{out:128,ret:133},st:{out:215,ret:220},lu:{out:205,ret:210},so:{out:152,ret:147},ci:{out:166,ret:171}},
+  lewes:{ga:{out:78,ret:74},he:{out:140,ret:145},st:{out:225,ret:230},lu:{out:215,ret:220},so:{out:160,ret:155},ci:{out:175,ret:180}},
+  horsham:{ga:{out:55,ret:50},he:{out:120,ret:125},st:{out:180,ret:185},lu:{out:155,ret:160},so:{out:135,ret:130},ci:{out:160,ret:165}},
+  crawley:{ga:{out:35,ret:32},he:{out:95,ret:100}},
+  worthing:{ga:{out:72,ret:68},he:{out:130,ret:135}},
+  haywards:{ga:{out:52,ret:48}},
+  burgess:{ga:{out:48,ret:44}},
+  eastbourne:{ga:{out:98,ret:94},he:{out:162,ret:167}},
+  seaford:{ga:{out:92,ret:88}},
+  uckfield:{ga:{out:62,ret:58}},
+  eastgrinstead:{ga:{out:42,ret:38}}
 };
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
