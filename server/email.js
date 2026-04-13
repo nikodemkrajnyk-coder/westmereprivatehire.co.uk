@@ -1,124 +1,63 @@
 /**
- * Email service — Gmail API over HTTPS
+ * Email service — Resend HTTP API (no SMTP ports needed)
  *
- * Uses Gmail's REST API instead of SMTP (Railway blocks SMTP ports).
- * Authenticates with Gmail App Password via Basic Auth → OAuth2 token exchange.
+ * Railway blocks SMTP ports, so we use Resend's HTTP API instead.
+ * Free tier: 100 emails/day — more than enough for bookings.
+ *
+ * Setup:
+ *   1. Sign up at https://resend.com (free)
+ *   2. Get your API key from the dashboard
+ *   3. Set RESEND_API_KEY in Railway
  *
  * Environment variables:
- *   GMAIL_USER          — Gmail address
- *   GMAIL_APP_PASSWORD  — Gmail App Password (16-char)
- *   ADMIN_EMAIL         — Where admin booking alerts go (defaults to GMAIL_USER)
+ *   RESEND_API_KEY — API key from resend.com
+ *   GMAIL_USER    — Reply-to address (westmereprivatehire@gmail.com)
+ *   ADMIN_EMAIL   — Where admin booking alerts go
  */
 
-const GMAIL_API = 'https://www.googleapis.com/gmail/v1/users/me/messages/send';
+const RESEND_URL = 'https://api.resend.com/emails';
 
-let cachedToken = null;
-let tokenExpiry = 0;
-
-// Get OAuth2 access token using App Password via Google's OAuth2 token endpoint
-async function getAccessToken() {
-  const now = Date.now();
-  if (cachedToken && now < tokenExpiry) return cachedToken;
-
-  const user = process.env.GMAIL_USER;
-  const pass = (process.env.GMAIL_APP_PASSWORD || '').replace(/\s/g, '');
-
-  if (!user || !pass) return null;
-
-  // Use nodemailer's XOAuth2 generator to get a token, or use SMTP over TLS on port 465
-  // Since SMTP is blocked, we'll use Google's OAuth playground approach
-  // Actually, Gmail API requires OAuth2 — App Passwords only work with SMTP/IMAP
-  // So let's use a different approach: send via fetch to a self-hosted endpoint
-  //
-  // Simplest approach: use nodemailer with a HTTPS proxy, or use a free email API
-  // Let's try connecting via port 587 with STARTTLS instead of port 465
-  return null;
-}
-
-// Build a raw RFC 2822 email
-function buildRawEmail(from, to, subject, html) {
-  const boundary = 'boundary_' + Date.now().toString(36);
-  const lines = [
-    `From: ${from}`,
-    `To: ${to}`,
-    `Subject: ${subject}`,
-    `MIME-Version: 1.0`,
-    `Content-Type: multipart/alternative; boundary="${boundary}"`,
-    '',
-    `--${boundary}`,
-    'Content-Type: text/html; charset=UTF-8',
-    'Content-Transfer-Encoding: base64',
-    '',
-    Buffer.from(html).toString('base64'),
-    `--${boundary}--`
-  ];
-  return Buffer.from(lines.join('\r\n')).toString('base64url');
-}
-
-// ── Send email using nodemailer with explicit host/port config ───────────
-const nodemailer = require('nodemailer');
-
-let transporter = null;
-
-function getTransporter() {
-  if (transporter) return transporter;
-
-  const user = process.env.GMAIL_USER;
-  const pass = (process.env.GMAIL_APP_PASSWORD || '').replace(/\s/g, '');
-
-  if (!user || !pass) {
-    console.warn('[EMAIL] GMAIL_USER or GMAIL_APP_PASSWORD not set — email disabled');
-    return null;
-  }
-
-  // Try port 587 with STARTTLS (some hosts block 465 but allow 587)
-  transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
-    auth: { user, pass },
-    tls: { rejectUnauthorized: false }
-  });
-
-  console.log('[EMAIL] Gmail transporter ready (' + user + ') via port 587');
-  return transporter;
+function isConfigured() {
+  return !!process.env.RESEND_API_KEY;
 }
 
 async function sendEmail(to, subject, html, fromLabel) {
-  const t = getTransporter();
-  if (!t) return false;
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn('[EMAIL] RESEND_API_KEY not set — email disabled');
+    return false;
+  }
+
+  const replyTo = process.env.GMAIL_USER || process.env.ADMIN_EMAIL || '';
 
   try {
-    await t.sendMail({
-      from: `"${fromLabel || 'Westmere Private Hire'}" <${process.env.GMAIL_USER}>`,
-      to,
-      subject,
-      html
+    const res = await fetch(RESEND_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + apiKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: (fromLabel || 'Westmere Private Hire') + ' <onboarding@resend.dev>',
+        to: to,
+        reply_to: replyTo || undefined,
+        subject: subject,
+        html: html
+      })
     });
-    return true;
-  } catch (smtpErr) {
-    console.error('[EMAIL] SMTP 587 failed:', smtpErr.message);
 
-    // Fallback: try sending via Google's SMTP relay on port 25
-    try {
-      const fallback = nodemailer.createTransport({
-        host: 'smtp-relay.gmail.com',
-        port: 25,
-        secure: false,
-        auth: { user: process.env.GMAIL_USER, pass: (process.env.GMAIL_APP_PASSWORD || '').replace(/\s/g, '') },
-        tls: { rejectUnauthorized: false }
-      });
-      await fallback.sendMail({
-        from: `"${fromLabel || 'Westmere Private Hire'}" <${process.env.GMAIL_USER}>`,
-        to,
-        subject,
-        html
-      });
-      return true;
-    } catch (fallbackErr) {
-      console.error('[EMAIL] All SMTP ports failed:', fallbackErr.message);
+    const data = await res.json();
+
+    if (!res.ok) {
+      console.error('[EMAIL] Resend error:', JSON.stringify(data));
       return false;
     }
+
+    console.log('[EMAIL] Sent to', to, '— id:', data.id);
+    return true;
+  } catch (err) {
+    console.error('[EMAIL] Failed:', err.message);
+    return false;
   }
 }
 
@@ -151,8 +90,8 @@ async function sendCustomerConfirmation(booking) {
     </div>
   `;
 
-  const ok = await sendEmail(email, `Booking Confirmed — ${ref}`, html, 'Westmere Private Hire');
-  if (ok) console.log('[EMAIL] Customer confirmation sent to', email, '(' + ref + ')');
+  const ok = await sendEmail(email, 'Booking Confirmed \u2014 ' + ref, html, 'Westmere Private Hire');
+  if (ok) console.log('[EMAIL] Customer confirmation sent (' + ref + ')');
 }
 
 // ── Send booking alert to admin/driver ───────────────────────────────────
@@ -164,7 +103,7 @@ async function sendAdminAlert(booking) {
 
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
-      <h2 style="color:#111D2C;border-bottom:2px solid #B8985A;padding-bottom:.5rem">New Booking — ${ref}</h2>
+      <h2 style="color:#111D2C;border-bottom:2px solid #B8985A;padding-bottom:.5rem">New Booking \u2014 ${ref}</h2>
       <table style="width:100%;border-collapse:collapse;font-size:.95rem">
         <tr><td style="padding:.4rem 0;font-weight:600;width:130px">Passenger</td><td>${name}</td></tr>
         <tr><td style="padding:.4rem 0;font-weight:600">Phone</td><td><a href="tel:${phone}">${phone}</a></td></tr>
@@ -182,8 +121,8 @@ async function sendAdminAlert(booking) {
     </div>
   `;
 
-  const ok = await sendEmail(adminEmail, `[NEW BOOKING] ${ref} — ${name} — ${pickup} → ${destination}`, html, 'Westmere Bookings');
-  if (ok) console.log('[EMAIL] Admin alert sent to', adminEmail, '(' + ref + ')');
+  const ok = await sendEmail(adminEmail, '[NEW BOOKING] ' + ref + ' \u2014 ' + name + ' \u2014 ' + pickup + ' \u2192 ' + destination, html, 'Westmere Bookings');
+  if (ok) console.log('[EMAIL] Admin alert sent (' + ref + ')');
 }
 
-module.exports = { sendCustomerConfirmation, sendAdminAlert, sendEmail };
+module.exports = { sendCustomerConfirmation, sendAdminAlert, sendEmail, isConfigured };

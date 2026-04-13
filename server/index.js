@@ -114,7 +114,8 @@ const { isConfigured: stripeOk } = require('./stripe');
 const { isConfigured: waOk } = require('./whatsapp');
 
 app.listen(PORT, () => {
-  const gmailOk = !!(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD);
+  const { isConfigured: emailOk } = require('./email');
+  const gmailOk = emailOk();
   console.log(`
 ╔═══════════════════════════════════════════════╗
 ║  Westmere Private Hire — Backend Server       ║
