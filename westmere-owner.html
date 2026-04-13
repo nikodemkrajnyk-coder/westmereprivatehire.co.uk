@@ -987,14 +987,14 @@ function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 function escAttr(s){return encodeURIComponent(String(s));}
 function buildAssistCtx(){
   var fares='Fixed airport fares (drop-off / pickup):\n';
-  fares+='Brighton→Gatwick £65/£61, Brighton→Heathrow £115/£120, Brighton→Stansted £194/£198, Brighton→Luton £185/£189, Brighton→Southampton £137/£132, Brighton→City £149/£154\n';
-  fares+='Lewes→Gatwick £70/£67, Lewes→Heathrow £126/£131, Lewes→Stansted £203/£207, Lewes→Luton £194/£198, Lewes→Southampton £144/£140, Lewes→City £158/£162\n';
-  fares+='Horsham→Gatwick £50/£45, Horsham→Heathrow £108/£113, Horsham→Stansted £162/£167, Horsham→Luton £140/£144, Horsham→Southampton £122/£117, Horsham→City £144/£149\n';
-  fares+='Crawley→Gatwick £32/£29, Crawley→Heathrow £86/£90\n';
-  fares+='Worthing→Gatwick £65/£61, Worthing→Heathrow £117/£122\n';
-  fares+='Haywards Heath→Gatwick £47/£43\nBurgess Hill→Gatwick £43/£40\n';
-  fares+='Eastbourne→Gatwick £88/£85, Eastbourne→Heathrow £146/£150\n';
-  fares+='Seaford→Gatwick £83/£79\nUckfield→Gatwick £56/£52\nEast Grinstead→Gatwick £38/£34\n';
+  fares+='Brighton→Gatwick £62/£58, Brighton→Heathrow £109/£114, Brighton→Stansted £184/£188, Brighton→Luton £176/£180, Brighton→Southampton £130/£125, Brighton→City £142/£146\n';
+  fares+='Lewes→Gatwick £67/£64, Lewes→Heathrow £120/£124, Lewes→Stansted £193/£197, Lewes→Luton £184/£188, Lewes→Southampton £137/£133, Lewes→City £150/£154\n';
+  fares+='Horsham→Gatwick £48/£43, Horsham→Heathrow £103/£107, Horsham→Stansted £154/£159, Horsham→Luton £133/£137, Horsham→Southampton £116/£111, Horsham→City £137/£142\n';
+  fares+='Crawley→Gatwick £30/£28, Crawley→Heathrow £82/£86\n';
+  fares+='Worthing→Gatwick £62/£58, Worthing→Heathrow £111/£116\n';
+  fares+='Haywards Heath→Gatwick £45/£41\nBurgess Hill→Gatwick £41/£38\n';
+  fares+='Eastbourne→Gatwick £84/£81, Eastbourne→Heathrow £139/£143\n';
+  fares+='Seaford→Gatwick £79/£75\nUckfield→Gatwick £53/£49\nEast Grinstead→Gatwick £36/£32\n';
   fares+='For locations outside a town centre: use nearest town fixed price + £2.25 per extra mile.\n';
   var jobs=TODAY_JOBS.map(function(j){return j.time+' '+j.name+' '+j.pickup+'→'+j.dest+' £'+j.fare+' '+j.payment;}).join('. ');
   return 'You are the business assistant for Westmere Private Hire (Horsham base). Sole operator/driver.\n'+fares+'\nToday: '+jobs+'\nBe direct and short — driver may be in the car. Confirm all actions clearly.';
@@ -1187,7 +1187,7 @@ var AIRPORTS=[
 ];
 var _st={};
 function _nominatim(q){
-  return fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q)+',UK&format=json&addressdetails=1&limit=6&countrycodes=gb&viewbox=-1.5,50.5,0.5,51.5&bounded=0',{headers:{'Accept':'application/json'}})
+  return fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q)+',UK&format=json&addressdetails=1&limit=10&countrycodes=gb&viewbox=-1.5,50.5,0.5,51.5&bounded=0',{headers:{'Accept':'application/json'}})
   .then(function(r){return r.json();})
   .then(function(arr){return(arr||[]).map(function(r){var parts=(r.display_name||'').split(', ');return{label:parts[0]||'',sub:parts.slice(1,3).join(', '),lat:parseFloat(r.lat),lon:parseFloat(r.lon)};});});
 }
@@ -1200,12 +1200,14 @@ function addrSearch(inputId,sugId,cb){
   clearTimeout(_st[sugId]);
   _st[sugId]=setTimeout(function(){
     if(window._MB){
-      fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+encodeURIComponent(q)+'.json?access_token='+_MB+'&country=gb&proximity=-0.35,50.95&language=en&limit=6&types=address,poi,place,postcode')
+      fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+encodeURIComponent(q)+'.json?access_token='+_MB+'&country=gb&proximity=-0.35,50.95&language=en&limit=10&types=poi,address,place,postcode,neighborhood,locality')
       .then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
       .then(function(data){
         var items=(data.features||[]).map(function(f){
           var parts=f.place_name?f.place_name.split(', '):[];
-          return{label:parts[0]||f.text,sub:parts.slice(1,3).join(', '),lat:f.center[1],lon:f.center[0]};
+          var isPoi=f.place_type&&f.place_type[0]==='poi';
+          var cat=isPoi&&f.properties&&f.properties.category?f.properties.category:'';
+          return{label:parts[0]||f.text,sub:parts.slice(1,3).join(', '),lat:f.center[1],lon:f.center[0],isPoi:isPoi,cat:cat};
         });
         if(!items.length)throw new Error('empty');
         _renderSuggestions(sug,items,inp,cb);
@@ -1219,7 +1221,7 @@ function _renderSuggestions(sug,items,inp,cb){
   if(!items.length){sug.innerHTML='';sug.classList.remove('on');return;}
   sug.innerHTML=items.map(function(it,i){
     var full=it.sub?it.label+', '+it.sub:it.label;
-    return '<div data-idx="'+i+'">'+esc(full)+'</div>';
+    return '<div data-idx="'+i+'">'+(it.isPoi?'\ud83d\udccd ':'')+esc(full)+(it.cat?' <span style="opacity:.5;font-size:.8em">\u00b7 '+esc(it.cat)+'</span>':'')+'</div>';
   }).join('');
   sug.classList.add('on');
   Array.from(sug.children).forEach(function(el,i){
@@ -1235,17 +1237,17 @@ function _renderSuggestions(sug,items,inp,cb){
 
 // ── FARE TABLE (matching fares page) ────────────────────────────────────────
 var CF={
-  brighton:{ga:{out:65,ret:61},he:{out:115,ret:120},st:{out:194,ret:198},lu:{out:185,ret:189},so:{out:137,ret:132},ci:{out:149,ret:154}},
-  lewes:{ga:{out:70,ret:67},he:{out:126,ret:131},st:{out:203,ret:207},lu:{out:194,ret:198},so:{out:144,ret:140},ci:{out:158,ret:162}},
-  horsham:{ga:{out:50,ret:45},he:{out:108,ret:113},st:{out:162,ret:167},lu:{out:140,ret:144},so:{out:122,ret:117},ci:{out:144,ret:149}},
-  crawley:{ga:{out:32,ret:29},he:{out:86,ret:90}},
-  worthing:{ga:{out:65,ret:61},he:{out:117,ret:122}},
-  haywards:{ga:{out:47,ret:43}},
-  burgess:{ga:{out:43,ret:40}},
-  eastbourne:{ga:{out:88,ret:85},he:{out:146,ret:150}},
-  seaford:{ga:{out:83,ret:79}},
-  uckfield:{ga:{out:56,ret:52}},
-  eastgrinstead:{ga:{out:38,ret:34}}
+  brighton:{ga:{out:62,ret:58},he:{out:109,ret:114},st:{out:184,ret:188},lu:{out:176,ret:180},so:{out:130,ret:125},ci:{out:142,ret:146}},
+  lewes:{ga:{out:67,ret:64},he:{out:120,ret:124},st:{out:193,ret:197},lu:{out:184,ret:188},so:{out:137,ret:133},ci:{out:150,ret:154}},
+  horsham:{ga:{out:48,ret:43},he:{out:103,ret:107},st:{out:154,ret:159},lu:{out:133,ret:137},so:{out:116,ret:111},ci:{out:137,ret:142}},
+  crawley:{ga:{out:30,ret:28},he:{out:82,ret:86}},
+  worthing:{ga:{out:62,ret:58},he:{out:111,ret:116}},
+  haywards:{ga:{out:45,ret:41}},
+  burgess:{ga:{out:41,ret:38}},
+  eastbourne:{ga:{out:84,ret:81},he:{out:139,ret:143}},
+  seaford:{ga:{out:79,ret:75}},
+  uckfield:{ga:{out:53,ret:49}},
+  eastgrinstead:{ga:{out:36,ret:32}}
 };
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
