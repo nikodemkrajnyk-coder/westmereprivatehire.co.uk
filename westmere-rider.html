@@ -365,7 +365,7 @@ body.mode-day .modal-fare-amt{color:#7A6230}
 
 footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);font-size:.66rem;letter-spacing:.1em;color:rgba(17,29,44,.35);background:rgba(17,29,44,.03);border-top:1px solid rgba(17,29,44,.06);position:relative;z-index:1}.mini-legal{margin-left:.6rem}.mini-legal a{color:rgba(17,29,44,.3);text-decoration:none;margin-left:.5rem;transition:color .2s;letter-spacing:.08em}.mini-legal a:hover{color:var(--gold)}
 </style>
-<!-- Photon (Komoot) – free address autocomplete, no API key needed -->
+<script src="/config.js"></script>
 <meta name="description" content="Westmere Rider — book private hire journeys across Sussex with real-time tracking, fixed quotes and premium chauffeurs.">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23111D2C'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='38' font-weight='500' text-anchor='middle' fill='%23B8985A'%3EW%3C/text%3E%3C/svg%3E">
 <meta name="robots" content="noindex,nofollow">
@@ -492,6 +492,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
             <label class="fl">Flight Number (optional)</label>
             <input class="fi" type="text" id="bk-flight" placeholder="e.g. BA2431" autocomplete="off">
           </div>
+          <div class="r2">
           <div class="fg">
             <label class="fl">Passengers</label>
             <select class="fi" id="bk-pax">
@@ -502,6 +503,18 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
               <option value="5">5 passengers</option>
               <option value="6">6 passengers</option>
             </select>
+          </div>
+          <div class="fg">
+            <label class="fl">Luggage</label>
+            <select class="fi" id="bk-bags">
+              <option value="0">0 bags</option>
+              <option value="1">1 bag</option>
+              <option value="2" selected>2 bags</option>
+              <option value="3">3 bags</option>
+              <option value="4">4 bags</option>
+              <option value="5">5+ bags</option>
+            </select>
+          </div>
           </div>
         </div>
       </div>
@@ -829,25 +842,14 @@ function isNight(h){return h>=22||h<6;}
 function calcMile(mi,night,ap){var f;if(night){f=mi<=10?Math.max(mi,10)*3.80:mi<=20?38+(mi-10)*3.10:69+(mi-20)*2.80;}else{f=mi<=10?Math.max(mi,10)*4.00:mi<=20?40+(mi-10)*2.50:65+(mi-20)*2.25;}if(ap&&APC[ap])f+=APC[ap][0];return Math.ceil(f/0.5)*0.5;}
 function sh(t){return t?t.replace('haywards heath','haywards').replace('burgess hill','burgess').replace('east grinstead','eastgrinstead'):t;}
 
-/* Geocoding – Photon primary, Nominatim fallback */
+/* Geocoding – Mapbox */
 var _gc={};
-var _pcRe=/^[A-Za-z]{1,2}\d/;
-function _isPostcode(v){return _pcRe.test(v.trim());}
 function geocode(a){
   if(_gc[a])return Promise.resolve(_gc[a]);
-  var pc=a.replace(/[^A-Za-z0-9 ]/g,'').trim();
-  if(_isPostcode(pc)){
-    return fetch('https://api.postcodes.io/postcodes/'+encodeURIComponent(pc.replace(/\s/g,'')))
-      .then(function(r){return r.json();})
-      .then(function(d){if(d.result){var r={lat:d.result.latitude,lon:d.result.longitude};_gc[a]=r;return r;}return _geocodePhoton(a);})
-      .catch(function(){return _geocodePhoton(a);});
-  }
-  return _geocodePhoton(a);
-}
-function _geocodePhoton(a){
-  return fetch('https://photon.komoot.io/api/?q='+encodeURIComponent(a)+'&lang=en&limit=1&lat=50.95&lon=-0.35')
+  if(!window._MB)return Promise.resolve(null);
+  return fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+encodeURIComponent(a)+'.json?access_token='+_MB+'&country=gb&proximity=-0.35,50.95&language=en&limit=1')
     .then(function(r){return r.json();})
-    .then(function(d){if(d.features&&d.features[0]){var c=d.features[0].geometry.coordinates;var r={lat:c[1],lon:c[0]};_gc[a]=r;return r;}return null;})
+    .then(function(d){if(d.features&&d.features[0]){var c=d.features[0].center;var r={lat:c[1],lon:c[0]};_gc[a]=r;return r;}return null;})
     .catch(function(){return null;});
 }
 function haverMiles(a,b,c,d){var R=3958.8,dL=(c-a)*Math.PI/180,dn=(d-b)*Math.PI/180,x=Math.sin(dL/2)*Math.sin(dL/2)+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dn/2)*Math.sin(dn/2);return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
@@ -862,7 +864,7 @@ function calcRoute(lat1,lon1,lat2,lon2){
     });
 }
 
-/* ── ADDRESS AUTOCOMPLETE (Photon + Postcodes.io) ── */
+/* ── ADDRESS AUTOCOMPLETE (Mapbox) ── */
 var _addrTimers={};
 
 function addrSearch(inputId,dropId){
@@ -877,48 +879,17 @@ function addrSearch(inputId,dropId){
     var apItems=AIRPORTS.filter(function(ap){
       return ap.name.toLowerCase().includes(ql)||ap.sub.toLowerCase().includes(ql);
     }).slice(0,3);
-
-    if(_isPostcode(q)){
-      fetch('https://api.postcodes.io/postcodes/'+encodeURIComponent(q.replace(/\s/g,''))+'/autocomplete')
-      .then(function(r){return r.json();})
-      .then(function(d){
-        var pcs=(d.result||[]).slice(0,6);
-        if(!pcs.length){_photonSearch(q,inp,drop,apItems);return;}
-        Promise.all(pcs.map(function(pc){
-          return fetch('https://api.postcodes.io/postcodes/'+encodeURIComponent(pc.replace(/\s/g,''))).then(function(r){return r.json();});
-        })).then(function(results){
-          var items=results.filter(function(r){return r.result;}).map(function(r){
-            var d=r.result;return{main:d.postcode,sub:d.admin_ward+', '+d.admin_district,lat:d.latitude,lon:d.longitude};
-          });
-          _renderSuggestions(inp,drop,apItems,items);
-        });
-      }).catch(function(){_photonSearch(q,inp,drop,apItems);});
-    } else {
-      _photonSearch(q,inp,drop,apItems);
-    }
+    if(!window._MB){_renderSuggestions(inp,drop,apItems,[]);return;}
+    fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+encodeURIComponent(q)+'.json?access_token='+_MB+'&country=gb&proximity=-0.35,50.95&language=en&limit=6&types=address,poi,place,postcode')
+    .then(function(r){return r.json();})
+    .then(function(data){
+      var items=(data.features||[]).map(function(f){
+        var parts=f.place_name?f.place_name.split(', '):[];
+        return{main:parts[0]||f.text,sub:parts.slice(1,3).join(', '),lat:f.center[1],lon:f.center[0]};
+      });
+      _renderSuggestions(inp,drop,apItems,items);
+    }).catch(function(){_renderSuggestions(inp,drop,apItems,[]);});
   },300);
-}
-
-function _photonSearch(v,inp,drop,apItems){
-  fetch('https://photon.komoot.io/api/?q='+encodeURIComponent(v)+'&lang=en&limit=6&lat=50.95&lon=-0.35')
-  .then(function(r){return r.json();})
-  .then(function(data){
-    var items=(data.features||[]).map(function(f){
-      var p=f.properties||{},l1='',l2='';
-      if(p.housenumber&&p.street)l1=p.housenumber+' '+p.street;
-      else if(p.name)l1=p.name;
-      else if(p.street)l1=p.street;
-      var town=p.city||p.town||p.village||p.district||'';
-      var pc=p.postcode||'';
-      l2=[town,pc].filter(Boolean).join(', ');
-      if(!l2&&p.county)l2=p.county;
-      if(!l1&&l2){l1=l2;l2=p.county||p.state||'';}
-      if(!l1)l1=town||p.county||p.country||'';
-      var coords=f.geometry?f.geometry.coordinates:null;
-      return{main:l1,sub:l2,lat:coords?coords[1]:null,lon:coords?coords[0]:null};
-    });
-    _renderSuggestions(inp,drop,apItems,items);
-  }).catch(function(){_renderSuggestions(inp,drop,apItems,[]);});
 }
 
 function _renderSuggestions(inp,drop,apItems,items){
@@ -929,7 +900,6 @@ function _renderSuggestions(inp,drop,apItems,items){
     d.onclick=function(){inp.value=ap.name;drop.classList.remove('open');drop.innerHTML='';checkFlightField();bkCalcFare();};
     drop.appendChild(d);
   });
-
   items.forEach(function(it){
     var full=it.sub?it.main+', '+it.sub:it.main;
     var d=document.createElement('div');d.className='sug-item';
@@ -941,7 +911,6 @@ function _renderSuggestions(inp,drop,apItems,items){
     };
     drop.appendChild(d);
   });
-
   if(drop.children.length>0)drop.classList.add('open');
   else drop.classList.remove('open');
 }

@@ -1185,66 +1185,41 @@ var AIRPORTS=[
   {n:'stansted',lat:51.8860,lon:0.2389},{n:'luton',lat:51.8747,lon:-0.3685},
   {n:'southampton',lat:50.9503,lon:-1.3568},{n:'city',lat:51.5048,lon:0.0495}
 ];
-var _pcRe=/^[A-Za-z]{1,2}\d/;
-function _isPostcode(v){return _pcRe.test(v.trim());}
-
+var _st={};
 function addrSearch(inputId,sugId,cb){
   var inp=document.getElementById(inputId);
   var sug=document.getElementById(sugId);
   if(!inp||!sug)return;
   var q=(inp.value||'').trim();
   if(q.length<2){sug.innerHTML='';sug.classList.remove('on');return;}
-  if(_isPostcode(q)){
-    fetch('https://api.postcodes.io/postcodes/'+encodeURIComponent(q.replace(/\s/g,''))+'/autocomplete')
+  clearTimeout(_st[sugId]);
+  _st[sugId]=setTimeout(function(){
+    if(!window._MB){sug.innerHTML='';sug.classList.remove('on');return;}
+    fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+encodeURIComponent(q)+'.json?access_token='+_MB+'&country=gb&proximity=-0.35,50.95&language=en&limit=6&types=address,poi,place,postcode')
     .then(function(r){return r.json();})
-    .then(function(d){
-      var pcs=(d.result||[]).slice(0,6);
-      if(!pcs.length){_photonSearchOwner(q,sug,inp,cb);return;}
-      Promise.all(pcs.map(function(pc){
-        return fetch('https://api.postcodes.io/postcodes/'+encodeURIComponent(pc.replace(/\s/g,''))).then(function(r){return r.json();});
-      })).then(function(results){
-        var items=results.filter(function(r){return r.result;}).map(function(r){
-          var d=r.result;return{label:d.postcode+', '+d.admin_ward+', '+d.admin_district,lat:d.latitude,lon:d.longitude};
-        });
-        _renderSuggestions(sug,items,inp,cb);
+    .then(function(data){
+      var items=(data.features||[]).map(function(f){
+        var parts=f.place_name?f.place_name.split(', '):[];
+        return{label:parts[0]||f.text,sub:parts.slice(1,3).join(', '),lat:f.center[1],lon:f.center[0]};
       });
-    }).catch(function(){_photonSearchOwner(q,sug,inp,cb);});
-  } else {
-    _photonSearchOwner(q,sug,inp,cb);
-  }
-}
-
-function _photonSearchOwner(q,sug,inp,cb){
-  fetch('https://photon.komoot.io/api/?q='+encodeURIComponent(q)+'&lang=en&limit=6&lat=50.95&lon=-0.35')
-  .then(function(r){return r.json();}).then(function(data){
-    var items=(data.features||[]).map(function(f){
-      var p=f.properties||{},l1='',l2='';
-      if(p.housenumber&&p.street)l1=p.housenumber+' '+p.street;
-      else if(p.name)l1=p.name;
-      else if(p.street)l1=p.street;
-      var town=p.city||p.town||p.village||p.district||'';
-      var pc=p.postcode||'';
-      l2=[town,pc].filter(Boolean).join(', ');
-      if(!l2&&p.county)l2=p.county;
-      if(!l1&&l2){l1=l2;l2=p.county||p.state||'';}
-      if(!l1)l1=town||p.county||p.country||'';
-      var full=l2?l1+', '+l2:l1;
-      var coords=f.geometry?f.geometry.coordinates:null;
-      return{label:full,lat:coords?coords[1]:null,lon:coords?coords[0]:null};
-    });
-    _renderSuggestions(sug,items,inp,cb);
-  }).catch(function(){sug.innerHTML='';sug.classList.remove('on');});
+      _renderSuggestions(sug,items,inp,cb);
+    }).catch(function(){sug.innerHTML='';sug.classList.remove('on');});
+  },300);
 }
 function _renderSuggestions(sug,items,inp,cb){
   if(!items.length){sug.innerHTML='';sug.classList.remove('on');return;}
-  sug.innerHTML=items.map(function(it,i){return '<div data-idx="'+i+'">'+esc(it.label)+'</div>';}).join('');
+  sug.innerHTML=items.map(function(it,i){
+    var full=it.sub?it.label+', '+it.sub:it.label;
+    return '<div data-idx="'+i+'">'+esc(full)+'</div>';
+  }).join('');
   sug.classList.add('on');
   Array.from(sug.children).forEach(function(el,i){
     el.onclick=function(){
       var it=items[i];
-      inp.value=it.label;
+      var full=it.sub?it.label+', '+it.sub:it.label;
+      inp.value=full;
       sug.innerHTML='';sug.classList.remove('on');
-      if(cb)cb(inp.value,it.lat&&it.lon?{lat:it.lat,lon:it.lon}:null);
+      if(cb)cb(full,it.lat&&it.lon?{lat:it.lat,lon:it.lon}:null);
     };
   });
 }
@@ -1308,7 +1283,7 @@ document.addEventListener('keydown',function(e){
 })();
 </script>
 
-<!-- Photon (Komoot) – free address autocomplete, no API key needed -->
+<script src="/config.js"></script>
 <footer class="mini-foot">&copy; 2026 Westmere Private Hire &middot; All rights reserved &middot; Licensed by Lewes District Council<span class="mini-legal"><a href="westmere-terms.html">Terms</a><a href="westmere-privacy.html">Privacy</a><a href="westmere-cookies.html">Cookies</a></span></footer>
 </body>
 </html>

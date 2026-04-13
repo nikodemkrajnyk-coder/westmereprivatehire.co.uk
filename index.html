@@ -253,7 +253,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 </style>
 <script src="https://js.stripe.com/v3/" async></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js" async></script>
-<!-- Photon (Komoot) – free address autocomplete, no API key needed -->
+<script src="/config.js"></script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23111D2C'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='38' font-weight='500' text-anchor='middle' fill='%23B8985A'%3EW%3C/text%3E%3C/svg%3E">
 <meta name="robots" content="index,follow">
 <meta property="og:title" content="Westmere Private Hire | Sussex Airport Transfers">
@@ -304,6 +304,10 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
     <div class="date-time-row">
       <div class="field"><label class="fl">Date</label><div class="custom-date-trigger" id="cdt-wrap"><input class="fi cdt-val" type="text" id="cdt-display" placeholder="Select date" readonly><input type="hidden" id="b-date"><div class="cal-drop" id="cal-drop"></div></div></div>
       <div class="field"><label class="fl">Time</label><div class="custom-time-trigger" id="ctt-wrap"><input class="fi ctt-val" type="text" id="ctt-display" placeholder="Select time" readonly><input type="hidden" id="b-time" value="08:00"><div class="time-drop" id="time-drop"></div></div></div>
+    </div>
+    <div class="date-time-row">
+      <div class="field"><label class="fl">Passengers</label><select class="fi" id="b-pax"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4" selected>4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option></select></div>
+      <div class="field"><label class="fl">Luggage</label><select class="fi" id="b-bags"><option value="0">0 bags</option><option value="1">1 bag</option><option value="2" selected>2 bags</option><option value="3">3 bags</option><option value="4">4 bags</option><option value="5">5+ bags</option></select></div>
     </div>
     <div class="fare-reveal" id="fare-reveal">
       <div class="fr-left">
@@ -448,23 +452,12 @@ var APFULL={ga:'Gatwick',he:'Heathrow',st:'Stansted',lu:'Luton',so:'Southampton'
 var TC={horsham:{lat:51.0632,lon:-0.3234},lewes:{lat:50.874,lon:0.0131},brighton:{lat:50.8225,lon:-0.1372},worthing:{lat:50.8185,lon:-0.3788},burgess:{lat:50.9578,lon:-0.132},haywards:{lat:51.0024,lon:-0.0993},seaford:{lat:50.7716,lon:0.1028},crawley:{lat:51.1087,lon:-0.1872},eastgrinstead:{lat:51.1252,lon:-0.0076},uckfield:{lat:50.9688,lon:0.0983},eastbourne:{lat:50.768,lon:0.2904}};
 function esc(s){if(!s)return '';var d=document.createElement('div');d.appendChild(document.createTextNode(s));return d.innerHTML;}
 var _gc={};
-var _pcRe=/^[A-Za-z]{1,2}\d/;
-function _isPostcode(v){return _pcRe.test(v.trim());}
 function geocode(a){
   if(_gc[a])return Promise.resolve(_gc[a]);
-  var pc=a.replace(/[^A-Za-z0-9 ]/g,'').trim();
-  if(_isPostcode(pc)){
-    return fetch('https://api.postcodes.io/postcodes/'+encodeURIComponent(pc.replace(/\s/g,'')))
-      .then(function(r){return r.json();})
-      .then(function(d){if(d.result){var r={lat:d.result.latitude,lon:d.result.longitude};_gc[a]=r;return r;}return _geocodePhoton(a);})
-      .catch(function(){return _geocodePhoton(a);});
-  }
-  return _geocodePhoton(a);
-}
-function _geocodePhoton(a){
-  return fetch('https://photon.komoot.io/api/?q='+encodeURIComponent(a)+'&lang=en&limit=1&lat=50.95&lon=-0.35')
+  if(!window._MB)return Promise.resolve(null);
+  return fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+encodeURIComponent(a)+'.json?access_token='+_MB+'&country=gb&proximity=-0.35,50.95&language=en&limit=1')
     .then(function(r){return r.json();})
-    .then(function(d){if(d.features&&d.features[0]){var c=d.features[0].geometry.coordinates;var r={lat:c[1],lon:c[0]};_gc[a]=r;return r;}return null;})
+    .then(function(d){if(d.features&&d.features[0]){var c=d.features[0].center;var r={lat:c[1],lon:c[0]};_gc[a]=r;return r;}return null;})
     .catch(function(){return null;});
 }
 function haverMiles(a,b,c,d){var R=3958.8,dL=(c-a)*Math.PI/180,dn=(d-b)*Math.PI/180,x=Math.sin(dL/2)*Math.sin(dL/2)+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dn/2)*Math.sin(dn/2);return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
@@ -498,48 +491,17 @@ function addrSearch(inp,sid){
     var apItems=AIRPORTS.filter(function(ap){
       return ap.name.toLowerCase().includes(vl)||ap.sub.toLowerCase().includes(vl);
     }).slice(0,3);
-
-    if(_isPostcode(v)){
-      fetch('https://api.postcodes.io/postcodes/'+encodeURIComponent(v.replace(/\s/g,''))+'/autocomplete')
-      .then(function(r){return r.json();})
-      .then(function(d){
-        var pcs=(d.result||[]).slice(0,6);
-        if(!pcs.length){_photonSearch(v,inp,s,apItems);return;}
-        Promise.all(pcs.map(function(pc){
-          return fetch('https://api.postcodes.io/postcodes/'+encodeURIComponent(pc.replace(/\s/g,''))).then(function(r){return r.json();});
-        })).then(function(results){
-          var items=results.filter(function(r){return r.result;}).map(function(r){
-            var d=r.result;return{main:d.postcode,sub:d.admin_ward+', '+d.admin_district,lat:d.latitude,lon:d.longitude};
-          });
-          _renderSuggestions(inp,s,apItems,items);
-        });
-      }).catch(function(){_photonSearch(v,inp,s,apItems);});
-    } else {
-      _photonSearch(v,inp,s,apItems);
-    }
+    if(!window._MB){_renderSuggestions(inp,s,apItems,[]);return;}
+    fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+encodeURIComponent(v)+'.json?access_token='+_MB+'&country=gb&proximity=-0.35,50.95&language=en&limit=6&types=address,poi,place,postcode')
+    .then(function(r){return r.json();})
+    .then(function(data){
+      var items=(data.features||[]).map(function(f){
+        var parts=f.place_name?f.place_name.split(', '):[];
+        return{main:parts[0]||f.text,sub:parts.slice(1,3).join(', '),lat:f.center[1],lon:f.center[0]};
+      });
+      _renderSuggestions(inp,s,apItems,items);
+    }).catch(function(){_renderSuggestions(inp,s,apItems,[]);});
   },300);
-}
-
-function _photonSearch(v,inp,s,apItems){
-  fetch('https://photon.komoot.io/api/?q='+encodeURIComponent(v)+'&lang=en&limit=6&lat=50.95&lon=-0.35')
-  .then(function(r){return r.json();})
-  .then(function(data){
-    var items=(data.features||[]).map(function(f){
-      var p=f.properties||{},l1='',l2='';
-      if(p.housenumber&&p.street)l1=p.housenumber+' '+p.street;
-      else if(p.name)l1=p.name;
-      else if(p.street)l1=p.street;
-      var town=p.city||p.town||p.village||p.district||'';
-      var pc=p.postcode||'';
-      l2=[town,pc].filter(Boolean).join(', ');
-      if(!l2&&p.county)l2=p.county;
-      if(!l1&&l2){l1=l2;l2=p.county||p.state||'';}
-      if(!l1)l1=town||p.county||p.country||'';
-      var coords=f.geometry?f.geometry.coordinates:null;
-      return{main:l1,sub:l2,lat:coords?coords[1]:null,lon:coords?coords[0]:null};
-    });
-    _renderSuggestions(inp,s,apItems,items);
-  }).catch(function(){_renderSuggestions(inp,s,apItems,[]);});
 }
 
 function _renderSuggestions(inp,s,apItems,items){
@@ -550,7 +512,6 @@ function _renderSuggestions(inp,s,apItems,items){
     d.onclick=function(){inp.value=ap.name;s.classList.remove('open');s.innerHTML='';checkFlight();doEstimate();};
     s.appendChild(d);
   });
-
   items.forEach(function(it){
     var full=it.sub?it.main+', '+it.sub:it.main;
     var d=document.createElement('div');d.className='sug-item';
@@ -562,7 +523,6 @@ function _renderSuggestions(inp,s,apItems,items){
     };
     s.appendChild(d);
   });
-
   if(s.children.length>0)s.classList.add('open');
   else s.classList.remove('open');
 }
@@ -575,9 +535,9 @@ function useLocation(){
   var orig=inp.placeholder;inp.placeholder='Getting location…';
   navigator.geolocation.getCurrentPosition(function(pos){
     var lat=pos.coords.latitude,lng=pos.coords.longitude;
-    fetch('https://api.postcodes.io/postcodes?lon='+lng+'&lat='+lat+'&limit=1')
+    fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+lng+','+lat+'.json?access_token='+(window._MB||'')+'&language=en&limit=1')
     .then(function(r){return r.json();}).then(function(d){
-      if(d.result&&d.result[0]){var r=d.result[0];inp.value=[r.admin_ward,r.postcode].filter(Boolean).join(', ');}
+      if(d.features&&d.features[0])inp.value=d.features[0].place_name||d.features[0].text;
       _gc[inp.value]={lat:lat,lon:lng};
       inp.placeholder=orig;checkFlight();doEstimate();
     }).catch(function(){inp.placeholder=orig;});

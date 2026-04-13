@@ -25,8 +25,8 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com", "https://fonts.googleapis.com"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
-      connectSrc: ["'self'", "https://photon.komoot.io", "https://api.postcodes.io",
-        "https://nominatim.openstreetmap.org", "https://api.anthropic.com", "https://api.emailjs.com"],
+      connectSrc: ["'self'", "https://api.mapbox.com",
+        "https://api.anthropic.com", "https://api.emailjs.com"],
       frameSrc: ["https://js.stripe.com", "https://www.google.com"],
     }
   }
@@ -56,6 +56,13 @@ const apiLimiter = rateLimit({
 const { requireAuth, requireRole, protectPage } = createAuthMiddleware(JWT_SECRET);
 
 // ── Routes ──────────────────────────────────────────────────────────────
+
+// Public config (serves Mapbox token from env var — no auth needed)
+app.get('/config.js', (req, res) => {
+  res.type('application/javascript');
+  res.set('Cache-Control', 'public, max-age=300');
+  res.send(`window._MB='${process.env.MAPBOX_TOKEN || ''}';`);
+});
 
 // Auth routes (login, register, logout, etc.)
 app.use('/api/auth', authLimiter, authRouter);

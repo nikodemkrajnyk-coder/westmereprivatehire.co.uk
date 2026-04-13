@@ -550,7 +550,10 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
               </div>
             </div>
             <div class="fg"><label class="fl">Passengers</label>
-              <select class="fi" id="qb-pax"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+              <select class="fi" id="qb-pax"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
+            </div>
+            <div class="fg"><label class="fl">Luggage</label>
+              <select class="fi" id="qb-bags"><option value="0">0 bags</option><option value="1">1 bag</option><option value="2" selected>2 bags</option><option value="3">3 bags</option><option value="4">4 bags</option><option value="5">5+ bags</option></select>
             </div>
             <div class="fg" id="qb-flight-wrap" style="grid-column:1/-1"><label class="fl">Flight Number (optional)</label><input class="fi" type="text" id="qb-flight" placeholder="e.g. EZY1234"></div>
             <div class="fg" style="grid-column:1/-1"><label class="fl">Special Requirements</label><input class="fi" type="text" id="qb-notes" placeholder="Child seat, meet &amp; greet, additional requirements…"></div>
@@ -777,8 +780,6 @@ var AIRPORTS=[
   {name:'London City Airport',sub:'London City \u00b7 LCY',key:'ci'}
 ];
 var _st={};
-var _pcRe=/^[A-Za-z]{1,2}\d/;
-function _isPostcode(v){return _pcRe.test(v.trim());}
 
 function addrSearch(inp,sid){
   var v=inp.value.trim(),s=document.getElementById(sid);
@@ -789,48 +790,18 @@ function addrSearch(inp,sid){
     var apItems=AIRPORTS.filter(function(ap){
       return ap.name.toLowerCase().includes(vl)||ap.sub.toLowerCase().includes(vl);
     }).slice(0,3);
-
-    if(_isPostcode(v)){
-      fetch('https://api.postcodes.io/postcodes/'+encodeURIComponent(v.replace(/\s/g,''))+'/autocomplete')
-      .then(function(r){return r.json();})
-      .then(function(d){
-        var pcs=(d.result||[]).slice(0,6);
-        if(!pcs.length){_photonSearch(v,inp,s,apItems);return;}
-        Promise.all(pcs.map(function(pc){
-          return fetch('https://api.postcodes.io/postcodes/'+encodeURIComponent(pc.replace(/\s/g,''))).then(function(r){return r.json();});
-        })).then(function(results){
-          var items=results.filter(function(r){return r.result;}).map(function(r){
-            var d=r.result;return{main:d.postcode,sub:d.admin_ward+', '+d.admin_district,lat:d.latitude,lon:d.longitude};
-          });
-          _renderSuggestions(inp,s,apItems,items);
-        });
-      }).catch(function(){_photonSearch(v,inp,s,apItems);});
-    } else {
-      _photonSearch(v,inp,s,apItems);
-    }
+    if(!window._MB){_renderSuggestions(inp,s,apItems,[]);return;}
+    fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+encodeURIComponent(v)+'.json?access_token='+_MB+'&country=gb&proximity=-0.35,50.95&language=en&limit=6&types=address,poi,place,postcode')
+    .then(function(r){return r.json();})
+    .then(function(data){
+      var items=(data.features||[]).map(function(f){
+        var parts=f.place_name?f.place_name.split(', '):[];
+        var coords=f.center;
+        return{main:parts[0]||f.text,sub:parts.slice(1,3).join(', '),lat:coords[1],lon:coords[0]};
+      });
+      _renderSuggestions(inp,s,apItems,items);
+    }).catch(function(){_renderSuggestions(inp,s,apItems,[]);});
   },300);
-}
-
-function _photonSearch(v,inp,s,apItems){
-  fetch('https://photon.komoot.io/api/?q='+encodeURIComponent(v)+'&lang=en&limit=6&lat=50.95&lon=-0.35')
-  .then(function(r){return r.json();})
-  .then(function(data){
-    var items=(data.features||[]).map(function(f){
-      var p=f.properties||{},l1='',l2='';
-      if(p.housenumber&&p.street)l1=p.housenumber+' '+p.street;
-      else if(p.name)l1=p.name;
-      else if(p.street)l1=p.street;
-      var town=p.city||p.town||p.village||p.district||'';
-      var pc=p.postcode||'';
-      l2=[town,pc].filter(Boolean).join(', ');
-      if(!l2&&p.county)l2=p.county;
-      if(!l1&&l2){l1=l2;l2=p.county||p.state||'';}
-      if(!l1)l1=town||p.county||p.country||'';
-      var coords=f.geometry?f.geometry.coordinates:null;
-      return{main:l1,sub:l2,lat:coords?coords[1]:null,lon:coords?coords[0]:null};
-    });
-    _renderSuggestions(inp,s,apItems,items);
-  }).catch(function(){_renderSuggestions(inp,s,apItems,[]);});
 }
 
 function _renderSuggestions(inp,drop,apItems,items){
@@ -841,7 +812,6 @@ function _renderSuggestions(inp,drop,apItems,items){
     d.onclick=function(){inp.value=ap.name;drop.classList.remove('open');drop.innerHTML='';checkFlight();qbCalc();};
     drop.appendChild(d);
   });
-
   items.forEach(function(it){
     var full=it.sub?it.main+', '+it.sub:it.main;
     var d=document.createElement('div');d.className='sug-item';
@@ -853,7 +823,6 @@ function _renderSuggestions(inp,drop,apItems,items){
     };
     drop.appendChild(d);
   });
-
   if(drop.children.length>0)drop.classList.add('open');
   else drop.classList.remove('open');
 }
@@ -1169,7 +1138,7 @@ function closeMenu(){var m=document.getElementById('mmenu');if(m){m.classList.re
   });
 })();
 </script>
-<!-- Photon (Komoot) – free address autocomplete, no API key needed -->
+<script src="/config.js"></script>
 <footer class="mini-foot">&copy; 2026 Westmere Private Hire &middot; All rights reserved &middot; Licensed by Lewes District Council<span class="mini-legal"><a href="westmere-terms.html">Terms</a><a href="westmere-privacy.html">Privacy</a><a href="westmere-cookies.html">Cookies</a></span></footer>
 </body>
 </html>
