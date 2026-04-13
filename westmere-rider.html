@@ -219,6 +219,16 @@ body.mode-day .aj-meta-grid{border-top:1px solid rgba(26,38,56,.12);border-botto
 .time-opt{font-family:var(--sans);font-size:.9rem;font-weight:300;color:rgba(17,29,44,.75);padding:.32rem .5rem;border-radius:5px;cursor:pointer;text-align:center;transition:background .12s,color .12s}
 .time-opt:hover{background:rgba(184,152,90,.25);color:var(--navy)}
 .time-opt.t-sel{background:var(--gold);color:#111;font-weight:500}
+/* ── CUSTOM PAX / LUGGAGE PICKER ── */
+.pax-trigger,.bags-trigger{cursor:pointer;position:relative}
+.pick-drop{display:none;position:absolute;top:calc(100% + 8px);left:0;z-index:400;background:rgba(18,12,6,.96);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid rgba(184,152,90,.35);border-radius:12px;padding:1.1rem;width:200px;box-shadow:0 20px 60px rgba(0,0,0,.7)}
+.pick-drop.open{display:block}
+.pick-col{display:flex;flex-direction:column;gap:2px;overflow-y:auto;max-height:240px;scrollbar-width:thin;scrollbar-color:rgba(184,152,90,.3) transparent}
+.pick-col-label{font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.5);text-align:center;padding:.3rem 0;position:sticky;top:0;background:rgba(18,12,6,.96)}
+.pick-opt{font-family:var(--sans);font-size:.95rem;font-weight:300;color:rgba(255,255,255,.75);padding:.5rem .6rem;border-radius:5px;cursor:pointer;text-align:center;transition:background .12s,color .12s;display:flex;align-items:center;justify-content:center;gap:.5rem}
+.pick-opt:hover{background:rgba(184,152,90,.25);color:#fff}
+.pick-opt.p-sel{background:var(--gold);color:#111;font-weight:500}
+.pick-opt .pick-icon{font-size:1rem;line-height:1}
 
 /* ── FILTER TABS ── */
 .filter-row{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap}
@@ -493,28 +503,8 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
             <input class="fi" type="text" id="bk-flight" placeholder="e.g. BA2431" autocomplete="off">
           </div>
           <div class="r2">
-          <div class="fg">
-            <label class="fl">Passengers</label>
-            <select class="fi" id="bk-pax">
-              <option value="1">1 passenger</option>
-              <option value="2">2 passengers</option>
-              <option value="3">3 passengers</option>
-              <option value="4" selected>4 passengers</option>
-              <option value="5">5 passengers</option>
-              <option value="6">6 passengers</option>
-            </select>
-          </div>
-          <div class="fg" id="bk-bags-wrap" style="display:none">
-            <label class="fl">Luggage</label>
-            <select class="fi" id="bk-bags">
-              <option value="0">0 bags</option>
-              <option value="1">1 bag</option>
-              <option value="2" selected>2 bags</option>
-              <option value="3">3 bags</option>
-              <option value="4">4 bags</option>
-              <option value="5">5+ bags</option>
-            </select>
-          </div>
+          <div class="fg"><label class="fl">Passengers</label><div class="pax-trigger" id="bk-pax-wrap"><input class="fi cdt-val" type="text" id="bk-pax-display" placeholder="Passengers" readonly><input type="hidden" id="bk-pax" value="4"><div class="pick-drop" id="bk-pax-drop"></div></div></div>
+          <div class="fg" id="bk-bags-wrap" style="display:none"><label class="fl">Luggage</label><div class="bags-trigger" id="bk-bags-inner"><input class="fi cdt-val" type="text" id="bk-bags-display" placeholder="Luggage" readonly><input type="hidden" id="bk-bags" value="2"><div class="pick-drop" id="bk-bags-drop"></div></div></div>
           </div>
         </div>
       </div>
@@ -762,6 +752,8 @@ function bootApp(){
   renderTrips('upcoming');
   initCalendar();
   initTimePicker();
+  initPaxPicker();
+  initBagsPicker();
 }
 
 /* ── PAGE NAVIGATION ── */
@@ -1168,6 +1160,76 @@ function initTimePicker(){
       if(wrap&&!wrap.contains(e.target))drop.classList.remove('open');
     });
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PASSENGER PICKER
+   ═══════════════════════════════════════════════════════════════════════════ */
+var _rPax=4;
+var _rPAX_OPTS=[
+  {v:1,label:'1 passenger',icon:'👤'},{v:2,label:'2 passengers',icon:'👥'},
+  {v:3,label:'3 passengers',icon:'👥'},{v:4,label:'4 passengers',icon:'👥'},
+  {v:5,label:'5 passengers',icon:'👥'},{v:6,label:'6 passengers',icon:'👥'},
+  {v:7,label:'7 passengers',icon:'👥'},{v:8,label:'8 passengers',icon:'👥'}
+];
+function _rRenderPax(){
+  var drop=document.getElementById('bk-pax-drop');if(!drop||!drop.classList.contains('open'))return;
+  var h='<div class="pick-col-label">Passengers</div>';
+  _rPAX_OPTS.forEach(function(o){
+    h+='<div class="pick-opt'+(_rPax===o.v?' p-sel':'')+'" onclick="event.stopPropagation();window._rPaxSel('+o.v+')"><span class="pick-icon">'+o.icon+'</span>'+o.label+'</div>';
+  });
+  drop.innerHTML='<div class="pick-col">'+h+'</div>';
+}
+window._rPaxSel=function(v){
+  _rPax=v;
+  var hid=document.getElementById('bk-pax');if(hid)hid.value=v;
+  var disp=document.getElementById('bk-pax-display');if(disp)disp.value=_rPAX_OPTS[v-1].label;
+  var drop=document.getElementById('bk-pax-drop');if(drop)drop.classList.remove('open');
+};
+/* ═══════════════════════════════════════════════════════════════════════════
+   LUGGAGE PICKER
+   ═══════════════════════════════════════════════════════════════════════════ */
+var _rBags=2;
+var _rBAG_OPTS=[
+  {v:0,label:'No luggage',icon:'—'},{v:1,label:'1 bag',icon:'🧳'},
+  {v:2,label:'2 bags',icon:'🧳'},{v:3,label:'3 bags',icon:'🧳'},
+  {v:4,label:'4 bags',icon:'🧳'},{v:5,label:'5+ bags',icon:'🧳'}
+];
+function _rRenderBags(){
+  var drop=document.getElementById('bk-bags-drop');if(!drop||!drop.classList.contains('open'))return;
+  var h='<div class="pick-col-label">Luggage</div>';
+  _rBAG_OPTS.forEach(function(o){
+    h+='<div class="pick-opt'+(_rBags===o.v?' p-sel':'')+'" onclick="event.stopPropagation();window._rBagsSel('+o.v+')"><span class="pick-icon">'+o.icon+'</span>'+o.label+'</div>';
+  });
+  drop.innerHTML='<div class="pick-col">'+h+'</div>';
+}
+window._rBagsSel=function(v){
+  _rBags=v;
+  var hid=document.getElementById('bk-bags');if(hid)hid.value=v;
+  var disp=document.getElementById('bk-bags-display');if(disp)disp.value=_rBAG_OPTS[v].label;
+  var drop=document.getElementById('bk-bags-drop');if(drop)drop.classList.remove('open');
+};
+function initPaxPicker(){
+  var trigger=document.getElementById('bk-pax-display');var drop=document.getElementById('bk-pax-drop');
+  if(!trigger||!drop)return;
+  trigger.value=_rPAX_OPTS[_rPax-1].label;
+  trigger.addEventListener('click',function(e){
+    e.stopPropagation();
+    document.querySelectorAll('.pick-drop.open,.cal-drop.open,.time-drop.open').forEach(function(d){d.classList.remove('open');});
+    drop.classList.toggle('open');if(drop.classList.contains('open'))_rRenderPax();
+  });
+  document.addEventListener('click',function(e){var w=document.getElementById('bk-pax-wrap');if(w&&!w.contains(e.target))drop.classList.remove('open');});
+}
+function initBagsPicker(){
+  var trigger=document.getElementById('bk-bags-display');var drop=document.getElementById('bk-bags-drop');
+  if(!trigger||!drop)return;
+  trigger.value=_rBAG_OPTS[_rBags].label;
+  trigger.addEventListener('click',function(e){
+    e.stopPropagation();
+    document.querySelectorAll('.pick-drop.open,.cal-drop.open,.time-drop.open').forEach(function(d){d.classList.remove('open');});
+    drop.classList.toggle('open');if(drop.classList.contains('open'))_rRenderBags();
+  });
+  document.addEventListener('click',function(e){var w=document.getElementById('bk-bags-inner');if(w&&!w.contains(e.target))drop.classList.remove('open');});
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

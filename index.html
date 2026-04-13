@@ -210,6 +210,16 @@ input[type="time"].fi,input[type="date"].fi{-webkit-appearance:auto;appearance:a
 .time-opt{font-family:var(--sans);font-size:.9rem;font-weight:300;color:rgba(255,255,255,.75);padding:.32rem .5rem;border-radius:5px;cursor:pointer;text-align:center;transition:background .12s,color .12s}
 .time-opt:hover{background:rgba(184,152,90,.25);color:#fff}
 .time-opt.t-sel{background:var(--gold);color:#111;font-weight:500}
+/* ===== CUSTOM PAX / LUGGAGE PICKER ===== */
+.pax-trigger,.bags-trigger{cursor:pointer;position:relative}
+.pick-drop{display:none;position:absolute;top:calc(100% + 8px);left:0;z-index:400;background:rgba(18,12,6,.96);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid rgba(184,152,90,.35);border-radius:12px;padding:1.1rem;width:200px;box-shadow:0 20px 60px rgba(0,0,0,.7)}
+.pick-drop.open{display:block}
+.pick-col{display:flex;flex-direction:column;gap:2px;overflow-y:auto;max-height:240px;scrollbar-width:thin;scrollbar-color:rgba(184,152,90,.3) transparent}
+.pick-col-label{font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.5);text-align:center;padding:.3rem 0;position:sticky;top:0;background:rgba(18,12,6,.96)}
+.pick-opt{font-family:var(--sans);font-size:.95rem;font-weight:300;color:rgba(255,255,255,.75);padding:.5rem .6rem;border-radius:5px;cursor:pointer;text-align:center;transition:background .12s,color .12s;display:flex;align-items:center;justify-content:center;gap:.5rem}
+.pick-opt:hover{background:rgba(184,152,90,.25);color:#fff}
+.pick-opt.p-sel{background:var(--gold);color:#111;font-weight:500}
+.pick-opt .pick-icon{font-size:1rem;line-height:1}
 
 
 
@@ -306,8 +316,8 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
       <div class="field"><label class="fl">Time</label><div class="custom-time-trigger" id="ctt-wrap"><input class="fi ctt-val" type="text" id="ctt-display" placeholder="Select time" readonly><input type="hidden" id="b-time" value="08:00"><div class="time-drop" id="time-drop"></div></div></div>
     </div>
     <div class="date-time-row">
-      <div class="field"><label class="fl">Passengers</label><select class="fi" id="b-pax"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4" selected>4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option></select></div>
-      <div class="field" id="bags-wrap" style="display:none"><label class="fl">Luggage</label><select class="fi" id="b-bags"><option value="0">0 bags</option><option value="1">1 bag</option><option value="2" selected>2 bags</option><option value="3">3 bags</option><option value="4">4 bags</option><option value="5">5+ bags</option></select></div>
+      <div class="field"><label class="fl">Passengers</label><div class="pax-trigger" id="pax-wrap"><input class="fi cdt-val" type="text" id="pax-display" placeholder="Passengers" readonly><input type="hidden" id="b-pax" value="4"><div class="pick-drop" id="pax-drop"></div></div></div>
+      <div class="field" id="bags-wrap" style="display:none"><label class="fl">Luggage</label><div class="bags-trigger" id="bags-inner"><input class="fi cdt-val" type="text" id="bags-display" placeholder="Luggage" readonly><input type="hidden" id="b-bags" value="2"><div class="pick-drop" id="bags-drop"></div></div></div>
     </div>
     <div class="fare-reveal" id="fare-reveal">
       <div class="fr-left">
@@ -1189,6 +1199,91 @@ function bkConfirm(type) {
   });
 })();
 
+// =====================================================
+// WESTMERE CUSTOM PASSENGER PICKER
+// =====================================================
+(function(){
+  var _pax=4;
+  var PAX_OPTS=[
+    {v:1,label:'1 passenger',icon:'👤'},
+    {v:2,label:'2 passengers',icon:'👥'},
+    {v:3,label:'3 passengers',icon:'👥'},
+    {v:4,label:'4 passengers',icon:'👥'},
+    {v:5,label:'5 passengers',icon:'👥'},
+    {v:6,label:'6 passengers',icon:'👥'},
+    {v:7,label:'7 passengers',icon:'👥'},
+    {v:8,label:'8 passengers',icon:'👥'}
+  ];
+  function _renderPax(){
+    var drop=document.getElementById('pax-drop');if(!drop||!drop.classList.contains('open'))return;
+    var h='<div class="pick-col-label">Passengers</div>';
+    PAX_OPTS.forEach(function(o){
+      var s=(_pax===o.v)?' p-sel':'';
+      h+='<div class="pick-opt'+s+'" onclick="event.stopPropagation();window._paxSel('+o.v+')"><span class="pick-icon">'+o.icon+'</span>'+o.label+'</div>';
+    });
+    drop.innerHTML='<div class="pick-col" id="pc-pax">'+h+'</div>';
+    setTimeout(function(){var c=document.getElementById('pc-pax');if(c){var se=c.querySelector('.p-sel');if(se)se.scrollIntoView({block:'center'});}},0);
+  }
+  window._paxSel=function(v){
+    _pax=v;
+    var hid=document.getElementById('b-pax');if(hid)hid.value=v;
+    var disp=document.getElementById('pax-display');if(disp)disp.value=PAX_OPTS[v-1].label;
+    var drop=document.getElementById('pax-drop');if(drop)drop.classList.remove('open');
+  };
+  document.addEventListener('DOMContentLoaded',function(){
+    var trigger=document.getElementById('pax-display');var drop=document.getElementById('pax-drop');
+    if(!trigger||!drop)return;
+    trigger.value=PAX_OPTS[_pax-1].label;
+    trigger.addEventListener('click',function(e){
+      e.stopPropagation();
+      document.querySelectorAll('.pick-drop.open,.cal-drop.open,.time-drop.open').forEach(function(d){d.classList.remove('open');});
+      drop.classList.toggle('open');if(drop.classList.contains('open'))_renderPax();
+    });
+    document.addEventListener('click',function(e){var w=document.getElementById('pax-wrap');if(w&&!w.contains(e.target))drop.classList.remove('open');});
+  });
+})();
+
+// =====================================================
+// WESTMERE CUSTOM LUGGAGE PICKER
+// =====================================================
+(function(){
+  var _bags=2;
+  var BAG_OPTS=[
+    {v:0,label:'No luggage',icon:'—'},
+    {v:1,label:'1 bag',icon:'🧳'},
+    {v:2,label:'2 bags',icon:'🧳'},
+    {v:3,label:'3 bags',icon:'🧳'},
+    {v:4,label:'4 bags',icon:'🧳'},
+    {v:5,label:'5+ bags',icon:'🧳'}
+  ];
+  function _renderBags(){
+    var drop=document.getElementById('bags-drop');if(!drop||!drop.classList.contains('open'))return;
+    var h='<div class="pick-col-label">Luggage</div>';
+    BAG_OPTS.forEach(function(o){
+      var s=(_bags===o.v)?' p-sel':'';
+      h+='<div class="pick-opt'+s+'" onclick="event.stopPropagation();window._bagsSel('+o.v+')"><span class="pick-icon">'+o.icon+'</span>'+o.label+'</div>';
+    });
+    drop.innerHTML='<div class="pick-col" id="pc-bags">'+h+'</div>';
+    setTimeout(function(){var c=document.getElementById('pc-bags');if(c){var se=c.querySelector('.p-sel');if(se)se.scrollIntoView({block:'center'});}},0);
+  }
+  window._bagsSel=function(v){
+    _bags=v;
+    var hid=document.getElementById('b-bags');if(hid)hid.value=v;
+    var disp=document.getElementById('bags-display');if(disp)disp.value=BAG_OPTS[v].label;
+    var drop=document.getElementById('bags-drop');if(drop)drop.classList.remove('open');
+  };
+  document.addEventListener('DOMContentLoaded',function(){
+    var trigger=document.getElementById('bags-display');var drop=document.getElementById('bags-drop');
+    if(!trigger||!drop)return;
+    trigger.value=BAG_OPTS[_bags].label;
+    trigger.addEventListener('click',function(e){
+      e.stopPropagation();
+      document.querySelectorAll('.pick-drop.open,.cal-drop.open,.time-drop.open').forEach(function(d){d.classList.remove('open');});
+      drop.classList.toggle('open');if(drop.classList.contains('open'))_renderBags();
+    });
+    document.addEventListener('click',function(e){var w=document.getElementById('bags-inner');if(w&&!w.contains(e.target))drop.classList.remove('open');});
+  });
+})();
 
 </script>
 </body>
