@@ -85,19 +85,6 @@ router.post('/book', async (req, res) => {
   }
 });
 
-// ── Email test (diagnostic) ──────────────────────────────────────────────
-router.get('/test-email', async (req, res) => {
-  const { sendEmail, isConfigured } = require('./email');
-  if (!isConfigured()) return res.json({ error: 'RESEND_API_KEY not set in Railway' });
-  const to = process.env.ADMIN_EMAIL || process.env.GMAIL_USER;
-  if (!to) return res.json({ error: 'ADMIN_EMAIL not set' });
-  try {
-    const ok = await sendEmail(to, 'Westmere Email Test', '<h2>Email works!</h2><p>If you see this, your booking emails will work too.</p>', 'Westmere Test');
-    res.json(ok ? { ok: true, sent_to: to } : { error: 'Send failed — check RESEND_API_KEY' });
-  } catch (err) {
-    res.json({ error: err.message });
-  }
-});
 
 // ── Create Stripe PaymentIntent ──────────────────────────────────────────
 router.post('/create-payment-intent', async (req, res) => {
