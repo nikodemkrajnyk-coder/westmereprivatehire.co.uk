@@ -434,8 +434,8 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
   <div class="sb-section">
     <span class="sb-label">Overview</span>
     <button class="sb-item on" onclick="nav('dashboard',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>Dashboard</button>
-    <button class="sb-item" onclick="nav('today',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>Today's Jobs<span class="sb-badge">2</span></button>
-    <button class="sb-item" onclick="nav('notifications',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>Notifications<span class="sb-badge red">3</span></button>
+    <button class="sb-item" onclick="nav('today',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>Today's Jobs<span class="sb-badge" id="sb-today-badge" style="display:none"></span></button>
+    <button class="sb-item" onclick="nav('notifications',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>Notifications</button>
   </div>
 
   <div class="sb-section">
@@ -448,7 +448,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
     <span class="sb-label">Customers</span>
     <button class="sb-item" onclick="nav('customers',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Customers</button>
     <button class="sb-item" onclick="nav('drivers',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="22" height="12" rx="2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/><path d="M5 6V4a1 1 0 0 1 1-1h4l2 3"/></svg></span>Drivers</button>
-    <button class="sb-item" onclick="nav('invoices',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>Invoices<span class="sb-badge red">1</span></button>
+    <button class="sb-item" onclick="nav('invoices',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>Invoices</button>
   </div>
 
   <div class="sb-section">
@@ -498,19 +498,19 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 
       <div class="stats">
         <div class="stat s-gold" onclick="nav('today',document.querySelector('[onclick*=today]'))">
-          <div class="sv">2</div><div class="sl">Today's Jobs</div><div class="ss">Next: 04:30 →</div>
+          <div class="sv" id="dash-today-count">0</div><div class="sl">Today's Jobs</div><div class="ss" id="dash-today-next">No jobs today</div>
         </div>
         <div class="stat s-green">
-          <div class="sv">£230</div><div class="sl">Today's Earnings</div><div class="ss">Cash + Card</div>
+          <div class="sv" id="dash-today-earn">£0</div><div class="sl">Today's Earnings</div><div class="ss" id="dash-today-earn-sub">—</div>
         </div>
         <div class="stat s-blue">
-          <div class="sv">11</div><div class="sl">This Month</div><div class="ss">£842 total</div>
+          <div class="sv" id="dash-month-count">0</div><div class="sl">This Month</div><div class="ss" id="dash-month-rev">£0 total</div>
         </div>
         <div class="stat s-red" onclick="nav('invoices',document.querySelector('[onclick*=invoices]'))">
-          <div class="sv">1</div><div class="sl">Overdue Invoice</div><div class="ss">£192 due</div>
+          <div class="sv">—</div><div class="sl">Invoices</div><div class="ss">Coming soon</div>
         </div>
         <div class="stat s-purple">
-          <div class="sv">8</div><div class="sl">Account Customers</div><div class="ss">3 business · 5 personal</div>
+          <div class="sv" id="dash-cust-count">0</div><div class="sl">Customers</div><div class="ss" id="dash-cust-sub">—</div>
         </div>
       </div>
 
@@ -518,42 +518,16 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
         <div class="card">
           <div class="ch"><div class="ct">Today's Jobs</div><button class="btn btn-ghost btn-sm" onclick="nav('today',document.querySelector('[onclick*=today]'))">View All</button></div>
           <div class="cb">
-            <div class="timeline">
-              <div class="tl-item">
-                <div class="tl-time-col"><div class="tl-time">04:30</div><div class="tl-line"></div></div>
-                <div class="tl-card active">
-                  <div class="tl-top"><div class="tl-name">Sarah Jones</div><span class="tag tag-upcoming">Upcoming</span></div>
-                  <div class="tl-route">Lewes BN7 → Gatwick · EZY1234 · £78 Cash</div>
-                  <div class="tl-actions">
-                    <button class="btn btn-blue btn-sm" onclick="openModal('modal-email-customer')">📧 Send Confirmation</button>
-                    <button class="btn btn-ghost btn-sm" onclick="openModal('modal-email-driver')">📋 Driver Sheet</button>
-                    <button class="btn btn-ghost btn-sm">✏️ Edit</button>
-                  </div>
-                </div>
-              </div>
-              <div class="tl-item">
-                <div class="tl-time-col"><div class="tl-time">17:20</div></div>
-                <div class="tl-card">
-                  <div class="tl-top"><div class="tl-name">John Smith</div><span class="tag tag-account">Account</span></div>
-                  <div class="tl-route">Heathrow T5 → Lewes · BA0492 · £145 Invoice</div>
-                  <div class="tl-actions">
-                    <button class="btn btn-blue btn-sm" onclick="openModal('modal-email-customer')">📧 Send Confirmation</button>
-                    <button class="btn btn-ghost btn-sm" onclick="openModal('modal-email-driver')">📋 Driver Sheet</button>
-                    <button class="btn btn-ghost btn-sm">✏️ Edit</button>
-                  </div>
-                </div>
-              </div>
+            <div class="timeline" id="dash-timeline">
+              <div style="text-align:center;padding:1.5rem;color:rgba(17,29,44,.3);font-size:.82rem">No jobs today</div>
             </div>
           </div>
         </div>
 
         <div class="card">
           <div class="ch"><div class="ct">Recent Activity</div></div>
-          <div class="cb">
-            <div class="notif"><div class="notif-dot" style="background:var(--gold)"></div><div><div class="notif-text"><strong>New booking</strong> — Mrs Williams, Lewes → Brighton, Wed 2 Apr 19:30</div><div class="notif-time">2 minutes ago</div></div></div>
-            <div class="notif"><div class="notif-dot" style="background:#3B82F6"></div><div><div class="notif-text"><strong>Card payment received</strong> — John Smith, £128.00</div><div class="notif-time">1 hour ago</div></div></div>
-            <div class="notif"><div class="notif-dot" style="background:var(--red)"></div><div><div class="notif-text"><strong>Invoice overdue</strong> — Smith &amp; Co Ltd, INV-2025-003, £192</div><div class="notif-time">3 days overdue</div></div></div>
-            <div class="notif"><div class="notif-dot" style="background:var(--green)"></div><div><div class="notif-text"><strong>Journey completed</strong> — Dr Foster, Brighton → Heathrow, £128</div><div class="notif-time">Yesterday 08:45</div></div></div>
+          <div class="cb" id="dash-activity">
+            <div style="text-align:center;padding:1.5rem;color:rgba(17,29,44,.3);font-size:.82rem">No recent activity</div>
           </div>
         </div>
       </div>
@@ -577,44 +551,13 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
     <div class="view" id="view-today">
       <div class="page-hd">
         <div class="page-title">Today's <em>Jobs</em></div>
-        <div class="page-sub">Tuesday 25 March 2025</div>
+        <div class="page-sub" id="today-page-sub"></div>
       </div>
       <div class="card">
         <div class="ch"><div class="ct">Schedule</div><button class="btn btn-navy btn-sm" onclick="openModal('modal-book')">+ Add Job</button></div>
         <div class="cb">
-          <div class="timeline">
-            <div class="tl-item">
-              <div class="tl-time-col"><div class="tl-time">04:30</div><div class="tl-line"></div></div>
-              <div class="tl-card active">
-                <div class="tl-top"><div class="tl-name">Sarah Jones</div><span class="tag tag-upcoming">Upcoming</span></div>
-                <div class="tl-route">📍 14 Friars Walk, Lewes BN7 → ✈ Gatwick South Terminal</div>
-                <div class="tl-route" style="margin-top:.2rem">Flight EZY1234 · 08:15 · 1 passenger · 1 case · £78 Cash</div>
-                <div class="tl-actions">
-                  <button class="btn btn-blue btn-sm" onclick="openModal('modal-email-customer')">📧 Confirm</button>
-                  <button class="btn btn-ghost btn-sm" onclick="openModal('modal-email-driver')">📋 Driver Sheet</button>
-                  <a class="btn btn-ghost btn-sm" href="https://waze.com/ul?q=14+Friars+Walk+Lewes&navigate=yes" target="_blank">🔵 Waze</a>
-                  <a class="btn btn-ghost btn-sm" href="https://maps.google.com/?q=14+Friars+Walk+Lewes+BN7&directionsmode=driving" target="_blank">🗺 Maps</a>
-                  <a class="btn btn-ghost btn-sm" href="https://www.flightradar24.com/data/flights/ezy1234" target="_blank">✈ Track</a>
-                  <button class="btn btn-green btn-sm" onclick="markDone(this)">✓ Done</button>
-                  <button class="btn btn-red btn-sm">✕ Cancel</button>
-                </div>
-              </div>
-            </div>
-            <div class="tl-item">
-              <div class="tl-time-col"><div class="tl-time">17:20</div></div>
-              <div class="tl-card">
-                <div class="tl-top"><div class="tl-name">John Smith · Smith &amp; Co</div><span class="tag tag-account">Account</span></div>
-                <div class="tl-route">📍 Heathrow T5 Arrivals → 22 Pelham Court, Lewes BN7</div>
-                <div class="tl-route" style="margin-top:.2rem">Flight BA0492 · Lands ~17:20 · 2 passengers · 2 cases · £145 Invoice</div>
-                <div class="tl-actions">
-                  <button class="btn btn-blue btn-sm" onclick="openModal('modal-email-customer')">📧 Confirm</button>
-                  <button class="btn btn-ghost btn-sm" onclick="openModal('modal-email-driver')">📋 Driver Sheet</button>
-                  <a class="btn btn-ghost btn-sm" href="https://www.flightradar24.com/data/flights/ba0492" target="_blank">✈ Track</a>
-                  <button class="btn btn-green btn-sm" onclick="markDone(this)">✓ Done</button>
-                  <button class="btn btn-red btn-sm">✕ Cancel</button>
-                </div>
-              </div>
-            </div>
+          <div class="timeline" id="today-timeline">
+            <div style="text-align:center;padding:2rem;color:rgba(17,29,44,.3);font-size:.85rem">No jobs scheduled for today</div>
           </div>
         </div>
       </div>
@@ -637,9 +580,6 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
           <table class="jtable">
             <thead><tr><th>Ref</th><th>Date</th><th>Time</th><th>Passenger</th><th>Route</th><th>Type</th><th>Fare</th><th>Payment</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody id="jobs-tbody">
-              <tr data-status="upcoming"><td><div class="main-v">WPH-241903</div></td><td>25/03/25</td><td>04:30</td><td><div class="main-v">Sarah Jones</div></td><td><div class="main-v">Lewes → Gatwick</div><div class="sub-v">EZY1234</div></td><td><span class="tag tag-upcoming" style="font-size:.5rem">Airport</span></td><td><span style="color:var(--gold);font-family:var(--serif);font-size:1.1rem">£78</span></td><td><span class="tag tag-cash">Cash</span></td><td><span class="tag tag-upcoming">Upcoming</span></td><td><button class="btn btn-blue btn-sm" onclick="showToast('Confirmation sent')">📧</button> <button class="btn btn-ghost btn-sm">✏️</button></td></tr>
-              <tr data-status="completed"><td><div class="main-v">WPH-241902</div></td><td>14/03/25</td><td>07:30</td><td><div class="main-v">Mrs Linda Patel</div></td><td><div class="main-v">Lewes → Heathrow T5</div><div class="sub-v">BA0117</div></td><td><span class="tag tag-upcoming" style="font-size:.5rem">Airport</span></td><td><span style="color:var(--gold);font-family:var(--serif);font-size:1.1rem">£140</span></td><td><span class="tag tag-card">Card</span></td><td><span class="tag tag-done">Done</span></td><td><button class="btn btn-ghost btn-sm">Receipt</button></td></tr>
-              <tr data-status="completed"><td><div class="main-v">WPH-241901</div></td><td>10/03/25</td><td>05:15</td><td><div class="main-v">Mr James Cooper</div></td><td><div class="main-v">Horsham → Gatwick</div></td><td><span class="tag tag-upcoming" style="font-size:.5rem">Airport</span></td><td><span style="color:var(--gold);font-family:var(--serif);font-size:1.1rem">£55</span></td><td><span class="tag tag-cash">Cash</span></td><td><span class="tag tag-done">Done</span></td><td><button class="btn btn-ghost btn-sm">Receipt</button></td></tr>
             </tbody>
           </table>
         </div>
@@ -649,12 +589,9 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
     <!-- ══ CUSTOMERS ══ -->
     <div class="view" id="view-customers">
       <div class="page-hd"><div class="page-title">Customers</div></div>
-      <div class="cust-grid">
-        <div class="cust-card"><div class="cc-name">Smith &amp; Co Ltd</div><div class="cc-type cc-business">Business</div><div class="cc-meta">John Smith · <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="620301010d170c161122110f0b160a010d4c010d0f">[email&#160;protected]</a></div><div class="cc-stats"><div class="cc-stat">Jobs: <span>12</span></div><div class="cc-stat">Spent: <span>£1,240</span></div></div></div>
-        <div class="cust-card"><div class="cc-name">Sarah Jones</div><div class="cc-type cc-personal">Personal</div><div class="cc-meta">+44 7700 123456</div><div class="cc-stats"><div class="cc-stat">Jobs: <span>4</span></div><div class="cc-stat">Spent: <span>£310</span></div></div></div>
-        <div class="cust-card"><div class="cc-name">Mrs Linda Patel</div><div class="cc-type cc-personal">Personal</div><div class="cc-meta">+44 7700 654321</div><div class="cc-stats"><div class="cc-stat">Jobs: <span>3</span></div><div class="cc-stat">Spent: <span>£366</span></div></div></div>
+      <div class="cust-grid" id="cust-grid">
+        <div style="grid-column:1/-1;text-align:center;padding:2rem;color:rgba(17,29,44,.3);font-size:.85rem">Loading customers...</div>
       </div>
-      <button class="btn btn-navy" onclick="showToast('Add customer — coming soon')">+ Add Customer</button>
     </div>
 
     <!-- ══ INVOICES ══ -->
@@ -666,8 +603,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
           <table class="inv-table">
             <thead><tr><th>Invoice No.</th><th>Customer</th><th>Issued</th><th>Due</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
-              <tr><td class="main-v">INV-2025-003</td><td><div class="main-v">Smith &amp; Co Ltd</div></td><td>01/03/2025</td><td>31/03/2025</td><td><span style="color:var(--red);font-family:var(--serif);font-size:1.1rem">£192.00</span></td><td><span class="tag tag-cancel">Overdue</span></td><td><button class="btn btn-ghost btn-sm" onclick="openModal('modal-inv-002')">Preview</button> <button class="btn btn-blue btn-sm" onclick="showToast('Invoice sent to accounts@smithco.com')">📧 Chase</button> <button class="btn btn-green btn-sm" onclick="showToast('Marked as paid')">✓ Paid</button></td></tr>
-              <tr><td class="main-v">INV-2025-002</td><td><div class="main-v">Smith &amp; Co Ltd</div></td><td>01/02/2025</td><td>28/02/2025</td><td><span style="color:var(--green);font-family:var(--serif);font-size:1.1rem">£152.00</span></td><td><span class="tag tag-done">Paid</span></td><td><button class="btn btn-ghost btn-sm" onclick="openModal('modal-inv-002')">View</button></td></tr>
+              <tr><td colspan="7" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">No invoices yet</td></tr>
             </tbody>
           </table>
         </div>
@@ -748,12 +684,8 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
       <div class="page-hd"><div class="page-title">Notifications</div></div>
       <div class="card">
         <div class="ch"><div class="ct">All Activity</div></div>
-        <div class="cb">
-          <div class="notif"><div class="notif-dot" style="background:var(--gold)"></div><div><div class="notif-text"><strong>New booking</strong> — Mrs Williams, Lewes → Brighton, Wed 2 Apr 19:30. £12 cash.</div><div class="notif-time">2 minutes ago</div></div></div>
-          <div class="notif"><div class="notif-dot" style="background:#3B82F6"></div><div><div class="notif-text"><strong>Card payment confirmed</strong> — John Smith, £128.00 via Stripe</div><div class="notif-time">1 hour ago</div></div></div>
-          <div class="notif"><div class="notif-dot" style="background:var(--red)"></div><div><div class="notif-text"><strong>Invoice overdue</strong> — Smith &amp; Co Ltd, INV-2025-003, £192.00. Due 31 March.</div><div class="notif-time">3 days ago</div></div></div>
-          <div class="notif"><div class="notif-dot" style="background:var(--green)"></div><div><div class="notif-text"><strong>Journey completed</strong> — Dr Amelia Foster, Brighton → Heathrow T2, £128.00 card.</div><div class="notif-time">Yesterday 08:45</div></div></div>
-          <div class="notif"><div class="notif-dot" style="background:var(--gold)"></div><div><div class="notif-text"><strong>New account signup</strong> — Mrs Patricia Williams registered as Personal account.</div><div class="notif-time">Yesterday 14:22</div></div></div>
+        <div class="cb" id="notif-list">
+          <div style="text-align:center;padding:2rem;color:rgba(17,29,44,.3);font-size:.85rem">No notifications yet</div>
         </div>
       </div>
     </div>
@@ -769,9 +701,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
       <div style="display:flex;gap:.7rem;margin-bottom:1.4rem;flex-wrap:wrap;align-items:center">
         <div class="fg" style="margin:0;flex:0 0 auto">
           <select class="fi" id="rb-month" style="padding:.42rem .85rem;min-height:auto;font-size:.8rem" onchange="buildRecordBook()">
-            <option value="2025-03">March 2025</option>
-            <option value="2025-02">February 2025</option>
-            <option value="2025-01">January 2025</option>
+            <option value="">Select month...</option>
           </select>
         </div>
         <button class="btn btn-navy" onclick="downloadRecordBook()">📄 Download PDF</button>
@@ -822,9 +752,9 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
       </div>
 
       <div class="stats" style="grid-template-columns:repeat(3,1fr)">
-        <div class="stat s-green"><div class="sv">1</div><div class="sl">Active Drivers</div><div class="ss">Currently enabled</div></div>
+        <div class="stat s-green"><div class="sv" id="drv-active">0</div><div class="sl">Active Drivers</div><div class="ss">Currently enabled</div></div>
         <div class="stat s-navy"><div class="sv">0</div><div class="sl">On a Job</div><div class="ss">Right now</div></div>
-        <div class="stat s-gold"><div class="sv">1</div><div class="sl">Total Drivers</div><div class="ss">On the roster</div></div>
+        <div class="stat s-gold"><div class="sv" id="drv-total">0</div><div class="sl">Total Drivers</div><div class="ss">On the roster</div></div>
       </div>
 
       <div class="card">
@@ -855,8 +785,6 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 
   </div><!-- end content -->
 </div><!-- end main -->
-
-<footer class="mini-foot">&copy; 2026 Westmere Private Hire &middot; All rights reserved &middot; Licensed by Lewes District Council<span class="mini-legal"><a href="westmere-terms.html">Terms</a><a href="westmere-privacy.html">Privacy</a><a href="westmere-cookies.html">Cookies</a></span></footer>
 </div><!-- end admin-app -->
 
 <!-- ═══ MODAL: NEW BOOKING ═══ -->
@@ -940,120 +868,6 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 
 
 <!-- ═══ MODAL: INVOICE VIEW INV-2025-002 ═══ -->
-<div class="overlay" id="modal-inv-002">
-  <div class="modal modal-doc">
-    <div class="modal-hd">
-      <div class="modal-title">Invoice INV-2025-002</div>
-      <button class="modal-x" onclick="closeModal('modal-inv-002')">✕</button>
-    </div>
-    <div class="inv-doc">
-      <!-- Invoice Header -->
-      <div class="inv-header">
-        <div style="display:flex;align-items:center">
-          <div class="inv-crest">W</div>
-          <div class="inv-brand">
-            <div class="inv-brand-name">Westmere Private Hire</div>
-            <span class="inv-brand-sub">Sussex</span>
-          </div>
-        </div>
-        <div class="inv-title-block">
-          <div class="inv-title">Invoice</div>
-          <div class="inv-meta">
-            <strong>Invoice No.</strong> INV-2025-002<br>
-            <strong>Issued:</strong> 01 February 2025<br>
-            <strong>Due:</strong> 28 February 2025
-          </div>
-          <span class="inv-status paid">Paid</span>
-        </div>
-      </div>
-
-      <!-- Billed To / From -->
-      <div class="inv-parties">
-        <div>
-          <div class="inv-party-label">Billed To</div>
-          <div class="inv-party-name">Smith &amp; Co Ltd</div>
-          <div class="inv-party-detail">
-            Mr John Smith<br>
-            22 Pelham Court<br>
-            Lewes, East Sussex BN7 1UL<br>
-            accounts@smithco.com
-          </div>
-        </div>
-        <div>
-          <div class="inv-party-label">From</div>
-          <div class="inv-party-name">Westmere Private Hire</div>
-          <div class="inv-party-detail">
-            Lewes, East Sussex<br>
-            info@westmereprivatehire.co.uk<br>
-            +44 7930 342 593<br>
-            Licensed Private Hire Operator
-          </div>
-        </div>
-      </div>
-
-      <!-- Line Items -->
-      <table class="inv-table-doc">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Journey</th>
-            <th>Ref</th>
-            <th>Fare</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>03 Feb 2025</td>
-            <td>14 Friars Walk, Lewes BN7 → Gatwick South Terminal</td>
-            <td style="font-size:.72rem;color:#778899">WPH-241801</td>
-            <td>£78.00</td>
-          </tr>
-          <tr>
-            <td>07 Feb 2025</td>
-            <td>Gatwick South Terminal → 22 Pelham Court, Lewes BN7</td>
-            <td style="font-size:.72rem;color:#778899">WPH-241802</td>
-            <td>£74.00</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <!-- Totals -->
-      <div class="inv-totals">
-        <div class="inv-total-row">
-          <span>Subtotal</span>
-          <span>£152.00</span>
-        </div>
-        <div class="inv-total-row">
-          <span>Airport surcharges</span>
-          <span>£0.00</span>
-        </div>
-        <div class="inv-total-row grand">
-          <span>Total Due</span>
-          <span>£152.00</span>
-        </div>
-      </div>
-
-      <!-- Payment Terms -->
-      <div class="inv-payment">
-        <strong>Payment Terms</strong><br>
-        Payment due within 30 days of invoice date.<br>
-        <strong>Bank:</strong> Westmere Private Hire Ltd · Sort: 00-00-00 · Acc: 00000000<br>
-        <strong>Reference:</strong> INV-2025-002<br>
-        <strong>Status:</strong> Paid on 14 February 2025 — Thank you.
-      </div>
-
-      <!-- Footer -->
-      <div class="inv-footer">
-        Westmere Private Hire Ltd · Lewes, East Sussex
-      </div>
-    </div>
-    <div class="modal-foot">
-      <button class="btn btn-ghost" onclick="closeModal('modal-inv-002')">Close</button>
-      <button class="btn btn-navy" onclick="showToast('Downloading invoice PDF…')">📄 Download PDF</button>
-      <button class="btn btn-blue" onclick="showToast('Invoice resent to accounts@smithco.com')">📧 Resend</button>
-    </div>
-  </div>
-</div>
 
 
 <!-- ═══ MODAL: EMAIL PREVIEW — CUSTOMER BOOKING CONFIRMATION ═══ -->
@@ -1320,7 +1134,7 @@ async function adminLogin(){
       document.getElementById('admin-login').style.display='none';
       document.getElementById('admin-app').style.display='flex';
       tick();
-      setTimeout(function(){buildFares();buildRecordBook();},50);
+      setTimeout(function(){buildFares();loadLiveBookings();},50);
     } else {
       errEl.textContent=data.error||'Incorrect username or password.';
       errEl.classList.add('show');
@@ -1348,76 +1162,167 @@ function loadLiveBookings(){
     var today=new Date().toISOString().split('T')[0];
 
     // ── Dashboard stats ──
-    var todayJobs=bookings.filter(function(b){return b.date===today;});
-    var thisMonth=bookings.filter(function(b){return b.date&&b.date.slice(0,7)===today.slice(0,7);});
-    var pending=bookings.filter(function(b){return b.status==='pending';});
+    var todayJobs=bookings.filter(function(b){return b.date===today&&b.status!=='cancelled';});
+    var thisMonth=bookings.filter(function(b){return b.date&&b.date.slice(0,7)===today.slice(0,7)&&b.status!=='cancelled';});
     var monthRev=thisMonth.reduce(function(s,b){return s+(b.fare||0);},0);
     var todayRev=todayJobs.reduce(function(s,b){return s+(b.fare||0);},0);
 
-    var stats=document.querySelectorAll('.stat .sv');
-    if(stats[0])stats[0].textContent=todayJobs.length;
-    if(stats[1])stats[1].textContent='\u00a3'+todayRev.toFixed(0);
-    if(stats[2]){stats[2].textContent=thisMonth.length;}
-    var subs=document.querySelectorAll('.stat .ss');
-    if(subs[2])subs[2].textContent='\u00a3'+monthRev.toFixed(0)+' total';
-    if(subs[0]&&todayJobs.length){
-      var next=todayJobs.sort(function(a,b){return(a.time||'').localeCompare(b.time||'');})[0];
-      subs[0].textContent='Next: '+(next.time||'ASAP')+' \u2192';
-    } else if(subs[0]){subs[0].textContent='No jobs today';}
+    var el=function(id){return document.getElementById(id);};
+    if(el('dash-today-count'))el('dash-today-count').textContent=todayJobs.length;
+    if(el('dash-today-earn'))el('dash-today-earn').textContent='\u00a3'+todayRev.toFixed(0);
+    if(el('dash-month-count'))el('dash-month-count').textContent=thisMonth.length;
+    if(el('dash-month-rev'))el('dash-month-rev').textContent='\u00a3'+monthRev.toFixed(0)+' total';
+    if(el('dash-today-next')&&todayJobs.length){
+      var sorted=todayJobs.slice().sort(function(a,b){return(a.time||'').localeCompare(b.time||'');});
+      el('dash-today-next').textContent='Next: '+(sorted[0].time||'ASAP')+' \u2192';
+    }
+    // Today badge in sidebar
+    var badge=el('sb-today-badge');
+    if(badge){badge.textContent=todayJobs.length;badge.style.display=todayJobs.length?'':'none';}
 
     // ── Dashboard today timeline ──
-    var tl=document.querySelector('#view-dashboard .timeline');
+    var tl=el('dash-timeline');
     if(tl){
       if(todayJobs.length){
-        tl.innerHTML=todayJobs.sort(function(a,b){return(a.time||'').localeCompare(b.time||'');}).map(function(b){
+        var sorted=todayJobs.slice().sort(function(a,b){return(a.time||'').localeCompare(b.time||'');});
+        tl.innerHTML=sorted.map(function(b,i){
           var statusTag=b.status==='completed'?'<span class="tag tag-done">Done</span>':b.status==='confirmed'?'<span class="tag tag-upcoming">Confirmed</span>':'<span class="tag tag-upcoming">Pending</span>';
-          return '<div class="tl-item"><div class="tl-time-col"><div class="tl-time">'+(b.time||'ASAP')+'</div><div class="tl-line"></div></div>'
+          return '<div class="tl-item"><div class="tl-time-col"><div class="tl-time">'+(b.time||'ASAP')+'</div>'+(i<sorted.length-1?'<div class="tl-line"></div>':'')+'</div>'
             +'<div class="tl-card"><div class="tl-top"><div class="tl-name">'+(b.customer_name||'Guest')+'</div>'+statusTag+'</div>'
             +'<div class="tl-route">'+b.pickup+' \u2192 '+b.destination+(b.flight?' \u00b7 '+b.flight:'')
             +(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')
             +' '+(b.payment==='card'?'Card':'Cash')+'</div></div></div>';
         }).join('');
       } else {
-        tl.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(255,255,255,.35);font-style:italic">No jobs today</div>';
+        tl.innerHTML='<div style="text-align:center;padding:1.5rem;color:rgba(17,29,44,.3);font-size:.82rem">No jobs today</div>';
+      }
+    }
+
+    // ── Today page timeline ──
+    var todayTl=el('today-timeline');
+    var todaySub=el('today-page-sub');
+    if(todaySub){
+      var d=new Date();
+      todaySub.textContent=d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    }
+    if(todayTl){
+      if(todayJobs.length){
+        var sorted=todayJobs.slice().sort(function(a,b){return(a.time||'').localeCompare(b.time||'');});
+        todayTl.innerHTML=sorted.map(function(b,i){
+          var statusTag=b.status==='completed'?'<span class="tag tag-done">Done</span>':b.status==='confirmed'?'<span class="tag tag-upcoming">Confirmed</span>':'<span class="tag tag-upcoming">Pending</span>';
+          return '<div class="tl-item"><div class="tl-time-col"><div class="tl-time">'+(b.time||'ASAP')+'</div>'+(i<sorted.length-1?'<div class="tl-line"></div>':'')+'</div>'
+            +'<div class="tl-card active"><div class="tl-top"><div class="tl-name">'+(b.customer_name||'Guest')+'</div>'+statusTag+'</div>'
+            +'<div class="tl-route">\ud83d\udccd '+b.pickup+' \u2192 '+b.destination+'</div>'
+            +'<div class="tl-route" style="margin-top:.2rem">'+(b.flight?'Flight '+b.flight+' \u00b7 ':'')+b.passengers+' pax'+(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')+' '+(b.payment==='card'?'Card':'Cash')+'</div>'
+            +'<div class="tl-actions">'
+            +'<button class="btn btn-green btn-sm" onclick="markJobDone('+b.id+',this)">\u2713 Done</button>'
+            +'<button class="btn btn-red btn-sm" onclick="cancelJob('+b.id+',this)">\u2715 Cancel</button>'
+            +'</div></div></div>';
+        }).join('');
+      } else {
+        todayTl.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.3);font-size:.85rem">No jobs scheduled for today</div>';
       }
     }
 
     // ── All Journeys table ──
-    var tbody=document.getElementById('jobs-tbody');
+    var tbody=el('jobs-tbody');
     if(tbody){
-      tbody.innerHTML=bookings.map(function(b){
-        var dateStr='';
-        try{var dd=new Date(b.date);dateStr=dd.toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'2-digit'});}catch(e){dateStr=b.date||'';}
-        var statusClass=b.status==='completed'?'tag-done':b.status==='cancelled'?'tag-cancel':'tag-upcoming';
-        var statusLabel=b.status?b.status.charAt(0).toUpperCase()+b.status.slice(1):'Pending';
-        var payClass=b.payment==='card'?'tag-card':'tag-cash';
-        var payLabel=b.payment==='card'?'Card':'Cash';
-        return '<tr data-status="'+b.status+'">'
-          +'<td><div class="main-v">'+b.ref+'</div></td>'
-          +'<td>'+dateStr+'</td>'
-          +'<td>'+(b.time||'ASAP')+'</td>'
-          +'<td><div class="main-v">'+(b.customer_name||'Guest')+'</div>'+(b.customer_phone?'<div class="sub-v">'+b.customer_phone+'</div>':'')+'</td>'
-          +'<td><div class="main-v">'+b.pickup+' \u2192 '+b.destination+'</div>'+(b.flight?'<div class="sub-v">'+b.flight+'</div>':'')+'</td>'
-          +'<td><span class="tag tag-upcoming" style="font-size:.5rem">'+(b.flight?'Airport':'Local')+'</span></td>'
-          +'<td><span style="color:var(--gold);font-family:var(--serif);font-size:1.1rem">'+(b.fare?'\u00a3'+Number(b.fare).toFixed(0):'TBC')+'</span></td>'
-          +'<td><span class="tag '+payClass+'">'+payLabel+'</span></td>'
-          +'<td><span class="tag '+statusClass+'">'+statusLabel+'</span></td>'
-          +'<td><button class="btn btn-ghost btn-sm" onclick="showToast(\''+b.ref+'\')">View</button></td>'
-          +'</tr>';
-      }).join('');
+      if(!bookings.length){
+        tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">No bookings yet</td></tr>';
+      } else {
+        tbody.innerHTML=bookings.map(function(b){
+          var dateStr='';
+          try{var dd=new Date(b.date);dateStr=dd.toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'2-digit'});}catch(e){dateStr=b.date||'';}
+          var statusClass=b.status==='completed'?'tag-done':b.status==='cancelled'?'tag-cancel':'tag-upcoming';
+          var statusLabel=b.status?b.status.charAt(0).toUpperCase()+b.status.slice(1):'Pending';
+          var payClass=b.payment==='card'?'tag-card':'tag-cash';
+          var payLabel=b.payment==='card'?'Card':'Cash';
+          return '<tr data-status="'+b.status+'">'
+            +'<td><div class="main-v">'+b.ref+'</div></td>'
+            +'<td>'+dateStr+'</td>'
+            +'<td>'+(b.time||'ASAP')+'</td>'
+            +'<td><div class="main-v">'+(b.customer_name||'Guest')+'</div>'+(b.customer_phone?'<div class="sub-v">'+b.customer_phone+'</div>':'')+'</td>'
+            +'<td><div class="main-v">'+b.pickup+' \u2192 '+b.destination+'</div>'+(b.flight?'<div class="sub-v">'+b.flight+'</div>':'')+'</td>'
+            +'<td><span class="tag tag-upcoming" style="font-size:.5rem">'+(b.flight?'Airport':'Local')+'</span></td>'
+            +'<td><span style="color:var(--gold);font-family:var(--serif);font-size:1.1rem">'+(b.fare?'\u00a3'+Number(b.fare).toFixed(0):'TBC')+'</span></td>'
+            +'<td><span class="tag '+payClass+'">'+payLabel+'</span></td>'
+            +'<td><span class="tag '+statusClass+'">'+statusLabel+'</span></td>'
+            +'<td><button class="btn btn-ghost btn-sm" onclick="showToast(\''+b.ref+'\')">View</button></td>'
+            +'</tr>';
+        }).join('');
+      }
     }
 
-    // ── Recent activity ──
-    var actDiv=document.querySelector('#view-dashboard .notif')?.parentElement;
-    if(actDiv&&bookings.length){
-      var recent=bookings.slice(0,5);
-      actDiv.innerHTML=recent.map(function(b){
+    // ── Recent activity (dashboard + notifications) ──
+    var actDiv=el('dash-activity');
+    var notifDiv=el('notif-list');
+    if(bookings.length){
+      var recent=bookings.slice(0,8);
+      var html=recent.map(function(b){
         var ago='';
         try{var mins=Math.floor((Date.now()-new Date(b.created_at).getTime())/60000);ago=mins<60?mins+' min ago':mins<1440?Math.floor(mins/60)+' hours ago':Math.floor(mins/1440)+' days ago';}catch(e){ago='';}
-        return '<div class="notif"><div class="notif-dot" style="background:var(--gold)"></div><div><div class="notif-text"><strong>'+b.ref+'</strong> \u2014 '+(b.customer_name||'Guest')+', '+b.pickup+' \u2192 '+b.destination+'</div><div class="notif-time">'+ago+'</div></div></div>';
+        return '<div class="notif"><div class="notif-dot" style="background:var(--gold)"></div><div><div class="notif-text"><strong>'+b.ref+'</strong> \u2014 '+(b.customer_name||'Guest')+', '+b.pickup+' \u2192 '+b.destination+(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')+'</div><div class="notif-time">'+ago+'</div></div></div>';
       }).join('');
+      if(actDiv)actDiv.innerHTML=html;
+      if(notifDiv)notifDiv.innerHTML=html;
     }
+
+    // ── Record book data ──
+    RECORD_DATA={};
+    bookings.forEach(function(b){
+      if(b.status==='cancelled')return;
+      var key=b.date?b.date.slice(0,7):'';
+      if(!key)return;
+      if(!RECORD_DATA[key])RECORD_DATA[key]=[];
+      RECORD_DATA[key].push(b);
+    });
+    buildRecordBook();
+
   }).catch(function(e){console.warn('[BOOKINGS]',e);});
+
+  // ── Load customers ──
+  fetch('/api/customers').then(function(r){return r.json();}).then(function(d){
+    if(!d.ok)return;
+    var cg=document.getElementById('cust-grid');
+    var dc=document.getElementById('dash-cust-count');
+    if(dc)dc.textContent=d.customers.length;
+    if(!cg)return;
+    if(!d.customers.length){
+      cg.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:2rem;color:rgba(17,29,44,.3);font-size:.85rem">No customers yet</div>';
+      return;
+    }
+    cg.innerHTML=d.customers.map(function(c){
+      return '<div class="cust-card"><div class="cc-name">'+(c.full_name||'Unknown')+'</div>'
+        +'<div class="cc-type cc-personal">'+(c.account_type||'Personal')+'</div>'
+        +'<div class="cc-meta">'+(c.email||'')+(c.phone?' \u00b7 '+c.phone:'')+'</div></div>';
+    }).join('');
+  }).catch(function(){});
+
+  // ── Load drivers ──
+  fetch('/api/drivers').then(function(r){return r.json();}).then(function(d){
+    if(!d.ok)return;
+    var da=document.getElementById('drv-active');
+    var dt=document.getElementById('drv-total');
+    var active=d.drivers.filter(function(x){return x.active;}).length;
+    if(da)da.textContent=active;
+    if(dt)dt.textContent=d.drivers.length;
+    DRIVERS=d.drivers.map(function(x){
+      return{id:x.id,initials:(x.full_name||'?')[0].toUpperCase(),name:x.full_name||x.username,role:x.role||'driver',
+        mobile:x.phone||'',email:x.email||'',status:x.active?'active':'inactive',jobs:0};
+    });
+    buildDrivers();
+  }).catch(function(){});
+}
+
+// ── Job status actions ──
+function markJobDone(id,btn){
+  fetch('/api/bookings/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'completed'})})
+    .then(function(){showToast('Journey completed');loadLiveBookings();}).catch(function(){showToast('Error updating');});
+}
+function cancelJob(id,btn){
+  if(!confirm('Cancel this booking?'))return;
+  fetch('/api/bookings/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'cancelled'})})
+    .then(function(){showToast('Booking cancelled');loadLiveBookings();}).catch(function(){showToast('Error updating');});
 }
 
 // Auth check via backend
@@ -1439,22 +1344,12 @@ function loadLiveBookings(){
   }
 })();
 
-// Always initialize on page load — clock, fares, record book, drivers
+// Initialize clock and fares on page load
 tick();
-setTimeout(function(){buildFares();buildRecordBook();buildDrivers();},50);
+setTimeout(function(){buildFares();},50);
 
 // ── DRIVERS ──────────────────────────────────────────────────────────────
-var DRIVERS = [
-  {
-    id:'drv1', initials:'W', name:'Driver Name', role:'Owner / Driver',
-    mobile:'+44 7700 000 000', email:'driver@westmere.co.uk',
-    licence:'DVLA-0000000', licenceExpiry:'2028-01-01',
-    dbs:'DBS-000000', dbsExpiry:'2026-06-01',
-    vehicle:'Tesla Model S · Midnight Silver', reg:'XX21 WPH',
-    phv:'LDC-00001', insurance:'POL-000000',
-    status:'active', jobs:43, note:'Primary driver'
-  }
-];
+var DRIVERS = [];
 
 function buildDrivers(){
   var grid=document.getElementById('driver-grid');
@@ -1546,7 +1441,7 @@ const TWN={horsham:'horsham',rh12:'horsham',rh13:'horsham',lewes:'lewes',bn7:'le
 const DT={gatwick:{heathrow:55,horsham:28,lewes:44,brighton:48,worthing:52,burgess:20,haywards:22},heathrow:{horsham:58,lewes:90,brighton:85,worthing:75,burgess:60,haywards:62},horsham:{lewes:50,brighton:42,worthing:38,burgess:28,haywards:30},lewes:{brighton:22,worthing:42,burgess:25,haywards:28},brighton:{worthing:28,burgess:20,haywards:25}};
 function dtDrive(a,b){if(!a||!b)return 25;if(a===b)return 8;return(DT[a]&&DT[a][b])||(DT[b]&&DT[b][a])||30}
 function nTown(s){const l=s.toLowerCase();for(const[k,v]of Object.entries(TWN)){if(l.includes(k))return v}if(l.includes('gatwick'))return'gatwick';if(l.includes('heathrow'))return'heathrow';return null}
-const CONFIRMED=[{date:'2025-03-25',pickupTime:'04:30',dest:'Gatwick Airport',journeyMins:45,name:'Sarah Jones'},{date:'2025-03-25',pickupTime:'15:30',dest:'Lewes',journeyMins:105,name:'John Smith'}];
+const CONFIRMED=[];
 function toM(t){if(!t)return 0;const[h,m]=t.split(':').map(Number);return h*60+m}
 function fmM(m){return String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0')}
 
@@ -1732,108 +1627,112 @@ const nbDate=document.getElementById('nb-date');
 if(nbDate)nbDate.value=tom.toISOString().split('T')[0];
 
 // ── RECORD BOOK ──────────────────────────────────────────────────────
-const RB_DATA = {
-  '2025-03': [
-    {n:1, date:'25/03/2025', time:'04:30', passenger:'Sarah Jones',      pickup:'14 Friars Walk, Lewes BN7 2PL',    dest:'Gatwick South Terminal',  type:'Airport Drop-off', fare:78,  pay:'Cash',    flight:'EZY1234'},
-    {n:2, date:'25/03/2025', time:'17:20', passenger:'John Smith',        pickup:'Heathrow T5 Arrivals',              dest:'22 Pelham Court, Lewes BN7', type:'Airport Pickup',   fare:145, pay:'Account', flight:'BA0492'},
-    {n:3, date:'14/03/2025', time:'07:30', passenger:'Mrs Linda Patel',   pickup:'8 Station Road, Lewes BN7 1PH',    dest:'Heathrow T5',              type:'Airport Drop-off', fare:140, pay:'Card',    flight:'BA0117'},
-    {n:4, date:'10/03/2025', time:'05:15', passenger:'Mr James Cooper',   pickup:'Horsham Town Centre RH12',          dest:'Gatwick North Terminal',   type:'Airport Drop-off', fare:55,  pay:'Cash',    flight:'FR9920'},
-    {n:5, date:'05/03/2025', time:'14:20', passenger:'Tom Ashworth',      pickup:'Gatwick South Terminal',            dest:'Lewes BN7 2AL',            type:'Airport Pickup',   fare:74,  pay:'Account', flight:'EZY5512'},
-    {n:6, date:'02/03/2025', time:'05:15', passenger:'Sarah Jones',       pickup:'14 Friars Walk, Lewes BN7 2PL',    dest:'Gatwick South Terminal',   type:'Airport Drop-off', fare:78,  pay:'Cash',    flight:'EZY2214'},
-  ],
-  '2025-02': [
-    {n:1, date:'18/02/2025', time:'06:00', passenger:'Priya Sharma',      pickup:'Brighton BN1 3AG',                  dest:'Gatwick South Terminal',   type:'Airport Drop-off', fare:72,  pay:'Cash',    flight:'FR1084'},
-    {n:2, date:'12/02/2025', time:'08:45', passenger:'Dr Amelia Foster',  pickup:'Lewes BN7 1XP',                     dest:'Heathrow T2',              type:'Airport Drop-off', fare:140, pay:'Card',    flight:'BA0026'},
-    {n:3, date:'05/02/2025', time:'14:20', passenger:'Tom Ashworth',      pickup:'Gatwick South Terminal',            dest:'Lewes BN7 2AL',            type:'Airport Pickup',   fare:74,  pay:'Account', flight:'EZY5512'},
-  ],
-  '2025-01': [
-    {n:1, date:'20/01/2025', time:'05:00', passenger:'Sarah Jones',       pickup:'14 Friars Walk, Lewes BN7 2PL',    dest:'Gatwick South Terminal',   type:'Airport Drop-off', fare:78,  pay:'Cash',    flight:'EZY0022'},
-    {n:2, date:'14/01/2025', time:'09:15', passenger:'Mrs Williams',      pickup:'Ringmer BN8 5QJ',                   dest:'Brighton Station BN1',     type:'Private Hire',     fare:28,  pay:'Cash',    flight:'—'},
-    {n:3, date:'08/01/2025', time:'11:30', passenger:'John Smith',        pickup:'Lewes BN7 2DB',                     dest:'Heathrow T5',              type:'Airport Drop-off', fare:140, pay:'Account', flight:'BA0117'},
-  ]
-};
+var RECORD_DATA = {};
 
 function buildRecordBook(){
-  const month = document.getElementById('rb-month').value;
-  const data = RB_DATA[month] || [];
-  const periods = {'2025-03':'March 2025','2025-02':'February 2025','2025-01':'January 2025'};
-  document.getElementById('rb-period').textContent = periods[month] || month;
-  document.getElementById('rb-generated').textContent = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
-  const tbody = document.getElementById('rb-tbody');
-  tbody.innerHTML = data.map(function(r){
+  // Build month selector from RECORD_DATA keys
+  var sel=document.getElementById('rb-month');
+  var months=Object.keys(RECORD_DATA).sort().reverse();
+  if(months.length){
+    var curVal=sel.value;
+    sel.innerHTML=months.map(function(m){
+      var parts=m.split('-');
+      var label=new Date(parseInt(parts[0]),parseInt(parts[1])-1).toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+      return '<option value="'+m+'">'+label+'</option>';
+    }).join('');
+    if(months.indexOf(curVal)>=0)sel.value=curVal;
+  }
+  var month=sel.value;
+  var data=RECORD_DATA[month]||[];
+  var parts=month.split('-');
+  var periodLabel=new Date(parseInt(parts[0]),parseInt(parts[1])-1).toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+  document.getElementById('rb-period').textContent=periodLabel;
+  document.getElementById('rb-generated').textContent=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  var tbody=document.getElementById('rb-tbody');
+  if(!data.length){
+    tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">No journeys recorded this month</td></tr>';
+    document.getElementById('rb-count').textContent='0';
+    document.getElementById('rb-total').textContent='\u00a30.00';
+    return;
+  }
+  tbody.innerHTML=data.map(function(b,i){
+    var dateStr='';
+    try{dateStr=new Date(b.date).toLocaleDateString('en-GB');}catch(e){dateStr=b.date||'';}
     return '<tr>'
-      + '<td style="color:var(--text-light);font-size:.72rem">'+r.n+'</td>'
-      + '<td style="font-weight:400;color:var(--navy)">'+r.date+'</td>'
-      + '<td>'+r.time+'</td>'
-      + '<td style="font-weight:400;color:var(--navy)">'+r.passenger+'</td>'
-      + '<td style="font-size:.75rem">'+r.pickup+'</td>'
-      + '<td style="font-size:.75rem">'+r.dest+'</td>'
-      + '<td><span class="tag tag-upcoming" style="font-size:.5rem">'+r.type+'</span></td>'
-      + '<td style="font-family:var(--serif);font-size:1rem;color:var(--gold)">£'+r.fare+'</td>'
-      + '<td>'+r.pay+'</td>'
-      + '<td style="font-size:.75rem;color:var(--text-mid)">'+r.flight+'</td>'
-      + '</tr>';
+      +'<td style="color:var(--text-light);font-size:.72rem">'+(i+1)+'</td>'
+      +'<td style="font-weight:400;color:var(--navy)">'+dateStr+'</td>'
+      +'<td>'+(b.time||'ASAP')+'</td>'
+      +'<td style="font-weight:400;color:var(--navy)">'+(b.customer_name||'Guest')+'</td>'
+      +'<td style="font-size:.75rem">'+b.pickup+'</td>'
+      +'<td style="font-size:.75rem">'+b.destination+'</td>'
+      +'<td><span class="tag tag-upcoming" style="font-size:.5rem">'+(b.flight?'Airport':'Local')+'</span></td>'
+      +'<td style="font-family:var(--serif);font-size:1rem;color:var(--gold)">'+(b.fare?'\u00a3'+Number(b.fare).toFixed(0):'TBC')+'</td>'
+      +'<td>'+(b.payment||'cash')+'</td>'
+      +'<td style="font-size:.75rem;color:var(--text-mid)">'+(b.flight||'\u2014')+'</td>'
+      +'</tr>';
   }).join('');
-  const total = data.reduce(function(s,r){return s+r.fare;},0);
-  document.getElementById('rb-count').textContent = data.length;
-  document.getElementById('rb-total').textContent = '£' + total.toFixed(2);
+  var total=data.reduce(function(s,b){return s+(b.fare||0);},0);
+  document.getElementById('rb-count').textContent=data.length;
+  document.getElementById('rb-total').textContent='\u00a3'+total.toFixed(2);
 }
 
 function downloadRecordBook(){
-  const month = document.getElementById('rb-month').value;
-  const periods = {'2025-03':'March 2025','2025-02':'February 2025','2025-01':'January 2025'};
-  const period = periods[month] || month;
-  const data = RB_DATA[month] || [];
-  const total = data.reduce(function(s,r){return s+r.fare;},0);
+  var month=document.getElementById('rb-month').value;
+  var parts=month.split('-');
+  var period=new Date(parseInt(parts[0]),parseInt(parts[1])-1).toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+  var data=RECORD_DATA[month]||[];
+  var total=data.reduce(function(s,b){return s+(b.fare||0);},0);
 
-  const rows = data.map(function(r){
-    return r.n+','+r.date+','+r.time+',"'+r.passenger+'","'+r.pickup+'","'+r.dest+'","'+r.type+'",£'+r.fare+','+r.pay+','+r.flight;
+  var rows=data.map(function(b,i){
+    var dateStr='';try{dateStr=new Date(b.date).toLocaleDateString('en-GB');}catch(e){dateStr=b.date||'';}
+    return (i+1)+','+dateStr+','+(b.time||'ASAP')+',"'+(b.customer_name||'Guest')+'","'+b.pickup+'","'+b.destination+'","'+(b.flight?'Airport':'Local')+'",\u00a3'+(b.fare||0)+','+(b.payment||'cash')+','+(b.flight||'\u2014');
   }).join('\n');
 
-  const csv = 'Westmere Private Hire — Operator Journey Record\nLicensed by Lewes District Council\nPeriod: '+period+'\nGenerated: '+new Date().toLocaleDateString('en-GB')+'\n\n'
-    + '#,Date,Time,Passenger,Pickup Address,Destination,Type,Fare,Payment,Flight No.\n'
-    + rows
-    + '\n\nTotal journeys:,'+data.length+'\nTotal revenue:,£'+total.toFixed(2);
+  var csv='Westmere Private Hire \u2014 Operator Journey Record\nLicensed by Lewes District Council\nPeriod: '+period+'\nGenerated: '+new Date().toLocaleDateString('en-GB')+'\n\n'
+    +'#,Date,Time,Passenger,Pickup Address,Destination,Type,Fare,Payment,Flight No.\n'
+    +rows
+    +'\n\nTotal journeys:,'+data.length+'\nTotal revenue:,\u00a3'+total.toFixed(2);
 
-  const blob = new Blob([csv], {type:'text/csv'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'Westmere-Record-Book-'+period.replace(' ','-')+'.csv';
+  var blob=new Blob([csv],{type:'text/csv'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='Westmere-Record-Book-'+period.replace(' ','-')+'.csv';
   a.click();
-  showToast('Record book downloaded — open in Excel or Numbers');
+  showToast('Record book downloaded \u2014 open in Excel or Numbers');
 }
 
 function printRecordBook(){
-  var w = window.open('','_blank');
-  var printCSS = '*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:Jost,Helvetica Neue,Arial,sans-serif;font-weight:300;color:#222;background:#fff;line-height:1.7;padding:2rem}h2{font-family:Cormorant Garamond,Georgia,serif;font-weight:400;margin-bottom:.3rem}p{color:#666;margin-bottom:1.5rem;font-size:.9rem}table{width:100%;border-collapse:collapse;margin-bottom:1.5rem}th{font-size:.65rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#888;padding:.5rem .6rem;border-bottom:2px solid #ddd;text-align:left}td{font-size:.82rem;padding:.5rem .6rem;border-bottom:1px solid #eee;color:#444}.navy{color:#111D2C;font-weight:400}.gold{color:#B8985A;font-family:Cormorant Garamond,Georgia,serif;font-size:1rem}.footer{display:flex;justify-content:space-between;padding-top:1rem;border-top:2px solid #ddd;font-size:.78rem;color:#888}@media print{body{padding:1rem}}';
-  w.document.write('<html><head><title>Westmere Record Book</title><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"><style>' + printCSS + '</style></head><body>');
-  w.document.write('<h2>Westmere Private Hire — Operator Record Book</h2>');
-  w.document.write('<p>Licensed by Lewes District Council &nbsp;·&nbsp; Period: '
-    + document.getElementById('rb-period').textContent
-    + ' &nbsp;·&nbsp; Generated: ' + new Date().toLocaleDateString('en-GB') + '</p>');
+  var w=window.open('','_blank');
+  var printCSS='*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:Jost,Helvetica Neue,Arial,sans-serif;font-weight:300;color:#222;background:#fff;line-height:1.7;padding:2rem}h2{font-family:Cormorant Garamond,Georgia,serif;font-weight:400;margin-bottom:.3rem}p{color:#666;margin-bottom:1.5rem;font-size:.9rem}table{width:100%;border-collapse:collapse;margin-bottom:1.5rem}th{font-size:.65rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#888;padding:.5rem .6rem;border-bottom:2px solid #ddd;text-align:left}td{font-size:.82rem;padding:.5rem .6rem;border-bottom:1px solid #eee;color:#444}.navy{color:#111D2C;font-weight:400}.gold{color:#B8985A;font-family:Cormorant Garamond,Georgia,serif;font-size:1rem}.footer{display:flex;justify-content:space-between;padding-top:1rem;border-top:2px solid #ddd;font-size:.78rem;color:#888}@media print{body{padding:1rem}}';
+  w.document.write('<html><head><title>Westmere Record Book</title><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"><style>'+printCSS+'</style></head><body>');
+  w.document.write('<h2>Westmere Private Hire \u2014 Operator Record Book</h2>');
+  w.document.write('<p>Licensed by Lewes District Council &nbsp;\u00b7&nbsp; Period: '
+    +document.getElementById('rb-period').textContent
+    +' &nbsp;\u00b7&nbsp; Generated: '+new Date().toLocaleDateString('en-GB')+'</p>');
   w.document.write('<table><thead><tr>'
-    + '<th>#</th><th>Date</th><th>Time</th><th>Passenger</th><th>Pickup Address</th><th>Destination</th><th>Type</th><th>Fare</th><th>Payment</th><th>Flight No.</th>'
-    + '</tr></thead><tbody>');
-  const month = document.getElementById('rb-month').value;
-  const data = RB_DATA[month] || [];
-  data.forEach(function(r){
+    +'<th>#</th><th>Date</th><th>Time</th><th>Passenger</th><th>Pickup Address</th><th>Destination</th><th>Type</th><th>Fare</th><th>Payment</th><th>Flight No.</th>'
+    +'</tr></thead><tbody>');
+  var month=document.getElementById('rb-month').value;
+  var data=RECORD_DATA[month]||[];
+  data.forEach(function(b,i){
+    var dateStr='';try{dateStr=new Date(b.date).toLocaleDateString('en-GB');}catch(e){dateStr=b.date||'';}
     w.document.write('<tr>'
-      + '<td style="color:#718096">'+r.n+'</td>'
-      + '<td class="navy">'+r.date+'</td>'
-      + '<td>'+r.time+'</td>'
-      + '<td class="navy">'+r.passenger+'</td>'
-      + '<td>'+r.pickup+'</td>'
-      + '<td>'+r.dest+'</td>'
-      + '<td>'+r.type+'</td>'
-      + '<td class="gold">£'+r.fare+'</td>'
-      + '<td>'+r.pay+'</td>'
-      + '<td>'+r.flight+'</td>'
-      + '</tr>');
+      +'<td style="color:#718096">'+(i+1)+'</td>'
+      +'<td class="navy">'+dateStr+'</td>'
+      +'<td>'+(b.time||'ASAP')+'</td>'
+      +'<td class="navy">'+(b.customer_name||'Guest')+'</td>'
+      +'<td>'+b.pickup+'</td>'
+      +'<td>'+b.destination+'</td>'
+      +'<td>'+(b.flight?'Airport':'Local')+'</td>'
+      +'<td class="gold">'+(b.fare?'\u00a3'+Number(b.fare).toFixed(0):'TBC')+'</td>'
+      +'<td>'+(b.payment||'cash')+'</td>'
+      +'<td>'+(b.flight||'\u2014')+'</td>'
+      +'</tr>');
   });
-  const total = data.reduce(function(s,r){return s+r.fare;},0);
+  var total=data.reduce(function(s,b){return s+(b.fare||0);},0);
   w.document.write('</tbody></table>');
-  w.document.write('<div class="footer"><span>Total journeys: <strong>'+data.length+'</strong></span><span>Total revenue: <strong style="color:#B8985A">£'+total.toFixed(2)+'</strong></span><span>Westmere Private Hire · Lewes District Council Licence</span></div>');
-  w.document.write('<footer class="mini-foot">&copy; 2026 Westmere Private Hire &middot; All rights reserved &middot; Licensed by Lewes District Council<span class="mini-legal"><a href="westmere-terms.html">Terms</a><a href="westmere-privacy.html">Privacy</a><a href="westmere-cookies.html">Cookies</a></span></footer></body><\/html>');
+  w.document.write('<div class="footer"><span>Total journeys: <strong>'+data.length+'</strong></span><span>Total revenue: <strong style="color:#B8985A">\u00a3'+total.toFixed(2)+'</strong></span><span>Westmere Private Hire \u00b7 Lewes District Council Licence</span></div>');
+  w.document.write('</body><\/html>');
   w.document.close();
   w.focus();
   setTimeout(function(){w.print();},600);
