@@ -902,7 +902,7 @@ function qbRunCalc(from,to){
       .then(function(r){return r.json();}).then(function(data){
         if(!data||!data.routes||!data.routes[0]){qbShowFare(calcMile(40,night,null)+APC[puAP][1]+APC[deAP][0],null,null,'Estimated');return;}
         var mi=Math.round(data.routes[0].distance/1609.34*10)/10,ti=Math.round(data.routes[0].duration/60);
-        qbShowFare(calcMile(mi,night,null)+APC[puAP][1]+APC[deAP][0],mi,ti,(night?'Night rate \u00b7 ':'')+'Fixed price',APFULL[puAP]+' pickup +\u00a3'+APC[puAP][1]+' \u00b7 '+APFULL[deAP]+' drop-off +\u00a3'+APC[deAP][0]);
+        qbShowFare(calcMile(mi,night,null)+APC[puAP][1]+APC[deAP][0],mi,ti,'Fixed price',APFULL[puAP]+' pickup +\u00a3'+APC[puAP][1]+' \u00b7 '+APFULL[deAP]+' drop-off +\u00a3'+APC[deAP][0]);
       }).catch(function(){qbShowFare(calcMile(40,night,null)+APC[puAP][1]+APC[deAP][0],null,null,'Estimated');});
     }).catch(function(){qbShowFare(calcMile(40,night,null)+APC[puAP][1]+APC[deAP][0],null,null,'Estimated');});
     return;
@@ -915,7 +915,7 @@ function qbRunCalc(from,to){
     .then(function(r){return r.json();}).then(function(data){
       if(!data||!data.routes||!data.routes[0]){qbShowFare(calcMile(8,night,null),null,null,'Estimated');return;}
       var mi=Math.round(data.routes[0].distance/1609.34*10)/10,ti=Math.round(data.routes[0].duration/60);
-      qbShowFare(calcMile(mi,night,puAP||deAP||null),mi,ti,(night?'Night rate \u00b7 ':'')+'Fixed price');
+      qbShowFare(calcMile(mi,night,puAP||deAP||null),mi,ti,'Fixed price');
     }).catch(function(){qbShowFare(calcMile(8,night,null),null,null,'Estimated');});
   }).catch(function(){qbShowFare(calcMile(8,night,null),null,null,'Estimated');});
 }

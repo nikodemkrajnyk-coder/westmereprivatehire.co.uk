@@ -15,7 +15,7 @@ function getTransporter() {
   if (transporter) return transporter;
 
   const user = process.env.GMAIL_USER;
-  const pass = process.env.GMAIL_APP_PASSWORD;
+  const pass = (process.env.GMAIL_APP_PASSWORD || '').replace(/\s/g, '');
 
   if (!user || !pass) {
     console.warn('[EMAIL] GMAIL_USER or GMAIL_APP_PASSWORD not set — email disabled');

@@ -20,9 +20,12 @@ router.post('/book', async (req, res) => {
             passengers, bags, flight, fare, payment, notes, source } = req.body;
 
     // Validate required fields
-    if (!name || !phone || !pickup || !destination || !date) {
-      return res.status(400).json({ error: 'Name, phone, pickup, destination, and date are required' });
+    if (!name || !phone || !pickup || !destination) {
+      return res.status(400).json({ error: 'Name, phone, pickup, and destination are required' });
     }
+
+    // Default date to today if not provided
+    const bookingDate = date || new Date().toISOString().split('T')[0];
 
     // Basic email format check
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -44,7 +47,7 @@ router.post('/book', async (req, res) => {
       INSERT INTO bookings (ref, customer_id, pickup, destination, date, time, passengers, bags, trip_type, flight, fare, payment, notes)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
-      ref, customerId, pickup, destination, date, time || null,
+      ref, customerId, pickup, destination, bookingDate, time || null,
       passengers || 1, bags || null, null,
       flight || null, fare || null, payment || 'cash',
       notes || null
@@ -56,7 +59,7 @@ router.post('/book', async (req, res) => {
 
     // Build notification payload
     const booking = {
-      ref, name, email, phone, pickup, destination, date, time,
+      ref, name, email, phone, pickup, destination, date: bookingDate, time,
       passengers, bags, flight, fare, payment, notes
     };
 

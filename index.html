@@ -122,7 +122,6 @@ input[type="time"].fi,input[type="date"].fi{-webkit-appearance:auto;appearance:a
 #bk-overlay{position:fixed;inset:0;z-index:300;background:rgba(10,7,4,.72);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;pointer-events:none;transition:opacity .25s}
 #bk-overlay.open{opacity:1;pointer-events:all}
 #bk-card{background:transparent;border-radius:0;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;padding:2rem 2.2rem;position:relative}
-#bk-card.night-mode{background:transparent}
 .bk-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.1rem}
 .bk-header h3{font-family:var(--serif);font-size:1.6rem;font-weight:300;color:#fff;margin:0;letter-spacing:.06em}
 .bk-close{background:none;border:none;font-size:1.5rem;cursor:pointer;color:rgba(255,255,255,.55);padding:.3rem;line-height:1;transition:color .15s}
@@ -130,7 +129,6 @@ input[type="time"].fi,input[type="date"].fi{-webkit-appearance:auto;appearance:a
 .bk-journey-bar{background:rgba(255,255,255,.06);border-radius:0;padding:.8rem 0 .8rem 1rem;margin-bottom:.8rem;font-size:.79rem;color:rgba(255,255,255,.65);line-height:1.85;border-left:3px solid var(--gold)}
 .bk-journey-bar strong{color:#fff}
 .bk-fare-badge{font-family:var(--serif);font-size:1.45rem;color:var(--gold);font-weight:300;display:block;margin-top:.1rem}
-.bk-night-note{background:#1C2A3E;color:rgba(255,255,255,.7);font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;padding:.45rem 1rem;border-radius:4px;margin-bottom:.75rem;text-align:center}
 .bk-progress{display:flex;gap:.4rem;margin-bottom:1.5rem}
 .bk-pd{height:1.5px;flex:1;border-radius:2px;background:rgba(255,255,255,.15);transition:background .35s}
 .bk-pd.done{background:var(--gold)}
@@ -352,7 +350,6 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
       <button class="bk-close" onclick="closeBkModal()" aria-label="Close">&times;</button>
     </div>
     <div class="bk-journey-bar" id="bk-j-bar"></div>
-    <div class="bk-night-note" id="bk-night-note" style="display:none">Night rate applies &nbsp;&middot;&nbsp; 22:00&ndash;06:00</div>
     <div class="bk-progress"><div class="bk-pd done"></div><div class="bk-pd" id="bkp2"></div><div class="bk-pd" id="bkp3"></div><div class="bk-pd" id="bkp4"></div></div>
 
     <!-- Step 1: Contact -->
@@ -668,7 +665,7 @@ function runCalc(from,to){
           _calcRoute(c.lat,c.lon,apCoord2.lat,apCoord2.lon).then(function(r){
             if(!r){showFare(calcMile(20,night,null),null,null,'Estimated');return;}
             var mi=Math.round(r.distance/1609.34*10)/10,ti=Math.round(r.duration/60);
-            showFare(Math.round(calcMile(mi,night,null)),mi,ti,(night?'Night rate \u00b7 ':'')+'Per mile');
+            showFare(Math.round(calcMile(mi,night,null)),mi,ti,'Per mile');
           }).catch(function(){showFare(calcMile(20,night,null),null,null,'Estimated');});
         } else {showFare(calcMile(20,night,null),null,null,'Estimated');}
       }
@@ -711,7 +708,7 @@ function runCalc(from,to){
           _calcRoute(apCoord2.lat,apCoord2.lon,c.lat,c.lon).then(function(r){
             if(!r){showFare(calcMile(20,night,null),null,null,'Estimated');return;}
             var mi=Math.round(r.distance/1609.34*10)/10,ti=Math.round(r.duration/60);
-            showFare(Math.round(calcMile(mi,night,null)),mi,ti,(night?'Night rate \u00b7 ':'')+'Per mile');
+            showFare(Math.round(calcMile(mi,night,null)),mi,ti,'Per mile');
           }).catch(function(){showFare(calcMile(20,night,null),null,null,'Estimated');});
         } else {showFare(calcMile(20,night,null),null,null,'Estimated');}
       }
@@ -726,7 +723,7 @@ function runCalc(from,to){
       _calcRoute(cs[0].lat,cs[0].lon,cs[1].lat,cs[1].lon).then(function(r){
         if(!r){showFare(calcMile(40,night,null),null,null,'Estimated');return;}
         var mi=Math.round(r.distance/1609.34*10)/10,ti=Math.round(r.duration/60);
-        showFare(Math.round(calcMile(mi,night,null)),mi,ti,(night?'Night rate \u00b7 ':'')+'Per mile');
+        showFare(Math.round(calcMile(mi,night,null)),mi,ti,'Per mile');
       }).catch(function(){showFare(calcMile(40,night,null),null,null,'Estimated');});
     }).catch(function(){showFare(calcMile(40,night,null),null,null,'Estimated');});
     return;
@@ -738,7 +735,7 @@ function runCalc(from,to){
     _calcRoute(cs[0].lat,cs[0].lon,cs[1].lat,cs[1].lon).then(function(r){
       if(!r){showFare(calcMile(8,night,null),null,null,'Estimated');return;}
       var mi=Math.round(r.distance/1609.34*10)/10,ti=Math.round(r.duration/60);
-      showFare(Math.round(calcMile(mi,night,null)),mi,ti,(night?'Night rate \u00b7 ':'')+'Per mile');
+      showFare(Math.round(calcMile(mi,night,null)),mi,ti,'Per mile');
     }).catch(function(){showFare(calcMile(8,night,null),null,null,'Estimated');});
   }).catch(function(){showFare(calcMile(8,night,null),null,null,'Estimated');});
 }
@@ -778,22 +775,18 @@ function bkSubmitBooking(data) {
     body: JSON.stringify(data)
   }).then(function(r){ return r.json(); }).then(function(d){
     if (d.ok) {
-      console.log("[BOOK] Saved:", d.ref);
+      bkToast("Booking saved — confirmation sent", "ok");
     } else {
-      console.warn("[BOOK] Server:", d.error);
+      bkToast("Booking error: " + (d.error||"unknown"), "err");
     }
-  }).catch(function(e){ console.warn("[BOOK] Submit error:", e); });
+  }).catch(function(e){ bkToast("Could not reach server — booking saved locally", "err"); });
 }
 
 // ── NIGHT DETECTION ───────────────────────────────────
 function bkSmartDay(time) {
   if (!time) return;
   var h = parseInt(time.split(":")[0]);
-  var night = (h >= 22 || h < 6);
   var card = document.getElementById("bk-card");
-  var note = document.getElementById("bk-night-note");
-  if (card) card.classList.toggle("night-mode", night);
-  if (note) note.style.display = night ? "block" : "none";
 }
 
 // ── OPEN MODAL ────────────────────────────────────────
@@ -880,8 +873,6 @@ function bkGoS(n) {
   if (h && heads[n]) h.textContent = heads[n];
   var bar = document.getElementById("bk-j-bar");
   if (bar) bar.style.display = (n===6) ? "none" : "";
-  var nn = document.getElementById("bk-night-note");
-  if (nn && n===6) nn.style.display = "none";
   var card = document.getElementById("bk-card");
   if (card) card.scrollTop = 0;
 }

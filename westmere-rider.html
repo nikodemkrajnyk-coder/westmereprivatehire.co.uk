@@ -1012,7 +1012,7 @@ function bkRunCalc(from,to){
       calcRoute(c.lat,c.lon,ap1.lat,ap1.lon).then(function(rtR){
         if(!rtR){bkSetFare(calcMile(15,night,deAP),null,null,'Estimated',APFULL[deAP]+' drop-off +\u00a3'+APC[deAP][0]);return;}
         var mi=Math.round(rtR.distance/1609.34*10)/10,ti=Math.round(rtR.duration/60);
-        bkSetFare(calcMile(mi,night,deAP),mi,ti,(night?'Night rate \u00b7 ':'')+'Custom quote',APFULL[deAP]+' drop-off +\u00a3'+APC[deAP][0]);
+        bkSetFare(calcMile(mi,night,deAP),mi,ti,'Custom quote',APFULL[deAP]+' drop-off +\u00a3'+APC[deAP][0]);
       }).catch(function(){bkSetFare(calcMile(15,night,deAP),null,null,'Estimated',APFULL[deAP]+' drop-off +\u00a3'+APC[deAP][0]);});
     }).catch(function(){bkSetFare(calcMile(15,night,deAP),null,null,'Estimated',APFULL[deAP]+' drop-off +\u00a3'+APC[deAP][0]);});
     return;
@@ -1031,7 +1031,7 @@ function bkRunCalc(from,to){
         var mi=Math.round(rtR.distance/1609.34*10)/10,ti=Math.round(rtR.duration/60);
         /* Use APC[puAP][1] (pickup surcharge) instead of [0] which calcMile would add */
         var fare=calcMile(mi,night,null)+APC[puAP][1];
-        bkSetFare(Math.ceil(fare/0.5)*0.5,mi,ti,(night?'Night rate \u00b7 ':'')+'Custom quote',APFULL[puAP]+' pickup +\u00a3'+APC[puAP][1]);
+        bkSetFare(Math.ceil(fare/0.5)*0.5,mi,ti,'Custom quote',APFULL[puAP]+' pickup +\u00a3'+APC[puAP][1]);
       }).catch(function(){bkSetFare(calcMile(15,night,puAP),null,null,'Estimated',APFULL[puAP]+' pickup +\u00a3'+APC[puAP][1]);});
     }).catch(function(){bkSetFare(calcMile(15,night,puAP),null,null,'Estimated',APFULL[puAP]+' pickup +\u00a3'+APC[puAP][1]);});
     return;
@@ -1044,7 +1044,7 @@ function bkRunCalc(from,to){
       calcRoute(cs[0].lat,cs[0].lon,cs[1].lat,cs[1].lon).then(function(rt){
         if(!rt){bkSetFare(calcMile(40,night,null)+APC[puAP][1]+APC[deAP][0],null,null,'Estimated');return;}
         var mi=Math.round(rt.distance/1609.34*10)/10,ti=Math.round(rt.duration/60);
-        bkSetFare(calcMile(mi,night,null)+APC[puAP][1]+APC[deAP][0],mi,ti,(night?'Night rate \u00b7 ':'')+'Fixed price',APFULL[puAP]+' pickup +\u00a3'+APC[puAP][1]+' \u00b7 '+APFULL[deAP]+' drop-off +\u00a3'+APC[deAP][0]);
+        bkSetFare(calcMile(mi,night,null)+APC[puAP][1]+APC[deAP][0],mi,ti,'Fixed price',APFULL[puAP]+' pickup +\u00a3'+APC[puAP][1]+' \u00b7 '+APFULL[deAP]+' drop-off +\u00a3'+APC[deAP][0]);
       }).catch(function(){bkSetFare(calcMile(40,night,null)+APC[puAP][1]+APC[deAP][0],null,null,'Estimated');});
     }).catch(function(){bkSetFare(calcMile(40,night,null)+APC[puAP][1]+APC[deAP][0],null,null,'Estimated');});
     return;
@@ -1056,7 +1056,7 @@ function bkRunCalc(from,to){
     calcRoute(cs[0].lat,cs[0].lon,cs[1].lat,cs[1].lon).then(function(rt){
       if(!rt){bkSetFare(calcMile(8,night,null),null,null,'Estimated');return;}
       var mi=Math.round(rt.distance/1609.34*10)/10,ti=Math.round(rt.duration/60);
-      bkSetFare(calcMile(mi,night,puAP||deAP||null),mi,ti,(night?'Night rate \u00b7 ':'')+'Fixed price');
+      bkSetFare(calcMile(mi,night,puAP||deAP||null),mi,ti,'Fixed price');
     }).catch(function(){bkSetFare(calcMile(8,night,null),null,null,'Estimated');});
   }).catch(function(){bkSetFare(calcMile(8,night,null),null,null,'Estimated');});
 }
