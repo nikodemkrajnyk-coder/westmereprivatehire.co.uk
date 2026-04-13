@@ -552,7 +552,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
             <div class="fg"><label class="fl">Passengers</label>
               <select class="fi" id="qb-pax"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
             </div>
-            <div class="fg"><label class="fl">Luggage</label>
+            <div class="fg" id="qb-bags-wrap" style="display:none"><label class="fl">Luggage</label>
               <select class="fi" id="qb-bags"><option value="0">0 bags</option><option value="1">1 bag</option><option value="2" selected>2 bags</option><option value="3">3 bags</option><option value="4">4 bags</option><option value="5">5+ bags</option></select>
             </div>
             <div class="fg" id="qb-flight-wrap" style="grid-column:1/-1"><label class="fl">Flight Number (optional)</label><input class="fi" type="text" id="qb-flight" placeholder="e.g. EZY1234"></div>
@@ -781,6 +781,11 @@ var AIRPORTS=[
 ];
 var _st={};
 
+function _nominatim(q){
+  return fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q)+',UK&format=json&addressdetails=1&limit=6&countrycodes=gb&viewbox=-1.5,50.5,0.5,51.5&bounded=0',{headers:{'Accept':'application/json'}})
+  .then(function(r){return r.json();})
+  .then(function(arr){return(arr||[]).map(function(r){var parts=(r.display_name||'').split(', ');return{main:parts[0]||'',sub:parts.slice(1,3).join(', '),lat:parseFloat(r.lat),lon:parseFloat(r.lon)};});});
+}
 function addrSearch(inp,sid){
   var v=inp.value.trim(),s=document.getElementById(sid);
   if(!s)return;clearTimeout(_st[sid]);
@@ -790,17 +795,20 @@ function addrSearch(inp,sid){
     var apItems=AIRPORTS.filter(function(ap){
       return ap.name.toLowerCase().includes(vl)||ap.sub.toLowerCase().includes(vl);
     }).slice(0,3);
-    if(!window._MB){_renderSuggestions(inp,s,apItems,[]);return;}
-    fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+encodeURIComponent(v)+'.json?access_token='+_MB+'&country=gb&proximity=-0.35,50.95&language=en&limit=6&types=address,poi,place,postcode')
-    .then(function(r){return r.json();})
-    .then(function(data){
-      var items=(data.features||[]).map(function(f){
-        var parts=f.place_name?f.place_name.split(', '):[];
-        var coords=f.center;
-        return{main:parts[0]||f.text,sub:parts.slice(1,3).join(', '),lat:coords[1],lon:coords[0]};
-      });
-      _renderSuggestions(inp,s,apItems,items);
-    }).catch(function(){_renderSuggestions(inp,s,apItems,[]);});
+    if(window._MB){
+      fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+encodeURIComponent(v)+'.json?access_token='+_MB+'&country=gb&proximity=-0.35,50.95&language=en&limit=6&types=address,poi,place,postcode')
+      .then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
+      .then(function(data){
+        var items=(data.features||[]).map(function(f){
+          var parts=f.place_name?f.place_name.split(', '):[];
+          return{main:parts[0]||f.text,sub:parts.slice(1,3).join(', '),lat:f.center[1],lon:f.center[0]};
+        });
+        if(!items.length&&!apItems.length)throw new Error('empty');
+        _renderSuggestions(inp,s,apItems,items);
+      }).catch(function(){_nominatim(v).then(function(items){_renderSuggestions(inp,s,apItems,items);}).catch(function(){_renderSuggestions(inp,s,apItems,[]);});});
+    } else {
+      _nominatim(v).then(function(items){_renderSuggestions(inp,s,apItems,items);}).catch(function(){_renderSuggestions(inp,s,apItems,[]);});
+    }
   },300);
 }
 
@@ -832,8 +840,11 @@ document.addEventListener('click',function(e){document.querySelectorAll('.sug-dr
 function checkFlight(){
   var from=document.getElementById('qb-from').value;
   var to=document.getElementById('qb-dest').value;
+  var isAP=nAP(from)||nAP(to);
   var wrap=document.getElementById('qb-flight-wrap');
-  if(wrap)wrap.style.display=(nAP(from)||nAP(to))?'block':'none';
+  if(wrap)wrap.style.display=isAP?'block':'none';
+  var bags=document.getElementById('qb-bags-wrap');
+  if(bags)bags.style.display=isAP?'':'none';
 }
 var _et=null;
 function qbCalc(){

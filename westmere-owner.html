@@ -1186,6 +1186,11 @@ var AIRPORTS=[
   {n:'southampton',lat:50.9503,lon:-1.3568},{n:'city',lat:51.5048,lon:0.0495}
 ];
 var _st={};
+function _nominatim(q){
+  return fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q)+',UK&format=json&addressdetails=1&limit=6&countrycodes=gb&viewbox=-1.5,50.5,0.5,51.5&bounded=0',{headers:{'Accept':'application/json'}})
+  .then(function(r){return r.json();})
+  .then(function(arr){return(arr||[]).map(function(r){var parts=(r.display_name||'').split(', ');return{label:parts[0]||'',sub:parts.slice(1,3).join(', '),lat:parseFloat(r.lat),lon:parseFloat(r.lon)};});});
+}
 function addrSearch(inputId,sugId,cb){
   var inp=document.getElementById(inputId);
   var sug=document.getElementById(sugId);
@@ -1194,16 +1199,20 @@ function addrSearch(inputId,sugId,cb){
   if(q.length<2){sug.innerHTML='';sug.classList.remove('on');return;}
   clearTimeout(_st[sugId]);
   _st[sugId]=setTimeout(function(){
-    if(!window._MB){sug.innerHTML='';sug.classList.remove('on');return;}
-    fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+encodeURIComponent(q)+'.json?access_token='+_MB+'&country=gb&proximity=-0.35,50.95&language=en&limit=6&types=address,poi,place,postcode')
-    .then(function(r){return r.json();})
-    .then(function(data){
-      var items=(data.features||[]).map(function(f){
-        var parts=f.place_name?f.place_name.split(', '):[];
-        return{label:parts[0]||f.text,sub:parts.slice(1,3).join(', '),lat:f.center[1],lon:f.center[0]};
-      });
-      _renderSuggestions(sug,items,inp,cb);
-    }).catch(function(){sug.innerHTML='';sug.classList.remove('on');});
+    if(window._MB){
+      fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+encodeURIComponent(q)+'.json?access_token='+_MB+'&country=gb&proximity=-0.35,50.95&language=en&limit=6&types=address,poi,place,postcode')
+      .then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
+      .then(function(data){
+        var items=(data.features||[]).map(function(f){
+          var parts=f.place_name?f.place_name.split(', '):[];
+          return{label:parts[0]||f.text,sub:parts.slice(1,3).join(', '),lat:f.center[1],lon:f.center[0]};
+        });
+        if(!items.length)throw new Error('empty');
+        _renderSuggestions(sug,items,inp,cb);
+      }).catch(function(){_nominatim(q).then(function(items){_renderSuggestions(sug,items,inp,cb);}).catch(function(){sug.innerHTML='';sug.classList.remove('on');});});
+    } else {
+      _nominatim(q).then(function(items){_renderSuggestions(sug,items,inp,cb);}).catch(function(){sug.innerHTML='';sug.classList.remove('on');});
+    }
   },300);
 }
 function _renderSuggestions(sug,items,inp,cb){

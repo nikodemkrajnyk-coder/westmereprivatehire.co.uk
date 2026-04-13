@@ -26,6 +26,7 @@ app.use(helmet({
       fontSrc: ["'self'", "https://fonts.gstatic.com", "https://fonts.googleapis.com"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
       connectSrc: ["'self'", "https://api.mapbox.com",
+        "https://nominatim.openstreetmap.org", "https://router.project-osrm.org",
         "https://api.anthropic.com", "https://api.emailjs.com"],
       frameSrc: ["https://js.stripe.com", "https://www.google.com"],
     }
