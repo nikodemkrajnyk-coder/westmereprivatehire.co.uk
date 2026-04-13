@@ -16,6 +16,7 @@ function getDb() {
     db.pragma('journal_mode = WAL');
     db.pragma('foreign_keys = ON');
     initSchema();
+    migrate();
     seedDefaults();
   }
   return db;
@@ -60,9 +61,9 @@ function initSchema() {
       pickup      TEXT    NOT NULL,
       destination TEXT    NOT NULL,
       date        TEXT    NOT NULL,
-      time        TEXT    NOT NULL,
+      time        TEXT    NOT NULL DEFAULT 'ASAP',
       passengers  INTEGER NOT NULL DEFAULT 1,
-      bags        INTEGER NOT NULL DEFAULT 0,
+      bags        TEXT    NOT NULL DEFAULT '0',
       trip_type   TEXT,
       flight      TEXT,
       fare        REAL,
@@ -96,6 +97,45 @@ function initSchema() {
       created_at TEXT    NOT NULL DEFAULT (datetime('now'))
     );
   `);
+}
+
+function migrate() {
+  // Migrate bags column from INTEGER NOT NULL to TEXT NOT NULL DEFAULT '0'
+  // SQLite doesn't support ALTER COLUMN, so we check and recreate if needed
+  try {
+    const info = db.prepare("PRAGMA table_info(bookings)").all();
+    const bagsCol = info.find(c => c.name === 'bags');
+    if (bagsCol && bagsCol.type === 'INTEGER') {
+      db.exec(`
+        ALTER TABLE bookings RENAME TO bookings_old;
+        CREATE TABLE bookings (
+          id          INTEGER PRIMARY KEY AUTOINCREMENT,
+          ref         TEXT    NOT NULL UNIQUE,
+          customer_id INTEGER REFERENCES customers(id),
+          driver_id   INTEGER REFERENCES users(id),
+          pickup      TEXT    NOT NULL,
+          destination TEXT    NOT NULL,
+          date        TEXT    NOT NULL,
+          time        TEXT    NOT NULL DEFAULT 'ASAP',
+          passengers  INTEGER NOT NULL DEFAULT 1,
+          bags        TEXT    NOT NULL DEFAULT '0',
+          trip_type   TEXT,
+          flight      TEXT,
+          fare        REAL,
+          payment     TEXT    DEFAULT 'cash',
+          status      TEXT    NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','confirmed','active','completed','cancelled')),
+          notes       TEXT,
+          created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+          updated_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+        );
+        INSERT INTO bookings SELECT * FROM bookings_old;
+        DROP TABLE bookings_old;
+      `);
+      console.log('[DB] Migrated bags column to TEXT');
+    }
+  } catch (e) {
+    // Table might not exist yet, that's fine
+  }
 }
 
 function seedDefaults() {

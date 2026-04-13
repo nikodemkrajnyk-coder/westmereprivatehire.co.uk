@@ -47,8 +47,8 @@ router.post('/book', async (req, res) => {
       INSERT INTO bookings (ref, customer_id, pickup, destination, date, time, passengers, bags, trip_type, flight, fare, payment, notes)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
-      ref, customerId, pickup, destination, bookingDate, time || null,
-      passengers || 1, bags || null, null,
+      ref, customerId, pickup, destination, bookingDate, time || 'ASAP',
+      passengers || 1, bags || '0', null,
       flight || null, fare || null, payment || 'cash',
       notes || null
     );
