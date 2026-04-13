@@ -785,7 +785,6 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 
   </div><!-- end content -->
 </div><!-- end main -->
-</div><!-- end admin-app -->
 
 <!-- ═══ MODAL: NEW BOOKING ═══ -->
 <div class="overlay" id="modal-book">
@@ -866,205 +865,6 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
   </div>
 </div>
 
-
-<!-- ═══ MODAL: INVOICE VIEW INV-2025-002 ═══ -->
-
-
-<!-- ═══ MODAL: EMAIL PREVIEW — CUSTOMER BOOKING CONFIRMATION ═══ -->
-<div class="overlay" id="modal-email-customer">
-  <div class="modal modal-doc">
-    <div class="modal-hd">
-      <div class="modal-title">Customer Email Preview</div>
-      <button class="modal-x" onclick="closeModal('modal-email-customer')">✕</button>
-    </div>
-    <div class="email-preview">
-      <!-- Email Header Bar -->
-      <div class="email-bar">
-        <strong>From:</strong> Westmere Private Hire &lt;bookings@westmereprivatehire.co.uk&gt;<br>
-        <strong>To:</strong> Sarah Jones &lt;sarah.jones@email.com&gt;<br>
-        <div class="email-bar-subject">Your Booking Confirmation — Lewes → Gatwick · 25 Mar 2025</div>
-      </div>
-
-      <!-- Email Body -->
-      <div class="email-body">
-        <!-- Brand Header -->
-        <div class="email-brand">
-          <div class="email-brand-crest">W</div>
-          <span class="email-brand-name">Westmere Private Hire</span>
-          <span class="email-brand-sub">Sussex</span>
-        </div>
-
-        <div class="email-content">
-          <div class="email-heading">Your booking is confirmed</div>
-          <div class="email-subtext">Thank you, Sarah. Everything is arranged for your journey.</div>
-
-          <!-- Booking Details Card -->
-          <div class="email-detail-card">
-            <div class="email-detail-title">Journey Details</div>
-            <div class="email-detail-row"><span class="edl">Date</span><span class="edv">Tuesday 25 March 2025</span></div>
-            <div class="email-detail-row"><span class="edl">Pickup Time</span><span class="edv">04:30</span></div>
-            <div class="email-detail-row"><span class="edl">Pickup</span><span class="edv">14 Friars Walk, Lewes BN7 2PL</span></div>
-            <div class="email-detail-row"><span class="edl">Destination</span><span class="edv">Gatwick South Terminal</span></div>
-            <div class="email-detail-row"><span class="edl">Vehicle</span><span class="edv">Tesla Model S · Midnight Silver</span></div>
-            <div class="email-detail-row"><span class="edl">Payment</span><span class="edv">Cash on the day</span></div>
-            <div class="email-fare-total"><span class="edl">Fare</span><span class="edv">£78.00</span></div>
-          </div>
-
-          <!-- Flight Tracking -->
-          <div class="email-flight">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1l6.2 3.5-3.5 3.5-2.7-.7c-.3-.1-.7 0-.9.2l-.5.5c-.2.2-.2.5 0 .7l3.8 2.5 2.5 3.8c.2.2.5.3.7 0l.5-.5c.2-.2.3-.6.2-.9l-.7-2.7 3.5-3.5 3.5 6.2c.2.4.7.5 1.1.3l.5-.3c.4-.2.6-.6.5-1.1z"/></svg>
-            <div><strong>Flight EZY1234</strong> <span>· Departing 08:15 · Track live on </span><a href="https://www.flightradar24.com/data/flights/ezy1234" target="_blank" style="color:#3B82F6!important">Flightradar24</a></div>
-          </div>
-
-          <!-- Driver Details -->
-          <div class="email-section">
-            <div class="email-section-title">Your Driver</div>
-            <div class="email-driver-card">
-              <div class="email-driver-avatar">W</div>
-              <div class="email-driver-info">
-                <strong>Westmere Private Hire</strong><br>
-                <span>+44 7930 342 593 · Tesla Model S · Midnight Silver</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Action Buttons -->
-          <div class="email-buttons">
-            <a class="email-btn email-btn-gold" href="#">Add to Calendar</a>
-            <a class="email-btn email-btn-green" href="#">Track on WhatsApp</a>
-          </div>
-
-          <!-- Map Placeholder -->
-          <div class="email-map-placeholder">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            Google Maps Route Preview<br>
-            <span style="font-size:.68rem;color:#99AABB">Lewes BN7 → Gatwick South Terminal · ~28 miles · ~38 min</span>
-          </div>
-
-          <!-- Contact -->
-          <div style="text-align:center;font-size:.78rem;color:#556677;line-height:1.8;margin-top:1rem">
-            Questions? Reply to this email or call <strong style="color:var(--navy)">+44 7930 342 593</strong><br>
-            <span style="font-size:.72rem">We are available 24/7 for airport bookings.</span>
-          </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="email-footer">
-          <div class="email-footer-brand">Westmere Private Hire · Sussex</div>
-          <div class="email-footer-text">
-            Licensed by Lewes District Council<br>
-            <a href="https://westmereprivatehire.co.uk">westmereprivatehire.co.uk</a> · <a href="mailto:bookings@westmereprivatehire.co.uk">bookings@westmereprivatehire.co.uk</a><br>
-            <span style="font-size:.55rem;color:rgba(255,255,255,.25);margin-top:.3rem;display:inline-block">You are receiving this email because a booking was made with Westmere Private Hire.</span>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="modal-foot">
-      <button class="btn btn-ghost" onclick="closeModal('modal-email-customer')">Close</button>
-      <button class="btn btn-navy" onclick="showToast('Customer email sent to sarah.jones@email.com')">📧 Send Email</button>
-    </div>
-  </div>
-</div>
-
-
-<!-- ═══ MODAL: EMAIL PREVIEW — DRIVER JOB SHEET ═══ -->
-<div class="overlay" id="modal-email-driver">
-  <div class="modal modal-doc">
-    <div class="modal-hd">
-      <div class="modal-title">Driver Email Preview</div>
-      <button class="modal-x" onclick="closeModal('modal-email-driver')">✕</button>
-    </div>
-    <div class="email-preview">
-      <!-- Email Header Bar -->
-      <div class="email-bar">
-        <strong>From:</strong> Westmere Admin &lt;admin@westmereprivatehire.co.uk&gt;<br>
-        <strong>To:</strong> Driver &lt;driver@westmere.co.uk&gt;<br>
-        <div class="email-bar-subject">New Job Assignment — Sarah Jones · 04:30 · 25 Mar 2025</div>
-      </div>
-
-      <!-- Email Body -->
-      <div class="email-body">
-        <!-- Brand Header -->
-        <div class="email-brand">
-          <div class="email-brand-crest">W</div>
-          <span class="email-brand-name">Westmere Private Hire</span>
-          <span class="email-brand-sub">Driver Job Sheet</span>
-        </div>
-
-        <div class="email-content">
-          <div class="email-heading">New Job Assignment</div>
-          <div class="email-subtext">You have a new booking. Please review the details below.</div>
-
-          <!-- Passenger & Job Details -->
-          <div class="email-detail-card">
-            <div class="email-detail-title">Passenger</div>
-            <div class="email-detail-row"><span class="edl">Name</span><span class="edv">Sarah Jones</span></div>
-            <div class="email-detail-row"><span class="edl">Phone</span><span class="edv">+44 7700 123 456</span></div>
-            <div class="email-detail-row"><span class="edl">Contact Preference</span><span class="edv">WhatsApp</span></div>
-          </div>
-
-          <div class="email-detail-card">
-            <div class="email-detail-title">Journey Details</div>
-            <div class="email-detail-row"><span class="edl">Date</span><span class="edv">Tuesday 25 March 2025</span></div>
-            <div class="email-detail-row"><span class="edl">Pickup Time</span><span class="edv">04:30</span></div>
-            <div class="email-detail-row"><span class="edl">Pickup Address</span><span class="edv">14 Friars Walk, Lewes BN7 2PL</span></div>
-            <div class="email-detail-row"><span class="edl">Destination</span><span class="edv">Gatwick South Terminal</span></div>
-            <div class="email-detail-row"><span class="edl">Passengers</span><span class="edv">1 passenger · 1 suitcase</span></div>
-          </div>
-
-          <!-- Flight Info -->
-          <div class="email-flight">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1l6.2 3.5-3.5 3.5-2.7-.7c-.3-.1-.7 0-.9.2l-.5.5c-.2.2-.2.5 0 .7l3.8 2.5 2.5 3.8c.2.2.5.3.7 0l.5-.5c.2-.2.3-.6.2-.9l-.7-2.7 3.5-3.5 3.5 6.2c.2.4.7.5 1.1.3l.5-.3c.4-.2.6-.6.5-1.1z"/></svg>
-            <div><strong>Flight EZY1234</strong> <span>· Departs 08:15 · </span><a href="https://www.flightradar24.com/data/flights/ezy1234" target="_blank" style="color:#3B82F6!important">Track on Flightradar24</a></div>
-          </div>
-
-          <!-- Fare & Payment -->
-          <div class="email-detail-card">
-            <div class="email-detail-title">Fare &amp; Payment</div>
-            <div class="email-detail-row"><span class="edl">Payment Method</span><span class="edv">Cash on the day</span></div>
-            <div class="email-fare-total"><span class="edl">Fare</span><span class="edv">£78.00</span></div>
-          </div>
-
-          <!-- Special Instructions -->
-          <div class="email-detail-card" style="background:rgba(184,152,90,.06);border-color:rgba(184,152,90,.2)">
-            <div class="email-detail-title">Special Instructions</div>
-            <div style="font-size:.82rem;color:#334155;line-height:1.7">
-              Passenger will be outside the front door. One large suitcase. Please ring doorbell on arrival.
-            </div>
-          </div>
-
-          <!-- Action Buttons -->
-          <div class="email-buttons">
-            <a class="email-btn email-btn-navy" href="https://waze.com/ul?q=14+Friars+Walk+Lewes+BN7&navigate=yes" target="_blank">Open in Waze</a>
-            <a class="email-btn email-btn-outline" href="https://maps.google.com/?q=14+Friars+Walk+Lewes+BN7&directionsmode=driving" target="_blank">Open in Google Maps</a>
-            <a class="email-btn email-btn-gold" href="#">Add to Calendar</a>
-          </div>
-
-          <!-- Map Placeholder -->
-          <div class="email-map-placeholder">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            Route Preview<br>
-            <span style="font-size:.68rem;color:#99AABB">Home → Lewes BN7 (~15 min) → Gatwick South Terminal (~38 min)</span>
-          </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="email-footer">
-          <div class="email-footer-brand">Westmere Private Hire · Sussex</div>
-          <div class="email-footer-text">
-            This is an automated job sheet from the Westmere Admin Panel.
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="modal-foot">
-      <button class="btn btn-ghost" onclick="closeModal('modal-email-driver')">Close</button>
-      <button class="btn btn-navy" onclick="showToast('Job sheet sent to driver@westmere.co.uk')">📧 Send to Driver</button>
-    </div>
-  </div>
-</div>
-
-
 <!-- ═══ MODAL: ADD DRIVER ═══ -->
 <div class="overlay" id="modal-add-driver">
   <div class="modal">
@@ -1107,6 +907,8 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 </div>
 
 <div class="toast" id="toast"><span class="ti">✓</span><span id="toast-msg"></span></div>
+
+</div><!-- end admin-app -->
 
 <script>
 
@@ -1266,6 +1068,16 @@ function loadLiveBookings(){
       if(actDiv)actDiv.innerHTML=html;
       if(notifDiv)notifDiv.innerHTML=html;
     }
+
+    // ── Populate CONFIRMED for smart engine availability checker ──
+    CONFIRMED.length=0;
+    bookings.forEach(function(b){
+      if(b.status==='cancelled'||!b.date||!b.time)return;
+      var puN=nTown(b.pickup)||'unknown';
+      var deN=nTown(b.destination)||'unknown';
+      var mins=dtDrive(puN,deN)+15;
+      CONFIRMED.push({date:b.date,pickupTime:b.time,journeyMins:mins,pickup:b.pickup,dest:b.destination});
+    });
 
     // ── Record book data ──
     RECORD_DATA={};
