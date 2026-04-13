@@ -85,6 +85,35 @@ router.post('/book', async (req, res) => {
   }
 });
 
+// ── Email test (diagnostic — remove after confirming) ────────────────────
+router.get('/test-email', async (req, res) => {
+  try {
+    const nodemailer = require('nodemailer');
+    const user = process.env.GMAIL_USER;
+    const pass = (process.env.GMAIL_APP_PASSWORD || '').replace(/\s/g, '');
+
+    if (!user || !pass) {
+      return res.json({ error: 'GMAIL_USER or GMAIL_APP_PASSWORD not set', user: !!user, pass: !!pass });
+    }
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user, pass }
+    });
+
+    const info = await transporter.sendMail({
+      from: '"Westmere Test" <' + user + '>',
+      to: user,
+      subject: 'Westmere Email Test',
+      text: 'If you see this, email works!'
+    });
+
+    res.json({ ok: true, messageId: info.messageId });
+  } catch (err) {
+    res.json({ error: err.message, code: err.code, command: err.command });
+  }
+});
+
 // ── Create Stripe PaymentIntent ──────────────────────────────────────────
 router.post('/create-payment-intent', async (req, res) => {
   try {
