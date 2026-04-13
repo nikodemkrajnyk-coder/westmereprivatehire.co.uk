@@ -38,7 +38,7 @@ async function sendEmail(to, subject, html, fromLabel) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: (fromLabel || 'Westmere Private Hire') + ' <onboarding@resend.dev>',
+        from: (fromLabel || 'Westmere Private Hire') + ' <bookings@westmereprivatehire.co.uk>',
         to: to,
         reply_to: replyTo || undefined,
         subject: subject,
