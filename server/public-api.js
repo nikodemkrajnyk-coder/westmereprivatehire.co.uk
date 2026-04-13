@@ -85,32 +85,16 @@ router.post('/book', async (req, res) => {
   }
 });
 
-// ── Email test (diagnostic — remove after confirming) ────────────────────
+// ── Email test (diagnostic) ──────────────────────────────────────────────
 router.get('/test-email', async (req, res) => {
+  const { sendEmail } = require('./email');
+  const user = process.env.GMAIL_USER;
+  if (!user) return res.json({ error: 'GMAIL_USER not set' });
   try {
-    const nodemailer = require('nodemailer');
-    const user = process.env.GMAIL_USER;
-    const pass = (process.env.GMAIL_APP_PASSWORD || '').replace(/\s/g, '');
-
-    if (!user || !pass) {
-      return res.json({ error: 'GMAIL_USER or GMAIL_APP_PASSWORD not set', user: !!user, pass: !!pass });
-    }
-
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user, pass }
-    });
-
-    const info = await transporter.sendMail({
-      from: '"Westmere Test" <' + user + '>',
-      to: user,
-      subject: 'Westmere Email Test',
-      text: 'If you see this, email works!'
-    });
-
-    res.json({ ok: true, messageId: info.messageId });
+    const ok = await sendEmail(user, 'Westmere Email Test', '<h2>Email works!</h2><p>If you see this, your booking emails will work too.</p>', 'Westmere Test');
+    res.json(ok ? { ok: true } : { error: 'All SMTP ports failed — check server logs' });
   } catch (err) {
-    res.json({ error: err.message, code: err.code, command: err.command });
+    res.json({ error: err.message });
   }
 });
 
