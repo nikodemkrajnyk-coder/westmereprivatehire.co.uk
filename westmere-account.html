@@ -644,6 +644,24 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
           <div class="prow"><span class="pl">Password</span><span class="pv">Last changed — never</span><button class="pedit" onclick="showToast('Password reset email sent')">Change</button></div>
         </div>
       </div>
+      <div class="card">
+        <div class="ch"><div class="ct">Display</div></div>
+        <div class="cb">
+          <div style="padding:.4rem 0">
+            <div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);margin-bottom:.4rem;letter-spacing:.08em;text-transform:uppercase">Font Size <span id="ds-scale-val" style="color:var(--gold);letter-spacing:0;text-transform:none">100%</span></div>
+            <input type="range" min="80" max="150" step="5" value="100" id="ds-scale" oninput="setDisplayPref('scale',+this.value)" style="width:100%">
+          </div>
+          <div style="padding:.9rem 0 .4rem">
+            <div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);margin-bottom:.4rem;letter-spacing:.08em;text-transform:uppercase">Brightness <span id="ds-brightness-val" style="color:var(--gold);letter-spacing:0;text-transform:none">100%</span></div>
+            <input type="range" min="50" max="150" step="5" value="100" id="ds-brightness" oninput="setDisplayPref('brightness',+this.value)" style="width:100%">
+          </div>
+          <div style="padding:.9rem 0 .4rem">
+            <div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);margin-bottom:.4rem;letter-spacing:.08em;text-transform:uppercase">Contrast <span id="ds-contrast-val" style="color:var(--gold);letter-spacing:0;text-transform:none">100%</span></div>
+            <input type="range" min="80" max="140" step="5" value="100" id="ds-contrast" oninput="setDisplayPref('contrast',+this.value)" style="width:100%">
+          </div>
+          <button onclick="resetDisplayPrefs()" style="margin-top:.9rem;width:100%;padding:.75rem;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:var(--sans);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Reset to Default</button>
+        </div>
+      </div>
     </div>
 
 
@@ -746,6 +764,33 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 <div class="toast" id="toast"><span class="ti">✓</span><span id="toast-msg"></span></div>
 
 <script>
+/* ── Display preferences (font size / brightness / contrast) ── */
+(function(){
+  var prefs={scale:100,brightness:100,contrast:100};
+  try{var s=localStorage.getItem('wph_display');if(s)prefs=Object.assign(prefs,JSON.parse(s));}catch(e){}
+  function apply(){
+    if(!document.body){document.addEventListener('DOMContentLoaded',apply);return;}
+    var isFF=navigator.userAgent.indexOf('Firefox')!==-1;
+    if(isFF){
+      document.body.style.zoom='';
+      document.body.style.transform='scale('+(prefs.scale/100)+')';
+      document.body.style.transformOrigin='0 0';
+      document.body.style.width=(10000/prefs.scale)+'%';
+    } else {
+      document.body.style.transform='';
+      document.body.style.width='';
+      document.body.style.zoom=(prefs.scale/100);
+    }
+    document.documentElement.style.filter='brightness('+(prefs.brightness/100)+') contrast('+(prefs.contrast/100)+')';
+  }
+  function save(){try{localStorage.setItem('wph_display',JSON.stringify(prefs));}catch(e){}}
+  window.setDisplayPref=function(key,val){prefs[key]=parseInt(val,10);save();apply();var lbl=document.getElementById('ds-'+key+'-val');if(lbl)lbl.textContent=prefs[key]+'%';};
+  window.resetDisplayPrefs=function(){prefs={scale:100,brightness:100,contrast:100};save();apply();if(window.syncDisplayUI)window.syncDisplayUI();};
+  window.syncDisplayUI=function(){['scale','brightness','contrast'].forEach(function(k){var s=document.getElementById('ds-'+k);if(s)s.value=prefs[k];var l=document.getElementById('ds-'+k+'-val');if(l)l.textContent=prefs[k]+'%';});};
+  apply();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',window.syncDisplayUI);else window.syncDisplayUI();
+})();
+
 /* ── Fare config (homepage engine) ── */
 var CF={
   brighton:{ga:{out:72,ret:68},he:{out:128,ret:133},st:{out:215,ret:220},lu:{out:168,ret:173},so:{out:92,ret:88},ci:{out:185,ret:190},lo:{out:155,ret:160}},
