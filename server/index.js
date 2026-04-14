@@ -9,6 +9,7 @@ const { router: authRouter, JWT_SECRET } = require('./auth');
 const apiRouter = require('./api');
 const publicApiRouter = require('./public-api');
 const googleRouter = require('./google-routes');
+const gmailRouter = require('./gmail-routes');
 const { createAuthMiddleware } = require('./middleware');
 const gcal = require('./google-calendar');
 
@@ -83,6 +84,9 @@ app.use('/api', apiLimiter, requireAuth, apiRouter);
 
 // Protected Google Calendar routes (auth-url, status, disconnect, sync)
 app.use('/api/google', requireAuth, googleRouter);
+
+// Protected Gmail routes (inbox, read, send)
+app.use('/api/gmail', apiLimiter, requireAuth, gmailRouter);
 
 // ── Protected app pages ─────────────────────────────────────────────────
 // These pages require authentication — the frontend handles showing login UI

@@ -486,10 +486,57 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
     <!-- Inbox (WhatsApp + Email) -->
     <div class="pg" id="pg-inbox">
       <div class="sec-title"><em>Inbox</em></div>
-      <div class="sec-sub">WhatsApp &amp; Email — auto-reads and books, or flags to you</div>
+      <div class="sec-sub">Email messages via Google</div>
       <div class="card" style="margin-bottom:.85rem">
-        <div class="ch">Incoming <button onclick="simMsg()" class="ibtn-sm">+ Simulate</button></div>
-        <div id="inbox-feed"></div>
+        <div class="ch" style="display:flex;justify-content:space-between;align-items:center">
+          <div style="display:flex;gap:.35rem">
+            <button class="ibtn-sm" id="ib-tab-inbox" onclick="oSetInboxFolder('inbox',this)" style="background:var(--gold);color:#fff">Inbox</button>
+            <button class="ibtn-sm" id="ib-tab-unread" onclick="oSetInboxFolder('unread',this)">Unread</button>
+            <button class="ibtn-sm" id="ib-tab-sent" onclick="oSetInboxFolder('sent',this)">Sent</button>
+          </div>
+          <div style="display:flex;gap:.35rem">
+            <button class="ibtn-sm" onclick="oLoadInbox()">Refresh</button>
+            <button class="ibtn-sm" onclick="oOpenCompose()" style="background:var(--navy);color:#fff">Compose</button>
+          </div>
+        </div>
+        <div id="inbox-feed" style="padding:0"></div>
+      </div>
+    </div>
+
+    <!-- Owner inbox viewer -->
+    <div id="ov-inbox-view" style="display:none;position:fixed;inset:0;background:rgba(10,14,20,.6);backdrop-filter:blur(6px);z-index:210;align-items:flex-end;justify-content:center;padding:1rem" onclick="if(event.target===this)oCloseInboxView()">
+      <div style="background:#fff;width:100%;max-width:640px;border-radius:18px 18px 0 0;max-height:85vh;display:flex;flex-direction:column;overflow:hidden">
+        <div style="padding:1rem 1.2rem;border-bottom:1px solid rgba(17,29,44,.08);display:flex;justify-content:space-between;align-items:center">
+          <div style="font-family:var(--serif);font-size:1.05rem;color:var(--navy);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="ov-subject">Message</div>
+          <button onclick="oCloseInboxView()" style="background:transparent;border:none;font-size:1.4rem;color:rgba(17,29,44,.5);cursor:pointer">&times;</button>
+        </div>
+        <div style="padding:.85rem 1.2rem;overflow-y:auto;flex:1">
+          <div style="font-size:.78rem;color:rgba(17,29,44,.55);margin-bottom:.2rem">From: <span id="ov-from" style="color:var(--navy)"></span></div>
+          <div style="font-size:.72rem;color:rgba(17,29,44,.45);margin-bottom:.9rem" id="ov-date"></div>
+          <div id="ov-body" style="background:rgba(17,29,44,.02);padding:1rem;border-radius:10px;font-size:.85rem;line-height:1.6;color:var(--navy)"></div>
+        </div>
+        <div style="padding:.75rem 1.2rem;border-top:1px solid rgba(17,29,44,.08);display:flex;gap:.5rem">
+          <button onclick="oReplyFromViewer()" style="flex:1;padding:.75rem;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:var(--sans);font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Reply</button>
+          <button onclick="oCloseInboxView()" style="padding:.75rem 1rem;background:transparent;color:var(--navy);border:1px solid rgba(17,29,44,.15);border-radius:8px;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Owner compose -->
+    <div id="ov-inbox-compose" style="display:none;position:fixed;inset:0;background:rgba(10,14,20,.6);backdrop-filter:blur(6px);z-index:215;align-items:flex-end;justify-content:center;padding:1rem" onclick="if(event.target===this)oCloseCompose()">
+      <div style="background:#fff;width:100%;max-width:640px;border-radius:18px 18px 0 0;max-height:85vh;display:flex;flex-direction:column;overflow:hidden">
+        <div style="padding:1rem 1.2rem;border-bottom:1px solid rgba(17,29,44,.08);display:flex;justify-content:space-between;align-items:center">
+          <div style="font-family:var(--serif);font-size:1.05rem;color:var(--navy)" id="oc-title">New Message</div>
+          <button onclick="oCloseCompose()" style="background:transparent;border:none;font-size:1.4rem;color:rgba(17,29,44,.5);cursor:pointer">&times;</button>
+        </div>
+        <div style="padding:.85rem 1.2rem;overflow-y:auto;flex:1">
+          <div style="margin-bottom:.7rem"><input id="oc-to" placeholder="To" style="width:100%;padding:.65rem .8rem;border:1px solid rgba(17,29,44,.12);border-radius:8px;font-size:.85rem"></div>
+          <div style="margin-bottom:.7rem"><input id="oc-subject" placeholder="Subject" style="width:100%;padding:.65rem .8rem;border:1px solid rgba(17,29,44,.12);border-radius:8px;font-size:.85rem"></div>
+          <div><textarea id="oc-body" placeholder="Message" rows="8" style="width:100%;padding:.65rem .8rem;border:1px solid rgba(17,29,44,.12);border-radius:8px;font-size:.85rem;resize:vertical;min-height:150px;font-family:inherit"></textarea></div>
+        </div>
+        <div style="padding:.75rem 1.2rem;border-top:1px solid rgba(17,29,44,.08)">
+          <button onclick="oSendMessage()" style="width:100%;padding:.85rem;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:var(--sans);font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;cursor:pointer">Send</button>
+        </div>
       </div>
     </div>
 
@@ -609,7 +656,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
     <button class="bn" id="bn-offered" onclick="goPage('offered',this)"><div class="bn-bar"></div><div class="bn-label">Offered</div><div class="bn-dot" id="offered-dot"></div></button>
     <button class="bn" id="bn-tesla" onclick="goPage('tesla',this)"><div class="bn-bar"></div><div class="bn-label">Tesla</div></button>
     <button class="bn" id="bn-calendar" onclick="goPage('calendar',this)"><div class="bn-bar"></div><div class="bn-label">Calendar</div></button>
-    <button class="bn" id="bn-inbox" onclick="goPage('inbox',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Inbox</div><div class="bn-dot" id="inbox-dot">2</div></button>
+    <button class="bn" id="bn-inbox" onclick="goPage('inbox',this)"><div class="bn-bar"></div><div class="bn-label">Inbox</div><div class="bn-dot" id="inbox-dot" style="display:none"></div></button>
     <button class="bn" id="bn-assistant" onclick="goPage('assistant',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Assistant</div></button>
     <button class="bn" id="bn-earnings" onclick="goPage('earnings',this)"><div class="bn-bar"></div><div class="bn-label">Earnings</div></button>
   </div>
@@ -804,11 +851,107 @@ function goPage(id,btn){
   if(id==='today')buildToday();
   if(id==='offered')buildOffered();
   if(id==='tesla'){updateTeslaUI();buildTeslaRC();}
-  if(id==='inbox')renderInbox();
+  if(id==='inbox')oLoadInbox();
   if(id==='calendar')buildCalendar();
   if(id==='assistant'&&!ASSIST_HISTORY.length)greetAssist();
   if(id==='smart'){var d=new Date();document.getElementById('sd-date').value=d.toISOString().split('T')[0];}
 }
+
+// ── INBOX (Gmail via Google OAuth) ────────────────────────────────────────
+var O_INBOX_FOLDER='inbox';
+var O_INBOX_CURRENT=null;
+function oEscHtml(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function oSetInboxFolder(folder,btn){
+  O_INBOX_FOLDER=folder;
+  ['ib-tab-inbox','ib-tab-unread','ib-tab-sent'].forEach(function(id){var b=document.getElementById(id);if(b){b.style.background='';b.style.color='';}});
+  if(btn){btn.style.background='var(--gold)';btn.style.color='#fff';}
+  oLoadInbox();
+}
+function oLoadInbox(){
+  var feed=document.getElementById('inbox-feed');
+  if(!feed)return;
+  feed.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.35);font-size:.85rem">Loading…</div>';
+  fetch('/api/gmail/messages?folder='+encodeURIComponent(O_INBOX_FOLDER)+'&limit=40').then(function(r){return r.json().then(function(d){return{status:r.status,d:d};});}).then(function(o){
+    if(o.status===400&&o.d&&o.d.error==='gmail_scope_missing'){
+      feed.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.55);font-size:.85rem">Gmail access not granted.<br><br><button onclick="oReconnectForGmail()" style="padding:.6rem 1rem;background:var(--navy);color:#fff;border:none;border-radius:8px;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Reconnect Google</button></div>';return;
+    }
+    if(o.status===400&&o.d&&o.d.error==='not_connected'){
+      feed.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.55);font-size:.85rem">Google not connected.<br><br><button onclick="connectGoogleCalendar()" style="padding:.6rem 1rem;background:var(--navy);color:#fff;border:none;border-radius:8px;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Connect Google</button></div>';return;
+    }
+    if(!o.d||!o.d.ok){feed.innerHTML='<div style="text-align:center;padding:2rem;color:#c54040;font-size:.85rem">'+oEscHtml((o.d&&o.d.error)||'Failed to load')+'</div>';return;}
+    var msgs=o.d.messages||[];
+    var dot=document.getElementById('inbox-dot');
+    var unread=msgs.filter(function(m){return m.unread;}).length;
+    if(dot){if(unread>0){dot.textContent=unread;dot.style.display='';}else{dot.style.display='none';}}
+    if(!msgs.length){feed.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.35);font-size:.85rem">No messages.</div>';return;}
+    feed.innerHTML=msgs.map(function(m){
+      var date=m.date?new Date(m.date).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
+      var w=m.unread?'600':'400';
+      var d=m.unread?'<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gold);margin-right:.5rem;vertical-align:middle"></span>':'<span style="display:inline-block;width:6px;margin-right:.5rem"></span>';
+      return '<div onclick="oOpenMessage(\''+oEscHtml(m.id)+'\')" style="padding:.85rem 1rem;border-bottom:1px solid rgba(17,29,44,.06);cursor:pointer">'+
+        '<div style="display:flex;justify-content:space-between;gap:.8rem"><div style="font-weight:'+w+';color:var(--navy);font-size:.85rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+d+oEscHtml(m.from)+'</div><div style="color:rgba(17,29,44,.4);font-size:.7rem;flex-shrink:0">'+oEscHtml(date)+'</div></div>'+
+        '<div style="color:var(--navy);font-weight:'+w+';margin-top:.2rem;font-size:.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+oEscHtml(m.subject)+'</div>'+
+        '<div style="color:rgba(17,29,44,.5);margin-top:.15rem;font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+oEscHtml(m.snippet)+'</div>'+
+        '</div>';
+    }).join('');
+  }).catch(function(){feed.innerHTML='<div style="text-align:center;padding:2rem;color:#c54040;font-size:.85rem">Network error</div>';});
+}
+function oOpenMessage(id){
+  fetch('/api/gmail/messages/'+encodeURIComponent(id)).then(function(r){return r.json();}).then(function(d){
+    if(!d||!d.ok)return;
+    var m=d.message;O_INBOX_CURRENT=m;
+    document.getElementById('ov-subject').textContent=m.subject||'(no subject)';
+    document.getElementById('ov-from').textContent=m.from||'';
+    document.getElementById('ov-date').textContent=m.date?new Date(m.date).toLocaleString('en-GB'):'';
+    var bodyEl=document.getElementById('ov-body');
+    if(m.html){bodyEl.innerHTML=m.html;}
+    else{bodyEl.innerHTML='<pre style="white-space:pre-wrap;font-family:inherit;margin:0">'+oEscHtml(m.text||m.snippet||'')+'</pre>';}
+    document.getElementById('ov-inbox-view').style.display='flex';
+    setTimeout(oLoadInbox,600);
+  });
+}
+function oCloseInboxView(){document.getElementById('ov-inbox-view').style.display='none';}
+function oOpenCompose(){
+  document.getElementById('oc-to').value='';
+  document.getElementById('oc-subject').value='';
+  document.getElementById('oc-body').value='';
+  document.getElementById('oc-title').textContent='New Message';
+  var mc=document.getElementById('ov-inbox-compose');
+  delete mc.dataset.threadId;delete mc.dataset.inReplyTo;delete mc.dataset.references;
+  mc.style.display='flex';
+}
+function oCloseCompose(){document.getElementById('ov-inbox-compose').style.display='none';}
+function oReplyFromViewer(){
+  if(!O_INBOX_CURRENT)return;
+  var m=O_INBOX_CURRENT;
+  var fromAddr=(m.from.match(/<([^>]+)>/)||[null,m.from])[1];
+  document.getElementById('oc-to').value=fromAddr||'';
+  document.getElementById('oc-subject').value=(/^re:/i.test(m.subject)?'':'Re: ')+m.subject;
+  document.getElementById('oc-body').value='\n\n—\nOn '+(m.date||'')+', '+m.from+' wrote:\n> '+((m.text||m.snippet||'').split('\n').join('\n> '));
+  document.getElementById('oc-title').textContent='Reply';
+  var mc=document.getElementById('ov-inbox-compose');
+  mc.dataset.threadId=m.threadId||'';
+  mc.dataset.inReplyTo=m.messageId||'';
+  mc.dataset.references=(m.references?m.references+' ':'')+(m.messageId||'');
+  oCloseInboxView();
+  mc.style.display='flex';
+}
+function oSendMessage(){
+  var to=document.getElementById('oc-to').value.trim();
+  var subject=document.getElementById('oc-subject').value.trim();
+  var body=document.getElementById('oc-body').value;
+  if(!to){alert('Recipient required');return;}
+  var mc=document.getElementById('ov-inbox-compose');
+  var payload={to:to,subject:subject,text:body,html:'<pre style="font-family:Georgia,serif;font-size:14px;white-space:pre-wrap">'+oEscHtml(body)+'</pre>'};
+  if(mc.dataset.threadId)payload.threadId=mc.dataset.threadId;
+  if(mc.dataset.inReplyTo)payload.inReplyTo=mc.dataset.inReplyTo;
+  if(mc.dataset.references)payload.references=mc.dataset.references;
+  fetch('/api/gmail/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(function(r){return r.json();}).then(function(d){
+    if(d&&d.ok){oCloseCompose();oLoadInbox();}
+    else{alert((d&&d.error)||'Send failed');}
+  }).catch(function(){alert('Network error');});
+}
+function oReconnectForGmail(){fetch('/api/google/disconnect',{method:'POST'}).then(function(){connectGoogleCalendar();});}
 
 // ── DISTANCES ─────────────────────────────────────────────────────────────────
 function getDist(a,b){
