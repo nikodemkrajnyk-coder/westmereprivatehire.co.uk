@@ -424,21 +424,17 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
         <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(-45deg,transparent,transparent 60px,rgba(184,152,90,.02) 60px,rgba(184,152,90,.02) 61px);pointer-events:none"></div>
         <div style="font-size:.5rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-bottom:.8rem;position:relative">XX21 WPH</div>
         <div style="display:flex;gap:2rem;flex-wrap:wrap;margin-bottom:1rem;position:relative">
-          <div><div style="font-size:.5rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-bottom:.2rem">Battery</div><div style="font-family:var(--serif);font-size:3.2rem;color:var(--navy);line-height:1" id="tesla-pct">78<span style="font-size:.85rem;font-family:var(--sans);font-weight:300;color:rgba(17,29,44,.4)">%</span></div></div>
-          <div><div style="font-size:.5rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-bottom:.2rem">Range</div><div style="font-family:var(--serif);font-size:1.8rem;color:var(--gold);line-height:1" id="tesla-range">218 <span style="font-size:.85rem;font-family:var(--sans);font-weight:300;color:rgba(17,29,44,.4)">mi</span></div></div>
-          <div><div style="font-size:.5rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-bottom:.2rem">Status</div><div id="tesla-status" style="font-size:.78rem;color:rgba(17,29,44,.6);margin-top:.25rem">Parked · Horsham</div></div>
+          <div><div style="font-size:.5rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-bottom:.2rem">Battery</div><div style="font-family:var(--serif);font-size:3.2rem;color:var(--navy);line-height:1" id="tesla-pct">&mdash;<span style="font-size:.85rem;font-family:var(--sans);font-weight:300;color:rgba(17,29,44,.4)">%</span></div></div>
+          <div><div style="font-size:.5rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-bottom:.2rem">Range</div><div style="font-family:var(--serif);font-size:1.8rem;color:var(--gold);line-height:1" id="tesla-range">&mdash; <span style="font-size:.85rem;font-family:var(--sans);font-weight:300;color:rgba(17,29,44,.4)">mi</span></div></div>
+          <div><div style="font-size:.5rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-bottom:.2rem">Status</div><div id="tesla-status" style="font-size:.78rem;color:rgba(17,29,44,.6);margin-top:.25rem">Not connected</div></div>
         </div>
-        <div style="height:7px;background:rgba(255,255,255,.08);margin-bottom:.4rem;position:relative"><div id="tesla-bar" style="height:100%;width:78%;background:linear-gradient(to right,var(--gold),#7ecfa0);transition:width 1s ease"></div></div>
-        <div style="font-size:.58rem;color:rgba(17,29,44,.3);position:relative" id="tesla-last">Last charged today 06:15</div>
+        <div style="height:7px;background:rgba(255,255,255,.08);margin-bottom:.4rem;position:relative"><div id="tesla-bar" style="height:100%;width:0%;background:linear-gradient(to right,var(--gold),#7ecfa0);transition:width 1s ease"></div></div>
+        <div style="font-size:.58rem;color:rgba(17,29,44,.3);position:relative" id="tesla-last">Connect Tesla to sync battery &amp; range</div>
       </div>
       <div class="card"><div class="ch">Range Check — Today's Jobs</div><div id="tesla-rc"></div></div>
       <div class="card">
         <div class="ch">Nearest Superchargers</div>
-        <div>
-          <div class="tesla-charger"><div class="tc-name">Gatwick Airport</div><div class="tc-dist">12 mi · ~15 min · 16 stalls</div><div class="tc-avail" style="color:var(--green)">Available · 0–80% in ~30 min</div></div>
-          <div class="tesla-charger"><div class="tc-name">Crawley</div><div class="tc-dist">14 mi · ~20 min · 12 stalls</div><div class="tc-avail" style="color:var(--green)">Available · 0–80% in ~28 min</div></div>
-          <div class="tesla-charger"><div class="tc-name">Brighton Marina</div><div class="tc-dist">18 mi · ~25 min · 8 stalls</div><div class="tc-avail" style="color:var(--amber)">Moderate · 0–80% in ~35 min</div></div>
-        </div>
+        <div style="padding:1.1rem 1rem;font-size:.78rem;color:rgba(17,29,44,.4);text-align:center">Connect Tesla to see nearest superchargers.</div>
       </div>
       <div style="display:flex;gap:.6rem;margin-top:.2rem">
         <button onclick="refreshTesla()" class="ibtn-primary">Refresh</button>
@@ -500,8 +496,8 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
         <div class="ch">Quick Commands</div>
         <div style="padding:.75rem 1rem;display:flex;flex-direction:column;gap:.45rem">
           <button onclick="assistQuick('What jobs do I have today?')" class="qcmd">What jobs do I have today?</button>
-          <button onclick="assistQuick('Book Mrs Williams, Lewes to Gatwick, tomorrow 4:30am, cash, 1 passenger, £78')" class="qcmd">Book Mrs Williams, Lewes to Gatwick, tomorrow 4:30am, cash, £78</button>
-          <button onclick="assistQuick('What is the fare from Brighton to Heathrow at 3am?')" class="qcmd">Fare from Brighton to Heathrow at 3am?</button>
+          <button onclick="assistQuick('What is my next job?')" class="qcmd">What is my next job?</button>
+          <button onclick="assistQuick('Show me this week\u2019s schedule')" class="qcmd">Show me this week&rsquo;s schedule</button>
           <button onclick="assistQuick('Block me off this Sunday')" class="qcmd">Block me off this Sunday</button>
         </div>
       </div>
@@ -514,7 +510,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
 
       <div style="display:flex;gap:.7rem;align-items:center;margin-bottom:.85rem;flex-wrap:wrap">
         <input type="date" id="sd-date" style="font-family:var(--sans);font-size:.82rem;font-weight:300;color:var(--navy);background:rgba(17,29,44,.04);border:1px solid rgba(17,29,44,.1);padding:.6rem .85rem;outline:none;flex:1;min-width:150px;-webkit-appearance:none">
-        <div style="position:relative;width:150px"><input id="sd-loc" placeholder="Your location now" style="font-family:var(--sans);font-size:.82rem;font-weight:300;color:var(--navy);background:rgba(17,29,44,.04);border:1px solid rgba(17,29,44,.1);padding:.6rem .85rem;outline:none;width:100%;-webkit-appearance:none" value="Horsham" oninput="addrSearch('sd-loc','sug-sd-loc')" onfocus="this.select()"><div class="sug-drop" id="sug-sd-loc"></div></div>
+        <div style="position:relative;width:150px"><input id="sd-loc" placeholder="Your location now" style="font-family:var(--sans);font-size:.82rem;font-weight:300;color:var(--navy);background:rgba(17,29,44,.04);border:1px solid rgba(17,29,44,.1);padding:.6rem .85rem;outline:none;width:100%;-webkit-appearance:none" oninput="addrSearch('sd-loc','sug-sd-loc')" onfocus="this.select()"><div class="sug-drop" id="sug-sd-loc"></div></div>
         <button onclick="runSmartDay()" id="sd-btn" class="ibtn-primary" style="white-space:nowrap">Score Day</button>
         <button onclick="loadSample()" class="ibtn-ghost" style="white-space:nowrap">Example</button>
       </div>
@@ -646,13 +642,13 @@ var TODAY_JOBS = [];
 var OFFERED_JOBS = [];
 var INBOX_MSGS = [];
 var SD_JOBS = [];
-var TESLA = {battery:78,rangeMiles:218,location:'Horsham',status:'Parked'};
+var TESLA = {battery:0,rangeMiles:0,location:'Not connected',status:'Offline'};
 var ASSIST_HISTORY = [];
 var ASSIST_BUSY = false;
 var VOICE_ACTIVE = false;
 var voiceRec = null;
 var currentMode = 'drive';
-var HOME_BASE = 'Horsham';
+var HOME_BASE = '';
 
 // ── MODE ─────────────────────────────────────────────────────────────────────
 function setMode(mode){
@@ -856,13 +852,14 @@ function cancelJ(id){var job=TODAY_JOBS.find(function(j){return j.id===id;});if(
 function showNB(name,fare){document.getElementById('nb-name').textContent=name;document.getElementById('nb-sub').textContent='Westmere Private Hire · Sussex';document.getElementById('nb-overlay').classList.add('on');if(navigator.wakeLock)navigator.wakeLock.request('screen').catch(function(){});}
 
 // ── TESLA ─────────────────────────────────────────────────────────────────────
-function refreshTesla(){TESLA.battery=Math.max(10,Math.min(100,TESLA.battery-Math.floor(Math.random()*3)));TESLA.rangeMiles=Math.round(TESLA.battery*(218/78));updateTeslaUI();buildTeslaRC();showToast('Tesla refreshed');}
+function refreshTesla(){if(!TESLA.battery){showToast('Connect Tesla first');return;}updateTeslaUI();buildTeslaRC();showToast('Tesla refreshed');}
 function updateTeslaUI(){
   var p=document.getElementById('tesla-pct');var r=document.getElementById('tesla-range');var b=document.getElementById('tesla-bar');var s=document.getElementById('tesla-status');
-  if(p)p.innerHTML=TESLA.battery+'<span style="font-size:.85rem;font-family:var(--sans);font-weight:300;color:rgba(17,29,44,.4)">%</span>';
-  if(r)r.innerHTML=TESLA.rangeMiles+' <span style="font-size:.85rem;font-family:var(--sans);font-weight:300;color:rgba(17,29,44,.4)">mi</span>';
-  if(b){b.style.width=TESLA.battery+'%';b.style.background=TESLA.battery>50?'linear-gradient(to right,var(--gold),#7ecfa0)':TESLA.battery>25?'linear-gradient(to right,var(--amber),var(--gold))':'linear-gradient(to right,var(--red),var(--amber))';}
-  if(s)s.textContent=TESLA.status+' · '+TESLA.location;
+  var connected=TESLA.battery>0;
+  if(p)p.innerHTML=(connected?TESLA.battery:'\u2014')+'<span style="font-size:.85rem;font-family:var(--sans);font-weight:300;color:rgba(17,29,44,.4)">%</span>';
+  if(r)r.innerHTML=(connected?TESLA.rangeMiles:'\u2014')+' <span style="font-size:.85rem;font-family:var(--sans);font-weight:300;color:rgba(17,29,44,.4)">mi</span>';
+  if(b){b.style.width=(connected?TESLA.battery:0)+'%';b.style.background=TESLA.battery>50?'linear-gradient(to right,var(--gold),#7ecfa0)':TESLA.battery>25?'linear-gradient(to right,var(--amber),var(--gold))':'linear-gradient(to right,var(--red),var(--amber))';}
+  if(s)s.textContent=connected?(TESLA.status+' · '+TESLA.location):'Not connected';
 }
 function buildTeslaRC(){
   var el=document.getElementById('tesla-rc');if(!el)return;
@@ -872,7 +869,7 @@ function buildTeslaRC(){
 }
 
 // ── INBOX ─────────────────────────────────────────────────────────────────────
-var SIM_MSGS=['Hi, can I book a car from Seaford to Gatwick this Thursday at 6am? 2 people, cash','Do you go to Southampton Airport? Need Sunday morning around 7am, 1 passenger','My wife needs Ringmer to Heathrow T3 on the 15th at 4am. Flight BA211','Are you available Saturday afternoon for a short local trip in Lewes?','Picking up from Gatwick arrivals Friday ~9pm, going to Haywards Heath, 3 of us'];
+var SIM_MSGS=[];
 function renderInbox(){
   var feed=document.getElementById('inbox-feed');var dot=document.getElementById('inbox-dot');
   var flagged=INBOX_MSGS.filter(function(m){return m.status==='flagged';}).length;
@@ -921,7 +918,7 @@ function simMsg(){
 // TODO: Route through backend proxy at /api/claude to keep API key server-side
 async function analyseMsg(id,text){
   var jobs=TODAY_JOBS.map(function(j){return j.time+' '+j.pickup+'→'+j.dest;}).join(', ');
-  var sys='You are the booking intake for Westmere Private Hire (Horsham base). Analyse this WhatsApp message. Extract booking details if it is a booking request. Existing jobs: '+jobs+'. 90 min conflict buffer.\n\nDrop-off/Pickup fares: Brighton→Gatwick £72/£68, Lewes→Gatwick £78/£74, Horsham→Gatwick £55/£50, Crawley→Gatwick £35/£32, Worthing→Gatwick £72/£68, Haywards Heath→Gatwick £52/£48, Burgess Hill→Gatwick £48/£44, Eastbourne→Gatwick £98/£94, Seaford→Gatwick £92/£88, Uckfield→Gatwick £62/£58, East Grinstead→Gatwick £42/£38. Brighton→Heathrow £128/£133, Lewes→Heathrow £140/£145, Horsham→Heathrow £120/£125, Crawley→Heathrow £95/£100, Worthing→Heathrow £130/£135, Eastbourne→Heathrow £162/£167. Horsham→Stansted £180/£185, Lewes→Stansted £225/£230, Brighton→Stansted £215/£220. Horsham→Luton £155/£160, Lewes→Luton £215/£220, Brighton→Luton £205/£210. Horsham→Southampton £135/£130, Brighton→Southampton £152/£147, Lewes→Southampton £160/£155. For locations outside town centre: nearest town fare + £2.50/extra mile.\n\nRespond ONLY with JSON: {"isBooking":true,"name":"...","pickup":"...","dest":"...","date":"...","time":"...","fare":0,"conflict":false,"conflictReason":"","note":"..."} or {"isBooking":false,"note":"..."}';
+  var sys='You are the booking intake for Westmere Private Hire, a Sussex-based private hire operator. Analyse this WhatsApp message. Extract booking details if it is a booking request. Existing jobs: '+jobs+'. 90 min conflict buffer.\n\nDrop-off/Pickup fares: Brighton→Gatwick £72/£68, Lewes→Gatwick £78/£74, Horsham→Gatwick £55/£50, Crawley→Gatwick £35/£32, Worthing→Gatwick £72/£68, Haywards Heath→Gatwick £52/£48, Burgess Hill→Gatwick £48/£44, Eastbourne→Gatwick £98/£94, Seaford→Gatwick £92/£88, Uckfield→Gatwick £62/£58, East Grinstead→Gatwick £42/£38. Brighton→Heathrow £128/£133, Lewes→Heathrow £140/£145, Horsham→Heathrow £120/£125, Crawley→Heathrow £95/£100, Worthing→Heathrow £130/£135, Eastbourne→Heathrow £162/£167. Horsham→Stansted £180/£185, Lewes→Stansted £225/£230, Brighton→Stansted £215/£220. Horsham→Luton £155/£160, Lewes→Luton £215/£220, Brighton→Luton £205/£210. Horsham→Southampton £135/£130, Brighton→Southampton £152/£147, Lewes→Southampton £160/£155. For locations outside town centre: nearest town fare + £2.50/extra mile.\n\nRespond ONLY with JSON: {"isBooking":true,"name":"...","pickup":"...","dest":"...","date":"...","time":"...","fare":0,"conflict":false,"conflictReason":"","note":"..."} or {"isBooking":false,"note":"..."}';
   try{
     // NOTE: Direct client-side calls to api.anthropic.com will return 401 (no API key).
     // In production, route through a backend proxy (e.g. /api/claude) that adds the auth header server-side.
@@ -971,7 +968,7 @@ function buildAssistCtx(){
   fares+='Seaford→Gatwick £92/£88\nUckfield→Gatwick £62/£58\nEast Grinstead→Gatwick £42/£38\n';
   fares+='For locations outside a town centre: use nearest town fixed price + £2.50 per extra mile.\n';
   var jobs=TODAY_JOBS.map(function(j){return j.time+' '+j.name+' '+j.pickup+'→'+j.dest+' £'+j.fare+' '+j.payment;}).join('. ');
-  return 'You are the business assistant for Westmere Private Hire (Horsham base). Sole operator/driver.\n'+fares+'\nToday: '+jobs+'\nBe direct and short — driver may be in the car. Confirm all actions clearly.';
+  return 'You are the business assistant for Westmere Private Hire, a Sussex-based private hire operator. Sole operator/driver.\n'+fares+'\nToday: '+jobs+'\nBe direct and short — driver may be in the car. Confirm all actions clearly.';
 }
 async function sendToAssist(msg){
   if(ASSIST_BUSY)return;ASSIST_BUSY=true;
@@ -1009,13 +1006,7 @@ function toggleVoice(){
 }
 
 // ── SMART DAY ─────────────────────────────────────────────────────────────────
-var SAMPLE=[
-  {id:'sd1',time:'07:00',name:'Mr Patterson',pickup:'Horsham',dest:'Heathrow T5',pax:1,fare:120,payment:'Card'},
-  {id:'sd2',time:'12:00',name:'Mrs Clarke',pickup:'Lewes',dest:'Brighton',pax:2,fare:22,payment:'Cash'},
-  {id:'sd3',time:'14:30',name:'James Ford',pickup:'Brighton',dest:'Gatwick',pax:1,fare:72,payment:'Account'},
-  {id:'sd4',time:'17:00',name:'Private',pickup:'Seaford',dest:'Eastbourne',pax:1,fare:18,payment:'Cash'},
-  {id:'sd5',time:'20:00',name:'Mr Okafor',pickup:'Lewes',dest:'Gatwick',pax:3,fare:78,payment:'Cash'}
-];
+var SAMPLE=[];
 function loadSample(){SD_JOBS=SAMPLE.slice();renderSDJobs();}
 function renderSDJobs(){
   var el=document.getElementById('sd-jobs');if(!el)return;
