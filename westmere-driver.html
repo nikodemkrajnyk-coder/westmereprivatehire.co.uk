@@ -565,35 +565,16 @@ var DRIVER = {
   phv:'LDC-00001', mobile:'+44 7700 000 000', email:'driver@westmere.co.uk'
 };
 
-var TODAY_JOBS = [
-  {id:'j1',time:'04:30',name:'Sarah Jones',phone:'+447700100001',email:'sarah.jones@email.com',
-   contactPref:'whatsapp',pax:1,bags:1,pickup:'14 Friars Walk, Lewes BN7 2PL',
-   dest:'Gatwick South Terminal',type:'Airport Drop-off',flight:'EZY1234',
-   flightStatus:'ontime',flightDeparts:'08:15',fare:85,payment:'Cash',status:'upcoming',
-   note:'One large suitcase. Quiet journey.'},
-  {id:'j2',time:'17:20',name:'John Smith',phone:'+447700100002',email:'john.smith@smithco.co.uk',
-   contactPref:'email',pax:2,bags:2,pickup:'Heathrow T5 Arrivals',
-   dest:'22 Pelham Court, Lewes BN7 1PH',type:'Airport Pickup',flight:'BA0492',
-   flightStatus:'landed',flightDeparts:'lands ~17:20',fare:145,payment:'Account Invoice',
-   status:'upcoming',note:'Business account. Two passengers, two cases.'}
-];
+var TODAY_JOBS = [];
 
-var OFFERED_JOBS = [
-  {id:'o1',date:'Sat 29 Mar',time:'05:00',name:'Private Booking',phone:'+447700100010',
-   contactPref:'whatsapp',pax:2,bags:2,pickup:'Horsham RH12',dest:'Gatwick Airport',
-   type:'Airport Drop-off',flight:'FR9920',driverFare:45,fare:45,payment:'Cash'},
-  {id:'o2',date:'Sun 30 Mar',time:'07:00',name:'Mrs Taylor',phone:'+447700100011',
-   contactPref:'sms',pax:1,bags:1,pickup:'Lewes BN7',dest:'Heathrow T3',
-   type:'Airport Drop-off',flight:'EK009',driverFare:135,fare:135,payment:'Card'}
-];
+var OFFERED_JOBS = [];
 
 // ─── TESLA ────────────────────────────────────────────────────────────────────
-var TESLA = {battery:78,rangeMiles:218,location:'Horsham',status:'Parked'};
-var TESLA_MI_PER_PCT = 218/78;
+var TESLA = {battery:0,rangeMiles:0,location:'Not connected',status:'Offline'};
+var TESLA_MI_PER_PCT = 0;
 
 function refreshTesla(){
-  TESLA.battery = Math.max(10, Math.min(100, TESLA.battery - Math.floor(Math.random()*3)));
-  TESLA.rangeMiles = Math.round(TESLA.battery * TESLA_MI_PER_PCT);
+  if(!TESLA.battery){showToast('Connect Tesla first');return;}
   updateTeslaUI();
   buildTeslaRangeCheck();
   showToast('Tesla data refreshed');
@@ -604,13 +585,14 @@ function updateTeslaUI(){
   var r=document.getElementById('tesla-range');
   var b=document.getElementById('tesla-bar');
   var s=document.getElementById('tesla-status');
-  if(p) p.innerHTML=TESLA.battery+'<span class="t-unit">%</span>';
-  if(r) r.innerHTML=TESLA.rangeMiles+' <span class="t-unit">mi</span>';
+  var connected=TESLA.battery>0;
+  if(p) p.innerHTML=(connected?TESLA.battery:'\u2014')+'<span class="t-unit">%</span>';
+  if(r) r.innerHTML=(connected?TESLA.rangeMiles:'\u2014')+' <span class="t-unit">mi</span>';
   if(b){
-    b.style.width=TESLA.battery+'%';
+    b.style.width=(connected?TESLA.battery:0)+'%';
     b.style.background=TESLA.battery>50?'linear-gradient(to right,var(--gold),#7ecfa0)':TESLA.battery>25?'linear-gradient(to right,var(--amber),var(--gold))':'linear-gradient(to right,var(--red),var(--amber))';
   }
-  if(s) s.textContent=TESLA.status+' · '+TESLA.location;
+  if(s) s.textContent=connected?(TESLA.status+' · '+TESLA.location):'Not connected';
 }
 
 function getDist(a,b){
@@ -642,7 +624,7 @@ function buildTeslaRangeCheck(){
 
 // ─── SCORING ENGINE ──────────────────────────────────────────────────────────
 function scoreJob(j){
-  var loc=TESLA.location||'Horsham';
+  var loc=TESLA.location||'';
   var done=TODAY_JOBS.filter(function(x){return x.status==='done';}).pop();
   if(done) loc=done.dest||loc;
   var dead=getDist(loc,j.pickup||'');var jmi=getDist(j.pickup||'',j.dest||'');
@@ -859,11 +841,39 @@ function showToast(msg){
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
+async function loadDriverJobs(){
+  try{
+    var res=await fetch('/api/bookings');
+    var data=await res.json();
+    if(!res.ok||!data.ok)return;
+    var bookings=data.bookings||[];
+    var today=new Date().toISOString().split('T')[0];
+    function toJob(b){
+      return{id:String(b.id),time:b.time||'ASAP',name:b.customer_name||'Guest',
+        phone:b.customer_phone||'',email:b.customer_email||'',contactPref:'whatsapp',
+        pax:b.passengers||1,bags:b.bags||'0',pickup:b.pickup,dest:b.destination,
+        type:b.trip_type||'',flight:b.flight||'',flightStatus:b.flight?'ontime':'',
+        flightDeparts:'',fare:b.fare||0,driverFare:b.fare||0,payment:b.payment||'cash',
+        status:b.status==='completed'?'done':b.status==='active'?'enroute':'upcoming',
+        note:b.notes||''};
+    }
+    TODAY_JOBS=bookings.filter(function(b){return b.date===today&&b.status!=='cancelled';}).map(toJob);
+    OFFERED_JOBS=bookings.filter(function(b){return b.date>today&&b.status==='pending';}).map(function(b){
+      var j=toJob(b);
+      try{j.date=new Date(b.date).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}catch(e){j.date=b.date;}
+      return j;
+    });
+    if(document.getElementById('pg-today').classList.contains('on'))buildToday();
+    if(document.getElementById('pg-offered').classList.contains('on'))buildOffered();
+  }catch(e){console.error('[DRIVER] Failed to load jobs:',e);}
+}
+
 function initApp(){
   document.getElementById('tb-dname').textContent=DRIVER.name.split(' ')[0];
   document.getElementById('today-date').textContent=new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
   applyTeslaVisibility();
   buildProfile();
+  loadDriverJobs();
   goPage('today',document.getElementById('bn-today'));
   setTimeout(function(){
     if(!sessionStorage.getItem('drv_pwa_shown')){
