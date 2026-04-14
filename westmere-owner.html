@@ -395,7 +395,48 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
         <button class="mode-btn on" id="mode-drive" onclick="setMode('drive')">Drive</button>
         <button class="mode-btn" id="mode-admin" onclick="setMode('admin')">Admin</button>
       </div>
+      <button onclick="openSettings()" title="Settings" style="background:transparent;border:1px solid rgba(17,29,44,.1);width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(17,29,44,.55)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
       <div class="status-dot"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS OVERLAY -->
+  <div id="settings-overlay" style="display:none;position:fixed;inset:0;background:rgba(10,14,20,.6);backdrop-filter:blur(6px);z-index:200;align-items:flex-end;justify-content:center;padding:1rem" onclick="if(event.target===this)closeSettings()">
+    <div style="background:#fff;border-radius:18px 18px 0 0;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;padding:1.6rem 1.4rem;box-shadow:0 -10px 40px rgba(0,0,0,.3)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem">
+        <div style="font-family:var(--serif);font-size:1.3rem;color:var(--navy);font-style:italic">Settings</div>
+        <button onclick="closeSettings()" style="background:transparent;border:none;font-size:1.4rem;cursor:pointer;color:rgba(17,29,44,.5)">&times;</button>
+      </div>
+
+      <div style="background:rgba(17,29,44,.03);border-radius:12px;padding:1.1rem 1rem;margin-bottom:1rem">
+        <div style="font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.9rem">Display</div>
+        <div style="padding:.2rem 0">
+          <div style="display:flex;justify-content:space-between;font-size:.78rem;color:rgba(17,29,44,.7);margin-bottom:.35rem">Font Size <span id="ds-scale-val" style="color:var(--gold)">100%</span></div>
+          <input type="range" min="80" max="150" step="5" value="100" id="ds-scale" oninput="setDisplayPref('scale',+this.value)" style="width:100%">
+        </div>
+        <div style="padding:.75rem 0 .2rem">
+          <div style="display:flex;justify-content:space-between;font-size:.78rem;color:rgba(17,29,44,.7);margin-bottom:.35rem">Brightness <span id="ds-brightness-val" style="color:var(--gold)">100%</span></div>
+          <input type="range" min="50" max="150" step="5" value="100" id="ds-brightness" oninput="setDisplayPref('brightness',+this.value)" style="width:100%">
+        </div>
+        <div style="padding:.75rem 0 .2rem">
+          <div style="display:flex;justify-content:space-between;font-size:.78rem;color:rgba(17,29,44,.7);margin-bottom:.35rem">Contrast <span id="ds-contrast-val" style="color:var(--gold)">100%</span></div>
+          <input type="range" min="80" max="140" step="5" value="100" id="ds-contrast" oninput="setDisplayPref('contrast',+this.value)" style="width:100%">
+        </div>
+        <button onclick="resetDisplayPrefs()" style="margin-top:.9rem;width:100%;padding:.75rem;background:transparent;border:1px solid rgba(17,29,44,.12);border-radius:8px;color:rgba(17,29,44,.65);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Reset to Default</button>
+      </div>
+
+      <div style="background:rgba(17,29,44,.03);border-radius:12px;padding:1.1rem 1rem">
+        <div style="font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.9rem">Integrations</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem 0">
+          <div>
+            <div style="font-size:.88rem;color:var(--navy)">Google Calendar</div>
+            <div style="font-size:.72rem;color:rgba(17,29,44,.5)">Two-way sync with your calendar</div>
+          </div>
+          <button id="gcal-connect-btn" onclick="connectGoogleCalendar()" style="padding:.5rem 1rem;background:var(--gold);color:#fff;border:none;border-radius:6px;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer">Connect</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -590,6 +631,83 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
 <div id="toast"><span style="color:var(--gold);font-size:.8rem;flex-shrink:0">✓</span><span id="toast-msg"></span></div>
 
 <script>
+// ── DISPLAY PREFERENCES (font size / brightness / contrast) ──────────────────
+(function(){
+  var prefs={scale:100,brightness:100,contrast:100};
+  try{var s=localStorage.getItem('wph_display');if(s)prefs=Object.assign(prefs,JSON.parse(s));}catch(e){}
+  function apply(){
+    document.documentElement.style.fontSize=(prefs.scale*0.16)+'px';
+    document.body.style.filter='brightness('+(prefs.brightness/100)+') contrast('+(prefs.contrast/100)+')';
+  }
+  function save(){try{localStorage.setItem('wph_display',JSON.stringify(prefs));}catch(e){}}
+  window.setDisplayPref=function(key,val){prefs[key]=parseInt(val,10);save();apply();var lbl=document.getElementById('ds-'+key+'-val');if(lbl)lbl.textContent=prefs[key]+'%';};
+  window.resetDisplayPrefs=function(){prefs={scale:100,brightness:100,contrast:100};save();apply();if(window.syncDisplayUI)window.syncDisplayUI();};
+  window.syncDisplayUI=function(){['scale','brightness','contrast'].forEach(function(k){var s=document.getElementById('ds-'+k);if(s)s.value=prefs[k];var l=document.getElementById('ds-'+k+'-val');if(l)l.textContent=prefs[k]+'%';});};
+  apply();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',window.syncDisplayUI);else window.syncDisplayUI();
+})();
+
+// ── SETTINGS OVERLAY ──────────────────────────────────────────────────────────
+function openSettings(){
+  var el=document.getElementById('settings-overlay');
+  if(!el)return;
+  el.style.display='flex';
+  if(window.syncDisplayUI)window.syncDisplayUI();
+  checkGoogleCalendarStatus();
+}
+function closeSettings(){
+  var el=document.getElementById('settings-overlay');
+  if(el)el.style.display='none';
+}
+
+// ── GOOGLE CALENDAR ───────────────────────────────────────────────────────────
+async function connectGoogleCalendar(){
+  try{
+    var res=await fetch('/api/google/auth-url');
+    var data=await res.json();
+    if(res.ok&&data.ok&&data.url){
+      window.location.href=data.url;
+    } else {
+      alert(data.error||'Google Calendar is not configured on the server yet.');
+    }
+  }catch(e){
+    alert('Unable to start Google Calendar connection. Please try again.');
+  }
+}
+async function checkGoogleCalendarStatus(){
+  var btn=document.getElementById('gcal-connect-btn');
+  var statusEl=document.getElementById('gcal-status');
+  if(!btn)return;
+  try{
+    var res=await fetch('/api/google/status');
+    var data=await res.json();
+    if(res.ok&&data.ok&&data.connected){
+      btn.textContent='Disconnect';
+      btn.onclick=disconnectGoogleCalendar;
+      btn.style.background='transparent';
+      btn.style.color='var(--ink)';
+      btn.style.border='1px solid rgba(17,29,44,.2)';
+      if(statusEl)statusEl.textContent='Connected'+(data.email?' ('+data.email+')':'');
+    } else {
+      btn.textContent='Connect';
+      btn.onclick=connectGoogleCalendar;
+      btn.style.background='var(--gold)';
+      btn.style.color='#fff';
+      btn.style.border='none';
+      if(statusEl)statusEl.textContent='Not connected';
+    }
+  }catch(e){
+    if(statusEl)statusEl.textContent='Status unavailable';
+  }
+}
+async function disconnectGoogleCalendar(){
+  if(!confirm('Disconnect Google Calendar?'))return;
+  try{
+    await fetch('/api/google/disconnect',{method:'POST'});
+    checkGoogleCalendarStatus();
+  }catch(e){}
+}
+
 // ── AUTH (backend API) ────────────────────────────────────────────────────────
 function esc(s){if(!s)return '';var d=document.createElement('div');d.appendChild(document.createTextNode(s));return d.innerHTML;}
 

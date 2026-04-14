@@ -450,6 +450,24 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
           <div class="p-row"><span class="p-label">Password</span><span class="p-val">••••••••</span></div>
         </div>
       </div>
+      <div class="p-card">
+        <div class="p-ch">Display</div>
+        <div class="p-cb">
+          <div style="padding:.2rem 0">
+            <div style="display:flex;justify-content:space-between;font-size:.75rem;color:rgba(17,29,44,.6);margin-bottom:.3rem">Font Size <span id="ds-scale-val" style="color:var(--gold)">100%</span></div>
+            <input type="range" min="80" max="150" step="5" value="100" id="ds-scale" oninput="setDisplayPref('scale',+this.value)" style="width:100%">
+          </div>
+          <div style="padding:.7rem 0 .2rem">
+            <div style="display:flex;justify-content:space-between;font-size:.75rem;color:rgba(17,29,44,.6);margin-bottom:.3rem">Brightness <span id="ds-brightness-val" style="color:var(--gold)">100%</span></div>
+            <input type="range" min="50" max="150" step="5" value="100" id="ds-brightness" oninput="setDisplayPref('brightness',+this.value)" style="width:100%">
+          </div>
+          <div style="padding:.7rem 0 .2rem">
+            <div style="display:flex;justify-content:space-between;font-size:.75rem;color:rgba(17,29,44,.6);margin-bottom:.3rem">Contrast <span id="ds-contrast-val" style="color:var(--gold)">100%</span></div>
+            <input type="range" min="80" max="140" step="5" value="100" id="ds-contrast" oninput="setDisplayPref('contrast',+this.value)" style="width:100%">
+          </div>
+          <button onclick="resetDisplayPrefs()" style="margin-top:.8rem;width:100%;padding:.7rem;background:transparent;border:1px solid rgba(17,29,44,.15);color:rgba(17,29,44,.7);font-size:.75rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Reset to Default</button>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -485,6 +503,22 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
 </div>
 
 <script>
+// ── Display preferences (font size / brightness / contrast) ─────────────
+(function(){
+  var prefs={scale:100,brightness:100,contrast:100};
+  try{var s=localStorage.getItem('wph_display');if(s)prefs=Object.assign(prefs,JSON.parse(s));}catch(e){}
+  function apply(){
+    document.documentElement.style.fontSize=(prefs.scale*0.16)+'px';
+    document.body.style.filter='brightness('+(prefs.brightness/100)+') contrast('+(prefs.contrast/100)+')';
+  }
+  function save(){localStorage.setItem('wph_display',JSON.stringify(prefs));}
+  window.setDisplayPref=function(key,val){prefs[key]=val;save();apply();var lbl=document.getElementById('ds-'+key+'-val');if(lbl)lbl.textContent=val+'%';};
+  window.resetDisplayPrefs=function(){prefs={scale:100,brightness:100,contrast:100};save();apply();syncDisplayUI();};
+  window.syncDisplayUI=function(){['scale','brightness','contrast'].forEach(function(k){var s=document.getElementById('ds-'+k);if(s)s.value=prefs[k];var l=document.getElementById('ds-'+k+'-val');if(l)l.textContent=prefs[k]+'%';});};
+  apply();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',window.syncDisplayUI);else window.syncDisplayUI();
+})();
+
 // ─── XSS ESCAPE ──────────────────────────────────────────────────────────────
 function esc(s){
   if(s==null) return '';

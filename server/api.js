@@ -2,6 +2,7 @@ const express = require('express');
 const { getDb } = require('./db');
 const { sendAdminAlert } = require('./email');
 const { sendAdminBookingWhatsApp } = require('./whatsapp');
+const gcal = require('./google-calendar');
 
 const router = express.Router();
 
@@ -82,6 +83,23 @@ router.post('/bookings', (req, res) => {
     sendAdminBookingWhatsApp(notifData)
   ]).catch(() => {});
 
+  // Push to Google Calendar in background
+  const bookingForCal = {
+    id: result.lastInsertRowid, ref, pickup, destination, date, time,
+    passengers, bags, flight, fare, payment, notes,
+    customer_name: customerName.full_name || 'Guest',
+    customer_phone: customerName.phone || '',
+    status: 'pending'
+  };
+  gcal.createEvent(bookingForCal).then(eventId => {
+    if (eventId) {
+      try {
+        getDb().prepare('UPDATE bookings SET calendar_event_id = ? WHERE id = ?')
+          .run(eventId, result.lastInsertRowid);
+      } catch (e) {}
+    }
+  }).catch(() => {});
+
   res.status(201).json({ ok: true, booking: { id: result.lastInsertRowid, ref } });
 });
 
@@ -115,6 +133,30 @@ router.patch('/bookings/:id', (req, res) => {
 
   db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
     .run(req.auth.type, req.auth.id, 'booking_updated', booking.ref, req.ip);
+
+  // Sync to Google Calendar in background
+  const updated = db.prepare(`
+    SELECT b.*, c.full_name as customer_name, c.phone as customer_phone
+    FROM bookings b LEFT JOIN customers c ON b.customer_id = c.id
+    WHERE b.id = ?
+  `).get(req.params.id);
+  if (updated) {
+    if (updated.status === 'cancelled' && updated.calendar_event_id) {
+      gcal.deleteEvent(updated.calendar_event_id).then(ok => {
+        if (ok) {
+          try { db.prepare('UPDATE bookings SET calendar_event_id = NULL WHERE id = ?').run(updated.id); } catch (e) {}
+        }
+      }).catch(() => {});
+    } else if (updated.calendar_event_id) {
+      gcal.updateEvent(updated.calendar_event_id, updated).catch(() => {});
+    } else if (updated.status !== 'cancelled') {
+      gcal.createEvent(updated).then(eventId => {
+        if (eventId) {
+          try { db.prepare('UPDATE bookings SET calendar_event_id = ? WHERE id = ?').run(eventId, updated.id); } catch (e) {}
+        }
+      }).catch(() => {});
+    }
+  }
 
   res.json({ ok: true });
 });

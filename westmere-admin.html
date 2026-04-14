@@ -668,11 +668,29 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
         <div class="card">
           <div class="ch"><div class="ct">Integrations</div></div>
           <div class="cb">
-            <div class="setting-row"><div><div class="sr-title">Google Calendar</div><div class="sr-sub">Auto-add bookings to your calendar</div></div><button class="btn btn-green btn-sm" onclick="showToast('Google Calendar connected!')">✓ Connect</button></div>
-            <div class="setting-row"><div><div class="sr-title">SendGrid (Email)</div><div class="sr-sub">Send automated customer emails</div></div><button class="btn btn-ghost btn-sm" onclick="showToast('Enter your SendGrid API key')">Connect</button></div>
+            <div class="setting-row"><div><div class="sr-title">Google Calendar</div><div class="sr-sub">Auto-add bookings to your calendar</div></div><button class="btn btn-green btn-sm" id="gcal-connect-btn" onclick="connectGoogleCalendar()">Connect</button></div>
+            <div class="setting-row"><div><div class="sr-title">Resend (Email)</div><div class="sr-sub">Send automated customer emails</div></div><button class="btn btn-ghost btn-sm" onclick="showToast('Set RESEND_API_KEY in Railway env')">Configured</button></div>
             <div class="setting-row"><div><div class="sr-title">Twilio (WhatsApp &amp; SMS)</div><div class="sr-sub">Automated WhatsApp and text messages</div></div><button class="btn btn-ghost btn-sm" onclick="showToast('Enter your Twilio credentials')">Connect</button></div>
             <div class="setting-row"><div><div class="sr-title">Stripe (Card Payments)</div><div class="sr-sub">Accept card payments online</div></div><button class="btn btn-ghost btn-sm" onclick="showToast('Enter your Stripe publishable key')">Connect</button></div>
             <div class="setting-row"><div><div class="sr-title">Flightradar24 API</div><div class="sr-sub">Live flight delay alerts</div></div><button class="btn btn-ghost btn-sm" onclick="showToast('Enter your FR24 API key')">Connect</button></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ch"><div class="ct">Display</div></div>
+          <div class="cb">
+            <div class="fg">
+              <label class="fl">Font Size <span id="ds-scale-val" style="color:var(--gold);margin-left:.4rem">100%</span></label>
+              <input type="range" min="80" max="150" step="5" value="100" id="ds-scale" oninput="setDisplayPref('scale',+this.value)" style="width:100%">
+            </div>
+            <div class="fg">
+              <label class="fl">Brightness <span id="ds-brightness-val" style="color:var(--gold);margin-left:.4rem">100%</span></label>
+              <input type="range" min="50" max="150" step="5" value="100" id="ds-brightness" oninput="setDisplayPref('brightness',+this.value)" style="width:100%">
+            </div>
+            <div class="fg">
+              <label class="fl">Contrast <span id="ds-contrast-val" style="color:var(--gold);margin-left:.4rem">100%</span></label>
+              <input type="range" min="80" max="140" step="5" value="100" id="ds-contrast" oninput="setDisplayPref('contrast',+this.value)" style="width:100%">
+            </div>
+            <button class="btn btn-ghost btn-full" style="margin-top:.5rem" onclick="resetDisplayPrefs()">Reset to default</button>
           </div>
         </div>
       </div>
@@ -910,6 +928,41 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 </div><!-- end admin-app -->
 
 <script>
+// ── Display preferences (font size / brightness / contrast) ─────────────
+(function(){
+  var prefs={scale:100,brightness:100,contrast:100};
+  try{var s=localStorage.getItem('wph_display');if(s)prefs=Object.assign(prefs,JSON.parse(s));}catch(e){}
+  function apply(){
+    document.documentElement.style.fontSize=(prefs.scale*0.16)+'px';
+    document.body.style.filter='brightness('+(prefs.brightness/100)+') contrast('+(prefs.contrast/100)+')';
+  }
+  function save(){localStorage.setItem('wph_display',JSON.stringify(prefs));}
+  window.setDisplayPref=function(key,val){prefs[key]=val;save();apply();var lbl=document.getElementById('ds-'+key+'-val');if(lbl)lbl.textContent=val+'%';};
+  window.resetDisplayPrefs=function(){prefs={scale:100,brightness:100,contrast:100};save();apply();syncDisplayUI();};
+  window.syncDisplayUI=function(){['scale','brightness','contrast'].forEach(function(k){var s=document.getElementById('ds-'+k);if(s)s.value=prefs[k];var l=document.getElementById('ds-'+k+'-val');if(l)l.textContent=prefs[k]+'%';});};
+  apply();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',window.syncDisplayUI);else window.syncDisplayUI();
+})();
+
+// ── Google Calendar connect (OAuth redirect) ────────────────────────────
+function connectGoogleCalendar(){
+  var btn=document.getElementById('gcal-connect-btn');
+  if(btn)btn.textContent='Connecting…';
+  fetch('/api/google/auth-url').then(function(r){return r.json();}).then(function(d){
+    if(d&&d.url){window.location.href=d.url;}
+    else{showToast('Google Calendar not configured yet. Add GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET to Railway env.');if(btn)btn.textContent='Connect';}
+  }).catch(function(){showToast('Google Calendar backend not ready');if(btn)btn.textContent='Connect';});
+}
+function checkGoogleCalendarStatus(){
+  fetch('/api/google/status').then(function(r){return r.json();}).then(function(d){
+    var btn=document.getElementById('gcal-connect-btn');
+    if(!btn)return;
+    if(d&&d.connected){btn.textContent='\u2713 Connected';btn.onclick=function(){if(confirm('Disconnect Google Calendar?'))fetch('/api/google/disconnect',{method:'POST'}).then(function(){checkGoogleCalendarStatus();});};}
+    else{btn.textContent='Connect';btn.onclick=connectGoogleCalendar;}
+  }).catch(function(){});
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',checkGoogleCalendarStatus);else checkGoogleCalendarStatus();
+
 
 // ── ADMIN AUTH (backend API) ─────────────────────────────────────────────
 async function adminLogin(){

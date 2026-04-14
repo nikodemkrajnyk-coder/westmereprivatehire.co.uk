@@ -8,7 +8,9 @@ const { getDb } = require('./db');
 const { router: authRouter, JWT_SECRET } = require('./auth');
 const apiRouter = require('./api');
 const publicApiRouter = require('./public-api');
+const googleRouter = require('./google-routes');
 const { createAuthMiddleware } = require('./middleware');
+const gcal = require('./google-calendar');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -73,8 +75,14 @@ app.use('/api/auth', authLimiter, authRouter);
 // Public API routes (booking, payment — no auth needed)
 app.use('/api/public', apiLimiter, publicApiRouter);
 
+// Google Calendar OAuth callback (public — Google redirects here after consent)
+app.use('/api/google', apiLimiter, googleRouter.publicCallback);
+
 // Protected API routes
 app.use('/api', apiLimiter, requireAuth, apiRouter);
+
+// Protected Google Calendar routes (auth-url, status, disconnect, sync)
+app.use('/api/google', requireAuth, googleRouter);
 
 // ── Protected app pages ─────────────────────────────────────────────────
 // These pages require authentication — the frontend handles showing login UI
@@ -116,6 +124,7 @@ const { isConfigured: waOk } = require('./whatsapp');
 app.listen(PORT, () => {
   const { isConfigured: emailOk } = require('./email');
   const gmailOk = emailOk();
+  const gcalOk = gcal.isConfigured();
   console.log(`
 ╔═══════════════════════════════════════════════╗
 ║  Westmere Private Hire — Backend Server       ║
@@ -127,8 +136,16 @@ app.listen(PORT, () => {
 ║  Stripe:   ${stripeOk() ? 'ACTIVE' : 'NOT CONFIGURED'}                        ║
 ║  Gmail:    ${gmailOk ? 'ACTIVE' : 'NOT CONFIGURED'}                        ║
 ║  WhatsApp: ${waOk() ? 'ACTIVE' : 'NOT CONFIGURED'}                        ║
+║  GCal:     ${gcalOk ? 'ACTIVE' : 'NOT CONFIGURED'}                        ║
 ╚═══════════════════════════════════════════════╝
   `);
+
+  // Background: poll Google Calendar for remote changes every 5 minutes
+  if (gcalOk) {
+    setInterval(() => {
+      gcal.pullChanges().catch(e => console.error('[GCAL] poll error:', e.message));
+    }, 5 * 60 * 1000);
+  }
 });
 
 module.exports = app;

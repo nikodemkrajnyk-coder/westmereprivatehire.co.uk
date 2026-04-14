@@ -96,6 +96,23 @@ function initSchema() {
       ip         TEXT,
       created_at TEXT    NOT NULL DEFAULT (datetime('now'))
     );
+
+    -- Third-party integrations (Google Calendar OAuth tokens, etc.)
+    CREATE TABLE IF NOT EXISTS integrations (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      provider      TEXT    NOT NULL,
+      account_email TEXT,
+      access_token  TEXT,
+      refresh_token TEXT,
+      expires_at    INTEGER,
+      scope         TEXT,
+      sync_token    TEXT,
+      calendar_id   TEXT DEFAULT 'primary',
+      data          TEXT,
+      created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+      updated_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(provider)
+    );
   `);
 }
 
@@ -136,6 +153,38 @@ function migrate() {
   } catch (e) {
     // Table might not exist yet, that's fine
   }
+
+  // Add calendar_event_id column to bookings (for Google Calendar sync)
+  try {
+    const info = db.prepare("PRAGMA table_info(bookings)").all();
+    if (!info.find(c => c.name === 'calendar_event_id')) {
+      db.exec(`ALTER TABLE bookings ADD COLUMN calendar_event_id TEXT`);
+      console.log('[DB] Added calendar_event_id column to bookings');
+    }
+  } catch (e) {
+    // Non-fatal
+  }
+
+  // Ensure integrations table exists for legacy databases
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS integrations (
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        provider      TEXT    NOT NULL,
+        account_email TEXT,
+        access_token  TEXT,
+        refresh_token TEXT,
+        expires_at    INTEGER,
+        scope         TEXT,
+        sync_token    TEXT,
+        calendar_id   TEXT DEFAULT 'primary',
+        data          TEXT,
+        created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+        updated_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+        UNIQUE(provider)
+      );
+    `);
+  } catch (e) {}
 }
 
 function seedDefaults() {

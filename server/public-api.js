@@ -10,6 +10,7 @@ const { getDb } = require('./db');
 const { sendCustomerConfirmation, sendAdminAlert } = require('./email');
 const { sendCustomerBookingWhatsApp, sendAdminBookingWhatsApp } = require('./whatsapp');
 const { createPaymentIntent, isConfigured: stripeConfigured } = require('./stripe');
+const gcal = require('./google-calendar');
 
 const router = express.Router();
 
@@ -76,6 +77,19 @@ router.post('/book', async (req, res) => {
         }
       });
     });
+
+    // Push to Google Calendar in background
+    gcal.createEvent({
+      id: result.lastInsertRowid, ref, pickup, destination,
+      date: bookingDate, time: time || 'ASAP',
+      passengers, bags, flight, fare, payment, notes,
+      customer_name: name, customer_phone: phone,
+      status: 'pending'
+    }).then(eventId => {
+      if (eventId) {
+        try { db.prepare('UPDATE bookings SET calendar_event_id = ? WHERE id = ?').run(eventId, result.lastInsertRowid); } catch (e) {}
+      }
+    }).catch(() => {});
 
     res.status(201).json({ ok: true, ref, bookingId: result.lastInsertRowid });
 
