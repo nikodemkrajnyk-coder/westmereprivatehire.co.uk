@@ -933,12 +933,24 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
   var prefs={scale:100,brightness:100,contrast:100};
   try{var s=localStorage.getItem('wph_display');if(s)prefs=Object.assign(prefs,JSON.parse(s));}catch(e){}
   function apply(){
-    document.documentElement.style.fontSize=(prefs.scale*0.16)+'px';
-    document.body.style.filter='brightness('+(prefs.brightness/100)+') contrast('+(prefs.contrast/100)+')';
+    if(!document.body){document.addEventListener('DOMContentLoaded',apply);return;}
+    // CSS zoom scales px-sized UIs; fall back to transform on Firefox
+    var isFF=navigator.userAgent.indexOf('Firefox')!==-1;
+    if(isFF){
+      document.body.style.zoom='';
+      document.body.style.transform='scale('+(prefs.scale/100)+')';
+      document.body.style.transformOrigin='0 0';
+      document.body.style.width=(10000/prefs.scale)+'%';
+    } else {
+      document.body.style.transform='';
+      document.body.style.width='';
+      document.body.style.zoom=(prefs.scale/100);
+    }
+    document.documentElement.style.filter='brightness('+(prefs.brightness/100)+') contrast('+(prefs.contrast/100)+')';
   }
-  function save(){localStorage.setItem('wph_display',JSON.stringify(prefs));}
-  window.setDisplayPref=function(key,val){prefs[key]=val;save();apply();var lbl=document.getElementById('ds-'+key+'-val');if(lbl)lbl.textContent=val+'%';};
-  window.resetDisplayPrefs=function(){prefs={scale:100,brightness:100,contrast:100};save();apply();syncDisplayUI();};
+  function save(){try{localStorage.setItem('wph_display',JSON.stringify(prefs));}catch(e){}}
+  window.setDisplayPref=function(key,val){prefs[key]=parseInt(val,10);save();apply();var lbl=document.getElementById('ds-'+key+'-val');if(lbl)lbl.textContent=prefs[key]+'%';};
+  window.resetDisplayPrefs=function(){prefs={scale:100,brightness:100,contrast:100};save();apply();if(window.syncDisplayUI)window.syncDisplayUI();};
   window.syncDisplayUI=function(){['scale','brightness','contrast'].forEach(function(k){var s=document.getElementById('ds-'+k);if(s)s.value=prefs[k];var l=document.getElementById('ds-'+k+'-val');if(l)l.textContent=prefs[k]+'%';});};
   apply();
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',window.syncDisplayUI);else window.syncDisplayUI();
