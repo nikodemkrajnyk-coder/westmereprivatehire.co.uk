@@ -904,6 +904,13 @@ function addrSearch(inputId,dropId){
   },300);
 }
 
+function _isAirportNoise(it){
+  var hay=((it.main||'')+' '+(it.sub||'')).toLowerCase();
+  if(/\bterminal\b|\bt[1-9]\b/.test(hay))return true;
+  var aps=['gatwick','heathrow','stansted','luton','southampton airport','london city airport','lhr','lgw','stn','ltn','sou','lcy'];
+  for(var i=0;i<aps.length;i++){if(hay.indexOf(aps[i])!==-1)return true;}
+  return false;
+}
 function _renderSuggestions(inp,drop,apItems,items){
   drop.innerHTML='';
   apItems.forEach(function(ap){
@@ -912,6 +919,7 @@ function _renderSuggestions(inp,drop,apItems,items){
     d.onclick=function(){inp.value=ap.name;drop.classList.remove('open');drop.innerHTML='';checkFlightField();bkCalcFare();};
     drop.appendChild(d);
   });
+  items=items.filter(function(it){return !_isAirportNoise(it);});
   items.forEach(function(it){
     var full=it.sub?it.main+', '+it.sub:it.main;
     var d=document.createElement('div');d.className='sug-item';
@@ -1294,7 +1302,7 @@ function confirmBooking(){
     bags:bags,
     vehicle:_selectedVehName,
     fare:fare,
-    status:'confirmed',
+    status:'pending',
     created:new Date().toISOString()
   };
   // Save to localStorage for offline display
@@ -1308,7 +1316,7 @@ function confirmBooking(){
     body:JSON.stringify({pickup:from,destination:dest,date:date,time:time,passengers:parseInt(pax)||1,bags:bags,flight:flight,fare:fare,payment:'cash',notes:_selectedVehName?'Vehicle: '+_selectedVehName:''})
   }).catch(function(){});
   closeModal();
-  showToast('Booking confirmed: '+ref,'success');
+  showToast('Booking received: '+ref+' \u2014 awaiting confirmation','success');
   // Reset form
   document.getElementById('bk-from').value='';
   document.getElementById('bk-dest').value='';

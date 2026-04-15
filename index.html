@@ -357,6 +357,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
       <div class="bkf"><label>Full name</label><input type="text" id="bk-name" placeholder="Your full name" autocomplete="name" inputmode="text"></div>
       <div class="bkf"><label>Email address</label><input type="email" id="bk-email" placeholder="your@email.com" autocomplete="email" inputmode="email"></div>
       <div class="bkf"><label>Mobile number</label><input type="tel" id="bk-phone" placeholder="+44 7xxx xxxxxx" autocomplete="tel" inputmode="tel"></div>
+      <div class="bkf"><label>Notes for your driver <span style="opacity:.6;font-weight:400">(optional)</span></label><textarea id="bk-notes" placeholder="Child seat, meet &amp; greet, extra stop, special requests…" rows="3" style="width:100%;font:inherit;color:inherit;background:rgba(255,255,255,.04);border:1px solid rgba(184,152,90,.25);border-radius:.5rem;padding:.7rem .85rem;resize:vertical;min-height:3.2rem"></textarea></div>
       <button class="bk-btn-p" onclick="bkToStep2()">Continue &rarr;</button>
     </div>
 
@@ -415,11 +416,11 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
         <div class="bk-welcome-w">W</div>
         <div class="bk-welcome-rule"></div>
         <div class="bk-welcome-ttl">Welcome to Westmere</div>
-        <div class="bk-welcome-sub" id="bk-wsub">Your journey is confirmed</div>
+        <div class="bk-welcome-sub" id="bk-wsub">Your booking request has been received</div>
         <div class="bk-welcome-ref" id="bk-cr"></div>
       </div>
       <div class="bk-confirm-dl" id="bk-cd"></div>
-      <div class="bk-driver-note" id="bk-driver-note" style="display:none">We have been notified and will confirm your booking shortly.</div>
+      <div class="bk-driver-note" id="bk-driver-note">We have been notified and will confirm your booking shortly &mdash; you&rsquo;ll receive an email and WhatsApp message once a driver has been assigned.</div>
       <button class="bk-btn-p" style="margin-top:1.3rem" onclick="closeBkModal()">All done</button>
     </div>
 
@@ -538,6 +539,15 @@ function addrSearch(inp,sid){
   },300);
 }
 
+function _isAirportNoise(it){
+  // Drop any geocoder result that looks like an airport / terminal —
+  // the curated AIRPORTS list already provides one clean entry per airport.
+  var hay=((it.main||'')+' '+(it.sub||'')).toLowerCase();
+  if(/\bterminal\b|\bt[1-9]\b/.test(hay))return true;
+  var aps=['gatwick','heathrow','stansted','luton','southampton airport','london city airport','lhr','lgw','stn','ltn','sou','lcy'];
+  for(var i=0;i<aps.length;i++){if(hay.indexOf(aps[i])!==-1)return true;}
+  return false;
+}
 function _renderSuggestions(inp,s,apItems,items){
   s.innerHTML='';
   apItems.forEach(function(ap){
@@ -546,6 +556,7 @@ function _renderSuggestions(inp,s,apItems,items){
     d.onclick=function(){inp.value=ap.name;s.classList.remove('open');s.innerHTML='';checkFlight();doEstimate();};
     s.appendChild(d);
   });
+  items=items.filter(function(it){return !_isAirportNoise(it);});
   items.forEach(function(it){
     var full=it.sub?it.main+', '+it.sub:it.main;
     var d=document.createElement('div');d.className='sug-item';
@@ -1033,9 +1044,7 @@ function bkConfirm(type) {
 
   // ── Welcome screen ──
   var wsub = document.getElementById("bk-wsub");
-  if (wsub) wsub.textContent = type==="driver"
-    ? firstName + ", your booking request is received"
-    : firstName + ", your booking is confirmed";
+  if (wsub) wsub.textContent = firstName + ", your booking request has been received";
 
   var crEl = document.getElementById("bk-cr");
   if (crEl) crEl.textContent = "Ref: " + ref;
@@ -1057,7 +1066,7 @@ function bkConfirm(type) {
   }).join("");
 
   var dn = document.getElementById("bk-driver-note");
-  if (dn) dn.style.display = type==="driver" ? "block" : "none";
+  if (dn) dn.style.display = "block";
 
   // ── Submit to backend (email + WhatsApp notifications sent server-side) ──
   bkSubmitBooking({

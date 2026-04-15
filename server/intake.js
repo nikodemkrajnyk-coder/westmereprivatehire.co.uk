@@ -14,12 +14,15 @@
 //
 // Env vars:
 //   ANTHROPIC_API_KEY  — required to enable evaluation
-//   INTAKE_MODEL       — optional, defaults to claude-sonnet-4-5
+//   INTAKE_MODEL       — optional, defaults to claude-haiku-4-5-20251001
+//                        (cheap + fast; use claude-sonnet-4-6 for higher accuracy)
 
 const { getDb } = require('./db');
+const { sendCustomerConfirmed } = require('./email');
+const { sendCustomerBookingConfirmedWhatsApp } = require('./whatsapp');
 
 const API_KEY = process.env.ANTHROPIC_API_KEY || '';
-const MODEL   = process.env.INTAKE_MODEL || 'claude-sonnet-4-5';
+const MODEL   = process.env.INTAKE_MODEL || 'claude-haiku-4-5-20251001';
 const API_URL = 'https://api.anthropic.com/v1/messages';
 
 function isConfigured() {
@@ -219,6 +222,9 @@ async function evaluate(bookingId) {
                    WHERE id = ?`)
         .run(decision.reason || 'Auto-confirmed by smart intake.', bookingId);
       console.log('[INTAKE] Auto-confirmed booking', booking.ref, '—', decision.reason);
+      // Tell the customer their booking is now confirmed (email + WhatsApp).
+      notifyCustomerConfirmed(bookingId).catch(e =>
+        console.error('[INTAKE] notifyCustomerConfirmed failed:', e.message));
     } else {
       // Flag for the operator to reassign / decline
       db.prepare(`UPDATE bookings
@@ -242,6 +248,41 @@ async function evaluate(bookingId) {
     } catch (_) {}
     return { ok: false, reason: e.message };
   }
+}
+
+// ── Notify the customer that their booking has been confirmed ────────────
+// Pulls booking + linked customer (or falls back to notes/phone) and fires
+// email + WhatsApp confirmation. Idempotent at the call-site level — callers
+// should only invoke this on a transition from unconfirmed to confirmed.
+async function notifyCustomerConfirmed(bookingId) {
+  const db = getDb();
+  const row = db.prepare(`
+    SELECT b.*, c.email AS cust_email, c.full_name AS cust_name, c.phone AS cust_phone
+      FROM bookings b
+      LEFT JOIN customers c ON b.customer_id = c.id
+     WHERE b.id = ?
+  `).get(bookingId);
+  if (!row) return;
+
+  const payload = {
+    ref: row.ref,
+    name: row.cust_name || row.notes || 'Guest',
+    email: row.cust_email || null,
+    phone: row.cust_phone || null,
+    pickup: row.pickup,
+    destination: row.destination,
+    date: row.date,
+    time: row.time,
+    fare: row.fare,
+    payment: row.payment,
+    flight: row.flight,
+    passengers: row.passengers
+  };
+
+  await Promise.allSettled([
+    payload.email ? sendCustomerConfirmed(payload) : Promise.resolve(),
+    payload.phone ? sendCustomerBookingConfirmedWhatsApp(payload) : Promise.resolve()
+  ]);
 }
 
 // ── Apology drafter (used when no driver can take the job) ───────────────
@@ -275,4 +316,4 @@ async function draftApology(bookingId) {
   }
 }
 
-module.exports = { isConfigured, evaluate, draftApology };
+module.exports = { isConfigured, evaluate, draftApology, notifyCustomerConfirmed };

@@ -57,14 +57,14 @@ async function sendMessage(to, text) {
   return data;
 }
 
-// ── Booking confirmation to customer ─────────────────────────────────────
+// ── Booking RECEIVED notice to customer (sent immediately on booking) ────
 async function sendCustomerBookingWhatsApp(booking) {
   if (!isConfigured() || !booking.phone) return;
 
   const lines = [
     `*Westmere Private Hire*`,
     ``,
-    `Booking Confirmed`,
+    `Booking received \u2014 awaiting confirmation`,
     `Ref: *${booking.ref}*`,
     ``,
     `From: ${booking.pickup}`,
@@ -76,13 +76,42 @@ async function sendCustomerBookingWhatsApp(booking) {
   if (booking.fare) lines.push(`Fare: \u00a3${typeof booking.fare === 'number' ? booking.fare.toFixed(2) : booking.fare}`);
   lines.push(`Payment: ${booking.payment === 'card' ? 'Paid online' : 'Pay driver'}`);
   lines.push('');
-  lines.push('Thank you for choosing Westmere.');
+  lines.push('We\'ll be in touch shortly to confirm your driver.');
+
+  try {
+    await sendMessage(booking.phone, lines.join('\n'));
+    console.log('[WHATSAPP] Customer received-notice sent (' + booking.ref + ')');
+  } catch (err) {
+    console.error('[WHATSAPP] Customer message failed:', err.message);
+  }
+}
+
+// ── Booking CONFIRMED notice (sent after Claude/operator approves) ───────
+async function sendCustomerBookingConfirmedWhatsApp(booking) {
+  if (!isConfigured() || !booking.phone) return;
+
+  const lines = [
+    `*Westmere Private Hire*`,
+    ``,
+    `\u2713 Booking Confirmed`,
+    `Ref: *${booking.ref}*`,
+    ``,
+    `From: ${booking.pickup}`,
+    `To: ${booking.destination}`,
+    `Date: ${booking.date}${booking.time ? ' at ' + booking.time : ''}`,
+  ];
+
+  if (booking.flight) lines.push(`Flight: ${booking.flight}`);
+  if (booking.fare) lines.push(`Fare: \u00a3${typeof booking.fare === 'number' ? booking.fare.toFixed(2) : booking.fare}`);
+  lines.push(`Payment: ${booking.payment === 'card' ? 'Paid online' : 'Pay driver'}`);
+  lines.push('');
+  lines.push('Your driver has been assigned. Thank you for choosing Westmere.');
 
   try {
     await sendMessage(booking.phone, lines.join('\n'));
     console.log('[WHATSAPP] Customer confirmation sent (' + booking.ref + ')');
   } catch (err) {
-    console.error('[WHATSAPP] Customer message failed:', err.message);
+    console.error('[WHATSAPP] Customer confirmation failed:', err.message);
   }
 }
 
@@ -114,4 +143,4 @@ async function sendAdminBookingWhatsApp(booking) {
   }
 }
 
-module.exports = { sendMessage, sendCustomerBookingWhatsApp, sendAdminBookingWhatsApp, isConfigured };
+module.exports = { sendMessage, sendCustomerBookingWhatsApp, sendCustomerBookingConfirmedWhatsApp, sendAdminBookingWhatsApp, isConfigured };

@@ -139,7 +139,10 @@ function rowDivider() {
   return `<tr><td colspan="2" style="padding:4px 0"><div style="border-top:1px solid ${HAIRLINE}"></div></td></tr>`;
 }
 
-// ── Customer booking confirmation ────────────────────────────────────────
+// ── Customer booking RECEIVED (sent immediately on booking) ──────────────
+// This is the "we got it, awaiting confirmation" message. The actual
+// confirmation goes out from sendCustomerConfirmed once Claude or the
+// operator approves the trip.
 async function sendCustomerConfirmation(booking) {
   const { ref, name, email, pickup, destination, date, time, fare, payment, flight, passengers } = booking;
   if (!email) return;
@@ -163,10 +166,18 @@ async function sendCustomerConfirmation(booking) {
   rows += detailRow('Payment', payment === 'card' ? 'Paid online \u2713' : 'Pay driver on arrival');
 
   const body = `
+  <!-- Status banner -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px">
+    <tr><td style="padding:14px 18px;background:rgba(30,77,140,0.06);border-left:3px solid ${ACCENT};border-radius:0 6px 6px 0">
+      <p style="margin:0;font-family:Georgia,serif;font-size:15px;color:${INK_PRIMARY};font-weight:500">Thank you &mdash; we&rsquo;ve received your booking request.</p>
+      <p style="margin:6px 0 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:${INK_SOFT};line-height:1.55">We&rsquo;ll review the details against our schedule and confirm your driver shortly. You&rsquo;ll receive a separate confirmation email once your journey is locked in.</p>
+    </td></tr>
+  </table>
+
   <!-- Booking details card -->
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${TINT};border:1px solid ${HAIRLINE};border-radius:12px;overflow:hidden">
     <tr><td style="padding:6px 24px 4px;background:rgba(30,77,140,0.08)">
-      <p style="margin:0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:${ACCENT};font-weight:500">Booking Details</p>
+      <p style="margin:0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:${ACCENT};font-weight:500">Booking Request</p>
     </td></tr>
     <tr><td style="padding:16px 24px 20px">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -191,13 +202,69 @@ async function sendCustomerConfirmation(booking) {
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:28px">
     <tr><td style="padding:24px;text-align:center">
       <p style="margin:0;font-family:Georgia,serif;font-size:18px;font-style:italic;color:${INK_SOFT};font-weight:400">Thank you for choosing Westmere</p>
+      <p style="margin:8px 0 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:${INK_MUTED};font-weight:300">We&rsquo;ll be in touch shortly.</p>
+    </td></tr>
+  </table>`;
+
+  const html = emailShell(body);
+  const ok = await sendEmail(email, 'Booking received \u2014 ' + ref, html, 'Westmere Private Hire');
+  if (ok) console.log('[EMAIL] Customer received-notice sent (' + ref + ')');
+}
+
+// ── Customer booking CONFIRMED (sent after Claude or operator approves) ──
+async function sendCustomerConfirmed(booking) {
+  const { ref, name, email, pickup, destination, date, time, fare, payment, flight, passengers } = booking;
+  if (!email) return;
+
+  const dateStr = formatDate(date, time);
+  const fareStr = fare ? ('\u00a3' + (typeof fare === 'number' ? fare.toFixed(2) : fare)) : null;
+
+  let rows = '';
+  rows += detailRow('Reference', ref, true);
+  rows += rowDivider();
+  rows += detailRow('Passenger', name);
+  if (passengers && passengers > 1) rows += detailRow('Travellers', passengers + ' passengers');
+  rows += rowDivider();
+  rows += detailRow('Pickup', pickup);
+  rows += detailRow('Drop-off', destination);
+  rows += rowDivider();
+  rows += detailRow('Date', dateStr);
+  if (flight) { rows += detailRow('Flight', flight); }
+  rows += rowDivider();
+  if (fareStr) { rows += detailRow('Fare', fareStr, true); }
+  rows += detailRow('Payment', payment === 'card' ? 'Paid online \u2713' : 'Pay driver on arrival');
+
+  const body = `
+  <!-- Confirmed banner -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px">
+    <tr><td style="padding:16px 20px;background:rgba(27,138,58,0.08);border-left:3px solid #1B8A3A;border-radius:0 6px 6px 0">
+      <p style="margin:0;font-family:Georgia,serif;font-size:16px;color:${INK_PRIMARY};font-weight:500">Your booking is confirmed.</p>
+      <p style="margin:6px 0 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:${INK_SOFT};line-height:1.55">A driver has been assigned to your journey. We&rsquo;ll see you on the day.</p>
+    </td></tr>
+  </table>
+
+  <!-- Booking details card -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${TINT};border:1px solid ${HAIRLINE};border-radius:12px;overflow:hidden">
+    <tr><td style="padding:6px 24px 4px;background:rgba(30,77,140,0.08)">
+      <p style="margin:0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:${ACCENT};font-weight:500">Booking Details</p>
+    </td></tr>
+    <tr><td style="padding:16px 24px 20px">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      ${rows}
+      </table>
+    </td></tr>
+  </table>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:28px">
+    <tr><td style="padding:24px;text-align:center">
+      <p style="margin:0;font-family:Georgia,serif;font-size:18px;font-style:italic;color:${INK_SOFT};font-weight:400">Thank you for choosing Westmere</p>
       <p style="margin:8px 0 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:${INK_MUTED};font-weight:300">We look forward to your journey.</p>
     </td></tr>
   </table>`;
 
   const html = emailShell(body);
   const ok = await sendEmail(email, 'Booking Confirmed \u2014 ' + ref, html, 'Westmere Private Hire');
-  if (ok) console.log('[EMAIL] Customer confirmation sent (' + ref + ')');
+  if (ok) console.log('[EMAIL] Customer confirmed sent (' + ref + ')');
 }
 
 // ── Admin booking alert ──────────────────────────────────────────────────
@@ -262,4 +329,4 @@ function formatDate(date, time) {
   }
 }
 
-module.exports = { sendCustomerConfirmation, sendAdminAlert, sendEmail, isConfigured };
+module.exports = { sendCustomerConfirmation, sendCustomerConfirmed, sendAdminAlert, sendEmail, isConfigured };

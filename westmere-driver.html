@@ -258,9 +258,6 @@ nav.solid{background:rgba(255,255,255,.85);backdrop-filter:blur(20px)}
 #toast.on{display:flex;animation:fadeUp .3s ease}
 @keyframes fadeUp{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 
-/* ── PWA BANNER ── */
-#pwa-banner{display:none;position:fixed;bottom:4rem;left:0;right:0;z-index:200;padding:.8rem 1.2rem;background:rgba(17,29,44,.92);border-top:1px solid rgba(184,152,90,.1);backdrop-filter:blur(16px)}
-
 /* ── WHATSAPP FAB ── */
 /* ── FOOTER ── */
 footer{background:transparent;padding:1.5rem 6%;border-top:none;position:relative;z-index:1}
@@ -526,16 +523,6 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
 </div>
 
 <div id="toast"><span style="color:var(--gold);font-size:.8rem;flex-shrink:0">&#10003;</span><span id="toast-msg"></span></div>
-
-<div id="pwa-banner">
-  <div style="max-width:400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:1rem">
-    <div><div style="font-size:.78rem;font-weight:400;color:var(--navy)">Add Westmere Driver</div><div style="font-size:.62rem;color:rgba(17,29,44,.4);margin-top:.1rem">Add to home screen</div></div>
-    <div style="display:flex;gap:.5rem">
-      <button onclick="installPWA()" style="background:var(--gold);color:var(--navy);border:none;font-family:var(--sans);font-size:.58rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.5rem .9rem;cursor:pointer">Install</button>
-      <button onclick="document.getElementById('pwa-banner').style.display='none'" style="background:transparent;color:rgba(17,29,44,.3);border:1px solid rgba(17,29,44,.1);font-family:var(--sans);font-size:.58rem;padding:.5rem .65rem;cursor:pointer">Dismiss</button>
-    </div>
-  </div>
-</div>
 
 <script>
 // ── Display preferences (font size / brightness / contrast) ─────────────
@@ -903,15 +890,6 @@ function applyTeslaVisibility(){
   if(btn)btn.style.display=isTesla?'':'none';
 }
 
-// ─── PWA ─────────────────────────────────────────────────────────────────────
-var _dp=null;
-window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();_dp=e;});
-function installPWA(){
-  document.getElementById('pwa-banner').style.display='none';
-  if(_dp){_dp.prompt();_dp.userChoice.then(function(){_dp=null;});}
-  else showToast('Tap Share then Add to Home Screen');
-}
-
 // ─── TOAST ────────────────────────────────────────────────────────────────────
 var _tt;
 function showToast(msg){
@@ -956,12 +934,6 @@ function initApp(){
   buildProfile();
   loadDriverJobs();
   goPage('today',document.getElementById('bn-today'));
-  setTimeout(function(){
-    if(!sessionStorage.getItem('drv_pwa_shown')){
-      document.getElementById('pwa-banner').style.display='block';
-      sessionStorage.setItem('drv_pwa_shown','1');
-    }
-  },3500);
 }
 
 // Auth check via backend

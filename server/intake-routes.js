@@ -83,6 +83,9 @@ router.post('/bookings/:id/assign-driver', staffOnly, (req, res) => {
   const db = getDb();
   const driver = db.prepare("SELECT id FROM users WHERE id = ? AND role IN ('driver','owner') AND active = 1").get(driver_id);
   if (!driver) return res.status(404).json({ error: 'Driver not found' });
+  // Check whether this is the transition that confirms the booking — if the
+  // status was pending we'll flip it to confirmed and notify the customer.
+  const before = db.prepare("SELECT status FROM bookings WHERE id = ?").get(req.params.id);
   const r = db.prepare(`
     UPDATE bookings
        SET driver_id = ?,
@@ -93,6 +96,11 @@ router.post('/bookings/:id/assign-driver', staffOnly, (req, res) => {
      WHERE id = ?
   `).run(driver_id, driver_id, req.params.id);
   if (r.changes === 0) return res.status(404).json({ error: 'Booking not found' });
+  // Fire the customer-confirmed notification if this assign just confirmed it.
+  if (before && before.status === 'pending') {
+    intake.notifyCustomerConfirmed(parseInt(req.params.id, 10))
+      .catch(e => console.error('[INTAKE] notifyCustomerConfirmed failed:', e.message));
+  }
   res.json({ ok: true });
 });
 
