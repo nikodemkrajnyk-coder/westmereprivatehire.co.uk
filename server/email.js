@@ -277,4 +277,134 @@ function escHtml(s) {
 }
 function escAttr(s) { return escHtml(s); }
 
-module.exports = { sendCustomerConfirmation, sendCustomerConfirmed, sendAdminAlert, sendEmail, isConfigured };
+// ── Account welcome (sent when admin opens an invoicing account) ─────────
+async function sendCustomerWelcome(customer) {
+  if (!customer || !customer.email) return;
+  const { email, full_name, account_type } = customer;
+  const firstName = (full_name || '').split(' ')[0] || 'there';
+  const typeLabel = account_type === 'business'
+    ? 'Monthly invoicing'
+    : 'Personal account';
+
+  const body = `
+  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Account opened</p>
+  <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
+  <p style="margin:0 0 18px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Thank you for choosing Westmere Private Hire. Your account has been opened and is ready to use.</p>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td style="padding:9px 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:1.8px;text-transform:uppercase;color:${INK_MUTED};vertical-align:top;width:120px;font-weight:500">Account holder</td>
+      <td style="padding:9px 0 9px 14px;font-family:Georgia,serif;font-size:13px;color:${INK};line-height:1.45">${escHtml(full_name || '')}</td>
+    </tr>
+    <tr><td colspan="2" style="padding:2px 0"><div style="border-top:1px solid ${HAIRLINE}"></div></td></tr>
+    <tr>
+      <td style="padding:9px 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:1.8px;text-transform:uppercase;color:${INK_MUTED};vertical-align:top;width:120px;font-weight:500">Billing</td>
+      <td style="padding:9px 0 9px 14px;font-family:Georgia,serif;font-size:13px;color:${INK};line-height:1.45">${escHtml(typeLabel)}</td>
+    </tr>
+  </table>
+
+  <p style="margin:24px 0 8px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">How it works:</p>
+  <ul style="margin:0 0 18px;padding:0 0 0 18px;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.7">
+    <li>Book any journey by phone, email, or WhatsApp &mdash; just mention your name</li>
+    <li>You'll receive a confirmation for every booking, with driver details</li>
+    ${account_type === 'business'
+      ? `<li>At the end of each month we'll send you a single itemised invoice covering every journey &mdash; no card required at the time of booking</li>`
+      : `<li>Pay per journey by card or cash on arrival</li>`}
+  </ul>
+
+  <p style="margin:22px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
+
+  const html = emailShell(body);
+  const subject = 'Your Westmere account is ready';
+  const preheader = 'Your ' + typeLabel.toLowerCase() + ' has been opened.';
+  const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
+  if (ok) console.log('[EMAIL] Welcome sent to', email);
+}
+
+// ── Monthly invoice (sent to account customers with all their journeys) ─
+// `bookings` = array of { ref, date, time, pickup, destination, fare, flight, passengers }
+// `period`   = { label: 'November 2025', month: '2025-11', dueDate: 'YYYY-MM-DD' }
+// `invoiceNo`= 'INV-2025-11-0001'
+async function sendCustomerInvoice(customer, bookings, period, invoiceNo) {
+  if (!customer || !customer.email) return false;
+  const { email, full_name } = customer;
+  const firstName = (full_name || '').split(' ')[0] || 'there';
+
+  const rows = (bookings || []).map(b => {
+    const fare = +b.fare || 0;
+    const dateStr = formatDate(b.date, b.time);
+    const routeStr = escHtml(b.pickup || '') + ' &rarr; ' + escHtml(b.destination || '');
+    const refStr = '<span style="font-family:Menlo,Consolas,monospace;font-size:11px;color:' + INK_MUTED + '">' + escHtml(b.ref || '') + '</span>';
+    return `<tr>
+      <td style="padding:10px 0;border-bottom:1px solid ${HAIRLINE};font-family:Georgia,serif;font-size:12px;color:${INK};vertical-align:top">
+        <div>${escHtml(dateStr)}</div>
+        <div style="margin-top:3px">${refStr}</div>
+      </td>
+      <td style="padding:10px 10px;border-bottom:1px solid ${HAIRLINE};font-family:Georgia,serif;font-size:12px;color:${INK};line-height:1.45;vertical-align:top">${routeStr}${b.flight ? '<div style="color:' + INK_MUTED + ';font-size:11px;margin-top:3px">Flight ' + escHtml(b.flight) + '</div>' : ''}</td>
+      <td style="padding:10px 0;border-bottom:1px solid ${HAIRLINE};font-family:Georgia,serif;font-size:13px;color:${INK};text-align:right;vertical-align:top;white-space:nowrap">£${fare.toFixed(2)}</td>
+    </tr>`;
+  }).join('');
+
+  const subtotal = (bookings || []).reduce((s, b) => s + (+b.fare || 0), 0);
+  const total = subtotal;
+
+  const summaryCount = (bookings || []).length;
+  const dueStr = period && period.dueDate ? formatDate(period.dueDate, null) : '';
+
+  const body = `
+  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Invoice &middot; ${escHtml(period.label || '')}</p>
+  <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
+  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Please find below your statement of journeys for ${escHtml(period.label || 'this period')}.</p>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px">
+    <tr>
+      <td style="padding:6px 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:1.8px;text-transform:uppercase;color:${INK_MUTED};vertical-align:top;width:110px;font-weight:500">Invoice no.</td>
+      <td style="padding:6px 0 6px 14px;font-family:Menlo,Consolas,monospace;font-size:12px;color:${INK}">${escHtml(invoiceNo || '')}</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:1.8px;text-transform:uppercase;color:${INK_MUTED};vertical-align:top;width:110px;font-weight:500">Account</td>
+      <td style="padding:6px 0 6px 14px;font-family:Georgia,serif;font-size:13px;color:${INK}">${escHtml(full_name || '')}</td>
+    </tr>
+    ${dueStr ? `<tr>
+      <td style="padding:6px 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:1.8px;text-transform:uppercase;color:${INK_MUTED};vertical-align:top;width:110px;font-weight:500">Due</td>
+      <td style="padding:6px 0 6px 14px;font-family:Georgia,serif;font-size:13px;color:${INK}">${escHtml(dueStr)}</td>
+    </tr>` : ''}
+  </table>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:14px">
+    <thead>
+      <tr>
+        <th style="padding:0 0 8px;border-bottom:2px solid ${INK};font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:1.6px;text-transform:uppercase;color:${INK_MUTED};text-align:left;font-weight:500">Date &amp; Ref</th>
+        <th style="padding:0 10px 8px;border-bottom:2px solid ${INK};font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:1.6px;text-transform:uppercase;color:${INK_MUTED};text-align:left;font-weight:500">Journey</th>
+        <th style="padding:0 0 8px;border-bottom:2px solid ${INK};font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:1.6px;text-transform:uppercase;color:${INK_MUTED};text-align:right;font-weight:500">Fare</th>
+      </tr>
+    </thead>
+    <tbody>${rows || `<tr><td colspan="3" style="padding:22px 0;text-align:center;font-family:Georgia,serif;font-size:13px;color:${INK_MUTED};font-style:italic">No journeys in this period.</td></tr>`}</tbody>
+    <tfoot>
+      <tr>
+        <td colspan="2" style="padding:14px 10px 6px 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:${INK_MUTED};text-align:right;font-weight:500">Subtotal (${summaryCount} journey${summaryCount === 1 ? '' : 's'})</td>
+        <td style="padding:14px 0 6px;font-family:Georgia,serif;font-size:13px;color:${INK};text-align:right">£${subtotal.toFixed(2)}</td>
+      </tr>
+      <tr>
+        <td colspan="2" style="padding:6px 10px 6px 0;border-top:1px solid ${HAIRLINE};font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:1.8px;text-transform:uppercase;color:${INK};text-align:right;font-weight:600">Total due</td>
+        <td style="padding:6px 0;border-top:1px solid ${HAIRLINE};font-family:Georgia,serif;font-size:18px;color:${GOLD};text-align:right;font-weight:500">£${total.toFixed(2)}</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <p style="margin:26px 0 4px;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">Payment is appreciated within 14 days by bank transfer; account details follow on request.</p>
+  <p style="margin:18px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
+
+  const html = emailShell(body);
+  const subject = 'Invoice ' + (invoiceNo || '') + ' \u2014 ' + (period.label || '');
+  const preheader = summaryCount + ' journey' + (summaryCount === 1 ? '' : 's') + ' \u00b7 £' + total.toFixed(2) + ' total';
+  const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
+  if (ok) console.log('[EMAIL] Invoice', invoiceNo, 'sent to', email);
+  return ok;
+}
+
+module.exports = {
+  sendCustomerConfirmation, sendCustomerConfirmed, sendAdminAlert,
+  sendCustomerWelcome, sendCustomerInvoice,
+  sendEmail, isConfigured
+};

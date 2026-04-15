@@ -243,6 +243,9 @@ textarea.fi{resize:vertical;min-height:80px}
 .cc-business{background:var(--purple-bg);color:var(--purple)}
 .cc-personal{background:rgba(59,130,246,.08);color:#60A5FA}
 .cc-meta{font-size:.72rem;color:rgba(17,29,44,.4);font-weight:300}
+.cc-actions{margin-top:.75rem;padding-top:.65rem;border-top:1px solid rgba(17,29,44,.06);display:flex;gap:.4rem}
+.cc-btn{flex:1;padding:.5rem .6rem;background:transparent;color:var(--navy);border:1px solid rgba(17,29,44,.15);border-radius:6px;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .2s}
+.cc-btn:hover{background:var(--gold);color:#fff;border-color:var(--gold)}
 .cc-stats{display:flex;gap:.8rem;margin-top:.45rem}
 .cc-stat{font-size:.68rem;color:rgba(17,29,44,.45)}
 .cc-stat span{color:var(--gold);font-weight:500}
@@ -698,24 +701,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
           <div id="nc-err" style="display:none;padding:.6rem .8rem;background:rgba(197,64,64,.08);color:#c54040;font-size:.8rem;border-radius:6px;margin-bottom:.8rem"></div>
           <button onclick="submitNewCustomer()" id="nc-submit" style="width:100%;padding:.9rem;background:#111D2C;color:#fff;border:none;border-radius:8px;font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Create Account</button>
         </div>
-        <div id="nc-result" style="display:none">
-          <div style="padding:.9rem 1rem;background:rgba(184,152,90,.08);border:1px solid rgba(184,152,90,.3);border-radius:8px;margin-bottom:1rem">
-            <div style="font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:#B8985A;font-weight:600;margin-bottom:.4rem">Account created</div>
-            <div style="font-size:.82rem;color:#111D2C;line-height:1.55">Share these details with the customer. The password is shown once — save it now.</div>
-          </div>
-          <div style="margin-bottom:.7rem">
-            <div style="font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.25rem">Email</div>
-            <div id="nc-r-email" style="font-family:Menlo,Consolas,monospace;font-size:.85rem;color:#111D2C;background:rgba(17,29,44,.04);padding:.55rem .7rem;border-radius:6px"></div>
-          </div>
-          <div style="margin-bottom:1rem">
-            <div style="font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.25rem">Initial password</div>
-            <div id="nc-r-pass" style="font-family:Menlo,Consolas,monospace;font-size:.95rem;color:#B8985A;background:rgba(17,29,44,.04);padding:.55rem .7rem;border-radius:6px;letter-spacing:.03em"></div>
-          </div>
-          <div style="display:flex;gap:.5rem">
-            <button onclick="copyNcCreds()" style="flex:1;padding:.75rem;background:#B8985A;color:#fff;border:none;border-radius:8px;font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Copy Both</button>
-            <button onclick="closeNewCustomerModal()" style="flex:1;padding:.75rem;background:transparent;color:#111D2C;border:1px solid rgba(17,29,44,.15);border-radius:8px;font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Done</button>
-          </div>
-        </div>
+        <div style="font-size:.72rem;color:rgba(17,29,44,.5);margin-top:.7rem;line-height:1.55">Accounts are managed by Westmere. The customer will receive a welcome email confirming the account was opened — they don't sign in. For business accounts, send a monthly invoice from the customer card.</div>
       </div>
     </div>
 
@@ -1510,9 +1496,12 @@ function loadLiveBookings(){
       }
       cg.innerHTML=d.customers.map(function(c){
         var typeClass=c.account_type==='business'?'cc-business':'cc-personal';
+        var safeName=(c.full_name||'Unknown').replace(/"/g,'&quot;').replace(/'/g,"\\'");
         return '<div class="cust-card"><div class="cc-name">'+(c.full_name||'Unknown')+'</div>'
           +'<div class="cc-type '+typeClass+'">'+(c.account_type||'personal')+'</div>'
-          +'<div class="cc-meta">'+(c.email||'')+(c.phone?' \u00b7 '+c.phone:'')+'</div></div>';
+          +'<div class="cc-meta">'+(c.email||'')+(c.phone?' \u00b7 '+c.phone:'')+'</div>'
+          +'<div class="cc-actions"><button class="cc-btn" onclick="sendInvoice('+c.id+',\''+safeName+'\')">Send Invoice</button></div>'
+          +'</div>';
       }).join('');
     }).catch(function(){});
   };
@@ -1632,8 +1621,6 @@ function showToast(msg){
 // ── NEW CUSTOMER MODAL ──
 function openNewCustomerModal(){
   document.getElementById('modal-new-customer').style.display='flex';
-  document.getElementById('nc-form').style.display='';
-  document.getElementById('nc-result').style.display='none';
   document.getElementById('nc-err').style.display='none';
   document.getElementById('nc-name').value='';
   document.getElementById('nc-email').value='';
@@ -1658,24 +1645,35 @@ async function submitNewCustomer(){
     const r=await fetch('/api/customers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({full_name:name,email,phone,account_type:type})});
     const d=await r.json();
     if(!r.ok||!d.ok){errEl.textContent=d.error||'Failed to create account.';errEl.style.display='';btn.disabled=false;btn.textContent='Create Account';return;}
-    document.getElementById('nc-r-email').textContent=d.customer.email;
-    document.getElementById('nc-r-pass').textContent=d.initialPassword;
-    document.getElementById('nc-form').style.display='none';
-    document.getElementById('nc-result').style.display='';
     btn.disabled=false;btn.textContent='Create Account';
-    // Refresh the customers list
+    closeNewCustomerModal();
+    showToast('Account opened — welcome email sent to '+d.customer.email);
     if(typeof loadCustomers==='function')loadCustomers();
-    else setTimeout(function(){location.reload();},0);
   }catch(e){
     errEl.textContent='Network error. Please try again.';errEl.style.display='';
     btn.disabled=false;btn.textContent='Create Account';
   }
 }
-function copyNcCreds(){
-  const email=document.getElementById('nc-r-email').textContent;
-  const pass=document.getElementById('nc-r-pass').textContent;
-  const text='Your Westmere account\nEmail: '+email+'\nPassword: '+pass+'\nSign in: '+location.origin+'/westmere-account.html';
-  navigator.clipboard.writeText(text).then(function(){showToast('Copied to clipboard');},function(){showToast('Could not copy');});
+
+// ── SEND INVOICE ──
+function sendInvoice(customerId, customerName){
+  var now=new Date();
+  // Default to previous month (operators typically invoice for the month just ended)
+  var invYear=now.getMonth()===0?now.getFullYear()-1:now.getFullYear();
+  var invMonth=now.getMonth()===0?12:now.getMonth();
+  var defaultMonth=invYear+'-'+String(invMonth).padStart(2,'0');
+  var month=prompt('Invoice '+customerName+' for which month?\n\nEnter as YYYY-MM (e.g. '+defaultMonth+')',defaultMonth);
+  if(!month)return;
+  if(!/^\d{4}-\d{2}$/.test(month)){showToast('Invalid month format. Use YYYY-MM.');return;}
+  showToast('Sending invoice…');
+  fetch('/api/customers/'+customerId+'/invoice',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({month:month})
+  }).then(function(r){return r.json().then(function(d){return{ok:r.ok,d:d};});}).then(function(res){
+    if(!res.ok||!res.d.ok){showToast(res.d.error||'Invoice failed');return;}
+    var total=(+res.d.total||0).toFixed(2);
+    showToast('Invoice '+res.d.invoiceNo+' sent · '+res.d.journeys+' journeys · £'+total);
+  }).catch(function(){showToast('Network error sending invoice');});
 }
 
 // ── MARK DONE ──

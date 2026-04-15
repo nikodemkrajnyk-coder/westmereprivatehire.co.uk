@@ -185,9 +185,9 @@ router.get('/customers', (req, res) => {
 });
 
 // Create customer (admin/owner only) — admin opens the account for a customer
-// who wants monthly invoicing. Generates a random initial password and
-// returns it once so the admin can share it; customer can change it after
-// first sign-in.
+// who wants monthly invoicing. The customer does NOT get a login password:
+// the account is managed entirely by the admin and the customer just receives
+// a welcome email confirming the account was opened on their behalf.
 router.post('/customers', (req, res) => {
   if (!['admin', 'owner'].includes(req.auth.role)) {
     return res.status(403).json({ error: 'Access denied' });
@@ -206,29 +206,82 @@ router.post('/customers', (req, res) => {
   const existing = db.prepare('SELECT id FROM customers WHERE email = ?').get(cleanEmail);
   if (existing) return res.status(409).json({ error: 'Account already exists with this email' });
 
-  // Generate a readable initial password: 3 words + 2 digits, e.g. "Blue-Harbour-Lion-42"
-  const WORDS = ['Amber','Bay','Clover','Dune','Echo','Fern','Glen','Harbour','Ivory','Juno',
-                 'Kite','Lark','Marlow','Noble','Oak','Piper','Quill','Rowan','Sable','Teal',
-                 'Umber','Vale','Willow','Xenon','York','Zephyr','Ridge','Pine','Stone','Silver'];
-  const pick = () => WORDS[Math.floor(Math.random() * WORDS.length)];
-  const initialPassword = pick() + '-' + pick() + '-' + pick() + '-' + Math.floor(10 + Math.random() * 90);
-
+  // Store a random hash in the password column — the customer never logs in,
+  // the column is NOT NULL in the existing schema so we need something.
   const bcrypt = require('bcryptjs');
-  const hash = bcrypt.hashSync(initialPassword, 12);
+  const unusableHash = bcrypt.hashSync('!' + Math.random().toString(36) + Date.now(), 12);
 
   const result = db.prepare(`
     INSERT INTO customers (email, password, full_name, phone, account_type)
     VALUES (?, ?, ?, ?, ?)
-  `).run(cleanEmail, hash, full_name.trim(), phone || null, type);
+  `).run(cleanEmail, unusableHash, full_name.trim(), phone || null, type);
 
   db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
     .run(req.auth.type || 'user', req.auth.id, 'customer_created_by_admin', cleanEmail, req.ip);
 
+  // Send the welcome email in the background — don't block the HTTP response.
+  const { sendCustomerWelcome } = require('./email');
+  sendCustomerWelcome({ email: cleanEmail, full_name: full_name.trim(), account_type: type })
+    .catch(e => console.error('[API] sendCustomerWelcome failed:', e.message));
+
   res.status(201).json({
     ok: true,
-    customer: { id: result.lastInsertRowid, email: cleanEmail, full_name: full_name.trim(), account_type: type },
-    initialPassword: initialPassword
+    customer: { id: result.lastInsertRowid, email: cleanEmail, full_name: full_name.trim(), account_type: type }
   });
+});
+
+// Send a monthly invoice to an account customer. Body: { month: 'YYYY-MM' }
+// Pulls every booking for this customer dated within that month and emails
+// an itemised statement with journey details and total fare.
+router.post('/customers/:id/invoice', async (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const { month } = req.body || {};
+  if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+    return res.status(400).json({ error: 'month (YYYY-MM) is required' });
+  }
+  const db = getDb();
+  const customer = db.prepare('SELECT id, email, full_name, account_type FROM customers WHERE id = ? AND active = 1').get(req.params.id);
+  if (!customer) return res.status(404).json({ error: 'Customer not found' });
+  if (!customer.email) return res.status(400).json({ error: 'Customer has no email address' });
+
+  const monthStart = month + '-01';
+  const [y, m] = month.split('-').map(n => parseInt(n, 10));
+  const nextMonthFirst = new Date(Date.UTC(m === 12 ? y + 1 : y, m === 12 ? 0 : m, 1));
+  const monthEnd = nextMonthFirst.toISOString().slice(0, 10);
+
+  const bookings = db.prepare(`
+    SELECT ref, date, time, pickup, destination, fare, flight, passengers, status
+      FROM bookings
+     WHERE customer_id = ?
+       AND date >= ?
+       AND date < ?
+       AND status IN ('confirmed','active','completed')
+     ORDER BY date ASC, time ASC
+  `).all(customer.id, monthStart, monthEnd);
+
+  const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const label = MONTH_NAMES[m - 1] + ' ' + y;
+
+  // Invoice number: INV-YYYYMM-<seq> — count existing invoices in audit log for uniqueness
+  const prevCount = db.prepare("SELECT COUNT(*) AS c FROM audit_log WHERE action = 'invoice_sent' AND detail LIKE ?").get('INV-' + y + String(m).padStart(2, '0') + '%').c;
+  const invoiceNo = 'INV-' + y + String(m).padStart(2, '0') + '-' + String(prevCount + 1).padStart(4, '0');
+
+  // Due date: 14 days from today
+  const due = new Date();
+  due.setDate(due.getDate() + 14);
+  const dueDate = due.toISOString().slice(0, 10);
+
+  const { sendCustomerInvoice } = require('./email');
+  const ok = await sendCustomerInvoice(customer, bookings, { label, month, dueDate }, invoiceNo);
+  if (!ok) return res.status(502).json({ error: 'Email delivery failed' });
+
+  db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+    .run(req.auth.type || 'user', req.auth.id, 'invoice_sent', invoiceNo + ' to ' + customer.email, req.ip);
+
+  const total = bookings.reduce((s, b) => s + (+b.fare || 0), 0);
+  res.json({ ok: true, invoiceNo, journeys: bookings.length, total });
 });
 
 // ── Drivers (admin only) ────────────────────────────────────────────────
