@@ -13,7 +13,7 @@ function isConfigured() {
   return !!process.env.RESEND_API_KEY;
 }
 
-async function sendEmail(to, subject, html, fromLabel) {
+async function sendEmail(to, subject, html, fromLabel, preheader) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     console.warn('[EMAIL] RESEND_API_KEY not set — email disabled');
@@ -21,6 +21,15 @@ async function sendEmail(to, subject, html, fromLabel) {
   }
 
   const replyTo = process.env.GMAIL_USER || process.env.ADMIN_EMAIL || '';
+
+  // Inject a hidden preheader (the snippet email clients show next to the
+  // subject) so the inbox preview reads cleanly instead of pulling random
+  // body text.
+  let finalHtml = html;
+  if (preheader) {
+    const hidden = `<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#FAF7F1;opacity:0">${preheader}</div>`;
+    finalHtml = html.replace('<body', hidden + '<body').replace(/<body([^>]*)>/, '<body$1>' + hidden);
+  }
 
   try {
     const res = await fetch(RESEND_URL, {
@@ -34,7 +43,7 @@ async function sendEmail(to, subject, html, fromLabel) {
         to: to,
         reply_to: replyTo || undefined,
         subject: subject,
-        html: html
+        html: finalHtml
       })
     });
 
@@ -53,17 +62,16 @@ async function sendEmail(to, subject, html, fromLabel) {
   }
 }
 
-// ── Light premium email shell (navy blue on ivory) ───────────────────────
-const BG_OUTER    = '#F4F6FA';  // page backdrop
-const BG_CARD     = '#FFFFFF';  // main container
-const INK_PRIMARY = '#0D2545';  // deep navy body text
-const INK_SOFT    = '#3C5A82';  // secondary blue
-const INK_MUTED   = '#7A8CA8';  // labels / footer
-const ACCENT      = '#1E4D8C';  // heading / highlight blue
-const ACCENT_SOFT = '#3A6FB8';
-const HAIRLINE    = 'rgba(30,77,140,0.12)';
-const TINT        = 'rgba(30,77,140,0.04)';
+// ── Refined palette: ivory canvas, deep navy ink, single gold accent ─────
+const BG_OUTER    = '#F7F4EE';   // warm ivory page
+const BG_CARD     = '#FFFFFF';   // letter card
+const INK         = '#0E2540';   // primary type
+const INK_SOFT    = '#5A6B7F';   // secondary
+const INK_MUTED   = '#9AA3B2';   // labels & footer
+const GOLD        = '#B8985A';   // single accent
+const HAIRLINE    = 'rgba(14,37,64,0.10)';
 
+// ── Master shell ─────────────────────────────────────────────────────────
 function emailShell(bodyHtml) {
   return `<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
@@ -75,48 +83,36 @@ function emailShell(bodyHtml) {
 <title>Westmere Private Hire</title>
 <!--[if mso]><style>table,td{font-family:Georgia,serif!important}h1,h2,h3{font-family:Georgia,serif!important}</style><![endif]-->
 </head>
-<body style="margin:0;padding:0;background-color:${BG_OUTER};-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%">
+<body style="margin:0;padding:0;background:${BG_OUTER};-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%">
 
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${BG_OUTER}">
-<tr><td align="center" style="padding:0">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${BG_OUTER}">
+<tr><td align="center" style="padding:32px 16px">
 
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:640px;background-color:${BG_CARD};border-collapse:collapse">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background:${BG_CARD};border:1px solid ${HAIRLINE};border-collapse:separate">
 
-<!-- Top blue accent line -->
-<tr><td style="height:3px;background:linear-gradient(90deg,transparent 0%,${ACCENT_SOFT} 20%,${ACCENT} 50%,${ACCENT_SOFT} 80%,transparent 100%);font-size:0;line-height:0">&nbsp;</td></tr>
-
-<!-- Header: W crest + brand -->
-<tr><td style="padding:48px 40px 36px;text-align:center;background-color:${BG_CARD}">
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center">
-    <tr><td style="width:72px;height:72px;border:1.5px solid ${HAIRLINE};text-align:center;vertical-align:middle;font-family:Georgia,'Times New Roman',serif;font-size:32px;font-weight:400;color:${ACCENT};letter-spacing:2px">W</td></tr>
-  </table>
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin-top:20px">
-    <tr><td style="width:40px;height:1px;background-color:${ACCENT};font-size:0;line-height:0">&nbsp;</td></tr>
-  </table>
-  <h1 style="margin:18px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:400;font-style:italic;color:${ACCENT};letter-spacing:6px;line-height:1">WESTMERE</h1>
-  <p style="margin:6px 0 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;letter-spacing:4px;text-transform:uppercase;color:${INK_MUTED};font-weight:400">PRIVATE HIRE &middot; SUSSEX</p>
+<!-- Header: wordmark only, no crest -->
+<tr><td style="padding:36px 44px 6px;text-align:center">
+  <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:400;color:${INK};letter-spacing:8px;line-height:1">WESTMERE</p>
+  <p style="margin:8px 0 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:3.5px;text-transform:uppercase;color:${INK_MUTED};font-weight:400">Private Hire &middot; Sussex</p>
 </td></tr>
 
-<!-- Divider -->
-<tr><td style="padding:0 40px"><div style="border-top:1px solid ${HAIRLINE}"></div></td></tr>
+<!-- Hairline gold rule -->
+<tr><td style="padding:22px 44px 0">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr>
+    <td style="width:32px;height:1px;background:${GOLD};font-size:0;line-height:0">&nbsp;</td>
+  </tr></table>
+</td></tr>
 
 <!-- Body content -->
-<tr><td style="padding:36px 40px 40px">
+<tr><td style="padding:24px 44px 36px">
 ${bodyHtml}
 </td></tr>
 
-<!-- Divider -->
-<tr><td style="padding:0 40px"><div style="border-top:1px solid ${HAIRLINE}"></div></td></tr>
-
 <!-- Footer -->
-<tr><td style="padding:32px 40px 24px;text-align:center">
-  <p style="margin:0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;color:${INK_MUTED};letter-spacing:1px">Questions? Simply reply to this email or call us.</p>
-  <p style="margin:12px 0 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;color:${INK_MUTED};letter-spacing:0.5px">Westmere Private Hire &middot; Licensed by Lewes District Council</p>
-  <p style="margin:4px 0 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;color:${INK_MUTED}">westmereprivatehire.co.uk</p>
+<tr><td style="padding:18px 44px 28px;border-top:1px solid ${HAIRLINE}">
+  <p style="margin:0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;color:${INK_MUTED};letter-spacing:.5px;line-height:1.6">Reply to this email or call us if anything needs adjusting.</p>
+  <p style="margin:8px 0 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;color:${INK_MUTED};letter-spacing:.5px">Westmere Private Hire &middot; Licensed by Lewes District Council &middot; westmereprivatehire.co.uk</p>
 </td></tr>
-
-<!-- Bottom blue accent line -->
-<tr><td style="height:2px;background:linear-gradient(90deg,transparent 0%,${ACCENT_SOFT} 30%,${ACCENT} 50%,${ACCENT_SOFT} 70%,transparent 100%);font-size:0;line-height:0">&nbsp;</td></tr>
 
 </table>
 </td></tr>
@@ -124,90 +120,62 @@ ${bodyHtml}
 </body></html>`;
 }
 
-// ── Detail row ──────────────────────────────────────────────────────────
-function detailRow(label, value, isHighlight) {
-  const valStyle = isHighlight
-    ? `font-family:Georgia,serif;font-size:18px;color:${ACCENT};font-weight:600;font-style:italic;letter-spacing:0.5px`
-    : `font-family:Georgia,serif;font-size:16px;color:${INK_PRIMARY};font-weight:400;line-height:1.5`;
+// ── Detail row: clean two-column, no boxes ───────────────────────────────
+function detailRow(label, value, opts) {
+  opts = opts || {};
+  const valSize = opts.large ? 15 : 13;
+  const valColor = opts.gold ? GOLD : INK;
+  const valWeight = opts.large ? 500 : 400;
+  const valStyle = `font-family:Georgia,serif;font-size:${valSize}px;color:${valColor};font-weight:${valWeight};line-height:1.45`;
   return `<tr>
-  <td style="padding:10px 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${INK_MUTED};vertical-align:top;width:110px;font-weight:500">${label}</td>
-  <td style="padding:10px 0;padding-left:16px;${valStyle}">${value}</td>
+  <td style="padding:9px 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:1.8px;text-transform:uppercase;color:${INK_MUTED};vertical-align:top;width:96px;font-weight:500">${label}</td>
+  <td style="padding:9px 0 9px 14px;${valStyle}">${value}</td>
 </tr>`;
 }
 
 function rowDivider() {
-  return `<tr><td colspan="2" style="padding:4px 0"><div style="border-top:1px solid ${HAIRLINE}"></div></td></tr>`;
+  return `<tr><td colspan="2" style="padding:2px 0"><div style="border-top:1px solid ${HAIRLINE}"></div></td></tr>`;
+}
+
+// ── Common booking-details table (borderless) ────────────────────────────
+function buildDetailsTable(rowsHtml) {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+${rowsHtml}
+</table>`;
 }
 
 // ── Customer booking RECEIVED (sent immediately on booking) ──────────────
-// This is the "we got it, awaiting confirmation" message. The actual
-// confirmation goes out from sendCustomerConfirmed once Claude or the
-// operator approves the trip.
 async function sendCustomerConfirmation(booking) {
   const { ref, name, email, pickup, destination, date, time, fare, payment, flight, passengers } = booking;
   if (!email) return;
 
   const dateStr = formatDate(date, time);
   const fareStr = fare ? ('\u00a3' + (typeof fare === 'number' ? fare.toFixed(2) : fare)) : null;
+  const firstName = (name || '').split(' ')[0] || 'there';
 
   let rows = '';
-  rows += detailRow('Reference', ref, true);
-  rows += rowDivider();
-  rows += detailRow('Passenger', name);
-  if (passengers && passengers > 1) rows += detailRow('Travellers', passengers + ' passengers');
+  rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:'+INK+'">' + ref + '</span>');
   rows += rowDivider();
   rows += detailRow('Pickup', pickup);
   rows += detailRow('Drop-off', destination);
   rows += rowDivider();
   rows += detailRow('Date', dateStr);
-  if (flight) { rows += detailRow('Flight', flight); }
+  if (flight) rows += detailRow('Flight', flight);
+  if (passengers && passengers > 1) rows += detailRow('Travellers', passengers + ' passengers');
   rows += rowDivider();
-  if (fareStr) { rows += detailRow('Fare', fareStr, true); }
-  rows += detailRow('Payment', payment === 'card' ? 'Paid online \u2713' : 'Pay driver on arrival');
+  if (fareStr) rows += detailRow('Fare', fareStr, { gold: true, large: true });
+  rows += detailRow('Payment', payment === 'card' ? 'Paid online' : 'Pay driver on arrival');
 
   const body = `
-  <!-- Status banner -->
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px">
-    <tr><td style="padding:14px 18px;background:rgba(30,77,140,0.06);border-left:3px solid ${ACCENT};border-radius:0 6px 6px 0">
-      <p style="margin:0;font-family:Georgia,serif;font-size:15px;color:${INK_PRIMARY};font-weight:500">Thank you &mdash; we&rsquo;ve received your booking request.</p>
-      <p style="margin:6px 0 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:${INK_SOFT};line-height:1.55">We&rsquo;ll review the details against our schedule and confirm your driver shortly. You&rsquo;ll receive a separate confirmation email once your journey is locked in.</p>
-    </td></tr>
-  </table>
-
-  <!-- Booking details card -->
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${TINT};border:1px solid ${HAIRLINE};border-radius:12px;overflow:hidden">
-    <tr><td style="padding:6px 24px 4px;background:rgba(30,77,140,0.08)">
-      <p style="margin:0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:${ACCENT};font-weight:500">Booking Request</p>
-    </td></tr>
-    <tr><td style="padding:16px 24px 20px">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-      ${rows}
-      </table>
-    </td></tr>
-  </table>
-
-  <!-- Route visual -->
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:24px">
-    <tr>
-      <td style="padding:16px 20px;background:${TINT};border-left:3px solid ${ACCENT};border-radius:0 8px 8px 0">
-        <p style="margin:0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${INK_MUTED};font-weight:500">Your Route</p>
-        <p style="margin:8px 0 0;font-family:Georgia,serif;font-size:16px;color:${INK_PRIMARY};font-weight:400;line-height:1.5">${pickup}</p>
-        <p style="margin:4px 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:16px;color:${ACCENT_SOFT}">\u2193</p>
-        <p style="margin:0;font-family:Georgia,serif;font-size:16px;color:${ACCENT};font-weight:500;font-style:italic;line-height:1.5">${destination}</p>
-      </td>
-    </tr>
-  </table>
-
-  <!-- Thank you block -->
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:28px">
-    <tr><td style="padding:24px;text-align:center">
-      <p style="margin:0;font-family:Georgia,serif;font-size:18px;font-style:italic;color:${INK_SOFT};font-weight:400">Thank you for choosing Westmere</p>
-      <p style="margin:8px 0 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:${INK_MUTED};font-weight:300">We&rsquo;ll be in touch shortly.</p>
-    </td></tr>
-  </table>`;
+  <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
+  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Thank you for your booking request. We have received the details below and will be in touch shortly to confirm your driver.</p>
+  ${buildDetailsTable(rows)}
+  <p style="margin:26px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
 
   const html = emailShell(body);
-  const ok = await sendEmail(email, 'Booking received \u2014 ' + ref, html, 'Westmere Private Hire');
+  const subject = 'Booking received \u2014 ' + ref;
+  const preheader = 'We have your request; a confirmation email will follow shortly.';
+  const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
   if (ok) console.log('[EMAIL] Customer received-notice sent (' + ref + ')');
 }
 
@@ -218,52 +186,32 @@ async function sendCustomerConfirmed(booking) {
 
   const dateStr = formatDate(date, time);
   const fareStr = fare ? ('\u00a3' + (typeof fare === 'number' ? fare.toFixed(2) : fare)) : null;
+  const firstName = (name || '').split(' ')[0] || 'there';
 
   let rows = '';
-  rows += detailRow('Reference', ref, true);
-  rows += rowDivider();
-  rows += detailRow('Passenger', name);
-  if (passengers && passengers > 1) rows += detailRow('Travellers', passengers + ' passengers');
+  rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:'+INK+'">' + ref + '</span>');
   rows += rowDivider();
   rows += detailRow('Pickup', pickup);
   rows += detailRow('Drop-off', destination);
   rows += rowDivider();
   rows += detailRow('Date', dateStr);
-  if (flight) { rows += detailRow('Flight', flight); }
+  if (flight) rows += detailRow('Flight', flight);
+  if (passengers && passengers > 1) rows += detailRow('Travellers', passengers + ' passengers');
   rows += rowDivider();
-  if (fareStr) { rows += detailRow('Fare', fareStr, true); }
-  rows += detailRow('Payment', payment === 'card' ? 'Paid online \u2713' : 'Pay driver on arrival');
+  if (fareStr) rows += detailRow('Fare', fareStr, { gold: true, large: true });
+  rows += detailRow('Payment', payment === 'card' ? 'Paid online' : 'Pay driver on arrival');
 
   const body = `
-  <!-- Confirmed banner -->
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px">
-    <tr><td style="padding:16px 20px;background:rgba(27,138,58,0.08);border-left:3px solid #1B8A3A;border-radius:0 6px 6px 0">
-      <p style="margin:0;font-family:Georgia,serif;font-size:16px;color:${INK_PRIMARY};font-weight:500">Your booking is confirmed.</p>
-      <p style="margin:6px 0 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:${INK_SOFT};line-height:1.55">A driver has been assigned to your journey. We&rsquo;ll see you on the day.</p>
-    </td></tr>
-  </table>
-
-  <!-- Booking details card -->
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${TINT};border:1px solid ${HAIRLINE};border-radius:12px;overflow:hidden">
-    <tr><td style="padding:6px 24px 4px;background:rgba(30,77,140,0.08)">
-      <p style="margin:0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:${ACCENT};font-weight:500">Booking Details</p>
-    </td></tr>
-    <tr><td style="padding:16px 24px 20px">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-      ${rows}
-      </table>
-    </td></tr>
-  </table>
-
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:28px">
-    <tr><td style="padding:24px;text-align:center">
-      <p style="margin:0;font-family:Georgia,serif;font-size:18px;font-style:italic;color:${INK_SOFT};font-weight:400">Thank you for choosing Westmere</p>
-      <p style="margin:8px 0 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:${INK_MUTED};font-weight:300">We look forward to your journey.</p>
-    </td></tr>
-  </table>`;
+  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Confirmed</p>
+  <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
+  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Your journey is confirmed. A driver has been assigned and we look forward to welcoming you on the day.</p>
+  ${buildDetailsTable(rows)}
+  <p style="margin:26px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
 
   const html = emailShell(body);
-  const ok = await sendEmail(email, 'Booking Confirmed \u2014 ' + ref, html, 'Westmere Private Hire');
+  const subject = 'Booking confirmed \u2014 ' + ref;
+  const preheader = 'Your driver has been assigned. We look forward to seeing you.';
+  const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
   if (ok) console.log('[EMAIL] Customer confirmed sent (' + ref + ')');
 }
 
@@ -277,56 +225,56 @@ async function sendAdminAlert(booking) {
   const fareStr = fare ? ('\u00a3' + (typeof fare === 'number' ? fare.toFixed(2) : fare)) : 'TBC';
 
   let rows = '';
-  rows += detailRow('Reference', ref, true);
+  rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:'+INK+'">' + ref + '</span>');
   rows += rowDivider();
-  rows += detailRow('Passenger', name);
-  rows += detailRow('Phone', '<a href="tel:' + phone + '" style="color:' + ACCENT + ';text-decoration:none;font-family:Georgia,serif;font-size:16px">' + phone + '</a>');
-  if (email) rows += detailRow('Email', '<a href="mailto:' + email + '" style="color:' + INK_SOFT + ';text-decoration:none;font-family:Georgia,serif;font-size:14px">' + email + '</a>');
+  rows += detailRow('Passenger', escHtml(name || 'Guest'));
+  rows += detailRow('Phone', '<a href="tel:' + escAttr(phone) + '" style="color:' + INK + ';text-decoration:none;font-family:Georgia,serif;font-size:13px">' + escHtml(phone) + '</a>');
+  if (email) rows += detailRow('Email', '<a href="mailto:' + escAttr(email) + '" style="color:' + INK_SOFT + ';text-decoration:none;font-family:Georgia,serif;font-size:12px">' + escHtml(email) + '</a>');
   rows += rowDivider();
-  rows += detailRow('Pickup', pickup);
-  rows += detailRow('Drop-off', destination);
+  rows += detailRow('Pickup', escHtml(pickup));
+  rows += detailRow('Drop-off', escHtml(destination));
   rows += rowDivider();
   rows += detailRow('Date', dateStr);
-  if (flight) { rows += detailRow('Flight', flight); }
-  rows += detailRow('Passengers', (passengers || 1).toString());
-  if (bags && bags !== '0' && bags !== '0s+0l') { rows += detailRow('Luggage', bags); }
+  if (flight) rows += detailRow('Flight', escHtml(flight));
+  if (passengers) rows += detailRow('Passengers', String(passengers));
+  if (bags && bags !== '0' && bags !== '0s+0l') rows += detailRow('Luggage', escHtml(bags));
   rows += rowDivider();
-  rows += detailRow('Fare', fareStr, true);
-  rows += detailRow('Payment', payment === 'card'
-    ? '<span style="color:#1B8A3A;font-weight:600;font-family:\'Helvetica Neue\',Arial,sans-serif;font-size:13px;letter-spacing:1px">PAID ONLINE</span>'
-    : '<span style="color:' + ACCENT + ';font-weight:600;font-family:\'Helvetica Neue\',Arial,sans-serif;font-size:13px;letter-spacing:1px">PAY DRIVER</span>');
-  if (notes) { rows += rowDivider(); rows += detailRow('Notes', notes); }
+  rows += detailRow('Fare', fareStr, { gold: true, large: true });
+  rows += detailRow('Payment', payment === 'card' ? 'Paid online' : 'Pay driver');
+  if (notes) { rows += rowDivider(); rows += detailRow('Notes', escHtml(notes)); }
 
   const body = `
-  <!-- Booking details card -->
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${TINT};border:1px solid ${HAIRLINE};border-radius:12px;overflow:hidden">
-    <tr><td style="padding:6px 24px 4px;background:rgba(30,77,140,0.08)">
-      <p style="margin:0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:${ACCENT};font-weight:500">Full Details</p>
-    </td></tr>
-    <tr><td style="padding:16px 24px 20px">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-      ${rows}
-      </table>
-    </td></tr>
-  </table>`;
+  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">New booking</p>
+  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">A new booking has just landed. Full details below.</p>
+  ${buildDetailsTable(rows)}`;
 
   const html = emailShell(body);
-  const ok = await sendEmail(adminEmail, '[BOOKING] ' + ref + ' \u2014 ' + name + ' \u2014 ' + pickup + ' \u2192 ' + destination, html, 'Westmere Bookings');
+  const subject = ref + ' \u00b7 ' + (name || 'Guest') + ' \u00b7 ' + pickup + ' \u2192 ' + destination;
+  const preheader = (name || 'Guest') + ' \u2014 ' + dateStr;
+  const ok = await sendEmail(adminEmail, subject, html, 'Westmere Bookings', preheader);
   if (ok) console.log('[EMAIL] Admin alert sent (' + ref + ')');
 }
 
-// ── Helper: format date nicely ───────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────
 function formatDate(date, time) {
   if (!date) return 'Not specified';
   try {
     const d = new Date(date + 'T' + (time || '00:00'));
     const opts = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
     let str = d.toLocaleDateString('en-GB', opts);
-    if (time) str += ' at ' + time;
+    if (time && time !== 'ASAP') str += ' \u00b7 ' + time;
+    else if (time === 'ASAP') str += ' \u00b7 ASAP';
     return str;
   } catch (e) {
-    return date + (time ? ' at ' + time : '');
+    return date + (time ? ' \u00b7 ' + time : '');
   }
 }
+
+function escHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function escAttr(s) { return escHtml(s); }
 
 module.exports = { sendCustomerConfirmation, sendCustomerConfirmed, sendAdminAlert, sendEmail, isConfigured };
