@@ -30,6 +30,29 @@ router.post('/book', async (req, res) => {
     // Default date to today if not provided
     const bookingDate = date || new Date().toISOString().split('T')[0];
 
+    // Reject bookings in the past — if a customer picks a date that has
+    // already passed, or today with a time that has already gone by, bail
+    // out before we write anything to the database.
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(bookingDate)) {
+      return res.status(400).json({ error: 'Date must be YYYY-MM-DD' });
+    }
+    const nowUk = new Date(new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' }));
+    const todayStr = nowUk.toISOString().split('T')[0];
+    if (bookingDate < todayStr) {
+      return res.status(400).json({ error: 'Pickup date is in the past' });
+    }
+    if (bookingDate === todayStr && time && time !== 'ASAP') {
+      // Compare HH:MM against the current local UK clock
+      const m = String(time).match(/^(\d{1,2}):(\d{2})/);
+      if (m) {
+        const reqMins = (+m[1]) * 60 + (+m[2]);
+        const nowMins = nowUk.getHours() * 60 + nowUk.getMinutes();
+        if (reqMins < nowMins) {
+          return res.status(400).json({ error: 'Pickup time is in the past — please choose ASAP or a future time' });
+        }
+      }
+    }
+
     // Basic email format check
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return res.status(400).json({ error: 'Invalid email format' });
@@ -164,8 +187,15 @@ router.post('/stripe-webhook', express.raw({ type: 'application/json' }), (req, 
     const ref = intent.metadata?.booking_ref;
     if (ref) {
       const db = getDb();
+      const row = db.prepare("SELECT id, status FROM bookings WHERE ref = ?").get(ref);
       db.prepare("UPDATE bookings SET payment = 'card', status = 'confirmed', updated_at = datetime('now') WHERE ref = ?").run(ref);
       console.log('[STRIPE] Payment confirmed for', ref);
+      // Fire customer "Booking confirmed" on the pending → confirmed edge
+      if (row && row.status === 'pending') {
+        intake.notifyCustomerConfirmed(row.id)
+          .catch(e => console.error('[STRIPE] notifyCustomerConfirmed failed:', e.message));
+        events.broadcast('booking:confirmed', { id: row.id, ref, reason: 'Paid online' });
+      }
     }
   }
 

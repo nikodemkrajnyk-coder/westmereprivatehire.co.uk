@@ -3,6 +3,7 @@ const { getDb } = require('./db');
 const { sendAdminAlert } = require('./email');
 const { sendAdminBookingWhatsApp } = require('./whatsapp');
 const gcal = require('./google-calendar');
+const events = require('./events');
 
 const router = express.Router();
 
@@ -130,6 +131,17 @@ router.patch('/bookings/:id', (req, res) => {
   values.push(req.params.id);
 
   db.prepare(`UPDATE bookings SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+
+  // If THIS update transitioned the booking from pending → confirmed, fire
+  // the customer "Booking confirmed" email + WhatsApp. We only fire on the
+  // edge so a second confirm doesn't spam the customer.
+  const becameConfirmed = req.body.status === 'confirmed' && booking.status === 'pending';
+  if (becameConfirmed) {
+    const intake = require('./intake');
+    intake.notifyCustomerConfirmed(parseInt(req.params.id, 10))
+      .catch(e => console.error('[API] notifyCustomerConfirmed failed:', e.message));
+    events.broadcast('booking:confirmed', { id: parseInt(req.params.id, 10), ref: booking.ref, reason: 'Confirmed by operator' });
+  }
 
   db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
     .run(req.auth.type, req.auth.id, 'booking_updated', booking.ref, req.ip);

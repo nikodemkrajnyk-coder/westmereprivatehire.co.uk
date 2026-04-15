@@ -1165,10 +1165,28 @@ function bkConfirm(type) {
   function _tStr(h,m){return _f2(h)+':'+_f2(m);}
   function _renderTP(){
     var drop=document.getElementById('time-drop');if(!drop||!drop.classList.contains('open'))return;
+    // If the chosen pickup date is today, grey out hours/minutes that have already passed.
+    var nowD=new Date();
+    var todayStr=nowD.getFullYear()+'-'+_f2(nowD.getMonth()+1)+'-'+_f2(nowD.getDate());
+    var dateInp=document.getElementById('b-date');
+    var isToday=dateInp&&dateInp.value===todayStr;
+    var nowH=nowD.getHours(),nowM=nowD.getMinutes();
     var hHtml='<div class="time-col-label">Hour</div>';
-    for(var h=0;h<24;h++){var s=(_tH===h)?' t-sel':'';hHtml+='<div class="time-opt'+s+'" onclick="event.stopPropagation();window._tSelH('+h+')">'+_f2(h)+'</div>';}
+    for(var h=0;h<24;h++){
+      var past=isToday&&h<nowH;
+      var s=(_tH===h)?' t-sel':'';
+      var dis=past?' style="opacity:.25;pointer-events:none"':'';
+      var click=past?'':' onclick="event.stopPropagation();window._tSelH('+h+')"';
+      hHtml+='<div class="time-opt'+s+'"'+dis+click+'>'+_f2(h)+'</div>';
+    }
     var mHtml='<div class="time-col-label">Min</div>';
-    _MINS.forEach(function(mm){var s=(_tM===mm)?' t-sel':'';mHtml+='<div class="time-opt'+s+'" onclick="window._tSelM('+mm+')">'+_f2(mm)+'</div>';});
+    _MINS.forEach(function(mm){
+      var past=isToday&&_tH===nowH&&mm<=nowM;
+      var s=(_tM===mm)?' t-sel':'';
+      var dis=past?' style="opacity:.25;pointer-events:none"':'';
+      var click=past?'':' onclick="window._tSelM('+mm+')"';
+      mHtml+='<div class="time-opt'+s+'"'+dis+click+'>'+_f2(mm)+'</div>';
+    });
     drop.innerHTML='<div class="time-cols"><div class="time-col" id="tc-h">'+hHtml+'</div><div class="time-col" id="tc-m">'+mHtml+'</div></div>';
     setTimeout(function(){var hc=document.getElementById('tc-h');if(hc){var se=hc.querySelector('.t-sel');if(se)se.scrollIntoView({block:'center'});}var mc=document.getElementById('tc-m');if(mc){var se=mc.querySelector('.t-sel');if(se)se.scrollIntoView({block:'center'});}},0);
   }
