@@ -61,7 +61,7 @@ const REFERENCE_ROUTES = [
 ];
 
 // Buffer in minutes between back-to-back jobs (turnaround / contingency)
-const TURNAROUND_MIN = 90;
+const TURNAROUND_MIN = 60;
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 function loadDayContext(dateStr, excludeBookingId) {
