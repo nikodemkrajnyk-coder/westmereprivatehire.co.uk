@@ -2267,6 +2267,16 @@ setInterval(function(){
   }
 },120000);
 
+// ── Real-time push: refresh views the instant something changes ─────────
+window.addEventListener('wm:event', function(){
+  if(typeof loadLiveBookings==='function')loadLiveBookings();
+  if(typeof loadFlaggedBookings==='function')loadFlaggedBookings();
+  if(document.getElementById('view-calendar')&&document.getElementById('view-calendar').classList.contains('on')&&typeof loadAdminCalendar==='function'){
+    loadAdminCalendar();
+  }
+});
+
 </script>
+<script src="/wm-realtime.js"></script>
 </body>
 </html>

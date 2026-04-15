@@ -1579,8 +1579,14 @@ document.addEventListener('keydown',function(e){
     document.getElementById('scr-app').style.display='none';
   }
 })();
+
+// Real-time push: refresh the owner's lists when bookings change
+window.addEventListener('wm:event', function(){
+  if(typeof loadOwnerBookings==='function')loadOwnerBookings();
+});
 </script>
 
 <script src="/config.js"></script>
+<script src="/wm-realtime.js"></script>
 </body>
 </html>

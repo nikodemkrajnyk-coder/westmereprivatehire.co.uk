@@ -20,6 +20,7 @@
 const { getDb } = require('./db');
 const { sendCustomerConfirmed } = require('./email');
 const { sendCustomerBookingConfirmedWhatsApp } = require('./whatsapp');
+const events = require('./events');
 
 const API_KEY = process.env.ANTHROPIC_API_KEY || '';
 const MODEL   = process.env.INTAKE_MODEL || 'claude-haiku-4-5-20251001';
@@ -225,6 +226,9 @@ async function evaluate(bookingId) {
       // Tell the customer their booking is now confirmed (email + WhatsApp).
       notifyCustomerConfirmed(bookingId).catch(e =>
         console.error('[INTAKE] notifyCustomerConfirmed failed:', e.message));
+      events.broadcast('booking:confirmed', {
+        id: bookingId, ref: booking.ref, reason: decision.reason || ''
+      });
     } else {
       // Flag for the operator to reassign / decline
       db.prepare(`UPDATE bookings
@@ -235,6 +239,9 @@ async function evaluate(bookingId) {
                    WHERE id = ?`)
         .run(decision.reason || 'Cannot fit alongside existing jobs.', bookingId);
       console.log('[INTAKE] Flagged booking', booking.ref, 'for reassignment —', decision.reason);
+      events.broadcast('booking:flagged', {
+        id: bookingId, ref: booking.ref, reason: decision.reason || 'Cannot fit alongside existing jobs.'
+      });
     }
 
     return { ok: true, decision };

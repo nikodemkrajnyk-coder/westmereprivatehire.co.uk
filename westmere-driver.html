@@ -1077,6 +1077,15 @@ function drvShowDay(key){
   html+='</div>';
   det.innerHTML=html;
 }
+
+// Real-time push: refresh the driver's lists when bookings change
+window.addEventListener('wm:event', function(){
+  if(typeof loadDriverJobs==='function')loadDriverJobs();
+  if(document.getElementById('pg-calendar')&&document.getElementById('pg-calendar').classList.contains('on')&&typeof loadDriverCalendar==='function'){
+    loadDriverCalendar();
+  }
+});
 </script>
+<script src="/wm-realtime.js"></script>
 </body>
 </html>

@@ -14,6 +14,7 @@ const intakeRouter = require('./intake-routes');
 const { createAuthMiddleware } = require('./middleware');
 const gcal = require('./google-calendar');
 const intake = require('./intake');
+const events = require('./events');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -92,6 +93,14 @@ app.use('/api/gmail', apiLimiter, requireAuth, gmailRouter);
 
 // Protected intake routes (time-off, reassignment, apology drafting)
 app.use('/api/intake', apiLimiter, requireAuth, intakeRouter);
+
+// ── Real-time push (SSE) ───────────────────────────────────────────────
+// Long-lived stream — must NOT pass through the api rate limiter (one
+// open connection per browser tab would burn the quota in seconds).
+app.get('/api/events', requireAuth, (req, res) => {
+  events.addClient(req, res);
+  // Don't call res.end() — the connection stays open until the client closes.
+});
 
 // ── Protected app pages ─────────────────────────────────────────────────
 // These pages require authentication — the frontend handles showing login UI

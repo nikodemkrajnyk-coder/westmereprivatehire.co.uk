@@ -13,6 +13,7 @@
 const express = require('express');
 const { getDb } = require('./db');
 const intake = require('./intake');
+const events = require('./events');
 
 const router = express.Router();
 
@@ -101,6 +102,9 @@ router.post('/bookings/:id/assign-driver', staffOnly, (req, res) => {
     intake.notifyCustomerConfirmed(parseInt(req.params.id, 10))
       .catch(e => console.error('[INTAKE] notifyCustomerConfirmed failed:', e.message));
   }
+  events.broadcast('booking:assigned', {
+    id: parseInt(req.params.id, 10), driverId: driver_id
+  }, { driverId: driver_id });
   res.json({ ok: true });
 });
 
@@ -120,6 +124,7 @@ router.post('/bookings/:id/decline', staffOnly, (req, res) => {
      WHERE id = ?
   `).run(req.params.id);
   if (r.changes === 0) return res.status(404).json({ error: 'Booking not found' });
+  events.broadcast('booking:declined', { id: parseInt(req.params.id, 10) });
   res.json({ ok: true });
 });
 

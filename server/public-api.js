@@ -12,6 +12,7 @@ const { sendCustomerBookingWhatsApp, sendAdminBookingWhatsApp } = require('./wha
 const { createPaymentIntent, isConfigured: stripeConfigured } = require('./stripe');
 const gcal = require('./google-calendar');
 const intake = require('./intake');
+const events = require('./events');
 
 const router = express.Router();
 
@@ -97,6 +98,13 @@ router.post('/book', async (req, res) => {
     // a graceful no-op.
     intake.evaluate(result.lastInsertRowid).catch(e => {
       console.error('[INTAKE] evaluate threw:', e.message);
+    });
+
+    // Push a real-time notification to every open staff app.
+    events.broadcast('booking:created', {
+      id: result.lastInsertRowid, ref, name, pickup, destination,
+      date: bookingDate, time: time || 'ASAP',
+      payment: payment || 'cash', fare: fare || null
     });
 
     res.status(201).json({ ok: true, ref, bookingId: result.lastInsertRowid });
