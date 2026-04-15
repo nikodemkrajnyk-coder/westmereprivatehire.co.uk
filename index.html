@@ -424,6 +424,23 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
       <button class="bk-btn-p" style="margin-top:1.3rem" onclick="closeBkModal()">All done</button>
     </div>
 
+    <!-- Step 7: Fallback — online save failed, offer direct contact -->
+    <div class="bk-step" id="bk-sfail">
+      <div class="bk-welcome-block">
+        <div style="font-family:var(--serif);font-size:3.2rem;font-weight:300;color:#e05252;line-height:1">!</div>
+        <div class="bk-welcome-rule" style="background:#e05252"></div>
+        <div class="bk-welcome-ttl">We couldn&rsquo;t save this online</div>
+        <div class="bk-welcome-sub" id="bk-fail-sub">We&rsquo;re still here &mdash; reach us any way below and we&rsquo;ll take it manually, right now.</div>
+      </div>
+      <div class="bk-confirm-dl" id="bk-fail-dl"></div>
+      <div style="display:grid;grid-template-columns:1fr;gap:.55rem;margin-top:1rem">
+        <a href="tel:+447930342593" class="bk-btn-p" style="text-decoration:none">Call 07930 342593</a>
+        <a id="bk-fail-wa" href="#" target="_blank" rel="noopener" class="bk-btn-p" style="text-decoration:none;background:#25D366;color:#fff">Send on WhatsApp</a>
+        <a id="bk-fail-em" href="#" class="bk-btn-p" style="text-decoration:none;background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3)">Email us</a>
+        <button class="bk-back" style="margin-top:.4rem" onclick="bkRetryBooking()">Try online again</button>
+      </div>
+    </div>
+
     <div class="bk-secure">Secured by Stripe &nbsp;&middot;&nbsp; TLS encrypted</div>
   </div>
 </div>
@@ -785,7 +802,10 @@ function bkToast(msg, type) {
 }
 
 // ── SUBMIT BOOKING TO BACKEND ─────────────────────────
+var _bkLastBooking = null;  // keep the payload so the fail panel can prefill links / retry can resend
+
 function bkSubmitBooking(data) {
+  _bkLastBooking = data;
   fetch(BOOKING_API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -794,9 +814,57 @@ function bkSubmitBooking(data) {
     if (d.ok) {
       bkToast("Booking saved — confirmation sent", "ok");
     } else {
-      bkToast("Booking error: " + (d.error||"unknown") + (d.detail ? " — " + d.detail : ""), "err");
+      bkShowFail((d.error || "We couldn't save your booking") + (d.detail ? " — " + d.detail : ""));
     }
-  }).catch(function(e){ bkToast("Could not reach server — please try again or call 07930 342593", "err"); });
+  }).catch(function(e){ bkShowFail("Could not reach our server"); });
+}
+
+// Show the "save failed, contact us" panel with booking details prefilled
+// into tappable WhatsApp / email links so the customer can complete the
+// booking in one tap rather than re-entering everything.
+function bkShowFail(reason) {
+  var d = _bkLastBooking || {};
+  var lines = [];
+  if (d.name)        lines.push(["Name", d.name]);
+  if (d.phone)       lines.push(["Phone", d.phone]);
+  if (d.email)       lines.push(["Email", d.email]);
+  if (d.pickup)      lines.push(["From", d.pickup]);
+  if (d.destination) lines.push(["To", d.destination]);
+  if (d.date)        lines.push(["Date", d.date + (d.time && d.time !== "ASAP" ? " at " + d.time : (d.time === "ASAP" ? " (ASAP)" : ""))]);
+  if (d.flight)      lines.push(["Flight", d.flight]);
+  if (d.fare)        lines.push(["Quoted fare", "£" + d.fare]);
+
+  var body = "Hi Westmere, I tried to book online but the website couldn't save it. "
+           + "Please confirm this booking for me:\n\n"
+           + lines.map(function(l){ return l[0] + ": " + l[1]; }).join("\n");
+
+  var subject = "Booking request" + (d.name ? " — " + d.name : "");
+  var waUrl = "https://wa.me/447930342593?text=" + encodeURIComponent(body);
+  var emUrl = "mailto:bookings@westmereprivatehire.co.uk?subject=" + encodeURIComponent(subject)
+            + "&body=" + encodeURIComponent(body);
+
+  var waEl = document.getElementById("bk-fail-wa"); if (waEl) waEl.href = waUrl;
+  var emEl = document.getElementById("bk-fail-em"); if (emEl) emEl.href = emUrl;
+
+  var dl = document.getElementById("bk-fail-dl");
+  if (dl) dl.innerHTML = lines.map(function(l){
+    return '<div class="dl-row"><span class="dl-key">'+l[0]+'</span>'
+         + '<span class="dl-val">'+String(l[1]).replace(/</g,"&lt;")+'</span></div>';
+  }).join("");
+
+  var sub = document.getElementById("bk-fail-sub");
+  if (sub && reason) sub.textContent = reason + ". We're still here — reach us any way below and we'll take it manually, right now.";
+
+  bkGoS(7);
+}
+
+// Retry the same payload — useful if the first attempt was a transient
+// network blip. If still failing we just re-show the fail panel.
+function bkRetryBooking() {
+  if (!_bkLastBooking) { bkGoS(1); return; }
+  bkToast("Trying again…", "ok");
+  bkSubmitBooking(_bkLastBooking);
+  bkGoS(6);  // optimistically show the welcome screen; if it fails again bkShowFail jumps us back
 }
 
 // ── NIGHT DETECTION ───────────────────────────────────
@@ -879,17 +947,18 @@ document.addEventListener("DOMContentLoaded", function(){
 function bkGoS(n) {
   _bk.step = n;
   document.querySelectorAll(".bk-step").forEach(function(s){ s.classList.remove("active"); });
-  var map = {1:"bk-s1",2:"bk-s2",3:"bk-s3",4:"bk-s4w",5:"bk-s4c",6:"bk-s5"};
+  var map = {1:"bk-s1",2:"bk-s2",3:"bk-s3",4:"bk-s4w",5:"bk-s4c",6:"bk-s5",7:"bk-sfail"};
   var el = document.getElementById(map[n]); if(el) el.classList.add("active");
   var dots = document.querySelectorAll(".bk-pd");
   var prog = n<=1?1:n===2?2:n===3?3:4;
   dots.forEach(function(d,i){ d.classList.toggle("done", i<prog); });
   var heads = {1:"Your details",2:"Payment",3:"Payment method",
-               4:"Apple / Google Pay",5:"Card payment",6:"Welcome to Westmere"};
+               4:"Apple / Google Pay",5:"Card payment",6:"Welcome to Westmere",
+               7:"We need to finish this manually"};
   var h = document.getElementById("bk-heading");
   if (h && heads[n]) h.textContent = heads[n];
   var bar = document.getElementById("bk-j-bar");
-  if (bar) bar.style.display = (n===6) ? "none" : "";
+  if (bar) bar.style.display = (n===6 || n===7) ? "none" : "";
   var card = document.getElementById("bk-card");
   if (card) card.scrollTop = 0;
 }
