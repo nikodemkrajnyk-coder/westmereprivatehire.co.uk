@@ -69,6 +69,25 @@ nav.solid{background:rgba(255,255,255,.85);backdrop-filter:blur(20px)}
 .bn-bar{width:20px;height:1px;background:currentColor;opacity:0;transition:opacity .2s;margin-bottom:.1rem}
 .bn-item.on .bn-bar{opacity:1}
 .bn-badge{position:absolute;top:.42rem;right:calc(50% - 16px);background:var(--red);color:#fff;font-size:.48rem;font-weight:700;min-width:14px;height:14px;border-radius:7px;padding:0 3px;display:none;align-items:center;justify-content:center}
+/* ── DRIVER CALENDAR ── */
+.dcal-hd{padding:.4rem .2rem;text-align:center;font-size:.55rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.45);background:rgba(245,242,237,.7)}
+.dcal-day{min-height:48px;padding:.3rem .25rem;background:#fff;cursor:pointer;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;transition:background .15s}
+.dcal-day:active{background:rgba(184,152,90,.15)}
+.dcal-day.today{background:rgba(184,152,90,.15);box-shadow:inset 0 0 0 2px var(--gold)}
+.dcal-day.selected{background:rgba(184,152,90,.22)}
+.dcal-day.other{opacity:.25;pointer-events:none;background:#fafafa}
+.dcal-day.has-jobs .dcal-num{color:var(--navy);font-weight:600}
+.dcal-num{font-size:.82rem;color:rgba(17,29,44,.65);line-height:1}
+.dcal-dots{display:flex;gap:2px;margin-top:.25rem}
+.dcal-dots span{width:5px;height:5px;border-radius:50%;background:var(--gold)}
+.dcal-warn{position:absolute;top:2px;right:3px;width:7px;height:7px;border-radius:50%;background:#9C5800}
+.dcal-job{display:flex;align-items:center;gap:.7rem;padding:.7rem .9rem;border-bottom:1px solid rgba(17,29,44,.05);background:#fff}
+.dcal-job:last-child{border-bottom:none}
+.dcal-jt{font-family:var(--serif);font-size:1rem;color:var(--gold);width:50px;flex-shrink:0}
+.dcal-ji{flex:1;min-width:0}
+.dcal-jn{font-size:.85rem;font-weight:500;color:var(--navy)}
+.dcal-jr{font-size:.7rem;color:rgba(17,29,44,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dcal-jf{font-family:var(--serif);font-size:.95rem;color:var(--gold);flex-shrink:0}
 .page-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:1rem}
 .page-content{padding:1.4rem 1.1rem;max-width:560px;margin:0 auto}
 .sec-title{font-family:var(--serif);font-size:1.6rem;font-weight:300;color:var(--navy);line-height:1;margin-bottom:.3rem}
@@ -412,6 +431,21 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
       </div>
     </div>
 
+    <!-- CALENDAR -->
+    <div class="page-content" id="pg-calendar" style="display:none">
+      <div class="sec-title"><em>Calendar</em></div>
+      <div class="sec-sub" id="drv-cal-sub">Your jobs at a glance</div>
+      <div class="p-card" style="margin-bottom:.85rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:.6rem .8rem">
+          <button onclick="drvCalNav(-1)" style="background:none;border:1px solid rgba(17,29,44,.15);color:rgba(17,29,44,.6);padding:.45rem .8rem;font-family:var(--sans);font-size:.78rem;cursor:pointer">← Prev</button>
+          <div id="drv-cal-month" style="font-family:var(--serif);font-size:1.15rem;color:var(--navy);font-weight:400"></div>
+          <button onclick="drvCalNav(1)" style="background:none;border:1px solid rgba(17,29,44,.15);color:rgba(17,29,44,.6);padding:.45rem .8rem;font-family:var(--sans);font-size:.78rem;cursor:pointer">Next →</button>
+        </div>
+        <div id="drv-cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:rgba(17,29,44,.08);border-top:1px solid rgba(17,29,44,.06)"></div>
+      </div>
+      <div id="drv-cal-detail"></div>
+    </div>
+
     <!-- EARNINGS -->
     <div class="page-content" id="pg-earnings" style="display:none">
       <div class="sec-title">Your <em>Earnings</em></div>
@@ -476,6 +510,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
     <button class="bn-item on" id="bn-today" onclick="goPage('today',this)"><div class="bn-bar"></div><div class="bn-label">Today</div></button>
     <button class="bn-item" id="bn-offered" onclick="goPage('offered',this)"><div class="bn-bar"></div><div class="bn-label">Offered</div><div class="bn-badge" id="offered-badge"></div></button>
     <button class="bn-item" id="bn-tesla" onclick="goPage('tesla',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Tesla</div></button>
+    <button class="bn-item" id="bn-calendar" onclick="goPage('calendar',this)"><div class="bn-bar"></div><div class="bn-label">Calendar</div></button>
     <button class="bn-item" id="bn-earnings" onclick="goPage('earnings',this)"><div class="bn-bar"></div><div class="bn-label">Earnings</div></button>
     <button class="bn-item" id="bn-profile" onclick="goPage('profile',this)"><div class="bn-bar"></div><div class="bn-label">Profile</div></button>
   </div>
@@ -702,11 +737,12 @@ function checkConflict(offered){
 
 // ─── NAVIGATION ──────────────────────────────────────────────────────────────
 function goPage(id,btn){
-  ['today','offered','tesla','earnings','profile'].forEach(function(p){var el=document.getElementById('pg-'+p);if(el)el.style.display='none';});
+  ['today','offered','tesla','calendar','earnings','profile'].forEach(function(p){var el=document.getElementById('pg-'+p);if(el)el.style.display='none';});
   document.querySelectorAll('.bn-item').forEach(function(b){b.classList.remove('on');});
   var pg=document.getElementById('pg-'+id);if(pg)pg.style.display='block';
   if(btn)btn.classList.add('on');
   document.getElementById('page-scroll').scrollTo(0,0);
+  if(id==='calendar'&&typeof loadDriverCalendar==='function')loadDriverCalendar();
   if(id==='today')buildToday();
   if(id==='offered')buildOffered();
   if(id==='tesla'){updateTeslaUI();buildTeslaRangeCheck();}
@@ -946,6 +982,129 @@ function initApp(){
     document.getElementById('scr-app').classList.remove('on');
   }
 })();
+
+// ── DRIVER CALENDAR ─────────────────────────────────────────────────────
+var DRV_CAL_BOOKINGS={};
+var DRV_CAL_YEAR=new Date().getFullYear();
+var DRV_CAL_MONTH=new Date().getMonth();
+var DRV_CAL_SELECTED=null;
+var DRV_MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function drvDateKey(y,m,d){return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');}
+function drvEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+async function loadDriverCalendar(){
+  try{
+    var r=await fetch('/api/bookings',{credentials:'include'});
+    var d=await r.json();
+    DRV_CAL_BOOKINGS={};
+    if(d&&d.ok){
+      d.bookings.forEach(function(b){
+        if(!b.date||b.status==='cancelled')return;
+        if(!DRV_CAL_BOOKINGS[b.date])DRV_CAL_BOOKINGS[b.date]=[];
+        DRV_CAL_BOOKINGS[b.date].push(b);
+      });
+    }
+    buildDriverCalendar();
+  }catch(e){
+    var g=document.getElementById('drv-cal-grid');
+    if(g)g.innerHTML='<div style="grid-column:1/-1;padding:1.5rem;text-align:center;color:#a33;font-size:.8rem">Failed to load: '+drvEsc(e.message)+'</div>';
+  }
+}
+
+function drvCalNav(dir){
+  DRV_CAL_MONTH+=dir;
+  if(DRV_CAL_MONTH>11){DRV_CAL_MONTH=0;DRV_CAL_YEAR++;}
+  if(DRV_CAL_MONTH<0){DRV_CAL_MONTH=11;DRV_CAL_YEAR--;}
+  DRV_CAL_SELECTED=null;
+  buildDriverCalendar();
+}
+
+function buildDriverCalendar(){
+  var grid=document.getElementById('drv-cal-grid');
+  var monthEl=document.getElementById('drv-cal-month');
+  if(!grid||!monthEl)return;
+  monthEl.textContent=DRV_MONTHS[DRV_CAL_MONTH]+' '+DRV_CAL_YEAR;
+
+  var first=new Date(DRV_CAL_YEAR,DRV_CAL_MONTH,1);
+  var startDay=(first.getDay()+6)%7;
+  var daysInMonth=new Date(DRV_CAL_YEAR,DRV_CAL_MONTH+1,0).getDate();
+  var daysInPrev=new Date(DRV_CAL_YEAR,DRV_CAL_MONTH,0).getDate();
+  var today=new Date();
+  var todayKey=drvDateKey(today.getFullYear(),today.getMonth(),today.getDate());
+
+  var monthJobs=0,monthEarn=0;
+  var html='';
+  ['M','T','W','T','F','S','S'].forEach(function(d){html+='<div class="dcal-hd">'+d+'</div>';});
+  for(var i=startDay-1;i>=0;i--){html+='<div class="dcal-day other"><div class="dcal-num">'+(daysInPrev-i)+'</div></div>';}
+
+  for(var d=1;d<=daysInMonth;d++){
+    var key=drvDateKey(DRV_CAL_YEAR,DRV_CAL_MONTH,d);
+    var jobs=DRV_CAL_BOOKINGS[key]||[];
+    var n=jobs.length;
+    monthJobs+=n;
+    jobs.forEach(function(j){if(j.fare)monthEarn+=Number(j.fare);});
+    var hasFlag=jobs.some(function(j){return j.needs_reassignment;});
+
+    var cls='dcal-day';
+    if(key===todayKey)cls+=' today';
+    if(key===DRV_CAL_SELECTED)cls+=' selected';
+    if(n)cls+=' has-jobs';
+
+    var dots='';
+    if(n){
+      dots='<div class="dcal-dots">';
+      for(var j=0;j<Math.min(n,4);j++)dots+='<span></span>';
+      dots+='</div>';
+    }
+    html+='<div class="'+cls+'" onclick="drvSelectDay(\''+key+'\')">'
+      +(hasFlag?'<div class="dcal-warn"></div>':'')
+      +'<div class="dcal-num">'+d+'</div>'+dots+'</div>';
+  }
+  var totalCells=startDay+daysInMonth;
+  var fill=totalCells%7?7-totalCells%7:0;
+  for(var d=1;d<=fill;d++){html+='<div class="dcal-day other"><div class="dcal-num">'+d+'</div></div>';}
+  grid.innerHTML=html;
+
+  var sub=document.getElementById('drv-cal-sub');
+  if(sub){
+    sub.textContent=monthJobs?(monthJobs+' job'+(monthJobs===1?'':'s')+' · £'+Math.round(monthEarn)+' this month'):'No jobs this month';
+  }
+
+  if(DRV_CAL_SELECTED)drvShowDay(DRV_CAL_SELECTED);
+  else if(DRV_CAL_MONTH===today.getMonth()&&DRV_CAL_YEAR===today.getFullYear())drvShowDay(todayKey);
+  else document.getElementById('drv-cal-detail').innerHTML='';
+}
+
+function drvSelectDay(key){DRV_CAL_SELECTED=key;buildDriverCalendar();}
+
+function drvShowDay(key){
+  var det=document.getElementById('drv-cal-detail');
+  if(!det)return;
+  var jobs=(DRV_CAL_BOOKINGS[key]||[]).slice().sort(function(a,b){return (a.time||'').localeCompare(b.time||'');});
+  var parts=key.split('-');
+  var dt=new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));
+  var dayName=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dt.getDay()];
+  var label=dayName+' '+parseInt(parts[2])+' '+DRV_MONTHS[parseInt(parts[1])-1];
+
+  var html='<div class="p-card"><div class="p-ch">'+drvEsc(label)+'</div>';
+  if(!jobs.length){
+    html+='<div style="padding:1.5rem;text-align:center;color:rgba(17,29,44,.4);font-size:.82rem">No jobs scheduled</div>';
+  } else {
+    html+=jobs.map(function(j){
+      return '<div class="dcal-job">'
+        +'<div class="dcal-jt">'+drvEsc(j.time||'ASAP')+'</div>'
+        +'<div class="dcal-ji">'
+          +'<div class="dcal-jn">'+drvEsc(j.customer_name||'Guest')+(j.needs_reassignment?' <span style="color:#9C5800;font-size:.62rem">⚠ Needs operator</span>':'')+'</div>'
+          +'<div class="dcal-jr">'+drvEsc(j.pickup||'')+' → '+drvEsc(j.destination||'')+'</div>'
+        +'</div>'
+        +'<div class="dcal-jf">'+(j.fare?'£'+Number(j.fare).toFixed(0):'TBC')+'</div>'
+        +'</div>';
+    }).join('');
+  }
+  html+='</div>';
+  det.innerHTML=html;
+}
 </script>
 </body>
 </html>

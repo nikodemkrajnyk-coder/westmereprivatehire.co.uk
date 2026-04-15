@@ -352,6 +352,36 @@ textarea.fi{resize:vertical;min-height:80px}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes sl{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+/* ── CALENDAR ── */
+.adm-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:rgba(17,29,44,.06);overflow:hidden;border:1px solid rgba(17,29,44,.06)}
+.adm-cal-hd{padding:.55rem .2rem;text-align:center;font-size:.65rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.5);background:rgba(245,242,237,.7)}
+.adm-cal-day{min-height:78px;padding:.4rem .45rem;background:#fff;cursor:pointer;transition:background .15s;position:relative;overflow:hidden}
+.adm-cal-day:hover{background:rgba(184,152,90,.06)}
+.adm-cal-day.today{background:rgba(184,152,90,.12);box-shadow:inset 0 0 0 2px var(--gold)}
+.adm-cal-day.selected{background:rgba(184,152,90,.18)}
+.adm-cal-day.other{opacity:.3;pointer-events:none;background:#fafafa}
+.adm-cal-day.blocked{background:repeating-linear-gradient(45deg,#fff,#fff 6px,rgba(176,42,42,.06) 6px,rgba(176,42,42,.06) 12px)}
+.adm-cal-day.flagged{box-shadow:inset 0 0 0 2px #F4B860}
+.adm-cal-num{font-size:.82rem;font-weight:500;color:var(--navy);line-height:1}
+.adm-cal-pill{margin-top:.25rem;font-size:.62rem;color:#fff;background:var(--navy);padding:1px 5px;border-radius:3px;display:inline-block;line-height:1.4}
+.adm-cal-pill.warn{background:#9C5800}
+.adm-cal-pill.off{background:#a33}
+.adm-cal-job-mini{font-size:.62rem;color:rgba(17,29,44,.55);line-height:1.25;margin-top:.18rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.adm-cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;gap:.5rem}
+.adm-cal-month{font-family:var(--serif);font-size:1.25rem;font-weight:400;color:var(--navy)}
+.adm-cal-detail{margin-top:1.1rem}
+.adm-cal-detail-job{display:flex;align-items:center;gap:.8rem;padding:.7rem 1rem;border-bottom:1px solid var(--rule)}
+.adm-cal-detail-job:last-child{border-bottom:none}
+.adm-cal-time{font-family:var(--serif);font-size:1rem;color:var(--gold);width:54px;flex-shrink:0}
+.adm-cal-info{flex:1;min-width:0}
+.adm-cal-name{font-size:.85rem;font-weight:600;color:var(--navy)}
+.adm-cal-route{font-size:.74rem;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.adm-cal-fare{font-family:var(--serif);font-size:.95rem;color:var(--gold);flex-shrink:0}
+.adm-cal-status{font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;padding:2px 7px;border-radius:3px;background:rgba(17,29,44,.08);color:var(--text-light);flex-shrink:0}
+.adm-cal-status.confirmed{background:#E6F4EA;color:#1E6B33}
+.adm-cal-status.pending{background:#FFF3C4;color:#7C5300}
+.adm-cal-status.cancelled{background:#FCE4E4;color:#9C2828}
+.adm-cal-status.flagged{background:#FFE7BE;color:#9C5800}
 @media(max-width:900px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main{margin-left:0}.mob-menu-btn{display:flex}.stats{grid-template-columns:1fr 1fr}.auto-grid{grid-template-columns:1fr 1fr}.cust-grid{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}
 @media(max-width:600px){.content{padding:1.2rem 1rem}.stats{grid-template-columns:1fr 1fr}.auto-grid{grid-template-columns:1fr}.cust-grid{grid-template-columns:1fr}.r2,.r3{grid-template-columns:1fr}.pb-row{grid-template-columns:1fr 1fr}.topbar{padding:0 1rem}}
 .sug-drop{display:none;position:absolute;left:0;right:0;top:100%;z-index:350;background:rgba(255,255,255,.97);backdrop-filter:blur(28px);border:1px solid rgba(184,152,90,.35);border-radius:0 0 10px 10px;max-height:240px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(184,152,90,.3) transparent}
@@ -443,6 +473,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
     <span class="sb-label">Bookings</span>
     <button class="sb-item" onclick="openModal('modal-book')"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>New Booking</button>
     <button class="sb-item" onclick="nav('all-jobs',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span>All Journeys</button>
+    <button class="sb-item" onclick="nav('calendar',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>Calendar</button>
   </div>
 
   <div class="sb-section">
@@ -584,6 +615,36 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+
+    <!-- ══ CALENDAR ══ -->
+    <div class="view" id="view-calendar">
+      <div class="page-hd">
+        <div class="page-title"><em>Calendar</em></div>
+        <div class="page-sub" id="adm-cal-sub">All confirmed and pending jobs · time-off windows shown striped</div>
+      </div>
+      <div class="card" style="margin-bottom:1.2rem">
+        <div class="cb" style="padding:1rem 1.2rem">
+          <div class="adm-cal-nav">
+            <button class="btn btn-ghost btn-sm" onclick="admCalNav(-1)">← Prev</button>
+            <div class="adm-cal-month" id="adm-cal-month"></div>
+            <div style="display:flex;gap:.4rem">
+              <button class="btn btn-ghost btn-sm" onclick="admCalToday()">Today</button>
+              <button class="btn btn-ghost btn-sm" onclick="admCalNav(1)">Next →</button>
+            </div>
+          </div>
+          <div class="adm-cal-grid" id="adm-cal-grid"></div>
+          <div style="display:flex;gap:1rem;margin-top:.8rem;font-size:.7rem;color:var(--text-light);flex-wrap:wrap">
+            <span><span style="display:inline-block;width:10px;height:10px;background:var(--navy);border-radius:2px;vertical-align:middle"></span> Confirmed/pending</span>
+            <span><span style="display:inline-block;width:10px;height:10px;background:#9C5800;border-radius:2px;vertical-align:middle"></span> Needs reassignment</span>
+            <span><span style="display:inline-block;width:10px;height:10px;background:repeating-linear-gradient(45deg,#fff,#fff 3px,rgba(176,42,42,.4) 3px,rgba(176,42,42,.4) 6px);border:1px solid rgba(0,0,0,.1);vertical-align:middle"></span> Time off</span>
+          </div>
+        </div>
+      </div>
+      <div class="card" id="adm-cal-detail-card" style="display:none">
+        <div class="ch"><div class="ct" id="adm-cal-detail-title">Selected day</div></div>
+        <div class="cb" id="adm-cal-detail" style="padding:0"></div>
       </div>
     </div>
 
@@ -1464,7 +1525,7 @@ function tick(){const n=new Date();document.getElementById('clock').textContent=
 setInterval(tick,10000);
 
 // ── NAV ──
-const TITLES={dashboard:'Dashboard',today:"Today's Jobs",notifications:'Notifications',inbox:'Inbox','all-jobs':'All Journeys',customers:'Customers',invoices:'Invoices',automation:'Automation','time-off':'Time Off',fares:'Fare Editor','record-book':'Record Book',drivers:'Drivers',settings:'Settings'};
+const TITLES={dashboard:'Dashboard',today:"Today's Jobs",notifications:'Notifications',inbox:'Inbox','all-jobs':'All Journeys',calendar:'Calendar',customers:'Customers',invoices:'Invoices',automation:'Automation','time-off':'Time Off',fares:'Fare Editor','record-book':'Record Book',drivers:'Drivers',settings:'Settings'};
 function nav(id,btn){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
   document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('on'));
@@ -1478,6 +1539,7 @@ function nav(id,btn){
   if(id==='time-off'&&typeof loadTimeOff==='function')loadTimeOff();
   if(id==='all-jobs'&&typeof loadFlaggedBookings==='function')loadFlaggedBookings();
   if(id==='today'&&typeof loadFlaggedBookings==='function')loadFlaggedBookings();
+  if(id==='calendar'&&typeof loadAdminCalendar==='function')loadAdminCalendar();
 }
 
 // ── MODALS ──
@@ -1988,6 +2050,194 @@ async function rsDecline(){
 // Periodic poll for flagged bookings (every 90s) so admin sees new ones quickly
 setInterval(function(){if(typeof loadFlaggedBookings==='function')loadFlaggedBookings();},90000);
 setTimeout(function(){if(typeof loadFlaggedBookings==='function')loadFlaggedBookings();},2000);
+
+// ── ADMIN CALENDAR ──────────────────────────────────────────────────────
+var ADM_CAL_BOOKINGS={};   // dateKey → array of bookings
+var ADM_CAL_TIMEOFF={};    // dateKey → array of time-off windows
+var ADM_CAL_YEAR=new Date().getFullYear();
+var ADM_CAL_MONTH=new Date().getMonth();
+var ADM_CAL_SELECTED=null;
+var ADM_MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function admDateKey(y,m,d){return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');}
+
+async function loadAdminCalendar(){
+  // Fetch bookings + time-off in parallel
+  try{
+    var [br,tr]=await Promise.all([
+      fetch('/api/bookings',{credentials:'include'}).then(function(r){return r.json();}),
+      fetch('/api/intake/time-off',{credentials:'include'}).then(function(r){return r.json();}).catch(function(){return{ok:false,timeOff:[]};})
+    ]);
+    ADM_CAL_BOOKINGS={};
+    if(br&&br.ok){
+      br.bookings.forEach(function(b){
+        if(!b.date)return;
+        if(b.status==='cancelled')return;
+        if(!ADM_CAL_BOOKINGS[b.date])ADM_CAL_BOOKINGS[b.date]=[];
+        ADM_CAL_BOOKINGS[b.date].push(b);
+      });
+    }
+    ADM_CAL_TIMEOFF={};
+    if(tr&&tr.ok){
+      tr.timeOff.forEach(function(t){
+        // Expand date ranges
+        var start=new Date(t.date+'T00:00:00');
+        var end=t.end_date?new Date(t.end_date+'T00:00:00'):start;
+        for(var d=new Date(start);d<=end;d.setDate(d.getDate()+1)){
+          var k=admDateKey(d.getFullYear(),d.getMonth(),d.getDate());
+          if(!ADM_CAL_TIMEOFF[k])ADM_CAL_TIMEOFF[k]=[];
+          ADM_CAL_TIMEOFF[k].push(t);
+        }
+      });
+    }
+    buildAdminCalendar();
+  }catch(e){
+    var g=document.getElementById('adm-cal-grid');
+    if(g)g.innerHTML='<div style="padding:2rem;color:#a33;grid-column:1/-1">Failed to load calendar: '+escTo(e.message)+'</div>';
+  }
+}
+
+function admCalNav(dir){
+  ADM_CAL_MONTH+=dir;
+  if(ADM_CAL_MONTH>11){ADM_CAL_MONTH=0;ADM_CAL_YEAR++;}
+  if(ADM_CAL_MONTH<0){ADM_CAL_MONTH=11;ADM_CAL_YEAR--;}
+  ADM_CAL_SELECTED=null;
+  buildAdminCalendar();
+}
+function admCalToday(){
+  var n=new Date();
+  ADM_CAL_YEAR=n.getFullYear();
+  ADM_CAL_MONTH=n.getMonth();
+  ADM_CAL_SELECTED=admDateKey(n.getFullYear(),n.getMonth(),n.getDate());
+  buildAdminCalendar();
+}
+
+function buildAdminCalendar(){
+  var grid=document.getElementById('adm-cal-grid');
+  var monthEl=document.getElementById('adm-cal-month');
+  if(!grid||!monthEl)return;
+  monthEl.textContent=ADM_MONTHS[ADM_CAL_MONTH]+' '+ADM_CAL_YEAR;
+
+  var first=new Date(ADM_CAL_YEAR,ADM_CAL_MONTH,1);
+  var startDay=(first.getDay()+6)%7; // Monday=0
+  var daysInMonth=new Date(ADM_CAL_YEAR,ADM_CAL_MONTH+1,0).getDate();
+  var daysInPrev=new Date(ADM_CAL_YEAR,ADM_CAL_MONTH,0).getDate();
+  var today=new Date();
+  var todayKey=admDateKey(today.getFullYear(),today.getMonth(),today.getDate());
+
+  var monthJobs=0,monthFlagged=0,monthFare=0;
+  var html='';
+  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(function(d){html+='<div class="adm-cal-hd">'+d+'</div>';});
+  for(var i=startDay-1;i>=0;i--){html+='<div class="adm-cal-day other"><div class="adm-cal-num">'+(daysInPrev-i)+'</div></div>';}
+
+  for(var d=1;d<=daysInMonth;d++){
+    var key=admDateKey(ADM_CAL_YEAR,ADM_CAL_MONTH,d);
+    var jobs=ADM_CAL_BOOKINGS[key]||[];
+    var off=ADM_CAL_TIMEOFF[key]||[];
+    var flagged=jobs.filter(function(j){return j.needs_reassignment;}).length;
+    monthJobs+=jobs.length;
+    monthFlagged+=flagged;
+    jobs.forEach(function(j){if(j.fare)monthFare+=Number(j.fare);});
+
+    var cls='adm-cal-day';
+    if(key===todayKey)cls+=' today';
+    if(key===ADM_CAL_SELECTED)cls+=' selected';
+    if(off.length)cls+=' blocked';
+    if(flagged)cls+=' flagged';
+
+    var inner='<div class="adm-cal-num">'+d+'</div>';
+    if(jobs.length){
+      var pillCls=flagged?'warn':'';
+      inner+='<div class="adm-cal-pill '+pillCls+'">'+jobs.length+' job'+(jobs.length>1?'s':'')+'</div>';
+      // Show top 2 mini lines
+      jobs.slice(0,2).forEach(function(j){
+        inner+='<div class="adm-cal-job-mini">'+escTo((j.time||'')+' '+(j.customer_name||'Guest'))+'</div>';
+      });
+      if(jobs.length>2)inner+='<div class="adm-cal-job-mini" style="color:var(--gold)">+'+(jobs.length-2)+' more</div>';
+    }
+    if(off.length&&!jobs.length){
+      inner+='<div class="adm-cal-pill off">Time off</div>';
+    } else if(off.length){
+      inner+='<div class="adm-cal-pill off">Off</div>';
+    }
+    html+='<div class="'+cls+'" onclick="admSelectDay(\''+key+'\')">'+inner+'</div>';
+  }
+  var totalCells=startDay+daysInMonth;
+  var fill=totalCells%7?7-totalCells%7:0;
+  for(var d=1;d<=fill;d++){html+='<div class="adm-cal-day other"><div class="adm-cal-num">'+d+'</div></div>';}
+  grid.innerHTML=html;
+
+  var sub=document.getElementById('adm-cal-sub');
+  if(sub){
+    var bits=[monthJobs+' job'+(monthJobs===1?'':'s'), '£'+Math.round(monthFare).toLocaleString()];
+    if(monthFlagged)bits.push(monthFlagged+' need attention');
+    sub.textContent=bits.join(' · ')+' this month';
+  }
+
+  if(ADM_CAL_SELECTED)admShowDay(ADM_CAL_SELECTED);
+}
+
+function admSelectDay(key){
+  ADM_CAL_SELECTED=key;
+  buildAdminCalendar();
+}
+
+function admShowDay(key){
+  var card=document.getElementById('adm-cal-detail-card');
+  var det=document.getElementById('adm-cal-detail');
+  var title=document.getElementById('adm-cal-detail-title');
+  if(!card||!det)return;
+  card.style.display='block';
+  var parts=key.split('-');
+  var dt=new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));
+  var dayName=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dt.getDay()];
+  if(title)title.textContent=dayName+' '+parseInt(parts[2])+' '+ADM_MONTHS[parseInt(parts[1])-1]+' '+parts[0];
+
+  var jobs=(ADM_CAL_BOOKINGS[key]||[]).slice().sort(function(a,b){return (a.time||'').localeCompare(b.time||'');});
+  var off=ADM_CAL_TIMEOFF[key]||[];
+
+  var html='';
+  if(off.length){
+    html+='<div style="background:#FCE4E4;padding:.7rem 1rem;border-bottom:1px solid var(--rule);font-size:.78rem;color:#7C2828">';
+    html+=off.map(function(t){
+      var hrs=(t.start_time||t.end_time)?(' · '+(t.start_time||'00:00')+'–'+(t.end_time||'23:59')):' · all day';
+      return '<strong>Time off</strong>'+hrs+(t.reason?' — '+escTo(t.reason):'');
+    }).join('<br>')+'</div>';
+  }
+  if(!jobs.length){
+    html+='<div style="padding:1.5rem;text-align:center;color:rgba(17,29,44,.4);font-size:.85rem">No jobs scheduled</div>';
+  } else {
+    html+=jobs.map(function(j){
+      var st=j.status||'pending';
+      var stCls=j.needs_reassignment?'flagged':st;
+      var stTxt=j.needs_reassignment?'Needs reassign':st;
+      var actions='';
+      if(j.needs_reassignment){
+        actions='<button class="btn btn-navy btn-sm" onclick="event.stopPropagation();openReassign('+j.id+')">Resolve</button>';
+      }
+      return '<div class="adm-cal-detail-job">'
+        +'<div class="adm-cal-time">'+escTo(j.time||'ASAP')+'</div>'
+        +'<div class="adm-cal-info">'
+          +'<div class="adm-cal-name">'+escTo(j.ref||'')+' · '+escTo(j.customer_name||'Guest')+'</div>'
+          +'<div class="adm-cal-route">'+escTo(j.pickup||'')+' → '+escTo(j.destination||'')+'</div>'
+        +'</div>'
+        +'<div class="adm-cal-fare">'+(j.fare?'£'+Number(j.fare).toFixed(0):'TBC')+'</div>'
+        +'<div class="adm-cal-status '+stCls+'">'+escTo(stTxt)+'</div>'
+        +actions
+        +'</div>';
+    }).join('');
+  }
+  det.innerHTML=html;
+  // Make sure flagged cache is populated for the Resolve buttons
+  jobs.forEach(function(j){FLAGGED_CACHE[j.id]=j;});
+}
+
+// Refresh calendar when bookings change
+setInterval(function(){
+  if(document.getElementById('view-calendar')&&document.getElementById('view-calendar').classList.contains('on')){
+    loadAdminCalendar();
+  }
+},120000);
 
 </script>
 </body>
