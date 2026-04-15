@@ -1375,8 +1375,13 @@ function loadLiveBookings(){
           var statusLabel=b.status?b.status.charAt(0).toUpperCase()+b.status.slice(1):'Pending';
           var payClass=b.payment==='card'?'tag-card':'tag-cash';
           var payLabel=b.payment==='card'?'Card':'Cash';
+          var actionBtns='<button class="btn btn-ghost btn-sm" onclick="showToast(\''+b.ref+'\')">View</button>';
+          if(b.status==='pending'&&!b.needs_reassignment){
+            actionBtns+=' <button class="btn btn-navy btn-sm" onclick="reevaluateBooking('+b.id+',this)" title="Ask Claude to re-check feasibility">Re-check</button>';
+          }
+          var reasonRow=b.intake_reason?'<div class="sub-v" style="color:#9C5800;font-style:italic;margin-top:.2rem">'+escTo(b.intake_reason)+'</div>':'';
           return '<tr data-status="'+b.status+'">'
-            +'<td><div class="main-v">'+b.ref+'</div></td>'
+            +'<td><div class="main-v">'+b.ref+'</div>'+reasonRow+'</td>'
             +'<td>'+dateStr+'</td>'
             +'<td>'+(b.time||'ASAP')+'</td>'
             +'<td><div class="main-v">'+(b.customer_name||'Guest')+'</div>'+(b.customer_phone?'<div class="sub-v">'+b.customer_phone+'</div>':'')+'</td>'
@@ -1385,7 +1390,7 @@ function loadLiveBookings(){
             +'<td><span style="color:var(--gold);font-family:var(--serif);font-size:1.1rem">'+(b.fare?'\u00a3'+Number(b.fare).toFixed(0):'TBC')+'</span></td>'
             +'<td><span class="tag '+payClass+'">'+payLabel+'</span></td>'
             +'<td><span class="tag '+statusClass+'">'+statusLabel+'</span></td>'
-            +'<td><button class="btn btn-ghost btn-sm" onclick="showToast(\''+b.ref+'\')">View</button></td>'
+            +'<td>'+actionBtns+'</td>'
             +'</tr>';
         }).join('');
       }
@@ -1943,6 +1948,27 @@ async function delTimeOff(id){
   else showToast(d.error||'Failed');
 }
 
+// ── Re-run Claude's intake check on a stuck pending booking ─────────────
+// Useful when a booking was created before ANTHROPIC_API_KEY was set,
+// before a model fix, or when the operator just wants a fresh decision.
+async function reevaluateBooking(id,btn){
+  if(btn){btn.disabled=true;btn.textContent='Checking…';}
+  try{
+    var r=await fetch('/api/intake/bookings/'+id+'/reevaluate',{method:'POST',credentials:'include'});
+    var d=await r.json();
+    if(!d.ok){showToast(d.error||'Re-check failed');return;}
+    var res=d.result||{};
+    if(res.skipped==='no_api_key'){showToast('ANTHROPIC_API_KEY not set on Railway');}
+    else if(res.decision&&res.decision.feasible){showToast('Confirmed by Claude');}
+    else if(res.decision){showToast('Flagged: '+(res.decision.reason||'cannot fit'));}
+    else{showToast('Re-check: '+(res.reason||'inconclusive'));}
+    // Pull fresh data so the table redraws with new status / reason
+    if(typeof loadLiveBookings==='function')loadLiveBookings();
+    if(typeof loadFlaggedBookings==='function')loadFlaggedBookings();
+  }catch(e){showToast('Re-check error');}
+  finally{if(btn){btn.disabled=false;btn.textContent='Re-check';}}
+}
+
 // ── FLAGGED BOOKINGS (needs_reassignment) ───────────────────────────────
 var FLAGGED_CACHE={};
 var REASSIGN_CURRENT=null;
@@ -2214,6 +2240,8 @@ function admShowDay(key){
       var actions='';
       if(j.needs_reassignment){
         actions='<button class="btn btn-navy btn-sm" onclick="event.stopPropagation();openReassign('+j.id+')">Resolve</button>';
+      } else if(st==='pending'){
+        actions='<button class="btn btn-navy btn-sm" onclick="event.stopPropagation();reevaluateBooking('+j.id+',this)" title="Ask Claude to re-check feasibility">Re-check</button>';
       }
       return '<div class="adm-cal-detail-job">'
         +'<div class="adm-cal-time">'+escTo(j.time||'ASAP')+'</div>'
