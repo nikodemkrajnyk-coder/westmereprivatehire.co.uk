@@ -35,7 +35,7 @@ app.use(helmet({
       connectSrc: ["'self'", "https://api.mapbox.com",
         "https://nominatim.openstreetmap.org", "https://router.project-osrm.org",
         "https://api.anthropic.com", "https://api.stripe.com"],
-      frameSrc: ["https://js.stripe.com", "https://www.google.com"],
+      frameSrc: ["'self'", "https://js.stripe.com", "https://www.google.com"],
       scriptSrcAttr: ["'unsafe-inline'"],
     }
   }

@@ -626,25 +626,28 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
     <!-- Earnings -->
     <div class="pg" id="pg-earnings">
       <div class="sec-title">Your <em>Earnings</em></div>
-      <div class="sec-sub">Weekly summary</div>
-      <div style="background:#fff;border:1px solid rgba(17,29,44,.08);padding:1.5rem;margin-bottom:.85rem;position:relative;overflow:hidden">
-        <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(-45deg,transparent,transparent 60px,rgba(184,152,90,.02) 60px,rgba(184,152,90,.02) 61px);pointer-events:none"></div>
-        <span style="font-size:.52rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-bottom:.2rem;display:block;position:relative">This Week · 24–30 Mar</span>
-        <span style="font-family:var(--serif);font-size:3rem;color:var(--gold);line-height:1;display:block;position:relative">£318.75</span>
-        <div style="font-size:.72rem;color:rgba(17,29,44,.45);font-weight:300;margin-top:.3rem;position:relative">Next payment Monday 31 March</div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(184,152,90,.1);margin-top:1.2rem;border:1px solid rgba(184,152,90,.1);position:relative">
-          <div style="padding:.7rem;background:rgba(17,29,44,.04);text-align:center"><div style="font-family:var(--serif);font-size:1.3rem;color:var(--navy);font-weight:300">5</div><div style="font-size:.48rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-top:.15rem">Jobs</div></div>
-          <div style="padding:.7rem;background:rgba(17,29,44,.04);text-align:center"><div style="font-family:var(--serif);font-size:1.3rem;color:var(--navy);font-weight:300">£63.75</div><div style="font-size:.48rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-top:.15rem">Avg</div></div>
-          <div style="padding:.7rem;background:rgba(17,29,44,.04);text-align:center"><div style="font-family:var(--serif);font-size:1.3rem;color:var(--navy);font-weight:300">182</div><div style="font-size:.48rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-top:.15rem">Miles</div></div>
-        </div>
-      </div>
+      <div class="sec-sub">Live, computed from your confirmed bookings</div>
+      <div id="earn-this-week"></div>
       <div class="card">
         <div class="ch">Previous Weeks</div>
-        <div class="cb">
-          <div class="row"><span class="row-k">17–23 Mar</span><span class="row-v">£241.50 · 4 jobs</span></div>
-          <div class="row"><span class="row-k">10–16 Mar</span><span class="row-v">£185.00 · 3 jobs</span></div>
-          <div class="row"><span class="row-k">03–09 Mar</span><span class="row-v">£297.25 · 5 jobs</span></div>
+        <div class="cb" id="earn-prev-weeks">
+          <div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">Loading…</div>
         </div>
+      </div>
+      <div class="card" style="margin-top:.85rem">
+        <div class="ch">All-Time</div>
+        <div class="cb" id="earn-alltime">
+          <div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">Loading…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin (full admin app embedded for owner) -->
+    <div class="pg" id="pg-admin">
+      <div class="sec-title"><em>Admin</em> Console</div>
+      <div class="sec-sub">Full admin features — same as the desktop admin app</div>
+      <div style="background:#fff;border:1px solid rgba(17,29,44,.08);overflow:hidden;height:calc(100vh - 220px);min-height:520px">
+        <iframe id="admin-frame" src="about:blank" style="width:100%;height:100%;border:0;display:block" loading="lazy"></iframe>
       </div>
     </div>
 
@@ -657,6 +660,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
     <button class="bn" id="bn-tesla" onclick="goPage('tesla',this)"><div class="bn-bar"></div><div class="bn-label">Tesla</div></button>
     <button class="bn" id="bn-calendar" onclick="goPage('calendar',this)"><div class="bn-bar"></div><div class="bn-label">Calendar</div></button>
     <button class="bn" id="bn-inbox" onclick="goPage('inbox',this)"><div class="bn-bar"></div><div class="bn-label">Inbox</div><div class="bn-dot" id="inbox-dot" style="display:none"></div></button>
+    <button class="bn" id="bn-admin" onclick="goPage('admin',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Admin</div></button>
     <button class="bn" id="bn-assistant" onclick="goPage('assistant',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Assistant</div></button>
     <button class="bn" id="bn-earnings" onclick="goPage('earnings',this)"><div class="bn-bar"></div><div class="bn-label">Earnings</div></button>
   </div>
@@ -833,12 +837,13 @@ function setMode(mode){
   document.getElementById('mode-admin').classList.toggle('on', mode==='admin');
   document.getElementById('tb-mode-label').textContent = mode==='drive' ? 'Drive Mode' : 'Admin Mode';
   // Show/hide nav items
-  var driveItems = ['bn-today','bn-offered','bn-tesla','bn-calendar'];
-  var adminItems = ['bn-inbox','bn-assistant'];
+  var driveItems = ['bn-today','bn-offered','bn-tesla'];
+  var adminItems = ['bn-admin','bn-inbox','bn-assistant'];
+  // Calendar + Earnings appear in BOTH modes — relevant either way
   driveItems.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=mode==='drive'?'':'none';});
   adminItems.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=mode==='admin'?'':'none';});
   if(mode==='drive') goPage('today', document.getElementById('bn-today'));
-  else goPage('inbox', document.getElementById('bn-inbox'));
+  else goPage('admin', document.getElementById('bn-admin'));
 }
 
 // ── NAVIGATION ────────────────────────────────────────────────────────────────
@@ -853,8 +858,91 @@ function goPage(id,btn){
   if(id==='tesla'){updateTeslaUI();buildTeslaRC();}
   if(id==='inbox')oLoadInbox();
   if(id==='calendar')buildCalendar();
+  if(id==='earnings')buildEarnings();
+  if(id==='admin')loadAdminFrame();
   if(id==='assistant'&&!ASSIST_HISTORY.length)greetAssist();
   if(id==='smart'){var d=new Date();document.getElementById('sd-date').value=d.toISOString().split('T')[0];}
+}
+
+// ── ADMIN IFRAME (full admin app embedded for owner) ─────────────────────
+function loadAdminFrame(){
+  var f=document.getElementById('admin-frame');
+  if(!f)return;
+  if(f.dataset.loaded==='1')return;
+  f.src='/westmere-admin.html';
+  f.dataset.loaded='1';
+}
+
+// ── EARNINGS (computed live from confirmed/completed bookings) ───────────
+var ALL_BOOKINGS_CACHE = [];
+function fmtMoney(n){return '£'+(Math.round((+n||0)*100)/100).toFixed(2);}
+function isoWeekStart(d){var x=new Date(d);var day=(x.getDay()+6)%7;x.setDate(x.getDate()-day);x.setHours(0,0,0,0);return x;}
+function fmtRange(start){var e=new Date(start);e.setDate(e.getDate()+6);
+  var m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  if(start.getMonth()===e.getMonth())return start.getDate()+'–'+e.getDate()+' '+m[start.getMonth()];
+  return start.getDate()+' '+m[start.getMonth()]+' – '+e.getDate()+' '+m[e.getMonth()];
+}
+function isEarning(b){
+  // Count bookings that are confirmed/active/completed (not pending or cancelled)
+  if(!b||!b.date)return false;
+  if(b.status==='cancelled')return false;
+  return b.status==='confirmed'||b.status==='active'||b.status==='completed';
+}
+function buildEarnings(){
+  var bookings=(ALL_BOOKINGS_CACHE||[]).filter(isEarning);
+  var thisWeekStart=isoWeekStart(new Date());
+  var thisWeekEnd=new Date(thisWeekStart);thisWeekEnd.setDate(thisWeekEnd.getDate()+7);
+  var nextPay=new Date(thisWeekEnd);
+  var nextPayLabel=nextPay.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
+
+  // Group by week
+  var weeks={};
+  bookings.forEach(function(b){
+    var d=new Date(b.date+'T00:00:00');
+    var ws=isoWeekStart(d);
+    var k=ws.toISOString().slice(0,10);
+    if(!weeks[k])weeks[k]={start:ws,total:0,jobs:0};
+    weeks[k].total+=(+b.fare||0);
+    weeks[k].jobs+=1;
+  });
+
+  var thisKey=thisWeekStart.toISOString().slice(0,10);
+  var thisWeek=weeks[thisKey]||{start:thisWeekStart,total:0,jobs:0};
+  var avg=thisWeek.jobs?(thisWeek.total/thisWeek.jobs):0;
+
+  // This-week hero card
+  document.getElementById('earn-this-week').innerHTML=
+    '<div style="background:#fff;border:1px solid rgba(17,29,44,.08);padding:1.5rem;margin-bottom:.85rem;position:relative;overflow:hidden">'
+    +'<div style="position:absolute;inset:0;background-image:repeating-linear-gradient(-45deg,transparent,transparent 60px,rgba(184,152,90,.02) 60px,rgba(184,152,90,.02) 61px);pointer-events:none"></div>'
+    +'<span style="font-size:.52rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-bottom:.2rem;display:block;position:relative">This Week · '+fmtRange(thisWeek.start)+'</span>'
+    +'<span style="font-family:var(--serif);font-size:3rem;color:var(--gold);line-height:1;display:block;position:relative">'+fmtMoney(thisWeek.total)+'</span>'
+    +'<div style="font-size:.72rem;color:rgba(17,29,44,.45);font-weight:300;margin-top:.3rem;position:relative">Next payment '+nextPayLabel+'</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:rgba(184,152,90,.1);margin-top:1.2rem;border:1px solid rgba(184,152,90,.1);position:relative">'
+      +'<div style="padding:.7rem;background:rgba(17,29,44,.04);text-align:center"><div style="font-family:var(--serif);font-size:1.3rem;color:var(--navy);font-weight:300">'+thisWeek.jobs+'</div><div style="font-size:.48rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-top:.15rem">Jobs</div></div>'
+      +'<div style="padding:.7rem;background:rgba(17,29,44,.04);text-align:center"><div style="font-family:var(--serif);font-size:1.3rem;color:var(--navy);font-weight:300">'+fmtMoney(avg)+'</div><div style="font-size:.48rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-top:.15rem">Avg</div></div>'
+    +'</div>'
+    +'</div>';
+
+  // Previous weeks (excluding current; show last 6)
+  var prevKeys=Object.keys(weeks).filter(function(k){return k!==thisKey;}).sort().reverse().slice(0,6);
+  var prevEl=document.getElementById('earn-prev-weeks');
+  if(prevKeys.length){
+    prevEl.innerHTML=prevKeys.map(function(k){
+      var w=weeks[k];
+      return '<div class="row"><span class="row-k">'+fmtRange(w.start)+'</span><span class="row-v">'+fmtMoney(w.total)+' · '+w.jobs+' job'+(w.jobs===1?'':'s')+'</span></div>';
+    }).join('');
+  } else {
+    prevEl.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">No earlier weeks yet</div>';
+  }
+
+  // All-time totals
+  var totalRev=bookings.reduce(function(s,b){return s+(+b.fare||0);},0);
+  var totalJobs=bookings.length;
+  var allEl=document.getElementById('earn-alltime');
+  allEl.innerHTML=
+    '<div class="row"><span class="row-k">Total revenue</span><span class="row-v" style="color:var(--gold)">'+fmtMoney(totalRev)+'</span></div>'
+    +'<div class="row"><span class="row-k">Total jobs</span><span class="row-v">'+totalJobs+'</span></div>'
+    +'<div class="row"><span class="row-k">Average fare</span><span class="row-v">'+fmtMoney(totalJobs?totalRev/totalJobs:0)+'</span></div>';
 }
 
 // ── INBOX (Gmail via Google OAuth) ────────────────────────────────────────
@@ -1486,6 +1574,7 @@ async function loadOwnerBookings(){
     var data=await res.json();
     if(!res.ok||!data.ok)return;
     var bookings=data.bookings||[];
+    ALL_BOOKINGS_CACHE=bookings;
     var today=new Date().toISOString().split('T')[0];
 
     // Map API bookings to owner job format
@@ -1537,6 +1626,7 @@ async function loadOwnerBookings(){
     buildToday();
     if(document.getElementById('pg-calendar')&&document.getElementById('pg-calendar').classList.contains('on'))buildCalendar();
     if(document.getElementById('pg-offered')&&document.getElementById('pg-offered').classList.contains('on'))buildOffered();
+    if(document.getElementById('pg-earnings')&&document.getElementById('pg-earnings').classList.contains('on'))buildEarnings();
 
   }catch(e){console.error('[OWNER] Failed to load bookings:',e);}
 }
