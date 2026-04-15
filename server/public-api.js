@@ -36,8 +36,17 @@ router.post('/book', async (req, res) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(bookingDate)) {
       return res.status(400).json({ error: 'Date must be YYYY-MM-DD' });
     }
-    const nowUk = new Date(new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' }));
-    const todayStr = nowUk.toISOString().split('T')[0];
+    // Get "now" in Europe/London. Use sv-SE which formats as "YYYY-MM-DD HH:MM:SS"
+    // — a format the Date constructor actually understands (en-GB gives
+    // DD/MM/YYYY which produces Invalid Date and crashes toISOString).
+    const ukNowParts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Europe/London',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false
+    }).formatToParts(new Date()).reduce((o, p) => { o[p.type] = p.value; return o; }, {});
+    const todayStr = `${ukNowParts.year}-${ukNowParts.month}-${ukNowParts.day}`;
+    const ukHour = parseInt(ukNowParts.hour, 10);
+    const ukMinute = parseInt(ukNowParts.minute, 10);
     if (bookingDate < todayStr) {
       return res.status(400).json({ error: 'Pickup date is in the past' });
     }
@@ -46,7 +55,7 @@ router.post('/book', async (req, res) => {
       const m = String(time).match(/^(\d{1,2}):(\d{2})/);
       if (m) {
         const reqMins = (+m[1]) * 60 + (+m[2]);
-        const nowMins = nowUk.getHours() * 60 + nowUk.getMinutes();
+        const nowMins = ukHour * 60 + ukMinute;
         if (reqMins < nowMins) {
           return res.status(400).json({ error: 'Pickup time is in the past — please choose ASAP or a future time' });
         }
