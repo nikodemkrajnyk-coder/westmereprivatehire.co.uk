@@ -794,9 +794,9 @@ function bkSubmitBooking(data) {
     if (d.ok) {
       bkToast("Booking saved — confirmation sent", "ok");
     } else {
-      bkToast("Booking error: " + (d.error||"unknown"), "err");
+      bkToast("Booking error: " + (d.error||"unknown") + (d.detail ? " — " + d.detail : ""), "err");
     }
-  }).catch(function(e){ bkToast("Could not reach server — booking saved locally", "err"); });
+  }).catch(function(e){ bkToast("Could not reach server — please try again or call 07930 342593", "err"); });
 }
 
 // ── NIGHT DETECTION ───────────────────────────────────

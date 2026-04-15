@@ -133,8 +133,9 @@ router.post('/book', async (req, res) => {
     res.status(201).json({ ok: true, ref, bookingId: result.lastInsertRowid });
 
   } catch (err) {
-    console.error('[BOOK] Error creating booking:', err);
-    res.status(500).json({ error: 'Failed to create booking' });
+    console.error('[BOOK] Error creating booking:', err && err.stack || err);
+    const detail = (err && err.message) ? err.message : 'unknown';
+    res.status(500).json({ error: 'Failed to create booking', detail });
   }
 });
 
