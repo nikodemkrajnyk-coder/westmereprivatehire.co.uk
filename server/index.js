@@ -10,8 +10,10 @@ const apiRouter = require('./api');
 const publicApiRouter = require('./public-api');
 const googleRouter = require('./google-routes');
 const gmailRouter = require('./gmail-routes');
+const intakeRouter = require('./intake-routes');
 const { createAuthMiddleware } = require('./middleware');
 const gcal = require('./google-calendar');
+const intake = require('./intake');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -88,6 +90,9 @@ app.use('/api/google', requireAuth, googleRouter);
 // Protected Gmail routes (inbox, read, send)
 app.use('/api/gmail', apiLimiter, requireAuth, gmailRouter);
 
+// Protected intake routes (time-off, reassignment, apology drafting)
+app.use('/api/intake', apiLimiter, requireAuth, intakeRouter);
+
 // ── Protected app pages ─────────────────────────────────────────────────
 // These pages require authentication — the frontend handles showing login UI
 const protectedPages = [
@@ -129,6 +134,7 @@ app.listen(PORT, () => {
   const { isConfigured: emailOk } = require('./email');
   const gmailOk = emailOk();
   const gcalOk = gcal.isConfigured();
+  const intakeOk = intake.isConfigured();
   console.log(`
 ╔═══════════════════════════════════════════════╗
 ║  Westmere Private Hire — Backend Server       ║
@@ -141,6 +147,7 @@ app.listen(PORT, () => {
 ║  Gmail:    ${gmailOk ? 'ACTIVE' : 'NOT CONFIGURED'}                        ║
 ║  WhatsApp: ${waOk() ? 'ACTIVE' : 'NOT CONFIGURED'}                        ║
 ║  GCal:     ${gcalOk ? 'ACTIVE' : 'NOT CONFIGURED'}                        ║
+║  Intake:   ${intakeOk ? 'ACTIVE' : 'NOT CONFIGURED'}                        ║
 ╚═══════════════════════════════════════════════╝
   `);
 

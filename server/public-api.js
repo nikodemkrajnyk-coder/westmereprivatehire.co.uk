@@ -11,6 +11,7 @@ const { sendCustomerConfirmation, sendAdminAlert } = require('./email');
 const { sendCustomerBookingWhatsApp, sendAdminBookingWhatsApp } = require('./whatsapp');
 const { createPaymentIntent, isConfigured: stripeConfigured } = require('./stripe');
 const gcal = require('./google-calendar');
+const intake = require('./intake');
 
 const router = express.Router();
 
@@ -90,6 +91,13 @@ router.post('/book', async (req, res) => {
         try { db.prepare('UPDATE bookings SET calendar_event_id = ? WHERE id = ?').run(eventId, result.lastInsertRowid); } catch (e) {}
       }
     }).catch(() => {});
+
+    // Smart intake: ask Claude if we can fit it. Runs in background, never
+    // blocks the booking response. If ANTHROPIC_API_KEY is missing this is
+    // a graceful no-op.
+    intake.evaluate(result.lastInsertRowid).catch(e => {
+      console.error('[INTAKE] evaluate threw:', e.message);
+    });
 
     res.status(201).json({ ok: true, ref, bookingId: result.lastInsertRowid });
 

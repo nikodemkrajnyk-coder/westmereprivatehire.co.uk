@@ -185,6 +185,41 @@ function migrate() {
       );
     `);
   } catch (e) {}
+
+  // Smart intake: needs_reassignment flag + reason from Claude evaluation
+  try {
+    const info = db.prepare("PRAGMA table_info(bookings)").all();
+    if (!info.find(c => c.name === 'needs_reassignment')) {
+      db.exec(`ALTER TABLE bookings ADD COLUMN needs_reassignment INTEGER NOT NULL DEFAULT 0`);
+      console.log('[DB] Added needs_reassignment column to bookings');
+    }
+    if (!info.find(c => c.name === 'intake_reason')) {
+      db.exec(`ALTER TABLE bookings ADD COLUMN intake_reason TEXT`);
+      console.log('[DB] Added intake_reason column to bookings');
+    }
+    if (!info.find(c => c.name === 'intake_checked_at')) {
+      db.exec(`ALTER TABLE bookings ADD COLUMN intake_checked_at TEXT`);
+      console.log('[DB] Added intake_checked_at column to bookings');
+    }
+  } catch (e) {}
+
+  // Time off / blackout windows for the operator (or per-driver)
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS time_off (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        driver_id  INTEGER REFERENCES users(id),
+        date       TEXT    NOT NULL,
+        end_date   TEXT,
+        start_time TEXT,
+        end_time   TEXT,
+        reason     TEXT,
+        created_by INTEGER,
+        created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_time_off_date ON time_off(date);
+    `);
+  } catch (e) {}
 }
 
 function seedDefaults() {

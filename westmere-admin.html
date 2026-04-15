@@ -455,6 +455,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
   <div class="sb-section">
     <span class="sb-label">Operations</span>
     <button class="sb-item" onclick="nav('automation',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>Automation</button>
+    <button class="sb-item" onclick="nav('time-off',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="14" x2="15" y2="20"/><line x1="15" y1="14" x2="9" y2="20"/></svg></span>Time Off</button>
     <button class="sb-item" onclick="nav('record-book',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>Record Book</button>
     <button class="sb-item" onclick="nav('settings',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Settings</button>
   </div>
@@ -755,6 +756,38 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
     </div>
 
 
+    <!-- ══ TIME OFF ══ -->
+    <div class="view" id="view-time-off">
+      <div class="page-hd">
+        <div class="page-title">Time <em>Off</em></div>
+        <div class="page-sub">Block dates or hours so the smart intake engine won't auto-book during them</div>
+      </div>
+
+      <div class="card" style="margin-bottom:1.4rem">
+        <div class="ch"><div class="ct">Add a Blackout Window</div></div>
+        <div class="cb">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.8rem">
+            <div class="fg" style="margin:0"><label class="fl">Start date</label><input class="fi" type="date" id="to-date"></div>
+            <div class="fg" style="margin:0"><label class="fl">End date (optional)</label><input class="fi" type="date" id="to-end-date"></div>
+            <div class="fg" style="margin:0"><label class="fl">Start time (optional)</label><input class="fi" type="time" id="to-start-time"></div>
+            <div class="fg" style="margin:0"><label class="fl">End time (optional)</label><input class="fi" type="time" id="to-end-time"></div>
+            <div class="fg" style="margin:0;grid-column:1/-1"><label class="fl">Reason (optional)</label><input class="fi" id="to-reason" placeholder="e.g. Family weekend / vehicle service"></div>
+          </div>
+          <div style="margin-top:1rem;display:flex;gap:.6rem;align-items:center">
+            <button class="btn btn-navy" onclick="addTimeOff()">＋ Block this window</button>
+            <span style="font-size:.72rem;color:var(--text-light)">Leave times blank for a full-day block</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><div class="ct">Current Blackouts</div></div>
+        <div class="cb" id="to-list">
+          <div style="text-align:center;padding:2rem;color:rgba(17,29,44,.3);font-size:.85rem">Loading…</div>
+        </div>
+      </div>
+    </div>
+
     <!-- ══ RECORD BOOK ══ -->
     <div class="view" id="view-record-book">
       <div class="page-hd">
@@ -966,6 +999,38 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-add-driver')">Cancel</button>
       <button class="btn btn-navy" onclick="closeModal('modal-add-driver');showToast('Driver added to roster')">Save Driver</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: REASSIGN BOOKING ═══ -->
+<div class="overlay" id="modal-reassign">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-hd">
+      <div class="modal-title">Can't Make This Booking</div>
+      <button class="modal-x" onclick="closeModal('modal-reassign')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="rs-summary" style="font-size:.82rem;color:var(--text-light);margin-bottom:1rem"></div>
+      <div style="background:#FFF8E1;border:1px solid #F0D68A;border-radius:8px;padding:.7rem .9rem;margin-bottom:1rem;font-size:.8rem">
+        <strong style="color:var(--navy)">Smart intake says:</strong>
+        <div id="rs-reason" style="margin-top:.3rem"></div>
+      </div>
+      <div class="fg"><label class="fl">Pass to driver</label>
+        <select class="fi" id="rs-driver"><option value="">— Select driver —</option></select>
+      </div>
+      <div style="display:flex;gap:.6rem;margin-top:.8rem">
+        <button class="btn btn-navy" style="flex:1" onclick="rsAssign()">Assign Driver</button>
+        <button class="btn btn-ghost" style="flex:1" onclick="rsApology()">Draft Apology</button>
+      </div>
+      <div id="rs-apology" style="display:none;margin-top:1rem">
+        <div class="fg"><label class="fl">Subject</label><input class="fi" id="rs-ap-subj"></div>
+        <div class="fg"><label class="fl">Body</label><textarea class="fi" id="rs-ap-body" style="min-height:160px"></textarea></div>
+        <div style="display:flex;gap:.6rem">
+          <button class="btn btn-navy" style="flex:1" onclick="rsSendApology()">Send &amp; Decline</button>
+          <button class="btn btn-ghost" style="flex:1" onclick="rsDecline()">Just Decline</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1399,7 +1464,7 @@ function tick(){const n=new Date();document.getElementById('clock').textContent=
 setInterval(tick,10000);
 
 // ── NAV ──
-const TITLES={dashboard:'Dashboard',today:"Today's Jobs",notifications:'Notifications',inbox:'Inbox','all-jobs':'All Journeys',customers:'Customers',invoices:'Invoices',automation:'Automation',fares:'Fare Editor','record-book':'Record Book',drivers:'Drivers',settings:'Settings'};
+const TITLES={dashboard:'Dashboard',today:"Today's Jobs",notifications:'Notifications',inbox:'Inbox','all-jobs':'All Journeys',customers:'Customers',invoices:'Invoices',automation:'Automation','time-off':'Time Off',fares:'Fare Editor','record-book':'Record Book',drivers:'Drivers',settings:'Settings'};
 function nav(id,btn){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
   document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('on'));
@@ -1410,6 +1475,9 @@ function nav(id,btn){
   window.scrollTo(0,0);
   if(id==='drivers')buildDrivers();
   if(id==='inbox'&&typeof loadInbox==='function')loadInbox();
+  if(id==='time-off'&&typeof loadTimeOff==='function')loadTimeOff();
+  if(id==='all-jobs'&&typeof loadFlaggedBookings==='function')loadFlaggedBookings();
+  if(id==='today'&&typeof loadFlaggedBookings==='function')loadFlaggedBookings();
 }
 
 // ── MODALS ──
@@ -1760,6 +1828,166 @@ function printRecordBook(){
   w.focus();
   setTimeout(function(){w.print();},600);
 }
+
+// ── TIME OFF ────────────────────────────────────────────────────────────
+function escTo(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+async function loadTimeOff(){
+  var list=document.getElementById('to-list');
+  if(!list)return;
+  list.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.3);font-size:.85rem">Loading…</div>';
+  try{
+    var r=await fetch('/api/intake/time-off',{credentials:'include'});
+    var d=await r.json();
+    if(!d.ok){list.innerHTML='<div style="padding:1.4rem;color:#a33">'+escTo(d.error||'Error')+'</div>';return;}
+    if(!d.timeOff.length){list.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.3);font-size:.85rem">No blackouts set. The smart intake will treat every day as available.</div>';return;}
+    list.innerHTML=d.timeOff.map(function(t){
+      var range=t.end_date&&t.end_date!==t.date?(t.date+' → '+t.end_date):t.date;
+      var hrs=(t.start_time||t.end_time)?((t.start_time||'00:00')+'–'+(t.end_time||'23:59')):'All day';
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:.8rem 1rem;border-bottom:1px solid var(--rule)">'
+        +'<div><div style="font-weight:600;color:var(--navy);font-size:.88rem">'+escTo(range)+' · '+escTo(hrs)+'</div>'
+        +'<div style="font-size:.74rem;color:var(--text-light);margin-top:.2rem">'+escTo(t.reason||'(no reason)')+(t.driver_name?' · '+escTo(t.driver_name):'')+'</div></div>'
+        +'<button class="btn btn-ghost btn-sm" onclick="delTimeOff('+t.id+')">Remove</button></div>';
+    }).join('');
+  }catch(e){list.innerHTML='<div style="padding:1.4rem;color:#a33">Failed to load: '+escTo(e.message)+'</div>';}
+}
+async function addTimeOff(){
+  var date=document.getElementById('to-date').value;
+  if(!date){showToast('Pick a start date');return;}
+  var body={
+    date:date,
+    end_date:document.getElementById('to-end-date').value||null,
+    start_time:document.getElementById('to-start-time').value||null,
+    end_time:document.getElementById('to-end-time').value||null,
+    reason:document.getElementById('to-reason').value||null
+  };
+  try{
+    var r=await fetch('/api/intake/time-off',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var d=await r.json();
+    if(!d.ok){showToast(d.error||'Failed');return;}
+    showToast('Blackout added');
+    document.getElementById('to-date').value='';
+    document.getElementById('to-end-date').value='';
+    document.getElementById('to-start-time').value='';
+    document.getElementById('to-end-time').value='';
+    document.getElementById('to-reason').value='';
+    loadTimeOff();
+  }catch(e){showToast('Failed: '+e.message);}
+}
+async function delTimeOff(id){
+  if(!confirm('Remove this blackout?'))return;
+  var r=await fetch('/api/intake/time-off/'+id,{method:'DELETE',credentials:'include'});
+  var d=await r.json();
+  if(d.ok){showToast('Removed');loadTimeOff();}
+  else showToast(d.error||'Failed');
+}
+
+// ── FLAGGED BOOKINGS (needs_reassignment) ───────────────────────────────
+var FLAGGED_CACHE={};
+var REASSIGN_CURRENT=null;
+async function loadFlaggedBookings(){
+  try{
+    var r=await fetch('/api/bookings',{credentials:'include'});
+    var d=await r.json();
+    if(!d.ok)return;
+    FLAGGED_CACHE={};
+    var anyFlagged=false;
+    (d.bookings||[]).forEach(function(b){
+      FLAGGED_CACHE[b.id]=b;
+      if(b.needs_reassignment){anyFlagged=true;}
+    });
+    // Surface flagged ones at top of all-jobs / today as banners (lightweight)
+    renderFlaggedBanner(d.bookings.filter(function(b){return b.needs_reassignment;}));
+  }catch(e){}
+}
+function renderFlaggedBanner(list){
+  ['view-today','view-all-jobs'].forEach(function(viewId){
+    var v=document.getElementById(viewId);
+    if(!v)return;
+    var existing=v.querySelector('.flagged-banner');
+    if(existing)existing.remove();
+    if(!list.length)return;
+    var div=document.createElement('div');
+    div.className='flagged-banner card';
+    div.style.cssText='background:#FFF4E5;border:1px solid #F4B860;margin-bottom:1.2rem';
+    div.innerHTML='<div class="ch"><div class="ct" style="color:#9C5800">⚠️ '+list.length+' booking'+(list.length>1?'s':'')+' need'+(list.length>1?'':'s')+' your attention</div></div>'
+      +'<div class="cb" style="padding:0">'+list.map(function(b){
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:.7rem 1rem;border-top:1px solid rgba(244,184,96,.4)">'
+          +'<div><div style="font-weight:600;color:var(--navy);font-size:.85rem">'+escTo(b.ref)+' · '+escTo(b.customer_name||'Guest')+'</div>'
+          +'<div style="font-size:.72rem;color:var(--text-light);margin-top:.2rem">'+escTo(b.pickup)+' → '+escTo(b.destination)+' · '+escTo(b.date)+' '+escTo(b.time)+'</div>'
+          +'<div style="font-size:.72rem;color:#9C5800;margin-top:.2rem"><em>'+escTo(b.intake_reason||'No driver available')+'</em></div></div>'
+          +'<button class="btn btn-navy btn-sm" onclick="openReassign('+b.id+')">Resolve</button>'
+          +'</div>';
+      }).join('')+'</div>';
+    var firstCard=v.querySelector('.card,.page-hd');
+    if(firstCard&&firstCard.nextSibling)firstCard.parentNode.insertBefore(div,firstCard.nextSibling);
+    else v.appendChild(div);
+  });
+}
+
+async function openReassign(bookingId){
+  var b=FLAGGED_CACHE[bookingId];
+  if(!b){showToast('Booking not loaded');return;}
+  REASSIGN_CURRENT=b;
+  document.getElementById('rs-summary').innerHTML='<strong style="color:var(--navy)">'+escTo(b.ref)+'</strong> · '+escTo(b.customer_name||'Guest')+'<br>'+escTo(b.pickup)+' → '+escTo(b.destination)+'<br>'+escTo(b.date)+' at '+escTo(b.time);
+  document.getElementById('rs-reason').textContent=b.intake_reason||'Cannot fit alongside existing jobs.';
+  document.getElementById('rs-apology').style.display='none';
+  // Load drivers
+  var sel=document.getElementById('rs-driver');
+  sel.innerHTML='<option value="">— Select driver —</option><option disabled>Loading…</option>';
+  try{
+    var r=await fetch('/api/drivers',{credentials:'include'});
+    var d=await r.json();
+    if(d.ok){
+      sel.innerHTML='<option value="">— Select driver —</option>'+d.drivers.filter(function(x){return x.active;}).map(function(x){
+        return '<option value="'+x.id+'">'+escTo(x.full_name)+' ('+escTo(x.role)+')</option>';
+      }).join('');
+    }
+  }catch(e){}
+  openModal('modal-reassign');
+}
+
+async function rsAssign(){
+  if(!REASSIGN_CURRENT)return;
+  var driver_id=document.getElementById('rs-driver').value;
+  if(!driver_id){showToast('Pick a driver');return;}
+  var r=await fetch('/api/intake/bookings/'+REASSIGN_CURRENT.id+'/assign-driver',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({driver_id:parseInt(driver_id,10)})});
+  var d=await r.json();
+  if(d.ok){showToast('Driver assigned');closeModal('modal-reassign');loadFlaggedBookings();}
+  else showToast(d.error||'Failed');
+}
+async function rsApology(){
+  if(!REASSIGN_CURRENT)return;
+  document.getElementById('rs-ap-subj').value='Drafting…';
+  document.getElementById('rs-ap-body').value='Drafting apology with smart intake…';
+  document.getElementById('rs-apology').style.display='block';
+  try{
+    var r=await fetch('/api/intake/bookings/'+REASSIGN_CURRENT.id+'/draft-apology',{method:'POST',credentials:'include'});
+    var d=await r.json();
+    document.getElementById('rs-ap-subj').value=d.subject||'Regarding your booking';
+    document.getElementById('rs-ap-body').value=d.body||'';
+  }catch(e){
+    document.getElementById('rs-ap-body').value='Could not draft: '+e.message;
+  }
+}
+async function rsSendApology(){
+  if(!REASSIGN_CURRENT)return;
+  // We don't auto-send (no SMTP wired here for arbitrary email-to). Operator copies the text and we just decline.
+  var subj=document.getElementById('rs-ap-subj').value;
+  var body=document.getElementById('rs-ap-body').value;
+  try{await navigator.clipboard.writeText('Subject: '+subj+'\n\n'+body);showToast('Apology copied to clipboard');}catch(e){}
+  rsDecline();
+}
+async function rsDecline(){
+  if(!REASSIGN_CURRENT)return;
+  var r=await fetch('/api/intake/bookings/'+REASSIGN_CURRENT.id+'/decline',{method:'POST',credentials:'include'});
+  var d=await r.json();
+  if(d.ok){showToast('Booking declined');closeModal('modal-reassign');loadFlaggedBookings();}
+  else showToast(d.error||'Failed');
+}
+
+// Periodic poll for flagged bookings (every 90s) so admin sees new ones quickly
+setInterval(function(){if(typeof loadFlaggedBookings==='function')loadFlaggedBookings();},90000);
+setTimeout(function(){if(typeof loadFlaggedBookings==='function')loadFlaggedBookings();},2000);
 
 </script>
 </body>
