@@ -357,7 +357,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
       <div class="bkf"><label>Full name</label><input type="text" id="bk-name" placeholder="Your full name" autocomplete="name" inputmode="text"></div>
       <div class="bkf"><label>Email address</label><input type="email" id="bk-email" placeholder="your@email.com" autocomplete="email" inputmode="email"></div>
       <div class="bkf"><label>Mobile number</label><input type="tel" id="bk-phone" placeholder="+44 7xxx xxxxxx" autocomplete="tel" inputmode="tel"></div>
-      <div class="bkf"><label>Notes for your driver <span style="opacity:.6;font-weight:400">(optional)</span></label><textarea id="bk-notes" placeholder="Child seat, meet &amp; greet, extra stop, special requests…" rows="3" style="width:100%;font:inherit;color:inherit;background:rgba(255,255,255,.04);border:1px solid rgba(184,152,90,.25);border-radius:.5rem;padding:.7rem .85rem;resize:vertical;min-height:3.2rem"></textarea></div>
+      <div class="bkf"><label>Notes for your driver <span style="opacity:.6;font-weight:400">(optional)</span></label><textarea id="bk-notes" placeholder="Terminal, child seat, meet &amp; greet, extra stop&hellip;" rows="3" style="width:100%;font-family:var(--sans);font-size:.94rem;font-weight:300;color:#fff;background:rgba(255,255,255,.04);border:1px solid rgba(184,152,90,.25);border-radius:.5rem;padding:.7rem .85rem;resize:vertical;min-height:3.2rem;outline:none;box-sizing:border-box;-webkit-appearance:none"></textarea></div>
       <button class="bk-btn-p" onclick="bkToStep2()">Continue &rarr;</button>
     </div>
 
@@ -489,8 +489,14 @@ var PER_MILE_ADJ=2.25;
 function nearestTown(coord){var best=null,bd=999;Object.keys(TC).forEach(function(k){var d=haverMiles(coord.lat,coord.lon,TC[k].lat,TC[k].lon);if(d<bd){bd=d;best=k;}});return best;}
 function nearestTownWithDist(coord){var best=null,bd=999;Object.keys(TC).forEach(function(k){var d=haverMiles(coord.lat,coord.lon,TC[k].lat,TC[k].lon);if(d<bd){bd=d;best=k;}});return {town:best,dist:bd};}
 var AIRPORTS=[
-  {name:'Gatwick Airport',sub:'London Gatwick · LGW · South & North Terminal',key:'ga',lat:51.1537,lon:-0.1821},
-  {name:'Heathrow Airport',sub:'London Heathrow · LHR · Terminals 2-5',key:'he',lat:51.47,lon:-0.4543},
+  {name:'Gatwick Airport',sub:'London Gatwick · LGW · pick a terminal below',key:'ga',lat:51.1537,lon:-0.1821},
+  {name:'Gatwick Airport — South Terminal',sub:'LGW South · easyJet, BA short-haul, Wizz, Vueling',key:'ga',lat:51.1561,lon:-0.1610},
+  {name:'Gatwick Airport — North Terminal',sub:'LGW North · BA long-haul, Virgin, TUI, Norse',key:'ga',lat:51.1599,lon:-0.1751},
+  {name:'Heathrow Airport',sub:'London Heathrow · LHR · pick a terminal below',key:'he',lat:51.47,lon:-0.4543},
+  {name:'Heathrow Airport — Terminal 2',sub:'LHR T2 · Star Alliance · United, Lufthansa, Air Canada, SAS',key:'he',lat:51.4714,lon:-0.4524},
+  {name:'Heathrow Airport — Terminal 3',sub:'LHR T3 · oneworld · BA, American, Cathay, Qantas, Emirates',key:'he',lat:51.4720,lon:-0.4540},
+  {name:'Heathrow Airport — Terminal 4',sub:'LHR T4 · SkyTeam · Air France, KLM, Etihad, Qatar, Saudia',key:'he',lat:51.4593,lon:-0.4470},
+  {name:'Heathrow Airport — Terminal 5',sub:'LHR T5 · British Airways & Iberia (most BA flights)',key:'he',lat:51.4720,lon:-0.4880},
   {name:'Stansted Airport',sub:'London Stansted · STN',key:'st',lat:51.885,lon:0.235},
   {name:'Luton Airport',sub:'London Luton · LTN',key:'lu',lat:51.8747,lon:-0.3684},
   {name:'Southampton Airport',sub:'Southampton · SOU',key:'so',lat:50.9503,lon:-1.3568},
@@ -519,7 +525,7 @@ function addrSearch(inp,sid){
     var vl=v.toLowerCase();
     var apItems=AIRPORTS.filter(function(ap){
       return ap.name.toLowerCase().includes(vl)||ap.sub.toLowerCase().includes(vl);
-    }).slice(0,3);
+    }).slice(0,8);
     if(window._MB){
       fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+encodeURIComponent(v)+'.json?access_token='+_MB+'&country=gb&proximity=-0.35,50.95&language=en&limit=10&types=poi,address,place,postcode,neighborhood,locality')
       .then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
