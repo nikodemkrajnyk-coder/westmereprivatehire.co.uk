@@ -184,6 +184,53 @@ router.get('/customers', (req, res) => {
   res.json({ ok: true, customers: rows });
 });
 
+// Create customer (admin/owner only) — admin opens the account for a customer
+// who wants monthly invoicing. Generates a random initial password and
+// returns it once so the admin can share it; customer can change it after
+// first sign-in.
+router.post('/customers', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const { email, full_name, phone, account_type } = req.body || {};
+  if (!email || !full_name) {
+    return res.status(400).json({ error: 'Email and full name are required' });
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: 'Invalid email format' });
+  }
+  const cleanEmail = email.trim().toLowerCase();
+  const type = (account_type === 'business') ? 'business' : 'personal';
+
+  const db = getDb();
+  const existing = db.prepare('SELECT id FROM customers WHERE email = ?').get(cleanEmail);
+  if (existing) return res.status(409).json({ error: 'Account already exists with this email' });
+
+  // Generate a readable initial password: 3 words + 2 digits, e.g. "Blue-Harbour-Lion-42"
+  const WORDS = ['Amber','Bay','Clover','Dune','Echo','Fern','Glen','Harbour','Ivory','Juno',
+                 'Kite','Lark','Marlow','Noble','Oak','Piper','Quill','Rowan','Sable','Teal',
+                 'Umber','Vale','Willow','Xenon','York','Zephyr','Ridge','Pine','Stone','Silver'];
+  const pick = () => WORDS[Math.floor(Math.random() * WORDS.length)];
+  const initialPassword = pick() + '-' + pick() + '-' + pick() + '-' + Math.floor(10 + Math.random() * 90);
+
+  const bcrypt = require('bcryptjs');
+  const hash = bcrypt.hashSync(initialPassword, 12);
+
+  const result = db.prepare(`
+    INSERT INTO customers (email, password, full_name, phone, account_type)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(cleanEmail, hash, full_name.trim(), phone || null, type);
+
+  db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+    .run(req.auth.type || 'user', req.auth.id, 'customer_created_by_admin', cleanEmail, req.ip);
+
+  res.status(201).json({
+    ok: true,
+    customer: { id: result.lastInsertRowid, email: cleanEmail, full_name: full_name.trim(), account_type: type },
+    initialPassword: initialPassword
+  });
+});
+
 // ── Drivers (admin only) ────────────────────────────────────────────────
 
 router.get('/drivers', (req, res) => {

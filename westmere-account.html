@@ -384,21 +384,12 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
       <div class="fg"><label class="fl">Password</label><input class="fi" type="password" id="l-pass" placeholder="Your password"></div>
       <label style="display:flex;align-items:center;gap:.5rem;margin-top:.6rem;cursor:pointer;font-size:.78rem;color:rgba(17,29,44,.5);font-weight:300"><input type="checkbox" id="l-remember" style="accent-color:var(--gold)"> Keep me logged in</label>
       <button class="btn-main" onclick="doLogin()">Sign In</button>
-      <div class="lb-switch">No account? <button onclick="swFrm('register')">Create one here</button></div>
+      <div class="lb-switch" style="line-height:1.6">Accounts are opened by Westmere on request.<br>Call <a href="tel:+447930342593" style="color:var(--gold);text-decoration:none">07930 342593</a> or email <a href="mailto:bookings@westmereprivatehire.co.uk" style="color:var(--gold);text-decoration:none">bookings@westmereprivatehire.co.uk</a> to request one.</div>
     </div>
     <div id="frm-register" class="lb-body" style="display:none">
-      <div class="lb-title">Create an account</div>
-      <p class="lb-desc">Join Westmere for easy booking and monthly invoicing</p>
-      <label class="fl" style="display:block;margin-bottom:.5rem">Account Type</label>
-      <div class="type-row">
-        <div class="type-opt on" onclick="selType(this)"><div class="type-name">Personal</div><div class="type-desc">Pay per journey</div></div>
-        <div class="type-opt" onclick="selType(this)"><div class="type-name">Business</div><div class="type-desc">Monthly invoicing</div></div>
-      </div>
-      <div class="fg"><label class="fl">Full Name</label><input class="fi" type="text" id="r-name" placeholder="Your full name"></div>
-      <div class="fg"><label class="fl">Email</label><input class="fi" type="email" id="r-email" placeholder="your@email.com"></div>
-      <div class="fg"><label class="fl">Mobile</label><input class="fi" type="tel" id="r-mobile" placeholder="+44 7700 000 000"></div>
-      <div class="fg"><label class="fl">Password</label><input class="fi" type="password" id="r-pass" placeholder="Choose a secure password"></div>
-      <button class="btn-main" onclick="doLoginReg()">Create Account</button>
+      <div class="lb-title">Accounts are invite-only</div>
+      <p class="lb-desc" style="margin-bottom:1rem">Westmere opens accounts for customers who want monthly invoicing. Please get in touch and we'll set one up for you.</p>
+      <a href="tel:+447930342593" class="btn-main" style="display:block;text-align:center;text-decoration:none">Call 07930 342593</a>
       <div class="lb-switch">Already have an account? <button onclick="swFrm('login')">Sign in</button></div>
     </div>
     <div class="lb-foot">

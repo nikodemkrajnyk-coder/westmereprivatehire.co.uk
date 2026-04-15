@@ -650,9 +650,72 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 
     <!-- ══ CUSTOMERS ══ -->
     <div class="view" id="view-customers">
-      <div class="page-hd"><div class="page-title">Customers</div></div>
+      <div class="page-hd" style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:.8rem">
+        <div>
+          <div class="page-title">Customers</div>
+          <div class="page-sub">Accounts for customers who prefer monthly invoicing — opened by you, on request.</div>
+        </div>
+        <button class="btn btn-navy" onclick="openNewCustomerModal()">+ New Customer</button>
+      </div>
       <div class="cust-grid" id="cust-grid">
         <div style="grid-column:1/-1;text-align:center;padding:2rem;color:rgba(17,29,44,.3);font-size:.85rem">Loading customers...</div>
+      </div>
+    </div>
+
+    <!-- New customer modal -->
+    <div id="modal-new-customer" style="display:none;position:fixed;inset:0;background:rgba(10,14,20,.6);backdrop-filter:blur(6px);z-index:300;align-items:center;justify-content:center;padding:1rem" onclick="if(event.target===this)closeNewCustomerModal()">
+      <div style="background:#fff;border-radius:14px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;padding:1.6rem 1.5rem;box-shadow:0 20px 60px rgba(0,0,0,.35)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem">
+          <div style="font-family:Georgia,serif;font-size:1.25rem;color:#111D2C">Open a Customer Account</div>
+          <button onclick="closeNewCustomerModal()" style="background:transparent;border:none;font-size:1.6rem;color:rgba(17,29,44,.4);cursor:pointer;line-height:1">&times;</button>
+        </div>
+        <div id="nc-form">
+          <div style="margin-bottom:.8rem">
+            <label style="display:block;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.35rem">Full name</label>
+            <input id="nc-name" type="text" placeholder="Jane Smith" style="width:100%;padding:.7rem .85rem;border:1px solid rgba(17,29,44,.14);border-radius:8px;font-size:.9rem">
+          </div>
+          <div style="margin-bottom:.8rem">
+            <label style="display:block;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.35rem">Email</label>
+            <input id="nc-email" type="email" placeholder="jane@example.com" style="width:100%;padding:.7rem .85rem;border:1px solid rgba(17,29,44,.14);border-radius:8px;font-size:.9rem">
+          </div>
+          <div style="margin-bottom:.8rem">
+            <label style="display:block;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.35rem">Mobile (optional)</label>
+            <input id="nc-phone" type="tel" placeholder="+44 7700 000 000" style="width:100%;padding:.7rem .85rem;border:1px solid rgba(17,29,44,.14);border-radius:8px;font-size:.9rem">
+          </div>
+          <div style="margin-bottom:1.1rem">
+            <label style="display:block;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.45rem">Account type</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.55rem">
+              <label style="border:1px solid rgba(17,29,44,.14);border-radius:8px;padding:.7rem .8rem;cursor:pointer;display:flex;align-items:flex-start;gap:.55rem">
+                <input type="radio" name="nc-type" value="personal" checked style="margin-top:.2rem">
+                <span><span style="display:block;font-weight:500;color:#111D2C">Personal</span><span style="display:block;font-size:.72rem;color:rgba(17,29,44,.5);margin-top:.1rem">Pay per journey</span></span>
+              </label>
+              <label style="border:1px solid rgba(17,29,44,.14);border-radius:8px;padding:.7rem .8rem;cursor:pointer;display:flex;align-items:flex-start;gap:.55rem">
+                <input type="radio" name="nc-type" value="business" style="margin-top:.2rem">
+                <span><span style="display:block;font-weight:500;color:#111D2C">Business</span><span style="display:block;font-size:.72rem;color:rgba(17,29,44,.5);margin-top:.1rem">Monthly invoicing</span></span>
+              </label>
+            </div>
+          </div>
+          <div id="nc-err" style="display:none;padding:.6rem .8rem;background:rgba(197,64,64,.08);color:#c54040;font-size:.8rem;border-radius:6px;margin-bottom:.8rem"></div>
+          <button onclick="submitNewCustomer()" id="nc-submit" style="width:100%;padding:.9rem;background:#111D2C;color:#fff;border:none;border-radius:8px;font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Create Account</button>
+        </div>
+        <div id="nc-result" style="display:none">
+          <div style="padding:.9rem 1rem;background:rgba(184,152,90,.08);border:1px solid rgba(184,152,90,.3);border-radius:8px;margin-bottom:1rem">
+            <div style="font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:#B8985A;font-weight:600;margin-bottom:.4rem">Account created</div>
+            <div style="font-size:.82rem;color:#111D2C;line-height:1.55">Share these details with the customer. The password is shown once — save it now.</div>
+          </div>
+          <div style="margin-bottom:.7rem">
+            <div style="font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.25rem">Email</div>
+            <div id="nc-r-email" style="font-family:Menlo,Consolas,monospace;font-size:.85rem;color:#111D2C;background:rgba(17,29,44,.04);padding:.55rem .7rem;border-radius:6px"></div>
+          </div>
+          <div style="margin-bottom:1rem">
+            <div style="font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.25rem">Initial password</div>
+            <div id="nc-r-pass" style="font-family:Menlo,Consolas,monospace;font-size:.95rem;color:#B8985A;background:rgba(17,29,44,.04);padding:.55rem .7rem;border-radius:6px;letter-spacing:.03em"></div>
+          </div>
+          <div style="display:flex;gap:.5rem">
+            <button onclick="copyNcCreds()" style="flex:1;padding:.75rem;background:#B8985A;color:#fff;border:none;border-radius:8px;font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Copy Both</button>
+            <button onclick="closeNewCustomerModal()" style="flex:1;padding:.75rem;background:transparent;color:#111D2C;border:1px solid rgba(17,29,44,.15);border-radius:8px;font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Done</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1434,22 +1497,26 @@ function loadLiveBookings(){
   }).catch(function(e){console.warn('[BOOKINGS]',e);});
 
   // ── Load customers ──
-  fetch('/api/customers').then(function(r){return r.json();}).then(function(d){
-    if(!d.ok)return;
-    var cg=document.getElementById('cust-grid');
-    var dc=document.getElementById('dash-cust-count');
-    if(dc)dc.textContent=d.customers.length;
-    if(!cg)return;
-    if(!d.customers.length){
-      cg.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:2rem;color:rgba(17,29,44,.3);font-size:.85rem">No customers yet</div>';
-      return;
-    }
-    cg.innerHTML=d.customers.map(function(c){
-      return '<div class="cust-card"><div class="cc-name">'+(c.full_name||'Unknown')+'</div>'
-        +'<div class="cc-type cc-personal">'+(c.account_type||'Personal')+'</div>'
-        +'<div class="cc-meta">'+(c.email||'')+(c.phone?' \u00b7 '+c.phone:'')+'</div></div>';
-    }).join('');
-  }).catch(function(){});
+  window.loadCustomers=function(){
+    return fetch('/api/customers').then(function(r){return r.json();}).then(function(d){
+      if(!d.ok)return;
+      var cg=document.getElementById('cust-grid');
+      var dc=document.getElementById('dash-cust-count');
+      if(dc)dc.textContent=d.customers.length;
+      if(!cg)return;
+      if(!d.customers.length){
+        cg.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:2rem;color:rgba(17,29,44,.3);font-size:.85rem">No customers yet. Click \u201c+ New Customer\u201d to open one.</div>';
+        return;
+      }
+      cg.innerHTML=d.customers.map(function(c){
+        var typeClass=c.account_type==='business'?'cc-business':'cc-personal';
+        return '<div class="cust-card"><div class="cc-name">'+(c.full_name||'Unknown')+'</div>'
+          +'<div class="cc-type '+typeClass+'">'+(c.account_type||'personal')+'</div>'
+          +'<div class="cc-meta">'+(c.email||'')+(c.phone?' \u00b7 '+c.phone:'')+'</div></div>';
+      }).join('');
+    }).catch(function(){});
+  };
+  window.loadCustomers();
 
   // ── Load drivers ──
   fetch('/api/drivers').then(function(r){return r.json();}).then(function(d){
@@ -1560,6 +1627,55 @@ function showToast(msg){
   el.classList.add('on');
   clearTimeout(tt);
   tt=setTimeout(()=>el.classList.remove('on'),3500);
+}
+
+// ── NEW CUSTOMER MODAL ──
+function openNewCustomerModal(){
+  document.getElementById('modal-new-customer').style.display='flex';
+  document.getElementById('nc-form').style.display='';
+  document.getElementById('nc-result').style.display='none';
+  document.getElementById('nc-err').style.display='none';
+  document.getElementById('nc-name').value='';
+  document.getElementById('nc-email').value='';
+  document.getElementById('nc-phone').value='';
+  document.querySelector('input[name="nc-type"][value="personal"]').checked=true;
+  setTimeout(function(){document.getElementById('nc-name').focus();},50);
+}
+function closeNewCustomerModal(){
+  document.getElementById('modal-new-customer').style.display='none';
+}
+async function submitNewCustomer(){
+  const errEl=document.getElementById('nc-err');
+  errEl.style.display='none';
+  const name=document.getElementById('nc-name').value.trim();
+  const email=document.getElementById('nc-email').value.trim();
+  const phone=document.getElementById('nc-phone').value.trim();
+  const type=document.querySelector('input[name="nc-type"]:checked').value;
+  if(!name||!email){errEl.textContent='Name and email are required.';errEl.style.display='';return;}
+  const btn=document.getElementById('nc-submit');
+  btn.disabled=true;btn.textContent='Creating…';
+  try{
+    const r=await fetch('/api/customers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({full_name:name,email,phone,account_type:type})});
+    const d=await r.json();
+    if(!r.ok||!d.ok){errEl.textContent=d.error||'Failed to create account.';errEl.style.display='';btn.disabled=false;btn.textContent='Create Account';return;}
+    document.getElementById('nc-r-email').textContent=d.customer.email;
+    document.getElementById('nc-r-pass').textContent=d.initialPassword;
+    document.getElementById('nc-form').style.display='none';
+    document.getElementById('nc-result').style.display='';
+    btn.disabled=false;btn.textContent='Create Account';
+    // Refresh the customers list
+    if(typeof loadCustomers==='function')loadCustomers();
+    else setTimeout(function(){location.reload();},0);
+  }catch(e){
+    errEl.textContent='Network error. Please try again.';errEl.style.display='';
+    btn.disabled=false;btn.textContent='Create Account';
+  }
+}
+function copyNcCreds(){
+  const email=document.getElementById('nc-r-email').textContent;
+  const pass=document.getElementById('nc-r-pass').textContent;
+  const text='Your Westmere account\nEmail: '+email+'\nPassword: '+pass+'\nSign in: '+location.origin+'/westmere-account.html';
+  navigator.clipboard.writeText(text).then(function(){showToast('Copied to clipboard');},function(){showToast('Could not copy');});
 }
 
 // ── MARK DONE ──

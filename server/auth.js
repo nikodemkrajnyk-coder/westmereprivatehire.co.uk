@@ -101,47 +101,12 @@ router.post('/customer/login', (req, res) => {
   });
 });
 
-// ── Customer registration ───────────────────────────────────────────────
+// ── Customer registration — DISABLED for public self-service ─────────────
+// Accounts are now opened by admin only via POST /api/customers. Keeping
+// the route so we can return a friendly error instead of a 404.
 router.post('/customer/register', (req, res) => {
-  const { full_name, email, password, phone, account_type } = req.body;
-  if (!full_name || !email || !password) {
-    return res.status(400).json({ error: 'Name, email, and password required' });
-  }
-  if (password.length < 8) {
-    return res.status(400).json({ error: 'Password must be at least 8 characters' });
-  }
-
-  const db = getDb();
-  const existing = db.prepare('SELECT id FROM customers WHERE email = ?').get(email.trim().toLowerCase());
-  if (existing) {
-    return res.status(409).json({ error: 'Account already exists with this email' });
-  }
-
-  const hash = bcrypt.hashSync(password, 12);
-  const result = db.prepare(`
-    INSERT INTO customers (email, password, full_name, phone, account_type)
-    VALUES (?, ?, ?, ?, ?)
-  `).run(email.trim().toLowerCase(), hash, full_name.trim(), phone || null, account_type || 'personal');
-
-  const token = jwt.sign(
-    { id: result.lastInsertRowid, email: email.trim().toLowerCase(), role: 'customer', type: 'customer' },
-    JWT_SECRET,
-    { expiresIn: JWT_EXPIRY }
-  );
-
-  res.cookie('wph_token', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 8 * 3600000
-  });
-
-  db.prepare('INSERT INTO audit_log (user_type, user_id, action, ip) VALUES (?,?,?,?)')
-    .run('customer', result.lastInsertRowid, 'register', req.ip);
-
-  res.status(201).json({
-    ok: true,
-    customer: { id: result.lastInsertRowid, email: email.trim().toLowerCase(), full_name: full_name.trim(), account_type: account_type || 'personal' }
+  return res.status(403).json({
+    error: 'Accounts are opened by Westmere on request. Please contact bookings@westmereprivatehire.co.uk or call 07930 342593.'
   });
 });
 
