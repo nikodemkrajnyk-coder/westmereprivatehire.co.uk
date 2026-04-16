@@ -366,15 +366,13 @@ async function pullChanges() {
 // ── List external events (commitments from the user's calendar) ──────────
 // Returns events from now through `days` ahead, EXCLUDING events we created
 // ourselves (identified by extendedProperties.private.wph_booking_id).
-// This lets the admin/owner UI show personal commitments alongside bookings
-// so the operator can see when they're unavailable.
+// Fetches from ALL of the user's visible calendars (including subscribed
+// ones like iCloud-published feeds) so operators who keep events elsewhere
+// still see them surfaced in the admin UI.
 async function listExternalEvents(opts) {
   if (!isConfigured() || !loadTokens()) return [];
   const token = await getAccessToken();
   if (!token) return [];
-
-  const t = loadTokens();
-  const calendarId = encodeURIComponent((t && t.calendar_id) || DEFAULT_CAL);
 
   // Accept either { from, to } as YYYY-MM-DD or { days } for a rolling window
   // from "now". Caps the window at 400 days to keep API responses sane.
@@ -391,27 +389,67 @@ async function listExternalEvents(opts) {
     to = new Date(Date.now() + daysAhead * 24 * 3600 * 1000).toISOString();
   }
 
-  const url = `${API_BASE}/calendars/${calendarId}/events`
-    + `?timeMin=${encodeURIComponent(from)}`
-    + `&timeMax=${encodeURIComponent(to)}`
-    + `&singleEvents=true&orderBy=startTime&maxResults=250`;
-
+  // Enumerate every calendar in the user's list. `selected !== false` keeps
+  // calendars the user has ticked as visible; `!hidden` excludes ones they
+  // explicitly hid. Subscribed feeds (like iCloud Published) appear here
+  // exactly like native Google calendars.
+  let calendars = [];
   try {
-    const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
-    const data = await res.json();
-    if (!res.ok) {
-      console.error('[GCAL] listExternalEvents HTTP', res.status, data && data.error && data.error.message);
+    const lr = await fetch(`${API_BASE}/users/me/calendarList?minAccessRole=reader`, {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    const ld = await lr.json();
+    if (!lr.ok) {
+      console.error('[GCAL] calendarList HTTP', lr.status, ld && ld.error && ld.error.message);
       return [];
     }
-    const out = [];
-    for (const ev of data.items || []) {
+    calendars = (ld.items || []).filter(c => !c.hidden && c.selected !== false);
+  } catch (e) {
+    console.error('[GCAL] calendarList failed:', e.message);
+    return [];
+  }
+  if (!calendars.length) return [];
+
+  const seenEventIds = new Set();
+  const out = [];
+
+  // Fetch events from every calendar in parallel.
+  const fetches = calendars.map(async (cal) => {
+    const id = encodeURIComponent(cal.id);
+    const url = `${API_BASE}/calendars/${id}/events`
+      + `?timeMin=${encodeURIComponent(from)}`
+      + `&timeMax=${encodeURIComponent(to)}`
+      + `&singleEvents=true&orderBy=startTime&maxResults=250`;
+    try {
+      const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+      const data = await res.json();
+      if (!res.ok) {
+        // Subscribed calendars that failed temporarily, calendars without
+        // event access — swallow and move on rather than failing the whole
+        // request.
+        console.error('[GCAL] events HTTP', res.status, cal.id, data && data.error && data.error.message);
+        return [];
+      }
+      return (data.items || []).map(ev => ({ ev, cal }));
+    } catch (e) {
+      console.error('[GCAL] events fetch failed for', cal.id, e.message);
+      return [];
+    }
+  });
+
+  const results = await Promise.all(fetches);
+  for (const bucket of results) {
+    for (const { ev, cal } of bucket) {
       if (ev.status === 'cancelled') continue;
-      // Skip events we created (those carry wph_booking_id)
+      // Skip events we created on our primary calendar
       const priv = (ev.extendedProperties && ev.extendedProperties.private) || {};
       if (priv.wph_booking_id) continue;
       // Skip declined events
       const me = (ev.attendees || []).find(a => a.self);
       if (me && me.responseStatus === 'declined') continue;
+      // Dedupe — the same event can appear on multiple calendars (invites)
+      if (seenEventIds.has(ev.id)) continue;
+      seenEventIds.add(ev.id);
 
       const start = ev.start || {};
       const end = ev.end || {};
@@ -422,14 +460,16 @@ async function listExternalEvents(opts) {
         allDay: !!start.date,
         start: start.dateTime || start.date,
         end: end.dateTime || end.date,
-        htmlLink: ev.htmlLink || null
+        htmlLink: ev.htmlLink || null,
+        calendar: cal.summary || cal.id,
+        calendarColor: cal.backgroundColor || null
       });
     }
-    return out;
-  } catch (e) {
-    console.error('[GCAL] listExternalEvents failed:', e.message);
-    return [];
   }
+
+  // Sort chronologically
+  out.sort((a, b) => String(a.start || '').localeCompare(String(b.start || '')));
+  return out;
 }
 
 // ── Status (for frontend) ────────────────────────────────────────────────
