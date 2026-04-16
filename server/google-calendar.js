@@ -457,6 +457,7 @@ async function listExternalEvents(opts) {
         id: ev.id,
         title: ev.summary || '(No title)',
         location: ev.location || '',
+        notes: ev.description || '',
         allDay: !!start.date,
         start: start.dateTime || start.date,
         end: end.dateTime || end.date,

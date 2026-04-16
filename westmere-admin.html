@@ -1278,9 +1278,10 @@ function renderTodayPersonal(events){
   card.style.display='';
   list.innerHTML=todayEvents.map(function(ev){
     var loc=ev.location?'<div style="font-size:.72rem;color:rgba(17,29,44,.5);margin-top:.15rem">\ud83d\udccd '+_esc(ev.location)+'</div>':'';
+    var notes=ev.notes?'<div style="font-size:.72rem;color:rgba(17,29,44,.6);margin-top:.3rem;padding:.35rem .5rem;background:rgba(91,107,154,.06);border-left:2px solid #5b6b9a;white-space:pre-wrap;line-height:1.4">'+_esc(ev.notes)+'</div>':'';
     return '<div style="display:flex;gap:.85rem;padding:.7rem 0;border-bottom:1px solid rgba(17,29,44,.06)">'
       +'<div style="min-width:88px;font-size:.78rem;color:var(--gold);font-weight:500;font-variant-numeric:tabular-nums">'+_evRange(ev)+'</div>'
-      +'<div style="flex:1"><div style="font-size:.86rem;color:var(--navy);font-weight:500">'+_esc(ev.title)+'</div>'+loc+'</div>'
+      +'<div style="flex:1"><div style="font-size:.86rem;color:var(--navy);font-weight:500">'+_esc(ev.title)+'</div>'+loc+notes+'</div>'
       +'</div>';
   }).join('');
 }
@@ -1304,9 +1305,10 @@ function renderDashPersonal(events){
     var label=k===todayKey?'Today':d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
     var rows=byDate[k].map(function(ev){
       var loc=ev.location?' \u00b7 '+_esc(ev.location):'';
+      var notes=ev.notes?'<div style="margin-top:.25rem;padding:.3rem .45rem;background:rgba(91,107,154,.06);border-left:2px solid #5b6b9a;font-size:.72rem;color:rgba(17,29,44,.6);white-space:pre-wrap;line-height:1.4">'+_esc(ev.notes)+'</div>':'';
       return '<div style="display:flex;gap:.7rem;padding:.35rem 0;font-size:.8rem">'
         +'<div style="min-width:90px;color:var(--gold);font-variant-numeric:tabular-nums">'+_evRange(ev)+'</div>'
-        +'<div style="flex:1;color:var(--navy)">'+_esc(ev.title)+'<span style="color:rgba(17,29,44,.45);font-size:.75rem">'+loc+'</span></div>'
+        +'<div style="flex:1;color:var(--navy)">'+_esc(ev.title)+'<span style="color:rgba(17,29,44,.45);font-size:.75rem">'+loc+'</span>'+notes+'</div>'
         +'</div>';
     }).join('');
     return '<div style="margin-bottom:.85rem"><div style="font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.25rem">'+label+'</div>'+rows+'</div>';
@@ -2504,7 +2506,8 @@ function admShowDay(key){
     html+=ext.map(function(ev){
       var when=ev.allDay?'All day':_evRange(ev);
       var loc=ev.location?' &middot; '+escTo(ev.location):'';
-      return '<div style="padding:.15rem 0"><strong style="color:#2A3A66">'+when+'</strong> &middot; '+escTo(ev.title)+'<span style="color:rgba(17,29,44,.5)">'+loc+'</span></div>';
+      var notes=ev.notes?'<div style="margin-top:.2rem;margin-left:0;padding:.35rem .5rem;background:#fff;border-left:2px solid #5b6b9a;font-size:.72rem;color:rgba(17,29,44,.75);white-space:pre-wrap;line-height:1.4">'+escTo(ev.notes)+'</div>':'';
+      return '<div style="padding:.25rem 0"><strong style="color:#2A3A66">'+when+'</strong> &middot; '+escTo(ev.title)+'<span style="color:rgba(17,29,44,.5)">'+loc+'</span>'+notes+'</div>';
     }).join('')+'</div>';
   }
   if(!jobs.length){

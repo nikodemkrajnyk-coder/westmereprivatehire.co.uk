@@ -1132,10 +1132,11 @@ function renderTodayPersonal(events){
   wrap.style.display='';
   list.innerHTML=todays.map(function(ev){
     var loc=ev.location?'<div style="font-size:.74rem;color:rgba(17,29,44,.5);margin-top:.2rem">'+escH(ev.location)+'</div>':'';
+    var notes=ev.notes?'<div style="margin-top:.35rem;padding:.4rem .55rem;background:rgba(17,29,44,.03);border-left:2px solid var(--gold);font-size:.74rem;color:rgba(17,29,44,.7);white-space:pre-wrap;line-height:1.4">'+escH(ev.notes)+'</div>':'';
     return '<div style="background:#fff;padding:.85rem 1rem;margin-bottom:.5rem;border:1px solid rgba(17,29,44,.08);border-left:3px solid var(--gold)">'
       +'<div style="display:flex;gap:.85rem;align-items:flex-start">'
         +'<div style="font-size:.78rem;color:var(--gold);font-weight:500;font-variant-numeric:tabular-nums;min-width:96px">'+_evRangeO(ev)+'</div>'
-        +'<div style="flex:1"><div style="font-size:.88rem;color:var(--navy);font-weight:500">'+escH(ev.title)+'</div>'+loc+'</div>'
+        +'<div style="flex:1"><div style="font-size:.88rem;color:var(--navy);font-weight:500">'+escH(ev.title)+'</div>'+loc+notes+'</div>'
       +'</div></div>';
   }).join('');
 }
