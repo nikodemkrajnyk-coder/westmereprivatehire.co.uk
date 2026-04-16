@@ -1184,17 +1184,47 @@ function connectGoogleCalendar(){
   if(btn)btn.textContent='Connecting…';
   fetch('/api/google/auth-url').then(function(r){return r.json();}).then(function(d){
     if(d&&d.url){window.location.href=d.url;}
-    else{showToast('Google Calendar not configured yet. Add GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET to Railway env.');if(btn)btn.textContent='Connect';}
+    else{showToast(d&&d.error||'Google Calendar not configured yet. Add GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET to Railway env.');if(btn)btn.textContent='Connect';}
   }).catch(function(){showToast('Google Calendar backend not ready');if(btn)btn.textContent='Connect';});
 }
 function checkGoogleCalendarStatus(){
   fetch('/api/google/status').then(function(r){return r.json();}).then(function(d){
     var btn=document.getElementById('gcal-connect-btn');
+    var row=btn?btn.closest('.setting-row'):null;
+    var sub=row?row.querySelector('.sr-sub'):null;
     if(!btn)return;
-    if(d&&d.connected){btn.textContent='\u2713 Connected';btn.onclick=function(){if(confirm('Disconnect Google Calendar?'))fetch('/api/google/disconnect',{method:'POST'}).then(function(){checkGoogleCalendarStatus();});};}
-    else{btn.textContent='Connect';btn.onclick=connectGoogleCalendar;}
+    if(d&&d.connected){
+      btn.textContent='Disconnect';
+      btn.className='btn btn-ghost btn-sm';
+      btn.onclick=function(){if(confirm('Disconnect Google Calendar?'))fetch('/api/google/disconnect',{method:'POST'}).then(function(){checkGoogleCalendarStatus();showToast('Google Calendar disconnected');});};
+      if(sub)sub.innerHTML='Connected'+(d.email?' as <span style="color:var(--gold)">'+d.email+'</span>':'')+' &middot; <a href="#" onclick="syncGoogleCalendar(event)" style="color:var(--gold);text-decoration:none">Sync now</a>';
+    } else {
+      btn.textContent='Connect';
+      btn.className='btn btn-green btn-sm';
+      btn.onclick=connectGoogleCalendar;
+      if(sub)sub.textContent='Auto-add bookings to your calendar';
+    }
   }).catch(function(){});
 }
+function syncGoogleCalendar(e){
+  if(e&&e.preventDefault)e.preventDefault();
+  showToast('Syncing…');
+  fetch('/api/google/sync',{method:'POST'}).then(function(r){return r.json();}).then(function(d){
+    if(d&&d.ok)showToast('Synced · '+(d.changed||0)+' booking(s) updated from Google');
+    else showToast('Sync failed: '+((d&&d.reason)||'unknown'));
+  }).catch(function(){showToast('Sync failed — network error');});
+}
+// Show feedback after returning from the Google OAuth redirect
+(function handleGcalReturn(){
+  var q=new URLSearchParams(location.search);
+  var gc=q.get('gcal');
+  if(!gc)return;
+  // Strip the query string so refreshing the page doesn't retrigger the toast
+  var clean=location.pathname+location.hash;
+  history.replaceState({},'',clean);
+  if(gc==='connected')setTimeout(function(){showToast('Google Calendar connected');},400);
+  else if(gc==='error')setTimeout(function(){showToast('Google Calendar connection failed: '+(q.get('reason')||'unknown'));},400);
+})();
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',checkGoogleCalendarStatus);else checkGoogleCalendarStatus();
 
 // ── Inbox (Gmail via Google OAuth) ─────────────────────────────────────

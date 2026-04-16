@@ -429,12 +429,15 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
 
       <div style="background:rgba(17,29,44,.03);border-radius:12px;padding:1.1rem 1rem">
         <div style="font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.9rem">Integrations</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem 0">
-          <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;gap:.75rem">
+          <div style="min-width:0;flex:1">
             <div style="font-size:.88rem;color:var(--navy)">Google Calendar</div>
-            <div style="font-size:.72rem;color:rgba(17,29,44,.5)">Two-way sync with your calendar</div>
+            <div id="gcal-status" style="font-size:.72rem;color:rgba(17,29,44,.5);word-break:break-all">Two-way sync with your calendar</div>
           </div>
-          <button id="gcal-connect-btn" onclick="connectGoogleCalendar()" style="padding:.5rem 1rem;background:var(--gold);color:#fff;border:none;border-radius:6px;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer">Connect</button>
+          <button id="gcal-connect-btn" onclick="connectGoogleCalendar()" style="padding:.5rem 1rem;background:var(--gold);color:#fff;border:none;border-radius:6px;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;white-space:nowrap">Connect</button>
+        </div>
+        <div style="display:flex;justify-content:flex-end;padding:.25rem 0 0">
+          <a href="#" id="gcal-sync-link" onclick="syncGoogleCalendar(event)" style="display:none;font-size:.68rem;color:var(--gold);text-decoration:none;letter-spacing:.08em;text-transform:uppercase">Sync now &rarr;</a>
         </div>
       </div>
     </div>
@@ -739,6 +742,7 @@ async function connectGoogleCalendar(){
 async function checkGoogleCalendarStatus(){
   var btn=document.getElementById('gcal-connect-btn');
   var statusEl=document.getElementById('gcal-status');
+  var syncLink=document.getElementById('gcal-sync-link');
   if(!btn)return;
   try{
     var res=await fetch('/api/google/status');
@@ -749,14 +753,16 @@ async function checkGoogleCalendarStatus(){
       btn.style.background='transparent';
       btn.style.color='var(--ink)';
       btn.style.border='1px solid rgba(17,29,44,.2)';
-      if(statusEl)statusEl.textContent='Connected'+(data.email?' ('+data.email+')':'');
+      if(statusEl)statusEl.innerHTML='Connected as <span style="color:var(--gold)">'+(data.email||'your Google account')+'</span>';
+      if(syncLink)syncLink.style.display='';
     } else {
       btn.textContent='Connect';
       btn.onclick=connectGoogleCalendar;
       btn.style.background='var(--gold)';
       btn.style.color='#fff';
       btn.style.border='none';
-      if(statusEl)statusEl.textContent='Not connected';
+      if(statusEl)statusEl.textContent='Two-way sync with your calendar';
+      if(syncLink)syncLink.style.display='none';
     }
   }catch(e){
     if(statusEl)statusEl.textContent='Status unavailable';
@@ -767,8 +773,29 @@ async function disconnectGoogleCalendar(){
   try{
     await fetch('/api/google/disconnect',{method:'POST'});
     checkGoogleCalendarStatus();
+    if(typeof showToast==='function')showToast('Google Calendar disconnected');
   }catch(e){}
 }
+async function syncGoogleCalendar(e){
+  if(e&&e.preventDefault)e.preventDefault();
+  if(typeof showToast==='function')showToast('Syncing…');
+  try{
+    var res=await fetch('/api/google/sync',{method:'POST'});
+    var d=await res.json();
+    if(d&&d.ok){if(typeof showToast==='function')showToast('Synced · '+(d.changed||0)+' booking(s) updated from Google');}
+    else if(typeof showToast==='function')showToast('Sync failed: '+((d&&d.reason)||'unknown'));
+  }catch(err){if(typeof showToast==='function')showToast('Sync failed — network error');}
+}
+// Toast feedback after returning from the Google OAuth redirect
+(function handleGcalReturn(){
+  var q=new URLSearchParams(location.search);
+  var gc=q.get('gcal');
+  if(!gc)return;
+  var clean=location.pathname+location.hash;
+  history.replaceState({},'',clean);
+  if(gc==='connected')setTimeout(function(){if(typeof showToast==='function')showToast('Google Calendar connected');},400);
+  else if(gc==='error')setTimeout(function(){if(typeof showToast==='function')showToast('Google Calendar connection failed: '+(q.get('reason')||'unknown'));},400);
+})();
 
 // ── AUTH (backend API) ────────────────────────────────────────────────────────
 function esc(s){if(!s)return '';var d=document.createElement('div');d.appendChild(document.createTextNode(s));return d.innerHTML;}
