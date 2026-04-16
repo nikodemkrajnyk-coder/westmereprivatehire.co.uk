@@ -368,16 +368,28 @@ async function pullChanges() {
 // ourselves (identified by extendedProperties.private.wph_booking_id).
 // This lets the admin/owner UI show personal commitments alongside bookings
 // so the operator can see when they're unavailable.
-async function listExternalEvents(days) {
+async function listExternalEvents(opts) {
   if (!isConfigured() || !loadTokens()) return [];
   const token = await getAccessToken();
   if (!token) return [];
 
   const t = loadTokens();
   const calendarId = encodeURIComponent((t && t.calendar_id) || DEFAULT_CAL);
-  const daysAhead = Math.max(1, Math.min(60, parseInt(days, 10) || 7));
-  const from = new Date().toISOString();
-  const to = new Date(Date.now() + daysAhead * 24 * 3600 * 1000).toISOString();
+
+  // Accept either { from, to } as YYYY-MM-DD or { days } for a rolling window
+  // from "now". Caps the window at 400 days to keep API responses sane.
+  let from, to;
+  const o = opts && typeof opts === 'object' ? opts : { days: opts };
+  if (o.from && /^\d{4}-\d{2}-\d{2}$/.test(o.from) && o.to && /^\d{4}-\d{2}-\d{2}$/.test(o.to)) {
+    from = new Date(o.from + 'T00:00:00.000Z').toISOString();
+    to = new Date(o.to + 'T23:59:59.999Z').toISOString();
+    const span = (new Date(to) - new Date(from)) / (24 * 3600 * 1000);
+    if (span > 400) return [];
+  } else {
+    const daysAhead = Math.max(1, Math.min(60, parseInt(o.days, 10) || 7));
+    from = new Date().toISOString();
+    to = new Date(Date.now() + daysAhead * 24 * 3600 * 1000).toISOString();
+  }
 
   const url = `${API_BASE}/calendars/${calendarId}/events`
     + `?timeMin=${encodeURIComponent(from)}`

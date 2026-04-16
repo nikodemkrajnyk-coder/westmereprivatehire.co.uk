@@ -66,7 +66,11 @@ router.get('/external-events', requireStaff, async (req, res) => {
     if (!gcal.isConfigured()) return res.json({ ok: true, events: [], reason: 'not_configured' });
     const status = gcal.getStatus();
     if (!status.connected) return res.json({ ok: true, events: [], reason: 'not_connected' });
-    const events = await gcal.listExternalEvents(req.query.days);
+    const events = await gcal.listExternalEvents({
+      days: req.query.days,
+      from: req.query.from,
+      to:   req.query.to
+    });
     res.json({ ok: true, events });
   } catch (e) {
     res.status(500).json({ error: e.message });
