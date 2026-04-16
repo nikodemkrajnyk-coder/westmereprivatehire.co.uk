@@ -133,6 +133,34 @@
       case 'booking:declined':
         toast('Booking declined', 'warn');
         break;
+      case 'job:offered':
+        title = 'Job offered';
+        msg = (payload.ref||'') + ' \u2014 awaiting ' + (payload.offered_driver_name||'driver');
+        toast(title + ': ' + (payload.ref||''), 'ok'); desktopNotify(title, msg);
+        break;
+      case 'job:accepted':
+        title = 'Offer accepted';
+        msg = (payload.ref||'') + ' \u2014 ' + (payload.driver_name||'driver');
+        chime(); toast('Accepted by ' + (payload.driver_name||'driver') + ' \u2014 ' + (payload.ref||''), 'ok');
+        desktopNotify(title, msg);
+        break;
+      case 'job:declined':
+        title = 'Offer declined';
+        msg = (payload.ref||'') + ' \u2014 back to you';
+        chime(); toast('Driver declined \u2014 ' + (payload.ref||''), 'warn');
+        desktopNotify(title, msg);
+        break;
+      case 'job:offer_expired':
+        title = 'Offer expired';
+        msg = (payload.ref||'') + ' \u2014 no reply in 10 min';
+        chime(); toast('Offer expired \u2014 ' + (payload.ref||''), 'warn');
+        desktopNotify(title, msg);
+        break;
+      case 'job:started':
+      case 'job:done':
+      case 'job:cancelled':
+        // Silent-ish: refresh only, no chime. Admin views will re-render.
+        break;
       case 'hello':
         // First handshake — log only
         console.log('[WMRT] connected as', payload.role);
@@ -153,7 +181,8 @@
     try { es = new EventSource('/api/events', { withCredentials: true }); }
     catch(e){ scheduleReconnect(); return; }
 
-    var EVENTS = ['hello','booking:created','booking:confirmed','booking:flagged','booking:assigned','booking:declined'];
+    var EVENTS = ['hello','booking:created','booking:confirmed','booking:flagged','booking:assigned','booking:declined',
+      'job:offered','job:accepted','job:declined','job:offer_expired','job:started','job:done','job:cancelled'];
     EVENTS.forEach(function(name){
       es.addEventListener(name, function(e){
         var payload = {};

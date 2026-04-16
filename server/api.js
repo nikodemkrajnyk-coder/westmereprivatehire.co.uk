@@ -18,10 +18,12 @@ router.get('/bookings', (req, res) => {
   if (role === 'admin' || role === 'owner') {
     rows = db.prepare(`
       SELECT b.*, c.full_name as customer_name, c.email as customer_email, c.phone as customer_phone,
-             u.full_name as driver_name
+             u.full_name as driver_name,
+             od.full_name as offered_driver_name
       FROM bookings b
       LEFT JOIN customers c ON b.customer_id = c.id
       LEFT JOIN users u ON b.driver_id = u.id
+      LEFT JOIN users od ON b.offered_to_driver_id = od.id
       ORDER BY b.date DESC, b.time DESC
       LIMIT 200
     `).all();

@@ -385,6 +385,11 @@ textarea.fi{resize:vertical;min-height:80px}
 .adm-cal-status.pending{background:#FFF3C4;color:#7C5300}
 .adm-cal-status.cancelled{background:#FCE4E4;color:#9C2828}
 .adm-cal-status.flagged{background:#FFE7BE;color:#9C5800}
+.adm-cal-status.offered{background:#E8EEFB;color:#2A3A66}
+.adm-cal-status.active{background:#DDEEFE;color:#13426B}
+.adm-cal-status.completed{background:#E6F4EA;color:#1E6B33}
+.offer-wait{display:inline-block;font-size:.62rem;font-weight:600;letter-spacing:.04em;color:#2A3A66;background:#E8EEFB;padding:2px 7px;border-radius:3px;margin-left:.4rem;vertical-align:middle}
+.offer-timer{font-variant-numeric:tabular-nums;margin-left:.35rem;color:#6b7b9a}
 @media(max-width:900px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main{margin-left:0}.mob-menu-btn{display:flex}.stats{grid-template-columns:1fr 1fr}.auto-grid{grid-template-columns:1fr 1fr}.cust-grid{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}
 @media(max-width:600px){.content{padding:1.2rem 1rem}.stats{grid-template-columns:1fr 1fr}.auto-grid{grid-template-columns:1fr}.cust-grid{grid-template-columns:1fr}.r2,.r3{grid-template-columns:1fr}.pb-row{grid-template-columns:1fr 1fr}.topbar{padding:0 1rem}}
 .sug-drop{display:none;position:absolute;left:0;right:0;top:100%;z-index:350;background:rgba(255,255,255,.97);backdrop-filter:blur(28px);border:1px solid rgba(184,152,90,.35);border-radius:0 0 10px 10px;max-height:360px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(184,152,90,.3) transparent}
@@ -1128,7 +1133,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 <div class="overlay" id="modal-reassign">
   <div class="modal" style="max-width:520px">
     <div class="modal-hd">
-      <div class="modal-title">Can't Make This Booking</div>
+      <div class="modal-title">Offer Booking to Driver</div>
       <button class="modal-x" onclick="closeModal('modal-reassign')">✕</button>
     </div>
     <div class="modal-body">
@@ -1137,11 +1142,12 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
         <strong style="color:var(--navy)">Smart intake says:</strong>
         <div id="rs-reason" style="margin-top:.3rem"></div>
       </div>
-      <div class="fg"><label class="fl">Pass to driver</label>
+      <div class="fg"><label class="fl">Offer to driver</label>
         <select class="fi" id="rs-driver"><option value="">— Select driver —</option></select>
       </div>
+      <div style="font-size:.72rem;color:var(--text-light);margin:-.3rem 0 .7rem">Driver has 10 minutes to accept. If they decline or time out, the job returns to you automatically.</div>
       <div style="display:flex;gap:.6rem;margin-top:.8rem">
-        <button class="btn btn-navy" style="flex:1" onclick="rsAssign()">Assign Driver</button>
+        <button class="btn btn-navy" style="flex:1" onclick="rsAssign()">Offer to Driver</button>
         <button class="btn btn-ghost" style="flex:1" onclick="rsApology()">Draft Apology</button>
       </div>
       <div id="rs-apology" style="display:none;margin-top:1rem">
@@ -2360,9 +2366,17 @@ async function rsAssign(){
   if(!REASSIGN_CURRENT)return;
   var driver_id=document.getElementById('rs-driver').value;
   if(!driver_id){showToast('Pick a driver');return;}
-  var r=await fetch('/api/intake/bookings/'+REASSIGN_CURRENT.id+'/assign-driver',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({driver_id:parseInt(driver_id,10)})});
+  var r=await fetch('/api/bookings/'+REASSIGN_CURRENT.id+'/offer',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({driver_id:parseInt(driver_id,10)})});
   var d=await r.json();
-  if(d.ok){showToast('Driver assigned');closeModal('modal-reassign');loadFlaggedBookings();}
+  if(d.ok){showToast('Offer sent \u2014 awaiting driver');closeModal('modal-reassign');loadFlaggedBookings();if(typeof loadAdminCalendar==='function')loadAdminCalendar();}
+  else showToast(d.error||'Failed');
+}
+
+async function reclaimOffer(bookingId){
+  if(!confirm('Retract this offer? The driver will lose the job and it returns to you.'))return;
+  var r=await fetch('/api/bookings/'+bookingId+'/reclaim',{method:'POST',credentials:'include'});
+  var d=await r.json();
+  if(d.ok){showToast('Offer reclaimed');if(typeof loadAdminCalendar==='function')loadAdminCalendar();loadFlaggedBookings();}
   else showToast(d.error||'Failed');
 }
 async function rsApology(){
@@ -2606,15 +2620,26 @@ function admShowDay(key){
       if(j.needs_reassignment){
         actions='<button class="btn btn-navy btn-sm" onclick="event.stopPropagation();openReassign('+j.id+')">Resolve</button>';
       } else if(st==='pending'){
-        actions='<button class="btn btn-navy btn-sm" onclick="event.stopPropagation();reevaluateBooking('+j.id+',this)" title="Ask Claude to re-check feasibility">Re-check</button>';
+        actions='<button class="btn btn-navy btn-sm" onclick="event.stopPropagation();openReassign('+j.id+')">Offer</button>';
+      } else if(st==='offered'){
+        actions='<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();reclaimOffer('+j.id+')">Reclaim</button>';
+      }
+      var waiting='';
+      if(st==='offered'&&j.offered_driver_name){
+        var exp='';
+        if(j.offered_at){
+          var expAt=new Date((j.offered_at||'').replace(' ','T')+'Z').getTime()+10*60*1000;
+          exp='<span class="offer-timer" data-offer-expires="'+expAt+'"></span>';
+        }
+        waiting='<span class="offer-wait">Awaiting '+escTo(j.offered_driver_name)+exp+'</span>';
       }
       return '<div class="adm-cal-detail-job">'
         +'<div class="adm-cal-time">'+escTo(j.time||'ASAP')+'</div>'
         +'<div class="adm-cal-info">'
-          +'<div class="adm-cal-name">'+escTo(j.ref||'')+' · '+escTo(j.customer_name||'Guest')+'</div>'
-          +'<div class="adm-cal-route">'+escTo(j.pickup||'')+' → '+escTo(j.destination||'')+'</div>'
+          +'<div class="adm-cal-name">'+escTo(j.ref||'')+' \u00b7 '+escTo(j.customer_name||'Guest')+waiting+'</div>'
+          +'<div class="adm-cal-route">'+escTo(j.pickup||'')+' \u2192 '+escTo(j.destination||'')+'</div>'
         +'</div>'
-        +'<div class="adm-cal-fare">'+(j.fare?'£'+Number(j.fare).toFixed(0):'TBC')+'</div>'
+        +'<div class="adm-cal-fare">'+(j.fare?'\u00a3'+Number(j.fare).toFixed(0):'TBC')+'</div>'
         +'<div class="adm-cal-status '+stCls+'">'+escTo(stTxt)+'</div>'
         +actions
         +'</div>';
@@ -2640,6 +2665,19 @@ window.addEventListener('wm:event', function(){
     loadAdminCalendar();
   }
 });
+
+// ── Countdown on offered-job timer pills (10-min window) ────────────────
+setInterval(function(){
+  document.querySelectorAll('.offer-timer[data-offer-expires]').forEach(function(el){
+    var t=parseInt(el.getAttribute('data-offer-expires'),10);
+    if(!t)return;
+    var ms=t-Date.now();
+    if(ms<=0){el.textContent='\u2014 expired';el.style.color='#9C2828';return;}
+    var mm=Math.floor(ms/60000),ss=Math.floor((ms%60000)/1000);
+    el.textContent='\u00b7 '+mm+':'+String(ss).padStart(2,'0');
+    el.style.color=ms<60000?'#9C2828':ms<180000?'#9C5800':'#6b7b9a';
+  });
+},1000);
 
 </script>
 <script src="/wm-realtime.js"></script>
