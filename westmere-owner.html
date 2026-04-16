@@ -498,63 +498,6 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
       </div>
     </div>
 
-    <!-- Inbox (WhatsApp + Email) -->
-    <div class="pg" id="pg-inbox">
-      <div class="sec-title"><em>Inbox</em></div>
-      <div class="sec-sub">Email messages via Google</div>
-      <div class="card" style="margin-bottom:.85rem">
-        <div class="ch" style="display:flex;justify-content:space-between;align-items:center">
-          <div style="display:flex;gap:.35rem">
-            <button class="ibtn-sm" id="ib-tab-inbox" onclick="oSetInboxFolder('inbox',this)" style="background:var(--gold);color:#fff">Inbox</button>
-            <button class="ibtn-sm" id="ib-tab-unread" onclick="oSetInboxFolder('unread',this)">Unread</button>
-            <button class="ibtn-sm" id="ib-tab-sent" onclick="oSetInboxFolder('sent',this)">Sent</button>
-          </div>
-          <div style="display:flex;gap:.35rem">
-            <button class="ibtn-sm" onclick="oLoadInbox()">Refresh</button>
-            <button class="ibtn-sm" onclick="oOpenCompose()" style="background:var(--navy);color:#fff">Compose</button>
-          </div>
-        </div>
-        <div id="inbox-feed" style="padding:0"></div>
-      </div>
-    </div>
-
-    <!-- Owner inbox viewer -->
-    <div id="ov-inbox-view" style="display:none;position:fixed;inset:0;background:rgba(10,14,20,.6);backdrop-filter:blur(6px);z-index:210;align-items:flex-end;justify-content:center;padding:1rem" onclick="if(event.target===this)oCloseInboxView()">
-      <div style="background:#fff;width:100%;max-width:640px;border-radius:18px 18px 0 0;max-height:85vh;display:flex;flex-direction:column;overflow:hidden">
-        <div style="padding:1rem 1.2rem;border-bottom:1px solid rgba(17,29,44,.08);display:flex;justify-content:space-between;align-items:center">
-          <div style="font-family:var(--serif);font-size:1.05rem;color:var(--navy);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="ov-subject">Message</div>
-          <button onclick="oCloseInboxView()" style="background:transparent;border:none;font-size:1.4rem;color:rgba(17,29,44,.5);cursor:pointer">&times;</button>
-        </div>
-        <div style="padding:.85rem 1.2rem;overflow-y:auto;flex:1">
-          <div style="font-size:.78rem;color:rgba(17,29,44,.55);margin-bottom:.2rem">From: <span id="ov-from" style="color:var(--navy)"></span></div>
-          <div style="font-size:.72rem;color:rgba(17,29,44,.45);margin-bottom:.9rem" id="ov-date"></div>
-          <div id="ov-body" style="background:rgba(17,29,44,.02);padding:1rem;border-radius:10px;font-size:.85rem;line-height:1.6;color:var(--navy)"></div>
-        </div>
-        <div style="padding:.75rem 1.2rem;border-top:1px solid rgba(17,29,44,.08);display:flex;gap:.5rem">
-          <button onclick="oReplyFromViewer()" style="flex:1;padding:.75rem;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:var(--sans);font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Reply</button>
-          <button onclick="oCloseInboxView()" style="padding:.75rem 1rem;background:transparent;color:var(--navy);border:1px solid rgba(17,29,44,.15);border-radius:8px;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Close</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Owner compose -->
-    <div id="ov-inbox-compose" style="display:none;position:fixed;inset:0;background:rgba(10,14,20,.6);backdrop-filter:blur(6px);z-index:215;align-items:flex-end;justify-content:center;padding:1rem" onclick="if(event.target===this)oCloseCompose()">
-      <div style="background:#fff;width:100%;max-width:640px;border-radius:18px 18px 0 0;max-height:85vh;display:flex;flex-direction:column;overflow:hidden">
-        <div style="padding:1rem 1.2rem;border-bottom:1px solid rgba(17,29,44,.08);display:flex;justify-content:space-between;align-items:center">
-          <div style="font-family:var(--serif);font-size:1.05rem;color:var(--navy)" id="oc-title">New Message</div>
-          <button onclick="oCloseCompose()" style="background:transparent;border:none;font-size:1.4rem;color:rgba(17,29,44,.5);cursor:pointer">&times;</button>
-        </div>
-        <div style="padding:.85rem 1.2rem;overflow-y:auto;flex:1">
-          <div style="margin-bottom:.7rem"><input id="oc-to" placeholder="To" style="width:100%;padding:.65rem .8rem;border:1px solid rgba(17,29,44,.12);border-radius:8px;font-size:.85rem"></div>
-          <div style="margin-bottom:.7rem"><input id="oc-subject" placeholder="Subject" style="width:100%;padding:.65rem .8rem;border:1px solid rgba(17,29,44,.12);border-radius:8px;font-size:.85rem"></div>
-          <div><textarea id="oc-body" placeholder="Message" rows="8" style="width:100%;padding:.65rem .8rem;border:1px solid rgba(17,29,44,.12);border-radius:8px;font-size:.85rem;resize:vertical;min-height:150px;font-family:inherit"></textarea></div>
-        </div>
-        <div style="padding:.75rem 1.2rem;border-top:1px solid rgba(17,29,44,.08)">
-          <button onclick="oSendMessage()" style="width:100%;padding:.85rem;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:var(--sans);font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;cursor:pointer">Send</button>
-        </div>
-      </div>
-    </div>
-
     <!-- Calendar -->
     <div class="pg" id="pg-calendar">
       <div class="sec-title"><em>Calendar</em></div>
@@ -568,74 +511,6 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
         <div class="cal-grid" id="cal-grid"></div>
       </div>
       <div id="cal-detail"></div>
-    </div>
-
-    <!-- Assistant -->
-    <div class="pg" id="pg-assistant">
-      <div class="sec-title">Westmere <em>Assistant</em></div>
-      <div class="sec-sub">Talk to me — I handle it</div>
-
-      <div style="background:#fff;padding:1rem 1.2rem;margin-bottom:.85rem;border:1px solid rgba(17,29,44,.08)">
-        <div style="font-size:.54rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem">Direct line to Claude</div>
-        <div style="font-size:.78rem;color:rgba(17,29,44,.6);font-weight:300;line-height:1.75">Speak or type. I'll create bookings from calls or WhatsApp messages, calculate fares, block your calendar, and tell you what your day looks like. No third party — this is me.</div>
-      </div>
-
-      <!-- Big speak button -->
-      <button id="speak-btn" onclick="toggleVoice()" style="width:100%;padding:1.3rem;background:rgba(17,29,44,.03);border:2px solid rgba(184,152,90,.2);color:rgba(17,29,44,.6);font-family:var(--sans);font-size:.82rem;font-weight:400;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;transition:all .3s;margin-bottom:.85rem">
-        <span id="speak-label">Tap to Speak</span>
-      </button>
-
-      <div class="card">
-        <div class="ch">Conversation <button onclick="clearAssist()" class="ibtn-sm-outline">Clear</button></div>
-        <div class="assist-feed" id="assist-feed"></div>
-        <div class="assist-input-row">
-          <textarea class="assist-input" id="assist-input" placeholder="Type a booking, question, or paste a WhatsApp message..." onkeydown="assistKey(event)" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,130)+'px'"></textarea>
-          <button class="btn-send" onclick="assistSend()">Send</button>
-        </div>
-      </div>
-
-      <!-- Quick examples -->
-      <div class="card" style="margin-top:.85rem">
-        <div class="ch">Quick Commands</div>
-        <div style="padding:.75rem 1rem;display:flex;flex-direction:column;gap:.45rem">
-          <button onclick="assistQuick('What jobs do I have today?')" class="qcmd">What jobs do I have today?</button>
-          <button onclick="assistQuick('What is my next job?')" class="qcmd">What is my next job?</button>
-          <button onclick="assistQuick('Show me this week\u2019s schedule')" class="qcmd">Show me this week&rsquo;s schedule</button>
-          <button onclick="assistQuick('Block me off this Sunday')" class="qcmd">Block me off this Sunday</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Smart Day -->
-    <div class="pg" id="pg-smart">
-      <div class="sec-title">Smart <em>Day</em></div>
-      <div class="sec-sub">Is today's schedule worth it?</div>
-
-      <div style="display:flex;gap:.7rem;align-items:center;margin-bottom:.85rem;flex-wrap:wrap">
-        <input type="date" id="sd-date" style="font-family:var(--sans);font-size:.82rem;font-weight:300;color:var(--navy);background:rgba(17,29,44,.04);border:1px solid rgba(17,29,44,.1);padding:.6rem .85rem;outline:none;flex:1;min-width:150px;-webkit-appearance:none">
-        <div style="position:relative;width:150px"><input id="sd-loc" placeholder="Your location now" style="font-family:var(--sans);font-size:.82rem;font-weight:300;color:var(--navy);background:rgba(17,29,44,.04);border:1px solid rgba(17,29,44,.1);padding:.6rem .85rem;outline:none;width:100%;-webkit-appearance:none" oninput="addrSearch('sd-loc','sug-sd-loc')" onfocus="this.select()"><div class="sug-drop" id="sug-sd-loc"></div></div>
-        <button onclick="runSmartDay()" id="sd-btn" class="ibtn-primary" style="white-space:nowrap">Score Day</button>
-        <button onclick="loadSample()" class="ibtn-ghost" style="white-space:nowrap">Example</button>
-      </div>
-
-      <div class="card" style="margin-bottom:.85rem">
-        <div class="ch">Bookings <button onclick="addSDJob()" class="ibtn-sm">+ Add</button></div>
-        <div id="sd-jobs"><div style="padding:1rem 1.1rem;font-size:.78rem;color:rgba(17,29,44,.4);text-align:center">Load example or add bookings</div></div>
-      </div>
-
-      <div id="sd-loading" style="display:none;text-align:center;padding:2.5rem;font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(17,29,44,.4);animation:blink 1.2s ease infinite">Scoring your day...</div>
-
-      <div id="sd-output" style="display:none">
-        <div id="sd-scorecard" style="margin-bottom:.85rem"></div>
-        <div class="card" style="margin-bottom:.85rem">
-          <div class="ch">Job Verdicts</div>
-          <div id="sd-verdicts"></div>
-        </div>
-        <div class="card">
-          <div class="ch">Recommendation <span style="display:inline-flex;align-items:center;gap:.35rem;font-size:.52rem;color:var(--gold)"><span style="width:5px;height:5px;border-radius:50%;background:var(--gold);display:inline-block;animation:blink 2s infinite"></span>Claude</span></div>
-          <div class="cb" style="padding-top:.9rem;padding-bottom:1rem"><div id="sd-rec" style="font-size:.84rem;color:rgba(17,29,44,.6);font-weight:300;line-height:1.85;white-space:pre-wrap"></div></div>
-        </div>
-      </div>
     </div>
 
     <!-- Earnings -->

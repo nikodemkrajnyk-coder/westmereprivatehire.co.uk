@@ -204,23 +204,6 @@ textarea.fi{resize:vertical;min-height:80px}
 .notif-text{font-size:.78rem;color:rgba(17,29,44,.6);line-height:1.55}
 .notif-text strong{color:var(--navy)}
 .notif-time{font-size:.62rem;color:rgba(17,29,44,.3);margin-top:.12rem}
-/* AUTOMATION */
-.auto-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
-.auto-card{background:#fff;border:1px solid rgba(17,29,44,.08);padding:1.2rem;transition:border-color .2s}
-.auto-card.armed{border-color:rgba(184,152,90,.35)}
-.ac-icon{font-size:1.5rem;margin-bottom:.5rem}
-.ac-title{font-size:.78rem;font-weight:500;color:var(--navy);margin-bottom:.18rem}
-.ac-sub{font-size:.7rem;color:rgba(17,29,44,.4);line-height:1.6;margin-bottom:.8rem;font-weight:300}
-.ac-status{display:flex;align-items:center;gap:.35rem;font-size:.62rem;color:var(--green)}
-.ac-status.off{color:rgba(17,29,44,.3)}
-.ac-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0}
-.ac-status.off .ac-dot{background:rgba(17,29,44,.3)}
-.toggle{display:flex;align-items:center;gap:.55rem;cursor:pointer;margin-top:.6rem}
-.toggle-track{width:30px;height:17px;border-radius:9px;background:rgba(17,29,44,.15);position:relative;transition:background .2s;flex-shrink:0}
-.toggle-track.on{background:var(--gold)}
-.toggle-thumb{width:13px;height:13px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
-.toggle-track.on .toggle-thumb{left:15px}
-.toggle-label{font-size:.65rem;color:rgba(17,29,44,.4)}
 /* SETTING ROW */
 .setting-row{display:flex;align-items:center;justify-content:space-between;padding:.9rem 0;border-bottom:1px solid rgba(17,29,44,.06)}
 .setting-row:last-child{border-bottom:none}
@@ -396,8 +379,8 @@ textarea.fi{resize:vertical;min-height:80px}
 .adm-cal-status.completed{background:#E6F4EA;color:#1E6B33}
 .offer-wait{display:inline-block;font-size:.62rem;font-weight:600;letter-spacing:.04em;color:#2A3A66;background:#E8EEFB;padding:2px 7px;border-radius:3px;margin-left:.4rem;vertical-align:middle}
 .offer-timer{font-variant-numeric:tabular-nums;margin-left:.35rem;color:#6b7b9a}
-@media(max-width:900px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main{margin-left:0}.mob-menu-btn{display:flex}.stats{grid-template-columns:1fr 1fr}.auto-grid{grid-template-columns:1fr 1fr}.cust-grid{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}
-@media(max-width:600px){.content{padding:1.2rem 1rem}.stats{grid-template-columns:1fr 1fr}.auto-grid{grid-template-columns:1fr}.cust-grid{grid-template-columns:1fr}.r2,.r3{grid-template-columns:1fr}.pb-row{grid-template-columns:1fr 1fr}.topbar{padding:0 1rem}}
+@media(max-width:900px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main{margin-left:0}.mob-menu-btn{display:flex}.stats{grid-template-columns:1fr 1fr}.cust-grid{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}
+@media(max-width:600px){.content{padding:1.2rem 1rem}.stats{grid-template-columns:1fr 1fr}.cust-grid{grid-template-columns:1fr}.r2,.r3{grid-template-columns:1fr}.pb-row{grid-template-columns:1fr 1fr}.topbar{padding:0 1rem}}
 .sug-drop{display:none;position:absolute;left:0;right:0;top:100%;z-index:350;background:rgba(255,255,255,.97);backdrop-filter:blur(28px);border:1px solid rgba(184,152,90,.35);border-radius:0 0 10px 10px;max-height:360px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(184,152,90,.3) transparent}
 .sug-drop.open{display:block}
 .sug-item{padding:.7rem 1rem;cursor:pointer;border-bottom:1px solid rgba(17,29,44,.05);transition:background .15s}
@@ -768,11 +751,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
         <div class="card">
           <div class="ch"><div class="ct">Integrations</div></div>
           <div class="cb">
-            <div class="setting-row"><div><div class="sr-title">Google Calendar</div><div class="sr-sub">Auto-add bookings to your calendar</div></div><button class="btn btn-green btn-sm" id="gcal-connect-btn" onclick="connectGoogleCalendar()">Connect</button></div>
-            <div class="setting-row"><div><div class="sr-title">Resend (Email)</div><div class="sr-sub">Send automated customer emails</div></div><button class="btn btn-ghost btn-sm" onclick="showToast('Set RESEND_API_KEY in Railway env')">Configured</button></div>
-            <div class="setting-row"><div><div class="sr-title">Twilio (WhatsApp &amp; SMS)</div><div class="sr-sub">Automated WhatsApp and text messages</div></div><button class="btn btn-ghost btn-sm" onclick="showToast('Enter your Twilio credentials')">Connect</button></div>
-            <div class="setting-row"><div><div class="sr-title">Stripe (Card Payments)</div><div class="sr-sub">Accept card payments online</div></div><button class="btn btn-ghost btn-sm" onclick="showToast('Enter your Stripe publishable key')">Connect</button></div>
-            <div class="setting-row"><div><div class="sr-title">Flightradar24 API</div><div class="sr-sub">Live flight delay alerts</div></div><button class="btn btn-ghost btn-sm" onclick="showToast('Enter your FR24 API key')">Connect</button></div>
+            <div class="setting-row"><div><div class="sr-title">Google Calendar</div><div class="sr-sub">Two-way sync with your calendar</div></div><button class="btn btn-green btn-sm" id="gcal-connect-btn" onclick="connectGoogleCalendar()">Connect</button></div>
           </div>
         </div>
         <div class="card">

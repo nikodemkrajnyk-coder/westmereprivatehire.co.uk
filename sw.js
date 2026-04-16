@@ -1,6 +1,6 @@
 // Westmere service worker — minimal network-first for navigations,
 // cache-first for static assets. Safe to deploy: never caches /api/*.
-const CACHE = 'westmere-v2';
+const CACHE = 'westmere-v3';
 
 self.addEventListener('install', function (e) {
   self.skipWaiting();
