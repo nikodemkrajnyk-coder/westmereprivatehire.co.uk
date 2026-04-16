@@ -7,8 +7,8 @@
 
 const express = require('express');
 const { getDb } = require('./db');
-const { sendCustomerConfirmation, sendAdminAlert } = require('./email');
-const { sendCustomerBookingWhatsApp, sendAdminBookingWhatsApp } = require('./whatsapp');
+const { sendAdminAlert } = require('./email');
+const { sendAdminBookingWhatsApp } = require('./whatsapp');
 const { createPaymentIntent, isConfigured: stripeConfigured } = require('./stripe');
 const gcal = require('./google-calendar');
 const intake = require('./intake');
@@ -98,11 +98,10 @@ router.post('/book', async (req, res) => {
       passengers, bags, flight, fare, payment, notes
     };
 
-    // Send notifications in background (don't block the response)
+    // Send admin notifications in background (don't block the response).
+    // Customer-facing email + WhatsApp fire later, once intake confirms.
     Promise.allSettled([
-      email ? sendCustomerConfirmation(booking) : Promise.resolve(),
       sendAdminAlert(booking),
-      phone ? sendCustomerBookingWhatsApp(booking) : Promise.resolve(),
       sendAdminBookingWhatsApp(booking)
     ]).then(results => {
       results.forEach((r, i) => {

@@ -78,40 +78,60 @@ function emailShell(bodyHtml) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<meta name="color-scheme" content="light">
-<meta name="supported-color-schemes" content="light">
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light only">
 <title>Westmere Private Hire</title>
 <!--[if mso]><style>table,td{font-family:Georgia,serif!important}h1,h2,h3{font-family:Georgia,serif!important}</style><![endif]-->
+<style>
+  :root { color-scheme: light only; supported-color-schemes: light only; }
+  /* Apple Mail dark mode: keep ivory canvas + navy ink instead of auto-invert. */
+  @media (prefers-color-scheme: dark) {
+    html, body, table, td { background-color: ${BG_OUTER} !important; color: ${INK} !important; }
+    .wm-card { background-color: ${BG_CARD} !important; }
+    .wm-ink { color: ${INK} !important; }
+    .wm-soft { color: ${INK_SOFT} !important; }
+    .wm-muted { color: ${INK_MUTED} !important; }
+    .wm-gold { color: ${GOLD} !important; }
+    .wm-hairline { border-color: ${HAIRLINE} !important; }
+  }
+  /* Gmail iOS dark mode (uses [data-ogsc] / [data-ogsb] attributes). */
+  [data-ogsc] body, [data-ogsb] body { background-color: ${BG_OUTER} !important; }
+  [data-ogsc] .wm-card, [data-ogsb] .wm-card { background-color: ${BG_CARD} !important; }
+  [data-ogsc] .wm-ink, [data-ogsb] .wm-ink { color: ${INK} !important; }
+  [data-ogsc] .wm-soft, [data-ogsb] .wm-soft { color: ${INK_SOFT} !important; }
+  [data-ogsc] .wm-muted, [data-ogsb] .wm-muted { color: ${INK_MUTED} !important; }
+  [data-ogsc] .wm-gold, [data-ogsb] .wm-gold { color: ${GOLD} !important; }
+</style>
 </head>
-<body style="margin:0;padding:0;background:${BG_OUTER};-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%">
+<body class="wm-ink" style="margin:0;padding:0;background:${BG_OUTER};color:${INK};-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%">
 
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${BG_OUTER}">
-<tr><td align="center" style="padding:32px 16px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${BG_OUTER}" bgcolor="${BG_OUTER}">
+<tr><td align="center" style="padding:32px 16px" bgcolor="${BG_OUTER}">
 
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background:${BG_CARD};border:1px solid ${HAIRLINE};border-collapse:separate">
+<table role="presentation" class="wm-card" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${BG_CARD}" style="max-width:560px;background:${BG_CARD};border:1px solid ${HAIRLINE};border-collapse:separate">
 
 <!-- Header: wordmark only, no crest -->
-<tr><td style="padding:36px 44px 6px;text-align:center">
-  <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:400;color:${INK};letter-spacing:8px;line-height:1">WESTMERE</p>
-  <p style="margin:8px 0 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:3.5px;text-transform:uppercase;color:${INK_MUTED};font-weight:400">Private Hire &middot; Sussex</p>
+<tr><td bgcolor="${BG_CARD}" style="padding:36px 44px 6px;text-align:center;background:${BG_CARD}">
+  <p class="wm-ink" style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:400;color:${INK};letter-spacing:8px;line-height:1">WESTMERE</p>
+  <p class="wm-muted" style="margin:8px 0 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:3.5px;text-transform:uppercase;color:${INK_MUTED};font-weight:400">Private Hire &middot; Sussex</p>
 </td></tr>
 
 <!-- Hairline gold rule -->
-<tr><td style="padding:22px 44px 0">
+<tr><td bgcolor="${BG_CARD}" style="padding:22px 44px 0;background:${BG_CARD}">
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr>
-    <td style="width:32px;height:1px;background:${GOLD};font-size:0;line-height:0">&nbsp;</td>
+    <td style="width:32px;height:1px;background:${GOLD};font-size:0;line-height:0" bgcolor="${GOLD}">&nbsp;</td>
   </tr></table>
 </td></tr>
 
 <!-- Body content -->
-<tr><td style="padding:24px 44px 36px">
+<tr><td bgcolor="${BG_CARD}" style="padding:24px 44px 36px;background:${BG_CARD}">
 ${bodyHtml}
 </td></tr>
 
 <!-- Footer -->
-<tr><td style="padding:18px 44px 28px;border-top:1px solid ${HAIRLINE}">
-  <p style="margin:0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;color:${INK_MUTED};letter-spacing:.5px;line-height:1.6">Reply to this email or call us if anything needs adjusting.</p>
-  <p style="margin:8px 0 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;color:${INK_MUTED};letter-spacing:.5px">Westmere Private Hire &middot; Licensed by Lewes District Council &middot; westmereprivatehire.co.uk</p>
+<tr><td bgcolor="${BG_CARD}" style="padding:18px 44px 28px;border-top:1px solid ${HAIRLINE};background:${BG_CARD}">
+  <p class="wm-muted" style="margin:0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;color:${INK_MUTED};letter-spacing:.5px;line-height:1.6">Reply to this email or call us if anything needs adjusting.</p>
+  <p class="wm-muted" style="margin:8px 0 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;color:${INK_MUTED};letter-spacing:.5px">Westmere Private Hire &middot; Licensed by Lewes District Council &middot; westmereprivatehire.co.uk</p>
 </td></tr>
 
 </table>

@@ -191,9 +191,29 @@ async function evaluate(bookingId) {
   const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(bookingId);
   if (!booking) return { ok: false, reason: 'booking_not_found' };
 
+  // Trust-first helper: mark confirmed + fire confirmation email/WhatsApp.
+  // Used whenever Claude approves OR when intake is unavailable/unreliable.
+  // The owner can always cancel later from the Decisions tab.
+  function autoConfirm(reasonNote) {
+    db.prepare(`UPDATE bookings
+                   SET status = 'confirmed',
+                       needs_reassignment = 0,
+                       intake_reason = ?,
+                       intake_checked_at = datetime('now'),
+                       updated_at = datetime('now')
+                 WHERE id = ?`)
+      .run(reasonNote, bookingId);
+    notifyCustomerConfirmed(bookingId).catch(e =>
+      console.error('[INTAKE] notifyCustomerConfirmed failed:', e.message));
+    events.broadcast('booking:confirmed', {
+      id: bookingId, ref: booking.ref, reason: reasonNote
+    });
+  }
+
   if (!isConfigured()) {
-    // No API key — graceful no-op. Booking stays in pending.
-    return { ok: true, skipped: 'no_api_key' };
+    console.log('[INTAKE] No API key — trust-first auto-confirm for', booking.ref);
+    autoConfirm('Auto-confirmed (intake disabled — no API key).');
+    return { ok: true, skipped: 'no_api_key', autoConfirmed: true };
   }
 
   try {
@@ -205,30 +225,13 @@ async function evaluate(bookingId) {
 
     if (!decision) {
       console.error('[INTAKE] Could not parse Claude response:', raw && raw.slice(0, 200));
-      db.prepare(`UPDATE bookings
-                     SET intake_reason = ?, intake_checked_at = datetime('now'), updated_at = datetime('now')
-                   WHERE id = ?`)
-        .run('Intake check inconclusive — left for manual review.', bookingId);
-      return { ok: false, reason: 'parse_failed' };
+      autoConfirm('Auto-confirmed (intake response unparseable — defaulting to trust).');
+      return { ok: true, parseFailed: true, autoConfirmed: true };
     }
 
     if (decision.feasible) {
-      // Auto-confirm
-      db.prepare(`UPDATE bookings
-                     SET status = 'confirmed',
-                         needs_reassignment = 0,
-                         intake_reason = ?,
-                         intake_checked_at = datetime('now'),
-                         updated_at = datetime('now')
-                   WHERE id = ?`)
-        .run(decision.reason || 'Auto-confirmed by smart intake.', bookingId);
+      autoConfirm(decision.reason || 'Auto-confirmed by smart intake.');
       console.log('[INTAKE] Auto-confirmed booking', booking.ref, '—', decision.reason);
-      // Tell the customer their booking is now confirmed (email + WhatsApp).
-      notifyCustomerConfirmed(bookingId).catch(e =>
-        console.error('[INTAKE] notifyCustomerConfirmed failed:', e.message));
-      events.broadcast('booking:confirmed', {
-        id: bookingId, ref: booking.ref, reason: decision.reason || ''
-      });
     } else {
       // Flag for the operator to reassign / decline
       db.prepare(`UPDATE bookings
@@ -247,13 +250,11 @@ async function evaluate(bookingId) {
     return { ok: true, decision };
   } catch (e) {
     console.error('[INTAKE] evaluate failed:', e.message);
-    try {
-      db.prepare(`UPDATE bookings
-                     SET intake_reason = ?, intake_checked_at = datetime('now'), updated_at = datetime('now')
-                   WHERE id = ?`)
-        .run('Intake check failed: ' + e.message, bookingId);
-    } catch (_) {}
-    return { ok: false, reason: e.message };
+    // Trust-first fallback: the booking should still confirm even if Claude
+    // is unreachable. Better to send a confirmation we can cancel than to
+    // leave the customer in silence.
+    try { autoConfirm('Auto-confirmed (intake error: ' + e.message + ').'); } catch (_) {}
+    return { ok: true, error: e.message, autoConfirmed: true };
   }
 }
 
