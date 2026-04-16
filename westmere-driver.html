@@ -818,31 +818,59 @@ function buildOffered(){
   list.innerHTML=OFFERED_JOBS.map(function(j){
     var s=scoreJob(j);
     var conflict=checkConflict(j);
+    var pay=(j.driverPay!=null)?j.driverPay:(j.fare?(Math.round(j.fare*0.9*100)/100):null);
+    var gross=j.fare||0;
+    var payLine=(pay!=null)?('<div class="ss-n" style="color:'+s.col+'">\u00a3'+esc(pay)+' to you</div><div style="font-size:.68rem;color:var(--text-light);text-align:right">gross \u00a3'+esc(gross)+' \u00b7 10% fee</div>'):('<div class="ss-n" style="color:'+s.col+'">\u00a3'+esc(s.net)+' net</div>');
     var strip='<div class="score-strip" style="background:'+s.bg+';border-bottom:1px solid '+s.col+'30">'
-      +'<div><div class="ss-v" style="color:'+s.col+'">'+esc(s.v)+'</div><div class="ss-d">'+esc(s.dead)+' dead mi · ~'+esc(s.jmi)+' mi job'+(s.rangeOk?'':' · charge needed')+'</div></div>'
-      +'<div class="ss-n" style="color:'+s.col+'">£'+esc(s.net)+' net</div></div>';
+      +'<div><div class="ss-v" style="color:'+s.col+'">'+esc(s.v)+'</div><div class="ss-d">'+esc(s.dead)+' dead mi \u00b7 ~'+esc(s.jmi)+' mi job'+(s.rangeOk?'':' \u00b7 charge needed')+'</div></div>'
+      +'<div>'+payLine+'</div></div>';
+    var countdownHtml='';
+    if(j.offeredAt){
+      var expires=new Date((j.offeredAt||'').replace(' ','T')+'Z').getTime()+10*60*1000;
+      countdownHtml='<div class="offer-countdown" data-expires="'+expires+'" style="padding:.45rem .85rem;background:#fff8e6;color:var(--amber);font-size:.72rem;font-weight:600;text-align:center;border-bottom:1px solid #f0e0b0">\u23f1 Decide within 10 min</div>';
+    }
     var conflictHtml=conflict?'<div class="conflict-warn"><strong>Conflict</strong> '+esc(conflict)+'</div>':'';
     var offerBtns='<div class="jc-offer-btns"><button class="btn-accept" onclick="acceptJob(\''+j.id+'\')">Accept</button><button class="btn-decline" onclick="declineJob(\''+j.id+'\')">Decline</button></div>';
-    return '<div class="job-card" style="margin-bottom:1rem;overflow:hidden">'+strip+conflictHtml+buildCard(j,true)+offerBtns+'</div>';
+    return '<div class="job-card" style="margin-bottom:1rem;overflow:hidden">'+countdownHtml+strip+conflictHtml+buildCard(j,true)+offerBtns+'</div>';
   }).join('');
 }
 
-function acceptJob(id){
-  var idx=OFFERED_JOBS.findIndex(function(j){return j.id===id;});
-  if(idx<0)return;
-  var job=OFFERED_JOBS.splice(idx,1)[0];
-  job.status='upcoming';TODAY_JOBS.push(job);
-  showToast('Job accepted — added to today');buildOffered();buildToday();
+async function acceptJob(id){
+  try{
+    var res=await fetch('/api/driver/offers/'+id+'/accept',{method:'POST',credentials:'include'});
+    var d=await res.json();
+    if(!res.ok||!d.ok){showToast(d.error||'Failed to accept');return;}
+    await loadDriverJobs();
+    showToast('Job accepted');
+    goPage('today',document.getElementById('bn-today'));
+  }catch(e){showToast('Network error');}
 }
-function declineJob(id){
-  OFFERED_JOBS=OFFERED_JOBS.filter(function(j){return j.id!==id;});
-  buildOffered();showToast('Job declined');
+async function declineJob(id){
+  var reason=prompt('Reason (optional — admin will see this):','')||'';
+  try{
+    var res=await fetch('/api/driver/offers/'+id+'/decline',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason:reason})});
+    var d=await res.json();
+    if(!res.ok||!d.ok){showToast(d.error||'Failed to decline');return;}
+    await loadDriverJobs();
+    showToast('Job declined');
+  }catch(e){showToast('Network error');}
 }
 
 // ─── STATUS ───────────────────────────────────────────────────────────────────
-function updateStatus(id,status){
+async function updateStatus(id,status){
   var job=TODAY_JOBS.find(function(j){return j.id===id;});if(!job)return;
-  if(status==='dropoff'){job.status='done';showToast('Journey complete — logged');buildToday();return;}
+  if(status==='dropoff'){
+    try{
+      var res=await fetch('/api/driver/jobs/'+id+'/done',{method:'POST',credentials:'include'});
+      var d=await res.json();
+      if(!res.ok||!d.ok){showToast(d.error||'Failed to mark done');return;}
+    }catch(e){showToast('Network error');return;}
+    job.status='done';showToast('Journey complete \u2014 logged');buildToday();return;
+  }
+  if((status==='enroute'||status==='atpickup')&&job.status==='upcoming'){
+    // Moving from upcoming → active on the server
+    try{await fetch('/api/driver/jobs/'+id+'/start',{method:'POST',credentials:'include'});}catch(e){}
+  }
   job.status=status;
   if(status==='atpickup')sendArrival(job);
   else{var labels={enroute:'En route to pickup',onboard:'Passenger on board'};showToast(labels[status]||status);}
@@ -860,10 +888,17 @@ function sendArrival(job){
   else{window.open('https://wa.me/'+p+'?text='+encodeURIComponent(msg),'_blank');setTimeout(function(){showToast('Message ready — send to '+fn);},400);}
 }
 
-function cancelJob(id){
+async function cancelJob(id){
   var job=TODAY_JOBS.find(function(j){return j.id===id;});if(!job)return;
-  if(!confirm('Cancel job for '+job.name+'?'))return;
-  TODAY_JOBS=TODAY_JOBS.filter(function(j){return j.id!==id;});buildToday();showToast('Job cancelled');
+  if(!confirm('Cancel job for '+job.name+'?\n\nThe customer will be emailed an apology.'))return;
+  var reason=prompt('Reason for cancellation (shown to admin; apology to customer is generic):','')||'Cancelled by driver';
+  try{
+    var res=await fetch('/api/driver/jobs/'+id+'/cancel',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason:reason})});
+    var d=await res.json();
+    if(!res.ok||!d.ok){showToast(d.error||'Failed to cancel');return;}
+    await loadDriverJobs();
+    showToast('Job cancelled \u2014 customer notified');
+  }catch(e){showToast('Network error');}
 }
 
 // ─── NAME BOARD ───────────────────────────────────────────────────────────────
@@ -900,32 +935,87 @@ function showToast(msg){
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
+function _toDriverJob(b){
+  return{id:String(b.id),ref:b.ref||'',time:b.time||'ASAP',name:b.customer_name||'Guest',
+    phone:b.customer_phone||'',email:b.customer_email||'',contactPref:'whatsapp',
+    pax:b.passengers||1,bags:b.bags||'0',pickup:b.pickup,dest:b.destination,
+    type:b.trip_type||'',flight:b.flight||'',flightStatus:b.flight?'ontime':'',
+    flightDeparts:'',fare:b.fare||0,driverFare:(b.driver_pay!=null?b.driver_pay:b.fare)||0,
+    driverPay:b.driver_pay,adminFee:b.admin_fee,offeredAt:b.offered_at||null,
+    payment:b.payment||'cash',
+    status:b.status==='completed'?'done':b.status==='active'?'enroute':b.status==='cancelled'?'cancelled':'upcoming',
+    note:b.notes||''};
+}
+
 async function loadDriverJobs(){
   try{
-    var res=await fetch('/api/bookings');
-    var data=await res.json();
-    if(!res.ok||!data.ok)return;
-    var bookings=data.bookings||[];
+    var results=await Promise.all([
+      fetch('/api/driver/offers',{credentials:'include'}).then(function(r){return r.json();}).catch(function(){return{ok:false,offers:[]};}),
+      fetch('/api/driver/jobs',{credentials:'include'}).then(function(r){return r.json();}).catch(function(){return{ok:false,jobs:[]};})
+    ]);
+    var offers=(results[0]&&results[0].ok)?results[0].offers:[];
+    var jobs=(results[1]&&results[1].ok)?results[1].jobs:[];
     var today=new Date().toISOString().split('T')[0];
-    function toJob(b){
-      return{id:String(b.id),time:b.time||'ASAP',name:b.customer_name||'Guest',
-        phone:b.customer_phone||'',email:b.customer_email||'',contactPref:'whatsapp',
-        pax:b.passengers||1,bags:b.bags||'0',pickup:b.pickup,dest:b.destination,
-        type:b.trip_type||'',flight:b.flight||'',flightStatus:b.flight?'ontime':'',
-        flightDeparts:'',fare:b.fare||0,driverFare:b.fare||0,payment:b.payment||'cash',
-        status:b.status==='completed'?'done':b.status==='active'?'enroute':'upcoming',
-        note:b.notes||''};
-    }
-    TODAY_JOBS=bookings.filter(function(b){return b.date===today&&b.status!=='cancelled';}).map(toJob);
-    OFFERED_JOBS=bookings.filter(function(b){return b.date>today&&b.status==='pending';}).map(function(b){
-      var j=toJob(b);
+
+    OFFERED_JOBS=offers.map(function(b){
+      var j=_toDriverJob(b);
       try{j.date=new Date(b.date).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}catch(e){j.date=b.date;}
       return j;
     });
+
+    TODAY_JOBS=jobs.filter(function(b){return b.date===today&&b.status!=='cancelled';}).map(_toDriverJob);
+
     if(document.getElementById('pg-today').classList.contains('on'))buildToday();
     if(document.getElementById('pg-offered').classList.contains('on'))buildOffered();
+    _refreshOfferedBadge();
   }catch(e){console.error('[DRIVER] Failed to load jobs:',e);}
 }
+
+function _refreshOfferedBadge(){
+  var badge=document.getElementById('offered-badge');
+  if(!badge)return;
+  badge.textContent=OFFERED_JOBS.length||'';
+  badge.style.display=OFFERED_JOBS.length?'flex':'none';
+}
+
+// ─── LIVE PUSH (SSE) ──────────────────────────────────────────────────────────
+var _driverSSE=null;
+function startDriverLiveFeed(){
+  if(_driverSSE||typeof EventSource==='undefined')return;
+  try{
+    _driverSSE=new EventSource('/api/events');
+    var refresh=function(){loadDriverJobs();};
+    var onOffered=function(ev){
+      try{var d=JSON.parse(ev.data);if(d&&d.payload&&d.payload.ref){showToast('New offer \u2014 '+d.payload.ref);}}catch(e){}
+      refresh();
+    };
+    _driverSSE.addEventListener('job:offered',onOffered);
+    _driverSSE.addEventListener('job:offer_expired',function(){showToast('Offer expired');refresh();});
+    _driverSSE.addEventListener('job:accepted',refresh);
+    _driverSSE.addEventListener('job:declined',refresh);
+    _driverSSE.addEventListener('job:started',refresh);
+    _driverSSE.addEventListener('job:done',refresh);
+    _driverSSE.addEventListener('job:cancelled',refresh);
+    _driverSSE.onerror=function(){/* auto-reconnect is built in */};
+  }catch(e){console.error('[DRIVER] SSE failed:',e);}
+}
+
+// Countdown refresh for offered-job cards (10-minute window)
+setInterval(function(){
+  if(!OFFERED_JOBS.length)return;
+  if(!document.getElementById('pg-offered'))return;
+  if(!document.getElementById('pg-offered').classList.contains('on'))return;
+  document.querySelectorAll('.offer-countdown').forEach(function(el){
+    var t=parseInt(el.getAttribute('data-expires'),10);
+    if(!t)return;
+    var ms=t-Date.now();
+    if(ms<=0){el.textContent='Expiring\u2026';el.style.color='var(--red)';return;}
+    var mm=Math.floor(ms/60000),ss=Math.floor((ms%60000)/1000);
+    el.textContent=mm+':'+String(ss).padStart(2,'0')+' left';
+    if(ms<60000)el.style.color='var(--red)';
+    else if(ms<180000)el.style.color='var(--amber)';
+  });
+},1000);
 
 function initApp(){
   document.getElementById('tb-dname').textContent=DRIVER.name.split(' ')[0];
@@ -933,6 +1023,7 @@ function initApp(){
   applyTeslaVisibility();
   buildProfile();
   loadDriverJobs();
+  startDriverLiveFeed();
   goPage('today',document.getElementById('bn-today'));
 }
 
