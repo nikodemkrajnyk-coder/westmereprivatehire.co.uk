@@ -733,7 +733,7 @@ function closeSettings(){
 // ── GOOGLE CALENDAR ───────────────────────────────────────────────────────────
 async function connectGoogleCalendar(){
   try{
-    var res=await fetch('/api/google/auth-url');
+    var res=await fetch('/api/google/auth-url?from=/westmere-owner.html');
     var data=await res.json();
     if(res.ok&&data.ok&&data.url){
       window.location.href=data.url;
