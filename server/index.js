@@ -117,9 +117,17 @@ const protectedPages = [
 
 for (const page of protectedPages) {
   app.get('/' + page, protectPage(null), (req, res) => {
+    res.set('Cache-Control', 'no-store, must-revalidate');
     res.sendFile(path.join(__dirname, '..', page));
   });
 }
+
+// Service worker must never be cached by the browser — otherwise stale SW
+// code continues serving stale HTML long after deploys.
+app.get('/sw.js', (req, res) => {
+  res.set('Cache-Control', 'no-store, must-revalidate');
+  res.sendFile(path.join(__dirname, '..', 'sw.js'));
+});
 
 // ── Health check (Railway uses this) ─────────────────────────────────────
 app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
