@@ -363,6 +363,63 @@ async function pullChanges() {
   return { ok: true, changed };
 }
 
+// ── List external events (commitments from the user's calendar) ──────────
+// Returns events from now through `days` ahead, EXCLUDING events we created
+// ourselves (identified by extendedProperties.private.wph_booking_id).
+// This lets the admin/owner UI show personal commitments alongside bookings
+// so the operator can see when they're unavailable.
+async function listExternalEvents(days) {
+  if (!isConfigured() || !loadTokens()) return [];
+  const token = await getAccessToken();
+  if (!token) return [];
+
+  const t = loadTokens();
+  const calendarId = encodeURIComponent((t && t.calendar_id) || DEFAULT_CAL);
+  const daysAhead = Math.max(1, Math.min(60, parseInt(days, 10) || 7));
+  const from = new Date().toISOString();
+  const to = new Date(Date.now() + daysAhead * 24 * 3600 * 1000).toISOString();
+
+  const url = `${API_BASE}/calendars/${calendarId}/events`
+    + `?timeMin=${encodeURIComponent(from)}`
+    + `&timeMax=${encodeURIComponent(to)}`
+    + `&singleEvents=true&orderBy=startTime&maxResults=250`;
+
+  try {
+    const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+    const data = await res.json();
+    if (!res.ok) {
+      console.error('[GCAL] listExternalEvents HTTP', res.status, data && data.error && data.error.message);
+      return [];
+    }
+    const out = [];
+    for (const ev of data.items || []) {
+      if (ev.status === 'cancelled') continue;
+      // Skip events we created (those carry wph_booking_id)
+      const priv = (ev.extendedProperties && ev.extendedProperties.private) || {};
+      if (priv.wph_booking_id) continue;
+      // Skip declined events
+      const me = (ev.attendees || []).find(a => a.self);
+      if (me && me.responseStatus === 'declined') continue;
+
+      const start = ev.start || {};
+      const end = ev.end || {};
+      out.push({
+        id: ev.id,
+        title: ev.summary || '(No title)',
+        location: ev.location || '',
+        allDay: !!start.date,
+        start: start.dateTime || start.date,
+        end: end.dateTime || end.date,
+        htmlLink: ev.htmlLink || null
+      });
+    }
+    return out;
+  } catch (e) {
+    console.error('[GCAL] listExternalEvents failed:', e.message);
+    return [];
+  }
+}
+
 // ── Status (for frontend) ────────────────────────────────────────────────
 function getStatus() {
   const t = loadTokens();
@@ -385,6 +442,7 @@ module.exports = {
   updateEvent,
   deleteEvent,
   pullChanges,
+  listExternalEvents,
   getStatus,
   loadTokens,
   getAccessToken

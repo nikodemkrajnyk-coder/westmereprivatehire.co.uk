@@ -567,6 +567,11 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
         </div>
       </div>
 
+      <div class="card" id="dash-personal-card" style="display:none">
+        <div class="ch"><div class="ct">Your Schedule <span style="font-size:.65rem;color:rgba(17,29,44,.4);font-weight:400;letter-spacing:.06em;margin-left:.4rem">NEXT 7 DAYS &middot; FROM CALENDAR</span></div></div>
+        <div class="cb" id="dash-personal-list"></div>
+      </div>
+
       <div class="card">
         <div class="ch"><div class="ct">Automation Status</div><button class="btn btn-ghost btn-sm" onclick="nav('automation',document.querySelector('[onclick*=auto]'))">Manage</button></div>
         <div class="cb">
@@ -594,6 +599,12 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
           <div class="timeline" id="today-timeline">
             <div style="text-align:center;padding:2rem;color:rgba(17,29,44,.3);font-size:.85rem">No jobs scheduled for today</div>
           </div>
+        </div>
+      </div>
+      <div class="card" id="today-personal-card" style="display:none">
+        <div class="ch"><div class="ct">Other Commitments <span style="font-size:.65rem;color:rgba(17,29,44,.4);font-weight:400;letter-spacing:.06em;margin-left:.4rem">FROM YOUR CALENDAR</span></div></div>
+        <div class="cb">
+          <div id="today-personal-list"></div>
         </div>
       </div>
     </div>
@@ -1212,6 +1223,7 @@ function syncGoogleCalendar(e){
   fetch('/api/google/sync',{method:'POST'}).then(function(r){return r.json();}).then(function(d){
     if(d&&d.ok)showToast('Synced · '+(d.changed||0)+' booking(s) updated from Google');
     else showToast('Sync failed: '+((d&&d.reason)||'unknown'));
+    if(typeof loadExternalCalendarEvents==='function')loadExternalCalendarEvents();
   }).catch(function(){showToast('Sync failed — network error');});
 }
 // Show feedback after returning from the Google OAuth redirect
@@ -1226,6 +1238,85 @@ function syncGoogleCalendar(e){
   else if(gc==='error')setTimeout(function(){showToast('Google Calendar connection failed: '+(q.get('reason')||'unknown'));},400);
 })();
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',checkGoogleCalendarStatus);else checkGoogleCalendarStatus();
+
+// ── External calendar events (operator's personal commitments) ─────────
+function loadExternalCalendarEvents(){
+  fetch('/api/google/external-events?days=7').then(function(r){return r.json();}).then(function(d){
+    var events=(d&&d.events)||[];
+    renderTodayPersonal(events);
+    renderDashPersonal(events);
+  }).catch(function(){});
+}
+function _evRange(ev){
+  if(ev.allDay) return 'All day';
+  try{
+    var s=new Date(ev.start), e=ev.end?new Date(ev.end):null;
+    var pad=function(n){return n<10?'0'+n:''+n;};
+    var fmt=function(d){return pad(d.getHours())+':'+pad(d.getMinutes());};
+    return fmt(s)+(e?' \u2013 '+fmt(e):'');
+  }catch(_){return ev.start||'';}
+}
+function _todayKey(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function _evDateKey(ev){
+  if(!ev.start) return '';
+  if(ev.allDay) return ev.start.slice(0,10);
+  try{
+    var d=new Date(ev.start);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }catch(_){return ev.start.slice(0,10);}
+}
+function renderTodayPersonal(events){
+  var card=document.getElementById('today-personal-card');
+  var list=document.getElementById('today-personal-list');
+  if(!card||!list)return;
+  var todayKey=_todayKey();
+  var todayEvents=events.filter(function(e){return _evDateKey(e)===todayKey;});
+  if(!todayEvents.length){card.style.display='none';return;}
+  card.style.display='';
+  list.innerHTML=todayEvents.map(function(ev){
+    var loc=ev.location?'<div style="font-size:.72rem;color:rgba(17,29,44,.5);margin-top:.15rem">\ud83d\udccd '+_esc(ev.location)+'</div>':'';
+    return '<div style="display:flex;gap:.85rem;padding:.7rem 0;border-bottom:1px solid rgba(17,29,44,.06)">'
+      +'<div style="min-width:88px;font-size:.78rem;color:var(--gold);font-weight:500;font-variant-numeric:tabular-nums">'+_evRange(ev)+'</div>'
+      +'<div style="flex:1"><div style="font-size:.86rem;color:var(--navy);font-weight:500">'+_esc(ev.title)+'</div>'+loc+'</div>'
+      +'</div>';
+  }).join('');
+}
+function renderDashPersonal(events){
+  var card=document.getElementById('dash-personal-card');
+  var list=document.getElementById('dash-personal-list');
+  if(!card||!list)return;
+  if(!events.length){card.style.display='none';return;}
+  card.style.display='';
+  // Group by date
+  var byDate={};
+  events.forEach(function(ev){
+    var k=_evDateKey(ev);
+    if(!byDate[k])byDate[k]=[];
+    byDate[k].push(ev);
+  });
+  var keys=Object.keys(byDate).sort();
+  var todayKey=_todayKey();
+  var html=keys.map(function(k){
+    var d=new Date(k+'T12:00:00');
+    var label=k===todayKey?'Today':d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+    var rows=byDate[k].map(function(ev){
+      var loc=ev.location?' \u00b7 '+_esc(ev.location):'';
+      return '<div style="display:flex;gap:.7rem;padding:.35rem 0;font-size:.8rem">'
+        +'<div style="min-width:90px;color:var(--gold);font-variant-numeric:tabular-nums">'+_evRange(ev)+'</div>'
+        +'<div style="flex:1;color:var(--navy)">'+_esc(ev.title)+'<span style="color:rgba(17,29,44,.45);font-size:.75rem">'+loc+'</span></div>'
+        +'</div>';
+    }).join('');
+    return '<div style="margin-bottom:.85rem"><div style="font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.25rem">'+label+'</div>'+rows+'</div>';
+  }).join('');
+  list.innerHTML=html;
+}
+function _esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+// Refresh on load and every 5 min
+loadExternalCalendarEvents();
+setInterval(loadExternalCalendarEvents,5*60*1000);
 
 // ── Inbox (Gmail via Google OAuth) ─────────────────────────────────────
 var INBOX_FOLDER='inbox';

@@ -451,6 +451,11 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
       <div class="sec-title">Today's <em>Jobs</em></div>
       <div class="sec-sub" id="today-sub"></div>
       <div id="today-list"></div>
+      <div id="today-personal-wrap" style="display:none;margin-top:1.2rem">
+        <div class="sec-title" style="font-size:1rem">Other <em>Commitments</em></div>
+        <div class="sec-sub">From your Google Calendar</div>
+        <div id="today-personal-list"></div>
+      </div>
     </div>
 
     <!-- Offered Jobs -->
@@ -1086,9 +1091,56 @@ function buildToday(){
   var d=new Date();
   document.getElementById('today-sub').textContent=d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})+(rem?' · '+rem+(rem===1?' job':' jobs')+' remaining':'');
   var list=document.getElementById('today-list');
-  if(!TODAY_JOBS.length){list.innerHTML='<div class="empty"><div class="empty-title">No jobs today</div><div class="empty-sub">Check Offered Jobs for new work</div></div>';return;}
-  list.innerHTML=TODAY_JOBS.map(function(j){return buildCard(j,false);}).join('');
+  if(!TODAY_JOBS.length){list.innerHTML='<div class="empty"><div class="empty-title">No jobs today</div><div class="empty-sub">Check Offered Jobs for new work</div></div>';}
+  else list.innerHTML=TODAY_JOBS.map(function(j){return buildCard(j,false);}).join('');
 }
+
+// ── External calendar events (operator's personal commitments) ──────────────
+function loadExternalCalEvents(){
+  fetch('/api/google/external-events?days=1').then(function(r){return r.json();}).then(function(d){
+    renderTodayPersonal((d&&d.events)||[]);
+  }).catch(function(){});
+}
+function _evRangeO(ev){
+  if(ev.allDay) return 'All day';
+  try{
+    var s=new Date(ev.start), e=ev.end?new Date(ev.end):null;
+    var pad=function(n){return n<10?'0'+n:''+n;};
+    var fmt=function(d){return pad(d.getHours())+':'+pad(d.getMinutes());};
+    return fmt(s)+(e?' \u2013 '+fmt(e):'');
+  }catch(_){return ev.start||'';}
+}
+function _todayKeyO(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function _evDateKeyO(ev){
+  if(!ev.start) return '';
+  if(ev.allDay) return ev.start.slice(0,10);
+  try{
+    var d=new Date(ev.start);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }catch(_){return ev.start.slice(0,10);}
+}
+function renderTodayPersonal(events){
+  var wrap=document.getElementById('today-personal-wrap');
+  var list=document.getElementById('today-personal-list');
+  if(!wrap||!list)return;
+  var todayKey=_todayKeyO();
+  var todays=events.filter(function(e){return _evDateKeyO(e)===todayKey;});
+  if(!todays.length){wrap.style.display='none';return;}
+  wrap.style.display='';
+  list.innerHTML=todays.map(function(ev){
+    var loc=ev.location?'<div style="font-size:.74rem;color:rgba(17,29,44,.5);margin-top:.2rem">'+escH(ev.location)+'</div>':'';
+    return '<div style="background:#fff;padding:.85rem 1rem;margin-bottom:.5rem;border:1px solid rgba(17,29,44,.08);border-left:3px solid var(--gold)">'
+      +'<div style="display:flex;gap:.85rem;align-items:flex-start">'
+        +'<div style="font-size:.78rem;color:var(--gold);font-weight:500;font-variant-numeric:tabular-nums;min-width:96px">'+_evRangeO(ev)+'</div>'
+        +'<div style="flex:1"><div style="font-size:.88rem;color:var(--navy);font-weight:500">'+escH(ev.title)+'</div>'+loc+'</div>'
+      +'</div></div>';
+  }).join('');
+}
+loadExternalCalEvents();
+setInterval(loadExternalCalEvents,5*60*1000);
 
 // ── JOB CARD ──────────────────────────────────────────────────────────────────
 function buildCard(j,isOffered){

@@ -58,6 +58,21 @@ router.post('/sync', requireStaff, async (req, res) => {
   }
 });
 
+// ── GET /api/google/external-events (protected) ──────────────────────────
+// Returns the operator's personal/other calendar events (not WPH bookings)
+// so the UI can display "you're busy at 14:00" etc.
+router.get('/external-events', requireStaff, async (req, res) => {
+  try {
+    if (!gcal.isConfigured()) return res.json({ ok: true, events: [], reason: 'not_configured' });
+    const status = gcal.getStatus();
+    if (!status.connected) return res.json({ ok: true, events: [], reason: 'not_connected' });
+    const events = await gcal.listExternalEvents(req.query.days);
+    res.json({ ok: true, events });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── Public callback route (mounted separately because Google calls it with
 // no auth cookie by default — we still validate state, but the ultimate
 // protection is that the code is single-use and bound to our client secret).
