@@ -20,6 +20,12 @@
 html{height:100%;font-size:16px;scroll-behavior:smooth}
 body{font-family:var(--sans);font-weight:300;color:var(--navy);background:#F5F2ED;line-height:1.7;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden}
 body::before{display:none}
+/* ── MOBILE-ONLY SHELL — clamp app to phone width on desktop ────────────── */
+@media (min-width: 720px){
+  body{background:#0a1420 url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='4' height='4' fill='%23101b2a'/><rect width='2' height='2' fill='%230c1624'/></svg>")}
+  #login-screen,.screen{max-width:420px;margin:0 auto;box-shadow:0 24px 60px rgba(0,0,0,.45);background:#F5F2ED;min-height:100vh;border-left:1px solid rgba(0,0,0,.1);border-right:1px solid rgba(0,0,0,.1)}
+  body::after{content:"Westmere Driver \2014 mobile app. Best experienced on iPhone or Android.";position:fixed;bottom:1.2rem;left:1.2rem;color:rgba(255,255,255,.38);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;font-family:var(--sans);pointer-events:none}
+}
 h1,h2,h3,h4{font-family:var(--serif);font-weight:300;color:var(--navy);letter-spacing:.05em}
 p{color:rgba(17,29,44,.65);line-height:1.8}
 a{color:var(--gold)}

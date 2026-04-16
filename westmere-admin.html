@@ -499,7 +499,6 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 
   <div class="sb-section">
     <span class="sb-label">Operations</span>
-    <button class="sb-item" onclick="nav('automation',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>Automation</button>
     <button class="sb-item" onclick="nav('time-off',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="14" x2="15" y2="20"/><line x1="15" y1="14" x2="9" y2="20"/></svg></span>Time Off</button>
     <button class="sb-item" onclick="nav('record-book',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>Record Book</button>
     <button class="sb-item" onclick="nav('settings',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Settings</button>
@@ -583,19 +582,6 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
         <div class="cb" id="dash-personal-list"></div>
       </div>
 
-      <div class="card">
-        <div class="ch"><div class="ct">Automation Status</div><button class="btn btn-ghost btn-sm" onclick="nav('automation',document.querySelector('[onclick*=auto]'))">Manage</button></div>
-        <div class="cb">
-          <div class="auto-grid">
-            <div class="auto-card armed" style="cursor:pointer" onclick="openModal('modal-email-customer')"><div class="ac-icon">📧</div><div class="ac-title">Customer Email</div><div class="ac-sub">Confirmation with Maps, flight tracker and calendar link</div><div class="ac-status"><div class="ac-dot"></div>Active · <span style="color:var(--gold);margin-left:.2rem;font-size:.55rem">Preview →</span></div></div>
-            <div class="auto-card armed"><div class="ac-icon">💬</div><div class="ac-title">WhatsApp</div><div class="ac-sub">Instant WhatsApp confirmation to customer on booking</div><div class="ac-status"><div class="ac-dot"></div>Active</div></div>
-            <div class="auto-card armed"><div class="ac-icon">📅</div><div class="ac-title">Calendar Sync</div><div class="ac-sub">Every booking added to Google and Apple Calendar</div><div class="ac-status"><div class="ac-dot"></div>Active</div></div>
-            <div class="auto-card armed" style="cursor:pointer" onclick="openModal('modal-email-driver')"><div class="ac-icon">✉️</div><div class="ac-title">Your Job Email</div><div class="ac-sub">Your job sheet with Waze, flight tracker and calendar</div><div class="ac-status"><div class="ac-dot"></div>Active · <span style="color:var(--gold);margin-left:.2rem;font-size:.55rem">Preview →</span></div></div>
-            <div class="auto-card armed"><div class="ac-icon">📒</div><div class="ac-title">Record Book</div><div class="ac-sub">Every booking logged to operator record spreadsheet</div><div class="ac-status"><div class="ac-dot"></div>Active</div></div>
-            <div class="auto-card"><div class="ac-icon">📄</div><div class="ac-title">Monthly Invoice</div><div class="ac-sub">Account customers invoiced automatically on the 1st</div><div class="ac-status off"><div class="ac-dot"></div>Connect Stripe to activate</div></div>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- ══ TODAY ══ -->
@@ -739,26 +725,6 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
               <tr><td colspan="7" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">No invoices yet</td></tr>
             </tbody>
           </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══ AUTOMATION ══ -->
-    <div class="view" id="view-automation">
-      <div class="page-hd"><div class="page-title">Automation</div></div>
-      <div class="card">
-        <div class="ch"><div class="ct">What Happens When a Booking Is Confirmed</div></div>
-        <div class="cb">
-          <div class="auto-grid">
-            <div class="auto-card armed"><div class="ac-icon">✉️</div><div class="ac-title">Customer Email</div><div class="ac-sub">Full confirmation with Google Maps route, flight tracker, Add to Calendar and WhatsApp link.</div><div class="toggle" onclick="togToggle(this)"><div class="toggle-track on"><div class="toggle-thumb"></div></div><div class="toggle-label">Enabled</div></div></div>
-            <div class="auto-card armed"><div class="ac-icon">💬</div><div class="ac-title">Customer WhatsApp</div><div class="ac-sub">Instant WhatsApp message with booking summary and your contact number.</div><div class="toggle" onclick="togToggle(this)"><div class="toggle-track on"><div class="toggle-thumb"></div></div><div class="toggle-label">Enabled</div></div></div>
-            <div class="auto-card armed"><div class="ac-icon">📱</div><div class="ac-title">SMS Reminder</div><div class="ac-sub">Text message to customer 2 hours before pickup time.</div><div class="toggle" onclick="togToggle(this)"><div class="toggle-track on"><div class="toggle-thumb"></div></div><div class="toggle-label">Enabled</div></div></div>
-            <div class="auto-card armed"><div class="ac-icon">🔔</div><div class="ac-title">Your Job Email</div><div class="ac-sub">Your personal job sheet sent to your inbox with Waze, flight tracker and calendar.</div><div class="toggle" onclick="togToggle(this)"><div class="toggle-track on"><div class="toggle-thumb"></div></div><div class="toggle-label">Enabled</div></div></div>
-            <div class="auto-card armed"><div class="ac-icon">📅</div><div class="ac-title">Google &amp; Apple Calendar</div><div class="ac-sub">Job added to both your Google Calendar and Apple Calendar automatically.</div><div class="toggle" onclick="togToggle(this)"><div class="toggle-track on"><div class="toggle-thumb"></div></div><div class="toggle-label">Enabled</div></div></div>
-            <div class="auto-card armed"><div class="ac-icon">📒</div><div class="ac-title">Record Book</div><div class="ac-sub">Every booking auto-logged to your statutory operator journey record.</div><div class="toggle" onclick="togToggle(this)"><div class="toggle-track on"><div class="toggle-thumb"></div></div><div class="toggle-label">Enabled</div></div></div>
-            <div class="auto-card"><div class="ac-icon">📄</div><div class="ac-title">Monthly Invoice</div><div class="ac-sub">Account customers invoiced automatically on the 1st of each month.</div><div class="toggle" onclick="togToggle(this)"><div class="toggle-track"><div class="toggle-thumb"></div></div><div class="toggle-label">Connect Stripe to enable</div></div></div>
-            <div class="auto-card"><div class="ac-icon">✈️</div><div class="ac-title">Flight Delay Alert</div><div class="ac-sub">Notifies you if a tracked flight is delayed more than 20 minutes.</div><div class="toggle" onclick="togToggle(this)"><div class="toggle-track"><div class="toggle-thumb"></div></div><div class="toggle-label">Connect Flightradar to enable</div></div></div>
-          </div>
         </div>
       </div>
     </div>
@@ -1721,7 +1687,7 @@ function tick(){const n=new Date();document.getElementById('clock').textContent=
 setInterval(tick,10000);
 
 // ── NAV ──
-const TITLES={dashboard:'Dashboard',today:"Today's Jobs",notifications:'Notifications',inbox:'Inbox','all-jobs':'All Journeys',calendar:'Calendar',customers:'Customers',invoices:'Invoices',automation:'Automation','time-off':'Time Off',fares:'Fare Editor','record-book':'Record Book',drivers:'Drivers',settings:'Settings'};
+const TITLES={dashboard:'Dashboard',today:"Today's Jobs",notifications:'Notifications',inbox:'Inbox','all-jobs':'All Journeys',calendar:'Calendar',customers:'Customers',invoices:'Invoices','time-off':'Time Off',fares:'Fare Editor','record-book':'Record Book',drivers:'Drivers',settings:'Settings'};
 function nav(id,btn){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
   document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('on'));
@@ -1820,13 +1786,6 @@ function markDone(btn){
   showToast('Journey marked complete. Record book updated.');
 }
 
-// ── TOGGLE ──
-function togToggle(el){
-  const t=el.querySelector('.toggle-track');
-  t.classList.toggle('on');
-  el.querySelector('.toggle-label').textContent=t.classList.contains('on')?'Enabled':'Disabled';
-  showToast(t.classList.contains('on')?'Automation enabled':'Automation disabled');
-}
 
 // ── FARE DATA (directional: out=drop-off, ret=pickup) ──
 const CF={
