@@ -1,0 +1,14 @@
+{
+  "name": "Westmere Owner",
+  "short_name": "Owner",
+  "description": "Owner app for Westmere Private Hire — drive, decide, oversee.",
+  "start_url": "/westmere-owner.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F5F2ED",
+  "theme_color": "#111D2C",
+  "lang": "en-GB",
+  "categories": ["business", "productivity"],
+  "icons": []
+}

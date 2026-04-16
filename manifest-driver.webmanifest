@@ -1,0 +1,14 @@
+{
+  "name": "Westmere Driver",
+  "short_name": "Driver",
+  "description": "Driver app for Westmere Private Hire — receive offers, run jobs, manage day.",
+  "start_url": "/westmere-driver.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#111D2C",
+  "theme_color": "#111D2C",
+  "lang": "en-GB",
+  "categories": ["business", "productivity"],
+  "icons": []
+}

@@ -221,4 +221,13 @@
   } else {
     boot();
   }
+
+  // ── PWA: register the service worker if available ──────────────────────
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js').catch(function (err) {
+        console.warn('[WMRT] SW registration failed:', err && err.message);
+      });
+    });
+  }
 })();
