@@ -220,6 +220,87 @@ function migrate() {
       CREATE INDEX IF NOT EXISTS idx_time_off_date ON time_off(date);
     `);
   } catch (e) {}
+
+  // Driver-offer workflow: admin offers a job to a specific driver; driver has
+  // a window to accept or decline; after timeout the job reverts to admin.
+  // Adds columns additively — old rows simply have NULLs.
+  try {
+    const info = db.prepare("PRAGMA table_info(bookings)").all();
+    const newCols = [
+      ['offered_to_driver_id', 'INTEGER REFERENCES users(id)'],
+      ['offered_at',           'TEXT'],
+      ['decided_at',           'TEXT'],
+      ['done_at',              'TEXT'],
+      ['cancelled_at',         'TEXT'],
+      ['cancellation_reason',  'TEXT'],
+      ['driver_pay',           'REAL'],
+      ['admin_fee',            'REAL']
+    ];
+    for (const [name, type] of newCols) {
+      if (!info.find(c => c.name === name)) {
+        db.exec(`ALTER TABLE bookings ADD COLUMN ${name} ${type}`);
+        console.log('[DB] Added ' + name + ' column to bookings');
+      }
+    }
+  } catch (e) {
+    console.error('[DB] driver-offer column migration failed:', e.message);
+  }
+
+  // Rebuild the bookings CHECK constraint to allow the new 'offered' status.
+  // Detect by inspecting the stored CREATE TABLE text in sqlite_master.
+  try {
+    const row = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='bookings'").get();
+    const needsRebuild = row && row.sql && !/'offered'/.test(row.sql);
+
+    if (needsRebuild) {
+      const info = db.prepare("PRAGMA table_info(bookings)").all();
+      const cols = info.map(c => c.name).join(', ');
+      db.exec('BEGIN');
+      db.exec(`ALTER TABLE bookings RENAME TO bookings_pre_offer`);
+      db.exec(`
+        CREATE TABLE bookings (
+          id          INTEGER PRIMARY KEY AUTOINCREMENT,
+          ref         TEXT    NOT NULL UNIQUE,
+          customer_id INTEGER REFERENCES customers(id),
+          driver_id   INTEGER REFERENCES users(id),
+          pickup      TEXT    NOT NULL,
+          destination TEXT    NOT NULL,
+          date        TEXT    NOT NULL,
+          time        TEXT    NOT NULL DEFAULT 'ASAP',
+          passengers  INTEGER NOT NULL DEFAULT 1,
+          bags        TEXT    NOT NULL DEFAULT '0',
+          trip_type   TEXT,
+          flight      TEXT,
+          fare        REAL,
+          payment     TEXT    DEFAULT 'cash',
+          status      TEXT    NOT NULL DEFAULT 'pending'
+                      CHECK(status IN ('pending','confirmed','offered','active','completed','cancelled')),
+          notes       TEXT,
+          calendar_event_id   TEXT,
+          needs_reassignment  INTEGER NOT NULL DEFAULT 0,
+          intake_reason       TEXT,
+          intake_checked_at   TEXT,
+          offered_to_driver_id INTEGER REFERENCES users(id),
+          offered_at           TEXT,
+          decided_at           TEXT,
+          done_at              TEXT,
+          cancelled_at         TEXT,
+          cancellation_reason  TEXT,
+          driver_pay           REAL,
+          admin_fee            REAL,
+          created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+          updated_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+        );
+      `);
+      db.exec(`INSERT INTO bookings (${cols}) SELECT ${cols} FROM bookings_pre_offer`);
+      db.exec(`DROP TABLE bookings_pre_offer`);
+      db.exec('COMMIT');
+      console.log('[DB] Rebuilt bookings with offered status support');
+    }
+  } catch (e) {
+    try { db.exec('ROLLBACK'); } catch (_) {}
+    console.error('[DB] bookings status CHECK rebuild failed:', e.message);
+  }
 }
 
 function seedDefaults() {

@@ -11,6 +11,7 @@ const publicApiRouter = require('./public-api');
 const googleRouter = require('./google-routes');
 const gmailRouter = require('./gmail-routes');
 const intakeRouter = require('./intake-routes');
+const offerRouter = require('./offer-routes');
 const { createAuthMiddleware } = require('./middleware');
 const gcal = require('./google-calendar');
 const intake = require('./intake');
@@ -94,6 +95,9 @@ app.use('/api/gmail', apiLimiter, requireAuth, gmailRouter);
 // Protected intake routes (time-off, reassignment, apology drafting)
 app.use('/api/intake', apiLimiter, requireAuth, intakeRouter);
 
+// Protected driver-offer workflow (offer/accept/decline/done/cancel)
+app.use('/api', apiLimiter, requireAuth, offerRouter);
+
 // ── Real-time push (SSE) ───────────────────────────────────────────────
 // Long-lived stream — must NOT pass through the api rate limiter (one
 // open connection per browser tab would burn the quota in seconds).
@@ -166,6 +170,9 @@ app.listen(PORT, () => {
       gcal.pullChanges().catch(e => console.error('[GCAL] poll error:', e.message));
     }, 5 * 60 * 1000);
   }
+
+  // Background: reclaim stale driver offers (10 min window)
+  offerRouter.startOfferSweeper();
 });
 
 module.exports = app;

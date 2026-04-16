@@ -403,8 +403,47 @@ async function sendCustomerInvoice(customer, bookings, period, invoiceNo) {
   return ok;
 }
 
+// ── Customer booking CANCELLED (apology) ─────────────────────────────────
+async function sendCustomerCancellation(booking) {
+  const { ref, name, email, pickup, destination, date, time, fare, flight, cancellation_reason } = booking;
+  if (!email) return;
+
+  const dateStr = formatDate(date, time);
+  const fareStr = fare ? ('\u00a3' + (typeof fare === 'number' ? fare.toFixed(2) : fare)) : null;
+  const firstName = (name || '').split(' ')[0] || 'there';
+
+  let rows = '';
+  rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:'+INK+'">' + ref + '</span>');
+  rows += rowDivider();
+  rows += detailRow('Pickup', escHtml(pickup));
+  rows += detailRow('Drop-off', escHtml(destination));
+  rows += detailRow('Date', dateStr);
+  if (flight) rows += detailRow('Flight', escHtml(flight));
+  if (fareStr) { rows += rowDivider(); rows += detailRow('Original fare', fareStr); }
+
+  const reasonBlock = cancellation_reason
+    ? `<p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Reason: ${escHtml(cancellation_reason)}</p>`
+    : '';
+
+  const body = `
+  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Cancellation</p>
+  <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
+  <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">We are very sorry \u2014 your journey with Westmere Private Hire can no longer go ahead and we must cancel the booking below.</p>
+  ${reasonBlock}
+  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">If you have already paid by card we will refund you in full within two working days. Please reply to this email or call us if you would like us to arrange an alternative \u2014 we will do our best to help.</p>
+  ${buildDetailsTable(rows)}
+  <p style="margin:26px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With our sincere apologies,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
+
+  const html = emailShell(body);
+  const subject = 'Booking cancelled \u2014 our apologies \u2014 ' + ref;
+  const preheader = 'We are sorry \u2014 your journey can no longer go ahead. A refund will follow if you paid online.';
+  const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
+  if (ok) console.log('[EMAIL] Customer cancellation sent (' + ref + ')');
+  return ok;
+}
+
 module.exports = {
   sendCustomerConfirmation, sendCustomerConfirmed, sendAdminAlert,
-  sendCustomerWelcome, sendCustomerInvoice,
+  sendCustomerWelcome, sendCustomerInvoice, sendCustomerCancellation,
   sendEmail, isConfigured
 };
