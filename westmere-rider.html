@@ -96,7 +96,7 @@ textarea.fi{resize:vertical;min-height:72px;border:1px solid rgba(17,29,44,.1);p
 textarea.fi:focus{border-color:var(--gold)}
 
 /* ── SUGGESTION DROPDOWN ── */
-.sug-drop{display:none;position:absolute;left:0;right:0;top:100%;z-index:350;background:rgba(255,255,255,.98);backdrop-filter:blur(28px);border:1px solid rgba(17,29,44,.08);box-shadow:0 8px 24px rgba(17,29,44,.1);border-radius:0 0 10px 10px;max-height:240px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(184,152,90,.3) transparent}
+.sug-drop{display:none;position:absolute;left:0;right:0;top:100%;z-index:350;background:rgba(255,255,255,.98);backdrop-filter:blur(28px);border:1px solid rgba(17,29,44,.08);box-shadow:0 8px 24px rgba(17,29,44,.1);border-radius:0 0 10px 10px;max-height:360px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(184,152,90,.3) transparent}
 .sug-drop.open{display:block}
 .sug-item{padding:.7rem 1rem;cursor:pointer;border-bottom:1px solid rgba(17,29,44,.04);transition:background .15s}
 .sug-item:hover{background:rgba(184,152,90,.15)}
@@ -828,6 +828,33 @@ var AIRPORTS=[
   {name:'Southampton Airport',sub:'Southampton \u00b7 SOU',key:'so',lat:50.9503,lon:-1.3568},
   {name:'London City Airport',sub:'London City \u00b7 LCY',key:'ci',lat:51.5048,lon:0.0495}
 ];
+var STATIONS=[
+  {name:'Gatwick Airport Railway Station',sub:'GTW \u00b7 below South Terminal \u00b7 Thameslink, Southern, Gatwick Express',lat:51.1565,lon:-0.1608},
+  {name:'Three Bridges Station',sub:'TBD \u00b7 Crawley \u00b7 Thameslink, Southern, Gatwick Express',lat:51.1173,lon:-0.1592},
+  {name:'Haywards Heath Station',sub:'HHE \u00b7 Thameslink, Southern, Gatwick Express',lat:51.0057,lon:-0.1020},
+  {name:'Horsham Station',sub:'HRH \u00b7 Southern',lat:51.0637,lon:-0.3283},
+  {name:'Crawley Station',sub:'CRW \u00b7 Southern',lat:51.1122,lon:-0.1862},
+  {name:'East Grinstead Station',sub:'EGR \u00b7 Southern',lat:51.1266,lon:-0.0094},
+  {name:'Burgess Hill Station',sub:'BUG \u00b7 Thameslink, Southern',lat:50.9561,lon:-0.1277},
+  {name:'Lewes Station',sub:'LWS \u00b7 Southern',lat:50.8722,lon:0.0093},
+  {name:'Brighton Station',sub:'BTN \u00b7 Southern, Thameslink, Gatwick Express',lat:50.8293,lon:-0.1413},
+  {name:'Hove Station',sub:'HOV \u00b7 Southern',lat:50.8305,lon:-0.1706},
+  {name:'Eastbourne Station',sub:'EBN \u00b7 Southern',lat:50.7697,lon:0.2822},
+  {name:'Seaford Station',sub:'SEF \u00b7 Southern',lat:50.7721,lon:0.1025},
+  {name:'Worthing Station',sub:'WRH \u00b7 Southern, Thameslink',lat:50.8175,lon:-0.3735},
+  {name:'Uckfield Station',sub:'UCK \u00b7 Southern',lat:50.9689,lon:0.0894},
+  {name:'London Victoria Station',sub:'VIC \u00b7 Gatwick Express, Southern, Southeastern',lat:51.4952,lon:-0.1439},
+  {name:'London Paddington Station',sub:'PAD \u00b7 GWR, Elizabeth line, Heathrow Express',lat:51.5154,lon:-0.1755},
+  {name:'London St Pancras International',sub:'STP \u00b7 Eurostar, Thameslink, HS1',lat:51.5308,lon:-0.1266},
+  {name:'London Kings Cross Station',sub:'KGX \u00b7 LNER, Thameslink',lat:51.5308,lon:-0.1238},
+  {name:'London Euston Station',sub:'EUS \u00b7 Avanti West Coast',lat:51.5282,lon:-0.1337},
+  {name:'London Waterloo Station',sub:'WAT \u00b7 South Western Railway',lat:51.5036,lon:-0.1143},
+  {name:'London Bridge Station',sub:'LBG \u00b7 Thameslink, Southern, Southeastern',lat:51.5055,lon:-0.0863},
+  {name:'London Liverpool Street Station',sub:'LST \u00b7 Greater Anglia, Stansted Express',lat:51.5178,lon:-0.0823},
+  {name:'London Charing Cross Station',sub:'CHX \u00b7 Southeastern',lat:51.5080,lon:-0.1249},
+  {name:'London Blackfriars Station',sub:'BFR \u00b7 Thameslink',lat:51.5116,lon:-0.1031},
+  {name:'London Marylebone Station',sub:'MYB \u00b7 Chiltern Railways',lat:51.5225,lon:-0.1631}
+];
 
 function nAP(s){if(!s)return null;var l=s.toLowerCase();if(l.includes('gatwick'))return 'ga';if(l.includes('heathrow'))return 'he';if(l.includes('stansted'))return 'st';if(l.includes('luton'))return 'lu';if(l.includes('southampton airport'))return 'so';if(l.includes('london city')||l.includes('city airport'))return 'ci';/* Central London only – avoid false matches like "London Road, Horsham" */if(l.includes('central london')||/\blondon\s+(wc|ec|w1|sw1|nw1|se1|n1|e1)\b/.test(l))return 'lo';return null;}
 function nT(s){if(!s)return null;var l=s.toLowerCase();
@@ -874,10 +901,35 @@ function calcRoute(lat1,lon1,lat2,lon2){
 /* ── ADDRESS AUTOCOMPLETE (Mapbox) ── */
 var _addrTimers={};
 
+function _poiIcon(cat){
+  var c=(cat||'').toLowerCase();
+  if(!c)return '\ud83d\udccd';
+  if(/airport|aero/.test(c))return '\u2708';
+  if(/(rail|train|station|metro|subway|tube)/.test(c))return '\ud83d\ude89';
+  if(/(hotel|lodg|motel|hostel|accommod|b&b|bed)/.test(c))return '\ud83c\udfe8';
+  if(/(restaurant|food|cafe|coffee|pub|bar|pizza|fast_food|bakery|diner)/.test(c))return '\ud83c\udf7d';
+  if(/(hospital|clinic|medical|doctor|pharmacy|dentist|nhs)/.test(c))return '\ud83c\udfe5';
+  if(/(school|university|college|education|kindergarten)/.test(c))return '\ud83c\udf93';
+  if(/(shop|store|retail|mall|market|supermarket)/.test(c))return '\ud83d\udecd';
+  if(/(museum|landmark|attraction|historic|monument|gallery|castle|church|cathedral|chapel|mosque|temple)/.test(c))return '\ud83c\udfdb';
+  if(/(park|garden|leisure|sport|stadium|pitch|gym|fitness|playground|pool)/.test(c))return '\ud83c\udf33';
+  if(/(fuel|petrol|gas_station)/.test(c))return '\u26fd';
+  if(/(bank|atm|finance)/.test(c))return '\ud83c\udfe6';
+  return '\ud83d\udccd';
+}
+
 function _nominatim(q){
-  return fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q)+'&format=json&addressdetails=1&extratags=1&limit=10&countrycodes=gb&viewbox=-1.5,50.5,0.5,51.5&bounded=0',{headers:{'Accept':'application/json'}})
+  return fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q)+'&format=json&addressdetails=1&extratags=1&limit=15&countrycodes=gb&viewbox=-1.5,50.5,0.5,51.8&bounded=0',{headers:{'Accept':'application/json'}})
   .then(function(r){return r.json();})
-  .then(function(arr){return(arr||[]).map(function(r){var parts=(r.display_name||'').split(', ');var poiClasses=['amenity','shop','tourism','leisure','sport','craft'];var isPoi=poiClasses.indexOf(r.class)!==-1;var cat=isPoi?(r.type||'').replace(/_/g,' '):'';return{main:parts[0]||'',sub:parts.slice(1,3).join(', '),lat:parseFloat(r.lat),lon:parseFloat(r.lon),isPoi:isPoi,cat:cat};});});
+  .then(function(arr){
+    var poiClasses=['amenity','shop','tourism','leisure','sport','craft','historic','railway','aeroway','office','building','man_made'];
+    return(arr||[]).map(function(r){
+      var parts=(r.display_name||'').split(', ');
+      var isPoi=poiClasses.indexOf(r.class)!==-1;
+      var cat=isPoi?((r.class==='amenity'||r.class==='shop'||r.class==='tourism'||r.class==='leisure'||r.class==='historic')?(r.type||'').replace(/_/g,' '):(r.class+' '+(r.type||'')).replace(/_/g,' ').trim()):'';
+      return{main:parts[0]||'',sub:parts.slice(1,3).join(', '),lat:parseFloat(r.lat),lon:parseFloat(r.lon),isPoi:isPoi,cat:cat};
+    });
+  });
 }
 function addrSearch(inputId,dropId){
   clearTimeout(_addrTimers[dropId]);
@@ -891,8 +943,11 @@ function addrSearch(inputId,dropId){
     var apItems=AIRPORTS.filter(function(ap){
       return ap.name.toLowerCase().includes(ql)||ap.sub.toLowerCase().includes(ql);
     }).slice(0,8);
+    var stItems=STATIONS.filter(function(st){
+      return st.name.toLowerCase().includes(ql)||st.sub.toLowerCase().includes(ql);
+    }).slice(0,6);
     if(window._MB){
-      fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+encodeURIComponent(q)+'.json?access_token='+_MB+'&country=gb&proximity=-0.35,50.95&language=en&limit=10&types=poi,address,place,postcode,neighborhood,locality')
+      fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+encodeURIComponent(q)+'.json?access_token='+_MB+'&country=gb&proximity=-0.35,50.95&language=en&limit=10&autocomplete=true&fuzzyMatch=true&types=poi,address,place,postcode,neighborhood,locality')
       .then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
       .then(function(data){
         var items=(data.features||[]).map(function(f){
@@ -901,11 +956,11 @@ function addrSearch(inputId,dropId){
           var cat=isPoi&&f.properties&&f.properties.category?f.properties.category:'';
           return{main:parts[0]||f.text,sub:parts.slice(1,3).join(', '),lat:f.center[1],lon:f.center[0],isPoi:isPoi,cat:cat};
         });
-        if(!items.length&&!apItems.length)throw new Error('empty');
-        _renderSuggestions(inp,drop,apItems,items);
-      }).catch(function(){_nominatim(q).then(function(items){_renderSuggestions(inp,drop,apItems,items);}).catch(function(){_renderSuggestions(inp,drop,apItems,[]);});});
+        if(!items.length&&!apItems.length&&!stItems.length)throw new Error('empty');
+        _renderSuggestions(inp,drop,apItems,stItems,items);
+      }).catch(function(){_nominatim(q).then(function(items){_renderSuggestions(inp,drop,apItems,stItems,items);}).catch(function(){_renderSuggestions(inp,drop,apItems,stItems,[]);});});
     } else {
-      _nominatim(q).then(function(items){_renderSuggestions(inp,drop,apItems,items);}).catch(function(){_renderSuggestions(inp,drop,apItems,[]);});
+      _nominatim(q).then(function(items){_renderSuggestions(inp,drop,apItems,stItems,items);}).catch(function(){_renderSuggestions(inp,drop,apItems,stItems,[]);});
     }
   },300);
 }
@@ -915,21 +970,34 @@ function _isAirportNoise(it){
   if(/\bterminal\b|\bt[1-9]\b/.test(hay))return true;
   var aps=['gatwick','heathrow','stansted','luton','southampton airport','london city airport','lhr','lgw','stn','ltn','sou','lcy'];
   for(var i=0;i<aps.length;i++){if(hay.indexOf(aps[i])!==-1)return true;}
+  if(/\brailway station\b|\btrain station\b/.test(hay)){
+    var stns=['gatwick airport','three bridges','haywards heath','horsham','crawley','east grinstead','burgess hill','lewes','brighton','hove','eastbourne','seaford','worthing','uckfield','victoria','paddington','st pancras','kings cross','king\u2019s cross','euston','waterloo','london bridge','liverpool street','charing cross','blackfriars','marylebone'];
+    for(var j=0;j<stns.length;j++){if(hay.indexOf(stns[j])!==-1)return true;}
+  }
   return false;
 }
-function _renderSuggestions(inp,drop,apItems,items){
+function _renderSuggestions(inp,drop,apItems,stItems,items){
   drop.innerHTML='';
   apItems.forEach(function(ap){
     var d=document.createElement('div');d.className='sug-item';
     d.innerHTML='<div class="si-main">\u2708 '+esc(ap.name)+'</div><div class="si-sub">'+esc(ap.sub)+'</div>';
-    d.onclick=function(){inp.value=ap.name;drop.classList.remove('open');drop.innerHTML='';checkFlightField();bkCalcFare();};
+    d.onclick=function(){inp.value=ap.name;if(ap.lat&&ap.lon)_gc[ap.name]={lat:ap.lat,lon:ap.lon};drop.classList.remove('open');drop.innerHTML='';checkFlightField();bkCalcFare();};
+    drop.appendChild(d);
+  });
+  stItems.forEach(function(st){
+    var d=document.createElement('div');d.className='sug-item';
+    d.innerHTML='<div class="si-main">\ud83d\ude89 '+esc(st.name)+'</div><div class="si-sub">'+esc(st.sub)+'</div>';
+    d.onclick=function(){inp.value=st.name;if(st.lat&&st.lon)_gc[st.name]={lat:st.lat,lon:st.lon};drop.classList.remove('open');drop.innerHTML='';checkFlightField();bkCalcFare();};
     drop.appendChild(d);
   });
   items=items.filter(function(it){return !_isAirportNoise(it);});
-  items.forEach(function(it){
+  var pois=items.filter(function(it){return it.isPoi;});
+  var addrs=items.filter(function(it){return !it.isPoi;});
+  pois.concat(addrs).forEach(function(it){
     var full=it.sub?it.main+', '+it.sub:it.main;
+    var icon=it.isPoi?_poiIcon(it.cat):'';
     var d=document.createElement('div');d.className='sug-item';
-    d.innerHTML='<div class="si-main">'+(it.isPoi?'\ud83d\udccd ':'')+esc(it.main)+'</div>'+(it.sub?'<div class="si-sub">'+esc(it.sub)+(it.cat?' \u00b7 '+esc(it.cat):'')+'</div>':'');
+    d.innerHTML='<div class="si-main">'+(icon?icon+' ':'')+esc(it.main)+'</div>'+(it.sub?'<div class="si-sub">'+esc(it.sub)+(it.cat?' \u00b7 '+esc(it.cat):'')+'</div>':'');
     d.onclick=function(){
       inp.value=full;
       if(it.lat&&it.lon)_gc[full]={lat:it.lat,lon:it.lon};

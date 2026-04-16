@@ -50,7 +50,7 @@ a{color:var(--gold)}
 .fi::placeholder{color:rgba(17,29,44,.3)}
 select.fi{cursor:pointer;background:transparent;padding:.78rem 0}
 select.fi option{background:#fff;color:var(--navy)}
-.sug-drop{display:none;position:absolute;left:0;right:0;top:100%;z-index:350;background:rgba(255,255,255,.97);backdrop-filter:blur(28px);border:1px solid rgba(184,152,90,.35);border-radius:0 0 10px 10px;max-height:240px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(184,152,90,.3) transparent}
+.sug-drop{display:none;position:absolute;left:0;right:0;top:100%;z-index:350;background:rgba(255,255,255,.97);backdrop-filter:blur(28px);border:1px solid rgba(184,152,90,.35);border-radius:0 0 10px 10px;max-height:360px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(184,152,90,.3) transparent}
 .sug-drop.open{display:block}
 .sug-item{padding:.7rem 1rem;cursor:pointer;border-bottom:1px solid rgba(17,29,44,.05);transition:background .15s}
 .sug-item:hover{background:rgba(184,152,90,.15)}
@@ -818,19 +818,74 @@ function nearestTown(coord){var best=null,bd=999;Object.keys(TC).forEach(functio
 
 /* ── Address autocomplete ── */
 var AIRPORTS=[
-  {name:'Gatwick Airport',sub:'London Gatwick \u00b7 LGW \u00b7 South & North Terminal',key:'ga'},
-  {name:'Heathrow Airport',sub:'London Heathrow \u00b7 LHR \u00b7 Terminals 2-5',key:'he'},
+  {name:'Gatwick Airport',sub:'London Gatwick \u00b7 LGW \u00b7 pick a terminal below',key:'ga'},
+  {name:'Gatwick Airport \u2014 South Terminal',sub:'LGW South \u00b7 easyJet, BA short-haul, Wizz, Vueling',key:'ga'},
+  {name:'Gatwick Airport \u2014 North Terminal',sub:'LGW North \u00b7 BA long-haul, Virgin, TUI, Norse',key:'ga'},
+  {name:'Heathrow Airport',sub:'London Heathrow \u00b7 LHR \u00b7 pick a terminal below',key:'he'},
+  {name:'Heathrow Airport \u2014 Terminal 2',sub:'LHR T2 \u00b7 Star Alliance',key:'he'},
+  {name:'Heathrow Airport \u2014 Terminal 3',sub:'LHR T3 \u00b7 oneworld',key:'he'},
+  {name:'Heathrow Airport \u2014 Terminal 4',sub:'LHR T4 \u00b7 SkyTeam',key:'he'},
+  {name:'Heathrow Airport \u2014 Terminal 5',sub:'LHR T5 \u00b7 British Airways & Iberia',key:'he'},
   {name:'Stansted Airport',sub:'London Stansted \u00b7 STN',key:'st'},
   {name:'Luton Airport',sub:'London Luton \u00b7 LTN',key:'lu'},
   {name:'Southampton Airport',sub:'Southampton \u00b7 SOU',key:'so'},
   {name:'London City Airport',sub:'London City \u00b7 LCY',key:'ci'}
 ];
+var STATIONS=[
+  {name:'Gatwick Airport Railway Station',sub:'GTW \u00b7 Thameslink, Southern, Gatwick Express'},
+  {name:'Three Bridges Station',sub:'TBD \u00b7 Thameslink, Southern'},
+  {name:'Haywards Heath Station',sub:'HHE \u00b7 Thameslink, Southern, Gatwick Express'},
+  {name:'Horsham Station',sub:'HRH \u00b7 Southern'},
+  {name:'Crawley Station',sub:'CRW \u00b7 Southern'},
+  {name:'East Grinstead Station',sub:'EGR \u00b7 Southern'},
+  {name:'Burgess Hill Station',sub:'BUG \u00b7 Thameslink, Southern'},
+  {name:'Lewes Station',sub:'LWS \u00b7 Southern'},
+  {name:'Brighton Station',sub:'BTN \u00b7 Southern, Thameslink, Gatwick Express'},
+  {name:'Hove Station',sub:'HOV \u00b7 Southern'},
+  {name:'Eastbourne Station',sub:'EBN \u00b7 Southern'},
+  {name:'Seaford Station',sub:'SEF \u00b7 Southern'},
+  {name:'Worthing Station',sub:'WRH \u00b7 Southern, Thameslink'},
+  {name:'Uckfield Station',sub:'UCK \u00b7 Southern'},
+  {name:'London Victoria Station',sub:'VIC \u00b7 Gatwick Express, Southern'},
+  {name:'London Paddington Station',sub:'PAD \u00b7 GWR, Elizabeth line, Heathrow Express'},
+  {name:'London St Pancras International',sub:'STP \u00b7 Eurostar, Thameslink, HS1'},
+  {name:'London Kings Cross Station',sub:'KGX \u00b7 LNER, Thameslink'},
+  {name:'London Euston Station',sub:'EUS \u00b7 Avanti West Coast'},
+  {name:'London Waterloo Station',sub:'WAT \u00b7 South Western Railway'},
+  {name:'London Bridge Station',sub:'LBG \u00b7 Thameslink, Southern, Southeastern'},
+  {name:'London Liverpool Street Station',sub:'LST \u00b7 Greater Anglia, Stansted Express'}
+];
 var _st={};
 
+function _poiIcon(cat){
+  var c=(cat||'').toLowerCase();
+  if(!c)return '\ud83d\udccd';
+  if(/airport|aero/.test(c))return '\u2708';
+  if(/(rail|train|station|metro|subway|tube)/.test(c))return '\ud83d\ude89';
+  if(/(hotel|lodg|motel|hostel|accommod|b&b|bed)/.test(c))return '\ud83c\udfe8';
+  if(/(restaurant|food|cafe|coffee|pub|bar|pizza|fast_food|bakery|diner)/.test(c))return '\ud83c\udf7d';
+  if(/(hospital|clinic|medical|doctor|pharmacy|dentist|nhs)/.test(c))return '\ud83c\udfe5';
+  if(/(school|university|college|education|kindergarten)/.test(c))return '\ud83c\udf93';
+  if(/(shop|store|retail|mall|market|supermarket)/.test(c))return '\ud83d\udecd';
+  if(/(museum|landmark|attraction|historic|monument|gallery|castle|church|cathedral|chapel|mosque|temple)/.test(c))return '\ud83c\udfdb';
+  if(/(park|garden|leisure|sport|stadium|pitch|gym|fitness|playground|pool)/.test(c))return '\ud83c\udf33';
+  if(/(fuel|petrol|gas_station)/.test(c))return '\u26fd';
+  if(/(bank|atm|finance)/.test(c))return '\ud83c\udfe6';
+  return '\ud83d\udccd';
+}
+
 function _nominatim(q){
-  return fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q)+'&format=json&addressdetails=1&extratags=1&limit=10&countrycodes=gb&viewbox=-1.5,50.5,0.5,51.5&bounded=0',{headers:{'Accept':'application/json'}})
+  return fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q)+'&format=json&addressdetails=1&extratags=1&limit=15&countrycodes=gb&viewbox=-1.5,50.5,0.5,51.8&bounded=0',{headers:{'Accept':'application/json'}})
   .then(function(r){return r.json();})
-  .then(function(arr){return(arr||[]).map(function(r){var parts=(r.display_name||'').split(', ');var poiClasses=['amenity','shop','tourism','leisure','sport','craft'];var isPoi=poiClasses.indexOf(r.class)!==-1;var cat=isPoi?(r.type||'').replace(/_/g,' '):'';return{main:parts[0]||'',sub:parts.slice(1,3).join(', '),lat:parseFloat(r.lat),lon:parseFloat(r.lon),isPoi:isPoi,cat:cat};});});
+  .then(function(arr){
+    var poiClasses=['amenity','shop','tourism','leisure','sport','craft','historic','railway','aeroway','office','building','man_made'];
+    return(arr||[]).map(function(r){
+      var parts=(r.display_name||'').split(', ');
+      var isPoi=poiClasses.indexOf(r.class)!==-1;
+      var cat=isPoi?((r.class==='amenity'||r.class==='shop'||r.class==='tourism'||r.class==='leisure'||r.class==='historic')?(r.type||'').replace(/_/g,' '):(r.class+' '+(r.type||'')).replace(/_/g,' ').trim()):'';
+      return{main:parts[0]||'',sub:parts.slice(1,3).join(', '),lat:parseFloat(r.lat),lon:parseFloat(r.lon),isPoi:isPoi,cat:cat};
+    });
+  });
 }
 function addrSearch(inp,sid){
   var v=inp.value.trim(),s=document.getElementById(sid);
@@ -840,9 +895,12 @@ function addrSearch(inp,sid){
     var vl=v.toLowerCase();
     var apItems=AIRPORTS.filter(function(ap){
       return ap.name.toLowerCase().includes(vl)||ap.sub.toLowerCase().includes(vl);
-    }).slice(0,3);
+    }).slice(0,8);
+    var stItems=STATIONS.filter(function(st){
+      return st.name.toLowerCase().includes(vl)||st.sub.toLowerCase().includes(vl);
+    }).slice(0,6);
     if(window._MB){
-      fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+encodeURIComponent(v)+'.json?access_token='+_MB+'&country=gb&proximity=-0.35,50.95&language=en&limit=10&types=poi,address,place,postcode,neighborhood,locality')
+      fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+encodeURIComponent(v)+'.json?access_token='+_MB+'&country=gb&proximity=-0.35,50.95&language=en&limit=10&autocomplete=true&fuzzyMatch=true&types=poi,address,place,postcode,neighborhood,locality')
       .then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
       .then(function(data){
         var items=(data.features||[]).map(function(f){
@@ -851,16 +909,28 @@ function addrSearch(inp,sid){
           var cat=isPoi&&f.properties&&f.properties.category?f.properties.category:'';
           return{main:parts[0]||f.text,sub:parts.slice(1,3).join(', '),lat:f.center[1],lon:f.center[0],isPoi:isPoi,cat:cat};
         });
-        if(!items.length&&!apItems.length)throw new Error('empty');
-        _renderSuggestions(inp,s,apItems,items);
-      }).catch(function(){_nominatim(v).then(function(items){_renderSuggestions(inp,s,apItems,items);}).catch(function(){_renderSuggestions(inp,s,apItems,[]);});});
+        if(!items.length&&!apItems.length&&!stItems.length)throw new Error('empty');
+        _renderSuggestions(inp,s,apItems,stItems,items);
+      }).catch(function(){_nominatim(v).then(function(items){_renderSuggestions(inp,s,apItems,stItems,items);}).catch(function(){_renderSuggestions(inp,s,apItems,stItems,[]);});});
     } else {
-      _nominatim(v).then(function(items){_renderSuggestions(inp,s,apItems,items);}).catch(function(){_renderSuggestions(inp,s,apItems,[]);});
+      _nominatim(v).then(function(items){_renderSuggestions(inp,s,apItems,stItems,items);}).catch(function(){_renderSuggestions(inp,s,apItems,stItems,[]);});
     }
   },300);
 }
 
-function _renderSuggestions(inp,drop,apItems,items){
+function _isAirportNoise(it){
+  var hay=((it.main||'')+' '+(it.sub||'')).toLowerCase();
+  if(/\bterminal\b|\bt[1-9]\b/.test(hay))return true;
+  var aps=['gatwick','heathrow','stansted','luton','southampton airport','london city airport','lhr','lgw','stn','ltn','sou','lcy'];
+  for(var i=0;i<aps.length;i++){if(hay.indexOf(aps[i])!==-1)return true;}
+  if(/\brailway station\b|\btrain station\b/.test(hay)){
+    var stns=['gatwick airport','three bridges','haywards heath','horsham','crawley','east grinstead','burgess hill','lewes','brighton','hove','eastbourne','seaford','worthing','uckfield','victoria','paddington','st pancras','kings cross','king\u2019s cross','euston','waterloo','london bridge','liverpool street'];
+    for(var j=0;j<stns.length;j++){if(hay.indexOf(stns[j])!==-1)return true;}
+  }
+  return false;
+}
+
+function _renderSuggestions(inp,drop,apItems,stItems,items){
   drop.innerHTML='';
   apItems.forEach(function(ap){
     var d=document.createElement('div');d.className='sug-item';
@@ -868,10 +938,20 @@ function _renderSuggestions(inp,drop,apItems,items){
     d.onclick=function(){inp.value=ap.name;drop.classList.remove('open');drop.innerHTML='';checkFlight();qbCalc();};
     drop.appendChild(d);
   });
-  items.forEach(function(it){
-    var full=it.sub?it.main+', '+it.sub:it.main;
+  stItems.forEach(function(st){
     var d=document.createElement('div');d.className='sug-item';
-    d.innerHTML='<div class="si-main">'+(it.isPoi?'\ud83d\udccd ':'')+esc(it.main)+'</div>'+(it.sub?'<div class="si-sub">'+esc(it.sub)+(it.cat?' \u00b7 '+esc(it.cat):'')+'</div>':'');
+    d.innerHTML='<div class="si-main">\ud83d\ude89 '+esc(st.name)+'</div><div class="si-sub">'+esc(st.sub)+'</div>';
+    d.onclick=function(){inp.value=st.name;drop.classList.remove('open');drop.innerHTML='';checkFlight();qbCalc();};
+    drop.appendChild(d);
+  });
+  items=items.filter(function(it){return !_isAirportNoise(it);});
+  var pois=items.filter(function(it){return it.isPoi;});
+  var addrs=items.filter(function(it){return !it.isPoi;});
+  pois.concat(addrs).forEach(function(it){
+    var full=it.sub?it.main+', '+it.sub:it.main;
+    var icon=it.isPoi?_poiIcon(it.cat):'';
+    var d=document.createElement('div');d.className='sug-item';
+    d.innerHTML='<div class="si-main">'+(icon?icon+' ':'')+esc(it.main)+'</div>'+(it.sub?'<div class="si-sub">'+esc(it.sub)+(it.cat?' \u00b7 '+esc(it.cat):'')+'</div>':'');
     d.onclick=function(){
       inp.value=full;
       if(it.lat&&it.lon)_gc[full]={lat:it.lat,lon:it.lon};

@@ -330,7 +330,7 @@ input[type=date]::placeholder,input[type=text]::placeholder{color:rgba(17,29,44,
 .msg-source.email{color:#60A5FA;border-color:rgba(96,165,250,.25)}
 
 /* ── SUGGESTION DROPDOWN ── */
-.sug-drop{position:absolute;left:0;right:0;top:100%;background:rgba(255,255,255,.97);backdrop-filter:blur(18px);border:1px solid rgba(184,152,90,.25);z-index:300;max-height:220px;overflow-y:auto;display:none}
+.sug-drop{position:absolute;left:0;right:0;top:100%;background:rgba(255,255,255,.97);backdrop-filter:blur(18px);border:1px solid rgba(184,152,90,.25);z-index:300;max-height:360px;overflow-y:auto;display:none}
 .sug-drop.on{display:block}
 .sug-drop div{padding:.72rem 1rem;font-size:.82rem;color:rgba(17,29,44,.7);cursor:pointer;border-bottom:1px solid rgba(17,29,44,.05);transition:background .15s}
 .sug-drop div:hover,.sug-drop div:active{background:rgba(184,152,90,.12);color:var(--navy)}
@@ -1595,11 +1595,79 @@ var AIRPORTS=[
   {n:'stansted',lat:51.8860,lon:0.2389},{n:'luton',lat:51.8747,lon:-0.3685},
   {n:'southampton',lat:50.9503,lon:-1.3568},{n:'city',lat:51.5048,lon:0.0495}
 ];
+var PINNED=[
+  {label:'Gatwick Airport — South Terminal',sub:'LGW South · easyJet, BA short-haul, Wizz, Vueling',lat:51.1561,lon:-0.1610,kind:'airport'},
+  {label:'Gatwick Airport — North Terminal',sub:'LGW North · BA long-haul, Virgin, TUI, Norse',lat:51.1599,lon:-0.1751,kind:'airport'},
+  {label:'Heathrow Airport — Terminal 2',sub:'LHR T2 · Star Alliance',lat:51.4714,lon:-0.4524,kind:'airport'},
+  {label:'Heathrow Airport — Terminal 3',sub:'LHR T3 · oneworld',lat:51.4720,lon:-0.4540,kind:'airport'},
+  {label:'Heathrow Airport — Terminal 4',sub:'LHR T4 · SkyTeam',lat:51.4593,lon:-0.4470,kind:'airport'},
+  {label:'Heathrow Airport — Terminal 5',sub:'LHR T5 · British Airways & Iberia',lat:51.4720,lon:-0.4880,kind:'airport'},
+  {label:'Stansted Airport',sub:'London Stansted · STN',lat:51.885,lon:0.235,kind:'airport'},
+  {label:'Luton Airport',sub:'London Luton · LTN',lat:51.8747,lon:-0.3684,kind:'airport'},
+  {label:'Southampton Airport',sub:'Southampton · SOU',lat:50.9503,lon:-1.3568,kind:'airport'},
+  {label:'London City Airport',sub:'London City · LCY',lat:51.5048,lon:0.0495,kind:'airport'},
+  {label:'Gatwick Airport Railway Station',sub:'GTW · Thameslink, Southern, Gatwick Express',lat:51.1565,lon:-0.1608,kind:'station'},
+  {label:'Three Bridges Station',sub:'TBD · Thameslink, Southern',lat:51.1173,lon:-0.1592,kind:'station'},
+  {label:'Haywards Heath Station',sub:'HHE · Thameslink, Southern, Gatwick Express',lat:51.0057,lon:-0.1020,kind:'station'},
+  {label:'Horsham Station',sub:'HRH · Southern',lat:51.0637,lon:-0.3283,kind:'station'},
+  {label:'Crawley Station',sub:'CRW · Southern',lat:51.1122,lon:-0.1862,kind:'station'},
+  {label:'East Grinstead Station',sub:'EGR · Southern',lat:51.1266,lon:-0.0094,kind:'station'},
+  {label:'Burgess Hill Station',sub:'BUG · Thameslink, Southern',lat:50.9561,lon:-0.1277,kind:'station'},
+  {label:'Lewes Station',sub:'LWS · Southern',lat:50.8722,lon:0.0093,kind:'station'},
+  {label:'Brighton Station',sub:'BTN · Southern, Thameslink, Gatwick Express',lat:50.8293,lon:-0.1413,kind:'station'},
+  {label:'Hove Station',sub:'HOV · Southern',lat:50.8305,lon:-0.1706,kind:'station'},
+  {label:'Eastbourne Station',sub:'EBN · Southern',lat:50.7697,lon:0.2822,kind:'station'},
+  {label:'Seaford Station',sub:'SEF · Southern',lat:50.7721,lon:0.1025,kind:'station'},
+  {label:'Worthing Station',sub:'WRH · Southern, Thameslink',lat:50.8175,lon:-0.3735,kind:'station'},
+  {label:'Uckfield Station',sub:'UCK · Southern',lat:50.9689,lon:0.0894,kind:'station'},
+  {label:'London Victoria Station',sub:'VIC · Gatwick Express, Southern',lat:51.4952,lon:-0.1439,kind:'station'},
+  {label:'London Paddington Station',sub:'PAD · GWR, Elizabeth line, Heathrow Express',lat:51.5154,lon:-0.1755,kind:'station'},
+  {label:'London St Pancras International',sub:'STP · Eurostar, Thameslink, HS1',lat:51.5308,lon:-0.1266,kind:'station'},
+  {label:'London Kings Cross Station',sub:'KGX · LNER, Thameslink',lat:51.5308,lon:-0.1238,kind:'station'},
+  {label:'London Euston Station',sub:'EUS · Avanti West Coast',lat:51.5282,lon:-0.1337,kind:'station'},
+  {label:'London Waterloo Station',sub:'WAT · South Western Railway',lat:51.5036,lon:-0.1143,kind:'station'},
+  {label:'London Bridge Station',sub:'LBG · Thameslink, Southern, Southeastern',lat:51.5055,lon:-0.0863,kind:'station'},
+  {label:'London Liverpool Street Station',sub:'LST · Greater Anglia, Stansted Express',lat:51.5178,lon:-0.0823,kind:'station'}
+];
 var _st={};
+function _poiIcon(cat){
+  var c=(cat||'').toLowerCase();
+  if(!c)return '\ud83d\udccd';
+  if(/airport|aero/.test(c))return '\u2708';
+  if(/(rail|train|station|metro|subway|tube)/.test(c))return '\ud83d\ude89';
+  if(/(hotel|lodg|motel|hostel|accommod)/.test(c))return '\ud83c\udfe8';
+  if(/(restaurant|food|cafe|coffee|pub|bar|pizza|fast_food|bakery|diner)/.test(c))return '\ud83c\udf7d';
+  if(/(hospital|clinic|medical|doctor|pharmacy|dentist)/.test(c))return '\ud83c\udfe5';
+  if(/(school|university|college|education|kindergarten)/.test(c))return '\ud83c\udf93';
+  if(/(shop|store|retail|mall|market|supermarket)/.test(c))return '\ud83d\udecd';
+  if(/(museum|landmark|attraction|historic|monument|gallery|castle|church|cathedral|chapel)/.test(c))return '\ud83c\udfdb';
+  if(/(park|garden|leisure|sport|stadium|gym|fitness)/.test(c))return '\ud83c\udf33';
+  if(/(fuel|petrol|gas_station)/.test(c))return '\u26fd';
+  return '\ud83d\udccd';
+}
+function _isAirportNoise(hay){
+  var h=(hay||'').toLowerCase();
+  if(/\bterminal\b|\bt[1-9]\b/.test(h))return true;
+  var aps=['gatwick','heathrow','stansted','luton','southampton airport','london city airport','lhr','lgw','stn','ltn','sou','lcy'];
+  for(var i=0;i<aps.length;i++){if(h.indexOf(aps[i])!==-1)return true;}
+  if(/\brailway station\b|\btrain station\b/.test(h)){
+    var stns=['gatwick airport','three bridges','haywards heath','horsham','crawley','east grinstead','burgess hill','lewes','brighton','hove','eastbourne','seaford','worthing','uckfield','victoria','paddington','st pancras','kings cross','king\u2019s cross','euston','waterloo','london bridge','liverpool street'];
+    for(var j=0;j<stns.length;j++){if(h.indexOf(stns[j])!==-1)return true;}
+  }
+  return false;
+}
 function _nominatim(q){
-  return fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q)+'&format=json&addressdetails=1&extratags=1&limit=10&countrycodes=gb&viewbox=-1.5,50.5,0.5,51.5&bounded=0',{headers:{'Accept':'application/json'}})
+  return fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q)+'&format=json&addressdetails=1&extratags=1&limit=15&countrycodes=gb&viewbox=-1.5,50.5,0.5,51.8&bounded=0',{headers:{'Accept':'application/json'}})
   .then(function(r){return r.json();})
-  .then(function(arr){return(arr||[]).map(function(r){var parts=(r.display_name||'').split(', ');var poiClasses=['amenity','shop','tourism','leisure','sport','craft'];var isPoi=poiClasses.indexOf(r.class)!==-1;var cat=isPoi?(r.type||'').replace(/_/g,' '):'';return{label:parts[0]||'',sub:parts.slice(1,3).join(', '),lat:parseFloat(r.lat),lon:parseFloat(r.lon),isPoi:isPoi,cat:cat};});});
+  .then(function(arr){
+    var poiClasses=['amenity','shop','tourism','leisure','sport','craft','historic','railway','aeroway','office','building','man_made'];
+    return(arr||[]).map(function(r){
+      var parts=(r.display_name||'').split(', ');
+      var isPoi=poiClasses.indexOf(r.class)!==-1;
+      var cat=isPoi?((r.class==='amenity'||r.class==='shop'||r.class==='tourism'||r.class==='leisure'||r.class==='historic')?(r.type||'').replace(/_/g,' '):(r.class+' '+(r.type||'')).replace(/_/g,' ').trim()):'';
+      return{label:parts[0]||'',sub:parts.slice(1,3).join(', '),lat:parseFloat(r.lat),lon:parseFloat(r.lon),isPoi:isPoi,cat:cat};
+    });
+  });
 }
 function addrSearch(inputId,sugId,cb){
   var inp=document.getElementById(inputId);
@@ -1609,8 +1677,10 @@ function addrSearch(inputId,sugId,cb){
   if(q.length<2){sug.innerHTML='';sug.classList.remove('on');return;}
   clearTimeout(_st[sugId]);
   _st[sugId]=setTimeout(function(){
+    var ql=q.toLowerCase();
+    var pinned=PINNED.filter(function(p){return p.label.toLowerCase().indexOf(ql)!==-1||p.sub.toLowerCase().indexOf(ql)!==-1;}).slice(0,10);
     if(window._MB){
-      fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+encodeURIComponent(q)+'.json?access_token='+_MB+'&country=gb&proximity=-0.35,50.95&language=en&limit=10&types=poi,address,place,postcode,neighborhood,locality')
+      fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+encodeURIComponent(q)+'.json?access_token='+_MB+'&country=gb&proximity=-0.35,50.95&language=en&limit=10&autocomplete=true&fuzzyMatch=true&types=poi,address,place,postcode,neighborhood,locality')
       .then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
       .then(function(data){
         var items=(data.features||[]).map(function(f){
@@ -1619,24 +1689,31 @@ function addrSearch(inputId,sugId,cb){
           var cat=isPoi&&f.properties&&f.properties.category?f.properties.category:'';
           return{label:parts[0]||f.text,sub:parts.slice(1,3).join(', '),lat:f.center[1],lon:f.center[0],isPoi:isPoi,cat:cat};
         });
-        if(!items.length)throw new Error('empty');
-        _renderSuggestions(sug,items,inp,cb);
-      }).catch(function(){_nominatim(q).then(function(items){_renderSuggestions(sug,items,inp,cb);}).catch(function(){sug.innerHTML='';sug.classList.remove('on');});});
+        if(!items.length&&!pinned.length)throw new Error('empty');
+        _renderSuggestions(sug,pinned,items,inp,cb);
+      }).catch(function(){_nominatim(q).then(function(items){_renderSuggestions(sug,pinned,items,inp,cb);}).catch(function(){_renderSuggestions(sug,pinned,[],inp,cb);});});
     } else {
-      _nominatim(q).then(function(items){_renderSuggestions(sug,items,inp,cb);}).catch(function(){sug.innerHTML='';sug.classList.remove('on');});
+      _nominatim(q).then(function(items){_renderSuggestions(sug,pinned,items,inp,cb);}).catch(function(){_renderSuggestions(sug,pinned,[],inp,cb);});
     }
   },300);
 }
-function _renderSuggestions(sug,items,inp,cb){
-  if(!items.length){sug.innerHTML='';sug.classList.remove('on');return;}
-  sug.innerHTML=items.map(function(it,i){
+function _renderSuggestions(sug,pinned,items,inp,cb){
+  items=items.filter(function(it){return !_isAirportNoise(it.label+' '+it.sub);});
+  var pois=items.filter(function(it){return it.isPoi;});
+  var addrs=items.filter(function(it){return !it.isPoi;});
+  var ordered=[];
+  pinned.forEach(function(p){ordered.push({label:p.label,sub:p.sub,lat:p.lat,lon:p.lon,icon:p.kind==='airport'?'\u2708':'\ud83d\ude89',cat:''});});
+  pois.forEach(function(it){ordered.push({label:it.label,sub:it.sub,lat:it.lat,lon:it.lon,icon:_poiIcon(it.cat),cat:it.cat});});
+  addrs.forEach(function(it){ordered.push({label:it.label,sub:it.sub,lat:it.lat,lon:it.lon,icon:'',cat:''});});
+  if(!ordered.length){sug.innerHTML='';sug.classList.remove('on');return;}
+  sug.innerHTML=ordered.map(function(it,i){
     var full=it.sub?it.label+', '+it.sub:it.label;
-    return '<div data-idx="'+i+'">'+(it.isPoi?'\ud83d\udccd ':'')+esc(full)+(it.cat?' <span style="opacity:.5;font-size:.8em">\u00b7 '+esc(it.cat)+'</span>':'')+'</div>';
+    return '<div data-idx="'+i+'">'+(it.icon?it.icon+' ':'')+esc(full)+(it.cat?' <span style="opacity:.5;font-size:.8em">\u00b7 '+esc(it.cat)+'</span>':'')+'</div>';
   }).join('');
   sug.classList.add('on');
   Array.from(sug.children).forEach(function(el,i){
     el.onclick=function(){
-      var it=items[i];
+      var it=ordered[i];
       var full=it.sub?it.label+', '+it.sub:it.label;
       inp.value=full;
       sug.innerHTML='';sug.classList.remove('on');
