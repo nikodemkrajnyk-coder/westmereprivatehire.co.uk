@@ -650,12 +650,17 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
       </div>
     </div>
 
-    <!-- Admin (full admin app embedded for owner) -->
-    <div class="pg" id="pg-admin">
-      <div class="sec-title"><em>Admin</em> Console</div>
-      <div class="sec-sub">Full admin features — same as the desktop admin app</div>
-      <div style="background:#fff;border:1px solid rgba(17,29,44,.08);overflow:hidden;height:calc(100vh - 220px);min-height:520px">
-        <iframe id="admin-frame" src="about:blank" style="width:100%;height:100%;border:0;display:block" loading="lazy"></iframe>
+    <!-- Decisions (native — offer/reclaim bookings that need a driver) -->
+    <div class="pg" id="pg-decisions">
+      <div class="sec-title"><em>Decisions</em></div>
+      <div class="sec-sub">Bookings awaiting your call — offer to a driver or reclaim a stalled offer.</div>
+      <div class="card" style="margin-top:.9rem">
+        <div class="ch">Needs action</div>
+        <div class="cb" id="dec-pending-list"><div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">Loading\u2026</div></div>
+      </div>
+      <div class="card" style="margin-top:.85rem">
+        <div class="ch">Currently offered</div>
+        <div class="cb" id="dec-offered-list"><div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">Loading\u2026</div></div>
       </div>
     </div>
 
@@ -667,9 +672,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
     <button class="bn" id="bn-offered" onclick="goPage('offered',this)"><div class="bn-bar"></div><div class="bn-label">Offered</div><div class="bn-dot" id="offered-dot"></div></button>
     <button class="bn" id="bn-tesla" onclick="goPage('tesla',this)"><div class="bn-bar"></div><div class="bn-label">Tesla</div></button>
     <button class="bn" id="bn-calendar" onclick="goPage('calendar',this)"><div class="bn-bar"></div><div class="bn-label">Calendar</div></button>
-    <button class="bn" id="bn-inbox" onclick="goPage('inbox',this)"><div class="bn-bar"></div><div class="bn-label">Inbox</div><div class="bn-dot" id="inbox-dot" style="display:none"></div></button>
-    <button class="bn" id="bn-admin" onclick="goPage('admin',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Admin</div></button>
-    <button class="bn" id="bn-assistant" onclick="goPage('assistant',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Assistant</div></button>
+    <button class="bn" id="bn-decisions" onclick="goPage('decisions',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Decisions</div><div class="bn-dot" id="decisions-dot" style="display:none"></div></button>
     <button class="bn" id="bn-earnings" onclick="goPage('earnings',this)"><div class="bn-bar"></div><div class="bn-label">Earnings</div></button>
   </div>
 
@@ -870,12 +873,12 @@ function setMode(mode){
   document.getElementById('tb-mode-label').textContent = mode==='drive' ? 'Drive Mode' : 'Admin Mode';
   // Show/hide nav items
   var driveItems = ['bn-today','bn-offered','bn-tesla'];
-  var adminItems = ['bn-admin','bn-inbox','bn-assistant'];
+  var adminItems = ['bn-decisions'];
   // Calendar + Earnings appear in BOTH modes — relevant either way
   driveItems.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=mode==='drive'?'':'none';});
   adminItems.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=mode==='admin'?'':'none';});
   if(mode==='drive') goPage('today', document.getElementById('bn-today'));
-  else goPage('admin', document.getElementById('bn-admin'));
+  else goPage('decisions', document.getElementById('bn-decisions'));
 }
 
 // ── NAVIGATION ────────────────────────────────────────────────────────────────
@@ -891,19 +894,107 @@ function goPage(id,btn){
   if(id==='inbox')oLoadInbox();
   if(id==='calendar')buildCalendar();
   if(id==='earnings')buildEarnings();
-  if(id==='admin')loadAdminFrame();
+  if(id==='decisions')loadDecisions();
   if(id==='assistant'&&!ASSIST_HISTORY.length)greetAssist();
   if(id==='smart'){var d=new Date();document.getElementById('sd-date').value=d.toISOString().split('T')[0];}
 }
 
-// ── ADMIN IFRAME (full admin app embedded for owner) ─────────────────────
-function loadAdminFrame(){
-  var f=document.getElementById('admin-frame');
-  if(!f)return;
-  if(f.dataset.loaded==='1')return;
-  f.src='/westmere-admin.html';
-  f.dataset.loaded='1';
+// ── DECISIONS (native — pending + offered bookings) ─────────────────────
+var DEC_DRIVERS = [];
+async function loadDecisions(){
+  try{
+    var results=await Promise.all([
+      fetch('/api/bookings',{credentials:'include'}).then(function(r){return r.json();}).catch(function(){return{ok:false,bookings:[]};}),
+      fetch('/api/drivers',{credentials:'include'}).then(function(r){return r.json();}).catch(function(){return{ok:false,drivers:[]};})
+    ]);
+    var bookings=(results[0]&&results[0].ok)?results[0].bookings:[];
+    DEC_DRIVERS=(results[1]&&results[1].ok)?results[1].drivers.filter(function(x){return x.active;}):[];
+    var pending=bookings.filter(function(b){return b.status==='pending';});
+    var offered=bookings.filter(function(b){return b.status==='offered';});
+    renderDecisionsPending(pending);
+    renderDecisionsOffered(offered);
+    var dot=document.getElementById('decisions-dot');
+    if(dot){var n=pending.length+offered.length;dot.textContent=n||'';dot.style.display=n?'flex':'none';}
+  }catch(e){console.error('[OWNER] loadDecisions failed:',e);}
 }
+
+function decEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function renderDecisionsPending(list){
+  var el=document.getElementById('dec-pending-list');if(!el)return;
+  if(!list.length){el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">Nothing awaiting offer</div>';return;}
+  var drvOpts='<option value="">\u2014 Offer to driver \u2014</option>'+DEC_DRIVERS.map(function(d){return '<option value="'+d.id+'">'+decEsc(d.full_name||('Driver #'+d.id))+'</option>';}).join('');
+  el.innerHTML=list.map(function(b){
+    return '<div style="padding:.85rem 1rem;border-top:1px solid var(--rule)">'
+      +'<div style="font-weight:500;color:var(--navy);font-size:.85rem">'+decEsc(b.ref||'')+' \u00b7 '+decEsc(b.customer_name||'Guest')+'</div>'
+      +'<div style="font-size:.72rem;color:rgba(17,29,44,.6);margin-top:.2rem">'+decEsc(b.pickup||'')+' \u2192 '+decEsc(b.destination||'')+'</div>'
+      +'<div style="font-size:.72rem;color:rgba(17,29,44,.5);margin-top:.15rem">'+decEsc(b.date||'')+' at '+decEsc(b.time||'')+(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')+'</div>'
+      +(b.intake_reason?'<div style="font-size:.7rem;color:#9C5800;margin-top:.25rem;font-style:italic">'+decEsc(b.intake_reason)+'</div>':'')
+      +'<div style="display:flex;gap:.5rem;margin-top:.6rem">'
+      +  '<select class="fi" id="dec-sel-'+b.id+'" style="flex:1;font-size:.78rem">'+drvOpts+'</select>'
+      +  '<button class="btn btn-navy btn-sm" onclick="decOffer('+b.id+')">Offer</button>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function renderDecisionsOffered(list){
+  var el=document.getElementById('dec-offered-list');if(!el)return;
+  if(!list.length){el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">No offers in flight</div>';return;}
+  el.innerHTML=list.map(function(b){
+    var timer='';
+    if(b.offered_at){
+      var exp=new Date((b.offered_at||'').replace(' ','T')+'Z').getTime()+10*60*1000;
+      timer='<span class="dec-offer-timer" data-offer-expires="'+exp+'" style="font-variant-numeric:tabular-nums;color:#6b7b9a;margin-left:.35rem"></span>';
+    }
+    return '<div style="padding:.85rem 1rem;border-top:1px solid var(--rule)">'
+      +'<div style="font-weight:500;color:var(--navy);font-size:.85rem">'+decEsc(b.ref||'')+' \u00b7 '+decEsc(b.customer_name||'Guest')+'</div>'
+      +'<div style="font-size:.72rem;color:rgba(17,29,44,.6);margin-top:.2rem">'+decEsc(b.pickup||'')+' \u2192 '+decEsc(b.destination||'')+'</div>'
+      +'<div style="font-size:.72rem;color:rgba(17,29,44,.5);margin-top:.15rem">'+decEsc(b.date||'')+' at '+decEsc(b.time||'')+(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')+'</div>'
+      +'<div style="font-size:.74rem;color:#2A3A66;margin-top:.25rem">Awaiting <strong>'+decEsc(b.offered_driver_name||'driver')+'</strong>'+timer+'</div>'
+      +'<div style="display:flex;gap:.5rem;margin-top:.5rem">'
+      +  '<button class="btn btn-ghost btn-sm" onclick="decReclaim('+b.id+')">Reclaim</button>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+async function decOffer(bookingId){
+  var sel=document.getElementById('dec-sel-'+bookingId);
+  var driver_id=sel&&sel.value;
+  if(!driver_id){showToast('Pick a driver first');return;}
+  var r=await fetch('/api/bookings/'+bookingId+'/offer',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({driver_id:parseInt(driver_id,10)})});
+  var d=await r.json();
+  if(d.ok){showToast('Offer sent');loadDecisions();}else showToast(d.error||'Failed');
+}
+
+async function decReclaim(bookingId){
+  if(!confirm('Reclaim this offer? Driver loses the job.'))return;
+  var r=await fetch('/api/bookings/'+bookingId+'/reclaim',{method:'POST',credentials:'include'});
+  var d=await r.json();
+  if(d.ok){showToast('Reclaimed');loadDecisions();}else showToast(d.error||'Failed');
+}
+
+// Live countdown for offered timer pills on decisions page
+setInterval(function(){
+  var pg=document.getElementById('pg-decisions');
+  if(!pg||!pg.classList.contains('on'))return;
+  document.querySelectorAll('.dec-offer-timer[data-offer-expires]').forEach(function(el){
+    var t=parseInt(el.getAttribute('data-offer-expires'),10);
+    if(!t)return;
+    var ms=t-Date.now();
+    if(ms<=0){el.textContent='\u2014 expired';el.style.color='#9C2828';return;}
+    var mm=Math.floor(ms/60000),ss=Math.floor((ms%60000)/1000);
+    el.textContent='\u00b7 '+mm+':'+String(ss).padStart(2,'0');
+    el.style.color=ms<60000?'#9C2828':ms<180000?'#9C5800':'#6b7b9a';
+  });
+},1000);
+
+// Refresh when SSE fires any booking/offer event
+window.addEventListener('wm:event',function(){
+  var pg=document.getElementById('pg-decisions');
+  if(pg&&pg.classList.contains('on'))loadDecisions();
+});
 
 // ── EARNINGS (computed live from confirmed/completed bookings) ───────────
 var ALL_BOOKINGS_CACHE = [];
