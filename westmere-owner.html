@@ -782,7 +782,7 @@ function goPage(id,btn){
   if(id==='offered')buildOffered();
   if(id==='tesla'){updateTeslaUI();buildTeslaRC();}
   if(id==='inbox')oLoadInbox();
-  if(id==='calendar')buildCalendar();
+  if(id==='calendar')loadCalendarExternal();
   if(id==='earnings')buildEarnings();
   if(id==='decisions')loadDecisions();
   if(id==='assistant'&&!ASSIST_HISTORY.length)greetAssist();
@@ -1223,10 +1223,11 @@ function buildWeekStrip(){
       altHtml += '<div style="font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.35);margin:.6rem 0 .35rem;font-weight:500">Personal</div>';
       selPersonal.forEach(function(ev){
         var loc = ev.location ? '<div style="font-size:.74rem;color:rgba(17,29,44,.5);margin-top:.15rem">'+escH(ev.location)+'</div>' : '';
+        var notes = ev.notes ? '<div style="margin-top:.3rem;padding:.35rem .55rem;background:rgba(17,29,44,.03);border-left:2px solid rgba(96,108,145,.3);font-size:.74rem;color:rgba(17,29,44,.6);white-space:pre-wrap;line-height:1.4">'+escH(ev.notes)+'</div>' : '';
         altHtml += '<div style="background:#fff;padding:.7rem .9rem;margin-bottom:.4rem;border:1px solid rgba(17,29,44,.08);border-left:3px solid var(--gold);border-radius:8px">'
           +'<div style="display:flex;gap:.7rem;align-items:flex-start">'
           +'<div style="font-size:.78rem;color:var(--gold);font-weight:500;font-variant-numeric:tabular-nums;min-width:50px">'+_evRangeO(ev).split(' ')[0]+'</div>'
-          +'<div style="flex:1"><div style="font-size:.85rem;color:var(--navy);font-weight:500">'+escH(ev.title)+'</div>'+loc+'</div>'
+          +'<div style="flex:1"><div style="font-size:.85rem;color:var(--navy);font-weight:500">'+escH(ev.title)+'</div>'+loc+notes+'</div>'
           +'</div></div>';
       });
     }
@@ -1609,8 +1610,25 @@ function dk(y,m,d){return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padSta
 
 // Calendar job store — populated from API
 var CAL_JOBS={};
+var CAL_EXTERNAL={};
 
-function calNav(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}calSelected=null;buildCalendar();}
+function calNav(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}calSelected=null;loadCalendarExternal();}
+function loadCalendarExternal(){
+  var from=dk(calYear,calMonth,1);
+  var last=new Date(calYear,calMonth+1,0);
+  var to=dk(last.getFullYear(),last.getMonth(),last.getDate());
+  fetch('/api/google/external-events?from='+from+'&to='+to,{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
+    CAL_EXTERNAL={};
+    if(d&&d.ok&&d.events){
+      d.events.forEach(function(ev){
+        var k=_evDateKeyO(ev);if(!k)return;
+        if(!CAL_EXTERNAL[k])CAL_EXTERNAL[k]=[];
+        CAL_EXTERNAL[k].push(ev);
+      });
+    }
+    buildCalendar();
+  }).catch(function(){buildCalendar();});
+}
 function buildCalendar(){
   var grid=document.getElementById('cal-grid');var mEl=document.getElementById('cal-month');
   mEl.textContent=MONTHS[calMonth]+' '+calYear;
@@ -1619,7 +1637,6 @@ function buildCalendar(){
   var daysInMonth=new Date(calYear,calMonth+1,0).getDate();
   var daysInPrev=new Date(calYear,calMonth,0).getDate();
   var today=new Date();var todayKey=dk(today.getFullYear(),today.getMonth(),today.getDate());
-  // Count jobs this month
   var monthJobs=0,monthEarn=0;
   for(var d=1;d<=daysInMonth;d++){var k=dk(calYear,calMonth,d);var jj=CAL_JOBS[k];if(jj){monthJobs+=jj.length;jj.forEach(function(j){monthEarn+=j.fare||0;});}}
 
@@ -1631,8 +1648,15 @@ function buildCalendar(){
     var isToday=key===todayKey;
     var isSel=key===calSelected;
     var jobs=CAL_JOBS[key];var n=jobs?jobs.length:0;
+    var ext=CAL_EXTERNAL[key];var nExt=ext?ext.length:0;
     var cls='cal-day'+(isToday?' today':'')+(isSel?' selected':'');
-    var dots='';if(n>0){dots='<div class="cal-dots">';for(var j=0;j<Math.min(n,4);j++)dots+='<span></span>';dots+='</div>';}
+    var dots='';
+    if(n>0||nExt>0){
+      dots='<div class="cal-dots">';
+      for(var j=0;j<Math.min(n,3);j++)dots+='<span></span>';
+      for(var j=0;j<Math.min(nExt,2);j++)dots+='<span style="background:rgba(17,29,44,.25)"></span>';
+      dots+='</div>';
+    }
     html+='<div class="'+cls+'" onclick="selectCalDay(\''+key+'\')">'
       +'<div class="cal-num">'+d+'</div>'
       +(isToday?'<div class="cal-today-label">Today</div>':'')
@@ -1644,10 +1668,8 @@ function buildCalendar(){
   for(var d=1;d<=fill;d++){html+='<div class="cal-day other"><div class="cal-num">'+d+'</div></div>';}
   grid.innerHTML=html;
 
-  // Month summary
   document.getElementById('cal-sub').innerHTML=monthJobs?'<strong>'+monthJobs+' job'+(monthJobs>1?'s':'')+'</strong> this month · <strong>£'+monthEarn+'</strong> booked':'No jobs booked this month';
 
-  // Auto-show today or selected
   if(calSelected)showCalDay(calSelected);
   else if(calMonth===today.getMonth()&&calYear===today.getFullYear())showCalDay(todayKey);
   else document.getElementById('cal-detail').innerHTML='';
@@ -1686,21 +1708,39 @@ function jobDetailCard(j){
 }
 function showCalDay(key){
   var detail=document.getElementById('cal-detail');
-  var jobs=CAL_JOBS[key];
+  var jobs=CAL_JOBS[key]||[];
+  var ext=(CAL_EXTERNAL[key]||[]).slice().sort(function(a,b){
+    if(a.allDay&&!b.allDay)return -1;if(!a.allDay&&b.allDay)return 1;
+    return (a.start||'').localeCompare(b.start||'');
+  });
   var parts=key.split('-');
   var dayNum=parseInt(parts[2]);var mon=MONTHS_S[parseInt(parts[1])-1];
   var dateObj=new Date(parseInt(parts[0]),parseInt(parts[1])-1,dayNum);
   var dayName=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dateObj.getDay()];
   var label=dayName+' '+dayNum+' '+mon;
 
-  if(!jobs||!jobs.length){
-    detail.innerHTML='<div class="card cal-day-detail"><div class="ch">'+label+'</div><div class="cal-empty">No jobs booked</div></div>';
+  if(!jobs.length&&!ext.length){
+    detail.innerHTML='<div class="card cal-day-detail"><div class="ch">'+label+'</div><div class="cal-empty">Nothing scheduled</div></div>';
     return;
   }
   var sorted=jobs.slice().sort(function(a,b){return toMins(a.time)-toMins(b.time);});
   var totalFare=sorted.reduce(function(s,j){return s+(j.fare||0);},0);
-  var html='<div class="card cal-day-detail"><div class="ch">'+label+' · '+sorted.length+' job'+(sorted.length>1?'s':'')+'<span style="color:var(--navy);font-size:.78rem;font-family:var(--serif)">£'+totalFare+'</span></div>';
-  html+=sorted.map(jobDetailCard).join('');
+  var html='<div class="card cal-day-detail"><div class="ch">'+label+(sorted.length?(' · '+sorted.length+' job'+(sorted.length>1?'s':'')+'<span style="color:var(--navy);font-size:.78rem;font-family:var(--serif)">£'+totalFare+'</span>'):'')+'</div>';
+  if(ext.length){
+    html+='<div style="background:rgba(96,108,145,.06);padding:.65rem 1rem;border-bottom:1px solid rgba(17,29,44,.06)">';
+    html+='<div style="font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.4rem;font-weight:500">From your calendar</div>';
+    html+=ext.map(function(ev){
+      var when=ev.allDay?'All day':_evRangeO(ev);
+      var loc=ev.location?'<div style="font-size:.74rem;color:rgba(17,29,44,.45);margin-top:.15rem">'+escH(ev.location)+'</div>':'';
+      var notes=ev.notes?'<div style="margin-top:.3rem;padding:.35rem .55rem;background:rgba(17,29,44,.03);border-left:2px solid rgba(96,108,145,.3);font-size:.74rem;color:rgba(17,29,44,.6);white-space:pre-wrap;line-height:1.4">'+escH(ev.notes)+'</div>':'';
+      return '<div style="padding:.4rem 0"><div style="display:flex;gap:.7rem;align-items:flex-start">'
+        +'<div style="font-size:.78rem;color:var(--gold);font-weight:500;font-variant-numeric:tabular-nums;min-width:85px">'+escH(when)+'</div>'
+        +'<div style="flex:1"><div style="font-size:.85rem;color:var(--navy);font-weight:500">'+escH(ev.title)+'</div>'+loc+notes+'</div>'
+        +'</div></div>';
+    }).join('')+'</div>';
+  }
+  if(sorted.length) html+=sorted.map(jobDetailCard).join('');
+  else if(!ext.length) html+='<div class="cal-empty">No jobs booked</div>';
   html+='</div>';
   detail.innerHTML=html;
 }
@@ -1914,7 +1954,7 @@ async function loadOwnerBookings(){
 
     // Rebuild current view
     buildToday();
-    if(document.getElementById('pg-calendar')&&document.getElementById('pg-calendar').classList.contains('on'))buildCalendar();
+    if(document.getElementById('pg-calendar')&&document.getElementById('pg-calendar').classList.contains('on'))loadCalendarExternal();
     if(document.getElementById('pg-offered')&&document.getElementById('pg-offered').classList.contains('on'))buildOffered();
     if(document.getElementById('pg-earnings')&&document.getElementById('pg-earnings').classList.contains('on'))buildEarnings();
 
