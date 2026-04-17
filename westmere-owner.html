@@ -1074,6 +1074,7 @@ function buildToday(){
   var list=document.getElementById('today-list');
   if(!TODAY_JOBS.length){list.innerHTML='<div class="empty"><div class="empty-title">No jobs today</div><div class="empty-sub">Check Offered Jobs for new work</div></div>';}
   else list.innerHTML=TODAY_JOBS.map(function(j){return buildCard(j,false);}).join('');
+  buildWeekStrip();
 }
 
 // ── External calendar events (operator's personal commitments) ──────────────
