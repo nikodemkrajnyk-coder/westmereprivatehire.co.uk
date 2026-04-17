@@ -532,6 +532,15 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
 <div id="toast"><span style="color:var(--gold);font-size:.8rem;flex-shrink:0">&#10003;</span><span id="toast-msg"></span></div>
 
 <script>
+// Force-evict stale service worker cache
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function(regs) {
+    regs.forEach(function(r) { r.unregister(); });
+  });
+  caches.keys().then(function(keys) {
+    keys.forEach(function(k) { caches.delete(k); });
+  });
+}
 // ── Display preferences (font size / brightness / contrast) ─────────────
 (function(){
   var prefs={scale:100,brightness:100,contrast:100};
