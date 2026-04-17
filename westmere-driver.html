@@ -1187,6 +1187,25 @@ function buildDriverCalendar(){
 
 function drvSelectDay(key){DRV_CAL_SELECTED=key;buildDriverCalendar();}
 
+function drvEnrichNotes(text){
+  if(!text)return '';
+  var s=drvEsc(text);
+  s=s.replace(/\b([A-Z]{2,3}\s?\d{1,5})\b/gi,function(m,f){
+    var code=f.replace(/\s/g,'').toUpperCase();
+    return '<a href="https://www.flightradar24.com/data/flights/'+code.toLowerCase()+'" target="_blank" style="color:#60A5FA;text-decoration:none;border-bottom:1px solid rgba(96,165,250,.4);font-weight:500">'+drvEsc(f)+'</a>';
+  });
+  s=s.replace(/((?:\+44|0)[\s\-]?\d[\s\-]?\d{3,4}[\s\-]?\d{3,6})/g,function(m,p){
+    var clean=p.replace(/[\s\-]/g,'');
+    return '<a href="tel:'+clean+'" style="color:var(--navy);text-decoration:none;border-bottom:1px solid var(--gold)">'+m+'</a>';
+  });
+  s=s.replace(/\b([A-Z]{1,2}\d{1,2}[A-Z]?\s*\d[A-Z]{2})\b/gi,function(m,pc){
+    return '<a href="https://maps.google.com/?q='+encodeURIComponent(pc)+'" target="_blank" style="color:var(--navy);text-decoration:none;border-bottom:1px solid var(--gold)">'+m+'</a>';
+  });
+  s=s.replace(/(\d+\s+(?:[A-Z][a-z]+\s+)?(?:Road|Street|Lane|Drive|Avenue|Ave|Close|Way|Place|Terrace|Court|Rd|St|Ln|Dr|Cl|Cres|Crescent|Hill|Grove|Park|Gardens|Gdns|Row|Square|Sq|Mews|Rise|Walk|Gate|Fields|View|Mount|Lodge|House|Manor)(?:\s*,\s*[A-Za-z\s]+)?)/gi,function(m){
+    return '<a href="https://maps.google.com/?q='+encodeURIComponent(m)+'" target="_blank" style="color:var(--navy);text-decoration:none;border-bottom:1px solid var(--gold)">'+m+'</a>';
+  });
+  return s;
+}
 function drvJobDetailCard(j){
   var h='<div style="padding:.85rem 1rem;border-bottom:1px solid rgba(17,29,44,.06)">';
   h+='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.35rem">';
@@ -1201,7 +1220,7 @@ function drvJobDetailCard(j){
     h+='<a href="https://www.flightradar24.com/data/flights/'+drvEsc(j.flight.toLowerCase())+'" target="_blank" style="font-size:.88rem;color:var(--navy);text-decoration:none;border-bottom:1px solid rgba(96,165,250,.4)">'+drvEsc(j.flight)+'</a></div>';
   }
   h+='<div style="display:flex;align-items:baseline;gap:.6rem"><span style="font-size:.6rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.4);width:50px;flex-shrink:0">Fare</span><span style="font-size:1rem;color:var(--gold)">£'+(j.fare?Number(j.fare).toFixed(0):'TBC')+'</span><span style="font-size:.72rem;color:rgba(17,29,44,.4);margin-left:.25rem">'+drvEsc(j.payment||'cash')+'</span></div>';
-  if(j.notes) h+='<div style="margin-top:.4rem;padding:.4rem .55rem;background:rgba(17,29,44,.03);border-left:2px solid var(--gold);font-size:.74rem;color:rgba(17,29,44,.6);line-height:1.4">'+drvEsc(j.notes)+'</div>';
+  if(j.notes) h+='<div style="margin-top:.4rem;padding:.4rem .55rem;background:rgba(17,29,44,.03);border-left:2px solid var(--gold);font-size:.74rem;color:rgba(17,29,44,.6);line-height:1.4">'+drvEnrichNotes(j.notes)+'</div>';
   if(j.customer_phone){
     var nm=drvEsc((j.customer_name||'Guest').split(' ')[0]);
     var wm=encodeURIComponent('Hi '+nm+', this is your Westmere driver.');

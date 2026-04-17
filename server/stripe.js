@@ -68,4 +68,44 @@ function verifyWebhook(payload, signature) {
   return s.webhooks.constructEvent(payload, signature, secret);
 }
 
-module.exports = { getStripe, isConfigured, createPaymentIntent, verifyWebhook };
+// ── Payouts ─────────────────────────────────────────────────────────────
+async function getBalance() {
+  const s = getStripe();
+  if (!s) throw new Error('Stripe not configured');
+  const bal = await s.balance.retrieve();
+  const available = (bal.available || []).find(b => b.currency === 'gbp') || { amount: 0 };
+  const pending = (bal.pending || []).find(b => b.currency === 'gbp') || { amount: 0 };
+  return {
+    available: available.amount,
+    pending: pending.amount,
+    currency: 'gbp'
+  };
+}
+
+async function createPayout({ amount, description }) {
+  const s = getStripe();
+  if (!s) throw new Error('Stripe not configured');
+  if (!amount || amount < 100) throw new Error('Minimum payout is £1.00');
+  const payout = await s.payouts.create({
+    amount,
+    currency: 'gbp',
+    description: description || 'Westmere Private Hire payout',
+  });
+  return payout;
+}
+
+async function listRecentPayouts() {
+  const s = getStripe();
+  if (!s) throw new Error('Stripe not configured');
+  const list = await s.payouts.list({ limit: 10 });
+  return (list.data || []).map(p => ({
+    id: p.id,
+    amount: p.amount,
+    status: p.status,
+    arrival_date: p.arrival_date,
+    created: p.created,
+    description: p.description
+  }));
+}
+
+module.exports = { getStripe, isConfigured, createPaymentIntent, verifyWebhook, getBalance, createPayout, listRecentPayouts };

@@ -358,4 +358,44 @@ router.get('/stats', (req, res) => {
   });
 });
 
+// ── Stripe Payouts (owner only) ──────────────────────────────────────────
+const stripe = require('./stripe');
+
+function ownerOnly(req, res, next) {
+  if (req.auth.role !== 'owner' && req.auth.role !== 'admin') return res.status(403).json({ error: 'Owner only' });
+  next();
+}
+
+router.get('/stripe/balance', ownerOnly, async (req, res) => {
+  try {
+    if (!stripe.isConfigured()) return res.json({ ok: true, available: 0, pending: 0, currency: 'gbp', reason: 'not_configured' });
+    const bal = await stripe.getBalance();
+    res.json({ ok: true, ...bal });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.post('/stripe/payout', ownerOnly, async (req, res) => {
+  try {
+    if (!stripe.isConfigured()) return res.status(400).json({ error: 'Stripe not configured' });
+    const { amount } = req.body;
+    if (!amount || amount < 100) return res.status(400).json({ error: 'Minimum payout is £1.00' });
+    const payout = await stripe.createPayout({ amount, description: req.body.description || 'Westmere payout' });
+    res.json({ ok: true, payout: { id: payout.id, amount: payout.amount, status: payout.status, arrival_date: payout.arrival_date } });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.get('/stripe/payouts', ownerOnly, async (req, res) => {
+  try {
+    if (!stripe.isConfigured()) return res.json({ ok: true, payouts: [] });
+    const payouts = await stripe.listRecentPayouts();
+    res.json({ ok: true, payouts });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 module.exports = router;

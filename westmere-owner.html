@@ -528,6 +528,20 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
           <div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">Loading…</div>
         </div>
       </div>
+      <div id="earn-payout-section" style="display:none;margin-top:.85rem">
+        <div class="card">
+          <div class="ch">Stripe Balance</div>
+          <div class="cb" id="earn-stripe-balance">
+            <div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">Loading…</div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:.65rem">
+          <div class="ch">Recent Payouts</div>
+          <div class="cb" id="earn-payout-history">
+            <div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">Loading…</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Decisions (native — offer/reclaim bookings that need a driver) -->
@@ -956,6 +970,80 @@ function buildEarnings(){
     '<div class="row"><span class="row-k">Total revenue</span><span class="row-v" style="color:var(--gold)">'+fmtMoney(totalRev)+'</span></div>'
     +'<div class="row"><span class="row-k">Total jobs</span><span class="row-v">'+totalJobs+'</span></div>'
     +'<div class="row"><span class="row-k">Average fare</span><span class="row-v">'+fmtMoney(totalJobs?totalRev/totalJobs:0)+'</span></div>';
+
+  // Show payout section in admin mode
+  var paySection=document.getElementById('earn-payout-section');
+  if(paySection){
+    paySection.style.display=(currentMode==='admin')?'':'none';
+    if(currentMode==='admin') loadStripeBalance();
+  }
+}
+
+function fmtPence(p){return '£'+(p/100).toFixed(2);}
+
+async function loadStripeBalance(){
+  var balEl=document.getElementById('earn-stripe-balance');
+  try{
+    var r=await fetch('/api/stripe/balance',{credentials:'include'});
+    var d=await r.json();
+    if(!d.ok||d.reason==='not_configured'){
+      balEl.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">Stripe not configured</div>';
+      return;
+    }
+    var avail=d.available||0;
+    var pend=d.pending||0;
+    balEl.innerHTML=
+      '<div style="padding:1rem 1.2rem">'
+      +'<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.75rem">'
+        +'<div><div style="font-size:.52rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-bottom:.15rem">Available</div>'
+        +'<div style="font-family:var(--serif);font-size:2rem;color:var(--gold);font-weight:300">'+fmtPence(avail)+'</div></div>'
+        +'<div style="text-align:right"><div style="font-size:.52rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-bottom:.15rem">Pending</div>'
+        +'<div style="font-family:var(--serif);font-size:1.2rem;color:rgba(17,29,44,.5);font-weight:300">'+fmtPence(pend)+'</div></div>'
+      +'</div>'
+      +(avail>=100?
+        '<button onclick="payoutNow('+avail+')" style="width:100%;padding:.75rem;background:var(--gold);color:#fff;border:none;border-radius:8px;font-size:.78rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Pay Out '+fmtPence(avail)+' Now</button>'
+        :'<div style="text-align:center;font-size:.78rem;color:rgba(17,29,44,.4);padding:.3rem 0">No available balance to pay out</div>')
+      +'</div>';
+    loadPayoutHistory();
+  }catch(e){
+    balEl.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:#a33">Failed to load balance</div>';
+  }
+}
+
+async function payoutNow(amount){
+  if(!confirm('Pay out '+fmtPence(amount)+' to your connected bank account?'))return;
+  try{
+    var r=await fetch('/api/stripe/payout',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({amount:amount})});
+    var d=await r.json();
+    if(d.ok){
+      if(typeof showToast==='function')showToast('Payout initiated — '+fmtPence(d.payout.amount));
+      loadStripeBalance();
+    } else {
+      alert(d.error||'Payout failed');
+    }
+  }catch(e){
+    alert('Payout error: '+e.message);
+  }
+}
+
+async function loadPayoutHistory(){
+  var el=document.getElementById('earn-payout-history');
+  try{
+    var r=await fetch('/api/stripe/payouts',{credentials:'include'});
+    var d=await r.json();
+    if(!d.ok||!d.payouts||!d.payouts.length){
+      el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">No payouts yet</div>';
+      return;
+    }
+    el.innerHTML=d.payouts.map(function(p){
+      var date=new Date(p.created*1000).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+      var arrival=p.arrival_date?new Date(p.arrival_date*1000).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';
+      var stColor=p.status==='paid'?'#2A9D5C':p.status==='pending'?'#B8989A':p.status==='failed'?'#a33':'rgba(17,29,44,.5)';
+      return '<div class="row"><span class="row-k">'+date+(arrival?' → '+arrival:'')+'</span><span class="row-v"><span style="color:'+stColor+';font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;margin-right:.5rem">'+escH(p.status)+'</span>'+fmtPence(p.amount)+'</span></div>';
+    }).join('');
+  }catch(e){
+    el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:#a33">Failed to load</div>';
+  }
 }
 
 // ── INBOX (Gmail via Google OAuth) ────────────────────────────────────────
@@ -1675,6 +1763,29 @@ function buildCalendar(){
   else document.getElementById('cal-detail').innerHTML='';
 }
 function selectCalDay(key){calSelected=key;buildCalendar();}
+function enrichNotes(text){
+  if(!text)return '';
+  var s=escH(text);
+  // Flight numbers: 2-3 letter code + 1-5 digits (e.g. BA123, EZY4567, FR901)
+  s=s.replace(/\b([A-Z]{2,3}\s?\d{1,5})\b/gi,function(m,f){
+    var code=f.replace(/\s/g,'').toUpperCase();
+    return '<a href="https://www.flightradar24.com/data/flights/'+code.toLowerCase()+'" target="_blank" style="color:#60A5FA;text-decoration:none;border-bottom:1px solid rgba(96,165,250,.4);font-weight:500">'+escH(f)+'</a>';
+  });
+  // UK phone numbers: +44..., 07..., 01..., 02...
+  s=s.replace(/((?:\+44|0)[\s\-]?\d[\s\-]?\d{3,4}[\s\-]?\d{3,6})/g,function(m,p){
+    var clean=p.replace(/[\s\-]/g,'');
+    return '<a href="tel:'+clean+'" style="color:var(--navy);text-decoration:none;border-bottom:1px solid var(--gold)">'+m+'</a>';
+  });
+  // UK postcodes: e.g. BN1 2AB, RH10 7AS, GU6 8JQ
+  s=s.replace(/\b([A-Z]{1,2}\d{1,2}[A-Z]?\s*\d[A-Z]{2})\b/gi,function(m,pc){
+    return '<a href="https://maps.google.com/?q='+encodeURIComponent(pc)+'" target="_blank" style="color:var(--navy);text-decoration:none;border-bottom:1px solid var(--gold)">'+m+'</a>';
+  });
+  // Common address patterns: numbers followed by road/street/lane/drive/avenue/close/way/place/terrace/court
+  s=s.replace(/(\d+\s+(?:[A-Z][a-z]+\s+)?(?:Road|Street|Lane|Drive|Avenue|Ave|Close|Way|Place|Terrace|Court|Rd|St|Ln|Dr|Cl|Cres|Crescent|Hill|Grove|Park|Gardens|Gdns|Row|Square|Sq|Mews|Rise|Walk|Gate|Fields|View|Mount|Lodge|House|Manor)(?:\s*,\s*[A-Za-z\s]+)?)/gi,function(m){
+    return '<a href="https://maps.google.com/?q='+encodeURIComponent(m)+'" target="_blank" style="color:var(--navy);text-decoration:none;border-bottom:1px solid var(--gold)">'+m+'</a>';
+  });
+  return s;
+}
 function jobDetailCard(j){
   var h='<div style="padding:.85rem 1rem;border-bottom:1px solid rgba(17,29,44,.06)">';
   h+='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.35rem">';
@@ -1689,7 +1800,7 @@ function jobDetailCard(j){
     h+='<a href="https://www.flightradar24.com/data/flights/'+escH(j.flight.toLowerCase())+'" target="_blank" style="font-size:.88rem;color:var(--navy);text-decoration:none;border-bottom:1px solid rgba(96,165,250,.4)">'+escH(j.flight)+'</a></div>';
   }
   h+='<div style="display:flex;align-items:baseline;gap:.6rem"><span style="font-size:.6rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.4);width:50px;flex-shrink:0">Fare</span><span style="font-family:var(--serif);font-size:1rem;color:var(--gold)">£'+escH(String(j.fare))+'</span><span style="font-size:.72rem;color:rgba(17,29,44,.4);margin-left:.25rem">'+escH(j.payment||'cash')+'</span></div>';
-  if(j.notes) h+='<div style="margin-top:.4rem;padding:.4rem .55rem;background:rgba(17,29,44,.03);border-left:2px solid var(--gold);font-size:.74rem;color:rgba(17,29,44,.6);line-height:1.4">'+escH(j.notes)+'</div>';
+  if(j.notes) h+='<div style="margin-top:.4rem;padding:.4rem .55rem;background:rgba(17,29,44,.03);border-left:2px solid var(--gold);font-size:.74rem;color:rgba(17,29,44,.6);line-height:1.4">'+enrichNotes(j.notes)+'</div>';
   if(j.phone){
     var wm=encodeURIComponent('Hi '+j.name.split(' ')[0]+', this is your Westmere driver.');
     h+='<div style="display:flex;gap:1px;margin-top:.55rem;background:rgba(17,29,44,.04);border-radius:8px;overflow:hidden">';

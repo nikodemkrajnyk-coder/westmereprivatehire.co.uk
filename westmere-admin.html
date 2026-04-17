@@ -2181,6 +2181,25 @@ function printRecordBook(){
 
 // ── TIME OFF ────────────────────────────────────────────────────────────
 function escTo(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function admEnrichNotes(text){
+  if(!text)return '';
+  var s=escTo(text);
+  s=s.replace(/\b([A-Z]{2,3}\s?\d{1,5})\b/gi,function(m,f){
+    var code=f.replace(/\s/g,'').toUpperCase();
+    return '<a href="https://www.flightradar24.com/data/flights/'+code.toLowerCase()+'" target="_blank" style="color:#60A5FA;text-decoration:none;border-bottom:1px solid rgba(96,165,250,.4);font-weight:500">'+escTo(f)+'</a>';
+  });
+  s=s.replace(/((?:\+44|0)[\s\-]?\d[\s\-]?\d{3,4}[\s\-]?\d{3,6})/g,function(m,p){
+    var clean=p.replace(/[\s\-]/g,'');
+    return '<a href="tel:'+clean+'" style="color:#111D2C;text-decoration:none;border-bottom:1px solid #B8989A">'+m+'</a>';
+  });
+  s=s.replace(/\b([A-Z]{1,2}\d{1,2}[A-Z]?\s*\d[A-Z]{2})\b/gi,function(m,pc){
+    return '<a href="https://maps.google.com/?q='+encodeURIComponent(pc)+'" target="_blank" style="color:#111D2C;text-decoration:none;border-bottom:1px solid #B8989A">'+m+'</a>';
+  });
+  s=s.replace(/(\d+\s+(?:[A-Z][a-z]+\s+)?(?:Road|Street|Lane|Drive|Avenue|Ave|Close|Way|Place|Terrace|Court|Rd|St|Ln|Dr|Cl|Cres|Crescent|Hill|Grove|Park|Gardens|Gdns|Row|Square|Sq|Mews|Rise|Walk|Gate|Fields|View|Mount|Lodge|House|Manor)(?:\s*,\s*[A-Za-z\s]+)?)/gi,function(m){
+    return '<a href="https://maps.google.com/?q='+encodeURIComponent(m)+'" target="_blank" style="color:#111D2C;text-decoration:none;border-bottom:1px solid #B8989A">'+m+'</a>';
+  });
+  return s;
+}
 async function loadTimeOff(){
   var list=document.getElementById('to-list');
   if(!list)return;
@@ -2588,11 +2607,13 @@ function admShowDay(key){
         }
         waiting='<span class="offer-wait">Awaiting '+escTo(j.offered_driver_name)+exp+'</span>';
       }
+      var notesHtml=j.notes?'<div style="margin-top:.3rem;padding:.3rem .5rem;background:rgba(17,29,44,.03);border-left:2px solid #B8989A;font-size:.72rem;color:rgba(17,29,44,.6);line-height:1.35">'+admEnrichNotes(j.notes)+'</div>':'';
       return '<div class="adm-cal-detail-job">'
         +'<div class="adm-cal-time">'+escTo(j.time||'ASAP')+'</div>'
         +'<div class="adm-cal-info">'
           +'<div class="adm-cal-name">'+escTo(j.ref||'')+' \u00b7 '+escTo(j.customer_name||'Guest')+waiting+'</div>'
           +'<div class="adm-cal-route">'+escTo(j.pickup||'')+' \u2192 '+escTo(j.destination||'')+'</div>'
+          +notesHtml
         +'</div>'
         +'<div class="adm-cal-fare">'+(j.fare?'\u00a3'+Number(j.fare).toFixed(0):'TBC')+'</div>'
         +'<div class="adm-cal-status '+stCls+'">'+escTo(stTxt)+'</div>'
