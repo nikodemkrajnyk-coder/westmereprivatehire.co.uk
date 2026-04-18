@@ -379,8 +379,41 @@ body.mode-day .modal-close{color:rgba(26,38,56,.55)}
 body.mode-day .modal-fare-amt{color:#7A6230}
 
 footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);font-size:.66rem;letter-spacing:.1em;color:rgba(17,29,44,.35);background:rgba(17,29,44,.03);border-top:1px solid rgba(17,29,44,.06);position:relative;z-index:1}.mini-legal{margin-left:.6rem}.mini-legal a{color:rgba(17,29,44,.3);text-decoration:none;margin-left:.5rem;transition:color .2s;letter-spacing:.08em}.mini-legal a:hover{color:var(--gold)}
+
+/* ── MY LOCATION BUTTON ── */
+.loc-btn{position:absolute;right:0;top:50%;transform:translateY(-50%);background:none;border:1px solid rgba(184,152,90,.3);color:var(--gold);font-family:var(--sans);font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;padding:.4rem .65rem;cursor:pointer;transition:all .2s;z-index:5;min-height:36px;display:flex;align-items:center;gap:.3rem}
+.loc-btn:hover{background:rgba(184,152,90,.12);border-color:var(--gold)}
+.loc-btn svg{width:14px;height:14px;fill:currentColor;flex-shrink:0}
+
+/* ── PAYMENT CHOICE ── */
+.pay-grid{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin:.8rem 0}
+.pay-card{background:transparent;border:1px solid rgba(17,29,44,.1);padding:1rem;cursor:pointer;transition:all .25s;text-align:center}
+.pay-card:hover{border-color:var(--gold)}
+.pay-card.sel{border-color:var(--gold);background:rgba(184,152,90,.08)}
+.pay-card-ttl{font-family:var(--serif);font-size:1rem;color:var(--navy);margin-bottom:.2rem}
+.pay-card-sub{font-size:.62rem;color:rgba(17,29,44,.4);font-weight:300}
+.pay-methods{margin:.8rem 0;display:none}
+.pay-method{display:flex;align-items:center;gap:.8rem;padding:.85rem 1rem;border:1px solid rgba(17,29,44,.08);cursor:pointer;transition:all .2s;margin-bottom:.5rem}
+.pay-method:hover{border-color:var(--gold)}
+.pay-method.sel{border-color:var(--gold);background:rgba(184,152,90,.08)}
+.pay-method-type{font-family:var(--sans);font-size:.55rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);min-width:40px}
+.pay-method-ttl{font-size:.85rem;color:var(--navy);font-weight:300}
+.pay-method-sub{font-size:.62rem;color:rgba(17,29,44,.4)}
+#stripe-card-wrap{display:none;margin:.8rem 0}
+#stripe-card-el{border:none;border-bottom:1px solid rgba(17,29,44,.18);padding:.9rem 0;min-height:50px;transition:border-color .2s}
+#stripe-card-el.StripeElement--focus{border-bottom-color:var(--gold)}
+#bk-card-error{color:var(--red);font-size:.72rem;margin-top:.4rem;min-height:1rem}
+#bk-pr-btn{min-height:52px;margin:.8rem 0}
+.bk-pr-na{font-size:.72rem;color:rgba(17,29,44,.4);text-align:center;padding:.8rem;display:none}
+body.mode-day .pay-card{border-color:rgba(26,38,56,.15)}
+body.mode-day .pay-card.sel{border-color:#7A6230;background:rgba(122,98,48,.08)}
+body.mode-day .pay-method{border-color:rgba(26,38,56,.12)}
+body.mode-day .pay-method.sel{border-color:#7A6230;background:rgba(122,98,48,.08)}
+body.mode-day #stripe-card-el{border-bottom-color:rgba(26,38,56,.25)}
+body.mode-day #stripe-card-el.StripeElement--focus{border-bottom-color:#7A6230}
 </style>
 <script src="/config.js"></script>
+<script src="https://js.stripe.com/v3/" async></script>
 <meta name="description" content="Westmere Rider — book private hire journeys across Sussex with real-time tracking, fixed quotes and premium chauffeurs.">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23111D2C'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='38' font-weight='500' text-anchor='middle' fill='%23B8985A'%3EW%3C/text%3E%3C/svg%3E">
 <meta name="robots" content="noindex,nofollow">
@@ -477,7 +510,10 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
         <div class="cb">
           <div class="fg" style="position:relative">
             <label class="fl">Pickup Address</label>
-            <input class="fi" type="text" id="bk-from" placeholder="e.g. 14 High Street, Lewes BN7" oninput="addrSearch('bk-from','bk-sug-from');bkCalcFare()" autocomplete="off">
+            <div style="position:relative">
+              <input class="fi" type="text" id="bk-from" placeholder="e.g. 14 High Street, Lewes BN7" oninput="addrSearch('bk-from','bk-sug-from');bkCalcFare()" autocomplete="off" style="padding-right:5.5rem">
+              <button type="button" class="loc-btn" onclick="useMyLocation()"><svg viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>Locate</button>
+            </div>
             <div class="sug-drop" id="bk-sug-from"></div>
           </div>
           <div class="fg" style="position:relative">
@@ -554,67 +590,10 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
       <div class="sec-title">My <em>Trips</em></div>
       <div class="sec-sub">Your journey history</div>
 
-      <!-- Active Journey -->
+      <!-- Active Journey (populated dynamically) -->
       <div class="aj-card" id="aj-card" style="display:none">
         <div class="aj-bar"></div>
-        <div class="aj-body">
-          <div class="aj-status">
-            <div class="aj-dot"></div>
-            <span class="aj-label" id="aj-status-label">Current Trip &middot; En route to pickup</span>
-          </div>
-
-          <div class="aj-eta" id="aj-eta">Driver arrives in <strong>~12 min</strong></div>
-
-          <div class="aj-meta-grid">
-            <div class="aj-meta-cell">
-              <div class="aj-meta-k">Waiting time</div>
-              <div class="aj-meta-v" id="aj-wait">8 min</div>
-            </div>
-            <div class="aj-meta-cell">
-              <div class="aj-meta-k">Distance</div>
-              <div class="aj-meta-v" id="aj-dist">28.4 mi</div>
-            </div>
-            <div class="aj-meta-cell">
-              <div class="aj-meta-k">Fare</div>
-              <div class="aj-meta-v aj-fare" id="aj-fare">&pound;78</div>
-            </div>
-          </div>
-
-          <div class="aj-progress">
-            <div class="aj-step on"><div class="aj-step-dot"></div><span>Booked</span></div>
-            <div class="aj-step-line"></div>
-            <div class="aj-step on"><div class="aj-step-dot"></div><span>En route</span></div>
-            <div class="aj-step-line"></div>
-            <div class="aj-step"><div class="aj-step-dot"></div><span>Arrived</span></div>
-          </div>
-
-          <div class="aj-route">
-            <div class="aj-from"><div class="aj-dot-sm" style="background:var(--gold)"></div><span id="aj-from-text">14 High Street, Lewes</span></div>
-            <div class="aj-line"></div>
-            <div class="aj-to"><div class="aj-dot-sm" style="background:var(--green)"></div><span id="aj-to-text">Gatwick Airport</span></div>
-          </div>
-
-          <div class="aj-driver-info">
-            <div class="aj-driver-avatar" id="aj-driver-avatar">J</div>
-            <div class="aj-driver-details">
-              <div class="aj-driver-name" id="aj-driver-name">John Carter</div>
-              <div class="aj-driver-vehicle" id="aj-driver-vehicle">Tesla Model S &middot; XX21 WPH</div>
-            </div>
-            <a href="tel:+447930342593" class="aj-call-btn" title="Call driver">Call</a>
-          </div>
-
-          <button class="aj-chat-toggle" id="aj-chat-toggle" onclick="toggleDriverChat()">Message driver</button>
-
-          <div class="aj-chat" id="aj-chat" style="display:none">
-            <div class="aj-chat-messages" id="aj-chat-msgs">
-              <div class="aj-chat-bubble them">I'm on my way. Will be there in about 12 minutes.<span class="aj-chat-time">10:18</span></div>
-            </div>
-            <div class="aj-chat-input">
-              <input type="text" id="aj-chat-input" placeholder="Type a message..." class="fi">
-              <button onclick="sendDriverMsg()" class="aj-send-btn">Send</button>
-            </div>
-          </div>
-        </div>
+        <div class="aj-body" id="aj-body"></div>
       </div>
 
       <div class="filter-row">
@@ -671,8 +650,33 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
       <button class="modal-close" onclick="closeModal()">&times;</button>
     </div>
     <div class="modal-bd" id="modal-details"></div>
+    <div class="modal-bd" style="border-top:1px solid rgba(17,29,44,.06);padding-top:1rem">
+      <div style="font-size:.56rem;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:.6rem">Payment</div>
+      <div class="pay-grid">
+        <div class="pay-card sel" id="pay-driver" onclick="riderPayChoice('driver')">
+          <div class="pay-card-ttl">Pay Driver</div>
+          <div class="pay-card-sub">Cash or card on the day</div>
+        </div>
+        <div class="pay-card" id="pay-now" onclick="riderPayChoice('now')">
+          <div class="pay-card-ttl">Pay Now</div>
+          <div class="pay-card-sub">Debit or credit card</div>
+        </div>
+      </div>
+      <div class="pay-methods" id="pay-methods">
+        <div class="pay-method sel" id="pm-card" onclick="riderMethodChoice('card')">
+          <div class="pay-method-type">Card</div>
+          <div><div class="pay-method-ttl">Debit or Credit Card</div><div class="pay-method-sub">Visa / Mastercard / Amex</div></div>
+        </div>
+      </div>
+      <div id="stripe-card-wrap">
+        <div id="stripe-card-el"></div>
+        <div id="bk-card-error"></div>
+      </div>
+      <div id="bk-pr-btn"></div>
+      <div class="bk-pr-na" id="bk-pr-na"></div>
+    </div>
     <div class="modal-ft">
-      <button class="btn-main" onclick="confirmBooking()" style="margin-top:0">Confirm Booking</button>
+      <button class="btn-main" id="bk-confirm-btn" onclick="confirmBooking()" style="margin-top:0">Confirm Booking</button>
     </div>
   </div>
 </div>
@@ -684,6 +688,41 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 
 /* ── XSS ESCAPE ── */
 function esc(s){if(!s)return '';var d=document.createElement('div');d.appendChild(document.createTextNode(String(s)));return d.innerHTML;}
+
+/* ── MY LOCATION ── */
+function useMyLocation(){
+  if(!navigator.geolocation){showToast('Location not supported on this device','error');return;}
+  var btn=document.querySelector('.loc-btn');
+  if(btn){btn.textContent='Locating...';btn.disabled=true;}
+  navigator.geolocation.getCurrentPosition(function(pos){
+    var lat=pos.coords.latitude,lng=pos.coords.longitude;
+    var _MB=window._MB;
+    if(_MB){
+      fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+lng+','+lat+'.json?access_token='+_MB+'&types=address,poi&limit=1')
+        .then(function(r){return r.json();})
+        .then(function(d){
+          var place=(d.features&&d.features[0])?d.features[0].place_name:'';
+          if(place){
+            document.getElementById('bk-from').value=place;
+            bkCalcFare();
+            showToast('Location found','success');
+          }else{
+            document.getElementById('bk-from').value=lat.toFixed(5)+', '+lng.toFixed(5);
+          }
+        }).catch(function(){
+          document.getElementById('bk-from').value=lat.toFixed(5)+', '+lng.toFixed(5);
+        }).finally(function(){
+          if(btn){btn.innerHTML='<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>Locate';btn.disabled=false;}
+        });
+    }else{
+      document.getElementById('bk-from').value=lat.toFixed(5)+', '+lng.toFixed(5);
+      if(btn){btn.innerHTML='<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>Locate';btn.disabled=false;}
+    }
+  },function(err){
+    showToast('Could not get your location','error');
+    if(btn){btn.innerHTML='<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>Locate';btn.disabled=false;}
+  },{enableHighAccuracy:true,timeout:10000});
+}
 
 /* ── SHA-256 ── */
 var RIDER_HASH='';
@@ -1379,11 +1418,61 @@ function openConfirmModal(){
     html+='<div style="text-align:center;font-size:.68rem;color:rgba(17,29,44,.35);font-weight:300;margin-top:.3rem">'+esc(_fareDistance)+' miles \u00b7 ~'+esc(_fareTime)+' min'+(_fareSurcharge?' \u00b7 '+esc(_fareSurcharge):'')+'</div>';
   }
   document.getElementById('modal-details').innerHTML=html;
+  _rPayChoice='driver';
+  document.getElementById('pay-driver').classList.add('sel');
+  document.getElementById('pay-now').classList.remove('sel');
+  document.getElementById('pay-methods').style.display='none';
+  document.getElementById('stripe-card-wrap').style.display='none';
+  var btn=document.getElementById('bk-confirm-btn');
+  btn.textContent='Confirm Booking';btn.disabled=false;
   document.getElementById('confirm-modal').classList.add('on');
 }
 function closeModal(){
   document.getElementById('confirm-modal').classList.remove('on');
 }
+
+/* ── PAYMENT CHOICE ── */
+var _rPayChoice='driver';
+var _rStripe=null;
+var _rCardEl=null;
+var STRIPE_KEY=window._SK||'';
+
+function riderPayChoice(choice){
+  _rPayChoice=choice;
+  document.getElementById('pay-driver').classList.toggle('sel',choice==='driver');
+  document.getElementById('pay-now').classList.toggle('sel',choice==='now');
+  var methods=document.getElementById('pay-methods');
+  var cardWrap=document.getElementById('stripe-card-wrap');
+  var btn=document.getElementById('bk-confirm-btn');
+  if(choice==='now'){
+    methods.style.display='block';
+    riderInitCard();
+    var fare=Math.ceil((_baseFare*_selectedVehMult)/0.5)*0.5;
+    btn.textContent='Pay \u00a3'+fare.toFixed(0);
+  }else{
+    methods.style.display='none';
+    cardWrap.style.display='none';
+    btn.textContent='Confirm Booking';
+  }
+}
+function riderMethodChoice(m){
+  document.getElementById('pm-card').classList.toggle('sel',m==='card');
+  riderInitCard();
+}
+function riderInitCard(){
+  document.getElementById('stripe-card-wrap').style.display='block';
+  if(!_rStripe&&typeof Stripe!=='undefined'&&STRIPE_KEY&&STRIPE_KEY.indexOf('YOUR')===-1){
+    _rStripe=Stripe(STRIPE_KEY);
+  }
+  if(!_rCardEl&&_rStripe){
+    _rCardEl=_rStripe.elements().create('card',{
+      style:{base:{fontFamily:'"Jost","Helvetica Neue",Arial,sans-serif',fontSize:'15px',fontWeight:'300',color:'#1C2A3E','::placeholder':{color:'#BDB8B0'}},invalid:{color:'#e05252',iconColor:'#e05252'}}
+    });
+    _rCardEl.mount('#stripe-card-el');
+    _rCardEl.on('change',function(ev){var err=document.getElementById('bk-card-error');if(err)err.textContent=ev.error?ev.error.message:'';});
+  }
+}
+
 async function confirmBooking(){
   var from=(document.getElementById('bk-from')||{}).value||'';
   var dest=(document.getElementById('bk-dest')||{}).value||'';
@@ -1403,14 +1492,35 @@ async function confirmBooking(){
     return;
   }
 
+  var paymentType=_rPayChoice==='now'?'card':'cash';
+  var btn=document.getElementById('bk-confirm-btn');
+
+  if(_rPayChoice==='now'){
+    if(!_rStripe||!_rCardEl){showToast('Payment system not ready. Please refresh.','error');return;}
+    btn.disabled=true;btn.textContent='Processing...';
+    try{
+      var amtPence=Math.max(Math.round(fare*100),100);
+      var piRes=await fetch('/api/public/create-payment-intent',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:amtPence,currency:'gbp',booking:{pickup:from,destination:dest,date:date,time:time},customer:{name:name,email:email,phone:phone}})});
+      var piData=await piRes.json();
+      if(!piRes.ok||!piData.clientSecret){btn.disabled=false;btn.textContent='Pay \u00a3'+fare.toFixed(0);showToast(piData.error||'Payment setup failed','error');return;}
+      var result=await _rStripe.confirmCardPayment(piData.clientSecret,{payment_method:{card:_rCardEl,billing_details:{name:name,email:email||undefined}}});
+      if(result.error){btn.disabled=false;btn.textContent='Pay \u00a3'+fare.toFixed(0);var errEl=document.getElementById('bk-card-error');if(errEl)errEl.textContent=result.error.message;return;}
+    }catch(e){
+      btn.disabled=false;btn.textContent='Pay \u00a3'+fare.toFixed(0);
+      showToast('Payment failed. Please try again.','error');
+      return;
+    }
+  }
+
   try{
     var r=await fetch('/api/public/book',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name:name,phone:phone,email:email||null,pickup:from,destination:dest,date:date,time:time||'ASAP',passengers:parseInt(pax)||1,bags:bags,flight:flight||null,fare:fare,payment:'cash',notes:_selectedVehName?'Vehicle: '+_selectedVehName:'',source:'rider-app'})
+      body:JSON.stringify({name:name,phone:phone,email:email||null,pickup:from,destination:dest,date:date,time:time||'ASAP',passengers:parseInt(pax)||1,bags:bags,flight:flight||null,fare:fare,payment:paymentType,notes:_selectedVehName?'Vehicle: '+_selectedVehName:'',source:'rider-app'})
     });
     var data=await r.json();
     if(!r.ok){
+      btn.disabled=false;btn.textContent=_rPayChoice==='now'?'Pay \u00a3'+fare.toFixed(0):'Confirm Booking';
       showToast(data.error||'Booking failed','error');
       return;
     }
@@ -1426,14 +1536,15 @@ async function confirmBooking(){
       bags:bags,
       vehicle:_selectedVehName,
       fare:fare,
-      status:'pending',
+      status:paymentType==='card'?'confirmed':'pending',
+      payment:paymentType,
       created:new Date().toISOString()
     };
     var bookings=JSON.parse(localStorage.getItem('wph_rider_bookings')||'[]');
     bookings.unshift(booking);
     localStorage.setItem('wph_rider_bookings',JSON.stringify(bookings));
     closeModal();
-    showToast('Booking confirmed: '+data.ref,'success');
+    showToast(paymentType==='card'?'Paid and booked: '+data.ref:'Booking received: '+data.ref,'success');
     document.getElementById('bk-from').value='';
     document.getElementById('bk-dest').value='';
     document.getElementById('bk-flight').value='';
@@ -1443,6 +1554,7 @@ async function confirmBooking(){
     renderTrips('upcoming');
     setTimeout(function(){goPage('trips');},600);
   }catch(e){
+    btn.disabled=false;btn.textContent=_rPayChoice==='now'?'Pay \u00a3'+fare.toFixed(0):'Confirm Booking';
     showToast('Connection error. Please try again.','error');
   }
 }
@@ -1455,6 +1567,7 @@ function getBookings(){
 }
 
 function renderTrips(filter){
+  renderActiveTrip();
   var bookings=getBookings();
   var now=new Date().toISOString().split('T')[0];
   var filtered;
@@ -1502,23 +1615,39 @@ function cancelTrip(ref){
   showToast('Booking '+ref+' cancelled');
 }
 
-function renderHomeUpcoming(){}
-
-/* ── DRIVER CHAT (in-app sync) ── */
-function toggleDriverChat(){
-  var c=document.getElementById('aj-chat');if(!c)return;
-  c.style.display=c.style.display==='none'?'block':'none';
-}
-function sendDriverMsg(){
-  var inp=document.getElementById('aj-chat-input');if(!inp||!inp.value.trim())return;
-  var msgs=document.getElementById('aj-chat-msgs');
-  var t=new Date(),hh=String(t.getHours()).padStart(2,'0'),mm=String(t.getMinutes()).padStart(2,'0');
-  var b=document.createElement('div');
-  b.className='aj-chat-bubble me';
-  b.innerHTML=esc(inp.value)+'<span class="aj-chat-time">'+hh+':'+mm+'</span>';
-  msgs.appendChild(b);
-  inp.value='';
-  msgs.scrollTop=msgs.scrollHeight;
+/* ── ACTIVE TRIP ── */
+function renderActiveTrip(){
+  var bookings=getBookings();
+  var today=new Date().toISOString().split('T')[0];
+  var active=bookings.find(function(b){
+    return(b.status==='confirmed'||b.status==='active')&&b.date>=today;
+  });
+  var card=document.getElementById('aj-card');
+  var body=document.getElementById('aj-body');
+  if(!active||!card||!body){if(card)card.style.display='none';return;}
+  card.style.display='block';
+  var statusLabel=active.status==='active'?'Driver en route':'Confirmed';
+  var h='';
+  h+='<div class="aj-status"><div class="aj-dot"></div><span class="aj-label">'+esc(statusLabel)+'</span></div>';
+  h+='<div class="aj-progress">';
+  h+='<div class="aj-step on"><div class="aj-step-dot"></div><span>Booked</span></div>';
+  h+='<div class="aj-step-line"></div>';
+  h+='<div class="aj-step'+(active.status==='active'?' on':'')+'"><div class="aj-step-dot"></div><span>En route</span></div>';
+  h+='<div class="aj-step-line"></div>';
+  h+='<div class="aj-step"><div class="aj-step-dot"></div><span>Arrived</span></div>';
+  h+='</div>';
+  h+='<div class="aj-route">';
+  h+='<div class="aj-from"><div class="aj-dot-sm" style="background:var(--gold)"></div><span>'+esc(active.from)+'</span></div>';
+  h+='<div class="aj-line"></div>';
+  h+='<div class="aj-to"><div class="aj-dot-sm" style="background:var(--green)"></div><span>'+esc(active.dest)+'</span></div>';
+  h+='</div>';
+  h+='<div class="aj-meta-grid">';
+  h+='<div class="aj-meta-cell"><div class="aj-meta-k">Date</div><div class="aj-meta-v">'+esc(active.date)+'</div></div>';
+  h+='<div class="aj-meta-cell"><div class="aj-meta-k">Time</div><div class="aj-meta-v">'+esc(active.time)+'</div></div>';
+  h+='<div class="aj-meta-cell"><div class="aj-meta-k">Fare</div><div class="aj-meta-v aj-fare">\u00a3'+active.fare+'</div></div>';
+  h+='</div>';
+  h+='<div style="text-align:center;padding:.6rem 0"><a href="tel:+447930342593" class="aj-call-btn" style="display:inline-block;padding:.6rem 1.2rem">Call Driver</a></div>';
+  body.innerHTML=h;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
