@@ -61,7 +61,7 @@ nav.solid{background:rgba(255,255,255,.85);backdrop-filter:blur(20px)}
 /* ── DRIVER APP ── */
 .screen{display:none;height:100vh;height:100dvh;flex-direction:column;position:relative;z-index:1;overflow:hidden}
 .screen.on{display:flex}
-.topbar{background:rgba(255,255,255,.92);backdrop-filter:blur(24px);padding:calc(env(safe-area-inset-top,0px) + .75rem) 1.2rem .75rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid rgba(17,29,44,.06);box-shadow:0 1px 8px rgba(17,29,44,.04);position:sticky;top:0;z-index:50;height:64px}
+.topbar{background:rgba(255,255,255,.92);backdrop-filter:blur(24px);padding:calc(env(safe-area-inset-top,0px) + .75rem) 1.2rem .75rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid rgba(17,29,44,.06);box-shadow:0 1px 8px rgba(17,29,44,.04);z-index:50;height:64px}
 .tb-brand{display:flex;align-items:center;gap:.8rem;text-decoration:none}
 .tb-crest{width:36px;height:36px;border:1px solid rgba(184,152,90,.35);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1rem;color:var(--navy);letter-spacing:.02em;flex-shrink:0}
 .tb-name{font-family:var(--serif);font-size:1rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--navy)}
@@ -387,6 +387,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
     <div class="page-content" id="pg-today">
       <div class="sec-title">Today's <em>Jobs</em></div>
       <div class="sec-sub" id="today-sub"></div>
+      <div id="today-personal"></div>
       <div id="today-list"></div>
     </div>
 
@@ -753,11 +754,43 @@ function goPage(id,btn){
 }
 
 // ─── TODAY ────────────────────────────────────────────────────────────────────
+var DRV_TODAY_PERSONAL=[];
+function loadTodayPersonal(){
+  fetch('/api/google/external-events?days=1',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
+    DRV_TODAY_PERSONAL=(d&&d.events)||[];
+    renderTodayPersonal();
+  }).catch(function(){});
+}
+function renderTodayPersonal(){
+  var el=document.getElementById('today-personal');
+  if(!el)return;
+  var today=new Date().toISOString().slice(0,10);
+  var evs=DRV_TODAY_PERSONAL.filter(function(ev){
+    var k=_drvEvDateKey(ev);return k===today;
+  });
+  if(!evs.length){el.innerHTML='';return;}
+  var html='<div style="margin:.5rem 0 .7rem;padding:.65rem 1rem;background:rgba(96,108,145,.06);border-left:3px solid var(--gold);border-radius:0 8px 8px 0">';
+  html+='<div style="font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.4rem;font-weight:500">From your calendar</div>';
+  html+=evs.map(function(ev){
+    var when=ev.allDay?'All day':_drvEvRange(ev);
+    var loc=ev.location?'<div style="font-size:.74rem;margin-top:.15rem"><a href="https://maps.google.com/?q='+encodeURIComponent(ev.location)+'" target="_blank" style="color:rgba(17,29,44,.5);text-decoration:none;border-bottom:1px solid var(--gold)">'+drvEsc(ev.location)+'</a></div>':'';
+    var notes=ev.notes?'<div style="margin-top:.25rem;font-size:.72rem;color:rgba(17,29,44,.55);line-height:1.35">'+drvEnrichNotes(ev.notes)+'</div>':'';
+    return '<div style="padding:.3rem 0"><div style="display:flex;gap:.6rem;align-items:flex-start">'
+      +'<div style="font-size:.76rem;color:var(--gold);font-weight:500;min-width:70px">'+drvEsc(when)+'</div>'
+      +'<div style="flex:1"><div style="font-size:.82rem;color:var(--navy);font-weight:500">'+drvEsc(ev.title)+'</div>'+loc+notes+'</div>'
+      +'</div></div>';
+  }).join('')+'</div>';
+  el.innerHTML=html;
+}
+loadTodayPersonal();
+setInterval(loadTodayPersonal,5*60*1000);
+
 function buildToday(){
   var d=new Date();
   document.getElementById('today-date').textContent=d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
   var rem=TODAY_JOBS.filter(function(j){return j.status!=='done';}).length;
   document.getElementById('today-sub').textContent=rem?(rem===1?'1 job remaining':rem+' jobs remaining'):'All done for today';
+  renderTodayPersonal();
   var list=document.getElementById('today-list');
   if(!TODAY_JOBS.length){list.innerHTML='<div class="empty"><div class="empty-title">No jobs today</div><div class="empty-sub">Check Offered Jobs for new work</div></div>';return;}
   list.innerHTML=TODAY_JOBS.map(function(j){return buildCard(j,false);}).join('');
@@ -817,7 +850,7 @@ function buildCard(j,isOffered){
     +  '<div class="jd-row"><span class="jd-key">Drop-off</span><span class="jd-val">'+esc(j.dest)+'</span></div>'
     +  (j.flight?'<div class="jd-row"><span class="jd-key">Flight</span><span class="jd-val">'+fb+'</span></div>':'')
     +  '<div class="jd-row"><span class="jd-key">Fare</span><span class="jd-val accent">£'+esc(j.fare)+' · '+esc(j.payment)+'</span></div>'
-    +  (j.note?'<div class="jd-row"><span class="jd-key">Note</span><span class="jd-val" style="color:rgba(17,29,44,.5);font-size:.78rem">'+esc(j.note)+'</span></div>':'')
+    +  (j.note?'<div class="jd-row"><span class="jd-key">Note</span><span class="jd-val" style="color:rgba(17,29,44,.5);font-size:.78rem">'+drvEnrichNotes(j.note)+'</span></div>':'')
     +'</div>'
     +contact+actions
     +(!isDone?links:'')
@@ -1190,19 +1223,19 @@ function drvSelectDay(key){DRV_CAL_SELECTED=key;buildDriverCalendar();}
 function drvEnrichNotes(text){
   if(!text)return '';
   var s=drvEsc(text);
-  s=s.replace(/\b([A-Z]{2,3}\s?\d{1,5})\b/gi,function(m,f){
-    var code=f.replace(/\s/g,'').toUpperCase();
-    return '<a href="https://www.flightradar24.com/data/flights/'+code.toLowerCase()+'" target="_blank" style="color:#60A5FA;text-decoration:none;border-bottom:1px solid rgba(96,165,250,.4);font-weight:500">'+drvEsc(f)+'</a>';
-  });
-  s=s.replace(/((?:\+44|0)[\s\-]?\d[\s\-]?\d{3,4}[\s\-]?\d{3,6})/g,function(m,p){
-    var clean=p.replace(/[\s\-]/g,'');
-    return '<a href="tel:'+clean+'" style="color:var(--navy);text-decoration:none;border-bottom:1px solid var(--gold)">'+m+'</a>';
-  });
-  s=s.replace(/\b([A-Z]{1,2}\d{1,2}[A-Z]?\s*\d[A-Z]{2})\b/gi,function(m,pc){
+  s=s.replace(/\b([A-Z]{1,2}\d{1,2}[A-Z]?\s+\d[A-Z]{2})\b/gi,function(m,pc){
     return '<a href="https://maps.google.com/?q='+encodeURIComponent(pc)+'" target="_blank" style="color:var(--navy);text-decoration:none;border-bottom:1px solid var(--gold)">'+m+'</a>';
   });
   s=s.replace(/(\d+\s+(?:[A-Z][a-z]+\s+)?(?:Road|Street|Lane|Drive|Avenue|Ave|Close|Way|Place|Terrace|Court|Rd|St|Ln|Dr|Cl|Cres|Crescent|Hill|Grove|Park|Gardens|Gdns|Row|Square|Sq|Mews|Rise|Walk|Gate|Fields|View|Mount|Lodge|House|Manor)(?:\s*,\s*[A-Za-z\s]+)?)/gi,function(m){
     return '<a href="https://maps.google.com/?q='+encodeURIComponent(m)+'" target="_blank" style="color:var(--navy);text-decoration:none;border-bottom:1px solid var(--gold)">'+m+'</a>';
+  });
+  s=s.replace(/(?<![">\/])(\b[A-Z]{2,3}\d{1,5}\b)/gi,function(m,f){
+    if(/<\/a>/.test(s.slice(s.indexOf(m)-50,s.indexOf(m))))return m;
+    return '<a href="https://www.flightradar24.com/data/flights/'+f.toLowerCase()+'" target="_blank" style="color:#60A5FA;text-decoration:none;border-bottom:1px solid rgba(96,165,250,.4);font-weight:500">'+m+'</a>';
+  });
+  s=s.replace(/((?:\+44|0)[\s\-]?\d[\s\-]?\d{3,4}[\s\-]?\d{3,6})/g,function(m,p){
+    var clean=p.replace(/[\s\-]/g,'');
+    return '<a href="tel:'+clean+'" style="color:var(--navy);text-decoration:none;border-bottom:1px solid var(--gold)">'+m+'</a>';
   });
   return s;
 }

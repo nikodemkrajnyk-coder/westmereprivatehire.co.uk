@@ -34,7 +34,7 @@ nav#nav{display:none}
 
 /* ── APP SHELL ── */
 .app{display:flex;flex-direction:column;height:100vh;height:100dvh;position:relative;z-index:1;overflow:hidden;max-width:100vw}
-.topbar{background:rgba(255,255,255,.92);backdrop-filter:blur(24px);padding:calc(var(--safe-top) + .35rem) 1.2rem .35rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid rgba(17,29,44,.06);box-shadow:0 1px 8px rgba(17,29,44,.04);position:sticky;top:0;z-index:60;height:50px}
+.topbar{background:rgba(255,255,255,.92);backdrop-filter:blur(24px);padding:calc(var(--safe-top) + .35rem) 1.2rem .35rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid rgba(17,29,44,.06);box-shadow:0 1px 8px rgba(17,29,44,.04);z-index:60;height:50px}
 .tb-left{display:flex;align-items:center;gap:.8rem}
 .tb-crest{width:36px;height:36px;border:1px solid rgba(184,152,90,.22);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1rem;color:var(--navy);flex-shrink:0}
 .tb-name{font-family:var(--serif);font-size:1rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--navy)}
@@ -1766,23 +1766,23 @@ function selectCalDay(key){calSelected=key;buildCalendar();}
 function enrichNotes(text){
   if(!text)return '';
   var s=escH(text);
-  // Flight numbers: 2-3 letter code + 1-5 digits (e.g. BA123, EZY4567, FR901)
-  s=s.replace(/\b([A-Z]{2,3}\s?\d{1,5})\b/gi,function(m,f){
-    var code=f.replace(/\s/g,'').toUpperCase();
-    return '<a href="https://www.flightradar24.com/data/flights/'+code.toLowerCase()+'" target="_blank" style="color:#60A5FA;text-decoration:none;border-bottom:1px solid rgba(96,165,250,.4);font-weight:500">'+escH(f)+'</a>';
+  // UK postcodes first (e.g. BN6 9SD, RH10 7AS) — must run before flights to avoid partial match
+  s=s.replace(/\b([A-Z]{1,2}\d{1,2}[A-Z]?\s+\d[A-Z]{2})\b/gi,function(m,pc){
+    return '<a href="https://maps.google.com/?q='+encodeURIComponent(pc)+'" target="_blank" style="color:var(--navy);text-decoration:none;border-bottom:1px solid var(--gold)">'+m+'</a>';
+  });
+  // Common address patterns
+  s=s.replace(/(\d+\s+(?:[A-Z][a-z]+\s+)?(?:Road|Street|Lane|Drive|Avenue|Ave|Close|Way|Place|Terrace|Court|Rd|St|Ln|Dr|Cl|Cres|Crescent|Hill|Grove|Park|Gardens|Gdns|Row|Square|Sq|Mews|Rise|Walk|Gate|Fields|View|Mount|Lodge|House|Manor)(?:\s*,\s*[A-Za-z\s]+)?)/gi,function(m){
+    return '<a href="https://maps.google.com/?q='+encodeURIComponent(m)+'" target="_blank" style="color:var(--navy);text-decoration:none;border-bottom:1px solid var(--gold)">'+m+'</a>';
+  });
+  // Flight numbers: 2-3 letter code + 1-5 digits, but NOT already inside a link
+  s=s.replace(/(?<![">\/])(\b[A-Z]{2,3}\d{1,5}\b)/gi,function(m,f){
+    if(/<\/a>/.test(s.slice(s.indexOf(m)-50,s.indexOf(m))))return m;
+    return '<a href="https://www.flightradar24.com/data/flights/'+f.toLowerCase()+'" target="_blank" style="color:#60A5FA;text-decoration:none;border-bottom:1px solid rgba(96,165,250,.4);font-weight:500">'+m+'</a>';
   });
   // UK phone numbers: +44..., 07..., 01..., 02...
   s=s.replace(/((?:\+44|0)[\s\-]?\d[\s\-]?\d{3,4}[\s\-]?\d{3,6})/g,function(m,p){
     var clean=p.replace(/[\s\-]/g,'');
     return '<a href="tel:'+clean+'" style="color:var(--navy);text-decoration:none;border-bottom:1px solid var(--gold)">'+m+'</a>';
-  });
-  // UK postcodes: e.g. BN1 2AB, RH10 7AS, GU6 8JQ
-  s=s.replace(/\b([A-Z]{1,2}\d{1,2}[A-Z]?\s*\d[A-Z]{2})\b/gi,function(m,pc){
-    return '<a href="https://maps.google.com/?q='+encodeURIComponent(pc)+'" target="_blank" style="color:var(--navy);text-decoration:none;border-bottom:1px solid var(--gold)">'+m+'</a>';
-  });
-  // Common address patterns: numbers followed by road/street/lane/drive/avenue/close/way/place/terrace/court
-  s=s.replace(/(\d+\s+(?:[A-Z][a-z]+\s+)?(?:Road|Street|Lane|Drive|Avenue|Ave|Close|Way|Place|Terrace|Court|Rd|St|Ln|Dr|Cl|Cres|Crescent|Hill|Grove|Park|Gardens|Gdns|Row|Square|Sq|Mews|Rise|Walk|Gate|Fields|View|Mount|Lodge|House|Manor)(?:\s*,\s*[A-Za-z\s]+)?)/gi,function(m){
-    return '<a href="https://maps.google.com/?q='+encodeURIComponent(m)+'" target="_blank" style="color:var(--navy);text-decoration:none;border-bottom:1px solid var(--gold)">'+m+'</a>';
   });
   return s;
 }
