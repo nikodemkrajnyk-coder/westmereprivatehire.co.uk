@@ -134,17 +134,9 @@ nav#nav{display:none}
 .ma-pass{background:transparent;color:rgba(17,29,44,.4);border:1px solid rgba(17,29,44,.15)}.ma-pass:hover{border-color:rgba(17,29,44,.3);color:var(--navy)}
 
 /* ── ASSISTANT FAB + PANEL ── */
-.assist-fab{position:fixed;bottom:calc(80px + var(--safe-bottom));right:1.2rem;width:56px;height:56px;border-radius:50%;background:var(--gold);border:none;color:var(--navy);cursor:pointer;z-index:150;display:none;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(184,152,90,.4);transition:all .3s}
+.assist-fab{position:fixed;bottom:calc(80px + var(--safe-bottom));right:1.2rem;width:56px;height:56px;border-radius:50%;background:var(--gold);border:none;color:var(--navy);cursor:pointer;z-index:150;display:none;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(184,152,90,.4);transition:all .3s;font-family:var(--serif);font-size:1.3rem;font-weight:400}
 @media(min-width:720px){.assist-fab{right:calc(50% - 210px + 1rem)}}
 .assist-fab:hover{transform:scale(1.06);box-shadow:0 6px 20px rgba(184,152,90,.5)}
-.assist-fab.listening{background:var(--navy);color:var(--gold);animation:fabPulse 1.5s ease infinite}
-.fab-mic{display:flex;flex-direction:column;align-items:center;gap:0}
-.fab-mic-head{width:10px;height:16px;border-radius:5px;background:var(--navy)}
-.fab-mic-body{width:16px;height:8px;border:2px solid var(--navy);border-top:none;border-radius:0 0 8px 8px}
-.fab-mic-base{width:2px;height:4px;background:var(--navy);margin-top:0}
-.assist-fab.listening .fab-mic-head,.assist-fab.listening .fab-mic-base{background:var(--gold)}
-.assist-fab.listening .fab-mic-body{border-color:var(--gold)}
-@keyframes fabPulse{0%,100%{box-shadow:0 4px 16px rgba(17,29,44,.4)}50%{box-shadow:0 4px 24px rgba(184,152,90,.6)}}
 .assist-panel{position:fixed;bottom:0;left:0;right:0;top:0;background:rgba(245,242,237,.98);backdrop-filter:blur(20px);z-index:100;display:none;flex-direction:column}
 .assist-panel.on{display:flex}
 @media(min-width:720px){.assist-panel{max-width:420px;margin:0 auto}}
@@ -176,12 +168,8 @@ nav#nav{display:none}
 .assist-input{flex:1;font-family:var(--sans);font-size:1rem;font-weight:300;color:var(--navy);background:transparent;border:none;border-bottom:1px solid rgba(17,29,44,.15);padding:.6rem 0;outline:none;resize:none;height:42px;min-height:42px;-webkit-appearance:none;transition:border-color .3s}
 .assist-input:focus{border-bottom-color:var(--gold)}
 .assist-input::placeholder{color:rgba(17,29,44,.3)}
-.assist-mic{width:46px;height:46px;border-radius:50%;background:transparent;border:1.5px solid rgba(17,29,44,.15);color:rgba(17,29,44,.45);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .25s;flex-shrink:0}
-.assist-mic.listening{background:var(--gold);border-color:var(--gold);color:var(--navy)}
-.assist-mic svg{width:18px;height:18px;fill:currentColor}
 .btn-send{font-family:var(--sans);font-size:.58rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;background:var(--gold);border:none;color:var(--navy);padding:.55rem 1rem;cursor:pointer;min-height:42px;transition:all .25s;white-space:nowrap}
 .btn-send:hover{background:var(--gold2)}
-.assist-interim{font-size:.82rem;color:rgba(17,29,44,.35);font-style:italic;padding:0 1rem .4rem;min-height:1.2em;flex-shrink:0}
 
 /* ── SMART DAY ── */
 .verdict-row{display:flex;align-items:flex-start;justify-content:space-between;padding:.9rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.06);gap:.8rem}
@@ -604,7 +592,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
 </div><!-- /app -->
 
 <!-- ASSISTANT FAB (outside app to avoid overflow:hidden clipping) -->
-<button class="assist-fab" id="assist-fab" onclick="openAssistantAndListen()" title="Voice Assistant"><div class="fab-mic"><div class="fab-mic-head"></div><div class="fab-mic-body"></div><div class="fab-mic-base"></div></div></button>
+<button class="assist-fab" id="assist-fab" onclick="openAssistant()" title="Assistant">W</button>
 
 <!-- ASSISTANT PANEL (overlay) -->
 <div class="assist-panel" id="assist-panel">
@@ -617,12 +605,8 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
     <span id="assist-status-text">Ready</span>
   </div>
   <div class="assist-feed" id="assist-feed"></div>
-  <div class="assist-interim" id="assist-interim"></div>
   <div class="assist-input-row">
-    <button class="assist-mic" id="assist-mic-btn" onclick="toggleAssistMic()">
-      <svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 11a1 1 0 0 0-2 0 5 5 0 0 1-10 0 1 1 0 0 0-2 0 7 7 0 0 0 6 6.93V21h2v-3.07A7 7 0 0 0 19 11z"/></svg>
-    </button>
-    <input class="assist-input" id="assist-input" type="text" placeholder="Type or tap mic to speak..." onkeydown="if(event.key==='Enter'){event.preventDefault();assistSend();}">
+    <input class="assist-input" id="assist-input" type="text" placeholder="Paste a WhatsApp message or type booking details..." onkeydown="if(event.key==='Enter'){event.preventDefault();assistSend();}">
     <button class="btn-send" onclick="assistSend()">Send</button>
   </div>
 </div>
@@ -819,8 +803,6 @@ var SD_JOBS = [];
 var TESLA = {battery:0,rangeMiles:0,location:'Not connected',status:'Offline'};
 var ASSIST_HISTORY = [];
 var ASSIST_BUSY = false;
-var VOICE_ACTIVE = false;
-var voiceRec = null;
 var currentMode = 'drive';
 var HOME_BASE = '';
 
@@ -1632,23 +1614,18 @@ var ASSIST_PENDING_BOOKING=null;
 function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function escAttr(s){return encodeURIComponent(String(s));}
 
-function openAssistantAndListen(){
-  openAssistant();
-  startContinuousListening();
-}
 function openAssistant(){
   ASSIST_PANEL_OPEN=true;
   document.getElementById('assist-panel').classList.add('on');
   if(!ASSIST_HISTORY.length) greetAssist();
+  setTimeout(function(){document.getElementById('assist-input').focus();},300);
 }
 function closeAssistant(){
   ASSIST_PANEL_OPEN=false;
   document.getElementById('assist-panel').classList.remove('on');
-  stopListening();
 }
 function greetAssist(){
-  var h=new Date().getHours();var g=h<12?'morning':h<17?'afternoon':'evening';
-  appendW('Good '+g+'. I\'m listening.\n\nDictate a booking from a message, WhatsApp, or call. I\'ll confirm before creating it.');
+  appendW('Paste a WhatsApp message or type booking details. I\'ll extract everything and set it up for you.\n\nJust confirm and the booking is created.');
 }
 function appendU(text){var f=document.getElementById('assist-feed');var el=document.createElement('div');el.className='msg-user';el.innerHTML='<div>'+escH(text)+'</div>';f.appendChild(el);f.scrollTop=f.scrollHeight;}
 function appendW(text,id){var f=document.getElementById('assist-feed');if(!f)return;var el=document.createElement('div');el.className='msg-w';if(id)el.id=id;el.innerHTML='<div class="msg-w-crest">W</div><div>'+escH(text).replace(/\n/g,'<br>')+'</div>';f.appendChild(el);f.scrollTop=f.scrollHeight;}
@@ -1726,7 +1703,6 @@ async function sendToAssist(msg){
       appendW(reply);
     }
 
-    speakReply(reply.replace(/<<<[A-Z]+>>>/g,'').replace(/\{[\s\S]*?\}/g,'').trim());
 
   }catch(e){
     var tel=document.getElementById(tid);if(tel)tel.remove();
@@ -1790,7 +1766,7 @@ async function createBookingFromAssist(bk){
     if(data.ok){
       appendW('Booked! Ref: '+data.booking.ref+'. Customer will be notified.');
       showToast('Booking created — '+data.booking.ref);
-      speakReply('Booking confirmed. Reference '+data.booking.ref);
+
     } else {
       appendW('Could not create booking: '+(data.error||'Unknown error'));
     }
@@ -1807,115 +1783,7 @@ function setAssistStatus(state,text){
   lbl.textContent=text||'Ready';
 }
 
-function speakReply(text){
-  if(!text||!window.speechSynthesis)return;
-  var clean=text.replace(/<<<[A-Z]+>>>/g,'').replace(/\{[\s\S]*?\}/g,'').trim();
-  if(!clean||clean.length>200)return;
-  var utt=new SpeechSynthesisUtterance(clean);
-  utt.lang='en-GB';utt.rate=1.05;utt.volume=0.8;
-  speechSynthesis.speak(utt);
-}
 
-// ── CONTINUOUS VOICE RECOGNITION ─────────────────────────────────────────────
-var assistRecog=null;
-var assistRecogRestart=false;
-var assistSilenceTimer=null;
-var assistTranscript='';
-
-function startContinuousListening(){
-  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){setAssistStatus('','Voice not supported');showToast('Voice not supported in this browser');return;}
-  if(VOICE_ACTIVE){return;}
-
-  if(assistRecog){
-    try{assistRecog.stop();}catch(e){}
-    assistRecog=null;
-  }
-
-  assistRecog=new SR();
-  assistRecog.lang='en-GB';
-  assistRecog.continuous=false;
-  assistRecog.interimResults=true;
-  assistRecogRestart=true;
-
-  assistRecog.onstart=function(){
-    VOICE_ACTIVE=true;
-    setAssistStatus('rec','Listening...');
-    updateMicUI(true);
-    document.getElementById('assist-fab').classList.add('listening');
-  };
-
-  assistRecog.onresult=function(e){
-    var transcript='';
-    for(var i=0;i<e.results.length;i++){
-      transcript+=e.results[i][0].transcript;
-    }
-    if(e.results[e.results.length-1].isFinal){
-      document.getElementById('assist-interim').textContent='';
-      if(transcript.trim()){
-        sendToAssist(transcript.trim());
-      }
-    } else {
-      document.getElementById('assist-interim').textContent=transcript;
-      setAssistStatus('rec','Hearing you...');
-    }
-  };
-
-  assistRecog.onerror=function(e){
-    if(e.error==='not-allowed'){
-      setAssistStatus('','Mic access denied');
-      showToast('Allow microphone access in browser settings');
-      assistRecogRestart=false;
-      updateMicUI(false);
-      document.getElementById('assist-fab').classList.remove('listening');
-      return;
-    }
-  };
-
-  assistRecog.onend=function(){
-    VOICE_ACTIVE=false;
-    assistRecog=null;
-    if(assistRecogRestart && ASSIST_PANEL_OPEN && !ASSIST_BUSY){
-      setTimeout(function(){startContinuousListening();},500);
-    } else {
-      setAssistStatus('','Tap mic to speak');
-      updateMicUI(false);
-      document.getElementById('assist-fab').classList.remove('listening');
-    }
-  };
-
-  try{assistRecog.start();}catch(ex){
-    setAssistStatus('','Could not start mic');
-  }
-}
-
-function stopListening(){
-  assistRecogRestart=false;
-  if(assistRecog){try{assistRecog.stop();}catch(e){}}
-  VOICE_ACTIVE=false;
-  updateMicUI(false);
-  var fab=document.getElementById('assist-fab');
-  if(fab)fab.classList.remove('listening');
-}
-
-function toggleAssistMic(){
-  if(VOICE_ACTIVE){
-    stopListening();
-  } else {
-    startContinuousListening();
-  }
-}
-
-function updateMicUI(on){
-  var btn=document.getElementById('assist-mic-btn');
-  if(btn) btn.classList.toggle('listening',!!on);
-}
-
-document.addEventListener('visibilitychange',function(){
-  if(!document.hidden && ASSIST_PANEL_OPEN && !VOICE_ACTIVE){
-    startContinuousListening();
-  }
-});
 
 // ── SMART DAY ─────────────────────────────────────────────────────────────────
 var SAMPLE=[];
