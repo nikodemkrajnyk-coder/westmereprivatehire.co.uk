@@ -559,7 +559,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
           <div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">Loading…</div>
         </div>
       </div>
-      <div id="earn-payout-section" style="display:none;margin-top:.85rem">
+      <div id="earn-payout-section" style="margin-top:.85rem">
         <div class="card">
           <div class="ch">Stripe Balance</div>
           <div class="cb" id="earn-stripe-balance">
@@ -831,7 +831,7 @@ function setMode(mode){
   document.getElementById('mode-admin').classList.toggle('on', mode==='admin');
   document.getElementById('tb-mode-label').textContent = mode==='drive' ? 'Drive Mode' : 'Admin Mode';
   var driveItems = ['bn-today','bn-offered','bn-tesla'];
-  var adminItems = ['bn-decisions'];
+  var adminItems = ['bn-decisions','bn-earnings'];
   driveItems.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=mode==='drive'?'':'none';});
   adminItems.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=mode==='admin'?'':'none';});
   var fab=document.getElementById('assist-fab');
@@ -1025,12 +1025,8 @@ function buildEarnings(){
     +'<div class="row"><span class="row-k">Total jobs</span><span class="row-v">'+totalJobs+'</span></div>'
     +'<div class="row"><span class="row-k">Average fare</span><span class="row-v">'+fmtMoney(totalJobs?totalRev/totalJobs:0)+'</span></div>';
 
-  // Show payout section in admin mode
-  var paySection=document.getElementById('earn-payout-section');
-  if(paySection){
-    paySection.style.display=(currentMode==='admin')?'':'none';
-    if(currentMode==='admin') loadStripeBalance();
-  }
+  // Load Stripe balance (earnings page is admin-only now)
+  loadStripeBalance();
 }
 
 function fmtPence(p){return '£'+(p/100).toFixed(2);}
