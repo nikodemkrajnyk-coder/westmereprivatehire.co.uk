@@ -69,13 +69,14 @@ nav.solid{background:rgba(255,255,255,.85);backdrop-filter:blur(20px)}
 .tb-date{font-size:.6rem;color:rgba(17,29,44,.4);font-weight:300;letter-spacing:.06em}
 .status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse 2.5s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.bottom-nav{background:rgba(255,255,255,.92);backdrop-filter:blur(24px);border-top:1px solid rgba(17,29,44,.06);box-shadow:0 -1px 8px rgba(17,29,44,.04);display:flex;padding-bottom:env(safe-area-inset-bottom,0px);flex-shrink:0;z-index:50}
-.bn-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:.25rem;padding:.7rem .4rem;background:none;border:none;cursor:pointer;transition:color .2s;color:rgba(17,29,44,.35);font-family:var(--sans);min-height:52px;position:relative}
+.nav-strip{background:rgba(255,255,255,.92);backdrop-filter:blur(24px);display:flex;flex-shrink:0;border-bottom:1px solid rgba(17,29,44,.06);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none}
+.nav-strip::-webkit-scrollbar{display:none}
+.bn-item{flex:0 0 auto;display:flex;align-items:center;gap:.3rem;padding:.55rem .85rem;background:none;border:none;cursor:pointer;transition:color .2s;color:rgba(17,29,44,.35);font-family:var(--sans);position:relative;white-space:nowrap}
 .bn-item.on{color:var(--gold)}
-.bn-label{font-size:.46rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase}
-.bn-bar{width:20px;height:1px;background:currentColor;opacity:0;transition:opacity .2s;margin-bottom:.1rem}
-.bn-item.on .bn-bar{opacity:1}
-.bn-badge{position:absolute;top:.42rem;right:calc(50% - 16px);background:var(--red);color:#fff;font-size:.48rem;font-weight:700;min-width:14px;height:14px;border-radius:7px;padding:0 3px;display:none;align-items:center;justify-content:center}
+.bn-label{font-size:.62rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase}
+.bn-bar{width:0;height:1.5px;background:var(--gold);position:absolute;bottom:0;left:.85rem;right:.85rem;opacity:0;transition:opacity .2s}
+.bn-item.on .bn-bar{opacity:1;width:auto}
+.bn-badge{background:var(--red);color:#fff;font-size:.46rem;font-weight:700;min-width:13px;height:13px;border-radius:7px;padding:0 2px;display:none;align-items:center;justify-content:center}
 /* ── DRIVER CALENDAR ── */
 .dcal-hd{padding:.4rem .2rem;text-align:center;font-size:.55rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.45);background:rgba(245,242,237,.7)}
 .dcal-day{min-height:48px;padding:.3rem .25rem;background:#fff;cursor:pointer;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;transition:background .15s}
@@ -381,6 +382,16 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
     </div>
   </div>
 
+  <!-- NAV STRIP -->
+  <div class="nav-strip" id="nav-strip">
+    <button class="bn-item on" id="bn-today" onclick="goPage('today',this)"><div class="bn-bar"></div><div class="bn-label">Today</div></button>
+    <button class="bn-item" id="bn-offered" onclick="goPage('offered',this)"><div class="bn-bar"></div><div class="bn-label">Offered</div><div class="bn-badge" id="offered-badge"></div></button>
+    <button class="bn-item" id="bn-tesla" onclick="goPage('tesla',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Tesla</div></button>
+    <button class="bn-item" id="bn-calendar" onclick="goPage('calendar',this)"><div class="bn-bar"></div><div class="bn-label">Calendar</div></button>
+    <button class="bn-item" id="bn-earnings" onclick="goPage('earnings',this)"><div class="bn-bar"></div><div class="bn-label">Earnings</div></button>
+    <button class="bn-item" id="bn-profile" onclick="goPage('profile',this)"><div class="bn-bar"></div><div class="bn-label">Profile</div></button>
+  </div>
+
   <div class="page-scroll" id="page-scroll">
 
     <!-- TODAY -->
@@ -511,14 +522,6 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
 
   </div>
 
-  <div class="bottom-nav" id="bottom-nav">
-    <button class="bn-item on" id="bn-today" onclick="goPage('today',this)"><div class="bn-bar"></div><div class="bn-label">Today</div></button>
-    <button class="bn-item" id="bn-offered" onclick="goPage('offered',this)"><div class="bn-bar"></div><div class="bn-label">Offered</div><div class="bn-badge" id="offered-badge"></div></button>
-    <button class="bn-item" id="bn-tesla" onclick="goPage('tesla',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Tesla</div></button>
-    <button class="bn-item" id="bn-calendar" onclick="goPage('calendar',this)"><div class="bn-bar"></div><div class="bn-label">Calendar</div></button>
-    <button class="bn-item" id="bn-earnings" onclick="goPage('earnings',this)"><div class="bn-bar"></div><div class="bn-label">Earnings</div></button>
-    <button class="bn-item" id="bn-profile" onclick="goPage('profile',this)"><div class="bn-bar"></div><div class="bn-label">Profile</div></button>
-  </div>
 
 </div>
 

@@ -45,14 +45,15 @@ nav#nav{display:none}
 .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse 2.5s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
-/* ── BOTTOM NAV ── */
-.bottom-nav{background:rgba(255,255,255,.92);backdrop-filter:blur(24px);border-top:1px solid rgba(17,29,44,.06);box-shadow:0 -1px 8px rgba(17,29,44,.04);display:flex;padding-bottom:var(--safe-bottom);flex-shrink:0;z-index:60}
-.bn{flex:1;display:flex;flex-direction:column;align-items:center;gap:.22rem;padding:.85rem .3rem;background:none;border:none;cursor:pointer;transition:color .2s;color:rgba(17,29,44,.35);font-family:var(--sans);min-height:60px;position:relative}
+/* ── NAV STRIP (moved from bottom to header) ── */
+.nav-strip{background:rgba(255,255,255,.92);backdrop-filter:blur(24px);display:flex;flex-shrink:0;border-bottom:1px solid rgba(17,29,44,.06);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none}
+.nav-strip::-webkit-scrollbar{display:none}
+.bn{flex:0 0 auto;display:flex;align-items:center;gap:.3rem;padding:.55rem .85rem;background:none;border:none;cursor:pointer;transition:color .2s;color:rgba(17,29,44,.35);font-family:var(--sans);position:relative;white-space:nowrap}
 .bn.on{color:var(--gold)}
-.bn-bar{width:18px;height:1px;background:currentColor;opacity:0;transition:opacity .2s}
-.bn.on .bn-bar{opacity:1}
-.bn-label{font-size:.6rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;margin-top:.1rem}
-.bn-dot{position:absolute;top:.38rem;right:calc(50% - 16px);background:var(--red);color:#fff;font-size:.46rem;font-weight:700;min-width:13px;height:13px;border-radius:7px;padding:0 2px;display:none;align-items:center;justify-content:center}
+.bn-bar{width:0;height:1.5px;background:var(--gold);position:absolute;bottom:0;left:.85rem;right:.85rem;opacity:0;transition:opacity .2s}
+.bn.on .bn-bar{opacity:1;width:auto}
+.bn-label{font-size:.62rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase}
+.bn-dot{background:var(--red);color:#fff;font-size:.46rem;font-weight:700;min-width:13px;height:13px;border-radius:7px;padding:0 2px;display:none;align-items:center;justify-content:center}
 
 /* ── PAGES ── */
 .page-scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:none}
@@ -408,6 +409,16 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
     </div>
   </div>
 
+  <!-- NAV STRIP -->
+  <div class="nav-strip" id="nav-strip">
+    <button class="bn on" id="bn-today" onclick="goPage('today',this)"><div class="bn-bar"></div><div class="bn-label">Today</div></button>
+    <button class="bn" id="bn-offered" onclick="goPage('offered',this)"><div class="bn-bar"></div><div class="bn-label">Offered</div><div class="bn-dot" id="offered-dot"></div></button>
+    <button class="bn" id="bn-tesla" onclick="goPage('tesla',this)"><div class="bn-bar"></div><div class="bn-label">Tesla</div></button>
+    <button class="bn" id="bn-calendar" onclick="goPage('calendar',this)"><div class="bn-bar"></div><div class="bn-label">Calendar</div></button>
+    <button class="bn" id="bn-decisions" onclick="goPage('decisions',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Decisions</div><div class="bn-dot" id="decisions-dot" style="display:none"></div></button>
+    <button class="bn" id="bn-earnings" onclick="goPage('earnings',this)"><div class="bn-bar"></div><div class="bn-label">Earnings</div></button>
+  </div>
+
   <!-- SETTINGS OVERLAY -->
   <div id="settings-overlay" style="display:none;position:fixed;inset:0;background:rgba(10,14,20,.6);backdrop-filter:blur(6px);z-index:200;align-items:flex-end;justify-content:center;padding:1rem" onclick="if(event.target===this)closeSettings()">
     <div style="background:#fff;border-radius:18px 18px 0 0;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;padding:1.6rem 1.4rem;box-shadow:0 -10px 40px rgba(0,0,0,.3)">
@@ -560,15 +571,6 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
 
   </div><!-- /page-scroll -->
 
-  <!-- BOTTOM NAV -->
-  <div class="bottom-nav" id="bottom-nav">
-    <button class="bn on" id="bn-today" onclick="goPage('today',this)"><div class="bn-bar"></div><div class="bn-label">Today</div></button>
-    <button class="bn" id="bn-offered" onclick="goPage('offered',this)"><div class="bn-bar"></div><div class="bn-label">Offered</div><div class="bn-dot" id="offered-dot"></div></button>
-    <button class="bn" id="bn-tesla" onclick="goPage('tesla',this)"><div class="bn-bar"></div><div class="bn-label">Tesla</div></button>
-    <button class="bn" id="bn-calendar" onclick="goPage('calendar',this)"><div class="bn-bar"></div><div class="bn-label">Calendar</div></button>
-    <button class="bn" id="bn-decisions" onclick="goPage('decisions',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Decisions</div><div class="bn-dot" id="decisions-dot" style="display:none"></div></button>
-    <button class="bn" id="bn-earnings" onclick="goPage('earnings',this)"><div class="bn-bar"></div><div class="bn-label">Earnings</div></button>
-  </div>
 
 </div><!-- /app -->
 
