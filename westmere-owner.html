@@ -1602,17 +1602,14 @@ function simMsg(){
   INBOX_MSGS.unshift({id:id,from:from,phone:phone,time:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),source:src,text:text,status:'processing',analysis:null});
   renderInbox();analyseMsg(id,text);
 }
-// TODO: Route through backend proxy at /api/claude to keep API key server-side
 async function analyseMsg(id,text){
   var jobs=TODAY_JOBS.map(function(j){return j.time+' '+j.pickup+'→'+j.dest;}).join(', ');
   var sys='You are the booking intake for Westmere Private Hire, a Sussex-based private hire operator. Analyse this WhatsApp message. Extract booking details if it is a booking request. Existing jobs: '+jobs+'. 90 min conflict buffer.\n\nDrop-off/Pickup fares: Brighton→Gatwick £72/£68, Lewes→Gatwick £78/£74, Horsham→Gatwick £55/£50, Crawley→Gatwick £35/£32, Worthing→Gatwick £72/£68, Haywards Heath→Gatwick £52/£48, Burgess Hill→Gatwick £48/£44, Eastbourne→Gatwick £98/£94, Seaford→Gatwick £92/£88, Uckfield→Gatwick £62/£58, East Grinstead→Gatwick £42/£38. Brighton→Heathrow £128/£133, Lewes→Heathrow £140/£145, Horsham→Heathrow £120/£125, Crawley→Heathrow £95/£100, Worthing→Heathrow £130/£135, Eastbourne→Heathrow £162/£167. Horsham→Stansted £180/£185, Lewes→Stansted £225/£230, Brighton→Stansted £215/£220. Horsham→Luton £155/£160, Lewes→Luton £215/£220, Brighton→Luton £205/£210. Horsham→Southampton £135/£130, Brighton→Southampton £152/£147, Lewes→Southampton £160/£155. For locations outside town centre: nearest town fare + £2.50/extra mile.\n\nRespond ONLY with JSON: {"isBooking":true,"name":"...","pickup":"...","dest":"...","date":"...","time":"...","fare":0,"conflict":false,"conflictReason":"","note":"..."} or {"isBooking":false,"note":"..."}';
   try{
-    // NOTE: Direct client-side calls to api.anthropic.com will return 401 (no API key).
-    // In production, route through a backend proxy (e.g. /api/claude) that adds the auth header server-side.
-    var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':'REPLACE_WITH_BACKEND_PROXY','anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,system:sys,messages:[{role:'user',content:text}]})});
+    var resp=await fetch('/api/assistant/analyse',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sys,prompt:text,max_tokens:300})});
     if(!resp.ok)throw new Error('API returned '+resp.status);
     var data=await resp.json();
-    var raw=(data.content&&data.content[0]&&data.content[0].text)||'{}';
+    var raw=(data.reply)||'{}';
     raw=raw.replace(/```json|```/g,'').trim();
     var parsed=JSON.parse(raw);
     var m=INBOX_MSGS.find(function(x){return x.id===id;});if(!m)return;
@@ -1969,11 +1966,9 @@ async function runSmartDay(){
   // Claude recommendation
   var prompt='Westmere Private Hire, sole operator, base Horsham.\n\nDay:\n'+segs.map(function(s){return s.j.time+' '+s.j.name+': '+s.j.pickup+'→'+s.j.dest+' £'+s.j.fare+' dead:'+s.dead+'mi net:£'+s.net+(s.rush?' rush':'');}).join('\n')+'\n\nGross £'+total+' Net £'+netTotal+' Dead '+Math.round(deadTotal+retHome)+'mi Net/hr £'+Math.round(netTotal/dayH)+'\n\nGive: 1) Is this day worth it? 2) Which jobs to keep/pass and why 3) Optimised version. Direct, practical, no padding.';
   try{
-    // NOTE: Direct client-side calls to api.anthropic.com will return 401 (no API key).
-    // In production, route through a backend proxy (e.g. /api/claude) that adds the auth header server-side.
-    var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':'REPLACE_WITH_BACKEND_PROXY','anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:prompt}]})});
+    var resp=await fetch('/api/assistant/analyse',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:prompt,max_tokens:800})});
     if(!resp.ok)throw new Error('API returned '+resp.status);
-    var data=await resp.json();document.getElementById('sd-rec').textContent=(data.content&&data.content[0]&&data.content[0].text)||'Analysis unavailable.';
+    var data=await resp.json();document.getElementById('sd-rec').textContent=data.reply||'Analysis unavailable.';
   }catch(e){
     console.warn('runSmartDay AI failed:',e.message||e);
     document.getElementById('sd-rec').textContent='AI recommendation unavailable — backend proxy not configured. The scorecard and verdicts above are calculated locally and still valid.';

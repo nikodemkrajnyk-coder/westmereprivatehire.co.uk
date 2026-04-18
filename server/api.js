@@ -114,8 +114,14 @@ router.patch('/bookings/:id', (req, res) => {
   }
 
   const db = getDb();
-  const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(req.params.id);
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+  const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
   if (!booking) return res.status(404).json({ error: 'Booking not found' });
+
+  if (role === 'driver' && booking.driver_id !== req.auth.id) {
+    return res.status(403).json({ error: 'You can only update your own bookings' });
+  }
 
   const allowed = ['status', 'driver_id', 'fare', 'notes', 'payment'];
   const updates = [];

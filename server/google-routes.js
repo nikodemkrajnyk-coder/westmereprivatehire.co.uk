@@ -32,7 +32,8 @@ router.get('/auth-url', requireStaff, (req, res) => {
     });
   }
   // State carries the return path so we can send the user back after consent.
-  const from = req.query.from && String(req.query.from).startsWith('/') ? String(req.query.from) : '/westmere-admin.html';
+  const ALLOWED_RETURNS = ['/westmere-admin.html', '/westmere-owner.html', '/westmere-driver.html'];
+  const from = req.query.from && ALLOWED_RETURNS.includes(String(req.query.from)) ? String(req.query.from) : '/westmere-admin.html';
   const state = Buffer.from(JSON.stringify({ from, uid: req.auth.id })).toString('base64url');
   res.json({ ok: true, url: gcal.buildAuthUrl(state) });
 });
@@ -84,11 +85,12 @@ const publicCallback = express.Router();
 
 publicCallback.get('/callback', async (req, res) => {
   const { code, state, error } = req.query;
+  const ALLOWED_RETURNS = ['/westmere-admin.html', '/westmere-owner.html', '/westmere-driver.html'];
   let from = '/westmere-admin.html';
   try {
     if (state) {
       const decoded = JSON.parse(Buffer.from(String(state), 'base64url').toString('utf8'));
-      if (decoded.from && typeof decoded.from === 'string' && decoded.from.startsWith('/')) from = decoded.from;
+      if (decoded.from && ALLOWED_RETURNS.includes(decoded.from)) from = decoded.from;
     }
   } catch (e) {}
 

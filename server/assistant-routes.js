@@ -104,4 +104,44 @@ router.post('/chat', async (req, res) => {
   }
 });
 
+router.post('/analyse', async (req, res) => {
+  if (!API_KEY) return res.status(503).json({ error: 'Assistant not configured' });
+
+  const { system, prompt, max_tokens } = req.body;
+  if (!prompt) return res.status(400).json({ error: 'prompt required' });
+
+  try {
+    const apiRes = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: Math.min(max_tokens || 300, 2000),
+        system: system || undefined,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await apiRes.json();
+    if (!apiRes.ok) {
+      const msg = (data && data.error && data.error.message) || ('HTTP ' + apiRes.status);
+      return res.status(502).json({ error: 'Claude API: ' + msg });
+    }
+
+    const reply = (data.content || [])
+      .filter(b => b.type === 'text')
+      .map(b => b.text)
+      .join('')
+      .trim();
+
+    res.json({ ok: true, reply });
+  } catch (e) {
+    res.status(502).json({ error: 'Assistant unavailable' });
+  }
+});
+
 module.exports = router;
