@@ -598,7 +598,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
     <button class="bn" id="bn-tesla" onclick="goPage('tesla',this)"><div class="bn-bar"></div><div class="bn-label">Tesla</div></button>
     <button class="bn" id="bn-calendar" onclick="goPage('calendar',this)"><div class="bn-bar"></div><div class="bn-label">Calendar</div></button>
     <button class="bn" id="bn-decisions" onclick="goPage('decisions',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Decisions</div><div class="bn-dot" id="decisions-dot" style="display:none"></div></button>
-    <button class="bn" id="bn-earnings" onclick="goPage('earnings',this)"><div class="bn-bar"></div><div class="bn-label">Earnings</div></button>
+    <button class="bn" id="bn-earnings" onclick="goPage('earnings',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Earnings</div></button>
   </div>
 
 </div><!-- /app -->
@@ -1824,75 +1824,61 @@ var assistTranscript='';
 
 function startContinuousListening(){
   var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){setAssistStatus('','Voice not supported');return;}
-  if(assistRecog){assistRecogRestart=true;return;}
+  if(!SR){setAssistStatus('','Voice not supported');showToast('Voice not supported in this browser');return;}
+  if(VOICE_ACTIVE){return;}
+
+  if(assistRecog){
+    try{assistRecog.stop();}catch(e){}
+    assistRecog=null;
+  }
 
   assistRecog=new SR();
   assistRecog.lang='en-GB';
-  assistRecog.continuous=true;
+  assistRecog.continuous=false;
   assistRecog.interimResults=true;
   assistRecogRestart=true;
 
   assistRecog.onstart=function(){
     VOICE_ACTIVE=true;
-    setAssistStatus('live','Listening');
+    setAssistStatus('rec','Listening...');
     updateMicUI(true);
     document.getElementById('assist-fab').classList.add('listening');
   };
 
   assistRecog.onresult=function(e){
-    var interim='';var final='';
-    for(var i=e.resultIndex;i<e.results.length;i++){
-      var t=e.results[i][0].transcript;
-      if(e.results[i].isFinal){
-        final+=t+' ';
-      } else {
-        interim+=t;
-      }
+    var transcript='';
+    for(var i=0;i<e.results.length;i++){
+      transcript+=e.results[i][0].transcript;
     }
-    if(interim){
-      document.getElementById('assist-interim').textContent=interim;
-      setAssistStatus('rec','Hearing you...');
-    }
-    if(final){
-      assistTranscript+=final;
+    if(e.results[e.results.length-1].isFinal){
       document.getElementById('assist-interim').textContent='';
-      clearTimeout(assistSilenceTimer);
-      assistSilenceTimer=setTimeout(function(){
-        if(assistTranscript.trim()){
-          var msg=assistTranscript.trim();
-          assistTranscript='';
-          sendToAssist(msg);
-        }
-      },1800);
+      if(transcript.trim()){
+        sendToAssist(transcript.trim());
+      }
+    } else {
+      document.getElementById('assist-interim').textContent=transcript;
+      setAssistStatus('rec','Hearing you...');
     }
   };
 
   assistRecog.onerror=function(e){
     if(e.error==='not-allowed'){
       setAssistStatus('','Mic access denied');
+      showToast('Allow microphone access in browser settings');
       assistRecogRestart=false;
       updateMicUI(false);
       document.getElementById('assist-fab').classList.remove('listening');
       return;
     }
-    if(e.error!=='no-speech'&&e.error!=='aborted'){
-      console.warn('Speech error:',e.error);
-    }
   };
 
   assistRecog.onend=function(){
     VOICE_ACTIVE=false;
-    if(assistRecogRestart && ASSIST_PANEL_OPEN){
-      setTimeout(function(){
-        try{assistRecog.start();}catch(ex){
-          setAssistStatus('','Mic restart failed');
-          updateMicUI(false);
-          document.getElementById('assist-fab').classList.remove('listening');
-        }
-      },300);
+    assistRecog=null;
+    if(assistRecogRestart && ASSIST_PANEL_OPEN && !ASSIST_BUSY){
+      setTimeout(function(){startContinuousListening();},500);
     } else {
-      setAssistStatus('','Paused');
+      setAssistStatus('','Tap mic to speak');
       updateMicUI(false);
       document.getElementById('assist-fab').classList.remove('listening');
     }
