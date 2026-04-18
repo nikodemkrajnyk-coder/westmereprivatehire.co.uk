@@ -134,7 +134,8 @@ nav#nav{display:none}
 .ma-pass{background:transparent;color:rgba(17,29,44,.4);border:1px solid rgba(17,29,44,.15)}.ma-pass:hover{border-color:rgba(17,29,44,.3);color:var(--navy)}
 
 /* ── ASSISTANT FAB + PANEL ── */
-.assist-fab{position:absolute;bottom:calc(70px + var(--safe-bottom));right:1rem;width:56px;height:56px;border-radius:50%;background:var(--gold);border:none;color:var(--navy);cursor:pointer;z-index:65;display:none;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(184,152,90,.4);transition:all .3s}
+.assist-fab{position:fixed;bottom:calc(80px + var(--safe-bottom));right:1.2rem;width:56px;height:56px;border-radius:50%;background:var(--gold);border:none;color:var(--navy);cursor:pointer;z-index:150;display:none;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(184,152,90,.4);transition:all .3s}
+@media(min-width:720px){.assist-fab{right:calc(50% - 210px + 1rem)}}
 .assist-fab:hover{transform:scale(1.06);box-shadow:0 6px 20px rgba(184,152,90,.5)}
 .assist-fab.listening{background:var(--navy);color:var(--gold);animation:fabPulse 1.5s ease infinite}
 .fab-mic{display:flex;flex-direction:column;align-items:center;gap:0}
@@ -600,10 +601,10 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
     <button class="bn" id="bn-earnings" onclick="goPage('earnings',this)"><div class="bn-bar"></div><div class="bn-label">Earnings</div></button>
   </div>
 
-  <!-- ASSISTANT FAB -->
-  <button class="assist-fab" id="assist-fab" onclick="openAssistant()" title="Voice Assistant"><div class="fab-mic"><div class="fab-mic-head"></div><div class="fab-mic-body"></div><div class="fab-mic-base"></div></div></button>
-
 </div><!-- /app -->
+
+<!-- ASSISTANT FAB (outside app to avoid overflow:hidden clipping) -->
+<button class="assist-fab" id="assist-fab" onclick="openAssistant()" title="Voice Assistant"><div class="fab-mic"><div class="fab-mic-head"></div><div class="fab-mic-body"></div><div class="fab-mic-base"></div></div></button>
 
 <!-- ASSISTANT PANEL (overlay) -->
 <div class="assist-panel" id="assist-panel">

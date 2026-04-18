@@ -13,6 +13,7 @@ const gmailRouter = require('./gmail-routes');
 const intakeRouter = require('./intake-routes');
 const offerRouter = require('./offer-routes');
 const assistantRouter = require('./assistant-routes');
+const backupRouter = require('./backup-routes');
 const { createAuthMiddleware } = require('./middleware');
 const gcal = require('./google-calendar');
 const intake = require('./intake');
@@ -102,6 +103,9 @@ app.use('/api', apiLimiter, requireAuth, offerRouter);
 // Protected assistant (voice booking helper)
 app.use('/api/assistant', apiLimiter, requireAuth, assistantRouter);
 
+// Protected backup routes (export/save/list)
+app.use('/api/backup', apiLimiter, requireAuth, backupRouter);
+
 // ── Real-time push (SSE) ───────────────────────────────────────────────
 // Long-lived stream — must NOT pass through the api rate limiter (one
 // open connection per browser tab would burn the quota in seconds).
@@ -185,6 +189,9 @@ app.listen(PORT, () => {
 
   // Background: reclaim stale driver offers (10 min window)
   offerRouter.startOfferSweeper();
+
+  // Background: auto-backup database hourly to data/backups/
+  backupRouter.startAutoBackup();
 });
 
 module.exports = app;
