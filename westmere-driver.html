@@ -23,7 +23,7 @@ body::before{display:none}
 /* ── MOBILE-ONLY SHELL — clamp app to phone width on desktop ────────────── */
 @media (min-width: 720px){
   body{background:#0a1420 url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='4' height='4' fill='%23101b2a'/><rect width='2' height='2' fill='%230c1624'/></svg>")}
-  #login-screen,.screen{max-width:420px;margin:0 auto;box-shadow:0 24px 60px rgba(0,0,0,.45);background:#F5F2ED;min-height:100vh;border-left:1px solid rgba(0,0,0,.1);border-right:1px solid rgba(0,0,0,.1)}
+  #login-screen,.screen{max-width:420px;margin:0 auto;box-shadow:0 24px 60px rgba(0,0,0,.45);background:#F5F2ED;height:100vh;height:100dvh;border-left:1px solid rgba(0,0,0,.1);border-right:1px solid rgba(0,0,0,.1)}
   body::after{content:"Westmere Driver \2014 mobile app. Best experienced on iPhone or Android.";position:fixed;bottom:1.2rem;left:1.2rem;color:rgba(255,255,255,.38);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;font-family:var(--sans);pointer-events:none}
 }
 h1,h2,h3,h4{font-family:var(--serif);font-weight:300;color:var(--navy);letter-spacing:.05em}
@@ -59,7 +59,7 @@ nav.solid{background:rgba(255,255,255,.85);backdrop-filter:blur(20px)}
 @media(max-width:780px){.nav-r{display:none}.burger{display:flex}body{background-attachment:scroll}}
 
 /* ── DRIVER APP ── */
-.screen{display:none;min-height:100vh;flex-direction:column;position:relative;z-index:1}
+.screen{display:none;height:100vh;height:100dvh;flex-direction:column;position:relative;z-index:1;overflow:hidden}
 .screen.on{display:flex}
 .topbar{background:rgba(255,255,255,.92);backdrop-filter:blur(24px);padding:calc(env(safe-area-inset-top,0px) + .75rem) 1.2rem .75rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid rgba(17,29,44,.06);box-shadow:0 1px 8px rgba(17,29,44,.04);position:sticky;top:0;z-index:50;height:64px}
 .tb-brand{display:flex;align-items:center;gap:.8rem;text-decoration:none}
@@ -69,7 +69,7 @@ nav.solid{background:rgba(255,255,255,.85);backdrop-filter:blur(20px)}
 .tb-date{font-size:.6rem;color:rgba(17,29,44,.4);font-weight:300;letter-spacing:.06em}
 .status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse 2.5s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.bottom-nav{background:rgba(255,255,255,.92);backdrop-filter:blur(24px);border-top:1px solid rgba(17,29,44,.06);box-shadow:0 -1px 8px rgba(17,29,44,.04);display:flex;padding-bottom:env(safe-area-inset-bottom,0px);flex-shrink:0;position:sticky;bottom:0;z-index:50}
+.bottom-nav{background:rgba(255,255,255,.92);backdrop-filter:blur(24px);border-top:1px solid rgba(17,29,44,.06);box-shadow:0 -1px 8px rgba(17,29,44,.04);display:flex;padding-bottom:env(safe-area-inset-bottom,0px);flex-shrink:0;z-index:50}
 .bn-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:.25rem;padding:.7rem .4rem;background:none;border:none;cursor:pointer;transition:color .2s;color:rgba(17,29,44,.35);font-family:var(--sans);min-height:52px;position:relative}
 .bn-item.on{color:var(--gold)}
 .bn-label{font-size:.46rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase}
@@ -1257,8 +1257,8 @@ function drvShowDay(key){
     html+='<div style="font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.4rem;font-weight:500">From your calendar</div>';
     html+=ext.map(function(ev){
       var when=ev.allDay?'All day':_drvEvRange(ev);
-      var loc=ev.location?'<div style="font-size:.74rem;color:rgba(17,29,44,.45);margin-top:.15rem">'+drvEsc(ev.location)+'</div>':'';
-      var notes=ev.notes?'<div style="margin-top:.3rem;padding:.35rem .55rem;background:rgba(17,29,44,.03);border-left:2px solid rgba(96,108,145,.3);font-size:.74rem;color:rgba(17,29,44,.6);white-space:pre-wrap;line-height:1.4">'+drvEsc(ev.notes)+'</div>':'';
+      var loc=ev.location?'<div style="font-size:.74rem;color:rgba(17,29,44,.45);margin-top:.15rem"><a href="https://maps.google.com/?q='+encodeURIComponent(ev.location)+'" target="_blank" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--gold)">'+drvEsc(ev.location)+'</a></div>':'';
+      var notes=ev.notes?'<div style="margin-top:.3rem;padding:.35rem .55rem;background:rgba(17,29,44,.03);border-left:2px solid rgba(96,108,145,.3);font-size:.74rem;color:rgba(17,29,44,.6);white-space:pre-wrap;line-height:1.4">'+drvEnrichNotes(ev.notes)+'</div>':'';
       return '<div style="padding:.4rem 0"><div style="display:flex;gap:.7rem;align-items:flex-start">'
         +'<div style="font-size:.78rem;color:var(--gold);font-weight:500;font-variant-numeric:tabular-nums;min-width:85px">'+drvEsc(when)+'</div>'
         +'<div style="flex:1"><div style="font-size:.85rem;color:var(--navy);font-weight:500">'+drvEsc(ev.title)+'</div>'+loc+notes+'</div>'
