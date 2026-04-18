@@ -604,7 +604,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
 </div><!-- /app -->
 
 <!-- ASSISTANT FAB (outside app to avoid overflow:hidden clipping) -->
-<button class="assist-fab" id="assist-fab" onclick="openAssistant()" title="Voice Assistant"><div class="fab-mic"><div class="fab-mic-head"></div><div class="fab-mic-body"></div><div class="fab-mic-base"></div></div></button>
+<button class="assist-fab" id="assist-fab" onclick="openAssistantAndListen()" title="Voice Assistant"><div class="fab-mic"><div class="fab-mic-head"></div><div class="fab-mic-body"></div><div class="fab-mic-base"></div></div></button>
 
 <!-- ASSISTANT PANEL (overlay) -->
 <div class="assist-panel" id="assist-panel">
@@ -1636,11 +1636,14 @@ var ASSIST_PENDING_BOOKING=null;
 function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function escAttr(s){return encodeURIComponent(String(s));}
 
+function openAssistantAndListen(){
+  openAssistant();
+  startContinuousListening();
+}
 function openAssistant(){
   ASSIST_PANEL_OPEN=true;
   document.getElementById('assist-panel').classList.add('on');
   if(!ASSIST_HISTORY.length) greetAssist();
-  startContinuousListening();
 }
 function closeAssistant(){
   ASSIST_PANEL_OPEN=false;
