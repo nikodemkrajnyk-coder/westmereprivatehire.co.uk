@@ -137,7 +137,12 @@ nav#nav{display:none}
 .assist-fab{position:absolute;bottom:calc(70px + var(--safe-bottom));right:1rem;width:56px;height:56px;border-radius:50%;background:var(--gold);border:none;color:var(--navy);cursor:pointer;z-index:65;display:none;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(184,152,90,.4);transition:all .3s}
 .assist-fab:hover{transform:scale(1.06);box-shadow:0 6px 20px rgba(184,152,90,.5)}
 .assist-fab.listening{background:var(--navy);color:var(--gold);animation:fabPulse 1.5s ease infinite}
-.assist-fab{font-size:1.5rem;line-height:1}
+.fab-mic{display:flex;flex-direction:column;align-items:center;gap:0}
+.fab-mic-head{width:10px;height:16px;border-radius:5px;background:var(--navy)}
+.fab-mic-body{width:16px;height:8px;border:2px solid var(--navy);border-top:none;border-radius:0 0 8px 8px}
+.fab-mic-base{width:2px;height:4px;background:var(--navy);margin-top:0}
+.assist-fab.listening .fab-mic-head,.assist-fab.listening .fab-mic-base{background:var(--gold)}
+.assist-fab.listening .fab-mic-body{border-color:var(--gold)}
 @keyframes fabPulse{0%,100%{box-shadow:0 4px 16px rgba(17,29,44,.4)}50%{box-shadow:0 4px 24px rgba(184,152,90,.6)}}
 .assist-panel{position:fixed;bottom:0;left:0;right:0;top:0;background:rgba(245,242,237,.98);backdrop-filter:blur(20px);z-index:100;display:none;flex-direction:column}
 .assist-panel.on{display:flex}
@@ -596,7 +601,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
   </div>
 
   <!-- ASSISTANT FAB -->
-  <button class="assist-fab" id="assist-fab" onclick="openAssistant()" title="Voice Assistant">&#127908;</button>
+  <button class="assist-fab" id="assist-fab" onclick="openAssistant()" title="Voice Assistant"><div class="fab-mic"><div class="fab-mic-head"></div><div class="fab-mic-body"></div><div class="fab-mic-base"></div></div></button>
 
 </div><!-- /app -->
 
