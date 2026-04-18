@@ -16,8 +16,8 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{--navy:#111D2C;--navy-deep:#0d1520;--gold:#B8985A;--gold2:#C9A96E;--rule:rgba(17,29,44,.1);--text:#111D2C;--text-mid:rgba(17,29,44,.65);--text-light:rgba(17,29,44,.4);--white:rgba(17,29,44,.85);--cream:#fff;--cream-dark:rgba(17,29,44,.04);--green:#2D6E47;--green-bg:rgba(45,110,71,.18);--red:#8B2222;--red-bg:rgba(139,34,34,.15);--amber:#B8985A;--amber-bg:rgba(184,152,90,.1);--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',sans-serif;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);}
-html{height:100%;font-size:18px;scroll-behavior:smooth;overflow-x:hidden}
-body{font-family:var(--sans);font-weight:300;color:var(--navy);background:#F5F2ED;line-height:1.7;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden;overscroll-behavior-x:none;touch-action:pan-y;max-width:100vw}
+html{height:100%;font-size:18px;overflow:hidden}
+body{font-family:var(--sans);font-weight:300;color:var(--navy);background:#F5F2ED;line-height:1.7;-webkit-font-smoothing:antialiased;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:pan-y;max-width:100vw}
 body::before{display:none}
 /* ── MOBILE-ONLY SHELL — clamp app to phone width on desktop ────────────── */
 @media (min-width: 720px){
@@ -1766,24 +1766,22 @@ function selectCalDay(key){calSelected=key;buildCalendar();}
 function enrichNotes(text){
   if(!text)return '';
   var s=escH(text);
-  // UK postcodes first (e.g. BN6 9SD, RH10 7AS) — must run before flights to avoid partial match
+  var toks=[];
+  function tok(html){var id='\x01'+toks.length+'\x01';toks.push(html);return id;}
   s=s.replace(/\b([A-Z]{1,2}\d{1,2}[A-Z]?\s+\d[A-Z]{2})\b/gi,function(m,pc){
-    return '<a href="https://maps.google.com/?q='+encodeURIComponent(pc)+'" target="_blank" style="color:var(--navy);text-decoration:none;border-bottom:1px solid var(--gold)">'+m+'</a>';
+    return tok('<a href="https://maps.google.com/?q='+encodeURIComponent(pc)+'" target="_blank" style="color:var(--navy);text-decoration:none;border-bottom:1px solid var(--gold)">'+m+'</a>');
   });
-  // Common address patterns
   s=s.replace(/(\d+\s+(?:[A-Z][a-z]+\s+)?(?:Road|Street|Lane|Drive|Avenue|Ave|Close|Way|Place|Terrace|Court|Rd|St|Ln|Dr|Cl|Cres|Crescent|Hill|Grove|Park|Gardens|Gdns|Row|Square|Sq|Mews|Rise|Walk|Gate|Fields|View|Mount|Lodge|House|Manor)(?:\s*,\s*[A-Za-z\s]+)?)/gi,function(m){
-    return '<a href="https://maps.google.com/?q='+encodeURIComponent(m)+'" target="_blank" style="color:var(--navy);text-decoration:none;border-bottom:1px solid var(--gold)">'+m+'</a>';
+    return tok('<a href="https://maps.google.com/?q='+encodeURIComponent(m)+'" target="_blank" style="color:var(--navy);text-decoration:none;border-bottom:1px solid var(--gold)">'+m+'</a>');
   });
-  // Flight numbers: 2-3 letter code + 1-5 digits, but NOT already inside a link
-  s=s.replace(/(?<![">\/])(\b[A-Z]{2,3}\d{1,5}\b)/gi,function(m,f){
-    if(/<\/a>/.test(s.slice(s.indexOf(m)-50,s.indexOf(m))))return m;
-    return '<a href="https://www.flightradar24.com/data/flights/'+f.toLowerCase()+'" target="_blank" style="color:#60A5FA;text-decoration:none;border-bottom:1px solid rgba(96,165,250,.4);font-weight:500">'+m+'</a>';
+  s=s.replace(/\b([A-Z]{2,3}\d{1,5})\b/gi,function(m,f){
+    return tok('<a href="https://www.flightradar24.com/data/flights/'+f.toLowerCase()+'" target="_blank" style="color:#60A5FA;text-decoration:none;border-bottom:1px solid rgba(96,165,250,.4);font-weight:500">'+m+'</a>');
   });
-  // UK phone numbers: +44..., 07..., 01..., 02...
   s=s.replace(/((?:\+44|0)[\s\-]?\d[\s\-]?\d{3,4}[\s\-]?\d{3,6})/g,function(m,p){
     var clean=p.replace(/[\s\-]/g,'');
-    return '<a href="tel:'+clean+'" style="color:var(--navy);text-decoration:none;border-bottom:1px solid var(--gold)">'+m+'</a>';
+    return tok('<a href="tel:'+clean+'" style="color:var(--navy);text-decoration:none;border-bottom:1px solid var(--gold)">'+m+'</a>');
   });
+  for(var i=0;i<toks.length;i++)s=s.replace('\x01'+i+'\x01',toks[i]);
   return s;
 }
 function jobDetailCard(j){
