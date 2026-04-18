@@ -891,6 +891,7 @@ function renderDecisionsPending(list){
       +'<div style="display:flex;gap:.5rem;margin-top:.6rem">'
       +  '<select class="fi" id="dec-sel-'+b.id+'" style="flex:1;font-size:.78rem">'+drvOpts+'</select>'
       +  '<button class="btn btn-navy btn-sm" onclick="decOffer('+b.id+')">Offer</button>'
+      +  '<button class="btn btn-sm" style="background:rgba(139,34,34,.12);color:#8B2222;border:1px solid rgba(139,34,34,.2)" onclick="decCancel('+b.id+')">Cancel</button>'
       +'</div>'
       +'</div>';
   }).join('');
@@ -912,6 +913,7 @@ function renderDecisionsOffered(list){
       +'<div style="font-size:.74rem;color:#2A3A66;margin-top:.25rem">Awaiting <strong>'+decEsc(b.offered_driver_name||'driver')+'</strong>'+timer+'</div>'
       +'<div style="display:flex;gap:.5rem;margin-top:.5rem">'
       +  '<button class="btn btn-ghost btn-sm" onclick="decReclaim('+b.id+')">Reclaim</button>'
+      +  '<button class="btn btn-sm" style="background:rgba(139,34,34,.12);color:#8B2222;border:1px solid rgba(139,34,34,.2)" onclick="decCancel('+b.id+')">Cancel</button>'
       +'</div>'
       +'</div>';
   }).join('');
@@ -931,6 +933,13 @@ async function decReclaim(bookingId){
   var r=await fetch('/api/bookings/'+bookingId+'/reclaim',{method:'POST',credentials:'include'});
   var d=await r.json();
   if(d.ok){showToast('Reclaimed');loadDecisions();}else showToast(d.error||'Failed');
+}
+
+async function decCancel(bookingId){
+  if(!confirm('Delete this booking permanently?'))return;
+  var r=await fetch('/api/bookings/'+bookingId,{method:'DELETE',credentials:'include'});
+  var d=await r.json();
+  if(d.ok){showToast('Booking deleted');loadDecisions();}else showToast(d.error||'Failed to delete');
 }
 
 // Live countdown for offered timer pills on decisions page
