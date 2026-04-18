@@ -139,6 +139,11 @@ app.get('/sw.js', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'sw.js'));
 });
 
+app.get('/rider-sw.js', (req, res) => {
+  res.set('Cache-Control', 'no-store, must-revalidate');
+  res.sendFile(path.join(__dirname, '..', 'rider-sw.js'));
+});
+
 // ── Health check (Railway uses this) ─────────────────────────────────────
 app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
 

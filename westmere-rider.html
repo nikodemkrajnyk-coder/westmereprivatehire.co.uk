@@ -8,6 +8,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Westmere Rider">
 <meta name="theme-color" content="#111D2C">
+<link rel="manifest" href="/rider-manifest.json">
+<link rel="apple-touch-icon" href="/rider-icon-192.svg">
 <title>Westmere Rider</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -512,6 +514,26 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
         </div>
       </div>
 
+      <div class="card" id="bk-contact-card">
+        <div class="ch"><span>Your Details</span></div>
+        <div class="cb">
+          <div class="fg">
+            <label class="fl">Full Name</label>
+            <input class="fi" type="text" id="bk-name" placeholder="Your full name" autocomplete="name">
+          </div>
+          <div class="r2">
+            <div class="fg">
+              <label class="fl">Phone</label>
+              <input class="fi" type="tel" id="bk-phone" placeholder="+44 7700 000 000" autocomplete="tel">
+            </div>
+            <div class="fg">
+              <label class="fl">Email (optional)</label>
+              <input class="fi" type="email" id="bk-email" placeholder="your@email.com" autocomplete="email">
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="fare-reveal" id="fare-reveal">
         <div class="fr-lbl">Estimated Fare</div>
         <div class="fr-amt" id="fr-amt">--</div>
@@ -533,7 +555,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
       <div class="sec-sub">Your journey history</div>
 
       <!-- Active Journey -->
-      <div class="aj-card" id="aj-card">
+      <div class="aj-card" id="aj-card" style="display:none">
         <div class="aj-bar"></div>
         <div class="aj-body">
           <div class="aj-status">
@@ -611,23 +633,14 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
       <div class="prof-card">
         <div class="prof-ch">Account Details</div>
         <div class="prof-cb">
-          <div class="prof-row"><span class="prof-label">Name</span><span class="prof-val" id="pv-name">Sarah Henshaw</span></div>
-          <div class="prof-row"><span class="prof-label">Email</span><span class="prof-val" id="pv-email">sarah.henshaw@example.co.uk</span></div>
-          <div class="prof-row"><span class="prof-label">Phone</span><span class="prof-val" id="pv-phone">+44 7700 900 432</span></div>
-          <div class="prof-row"><span class="prof-label">Member since</span><span class="prof-val">March 2024</span></div>
+          <div class="prof-row"><span class="prof-label">Name</span><span class="prof-val" id="pv-name">--</span></div>
+          <div class="prof-row"><span class="prof-label">Email</span><span class="prof-val" id="pv-email">--</span></div>
+          <div class="prof-row"><span class="prof-label">Phone</span><span class="prof-val" id="pv-phone">--</span></div>
         </div>
       </div>
 
-      <div class="prof-card">
-        <div class="prof-ch">Travel Summary</div>
-        <div class="prof-cb">
-          <div class="prof-row"><span class="prof-label">Total trips</span><span class="prof-val">28</span></div>
-          <div class="prof-row"><span class="prof-label">Favourite route</span><span class="prof-val">Lewes &rarr; Gatwick</span></div>
-          <div class="prof-row"><span class="prof-label">Saved</span><span class="prof-val">&pound;142 vs metered</span></div>
-        </div>
-      </div>
-
-      <a href="westmere-account.html" class="prof-acc-link">Manage on My Account &rarr;</a>
+      <button class="btn-main" id="prof-login-btn" onclick="showLogin()" style="margin-top:.5rem">Sign In</button>
+      <button class="btn-main" id="prof-logout-btn" onclick="doLogout()" style="margin-top:.5rem;background:transparent;border:1px solid rgba(17,29,44,.15);color:rgba(17,29,44,.5);display:none">Sign Out</button>
     </div>
 
   </div>
@@ -704,22 +717,28 @@ async function doLogin(){
     attEl.textContent='';
     return;
   }
-  if(!email.includes('@')||pass.length<8){
-    _loginAttempts++;
-    errEl.textContent='Invalid email or password too short (min 8 chars).';
+  errEl.classList.remove('show');
+  try{
+    var r=await fetch('/api/auth/customer/login',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:pass,remember:true})});
+    var data=await r.json();
+    if(!r.ok){
+      _loginAttempts++;
+      errEl.textContent=data.error||'Invalid credentials.';
+      errEl.classList.add('show');
+      var rem=_maxAttempts-_loginAttempts;
+      attEl.textContent=rem>0?rem+' attempt'+(rem===1?'':'s')+' remaining':'';
+      return;
+    }
+    _loginAttempts=0;
+    localStorage.removeItem('wph_rider_lockout');
+    _currentUser={name:data.customer.full_name,email:data.customer.email,phone:'',loggedIn:true};
+    bootApp();
+  }catch(e){
+    errEl.textContent='Connection error. Please try again.';
     errEl.classList.add('show');
-    var rem=_maxAttempts-_loginAttempts;
-    attEl.textContent=rem>0?rem+' attempt'+(rem===1?'':'s')+' remaining':'';
-    return;
   }
-  // Demo mode: accept any valid-looking credentials
-  _loginAttempts=0;
-  localStorage.removeItem('wph_rider_lockout');
-  sessionStorage.setItem('wph_rider',email);
-  _currentUser={name:email.split('@')[0].replace(/[._]/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();}),email:email,phone:'+44 7700 000 000'};
-  bootApp();
 }
-function doRegister(){
+async function doRegister(){
   var name=(document.getElementById('r-name').value||'').trim();
   var email=(document.getElementById('r-email').value||'').trim();
   var phone=(document.getElementById('r-phone').value||'').trim();
@@ -727,13 +746,24 @@ function doRegister(){
   var errEl=document.getElementById('reg-err');
   if(!name||!email||!phone||!pass){errEl.textContent='Please fill in all fields.';errEl.classList.add('show');return;}
   if(pass.length<8){errEl.textContent='Password must be at least 8 characters.';errEl.classList.add('show');return;}
-  sessionStorage.setItem('wph_rider',email);
-  _currentUser={name:name,email:email,phone:phone};
-  bootApp();
+  try{
+    var r=await fetch('/api/auth/customer/register',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:pass,full_name:name,phone:phone})});
+    var data=await r.json();
+    if(!r.ok){errEl.textContent=data.error||'Registration failed.';errEl.classList.add('show');return;}
+    _currentUser={name:name,email:email,phone:phone,loggedIn:true};
+    bootApp();
+  }catch(e){
+    errEl.textContent='Connection error. Please try again.';
+    errEl.classList.add('show');
+  }
 }
 function swFrm(f){
   document.getElementById('frm-login').style.display=f==='login'?'block':'none';
   document.getElementById('frm-register').style.display=f==='register'?'block':'none';
+}
+function showLogin(){
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('scr-app').classList.remove('on');
 }
 document.addEventListener('keydown',function(e){
   if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none'){
@@ -757,6 +787,7 @@ function bootApp(){
   initTimePicker();
   initPaxPicker();
   initBagsPicker();
+  updateProfileUI();
 }
 
 /* ── PAGE NAVIGATION ── */
@@ -1353,7 +1384,7 @@ function openConfirmModal(){
 function closeModal(){
   document.getElementById('confirm-modal').classList.remove('on');
 }
-function confirmBooking(){
+async function confirmBooking(){
   var from=(document.getElementById('bk-from')||{}).value||'';
   var dest=(document.getElementById('bk-dest')||{}).value||'';
   var date=(document.getElementById('bk-date')||{}).value||'';
@@ -1362,67 +1393,65 @@ function confirmBooking(){
   var flight=(document.getElementById('bk-flight')||{}).value||'';
   var pax=(document.getElementById('bk-pax')||{}).value||'1';
   var bags=(document.getElementById('bk-bags')||{}).value||'';
+  var name=(document.getElementById('bk-name')||{}).value||'';
+  var phone=(document.getElementById('bk-phone')||{}).value||'';
+  var email=(document.getElementById('bk-email')||{}).value||'';
   var fare=Math.ceil((_baseFare*_selectedVehMult)/0.5)*0.5;
-  var ref='WPH-'+String(Math.floor(10000+Math.random()*90000));
-  var booking={
-    ref:ref,
-    from:from,
-    dest:dest,
-    date:date,
-    dateDisp:dateDisp,
-    time:time,
-    flight:flight,
-    pax:pax,
-    bags:bags,
-    vehicle:_selectedVehName,
-    fare:fare,
-    status:'pending',
-    created:new Date().toISOString()
-  };
-  // Save to localStorage for offline display
-  var bookings=JSON.parse(localStorage.getItem('wph_rider_bookings')||'[]');
-  bookings.unshift(booking);
-  localStorage.setItem('wph_rider_bookings',JSON.stringify(bookings));
-  // Also save to backend API
-  fetch('/api/bookings',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({pickup:from,destination:dest,date:date,time:time,passengers:parseInt(pax)||1,bags:bags,flight:flight,fare:fare,payment:'cash',notes:_selectedVehName?'Vehicle: '+_selectedVehName:''})
-  }).catch(function(){});
-  closeModal();
-  showToast('Booking received: '+ref+' \u2014 awaiting confirmation','success');
-  // Reset form
-  document.getElementById('bk-from').value='';
-  document.getElementById('bk-dest').value='';
-  document.getElementById('bk-flight').value='';
-  document.getElementById('fare-reveal').classList.remove('show');
-  document.getElementById('bk-calc-btn').style.display='block';
-  _baseFare=null;
-  // Refresh trips
-  renderTrips('upcoming');
-  renderHomeUpcoming();
-  // Switch to trips
-  setTimeout(function(){goPage('trips');},600);
+
+  if(!name||!phone){
+    showToast('Please enter your name and phone number','error');
+    return;
+  }
+
+  try{
+    var r=await fetch('/api/public/book',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name:name,phone:phone,email:email||null,pickup:from,destination:dest,date:date,time:time||'ASAP',passengers:parseInt(pax)||1,bags:bags,flight:flight||null,fare:fare,payment:'cash',notes:_selectedVehName?'Vehicle: '+_selectedVehName:'',source:'rider-app'})
+    });
+    var data=await r.json();
+    if(!r.ok){
+      showToast(data.error||'Booking failed','error');
+      return;
+    }
+    var booking={
+      ref:data.ref,
+      from:from,
+      dest:dest,
+      date:date,
+      dateDisp:dateDisp,
+      time:time,
+      flight:flight,
+      pax:pax,
+      bags:bags,
+      vehicle:_selectedVehName,
+      fare:fare,
+      status:'pending',
+      created:new Date().toISOString()
+    };
+    var bookings=JSON.parse(localStorage.getItem('wph_rider_bookings')||'[]');
+    bookings.unshift(booking);
+    localStorage.setItem('wph_rider_bookings',JSON.stringify(bookings));
+    closeModal();
+    showToast('Booking confirmed: '+data.ref,'success');
+    document.getElementById('bk-from').value='';
+    document.getElementById('bk-dest').value='';
+    document.getElementById('bk-flight').value='';
+    document.getElementById('fare-reveal').classList.remove('show');
+    document.getElementById('bk-calc-btn').style.display='block';
+    _baseFare=null;
+    renderTrips('upcoming');
+    setTimeout(function(){goPage('trips');},600);
+  }catch(e){
+    showToast('Connection error. Please try again.','error');
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    MY TRIPS
    ═══════════════════════════════════════════════════════════════════════════ */
 function getBookings(){
-  var stored=JSON.parse(localStorage.getItem('wph_rider_bookings')||'[]');
-  // Add demo bookings if empty
-  if(!stored.length){
-    var demoBookings=[
-      {ref:'WPH-12345',from:'14 High Street, Lewes',dest:'Gatwick Airport',date:'2026-04-10',dateDisp:'Fri 10 April 2026',time:'05:30',flight:'BA2431',pax:'2',vehicle:'Standard Saloon',fare:78,status:'confirmed',created:'2026-04-01T10:00:00Z'},
-      {ref:'WPH-12290',from:'Brighton Station',dest:'Heathrow Airport T5',date:'2026-04-15',dateDisp:'Wed 15 April 2026',time:'06:00',flight:'',pax:'3',vehicle:'Executive Saloon',fare:175,status:'confirmed',created:'2026-03-28T14:00:00Z'},
-      {ref:'WPH-12201',from:'Gatwick Airport',dest:'22 North Street, Lewes',date:'2026-03-20',dateDisp:'Fri 20 March 2026',time:'14:30',flight:'EZY8704',pax:'2',vehicle:'Standard Saloon',fare:78,status:'completed',created:'2026-03-15T09:00:00Z'},
-      {ref:'WPH-12150',from:'Lewes',dest:'Stansted Airport',date:'2026-03-05',dateDisp:'Thu 5 March 2026',time:'04:00',flight:'',pax:'1',vehicle:'Standard Saloon',fare:209,status:'completed',created:'2026-02-28T16:00:00Z'},
-      {ref:'WPH-12099',from:'Horsham',dest:'Gatwick Airport',date:'2026-02-18',dateDisp:'Wed 18 February 2026',time:'07:00',flight:'',pax:'4',vehicle:'MPV / Estate',fare:104,status:'cancelled',created:'2026-02-10T11:00:00Z'}
-    ];
-    localStorage.setItem('wph_rider_bookings',JSON.stringify(demoBookings));
-    return demoBookings;
-  }
-  return stored;
+  return JSON.parse(localStorage.getItem('wph_rider_bookings')||'[]');
 }
 
 function renderTrips(filter){
@@ -1470,7 +1499,6 @@ function cancelTrip(ref){
   bookings.forEach(function(b){if(b.ref===ref)b.status='cancelled';});
   localStorage.setItem('wph_rider_bookings',JSON.stringify(bookings));
   renderTrips('upcoming');
-  renderHomeUpcoming();
   showToast('Booking '+ref+' cancelled');
 }
 
@@ -1494,7 +1522,7 @@ function sendDriverMsg(){
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   AUTO-BOOT (no login required — open as mockup)
+   AUTO-BOOT
    ═══════════════════════════════════════════════════════════════════════════ */
 function _applyDayNight(){
   var h=new Date().getHours();
@@ -1502,13 +1530,71 @@ function _applyDayNight(){
   document.body.classList.toggle('mode-day',isDay);
   document.body.classList.toggle('mode-night',!isDay);
 }
-function _autoBoot(){
+async function _autoBoot(){
   try{
     _applyDayNight();
     setInterval(_applyDayNight,60000);
-    _currentUser={name:'Guest',email:'',phone:''};
-    bootApp();
-  }catch(e){console.error('Rider auto-boot failed:',e);}
+    var r=await fetch('/api/auth/me',{credentials:'include'});
+    if(r.ok){
+      var data=await r.json();
+      if(data.type==='customer'&&data.customer){
+        _currentUser={name:data.customer.full_name,email:data.customer.email,phone:data.customer.phone||'',loggedIn:true};
+        bootApp();
+        updateProfile();
+        return;
+      }
+    }
+  }catch(e){}
+  _currentUser={name:'',email:'',phone:'',loggedIn:false};
+  bootApp();
+}
+function updateProfile(){
+  var n=document.getElementById('pv-name');if(n)n.textContent=_currentUser.name||'Guest';
+  var e=document.getElementById('pv-email');if(e)e.textContent=_currentUser.email||'--';
+  var p=document.getElementById('pv-phone');if(p)p.textContent=_currentUser.phone||'--';
+  if(_currentUser.loggedIn){
+    var nameF=document.getElementById('bk-name');if(nameF&&!nameF.value)nameF.value=_currentUser.name;
+    var phoneF=document.getElementById('bk-phone');if(phoneF&&!phoneF.value)phoneF.value=_currentUser.phone;
+    var emailF=document.getElementById('bk-email');if(emailF&&!emailF.value)emailF.value=_currentUser.email;
+  }
+  loadServerTrips();
+}
+async function loadServerTrips(){
+  if(!_currentUser.loggedIn)return;
+  try{
+    var r=await fetch('/api/bookings',{credentials:'include'});
+    if(!r.ok)return;
+    var data=await r.json();
+    if(data.bookings&&data.bookings.length){
+      var mapped=data.bookings.map(function(b){
+        return{ref:b.ref,from:b.pickup,dest:b.destination,date:b.date,time:b.time,flight:b.flight||'',pax:b.passengers||1,vehicle:'',fare:b.fare||0,status:b.status,created:b.created_at};
+      });
+      localStorage.setItem('wph_rider_bookings',JSON.stringify(mapped));
+      renderTrips('upcoming');
+    }
+  }catch(e){}
+}
+function doLogout(){
+  fetch('/api/auth/logout',{method:'POST',credentials:'include'}).catch(function(){});
+  _currentUser={name:'',email:'',phone:'',loggedIn:false};
+  localStorage.removeItem('wph_rider_bookings');
+  showToast('Signed out');
+  goPage('book');
+  updateProfileUI();
+}
+function updateProfileUI(){
+  var loginBtn=document.getElementById('prof-login-btn');
+  var logoutBtn=document.getElementById('prof-logout-btn');
+  if(_currentUser.loggedIn){
+    if(loginBtn)loginBtn.style.display='none';
+    if(logoutBtn)logoutBtn.style.display='block';
+  }else{
+    if(loginBtn)loginBtn.style.display='block';
+    if(logoutBtn)logoutBtn.style.display='none';
+  }
+}
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/rider-sw.js').catch(function(){});
 }
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',_autoBoot);}
 else{_autoBoot();}
