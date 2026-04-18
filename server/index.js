@@ -12,6 +12,7 @@ const googleRouter = require('./google-routes');
 const gmailRouter = require('./gmail-routes');
 const intakeRouter = require('./intake-routes');
 const offerRouter = require('./offer-routes');
+const assistantRouter = require('./assistant-routes');
 const { createAuthMiddleware } = require('./middleware');
 const gcal = require('./google-calendar');
 const intake = require('./intake');
@@ -97,6 +98,9 @@ app.use('/api/intake', apiLimiter, requireAuth, intakeRouter);
 
 // Protected driver-offer workflow (offer/accept/decline/done/cancel)
 app.use('/api', apiLimiter, requireAuth, offerRouter);
+
+// Protected assistant (voice booking helper)
+app.use('/api/assistant', apiLimiter, requireAuth, assistantRouter);
 
 // ── Real-time push (SSE) ───────────────────────────────────────────────
 // Long-lived stream — must NOT pass through the api rate limiter (one
