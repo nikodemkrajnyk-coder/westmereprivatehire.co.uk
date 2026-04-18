@@ -137,7 +137,7 @@ nav#nav{display:none}
 .assist-fab{position:absolute;bottom:calc(70px + var(--safe-bottom));right:1rem;width:56px;height:56px;border-radius:50%;background:var(--gold);border:none;color:var(--navy);cursor:pointer;z-index:65;display:none;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(184,152,90,.4);transition:all .3s}
 .assist-fab:hover{transform:scale(1.06);box-shadow:0 6px 20px rgba(184,152,90,.5)}
 .assist-fab.listening{background:var(--navy);color:var(--gold);animation:fabPulse 1.5s ease infinite}
-.assist-fab svg{width:24px;height:24px;fill:currentColor}
+.assist-fab{font-size:1.5rem;line-height:1}
 @keyframes fabPulse{0%,100%{box-shadow:0 4px 16px rgba(17,29,44,.4)}50%{box-shadow:0 4px 24px rgba(184,152,90,.6)}}
 .assist-panel{position:fixed;bottom:0;left:0;right:0;top:0;background:rgba(245,242,237,.98);backdrop-filter:blur(20px);z-index:100;display:none;flex-direction:column}
 .assist-panel.on{display:flex}
@@ -596,9 +596,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
   </div>
 
   <!-- ASSISTANT FAB -->
-  <button class="assist-fab" id="assist-fab" onclick="openAssistant()" title="Voice Assistant">
-    <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
-  </button>
+  <button class="assist-fab" id="assist-fab" onclick="openAssistant()" title="Voice Assistant">&#127908;</button>
 
 </div><!-- /app -->
 
@@ -616,7 +614,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
   <div class="assist-interim" id="assist-interim"></div>
   <div class="assist-input-row">
     <button class="assist-mic" id="assist-mic-btn" onclick="toggleAssistMic()">
-      <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+      <svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 11a1 1 0 0 0-2 0 5 5 0 0 1-10 0 1 1 0 0 0-2 0 7 7 0 0 0 6 6.93V21h2v-3.07A7 7 0 0 0 19 11z"/></svg>
     </button>
     <input class="assist-input" id="assist-input" type="text" placeholder="Type or tap mic to speak..." onkeydown="if(event.key==='Enter'){event.preventDefault();assistSend();}">
     <button class="btn-send" onclick="assistSend()">Send</button>
