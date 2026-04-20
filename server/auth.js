@@ -5,6 +5,9 @@ const { getDb } = require('./db');
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'wph_' + require('crypto').randomBytes(32).toString('hex');
+if (!process.env.JWT_SECRET) {
+  console.warn('[AUTH] WARNING: JWT_SECRET not set — sessions will not survive server restarts. Set JWT_SECRET in your environment variables.');
+}
 const JWT_EXPIRY = '8h';
 const JWT_EXPIRY_REMEMBER = '30d';
 const COOKIE_MAX_AGE = 8 * 3600000; // 8 hours

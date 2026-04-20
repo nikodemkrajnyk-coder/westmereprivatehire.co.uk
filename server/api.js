@@ -60,6 +60,30 @@ router.post('/bookings', (req, res) => {
     return res.status(400).json({ error: 'Pickup, destination, date, and time required' });
   }
 
+  // Reject bookings in the past (Europe/London timezone)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return res.status(400).json({ error: 'Date must be YYYY-MM-DD' });
+  }
+  const ukNowParts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/London',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false
+  }).formatToParts(new Date()).reduce((o, p) => { o[p.type] = p.value; return o; }, {});
+  const todayStr = `${ukNowParts.year}-${ukNowParts.month}-${ukNowParts.day}`;
+  if (date < todayStr) {
+    return res.status(400).json({ error: 'Pickup date is in the past' });
+  }
+  if (date === todayStr && time && time !== 'ASAP') {
+    const m = String(time).match(/^(\d{1,2}):(\d{2})/);
+    if (m) {
+      const reqMins = (+m[1]) * 60 + (+m[2]);
+      const nowMins = parseInt(ukNowParts.hour, 10) * 60 + parseInt(ukNowParts.minute, 10);
+      if (reqMins < nowMins) {
+        return res.status(400).json({ error: 'Pickup time is in the past' });
+      }
+    }
+  }
+
   const db = getDb();
   const ref = 'WPH-' + Date.now().toString(36).toUpperCase();
   const customerId = req.auth.type === 'customer' ? req.auth.id : null;
@@ -114,8 +138,14 @@ router.patch('/bookings/:id', (req, res) => {
   }
 
   const db = getDb();
-  const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(req.params.id);
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+  const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
   if (!booking) return res.status(404).json({ error: 'Booking not found' });
+
+  if (role === 'driver' && booking.driver_id !== req.auth.id) {
+    return res.status(403).json({ error: 'You can only update your own bookings' });
+  }
 
   const allowed = ['status', 'driver_id', 'fare', 'notes', 'payment'];
   const updates = [];
@@ -171,6 +201,31 @@ router.patch('/bookings/:id', (req, res) => {
       }).catch(() => {});
     }
   }
+
+  res.json({ ok: true });
+});
+
+// Delete booking (admin/owner only — permanently removes the record)
+router.delete('/bookings/:id', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+  const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+  if (!booking) return res.status(404).json({ error: 'Booking not found' });
+
+  if (booking.calendar_event_id) {
+    gcal.deleteEvent(booking.calendar_event_id).catch(() => {});
+  }
+
+  db.prepare('DELETE FROM bookings WHERE id = ?').run(id);
+
+  db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+    .run(req.auth.type, req.auth.id, 'booking_deleted', booking.ref, req.ip);
+
+  events.broadcast('booking:deleted', { id, ref: booking.ref });
 
   res.json({ ok: true });
 });

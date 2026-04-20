@@ -245,10 +245,13 @@ function buildDescription(b) {
     b.passengers ? `Passengers: ${b.passengers}` : null,
     b.bags ? `Bags: ${b.bags}` : null,
     b.flight ? `Flight: ${b.flight}` : null,
-    b.fare ? `Fare: £${b.fare}` : null,
+    b.fare ? `Fare: \u00a3${b.fare}` : null,
     b.payment ? `Payment: ${b.payment}` : null,
     b.notes ? `Notes: ${b.notes}` : null,
-    `Status: ${b.status || 'pending'}`
+    `Status: ${b.status || 'pending'}`,
+    '',
+    b.destination ? `Navigate to destination (Waze): https://waze.com/ul?q=${encodeURIComponent(b.destination)}` : null,
+    b.pickup ? `Navigate to pickup (Waze): https://waze.com/ul?q=${encodeURIComponent(b.pickup)}` : null
   ].filter(Boolean);
   return lines.join('\n');
 }

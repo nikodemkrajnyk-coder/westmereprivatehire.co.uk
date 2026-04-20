@@ -39,7 +39,7 @@ app.use(helmet({
       imgSrc: ["'self'", "data:", "https:", "blob:"],
       connectSrc: ["'self'", "https://api.mapbox.com",
         "https://nominatim.openstreetmap.org", "https://router.project-osrm.org",
-        "https://api.anthropic.com", "https://api.stripe.com"],
+        "https://api.stripe.com"],
       frameSrc: ["'self'", "https://js.stripe.com", "https://www.google.com"],
       scriptSrcAttr: ["'unsafe-inline'"],
     }
@@ -47,7 +47,7 @@ app.use(helmet({
 }));
 
 app.use(cookieParser());
-app.use(express.json());
+app.use(express.json({ limit: '16kb' }));
 
 // Rate limiting on auth endpoints
 const authLimiter = rateLimit({
@@ -137,6 +137,11 @@ for (const page of protectedPages) {
 app.get('/sw.js', (req, res) => {
   res.set('Cache-Control', 'no-store, must-revalidate');
   res.sendFile(path.join(__dirname, '..', 'sw.js'));
+});
+
+app.get('/rider-sw.js', (req, res) => {
+  res.set('Cache-Control', 'no-store, must-revalidate');
+  res.sendFile(path.join(__dirname, '..', 'rider-sw.js'));
 });
 
 // ── Health check (Railway uses this) ─────────────────────────────────────

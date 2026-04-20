@@ -142,8 +142,7 @@ router.post('/book', async (req, res) => {
 
   } catch (err) {
     console.error('[BOOK] Error creating booking:', err && err.stack || err);
-    const detail = (err && err.message) ? err.message : 'unknown';
-    res.status(500).json({ error: 'Failed to create booking', detail });
+    res.status(500).json({ error: 'Failed to create booking' });
   }
 });
 
@@ -196,7 +195,10 @@ router.post('/stripe-webhook', express.raw({ type: 'application/json' }), (req, 
     const ref = intent.metadata?.booking_ref;
     if (ref) {
       const db = getDb();
-      const row = db.prepare("SELECT id, status FROM bookings WHERE ref = ?").get(ref);
+      const row = db.prepare("SELECT id, status, fare FROM bookings WHERE ref = ?").get(ref);
+      if (row && row.fare && Math.round(row.fare * 100) !== intent.amount) {
+        console.error('[STRIPE] Amount mismatch for', ref, '- expected', Math.round(row.fare * 100), 'got', intent.amount);
+      }
       db.prepare("UPDATE bookings SET payment = 'card', status = 'confirmed', updated_at = datetime('now') WHERE ref = ?").run(ref);
       console.log('[STRIPE] Payment confirmed for', ref);
       // Fire customer "Booking confirmed" on the pending → confirmed edge

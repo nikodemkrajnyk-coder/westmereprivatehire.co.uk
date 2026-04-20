@@ -995,15 +995,15 @@ if ('serviceWorker' in navigator) {
             <option value="ge">🚗 General</option>
           </select></div>
         <div class="fg"><label class="fl">Passengers</label>
-          <select class="fi"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+          <select class="fi" id="nb-pax"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
       </div>
       <div class="r2">
-        <div class="fg"><label class="fl">Passenger Name</label><input class="fi" type="text" placeholder="Full name"></div>
-        <div class="fg"><label class="fl">Mobile</label><input class="fi" type="tel" placeholder="+44 7700…"></div>
+        <div class="fg"><label class="fl">Passenger Name</label><input class="fi" type="text" id="nb-name" placeholder="Full name"></div>
+        <div class="fg"><label class="fl">Mobile</label><input class="fi" type="tel" id="nb-phone" placeholder="+44 7700..."></div>
       </div>
-      <div class="fg"><label class="fl">Email</label><input class="fi" type="email" placeholder="customer@email.com"></div>
+      <div class="fg"><label class="fl">Email</label><input class="fi" type="email" id="nb-email" placeholder="customer@email.com"></div>
       <div class="fg"><label class="fl">Payment Method</label>
-        <select class="fi"><option>💵 Cash on the Day</option><option>💳 Card — Pre-paid</option><option>📄 Account / Monthly Invoice</option></select></div>
+        <select class="fi" id="nb-pay"><option value="cash">Cash on the Day</option><option value="card">Card -- Pre-paid</option><option value="account">Account / Monthly Invoice</option></select></div>
 
       <!-- Availability check -->
       <div class="avail" id="nb-avail">
@@ -1045,7 +1045,7 @@ if ('serviceWorker' in navigator) {
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-book')">Cancel</button>
-      <button class="btn btn-navy" onclick="closeModal('modal-book');showToast('✓ Booking confirmed! Customer notified. Calendar updated. Record book logged.')">Confirm &amp; Send</button>
+      <button class="btn btn-navy" onclick="submitBooking()">Confirm &amp; Send</button>
     </div>
   </div>
 </div>
@@ -1490,7 +1490,7 @@ function loadLiveBookings(){
           var statusTag=b.status==='completed'?'<span class="tag tag-done">Done</span>':b.status==='confirmed'?'<span class="tag tag-upcoming">Confirmed</span>':'<span class="tag tag-upcoming">Pending</span>';
           return '<div class="tl-item"><div class="tl-time-col"><div class="tl-time">'+(b.time||'ASAP')+'</div>'+(i<sorted.length-1?'<div class="tl-line"></div>':'')+'</div>'
             +'<div class="tl-card active"><div class="tl-top"><div class="tl-name">'+(b.customer_name||'Guest')+'</div>'+statusTag+'</div>'
-            +'<div class="tl-route">\ud83d\udccd '+b.pickup+' \u2192 '+b.destination+'</div>'
+            +'<div class="tl-route">'+b.pickup+' \u2192 '+b.destination+'</div>'
             +'<div class="tl-route" style="margin-top:.2rem">'+(b.flight?'Flight '+b.flight+' \u00b7 ':'')+b.passengers+' pax'+(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')+' '+(b.payment==='card'?'Card':'Cash')+'</div>'
             +'<div class="tl-actions">'
             +'<button class="btn btn-green btn-sm" onclick="markJobDone('+b.id+',this)">\u2713 Done</button>'
@@ -1620,9 +1620,48 @@ function markJobDone(id,btn){
     .then(function(){showToast('Journey completed');loadLiveBookings();}).catch(function(){showToast('Error updating');});
 }
 function cancelJob(id,btn){
-  if(!confirm('Cancel this booking?'))return;
-  fetch('/api/bookings/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'cancelled'})})
-    .then(function(){showToast('Booking cancelled');loadLiveBookings();}).catch(function(){showToast('Error updating');});
+  if(!confirm('Delete this booking permanently?'))return;
+  fetch('/api/bookings/'+id,{method:'DELETE'})
+    .then(function(r){return r.json();})
+    .then(function(d){if(d.ok){showToast('Booking deleted');loadLiveBookings();}else{showToast(d.error||'Error deleting');}})
+    .catch(function(){showToast('Error deleting booking');});
+}
+
+async function submitBooking(){
+  var date=document.getElementById('nb-date').value;
+  var time=document.getElementById('nb-time').value;
+  var pickup=document.getElementById('nb-pu').value.trim();
+  var dest=document.getElementById('nb-de').value.trim();
+  var name=document.getElementById('nb-name').value.trim();
+  var phone=document.getElementById('nb-phone').value.trim();
+  var email=document.getElementById('nb-email').value.trim();
+  var pax=document.getElementById('nb-pax').value;
+  var payment=document.getElementById('nb-pay').value;
+  var fareText=document.getElementById('nb-pb-amount').textContent.replace(/[^0-9.]/g,'');
+  var fare=fareText?parseFloat(fareText):null;
+
+  if(!pickup||!dest){showToast('Enter pickup and destination');return;}
+  if(!date){showToast('Pick a date');return;}
+  if(!name){showToast('Enter passenger name');return;}
+  if(!phone){showToast('Enter mobile number');return;}
+
+  var notes=name+' / '+phone+(email?' / '+email:'');
+  try{
+    var r=await fetch('/api/bookings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      pickup:pickup,destination:dest,date:date,time:time||'ASAP',
+      passengers:parseInt(pax,10)||1,fare:fare,payment:payment,notes:notes
+    })});
+    var d=await r.json();
+    if(d.ok){
+      closeModal('modal-book');
+      showToast('Booking confirmed -- '+d.booking.ref);
+      loadLiveBookings();
+    }else{
+      showToast(d.error||'Failed to create booking');
+    }
+  }catch(e){
+    showToast('Connection error');
+  }
 }
 
 // Auth check via backend

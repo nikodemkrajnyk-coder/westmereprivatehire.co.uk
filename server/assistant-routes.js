@@ -1,5 +1,6 @@
 const express = require('express');
 const { getDb } = require('./db');
+const gcal = require('./google-calendar');
 
 const router = express.Router();
 
@@ -101,6 +102,101 @@ router.post('/chat', async (req, res) => {
     res.json({ ok: true, reply });
   } catch (e) {
     res.status(502).json({ error: 'Assistant unavailable: ' + e.message });
+  }
+});
+
+router.post('/analyse', async (req, res) => {
+  if (!API_KEY) return res.status(503).json({ error: 'Assistant not configured' });
+
+  const { system, prompt, max_tokens } = req.body;
+  if (!prompt) return res.status(400).json({ error: 'prompt required' });
+
+  try {
+    const apiRes = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: Math.min(max_tokens || 300, 2000),
+        system: system || undefined,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await apiRes.json();
+    if (!apiRes.ok) {
+      const msg = (data && data.error && data.error.message) || ('HTTP ' + apiRes.status);
+      return res.status(502).json({ error: 'Claude API: ' + msg });
+    }
+
+    const reply = (data.content || [])
+      .filter(b => b.type === 'text')
+      .map(b => b.text)
+      .join('')
+      .trim();
+
+    res.json({ ok: true, reply });
+  } catch (e) {
+    res.status(502).json({ error: 'Assistant unavailable' });
+  }
+});
+
+// Calendar event management (W assistant can create/update/delete events)
+router.post('/calendar/create', async (req, res) => {
+  const { title, date, time, duration, location, notes } = req.body;
+  if (!title || !date) return res.status(400).json({ error: 'title and date required' });
+  try {
+    const event = {
+      ref: '', customer_name: title, pickup: location || '',
+      destination: '', date, time: time || null,
+      duration_min: duration || 60, status: 'confirmed',
+      notes: notes || '', id: 0
+    };
+    const eventId = await gcal.createEvent(event);
+    if (eventId) {
+      res.json({ ok: true, eventId });
+    } else {
+      res.status(502).json({ error: 'Calendar not connected or event creation failed' });
+    }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.patch('/calendar/:eventId', async (req, res) => {
+  const { eventId } = req.params;
+  const { title, date, time, duration, location, notes } = req.body;
+  if (!eventId) return res.status(400).json({ error: 'eventId required' });
+  try {
+    const event = {
+      ref: '', customer_name: title || '', pickup: location || '',
+      destination: '', date: date || undefined, time: time || undefined,
+      duration_min: duration || 60, status: 'confirmed',
+      notes: notes || '', id: 0
+    };
+    const ok = await gcal.updateEvent(eventId, event);
+    if (ok) {
+      res.json({ ok: true });
+    } else {
+      res.status(404).json({ error: 'Event not found or update failed' });
+    }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.delete('/calendar/:eventId', async (req, res) => {
+  const { eventId } = req.params;
+  if (!eventId) return res.status(400).json({ error: 'eventId required' });
+  try {
+    const ok = await gcal.deleteEvent(eventId);
+    res.json({ ok: !!ok });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 
