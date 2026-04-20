@@ -502,7 +502,6 @@ if ('serviceWorker' in navigator) {
     <span class="sb-label">Your Sites</span>
     <a class="sb-item" href="https://nikodemkrajnyk-coder.github.io/westmereprivatehire.co.uk/westmere-account.html" target="_blank" rel="noopener"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>Booking Site</a>
     <a class="sb-item" href="https://nikodemkrajnyk-coder.github.io/westmereprivatehire.co.uk/westmere-account.html" target="_blank"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>Account Portal</a>
-    <a class="sb-item" href="https://nikodemkrajnyk-coder.github.io/westmereprivatehire.co.uk/westmere-driver.html" target="_blank"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></span>Driver App</a>
   </div>
 
   <div class="sb-bottom">
@@ -711,12 +710,12 @@ if ('serviceWorker' in navigator) {
     <div class="view" id="view-invoices">
       <div class="page-hd"><div class="page-title">Invoices</div></div>
       <div class="card">
-        <div class="ch"><div class="ct">Outstanding</div><button class="btn btn-navy btn-sm" onclick="showToast('Invoice created!')">+ New Invoice</button></div>
+        <div class="ch"><div class="ct">History</div><button class="btn btn-navy btn-sm" onclick="openNewInvoice()">+ New Invoice</button></div>
         <div style="overflow-x:auto">
           <table class="inv-table">
-            <thead><tr><th>Invoice No.</th><th>Customer</th><th>Issued</th><th>Due</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody>
-              <tr><td colspan="7" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">No invoices yet</td></tr>
+            <thead><tr><th>Invoice No.</th><th>Customer</th><th>Issued</th></tr></thead>
+            <tbody id="invoice-history-body">
+              <tr><td colspan="3" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">Loading...</td></tr>
             </tbody>
           </table>
         </div>
@@ -954,18 +953,6 @@ if ('serviceWorker' in navigator) {
         </div>
       </div>
 
-      <div class="card">
-        <div class="ch"><div class="ct">Driver App</div></div>
-        <div class="cb">
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
-            <div>
-              <div style="font-size:.88rem;font-weight:400;color:var(--navy);margin-bottom:.25rem">Westmere Driver App</div>
-              <div style="font-size:.78rem;color:var(--text-light);font-weight:300;max-width:460px;line-height:1.65">Drivers log in to see assigned jobs, update trip status (en route → at pickup → passenger on board → dropped off) and view offered jobs they can accept.</div>
-            </div>
-            <a class="btn btn-navy" href="westmere-driver.html" target="_blank">Open Driver App →</a>
-          </div>
-        </div>
-      </div>
     </div>
 
   </div><!-- end content -->
@@ -1149,7 +1136,33 @@ if ('serviceWorker' in navigator) {
   </div>
 </div>
 
-<div class="toast" id="toast"><span class="ti">✓</span><span id="toast-msg"></span></div>
+<!-- MODAL: NEW INVOICE -->
+<div class="overlay" id="modal-new-invoice">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-hd">
+      <div class="modal-title">New Invoice</div>
+      <button class="modal-x" onclick="closeModal('modal-new-invoice')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="fg">
+        <label class="fl">Customer *</label>
+        <select class="fi" id="ni-customer"><option value="">Loading...</option></select>
+      </div>
+      <div class="fg">
+        <label class="fl">Invoice Month *</label>
+        <input class="fi" type="month" id="ni-month">
+        <div style="font-size:.68rem;color:rgba(17,29,44,.5);margin-top:.3rem">Only bookings dated within this month will be included.</div>
+      </div>
+      <div id="ni-err" style="display:none;margin-top:.6rem;padding:.55rem .8rem;background:rgba(156,40,40,.08);color:#9C2828;font-size:.78rem;border-radius:6px"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-new-invoice')">Cancel</button>
+      <button class="btn btn-navy" id="ni-send-btn" onclick="submitNewInvoice()">Send Invoice</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span class="ti">&check;</span><span id="toast-msg"></span></div>
 
 </div><!-- end admin-app -->
 
@@ -1901,6 +1914,7 @@ function nav(id,btn){
   if(id==='inbox'&&typeof loadInbox==='function')loadInbox();
   if(id==='time-off'&&typeof loadTimeOff==='function')loadTimeOff();
   if(id==='all-jobs'&&typeof loadFlaggedBookings==='function')loadFlaggedBookings();
+  if(id==='invoices'&&typeof loadInvoiceHistory==='function')loadInvoiceHistory();
   if(id==='today'&&typeof loadFlaggedBookings==='function')loadFlaggedBookings();
   if(id==='calendar'&&typeof loadAdminCalendar==='function')loadAdminCalendar();
 }
@@ -1955,6 +1969,74 @@ async function submitNewCustomer(){
     errEl.textContent='Network error. Please try again.';errEl.style.display='';
     btn.disabled=false;btn.textContent='Create Account';
   }
+}
+
+// ── NEW INVOICE MODAL ──
+function openNewInvoice(){
+  var sel=document.getElementById('ni-customer');
+  sel.innerHTML='<option value="">Loading...</option>';
+  var err=document.getElementById('ni-err');err.style.display='none';
+  var m=document.getElementById('ni-month');
+  var now=new Date();
+  var invYear=now.getMonth()===0?now.getFullYear()-1:now.getFullYear();
+  var invMonth=now.getMonth()===0?12:now.getMonth();
+  m.value=invYear+'-'+String(invMonth).padStart(2,'0');
+  openModal('modal-new-invoice');
+  fetch('/api/customers',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
+    if(!d.ok||!d.customers.length){
+      sel.innerHTML='<option value="">No customers yet</option>';return;
+    }
+    var opts=['<option value="">-- Select customer --</option>'];
+    d.customers.forEach(function(c){
+      var label=(c.full_name||'Unknown')+(c.account_type?' ('+c.account_type+')':'');
+      opts.push('<option value="'+c.id+'">'+escTo(label)+'</option>');
+    });
+    sel.innerHTML=opts.join('');
+  }).catch(function(){sel.innerHTML='<option value="">Error loading customers</option>';});
+}
+
+function submitNewInvoice(){
+  var err=document.getElementById('ni-err');err.style.display='none';
+  var cid=document.getElementById('ni-customer').value;
+  var month=document.getElementById('ni-month').value;
+  if(!cid){err.textContent='Pick a customer.';err.style.display='';return;}
+  if(!month||!/^\d{4}-\d{2}$/.test(month)){err.textContent='Pick an invoice month.';err.style.display='';return;}
+  var btn=document.getElementById('ni-send-btn');
+  btn.disabled=true;btn.textContent='Sending...';
+  fetch('/api/customers/'+cid+'/invoice',{
+    method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({month:month})
+  }).then(function(r){return r.json().then(function(d){return{ok:r.ok,status:r.status,d:d};});}).then(function(res){
+    btn.disabled=false;btn.textContent='Send Invoice';
+    if(!res.ok||!res.d.ok){
+      err.textContent=res.d.error||('Invoice failed ('+res.status+')');err.style.display='';return;
+    }
+    var total=(+res.d.total||0).toFixed(2);
+    closeModal('modal-new-invoice');
+    showToast('Invoice '+res.d.invoiceNo+' sent to customer \u00b7 '+res.d.journeys+' journeys \u00b7 \u00a3'+total);
+    loadInvoiceHistory();
+  }).catch(function(){
+    btn.disabled=false;btn.textContent='Send Invoice';
+    err.textContent='Network error.';err.style.display='';
+  });
+}
+
+function loadInvoiceHistory(){
+  var tbody=document.getElementById('invoice-history-body');if(!tbody)return;
+  fetch('/api/audit?limit=500',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
+    if(!d.ok){tbody.innerHTML='<tr><td colspan="3" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">Unable to load history</td></tr>';return;}
+    var invoices=(d.logs||[]).filter(function(l){return l.action==='invoice_sent';});
+    if(!invoices.length){
+      tbody.innerHTML='<tr><td colspan="3" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">No invoices sent yet</td></tr>';return;
+    }
+    tbody.innerHTML=invoices.map(function(l){
+      var parts=String(l.detail||'').split(' to ');
+      var invNo=parts[0]||'';
+      var to=parts[1]||'';
+      var issued=(l.created_at||'').split(' ')[0]||'';
+      return '<tr><td>'+escTo(invNo)+'</td><td>'+escTo(to)+'</td><td>'+escTo(issued)+'</td></tr>';
+    }).join('');
+  }).catch(function(){tbody.innerHTML='<tr><td colspan="3" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">Unable to load history</td></tr>';});
 }
 
 // ── SEND INVOICE ──
