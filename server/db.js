@@ -275,6 +275,19 @@ function migrate() {
     console.error('[DB] driver-offer column migration failed:', e.message);
   }
 
+  // Key-value settings columns in integrations table
+  try {
+    const cols = db.prepare("PRAGMA table_info(integrations)").all();
+    if (!cols.find(c => c.name === 'key')) {
+      db.exec(`ALTER TABLE integrations ADD COLUMN key TEXT`);
+      console.log('[DB] Added key column to integrations');
+    }
+    if (!cols.find(c => c.name === 'value')) {
+      db.exec(`ALTER TABLE integrations ADD COLUMN value TEXT`);
+      console.log('[DB] Added value column to integrations');
+    }
+  } catch (e) {}
+
   // Rebuild the bookings CHECK constraint to allow the new 'offered' status.
   // Detect by inspecting the stored CREATE TABLE text in sqlite_master.
   try {
@@ -343,6 +356,27 @@ function seedDefaults() {
 
     console.log('[DB] Default admin user created (westmere / sussex)');
   }
+
+  // Seed default invoice settings
+  try {
+    const invoiceRow = db.prepare("SELECT id FROM integrations WHERE key = 'invoice_settings'").get();
+    if (!invoiceRow) {
+      db.prepare("INSERT INTO integrations (provider, key, value) VALUES ('invoice_settings', 'invoice_settings', ?)").run(JSON.stringify({
+        business_name: 'Westmere Private Hire',
+        owner_name: 'Nikodem Krajnyk',
+        address_line1: '4 Fisher Street',
+        address_line2: 'Lewes, East Sussex',
+        postcode: 'BN7 2DG',
+        phone: '07930 342593',
+        email: 'bookings@westmereprivatehire.co.uk',
+        bank_name: '',
+        sort_code: '',
+        account_no: '',
+        account_name: ''
+      }));
+      console.log('[DB] Seeded default invoice settings');
+    }
+  } catch (e) {}
 }
 
 module.exports = { getDb };

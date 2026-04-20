@@ -686,23 +686,10 @@ if ('serviceWorker' in navigator) {
             <label style="display:block;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.35rem">Mobile (optional)</label>
             <input id="nc-phone" type="tel" placeholder="+44 7700 000 000" style="width:100%;padding:.7rem .85rem;border:1px solid rgba(17,29,44,.14);border-radius:8px;font-size:.9rem">
           </div>
-          <div style="margin-bottom:1.1rem">
-            <label style="display:block;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.45rem">Account type</label>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.55rem">
-              <label style="border:1px solid rgba(17,29,44,.14);border-radius:8px;padding:.7rem .8rem;cursor:pointer;display:flex;align-items:flex-start;gap:.55rem">
-                <input type="radio" name="nc-type" value="personal" checked style="margin-top:.2rem">
-                <span><span style="display:block;font-weight:500;color:#111D2C">Personal</span><span style="display:block;font-size:.72rem;color:rgba(17,29,44,.5);margin-top:.1rem">Pay per journey</span></span>
-              </label>
-              <label style="border:1px solid rgba(17,29,44,.14);border-radius:8px;padding:.7rem .8rem;cursor:pointer;display:flex;align-items:flex-start;gap:.55rem">
-                <input type="radio" name="nc-type" value="business" style="margin-top:.2rem">
-                <span><span style="display:block;font-weight:500;color:#111D2C">Business</span><span style="display:block;font-size:.72rem;color:rgba(17,29,44,.5);margin-top:.1rem">Monthly invoicing</span></span>
-              </label>
-            </div>
-          </div>
           <div id="nc-err" style="display:none;padding:.6rem .8rem;background:rgba(197,64,64,.08);color:#c54040;font-size:.8rem;border-radius:6px;margin-bottom:.8rem"></div>
           <button onclick="submitNewCustomer()" id="nc-submit" style="width:100%;padding:.9rem;background:#111D2C;color:#fff;border:none;border-radius:8px;font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Create Account</button>
         </div>
-        <div style="font-size:.72rem;color:rgba(17,29,44,.5);margin-top:.7rem;line-height:1.55">Accounts are managed by Westmere. The customer will receive a welcome email confirming the account was opened — they don't sign in. For business accounts, send a monthly invoice from the customer card.</div>
+        <div style="font-size:.72rem;color:rgba(17,29,44,.5);margin-top:.7rem;line-height:1.55">Accounts are managed by Westmere. The customer will receive a welcome email confirming the account was opened. Send invoices from the Invoices page.</div>
       </div>
     </div>
 
@@ -747,15 +734,24 @@ if ('serviceWorker' in navigator) {
       <div class="page-hd"><div class="page-title">Settings</div></div>
       <div class="g2">
         <div class="card">
-          <div class="ch"><div class="ct">Business Details</div></div>
+          <div class="ch"><div class="ct">Invoice / Business Details</div></div>
           <div class="cb">
-            <div class="fg"><label class="fl">Business Name</label><input class="fi" value="Westmere Private Hire"></div>
-            <div class="fg"><label class="fl">Your Name</label><input class="fi" placeholder="Your legal name"></div>
-            <div class="fg"><label class="fl">Mobile</label><input class="fi" placeholder="+44 7700 000000"></div>
-            <div class="fg"><label class="fl">Email</label><input class="fi" placeholder="info@westemereprivatehire.co.uk"></div>
-            <div class="fg"><label class="fl">WhatsApp Number</label><input class="fi" placeholder="+44 7700 000000"></div>
-            <div class="fg"><label class="fl">Operator Licence No.</label><input class="fi" placeholder="[Enter when received]"></div>
-            <button class="btn btn-navy btn-full" style="margin-top:.5rem" onclick="showToast('Settings saved!')">Save Changes</button>
+            <div style="font-size:.72rem;color:rgba(17,29,44,.45);margin-bottom:1rem;line-height:1.5">These details appear on every invoice you generate or email.</div>
+            <div class="fg"><label class="fl">Business Name</label><input class="fi" id="is-business-name" value="Westmere Private Hire"></div>
+            <div class="fg"><label class="fl">Owner Name</label><input class="fi" id="is-owner-name" placeholder="Your legal name"></div>
+            <div class="fg"><label class="fl">Address Line 1</label><input class="fi" id="is-address1" placeholder="4 Fisher Street"></div>
+            <div class="fg"><label class="fl">Address Line 2</label><input class="fi" id="is-address2" placeholder="Lewes, East Sussex"></div>
+            <div class="fg"><label class="fl">Postcode</label><input class="fi" id="is-postcode" placeholder="BN7 2DG"></div>
+            <div class="fg"><label class="fl">Phone</label><input class="fi" id="is-phone" placeholder="07930 342593"></div>
+            <div class="fg"><label class="fl">Email</label><input class="fi" id="is-email" placeholder="bookings@westmereprivatehire.co.uk"></div>
+            <div style="border-top:1px solid rgba(17,29,44,.08);margin:1.2rem 0;padding-top:1rem">
+              <div style="font-size:.72rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:.8rem">Bank Details (shown on invoices)</div>
+              <div class="fg"><label class="fl">Bank Name</label><input class="fi" id="is-bank-name" placeholder="e.g. Starling Bank"></div>
+              <div class="fg"><label class="fl">Account Name</label><input class="fi" id="is-account-name" placeholder="e.g. N Krajnyk"></div>
+              <div class="fg"><label class="fl">Sort Code</label><input class="fi" id="is-sort-code" placeholder="00-00-00"></div>
+              <div class="fg"><label class="fl">Account Number</label><input class="fi" id="is-account-no" placeholder="12345678"></div>
+            </div>
+            <button class="btn btn-navy btn-full" style="margin-top:.5rem" onclick="saveInvoiceSettings()">Save Invoice Settings</button>
           </div>
         </div>
         <div class="card">
@@ -1138,7 +1134,7 @@ if ('serviceWorker' in navigator) {
 
 <!-- MODAL: NEW INVOICE -->
 <div class="overlay" id="modal-new-invoice">
-  <div class="modal" style="max-width:460px">
+  <div class="modal" style="max-width:520px">
     <div class="modal-hd">
       <div class="modal-title">New Invoice</div>
       <button class="modal-x" onclick="closeModal('modal-new-invoice')">&times;</button>
@@ -1149,15 +1145,24 @@ if ('serviceWorker' in navigator) {
         <select class="fi" id="ni-customer"><option value="">Loading...</option></select>
       </div>
       <div class="fg">
-        <label class="fl">Invoice Month *</label>
-        <input class="fi" type="month" id="ni-month">
-        <div style="font-size:.68rem;color:rgba(17,29,44,.5);margin-top:.3rem">Only bookings dated within this month will be included.</div>
+        <label class="fl">Period</label>
+        <div style="display:flex;gap:.4rem;margin-bottom:.7rem;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" id="ni-btn-week" onclick="setInvoicePeriod('week')" style="font-size:.68rem;padding:.4rem .8rem">Last Week</button>
+          <button class="btn btn-ghost btn-sm" id="ni-btn-month" onclick="setInvoicePeriod('month')" style="font-size:.68rem;padding:.4rem .8rem">Last Month</button>
+          <button class="btn btn-ghost btn-sm" id="ni-btn-custom" onclick="setInvoicePeriod('custom')" style="font-size:.68rem;padding:.4rem .8rem">Custom Range</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem">
+          <div><label class="fl">From</label><input class="fi" type="date" id="ni-from"></div>
+          <div><label class="fl">To</label><input class="fi" type="date" id="ni-to"></div>
+        </div>
+        <div style="font-size:.68rem;color:rgba(17,29,44,.45);margin-top:.35rem">Only confirmed/completed bookings in this date range will be included.</div>
       </div>
       <div id="ni-err" style="display:none;margin-top:.6rem;padding:.55rem .8rem;background:rgba(156,40,40,.08);color:#9C2828;font-size:.78rem;border-radius:6px"></div>
     </div>
-    <div class="modal-foot">
+    <div class="modal-foot" style="flex-wrap:wrap">
       <button class="btn btn-ghost" onclick="closeModal('modal-new-invoice')">Cancel</button>
-      <button class="btn btn-navy" id="ni-send-btn" onclick="submitNewInvoice()">Send Invoice</button>
+      <button class="btn btn-ghost" id="ni-preview-btn" onclick="previewInvoice()" style="border:1px solid rgba(17,29,44,.2)">Preview / Download</button>
+      <button class="btn btn-navy" id="ni-send-btn" onclick="submitNewInvoice()">Send to Email</button>
     </div>
   </div>
 </div>
@@ -1624,10 +1629,8 @@ function loadLiveBookings(){
         return;
       }
       cg.innerHTML=d.customers.map(function(c){
-        var typeClass=c.account_type==='business'?'cc-business':'cc-personal';
         var safeName=(c.full_name||'Unknown').replace(/"/g,'&quot;').replace(/'/g,"\\'");
         return '<div class="cust-card"><div class="cc-name">'+(c.full_name||'Unknown')+'</div>'
-          +'<div class="cc-type '+typeClass+'">'+(c.account_type||'personal')+'</div>'
           +'<div class="cc-meta">'+(c.email||'')+(c.phone?' \u00b7 '+c.phone:'')+'</div>'
           +'<div class="cc-actions"><button class="cc-btn" onclick="sendInvoice('+c.id+',\''+safeName+'\')">Send Invoice</button></div>'
           +'</div>';
@@ -1915,6 +1918,7 @@ function nav(id,btn){
   if(id==='time-off'&&typeof loadTimeOff==='function')loadTimeOff();
   if(id==='all-jobs'&&typeof loadFlaggedBookings==='function')loadFlaggedBookings();
   if(id==='invoices'&&typeof loadInvoiceHistory==='function')loadInvoiceHistory();
+  if(id==='settings'&&typeof loadInvoiceSettings==='function')loadInvoiceSettings();
   if(id==='today'&&typeof loadFlaggedBookings==='function')loadFlaggedBookings();
   if(id==='calendar'&&typeof loadAdminCalendar==='function')loadAdminCalendar();
 }
@@ -1941,7 +1945,6 @@ function openNewCustomerModal(){
   document.getElementById('nc-name').value='';
   document.getElementById('nc-email').value='';
   document.getElementById('nc-phone').value='';
-  document.querySelector('input[name="nc-type"][value="personal"]').checked=true;
   setTimeout(function(){document.getElementById('nc-name').focus();},50);
 }
 function closeNewCustomerModal(){
@@ -1953,12 +1956,11 @@ async function submitNewCustomer(){
   const name=document.getElementById('nc-name').value.trim();
   const email=document.getElementById('nc-email').value.trim();
   const phone=document.getElementById('nc-phone').value.trim();
-  const type=document.querySelector('input[name="nc-type"]:checked').value;
   if(!name||!email){errEl.textContent='Name and email are required.';errEl.style.display='';return;}
   const btn=document.getElementById('nc-submit');
-  btn.disabled=true;btn.textContent='Creating…';
+  btn.disabled=true;btn.textContent='Creating...';
   try{
-    const r=await fetch('/api/customers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({full_name:name,email,phone,account_type:type})});
+    const r=await fetch('/api/customers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({full_name:name,email,phone})});
     const d=await r.json();
     if(!r.ok||!d.ok){errEl.textContent=d.error||'Failed to create account.';errEl.style.display='';btn.disabled=false;btn.textContent='Create Account';return;}
     btn.disabled=false;btn.textContent='Create Account';
@@ -1972,15 +1974,32 @@ async function submitNewCustomer(){
 }
 
 // ── NEW INVOICE MODAL ──
+function setInvoicePeriod(type){
+  var now=new Date();
+  var from=document.getElementById('ni-from');
+  var to=document.getElementById('ni-to');
+  document.querySelectorAll('#ni-btn-week,#ni-btn-month,#ni-btn-custom').forEach(function(b){b.style.background='';b.style.color='';});
+  var btn=document.getElementById('ni-btn-'+type);
+  if(btn){btn.style.background='var(--navy)';btn.style.color='#fff';}
+  if(type==='week'){
+    var weekEnd=new Date(now);weekEnd.setDate(weekEnd.getDate()-weekEnd.getDay());
+    var weekStart=new Date(weekEnd);weekStart.setDate(weekStart.getDate()-6);
+    from.value=weekStart.toISOString().slice(0,10);
+    to.value=weekEnd.toISOString().slice(0,10);
+  } else if(type==='month'){
+    var y=now.getMonth()===0?now.getFullYear()-1:now.getFullYear();
+    var m=now.getMonth()===0?12:now.getMonth();
+    from.value=y+'-'+String(m).padStart(2,'0')+'-01';
+    var lastDay=new Date(y,m,0).getDate();
+    to.value=y+'-'+String(m).padStart(2,'0')+'-'+String(lastDay).padStart(2,'0');
+  }
+}
+
 function openNewInvoice(){
   var sel=document.getElementById('ni-customer');
   sel.innerHTML='<option value="">Loading...</option>';
   var err=document.getElementById('ni-err');err.style.display='none';
-  var m=document.getElementById('ni-month');
-  var now=new Date();
-  var invYear=now.getMonth()===0?now.getFullYear()-1:now.getFullYear();
-  var invMonth=now.getMonth()===0?12:now.getMonth();
-  m.value=invYear+'-'+String(invMonth).padStart(2,'0');
+  setInvoicePeriod('month');
   openModal('modal-new-invoice');
   fetch('/api/customers',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
     if(!d.ok||!d.customers.length){
@@ -1988,38 +2007,166 @@ function openNewInvoice(){
     }
     var opts=['<option value="">-- Select customer --</option>'];
     d.customers.forEach(function(c){
-      var label=(c.full_name||'Unknown')+(c.account_type?' ('+c.account_type+')':'');
-      opts.push('<option value="'+c.id+'">'+escTo(label)+'</option>');
+      opts.push('<option value="'+c.id+'">'+escTo(c.full_name||'Unknown')+'</option>');
     });
     sel.innerHTML=opts.join('');
   }).catch(function(){sel.innerHTML='<option value="">Error loading customers</option>';});
 }
 
+function getInvoiceDates(){
+  var from=document.getElementById('ni-from').value;
+  var to=document.getElementById('ni-to').value;
+  if(!from||!to)return null;
+  var toDate=new Date(to+'T00:00:00');
+  toDate.setDate(toDate.getDate()+1);
+  return{from:from,to:toDate.toISOString().slice(0,10)};
+}
+
 function submitNewInvoice(){
   var err=document.getElementById('ni-err');err.style.display='none';
   var cid=document.getElementById('ni-customer').value;
-  var month=document.getElementById('ni-month').value;
+  var dates=getInvoiceDates();
   if(!cid){err.textContent='Pick a customer.';err.style.display='';return;}
-  if(!month||!/^\d{4}-\d{2}$/.test(month)){err.textContent='Pick an invoice month.';err.style.display='';return;}
+  if(!dates){err.textContent='Pick a date range.';err.style.display='';return;}
   var btn=document.getElementById('ni-send-btn');
   btn.disabled=true;btn.textContent='Sending...';
   fetch('/api/customers/'+cid+'/invoice',{
     method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({month:month})
+    body:JSON.stringify({from:dates.from,to:dates.to,send_email:true})
   }).then(function(r){return r.json().then(function(d){return{ok:r.ok,status:r.status,d:d};});}).then(function(res){
-    btn.disabled=false;btn.textContent='Send Invoice';
+    btn.disabled=false;btn.textContent='Send to Email';
     if(!res.ok||!res.d.ok){
       err.textContent=res.d.error||('Invoice failed ('+res.status+')');err.style.display='';return;
     }
     var total=(+res.d.total||0).toFixed(2);
     closeModal('modal-new-invoice');
-    showToast('Invoice '+res.d.invoiceNo+' sent to customer \u00b7 '+res.d.journeys+' journeys \u00b7 \u00a3'+total);
+    showToast('Invoice '+res.d.invoiceNo+' emailed to '+res.d.customer.email+' -- '+res.d.journeys+' journeys -- £'+total);
     loadInvoiceHistory();
   }).catch(function(){
-    btn.disabled=false;btn.textContent='Send Invoice';
+    btn.disabled=false;btn.textContent='Send to Email';
     err.textContent='Network error.';err.style.display='';
   });
 }
+
+function previewInvoice(){
+  var err=document.getElementById('ni-err');err.style.display='none';
+  var cid=document.getElementById('ni-customer').value;
+  var dates=getInvoiceDates();
+  if(!cid){err.textContent='Pick a customer.';err.style.display='';return;}
+  if(!dates){err.textContent='Pick a date range.';err.style.display='';return;}
+  var btn=document.getElementById('ni-preview-btn');
+  btn.disabled=true;btn.textContent='Loading...';
+  fetch('/api/customers/'+cid+'/invoice',{
+    method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({from:dates.from,to:dates.to,send_email:false})
+  }).then(function(r){return r.json().then(function(d){return{ok:r.ok,status:r.status,d:d};});}).then(function(res){
+    btn.disabled=false;btn.textContent='Preview / Download';
+    if(!res.ok||!res.d.ok){
+      err.textContent=res.d.error||('Invoice failed ('+res.status+')');err.style.display='';return;
+    }
+    openInvoicePreview(res.d);
+  }).catch(function(){
+    btn.disabled=false;btn.textContent='Preview / Download';
+    err.textContent='Network error.';err.style.display='';
+  });
+}
+
+function openInvoicePreview(data){
+  var s=data.settings||{};
+  var c=data.customer||{};
+  var p=data.period||{};
+  var bks=data.bookings||[];
+  var total=(+data.total||0).toFixed(2);
+  var journeyCount=bks.length;
+
+  var bookingRows=bks.map(function(b){
+    var fare=(+b.fare||0).toFixed(2);
+    var d=b.date||'';
+    var t=b.time||'';
+    return '<tr>'
+      +'<td style="padding:10px 8px;border-bottom:1px solid rgba(17,29,44,.08);font-size:13px;color:#111D2C;vertical-align:top">'+esc(d)+(t&&t!=='ASAP'?' '+esc(t):t==='ASAP'?' ASAP':'')+'<br><span style="font-family:Menlo,Consolas,monospace;font-size:10px;color:#9AA3B2">'+esc(b.ref||'')+'</span></td>'
+      +'<td style="padding:10px 8px;border-bottom:1px solid rgba(17,29,44,.08);font-size:13px;color:#111D2C;line-height:1.5;vertical-align:top">'+esc(b.pickup||'')+' &rarr; '+esc(b.destination||'')+(b.flight?'<br><span style="font-size:11px;color:#9AA3B2">Flight '+esc(b.flight)+'</span>':'')+'</td>'
+      +'<td style="padding:10px 8px;border-bottom:1px solid rgba(17,29,44,.08);font-size:14px;color:#111D2C;text-align:right;vertical-align:top;white-space:nowrap;font-family:Georgia,serif">&pound;'+fare+'</td>'
+      +'</tr>';
+  }).join('');
+
+  if(!bookingRows){
+    bookingRows='<tr><td colspan="3" style="padding:24px;text-align:center;font-size:13px;color:#9AA3B2;font-style:italic">No journeys in this period.</td></tr>';
+  }
+
+  var fromAddr=[s.business_name||'Westmere Private Hire',s.owner_name||'',s.address_line1||'',(s.address_line2||'')+(s.postcode?' '+s.postcode:''),s.phone||'',s.email||''].filter(Boolean).map(esc).join('<br>');
+  var toAddr=[esc(c.full_name||''),c.phone?esc(c.phone):'',c.email?esc(c.email):''].filter(Boolean).join('<br>');
+
+  var bankHtml='';
+  if(s.sort_code&&s.account_no){
+    bankHtml='<div style="background:rgba(17,29,44,.04);border:1px solid rgba(17,29,44,.08);padding:20px 24px;margin-bottom:32px">'
+      +'<div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#B8985A;font-weight:600;margin-bottom:10px">Payment Details</div>'
+      +'<table style="font-size:13px;color:#111D2C;line-height:1.8">'
+      +(s.bank_name?'<tr><td style="color:#9AA3B2;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Bank</td><td>'+esc(s.bank_name)+'</td></tr>':'')
+      +(s.account_name?'<tr><td style="color:#9AA3B2;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Name</td><td>'+esc(s.account_name)+'</td></tr>':'')
+      +'<tr><td style="color:#9AA3B2;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Sort code</td><td style="font-family:Menlo,Consolas,monospace">'+esc(s.sort_code)+'</td></tr>'
+      +'<tr><td style="color:#9AA3B2;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Account no.</td><td style="font-family:Menlo,Consolas,monospace">'+esc(s.account_no)+'</td></tr>'
+      +'<tr><td style="color:#9AA3B2;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Reference</td><td style="font-family:Menlo,Consolas,monospace">'+esc(data.invoiceNo||'')+'</td></tr>'
+      +'</table></div>';
+  } else {
+    bankHtml='<div style="font-size:13px;color:#5A6B7F;margin-bottom:32px">Payment is appreciated within 14 days by bank transfer. Please contact us for account details.</div>';
+  }
+
+  var issuedStr=p.issuedDate||new Date().toISOString().slice(0,10);
+  var dueStr=p.dueDate||'';
+
+  var html='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Invoice '+esc(data.invoiceNo||'')+'</title>'
+    +'<style>'
+    +'@page{size:A4;margin:15mm 20mm}'
+    +'@media print{.no-print{display:none!important}body{background:#fff}}'
+    +'*{box-sizing:border-box;margin:0;padding:0}'
+    +'body{font-family:Georgia,"Times New Roman",serif;color:#111D2C;background:#f5f2ed;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+    +'.wrap{max-width:800px;margin:0 auto;background:#fff;box-shadow:0 2px 20px rgba(0,0,0,.08)}'
+    +'.toolbar{background:#111D2C;padding:12px 24px;display:flex;gap:12px;align-items:center}'
+    +'.toolbar button{font-family:Helvetica Neue,Arial,sans-serif;font-size:12px;padding:8px 18px;border:none;cursor:pointer;letter-spacing:.5px}'
+    +'.toolbar .btn-dl{background:#B8985A;color:#111D2C}'
+    +'.toolbar .btn-cl{background:transparent;color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.2)}'
+    +'.page{padding:48px}'
+    +'</style></head><body>'
+    +'<div class="wrap">'
+    +'<div class="toolbar no-print"><button class="btn-dl" onclick="window.print()">Print / Save as PDF</button><button class="btn-cl" onclick="window.close()">Close</button></div>'
+    +'<div class="page">'
+    +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px">'
+      +'<div><div style="font-size:20px;letter-spacing:6px;font-weight:400;margin-bottom:4px">WESTMERE</div><div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#B8985A">Private Hire &middot; Sussex</div></div>'
+      +'<div style="text-align:right"><div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#B8985A;font-weight:600;margin-bottom:6px">Invoice</div>'
+      +'<div style="font-family:Menlo,Consolas,monospace;font-size:14px;margin-bottom:4px">'+esc(data.invoiceNo||'')+'</div>'
+      +'<div style="font-size:12px;color:#5A6B7F">Issued: '+esc(issuedStr)+'</div>'
+      +(dueStr?'<div style="font-size:12px;color:#5A6B7F">Due: '+esc(dueStr)+'</div>':'')
+      +'</div></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-bottom:36px">'
+      +'<div><div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#B8985A;margin-bottom:6px;font-weight:600">From</div><div style="font-size:13px;color:#111D2C;line-height:1.7">'+fromAddr+'</div></div>'
+      +'<div><div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#B8985A;margin-bottom:6px;font-weight:600">Bill To</div><div style="font-size:13px;color:#111D2C;line-height:1.7">'+toAddr+'</div></div>'
+    +'</div>'
+    +'<div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#9AA3B2;margin-bottom:6px;font-weight:500">Period: '+esc(p.label||'')+'</div>'
+    +'<table style="width:100%;border-collapse:collapse;margin-bottom:24px">'
+      +'<thead><tr>'
+      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#B8985A;padding:8px;border-bottom:2px solid #B8985A;text-align:left;font-weight:600">Date / Ref</th>'
+      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#B8985A;padding:8px;border-bottom:2px solid #B8985A;text-align:left;font-weight:600">Journey</th>'
+      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#B8985A;padding:8px;border-bottom:2px solid #B8985A;text-align:right;font-weight:600">Fare</th>'
+      +'</tr></thead>'
+      +'<tbody>'+bookingRows+'</tbody>'
+    +'</table>'
+    +'<div style="display:flex;flex-direction:column;align-items:flex-end;margin-bottom:32px">'
+      +'<div style="display:flex;justify-content:space-between;width:240px;padding:6px 0;font-size:13px;color:#5A6B7F"><span>Subtotal ('+journeyCount+' journey'+(journeyCount===1?'':'s')+')</span><span>&pound;'+total+'</span></div>'
+      +'<div style="display:flex;justify-content:space-between;width:240px;padding:12px 0 6px;border-top:2px solid #B8985A;margin-top:4px"><span style="font-family:Helvetica Neue,Arial,sans-serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-weight:600;color:#111D2C">Total due</span><span style="font-size:24px;font-weight:500;color:#111D2C">&pound;'+total+'</span></div>'
+    +'</div>'
+    +bankHtml
+    +'<div style="text-align:center;padding-top:20px;border-top:1px solid rgba(17,29,44,.1);font-size:11px;color:#9AA3B2;font-family:Helvetica Neue,Arial,sans-serif">'
+      +'Westmere Private Hire &middot; Licensed by Lewes District Council &middot; westmereprivatehire.co.uk'
+    +'</div>'
+    +'</div></div></body></html>';
+
+  var w=window.open('','_blank','width=850,height=1100');
+  if(w){w.document.write(html);w.document.close();}
+  else{showToast('Pop-up blocked. Please allow pop-ups for this site.');}
+}
+
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 function loadInvoiceHistory(){
   var tbody=document.getElementById('invoice-history-body');if(!tbody)return;
@@ -2039,25 +2186,63 @@ function loadInvoiceHistory(){
   }).catch(function(){tbody.innerHTML='<tr><td colspan="3" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">Unable to load history</td></tr>';});
 }
 
-// ── SEND INVOICE ──
+// ── SEND INVOICE (from customer card) ──
 function sendInvoice(customerId, customerName){
   var now=new Date();
-  // Default to previous month (operators typically invoice for the month just ended)
-  var invYear=now.getMonth()===0?now.getFullYear()-1:now.getFullYear();
-  var invMonth=now.getMonth()===0?12:now.getMonth();
-  var defaultMonth=invYear+'-'+String(invMonth).padStart(2,'0');
-  var month=prompt('Invoice '+customerName+' for which month?\n\nEnter as YYYY-MM (e.g. '+defaultMonth+')',defaultMonth);
-  if(!month)return;
-  if(!/^\d{4}-\d{2}$/.test(month)){showToast('Invalid month format. Use YYYY-MM.');return;}
-  showToast('Sending invoice…');
+  var y=now.getMonth()===0?now.getFullYear()-1:now.getFullYear();
+  var m=now.getMonth()===0?12:now.getMonth();
+  var from=y+'-'+String(m).padStart(2,'0')+'-01';
+  var lastDay=new Date(y,m,0).getDate();
+  var to=y+'-'+String(m).padStart(2,'0')+'-'+String(lastDay).padStart(2,'0');
+  if(!confirm('Send invoice to '+customerName+' for last month?\n\n'+from+' to '+to))return;
+  showToast('Sending invoice...');
+  var toExcl=new Date(to+'T00:00:00');toExcl.setDate(toExcl.getDate()+1);
   fetch('/api/customers/'+customerId+'/invoice',{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({month:month})
+    body:JSON.stringify({from:from,to:toExcl.toISOString().slice(0,10),send_email:true})
   }).then(function(r){return r.json().then(function(d){return{ok:r.ok,d:d};});}).then(function(res){
     if(!res.ok||!res.d.ok){showToast(res.d.error||'Invoice failed');return;}
     var total=(+res.d.total||0).toFixed(2);
-    showToast('Invoice '+res.d.invoiceNo+' sent · '+res.d.journeys+' journeys · £'+total);
+    showToast('Invoice '+res.d.invoiceNo+' sent -- '+res.d.journeys+' journeys -- £'+total);
   }).catch(function(){showToast('Network error sending invoice');});
+}
+
+// ── INVOICE SETTINGS ──
+function loadInvoiceSettings(){
+  fetch('/api/settings/invoice',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
+    if(!d.ok)return;
+    var s=d.settings||{};
+    var fields={
+      'is-business-name':'business_name','is-owner-name':'owner_name',
+      'is-address1':'address_line1','is-address2':'address_line2',
+      'is-postcode':'postcode','is-phone':'phone','is-email':'email',
+      'is-bank-name':'bank_name','is-account-name':'account_name',
+      'is-sort-code':'sort_code','is-account-no':'account_no'
+    };
+    for(var id in fields){
+      var el=document.getElementById(id);
+      if(el&&s[fields[id]])el.value=s[fields[id]];
+    }
+  }).catch(function(){});
+}
+function saveInvoiceSettings(){
+  var data={
+    business_name:document.getElementById('is-business-name').value,
+    owner_name:document.getElementById('is-owner-name').value,
+    address_line1:document.getElementById('is-address1').value,
+    address_line2:document.getElementById('is-address2').value,
+    postcode:document.getElementById('is-postcode').value,
+    phone:document.getElementById('is-phone').value,
+    email:document.getElementById('is-email').value,
+    bank_name:document.getElementById('is-bank-name').value,
+    account_name:document.getElementById('is-account-name').value,
+    sort_code:document.getElementById('is-sort-code').value,
+    account_no:document.getElementById('is-account-no').value
+  };
+  fetch('/api/settings/invoice',{method:'PUT',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+    .then(function(r){return r.json();})
+    .then(function(d){if(d.ok)showToast('Invoice settings saved');else showToast(d.error||'Failed to save');})
+    .catch(function(){showToast('Network error saving settings');});
 }
 
 // ── MARK DONE ──
