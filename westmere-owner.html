@@ -922,9 +922,14 @@ function renderDecisionsOffered(list){
 }
 
 async function decAccept(bookingId){
-  var r=await fetch('/api/bookings/'+bookingId,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'confirmed'})});
-  var d=await r.json();
-  if(d.ok){showToast('Accepted');loadDecisions();}else showToast(d.error||'Failed');
+  try{
+    var body={status:'confirmed'};
+    if(CURRENT_USER&&CURRENT_USER.id)body.driver_id=CURRENT_USER.id;
+    var r=await fetch('/api/bookings/'+bookingId,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var d=await r.json();
+    if(r.ok&&d.ok){showToast('Accepted');loadDecisions();if(typeof loadOwnerBookings==='function')loadOwnerBookings();}
+    else showToast(d.error||('Failed ('+r.status+')'));
+  }catch(e){showToast('Network error');console.error('[decAccept]',e);}
 }
 
 async function decOffer(bookingId){
@@ -945,9 +950,12 @@ async function decReclaim(bookingId){
 
 async function decCancel(bookingId){
   if(!confirm('Delete this booking permanently?'))return;
-  var r=await fetch('/api/bookings/'+bookingId,{method:'DELETE',credentials:'include'});
-  var d=await r.json();
-  if(d.ok){showToast('Booking deleted');loadDecisions();}else showToast(d.error||'Failed to delete');
+  try{
+    var r=await fetch('/api/bookings/'+bookingId,{method:'DELETE',credentials:'include'});
+    var d=await r.json();
+    if(r.ok&&d.ok){showToast('Booking deleted');loadDecisions();if(typeof loadOwnerBookings==='function')loadOwnerBookings();}
+    else showToast(d.error||('Failed ('+r.status+')'));
+  }catch(e){showToast('Network error');console.error('[decCancel]',e);}
 }
 
 // Live countdown for offered timer pills on decisions page
@@ -2308,11 +2316,13 @@ document.addEventListener('keydown',function(e){
   if(e.key==='Escape')document.querySelectorAll('.sug-drop.on').forEach(function(d){d.classList.remove('on');});
 });
 // Auth check via backend
+var CURRENT_USER = null;
 (async function(){
   try{
     var res=await fetch('/api/auth/me');
     var data=await res.json();
     if(res.ok&&data.ok){
+      CURRENT_USER = data.user || null;
       document.getElementById('login-screen').style.display='none';
       document.getElementById('scr-app').style.display='';
       initApp();
