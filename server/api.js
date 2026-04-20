@@ -370,6 +370,76 @@ router.post('/customers/:id/invoice', async (req, res) => {
   });
 });
 
+// Bespoke / one-off invoice — for recipients not in the customers table.
+// Body: { recipient: { name, email, address, phone }, items: [{ description, amount }], due_days, send_email }
+router.post('/invoices/bespoke', async (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  const { recipient, items, due_days, send_email, notes } = req.body || {};
+  if (!recipient || !recipient.name || !String(recipient.name).trim()) {
+    return res.status(400).json({ error: 'Recipient name is required' });
+  }
+  if (!Array.isArray(items) || !items.length) {
+    return res.status(400).json({ error: 'At least one line item is required' });
+  }
+
+  const cleanItems = items
+    .map(it => ({ description: String(it.description || '').trim(), amount: +it.amount || 0 }))
+    .filter(it => it.description && it.amount > 0);
+  if (!cleanItems.length) {
+    return res.status(400).json({ error: 'Items must have description and positive amount' });
+  }
+
+  const db = getDb();
+  const now = new Date();
+  const invoicePrefix = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0');
+  const prevCount = db.prepare("SELECT COUNT(*) AS c FROM audit_log WHERE action = 'invoice_sent' AND detail LIKE ?").get('INV-' + invoicePrefix + '%').c;
+  const invoiceNo = 'INV-' + invoicePrefix + '-' + String(prevCount + 1).padStart(4, '0');
+
+  const due = new Date();
+  due.setDate(due.getDate() + (parseInt(due_days, 10) || 14));
+  const dueDate = due.toISOString().slice(0, 10);
+  const issuedDate = now.toISOString().slice(0, 10);
+
+  let settings = {};
+  try {
+    const row = db.prepare("SELECT value FROM integrations WHERE key = 'invoice_settings'").get();
+    if (row) settings = JSON.parse(row.value);
+  } catch (e) {}
+
+  const total = cleanItems.reduce((s, it) => s + it.amount, 0);
+  const shouldEmail = send_email === true;
+
+  const cleanRecipient = {
+    name: String(recipient.name).trim(),
+    email: recipient.email ? String(recipient.email).trim().toLowerCase() : '',
+    phone: recipient.phone ? String(recipient.phone).trim() : '',
+    address: recipient.address ? String(recipient.address).trim() : ''
+  };
+
+  if (shouldEmail) {
+    if (!cleanRecipient.email) return res.status(400).json({ error: 'Recipient email required to send' });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanRecipient.email)) {
+      return res.status(400).json({ error: 'Invalid recipient email' });
+    }
+    const { sendBespokeInvoice } = require('./email');
+    const ok = await sendBespokeInvoice(cleanRecipient, cleanItems, { dueDate, issuedDate, notes }, invoiceNo, settings);
+    if (!ok) return res.status(502).json({ error: 'Email delivery failed' });
+
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run(req.auth.type || 'user', req.auth.id, 'invoice_sent', invoiceNo + ' to ' + cleanRecipient.email, req.ip);
+  }
+
+  res.json({
+    ok: true, invoiceNo, total, bespoke: true,
+    recipient: cleanRecipient, items: cleanItems,
+    period: { label: '', dueDate, issuedDate, notes: notes || '' },
+    settings, emailed: shouldEmail
+  });
+});
+
 // Invoice settings (business details + bank details for invoices)
 router.get('/settings/invoice', (req, res) => {
   if (!['admin', 'owner'].includes(req.auth.role)) {
