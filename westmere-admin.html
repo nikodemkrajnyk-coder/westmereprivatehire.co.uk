@@ -945,7 +945,7 @@ if ('serviceWorker' in navigator) {
       <div class="card">
         <div class="ch">
           <div class="ct">Driver Roster</div>
-          <button class="btn btn-navy btn-sm" onclick="openModal('modal-add-driver')">+ Add Driver</button>
+          <button class="btn btn-navy btn-sm" onclick="openAddDriver()">+ Add Driver</button>
         </div>
         <div class="cb">
           <div class="driver-grid" id="driver-grid">
@@ -1052,27 +1052,66 @@ if ('serviceWorker' in navigator) {
 
 <!-- ═══ MODAL: ADD DRIVER ═══ -->
 <div class="overlay" id="modal-add-driver">
-  <div class="modal">
+  <div class="modal" style="max-width:640px">
     <div class="modal-hd">
-      <div class="modal-title">Add Driver</div>
-      <button class="modal-x" onclick="closeModal('modal-add-driver')">✕</button>
+      <div class="modal-title" id="dm-title">Add Driver</div>
+      <button class="modal-x" onclick="closeModal('modal-add-driver')">&times;</button>
     </div>
     <div class="modal-body">
+      <input type="hidden" id="dm-id" value="">
+
+      <div style="font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:.2rem 0 .6rem">Personal</div>
       <div class="r2">
-        <div class="fg"><label class="fl">First Name</label><input class="fi" type="text" id="ad-fname" placeholder="First name"></div>
-        <div class="fg"><label class="fl">Last Name</label><input class="fi" type="text" id="ad-lname" placeholder="Last name"></div>
+        <div class="fg"><label class="fl">First Name *</label><input class="fi" type="text" id="dm-fname" placeholder="First name"></div>
+        <div class="fg"><label class="fl">Last Name</label><input class="fi" type="text" id="dm-lname" placeholder="Last name"></div>
       </div>
-      <div class="fg"><label class="fl">Mobile Number</label><input class="fi" type="tel" id="ad-phone" placeholder="+44 7700 000 000"></div>
-      <div class="fg"><label class="fl">Email Address</label><input class="fi" type="email" id="ad-email" placeholder="driver@email.com"></div>
       <div class="r2">
-        <div class="fg"><label class="fl">Username (for login)</label><input class="fi" type="text" id="ad-username" placeholder="driver_username"></div>
-        <div class="fg"><label class="fl">Password</label><input class="fi" type="password" id="ad-password" placeholder="Min 8 characters"></div>
+        <div class="fg"><label class="fl">Mobile Number</label><input class="fi" type="tel" id="dm-phone" placeholder="+44 7700 000 000"></div>
+        <div class="fg"><label class="fl">Email Address</label><input class="fi" type="email" id="dm-email" placeholder="driver@email.com"></div>
       </div>
-      <div class="fg"><label class="fl">Notes</label><textarea class="fi" id="ad-notes" placeholder="Any additional notes about this driver..." style="min-height:70px"></textarea></div>
+
+      <div style="font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:1.2rem 0 .6rem">Licensing</div>
+      <div class="r2">
+        <div class="fg"><label class="fl">DVLA Licence No.</label><input class="fi" type="text" id="dm-license-no" placeholder="Driver licence no."></div>
+        <div class="fg"><label class="fl">Licence Expiry</label><input class="fi" type="date" id="dm-license-expiry"></div>
+      </div>
+      <div class="r2">
+        <div class="fg"><label class="fl">DBS Check No.</label><input class="fi" type="text" id="dm-dbs-no" placeholder="DBS certificate no."></div>
+        <div class="fg"><label class="fl">DBS Expiry</label><input class="fi" type="date" id="dm-dbs-expiry"></div>
+      </div>
+      <div class="r2">
+        <div class="fg"><label class="fl">PHV Licence No.</label><input class="fi" type="text" id="dm-phv" placeholder="Private Hire Vehicle licence"></div>
+        <div class="fg"><label class="fl">Insurance Policy</label><input class="fi" type="text" id="dm-insurance" placeholder="Insurance policy no."></div>
+      </div>
+
+      <div style="font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:1.2rem 0 .6rem">Vehicle</div>
+      <div class="r2">
+        <div class="fg"><label class="fl">Vehicle</label><input class="fi" type="text" id="dm-vehicle" placeholder="e.g. Tesla Model S - White"></div>
+        <div class="fg"><label class="fl">Registration</label><input class="fi" type="text" id="dm-reg" placeholder="e.g. AB21 XYZ"></div>
+      </div>
+
+      <div class="fg" style="margin-top:.6rem"><label class="fl">Notes</label><textarea class="fi" id="dm-notes" placeholder="Any additional notes..." style="min-height:60px"></textarea></div>
+
+      <div style="font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:1.2rem 0 .4rem;display:flex;justify-content:space-between;align-items:center">
+        <span>Driver App Access</span>
+        <label style="font-size:.7rem;color:rgba(17,29,44,.6);text-transform:none;letter-spacing:normal;font-weight:400;cursor:pointer;display:flex;align-items:center;gap:.4rem">
+          <input type="checkbox" id="dm-has-login" onchange="toggleDriverLoginSection()" style="accent-color:var(--gold)">Grant app login
+        </label>
+      </div>
+      <div id="dm-login-section" style="display:none;padding:.9rem 1rem;background:rgba(17,29,44,.03);border:1px dashed rgba(17,29,44,.12);border-radius:6px">
+        <div class="r2">
+          <div class="fg"><label class="fl">Username</label><input class="fi" type="text" id="dm-username" placeholder="driver_username" autocomplete="off"></div>
+          <div class="fg"><label class="fl">Password</label><input class="fi" type="password" id="dm-password" placeholder="Min 8 characters" autocomplete="new-password"></div>
+        </div>
+        <div style="font-size:.68rem;color:rgba(17,29,44,.5);margin-top:.2rem">Driver uses these credentials in the Driver app. Leave blank to add them later.</div>
+      </div>
+
+      <div id="dm-err" style="display:none;margin-top:.8rem;padding:.6rem .8rem;background:rgba(156,40,40,.08);color:#9C2828;font-size:.78rem;border-radius:6px"></div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-add-driver')">Cancel</button>
-      <button class="btn btn-navy" onclick="saveDriver()">Save Driver</button>
+      <button class="btn btn-sm" id="dm-revoke-btn" onclick="revokeDriverLogin()" style="background:rgba(139,34,34,.08);color:#8B2222;border:1px solid rgba(139,34,34,.2);display:none">Revoke Login</button>
+      <button class="btn btn-navy" id="dm-save-btn" onclick="saveDriver()">Save Driver</button>
     </div>
   </div>
 </div>
@@ -1675,32 +1714,125 @@ setTimeout(function(){buildFares();},50);
 
 // ── DRIVERS ──────────────────────────────────────────────────────────────
 var DRIVERS = [];
+var DRIVER_EDIT_ID = null;
+
+function dmEsc(s){return String(s==null?'':s);}
+
+function openAddDriver(){
+  DRIVER_EDIT_ID=null;
+  document.getElementById('dm-title').textContent='Add Driver';
+  document.getElementById('dm-save-btn').textContent='Save Driver';
+  document.getElementById('dm-revoke-btn').style.display='none';
+  ['dm-id','dm-fname','dm-lname','dm-phone','dm-email','dm-license-no','dm-license-expiry','dm-dbs-no','dm-dbs-expiry','dm-phv','dm-insurance','dm-vehicle','dm-reg','dm-notes','dm-username','dm-password']
+    .forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('dm-has-login').checked=false;
+  toggleDriverLoginSection();
+  document.getElementById('dm-err').style.display='none';
+  openModal('modal-add-driver');
+  setTimeout(function(){document.getElementById('dm-fname').focus();},60);
+}
+
+function openEditDriver(id){
+  fetch('/api/drivers/'+id,{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
+    if(!d.ok){showToast(d.error||'Driver not found');return;}
+    var dr=d.driver;
+    DRIVER_EDIT_ID=dr.id;
+    document.getElementById('dm-title').textContent='Edit Driver';
+    document.getElementById('dm-save-btn').textContent='Save Changes';
+    document.getElementById('dm-id').value=dr.id;
+    var fullName=dr.full_name||'';
+    var spaceIdx=fullName.indexOf(' ');
+    document.getElementById('dm-fname').value=spaceIdx>0?fullName.slice(0,spaceIdx):fullName;
+    document.getElementById('dm-lname').value=spaceIdx>0?fullName.slice(spaceIdx+1):'';
+    document.getElementById('dm-phone').value=dmEsc(dr.phone);
+    document.getElementById('dm-email').value=dmEsc(dr.email);
+    document.getElementById('dm-license-no').value=dmEsc(dr.license_no);
+    document.getElementById('dm-license-expiry').value=dmEsc(dr.license_expiry);
+    document.getElementById('dm-dbs-no').value=dmEsc(dr.dbs_no);
+    document.getElementById('dm-dbs-expiry').value=dmEsc(dr.dbs_expiry);
+    document.getElementById('dm-phv').value=dmEsc(dr.phv_no);
+    document.getElementById('dm-insurance').value=dmEsc(dr.insurance_no);
+    document.getElementById('dm-vehicle').value=dmEsc(dr.vehicle);
+    document.getElementById('dm-reg').value=dmEsc(dr.reg);
+    document.getElementById('dm-notes').value=dmEsc(dr.driver_notes);
+    document.getElementById('dm-has-login').checked=!!dr.has_login;
+    document.getElementById('dm-username').value=dr.has_login?dmEsc(dr.username):'';
+    document.getElementById('dm-password').value='';
+    document.getElementById('dm-revoke-btn').style.display=dr.has_login?'':'none';
+    toggleDriverLoginSection();
+    document.getElementById('dm-err').style.display='none';
+    openModal('modal-add-driver');
+  }).catch(function(){showToast('Error loading driver');});
+}
+
+function toggleDriverLoginSection(){
+  var on=document.getElementById('dm-has-login').checked;
+  document.getElementById('dm-login-section').style.display=on?'':'none';
+}
+
+function dmShowErr(msg){
+  var el=document.getElementById('dm-err');
+  el.textContent=msg;el.style.display='';
+}
 
 async function saveDriver(){
-  var fname=(document.getElementById('ad-fname').value||'').trim();
-  var lname=(document.getElementById('ad-lname').value||'').trim();
-  var phone=(document.getElementById('ad-phone').value||'').trim();
-  var email=(document.getElementById('ad-email').value||'').trim();
-  var username=(document.getElementById('ad-username').value||'').trim();
-  var password=(document.getElementById('ad-password').value||'').trim();
-  var notes=(document.getElementById('ad-notes').value||'').trim();
-  if(!fname){showToast('First name required');return;}
-  if(!username){showToast('Username required');return;}
-  if(!password||password.length<8){showToast('Password required (min 8 chars)');return;}
+  var fname=(document.getElementById('dm-fname').value||'').trim();
+  var lname=(document.getElementById('dm-lname').value||'').trim();
+  if(!fname){dmShowErr('First name required');return;}
   var full_name=fname+(lname?' '+lname:'');
+
+  var body={
+    full_name:full_name,
+    phone:(document.getElementById('dm-phone').value||'').trim()||null,
+    email:(document.getElementById('dm-email').value||'').trim()||null,
+    license_no:(document.getElementById('dm-license-no').value||'').trim()||null,
+    license_expiry:(document.getElementById('dm-license-expiry').value||'').trim()||null,
+    dbs_no:(document.getElementById('dm-dbs-no').value||'').trim()||null,
+    dbs_expiry:(document.getElementById('dm-dbs-expiry').value||'').trim()||null,
+    phv_no:(document.getElementById('dm-phv').value||'').trim()||null,
+    insurance_no:(document.getElementById('dm-insurance').value||'').trim()||null,
+    vehicle:(document.getElementById('dm-vehicle').value||'').trim()||null,
+    reg:(document.getElementById('dm-reg').value||'').trim()||null,
+    driver_notes:(document.getElementById('dm-notes').value||'').trim()||null
+  };
+
+  if(document.getElementById('dm-has-login').checked){
+    var u=(document.getElementById('dm-username').value||'').trim();
+    var p=(document.getElementById('dm-password').value||'').trim();
+    if(DRIVER_EDIT_ID){
+      if(u)body.username=u;
+      if(p){if(p.length<8){dmShowErr('Password must be at least 8 characters');return;}body.password=p;}
+    }else{
+      if(!u){dmShowErr('Username required when granting login');return;}
+      if(!p||p.length<8){dmShowErr('Password required (min 8 chars)');return;}
+      body.username=u;body.password=p;
+    }
+  }
+
   try{
-    var r=await fetch('/api/drivers',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:username,password:password,full_name:full_name,email:email||null,phone:phone||null})});
+    var url=DRIVER_EDIT_ID?'/api/drivers/'+DRIVER_EDIT_ID:'/api/drivers';
+    var method=DRIVER_EDIT_ID?'PATCH':'POST';
+    var r=await fetch(url,{method:method,credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     var d=await r.json();
-    if(d.ok){
-      showToast('Driver saved');
+    if(r.ok&&d.ok){
+      showToast(DRIVER_EDIT_ID?'Driver updated':'Driver added');
       closeModal('modal-add-driver');
-      document.getElementById('ad-fname').value='';document.getElementById('ad-lname').value='';
-      document.getElementById('ad-phone').value='';document.getElementById('ad-email').value='';
-      document.getElementById('ad-username').value='';document.getElementById('ad-password').value='';
-      document.getElementById('ad-notes').value='';
       reloadDrivers();
-    }else{showToast(d.error||'Failed to save driver');}
-  }catch(e){showToast('Error saving driver');}
+    }else{
+      dmShowErr(d.error||('Failed ('+r.status+')'));
+    }
+  }catch(e){dmShowErr('Network error');}
+}
+
+async function revokeDriverLogin(){
+  if(!DRIVER_EDIT_ID)return;
+  if(!confirm('Revoke this driver\u2019s app access? They will no longer be able to log in.'))return;
+  try{
+    var r=await fetch('/api/drivers/'+DRIVER_EDIT_ID,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({revoke_login:true})});
+    var d=await r.json();
+    if(r.ok&&d.ok){showToast('Login revoked');closeModal('modal-add-driver');reloadDrivers();}
+    else dmShowErr(d.error||'Failed');
+  }catch(e){dmShowErr('Network error');}
 }
 
 function reloadDrivers(){
@@ -1710,8 +1842,11 @@ function reloadDrivers(){
     var active=d.drivers.filter(function(x){return x.active;}).length;
     if(da)da.textContent=active;if(dt)dt.textContent=d.drivers.length;
     DRIVERS=d.drivers.map(function(x){
-      return{id:x.id,initials:(x.full_name||'?')[0].toUpperCase(),name:x.full_name||x.username,role:x.role||'driver',
-        mobile:x.phone||'',email:x.email||'',status:x.active?'active':'inactive',jobs:0};
+      return{id:x.id,initials:((x.full_name||'?').trim()[0]||'?').toUpperCase(),
+        name:x.full_name||x.username||'Driver',role:x.role||'driver',
+        mobile:x.phone||'',email:x.email||'',
+        vehicle:x.vehicle||'',reg:x.reg||'',phv:x.phv_no||'',
+        has_login:!!x.has_login,status:x.active?'active':'inactive',jobs:0};
     });
     buildDrivers();
   }).catch(function(){});
@@ -1720,15 +1855,25 @@ function reloadDrivers(){
 function buildDrivers(){
   var grid=document.getElementById('driver-grid');
   if(!grid)return;
+  if(!DRIVERS.length){
+    grid.innerHTML='<div style="grid-column:1/-1;padding:2rem;text-align:center;font-size:.82rem;color:var(--text-light)">No drivers added yet. Click "+ Add Driver" to start.</div>';
+    return;
+  }
   grid.innerHTML=DRIVERS.map(function(d){
-    return '<div class="driver-card '+d.status+'" onclick="showToast(&quot;'+d.name+' \u00b7 '+d.mobile+'&quot;)">'
+    var vehicleLine=d.vehicle?d.vehicle:'<span style="color:rgba(17,29,44,.3)">No vehicle set</span>';
+    var regLine=d.reg?d.reg:'';
+    var phvLine=d.phv?('PHV: '+d.phv):'';
+    var loginBadge=d.has_login
+      ? '<span style="font-size:.6rem;color:var(--green);background:var(--green-bg);padding:.15rem .4rem;border-radius:3px;letter-spacing:.08em;text-transform:uppercase">App access</span>'
+      : '<span style="font-size:.6rem;color:rgba(17,29,44,.5);background:rgba(17,29,44,.06);padding:.15rem .4rem;border-radius:3px;letter-spacing:.08em;text-transform:uppercase">No login</span>';
+    return '<div class="driver-card '+d.status+'" onclick="openEditDriver('+d.id+')" title="Click to edit">'
       +'<div class="dc-avatar">'+d.initials+'</div>'
-      +'<div class="dc-name">'+d.name+'</div>'
-      +'<div class="dc-role">'+d.role+'</div>'
+      +'<div class="dc-name">'+escTo(d.name)+'</div>'
+      +'<div class="dc-role">'+escTo(d.role)+' '+loginBadge+'</div>'
       +'<div class="dc-meta">'
-        +d.vehicle+'<br>'
-        +d.reg+'<br>'
-        +'PHV: '+d.phv
+        +vehicleLine+(regLine?'<br>'+escTo(regLine):'')
+        +(phvLine?'<br>'+escTo(phvLine):'')
+        +(d.mobile?'<br>'+escTo(d.mobile):'')
       +'</div>'
       +'<div class="dc-status '+(d.status==='active'?'on':'off')+'">'
         +'<div class="dc-dot"></div>'+(d.status==='active'?'Active':'Inactive')
