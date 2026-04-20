@@ -511,7 +511,7 @@ router.patch('/drivers/:id', (req, res) => {
 // ── Audit log (admin only) ──────────────────────────────────────────────
 
 router.get('/audit', (req, res) => {
-  if (req.auth.role !== 'admin') {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
     return res.status(403).json({ error: 'Admin access required' });
   }
   const db = getDb();
