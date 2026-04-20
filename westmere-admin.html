@@ -1059,34 +1059,20 @@ if ('serviceWorker' in navigator) {
     </div>
     <div class="modal-body">
       <div class="r2">
-        <div class="fg"><label class="fl">First Name</label><input class="fi" type="text" placeholder="First name"></div>
-        <div class="fg"><label class="fl">Last Name</label><input class="fi" type="text" placeholder="Last name"></div>
+        <div class="fg"><label class="fl">First Name</label><input class="fi" type="text" id="ad-fname" placeholder="First name"></div>
+        <div class="fg"><label class="fl">Last Name</label><input class="fi" type="text" id="ad-lname" placeholder="Last name"></div>
       </div>
-      <div class="fg"><label class="fl">Mobile Number</label><input class="fi" type="tel" placeholder="+44 7700 000 000"></div>
-      <div class="fg"><label class="fl">Email Address</label><input class="fi" type="email" placeholder="driver@email.com"></div>
+      <div class="fg"><label class="fl">Mobile Number</label><input class="fi" type="tel" id="ad-phone" placeholder="+44 7700 000 000"></div>
+      <div class="fg"><label class="fl">Email Address</label><input class="fi" type="email" id="ad-email" placeholder="driver@email.com"></div>
       <div class="r2">
-        <div class="fg"><label class="fl">Licence Number</label><input class="fi" type="text" placeholder="Driver licence no."></div>
-        <div class="fg"><label class="fl">Licence Expiry</label><input class="fi" type="date"></div>
+        <div class="fg"><label class="fl">Username (for login)</label><input class="fi" type="text" id="ad-username" placeholder="driver_username"></div>
+        <div class="fg"><label class="fl">Password</label><input class="fi" type="password" id="ad-password" placeholder="Min 8 characters"></div>
       </div>
-      <div class="r2">
-        <div class="fg"><label class="fl">DBS Check Number</label><input class="fi" type="text" placeholder="DBS certificate no."></div>
-        <div class="fg"><label class="fl">DBS Expiry</label><input class="fi" type="date"></div>
-      </div>
-      <div class="r2">
-        <div class="fg"><label class="fl">Vehicle</label><input class="fi" type="text" placeholder="e.g. Tesla Model S · White"></div>
-        <div class="fg"><label class="fl">Registration</label><input class="fi" type="text" placeholder="e.g. AB21 XYZ"></div>
-      </div>
-      <div class="fg"><label class="fl">PHV Licence Number</label><input class="fi" type="text" placeholder="Private Hire Vehicle licence no."></div>
-      <div class="fg"><label class="fl">Insurance Policy No.</label><input class="fi" type="text" placeholder="Insurance policy number"></div>
-      <div class="fg"><label class="fl">Driver App Login (email)</label><input class="fi" type="email" placeholder="Login email for driver app"></div>
-      <div class="fg"><label class="fl">Status</label>
-        <select class="fi"><option value="active">Active</option><option value="inactive">Inactive</option></select>
-      </div>
-      <div class="fg"><label class="fl">Notes</label><textarea class="fi" placeholder="Any additional notes about this driver…" style="min-height:70px"></textarea></div>
+      <div class="fg"><label class="fl">Notes</label><textarea class="fi" id="ad-notes" placeholder="Any additional notes about this driver..." style="min-height:70px"></textarea></div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-add-driver')">Cancel</button>
-      <button class="btn btn-navy" onclick="closeModal('modal-add-driver');showToast('Driver added to roster')">Save Driver</button>
+      <button class="btn btn-navy" onclick="saveDriver()">Save Driver</button>
     </div>
   </div>
 </div>
@@ -1689,6 +1675,47 @@ setTimeout(function(){buildFares();},50);
 
 // ── DRIVERS ──────────────────────────────────────────────────────────────
 var DRIVERS = [];
+
+async function saveDriver(){
+  var fname=(document.getElementById('ad-fname').value||'').trim();
+  var lname=(document.getElementById('ad-lname').value||'').trim();
+  var phone=(document.getElementById('ad-phone').value||'').trim();
+  var email=(document.getElementById('ad-email').value||'').trim();
+  var username=(document.getElementById('ad-username').value||'').trim();
+  var password=(document.getElementById('ad-password').value||'').trim();
+  var notes=(document.getElementById('ad-notes').value||'').trim();
+  if(!fname){showToast('First name required');return;}
+  if(!username){showToast('Username required');return;}
+  if(!password||password.length<8){showToast('Password required (min 8 chars)');return;}
+  var full_name=fname+(lname?' '+lname:'');
+  try{
+    var r=await fetch('/api/drivers',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:username,password:password,full_name:full_name,email:email||null,phone:phone||null})});
+    var d=await r.json();
+    if(d.ok){
+      showToast('Driver saved');
+      closeModal('modal-add-driver');
+      document.getElementById('ad-fname').value='';document.getElementById('ad-lname').value='';
+      document.getElementById('ad-phone').value='';document.getElementById('ad-email').value='';
+      document.getElementById('ad-username').value='';document.getElementById('ad-password').value='';
+      document.getElementById('ad-notes').value='';
+      reloadDrivers();
+    }else{showToast(d.error||'Failed to save driver');}
+  }catch(e){showToast('Error saving driver');}
+}
+
+function reloadDrivers(){
+  fetch('/api/drivers',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
+    if(!d.ok)return;
+    var da=document.getElementById('drv-active');var dt=document.getElementById('drv-total');
+    var active=d.drivers.filter(function(x){return x.active;}).length;
+    if(da)da.textContent=active;if(dt)dt.textContent=d.drivers.length;
+    DRIVERS=d.drivers.map(function(x){
+      return{id:x.id,initials:(x.full_name||'?')[0].toUpperCase(),name:x.full_name||x.username,role:x.role||'driver',
+        mobile:x.phone||'',email:x.email||'',status:x.active?'active':'inactive',jobs:0};
+    });
+    buildDrivers();
+  }).catch(function(){});
+}
 
 function buildDrivers(){
   var grid=document.getElementById('driver-grid');
