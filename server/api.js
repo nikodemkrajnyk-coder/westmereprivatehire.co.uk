@@ -352,9 +352,9 @@ router.get('/drivers', (req, res) => {
   res.json({ ok: true, drivers: rows });
 });
 
-// Create driver (admin only)
+// Create driver (admin/owner)
 router.post('/drivers', (req, res) => {
-  if (req.auth.role !== 'admin') {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
     return res.status(403).json({ error: 'Admin access required' });
   }
 

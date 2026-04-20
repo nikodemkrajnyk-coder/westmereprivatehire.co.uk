@@ -4,10 +4,17 @@ const jwt = require('jsonwebtoken');
 const { getDb } = require('./db');
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'wph_' + require('crypto').randomBytes(32).toString('hex');
-if (!process.env.JWT_SECRET) {
-  console.warn('[AUTH] WARNING: JWT_SECRET not set — sessions will not survive server restarts. Set JWT_SECRET in your environment variables.');
+
+function getJwtSecret() {
+  if (process.env.JWT_SECRET) return process.env.JWT_SECRET;
+  const db = getDb();
+  const row = db.prepare("SELECT value FROM integrations WHERE key = 'jwt_secret'").get();
+  if (row) return row.value;
+  const secret = 'wph_' + require('crypto').randomBytes(32).toString('hex');
+  db.prepare("INSERT OR REPLACE INTO integrations (key, value) VALUES ('jwt_secret', ?)").run(secret);
+  return secret;
 }
+const JWT_SECRET = getJwtSecret();
 const JWT_EXPIRY = '8h';
 const JWT_EXPIRY_REMEMBER = '30d';
 const COOKIE_MAX_AGE = 8 * 3600000; // 8 hours
