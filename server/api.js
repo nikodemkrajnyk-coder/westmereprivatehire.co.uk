@@ -249,7 +249,7 @@ router.post('/customers', (req, res) => {
   if (!['admin', 'owner'].includes(req.auth.role)) {
     return res.status(403).json({ error: 'Access denied' });
   }
-  const { email, full_name, phone, account_type } = req.body || {};
+  const { email, full_name, phone } = req.body || {};
   if (!email || !full_name) {
     return res.status(400).json({ error: 'Email and full name are required' });
   }
@@ -257,56 +257,73 @@ router.post('/customers', (req, res) => {
     return res.status(400).json({ error: 'Invalid email format' });
   }
   const cleanEmail = email.trim().toLowerCase();
-  const type = (account_type === 'business') ? 'business' : 'personal';
 
   const db = getDb();
   const existing = db.prepare('SELECT id FROM customers WHERE email = ?').get(cleanEmail);
   if (existing) return res.status(409).json({ error: 'Account already exists with this email' });
 
-  // Store a random hash in the password column — the customer never logs in,
-  // the column is NOT NULL in the existing schema so we need something.
   const bcrypt = require('bcryptjs');
   const unusableHash = bcrypt.hashSync('!' + Math.random().toString(36) + Date.now(), 12);
 
   const result = db.prepare(`
     INSERT INTO customers (email, password, full_name, phone, account_type)
-    VALUES (?, ?, ?, ?, ?)
-  `).run(cleanEmail, unusableHash, full_name.trim(), phone || null, type);
+    VALUES (?, ?, ?, ?, 'personal')
+  `).run(cleanEmail, unusableHash, full_name.trim(), phone || null);
 
   db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
     .run(req.auth.type || 'user', req.auth.id, 'customer_created_by_admin', cleanEmail, req.ip);
 
-  // Send the welcome email in the background — don't block the HTTP response.
   const { sendCustomerWelcome } = require('./email');
-  sendCustomerWelcome({ email: cleanEmail, full_name: full_name.trim(), account_type: type })
+  sendCustomerWelcome({ email: cleanEmail, full_name: full_name.trim() })
     .catch(e => console.error('[API] sendCustomerWelcome failed:', e.message));
 
   res.status(201).json({
     ok: true,
-    customer: { id: result.lastInsertRowid, email: cleanEmail, full_name: full_name.trim(), account_type: type }
+    customer: { id: result.lastInsertRowid, email: cleanEmail, full_name: full_name.trim() }
   });
 });
 
-// Send a monthly invoice to an account customer. Body: { month: 'YYYY-MM' }
-// Pulls every booking for this customer dated within that month and emails
-// an itemised statement with journey details and total fare.
+// Generate / send invoice for a customer.
+// Body: { from: 'YYYY-MM-DD', to: 'YYYY-MM-DD' } or { month: 'YYYY-MM' }
+// Optional: send_email (default true). When false, returns data only (for preview).
 router.post('/customers/:id/invoice', async (req, res) => {
   if (!['admin', 'owner'].includes(req.auth.role)) {
     return res.status(403).json({ error: 'Access denied' });
   }
-  const { month } = req.body || {};
-  if (!month || !/^\d{4}-\d{2}$/.test(month)) {
-    return res.status(400).json({ error: 'month (YYYY-MM) is required' });
-  }
-  const db = getDb();
-  const customer = db.prepare('SELECT id, email, full_name, account_type FROM customers WHERE id = ? AND active = 1').get(req.params.id);
-  if (!customer) return res.status(404).json({ error: 'Customer not found' });
-  if (!customer.email) return res.status(400).json({ error: 'Customer has no email address' });
 
-  const monthStart = month + '-01';
-  const [y, m] = month.split('-').map(n => parseInt(n, 10));
-  const nextMonthFirst = new Date(Date.UTC(m === 12 ? y + 1 : y, m === 12 ? 0 : m, 1));
-  const monthEnd = nextMonthFirst.toISOString().slice(0, 10);
+  const { month, from, to, send_email } = req.body || {};
+  const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  let dateFrom, dateTo, periodLabel, invoicePrefix;
+
+  if (from && to) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+      return res.status(400).json({ error: 'Dates must be YYYY-MM-DD' });
+    }
+    dateFrom = from;
+    dateTo = to;
+    const fd = new Date(from + 'T00:00:00');
+    const td = new Date(to + 'T00:00:00');
+    if (fd.getMonth() === td.getMonth() && fd.getFullYear() === td.getFullYear()) {
+      periodLabel = MONTH_NAMES[fd.getMonth()] + ' ' + fd.getFullYear();
+    } else {
+      periodLabel = fd.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+        + ' - ' + td.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    invoicePrefix = from.slice(0, 4) + from.slice(5, 7);
+  } else if (month && /^\d{4}-\d{2}$/.test(month)) {
+    const [y, m] = month.split('-').map(n => parseInt(n, 10));
+    dateFrom = month + '-01';
+    const nextMonthFirst = new Date(Date.UTC(m === 12 ? y + 1 : y, m === 12 ? 0 : m, 1));
+    dateTo = nextMonthFirst.toISOString().slice(0, 10);
+    periodLabel = MONTH_NAMES[m - 1] + ' ' + y;
+    invoicePrefix = y + String(m).padStart(2, '0');
+  } else {
+    return res.status(400).json({ error: 'Provide either month (YYYY-MM) or from/to dates (YYYY-MM-DD)' });
+  }
+
+  const db = getDb();
+  const customer = db.prepare('SELECT id, email, full_name, phone FROM customers WHERE id = ? AND active = 1').get(req.params.id);
+  if (!customer) return res.status(404).json({ error: 'Customer not found' });
 
   const bookings = db.prepare(`
     SELECT ref, date, time, pickup, destination, fare, flight, passengers, status
@@ -316,29 +333,71 @@ router.post('/customers/:id/invoice', async (req, res) => {
        AND date < ?
        AND status IN ('confirmed','active','completed')
      ORDER BY date ASC, time ASC
-  `).all(customer.id, monthStart, monthEnd);
+  `).all(customer.id, dateFrom, dateTo);
 
-  const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const label = MONTH_NAMES[m - 1] + ' ' + y;
+  const prevCount = db.prepare("SELECT COUNT(*) AS c FROM audit_log WHERE action = 'invoice_sent' AND detail LIKE ?").get('INV-' + invoicePrefix + '%').c;
+  const invoiceNo = 'INV-' + invoicePrefix + '-' + String(prevCount + 1).padStart(4, '0');
 
-  // Invoice number: INV-YYYYMM-<seq> — count existing invoices in audit log for uniqueness
-  const prevCount = db.prepare("SELECT COUNT(*) AS c FROM audit_log WHERE action = 'invoice_sent' AND detail LIKE ?").get('INV-' + y + String(m).padStart(2, '0') + '%').c;
-  const invoiceNo = 'INV-' + y + String(m).padStart(2, '0') + '-' + String(prevCount + 1).padStart(4, '0');
-
-  // Due date: 14 days from today
   const due = new Date();
   due.setDate(due.getDate() + 14);
   const dueDate = due.toISOString().slice(0, 10);
+  const issuedDate = new Date().toISOString().slice(0, 10);
 
-  const { sendCustomerInvoice } = require('./email');
-  const ok = await sendCustomerInvoice(customer, bookings, { label, month, dueDate }, invoiceNo);
-  if (!ok) return res.status(502).json({ error: 'Email delivery failed' });
-
-  db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
-    .run(req.auth.type || 'user', req.auth.id, 'invoice_sent', invoiceNo + ' to ' + customer.email, req.ip);
+  let settings = {};
+  try {
+    const row = db.prepare("SELECT value FROM integrations WHERE key = 'invoice_settings'").get();
+    if (row) settings = JSON.parse(row.value);
+  } catch (e) {}
 
   const total = bookings.reduce((s, b) => s + (+b.fare || 0), 0);
-  res.json({ ok: true, invoiceNo, journeys: bookings.length, total });
+  const shouldEmail = send_email !== false;
+
+  if (shouldEmail) {
+    if (!customer.email) return res.status(400).json({ error: 'Customer has no email address' });
+    const { sendCustomerInvoice } = require('./email');
+    const ok = await sendCustomerInvoice(customer, bookings, { label: periodLabel, dueDate }, invoiceNo, settings);
+    if (!ok) return res.status(502).json({ error: 'Email delivery failed' });
+
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run(req.auth.type || 'user', req.auth.id, 'invoice_sent', invoiceNo + ' to ' + customer.email, req.ip);
+  }
+
+  res.json({
+    ok: true, invoiceNo, journeys: bookings.length, total,
+    customer: { id: customer.id, email: customer.email, full_name: customer.full_name, phone: customer.phone },
+    bookings, period: { label: periodLabel, from: dateFrom, to: dateTo, dueDate, issuedDate },
+    settings, emailed: shouldEmail
+  });
+});
+
+// Invoice settings (business details + bank details for invoices)
+router.get('/settings/invoice', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  let settings = {};
+  try {
+    const row = db.prepare("SELECT value FROM integrations WHERE key = 'invoice_settings'").get();
+    if (row) settings = JSON.parse(row.value);
+  } catch (e) {}
+  res.json({ ok: true, settings });
+});
+
+router.put('/settings/invoice', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const settings = req.body || {};
+  const allowed = ['business_name', 'owner_name', 'address_line1', 'address_line2', 'postcode',
+    'phone', 'email', 'bank_name', 'sort_code', 'account_no', 'account_name'];
+  const clean = {};
+  for (const k of allowed) {
+    if (settings[k] !== undefined) clean[k] = String(settings[k]).trim();
+  }
+  db.prepare("INSERT OR REPLACE INTO integrations (provider, key, value) VALUES ('invoice_settings', 'invoice_settings', ?)").run(JSON.stringify(clean));
+  res.json({ ok: true });
 });
 
 // ── Drivers (admin only) ────────────────────────────────────────────────

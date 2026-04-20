@@ -11,7 +11,7 @@ function getJwtSecret() {
   const row = db.prepare("SELECT value FROM integrations WHERE key = 'jwt_secret'").get();
   if (row) return row.value;
   const secret = 'wph_' + require('crypto').randomBytes(32).toString('hex');
-  db.prepare("INSERT OR REPLACE INTO integrations (key, value) VALUES ('jwt_secret', ?)").run(secret);
+  db.prepare("INSERT OR REPLACE INTO integrations (provider, key, value) VALUES ('jwt_secret', 'jwt_secret', ?)").run(secret);
   return secret;
 }
 const JWT_SECRET = getJwtSecret();
