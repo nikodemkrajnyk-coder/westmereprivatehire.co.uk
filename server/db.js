@@ -221,6 +221,35 @@ function migrate() {
     `);
   } catch (e) {}
 
+  // Driver profile columns — admin can add driver details (licence, vehicle etc.)
+  // before granting app login. Username/password stay required but are set to
+  // placeholder values until admin issues real credentials.
+  try {
+    const info = db.prepare("PRAGMA table_info(users)").all();
+    const driverCols = [
+      ['license_no',     'TEXT'],
+      ['license_expiry', 'TEXT'],
+      ['dbs_no',         'TEXT'],
+      ['dbs_expiry',     'TEXT'],
+      ['vehicle',        'TEXT'],
+      ['reg',            'TEXT'],
+      ['phv_no',         'TEXT'],
+      ['insurance_no',   'TEXT'],
+      ['driver_notes',   'TEXT'],
+      ['has_login',      'INTEGER NOT NULL DEFAULT 0']
+    ];
+    for (const [name, type] of driverCols) {
+      if (!info.find(c => c.name === name)) {
+        db.exec(`ALTER TABLE users ADD COLUMN ${name} ${type}`);
+        console.log('[DB] Added ' + name + ' column to users');
+      }
+    }
+    // Backfill has_login=1 for existing accounts (they all have real usernames)
+    db.prepare(`UPDATE users SET has_login = 1 WHERE has_login = 0 AND username NOT LIKE '__nolgn_%'`).run();
+  } catch (e) {
+    console.error('[DB] users driver-profile migration failed:', e.message);
+  }
+
   // Driver-offer workflow: admin offers a job to a specific driver; driver has
   // a window to accept or decline; after timeout the job reverts to admin.
   // Adds columns additively — old rows simply have NULLs.

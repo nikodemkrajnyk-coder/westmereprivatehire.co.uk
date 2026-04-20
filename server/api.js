@@ -343,40 +343,169 @@ router.post('/customers/:id/invoice', async (req, res) => {
 
 // ── Drivers (admin only) ────────────────────────────────────────────────
 
+function sanitizeDriver(row) {
+  if (!row) return row;
+  if (!row.has_login || (row.username && row.username.startsWith('__nolgn_'))) {
+    row.username = null;
+    row.has_login = 0;
+  }
+  return row;
+}
+
 router.get('/drivers', (req, res) => {
   if (!['admin', 'owner'].includes(req.auth.role)) {
     return res.status(403).json({ error: 'Access denied' });
   }
   const db = getDb();
-  const rows = db.prepare("SELECT id, username, full_name, email, phone, role, active, created_at FROM users WHERE role IN ('driver','owner') ORDER BY created_at DESC").all();
+  const rows = db.prepare(`
+    SELECT id, username, full_name, email, phone, role, active, has_login,
+           license_no, license_expiry, dbs_no, dbs_expiry, vehicle, reg,
+           phv_no, insurance_no, driver_notes, created_at
+    FROM users WHERE role IN ('driver','owner') ORDER BY created_at DESC
+  `).all().map(sanitizeDriver);
   res.json({ ok: true, drivers: rows });
 });
 
-// Create driver (admin/owner)
+router.get('/drivers/:id', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid driver ID' });
+  const row = db.prepare(`
+    SELECT id, username, full_name, email, phone, role, active, has_login,
+           license_no, license_expiry, dbs_no, dbs_expiry, vehicle, reg,
+           phv_no, insurance_no, driver_notes, created_at
+    FROM users WHERE id = ? AND role IN ('driver','owner')
+  `).get(id);
+  if (!row) return res.status(404).json({ error: 'Driver not found' });
+  res.json({ ok: true, driver: sanitizeDriver(row) });
+});
+
+// Create driver (admin/owner). Login credentials are optional — admin can
+// register a driver on the roster first, and issue username/password later.
 router.post('/drivers', (req, res) => {
   if (!['admin', 'owner'].includes(req.auth.role)) {
     return res.status(403).json({ error: 'Admin access required' });
   }
 
-  const { username, password, full_name, email, phone, role } = req.body;
-  if (!username || !password || !full_name) {
-    return res.status(400).json({ error: 'Username, password, and full name required' });
+  const {
+    username, password, full_name, email, phone, role, active,
+    license_no, license_expiry, dbs_no, dbs_expiry,
+    vehicle, reg, phv_no, insurance_no, driver_notes
+  } = req.body;
+
+  if (!full_name || !String(full_name).trim()) {
+    return res.status(400).json({ error: 'Full name required' });
   }
 
+  const wantsLogin = !!(username && password);
+  if (username && !password) return res.status(400).json({ error: 'Password required when setting username' });
+  if (password && !username) return res.status(400).json({ error: 'Username required when setting password' });
+  if (password && String(password).length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
+
   const db = getDb();
-  const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
-  if (existing) return res.status(409).json({ error: 'Username already exists' });
-
   const bcrypt = require('bcryptjs');
-  const hash = bcrypt.hashSync(password, 12);
+  const crypto = require('crypto');
 
-  const result = db.prepare('INSERT INTO users (username, password, role, full_name, email, phone) VALUES (?,?,?,?,?,?)')
-    .run(username, hash, role || 'driver', full_name, email || null, phone || null);
+  let finalUsername, finalHash;
+  if (wantsLogin) {
+    const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(username.trim());
+    if (existing) return res.status(409).json({ error: 'Username already exists' });
+    finalUsername = username.trim();
+    finalHash = bcrypt.hashSync(password, 12);
+  } else {
+    finalUsername = '__nolgn_' + Date.now().toString(36) + '_' + crypto.randomBytes(3).toString('hex');
+    finalHash = bcrypt.hashSync(crypto.randomBytes(32).toString('hex'), 10);
+  }
+
+  const result = db.prepare(`
+    INSERT INTO users
+      (username, password, role, full_name, email, phone, active, has_login,
+       license_no, license_expiry, dbs_no, dbs_expiry,
+       vehicle, reg, phv_no, insurance_no, driver_notes)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+  `).run(
+    finalUsername, finalHash, role || 'driver', full_name.trim(),
+    email || null, phone || null,
+    active === 0 ? 0 : 1, wantsLogin ? 1 : 0,
+    license_no || null, license_expiry || null,
+    dbs_no || null, dbs_expiry || null,
+    vehicle || null, reg || null,
+    phv_no || null, insurance_no || null, driver_notes || null
+  );
 
   db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
-    .run('user', req.auth.id, 'driver_created', username, req.ip);
+    .run('user', req.auth.id, 'driver_created', full_name, req.ip);
 
-  res.status(201).json({ ok: true, driver: { id: result.lastInsertRowid, username } });
+  res.status(201).json({ ok: true, driver: { id: result.lastInsertRowid, has_login: wantsLogin } });
+});
+
+// Update driver (admin/owner)
+router.patch('/drivers/:id', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid driver ID' });
+  const existing = db.prepare("SELECT * FROM users WHERE id = ? AND role IN ('driver','owner')").get(id);
+  if (!existing) return res.status(404).json({ error: 'Driver not found' });
+
+  const body = req.body || {};
+  const updates = [];
+  const values = [];
+
+  const plainFields = [
+    'full_name', 'email', 'phone', 'active',
+    'license_no', 'license_expiry', 'dbs_no', 'dbs_expiry',
+    'vehicle', 'reg', 'phv_no', 'insurance_no', 'driver_notes'
+  ];
+  for (const f of plainFields) {
+    if (body[f] !== undefined) {
+      updates.push(`${f} = ?`);
+      values.push(body[f] === '' ? null : body[f]);
+    }
+  }
+
+  // Grant / change app access
+  if (body.username !== undefined || body.password !== undefined) {
+    const bcrypt = require('bcryptjs');
+    if (body.username) {
+      const newUsername = String(body.username).trim();
+      if (newUsername !== existing.username) {
+        const dup = db.prepare('SELECT id FROM users WHERE username = ? AND id != ?').get(newUsername, id);
+        if (dup) return res.status(409).json({ error: 'Username already exists' });
+        updates.push('username = ?'); values.push(newUsername);
+      }
+    }
+    if (body.password) {
+      if (String(body.password).length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
+      updates.push('password = ?'); values.push(bcrypt.hashSync(body.password, 12));
+    }
+    if (body.username && body.password) {
+      updates.push('has_login = 1');
+    }
+  }
+  if (body.revoke_login === true) {
+    const crypto = require('crypto');
+    const bcrypt = require('bcryptjs');
+    updates.push('username = ?'); values.push('__nolgn_' + Date.now().toString(36) + '_' + crypto.randomBytes(3).toString('hex'));
+    updates.push('password = ?'); values.push(bcrypt.hashSync(crypto.randomBytes(32).toString('hex'), 10));
+    updates.push('has_login = 0');
+  }
+
+  if (!updates.length) return res.status(400).json({ error: 'No fields to update' });
+
+  updates.push('updated_at = datetime("now")');
+  values.push(id);
+
+  db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+  db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+    .run('user', req.auth.id, 'driver_updated', existing.full_name || existing.username, req.ip);
+
+  res.json({ ok: true });
 });
 
 // ── Audit log (admin only) ──────────────────────────────────────────────
