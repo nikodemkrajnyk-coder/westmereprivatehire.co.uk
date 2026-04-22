@@ -17,7 +17,7 @@ const fs = require('fs');
 // volume wasn't mounted yet on a first boot), we fall back to the local
 // ./data/ path and log a warning rather than crashing before app.listen.
 function resolveDbPath() {
-  const preferred = process.env.SQLITE_DB;
+  const preferred = process.env.SQLITE_DB ? process.env.SQLITE_DB.trim() : undefined;
   const fallback = path.join(__dirname, '..', 'data', 'westmere.db');
   if (!preferred) return fallback;
 
