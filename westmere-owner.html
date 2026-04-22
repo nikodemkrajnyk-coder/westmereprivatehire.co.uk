@@ -499,10 +499,10 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
       <div id="today-list"></div>
     </div>
 
-    <!-- Offered Jobs -->
+    <!-- Upcoming Jobs -->
     <div class="pg" id="pg-offered">
-      <div class="sec-title"><em>Offered</em> Jobs</div>
-      <div class="sec-sub">Scored against your location and battery</div>
+      <div class="sec-title"><em>Upcoming</em> Jobs</div>
+      <div class="sec-sub">All confirmed, pending and offered bookings</div>
       <div id="offered-list"></div>
     </div>
 
@@ -599,7 +599,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
   <!-- BOTTOM NAV -->
   <div class="bottom-nav" id="bottom-nav">
     <button class="bn on" id="bn-today" onclick="goPage('today',this)"><div class="bn-bar"></div><div class="bn-label">Today</div></button>
-    <button class="bn" id="bn-offered" onclick="goPage('offered',this)"><div class="bn-bar"></div><div class="bn-label">Offered</div><div class="bn-dot" id="offered-dot"></div></button>
+    <button class="bn" id="bn-offered" onclick="goPage('offered',this)"><div class="bn-bar"></div><div class="bn-label">Upcoming</div><div class="bn-dot" id="offered-dot"></div></button>
     <button class="bn" id="bn-tesla" onclick="goPage('tesla',this)"><div class="bn-bar"></div><div class="bn-label">Tesla</div></button>
     <button class="bn" id="bn-calendar" onclick="goPage('calendar',this)"><div class="bn-bar"></div><div class="bn-label">Calendar</div></button>
     <button class="bn" id="bn-decisions" onclick="goPage('decisions',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Decisions</div><div class="bn-dot" id="decisions-dot" style="display:none"></div></button>
@@ -1530,27 +1530,88 @@ function checkFeasibility(offered){
   }
   return null;
 }
+var _CAL_MONTHS_S=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function _fmtUpcomingDate(dateStr){
+  if(!dateStr)return'';
+  var today=new Date().toISOString().split('T')[0];
+  var tomorrow=new Date(Date.now()+86400000).toISOString().split('T')[0];
+  if(dateStr===today)return'Today';
+  if(dateStr===tomorrow)return'Tomorrow';
+  var p=dateStr.split('-');
+  if(p.length!==3)return dateStr;
+  var d=new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));
+  var days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  return days[d.getDay()]+' '+parseInt(p[2])+' '+_CAL_MONTHS_S[parseInt(p[1])-1];
+}
+
 function buildOffered(){
-  var list=document.getElementById('offered-list');var dot=document.getElementById('offered-dot');
-  dot.textContent=OFFERED_JOBS.length||'';dot.style.display=OFFERED_JOBS.length?'flex':'none';
-  if(!OFFERED_JOBS.length){list.innerHTML='<div class="empty"><div class="empty-title">No offered jobs</div><div class="empty-sub">New jobs will appear here</div></div>';return;}
+  var list=document.getElementById('offered-list');
+  var dot=document.getElementById('offered-dot');
+  var pendingCount=OFFERED_JOBS.filter(function(j){return j.apiStatus==='pending';}).length;
+  dot.textContent=pendingCount||OFFERED_JOBS.length;
+  dot.style.display=OFFERED_JOBS.length?'flex':'none';
+
+  if(!OFFERED_JOBS.length){
+    list.innerHTML='<div class="empty"><div class="empty-title">No upcoming jobs</div><div class="empty-sub">New bookings will appear here</div></div>';
+    return;
+  }
+
+  var lastDate='';
   list.innerHTML=OFFERED_JOBS.map(function(j){
-    scoreJob(j);
-    var feas=checkFeasibility(j);
-    var alertBanner='';
-    if(feas){
-      var cls=feas.canMake==='tight'?'tight':'no-go';
-      alertBanner='<div class="feas-banner '+cls+'">'
-        +'<div class="feas-verdict">'+(feas.canMake==='tight'?'Tight — possible if on time':'You won\'t make it')+'</div>'
-        +'<div class="feas-explain">'+escH(feas.reason)+'</div>'
-        +'<div class="feas-action">'+(feas.canMake==='tight'?'Your call.':'Pass to another driver.')+'</div>'
+    var stLabel,stColor,stBg;
+    if(j.apiStatus==='pending'){stLabel='Needs decision';stColor='#9C5800';stBg='rgba(156,88,0,.08)';}
+    else if(j.apiStatus==='offered'){stLabel='Awaiting driver';stColor='#2A3A66';stBg='rgba(42,58,102,.07)';}
+    else if(j.apiStatus==='active'){stLabel='Active';stColor='#2D6E47';stBg='rgba(45,110,71,.1)';}
+    else{stLabel='Confirmed';stColor='#2D6E47';stBg='rgba(45,110,71,.08)';}
+
+    var dateLabel=_fmtUpcomingDate(j.date);
+    var dateSep='';
+    if(j.date!==lastDate){
+      lastDate=j.date;
+      dateSep='<div style="padding:.45rem 1rem .2rem;font-size:.56rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(17,29,44,.35);background:rgba(17,29,44,.02);border-top:1px solid var(--rule)">'+dateLabel+'</div>';
+    }
+
+    var html=dateSep+'<div style="padding:.8rem 1rem;border-top:1px solid var(--rule)">'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;margin-bottom:.2rem">'
+      +  '<div style="font-weight:500;color:var(--navy);font-size:.92rem;font-family:var(--serif)">'+escH(j.name)+'</div>'
+      +  '<span style="display:inline-flex;align-items:center;padding:.2rem .5rem;font-size:.52rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:'+stColor+';background:'+stBg+';border-radius:4px;white-space:nowrap">'+stLabel+'</span>'
+      +'</div>'
+      +'<div style="font-size:.8rem;color:rgba(17,29,44,.6);margin-bottom:.15rem">'+escH(j.pickup||'')+' → '+escH(j.dest||'')+'</div>'
+      +'<div style="font-size:.72rem;color:rgba(17,29,44,.4)">'+(j.time||'ASAP')+(j.fare?' · £'+Number(j.fare).toFixed(0):'')+(j.pax>1?' · '+j.pax+' pax':'')+(j.payment==='card'?' · Card':'')+'</div>';
+
+    if(j.apiStatus==='pending'){
+      html+='<div style="display:flex;gap:.4rem;margin-top:.6rem">'
+        +'<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(45,110,71,.12);color:#2D6E47;border:1.5px solid rgba(45,110,71,.3);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingConfirm('+j.id+')">Confirm</button>'
+        +'<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(139,34,34,.08);color:#8B2222;border:1.5px solid rgba(139,34,34,.2);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingCancel('+j.id+')">Cancel</button>'
         +'</div>';
     }
-    return alertBanner+buildCard(j,true)+'<div class="offer-btns"><button class="btn-accept" onclick="acceptJob(\''+j.id+'\')">Accept</button><button class="btn-decline" onclick="declineJob(\''+j.id+'\')">Decline</button></div>';
+    html+='</div>';
+    return html;
   }).join('');
 }
-function acceptJob(id){var idx=OFFERED_JOBS.findIndex(function(j){return j.id===id;});if(idx<0)return;var job=OFFERED_JOBS.splice(idx,1)[0];job.status='upcoming';TODAY_JOBS.push(job);showToast('Job accepted — added to today');buildOffered();buildToday();fetch('/api/bookings/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'confirmed'})}).catch(function(){});}
-function declineJob(id){OFFERED_JOBS=OFFERED_JOBS.filter(function(j){return j.id!==id;});buildOffered();showToast('Declined');fetch('/api/bookings/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'cancelled'})}).catch(function(){});}
+
+async function upcomingConfirm(bookingId){
+  try{
+    var r=await fetch('/api/bookings/'+bookingId,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'confirmed'})});
+    var d=await r.json();
+    if(r.ok&&d.ok){showToast('Booking confirmed');loadOwnerBookings();}
+    else showToast(d.error||('Failed ('+r.status+')'));
+  }catch(e){showToast('Network error');console.error('[upcomingConfirm]',e);}
+}
+
+async function upcomingCancel(bookingId){
+  if(!confirm('Cancel this booking permanently?'))return;
+  try{
+    var r=await fetch('/api/bookings/'+bookingId,{method:'DELETE',credentials:'include'});
+    var d=await r.json();
+    if(r.ok&&d.ok){showToast('Booking cancelled');loadOwnerBookings();}
+    else showToast(d.error||('Failed ('+r.status+')'));
+  }catch(e){showToast('Network error');console.error('[upcomingCancel]',e);}
+}
+
+// Legacy: kept so old SSE-path calls don't throw
+function acceptJob(id){upcomingConfirm(id);}
+function declineJob(id){upcomingCancel(id);}
 
 // ── STATUS ────────────────────────────────────────────────────────────────────
 function navChoice(addr){
@@ -2244,10 +2305,11 @@ async function loadOwnerBookings(){
     // Map API bookings to owner job format
     function toJob(b){
       return{
-        id:String(b.id),time:b.time||'ASAP',
-        name:b.customer_name||'Guest',
-        phone:b.customer_phone||'',
-        email:b.customer_email||'',
+        id:String(b.id),ref:b.ref||'',time:b.time||'ASAP',
+        date:b.date||'',
+        name:b.customer_name||b.passenger_name||'Guest',
+        phone:b.customer_phone||b.passenger_phone||'',
+        email:b.customer_email||b.passenger_email||'',
         contactPref:'whatsapp',
         pax:b.passengers||1,
         bags:b.bags||'0',
@@ -2260,6 +2322,7 @@ async function loadOwnerBookings(){
         fare:b.fare||0,
         driverFare:b.fare||0,
         payment:b.payment||'cash',
+        apiStatus:b.status||'',
         status:b.status==='completed'?'done':b.status==='active'?'enroute':b.status==='cancelled'?'done':'upcoming',
         note:b.notes||''
       };
@@ -2269,8 +2332,13 @@ async function loadOwnerBookings(){
     var todayBookings=bookings.filter(function(b){return b.date===today&&b.status!=='cancelled';});
     TODAY_JOBS=todayBookings.map(toJob);
 
-    // Offered jobs = pending bookings for future dates (not today)
-    OFFERED_JOBS=bookings.filter(function(b){return b.date>today&&b.status==='pending';}).map(toJob);
+    // Upcoming jobs = ALL future + today non-cancelled, sorted by date then time
+    OFFERED_JOBS=bookings.filter(function(b){
+      return b.date>=today&&b.status!=='cancelled';
+    }).sort(function(a,b){
+      if(a.date!==b.date)return a.date<b.date?-1:1;
+      return(a.time||'').localeCompare(b.time||'');
+    }).map(toJob);
 
     // Calendar jobs — group all bookings by date
     CAL_JOBS={};
@@ -2279,16 +2347,20 @@ async function loadOwnerBookings(){
       var key=b.date;
       if(!key)return;
       if(!CAL_JOBS[key])CAL_JOBS[key]=[];
-      CAL_JOBS[key].push({id:b.id,time:b.time||'ASAP',name:b.customer_name||'Guest',phone:b.customer_phone||'',pickup:b.pickup,dest:b.destination,fare:b.fare||0,payment:b.payment||'cash',flight:b.flight||'',pax:b.passengers||1,bags:b.bags||'',notes:b.notes||'',status:b.status});
+      CAL_JOBS[key].push({id:b.id,time:b.time||'ASAP',name:b.customer_name||b.passenger_name||'Guest',phone:b.customer_phone||b.passenger_phone||'',pickup:b.pickup,dest:b.destination,fare:b.fare||0,payment:b.payment||'cash',flight:b.flight||'',pax:b.passengers||1,bags:b.bags||'',notes:b.notes||'',status:b.status});
     });
 
-    // Update offered dot
+    // Update upcoming dot — show count of pending bookings needing attention
     var dot=document.getElementById('offered-dot');
-    if(dot){dot.textContent=OFFERED_JOBS.length||'';dot.style.display=OFFERED_JOBS.length?'flex':'none';}
+    if(dot){
+      var pendingCount=OFFERED_JOBS.filter(function(j){return j.apiStatus==='pending';}).length;
+      dot.textContent=pendingCount||OFFERED_JOBS.length;
+      dot.style.display=OFFERED_JOBS.length?'flex':'none';
+    }
 
     // Rebuild current view
     buildToday();
-    if(document.getElementById('pg-calendar')&&document.getElementById('pg-calendar').classList.contains('on'))loadCalendarExternal();
+    if(document.getElementById('pg-calendar')&&document.getElementById('pg-calendar').classList.contains('on'))buildCalendar();
     if(document.getElementById('pg-offered')&&document.getElementById('pg-offered').classList.contains('on'))buildOffered();
     if(document.getElementById('pg-earnings')&&document.getElementById('pg-earnings').classList.contains('on'))buildEarnings();
 

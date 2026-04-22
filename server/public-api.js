@@ -86,6 +86,45 @@ router.post('/book', async (req, res) => {
       if (row) defaultDriverId = row.id;
     } catch (_) {}
 
+    // Google Calendar conflict check — if the calendar slot is free, auto-confirm.
+    // If there's a conflicting event (personal appointment, another job, etc.),
+    // leave as pending so the owner can decide manually.
+    // Falls back gracefully if Google Calendar is not connected.
+    let autoConfirm = !!defaultDriverId;
+    if (autoConfirm) {
+      try {
+        if (gcal.isConfigured() && gcal.loadTokens()) {
+          const calEvents = await gcal.listExternalEvents({ from: bookingDate, to: bookingDate });
+          if (calEvents.length > 0 && time && time !== 'ASAP') {
+            const m = String(time).match(/^(\d{1,2}):(\d{2})/);
+            if (m) {
+              // Treat booking as UTC (±1h for UK — acceptable for conflict detection)
+              const bookingStart = new Date(bookingDate + 'T' + m[1].padStart(2, '0') + ':' + m[2] + ':00Z');
+              const bookingEnd = new Date(bookingStart.getTime() + 2 * 60 * 60 * 1000); // 2h window
+              for (const ev of calEvents) {
+                if (ev.allDay) continue;
+                if (!ev.start) continue;
+                const evStart = new Date(ev.start);
+                const evEnd = new Date(ev.end || new Date(evStart.getTime() + 3600000));
+                if (bookingStart < evEnd && evStart < bookingEnd) {
+                  autoConfirm = false;
+                  console.log(`[BOOK] ${ref} left pending — calendar conflict: "${ev.title}" at ${ev.start}`);
+                  break;
+                }
+              }
+            }
+          }
+        }
+      } catch (calErr) {
+        console.error('[BOOK] Calendar conflict check failed (non-blocking):', calErr.message);
+        // On any error, leave as pending — safer to require manual confirmation
+        autoConfirm = false;
+      }
+    }
+
+    const finalDriverId = autoConfirm ? defaultDriverId : null;
+    const finalStatus   = autoConfirm ? 'confirmed' : 'pending';
+
     // Insert booking
     const result = db.prepare(`
       INSERT INTO bookings (ref, customer_id, driver_id, pickup, destination, date, time,
@@ -93,12 +132,12 @@ router.post('/book', async (req, res) => {
                             passenger_name, passenger_phone, passenger_email)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
-      ref, customerId, defaultDriverId,
+      ref, customerId, finalDriverId,
       pickup, destination, bookingDate, time || 'ASAP',
       passengers || 1, bags || '0', null,
       flight || null, fare || null, payment || 'cash',
       notes || null,
-      defaultDriverId ? 'confirmed' : 'pending',
+      finalStatus,
       (name || '').trim() || null,
       (phone || '').trim() || null,
       (email || '').trim().toLowerCase() || null
