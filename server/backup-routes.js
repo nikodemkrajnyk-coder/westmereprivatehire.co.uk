@@ -6,14 +6,19 @@ const { getDb } = require('./db');
 
 const router = express.Router();
 
-// Primary: iCloud (syncs to all Apple devices automatically)
+// Primary: iCloud (syncs to all Apple devices automatically — Mac only)
 const ICLOUD_DIR = path.join(
   os.homedir(),
   'Library', 'Mobile Documents', 'com~apple~CloudDocs',
   'WestmereBackups'
 );
-// Secondary: local fallback alongside the database
-const LOCAL_DIR = path.join(__dirname, '..', 'data', 'backups');
+
+// Secondary / Railway: if DB_PATH is set (Railway Volume mounted at /data),
+// save backups to /data/backups/ so they persist across redeploys.
+// Otherwise fall back to ./data/backups/ alongside the repo (local dev).
+const LOCAL_DIR = process.env.DB_PATH
+  ? path.join(path.dirname(process.env.DB_PATH), 'backups')
+  : path.join(__dirname, '..', 'data', 'backups');
 
 // Runtime state
 let lastBackupAt = null;

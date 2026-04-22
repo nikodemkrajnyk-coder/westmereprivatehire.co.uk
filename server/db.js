@@ -3,8 +3,17 @@ const bcrypt = require('bcryptjs');
 const path = require('path');
 const fs = require('fs');
 
-const DATA_DIR = path.join(__dirname, '..', 'data');
-const DB_PATH = path.join(DATA_DIR, 'westmere.db');
+// ── Persistent storage path ───────────────────────────────────────────────
+// On Railway: mount a Volume at /data via the Railway dashboard
+// (Service → Volumes → Mount path: /data), then set:
+//   DB_PATH=/data/westmere.db   (Railway env var)
+//
+// Locally (Mac dev): no env var needed — defaults to ./data/westmere.db
+//
+// Without a Railway Volume every redeploy wipes the SQLite file.
+// The Volume persists across redeploys and restarts.
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'data', 'westmere.db');
+const DATA_DIR = path.dirname(DB_PATH);
 
 let db;
 

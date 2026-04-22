@@ -412,6 +412,36 @@ router.patch('/customers/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Set / reset a customer's portal password (admin-only) ───────────────
+// Allows admin to grant a customer access to the account portal by setting
+// a password. Customer then logs in via POST /api/auth/customer/login.
+router.post('/customers/:id/set-password', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid customer ID' });
+
+  const customer = db.prepare('SELECT id, email, full_name FROM customers WHERE id = ?').get(id);
+  if (!customer) return res.status(404).json({ error: 'Customer not found' });
+
+  const { password } = req.body || {};
+  if (!password) return res.status(400).json({ error: 'password required' });
+  if (String(password).length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
+
+  const bcrypt = require('bcryptjs');
+  const hash = bcrypt.hashSync(String(password), 12);
+  db.prepare("UPDATE customers SET password = ?, updated_at = datetime('now') WHERE id = ?").run(hash, id);
+
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run('user', req.auth.id, 'customer_password_set', customer.email, req.ip);
+  } catch (_) {}
+
+  res.json({ ok: true, message: 'Password set. Customer can now log in via /api/auth/customer/login.' });
+});
+
 // Generate / send invoice for a customer.
 // Body: { from: 'YYYY-MM-DD', to: 'YYYY-MM-DD' } or { month: 'YYYY-MM' }
 // Optional: send_email (default true). When false, returns data only (for preview).
@@ -890,6 +920,48 @@ router.patch('/drivers/:id', (req, res) => {
   } catch (e) { /* audit failure must not block response */ }
 
   res.json({ ok: true });
+});
+
+// ── Grant / update driver login credentials (admin-only) ─────────────────
+// Dedicated endpoint for provisioning a driver's portal username + password.
+// Equivalent to PATCH /drivers/:id with {username, password} but more
+// explicit — useful for admin UI "Set Login" button.
+router.post('/drivers/:id/set-credentials', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid driver ID' });
+
+  const driver = db.prepare("SELECT id, full_name, username FROM users WHERE id = ? AND role IN ('driver','owner')").get(id);
+  if (!driver) return res.status(404).json({ error: 'Driver not found' });
+
+  const { username, password } = req.body || {};
+  if (!username || !password) return res.status(400).json({ error: 'username and password required' });
+  if (String(username).trim().length < 3) return res.status(400).json({ error: 'Username must be at least 3 characters' });
+  if (String(password).length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
+
+  const cleanUsername = String(username).trim();
+  const bcrypt = require('bcryptjs');
+
+  // Check for duplicate username (skip if it's the same driver's current username)
+  const dup = db.prepare('SELECT id FROM users WHERE username = ? AND id != ?').get(cleanUsername, id);
+  if (dup) return res.status(409).json({ error: 'Username already taken' });
+
+  const hash = bcrypt.hashSync(String(password), 12);
+  db.prepare(`
+    UPDATE users
+       SET username = ?, password = ?, has_login = 1, updated_at = datetime('now')
+     WHERE id = ?
+  `).run(cleanUsername, hash, id);
+
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run('user', req.auth.id, 'driver_credentials_set', driver.full_name || driver.username, req.ip);
+  } catch (_) {}
+
+  res.json({ ok: true, message: 'Driver credentials set. They can now log in via /api/auth/login.' });
 });
 
 // Earnings summary for a driver over a period. Used by admin driver

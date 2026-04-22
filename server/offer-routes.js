@@ -88,38 +88,72 @@ router.post('/bookings/:id/offer', staffOnly, (req, res) => {
   const { driver_id } = req.body || {};
   if (!driver_id) return res.status(400).json({ error: 'driver_id required' });
 
-  const db = getDb();
-  const driver = db.prepare(`
-    SELECT id, full_name FROM users
-     WHERE id = ? AND role IN ('driver','owner') AND active = 1
-  `).get(driver_id);
-  if (!driver) return res.status(404).json({ error: 'Driver not found' });
+  try {
+    const db = getDb();
+    const driver = db.prepare(`
+      SELECT id, full_name, email, phone FROM users
+       WHERE id = ? AND role IN ('driver','owner') AND active = 1
+    `).get(driver_id);
+    if (!driver) return res.status(404).json({ error: 'Driver not found or inactive' });
 
-  const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(req.params.id);
-  if (!booking) return res.status(404).json({ error: 'Booking not found' });
-  if (['completed', 'cancelled'].includes(booking.status)) {
-    return res.status(409).json({ error: 'Booking is already ' + booking.status });
+    const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(req.params.id);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (['completed', 'cancelled'].includes(booking.status)) {
+      return res.status(409).json({ error: 'Booking is already ' + booking.status });
+    }
+
+    const { driver_pay, admin_fee } = computeSplit(booking.fare);
+    const driverLabel = (driver.full_name || ('#' + driver_id)).slice(0, 120);
+
+    // Update booking status — use a simpler UPDATE that avoids string-concat
+    // in SQL (which can fail if intake_reason column is missing on old DBs)
+    db.prepare(`
+      UPDATE bookings
+         SET status = 'offered',
+             offered_to_driver_id = ?,
+             offered_at = datetime('now'),
+             decided_at = NULL,
+             driver_pay = ?,
+             admin_fee  = ?,
+             needs_reassignment = 0,
+             updated_at = datetime('now')
+       WHERE id = ?
+    `).run(driver_id, driver_pay, admin_fee, req.params.id);
+
+    // Append to intake_reason separately — non-fatal if it fails
+    try {
+      db.prepare(`
+        UPDATE bookings
+           SET intake_reason = COALESCE(intake_reason, '') || ?
+         WHERE id = ?
+      `).run(' [Offered to ' + driverLabel + ' at ' + new Date().toISOString() + ']', req.params.id);
+    } catch (_) { /* intake_reason column may not exist on legacy DBs */ }
+
+    const row = bookingRow(req.params.id);
+
+    // Broadcast SSE (non-fatal)
+    try { events.broadcast('job:offered', publicSummary(row), { driverId: driver_id }); } catch (_) {}
+
+    // Driver notification — skip gracefully if driver has no contact details
+    // (push tokens, email, WhatsApp are all optional at offer time)
+    if (driver.email) {
+      try {
+        email.sendDriverJobOffer && email.sendDriverJobOffer({
+          driver_name: driver.full_name, driver_email: driver.email,
+          ref: booking.ref, pickup: booking.pickup, destination: booking.destination,
+          date: booking.date, time: booking.time, fare: booking.fare,
+          driver_pay, passengers: booking.passengers
+        });
+      } catch (notifyErr) {
+        console.warn('[OFFER] driver email notification skipped:', notifyErr.message);
+      }
+    }
+
+    res.json({ ok: true, booking: publicSummary(row) });
+  } catch (e) {
+    console.error('[OFFER] /bookings/:id/offer error:', e.message, e.stack);
+    res.status(500).json({ error: 'Failed to create offer: ' + e.message });
   }
-
-  const { driver_pay, admin_fee } = computeSplit(booking.fare);
-
-  db.prepare(`
-    UPDATE bookings
-       SET status = 'offered',
-           offered_to_driver_id = ?,
-           offered_at = datetime('now'),
-           decided_at = NULL,
-           driver_pay = ?,
-           admin_fee  = ?,
-           needs_reassignment = 0,
-           intake_reason = COALESCE(intake_reason, '') || ' [Offered to ' || ? || ' at ' || datetime('now') || ']',
-           updated_at = datetime('now')
-     WHERE id = ?
-  `).run(driver_id, driver_pay, admin_fee, driver.full_name || ('#' + driver_id), req.params.id);
-
-  const row = bookingRow(req.params.id);
-  events.broadcast('job:offered', publicSummary(row), { driverId: driver_id });
-  res.json({ ok: true, booking: publicSummary(row) });
 });
 
 // ── Admin: retract a pending offer ───────────────────────────────────────
