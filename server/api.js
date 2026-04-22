@@ -611,6 +611,7 @@ router.get('/drivers', (req, res) => {
     SELECT id, username, full_name, email, phone, role, active, has_login,
            license_no, license_expiry, dbs_no, dbs_expiry, vehicle, reg,
            phv_no, insurance_no, driver_notes, photo, is_default_driver,
+           max_passengers, max_bags, luggage_notes,
            created_at
     FROM users WHERE role IN ('driver','owner') ORDER BY created_at DESC
   `).all().map(sanitizeDriver);
@@ -628,6 +629,7 @@ router.get('/drivers/:id', (req, res) => {
     SELECT id, username, full_name, email, phone, role, active, has_login,
            license_no, license_expiry, dbs_no, dbs_expiry, vehicle, reg,
            phv_no, insurance_no, driver_notes, photo, is_default_driver,
+           max_passengers, max_bags, luggage_notes,
            created_at
     FROM users WHERE id = ? AND role IN ('driver','owner')
   `).get(id);
@@ -645,7 +647,8 @@ router.post('/drivers', (req, res) => {
   const {
     username, password, full_name, email, phone, role, active,
     license_no, license_expiry, dbs_no, dbs_expiry,
-    vehicle, reg, phv_no, insurance_no, driver_notes, photo
+    vehicle, reg, phv_no, insurance_no, driver_notes, photo,
+    max_passengers, max_bags, luggage_notes
   } = req.body;
 
   if (!full_name || !String(full_name).trim()) {
@@ -676,8 +679,9 @@ router.post('/drivers', (req, res) => {
     INSERT INTO users
       (username, password, role, full_name, email, phone, active, has_login,
        license_no, license_expiry, dbs_no, dbs_expiry,
-       vehicle, reg, phv_no, insurance_no, driver_notes, photo)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+       vehicle, reg, phv_no, insurance_no, driver_notes, photo,
+       max_passengers, max_bags, luggage_notes)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(
     finalUsername, finalHash, role || 'driver', full_name.trim(),
     email || null, phone || null,
@@ -686,7 +690,10 @@ router.post('/drivers', (req, res) => {
     dbs_no || null, dbs_expiry || null,
     vehicle || null, reg || null,
     phv_no || null, insurance_no || null, driver_notes || null,
-    photo || null
+    photo || null,
+    max_passengers == null || max_passengers === '' ? null : parseInt(max_passengers, 10),
+    max_bags == null || max_bags === '' ? null : parseInt(max_bags, 10),
+    luggage_notes || null
   );
 
   db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
@@ -713,7 +720,8 @@ router.patch('/drivers/:id', (req, res) => {
   const plainFields = [
     'full_name', 'email', 'phone', 'active',
     'license_no', 'license_expiry', 'dbs_no', 'dbs_expiry',
-    'vehicle', 'reg', 'phv_no', 'insurance_no', 'driver_notes', 'photo'
+    'vehicle', 'reg', 'phv_no', 'insurance_no', 'driver_notes', 'photo',
+    'max_passengers', 'max_bags', 'luggage_notes'
   ];
   for (const f of plainFields) {
     if (body[f] !== undefined) {
@@ -766,12 +774,12 @@ router.patch('/drivers/:id', (req, res) => {
 // if driver_pay / admin_fee are set on a booking those override.
 const COMMISSION_RATE = 0.10;
 router.get('/drivers/:id/earnings', (req, res) => {
-  if (!['admin', 'owner'].includes(req.auth.role)) {
-    return res.status(403).json({ error: 'Admin access required' });
-  }
   const db = getDb();
   const id = parseInt(req.params.id, 10);
   if (isNaN(id)) return res.status(400).json({ error: 'Invalid driver ID' });
+  // Admins/owners can view any driver; drivers can only view themselves.
+  const isStaff = ['admin', 'owner'].includes(req.auth.role);
+  if (!isStaff && req.auth.id !== id) return res.status(403).json({ error: 'Forbidden' });
 
   // Default range: current week (Mon–Sun) if nothing provided.
   let from = req.query.from, to = req.query.to;
@@ -827,6 +835,52 @@ router.get('/drivers/:id/earnings', (req, res) => {
       commission: +commission.toFixed(2),
       net: +net.toFixed(2)
     },
+    items
+  });
+});
+
+// Shortcut: earnings for the currently signed-in driver. Driver app uses this.
+router.get('/me/earnings', (req, res) => {
+  if (!['driver', 'owner', 'admin'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Driver access required' });
+  }
+  req.params.id = String(req.auth.id);
+  // Delegate by re-dispatching — simpler to inline the same logic:
+  const db = getDb();
+  let from = req.query.from, to = req.query.to;
+  if (!from || !to) {
+    const now = new Date();
+    const day = now.getDay(); const diffToMon = (day + 6) % 7;
+    const mon = new Date(now); mon.setDate(now.getDate() - diffToMon); mon.setHours(0,0,0,0);
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    from = mon.toISOString().slice(0, 10); to = sun.toISOString().slice(0, 10);
+  }
+  const driver = db.prepare("SELECT id, full_name, email FROM users WHERE id = ?").get(req.auth.id);
+  const bookings = db.prepare(`
+    SELECT id, ref, date, time, pickup, destination, fare, payment, status,
+           driver_pay, admin_fee
+      FROM bookings
+     WHERE driver_id = ? AND date >= ? AND date <= ?
+       AND status IN ('confirmed','active','completed','done')
+     ORDER BY date ASC, time ASC
+  `).all(req.auth.id, from, to);
+  let gross = 0, commission = 0, net = 0;
+  const items = bookings.map(b => {
+    const fare = +b.fare || 0;
+    const c = (b.admin_fee != null) ? (+b.admin_fee || 0) : +(fare * COMMISSION_RATE).toFixed(2);
+    const n = (b.driver_pay != null) ? (+b.driver_pay || 0) : +(fare - c).toFixed(2);
+    gross += fare; commission += c; net += n;
+    return {
+      id: b.id, ref: b.ref, date: b.date, time: b.time,
+      pickup: b.pickup, destination: b.destination,
+      fare, commission: c, net: n, payment: b.payment, status: b.status
+    };
+  });
+  res.json({
+    ok: true,
+    driver: driver ? { id: driver.id, name: driver.full_name } : null,
+    period: { from, to }, commission_rate: COMMISSION_RATE,
+    totals: { jobs: items.length, gross: +gross.toFixed(2), commission: +commission.toFixed(2), net: +net.toFixed(2) },
     items
   });
 });

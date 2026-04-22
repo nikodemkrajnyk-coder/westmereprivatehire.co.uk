@@ -398,44 +398,6 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
       <div id="offered-list"></div>
     </div>
 
-    <!-- TESLA -->
-    <div class="page-content" id="pg-tesla" style="display:none">
-      <div class="sec-title">Tesla <em>Model S</em></div>
-      <div class="sec-sub">Battery · Range · Jobs feasibility</div>
-      <div class="tesla-hero">
-        <div style="font-size:.5rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:rgba(248,245,239,.3);margin-bottom:.8rem;position:relative">XX21 WPH</div>
-        <div class="t-row">
-          <div><div class="t-stat-label">Battery</div><div class="t-big" id="tesla-pct">78<span class="t-unit">%</span></div></div>
-          <div><div class="t-stat-label">Range</div><div class="t-mid" id="tesla-range">218 <span class="t-unit">mi</span></div></div>
-          <div><div class="t-stat-label">Status</div><div id="tesla-status" style="font-size:.78rem;color:rgba(248,245,239,.65);margin-top:.25rem">Parked</div></div>
-        </div>
-        <div class="t-bar"><div class="t-fill" id="tesla-bar" style="width:78%"></div></div>
-        <div class="t-meta" id="tesla-last">Last charged today 06:15</div>
-      </div>
-      <div class="p-card">
-        <div class="p-ch">Today's Jobs — Range Check</div>
-        <div id="tesla-range-check"></div>
-      </div>
-      <div class="p-card">
-        <div class="p-ch">Nearest Superchargers</div>
-        <div id="tesla-chargers">
-          <div class="charger-item"><div class="ci-name">Gatwick Airport</div><div class="ci-meta">12 mi · ~15 min · 16 stalls</div><div class="ci-avail" style="color:var(--green)">Available · 0–80% in ~30 min</div></div>
-          <div class="charger-item"><div class="ci-name">Crawley</div><div class="ci-meta">14 mi · ~20 min · 12 stalls</div><div class="ci-avail" style="color:var(--green)">Available · 0–80% in ~28 min</div></div>
-          <div class="charger-item"><div class="ci-name">Brighton Marina</div><div class="ci-meta">18 mi · ~25 min · 8 stalls</div><div class="ci-avail" style="color:var(--amber)">Moderate · 0–80% in ~35 min</div></div>
-        </div>
-      </div>
-      <div class="p-card">
-        <div class="p-ch">Connection</div>
-        <div class="p-cb" style="padding-top:.9rem;padding-bottom:1rem">
-          <div style="font-size:.76rem;color:rgba(17,29,44,.5);font-weight:300;margin-bottom:.8rem;line-height:1.7">Demo data shown. Authenticate once with your Tesla account to read live battery, location, and range automatically.</div>
-          <div style="display:flex;gap:.6rem;flex-wrap:wrap">
-            <button onclick="refreshTesla()" style="font-family:var(--sans);font-size:.62rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;background:rgba(17,29,44,.06);color:rgba(17,29,44,.65);border:1px solid rgba(17,29,44,.1);padding:.65rem 1.2rem;cursor:pointer;min-height:42px;transition:all .2s">Refresh</button>
-            <button onclick="showToast('Tesla OAuth ready — connect when live')" style="font-family:var(--sans);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;background:transparent;color:rgba(17,29,44,.5);border:1px solid rgba(17,29,44,.1);padding:.65rem 1.2rem;cursor:pointer;min-height:42px;transition:all .2s">Connect Tesla Account</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- CALENDAR -->
     <div class="page-content" id="pg-calendar" style="display:none">
       <div class="sec-title"><em>Calendar</em></div>
@@ -454,23 +416,21 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
     <!-- EARNINGS -->
     <div class="page-content" id="pg-earnings" style="display:none">
       <div class="sec-title">Your <em>Earnings</em></div>
-      <div class="sec-sub">Weekly summary</div>
+      <div class="sec-sub">Net after 10% commission</div>
       <div class="earn-hero">
-        <span class="earn-label">This Week · 24–30 Mar</span>
-        <span class="earn-amount">£318.75</span>
-        <div class="earn-sub">Next payment Monday 31 March</div>
+        <span class="earn-label" id="earn-label">This week</span>
+        <span class="earn-amount" id="earn-net">£—</span>
+        <div class="earn-sub" id="earn-sub">Loading…</div>
         <div class="earn-grid">
-          <div class="eg-stat"><div class="eg-val">5</div><div class="eg-label">Jobs</div></div>
-          <div class="eg-stat"><div class="eg-val">£63.75</div><div class="eg-label">Avg / job</div></div>
-          <div class="eg-stat"><div class="eg-val">~182</div><div class="eg-label">Miles</div></div>
+          <div class="eg-stat"><div class="eg-val" id="earn-jobs">—</div><div class="eg-label">Jobs</div></div>
+          <div class="eg-stat"><div class="eg-val" id="earn-gross">£—</div><div class="eg-label">Gross</div></div>
+          <div class="eg-stat"><div class="eg-val" id="earn-comm">£—</div><div class="eg-label">Fee</div></div>
         </div>
       </div>
       <div class="p-card">
-        <div class="p-ch">Previous Weeks</div>
-        <div class="p-cb">
-          <div class="p-row"><span class="p-label">17–23 Mar</span><span class="p-val">£241.50 · 4 jobs</span></div>
-          <div class="p-row"><span class="p-label">10–16 Mar</span><span class="p-val">£185.00 · 3 jobs</span></div>
-          <div class="p-row"><span class="p-label">03–09 Mar</span><span class="p-val">£297.25 · 5 jobs</span></div>
+        <div class="p-ch">This Week's Jobs</div>
+        <div class="p-cb" id="earn-items" style="padding:.6rem .9rem;max-height:60vh;overflow-y:auto">
+          <div style="padding:.6rem 0;color:rgba(17,29,44,.5);font-size:.82rem">Loading…</div>
         </div>
       </div>
     </div>
@@ -514,7 +474,6 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
   <div class="bottom-nav" id="bottom-nav">
     <button class="bn-item on" id="bn-today" onclick="goPage('today',this)"><div class="bn-bar"></div><div class="bn-label">Today</div></button>
     <button class="bn-item" id="bn-offered" onclick="goPage('offered',this)"><div class="bn-bar"></div><div class="bn-label">Offered</div><div class="bn-badge" id="offered-badge"></div></button>
-    <button class="bn-item" id="bn-tesla" onclick="goPage('tesla',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Tesla</div></button>
     <button class="bn-item" id="bn-calendar" onclick="goPage('calendar',this)"><div class="bn-bar"></div><div class="bn-label">Calendar</div></button>
     <button class="bn-item" id="bn-earnings" onclick="goPage('earnings',this)"><div class="bn-bar"></div><div class="bn-label">Earnings</div></button>
     <button class="bn-item" id="bn-profile" onclick="goPage('profile',this)"><div class="bn-bar"></div><div class="bn-label">Profile</div></button>
@@ -741,7 +700,7 @@ function checkConflict(offered){
 
 // ─── NAVIGATION ──────────────────────────────────────────────────────────────
 function goPage(id,btn){
-  ['today','offered','tesla','calendar','earnings','profile'].forEach(function(p){var el=document.getElementById('pg-'+p);if(el)el.style.display='none';});
+  ['today','offered','calendar','earnings','profile'].forEach(function(p){var el=document.getElementById('pg-'+p);if(el)el.style.display='none';});
   document.querySelectorAll('.bn-item').forEach(function(b){b.classList.remove('on');});
   var pg=document.getElementById('pg-'+id);if(pg)pg.style.display='block';
   if(btn)btn.classList.add('on');
@@ -749,7 +708,7 @@ function goPage(id,btn){
   if(id==='calendar'&&typeof loadDriverCalendar==='function')loadDriverCalendar();
   if(id==='today')buildToday();
   if(id==='offered')buildOffered();
-  if(id==='tesla'){updateTeslaUI();buildTeslaRangeCheck();}
+  if(id==='earnings')loadDriverEarnings();
   if(id==='profile')buildProfile();
 }
 
@@ -960,6 +919,41 @@ function showNameBoard(name,fare){
 function closeNameBoard(){document.getElementById('name-board').classList.remove('on');}
 
 // ─── PROFILE ─────────────────────────────────────────────────────────────────
+async function loadDriverEarnings(){
+  try{
+    var r=await fetch('/api/me/earnings',{credentials:'include'});
+    var d=await r.json();
+    if(!r.ok||!d.ok){
+      document.getElementById('earn-sub').textContent=d.error||'Could not load earnings';
+      return;
+    }
+    var t=d.totals||{};var p=d.period||{};
+    document.getElementById('earn-label').textContent='This week · '+p.from+' → '+p.to;
+    document.getElementById('earn-net').textContent='£'+(t.net||0).toFixed(2);
+    document.getElementById('earn-sub').textContent='After 10% commission';
+    document.getElementById('earn-jobs').textContent=t.jobs||0;
+    document.getElementById('earn-gross').textContent='£'+(t.gross||0).toFixed(2);
+    document.getElementById('earn-comm').textContent='£'+(t.commission||0).toFixed(2);
+    var list=document.getElementById('earn-items');
+    if(!d.items||!d.items.length){
+      list.innerHTML='<div style="padding:.8rem 0;color:rgba(17,29,44,.45);font-size:.82rem;text-align:center">No jobs this week.</div>';
+      return;
+    }
+    list.innerHTML=d.items.map(function(it){
+      return '<div style="padding:.6rem 0;border-bottom:1px solid rgba(17,29,44,.06)">'
+        +'<div style="display:flex;justify-content:space-between;align-items:baseline;gap:.5rem">'
+          +'<div style="font-size:.78rem;color:var(--navy);font-weight:500">'+esc(it.date)+' · '+esc(it.time||'')+'</div>'
+          +'<div style="font-size:.9rem;font-weight:500;color:var(--gold);font-family:Menlo,Consolas,monospace">£'+it.net.toFixed(2)+'</div>'
+        +'</div>'
+        +'<div style="font-size:.72rem;color:rgba(17,29,44,.55);margin-top:.15rem">'+esc(it.pickup)+' → '+esc(it.destination)+'</div>'
+        +'<div style="font-size:.64rem;color:rgba(17,29,44,.4);margin-top:.15rem">'+esc(it.ref)+' · gross £'+it.fare.toFixed(2)+' − fee £'+it.commission.toFixed(2)+'</div>'
+      +'</div>';
+    }).join('');
+  } catch(e){
+    document.getElementById('earn-sub').textContent='Network error';
+  }
+}
+
 function buildProfile(){
   var el=document.getElementById('profile-body');if(!el)return;
   var rows=[['Name',DRIVER.name],['Mobile',DRIVER.mobile],['Email',DRIVER.email],
@@ -1069,7 +1063,6 @@ setInterval(function(){
 function initApp(){
   document.getElementById('tb-dname').textContent=DRIVER.name.split(' ')[0];
   document.getElementById('today-date').textContent=new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
-  applyTeslaVisibility();
   buildProfile();
   loadDriverJobs();
   startDriverLiveFeed();

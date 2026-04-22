@@ -251,7 +251,10 @@ function migrate() {
       ['driver_notes',      'TEXT'],
       ['has_login',         'INTEGER NOT NULL DEFAULT 0'],
       ['photo',             'TEXT'],
-      ['is_default_driver', 'INTEGER NOT NULL DEFAULT 0']
+      ['is_default_driver', 'INTEGER NOT NULL DEFAULT 0'],
+      ['max_passengers',    'INTEGER'],
+      ['max_bags',          'INTEGER'],
+      ['luggage_notes',     'TEXT']
     ];
     for (const [name, type] of driverCols) {
       if (!info.find(c => c.name === name)) {
@@ -457,8 +460,8 @@ function seedDefaults() {
       const placeholderUser = '__nolgn_' + Date.now().toString(36) + '_' + crypto.randomBytes(3).toString('hex');
       const placeholderPass = bcrypt.hashSync(crypto.randomBytes(32).toString('hex'), 10);
       db.prepare(`
-        INSERT INTO users (username, password, role, full_name, email, phone, active, has_login, vehicle, is_default_driver)
-        VALUES (?, ?, 'owner', 'Nikodem Krajnyk', 'bookings@westmereprivatehire.co.uk', '07930 342593', 1, 0, 'Tesla Model S', 1)
+        INSERT INTO users (username, password, role, full_name, email, phone, active, has_login, vehicle, is_default_driver, max_passengers, max_bags)
+        VALUES (?, ?, 'owner', 'Nikodem Krajnyk', 'bookings@westmereprivatehire.co.uk', '07930 342593', 1, 0, 'Tesla Model S', 1, 4, 4)
       `).run(placeholderUser, placeholderPass);
       console.log('[DB] Seeded default driver Nikodem Krajnyk');
     } else if (!existingDefault && nikodem) {

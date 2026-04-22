@@ -251,8 +251,19 @@ async function sendAdminAlert(booking) {
   rows += detailRow('Phone', '<a href="tel:' + escAttr(phone) + '" style="color:' + INK + ';text-decoration:none;font-family:Georgia,serif;font-size:13px">' + escHtml(phone) + '</a>');
   if (email) rows += detailRow('Email', '<a href="mailto:' + escAttr(email) + '" style="color:' + INK_SOFT + ';text-decoration:none;font-family:Georgia,serif;font-size:12px">' + escHtml(email) + '</a>');
   rows += rowDivider();
-  rows += detailRow('Pickup', escHtml(pickup));
-  rows += detailRow('Drop-off', escHtml(destination));
+  // Pickup + destination each with Google Maps + Waze navigation links so the
+  // owner can tap straight into their preferred nav app from the email.
+  const puQ = encodeURIComponent(pickup || '');
+  const deQ = encodeURIComponent(destination || '');
+  const routeGoogle = 'https://www.google.com/maps/dir/?api=1&origin=' + puQ + '&destination=' + deQ + '&travelmode=driving';
+  const routeWaze   = 'https://www.waze.com/ul?ll=&navigate=yes&q=' + deQ;
+  const puGoogle    = 'https://www.google.com/maps/search/?api=1&query=' + puQ;
+  const puWaze      = 'https://www.waze.com/ul?q=' + puQ + '&navigate=yes';
+  const navLinks = (gUrl, wUrl) =>
+    ' <a href="' + gUrl + '" style="color:' + GOLD + ';font-family:Helvetica Neue,Arial,sans-serif;font-size:10px;letter-spacing:.5px;text-decoration:none;margin-left:8px">Maps</a>'
+  + ' <a href="' + wUrl + '" style="color:' + GOLD + ';font-family:Helvetica Neue,Arial,sans-serif;font-size:10px;letter-spacing:.5px;text-decoration:none;margin-left:6px">Waze</a>';
+  rows += detailRow('Pickup', escHtml(pickup) + navLinks(puGoogle, puWaze));
+  rows += detailRow('Drop-off', escHtml(destination) + navLinks(routeGoogle, routeWaze));
   rows += rowDivider();
   rows += detailRow('Date', dateStr);
   if (flight) rows += detailRow('Flight', escHtml(flight));

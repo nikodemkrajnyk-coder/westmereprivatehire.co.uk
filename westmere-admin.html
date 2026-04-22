@@ -987,16 +987,12 @@ if ('serviceWorker' in navigator) {
       <div class="fg" style="position:relative"><label class="fl">Pickup Address</label><input class="fi" type="text" id="nb-pu" placeholder="Full address or postcode" oninput="addrSearch(this,'nb-sug-pu');nbCheck()" autocomplete="off"><div class="sug-drop" id="nb-sug-pu"></div></div>
       <div class="fg" style="position:relative"><label class="fl">Destination</label><input class="fi" type="text" id="nb-de" placeholder="Airport, address or town" oninput="addrSearch(this,'nb-sug-de');nbCheck()" autocomplete="off"><div class="sug-drop" id="nb-sug-de"></div></div>
       <div class="r2">
-        <div class="fg"><label class="fl">Journey Type</label>
-          <select class="fi" id="nb-jt" onchange="nbCheck()">
-            <option value="">Select…</option>
-            <option value="ad">✈ Airport Drop-off</option>
-            <option value="ap">✈ Airport Pickup</option>
-            <option value="ge">🚗 General</option>
-          </select></div>
         <div class="fg"><label class="fl">Passengers</label>
-          <select class="fi" id="nb-pax"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+          <select class="fi" id="nb-pax" onchange="nbCapacityCheck()"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></div>
+        <div class="fg"><label class="fl">Luggage</label>
+          <select class="fi" id="nb-bags" onchange="nbCapacityCheck()"><option value="0">No luggage</option><option value="small">1–2 small bags</option><option value="medium" selected>3–4 medium bags</option><option value="large">5+ large bags</option></select></div>
       </div>
+      <div id="nb-capacity-warn" style="display:none;padding:.6rem .8rem;margin-bottom:.6rem;background:rgba(156,40,40,.08);border:1px solid rgba(156,40,40,.25);color:#9C2828;font-size:.78rem;border-radius:4px"></div>
       <div class="r2">
         <div class="fg"><label class="fl">Passenger Name</label><input class="fi" type="text" id="nb-name" placeholder="Full name"></div>
         <div class="fg"><label class="fl">Mobile</label><input class="fi" type="tel" id="nb-phone" placeholder="+44 7700..."></div>
@@ -1103,6 +1099,11 @@ if ('serviceWorker' in navigator) {
         <div class="fg"><label class="fl">Vehicle</label><input class="fi" type="text" id="dm-vehicle" placeholder="e.g. Tesla Model S - White"></div>
         <div class="fg"><label class="fl">Registration</label><input class="fi" type="text" id="dm-reg" placeholder="e.g. AB21 XYZ"></div>
       </div>
+      <div class="r2">
+        <div class="fg"><label class="fl">Max passengers</label><input class="fi" type="number" id="dm-max-pax" min="1" max="16" placeholder="e.g. 4"></div>
+        <div class="fg"><label class="fl">Max luggage (bags)</label><input class="fi" type="number" id="dm-max-bags" min="0" max="20" placeholder="e.g. 4"></div>
+      </div>
+      <div class="fg"><label class="fl">Luggage notes</label><input class="fi" type="text" id="dm-luggage-notes" placeholder="e.g. 3 large + 2 carry-on, roof box available"></div>
 
       <div class="fg" style="margin-top:.6rem"><label class="fl">Notes</label><textarea class="fi" id="dm-notes" placeholder="Any additional notes..." style="min-height:60px"></textarea></div>
 
@@ -1893,7 +1894,7 @@ function openAddDriver(){
   document.getElementById('dm-revoke-btn').style.display='none';
   document.getElementById('dm-default-btn').style.display='none';
   document.getElementById('dm-earnings').style.display='none';
-  ['dm-id','dm-photo','dm-fname','dm-lname','dm-phone','dm-email','dm-license-no','dm-license-expiry','dm-dbs-no','dm-dbs-expiry','dm-phv','dm-insurance','dm-vehicle','dm-reg','dm-notes','dm-username','dm-password']
+  ['dm-id','dm-photo','dm-fname','dm-lname','dm-phone','dm-email','dm-license-no','dm-license-expiry','dm-dbs-no','dm-dbs-expiry','dm-phv','dm-insurance','dm-vehicle','dm-reg','dm-max-pax','dm-max-bags','dm-luggage-notes','dm-notes','dm-username','dm-password']
     .forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   dmPhotoRenderPreview('');
   document.getElementById('dm-has-login').checked=false;
@@ -1925,6 +1926,9 @@ function openEditDriver(id){
     document.getElementById('dm-insurance').value=dmEsc(dr.insurance_no);
     document.getElementById('dm-vehicle').value=dmEsc(dr.vehicle);
     document.getElementById('dm-reg').value=dmEsc(dr.reg);
+    document.getElementById('dm-max-pax').value=dr.max_passengers==null?'':dr.max_passengers;
+    document.getElementById('dm-max-bags').value=dr.max_bags==null?'':dr.max_bags;
+    document.getElementById('dm-luggage-notes').value=dmEsc(dr.luggage_notes);
     document.getElementById('dm-notes').value=dmEsc(dr.driver_notes);
     document.getElementById('dm-has-login').checked=!!dr.has_login;
     document.getElementById('dm-username').value=dr.has_login?dmEsc(dr.username):'';
@@ -2072,7 +2076,10 @@ async function saveDriver(){
     vehicle:(document.getElementById('dm-vehicle').value||'').trim()||null,
     reg:(document.getElementById('dm-reg').value||'').trim()||null,
     driver_notes:(document.getElementById('dm-notes').value||'').trim()||null,
-    photo:(document.getElementById('dm-photo').value||'')||null
+    photo:(document.getElementById('dm-photo').value||'')||null,
+    max_passengers:(document.getElementById('dm-max-pax').value||'').trim()||null,
+    max_bags:(document.getElementById('dm-max-bags').value||'').trim()||null,
+    luggage_notes:(document.getElementById('dm-luggage-notes').value||'').trim()||null
   };
 
   if(document.getElementById('dm-has-login').checked){
@@ -2126,8 +2133,11 @@ function reloadDrivers(){
         mobile:x.phone||'',email:x.email||'',
         vehicle:x.vehicle||'',reg:x.reg||'',phv:x.phv_no||'',
         photo:x.photo||'',is_default:!!x.is_default_driver,
+        max_passengers:x.max_passengers||0,max_bags:x.max_bags||0,
+        luggage_notes:x.luggage_notes||'',
         has_login:!!x.has_login,status:x.active?'active':'inactive',jobs:0};
     });
+    window.DRIVERS=DRIVERS;
     buildDrivers();
   }).catch(function(){});
 }
@@ -2530,7 +2540,7 @@ function openInvoicePreview(data){
     +'.wrap{max-width:800px;margin:0 auto;background:#fff;position:relative;overflow:hidden;box-shadow:0 2px 20px rgba(0,0,0,.08)}'
     +'.wrap::before{content:"";position:absolute;top:0;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,#B8985A 18%,#B8985A 82%,transparent 100%);z-index:2}'
     +'.wrap::after{content:"";position:absolute;bottom:0;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,#B8985A 18%,#B8985A 82%,transparent 100%);z-index:2}'
-    +'.watermark{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-28deg);font-family:Georgia,"Times New Roman",serif;font-size:180px;font-weight:400;letter-spacing:28px;color:rgba(17,29,44,.035);white-space:nowrap;z-index:0;pointer-events:none;user-select:none}'
+    +'/* watermark removed */'
     +'.corner-mark{position:absolute;top:28px;right:32px;font-family:Helvetica Neue,Arial,sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:rgba(17,29,44,.28);z-index:1}'
     +'.toolbar{background:#111D2C;padding:12px 24px;display:flex;gap:12px;align-items:center;position:relative;z-index:3}'
     +'.toolbar button{font-family:Helvetica Neue,Arial,sans-serif;font-size:12px;padding:8px 18px;border:none;cursor:pointer;letter-spacing:.5px}'
@@ -2549,7 +2559,7 @@ function openInvoicePreview(data){
     +'</style></head><body>'
     +'<div class="wrap">'
     +'<div class="toolbar no-print"><button class="btn-dl" onclick="window.print()">Print / Save as PDF</button><button class="btn-cl" onclick="window.close()">Close</button></div>'
-    +'<div class="watermark">WESTMERE</div>'
+    +''
     +'<div class="corner-mark">Est. Sussex</div>'
     +'<div class="page">'
     +'<div class="brand-head">'
@@ -2843,10 +2853,34 @@ function _renderSuggestions(inp,s,apItems,stItems,items){
 document.addEventListener('click',function(e){document.querySelectorAll('.sug-drop').forEach(function(s){if(!s.contains(e.target))s.classList.remove('open');});});
 ['nb-pu','nb-de'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('focus',function(){this.select();});});
 
+// Capacity guard: whenever the admin changes passenger count or luggage size
+// on a New Booking, compare it against the default driver's stored
+// max_passengers / max_bags. Show a red warning if it won't fit so the
+// admin can reassign or explain before confirming.
+function nbCapacityCheck(){
+  var warn=document.getElementById('nb-capacity-warn');if(!warn)return;
+  var pax=parseInt(document.getElementById('nb-pax').value,10)||0;
+  var bagSel=document.getElementById('nb-bags');var bagVal=bagSel?bagSel.value:'';
+  var bagsNeeded={'0':0,'small':2,'medium':4,'large':6}[bagVal]||0;
+  // Default driver cached in DRIVERS from reloadDrivers()
+  var def=(window.DRIVERS||[]).find(function(d){return d.is_default;});
+  if(!def){warn.style.display='none';return;}
+  var problems=[];
+  if(def.max_passengers&&pax>def.max_passengers){problems.push(pax+' passengers > '+def.max_passengers+' seats ('+def.vehicle+')');}
+  if(def.max_bags&&bagsNeeded>def.max_bags){problems.push(bagsNeeded+' bags > '+def.max_bags+' luggage space');}
+  if(problems.length){
+    warn.innerHTML='<strong>Capacity warning —</strong> '+esc(def.name)+' / '+esc(def.vehicle||'vehicle')+':<br>'+problems.map(esc).join('<br>')+(def.luggage_notes?'<br><span style="color:rgba(156,40,40,.75);font-size:.72rem">Note: '+esc(def.luggage_notes)+'</span>':'');
+    warn.style.display='';
+  } else {
+    warn.style.display='none';
+  }
+}
+
 let nbTimer=null;
 function nbCheck(){
   clearTimeout(nbTimer);
-  const jt=document.getElementById('nb-jt').value;
+  nbCapacityCheck();
+  const jt='';
   const pu=document.getElementById('nb-pu').value;
   const de=document.getElementById('nb-de').value;
   const dt=document.getElementById('nb-date').value;
