@@ -77,15 +77,26 @@ router.post('/book', async (req, res) => {
       if (existing) customerId = existing.id;
     }
 
+    // Auto-allocate to the default driver if one is flagged. Owner runs most
+    // jobs himself, so this saves a manual assignment step. Admin can still
+    // reassign via the intake route if needed.
+    let defaultDriverId = null;
+    try {
+      const row = db.prepare("SELECT id FROM users WHERE is_default_driver = 1 AND active = 1 LIMIT 1").get();
+      if (row) defaultDriverId = row.id;
+    } catch (_) {}
+
     // Insert booking
     const result = db.prepare(`
-      INSERT INTO bookings (ref, customer_id, pickup, destination, date, time, passengers, bags, trip_type, flight, fare, payment, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO bookings (ref, customer_id, driver_id, pickup, destination, date, time, passengers, bags, trip_type, flight, fare, payment, notes, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
-      ref, customerId, pickup, destination, bookingDate, time || 'ASAP',
+      ref, customerId, defaultDriverId,
+      pickup, destination, bookingDate, time || 'ASAP',
       passengers || 1, bags || '0', null,
       flight || null, fare || null, payment || 'cash',
-      notes || null
+      notes || null,
+      defaultDriverId ? 'confirmed' : 'pending'
     );
 
     // Audit log

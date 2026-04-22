@@ -362,6 +362,29 @@ router.post('/customers/:id/invoice', async (req, res) => {
       .run(req.auth.type || 'user', req.auth.id, 'invoice_sent', invoiceNo + ' to ' + customer.email, req.ip);
   }
 
+  // Persist the invoice record so it can be looked up later.
+  try {
+    const lineItems = bookings.map(b => ({
+      date: b.date, time: b.time, ref: b.ref,
+      pickup: b.pickup, destination: b.destination,
+      flight: b.flight, passengers: b.passengers, fare: b.fare
+    }));
+    db.prepare(`
+      INSERT INTO invoices
+        (invoice_no, kind, customer_id, recipient_name, recipient_email, recipient_phone,
+         period_from, period_to, period_label, issued_date, due_date,
+         line_items_json, booking_ids_json, total, emailed, created_by)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    `).run(
+      invoiceNo, 'account', customer.id, customer.full_name, customer.email, customer.phone,
+      dateFrom, dateTo, periodLabel, issuedDate, dueDate,
+      JSON.stringify(lineItems), JSON.stringify(bookings.map(b => b.ref)),
+      total, shouldEmail ? 1 : 0, req.auth.id
+    );
+  } catch (e) {
+    console.error('[INVOICE] persist failed:', e.message);
+  }
+
   res.json({
     ok: true, invoiceNo, journeys: bookings.length, total,
     customer: { id: customer.id, email: customer.email, full_name: customer.full_name, phone: customer.phone },
@@ -432,12 +455,65 @@ router.post('/invoices/bespoke', async (req, res) => {
       .run(req.auth.type || 'user', req.auth.id, 'invoice_sent', invoiceNo + ' to ' + cleanRecipient.email, req.ip);
   }
 
+  // Persist bespoke invoice so it can be reviewed later.
+  try {
+    db.prepare(`
+      INSERT INTO invoices
+        (invoice_no, kind, recipient_name, recipient_email, recipient_phone, recipient_addr,
+         issued_date, due_date, notes, line_items_json, total, emailed, created_by)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+    `).run(
+      invoiceNo, 'bespoke', cleanRecipient.name, cleanRecipient.email, cleanRecipient.phone, cleanRecipient.address,
+      issuedDate, dueDate, notes || null,
+      JSON.stringify(cleanItems), total, shouldEmail ? 1 : 0, req.auth.id
+    );
+  } catch (e) {
+    console.error('[INVOICE] persist bespoke failed:', e.message);
+  }
+
   res.json({
     ok: true, invoiceNo, total, bespoke: true,
     recipient: cleanRecipient, items: cleanItems,
     period: { label: '', dueDate, issuedDate, notes: notes || '' },
     settings, emailed: shouldEmail
   });
+});
+
+// List stored invoices (admin/owner). Supports optional ?customer_id, ?kind filters.
+router.get('/invoices', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const where = [];
+  const params = [];
+  if (req.query.customer_id) { where.push('customer_id = ?'); params.push(parseInt(req.query.customer_id, 10)); }
+  if (req.query.kind && ['account','bespoke'].includes(req.query.kind)) {
+    where.push('kind = ?'); params.push(req.query.kind);
+  }
+  const sql = `SELECT id, invoice_no, kind, customer_id, recipient_name, recipient_email,
+                      issued_date, due_date, period_label, total, emailed, created_at
+                 FROM invoices ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
+                 ORDER BY created_at DESC LIMIT 500`;
+  const rows = db.prepare(sql).all(...params);
+  res.json({ ok: true, invoices: rows });
+});
+
+// Fetch a single stored invoice with full line items.
+router.get('/invoices/:id', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid invoice ID' });
+  const row = db.prepare('SELECT * FROM invoices WHERE id = ?').get(id);
+  if (!row) return res.status(404).json({ error: 'Invoice not found' });
+  try { row.line_items = JSON.parse(row.line_items_json || '[]'); } catch (e) { row.line_items = []; }
+  try { row.booking_refs = JSON.parse(row.booking_ids_json || '[]'); } catch (e) { row.booking_refs = []; }
+  delete row.line_items_json;
+  delete row.booking_ids_json;
+  res.json({ ok: true, invoice: row });
 });
 
 // Invoice settings (business details + bank details for invoices)
@@ -489,7 +565,8 @@ router.get('/drivers', (req, res) => {
   const rows = db.prepare(`
     SELECT id, username, full_name, email, phone, role, active, has_login,
            license_no, license_expiry, dbs_no, dbs_expiry, vehicle, reg,
-           phv_no, insurance_no, driver_notes, created_at
+           phv_no, insurance_no, driver_notes, photo, is_default_driver,
+           created_at
     FROM users WHERE role IN ('driver','owner') ORDER BY created_at DESC
   `).all().map(sanitizeDriver);
   res.json({ ok: true, drivers: rows });
@@ -505,7 +582,8 @@ router.get('/drivers/:id', (req, res) => {
   const row = db.prepare(`
     SELECT id, username, full_name, email, phone, role, active, has_login,
            license_no, license_expiry, dbs_no, dbs_expiry, vehicle, reg,
-           phv_no, insurance_no, driver_notes, created_at
+           phv_no, insurance_no, driver_notes, photo, is_default_driver,
+           created_at
     FROM users WHERE id = ? AND role IN ('driver','owner')
   `).get(id);
   if (!row) return res.status(404).json({ error: 'Driver not found' });
@@ -522,7 +600,7 @@ router.post('/drivers', (req, res) => {
   const {
     username, password, full_name, email, phone, role, active,
     license_no, license_expiry, dbs_no, dbs_expiry,
-    vehicle, reg, phv_no, insurance_no, driver_notes
+    vehicle, reg, phv_no, insurance_no, driver_notes, photo
   } = req.body;
 
   if (!full_name || !String(full_name).trim()) {
@@ -553,8 +631,8 @@ router.post('/drivers', (req, res) => {
     INSERT INTO users
       (username, password, role, full_name, email, phone, active, has_login,
        license_no, license_expiry, dbs_no, dbs_expiry,
-       vehicle, reg, phv_no, insurance_no, driver_notes)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+       vehicle, reg, phv_no, insurance_no, driver_notes, photo)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(
     finalUsername, finalHash, role || 'driver', full_name.trim(),
     email || null, phone || null,
@@ -562,7 +640,8 @@ router.post('/drivers', (req, res) => {
     license_no || null, license_expiry || null,
     dbs_no || null, dbs_expiry || null,
     vehicle || null, reg || null,
-    phv_no || null, insurance_no || null, driver_notes || null
+    phv_no || null, insurance_no || null, driver_notes || null,
+    photo || null
   );
 
   db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
@@ -589,7 +668,7 @@ router.patch('/drivers/:id', (req, res) => {
   const plainFields = [
     'full_name', 'email', 'phone', 'active',
     'license_no', 'license_expiry', 'dbs_no', 'dbs_expiry',
-    'vehicle', 'reg', 'phv_no', 'insurance_no', 'driver_notes'
+    'vehicle', 'reg', 'phv_no', 'insurance_no', 'driver_notes', 'photo'
   ];
   for (const f of plainFields) {
     if (body[f] !== undefined) {
@@ -634,6 +713,26 @@ router.patch('/drivers/:id', (req, res) => {
   db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
     .run('user', req.auth.id, 'driver_updated', existing.full_name || existing.username, req.ip);
 
+  res.json({ ok: true });
+});
+
+// Mark a driver as the default (auto-allocation target for new bookings).
+// Only one driver can be default at a time, so this also clears any prior flag.
+router.post('/drivers/:id/default', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid driver ID' });
+  const existing = db.prepare("SELECT id, full_name FROM users WHERE id = ? AND role IN ('driver','owner') AND active = 1").get(id);
+  if (!existing) return res.status(404).json({ error: 'Driver not found or inactive' });
+  db.transaction(() => {
+    db.prepare("UPDATE users SET is_default_driver = 0 WHERE is_default_driver = 1").run();
+    db.prepare("UPDATE users SET is_default_driver = 1 WHERE id = ?").run(id);
+  })();
+  db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+    .run('user', req.auth.id, 'default_driver_set', existing.full_name, req.ip);
   res.json({ ok: true });
 });
 

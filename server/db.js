@@ -227,16 +227,18 @@ function migrate() {
   try {
     const info = db.prepare("PRAGMA table_info(users)").all();
     const driverCols = [
-      ['license_no',     'TEXT'],
-      ['license_expiry', 'TEXT'],
-      ['dbs_no',         'TEXT'],
-      ['dbs_expiry',     'TEXT'],
-      ['vehicle',        'TEXT'],
-      ['reg',            'TEXT'],
-      ['phv_no',         'TEXT'],
-      ['insurance_no',   'TEXT'],
-      ['driver_notes',   'TEXT'],
-      ['has_login',      'INTEGER NOT NULL DEFAULT 0']
+      ['license_no',        'TEXT'],
+      ['license_expiry',    'TEXT'],
+      ['dbs_no',            'TEXT'],
+      ['dbs_expiry',        'TEXT'],
+      ['vehicle',           'TEXT'],
+      ['reg',               'TEXT'],
+      ['phv_no',            'TEXT'],
+      ['insurance_no',      'TEXT'],
+      ['driver_notes',      'TEXT'],
+      ['has_login',         'INTEGER NOT NULL DEFAULT 0'],
+      ['photo',             'TEXT'],
+      ['is_default_driver', 'INTEGER NOT NULL DEFAULT 0']
     ];
     for (const [name, type] of driverCols) {
       if (!info.find(c => c.name === name)) {
@@ -273,6 +275,41 @@ function migrate() {
     }
   } catch (e) {
     console.error('[DB] driver-offer column migration failed:', e.message);
+  }
+
+  // Invoices table — persistent record of every invoice generated.
+  // Previously we only stored an audit_log entry; this table keeps the
+  // full recipient, line items, totals, and (for account customers) the
+  // booking ids covered, so invoices can be re-viewed later.
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS invoices (
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        invoice_no      TEXT    NOT NULL UNIQUE,
+        kind            TEXT    NOT NULL CHECK(kind IN ('account','bespoke')),
+        customer_id     INTEGER REFERENCES customers(id),
+        recipient_name  TEXT    NOT NULL,
+        recipient_email TEXT,
+        recipient_phone TEXT,
+        recipient_addr  TEXT,
+        period_from     TEXT,
+        period_to       TEXT,
+        period_label    TEXT,
+        issued_date     TEXT    NOT NULL,
+        due_date        TEXT,
+        notes           TEXT,
+        line_items_json TEXT    NOT NULL,
+        booking_ids_json TEXT,
+        total           REAL    NOT NULL DEFAULT 0,
+        emailed         INTEGER NOT NULL DEFAULT 0,
+        created_by      INTEGER REFERENCES users(id),
+        created_at      TEXT    NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_invoices_customer ON invoices(customer_id);
+      CREATE INDEX IF NOT EXISTS idx_invoices_issued ON invoices(issued_date);
+    `);
+  } catch (e) {
+    console.error('[DB] invoices table creation failed:', e.message);
   }
 
   // Key-value settings columns in integrations table
@@ -355,6 +392,29 @@ function seedDefaults() {
     `).run('westmere', hash, 'admin', 'Westmere Admin', 'admin@westmereprivatehire.co.uk');
 
     console.log('[DB] Default admin user created (westmere / sussex)');
+  }
+
+  // Seed default driver (Nikodem Krajnyk) — owner drives his own jobs
+  // by default, so every new booking gets allocated to him automatically.
+  // Admin can later add more drivers and reassign via the admin UI.
+  try {
+    const existingDefault = db.prepare("SELECT id FROM users WHERE is_default_driver = 1 LIMIT 1").get();
+    const nikodem = db.prepare("SELECT id FROM users WHERE full_name = ? AND role IN ('driver','owner') LIMIT 1").get('Nikodem Krajnyk');
+    if (!existingDefault && !nikodem) {
+      const crypto = require('crypto');
+      const placeholderUser = '__nolgn_' + Date.now().toString(36) + '_' + crypto.randomBytes(3).toString('hex');
+      const placeholderPass = bcrypt.hashSync(crypto.randomBytes(32).toString('hex'), 10);
+      db.prepare(`
+        INSERT INTO users (username, password, role, full_name, email, phone, active, has_login, vehicle, is_default_driver)
+        VALUES (?, ?, 'owner', 'Nikodem Krajnyk', 'bookings@westmereprivatehire.co.uk', '07930 342593', 1, 0, 'Tesla Model S', 1)
+      `).run(placeholderUser, placeholderPass);
+      console.log('[DB] Seeded default driver Nikodem Krajnyk');
+    } else if (!existingDefault && nikodem) {
+      db.prepare("UPDATE users SET is_default_driver = 1 WHERE id = ?").run(nikodem.id);
+      console.log('[DB] Marked existing Nikodem as default driver');
+    }
+  } catch (e) {
+    console.error('[DB] default driver seed failed:', e.message);
   }
 
   // Seed default invoice settings

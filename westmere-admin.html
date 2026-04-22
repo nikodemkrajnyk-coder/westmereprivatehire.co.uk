@@ -1046,6 +1046,20 @@ if ('serviceWorker' in navigator) {
     </div>
     <div class="modal-body">
       <input type="hidden" id="dm-id" value="">
+      <input type="hidden" id="dm-photo" value="">
+
+      <div style="font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:.2rem 0 .6rem">Photo</div>
+      <div style="display:flex;gap:1rem;align-items:center;margin-bottom:.9rem">
+        <div id="dm-photo-preview" style="width:72px;height:72px;border-radius:50%;background:rgba(17,29,44,.06);border:1px solid rgba(17,29,44,.12);display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:.68rem;color:rgba(17,29,44,.4);letter-spacing:.1em;text-transform:uppercase;flex-shrink:0">None</div>
+        <div style="flex:1">
+          <label class="btn btn-ghost btn-sm" style="display:inline-block;cursor:pointer;font-size:.68rem;padding:.4rem .9rem">
+            Upload Photo
+            <input type="file" accept="image/*" id="dm-photo-file" onchange="dmPhotoPick(this)" style="display:none">
+          </label>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="dmPhotoClear()" style="font-size:.68rem;padding:.4rem .9rem;margin-left:.4rem">Remove</button>
+          <div style="font-size:.66rem;color:rgba(17,29,44,.45);margin-top:.35rem">Square JPG/PNG, resized to 512px. Shown to riders during live tracking.</div>
+        </div>
+      </div>
 
       <div style="font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:.2rem 0 .6rem">Personal</div>
       <div class="r2">
@@ -1098,6 +1112,7 @@ if ('serviceWorker' in navigator) {
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-add-driver')">Cancel</button>
       <button class="btn btn-sm" id="dm-revoke-btn" onclick="revokeDriverLogin()" style="background:rgba(139,34,34,.08);color:#8B2222;border:1px solid rgba(139,34,34,.2);display:none">Revoke Login</button>
+      <button class="btn btn-sm" id="dm-default-btn" onclick="dmSetDefault()" style="background:rgba(184,152,90,.1);color:#B8985A;border:1px solid rgba(184,152,90,.3);display:none;font-size:.68rem">Set as default driver</button>
       <button class="btn btn-navy" id="dm-save-btn" onclick="saveDriver()">Save Driver</button>
     </div>
   </div>
@@ -1768,8 +1783,10 @@ function openAddDriver(){
   document.getElementById('dm-title').textContent='Add Driver';
   document.getElementById('dm-save-btn').textContent='Save Driver';
   document.getElementById('dm-revoke-btn').style.display='none';
-  ['dm-id','dm-fname','dm-lname','dm-phone','dm-email','dm-license-no','dm-license-expiry','dm-dbs-no','dm-dbs-expiry','dm-phv','dm-insurance','dm-vehicle','dm-reg','dm-notes','dm-username','dm-password']
+  document.getElementById('dm-default-btn').style.display='none';
+  ['dm-id','dm-photo','dm-fname','dm-lname','dm-phone','dm-email','dm-license-no','dm-license-expiry','dm-dbs-no','dm-dbs-expiry','dm-phv','dm-insurance','dm-vehicle','dm-reg','dm-notes','dm-username','dm-password']
     .forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  dmPhotoRenderPreview('');
   document.getElementById('dm-has-login').checked=false;
   toggleDriverLoginSection();
   document.getElementById('dm-err').style.display='none';
@@ -1804,10 +1821,68 @@ function openEditDriver(id){
     document.getElementById('dm-username').value=dr.has_login?dmEsc(dr.username):'';
     document.getElementById('dm-password').value='';
     document.getElementById('dm-revoke-btn').style.display=dr.has_login?'':'none';
+    document.getElementById('dm-photo').value=dr.photo||'';
+    dmPhotoRenderPreview(dr.photo||'');
+    var defBtn=document.getElementById('dm-default-btn');
+    if(dr.is_default_driver){
+      defBtn.textContent='★ Default driver';
+      defBtn.style.display='';
+      defBtn.disabled=true;
+      defBtn.style.opacity='.7';defBtn.style.cursor='default';
+    } else {
+      defBtn.textContent='Set as default driver';
+      defBtn.style.display='';
+      defBtn.disabled=false;
+      defBtn.style.opacity='';defBtn.style.cursor='';
+    }
     toggleDriverLoginSection();
     document.getElementById('dm-err').style.display='none';
     openModal('modal-add-driver');
   }).catch(function(){showToast('Error loading driver');});
+}
+
+function dmPhotoPick(input){
+  var f=input.files&&input.files[0];
+  if(!f)return;
+  if(f.size>5*1024*1024){dmShowErr('Photo too large (max 5MB).');return;}
+  var img=new Image();var reader=new FileReader();
+  reader.onload=function(e){img.src=e.target.result;};
+  img.onload=function(){
+    // Resize to 512px square using canvas; keeps DB blob small.
+    var size=512;
+    var canvas=document.createElement('canvas');canvas.width=size;canvas.height=size;
+    var ctx=canvas.getContext('2d');
+    // Crop to square by centering the shorter side.
+    var s=Math.min(img.width,img.height);
+    var sx=(img.width-s)/2, sy=(img.height-s)/2;
+    ctx.drawImage(img,sx,sy,s,s,0,0,size,size);
+    var data=canvas.toDataURL('image/jpeg',0.85);
+    document.getElementById('dm-photo').value=data;
+    dmPhotoRenderPreview(data);
+  };
+  reader.readAsDataURL(f);
+}
+function dmPhotoClear(){document.getElementById('dm-photo').value='';dmPhotoRenderPreview('');var f=document.getElementById('dm-photo-file');if(f)f.value='';}
+function dmPhotoRenderPreview(src){
+  var el=document.getElementById('dm-photo-preview');if(!el)return;
+  if(src){el.innerHTML='<img src="'+src+'" style="width:100%;height:100%;object-fit:cover">';}
+  else{el.textContent='None';}
+}
+
+async function dmSetDefault(){
+  if(!DRIVER_EDIT_ID)return;
+  var btn=document.getElementById('dm-default-btn');
+  if(btn.disabled)return;
+  btn.disabled=true;btn.textContent='Saving…';
+  try{
+    var r=await fetch('/api/drivers/'+DRIVER_EDIT_ID+'/default',{method:'POST',credentials:'include'});
+    var d=await r.json();
+    if(r.ok&&d.ok){
+      btn.textContent='★ Default driver';btn.style.opacity='.7';btn.style.cursor='default';
+      showToast('Default driver updated');
+      reloadDrivers();
+    } else { btn.disabled=false;btn.textContent='Set as default driver';dmShowErr(d.error||'Failed'); }
+  } catch(e){ btn.disabled=false;btn.textContent='Set as default driver';dmShowErr('Network error'); }
 }
 
 function toggleDriverLoginSection(){
@@ -1838,7 +1913,8 @@ async function saveDriver(){
     insurance_no:(document.getElementById('dm-insurance').value||'').trim()||null,
     vehicle:(document.getElementById('dm-vehicle').value||'').trim()||null,
     reg:(document.getElementById('dm-reg').value||'').trim()||null,
-    driver_notes:(document.getElementById('dm-notes').value||'').trim()||null
+    driver_notes:(document.getElementById('dm-notes').value||'').trim()||null,
+    photo:(document.getElementById('dm-photo').value||'')||null
   };
 
   if(document.getElementById('dm-has-login').checked){
@@ -1891,6 +1967,7 @@ function reloadDrivers(){
         name:x.full_name||x.username||'Driver',role:x.role||'driver',
         mobile:x.phone||'',email:x.email||'',
         vehicle:x.vehicle||'',reg:x.reg||'',phv:x.phv_no||'',
+        photo:x.photo||'',is_default:!!x.is_default_driver,
         has_login:!!x.has_login,status:x.active?'active':'inactive',jobs:0};
     });
     buildDrivers();
@@ -1911,10 +1988,16 @@ function buildDrivers(){
     var loginBadge=d.has_login
       ? '<span style="font-size:.6rem;color:var(--green);background:var(--green-bg);padding:.15rem .4rem;border-radius:3px;letter-spacing:.08em;text-transform:uppercase">App access</span>'
       : '<span style="font-size:.6rem;color:rgba(17,29,44,.5);background:rgba(17,29,44,.06);padding:.15rem .4rem;border-radius:3px;letter-spacing:.08em;text-transform:uppercase">No login</span>';
-    return '<div class="driver-card '+d.status+'" onclick="openEditDriver('+d.id+')" title="Click to edit">'
-      +'<div class="dc-avatar">'+d.initials+'</div>'
+    var defaultBadge=d.is_default
+      ? '<span style="font-size:.6rem;color:#B8985A;background:rgba(184,152,90,.12);padding:.15rem .4rem;border-radius:3px;letter-spacing:.08em;text-transform:uppercase;margin-left:.3rem">★ Default</span>'
+      : '';
+    var avatarInner=d.photo
+      ? '<img src="'+d.photo+'" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" alt="">'
+      : d.initials;
+    return '<div class="driver-card '+d.status+'">'
+      +'<div class="dc-avatar" style="overflow:hidden">'+avatarInner+'</div>'
       +'<div class="dc-name">'+escTo(d.name)+'</div>'
-      +'<div class="dc-role">'+escTo(d.role)+' '+loginBadge+'</div>'
+      +'<div class="dc-role">'+escTo(d.role)+' '+loginBadge+defaultBadge+'</div>'
       +'<div class="dc-meta">'
         +vehicleLine+(regLine?'<br>'+escTo(regLine):'')
         +(phvLine?'<br>'+escTo(phvLine):'')
@@ -1923,6 +2006,7 @@ function buildDrivers(){
       +'<div class="dc-status '+(d.status==='active'?'on':'off')+'">'
         +'<div class="dc-dot"></div>'+(d.status==='active'?'Active':'Inactive')
       +'</div>'
+      +'<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEditDriver('+d.id+')" style="margin-top:.7rem;width:100%;font-size:.66rem;padding:.45rem .8rem">Edit</button>'
       +'</div>';
   }).join('');
 }
