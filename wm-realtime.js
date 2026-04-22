@@ -156,6 +156,12 @@
         chime(); toast('Offer expired \u2014 ' + (payload.ref||''), 'warn');
         desktopNotify(title, msg);
         break;
+      case 'booking:updated':
+        // Status changed (active, completed, etc.) — silent refresh
+        break;
+      case 'booking:deleted':
+        // Booking removed — silent refresh
+        break;
       case 'job:started':
       case 'job:done':
       case 'job:cancelled':
@@ -181,7 +187,7 @@
     try { es = new EventSource('/api/events', { withCredentials: true }); }
     catch(e){ scheduleReconnect(); return; }
 
-    var EVENTS = ['hello','booking:created','booking:confirmed','booking:flagged','booking:assigned','booking:declined',
+    var EVENTS = ['hello','booking:created','booking:confirmed','booking:updated','booking:deleted','booking:flagged','booking:assigned','booking:declined',
       'job:offered','job:accepted','job:declined','job:offer_expired','job:started','job:done','job:cancelled'];
     EVENTS.forEach(function(name){
       es.addEventListener(name, function(e){

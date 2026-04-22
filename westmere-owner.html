@@ -2643,6 +2643,12 @@ var CURRENT_USER = null;
 window.addEventListener('wm:event', function(){
   if(typeof loadOwnerBookings==='function')loadOwnerBookings();
 });
+
+// Polling fallback — catches updates if SSE drops or a status change
+// was made from another device. Runs every 30s, silently, in background.
+setInterval(function(){
+  if(typeof loadOwnerBookings==='function')loadOwnerBookings();
+}, 30000);
 </script>
 
 <script src="/config.js"></script>

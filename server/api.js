@@ -195,6 +195,14 @@ router.patch('/bookings/:id', (req, res) => {
   db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
     .run(req.auth.type, req.auth.id, 'booking_updated', booking.ref, req.ip);
 
+  // Broadcast all status changes so connected staff apps refresh immediately.
+  if (req.body.status && req.body.status !== booking.status) {
+    events.broadcast('booking:updated', {
+      id: parseInt(req.params.id, 10), ref: booking.ref,
+      status: req.body.status, prev_status: booking.status
+    });
+  }
+
   // Sync to Google Calendar in background
   const updated = db.prepare(`
     SELECT b.*,
