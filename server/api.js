@@ -159,7 +159,7 @@ router.patch('/bookings/:id', (req, res) => {
 
   if (updates.length === 0) return res.status(400).json({ error: 'No valid fields to update' });
 
-  updates.push('updated_at = datetime("now")');
+  updates.push("updated_at = datetime('now')");
   values.push(req.params.id);
 
   db.prepare(`UPDATE bookings SET ${updates.join(', ')} WHERE id = ?`).run(...values);
@@ -724,7 +724,7 @@ router.patch('/drivers/:id', (req, res) => {
 
   if (!updates.length) return res.status(400).json({ error: 'No fields to update' });
 
-  updates.push('updated_at = datetime("now")');
+  updates.push("updated_at = datetime('now')");
   values.push(id);
 
   db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...values);
