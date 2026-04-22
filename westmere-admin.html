@@ -1253,6 +1253,74 @@ if ('serviceWorker' in navigator) {
 
 <div class="toast" id="toast"><span class="ti">&check;</span><span id="toast-msg"></span></div>
 
+<!-- ═══ AI ASSISTANT FAB + PANEL ═══ -->
+<style>
+.aa-fab{position:fixed;bottom:1.4rem;right:1.4rem;z-index:190;width:54px;height:54px;border-radius:50%;background:var(--navy);color:var(--gold);border:none;font-family:Georgia,serif;font-size:1.3rem;letter-spacing:.1em;cursor:pointer;box-shadow:0 8px 24px rgba(17,29,44,.3);display:flex;align-items:center;justify-content:center;font-weight:500;transition:transform .2s}
+.aa-fab:hover{transform:translateY(-2px)}
+.aa-panel{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:100vw;background:#fff;border-left:1px solid rgba(17,29,44,.08);box-shadow:-8px 0 30px rgba(0,0,0,.14);transform:translateX(110%);transition:transform .3s cubic-bezier(.4,0,.2,1);z-index:195;display:flex;flex-direction:column}
+.aa-panel.on{transform:translateX(0)}
+.aa-hd{padding:1.05rem 1.2rem;border-bottom:1px solid rgba(17,29,44,.08);display:flex;align-items:center;gap:.6rem;justify-content:space-between}
+.aa-hd-t{font-family:Georgia,serif;font-size:1.05rem;color:var(--navy)}
+.aa-hd-s{font-size:.56rem;letter-spacing:.26em;text-transform:uppercase;color:var(--gold);margin-top:.15rem}
+.aa-close{background:transparent;border:none;color:rgba(17,29,44,.4);cursor:pointer;font-size:1.4rem;line-height:1}
+.aa-clear{background:transparent;border:none;font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(17,29,44,.5);cursor:pointer;padding:.2rem .4rem}
+.aa-clear:hover{color:var(--navy)}
+.aa-feed{flex:1;overflow-y:auto;padding:1rem 1.2rem;display:flex;flex-direction:column;gap:.7rem;background:#fafaf7}
+.aa-msg{max-width:88%;padding:.65rem .85rem;font-size:.85rem;line-height:1.45;border-radius:10px;word-wrap:break-word;white-space:pre-wrap}
+.aa-msg.user{align-self:flex-end;background:var(--navy);color:#fff;border-bottom-right-radius:3px}
+.aa-msg.bot{align-self:flex-start;background:#fff;color:var(--navy);border:1px solid rgba(17,29,44,.08);border-bottom-left-radius:3px}
+.aa-msg.bot.thinking{color:rgba(17,29,44,.5);font-style:italic}
+.aa-in{padding:.85rem 1rem;border-top:1px solid rgba(17,29,44,.08);display:flex;gap:.5rem;background:#fff}
+.aa-in textarea{flex:1;resize:none;font-family:inherit;font-size:.85rem;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);border-radius:6px;outline:none;background:#fafafa;color:var(--navy);min-height:42px;max-height:110px;line-height:1.4}
+.aa-in textarea:focus{border-color:var(--gold);background:#fff}
+.aa-send{background:var(--gold);color:var(--navy);border:none;padding:0 1rem;font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;font-weight:600;cursor:pointer;border-radius:4px}
+.aa-send:disabled{opacity:.5;cursor:not-allowed}
+.aa-hint{font-size:.66rem;color:rgba(17,29,44,.45);padding:.5rem 1.2rem .7rem;background:#fafaf7;border-top:1px solid rgba(17,29,44,.06)}
+</style>
+<button class="aa-fab" onclick="aaToggle()" title="AI Assistant">W</button>
+<div class="aa-panel" id="aa-panel">
+  <div class="aa-hd">
+    <div>
+      <div class="aa-hd-t">Westmere Assistant</div>
+      <div class="aa-hd-s">AI · Admin</div>
+    </div>
+    <div style="display:flex;gap:.4rem;align-items:center">
+      <button class="aa-clear" onclick="aaClear()">Clear</button>
+      <button class="aa-close" onclick="aaToggle()">&times;</button>
+    </div>
+  </div>
+  <div class="aa-feed" id="aa-feed"></div>
+  <div class="aa-hint">Ask about drivers, earnings, bookings, or dictate a quick invoice line.</div>
+  <div class="aa-in">
+    <textarea id="aa-input" placeholder="Ask anything…" onkeydown="aaKey(event)"></textarea>
+    <button class="aa-send" id="aa-send" onclick="aaSend()">Send</button>
+  </div>
+</div>
+<script>
+var AA_HIST=[];var AA_BUSY=false;
+function aaToggle(){var p=document.getElementById('aa-panel');p.classList.toggle('on');if(p.classList.contains('on')){if(!AA_HIST.length)aaGreet();setTimeout(function(){document.getElementById('aa-input').focus();},250);}}
+function aaClear(){AA_HIST=[];document.getElementById('aa-feed').innerHTML='';aaGreet();}
+function aaGreet(){aaAddBot('Hi. I can help you plan the day, check earnings, draft customer emails, or explain a booking. What do you need?');}
+function aaAddUser(msg){var el=document.createElement('div');el.className='aa-msg user';el.textContent=msg;document.getElementById('aa-feed').appendChild(el);aaScroll();}
+function aaAddBot(msg,opts){var el=document.createElement('div');el.className='aa-msg bot'+(opts&&opts.thinking?' thinking':'');el.textContent=msg;document.getElementById('aa-feed').appendChild(el);aaScroll();return el;}
+function aaScroll(){var f=document.getElementById('aa-feed');f.scrollTop=f.scrollHeight;}
+function aaKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();aaSend();}}
+async function aaSend(){
+  var ta=document.getElementById('aa-input');var msg=(ta.value||'').trim();if(!msg||AA_BUSY)return;
+  ta.value='';AA_BUSY=true;document.getElementById('aa-send').disabled=true;
+  aaAddUser(msg);AA_HIST.push({role:'user',content:msg});
+  var thinking=aaAddBot('Thinking…',{thinking:true});
+  try{
+    var r=await fetch('/api/assistant/chat',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:AA_HIST.slice(-16)})});
+    var d=await r.json();
+    thinking.remove();
+    if(!r.ok||!d.ok){aaAddBot(d.error||'Assistant error ('+r.status+')');}
+    else{var reply=d.reply||d.message||d.content||'(no reply)';AA_HIST.push({role:'assistant',content:reply});aaAddBot(reply);}
+  }catch(e){thinking.remove();aaAddBot('Network error.');}
+  AA_BUSY=false;document.getElementById('aa-send').disabled=false;
+}
+</script>
+
 </div><!-- end admin-app -->
 
 <script>
