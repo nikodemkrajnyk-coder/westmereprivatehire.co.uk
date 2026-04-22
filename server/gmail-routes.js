@@ -70,6 +70,16 @@ router.post('/messages/:id/read', requireStaff, requireConnected, async (req, re
   }
 });
 
+// ── DELETE /api/gmail/messages/:id — trash a message ────────────────────
+router.delete('/messages/:id', requireStaff, requireConnected, async (req, res) => {
+  try {
+    await gmail.trashMessage(req.params.id);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(e.status || 500).json({ error: e.message });
+  }
+});
+
 // ── POST /api/gmail/send ────────────────────────────────────────────────
 router.post('/send', requireStaff, requireConnected, async (req, res) => {
   try {

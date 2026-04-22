@@ -59,7 +59,8 @@ router.get('/bookings', (req, res) => {
 
 // Create booking
 router.post('/bookings', (req, res) => {
-  const { pickup, destination, date, time, passengers, bags, trip_type, flight, fare, payment, notes } = req.body;
+  const { pickup, destination, date, time, passengers, bags, trip_type, flight, fare, payment, notes,
+          passenger_name, passenger_phone, passenger_email, customer_id: bodyCustomerId } = req.body;
 
   if (!pickup || !destination || !date || !time) {
     return res.status(400).json({ error: 'Pickup, destination, date, and time required' });
@@ -91,14 +92,15 @@ router.post('/bookings', (req, res) => {
 
   const db = getDb();
   const ref = 'WPH-' + Date.now().toString(36).toUpperCase();
-  const customerId = req.auth.type === 'customer' ? req.auth.id : null;
+  const customerId = req.auth.type === 'customer' ? req.auth.id : (bodyCustomerId ? parseInt(bodyCustomerId, 10) : null);
 
   let result;
   try {
     result = db.prepare(`
-      INSERT INTO bookings (ref, customer_id, pickup, destination, date, time, passengers, bags, trip_type, flight, fare, payment, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(ref, customerId, pickup, destination, date, time, passengers || 1, bags || 0, trip_type || null, flight || null, fare || null, payment || 'cash', notes || null);
+      INSERT INTO bookings (ref, customer_id, pickup, destination, date, time, passengers, bags, trip_type, flight, fare, payment, notes, passenger_name, passenger_phone, passenger_email)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(ref, customerId, pickup, destination, date, time, passengers || 1, bags || 0, trip_type || null, flight || null, fare || null, payment || 'cash', notes || null,
+           passenger_name || null, passenger_phone || null, passenger_email || null);
   } catch (e) {
     console.error('[API] booking insert failed:', e.message);
     return res.status(500).json({ error: 'Failed to save booking. Please try again.' });

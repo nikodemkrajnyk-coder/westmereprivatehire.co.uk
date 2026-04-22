@@ -193,11 +193,17 @@ async function sendMessage({ to, subject, html, text, replyTo, threadId, inReply
   return data;
 }
 
+// ── Trash a message (moves to Gmail Trash, recoverable for 30 days) ──────
+async function trashMessage(messageId) {
+  return authFetch(`${API_BASE}/messages/${encodeURIComponent(messageId)}/trash`, { method: 'POST' });
+}
+
 module.exports = {
   hasGmailScope,
   listMessages,
   getMessage,
   markRead,
   markUnread,
-  sendMessage
+  sendMessage,
+  trashMessage
 };
