@@ -12,7 +12,30 @@ const fs = require('fs');
 //
 // Without a Railway Volume every redeploy wipes the SQLite file.
 // The Volume persists across redeploys and restarts.
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'data', 'westmere.db');
+//
+// Safety: if DB_PATH is set but the directory is not writable (e.g. the
+// volume wasn't mounted yet on a first boot), we fall back to the local
+// ./data/ path and log a warning rather than crashing before app.listen.
+function resolveDbPath() {
+  const preferred = process.env.DB_PATH;
+  const fallback = path.join(__dirname, '..', 'data', 'westmere.db');
+  if (!preferred) return fallback;
+
+  const dir = path.dirname(preferred);
+  try {
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    // Quick write-test — fails early if the volume isn't writable
+    const probe = path.join(dir, '.db_probe');
+    fs.writeFileSync(probe, '');
+    fs.unlinkSync(probe);
+    return preferred;
+  } catch (e) {
+    console.warn('[DB] DB_PATH', preferred, 'not writable (' + e.message + ') — falling back to local path');
+    return fallback;
+  }
+}
+
+const DB_PATH = resolveDbPath();
 const DATA_DIR = path.dirname(DB_PATH);
 
 let db;
