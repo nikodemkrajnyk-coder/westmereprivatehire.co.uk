@@ -13,11 +13,11 @@ const ICLOUD_DIR = path.join(
   'WestmereBackups'
 );
 
-// Secondary / Railway: if DB_PATH is set (Railway Volume mounted at /data),
+// Secondary / Railway: if SQLITE_DB is set (Railway Volume mounted at /data),
 // save backups to /data/backups/ so they persist across redeploys.
 // Otherwise fall back to ./data/backups/ alongside the repo (local dev).
-const LOCAL_DIR = process.env.DB_PATH
-  ? path.join(path.dirname(process.env.DB_PATH), 'backups')
+const LOCAL_DIR = process.env.SQLITE_DB
+  ? path.join(path.dirname(process.env.SQLITE_DB), 'backups')
   : path.join(__dirname, '..', 'data', 'backups');
 
 // Runtime state

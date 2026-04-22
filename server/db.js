@@ -6,18 +6,18 @@ const fs = require('fs');
 // ── Persistent storage path ───────────────────────────────────────────────
 // On Railway: mount a Volume at /data via the Railway dashboard
 // (Service → Volumes → Mount path: /data), then set:
-//   DB_PATH=/data/westmere.db   (Railway env var)
+//   SQLITE_DB=/data/westmere.db   (Railway env var)
 //
 // Locally (Mac dev): no env var needed — defaults to ./data/westmere.db
 //
 // Without a Railway Volume every redeploy wipes the SQLite file.
 // The Volume persists across redeploys and restarts.
 //
-// Safety: if DB_PATH is set but the directory is not writable (e.g. the
+// Safety: if SQLITE_DB is set but the directory is not writable (e.g. the
 // volume wasn't mounted yet on a first boot), we fall back to the local
 // ./data/ path and log a warning rather than crashing before app.listen.
 function resolveDbPath() {
-  const preferred = process.env.DB_PATH;
+  const preferred = process.env.SQLITE_DB;
   const fallback = path.join(__dirname, '..', 'data', 'westmere.db');
   if (!preferred) return fallback;
 
@@ -30,7 +30,7 @@ function resolveDbPath() {
     fs.unlinkSync(probe);
     return preferred;
   } catch (e) {
-    console.warn('[DB] DB_PATH', preferred, 'not writable (' + e.message + ') — falling back to local path');
+    console.warn('[SQLITE_DB]', preferred, 'not writable (' + e.message + ') — falling back to local path');
     return fallback;
   }
 }
