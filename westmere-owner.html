@@ -368,6 +368,15 @@ input[type=date]::placeholder,input[type=text]::placeholder{color:rgba(17,29,44,
   .mode-btn{padding:.35rem .55rem;font-size:.48rem}
 }
 
+/* ── EARNINGS STAT CARDS ── */
+.earn-stat-card{background:var(--navy);border-radius:10px;padding:.75rem .6rem;text-align:center;position:relative;overflow:hidden}
+.earn-stat-card::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(-45deg,transparent,transparent 12px,rgba(184,152,90,.04) 12px,rgba(184,152,90,.04) 13px);pointer-events:none}
+.earn-stat-card.esk-accent{background:linear-gradient(135deg,#1a2d42 0%,var(--navy) 100%);border:1px solid rgba(184,152,90,.35)}
+.esk-label{font-size:.45rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:.3rem;position:relative}
+.esk-amount{font-family:var(--serif);font-size:1.55rem;color:var(--gold);line-height:1;position:relative;font-weight:300}
+.earn-stat-card.esk-accent .esk-amount{font-size:1.75rem}
+.esk-jobs{font-size:.5rem;color:rgba(255,255,255,.38);margin-top:.25rem;letter-spacing:.06em;position:relative}
+
 /* ── LOGIN SCREEN ── */
 #login-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1rem;position:relative;z-index:1;padding-top:6rem}
 .ls-inner{width:100%;max-width:420px;background:#fff;border:1px solid rgba(17,29,44,.08);box-shadow:0 4px 24px rgba(17,29,44,.06)}
@@ -661,8 +670,30 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
     <!-- Earnings -->
     <div class="pg" id="pg-earnings">
       <div class="sec-title">Your <em>Earnings</em></div>
-      <div class="sec-sub">Live, computed from your confirmed bookings</div>
+      <div class="sec-sub">Live from confirmed &amp; completed bookings</div>
+
+      <!-- Today / Week / Month stat trio -->
+      <div id="earn-trio" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:1rem">
+        <div class="earn-stat-card" id="earn-stat-today">
+          <div class="esk-label">Today</div>
+          <div class="esk-amount">£—</div>
+          <div class="esk-jobs">— jobs</div>
+        </div>
+        <div class="earn-stat-card esk-accent" id="earn-stat-week">
+          <div class="esk-label">This Week</div>
+          <div class="esk-amount">£—</div>
+          <div class="esk-jobs">— jobs</div>
+        </div>
+        <div class="earn-stat-card" id="earn-stat-month">
+          <div class="esk-label">This Month</div>
+          <div class="esk-amount">£—</div>
+          <div class="esk-jobs">— jobs</div>
+        </div>
+      </div>
+
+      <!-- This week detail (hidden on mobile, shown as full card) -->
       <div id="earn-this-week"></div>
+
       <div class="card">
         <div class="ch">Previous Weeks</div>
         <div class="cb" id="earn-prev-weeks">
@@ -714,7 +745,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
     <button class="bn" id="bn-tesla" onclick="goPage('tesla',this)"><div class="bn-bar"></div><div class="bn-label">Tesla</div></button>
     <button class="bn" id="bn-calendar" onclick="goPage('calendar',this)"><div class="bn-bar"></div><div class="bn-label">Calendar</div></button>
     <button class="bn" id="bn-decisions" onclick="goPage('decisions',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Decisions</div><div class="bn-dot" id="decisions-dot" style="display:none"></div></button>
-    <button class="bn" id="bn-earnings" onclick="goPage('earnings',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Earnings</div></button>
+    <button class="bn" id="bn-earnings" onclick="goPage('earnings',this)"><div class="bn-bar"></div><div class="bn-label">Earnings</div></button>
   </div>
 
 </div><!-- /app -->
@@ -941,7 +972,7 @@ function setMode(mode){
   document.getElementById('mode-admin').classList.toggle('on', mode==='admin');
   document.getElementById('tb-mode-label').textContent = mode==='drive' ? 'Drive Mode' : 'Admin Mode';
   var driveItems = ['bn-today','bn-offered','bn-tesla'];
-  var adminItems = ['bn-decisions','bn-earnings'];
+  var adminItems = ['bn-decisions'];
   driveItems.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=mode==='drive'?'':'none';});
   adminItems.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=mode==='admin'?'':'none';});
   var fab=document.getElementById('assist-fab');
@@ -1107,12 +1138,18 @@ function isEarning(b){
 }
 function buildEarnings(){
   var bookings=(ALL_BOOKINGS_CACHE||[]).filter(isEarning);
-  var thisWeekStart=isoWeekStart(new Date());
+  var now=new Date();
+  var todayStr=now.toISOString().slice(0,10);
+
+  // Today
+  var todayBookings=bookings.filter(function(b){return b.date===todayStr;});
+  var todayTotal=todayBookings.reduce(function(s,b){return s+(+b.fare||0);},0);
+
+  // This week (Mon–Sun)
+  var thisWeekStart=isoWeekStart(now);
   var thisWeekEnd=new Date(thisWeekStart);thisWeekEnd.setDate(thisWeekEnd.getDate()+7);
   var nextPay=new Date(thisWeekEnd);
   var nextPayLabel=nextPay.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
-
-  // Group by week
   var weeks={};
   bookings.forEach(function(b){
     var d=new Date(b.date+'T00:00:00');
@@ -1122,12 +1159,28 @@ function buildEarnings(){
     weeks[k].total+=(+b.fare||0);
     weeks[k].jobs+=1;
   });
-
   var thisKey=thisWeekStart.toISOString().slice(0,10);
   var thisWeek=weeks[thisKey]||{start:thisWeekStart,total:0,jobs:0};
+
+  // This month
+  var monthPrefix=todayStr.slice(0,7); // YYYY-MM
+  var monthBookings=bookings.filter(function(b){return b.date&&b.date.slice(0,7)===monthPrefix;});
+  var monthTotal=monthBookings.reduce(function(s,b){return s+(+b.fare||0);},0);
+
+  // Populate trio stat cards
+  function setStatCard(id,amount,jobs){
+    var el=document.getElementById(id);
+    if(!el)return;
+    el.querySelector('.esk-amount').textContent='£'+amount.toFixed(2);
+    el.querySelector('.esk-jobs').textContent=jobs+' job'+(jobs===1?'':'s');
+  }
+  setStatCard('earn-stat-today',todayTotal,todayBookings.length);
+  setStatCard('earn-stat-week',thisWeek.total,thisWeek.jobs);
+  setStatCard('earn-stat-month',monthTotal,monthBookings.length);
+
   var avg=thisWeek.jobs?(thisWeek.total/thisWeek.jobs):0;
 
-  // This-week hero card
+  // This-week detail card
   document.getElementById('earn-this-week').innerHTML=
     '<div style="background:#fff;border:1px solid rgba(17,29,44,.08);padding:1.5rem;margin-bottom:.85rem;position:relative;overflow:hidden">'
     +'<div style="position:absolute;inset:0;background-image:repeating-linear-gradient(-45deg,transparent,transparent 60px,rgba(184,152,90,.02) 60px,rgba(184,152,90,.02) 61px);pointer-events:none"></div>'

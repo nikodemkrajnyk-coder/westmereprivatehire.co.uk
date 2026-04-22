@@ -20,6 +20,105 @@ const REFERENCE_FARES = [
   'Outside town centre: nearest town price + £2.50/extra mile'
 ].join('\n');
 
+// ── Google Calendar tool definitions ─────────────────────────────────────
+const CALENDAR_TOOLS = [
+  {
+    name: 'list_calendar_events',
+    description: 'List upcoming Google Calendar events to check the schedule or find event IDs for editing/deletion.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        days: { type: 'number', description: 'How many days ahead to look (default 14, max 60)' }
+      }
+    }
+  },
+  {
+    name: 'create_calendar_event',
+    description: 'Create a new Google Calendar event (block-out time, personal appointment, etc.).',
+    input_schema: {
+      type: 'object',
+      properties: {
+        title:        { type: 'string', description: 'Event title' },
+        date:         { type: 'string', description: 'Date in YYYY-MM-DD' },
+        time:         { type: 'string', description: 'Start time in HH:MM (omit for all-day event)' },
+        duration_min: { type: 'number', description: 'Duration in minutes (default 60)' },
+        location:     { type: 'string', description: 'Location or address' },
+        notes:        { type: 'string', description: 'Additional notes or description' }
+      },
+      required: ['title', 'date']
+    }
+  },
+  {
+    name: 'update_calendar_event',
+    description: 'Update an existing Google Calendar event. You must first call list_calendar_events to get the event ID.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        event_id:     { type: 'string', description: 'Google Calendar event ID (from list_calendar_events)' },
+        title:        { type: 'string', description: 'New title (leave out to keep existing)' },
+        date:         { type: 'string', description: 'New date in YYYY-MM-DD' },
+        time:         { type: 'string', description: 'New start time in HH:MM' },
+        duration_min: { type: 'number', description: 'New duration in minutes' },
+        location:     { type: 'string', description: 'New location' },
+        notes:        { type: 'string', description: 'New notes' }
+      },
+      required: ['event_id']
+    }
+  },
+  {
+    name: 'delete_calendar_event',
+    description: 'Delete a Google Calendar event by its ID.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        event_id: { type: 'string', description: 'Google Calendar event ID (from list_calendar_events)' }
+      },
+      required: ['event_id']
+    }
+  }
+];
+
+async function executeCalendarTool(name, input) {
+  switch (name) {
+    case 'list_calendar_events': {
+      const days = Math.min(60, Math.max(1, input.days || 14));
+      const events = await gcal.listExternalEvents({ days });
+      if (!events.length) return 'No upcoming events found in the next ' + days + ' days.';
+      return events.map(e => {
+        const start = e.allDay ? e.start : new Date(e.start).toLocaleString('en-GB', { timeZone: 'Europe/London', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+        return `ID:${e.id} | ${e.title} | ${start}${e.location ? ' @ ' + e.location : ''}`;
+      }).join('\n');
+    }
+    case 'create_calendar_event': {
+      const event = {
+        ref: '', customer_name: input.title, pickup: input.location || '',
+        destination: '', date: input.date, time: input.time || null,
+        duration_min: input.duration_min || 60, status: 'confirmed',
+        notes: input.notes || '', id: 0
+      };
+      const eventId = await gcal.createEvent(event);
+      if (eventId) return 'Event created successfully. ID: ' + eventId;
+      return 'Failed to create event — Google Calendar may not be connected.';
+    }
+    case 'update_calendar_event': {
+      const event = {
+        ref: '', customer_name: input.title || '', pickup: input.location || '',
+        destination: '', date: input.date || undefined, time: input.time || undefined,
+        duration_min: input.duration_min || 60, status: 'confirmed',
+        notes: input.notes || '', id: 0
+      };
+      const ok = await gcal.updateEvent(input.event_id, event);
+      return ok ? 'Event updated successfully.' : 'Event not found or update failed.';
+    }
+    case 'delete_calendar_event': {
+      const ok = await gcal.deleteEvent(input.event_id);
+      return ok ? 'Event deleted successfully.' : 'Failed to delete event.';
+    }
+    default:
+      return 'Unknown tool: ' + name;
+  }
+}
+
 function buildSystemPrompt(todayJobs) {
   const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Europe/London' });
   const jobsSummary = todayJobs.length
@@ -42,6 +141,7 @@ RULES:
 - "payment" should default to "cash" unless stated otherwise. Options: cash, card, account, invoice.
 - Dates: "tomorrow" = tomorrow's date, "next Monday" = compute from today, etc.
 - If driver says just a time like "3pm", assume today's date.
+- You can manage the Google Calendar: list upcoming events, create block-outs or appointments, edit or delete events. Use the calendar tools when asked.
 
 Fixed fares (drop-off / return):
 ${REFERENCE_FARES}
@@ -72,34 +172,62 @@ router.post('/chat', async (req, res) => {
   const system = buildSystemPrompt(todayJobs);
 
   try {
-    const apiRes = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 600,
-        system,
-        messages: messages.slice(-16)
-      })
-    });
+    // Agentic loop — handles calendar tool calls, max 5 iterations
+    let currentMessages = messages.slice(-16);
+    let finalReply = '';
+    const MAX_ITER = 5;
 
-    const data = await apiRes.json();
-    if (!apiRes.ok) {
-      const msg = (data && data.error && data.error.message) || ('HTTP ' + apiRes.status);
-      return res.status(502).json({ error: 'Claude API: ' + msg });
+    for (let iter = 0; iter < MAX_ITER; iter++) {
+      const apiRes = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': API_KEY,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          max_tokens: 1000,
+          system,
+          tools: CALENDAR_TOOLS,
+          messages: currentMessages
+        })
+      });
+
+      const data = await apiRes.json();
+      if (!apiRes.ok) {
+        const msg = (data && data.error && data.error.message) || ('HTTP ' + apiRes.status);
+        return res.status(502).json({ error: 'Claude API: ' + msg });
+      }
+
+      const content = data.content || [];
+      const toolUseBlocks = content.filter(b => b.type === 'tool_use');
+
+      // No tool calls — we have our final answer
+      if (!toolUseBlocks.length || data.stop_reason === 'end_turn') {
+        finalReply = content.filter(b => b.type === 'text').map(b => b.text).join('').trim();
+        break;
+      }
+
+      // Append assistant turn (with tool_use blocks)
+      currentMessages = [...currentMessages, { role: 'assistant', content }];
+
+      // Execute each tool in parallel
+      const toolResults = await Promise.all(toolUseBlocks.map(async (tb) => {
+        let result;
+        try {
+          result = await executeCalendarTool(tb.name, tb.input || {});
+        } catch (e) {
+          result = 'Tool error: ' + e.message;
+        }
+        return { type: 'tool_result', tool_use_id: tb.id, content: result };
+      }));
+
+      // Feed results back as a user turn
+      currentMessages = [...currentMessages, { role: 'user', content: toolResults }];
     }
 
-    const reply = (data.content || [])
-      .filter(b => b.type === 'text')
-      .map(b => b.text)
-      .join('')
-      .trim();
-
-    res.json({ ok: true, reply });
+    res.json({ ok: true, reply: finalReply });
   } catch (e) {
     res.status(502).json({ error: 'Assistant unavailable: ' + e.message });
   }
