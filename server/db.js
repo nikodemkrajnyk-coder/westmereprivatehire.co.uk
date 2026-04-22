@@ -100,7 +100,7 @@ function initSchema() {
       flight      TEXT,
       fare        REAL,
       payment     TEXT    DEFAULT 'cash',
-      status      TEXT    NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','confirmed','active','completed','cancelled')),
+      status      TEXT    NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','offered','confirmed','active','completed','cancelled')),
       notes       TEXT,
       created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
       updated_at  TEXT    NOT NULL DEFAULT (datetime('now'))
@@ -172,7 +172,7 @@ function migrate() {
           flight      TEXT,
           fare        REAL,
           payment     TEXT    DEFAULT 'cash',
-          status      TEXT    NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','confirmed','active','completed','cancelled')),
+          status      TEXT    NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','offered','confirmed','active','completed','cancelled')),
           notes       TEXT,
           created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
           updated_at  TEXT    NOT NULL DEFAULT (datetime('now'))
@@ -323,6 +323,62 @@ function migrate() {
     }
   } catch (e) {
     console.error('[DB] driver-offer column migration failed:', e.message);
+  }
+
+  // Fix bookings CHECK constraint to allow 'offered' status.
+  // SQLite can't ALTER a constraint — detect by inspecting sqlite_master SQL
+  // and rebuild the table if 'offered' is missing from the status check.
+  try {
+    const masterRow = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='bookings'").get();
+    if (masterRow && masterRow.sql && !masterRow.sql.includes("'offered'")) {
+      console.log('[DB] Migrating bookings CHECK constraint to include offered status…');
+      // Capture all current columns so we copy everything
+      const cols = db.prepare("PRAGMA table_info(bookings)").all().map(c => c.name).join(', ');
+      db.exec(`
+        ALTER TABLE bookings RENAME TO bookings_pre_offered;
+        CREATE TABLE bookings (
+          id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+          ref                 TEXT    NOT NULL UNIQUE,
+          customer_id         INTEGER REFERENCES customers(id),
+          driver_id           INTEGER REFERENCES users(id),
+          pickup              TEXT    NOT NULL,
+          destination         TEXT    NOT NULL,
+          date                TEXT    NOT NULL,
+          time                TEXT    NOT NULL DEFAULT 'ASAP',
+          passengers          INTEGER NOT NULL DEFAULT 1,
+          bags                TEXT    NOT NULL DEFAULT '0',
+          trip_type           TEXT,
+          flight              TEXT,
+          fare                REAL,
+          payment             TEXT    DEFAULT 'cash',
+          status              TEXT    NOT NULL DEFAULT 'pending'
+                                CHECK(status IN ('pending','offered','confirmed','active','completed','cancelled')),
+          notes               TEXT,
+          created_at          TEXT    NOT NULL DEFAULT (datetime('now')),
+          updated_at          TEXT    NOT NULL DEFAULT (datetime('now')),
+          calendar_event_id   TEXT,
+          passenger_name      TEXT,
+          passenger_phone     TEXT,
+          passenger_email     TEXT,
+          needs_reassignment  INTEGER NOT NULL DEFAULT 0,
+          intake_reason       TEXT,
+          intake_checked_at   TEXT,
+          offered_to_driver_id INTEGER REFERENCES users(id),
+          offered_at          TEXT,
+          decided_at          TEXT,
+          done_at             TEXT,
+          cancelled_at        TEXT,
+          cancellation_reason TEXT,
+          driver_pay          REAL,
+          admin_fee           REAL
+        );
+        INSERT INTO bookings (${cols}) SELECT ${cols} FROM bookings_pre_offered;
+        DROP TABLE bookings_pre_offered;
+      `);
+      console.log('[DB] bookings table rebuilt with offered status support');
+    }
+  } catch (e) {
+    console.error('[DB] offered-status migration failed:', e.message);
   }
 
   // Customer billing details — for invoicing (address + bank).
