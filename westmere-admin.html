@@ -1277,6 +1277,16 @@ if ('serviceWorker' in navigator) {
 .aa-send{background:var(--gold);color:var(--navy);border:none;padding:0 1rem;font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;font-weight:600;cursor:pointer;border-radius:4px}
 .aa-send:disabled{opacity:.5;cursor:not-allowed}
 .aa-hint{font-size:.66rem;color:rgba(17,29,44,.45);padding:.5rem 1.2rem .7rem;background:#fafaf7;border-top:1px solid rgba(17,29,44,.06)}
+.aa-img-btn{background:none;border:1px solid rgba(17,29,44,.15);color:rgba(17,29,44,.5);width:34px;height:34px;border-radius:6px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:border-color .15s,color .15s}
+.aa-img-btn:hover{border-color:var(--gold);color:var(--gold)}
+.aa-booking-card{background:#f4f8ff;border:1.5px solid var(--gold);border-radius:10px;padding:.9rem 1rem;margin:.4rem 0;font-size:.8rem;line-height:1.6;color:var(--navy);max-width:100%}
+.aa-booking-card .abc-title{font-weight:700;font-size:.82rem;margin-bottom:.5rem;color:var(--navy)}
+.aa-booking-card .abc-row{display:flex;gap:.4rem;margin:.1rem 0}
+.aa-booking-card .abc-lbl{color:rgba(17,29,44,.5);min-width:70px;flex-shrink:0}
+.aa-booking-card .abc-val{color:var(--navy);font-weight:500}
+.aa-booking-card .abc-btn{margin-top:.75rem;width:100%;background:var(--gold);color:var(--navy);border:none;padding:.55rem;font-weight:700;font-size:.78rem;border-radius:6px;cursor:pointer;letter-spacing:.03em}
+.aa-booking-card .abc-btn:hover{opacity:.88}
+.aa-img-thumb{max-width:100%;max-height:140px;border-radius:6px;margin:.3rem 0;border:1px solid rgba(17,29,44,.1)}
 </style>
 <button class="aa-fab" onclick="aaToggle()" title="AI Assistant">W</button>
 <div class="aa-panel" id="aa-panel">
@@ -1293,7 +1303,9 @@ if ('serviceWorker' in navigator) {
   <div class="aa-feed" id="aa-feed"></div>
   <div class="aa-hint">Ask about drivers, earnings, bookings, or dictate a quick invoice line.</div>
   <div class="aa-in">
-    <textarea id="aa-input" placeholder="Ask anything…" onkeydown="aaKey(event)"></textarea>
+    <input type="file" accept="image/*" id="aa-img-file" style="display:none" onchange="aaHandleFileInput(this)">
+    <button class="aa-img-btn" onclick="document.getElementById('aa-img-file').click()" title="Scan booking from image">&#128247;</button>
+    <textarea id="aa-input" placeholder="Ask anything… or paste a screenshot" onkeydown="aaKey(event)"></textarea>
     <button class="aa-send" id="aa-send" onclick="aaSend()">Send</button>
   </div>
 </div>
@@ -1301,11 +1313,138 @@ if ('serviceWorker' in navigator) {
 var AA_HIST=[];var AA_BUSY=false;
 function aaToggle(){var p=document.getElementById('aa-panel');p.classList.toggle('on');if(p.classList.contains('on')){if(!AA_HIST.length)aaGreet();setTimeout(function(){document.getElementById('aa-input').focus();},250);}}
 function aaClear(){AA_HIST=[];document.getElementById('aa-feed').innerHTML='';aaGreet();}
-function aaGreet(){aaAddBot('Hi. I can help you plan the day, check earnings, draft customer emails, or explain a booking. What do you need?');}
+function aaGreet(){aaAddBot('Hi. I can help you plan the day, check earnings, draft customer emails, or explain a booking. Paste or upload a screenshot to scan a booking.');}
 function aaAddUser(msg){var el=document.createElement('div');el.className='aa-msg user';el.textContent=msg;document.getElementById('aa-feed').appendChild(el);aaScroll();}
 function aaAddBot(msg,opts){var el=document.createElement('div');el.className='aa-msg bot'+(opts&&opts.thinking?' thinking':'');el.textContent=msg;document.getElementById('aa-feed').appendChild(el);aaScroll();return el;}
+function aaAddEl(el){document.getElementById('aa-feed').appendChild(el);aaScroll();return el;}
 function aaScroll(){var f=document.getElementById('aa-feed');f.scrollTop=f.scrollHeight;}
 function aaKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();aaSend();}}
+
+// ── Image scanning ────────────────────────────────────────────────────────
+function aaHandleFileInput(input){
+  if(!input.files||!input.files[0])return;
+  var file=input.files[0];
+  input.value='';
+  var reader=new FileReader();
+  reader.onload=function(ev){aaHandleImage(ev.target.result,file.type||'image/jpeg');};
+  reader.readAsDataURL(file);
+}
+
+// Paste handler — intercepts images pasted via clipboard
+document.addEventListener('paste',function(e){
+  var panel=document.getElementById('aa-panel');
+  if(!panel||!panel.classList.contains('on'))return;
+  var items=e.clipboardData&&e.clipboardData.items;
+  if(!items)return;
+  for(var i=0;i<items.length;i++){
+    if(items[i].type.indexOf('image')===0){
+      e.preventDefault();
+      var blob=items[i].getAsFile();
+      var reader=new FileReader();
+      reader.onload=function(ev){aaHandleImage(ev.target.result,blob.type||'image/png');};
+      reader.readAsDataURL(blob);
+      return;
+    }
+  }
+});
+
+async function aaHandleImage(dataUrl,mimeType){
+  if(AA_BUSY)return;
+  AA_BUSY=true;document.getElementById('aa-send').disabled=true;
+
+  // Show thumbnail in chat
+  var wrap=document.createElement('div');
+  wrap.className='aa-msg user';
+  wrap.style.padding='.4rem';
+  var img=document.createElement('img');
+  img.src=dataUrl;img.className='aa-img-thumb';
+  wrap.appendChild(img);
+  aaAddEl(wrap);
+
+  var thinking=aaAddBot('Scanning image…',{thinking:true});
+  try{
+    var base64=dataUrl.replace(/^data:[^;]+;base64,/,'');
+    var r=await fetch('/api/assistant/scan',{method:'POST',credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({image:base64,media_type:mimeType})});
+    var d=await r.json();
+    thinking.remove();
+    if(!r.ok||!d.ok){aaAddBot(d.error||'Scan error ('+r.status+')');return;}
+    if(d.booking){
+      aaAddBot(d.reply||'Booking details extracted.');
+      aaShowBookingCard(d.booking);
+    } else {
+      aaAddBot(d.reply||'No booking details found in this image.');
+    }
+  }catch(e){thinking.remove();aaAddBot('Network error scanning image.');}
+  finally{AA_BUSY=false;document.getElementById('aa-send').disabled=false;}
+}
+
+function aaShowBookingCard(b){
+  var card=document.createElement('div');
+  card.className='aa-msg bot';
+  card.style.padding='0';
+  var inner=document.createElement('div');
+  inner.className='aa-booking-card';
+
+  function row(lbl,val){
+    if(!val&&val!==0)return '';
+    return '<div class="abc-row"><span class="abc-lbl">'+lbl+'</span><span class="abc-val">'+escHtml(String(val))+'</span></div>';
+  }
+  function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+  var dateDisp=b.date||'';
+  var timeDisp=b.time||'';
+  var fareDisp=b.fare?'£'+b.fare:'—';
+
+  inner.innerHTML='<div class="abc-title">Extracted Booking</div>'
+    +row('Name',b.name)
+    +row('Phone',b.phone)
+    +row('Email',b.email)
+    +row('Pickup',b.pickup)
+    +row('Drop-off',b.destination)
+    +row('Date',dateDisp)
+    +row('Time',timeDisp)
+    +row('Passengers',b.passengers)
+    +row('Flight',b.flight)
+    +row('Fare',fareDisp)
+    +row('Payment',b.payment)
+    +row('Notes',b.notes)
+    +'<button class="abc-btn" onclick="aaFillModal('+JSON.stringify(JSON.stringify(b))+')">Create This Booking</button>';
+
+  card.appendChild(inner);
+  aaAddEl(card);
+}
+
+function aaFillModal(bookingJson){
+  var b;
+  try{b=JSON.parse(bookingJson);}catch(e){return;}
+  function set(id,val){var el=document.getElementById(id);if(el&&val!=null)el.value=val;}
+  set('nb-date',b.date||'');
+  set('nb-time',b.time||'');
+  set('nb-pu',b.pickup||'');
+  set('nb-de',b.destination||'');
+  set('nb-name',b.name||'');
+  set('nb-phone',b.phone||'');
+  set('nb-email',b.email||'');
+  if(b.passengers){var pax=document.getElementById('nb-pax');if(pax)pax.value=String(b.passengers);}
+  if(b.payment){
+    var pay=document.getElementById('nb-pay');
+    if(pay){
+      var pv=b.payment.toLowerCase();
+      if(pv==='card')pay.value='card';
+      else if(pv==='account'||pv==='invoice')pay.value='account';
+      else pay.value='cash';
+    }
+  }
+  // Close the assistant panel and open the booking modal
+  var panel=document.getElementById('aa-panel');
+  if(panel)panel.classList.remove('on');
+  if(typeof openModal==='function')openModal('modal-book');
+  // Trigger fare calculation
+  if(typeof nbCheck==='function')setTimeout(nbCheck,100);
+}
+
 async function aaSend(){
   var ta=document.getElementById('aa-input');var msg=(ta.value||'').trim();if(!msg||AA_BUSY)return;
   ta.value='';AA_BUSY=true;document.getElementById('aa-send').disabled=true;

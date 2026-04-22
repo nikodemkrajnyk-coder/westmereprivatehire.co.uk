@@ -105,6 +105,108 @@ router.post('/chat', async (req, res) => {
   }
 });
 
+// ── POST /api/assistant/scan — extract booking from image ────────────────
+// Accepts a base64-encoded image and uses Claude vision to extract booking
+// details, returning them as structured JSON inside <<<BOOKING>>>...<<<END>>>
+router.post('/scan', async (req, res) => {
+  if (!API_KEY) return res.status(503).json({ error: 'Assistant not configured' });
+
+  const { image, media_type } = req.body;
+  if (!image) return res.status(400).json({ error: 'image (base64) required' });
+
+  // Strip data URL prefix if present
+  const base64 = image.replace(/^data:[^;]+;base64,/, '');
+  const mimeType = media_type || (image.startsWith('data:image/png') ? 'image/png' : 'image/jpeg');
+
+  const today = new Date().toLocaleDateString('en-GB', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Europe/London'
+  });
+
+  const scanSystem = `You are a booking extraction assistant for Westmere Private Hire, Sussex UK.
+Today is ${today}.
+
+TASK: Read the image and extract any private hire / taxi booking details.
+
+The image may be a screenshot of a WhatsApp message, email, text message, booking form, or handwritten note.
+
+Extract these fields if present:
+- name (passenger full name)
+- phone (UK mobile, e.g. 07700 900123)
+- email
+- pickup (full address or location)
+- destination (full address or location)
+- date (convert to YYYY-MM-DD — e.g. "22nd April" → "${new Date().getFullYear()}-04-22")
+- time (HH:MM 24h — e.g. "3pm" → "15:00")
+- passengers (number, default 1)
+- flight (flight number if airport job, e.g. BA2490)
+- fare (numeric — look up from reference table if route matches)
+- payment (cash/card/account — default cash)
+- notes (any special requests, luggage info, etc.)
+
+Fixed airport fares (out/return):
+${REFERENCE_FARES}
+
+ALWAYS respond with:
+1. A brief 1-2 sentence summary of what you found
+2. The extracted data as JSON inside <<<BOOKING>>> and <<<END>>> markers
+
+Format exactly like this:
+I found a booking from [name] going to [destination] on [date].
+
+<<<BOOKING>>>
+{"name":"...","phone":"...","email":null,"pickup":"...","destination":"...","date":"YYYY-MM-DD","time":"HH:MM","passengers":1,"flight":null,"fare":0,"payment":"cash","notes":null}
+<<<END>>>
+
+If no booking details are found, just say so clearly without the JSON block.
+Use null for any field you cannot determine. For fare, use 0 if unknown.`;
+
+  try {
+    const apiRes = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 800,
+        system: scanSystem,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mimeType, data: base64 } },
+            { type: 'text', text: 'Please extract the booking details from this image.' }
+          ]
+        }]
+      })
+    });
+
+    const data = await apiRes.json();
+    if (!apiRes.ok) {
+      const msg = (data && data.error && data.error.message) || ('HTTP ' + apiRes.status);
+      return res.status(502).json({ error: 'Claude API: ' + msg });
+    }
+
+    const reply = (data.content || [])
+      .filter(b => b.type === 'text')
+      .map(b => b.text)
+      .join('')
+      .trim();
+
+    // Try to parse the booking JSON out of the response
+    const match = reply.match(/<<<BOOKING>>>([\s\S]*?)<<<END>>>/);
+    let booking = null;
+    if (match) {
+      try { booking = JSON.parse(match[1].trim()); } catch (_) {}
+    }
+
+    res.json({ ok: true, reply, booking });
+  } catch (e) {
+    res.status(502).json({ error: 'Scan unavailable: ' + e.message });
+  }
+});
+
 router.post('/analyse', async (req, res) => {
   if (!API_KEY) return res.status(503).json({ error: 'Assistant not configured' });
 
