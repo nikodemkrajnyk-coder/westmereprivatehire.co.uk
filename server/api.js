@@ -335,8 +335,7 @@ router.post('/customers/:id/invoice', async (req, res) => {
      ORDER BY date ASC, time ASC
   `).all(customer.id, dateFrom, dateTo);
 
-  const prevCount = db.prepare("SELECT COUNT(*) AS c FROM audit_log WHERE action = 'invoice_sent' AND detail LIKE ?").get('INV-' + invoicePrefix + '%').c;
-  const invoiceNo = 'INV-' + invoicePrefix + '-' + String(prevCount + 1).padStart(4, '0');
+  const invoiceNo = nextInvoiceNo(db, invoicePrefix);
 
   const due = new Date();
   due.setDate(due.getDate() + 14);
@@ -418,8 +417,7 @@ router.post('/invoices/bespoke', async (req, res) => {
   const db = getDb();
   const now = new Date();
   const invoicePrefix = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0');
-  const prevCount = db.prepare("SELECT COUNT(*) AS c FROM audit_log WHERE action = 'invoice_sent' AND detail LIKE ?").get('INV-' + invoicePrefix + '%').c;
-  const invoiceNo = 'INV-' + invoicePrefix + '-' + String(prevCount + 1).padStart(4, '0');
+  const invoiceNo = nextInvoiceNo(db, invoicePrefix);
 
   const due = new Date();
   due.setDate(due.getDate() + (parseInt(due_days, 10) || 14));
@@ -555,6 +553,26 @@ function sanitizeDriver(row) {
     row.has_login = 0;
   }
   return row;
+}
+
+// Pick the next sequential invoice number for a given prefix (YYYYMM).
+// Looks at BOTH the stored invoices table and legacy audit_log entries to
+// avoid collisions with the pre-invoices-table history.
+function nextInvoiceNo(db, invoicePrefix) {
+  const like = 'INV-' + invoicePrefix + '%';
+  let maxNum = 0;
+  try {
+    const row = db.prepare("SELECT invoice_no FROM invoices WHERE invoice_no LIKE ? ORDER BY id DESC LIMIT 1").get(like);
+    if (row && row.invoice_no) {
+      const m = row.invoice_no.match(/-(\d+)$/);
+      if (m) maxNum = Math.max(maxNum, parseInt(m[1], 10));
+    }
+  } catch (_) {}
+  try {
+    const legacy = db.prepare("SELECT COUNT(*) AS c FROM audit_log WHERE action = 'invoice_sent' AND detail LIKE ?").get(like).c;
+    if (legacy > maxNum) maxNum = legacy;
+  } catch (_) {}
+  return 'INV-' + invoicePrefix + '-' + String(maxNum + 1).padStart(4, '0');
 }
 
 router.get('/drivers', (req, res) => {
