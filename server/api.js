@@ -93,13 +93,21 @@ router.post('/bookings', (req, res) => {
   const ref = 'WPH-' + Date.now().toString(36).toUpperCase();
   const customerId = req.auth.type === 'customer' ? req.auth.id : null;
 
-  const result = db.prepare(`
-    INSERT INTO bookings (ref, customer_id, pickup, destination, date, time, passengers, bags, trip_type, flight, fare, payment, notes)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(ref, customerId, pickup, destination, date, time, passengers || 1, bags || 0, trip_type || null, flight || null, fare || null, payment || 'cash', notes || null);
+  let result;
+  try {
+    result = db.prepare(`
+      INSERT INTO bookings (ref, customer_id, pickup, destination, date, time, passengers, bags, trip_type, flight, fare, payment, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(ref, customerId, pickup, destination, date, time, passengers || 1, bags || 0, trip_type || null, flight || null, fare || null, payment || 'cash', notes || null);
+  } catch (e) {
+    console.error('[API] booking insert failed:', e.message);
+    return res.status(500).json({ error: 'Failed to save booking. Please try again.' });
+  }
 
-  db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
-    .run(req.auth.type, req.auth.id, 'booking_created', ref, req.ip);
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run(req.auth.type, req.auth.id, 'booking_created', ref, req.ip);
+  } catch (e) { /* audit failure must not block the response */ }
 
   // Send admin notifications in background
   const customerName = customerId
@@ -167,7 +175,12 @@ router.patch('/bookings/:id', (req, res) => {
   updates.push("updated_at = datetime('now')");
   values.push(req.params.id);
 
-  db.prepare(`UPDATE bookings SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+  try {
+    db.prepare(`UPDATE bookings SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+  } catch (e) {
+    console.error('[API] booking update failed:', e.message);
+    return res.status(500).json({ error: 'Failed to update booking. Please try again.' });
+  }
 
   // If THIS update transitioned the booking from pending → confirmed, fire
   // the customer "Booking confirmed" email + WhatsApp. We only fire on the
@@ -227,10 +240,17 @@ router.delete('/bookings/:id', (req, res) => {
     gcal.deleteEvent(booking.calendar_event_id).catch(() => {});
   }
 
-  db.prepare('DELETE FROM bookings WHERE id = ?').run(id);
+  try {
+    db.prepare('DELETE FROM bookings WHERE id = ?').run(id);
+  } catch (e) {
+    console.error('[API] booking delete failed:', e.message);
+    return res.status(500).json({ error: 'Failed to delete booking. Please try again.' });
+  }
 
-  db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
-    .run(req.auth.type, req.auth.id, 'booking_deleted', booking.ref, req.ip);
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run(req.auth.type, req.auth.id, 'booking_deleted', booking.ref, req.ip);
+  } catch (e) { /* audit failure must not block the response */ }
 
   events.broadcast('booking:deleted', { id, ref: booking.ref });
 
@@ -281,24 +301,32 @@ router.post('/customers', (req, res) => {
   const bcrypt = require('bcryptjs');
   const unusableHash = bcrypt.hashSync('!' + Math.random().toString(36) + Date.now(), 12);
 
-  const result = db.prepare(`
-    INSERT INTO customers (email, password, full_name, phone, account_type,
-                           address_line1, address_line2, postcode,
-                           bank_name, bank_sort_code, bank_account_no, bank_account_name)
-    VALUES (?, ?, ?, ?, 'personal', ?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    cleanEmail, unusableHash, full_name.trim(), phone || null,
-    (address_line1 || '').trim() || null,
-    (address_line2 || '').trim() || null,
-    (postcode || '').trim() || null,
-    (bank_name || '').trim() || null,
-    (bank_sort_code || '').trim() || null,
-    (bank_account_no || '').trim() || null,
-    (bank_account_name || '').trim() || null
-  );
+  let result;
+  try {
+    result = db.prepare(`
+      INSERT INTO customers (email, password, full_name, phone, account_type,
+                             address_line1, address_line2, postcode,
+                             bank_name, bank_sort_code, bank_account_no, bank_account_name)
+      VALUES (?, ?, ?, ?, 'personal', ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      cleanEmail, unusableHash, full_name.trim(), phone || null,
+      (address_line1 || '').trim() || null,
+      (address_line2 || '').trim() || null,
+      (postcode || '').trim() || null,
+      (bank_name || '').trim() || null,
+      (bank_sort_code || '').trim() || null,
+      (bank_account_no || '').trim() || null,
+      (bank_account_name || '').trim() || null
+    );
+  } catch (e) {
+    console.error('[API] customer insert failed:', e.message);
+    return res.status(500).json({ error: 'Failed to create customer account. Please try again.' });
+  }
 
-  db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
-    .run(req.auth.type || 'user', req.auth.id, 'customer_created_by_admin', cleanEmail, req.ip);
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run(req.auth.type || 'user', req.auth.id, 'customer_created_by_admin', cleanEmail, req.ip);
+  } catch (e) { /* audit failure must not block response */ }
 
   const { sendCustomerWelcome } = require('./email');
   sendCustomerWelcome({ email: cleanEmail, full_name: full_name.trim() })
@@ -308,6 +336,73 @@ router.post('/customers', (req, res) => {
     ok: true,
     customer: { id: result.lastInsertRowid, email: cleanEmail, full_name: full_name.trim() }
   });
+});
+
+// Update customer (admin/owner)
+router.patch('/customers/:id', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid customer ID' });
+
+  const existing = db.prepare('SELECT id, email FROM customers WHERE id = ?').get(id);
+  if (!existing) return res.status(404).json({ error: 'Customer not found' });
+
+  const body = req.body || {};
+  const updates = [];
+  const values = [];
+
+  const plainFields = [
+    'full_name', 'phone',
+    'address_line1', 'address_line2', 'postcode',
+    'bank_name', 'bank_sort_code', 'bank_account_no', 'bank_account_name'
+  ];
+  for (const f of plainFields) {
+    if (body[f] !== undefined) {
+      updates.push(`${f} = ?`);
+      values.push(body[f] === '' ? null : String(body[f]).trim() || null);
+    }
+  }
+
+  if (body.email !== undefined) {
+    const newEmail = String(body.email).trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+    if (newEmail !== existing.email) {
+      const dup = db.prepare('SELECT id FROM customers WHERE email = ? AND id != ?').get(newEmail, id);
+      if (dup) return res.status(409).json({ error: 'Email already in use by another customer' });
+    }
+    updates.push('email = ?');
+    values.push(newEmail);
+  }
+
+  if (body.active !== undefined) {
+    updates.push('active = ?');
+    values.push(body.active ? 1 : 0);
+  }
+
+  if (!updates.length) return res.status(400).json({ error: 'No fields to update' });
+
+  updates.push("updated_at = datetime('now')");
+  values.push(id);
+
+  try {
+    db.prepare(`UPDATE customers SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+  } catch (e) {
+    console.error('[API] customer update failed:', e.message);
+    return res.status(500).json({ error: 'Failed to update customer. Please try again.' });
+  }
+
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run(req.auth.type || 'user', req.auth.id, 'customer_updated', existing.email, req.ip);
+  } catch (e) { /* audit failure must not block response */ }
+
+  res.json({ ok: true });
 });
 
 // Generate / send invoice for a customer.
@@ -567,7 +662,12 @@ router.put('/settings/invoice', (req, res) => {
   for (const k of allowed) {
     if (settings[k] !== undefined) clean[k] = String(settings[k]).trim();
   }
-  db.prepare("INSERT OR REPLACE INTO integrations (provider, key, value) VALUES ('invoice_settings', 'invoice_settings', ?)").run(JSON.stringify(clean));
+  try {
+    db.prepare("INSERT OR REPLACE INTO integrations (provider, key, value) VALUES ('invoice_settings', 'invoice_settings', ?)").run(JSON.stringify(clean));
+  } catch (e) {
+    console.error('[API] invoice settings save failed:', e.message);
+    return res.status(500).json({ error: 'Failed to save settings. Please try again.' });
+  }
   res.json({ ok: true });
 });
 
@@ -675,29 +775,37 @@ router.post('/drivers', (req, res) => {
     finalHash = bcrypt.hashSync(crypto.randomBytes(32).toString('hex'), 10);
   }
 
-  const result = db.prepare(`
-    INSERT INTO users
-      (username, password, role, full_name, email, phone, active, has_login,
-       license_no, license_expiry, dbs_no, dbs_expiry,
-       vehicle, reg, phv_no, insurance_no, driver_notes, photo,
-       max_passengers, max_bags, luggage_notes)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-  `).run(
-    finalUsername, finalHash, role || 'driver', full_name.trim(),
-    email || null, phone || null,
-    active === 0 ? 0 : 1, wantsLogin ? 1 : 0,
-    license_no || null, license_expiry || null,
-    dbs_no || null, dbs_expiry || null,
-    vehicle || null, reg || null,
-    phv_no || null, insurance_no || null, driver_notes || null,
-    photo || null,
-    max_passengers == null || max_passengers === '' ? null : parseInt(max_passengers, 10),
-    max_bags == null || max_bags === '' ? null : parseInt(max_bags, 10),
-    luggage_notes || null
-  );
+  let result;
+  try {
+    result = db.prepare(`
+      INSERT INTO users
+        (username, password, role, full_name, email, phone, active, has_login,
+         license_no, license_expiry, dbs_no, dbs_expiry,
+         vehicle, reg, phv_no, insurance_no, driver_notes, photo,
+         max_passengers, max_bags, luggage_notes)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    `).run(
+      finalUsername, finalHash, role || 'driver', full_name.trim(),
+      email || null, phone || null,
+      active === 0 ? 0 : 1, wantsLogin ? 1 : 0,
+      license_no || null, license_expiry || null,
+      dbs_no || null, dbs_expiry || null,
+      vehicle || null, reg || null,
+      phv_no || null, insurance_no || null, driver_notes || null,
+      photo || null,
+      max_passengers == null || max_passengers === '' ? null : parseInt(max_passengers, 10),
+      max_bags == null || max_bags === '' ? null : parseInt(max_bags, 10),
+      luggage_notes || null
+    );
+  } catch (e) {
+    console.error('[API] driver insert failed:', e.message);
+    return res.status(500).json({ error: 'Failed to create driver account. Please try again.' });
+  }
 
-  db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
-    .run('user', req.auth.id, 'driver_created', full_name, req.ip);
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run('user', req.auth.id, 'driver_created', full_name, req.ip);
+  } catch (e) { /* audit failure must not block response */ }
 
   res.status(201).json({ ok: true, driver: { id: result.lastInsertRowid, has_login: wantsLogin } });
 });
@@ -762,9 +870,17 @@ router.patch('/drivers/:id', (req, res) => {
   updates.push("updated_at = datetime('now')");
   values.push(id);
 
-  db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...values);
-  db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
-    .run('user', req.auth.id, 'driver_updated', existing.full_name || existing.username, req.ip);
+  try {
+    db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+  } catch (e) {
+    console.error('[API] driver update failed:', e.message);
+    return res.status(500).json({ error: 'Failed to update driver. Please try again.' });
+  }
+
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run('user', req.auth.id, 'driver_updated', existing.full_name || existing.username, req.ip);
+  } catch (e) { /* audit failure must not block response */ }
 
   res.json({ ok: true });
 });
@@ -937,12 +1053,19 @@ router.post('/drivers/:id/default', (req, res) => {
   if (isNaN(id)) return res.status(400).json({ error: 'Invalid driver ID' });
   const existing = db.prepare("SELECT id, full_name FROM users WHERE id = ? AND role IN ('driver','owner') AND active = 1").get(id);
   if (!existing) return res.status(404).json({ error: 'Driver not found or inactive' });
-  db.transaction(() => {
-    db.prepare("UPDATE users SET is_default_driver = 0 WHERE is_default_driver = 1").run();
-    db.prepare("UPDATE users SET is_default_driver = 1 WHERE id = ?").run(id);
-  })();
-  db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
-    .run('user', req.auth.id, 'default_driver_set', existing.full_name, req.ip);
+  try {
+    db.transaction(() => {
+      db.prepare("UPDATE users SET is_default_driver = 0 WHERE is_default_driver = 1").run();
+      db.prepare("UPDATE users SET is_default_driver = 1 WHERE id = ?").run(id);
+    })();
+  } catch (e) {
+    console.error('[API] default driver update failed:', e.message);
+    return res.status(500).json({ error: 'Failed to set default driver. Please try again.' });
+  }
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run('user', req.auth.id, 'default_driver_set', existing.full_name, req.ip);
+  } catch (e) { /* audit failure must not block the response */ }
   res.json({ ok: true });
 });
 

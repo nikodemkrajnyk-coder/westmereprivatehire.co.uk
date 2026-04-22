@@ -181,6 +181,12 @@ app.listen(PORT, () => {
   const gmailOk = emailOk();
   const gcalOk = gcal.isConfigured();
   const intakeOk = intake.isConfigured();
+  const os = require('os');
+  const path = require('path');
+  const fs = require('fs');
+  const icloudParent = path.join(os.homedir(), 'Library', 'Mobile Documents', 'com~apple~CloudDocs');
+  const icloudOk = fs.existsSync(icloudParent);
+  const pad = s => String(s).padEnd(16);
   console.log(`
 ╔═══════════════════════════════════════════════╗
 ║  Westmere Private Hire — Backend Server       ║
@@ -189,11 +195,12 @@ app.listen(PORT, () => {
 ║  Admin login: westmere / sussex               ║
 ║  Database: data/westmere.db                   ║
 ║                                               ║
-║  Stripe:   ${stripeOk() ? 'ACTIVE' : 'NOT CONFIGURED'}                        ║
-║  Gmail:    ${gmailOk ? 'ACTIVE' : 'NOT CONFIGURED'}                        ║
-║  WhatsApp: ${waOk() ? 'ACTIVE' : 'NOT CONFIGURED'}                        ║
-║  GCal:     ${gcalOk ? 'ACTIVE' : 'NOT CONFIGURED'}                        ║
-║  Intake:   ${intakeOk ? 'ACTIVE' : 'NOT CONFIGURED'}                        ║
+║  Stripe:   ${pad(stripeOk() ? 'ACTIVE' : 'NOT CONFIGURED')}               ║
+║  Gmail:    ${pad(gmailOk ? 'ACTIVE' : 'NOT CONFIGURED')}               ║
+║  WhatsApp: ${pad(waOk() ? 'ACTIVE' : 'NOT CONFIGURED')}               ║
+║  GCal:     ${pad(gcalOk ? 'ACTIVE' : 'NOT CONFIGURED')}               ║
+║  Intake:   ${pad(intakeOk ? 'ACTIVE' : 'NOT CONFIGURED')}               ║
+║  Backup:   ${pad(icloudOk ? 'iCloud + local' : 'local only')}               ║
 ╚═══════════════════════════════════════════════╝
   `);
 
@@ -207,7 +214,7 @@ app.listen(PORT, () => {
   // Background: reclaim stale driver offers (10 min window)
   offerRouter.startOfferSweeper();
 
-  // Background: auto-backup database hourly to data/backups/
+  // Background: auto-backup database on start + every 6h → iCloud + data/backups/
   backupRouter.startAutoBackup();
 });
 
