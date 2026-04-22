@@ -332,10 +332,11 @@ function migrate() {
     const masterRow = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='bookings'").get();
     if (masterRow && masterRow.sql && !masterRow.sql.includes("'offered'")) {
       console.log('[DB] Migrating bookings CHECK constraint to include offered status…');
-      // Capture all current columns so we copy everything
       const cols = db.prepare("PRAGMA table_info(bookings)").all().map(c => c.name).join(', ');
+      // Run each DDL statement separately — better-sqlite3 multi-statement exec
+      // can fail silently on mixed DDL+DML in a single exec() call.
+      db.prepare('ALTER TABLE bookings RENAME TO bookings_pre_offered').run();
       db.exec(`
-        ALTER TABLE bookings RENAME TO bookings_pre_offered;
         CREATE TABLE bookings (
           id                  INTEGER PRIMARY KEY AUTOINCREMENT,
           ref                 TEXT    NOT NULL UNIQUE,
@@ -371,10 +372,10 @@ function migrate() {
           cancellation_reason TEXT,
           driver_pay          REAL,
           admin_fee           REAL
-        );
-        INSERT INTO bookings (${cols}) SELECT ${cols} FROM bookings_pre_offered;
-        DROP TABLE bookings_pre_offered;
+        )
       `);
+      db.prepare(`INSERT INTO bookings (${cols}) SELECT ${cols} FROM bookings_pre_offered`).run();
+      db.prepare('DROP TABLE bookings_pre_offered').run();
       console.log('[DB] bookings table rebuilt with offered status support');
     }
   } catch (e) {
