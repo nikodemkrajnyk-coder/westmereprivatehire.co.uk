@@ -277,6 +277,25 @@ function migrate() {
     console.error('[DB] driver-offer column migration failed:', e.message);
   }
 
+  // Driver locations — latest GPS position per driver for live rider tracking.
+  // One row per driver_id (UPSERT), kept fresh by the driver app posting
+  // every few seconds while on a job.
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS driver_locations (
+        driver_id  INTEGER PRIMARY KEY REFERENCES users(id),
+        lat        REAL    NOT NULL,
+        lng        REAL    NOT NULL,
+        heading    REAL,
+        accuracy   REAL,
+        speed      REAL,
+        updated_at TEXT    NOT NULL DEFAULT (datetime('now'))
+      );
+    `);
+  } catch (e) {
+    console.error('[DB] driver_locations table failed:', e.message);
+  }
+
   // Invoices table — persistent record of every invoice generated.
   // Previously we only stored an audit_log entry; this table keeps the
   // full recipient, line items, totals, and (for account customers) the

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Track your Westmere ride</title>
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.js"></script>
+<script src="/config.js"></script>
+<style>
+  :root { --navy:#111D2C; --gold:#B8985A; --green:#2F6B4A; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;background:#f5f2ed;color:var(--navy)}
+  #map{position:absolute;inset:0;z-index:0}
+  .topbar{position:fixed;top:0;left:0;right:0;z-index:10;background:rgba(17,29,44,.95);color:#fff;padding:.8rem 1rem;display:flex;align-items:center;gap:.7rem;backdrop-filter:blur(10px)}
+  .topbar .brand{font-family:Georgia,serif;font-size:1rem;letter-spacing:.25em;font-weight:500}
+  .topbar .sub{font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+  .panel{position:fixed;bottom:0;left:0;right:0;z-index:10;background:#fff;border-radius:16px 16px 0 0;padding:1rem 1.1rem 1.4rem;box-shadow:0 -4px 24px rgba(0,0,0,.15);max-height:50vh;overflow-y:auto}
+  .panel .route{display:flex;flex-direction:column;gap:.4rem;margin:.3rem 0 .6rem}
+  .route-row{display:flex;align-items:center;gap:.55rem;font-size:.88rem}
+  .route-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .dot-a{background:var(--gold)} .dot-b{background:var(--green)}
+  .panel .driver{display:flex;align-items:center;gap:.8rem;padding:.85rem;background:rgba(17,29,44,.04);border:1px solid rgba(17,29,44,.08);margin-bottom:.6rem}
+  .dv-photo{width:54px;height:54px;border-radius:50%;background:rgba(17,29,44,.08);overflow:hidden;display:flex;align-items:center;justify-content:center;color:rgba(17,29,44,.45);font-size:1.3rem;flex-shrink:0}
+  .dv-photo img{width:100%;height:100%;object-fit:cover}
+  .dv-info{flex:1;min-width:0}
+  .dv-name{font-weight:500;font-size:.95rem}
+  .dv-veh{font-size:.74rem;color:rgba(17,29,44,.55);letter-spacing:.05em;margin-top:.1rem}
+  .dv-call{font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;padding:.55rem 1rem;background:var(--gold);color:#fff;text-decoration:none;border-radius:2px}
+  .status-chip{display:inline-block;font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;padding:.25rem .5rem;background:rgba(47,107,74,.12);color:var(--green);border-radius:2px;font-weight:500;margin-bottom:.4rem}
+  .no-driver{font-size:.8rem;color:rgba(17,29,44,.55);padding:.5rem 0;text-align:center}
+  .err{padding:1rem;background:rgba(156,40,40,.08);color:#9C2828;font-size:.85rem;border-radius:4px;margin:1rem}
+  .form{padding:2.5rem 1.2rem;max-width:420px;margin:0 auto}
+  .form h2{font-family:Georgia,serif;font-size:1.35rem;margin-bottom:.3rem;letter-spacing:.08em}
+  .form p{font-size:.82rem;color:rgba(17,29,44,.65);margin-bottom:1.4rem}
+  .form label{display:block;font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(17,29,44,.55);margin:.8rem 0 .3rem}
+  .form input{width:100%;padding:.8rem;border:1px solid rgba(17,29,44,.15);border-radius:4px;font-size:16px;background:#fff;font-family:inherit}
+  .form button{width:100%;margin-top:1.2rem;padding:.85rem;background:var(--navy);color:#fff;border:none;border-radius:4px;font-size:.75rem;letter-spacing:.2em;text-transform:uppercase;cursor:pointer}
+  .form .err-inline{margin-top:.8rem;padding:.6rem;background:rgba(156,40,40,.08);color:#9C2828;font-size:.8rem;border-radius:3px;display:none}
+  .stale{font-size:.68rem;color:rgba(17,29,44,.5);margin-top:.3rem}
+</style>
+</head>
+<body>
+
+<!-- Landing screen: ask for ref + phone if not in URL -->
+<div class="form" id="screen-form" style="display:none">
+  <div class="topbar" style="position:relative;border-radius:4px">
+    <span class="brand">WESTMERE</span><span class="sub">Track</span>
+  </div>
+  <h2 style="margin-top:1.6rem">Track your ride</h2>
+  <p>Enter your booking reference and the mobile number you booked with.</p>
+  <label>Booking reference</label>
+  <input id="inp-ref" type="text" placeholder="WM-XXXXXX" autocomplete="off">
+  <label>Mobile number</label>
+  <input id="inp-phone" type="tel" placeholder="07XXX XXX XXX" autocomplete="tel">
+  <button onclick="submitForm()">Track</button>
+  <div class="err-inline" id="form-err"></div>
+</div>
+
+<!-- Tracking screen -->
+<div id="screen-track" style="display:none;height:100%;position:relative">
+  <div class="topbar">
+    <span class="brand">WESTMERE</span>
+    <span class="sub" id="ref-chip" style="margin-left:auto"></span>
+  </div>
+  <div id="map"></div>
+  <div class="panel">
+    <div id="panel-body"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var MB_TOKEN = window._MB || '';
+  var params = new URLSearchParams(location.search);
+  var ref = (params.get('ref') || '').trim().toUpperCase();
+  var phone = (params.get('phone') || '').trim();
+  var map, pickupMarker, destMarker, driverMarker;
+  var pollTimer = null;
+
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+  function show(id){
+    ['screen-form','screen-track'].forEach(function(i){document.getElementById(i).style.display=i===id?(i==='screen-track'?'block':'block'):'none';});
+  }
+
+  function submitForm(){
+    var r = (document.getElementById('inp-ref').value||'').trim().toUpperCase();
+    var p = (document.getElementById('inp-phone').value||'').trim();
+    var err = document.getElementById('form-err');err.style.display='none';
+    if(!r){err.textContent='Booking reference required';err.style.display='block';return;}
+    if(!p){err.textContent='Phone number required';err.style.display='block';return;}
+    location.href = '?ref='+encodeURIComponent(r)+'&phone='+encodeURIComponent(p);
+  }
+  window.submitForm = submitForm;
+
+  function initMap(lng, lat){
+    if(!MB_TOKEN){document.getElementById('map').innerHTML='<div class="err">Map unavailable — MAPBOX_TOKEN missing.</div>';return false;}
+    mapboxgl.accessToken = MB_TOKEN;
+    map = new mapboxgl.Map({
+      container:'map',
+      style:'mapbox://styles/mapbox/streets-v12',
+      center:[lng,lat],
+      zoom:12
+    });
+    map.addControl(new mapboxgl.NavigationControl({showCompass:false}), 'top-right');
+    return true;
+  }
+
+  function addOrMovePin(existing, lng, lat, color){
+    if(existing){existing.setLngLat([lng,lat]);return existing;}
+    return new mapboxgl.Marker({color:color}).setLngLat([lng,lat]).addTo(map);
+  }
+
+  function addOrMoveDriver(lng, lat, photo){
+    if(driverMarker){
+      driverMarker.setLngLat([lng,lat]);
+      return;
+    }
+    var el = document.createElement('div');
+    el.style.cssText='width:44px;height:44px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);overflow:hidden;background:#B8985A;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600';
+    if(photo){el.innerHTML='<img src="'+esc(photo)+'" style="width:100%;height:100%;object-fit:cover">';}
+    else{el.textContent='★';}
+    driverMarker = new mapboxgl.Marker({element:el}).setLngLat([lng,lat]).addTo(map);
+  }
+
+  // Naive forward-geocode via Mapbox for pickup/dest pins. Cached by string.
+  var geoCache = {};
+  function geocode(q){
+    if(geoCache[q])return Promise.resolve(geoCache[q]);
+    var url = 'https://api.mapbox.com/geocoding/v5/mapbox.places/'+encodeURIComponent(q)+'.json?country=GB&limit=1&access_token='+MB_TOKEN;
+    return fetch(url).then(function(r){return r.json();}).then(function(d){
+      var f=(d&&d.features&&d.features[0]);if(!f)return null;
+      var pt={lng:f.center[0],lat:f.center[1]};
+      geoCache[q]=pt;return pt;
+    }).catch(function(){return null;});
+  }
+
+  function renderPanel(data){
+    var body = document.getElementById('panel-body');
+    var b = data.booking||{};
+    var d = data.driver||{};
+    var loc = data.location||null;
+    var stale = '';
+    if(loc&&loc.updated_at){
+      var t = new Date(loc.updated_at.replace(' ','T')+'Z');
+      var secs = Math.round((Date.now()-t.getTime())/1000);
+      if(secs>45)stale='<div class="stale">Last location update '+secs+'s ago — driver may be out of coverage.</div>';
+    }
+    var driverHtml = '';
+    if(d && d.name){
+      var photoHtml = d.photo
+        ? '<img src="'+esc(d.photo)+'" alt="">'
+        : '<span>'+esc((d.name||'?').trim()[0]||'?')+'</span>';
+      driverHtml = '<div class="driver">'
+        +'<div class="dv-photo">'+photoHtml+'</div>'
+        +'<div class="dv-info">'
+          +'<div class="dv-name">'+esc(d.name)+'</div>'
+          +'<div class="dv-veh">'+esc(d.vehicle||'Tesla')+(d.reg?' · '+esc(d.reg):'')+'</div>'
+          +stale
+        +'</div>'
+        +'<a href="tel:+447930342593" class="dv-call">Call</a>'
+      +'</div>';
+    } else {
+      driverHtml='<div class="no-driver">Driver will be assigned shortly.</div>';
+    }
+    body.innerHTML =
+      '<span class="status-chip">'+esc((b.status||'').toUpperCase())+'</span>'
+      +driverHtml
+      +'<div class="route">'
+        +'<div class="route-row"><div class="route-dot dot-a"></div><span>'+esc(b.pickup||'')+'</span></div>'
+        +'<div class="route-row"><div class="route-dot dot-b"></div><span>'+esc(b.destination||'')+'</span></div>'
+      +'</div>';
+    document.getElementById('ref-chip').textContent = (b.ref||ref);
+  }
+
+  async function poll(){
+    try{
+      var r = await fetch('/api/public/tracking/'+encodeURIComponent(ref)+'?phone='+encodeURIComponent(phone));
+      var data = await r.json();
+      if(!r.ok||!data.ok){
+        document.getElementById('panel-body').innerHTML = '<div class="err">'+esc(data.error||'Unable to load tracking')+'</div>';
+        clearInterval(pollTimer);return;
+      }
+      renderPanel(data);
+
+      if(!map){
+        // Center initial map on driver if known, else geocode pickup.
+        if(data.location){
+          initMap(data.location.lng, data.location.lat);
+        } else {
+          var pu = await geocode(data.booking.pickup);
+          if(pu)initMap(pu.lng,pu.lat); else initMap(-0.1276,51.5074);
+        }
+      }
+
+      if(map){
+        // Add pickup + destination pins once
+        if(!pickupMarker){
+          geocode(data.booking.pickup).then(function(pt){if(pt){pickupMarker=addOrMovePin(null,pt.lng,pt.lat,'#B8985A');}});
+        }
+        if(!destMarker){
+          geocode(data.booking.destination).then(function(pt){if(pt){destMarker=addOrMovePin(null,pt.lng,pt.lat,'#2F6B4A');}});
+        }
+        if(data.location){
+          addOrMoveDriver(data.location.lng, data.location.lat, data.driver?data.driver.photo:null);
+          // Keep driver in view
+          map.easeTo({center:[data.location.lng,data.location.lat],duration:800});
+        }
+      }
+    } catch(e){
+      console.error('poll failed',e);
+    }
+  }
+
+  if(!ref || !phone){show('screen-form');return;}
+  show('screen-track');
+  poll();
+  pollTimer = setInterval(poll, 5000);
+})();
+</script>
+</body>
+</html>

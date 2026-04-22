@@ -14,6 +14,8 @@ const intakeRouter = require('./intake-routes');
 const offerRouter = require('./offer-routes');
 const assistantRouter = require('./assistant-routes');
 const backupRouter = require('./backup-routes');
+const trackingRouter = require('./tracking-routes');
+const publicTrackingRouter = require('./public-tracking-routes');
 const { createAuthMiddleware } = require('./middleware');
 const gcal = require('./google-calendar');
 const intake = require('./intake');
@@ -33,11 +35,13 @@ app.use(helmet({
         "https://fonts.googleapis.com", "https://fonts.gstatic.com",
         "https://js.stripe.com",
         "https://cdn.jsdelivr.net", "https://www.google.com",
-        "https://www.gstatic.com"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        "https://www.gstatic.com",
+        "https://api.mapbox.com"],
+      workerSrc: ["'self'", "blob:"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://api.mapbox.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com", "https://fonts.googleapis.com"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
-      connectSrc: ["'self'", "https://api.mapbox.com",
+      connectSrc: ["'self'", "https://api.mapbox.com", "https://events.mapbox.com",
         "https://nominatim.openstreetmap.org", "https://router.project-osrm.org",
         "https://api.stripe.com"],
       frameSrc: ["'self'", "https://js.stripe.com", "https://www.google.com"],
@@ -84,11 +88,17 @@ app.use('/api/auth', authLimiter, authRouter);
 // Public API routes (booking, payment — no auth needed)
 app.use('/api/public', apiLimiter, publicApiRouter);
 
+// Public tracking (rider views their own booking by ref + phone)
+app.use('/api/public', apiLimiter, publicTrackingRouter);
+
 // Google Calendar OAuth callback (public — Google redirects here after consent)
 app.use('/api/google', apiLimiter, googleRouter.publicCallback);
 
 // Protected API routes
 app.use('/api', apiLimiter, requireAuth, apiRouter);
+
+// Driver location push (authenticated driver/owner)
+app.use('/api', apiLimiter, requireAuth, trackingRouter);
 
 // Protected Google Calendar routes (auth-url, status, disconnect, sync)
 app.use('/api/google', requireAuth, googleRouter);
