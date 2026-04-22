@@ -596,8 +596,48 @@ async function sendCustomerCancellation(booking) {
   return ok;
 }
 
+// ── Weekly driver statement ─────────────────────────────────────────────
+// Plain-text-ish HTML summary of a driver's earnings for a date range.
+// Triggered manually via admin UI, or automatically by a weekly cron.
+async function sendDriverStatement(driver, period, totals, items) {
+  if (!driver || !driver.email) return false;
+  const rows = (items || []).map(it => `
+    <tr>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:12px;color:#555">${it.date}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:12px;color:#111">${it.ref} · ${it.pickup} → ${it.destination}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:12px;color:#111;text-align:right;font-family:Menlo,Consolas,monospace">£${(+it.fare||0).toFixed(2)}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:12px;color:#9C2828;text-align:right;font-family:Menlo,Consolas,monospace">−£${(+it.commission||0).toFixed(2)}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:12px;color:#B8985A;text-align:right;font-family:Menlo,Consolas,monospace;font-weight:600">£${(+it.net||0).toFixed(2)}</td>
+    </tr>`).join('');
+  const html = `<!DOCTYPE html><html><body style="font-family:Helvetica,Arial,sans-serif;background:#f5f2ed;padding:20px">
+  <div style="max-width:640px;margin:0 auto;background:#fff;padding:26px 30px;border-top:4px solid #B8985A">
+    <div style="font-family:Georgia,serif;font-size:22px;letter-spacing:.2em;color:#111D2C">WESTMERE</div>
+    <div style="font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:#B8985A;margin-top:2px">Driver Statement</div>
+    <h2 style="font-family:Georgia,serif;font-size:16px;color:#111D2C;margin:22px 0 6px">Hi ${driver.name || 'driver'},</h2>
+    <p style="font-size:13px;color:#333;line-height:1.6">Here is your earnings summary for <strong>${period.from}</strong> to <strong>${period.to}</strong>.</p>
+    <div style="display:flex;gap:12px;margin:16px 0 10px;flex-wrap:wrap">
+      <div style="flex:1;min-width:110px;padding:10px 12px;background:#fafafa;border:1px solid #eee"><div style="font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#888">Jobs</div><div style="font-size:18px;color:#111D2C;margin-top:2px">${totals.jobs}</div></div>
+      <div style="flex:1;min-width:110px;padding:10px 12px;background:#fafafa;border:1px solid #eee"><div style="font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#888">Gross</div><div style="font-size:18px;color:#111D2C;margin-top:2px">£${(+totals.gross||0).toFixed(2)}</div></div>
+      <div style="flex:1;min-width:110px;padding:10px 12px;background:#fafafa;border:1px solid #eee"><div style="font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#888">Commission (10%)</div><div style="font-size:18px;color:#9C2828;margin-top:2px">£${(+totals.commission||0).toFixed(2)}</div></div>
+      <div style="flex:1;min-width:110px;padding:10px 12px;background:rgba(184,152,90,.08);border:1px solid rgba(184,152,90,.25)"><div style="font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#8B7035">Net due to you</div><div style="font-size:18px;color:#B8985A;margin-top:2px;font-weight:600">£${(+totals.net||0).toFixed(2)}</div></div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;margin-top:12px">
+      <thead><tr>
+        <th style="padding:6px 8px;text-align:left;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#B8985A;border-bottom:2px solid #B8985A">Date</th>
+        <th style="padding:6px 8px;text-align:left;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#B8985A;border-bottom:2px solid #B8985A">Journey</th>
+        <th style="padding:6px 8px;text-align:right;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#B8985A;border-bottom:2px solid #B8985A">Fare</th>
+        <th style="padding:6px 8px;text-align:right;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#B8985A;border-bottom:2px solid #B8985A">Fee</th>
+        <th style="padding:6px 8px;text-align:right;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#B8985A;border-bottom:2px solid #B8985A">Net</th>
+      </tr></thead>
+      <tbody>${rows || '<tr><td colspan="5" style="padding:16px;text-align:center;color:#999;font-size:12px">No jobs this period.</td></tr>'}</tbody>
+    </table>
+    <div style="font-size:11px;color:#888;border-top:1px solid #eee;margin-top:24px;padding-top:14px;text-align:center">Westmere Private Hire · Licensed by Lewes District Council</div>
+  </div></body></html>`;
+  return sendEmail(driver.email, `Westmere — Weekly statement (${period.from} to ${period.to})`, html, 'Westmere Payroll', `Your earnings summary: £${(+totals.net||0).toFixed(2)} net`);
+}
+
 module.exports = {
   sendCustomerConfirmation, sendCustomerConfirmed, sendAdminAlert,
   sendCustomerWelcome, sendCustomerInvoice, sendBespokeInvoice,
-  sendCustomerCancellation, sendEmail, isConfigured
+  sendCustomerCancellation, sendDriverStatement, sendEmail, isConfigured
 };

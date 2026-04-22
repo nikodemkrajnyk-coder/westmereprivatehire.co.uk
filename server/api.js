@@ -17,8 +17,11 @@ router.get('/bookings', (req, res) => {
   let rows;
   if (role === 'admin' || role === 'owner') {
     rows = db.prepare(`
-      SELECT b.*, c.full_name as customer_name, c.email as customer_email, c.phone as customer_phone,
-             u.full_name as driver_name,
+      SELECT b.*,
+             COALESCE(c.full_name, b.passenger_name) as customer_name,
+             COALESCE(c.email,     b.passenger_email) as customer_email,
+             COALESCE(c.phone,     b.passenger_phone) as customer_phone,
+             u.full_name  as driver_name,
              od.full_name as offered_driver_name
       FROM bookings b
       LEFT JOIN customers c ON b.customer_id = c.id
@@ -29,7 +32,9 @@ router.get('/bookings', (req, res) => {
     `).all();
   } else if (role === 'driver') {
     rows = db.prepare(`
-      SELECT b.*, c.full_name as customer_name, c.phone as customer_phone
+      SELECT b.*,
+             COALESCE(c.full_name, b.passenger_name) as customer_name,
+             COALESCE(c.phone,     b.passenger_phone) as customer_phone
       FROM bookings b
       LEFT JOIN customers c ON b.customer_id = c.id
       WHERE b.driver_id = ?
@@ -180,7 +185,9 @@ router.patch('/bookings/:id', (req, res) => {
 
   // Sync to Google Calendar in background
   const updated = db.prepare(`
-    SELECT b.*, c.full_name as customer_name, c.phone as customer_phone
+    SELECT b.*,
+           COALESCE(c.full_name, b.passenger_name) as customer_name,
+           COALESCE(c.phone,     b.passenger_phone) as customer_phone
     FROM bookings b LEFT JOIN customers c ON b.customer_id = c.id
     WHERE b.id = ?
   `).get(req.params.id);
@@ -237,7 +244,12 @@ router.get('/customers', (req, res) => {
     return res.status(403).json({ error: 'Access denied' });
   }
   const db = getDb();
-  const rows = db.prepare('SELECT id, email, full_name, phone, account_type, active, created_at FROM customers ORDER BY created_at DESC').all();
+  const rows = db.prepare(`
+    SELECT id, email, full_name, phone, account_type, active, created_at,
+           address_line1, address_line2, postcode,
+           bank_name, bank_sort_code, bank_account_no, bank_account_name
+      FROM customers ORDER BY created_at DESC
+  `).all();
   res.json({ ok: true, customers: rows });
 });
 
@@ -249,7 +261,11 @@ router.post('/customers', (req, res) => {
   if (!['admin', 'owner'].includes(req.auth.role)) {
     return res.status(403).json({ error: 'Access denied' });
   }
-  const { email, full_name, phone } = req.body || {};
+  const {
+    email, full_name, phone,
+    address_line1, address_line2, postcode,
+    bank_name, bank_sort_code, bank_account_no, bank_account_name
+  } = req.body || {};
   if (!email || !full_name) {
     return res.status(400).json({ error: 'Email and full name are required' });
   }
@@ -266,9 +282,20 @@ router.post('/customers', (req, res) => {
   const unusableHash = bcrypt.hashSync('!' + Math.random().toString(36) + Date.now(), 12);
 
   const result = db.prepare(`
-    INSERT INTO customers (email, password, full_name, phone, account_type)
-    VALUES (?, ?, ?, ?, 'personal')
-  `).run(cleanEmail, unusableHash, full_name.trim(), phone || null);
+    INSERT INTO customers (email, password, full_name, phone, account_type,
+                           address_line1, address_line2, postcode,
+                           bank_name, bank_sort_code, bank_account_no, bank_account_name)
+    VALUES (?, ?, ?, ?, 'personal', ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    cleanEmail, unusableHash, full_name.trim(), phone || null,
+    (address_line1 || '').trim() || null,
+    (address_line2 || '').trim() || null,
+    (postcode || '').trim() || null,
+    (bank_name || '').trim() || null,
+    (bank_sort_code || '').trim() || null,
+    (bank_account_no || '').trim() || null,
+    (bank_account_name || '').trim() || null
+  );
 
   db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
     .run(req.auth.type || 'user', req.auth.id, 'customer_created_by_admin', cleanEmail, req.ip);
@@ -732,6 +759,117 @@ router.patch('/drivers/:id', (req, res) => {
     .run('user', req.auth.id, 'driver_updated', existing.full_name || existing.username, req.ip);
 
   res.json({ ok: true });
+});
+
+// Earnings summary for a driver over a period. Used by admin driver
+// detail / weekly statements. Commission is 10% on the fare by default;
+// if driver_pay / admin_fee are set on a booking those override.
+const COMMISSION_RATE = 0.10;
+router.get('/drivers/:id/earnings', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid driver ID' });
+
+  // Default range: current week (Mon–Sun) if nothing provided.
+  let from = req.query.from, to = req.query.to;
+  if (!from || !to) {
+    const now = new Date();
+    const day = now.getDay(); // 0=Sun
+    const diffToMon = (day + 6) % 7;
+    const mon = new Date(now); mon.setDate(now.getDate() - diffToMon); mon.setHours(0,0,0,0);
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    from = mon.toISOString().slice(0, 10);
+    to   = sun.toISOString().slice(0, 10);
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+    return res.status(400).json({ error: 'from/to must be YYYY-MM-DD' });
+  }
+
+  const driver = db.prepare("SELECT id, full_name, email FROM users WHERE id = ? AND role IN ('driver','owner')").get(id);
+  if (!driver) return res.status(404).json({ error: 'Driver not found' });
+
+  const bookings = db.prepare(`
+    SELECT id, ref, date, time, pickup, destination, fare, payment, status,
+           driver_pay, admin_fee
+      FROM bookings
+     WHERE driver_id = ?
+       AND date >= ? AND date <= ?
+       AND status IN ('confirmed','active','completed','done')
+     ORDER BY date ASC, time ASC
+  `).all(id, from, to);
+
+  let gross = 0, commission = 0, net = 0;
+  const items = bookings.map(b => {
+    const fare = +b.fare || 0;
+    // If admin set explicit payouts use those; otherwise derive from commission rate.
+    const itemCommission = (b.admin_fee != null) ? (+b.admin_fee || 0) : +(fare * COMMISSION_RATE).toFixed(2);
+    const itemNet = (b.driver_pay != null) ? (+b.driver_pay || 0) : +(fare - itemCommission).toFixed(2);
+    gross += fare; commission += itemCommission; net += itemNet;
+    return {
+      id: b.id, ref: b.ref, date: b.date, time: b.time,
+      pickup: b.pickup, destination: b.destination,
+      fare, commission: itemCommission, net: itemNet,
+      payment: b.payment, status: b.status
+    };
+  });
+
+  res.json({
+    ok: true,
+    driver: { id: driver.id, name: driver.full_name, email: driver.email },
+    period: { from, to },
+    commission_rate: COMMISSION_RATE,
+    totals: {
+      jobs: items.length,
+      gross: +gross.toFixed(2),
+      commission: +commission.toFixed(2),
+      net: +net.toFixed(2)
+    },
+    items
+  });
+});
+
+// Email a weekly earnings statement to a driver. Body: { from, to }.
+router.post('/drivers/:id/statement', async (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid driver ID' });
+  const { from, to } = req.body || {};
+  if (!from || !to || !/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+    return res.status(400).json({ error: 'from and to required (YYYY-MM-DD)' });
+  }
+  const driver = db.prepare("SELECT id, full_name, email FROM users WHERE id = ? AND role IN ('driver','owner')").get(id);
+  if (!driver) return res.status(404).json({ error: 'Driver not found' });
+  if (!driver.email) return res.status(400).json({ error: 'Driver has no email on file' });
+
+  const bookings = db.prepare(`
+    SELECT id, ref, date, time, pickup, destination, fare, payment, status, driver_pay, admin_fee
+      FROM bookings
+     WHERE driver_id = ? AND date >= ? AND date <= ?
+       AND status IN ('confirmed','active','completed','done')
+     ORDER BY date ASC, time ASC
+  `).all(id, from, to);
+  let gross = 0, commission = 0, net = 0;
+  const items = bookings.map(b => {
+    const fare = +b.fare || 0;
+    const c = (b.admin_fee != null) ? (+b.admin_fee || 0) : +(fare * 0.10).toFixed(2);
+    const n = (b.driver_pay != null) ? (+b.driver_pay || 0) : +(fare - c).toFixed(2);
+    gross += fare; commission += c; net += n;
+    return { date: b.date, time: b.time, ref: b.ref, pickup: b.pickup, destination: b.destination, fare, commission: c, net: n };
+  });
+  const totals = { jobs: items.length, gross: +gross.toFixed(2), commission: +commission.toFixed(2), net: +net.toFixed(2) };
+
+  const { sendDriverStatement } = require('./email');
+  const ok = await sendDriverStatement({ name: driver.full_name, email: driver.email }, { from, to }, totals, items);
+  if (!ok) return res.status(502).json({ error: 'Email delivery failed (check RESEND_API_KEY)' });
+  db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+    .run(req.auth.type || 'user', req.auth.id, 'driver_statement_sent', driver.full_name + ' ' + from + '→' + to, req.ip);
+  res.json({ ok: true, sent_to: driver.email, totals });
 });
 
 // Mark a driver as the default (auto-allocation target for new bookings).

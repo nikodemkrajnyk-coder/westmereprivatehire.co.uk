@@ -290,6 +290,26 @@ function migrate() {
     console.error('[DB] driver-offer column migration failed:', e.message);
   }
 
+  // Customer billing details — for invoicing (address + bank).
+  try {
+    const info = db.prepare("PRAGMA table_info(customers)").all();
+    const custCols = [
+      ['address_line1',    'TEXT'],
+      ['address_line2',    'TEXT'],
+      ['postcode',         'TEXT'],
+      ['bank_name',        'TEXT'],
+      ['bank_sort_code',   'TEXT'],
+      ['bank_account_no',  'TEXT'],
+      ['bank_account_name','TEXT']
+    ];
+    for (const [n, t] of custCols) {
+      if (!info.find(c => c.name === n)) {
+        db.exec(`ALTER TABLE customers ADD COLUMN ${n} ${t}`);
+        console.log('[DB] Added ' + n + ' column to customers');
+      }
+    }
+  } catch (e) { console.error('[DB] customer billing migration failed:', e.message); }
+
   // Driver locations — latest GPS position per driver for live rider tracking.
   // One row per driver_id (UPSERT), kept fresh by the driver app posting
   // every few seconds while on a job.

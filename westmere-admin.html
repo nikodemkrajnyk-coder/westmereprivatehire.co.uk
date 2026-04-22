@@ -130,7 +130,7 @@ a{color:var(--gold)}
 .btn:active{transform:scale(.97)}
 .btn-gold{background:var(--gold);color:var(--navy);border:1px solid var(--gold)}.btn-gold:hover{background:var(--gold2)}
 .btn-navy{background:rgba(17,29,44,.06);color:var(--navy);border:1px solid rgba(17,29,44,.15)}.btn-navy:hover{background:var(--gold);border-color:var(--gold);color:var(--navy)}
-.btn-ghost{background:transparent;color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.15)}.btn-ghost:hover{color:#fff;border-color:rgba(17,29,44,.4)}
+.btn-ghost{background:transparent;color:rgba(17,29,44,.65);border:1px solid rgba(17,29,44,.18)}.btn-ghost:hover{color:var(--navy);border-color:rgba(17,29,44,.4);background:rgba(17,29,44,.03)}
 .btn-green{background:var(--green-bg);color:var(--green);border:1px solid rgba(45,110,71,.3)}.btn-green:hover{background:rgba(45,110,71,.25)}
 .btn-red{background:var(--red-bg);color:var(--red);border:1px solid rgba(139,34,34,.3)}.btn-red:hover{background:rgba(139,34,34,.25)}
 .btn-blue{background:rgba(59,130,246,.08);color:#60A5FA;border:1px solid rgba(59,130,246,.2)}.btn-blue:hover{background:rgba(59,130,246,.15)}
@@ -691,6 +691,19 @@ if ('serviceWorker' in navigator) {
             <label style="display:block;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.35rem">Mobile (optional)</label>
             <input id="nc-phone" type="tel" placeholder="+44 7700 000 000" style="width:100%;padding:.7rem .85rem;border:1px solid rgba(17,29,44,.14);border-radius:8px;font-size:.9rem">
           </div>
+          <div style="font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:1rem 0 .45rem">Billing Address</div>
+          <div style="margin-bottom:.6rem"><input id="nc-addr1" type="text" placeholder="Address line 1" style="width:100%;padding:.7rem .85rem;border:1px solid rgba(17,29,44,.14);border-radius:8px;font-size:.9rem"></div>
+          <div style="display:grid;grid-template-columns:1fr 120px;gap:.5rem;margin-bottom:.8rem">
+            <input id="nc-addr2" type="text" placeholder="Town / City" style="padding:.7rem .85rem;border:1px solid rgba(17,29,44,.14);border-radius:8px;font-size:.9rem">
+            <input id="nc-postcode" type="text" placeholder="Postcode" style="padding:.7rem .85rem;border:1px solid rgba(17,29,44,.14);border-radius:8px;font-size:.9rem">
+          </div>
+          <div style="font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:.8rem 0 .45rem">Bank (for invoice payments)</div>
+          <div style="margin-bottom:.6rem"><input id="nc-bank-name" type="text" placeholder="Bank name (e.g. Barclays)" style="width:100%;padding:.7rem .85rem;border:1px solid rgba(17,29,44,.14);border-radius:8px;font-size:.9rem"></div>
+          <div style="margin-bottom:.6rem"><input id="nc-bank-acc-name" type="text" placeholder="Account name" style="width:100%;padding:.7rem .85rem;border:1px solid rgba(17,29,44,.14);border-radius:8px;font-size:.9rem"></div>
+          <div style="display:grid;grid-template-columns:130px 1fr;gap:.5rem;margin-bottom:.8rem">
+            <input id="nc-bank-sort" type="text" placeholder="Sort code" style="padding:.7rem .85rem;border:1px solid rgba(17,29,44,.14);border-radius:8px;font-size:.9rem;font-family:Menlo,Consolas,monospace">
+            <input id="nc-bank-acc" type="text" placeholder="Account number" style="padding:.7rem .85rem;border:1px solid rgba(17,29,44,.14);border-radius:8px;font-size:.9rem;font-family:Menlo,Consolas,monospace">
+          </div>
           <div id="nc-err" style="display:none;padding:.6rem .8rem;background:rgba(197,64,64,.08);color:#c54040;font-size:.8rem;border-radius:6px;margin-bottom:.8rem"></div>
           <button onclick="submitNewCustomer()" id="nc-submit" style="width:100%;padding:.9rem;background:#111D2C;color:#fff;border:none;border-radius:8px;font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Create Account</button>
         </div>
@@ -1107,6 +1120,27 @@ if ('serviceWorker' in navigator) {
         <div style="font-size:.68rem;color:rgba(17,29,44,.5);margin-top:.2rem">Driver uses these credentials in the Driver app. Leave blank to add them later.</div>
       </div>
 
+      <!-- Earnings (populated on edit) -->
+      <div id="dm-earnings" style="display:none;margin-top:1.3rem;padding:1rem 1.1rem;background:rgba(184,152,90,.06);border:1px solid rgba(184,152,90,.2);border-radius:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">
+          <div style="font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:600">This Week (Mon–Sun)</div>
+          <div style="font-size:.66rem;color:rgba(17,29,44,.5)" id="dm-earn-period">—</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:.7rem">
+          <div style="text-align:center"><div style="font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(17,29,44,.5)">Jobs</div><div style="font-size:1.2rem;font-weight:500;color:var(--navy);margin-top:.15rem" id="dm-earn-jobs">0</div></div>
+          <div style="text-align:center"><div style="font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(17,29,44,.5)">Gross</div><div style="font-size:1.2rem;font-weight:500;color:var(--navy);margin-top:.15rem" id="dm-earn-gross">£0</div></div>
+          <div style="text-align:center"><div style="font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(17,29,44,.5)">Commission (10%)</div><div style="font-size:1.2rem;font-weight:500;color:#9C2828;margin-top:.15rem" id="dm-earn-comm">£0</div></div>
+          <div style="text-align:center"><div style="font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(17,29,44,.5)">Driver Net</div><div style="font-size:1.2rem;font-weight:500;color:var(--gold);margin-top:.15rem" id="dm-earn-net">£0</div></div>
+        </div>
+        <div id="dm-earn-list" style="max-height:180px;overflow-y:auto;border-top:1px solid rgba(17,29,44,.08);padding-top:.6rem;font-size:.78rem"></div>
+        <div style="display:flex;gap:.5rem;margin-top:.7rem;flex-wrap:wrap">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="dmLoadEarnings('week')" style="font-size:.64rem;padding:.4rem .8rem">This week</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="dmLoadEarnings('last-week')" style="font-size:.64rem;padding:.4rem .8rem">Last week</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="dmLoadEarnings('month')" style="font-size:.64rem;padding:.4rem .8rem">This month</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="dmSendStatement()" style="font-size:.64rem;padding:.4rem .8rem;border-color:rgba(184,152,90,.4);color:#B8985A">Email statement to driver</button>
+        </div>
+      </div>
+
       <div id="dm-err" style="display:none;margin-top:.8rem;padding:.6rem .8rem;background:rgba(156,40,40,.08);color:#9C2828;font-size:.78rem;border-radius:6px"></div>
     </div>
     <div class="modal-foot">
@@ -1187,7 +1221,13 @@ if ('serviceWorker' in navigator) {
 
       <!-- Bespoke / one-off mode -->
       <div id="ni-bespoke-fields" style="display:none">
-        <div style="font-size:.72rem;color:rgba(17,29,44,.5);margin-bottom:.9rem;line-height:1.5">Create a bespoke invoice for someone not in your customer list — e.g. an outside company using Westmere services.</div>
+        <div style="font-size:.72rem;color:rgba(17,29,44,.5);margin-bottom:.9rem;line-height:1.5">Create a bespoke invoice with custom line items. You can prefill from an existing account customer or type a new recipient.</div>
+        <div class="fg">
+          <label class="fl">Prefill from customer (optional)</label>
+          <select class="fi" id="ni-rec-prefill" onchange="prefillBespokeFromCustomer(this.value)">
+            <option value="">— New recipient —</option>
+          </select>
+        </div>
         <div class="fg"><label class="fl">Recipient Name *</label><input class="fi" id="ni-rec-name" placeholder="e.g. Sussex Corporate Ltd"></div>
         <div class="fg"><label class="fl">Recipient Email</label><input class="fi" type="email" id="ni-rec-email" placeholder="accounts@example.com"></div>
         <div class="fg"><label class="fl">Recipient Phone</label><input class="fi" id="ni-rec-phone" placeholder="Optional"></div>
@@ -1784,6 +1824,7 @@ function openAddDriver(){
   document.getElementById('dm-save-btn').textContent='Save Driver';
   document.getElementById('dm-revoke-btn').style.display='none';
   document.getElementById('dm-default-btn').style.display='none';
+  document.getElementById('dm-earnings').style.display='none';
   ['dm-id','dm-photo','dm-fname','dm-lname','dm-phone','dm-email','dm-license-no','dm-license-expiry','dm-dbs-no','dm-dbs-expiry','dm-phv','dm-insurance','dm-vehicle','dm-reg','dm-notes','dm-username','dm-password']
     .forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   dmPhotoRenderPreview('');
@@ -1838,6 +1879,7 @@ function openEditDriver(id){
     toggleDriverLoginSection();
     document.getElementById('dm-err').style.display='none';
     openModal('modal-add-driver');
+    dmLoadEarnings('week');
   }).catch(function(){showToast('Error loading driver');});
 }
 
@@ -1867,6 +1909,54 @@ function dmPhotoRenderPreview(src){
   var el=document.getElementById('dm-photo-preview');if(!el)return;
   if(src){el.innerHTML='<img src="'+src+'" style="width:100%;height:100%;object-fit:cover">';}
   else{el.textContent='None';}
+}
+
+function dmEarnRange(which){
+  var now=new Date();
+  var day=now.getDay(); var diffMon=(day+6)%7;
+  var mon=new Date(now);mon.setHours(0,0,0,0);mon.setDate(now.getDate()-diffMon);
+  var sun=new Date(mon);sun.setDate(mon.getDate()+6);
+  if(which==='last-week'){mon.setDate(mon.getDate()-7);sun.setDate(sun.getDate()-7);}
+  if(which==='month'){mon=new Date(now.getFullYear(),now.getMonth(),1);sun=new Date(now.getFullYear(),now.getMonth()+1,0);}
+  function fmt(d){return d.toISOString().slice(0,10);}
+  return{from:fmt(mon),to:fmt(sun)};
+}
+
+async function dmLoadEarnings(which){
+  if(!DRIVER_EDIT_ID)return;
+  var range=dmEarnRange(which||'week');
+  var box=document.getElementById('dm-earnings');box.style.display='';
+  try{
+    var r=await fetch('/api/drivers/'+DRIVER_EDIT_ID+'/earnings?from='+range.from+'&to='+range.to,{credentials:'include'});
+    var d=await r.json();
+    if(!r.ok||!d.ok){showToast(d.error||'Earnings load failed');return;}
+    document.getElementById('dm-earn-period').textContent=range.from+' → '+range.to;
+    document.getElementById('dm-earn-jobs').textContent=d.totals.jobs;
+    document.getElementById('dm-earn-gross').textContent='£'+d.totals.gross.toFixed(2);
+    document.getElementById('dm-earn-comm').textContent='£'+d.totals.commission.toFixed(2);
+    document.getElementById('dm-earn-net').textContent='£'+d.totals.net.toFixed(2);
+    var list=document.getElementById('dm-earn-list');
+    if(!d.items.length){list.innerHTML='<div style="color:rgba(17,29,44,.45);padding:.4rem 0">No jobs in this period.</div>';return;}
+    list.innerHTML=d.items.map(function(it){
+      return '<div style="display:grid;grid-template-columns:76px 1fr auto;gap:.5rem;padding:.45rem 0;border-bottom:1px solid rgba(17,29,44,.05)">'
+        +'<div style="color:rgba(17,29,44,.55);font-size:.72rem">'+escTo(it.date)+'</div>'
+        +'<div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escTo(it.pickup)+' → '+escTo(it.destination)+'">'+escTo(it.ref)+' · '+escTo(it.pickup)+' → '+escTo(it.destination)+'</div>'
+        +'<div style="text-align:right;white-space:nowrap;font-family:Menlo,Consolas,monospace;font-size:.72rem">£'+it.fare.toFixed(2)+' <span style="color:#9C2828">−£'+it.commission.toFixed(2)+'</span> = <span style="color:var(--gold);font-weight:500">£'+it.net.toFixed(2)+'</span></div>'
+      +'</div>';
+    }).join('');
+  }catch(e){showToast('Network error loading earnings');}
+}
+
+async function dmSendStatement(){
+  if(!DRIVER_EDIT_ID)return;
+  var range=dmEarnRange('last-week');
+  if(!confirm('Email a weekly statement to this driver for '+range.from+' → '+range.to+'?'))return;
+  try{
+    var r=await fetch('/api/drivers/'+DRIVER_EDIT_ID+'/statement',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({from:range.from,to:range.to})});
+    var d=await r.json();
+    if(r.ok&&d.ok){showToast('Statement emailed to '+(d.sent_to||'driver'));}
+    else{showToast(d.error||'Email failed');}
+  }catch(e){showToast('Network error');}
 }
 
 async function dmSetDefault(){
@@ -2055,9 +2145,8 @@ function showToast(msg){
 function openNewCustomerModal(){
   document.getElementById('modal-new-customer').style.display='flex';
   document.getElementById('nc-err').style.display='none';
-  document.getElementById('nc-name').value='';
-  document.getElementById('nc-email').value='';
-  document.getElementById('nc-phone').value='';
+  ['nc-name','nc-email','nc-phone','nc-addr1','nc-addr2','nc-postcode','nc-bank-name','nc-bank-acc-name','nc-bank-sort','nc-bank-acc']
+    .forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   setTimeout(function(){document.getElementById('nc-name').focus();},50);
 }
 function closeNewCustomerModal(){
@@ -2070,10 +2159,20 @@ async function submitNewCustomer(){
   const email=document.getElementById('nc-email').value.trim();
   const phone=document.getElementById('nc-phone').value.trim();
   if(!name||!email){errEl.textContent='Name and email are required.';errEl.style.display='';return;}
+  const payload={
+    full_name:name, email, phone,
+    address_line1:(document.getElementById('nc-addr1').value||'').trim(),
+    address_line2:(document.getElementById('nc-addr2').value||'').trim(),
+    postcode:(document.getElementById('nc-postcode').value||'').trim(),
+    bank_name:(document.getElementById('nc-bank-name').value||'').trim(),
+    bank_account_name:(document.getElementById('nc-bank-acc-name').value||'').trim(),
+    bank_sort_code:(document.getElementById('nc-bank-sort').value||'').trim(),
+    bank_account_no:(document.getElementById('nc-bank-acc').value||'').trim()
+  };
   const btn=document.getElementById('nc-submit');
   btn.disabled=true;btn.textContent='Creating...';
   try{
-    const r=await fetch('/api/customers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({full_name:name,email,phone})});
+    const r=await fetch('/api/customers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     const d=await r.json();
     if(!r.ok||!d.ok){errEl.textContent=d.error||'Failed to create account.';errEl.style.display='';btn.disabled=false;btn.textContent='Create Account';return;}
     btn.disabled=false;btn.textContent='Create Account';
@@ -2167,16 +2266,32 @@ function openNewInvoice(){
   document.getElementById('ni-items').innerHTML='';
   addBespokeItem();
   openModal('modal-new-invoice');
+  window._BESPOKE_CUST_INDEX={};
   fetch('/api/customers',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
     if(!d.ok||!d.customers.length){
       sel.innerHTML='<option value="">No customers yet</option>';return;
     }
     var opts=['<option value="">-- Select customer --</option>'];
+    var prefillOpts=['<option value="">— New recipient —</option>'];
     d.customers.forEach(function(c){
       opts.push('<option value="'+c.id+'">'+escTo(c.full_name||'Unknown')+'</option>');
+      prefillOpts.push('<option value="'+c.id+'">'+escTo(c.full_name||'Unknown')+(c.email?' ('+escTo(c.email)+')':'')+'</option>');
+      window._BESPOKE_CUST_INDEX[c.id]=c;
     });
     sel.innerHTML=opts.join('');
+    var pre=document.getElementById('ni-rec-prefill');if(pre)pre.innerHTML=prefillOpts.join('');
   }).catch(function(){sel.innerHTML='<option value="">Error loading customers</option>';});
+}
+
+function prefillBespokeFromCustomer(id){
+  if(!id){return;}
+  var c=(window._BESPOKE_CUST_INDEX||{})[id];
+  if(!c)return;
+  document.getElementById('ni-rec-name').value=c.full_name||'';
+  document.getElementById('ni-rec-email').value=c.email||'';
+  document.getElementById('ni-rec-phone').value=c.phone||'';
+  var addr=[c.address_line1,c.address_line2,c.postcode].filter(Boolean).join('\n');
+  document.getElementById('ni-rec-address').value=addr;
 }
 
 function getInvoiceDates(){
