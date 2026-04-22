@@ -159,7 +159,7 @@ router.patch('/bookings/:id', (req, res) => {
     return res.status(403).json({ error: 'You can only update your own bookings' });
   }
 
-  const allowed = ['status', 'driver_id', 'fare', 'notes', 'payment'];
+  const allowed = ['status', 'driver_id', 'fare', 'notes', 'payment', 'passenger_name', 'passenger_phone', 'passenger_email', 'pickup', 'destination', 'date', 'time', 'passengers', 'customer_id'];
   const updates = [];
   const values = [];
   for (const key of allowed) {
