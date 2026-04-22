@@ -88,15 +88,20 @@ router.post('/book', async (req, res) => {
 
     // Insert booking
     const result = db.prepare(`
-      INSERT INTO bookings (ref, customer_id, driver_id, pickup, destination, date, time, passengers, bags, trip_type, flight, fare, payment, notes, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO bookings (ref, customer_id, driver_id, pickup, destination, date, time,
+                            passengers, bags, trip_type, flight, fare, payment, notes, status,
+                            passenger_name, passenger_phone, passenger_email)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       ref, customerId, defaultDriverId,
       pickup, destination, bookingDate, time || 'ASAP',
       passengers || 1, bags || '0', null,
       flight || null, fare || null, payment || 'cash',
       notes || null,
-      defaultDriverId ? 'confirmed' : 'pending'
+      defaultDriverId ? 'confirmed' : 'pending',
+      (name || '').trim() || null,
+      (phone || '').trim() || null,
+      (email || '').trim().toLowerCase() || null
     );
 
     // Audit log

@@ -165,6 +165,19 @@ function migrate() {
     // Non-fatal
   }
 
+  // Passenger contact columns — public /book stores these so guest bookings
+  // (no customer account) can still be looked up for rider tracking via
+  // booking ref + phone.
+  try {
+    const info = db.prepare("PRAGMA table_info(bookings)").all();
+    for (const [n, t] of [['passenger_name','TEXT'],['passenger_phone','TEXT'],['passenger_email','TEXT']]) {
+      if (!info.find(c => c.name === n)) {
+        db.exec(`ALTER TABLE bookings ADD COLUMN ${n} ${t}`);
+        console.log('[DB] Added ' + n + ' column to bookings');
+      }
+    }
+  } catch (e) { console.error('[DB] passenger columns migration failed:', e.message); }
+
   // Ensure integrations table exists for legacy databases
   try {
     db.exec(`

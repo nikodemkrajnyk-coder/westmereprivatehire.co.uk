@@ -23,7 +23,7 @@ router.get('/tracking/:ref', (req, res) => {
 
   const booking = db.prepare(`
     SELECT b.id, b.ref, b.pickup, b.destination, b.date, b.time, b.status,
-           b.fare, b.driver_id,
+           b.fare, b.driver_id, b.passenger_phone,
            c.phone AS cust_phone, c.full_name AS cust_name
       FROM bookings b
       LEFT JOIN customers c ON c.id = b.customer_id
@@ -31,7 +31,11 @@ router.get('/tracking/:ref', (req, res) => {
   `).get(ref);
   if (!booking) return res.status(404).json({ error: 'Booking not found' });
 
-  if (!booking.cust_phone || phoneTail(booking.cust_phone) !== phone) {
+  // Accept either the linked customer's phone or the guest passenger phone
+  // captured on the booking itself.
+  const cust = phoneTail(booking.cust_phone);
+  const pax  = phoneTail(booking.passenger_phone);
+  if ((!cust || cust !== phone) && (!pax || pax !== phone)) {
     return res.status(403).json({ error: 'Phone does not match this booking' });
   }
 
