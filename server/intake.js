@@ -288,8 +288,7 @@ async function notifyCustomerConfirmed(bookingId) {
   };
 
   await Promise.allSettled([
-    payload.email ? sendCustomerConfirmed(payload) : Promise.resolve(),
-    payload.phone ? sendCustomerBookingConfirmedWhatsApp(payload) : Promise.resolve()
+    payload.email ? sendCustomerConfirmed(payload) : Promise.resolve()
   ]);
 }
 

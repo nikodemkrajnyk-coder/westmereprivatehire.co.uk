@@ -119,8 +119,7 @@ router.post('/bookings', (req, res) => {
     passengers, bags, flight, fare, payment, notes
   };
   Promise.allSettled([
-    sendAdminAlert(notifData),
-    sendAdminBookingWhatsApp(notifData)
+    sendAdminAlert(notifData)
   ]).catch(() => {});
 
   // Push to Google Calendar in background

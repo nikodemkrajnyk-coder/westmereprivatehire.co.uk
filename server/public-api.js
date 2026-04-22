@@ -156,8 +156,7 @@ router.post('/book', async (req, res) => {
     // Send admin notifications in background (don't block the response).
     // Customer-facing email + WhatsApp fire later, once intake confirms.
     Promise.allSettled([
-      sendAdminAlert(booking),
-      sendAdminBookingWhatsApp(booking)
+      sendAdminAlert(booking)
     ]).then(results => {
       results.forEach((r, i) => {
         if (r.status === 'rejected') {

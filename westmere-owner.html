@@ -121,6 +121,85 @@ nav#nav{display:none}
 .jc-fare-btn{font-family:var(--sans);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;background:transparent;border:1px solid rgba(17,29,44,.12);color:rgba(17,29,44,.45);padding:.45rem .8rem;cursor:pointer}
 .jc-fare-detail{display:none;font-family:var(--serif);font-size:1.1rem;color:var(--gold)}
 .jc-fare-detail.show{display:block}
+
+/* ── SECTION HEADERS ── */
+.tj-sec{font-size:.6rem;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:rgba(17,29,44,.35);padding:.5rem 0 .6rem;margin-top:.6rem}
+.tj-sec:first-child{margin-top:0}
+.tj-sec-done{color:rgba(45,110,71,.6)}
+
+/* ── JOB CARD v2 (redesigned) ── */
+.jc2{background:#fff;border-radius:14px;box-shadow:0 2px 18px rgba(17,29,44,.07),0 1px 4px rgba(17,29,44,.04);margin-bottom:1rem;overflow:hidden;border:1.5px solid rgba(17,29,44,.07);transition:box-shadow .2s}
+.jc2.st-upcoming,.jc2.st-confirmed{border-left:4px solid var(--gold)}
+.jc2.st-enroute{border-left:4px solid #60A5FA}
+.jc2.st-atpickup{border-left:4px solid #F59E0B}
+.jc2.st-onboard{border-left:4px solid var(--green)}
+.jc2.st-done{border-left:4px solid rgba(17,29,44,.12);opacity:.7}
+
+.jc2-hd{display:flex;align-items:flex-start;justify-content:space-between;padding:.95rem 1.15rem .5rem}
+.jc2-time{font-family:var(--serif);font-size:2rem;font-weight:300;color:var(--navy);line-height:1}
+.jc2-right{text-align:right}
+.jc2-name{font-size:.95rem;font-weight:500;color:var(--navy)}
+.jc2-pax{font-size:.7rem;color:rgba(17,29,44,.42);margin-top:.12rem}
+
+.jc2-badge{display:inline-flex;align-items:center;font-size:.58rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;padding:.2rem .7rem;border-radius:20px;margin:.15rem 1.15rem .35rem}
+.jc2-bd-upcoming,.jc2-bd-confirmed{background:rgba(184,152,90,.13);color:#9a7a3a}
+.jc2-bd-enroute{background:rgba(96,165,250,.1);color:#2563EB}
+.jc2-bd-atpickup{background:rgba(245,158,11,.1);color:#B45309}
+.jc2-bd-onboard{background:rgba(45,110,71,.1);color:var(--green)}
+.jc2-bd-done{background:rgba(17,29,44,.05);color:rgba(17,29,44,.38)}
+
+/* Progress track */
+.jc2-prog{display:flex;align-items:center;padding:0 1.15rem .7rem}
+.jc2-prog-dot{width:8px;height:8px;border-radius:50%;border:1.5px solid rgba(17,29,44,.18);background:#fff;flex-shrink:0}
+.jc2-prog-dot.pd-done{background:var(--green);border-color:var(--green)}
+.jc2-prog-dot.pd-active{background:var(--gold);border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,152,90,.22)}
+.jc2-prog-line{flex:1;height:1.5px;background:rgba(17,29,44,.1);margin:0 2px}
+.jc2-prog-line.pl-done{background:rgba(45,110,71,.4)}
+
+/* Route */
+.jc2-route{padding:.35rem 1.15rem .75rem;border-bottom:1px solid rgba(17,29,44,.06)}
+.jc2-loc{display:flex;align-items:flex-start;gap:.6rem;padding:.2rem 0}
+.jc2-pin{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:.3rem}
+.jc2-pin.pu{background:var(--gold)}
+.jc2-pin.de{background:rgba(17,29,44,.35)}
+.jc2-addr{font-size:.92rem;font-weight:300;color:var(--navy);cursor:pointer;line-height:1.35;border-bottom:1px dashed rgba(184,152,90,.35)}
+.jc2-addr:active{opacity:.6}
+
+/* Fare row */
+.jc2-meta{display:flex;align-items:center;justify-content:space-between;padding:.6rem 1.15rem;border-bottom:1px solid rgba(17,29,44,.06)}
+.jc2-fare{font-family:var(--serif);font-size:1.25rem;color:var(--gold);line-height:1}
+.jc2-pay{font-size:.68rem;color:rgba(17,29,44,.4);margin-top:.1rem}
+
+/* Footer */
+.jc2-foot{display:flex;border-top:1px solid rgba(17,29,44,.06)}
+.jc2-cc{flex:1;padding:.82rem .5rem;background:rgba(17,29,44,.025);border:none;font-family:var(--sans);font-size:.68rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.5);cursor:pointer;text-decoration:none;display:flex;align-items:center;justify-content:center;border-right:1px solid rgba(17,29,44,.05)}
+.jc2-cc:active{background:rgba(184,152,90,.12);color:var(--navy)}
+.jc2-ab{flex:2;padding:.82rem .6rem;font-family:var(--sans);font-size:.74rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border:none;transition:all .2s}
+.jc2-ab.ab-enroute{background:var(--gold);color:var(--navy)}
+.jc2-ab.ab-atpickup{background:#3B82F6;color:#fff}
+.jc2-ab.ab-onboard{background:#F59E0B;color:#fff}
+.jc2-ab.ab-dropoff{background:var(--green);color:#fff}
+.jc2-ab.ab-cancel{background:transparent;color:rgba(17,29,44,.35);font-weight:400;border-left:1px solid rgba(17,29,44,.08)}
+
+/* Extras */
+.jc2-extras{display:flex;gap:.4rem;padding:.5rem 1.15rem;flex-wrap:wrap;border-top:1px solid rgba(17,29,44,.05)}
+.jc2-ex{font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;padding:.38rem .75rem;background:rgba(17,29,44,.03);border:1px solid rgba(17,29,44,.08);color:rgba(17,29,44,.5);text-decoration:none;display:inline-flex;align-items:center;border-radius:4px;cursor:pointer;min-height:34px}
+
+/* Notification panel */
+.notif-panel{position:fixed;top:0;left:50%;width:100%;max-width:420px;background:#fff;z-index:500;box-shadow:0 8px 32px rgba(17,29,44,.2);border-radius:0 0 18px 18px;max-height:72vh;display:flex;flex-direction:column;padding-top:var(--safe-top);transform:translateX(-50%) translateY(-105%);transition:transform .28s cubic-bezier(.4,0,.2,1);pointer-events:none}
+.notif-panel.open{transform:translateX(-50%) translateY(0);pointer-events:auto}
+.notif-hd{display:flex;align-items:center;justify-content:space-between;padding:.9rem 1.2rem .7rem;border-bottom:1px solid rgba(17,29,44,.07)}
+.notif-feed{overflow-y:auto;flex:1}
+.notif-empty{padding:2rem;text-align:center;font-size:.82rem;color:rgba(17,29,44,.35)}
+.notif-item{display:flex;gap:.85rem;align-items:flex-start;padding:.75rem 1.2rem;border-bottom:1px solid rgba(17,29,44,.04)}
+.notif-icon{width:30px;height:30px;border-radius:50%;background:rgba(184,152,90,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.85rem}
+.notif-body{flex:1}
+.notif-msg{font-size:.83rem;color:var(--navy);line-height:1.4}
+.notif-ts{font-size:.66rem;color:rgba(17,29,44,.38);margin-top:.2rem}
+.notif-badge-num{position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;border-radius:9px;background:var(--gold);color:var(--navy);font-size:.58rem;font-weight:700;display:none;align-items:center;justify-content:center;padding:0 3px;border:2px solid #F5F2ED}
+.notif-backdrop{position:fixed;inset:0;z-index:499;display:none}
+.notif-backdrop.open{display:block}
+
 .nav-popup{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;display:flex;align-items:center;justify-content:center;padding:1rem}
 .nav-popup-box{background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:300px;text-align:center}
 .nav-popup-title{font-family:var(--serif);font-size:1.2rem;color:var(--navy);margin-bottom:1rem}
@@ -446,6 +525,10 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
       <button onclick="openSettings()" title="Settings" style="background:transparent;border:1px solid rgba(17,29,44,.1);width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(17,29,44,.55)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
+      <button onclick="toggleNotifPanel()" title="Activity log" style="background:transparent;border:none;cursor:pointer;position:relative;width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:rgba(17,29,44,.5)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="notif-badge-num" id="notif-badge"></span>
+      </button>
       <div class="status-dot" id="conn-dot" title="Checking connection..."></div>
     </div>
   </div>
@@ -502,6 +585,18 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
           <a href="#" id="gcal-sync-link" onclick="syncGoogleCalendar(event)" style="display:none;font-size:.68rem;color:var(--gold);text-decoration:none;letter-spacing:.08em;text-transform:uppercase">Sync now &rarr;</a>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICATION PANEL -->
+  <div class="notif-backdrop" id="notif-backdrop" onclick="toggleNotifPanel()"></div>
+  <div class="notif-panel" id="notif-panel">
+    <div class="notif-hd">
+      <div style="font-family:var(--serif);font-size:1.1rem;color:var(--navy);font-style:italic">Activity</div>
+      <button onclick="clearNotifs()" style="background:transparent;border:none;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.4);cursor:pointer">Clear all</button>
+    </div>
+    <div class="notif-feed" id="notif-feed">
+      <div class="notif-empty">No activity yet</div>
     </div>
   </div>
 
@@ -1247,12 +1342,25 @@ function getDist(a,b){
 
 // ── TODAY ─────────────────────────────────────────────────────────────────────
 function buildToday(){
-  var rem=TODAY_JOBS.filter(function(j){return j.status!=='done';}).length;
+  var active=TODAY_JOBS.filter(function(j){return j.status!=='done';});
+  var done=TODAY_JOBS.filter(function(j){return j.status==='done';});
   var d=new Date();
-  document.getElementById('today-sub').textContent=d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})+(rem?' · '+rem+(rem===1?' job':' jobs')+' remaining':'');
+  document.getElementById('today-sub').textContent=d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})+(active.length?' · '+active.length+(active.length===1?' job':' jobs')+' active':'');
   var list=document.getElementById('today-list');
-  if(!TODAY_JOBS.length){list.innerHTML='<div class="empty"><div class="empty-title">No jobs today</div><div class="empty-sub">Check Offered Jobs for new work</div></div>';}
-  else list.innerHTML=TODAY_JOBS.map(function(j){return buildCard(j,false);}).join('');
+  if(!TODAY_JOBS.length){
+    list.innerHTML='<div class="empty"><div class="empty-title">No jobs today</div><div class="empty-sub">New bookings will appear here</div></div>';
+    return;
+  }
+  var html='';
+  if(active.length){
+    html+='<div class="tj-sec">Active Jobs</div>';
+    html+=active.map(function(j){return buildCard(j,false);}).join('');
+  }
+  if(done.length){
+    html+='<div class="tj-sec tj-sec-done">Completed · '+done.length+'</div>';
+    html+=done.map(function(j){return buildCard(j,false);}).join('');
+  }
+  list.innerHTML=html;
 }
 
 // ── External calendar events (operator's personal commitments) ──────────────
@@ -1427,45 +1535,83 @@ setInterval(loadExternalCalEvents,5*60*1000);
 
 // ── JOB CARD ──────────────────────────────────────────────────────────────────
 function buildCard(j,isOffered){
-  var isDone=j.status==='done';var isActive=j.status==='enroute'||j.status==='atpickup'||j.status==='onboard';
-  var cls=isDone?'done-job':isActive?'active-job':'';
-  var fb='';
-  if(j.flight){var fCls=j.flightStatus==='ontime'?'fp-ontime':j.flightStatus==='landed'?'fp-landed':'fp-delayed';var fTxt=j.flightStatus==='ontime'?'On Time':j.flightStatus==='landed'?'Landed':'Delayed';fb='<a href="https://www.flightradar24.com/data/flights/'+escH(j.flight.toLowerCase())+'" target="_blank" style="text-decoration:none"><span class="fp '+fCls+'">'+escH(j.flight)+' · '+fTxt+(j.flightDeparts?' · '+j.flightDeparts:'')+'</span></a>';}
-  var puEnc=encodeURIComponent(j.pickup),deEnc=encodeURIComponent(j.dest);
-  var puNav='<span class="jd-val nav-addr" onclick="navChoice(\''+puEnc+'\')">'+escH(j.pickup)+'</span>';
-  var deNav='<span class="jd-val nav-addr" onclick="navChoice(\''+deEnc+'\')">'+escH(j.dest)+'</span>';
-  var statusLabel='';
-  if(j.status==='enroute')statusLabel='<div class="trip-status ts-enroute">On Route</div>';
-  else if(j.status==='atpickup')statusLabel='<div class="trip-status ts-atpickup">At Location</div>';
-  else if(j.status==='onboard')statusLabel='<div class="trip-status ts-onboard">Passenger On Board</div>';
-  else if(isDone)statusLabel='<div class="trip-status ts-done">Completed</div>';
-  var p=j.phone;
-  var contact='<div class="jc-contact">';
-  contact+='<a href="tel:'+p+'" class="jcc">Call</a>';
-  contact+='<a href="sms:'+p+'" class="jcc">Text</a>';
-  contact+='</div>';
-  var actions='';
-  if(!isDone&&!isOffered){
-    actions='<div class="jc-actions">';
-    if(j.status==='upcoming') actions+='<button class="sbt sbt-enroute" onclick="updStat(\''+j.id+'\',\'enroute\')">En Route</button>';
-    if(j.status==='enroute')  actions+='<button class="sbt sbt-atpickup" onclick="updStat(\''+j.id+'\',\'atpickup\')">At Pickup</button>';
-    if(j.status==='atpickup') actions+='<button class="sbt sbt-onboard" onclick="updStat(\''+j.id+'\',\'onboard\')">On Board</button>';
-    if(j.status==='onboard')  actions+='<button class="sbt sbt-dropoff" onclick="updStat(\''+j.id+'\',\'dropoff\')">Dropped Off</button>';
-    if(j.status!=='onboard')  actions+='<button class="sbt sbt-cancel" onclick="cancelJ(\''+j.id+'\')">Can\'t Make It</button>';
-    actions+='</div>';
+  var isDone=j.status==='done';
+  var stClass=isDone?'st-done':'st-'+j.status;
+
+  // Badge label + class
+  var bdLabel,bdClass;
+  if(j.status==='upcoming'||j.status==='confirmed'){bdLabel='Confirmed';bdClass='jc2-bd-confirmed';}
+  else if(j.status==='enroute'){bdLabel='En Route';bdClass='jc2-bd-enroute';}
+  else if(j.status==='atpickup'){bdLabel='At Pickup';bdClass='jc2-bd-atpickup';}
+  else if(j.status==='onboard'){bdLabel='On Board';bdClass='jc2-bd-onboard';}
+  else if(isDone){bdLabel='Complete';bdClass='jc2-bd-done';}
+  else{bdLabel='Pending';bdClass='jc2-bd-confirmed';}
+
+  // Progress track: Confirmed → En Route → At Pickup → On Board → Complete
+  var steps=['upcoming','enroute','atpickup','onboard','done'];
+  var cur=isDone?4:steps.indexOf(j.status);if(cur<0)cur=0;
+  var progHtml='<div class="jc2-prog">';
+  var stepLabels=['Conf','Route','Pickup','Board','Done'];
+  for(var s=0;s<5;s++){
+    var dc=s<cur?'pd-done':s===cur?'pd-active':'';
+    progHtml+='<div class="jc2-prog-dot '+dc+'" title="'+stepLabels[s]+'"></div>';
+    if(s<4){var lc=s<cur?'pl-done':'';progHtml+='<div class="jc2-prog-line '+lc+'"></div>';}
   }
-  var links='<div class="jc-links"><button class="jl" onclick="showNB(\''+j.name.replace(/'/g,"\\'")+'\',\''+j.fare+'\')">Name Board</button>'+(j.flight?'<a class="jl" href="https://www.flightradar24.com/data/flights/'+j.flight.toLowerCase()+'" target="_blank">Flight</a>':'')+'</div>';
-  return '<div class="job-card '+cls+'" id="jc-'+escH(j.id)+'"><div class="jc-bar"></div>'
-    +statusLabel
-    +'<div class="jc-details">'
-    +'<div class="jd-row"><span class="jd-key">Pickup</span>'+puNav+'</div>'
-    +'<div class="jd-row"><span class="jd-key">Drop</span>'+deNav+'</div>'
-    +(j.flight?'<div class="jd-row"><span class="jd-key">Flight</span><span class="jd-val">'+fb+'</span></div>':'')
+  progHtml+='</div>';
+
+  // Route
+  var puEnc=encodeURIComponent(j.pickup||'');
+  var deEnc=encodeURIComponent(j.dest||'');
+  var route='<div class="jc2-route">'
+    +'<div class="jc2-loc"><div class="jc2-pin pu"></div><div class="jc2-addr" onclick="navChoice(\''+puEnc+'\')">'+escH(j.pickup||'')+'</div></div>'
+    +'<div class="jc2-loc" style="margin-top:.18rem"><div class="jc2-pin de"></div><div class="jc2-addr" onclick="navChoice(\''+deEnc+'\')">'+escH(j.dest||'')+'</div></div>'
+    +(j.flight?'<div style="margin-top:.4rem;font-size:.72rem;color:rgba(17,29,44,.5)">✈ '+escH(j.flight)+'</div>':'')
+    +'</div>';
+
+  // Fare
+  var fareHtml='<div class="jc2-meta">'
+    +'<div><div class="jc2-fare">'+(j.fare?'£'+escH(String(Number(j.fare).toFixed(0))):'TBC')+'</div>'
+    +(j.fare?'<div class="jc2-pay">'+escH(j.payment||'cash')+'</div>':'')+'</div>'
+    +'<div style="text-align:right"><div style="font-size:.72rem;color:rgba(17,29,44,.45)">' +escH(j.pax||1)+' pax'+(j.bags&&j.bags!=='0'?' · '+escH(j.bags)+' bags':'')+'</div>'
+    +'<div style="font-size:.68rem;color:rgba(17,29,44,.35);margin-top:.1rem">'+escH(j.name)+'</div></div>'
+    +'</div>';
+
+  // Contact + action
+  var nextBtn='';
+  if(!isDone&&!isOffered){
+    if(j.status==='upcoming'||j.status==='confirmed')nextBtn='<button class="jc2-ab ab-enroute" onclick="updStat(\''+j.id+'\',\'enroute\')">En Route</button>';
+    else if(j.status==='enroute')nextBtn='<button class="jc2-ab ab-atpickup" onclick="updStat(\''+j.id+'\',\'atpickup\')">At Pickup</button>';
+    else if(j.status==='atpickup')nextBtn='<button class="jc2-ab ab-onboard" onclick="updStat(\''+j.id+'\',\'onboard\')">On Board</button>';
+    else if(j.status==='onboard')nextBtn='<button class="jc2-ab ab-dropoff" onclick="updStat(\''+j.id+'\',\'dropoff\')">Dropped Off</button>';
+  }
+  var cancelBtn=(!isDone&&!isOffered&&j.status!=='onboard')
+    ?'<button class="jc2-cc jc2-ab ab-cancel" onclick="cancelJ(\''+j.id+'\')">Cancel</button>':'';
+  var phone=j.phone||'';
+  var foot='<div class="jc2-foot">'
+    +'<a href="tel:'+escH(phone)+'" class="jc2-cc">Call</a>'
+    +'<a href="sms:'+escH(phone)+'" class="jc2-cc">Text</a>'
+    +cancelBtn
+    +nextBtn
+    +'</div>';
+
+  // Extras
+  var extras='<div class="jc2-extras">'
+    +'<button class="jc2-ex" onclick="showNB(\''+j.name.replace(/'/g,"\\'")+'\',\''+j.fare+'\')">Name Board</button>'
+    +(j.flight?'<a class="jc2-ex" href="https://www.flightradar24.com/data/flights/'+escH(j.flight.toLowerCase())+'" target="_blank">Track Flight</a>':'')
+    +'</div>';
+
+  return '<div class="jc2 '+stClass+'" id="jc-'+escH(j.id)+'">'
+    +'<div class="jc2-hd">'
+      +'<div class="jc2-time">'+escH(j.time||'ASAP')+'</div>'
+      +'<div class="jc2-right"><div class="jc2-name">'+escH(j.name||'Guest')+'</div><div class="jc2-pax">'+escH(j.phone||'')+'</div></div>'
     +'</div>'
-    +'<div class="jc-passenger"><div class="jc-name">'+escH(j.name)+'</div><div class="jc-phone">'+escH(j.phone||'')+'</div></div>'
-    +contact
-    +'<div class="jc-fare-wrap"><button class="jc-fare-btn" onclick="this.nextElementSibling.classList.toggle(\'show\');this.style.display=\'none\'">Show Fare</button><div class="jc-fare-detail">'+(j.fare?'£'+escH(String(j.fare))+' · '+escH(j.payment):'TBC')+'</div></div>'
-    +actions+(!isDone?links:'')+'</div>';
+    +'<div class="jc2-badge '+bdClass+'">'+bdLabel+'</div>'
+    +progHtml
+    +route
+    +fareHtml
+    +foot
+    +(!isDone?extras:'')
+    +'</div>';
 }
 
 // ── OFFERED ───────────────────────────────────────────────────────────────────
@@ -1650,17 +1796,74 @@ function updStat(id,status){
   showToast(L[status]||status);
   buildToday();
 }
-function sendStatusUpdate(job,status){
-  var fn=job.name.split(' ')[0];
-  var msgs={
-    enroute:'Hi '+fn+', your Westmere driver is on the way to pick you up.',
-    atpickup:'Hi '+fn+', your Westmere driver has arrived and is waiting outside.',
-    onboard:'Hi '+fn+', trip in progress. Have a pleasant journey.',
-    complete:'Hi '+fn+', you have arrived at your destination. Thank you for choosing Westmere.'
+// ── IN-APP NOTIFICATION LOG ───────────────────────────────────────────────────
+var NOTIF_LOG = [];
+var NOTIF_UNREAD = 0;
+
+function sendStatusUpdate(job, status) {
+  var icons = { enroute:'🚗', atpickup:'📍', onboard:'✅', complete:'🏁' };
+  var msgs = {
+    enroute: 'En route to pick up ' + job.name,
+    atpickup: 'Arrived at pickup — ' + job.name,
+    onboard: job.name + ' on board · journey started',
+    complete: 'Job complete · ' + job.name + (job.fare ? ' · £' + job.fare : '') + (job.payment && job.payment !== 'card' ? ' cash' : job.payment === 'card' ? ' card' : '')
   };
-  var msg=msgs[status]||('Hi '+fn+', trip status updated — Westmere Private Hire');
-  var p=job.phone.replace(/[\s\-\(\)]/g,'').replace(/^\+/,'');
-  window.open('https://wa.me/'+p+'?text='+encodeURIComponent(msg),'_blank');
+  addNotif(msgs[status] || 'Status updated', icons[status] || '📋', job);
+}
+
+function addNotif(msg, icon, job) {
+  var now = new Date();
+  var time = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  NOTIF_LOG.unshift({ msg: msg, icon: icon||'📋', time: time, jobId: job&&job.id });
+  if (NOTIF_LOG.length > 50) NOTIF_LOG.pop();
+  NOTIF_UNREAD++;
+  _renderNotifBadge();
+  _renderNotifFeed();
+}
+
+function _renderNotifBadge() {
+  var b = document.getElementById('notif-badge');
+  if (!b) return;
+  b.textContent = NOTIF_UNREAD > 9 ? '9+' : NOTIF_UNREAD || '';
+  b.style.display = NOTIF_UNREAD ? 'flex' : 'none';
+}
+
+function _renderNotifFeed() {
+  var feed = document.getElementById('notif-feed');
+  if (!feed) return;
+  if (!NOTIF_LOG.length) {
+    feed.innerHTML = '<div class="notif-empty">No activity yet</div>';
+    return;
+  }
+  feed.innerHTML = NOTIF_LOG.map(function(n) {
+    return '<div class="notif-item">'
+      + '<div class="notif-icon">' + n.icon + '</div>'
+      + '<div class="notif-body"><div class="notif-msg">' + escH(n.msg) + '</div><div class="notif-ts">' + escH(n.time) + '</div></div>'
+      + '</div>';
+  }).join('');
+}
+
+function toggleNotifPanel() {
+  var panel = document.getElementById('notif-panel');
+  var bd = document.getElementById('notif-backdrop');
+  if (!panel) return;
+  var isOpen = panel.classList.contains('open');
+  if (isOpen) {
+    panel.classList.remove('open');
+    if (bd) bd.classList.remove('open');
+  } else {
+    NOTIF_UNREAD = 0;
+    _renderNotifBadge();
+    panel.classList.add('open');
+    if (bd) bd.classList.add('open');
+  }
+}
+
+function clearNotifs() {
+  NOTIF_LOG = [];
+  NOTIF_UNREAD = 0;
+  _renderNotifBadge();
+  _renderNotifFeed();
 }
 function cancelJ(id){
   var job=TODAY_JOBS.find(function(j){return j.id===id;});
