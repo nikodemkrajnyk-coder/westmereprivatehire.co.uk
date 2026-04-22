@@ -78,6 +78,54 @@ router.get('/external-events', requireStaff, async (req, res) => {
   }
 });
 
+// ── DELETE /api/google/booking-events — purge all WPH events from calendar ──
+// Lists events in a 90-day window, identifies any with wph_booking_id in their
+// extendedProperties, and deletes them. Used to clean up test bookings.
+router.delete('/booking-events', requireStaff, async (req, res) => {
+  if (!gcal.isConfigured()) return res.status(503).json({ error: 'Google Calendar not configured' });
+  const token = await gcal.getAccessToken().catch(() => null);
+  if (!token) return res.status(503).json({ error: 'Google Calendar not connected' });
+
+  const t = gcal.loadTokens();
+  const calId = encodeURIComponent((t && t.calendar_id) || 'primary');
+  const API = 'https://www.googleapis.com/calendar/v3';
+  const from = new Date(Date.now() - 14 * 86400000).toISOString();
+  const to   = new Date(Date.now() + 60 * 86400000).toISOString();
+
+  let items = [];
+  try {
+    const r = await fetch(
+      `${API}/calendars/${calId}/events?timeMin=${encodeURIComponent(from)}&timeMax=${encodeURIComponent(to)}&singleEvents=true&maxResults=500`,
+      { headers: { Authorization: 'Bearer ' + token } }
+    );
+    const d = await r.json();
+    items = d.items || [];
+  } catch (e) {
+    return res.status(500).json({ error: 'List failed: ' + e.message });
+  }
+
+  const wphEvents = items.filter(ev => {
+    const priv = (ev.extendedProperties && ev.extendedProperties.private) || {};
+    return priv.wph_booking_id || priv.wph_ref;
+  });
+
+  let deleted = 0;
+  for (const ev of wphEvents) {
+    try {
+      await fetch(`${API}/calendars/${calId}/events/${encodeURIComponent(ev.id)}`, {
+        method: 'DELETE',
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      deleted++;
+    } catch (e) {
+      console.error('[GCAL] delete event failed:', ev.id, e.message);
+    }
+  }
+
+  console.log(`[GCAL] Purged ${deleted}/${wphEvents.length} WPH booking events`);
+  res.json({ ok: true, found: wphEvents.length, deleted });
+});
+
 // ── Public callback route (mounted separately because Google calls it with
 // no auth cookie by default — we still validate state, but the ultimate
 // protection is that the code is single-use and bound to our client secret).

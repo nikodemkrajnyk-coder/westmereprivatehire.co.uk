@@ -42,7 +42,9 @@ nav#nav{display:none}
 .mode-toggle{display:flex;background:rgba(17,29,44,.04);border:1px solid rgba(184,152,90,.15);gap:1px}
 .mode-btn{padding:.5rem 1rem;background:transparent;border:none;font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.5);cursor:pointer;transition:all .25s;white-space:nowrap}
 .mode-btn.on{background:var(--gold);color:var(--navy)}
-.status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse 2.5s infinite}
+.status-dot{width:8px;height:8px;border-radius:50%;background:rgba(17,29,44,.2);flex-shrink:0;transition:background .4s}
+.status-dot.ok{background:var(--green);animation:pulse 2.5s infinite}
+.status-dot.err{background:var(--red);animation:none}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
 /* ── BOTTOM NAV ── */
@@ -444,7 +446,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
       <button onclick="openSettings()" title="Settings" style="background:transparent;border:1px solid rgba(17,29,44,.1);width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(17,29,44,.55)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
-      <div class="status-dot"></div>
+      <div class="status-dot" id="conn-dot" title="Checking connection..."></div>
     </div>
   </div>
 
@@ -471,6 +473,20 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
           <input type="range" min="80" max="140" step="5" value="100" id="ds-contrast" oninput="setDisplayPref('contrast',+this.value)" style="width:100%">
         </div>
         <button onclick="resetDisplayPrefs()" style="margin-top:.9rem;width:100%;padding:.75rem;background:transparent;border:1px solid rgba(17,29,44,.12);border-radius:8px;color:rgba(17,29,44,.65);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Reset to Default</button>
+      </div>
+
+      <div style="background:rgba(17,29,44,.03);border-radius:12px;padding:1.1rem 1rem;margin-bottom:1rem">
+        <div style="font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.9rem">Connection</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:.3rem 0;font-size:.8rem;color:rgba(17,29,44,.7)">
+          <span>Status</span><span id="sett-conn-status" style="color:rgba(17,29,44,.4)">Checking…</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:.3rem 0;font-size:.8rem;color:rgba(17,29,44,.7)">
+          <span>Build</span><span id="sett-build" style="font-family:monospace;font-size:.72rem;color:rgba(17,29,44,.4)">2026-04-22</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:.3rem 0;font-size:.8rem;color:rgba(17,29,44,.7)">
+          <span>Bookings loaded</span><span id="sett-booking-count" style="color:rgba(17,29,44,.4)">—</span>
+        </div>
+        <button onclick="manualRefresh()" style="margin-top:.9rem;width:100%;padding:.75rem;background:transparent;border:1px solid rgba(17,29,44,.12);border-radius:8px;color:rgba(17,29,44,.65);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Refresh Now</button>
       </div>
 
       <div style="background:rgba(17,29,44,.03);border-radius:12px;padding:1.1rem 1rem">
@@ -2293,13 +2309,25 @@ var _tt;
 function showToast(msg){var el=document.getElementById('toast');document.getElementById('toast-msg').textContent=msg;el.classList.add('on');clearTimeout(_tt);_tt=setTimeout(function(){el.classList.remove('on');},3000);}
 
 // ── LOAD LIVE BOOKINGS ───────────────────────────────────────────────────────
+function _setConnDot(ok){
+  var dot=document.getElementById('conn-dot');
+  var lbl=document.getElementById('sett-conn-status');
+  if(dot){dot.className='status-dot '+(ok?'ok':'err');dot.title=ok?'Connected':'Not connected';}
+  if(lbl)lbl.textContent=ok?'Connected':'Not connected — tap Refresh';
+}
+
+function manualRefresh(){loadOwnerBookings();showToast('Refreshing…');}
+
 async function loadOwnerBookings(){
   try{
-    var res=await fetch('/api/bookings');
+    var res=await fetch('/api/bookings',{credentials:'include'});
     var data=await res.json();
-    if(!res.ok||!data.ok)return;
+    if(!res.ok||!data.ok){_setConnDot(false);return;}
     var bookings=data.bookings||[];
     ALL_BOOKINGS_CACHE=bookings;
+    _setConnDot(true);
+    var cnt=document.getElementById('sett-booking-count');
+    if(cnt)cnt.textContent=bookings.length+' booking'+(bookings.length===1?'':'s');
     var today=new Date().toISOString().split('T')[0];
 
     // Map API bookings to owner job format
@@ -2364,7 +2392,7 @@ async function loadOwnerBookings(){
     if(document.getElementById('pg-offered')&&document.getElementById('pg-offered').classList.contains('on'))buildOffered();
     if(document.getElementById('pg-earnings')&&document.getElementById('pg-earnings').classList.contains('on'))buildEarnings();
 
-  }catch(e){console.error('[OWNER] Failed to load bookings:',e);}
+  }catch(e){console.error('[OWNER] Failed to load bookings:',e);_setConnDot(false);}
 }
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
