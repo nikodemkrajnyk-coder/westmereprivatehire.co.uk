@@ -2694,31 +2694,76 @@ function enrichNotes(text){
   return s;
 }
 function jobDetailCard(j){
-  var h='<div style="padding:.85rem 1rem;border-bottom:1px solid rgba(17,29,44,.06)">';
-  h+='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.35rem">';
-  h+='<div style="font-family:var(--serif);font-size:1.4rem;color:var(--gold);font-weight:300">'+escH(j.time)+'</div>';
-  h+='<div style="font-family:var(--serif);font-size:1rem;color:var(--navy);font-weight:500;text-align:right">'+escH(j.name)+'</div></div>';
-  if(j.pax>1||j.bags) h+='<div style="font-size:.72rem;color:rgba(17,29,44,.45);margin-bottom:.45rem;text-align:right">'+(j.pax||1)+' pax'+(j.bags?' · '+j.bags+' bags':'')+'</div>';
-  h+='<div style="display:flex;align-items:baseline;gap:.6rem;margin-bottom:.2rem"><span style="font-size:.6rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.4);width:50px;flex-shrink:0">Pickup</span><span class="nav-addr" onclick="navChoice(\''+encodeURIComponent(j.pickup)+'\')" style="font-size:.88rem">'+escH(j.pickup)+'</span></div>';
-  h+='<div style="display:flex;align-items:baseline;gap:.6rem;margin-bottom:.2rem"><span style="font-size:.6rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.4);width:50px;flex-shrink:0">Drop</span>';
-  h+='<span class="nav-addr" onclick="navChoice(\''+encodeURIComponent(j.dest)+'\')" style="font-size:.88rem">'+escH(j.dest)+'</span></div>';
+  var wazeBtn=function(addr,label){
+    return '<a href="https://waze.com/ul?q='+encodeURIComponent(addr)+'&navigate=yes" target="_blank" '
+      +'style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:.5rem .9rem;'
+      +'background:rgba(184,152,90,.1);border:1px solid rgba(184,152,90,.3);color:var(--gold);'
+      +'text-decoration:none;border-radius:8px;font-size:.68rem;font-weight:500;letter-spacing:.1em;'
+      +'text-transform:uppercase;font-family:var(--sans);white-space:nowrap">&#9660; '+escH(label)+'</a>';
+  };
+  var h='<div style="padding:1rem 1.1rem;border-bottom:1px solid rgba(17,29,44,.06)">';
+
+  // Time + passenger
+  h+='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.55rem">';
+  h+='<div style="font-family:var(--serif);font-size:1.75rem;color:var(--gold);font-weight:300;letter-spacing:.02em">'+escH(j.time)+'</div>';
+  h+='<div style="font-size:.95rem;color:var(--navy);font-weight:500;text-align:right;line-height:1.2;max-width:55%">'+escH(j.name)+'</div>';
+  h+='</div>';
+
+  // Pax / bags
+  if(j.pax>1||j.bags) h+='<div style="font-size:.72rem;color:rgba(17,29,44,.45);margin-bottom:.55rem;text-align:right">'+(j.pax||1)+' pax'+(j.bags?' · '+j.bags+' bags':'')+'</div>';
+
+  // Pickup
+  h+='<div style="margin-bottom:.5rem">';
+  h+='<div style="font-size:.58rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-bottom:.15rem">Pickup</div>';
+  h+='<div style="font-size:.95rem;color:var(--navy);line-height:1.4">'+escH(j.pickup)+'</div>';
+  h+='</div>';
+
+  // Destination
+  h+='<div style="margin-bottom:.65rem">';
+  h+='<div style="font-size:.58rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-bottom:.15rem">Drop-off</div>';
+  h+='<div style="font-size:.95rem;color:var(--navy);line-height:1.4">'+escH(j.dest)+'</div>';
+  h+='</div>';
+
+  // Flight
   if(j.flight){
-    h+='<div style="display:flex;align-items:baseline;gap:.6rem;margin-bottom:.2rem"><span style="font-size:.6rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.4);width:50px;flex-shrink:0">Flight</span>';
-    h+='<a href="https://www.flightradar24.com/data/flights/'+escH(j.flight.toLowerCase())+'" target="_blank" style="font-size:.88rem;color:var(--navy);text-decoration:none;border-bottom:1px solid rgba(96,165,250,.4)">'+escH(j.flight)+'</a></div>';
-  }
-  h+='<div style="display:flex;align-items:baseline;gap:.6rem"><span style="font-size:.6rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.4);width:50px;flex-shrink:0">Fare</span><span style="font-family:var(--serif);font-size:1rem;color:var(--gold)">£'+escH(String(j.fare))+'</span><span style="font-size:.72rem;color:rgba(17,29,44,.4);margin-left:.25rem">'+escH(j.payment||'cash')+'</span></div>';
-  if(j.notes) h+='<div style="margin-top:.4rem;padding:.4rem .55rem;background:rgba(17,29,44,.03);border-left:2px solid var(--gold);font-size:.74rem;color:rgba(17,29,44,.6);line-height:1.4">'+enrichNotes(j.notes)+'</div>';
-  if(j.phone){
-    var wm=encodeURIComponent('Hi '+j.name.split(' ')[0]+', this is your Westmere driver.');
-    h+='<div style="display:flex;gap:1px;margin-top:.55rem;background:rgba(17,29,44,.04);border-radius:8px;overflow:hidden">';
-    h+='<a href="tel:'+escH(j.phone)+'" style="flex:1;padding:.65rem;text-align:center;font-size:.72rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.55);text-decoration:none;background:rgba(17,29,44,.04)">Call</a>';
-    h+='<a href="https://wa.me/'+j.phone.replace(/\D/g,'')+'?text='+wm+'" target="_blank" style="flex:1;padding:.65rem;text-align:center;font-size:.72rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.55);text-decoration:none;background:rgba(17,29,44,.04)">WhatsApp</a>';
-    h+='<a href="sms:'+escH(j.phone)+'" style="flex:1;padding:.65rem;text-align:center;font-size:.72rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.55);text-decoration:none;background:rgba(17,29,44,.04)">Text</a>';
+    h+='<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.55rem">';
+    h+='<span style="font-size:.58rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.35)">Flight</span>';
+    h+='<a href="https://www.flightradar24.com/data/flights/'+escH(j.flight.toLowerCase())+'" target="_blank" '
+      +'style="font-size:.9rem;color:#60A5FA;text-decoration:none;border-bottom:1px solid rgba(96,165,250,.4)">'+escH(j.flight)+'</a>';
     h+='</div>';
   }
-  h+='<div style="display:flex;gap:.4rem;margin-top:.45rem;flex-wrap:wrap">';
-  h+='<button onclick="navChoice(\''+encodeURIComponent(j.dest)+'\')" style="font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;padding:.45rem .7rem;background:rgba(17,29,44,.04);border:1px solid rgba(17,29,44,.1);color:rgba(17,29,44,.55);cursor:pointer;border-radius:6px;font-family:var(--sans)">Navigate</button>';
-  if(j.flight) h+='<a href="https://www.flightradar24.com/data/flights/'+escH(j.flight.toLowerCase())+'" target="_blank" style="font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;padding:.45rem .7rem;background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.2);color:#60A5FA;text-decoration:none;border-radius:6px">Flight</a>';
+
+  // Fare
+  h+='<div style="display:flex;align-items:baseline;gap:.5rem;margin-bottom:.8rem">';
+  h+='<span style="font-family:var(--serif);font-size:1.3rem;color:var(--gold)">£'+escH(String(j.fare||0))+'</span>';
+  h+='<span style="font-size:.75rem;color:rgba(17,29,44,.4)">'+escH(j.payment||'cash')+'</span>';
+  h+='</div>';
+
+  // Notes
+  if(j.notes) h+='<div style="margin-bottom:.75rem;padding:.5rem .7rem;background:rgba(17,29,44,.03);border-left:2px solid var(--gold);font-size:.82rem;color:rgba(17,29,44,.65);line-height:1.5">'+enrichNotes(j.notes)+'</div>';
+
+  // Action buttons
+  h+='<div style="display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.2rem">';
+
+  // Call button
+  if(j.phone){
+    var wm=encodeURIComponent('Hi '+escH(j.name.split(' ')[0])+', your booking with Westmere is confirmed.');
+    h+='<a href="tel:'+escH(j.phone)+'" style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:.5rem .9rem;background:var(--navy);color:#fff;text-decoration:none;border-radius:8px;font-size:.68rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-family:var(--sans)">&#128222; Call</a>';
+    h+='<a href="https://wa.me/'+j.phone.replace(/\D/g,'')+'?text='+wm+'" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:.5rem .9rem;background:#25D366;color:#fff;text-decoration:none;border-radius:8px;font-size:.68rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-family:var(--sans)">WhatsApp</a>';
+  }
+
+  // Waze — pickup then destination
+  if(j.pickup) h+=wazeBtn(j.pickup,'Pickup');
+  if(j.dest)   h+=wazeBtn(j.dest,'Drop-off');
+
+  // Flight tracker
+  if(j.flight){
+    h+='<a href="https://www.flightradar24.com/data/flights/'+escH(j.flight.toLowerCase())+'" target="_blank" '
+      +'style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:.5rem .9rem;'
+      +'background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.25);color:#60A5FA;text-decoration:none;'
+      +'border-radius:8px;font-size:.68rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-family:var(--sans)">&#9992; Flight</a>';
+  }
+
   h+='</div>';
   h+='</div>';
   return h;
@@ -2748,12 +2793,20 @@ function showCalDay(key){
     html+='<div style="font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.4rem;font-weight:500">From your calendar</div>';
     html+=ext.map(function(ev){
       var when=ev.allDay?'All day':_evRangeO(ev);
-      var loc=ev.location?'<div style="font-size:.74rem;color:rgba(17,29,44,.45);margin-top:.15rem"><span class="nav-addr" onclick="navChoice(\''+encodeURIComponent(ev.location)+'\')" style="color:inherit;font-size:inherit">'+escH(ev.location)+'</span></div>':'';
-      var notes=ev.notes?'<div style="margin-top:.3rem;padding:.35rem .55rem;background:rgba(17,29,44,.03);border-left:2px solid rgba(96,108,145,.3);font-size:.74rem;color:rgba(17,29,44,.6);white-space:pre-wrap;line-height:1.4">'+enrichNotes(ev.notes)+'</div>':'';
-      return '<div style="padding:.4rem 0"><div style="display:flex;gap:.7rem;align-items:flex-start">'
-        +'<div style="font-size:.78rem;color:var(--gold);font-weight:500;font-variant-numeric:tabular-nums;min-width:85px">'+escH(when)+'</div>'
-        +'<div style="flex:1"><div style="font-size:.85rem;color:var(--navy);font-weight:500">'+escH(ev.title)+'</div>'+loc+notes+'</div>'
-        +'</div></div>';
+      var locHtml='';
+      if(ev.location){
+        var wazeUrl='https://waze.com/ul?q='+encodeURIComponent(ev.location)+'&navigate=yes';
+        locHtml='<div style="display:flex;align-items:center;gap:.5rem;margin-top:.35rem;flex-wrap:wrap">'
+          +'<span style="font-size:.82rem;color:rgba(17,29,44,.6)">'+escH(ev.location)+'</span>'
+          +'<a href="'+wazeUrl+'" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:.3rem .65rem;background:rgba(184,152,90,.1);border:1px solid rgba(184,152,90,.25);color:var(--gold);text-decoration:none;border-radius:6px;font-size:.62rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-family:var(--sans);white-space:nowrap">&#9660; Navigate</a>'
+          +'</div>';
+      }
+      var notes=ev.notes?'<div style="margin-top:.4rem;padding:.4rem .6rem;background:rgba(17,29,44,.03);border-left:2px solid rgba(96,108,145,.3);font-size:.8rem;color:rgba(17,29,44,.6);white-space:pre-wrap;line-height:1.5">'+enrichNotes(ev.notes)+'</div>':'';
+      return '<div style="padding:.6rem 0;border-bottom:1px solid rgba(17,29,44,.04)">'
+        +'<div style="font-size:.82rem;color:var(--gold);font-weight:500;margin-bottom:.25rem">'+escH(when)+'</div>'
+        +'<div style="font-size:.95rem;color:var(--navy);font-weight:500;line-height:1.3">'+escH(ev.title)+'</div>'
+        +locHtml+notes
+        +'</div>';
     }).join('')+'</div>';
   }
   if(sorted.length) html+=sorted.map(jobDetailCard).join('');

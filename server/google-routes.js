@@ -81,20 +81,38 @@ router.get('/external-events', requireStaff, async (req, res) => {
 // ── POST /api/google/events — create a one-off calendar event (no booking) ──
 // Used by the "Add to Calendar Only" button in the AI assistant for jobs from
 // other operators that don't need to go through the Westmere booking system.
+// Normalize various time strings to HH:MM (24h). Returns null if not parseable.
+function normalizeTime(t) {
+  if (!t) return null;
+  t = String(t).trim();
+  if (/^\d{2}:\d{2}$/.test(t)) return t;                              // already HH:MM
+  if (/^\d{1}:\d{2}$/.test(t)) return '0' + t;                        // H:MM → 0H:MM
+  const m = t.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/i);
+  if (m) {
+    let h = parseInt(m[1]), mins = parseInt(m[2] || '0');
+    const period = m[3] ? m[3].toLowerCase() : null;
+    if (period === 'pm' && h < 12) h += 12;
+    if (period === 'am' && h === 12) h = 0;
+    return String(h).padStart(2, '0') + ':' + String(mins).padStart(2, '0');
+  }
+  return null;
+}
+
 router.post('/events', requireStaff, async (req, res) => {
   if (!gcal.isConfigured()) return res.status(503).json({ error: 'Google Calendar not configured' });
   const status = gcal.getStatus();
-  if (!status.connected) return res.status(503).json({ error: 'Google Calendar not connected' });
+  if (!status.connected) return res.status(503).json({ error: 'Google Calendar not connected. Connect Google Calendar in Settings first.' });
 
   const { title, date, time, pickup, destination, name, phone, fare, notes } = req.body;
   if (!date) return res.status(400).json({ error: 'date is required' });
 
+  const normalTime = normalizeTime(time);
   const tz = 'Europe/London';
   let eventBody;
 
-  if (time && /^\d{2}:\d{2}$/.test(time)) {
-    const startIso = `${date}T${time}:00`;
-    const endDate = new Date(`${date}T${time}:00Z`);
+  if (normalTime) {
+    const startIso = `${date}T${normalTime}:00`;
+    const endDate = new Date(`${date}T${normalTime}:00Z`);
     endDate.setUTCMinutes(endDate.getUTCMinutes() + 60);
     const pad = n => String(n).padStart(2, '0');
     const endIso = `${endDate.getUTCFullYear()}-${pad(endDate.getUTCMonth()+1)}-${pad(endDate.getUTCDate())}T${pad(endDate.getUTCHours())}:${pad(endDate.getUTCMinutes())}:00`;
