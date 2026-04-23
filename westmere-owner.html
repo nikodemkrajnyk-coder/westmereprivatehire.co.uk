@@ -2072,10 +2072,10 @@ function assistHandleImage(dataUrl,mimeType){
     var booking=data.booking;
     if(booking){
       ASSIST_PENDING_BOOKING=booking;
-      appendW('Got it — here's what I found:');
+      appendW('Got it — here\'s what I found:');
       showBookingCard(booking);
     } else {
-      appendW(data.reply||'I could see the image but couldn't extract a booking. Try typing the details.');
+      appendW(data.reply||'I could see the image but couldn\'t extract a booking. Try typing the details.');
     }
     ASSIST_BUSY=false;setAssistStatus('live','Listening');
   })
