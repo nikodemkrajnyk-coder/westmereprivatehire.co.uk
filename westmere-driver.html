@@ -367,8 +367,8 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
 
     <!-- OFFERED -->
     <div class="page-content" id="pg-offered" style="display:none">
-      <div class="sec-title"><em>Offered</em> Jobs</div>
-      <div class="sec-sub">Scored against your current position and battery</div>
+      <div class="sec-title"><em>Upcoming</em> Jobs</div>
+      <div class="sec-sub">All confirmed, offered and active bookings</div>
       <div id="offered-list"></div>
     </div>
 
@@ -447,7 +447,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
 
   <div class="bottom-nav" id="bottom-nav">
     <button class="bn-item on" id="bn-today" onclick="goPage('today',this)"><div class="bn-bar"></div><div class="bn-label">Today</div></button>
-    <button class="bn-item" id="bn-offered" onclick="goPage('offered',this)"><div class="bn-bar"></div><div class="bn-label">Offered</div><div class="bn-badge" id="offered-badge"></div></button>
+    <button class="bn-item" id="bn-offered" onclick="goPage('offered',this)"><div class="bn-bar"></div><div class="bn-label">Upcoming</div><div class="bn-badge" id="offered-badge"></div></button>
     <button class="bn-item" id="bn-calendar" onclick="goPage('calendar',this)"><div class="bn-bar"></div><div class="bn-label">Calendar</div></button>
     <button class="bn-item" id="bn-earnings" onclick="goPage('earnings',this)"><div class="bn-bar"></div><div class="bn-label">Earnings</div></button>
     <button class="bn-item" id="bn-profile" onclick="goPage('profile',this)"><div class="bn-bar"></div><div class="bn-label">Profile</div></button>
@@ -678,7 +678,7 @@ function buildToday(){
   document.getElementById('today-sub').textContent=rem?(rem===1?'1 job remaining':rem+' jobs remaining'):'All done for today';
   renderTodayPersonal();
   var list=document.getElementById('today-list');
-  if(!TODAY_JOBS.length){list.innerHTML='<div class="empty"><div class="empty-title">No jobs today</div><div class="empty-sub">Check Offered Jobs for new work</div></div>';return;}
+  if(!TODAY_JOBS.length){list.innerHTML='<div class="empty"><div class="empty-title">No jobs today</div><div class="empty-sub">Check Upcoming for new work</div></div>';return;}
   list.innerHTML=TODAY_JOBS.map(function(j){return buildCard(j,false);}).join('');
 }
 
@@ -734,30 +734,39 @@ function buildCard(j,isOffered){
     +'</div>';
 }
 
-// ─── OFFERED ──────────────────────────────────────────────────────────────────
+// ─── UPCOMING ─────────────────────────────────────────────────────────────────
 function buildOffered(){
   var list=document.getElementById('offered-list');
   var badge=document.getElementById('offered-badge');
-  badge.textContent=OFFERED_JOBS.length||'';
+  var needsAction=OFFERED_JOBS.filter(function(j){return j.apiStatus==='offered';}).length;
+  badge.textContent=needsAction||OFFERED_JOBS.length||'';
   badge.style.display=OFFERED_JOBS.length?'flex':'none';
-  if(!OFFERED_JOBS.length){list.innerHTML='<div class="empty"><div class="empty-title">No offered jobs</div><div class="empty-sub">New jobs will appear here</div></div>';return;}
+  if(!OFFERED_JOBS.length){list.innerHTML='<div class="empty"><div class="empty-title">No upcoming jobs</div><div class="empty-sub">New jobs will appear here</div></div>';return;}
   list.innerHTML=OFFERED_JOBS.map(function(j){
-    var s=scoreJob(j);
-    var conflict=checkConflict(j);
-    var pay=(j.driverPay!=null)?j.driverPay:(j.fare?(Math.round(j.fare*0.9*100)/100):null);
-    var gross=j.fare||0;
-    var payLine=(pay!=null)?('<div class="ss-n" style="color:'+s.col+'">\u00a3'+esc(pay)+' to you</div><div style="font-size:.68rem;color:var(--text-light);text-align:right">gross \u00a3'+esc(gross)+' \u00b7 10% fee</div>'):('<div class="ss-n" style="color:'+s.col+'">\u00a3'+esc(s.net)+' net</div>');
-    var strip='<div class="score-strip" style="background:'+s.bg+';border-bottom:1px solid '+s.col+'30">'
-      +'<div><div class="ss-v" style="color:'+s.col+'">'+esc(s.v)+'</div><div class="ss-d">'+esc(s.dead)+' dead mi \u00b7 ~'+esc(s.jmi)+' mi job</div></div>'
-      +'<div>'+payLine+'</div></div>';
-    var countdownHtml='';
-    if(j.offeredAt){
-      var expires=new Date((j.offeredAt||'').replace(' ','T')+'Z').getTime()+10*60*1000;
-      countdownHtml='<div class="offer-countdown" data-expires="'+expires+'" style="padding:.45rem .85rem;background:#fff8e6;color:var(--amber);font-size:.72rem;font-weight:600;text-align:center;border-bottom:1px solid #f0e0b0">\u23f1 Decide within 10 min</div>';
+    var isOfferedStatus=j.apiStatus==='offered';
+    if(isOfferedStatus){
+      // Offered job: show score strip + accept/decline
+      var s=scoreJob(j);
+      var conflict=checkConflict(j);
+      var pay=(j.driverPay!=null)?j.driverPay:(j.fare?(Math.round(j.fare*0.9*100)/100):null);
+      var gross=j.fare||0;
+      var payLine=(pay!=null)?('<div class="ss-n" style="color:'+s.col+'">\u00a3'+esc(pay)+' to you</div><div style="font-size:.68rem;color:var(--text-light);text-align:right">gross \u00a3'+esc(gross)+' \u00b7 10% fee</div>'):('<div class="ss-n" style="color:'+s.col+'">\u00a3'+esc(s.net)+' net</div>');
+      var strip='<div class="score-strip" style="background:'+s.bg+';border-bottom:1px solid '+s.col+'30">'
+        +'<div><div class="ss-v" style="color:'+s.col+'">'+esc(s.v)+'</div><div class="ss-d">'+esc(s.dead)+' dead mi \u00b7 ~'+esc(s.jmi)+' mi job</div></div>'
+        +'<div>'+payLine+'</div></div>';
+      var countdownHtml='';
+      if(j.offeredAt){
+        var expires=new Date((j.offeredAt||'').replace(' ','T')+'Z').getTime()+10*60*1000;
+        countdownHtml='<div class="offer-countdown" data-expires="'+expires+'" style="padding:.45rem .85rem;background:#fff8e6;color:var(--amber);font-size:.72rem;font-weight:600;text-align:center;border-bottom:1px solid #f0e0b0">\u23f1 Decide within 10 min</div>';
+      }
+      var conflictHtml=conflict?'<div class="conflict-warn"><strong>Conflict</strong> '+esc(conflict)+'</div>':'';
+      var offerBtns='<div class="jc-offer-btns"><button class="btn-accept" onclick="acceptJob(\''+j.id+'\')">Accept</button><button class="btn-decline" onclick="declineJob(\''+j.id+'\')">Decline</button></div>';
+      return '<div class="job-card" style="margin-bottom:1rem;overflow:hidden">'+countdownHtml+strip+conflictHtml+buildCard(j,true)+offerBtns+'</div>';
+    } else {
+      // Confirmed/active future job: info only
+      var dateLbl=j.date?'<div style="padding:.4rem 1rem .1rem;font-size:.62rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)">'+esc(j.date)+'</div>':'';
+      return '<div class="job-card" style="margin-bottom:1rem;overflow:hidden">'+dateLbl+buildCard(j,true)+'</div>';
     }
-    var conflictHtml=conflict?'<div class="conflict-warn"><strong>Conflict</strong> '+esc(conflict)+'</div>':'';
-    var offerBtns='<div class="jc-offer-btns"><button class="btn-accept" onclick="acceptJob(\''+j.id+'\')">Accept</button><button class="btn-decline" onclick="declineJob(\''+j.id+'\')">Decline</button></div>';
-    return '<div class="job-card" style="margin-bottom:1rem;overflow:hidden">'+countdownHtml+strip+conflictHtml+buildCard(j,true)+offerBtns+'</div>';
   }).join('');
 }
 
@@ -889,13 +898,13 @@ function showToast(msg){
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 function _toDriverJob(b){
-  return{id:String(b.id),ref:b.ref||'',time:b.time||'ASAP',name:b.customer_name||'Guest',
-    phone:b.customer_phone||'',email:b.customer_email||'',contactPref:'whatsapp',
+  return{id:String(b.id),ref:b.ref||'',time:b.time||'ASAP',name:b.customer_name||b.passenger_name||'Guest',
+    phone:b.customer_phone||b.passenger_phone||'',email:b.customer_email||b.passenger_email||'',contactPref:'whatsapp',
     pax:b.passengers||1,bags:b.bags||'0',pickup:b.pickup,dest:b.destination,
     type:b.trip_type||'',flight:b.flight||'',flightStatus:b.flight?'ontime':'',
     flightDeparts:'',fare:b.fare||0,driverFare:(b.driver_pay!=null?b.driver_pay:b.fare)||0,
     driverPay:b.driver_pay,adminFee:b.admin_fee,offeredAt:b.offered_at||null,
-    payment:b.payment||'cash',
+    payment:b.payment||'cash',apiStatus:b.status||'',
     status:b.status==='completed'?'done':b.status==='active'?'enroute':b.status==='cancelled'?'cancelled':'upcoming',
     note:b.notes||''};
 }
@@ -910,13 +919,24 @@ async function loadDriverJobs(){
     var jobs=(results[1]&&results[1].ok)?results[1].jobs:[];
     var today=new Date().toISOString().split('T')[0];
 
-    OFFERED_JOBS=offers.map(function(b){
+    TODAY_JOBS=jobs.filter(function(b){return b.date===today&&b.status!=='cancelled';}).map(_toDriverJob);
+
+    // Upcoming = all offered jobs + future confirmed/active jobs (date > today)
+    var futureJobs=jobs.filter(function(b){return b.date>today&&b.status!=='cancelled'&&b.status!=='completed';}).map(function(b){
       var j=_toDriverJob(b);
-      try{j.date=new Date(b.date).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}catch(e){j.date=b.date;}
+      try{j.dateKey=b.date;j.date=new Date(b.date).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}catch(e){j.dateKey=b.date;j.date=b.date;}
       return j;
     });
-
-    TODAY_JOBS=jobs.filter(function(b){return b.date===today&&b.status!=='cancelled';}).map(_toDriverJob);
+    var offeredMapped=offers.map(function(b){
+      var j=_toDriverJob(b);
+      try{j.dateKey=b.date;j.date=new Date(b.date).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}catch(e){j.dateKey=b.date;j.date=b.date;}
+      return j;
+    });
+    OFFERED_JOBS=offeredMapped.concat(futureJobs).sort(function(a,b){
+      var ak=a.dateKey||a.date||'';var bk=b.dateKey||b.date||'';
+      if(ak!==bk)return ak<bk?-1:1;
+      return(a.time||'').localeCompare(b.time||'');
+    });
 
     if(document.getElementById('pg-today').classList.contains('on'))buildToday();
     if(document.getElementById('pg-offered').classList.contains('on'))buildOffered();
@@ -927,7 +947,9 @@ async function loadDriverJobs(){
 function _refreshOfferedBadge(){
   var badge=document.getElementById('offered-badge');
   if(!badge)return;
-  badge.textContent=OFFERED_JOBS.length||'';
+  // Badge count = jobs needing a decision (offered status)
+  var needsAction=OFFERED_JOBS.filter(function(j){return j.apiStatus==='offered';}).length;
+  badge.textContent=needsAction||OFFERED_JOBS.length||'';
   badge.style.display=OFFERED_JOBS.length?'flex':'none';
 }
 
