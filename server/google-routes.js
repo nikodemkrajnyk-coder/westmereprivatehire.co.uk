@@ -150,7 +150,44 @@ router.post('/events', requireStaff, async (req, res) => {
     const token = await gcal.getAccessToken();
     const t = gcal.loadTokens();
     const calId = encodeURIComponent((t && t.calendar_id) || 'primary');
-    const r = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calId}/events`, {
+    const API = 'https://www.googleapis.com/calendar/v3';
+
+    // ── Duplicate check: search for an existing event on the same day ──────
+    // If an event with the same start time and matching location/summary
+    // already exists, return it without creating a duplicate.
+    if (normalTime) {
+      const dayMin = encodeURIComponent(`${date}T00:00:00Z`);
+      const dayMax = encodeURIComponent(`${date}T23:59:59Z`);
+      try {
+        const sr = await fetch(
+          `${API}/calendars/${calId}/events?timeMin=${dayMin}&timeMax=${dayMax}&singleEvents=true&maxResults=50`,
+          { headers: { Authorization: 'Bearer ' + token } }
+        );
+        if (sr.ok) {
+          const sd = await sr.json();
+          const wantedStart = `${date}T${normalTime}`;
+          const wantedLoc   = (pickup || '').toLowerCase().trim();
+          const wantedSum   = eventBody.summary.toLowerCase().trim();
+          const existing = (sd.items || []).find(ev => {
+            if (ev.status === 'cancelled') return false;
+            const evStart = (ev.start && (ev.start.dateTime || ev.start.date)) || '';
+            if (!evStart.startsWith(wantedStart)) return false;
+            const evLoc = (ev.location || '').toLowerCase().trim();
+            const evSum = (ev.summary || '').toLowerCase().trim();
+            return (wantedLoc && evLoc.includes(wantedLoc)) || evSum === wantedSum;
+          });
+          if (existing) {
+            console.log('[GCAL] Skipped duplicate calendar event for', date, normalTime, pickup || title);
+            return res.json({ ok: true, eventId: existing.id, htmlLink: existing.htmlLink, duplicate: true });
+          }
+        }
+      } catch (e2) {
+        // Duplicate check failure is non-fatal — fall through to create
+        console.warn('[GCAL] duplicate check failed:', e2.message);
+      }
+    }
+
+    const r = await fetch(`${API}/calendars/${calId}/events`, {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
       body: JSON.stringify(eventBody)

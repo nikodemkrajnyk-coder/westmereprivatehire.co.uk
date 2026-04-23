@@ -253,11 +253,18 @@ router.post('/scan', async (req, res) => {
   const scanSystem = `You are a booking extraction assistant for Westmere Private Hire, Sussex UK.
 Today is ${today}.
 
-TASK: Read the image and extract any private hire / taxi booking details.
+TASK: Read the image and extract ALL private hire / taxi booking details. There may be ONE or MULTIPLE bookings.
 
-The image may be a screenshot of a WhatsApp message, email, text message, booking form, or handwritten note.
+The image may be a screenshot of a WhatsApp conversation, email, text message, booking form, or handwritten note.
 
-Extract these fields if present:
+MULTIPLE BOOKING RULES:
+- WhatsApp screenshots often contain multiple bookings — each message or exchange may be a separate booking.
+- Look for different dates, times, passenger names, pickup/destination pairs, or visual separators.
+- If a return journey is mentioned (e.g. "and can you pick up on the way back"), treat it as a SECOND booking.
+- If one person is making a booking for multiple separate trips on different dates/times, extract each as its own booking.
+- A single message with ONE set of pickup/destination/date/time is ONE booking.
+
+For EACH booking extract:
 - name (passenger full name)
 - phone (UK mobile, e.g. 07700 900123)
 - email
@@ -275,14 +282,17 @@ Fixed airport fares (out/return):
 ${REFERENCE_FARES}
 
 ALWAYS respond with:
-1. A brief 1-2 sentence summary of what you found
-2. The extracted data as JSON inside <<<BOOKING>>> and <<<END>>> markers
+1. A brief summary: "Found X booking(s): [one line per booking]"
+2. ALL extracted bookings as a JSON array inside <<<BOOKINGS>>> and <<<END>>> markers
 
-Format exactly like this:
-I found a booking from [name] going to [destination] on [date].
+Format exactly like this (always use the array format, even for a single booking):
+Found 2 bookings: James Smith to Gatwick on 14 May, return on 21 May.
 
-<<<BOOKING>>>
-{"name":"...","phone":"...","email":null,"pickup":"...","destination":"...","date":"YYYY-MM-DD","time":"HH:MM","passengers":1,"flight":null,"fare":0,"payment":"cash","notes":null}
+<<<BOOKINGS>>>
+[
+  {"name":"James Smith","phone":"07700900123","email":null,"pickup":"14 High Street, Horsham","destination":"Gatwick Airport","date":"2025-05-14","time":"06:00","passengers":1,"flight":null,"fare":55,"payment":"cash","notes":null},
+  {"name":"James Smith","phone":"07700900123","email":null,"pickup":"Gatwick Airport","destination":"14 High Street, Horsham","date":"2025-05-21","time":"13:30","passengers":1,"flight":"BA2490","fare":50,"payment":"cash","notes":"return leg"}
+]
 <<<END>>>
 
 If no booking details are found, just say so clearly without the JSON block.
@@ -298,13 +308,13 @@ Use null for any field you cannot determine. For fare, use 0 if unknown.`;
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 800,
+        max_tokens: 1500,
         system: scanSystem,
         messages: [{
           role: 'user',
           content: [
             { type: 'image', source: { type: 'base64', media_type: mimeType, data: base64 } },
-            { type: 'text', text: 'Please extract the booking details from this image.' }
+            { type: 'text', text: 'Please extract ALL booking details from this image.' }
           ]
         }]
       })
@@ -322,14 +332,31 @@ Use null for any field you cannot determine. For fare, use 0 if unknown.`;
       .join('')
       .trim();
 
-    // Try to parse the booking JSON out of the response
-    const match = reply.match(/<<<BOOKING>>>([\s\S]*?)<<<END>>>/);
-    let booking = null;
-    if (match) {
-      try { booking = JSON.parse(match[1].trim()); } catch (_) {}
+    // Parse bookings — support new <<<BOOKINGS>>> array format and legacy <<<BOOKING>>> single object
+    let bookings = [];
+    const arrayMatch = reply.match(/<<<BOOKINGS>>>([\s\S]*?)<<<END>>>/);
+    const singleMatch = reply.match(/<<<BOOKING>>>([\s\S]*?)<<<END>>>/);
+    if (arrayMatch) {
+      try {
+        const parsed = JSON.parse(arrayMatch[1].trim());
+        bookings = Array.isArray(parsed) ? parsed : [parsed];
+      } catch (_) {}
+    } else if (singleMatch) {
+      try { bookings = [JSON.parse(singleMatch[1].trim())]; } catch (_) {}
     }
 
-    res.json({ ok: true, reply, booking });
+    // Strip the marker block from the reply text shown to the user
+    const cleanReply = reply
+      .replace(/<<<BOOKINGS>>>[\s\S]*?<<<END>>>/g, '')
+      .replace(/<<<BOOKING>>>[\s\S]*?<<<END>>>/g, '')
+      .trim();
+
+    res.json({
+      ok: true,
+      reply: cleanReply,
+      bookings,                       // always an array
+      booking: bookings[0] || null    // backwards compat for old frontend code
+    });
   } catch (e) {
     res.status(502).json({ error: 'Scan unavailable: ' + e.message });
   }

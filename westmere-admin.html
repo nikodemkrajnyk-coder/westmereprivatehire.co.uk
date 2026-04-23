@@ -1490,23 +1490,23 @@ function aaHandleImage(dataUrl,mimeType){
         AA_HIST.push({role:'assistant',content:errMsg});
         return;
       }
-      if(d.booking){
-        var b=d.booking;
-        var replyText=d.reply||'Booking details extracted.';
-        aaAddBot(replyText);
-        aaShowBookingCard(b);
-        var bookingText='Booking extracted from image: '
-          +(b.name?'Passenger: '+b.name+'. ':'')
-          +(b.date?'Date: '+b.date+'. ':'')
-          +(b.time?'Time: '+b.time+'. ':'')
-          +(b.pickup?'Pickup: '+b.pickup+'. ':'')
-          +(b.destination?'Drop-off: '+b.destination+'. ':'')
-          +(b.fare?'Fare: £'+b.fare+'. ':'')
-          +(b.payment?'Payment: '+b.payment+'. ':'')
-          +(b.phone?'Phone: '+b.phone+'. ':'')
-          +(b.notes?'Notes: '+b.notes+'. ':'');
+      var bookings=d.bookings&&d.bookings.length?d.bookings:(d.booking?[d.booking]:[]);
+      if(bookings.length){
+        var intro=d.reply||(bookings.length===1?'Booking details extracted.':'Found '+bookings.length+' bookings:');
+        aaAddBot(intro);
+        bookings.forEach(function(b,i){aaShowBookingCard(b,i,bookings.length);});
+        var histText=bookings.map(function(b,i){
+          return 'Booking '+(i+1)+': '
+            +(b.name?'Passenger: '+b.name+'. ':'')
+            +(b.date?'Date: '+b.date+'. ':'')
+            +(b.time?'Time: '+b.time+'. ':'')
+            +(b.pickup?'Pickup: '+b.pickup+'. ':'')
+            +(b.destination?'Drop-off: '+b.destination+'. ':'')
+            +(b.fare?'Fare: £'+b.fare+'. ':'')
+            +(b.phone?'Phone: '+b.phone+'. ':'');
+        }).join('\n');
         AA_HIST.push({role:'user',content:'[User scanned an image]'});
-        AA_HIST.push({role:'assistant',content:replyText+'\n'+bookingText+'Awaiting confirmation.'});
+        AA_HIST.push({role:'assistant',content:intro+'\n'+histText});
       } else {
         var noMatch=d.reply||'No booking details found in this image.';
         aaAddBot(noMatch);
@@ -1519,7 +1519,7 @@ function aaHandleImage(dataUrl,mimeType){
   });
 }
 
-function aaShowBookingCard(b){
+function aaShowBookingCard(b,idx,total){
   var card=document.createElement('div');
   card.className='aa-msg bot';
   card.style.padding='0';
@@ -1530,29 +1530,28 @@ function aaShowBookingCard(b){
     if(!val&&val!==0)return '';
     return '<div class="abc-row"><span class="abc-lbl">'+lbl+'</span><span class="abc-val">'+escHtml(String(val))+'</span></div>';
   }
-  function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
-  var dateDisp=b.date||'';
-  var timeDisp=b.time||'';
+  var label=(total&&total>1)?'Booking '+(idx+1)+' of '+total:'Extracted Booking';
   var fareDisp=b.fare?'£'+b.fare:'—';
-
   var bJson=JSON.stringify(JSON.stringify(b));
-  inner.innerHTML='<div class="abc-title">Extracted Booking</div>'
+
+  inner.innerHTML='<div class="abc-title">'+escHtml(label)+'</div>'
     +row('Name',b.name)
     +row('Phone',b.phone)
     +row('Email',b.email)
     +row('Pickup',b.pickup)
     +row('Drop-off',b.destination)
-    +row('Date',dateDisp)
-    +row('Time',timeDisp)
-    +row('Passengers',b.passengers)
+    +row('Date',b.date||'')
+    +row('Time',b.time||'')
+    +row('Passengers',b.passengers>1?b.passengers:null)
     +row('Flight',b.flight)
     +row('Fare',fareDisp)
     +row('Payment',b.payment)
     +row('Notes',b.notes)
     +'<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.75rem">'
     +'<button class="abc-btn" style="flex:1;min-width:120px" onclick="aaFillModal('+bJson+')">Create This Booking</button>'
-    +'<button class="abc-btn" style="flex:1;min-width:120px;background:rgba(184,152,90,.08);border:1px solid rgba(184,152,90,.3);color:var(--gold)" onclick="aaCalOnly('+bJson+')">Add to Calendar Only</button>'
+    +'<button class="abc-btn" style="flex:1;min-width:120px;background:rgba(184,152,90,.08);border:1px solid rgba(184,152,90,.3);color:var(--gold)" onclick="aaCalOnly('+bJson+')">Calendar Only</button>'
     +'</div>';
 
   card.appendChild(inner);

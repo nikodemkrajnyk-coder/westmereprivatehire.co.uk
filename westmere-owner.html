@@ -2311,27 +2311,31 @@ function assistHandleImage(dataUrl,mimeType){
         ASSIST_HISTORY.push({role:'assistant',content:errMsg});
         ASSIST_BUSY=false;setAssistStatus('live','Listening');return;
       }
-      var booking=data.booking;
-      if(booking){
-        ASSIST_PENDING_BOOKING=booking;
-        var summary='Got it — here\'s what I found:';
-        appendW(summary);
-        showBookingCard(booking);
-        // Add scan context to history so follow-up messages have it
-        var bookingText='Booking extracted from image: '
-          +(booking.name?'Passenger: '+booking.name+'. ':'')
-          +(booking.date?'Date: '+booking.date+'. ':'')
-          +(booking.time?'Time: '+booking.time+'. ':'')
-          +(booking.pickup?'Pickup: '+booking.pickup+'. ':'')
-          +(booking.destination?'Drop-off: '+booking.destination+'. ':'')
-          +(booking.fare?'Fare: £'+booking.fare+'. ':'')
-          +(booking.payment?'Payment: '+booking.payment+'. ':'')
-          +(booking.phone?'Phone: '+booking.phone+'. ':'')
-          +(booking.notes?'Notes: '+booking.notes+'. ':'');
+      var bookings=data.bookings&&data.bookings.length?data.bookings:(data.booking?[data.booking]:[]);
+      if(bookings.length){
+        var intro=data.reply||(bookings.length===1?'Got it — here\'s what I found:':'Found '+bookings.length+' bookings:');
+        appendW(intro);
+        // Show a card for each booking
+        bookings.forEach(function(bk,i){
+          showScannedBookingCard(bk,i,bookings.length);
+        });
+        // Set pending to first booking for voice-confirm flow
+        ASSIST_PENDING_BOOKING=bookings[0];
+        // Add all to history
+        var histText=bookings.map(function(bk,i){
+          return 'Booking '+(i+1)+': '
+            +(bk.name?'Passenger: '+bk.name+'. ':'')
+            +(bk.date?'Date: '+bk.date+'. ':'')
+            +(bk.time?'Time: '+bk.time+'. ':'')
+            +(bk.pickup?'Pickup: '+bk.pickup+'. ':'')
+            +(bk.destination?'Drop-off: '+bk.destination+'. ':'')
+            +(bk.fare?'Fare: £'+bk.fare+'. ':'')
+            +(bk.phone?'Phone: '+bk.phone+'. ':'');
+        }).join('\n');
         ASSIST_HISTORY.push({role:'user',content:'[User scanned an image]'});
-        ASSIST_HISTORY.push({role:'assistant',content:summary+'\n'+bookingText+'Awaiting confirmation.'});
+        ASSIST_HISTORY.push({role:'assistant',content:intro+'\n'+histText});
       } else {
-        var replyMsg=data.reply||'I could see the image but couldn\'t extract a booking. Try typing the details.';
+        var replyMsg=data.reply||'I could see the image but couldn\'t extract any bookings. Try typing the details.';
         appendW(replyMsg);
         ASSIST_HISTORY.push({role:'user',content:'[User scanned an image]'});
         ASSIST_HISTORY.push({role:'assistant',content:replyMsg});
@@ -2471,6 +2475,45 @@ async function sendToAssist(msg){
   }
 
   ASSIST_BUSY=false;
+  setAssistStatus('live','Listening');
+}
+
+// Card for image-scanned bookings — direct action buttons (no pending flow needed)
+function showScannedBookingCard(bk,idx,total){
+  var label=total>1?'Booking '+(idx+1)+' of '+total:'Booking';
+  var rows=[];
+  if(bk.name) rows.push('<strong>Passenger:</strong> '+escH(bk.name));
+  if(bk.phone) rows.push('<strong>Phone:</strong> '+escH(bk.phone));
+  if(bk.pickup) rows.push('<strong>Pickup:</strong> '+escH(bk.pickup));
+  if(bk.destination) rows.push('<strong>Destination:</strong> '+escH(bk.destination));
+  if(bk.date) rows.push('<strong>Date:</strong> '+escH(bk.date));
+  if(bk.time) rows.push('<strong>Time:</strong> '+escH(bk.time));
+  if(bk.passengers&&bk.passengers>1) rows.push('<strong>Passengers:</strong> '+bk.passengers);
+  if(bk.flight) rows.push('<strong>Flight:</strong> '+escH(bk.flight));
+  if(bk.fare) rows.push('<strong>Fare:</strong> £'+bk.fare);
+  if(bk.payment) rows.push('<strong>Payment:</strong> '+escH(bk.payment));
+  if(bk.notes) rows.push('<strong>Notes:</strong> '+escH(bk.notes));
+  var bkJson=escH(JSON.stringify(bk));
+  var html='<div class="msg-w"><div class="msg-w-crest">W</div><div class="msg-booking">'
+    +'<div class="msg-booking-title">'+escH(label)+'</div>'
+    +'<div class="msg-booking-row">'+rows.join('<br>')+'</div>'
+    +'<div class="msg-booking-actions">'
+    +'<button class="mba-confirm" onclick="createBookingFromAssist(JSON.parse(this.dataset.bk))" data-bk="'+bkJson+'">Create Booking</button>'
+    +'<button class="mba-cal" onclick="calOnlyFromData(JSON.parse(this.dataset.bk))" data-bk="'+bkJson+'" style="padding:.6rem 1rem;background:rgba(184,152,90,.1);border:1px solid rgba(184,152,90,.35);color:var(--gold);font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:6px">Calendar Only</button>'
+    +'</div></div></div>';
+  appendHTML(html);
+}
+async function calOnlyFromData(bk){
+  setAssistStatus('thinking','Adding to calendar…');
+  try{
+    var r=await fetch('/api/google/events',{method:'POST',credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({date:bk.date,time:bk.time,pickup:bk.pickup,destination:bk.destination,
+        name:bk.name,phone:bk.phone,fare:bk.fare,notes:bk.notes})});
+    var d=await r.json();
+    if(d.ok){appendW('Added to Google Calendar.');showToast('Calendar event created');}
+    else appendW('Could not add to calendar: '+(d.error||'Unknown error'));
+  }catch(e){appendW('Network error adding to calendar.');}
   setAssistStatus('live','Listening');
 }
 
