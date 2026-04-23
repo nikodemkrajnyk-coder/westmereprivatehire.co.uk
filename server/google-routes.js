@@ -257,10 +257,13 @@ publicCallback.get('/callback', async (req, res) => {
   const { code, state, error } = req.query;
   const ALLOWED_RETURNS = ['/westmere-admin.html', '/westmere-owner.html', '/westmere-driver.html'];
   let from = '/westmere-admin.html';
+  let driverCal = false;
+  let uid = null;
   try {
     if (state) {
       const decoded = JSON.parse(Buffer.from(String(state), 'base64url').toString('utf8'));
       if (decoded.from && ALLOWED_RETURNS.includes(decoded.from)) from = decoded.from;
+      if (decoded.driverCal && decoded.uid) { driverCal = true; uid = decoded.uid; }
     }
   } catch (e) {}
 
@@ -277,15 +280,29 @@ publicCallback.get('/callback', async (req, res) => {
   try {
     const tokens = await gcal.exchangeCodeForTokens(String(code));
     const email = await gcal.fetchUserEmail(tokens.access_token);
-    gcal.saveTokens({
-      access_token:  tokens.access_token,
-      refresh_token: tokens.refresh_token,
-      expires_in:    tokens.expires_in,
-      scope:         tokens.scope,
-      email
-    });
-    // Kick off an initial pull in the background
-    gcal.pullChanges().catch(() => {});
+
+    if (driverCal && uid) {
+      // Per-driver connection — save under gcal_driver_<id>
+      gcal.saveDriverTokens(uid, {
+        access_token:  tokens.access_token,
+        refresh_token: tokens.refresh_token,
+        expires_in:    tokens.expires_in,
+        scope:         tokens.scope,
+        email
+      });
+      console.log('[GCAL] Driver', uid, 'connected calendar:', email);
+    } else {
+      // Admin/owner shared calendar
+      gcal.saveTokens({
+        access_token:  tokens.access_token,
+        refresh_token: tokens.refresh_token,
+        expires_in:    tokens.expires_in,
+        scope:         tokens.scope,
+        email
+      });
+      // Kick off an initial pull in the background
+      gcal.pullChanges().catch(() => {});
+    }
     return res.redirect(from + '?gcal=connected');
   } catch (e) {
     console.error('[GCAL] callback error:', e.message);

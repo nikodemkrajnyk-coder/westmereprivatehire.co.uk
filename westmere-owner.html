@@ -1323,6 +1323,7 @@ async function toggleDriverDocs(drvId){
     } else {
       html+='<div style="padding:.5rem .75rem;background:var(--green-bg);color:var(--green);font-size:.72rem;border-radius:5px;margin-bottom:.4rem;text-align:center">Driver fully approved ✓</div>';
     }
+    html+='<button onclick="deleteDriver('+drvId+',\''+owEsc(driver.full_name||'this driver')+'\')" style="width:100%;padding:.55rem;background:transparent;border:1px solid rgba(180,30,30,.35);color:var(--red);font-family:var(--sans);font-size:.65rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;border-radius:6px;margin-top:.3rem">Remove Driver</button>';
     html+='</div>';
     panel.innerHTML=html;
   }catch(e){panel.innerHTML='<div style="padding:.8rem 1rem;color:var(--red);font-size:.78rem">Network error</div>';}
@@ -1349,6 +1350,16 @@ async function approveDriver(drvId){
     var r=await fetch('/api/drivers/'+drvId+'/approve',{method:'POST',credentials:'include'});
     var d=await r.json();
     if(d.ok){showToast('Driver approved');loadDriversList();_drvDocsOpen[drvId]=false;}
+    else showToast(d.error||'Failed');
+  }catch(e){showToast('Network error');}
+}
+
+async function deleteDriver(drvId,name){
+  if(!confirm('Remove '+name+' from the roster?\n\nThis deactivates the account. Their booking history is preserved.'))return;
+  try{
+    var r=await fetch('/api/drivers/'+drvId,{method:'DELETE',credentials:'include'});
+    var d=await r.json();
+    if(d.ok){showToast(name+' removed');loadDriversList();}
     else showToast(d.error||'Failed');
   }catch(e){showToast('Network error');}
 }

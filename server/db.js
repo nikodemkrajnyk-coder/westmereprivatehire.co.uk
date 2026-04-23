@@ -193,6 +193,11 @@ function migrate() {
       db.exec(`ALTER TABLE bookings ADD COLUMN calendar_event_id TEXT`);
       console.log('[DB] Added calendar_event_id column to bookings');
     }
+    // Per-driver calendar event ID — so assigned jobs appear on each driver's personal calendar
+    if (!info.find(c => c.name === 'driver_calendar_event_id')) {
+      db.exec(`ALTER TABLE bookings ADD COLUMN driver_calendar_event_id TEXT`);
+      console.log('[DB] Added driver_calendar_event_id column to bookings');
+    }
   } catch (e) {
     // Non-fatal
   }

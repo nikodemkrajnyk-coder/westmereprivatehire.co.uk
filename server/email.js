@@ -643,8 +643,42 @@ async function sendDriverStatement(driver, period, totals, items) {
   return sendEmail(driver.email, `Westmere — Weekly statement (${period.from} to ${period.to})`, html, 'Westmere Payroll', `Your earnings summary: £${(+totals.net||0).toFixed(2)} net`);
 }
 
+// ── Driver welcome email (sent when admin creates a driver account) ─────────
+async function sendDriverWelcome(driver) {
+  const { email, full_name, username, temp_password } = driver;
+  if (!email) return false;
+
+  const firstName = (full_name || 'Driver').split(' ')[0];
+  const appUrl = 'https://westmereprivatehire.co.uk/westmere-driver.html';
+
+  const body = `
+  <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
+  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Welcome to Westmere Private Hire. Your driver account is ready — please log in at your earliest convenience to complete your profile and upload your documents.</p>
+  ${buildDetailsTable(
+    detailRow('Username', `<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:${INK}">${escHtml(username)}</span>`) +
+    rowDivider() +
+    detailRow('Password', `<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:${GOLD}">${escHtml(temp_password || '(use the password you were given)')}</span>`) +
+    rowDivider() +
+    detailRow('Driver App', `<a href="${appUrl}" style="color:${GOLD};text-decoration:none">westmereprivatehire.co.uk/westmere-driver.html</a>`)
+  )}
+  <p style="margin:22px 0 10px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:${INK_MUTED};font-weight:500">Getting started</p>
+  <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.7">1. Open the driver app on your phone and log in with the credentials above.</p>
+  <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.7">2. Go to <em>Profile</em> and complete your personal details.</p>
+  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.7">3. Upload your required documents — DBS, licence, PHV badge, insurance, and MOT — so they can be reviewed and approved before you start accepting jobs.</p>
+  <p style="margin:0 0 22px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;color:${INK_MUTED};line-height:1.6">For security, please change your password once you have logged in. If you have any questions, reply to this email or contact us directly.</p>
+  <p style="margin:22px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
+
+  const html = emailShell(body);
+  const subject = 'Welcome to Westmere — Your driver account is ready';
+  const preheader = `Your driver login: ${username}. Open the driver app to get started.`;
+  const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
+  if (ok) console.log('[EMAIL] Driver welcome sent to', email);
+  return ok;
+}
+
 module.exports = {
   sendCustomerConfirmation, sendCustomerConfirmed, sendAdminAlert,
   sendCustomerWelcome, sendCustomerInvoice, sendBespokeInvoice,
-  sendCustomerCancellation, sendDriverStatement, sendEmail, isConfigured
+  sendCustomerCancellation, sendDriverStatement, sendDriverWelcome,
+  sendEmail, isConfigured
 };

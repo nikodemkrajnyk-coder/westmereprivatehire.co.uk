@@ -214,6 +214,7 @@ router.patch('/bookings/:id', (req, res) => {
     WHERE b.id = ?
   `).get(req.params.id);
   if (updated) {
+    // ── Operator's shared calendar ───────────────────────────────────────
     if (updated.status === 'cancelled' && updated.calendar_event_id) {
       gcal.deleteEvent(updated.calendar_event_id).then(ok => {
         if (ok) {
@@ -228,6 +229,38 @@ router.patch('/bookings/:id', (req, res) => {
           try { db.prepare('UPDATE bookings SET calendar_event_id = ? WHERE id = ?').run(eventId, updated.id); } catch (e) {}
         }
       }).catch(() => {});
+    }
+
+    // ── Driver's personal calendar ───────────────────────────────────────
+    // When a driver is assigned (or reassigned) we push the job to their
+    // personal Google Calendar if they have connected one.
+    const prevDriverId = booking.driver_id;
+    const newDriverId  = req.body.driver_id !== undefined ? req.body.driver_id : prevDriverId;
+
+    // Remove from old driver's calendar if driver changed or job cancelled
+    if (updated.driver_calendar_event_id && (updated.status === 'cancelled' || (newDriverId !== prevDriverId && prevDriverId))) {
+      const removeFrom = prevDriverId;
+      gcal.deleteDriverCalendarEvent(removeFrom, updated.driver_calendar_event_id).then(() => {
+        try { db.prepare('UPDATE bookings SET driver_calendar_event_id = NULL WHERE id = ?').run(updated.id); } catch (e) {}
+      }).catch(() => {});
+    }
+
+    // Create / update on new driver's calendar
+    if (newDriverId && updated.status !== 'cancelled') {
+      const driverStatus = gcal.getDriverStatus(newDriverId);
+      if (driverStatus.connected) {
+        if (updated.driver_calendar_event_id && newDriverId === prevDriverId) {
+          // Same driver — no-op; driver's event stays (times may have changed
+          // but driver calendar update is a separate nice-to-have)
+        } else {
+          // New driver assignment — create event on their calendar
+          gcal.createDriverCalendarEvent(newDriverId, updated).then(eventId => {
+            if (eventId) {
+              try { db.prepare('UPDATE bookings SET driver_calendar_event_id = ? WHERE id = ?').run(eventId, updated.id); } catch (e) {}
+            }
+          }).catch(() => {});
+        }
+      }
     }
   }
 
@@ -860,6 +893,17 @@ router.post('/drivers', (req, res) => {
       .run('user', req.auth.id, 'driver_created', full_name, req.ip);
   } catch (e) { /* audit failure must not block response */ }
 
+  // Send welcome email if driver has an email address
+  if (email) {
+    const { sendDriverWelcome } = require('./email');
+    sendDriverWelcome({
+      email,
+      full_name: full_name.trim(),
+      username: finalUsername,
+      temp_password: tempPassword
+    }).catch(e => console.error('[API] driver welcome email failed:', e.message));
+  }
+
   res.status(201).json({
     ok: true,
     driver: {
@@ -871,6 +915,27 @@ router.post('/drivers', (req, res) => {
       app_url: '/westmere-driver.html'
     }
   });
+});
+
+// Delete (deactivate) driver — soft delete preserves booking history
+router.delete('/drivers/:id', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid driver ID' });
+  const driver = db.prepare("SELECT * FROM users WHERE id = ? AND role = 'driver'").get(id);
+  if (!driver) return res.status(404).json({ error: 'Driver not found' });
+
+  db.prepare("UPDATE users SET active = 0, updated_at = datetime('now') WHERE id = ?").run(id);
+
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run('user', req.auth.id, 'driver_removed', driver.full_name || driver.username, req.ip);
+  } catch (e) { /* non-fatal */ }
+
+  res.json({ ok: true });
 });
 
 // Update driver (admin/owner)
