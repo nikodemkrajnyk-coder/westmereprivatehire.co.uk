@@ -2264,6 +2264,19 @@ function assistHandleFileInput(input){
   reader.readAsDataURL(file);
 }
 
+function compressImage(dataUrl,maxWidth,quality,callback){
+  var img=new Image();
+  img.onload=function(){
+    var w=img.width,h=img.height;
+    if(w>maxWidth){h=Math.round(h*maxWidth/w);w=maxWidth;}
+    var canvas=document.createElement('canvas');
+    canvas.width=w;canvas.height=h;
+    canvas.getContext('2d').drawImage(img,0,0,w,h);
+    callback(canvas.toDataURL('image/jpeg',quality||0.7));
+  };
+  img.src=dataUrl;
+}
+
 function assistHandleImage(dataUrl,mimeType){
   if(ASSIST_BUSY)return;
   // Show thumbnail in feed
@@ -2280,34 +2293,36 @@ function assistHandleImage(dataUrl,mimeType){
   appendThink(tid);
   setAssistStatus('thinking','Scanning image…');
 
-  var b64=dataUrl.split(',')[1];
-  fetch('/api/assistant/scan',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    credentials:'include',
-    body:JSON.stringify({image:b64,media_type:mimeType||'image/jpeg'})
-  })
-  .then(function(r){return r.json();})
-  .then(function(data){
-    var tel=document.getElementById(tid);if(tel)tel.remove();
-    if(!data.ok){
-      appendW(data.error||'Could not read the image. Try again or type the details.');
-      ASSIST_BUSY=false;setAssistStatus('live','Listening');return;
-    }
-    var booking=data.booking;
-    if(booking){
-      ASSIST_PENDING_BOOKING=booking;
-      appendW('Got it — here\'s what I found:');
-      showBookingCard(booking);
-    } else {
-      appendW(data.reply||'I could see the image but couldn\'t extract a booking. Try typing the details.');
-    }
-    ASSIST_BUSY=false;setAssistStatus('live','Listening');
-  })
-  .catch(function(){
-    var tel=document.getElementById(tid);if(tel)tel.remove();
-    appendW('Connection error scanning image.');
-    ASSIST_BUSY=false;setAssistStatus('live','Listening');
+  compressImage(dataUrl,1200,0.7,function(compressed){
+    var b64=compressed.split(',')[1];
+    fetch('/api/assistant/scan',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      credentials:'include',
+      body:JSON.stringify({image:b64,media_type:'image/jpeg'})
+    })
+    .then(function(r){return r.json();})
+    .then(function(data){
+      var tel=document.getElementById(tid);if(tel)tel.remove();
+      if(!data.ok){
+        appendW(data.error||'Could not read the image. Try again or type the details.');
+        ASSIST_BUSY=false;setAssistStatus('live','Listening');return;
+      }
+      var booking=data.booking;
+      if(booking){
+        ASSIST_PENDING_BOOKING=booking;
+        appendW('Got it — here\'s what I found:');
+        showBookingCard(booking);
+      } else {
+        appendW(data.reply||'I could see the image but couldn\'t extract a booking. Try typing the details.');
+      }
+      ASSIST_BUSY=false;setAssistStatus('live','Listening');
+    })
+    .catch(function(){
+      var tel=document.getElementById(tid);if(tel)tel.remove();
+      appendW('Connection error scanning image.');
+      ASSIST_BUSY=false;setAssistStatus('live','Listening');
+    });
   });
 }
 

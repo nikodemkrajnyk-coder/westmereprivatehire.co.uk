@@ -52,7 +52,7 @@ app.use(helmet({
 }));
 
 app.use(cookieParser());
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
 
 // Rate limiting on auth endpoints
 const authLimiter = rateLimit({
