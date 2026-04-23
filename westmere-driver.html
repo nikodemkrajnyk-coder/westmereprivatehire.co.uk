@@ -187,7 +187,7 @@ nav.solid{background:rgba(255,255,255,.85);backdrop-filter:blur(20px)}
 .row-v{font-size:.85rem;color:var(--navy);font-weight:300;text-align:right;max-width:66%}
 .row-v.serif{font-family:var(--serif);font-size:.98rem}
 
-/* ── P-CARD (profile, earnings, tesla panels) ── */
+/* ── P-CARD (profile, earnings panels) ── */
 .p-card{background:#fff;border:1px solid rgba(17,29,44,.08);box-shadow:0 2px 12px rgba(17,29,44,.04);margin-bottom:1rem;overflow:hidden}
 .p-ch{padding:.9rem 1.4rem;border-bottom:1px solid rgba(184,152,90,.12);font-size:.56rem;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:var(--gold)}
 .p-cb{padding:.2rem 1.1rem}
@@ -196,32 +196,6 @@ nav.solid{background:rgba(255,255,255,.85);backdrop-filter:blur(20px)}
 .p-label{font-size:.56rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45)}
 .p-val{font-size:.82rem;color:var(--navy);font-weight:300;text-align:right}
 
-/* ── TESLA ── */
-.tesla-hero{background:#fff;border:1px solid rgba(17,29,44,.08);padding:1.4rem 1.2rem;margin-bottom:1rem;text-align:center;position:relative;overflow:hidden}
-.tesla-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
-.t-row{display:flex;justify-content:space-around;margin:.8rem 0}
-.t-stat-label{font-size:.5rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.25rem}
-.t-big{font-family:var(--serif);font-size:2.6rem;font-weight:300;color:var(--gold);line-height:1}
-.t-mid{font-family:var(--serif);font-size:1.4rem;font-weight:300;color:var(--navy);margin-top:.3rem}
-.t-unit{font-size:.55em;color:rgba(17,29,44,.45);font-weight:300}
-.t-bar{height:4px;background:rgba(17,29,44,.08);margin:1rem 0 .6rem;overflow:hidden}
-.t-fill{height:100%;background:linear-gradient(to right,var(--gold),#7ecfa0);transition:width .6s ease}
-.t-meta{font-size:.62rem;color:rgba(17,29,44,.4);font-weight:300}
-
-/* ── TESLA RANGE CHECK ── */
-.range-row{display:flex;align-items:center;justify-content:space-between;padding:.8rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.06)}
-.range-row:last-child{border-bottom:none}
-.rr-info{flex:1}
-.rr-job{font-size:.78rem;color:var(--navy);font-weight:400;margin-bottom:.15rem}
-.rr-detail{font-size:.62rem;color:rgba(17,29,44,.45);font-weight:300}
-.rr-verdict{font-size:.55rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.3rem .65rem;border:1px solid;flex-shrink:0;margin-left:.8rem}
-
-/* ── TESLA CHARGERS ── */
-.charger-item{padding:.8rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.06)}
-.charger-item:last-child{border-bottom:none}
-.ci-name{font-size:.82rem;color:var(--navy);font-weight:400;margin-bottom:.15rem}
-.ci-meta{font-size:.62rem;color:rgba(17,29,44,.45);font-weight:300;margin-bottom:.1rem}
-.ci-avail{font-size:.6rem;font-weight:400}
 
 /* ── EARNINGS ── */
 .earn-hero{background:#fff;border:1px solid rgba(17,29,44,.08);padding:1.6rem 1.2rem;margin-bottom:1rem;text-align:center;position:relative;overflow:hidden}
@@ -603,8 +577,8 @@ document.addEventListener('keydown',function(e){
 
 // ─── DATA ─────────────────────────────────────────────────────────────────────
 var DRIVER = {
-  name:'Driver Name', vehicle:'Tesla Model S · Midnight Silver',
-  vehicleType:'tesla', reg:'XX21 WPH', licence:'DVLA-0000000',
+  name:'Driver Name', vehicle:'Vehicle Not Set',
+  vehicleType:'car', reg:'XX21 WPH', licence:'DVLA-0000000',
   phv:'LDC-00001', mobile:'+44 7700 000 000', email:'driver@westmere.co.uk'
 };
 
@@ -612,78 +586,31 @@ var TODAY_JOBS = [];
 
 var OFFERED_JOBS = [];
 
-// ─── TESLA ────────────────────────────────────────────────────────────────────
-var TESLA = {battery:0,rangeMiles:0,location:'Not connected',status:'Offline'};
-var TESLA_MI_PER_PCT = 0;
 
-function refreshTesla(){
-  if(!TESLA.battery){showToast('Connect Tesla first');return;}
-  updateTeslaUI();
-  buildTeslaRangeCheck();
-  showToast('Tesla data refreshed');
-}
-
-function updateTeslaUI(){
-  var p=document.getElementById('tesla-pct');
-  var r=document.getElementById('tesla-range');
-  var b=document.getElementById('tesla-bar');
-  var s=document.getElementById('tesla-status');
-  var connected=TESLA.battery>0;
-  if(p) p.innerHTML=(connected?TESLA.battery:'\u2014')+'<span class="t-unit">%</span>';
-  if(r) r.innerHTML=(connected?TESLA.rangeMiles:'\u2014')+' <span class="t-unit">mi</span>';
-  if(b){
-    b.style.width=(connected?TESLA.battery:0)+'%';
-    b.style.background=TESLA.battery>50?'linear-gradient(to right,var(--gold),#7ecfa0)':TESLA.battery>25?'linear-gradient(to right,var(--amber),var(--gold))':'linear-gradient(to right,var(--red),var(--amber))';
-  }
-  if(s) s.textContent=connected?(TESLA.status+' · '+TESLA.location):'Not connected';
-}
-
+// ─── JOB SCORING (distance-based, no Tesla dependency) ─────────────────────
 function getDist(a,b){
-  var D={'horsham-lewes':22,'horsham-brighton':18,'horsham-gatwick':12,'horsham-heathrow':42,
-    'lewes-gatwick':22,'lewes-brighton':9,'lewes-heathrow':56,'lewes-horsham':22,
-    'brighton-gatwick':22,'brighton-heathrow':52,'brighton-horsham':18,
-    'gatwick-heathrow':31,'gatwick-horsham':12,'heathrow-horsham':42,'heathrow-lewes':56};
-  var ka=(a||'').toLowerCase().replace(/,.*$/,'').replace(/\s+(airport|terminal|t\d+|arrivals|south|north)/gi,'').trim();
-  var kb=(b||'').toLowerCase().replace(/,.*$/,'').replace(/\s+(airport|terminal|t\d+|arrivals|south|north)/gi,'').trim();
-  for(var k in D){var pts=k.split('-');if((ka.includes(pts[0])&&kb.includes(pts[1]))||(ka.includes(pts[1])&&kb.includes(pts[0])))return D[k];}
-  return 16;
+  var m={horsham:{horsham:0,lewes:28,brighton:24,worthing:18,gatwick:24,heathrow:52,stansted:78,luton:70},
+         lewes:{horsham:28,lewes:0,brighton:10,worthing:22,gatwick:32,heathrow:68,stansted:90,luton:88},
+         brighton:{horsham:24,lewes:10,brighton:0,worthing:12,gatwick:28,heathrow:56,stansted:84,luton:80},
+         worthing:{horsham:18,lewes:22,brighton:12,worthing:0,gatwick:28,heathrow:50,stansted:85,luton:80},
+         gatwick:{horsham:24,lewes:32,brighton:28,worthing:28,gatwick:0,heathrow:30,stansted:58,luton:52},
+         heathrow:{horsham:52,lewes:68,brighton:56,worthing:50,gatwick:30,heathrow:0,stansted:58,luton:38}};
+  function k(s){if(!s)return'unknown';var l=s.toLowerCase();if(l.includes('horsham'))return'horsham';if(l.includes('lewes'))return'lewes';if(l.includes('brighton'))return'brighton';if(l.includes('worthing'))return'worthing';if(l.includes('gatwick'))return'gatwick';if(l.includes('heathrow'))return'heathrow';if(l.includes('stansted'))return'stansted';if(l.includes('luton'))return'luton';return'unknown';}
+  var ak=k(a),bk=k(b);return(m[ak]&&m[ak][bk]!=null)?m[ak][bk]:15;
 }
-
-function buildTeslaRangeCheck(){
-  var el=document.getElementById('tesla-range-check');
-  if(!el)return;
-  if(!TODAY_JOBS.length){el.innerHTML='<div style="padding:.85rem 1rem;font-size:.78rem;color:var(--text-light)">No jobs today</div>';return;}
-  var cum=0,prev=TESLA.location;
-  el.innerHTML=TODAY_JOBS.map(function(j){
-    var dead=getDist(prev,j.pickup);var job=getDist(j.pickup,j.dest);
-    cum+=dead+job;prev=j.dest;
-    var left=Math.max(0,TESLA.rangeMiles-cum);
-    var ok=TESLA.rangeMiles>cum+20;
-    var col=ok?'var(--green)':left<15?'var(--red)':'var(--amber)';
-    var lbl=ok?'Range OK':left<15?'Charge first':'Low — monitor';
-    return '<div class="range-row"><div class="rr-info"><div class="rr-job">'+esc(j.time)+' · '+esc(j.name)+'</div><div class="rr-detail">~'+cum+' mi cumulative · '+left+' mi remaining after</div></div><div class="rr-verdict" style="color:'+col+';border-color:'+col+'">'+lbl+'</div></div>';
-  }).join('');
-}
-
-// ─── SCORING ENGINE ──────────────────────────────────────────────────────────
 function scoreJob(j){
-  var loc=TESLA.location||'';
-  var done=TODAY_JOBS.filter(function(x){return x.status==='done';}).pop();
-  if(done) loc=done.dest||loc;
-  var dead=getDist(loc,j.pickup||'');var jmi=getDist(j.pickup||'',j.dest||'');
-  var fare=parseFloat(j.driverFare||j.fare||0);
+  var dead=getDist('',j.pickup||'');
+  var jmi=getDist(j.pickup||'',j.dest||'');
+  var fare=j.fare||0;
   var net=Math.round(fare-(dead+jmi)*0.18-(dead/28)*8);
-  var rangeOk=TESLA.battery>5&&TESLA.rangeMiles>dead+jmi+20;
-  var v,col,bg;
-  if(!rangeOk){v='Charge needed';col='var(--red)';bg='var(--red-bg)';}
-  else if(net>=55){v='Good job';col='var(--green)';bg='var(--green-bg)';}
-  else if(net>=20){v='Marginal';col='var(--amber)';bg='var(--amber-bg)';}
-  else{v='Not worth it';col='var(--red)';bg='var(--red-bg)';}
-  return{net,dead,jmi,rangeOk,v,col,bg};
+  var col=net>=40?'var(--green)':net>=20?'var(--amber)':'var(--red)';
+  var bg=net>=40?'rgba(100,180,100,.06)':net>=20?'rgba(255,185,0,.06)':'rgba(220,80,80,.06)';
+  var v=net>=40?'Good':net>=20?'Fair':'Low Pay';
+  return{v:v,col:col,bg:bg,net:net,dead:dead,jmi:jmi};
 }
+
 function checkConflict(offered){
-  // Check if offered job time clashes within 2 hours of any existing job
-  var BUFFER=120; // minutes
+  var BUFFER=120;
   var parse=function(t){if(!t)return null;var p=t.split(':');return parseInt(p[0])*60+parseInt(p[1]);};
   var oTime=parse(offered.time);if(oTime===null)return null;
   for(var i=0;i<TODAY_JOBS.length;i++){
@@ -691,8 +618,8 @@ function checkConflict(offered){
     var jTime=parse(j.time);if(jTime===null)continue;
     var diff=Math.abs(oTime-jTime);
     if(diff<BUFFER){
-      var gap=diff<60?(diff+' min gap'):(Math.floor(diff/60)+'h '+((diff%60)||'')+(diff%60?'m':'') + ' gap');
-      return j.time+' · '+j.name+' ('+gap+')';
+      var gap=diff<60?(diff+' min gap'):(Math.floor(diff/60)+'h '+((diff%60)||'')+(diff%60?'m':'')+' gap');
+      return j.time+' \u00b7 '+j.name+' ('+gap+')';
     }
   }
   return null;
@@ -755,30 +682,24 @@ function buildToday(){
   list.innerHTML=TODAY_JOBS.map(function(j){return buildCard(j,false);}).join('');
 }
 
-// ─── JOB CARD — SIMPLE ───────────────────────────────────────────────────────
+// ─── JOB CARD ─────────────────────────────────────────────────────────────────
 function buildCard(j,isOffered){
   var isDone=j.status==='done';
   var isActive=j.status==='enroute'||j.status==='atpickup'||j.status==='onboard';
   var cls=isDone?'done-job':isActive?'active-job':'';
-
-  // Flight badge
   var fb='';
   if(j.flight){
     var fCls=j.flightStatus==='ontime'?'fp-ontime':j.flightStatus==='landed'?'fp-landed':'fp-delayed';
     var fTxt=j.flightStatus==='ontime'?'On Time':j.flightStatus==='landed'?'Landed':'Delayed';
-    fb='<span class="flight-pill '+fCls+'">'+esc(j.flight)+' · '+fTxt+(j.flightDeparts?' · '+esc(j.flightDeparts):'')+'</span>';
+    fb='<span class="flight-pill '+fCls+'">'+esc(j.flight)+' \u00b7 '+fTxt+(j.flightDeparts?' \u00b7 '+esc(j.flightDeparts):'')+'</span>';
   }
-
-  // Contact strip
   var phone=j.phone;
-  var waMsg=encodeURIComponent('Hi '+esc(j.name.split(' ')[0])+', this is your Westmere driver — I\'m on my way.');
+  var waMsg=encodeURIComponent('Hi '+esc(j.name.split(' ')[0])+', this is your Westmere driver \u2014 I\'m on my way.');
   var contact='<div class="jc-contact">'
     +'<a href="tel:'+phone+'" class="jcc">Call</a>'
     +'<a href="https://wa.me/'+phone.replace(/\D/g,'')+'?text='+waMsg+'" target="_blank" class="jcc">WhatsApp</a>'
     +'<a href="sms:'+phone+'" class="jcc">Text</a>'
     +'</div>';
-
-  // Status buttons
   var actions='';
   if(!isDone&&!isOffered){
     actions='<div class="jc-actions">';
@@ -789,26 +710,23 @@ function buildCard(j,isOffered){
     if(j.status!=='onboard')  actions+='<button class="sbt sbt-cancel" onclick="cancelJob(\''+j.id+'\')">Can\'t Make It</button>';
     actions+='</div>';
   }
-
-  // Links
   var links='<div class="jc-links">'
     +'<button class="jl" onclick="showNameBoard(\''+j.name.replace(/'/g,"\\'")+'\',\''+j.fare+'\')">Name Board</button>'
     +'<a class="jl" href="https://maps.google.com/?q='+encodeURIComponent(j.dest)+'" target="_blank">Google Maps</a>'
     +'<a class="jl" href="waze://?q='+encodeURIComponent(j.dest)+'" target="_blank">Waze</a>'
     +(j.flight?'<a class="jl" href="https://www.flightradar24.com/data/flights/'+j.flight.toLowerCase()+'" target="_blank">Track Flight</a>':'')
     +'</div>';
-
   return '<div class="job-card '+cls+'" id="jcard-'+j.id+'">'
     +'<div class="jc-bar"></div>'
     +'<div class="jc-header">'
     +  '<div class="jc-time">'+esc(j.time)+'</div>'
-    +  '<div class="jc-nameblock"><div class="jc-name">'+esc(j.name)+'</div><div class="jc-pax">'+j.pax+(j.pax>1?' pax':' pax')+(j.bags?' · '+j.bags+(j.bags>1?' bags':' bag'):'')+'</div></div>'
+    +  '<div class="jc-nameblock"><div class="jc-name">'+esc(j.name)+'</div><div class="jc-pax">'+j.pax+(j.pax>1?' pax':' pax')+(j.bags?' \u00b7 '+j.bags+(j.bags>1?' bags':' bag'):'')+'</div></div>'
     +'</div>'
     +'<div class="jc-details">'
     +  '<div class="jd-row"><span class="jd-key">Pickup</span><span class="jd-val">'+esc(j.pickup)+'</span></div>'
     +  '<div class="jd-row"><span class="jd-key">Drop-off</span><span class="jd-val">'+esc(j.dest)+'</span></div>'
     +  (j.flight?'<div class="jd-row"><span class="jd-key">Flight</span><span class="jd-val">'+fb+'</span></div>':'')
-    +  '<div class="jd-row"><span class="jd-key">Fare</span><span class="jd-val accent">£'+esc(j.fare)+' · '+esc(j.payment)+'</span></div>'
+    +  '<div class="jd-row"><span class="jd-key">Fare</span><span class="jd-val accent">\u00a3'+esc(j.fare)+' \u00b7 '+esc(j.payment)+'</span></div>'
     +  (j.note?'<div class="jd-row"><span class="jd-key">Note</span><span class="jd-val" style="color:rgba(17,29,44,.5);font-size:.78rem">'+drvEnrichNotes(j.note)+'</span></div>':'')
     +'</div>'
     +contact+actions
@@ -830,7 +748,7 @@ function buildOffered(){
     var gross=j.fare||0;
     var payLine=(pay!=null)?('<div class="ss-n" style="color:'+s.col+'">\u00a3'+esc(pay)+' to you</div><div style="font-size:.68rem;color:var(--text-light);text-align:right">gross \u00a3'+esc(gross)+' \u00b7 10% fee</div>'):('<div class="ss-n" style="color:'+s.col+'">\u00a3'+esc(s.net)+' net</div>');
     var strip='<div class="score-strip" style="background:'+s.bg+';border-bottom:1px solid '+s.col+'30">'
-      +'<div><div class="ss-v" style="color:'+s.col+'">'+esc(s.v)+'</div><div class="ss-d">'+esc(s.dead)+' dead mi \u00b7 ~'+esc(s.jmi)+' mi job'+(s.rangeOk?'':' \u00b7 charge needed')+'</div></div>'
+      +'<div><div class="ss-v" style="color:'+s.col+'">'+esc(s.v)+'</div><div class="ss-d">'+esc(s.dead)+' dead mi \u00b7 ~'+esc(s.jmi)+' mi job</div></div>'
       +'<div>'+payLine+'</div></div>';
     var countdownHtml='';
     if(j.offeredAt){
@@ -854,7 +772,7 @@ async function acceptJob(id){
   }catch(e){showToast('Network error');}
 }
 async function declineJob(id){
-  var reason=prompt('Reason (optional — admin will see this):','')||'';
+  var reason=prompt('Reason (optional \u2014 admin will see this):','')||'';
   try{
     var res=await fetch('/api/driver/offers/'+id+'/decline',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason:reason})});
     var d=await res.json();
@@ -876,7 +794,6 @@ async function updateStatus(id,status){
     job.status='done';showToast('Journey complete \u2014 logged');buildToday();return;
   }
   if((status==='enroute'||status==='atpickup')&&job.status==='upcoming'){
-    // Moving from upcoming → active on the server
     try{await fetch('/api/driver/jobs/'+id+'/start',{method:'POST',credentials:'include'});}catch(e){}
   }
   job.status=status;
@@ -887,13 +804,13 @@ async function updateStatus(id,status){
 
 function sendArrival(job){
   var fn=job.name.split(' ')[0];
-  var msg='Hi '+fn+', your Westmere driver is outside and waiting. — Westmere Private Hire';
+  var msg='Hi '+fn+', your Westmere driver is outside and waiting. \u2014 Westmere Private Hire';
   var pref=(job.contactPref||'whatsapp').toLowerCase();
   var p=job.phone.replace(/[\s\-\(\)]/g,'').replace(/^\+/,'');
-  if(pref==='whatsapp'){window.open('https://wa.me/'+p+'?text='+encodeURIComponent(msg),'_blank');setTimeout(function(){showToast('WhatsApp opened — send to '+fn);},400);}
-  else if(pref==='sms'){window.location.href='sms:'+job.phone+'?body='+encodeURIComponent(msg);setTimeout(function(){showToast('SMS ready — send to '+fn);},400);}
-  else if(pref==='email'&&job.email){window.location.href='mailto:'+job.email+'?subject='+encodeURIComponent('Your driver has arrived')+'&body='+encodeURIComponent(msg);setTimeout(function(){showToast('Email ready — send to '+fn);},400);}
-  else{window.open('https://wa.me/'+p+'?text='+encodeURIComponent(msg),'_blank');setTimeout(function(){showToast('Message ready — send to '+fn);},400);}
+  if(pref==='whatsapp'){window.open('https://wa.me/'+p+'?text='+encodeURIComponent(msg),'_blank');setTimeout(function(){showToast('WhatsApp opened \u2014 send to '+fn);},400);}
+  else if(pref==='sms'){window.location.href='sms:'+job.phone+'?body='+encodeURIComponent(msg);setTimeout(function(){showToast('SMS ready \u2014 send to '+fn);},400);}
+  else if(pref==='email'&&job.email){window.location.href='mailto:'+job.email+'?subject='+encodeURIComponent('Your driver has arrived')+'&body='+encodeURIComponent(msg);setTimeout(function(){showToast('Email ready \u2014 send to '+fn);},400);}
+  else{window.open('https://wa.me/'+p+'?text='+encodeURIComponent(msg),'_blank');setTimeout(function(){showToast('Message ready \u2014 send to '+fn);},400);}
 }
 
 async function cancelJob(id){
@@ -912,7 +829,7 @@ async function cancelJob(id){
 // ─── NAME BOARD ───────────────────────────────────────────────────────────────
 function showNameBoard(name,fare){
   document.getElementById('nb-name-text').textContent=name;
-  document.getElementById('nb-name-sub').textContent='Westmere Private Hire · Sussex';
+  document.getElementById('nb-name-sub').textContent='Westmere Private Hire \u00b7 Sussex';
   document.getElementById('name-board').classList.add('on');
   if(navigator.wakeLock)navigator.wakeLock.request('screen').catch(function(){});
 }
@@ -928,12 +845,12 @@ async function loadDriverEarnings(){
       return;
     }
     var t=d.totals||{};var p=d.period||{};
-    document.getElementById('earn-label').textContent='This week · '+p.from+' → '+p.to;
-    document.getElementById('earn-net').textContent='£'+(t.net||0).toFixed(2);
+    document.getElementById('earn-label').textContent='This week \u00b7 '+p.from+' \u2192 '+p.to;
+    document.getElementById('earn-net').textContent='\u00a3'+(t.net||0).toFixed(2);
     document.getElementById('earn-sub').textContent='After 10% commission';
     document.getElementById('earn-jobs').textContent=t.jobs||0;
-    document.getElementById('earn-gross').textContent='£'+(t.gross||0).toFixed(2);
-    document.getElementById('earn-comm').textContent='£'+(t.commission||0).toFixed(2);
+    document.getElementById('earn-gross').textContent='\u00a3'+(t.gross||0).toFixed(2);
+    document.getElementById('earn-comm').textContent='\u00a3'+(t.commission||0).toFixed(2);
     var list=document.getElementById('earn-items');
     if(!d.items||!d.items.length){
       list.innerHTML='<div style="padding:.8rem 0;color:rgba(17,29,44,.45);font-size:.82rem;text-align:center">No jobs this week.</div>';
@@ -942,11 +859,11 @@ async function loadDriverEarnings(){
     list.innerHTML=d.items.map(function(it){
       return '<div style="padding:.6rem 0;border-bottom:1px solid rgba(17,29,44,.06)">'
         +'<div style="display:flex;justify-content:space-between;align-items:baseline;gap:.5rem">'
-          +'<div style="font-size:.78rem;color:var(--navy);font-weight:500">'+esc(it.date)+' · '+esc(it.time||'')+'</div>'
-          +'<div style="font-size:.9rem;font-weight:500;color:var(--gold);font-family:Menlo,Consolas,monospace">£'+it.net.toFixed(2)+'</div>'
+          +'<div style="font-size:.78rem;color:var(--navy);font-weight:500">'+esc(it.date)+' \u00b7 '+esc(it.time||'')+'</div>'
+          +'<div style="font-size:.9rem;font-weight:500;color:var(--gold);font-family:Menlo,Consolas,monospace">\u00a3'+it.net.toFixed(2)+'</div>'
         +'</div>'
-        +'<div style="font-size:.72rem;color:rgba(17,29,44,.55);margin-top:.15rem">'+esc(it.pickup)+' → '+esc(it.destination)+'</div>'
-        +'<div style="font-size:.64rem;color:rgba(17,29,44,.4);margin-top:.15rem">'+esc(it.ref)+' · gross £'+it.fare.toFixed(2)+' − fee £'+it.commission.toFixed(2)+'</div>'
+        +'<div style="font-size:.72rem;color:rgba(17,29,44,.55);margin-top:.15rem">'+esc(it.pickup)+' \u2192 '+esc(it.destination)+'</div>'
+        +'<div style="font-size:.64rem;color:rgba(17,29,44,.4);margin-top:.15rem">'+esc(it.ref)+' \u00b7 gross \u00a3'+it.fare.toFixed(2)+' \u2212 fee \u00a3'+it.commission.toFixed(2)+'</div>'
       +'</div>';
     }).join('');
   } catch(e){
@@ -959,13 +876,6 @@ function buildProfile(){
   var rows=[['Name',DRIVER.name],['Mobile',DRIVER.mobile],['Email',DRIVER.email],
     ['Vehicle',DRIVER.vehicle],['Registration',DRIVER.reg],['PHV Licence',DRIVER.phv]];
   el.innerHTML=rows.map(function(r){return '<div class="p-row"><span class="p-label">'+esc(r[0])+'</span><span class="p-val">'+esc(r[1])+'</span></div>';}).join('');
-}
-
-// ─── TESLA VISIBILITY ─────────────────────────────────────────────────────────
-function applyTeslaVisibility(){
-  var isTesla=DRIVER.vehicleType==='tesla'||(DRIVER.vehicle&&DRIVER.vehicle.toLowerCase().includes('tesla'));
-  var btn=document.getElementById('bn-tesla');
-  if(btn)btn.style.display=isTesla?'':'none';
 }
 
 // ─── TOAST ────────────────────────────────────────────────────────────────────
