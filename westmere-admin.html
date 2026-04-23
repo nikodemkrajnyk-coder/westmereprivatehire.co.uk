@@ -1399,7 +1399,18 @@ if ('serviceWorker' in navigator) {
 </div>
 <script>
 var AA_HIST=[];var AA_BUSY=false;
-function aaToggle(){var p=document.getElementById('aa-panel');p.classList.toggle('on');if(p.classList.contains('on')){if(!AA_HIST.length)aaGreet();setTimeout(function(){document.getElementById('aa-input').focus();},250);}}
+function aaToggle(){
+  var p=document.getElementById('aa-panel');
+  p.classList.toggle('on');
+  if(p.classList.contains('on')){
+    if(!AA_HIST.length)aaGreet();
+    setTimeout(function(){document.getElementById('aa-input').focus();},250);
+  } else {
+    // Clear history so next session starts fresh
+    AA_HIST=[];
+    document.getElementById('aa-feed').innerHTML='';
+  }
+}
 function aaClear(){AA_HIST=[];document.getElementById('aa-feed').innerHTML='';aaGreet();}
 function aaGreet(){aaAddBot('Hi. I can help you plan the day, check earnings, draft customer emails, or explain a booking. Paste or upload a screenshot to scan a booking.');}
 function aaAddUser(msg){var el=document.createElement('div');el.className='aa-msg user';el.textContent=msg;document.getElementById('aa-feed').appendChild(el);aaScroll();}
@@ -1472,12 +1483,35 @@ function aaHandleImage(dataUrl,mimeType){
     .then(function(x){
       var r=x.r,d=x.d;
       thinking.remove();
-      if(!r.ok||!d.ok){aaAddBot(d.error||'Scan error ('+r.status+')');return;}
+      if(!r.ok||!d.ok){
+        var errMsg=d.error||'Scan error ('+r.status+')';
+        aaAddBot(errMsg);
+        AA_HIST.push({role:'user',content:'[User scanned an image]'});
+        AA_HIST.push({role:'assistant',content:errMsg});
+        return;
+      }
       if(d.booking){
-        aaAddBot(d.reply||'Booking details extracted.');
-        aaShowBookingCard(d.booking);
+        var b=d.booking;
+        var replyText=d.reply||'Booking details extracted.';
+        aaAddBot(replyText);
+        aaShowBookingCard(b);
+        var bookingText='Booking extracted from image: '
+          +(b.name?'Passenger: '+b.name+'. ':'')
+          +(b.date?'Date: '+b.date+'. ':'')
+          +(b.time?'Time: '+b.time+'. ':'')
+          +(b.pickup?'Pickup: '+b.pickup+'. ':'')
+          +(b.destination?'Drop-off: '+b.destination+'. ':'')
+          +(b.fare?'Fare: £'+b.fare+'. ':'')
+          +(b.payment?'Payment: '+b.payment+'. ':'')
+          +(b.phone?'Phone: '+b.phone+'. ':'')
+          +(b.notes?'Notes: '+b.notes+'. ':'');
+        AA_HIST.push({role:'user',content:'[User scanned an image]'});
+        AA_HIST.push({role:'assistant',content:replyText+'\n'+bookingText+'Awaiting confirmation.'});
       } else {
-        aaAddBot(d.reply||'No booking details found in this image.');
+        var noMatch=d.reply||'No booking details found in this image.';
+        aaAddBot(noMatch);
+        AA_HIST.push({role:'user',content:'[User scanned an image]'});
+        AA_HIST.push({role:'assistant',content:noMatch});
       }
     })
     .catch(function(){thinking.remove();aaAddBot('Network error scanning image.');})

@@ -2305,16 +2305,36 @@ function assistHandleImage(dataUrl,mimeType){
     .then(function(data){
       var tel=document.getElementById(tid);if(tel)tel.remove();
       if(!data.ok){
-        appendW(data.error||'Could not read the image. Try again or type the details.');
+        var errMsg=data.error||'Could not read the image. Try again or type the details.';
+        appendW(errMsg);
+        ASSIST_HISTORY.push({role:'user',content:'[User scanned an image]'});
+        ASSIST_HISTORY.push({role:'assistant',content:errMsg});
         ASSIST_BUSY=false;setAssistStatus('live','Listening');return;
       }
       var booking=data.booking;
       if(booking){
         ASSIST_PENDING_BOOKING=booking;
-        appendW('Got it — here\'s what I found:');
+        var summary='Got it — here\'s what I found:';
+        appendW(summary);
         showBookingCard(booking);
+        // Add scan context to history so follow-up messages have it
+        var bookingText='Booking extracted from image: '
+          +(booking.name?'Passenger: '+booking.name+'. ':'')
+          +(booking.date?'Date: '+booking.date+'. ':'')
+          +(booking.time?'Time: '+booking.time+'. ':'')
+          +(booking.pickup?'Pickup: '+booking.pickup+'. ':'')
+          +(booking.destination?'Drop-off: '+booking.destination+'. ':'')
+          +(booking.fare?'Fare: £'+booking.fare+'. ':'')
+          +(booking.payment?'Payment: '+booking.payment+'. ':'')
+          +(booking.phone?'Phone: '+booking.phone+'. ':'')
+          +(booking.notes?'Notes: '+booking.notes+'. ':'');
+        ASSIST_HISTORY.push({role:'user',content:'[User scanned an image]'});
+        ASSIST_HISTORY.push({role:'assistant',content:summary+'\n'+bookingText+'Awaiting confirmation.'});
       } else {
-        appendW(data.reply||'I could see the image but couldn\'t extract a booking. Try typing the details.');
+        var replyMsg=data.reply||'I could see the image but couldn\'t extract a booking. Try typing the details.';
+        appendW(replyMsg);
+        ASSIST_HISTORY.push({role:'user',content:'[User scanned an image]'});
+        ASSIST_HISTORY.push({role:'assistant',content:replyMsg});
       }
       ASSIST_BUSY=false;setAssistStatus('live','Listening');
     })
@@ -2360,6 +2380,9 @@ document.addEventListener('paste',function(e){
 function closeAssistant(){
   ASSIST_PANEL_OPEN=false;
   document.getElementById('assist-panel').classList.remove('on');
+  // Clear history so next session starts fresh
+  ASSIST_HISTORY=[];
+  ASSIST_PENDING_BOOKING=null;
 }
 function greetAssist(){
   appendW('Paste a WhatsApp message, type booking details, or tap the camera to scan a screenshot. I\'ll extract everything and set it up.\n\nJust confirm and the booking is created.');
