@@ -51,7 +51,7 @@ router.get('/driver/profile', requireDriver, (req, res) => {
   const db = getDb();
   const user = db.prepare(`
     SELECT id, full_name, email, phone, address_line1, address_line2, city, postcode,
-           vehicle, reg, phv_no, license_no, onboarding_status
+           vehicle, reg, phv_no, license_no, onboarding_status, calendar_token
     FROM users WHERE id = ?
   `).get(req.auth.id);
   if (!user) return res.status(404).json({ error: 'Not found' });
@@ -220,36 +220,6 @@ router.post('/drivers/:id/approve', requireAdminOrOwner, (req, res) => {
       .run('user', req.auth.id, 'driver_approved', `driver_id:${driverId}`, req.ip);
   } catch (_) {}
 
-  res.json({ ok: true });
-});
-
-// ── Driver Google Calendar OAuth ─────────────────────────────────────────
-// Each driver can connect their own personal Google Calendar. Jobs assigned
-// to them are automatically pushed to their calendar.
-const gcal = require('./google-calendar');
-
-// GET /api/driver/google/status — is THIS driver's personal calendar connected?
-router.get('/driver/google/status', requireDriver, (req, res) => {
-  if (!gcal.isConfigured()) return res.json({ ok: true, configured: false, connected: false });
-  res.json({ ok: true, ...gcal.getDriverStatus(req.auth.id) });
-});
-
-// GET /api/driver/google/auth-url — start OAuth, redirect to Google consent
-router.get('/driver/google/auth-url', requireDriver, (req, res) => {
-  if (!gcal.isConfigured()) {
-    return res.status(503).json({ error: 'Google Calendar not configured on the server.' });
-  }
-  const state = Buffer.from(JSON.stringify({
-    from: '/westmere-driver.html',
-    uid: req.auth.id,
-    driverCal: true
-  })).toString('base64url');
-  res.json({ ok: true, url: gcal.buildDriverAuthUrl(req.auth.id, state) });
-});
-
-// POST /api/driver/google/disconnect — remove this driver's calendar tokens
-router.post('/driver/google/disconnect', requireDriver, (req, res) => {
-  gcal.clearDriverTokens(req.auth.id);
   res.json({ ok: true });
 });
 

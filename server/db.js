@@ -282,6 +282,7 @@ function migrate() {
       ['dbs_no',            'TEXT'],
       ['dbs_expiry',        'TEXT'],
       ['vehicle',           'TEXT'],
+      ['calendar_token',    'TEXT'],
       ['reg',               'TEXT'],
       ['phv_no',            'TEXT'],
       ['insurance_no',      'TEXT'],
@@ -301,6 +302,12 @@ function migrate() {
     }
     // Backfill has_login=1 for existing accounts (they all have real usernames)
     db.prepare(`UPDATE users SET has_login = 1 WHERE has_login = 0 AND username NOT LIKE '__nolgn_%'`).run();
+    // Backfill calendar_token for existing drivers that don't have one yet
+    const { randomUUID } = require('crypto');
+    const noToken = db.prepare("SELECT id FROM users WHERE role = 'driver' AND (calendar_token IS NULL OR calendar_token = '')").all();
+    for (const row of noToken) {
+      db.prepare('UPDATE users SET calendar_token = ? WHERE id = ?').run(randomUUID().replace(/-/g, ''), row.id);
+    }
   } catch (e) {
     console.error('[DB] users driver-profile migration failed:', e.message);
   }

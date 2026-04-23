@@ -231,37 +231,6 @@ router.patch('/bookings/:id', (req, res) => {
       }).catch(() => {});
     }
 
-    // ── Driver's personal calendar ───────────────────────────────────────
-    // When a driver is assigned (or reassigned) we push the job to their
-    // personal Google Calendar if they have connected one.
-    const prevDriverId = booking.driver_id;
-    const newDriverId  = req.body.driver_id !== undefined ? req.body.driver_id : prevDriverId;
-
-    // Remove from old driver's calendar if driver changed or job cancelled
-    if (updated.driver_calendar_event_id && (updated.status === 'cancelled' || (newDriverId !== prevDriverId && prevDriverId))) {
-      const removeFrom = prevDriverId;
-      gcal.deleteDriverCalendarEvent(removeFrom, updated.driver_calendar_event_id).then(() => {
-        try { db.prepare('UPDATE bookings SET driver_calendar_event_id = NULL WHERE id = ?').run(updated.id); } catch (e) {}
-      }).catch(() => {});
-    }
-
-    // Create / update on new driver's calendar
-    if (newDriverId && updated.status !== 'cancelled') {
-      const driverStatus = gcal.getDriverStatus(newDriverId);
-      if (driverStatus.connected) {
-        if (updated.driver_calendar_event_id && newDriverId === prevDriverId) {
-          // Same driver — no-op; driver's event stays (times may have changed
-          // but driver calendar update is a separate nice-to-have)
-        } else {
-          // New driver assignment — create event on their calendar
-          gcal.createDriverCalendarEvent(newDriverId, updated).then(eventId => {
-            if (eventId) {
-              try { db.prepare('UPDATE bookings SET driver_calendar_event_id = ? WHERE id = ?').run(eventId, updated.id); } catch (e) {}
-            }
-          }).catch(() => {});
-        }
-      }
-    }
   }
 
   res.json({ ok: true });
@@ -860,6 +829,8 @@ router.post('/drivers', (req, res) => {
     finalHash = bcrypt.hashSync(tempPassword, 12);
   }
 
+  const calendarToken = require('crypto').randomUUID().replace(/-/g, '');
+
   let result;
   try {
     result = db.prepare(`
@@ -867,8 +838,8 @@ router.post('/drivers', (req, res) => {
         (username, password, role, full_name, email, phone, active, has_login,
          license_no, license_expiry, dbs_no, dbs_expiry,
          vehicle, reg, phv_no, insurance_no, driver_notes, photo,
-         max_passengers, max_bags, luggage_notes, onboarding_status)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+         max_passengers, max_bags, luggage_notes, onboarding_status, calendar_token)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     `).run(
       finalUsername, finalHash, role || 'driver', full_name.trim(),
       email || null, phone || null,
@@ -881,7 +852,8 @@ router.post('/drivers', (req, res) => {
       max_passengers == null || max_passengers === '' ? null : parseInt(max_passengers, 10),
       max_bags == null || max_bags === '' ? null : parseInt(max_bags, 10),
       luggage_notes || null,
-      'pending'
+      'pending',
+      calendarToken
     );
   } catch (e) {
     console.error('[API] driver insert failed:', e.message);

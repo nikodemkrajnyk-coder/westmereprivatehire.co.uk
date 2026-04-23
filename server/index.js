@@ -17,6 +17,7 @@ const backupRouter = require('./backup-routes');
 const trackingRouter = require('./tracking-routes');
 const publicTrackingRouter = require('./public-tracking-routes');
 const onboardingRouter = require('./driver-onboarding-routes');
+const driverCalRouter = require('./driver-cal-routes');
 const { createAuthMiddleware } = require('./middleware');
 const gcal = require('./google-calendar');
 const intake = require('./intake');
@@ -94,6 +95,9 @@ app.use('/api/public', apiLimiter, publicTrackingRouter);
 
 // Google Calendar OAuth callback (public — Google redirects here after consent)
 app.use('/api/google', apiLimiter, googleRouter.publicCallback);
+
+// Driver .ics calendar subscription feed (public — token-protected)
+app.use('/api/driver', apiLimiter, driverCalRouter);
 
 // Driver onboarding routes (profile update, document upload/review)
 app.use('/api', apiLimiter, requireAuth, onboardingRouter);
