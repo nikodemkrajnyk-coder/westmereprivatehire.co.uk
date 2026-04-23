@@ -1184,6 +1184,79 @@ router.get('/stats', (req, res) => {
   });
 });
 
+// ── Analytics ────────────────────────────────────────────────────────────
+router.get('/analytics', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) return res.status(403).json({ error: 'Access denied' });
+  const db = getDb();
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  const dayOfWeek = (now.getDay() + 6) % 7; // Mon=0
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - dayOfWeek);
+  const weekStartStr = weekStart.toISOString().split('T')[0];
+  const monthStart = today.slice(0, 7) + '-01';
+
+  // Revenue overview
+  const revToday   = db.prepare(`SELECT COALESCE(SUM(fare),0) as t FROM bookings WHERE date=? AND status='completed'`).get(today).t;
+  const revWeek    = db.prepare(`SELECT COALESCE(SUM(fare),0) as t FROM bookings WHERE date>=? AND date<=? AND status='completed'`).get(weekStartStr, today).t;
+  const revMonth   = db.prepare(`SELECT COALESCE(SUM(fare),0) as t FROM bookings WHERE date>=? AND status='completed'`).get(monthStart).t;
+  const revAllTime = db.prepare(`SELECT COALESCE(SUM(fare),0) as t FROM bookings WHERE status='completed'`).get().t;
+
+  // Weekly trend — last 12 weeks (oldest first)
+  const weeklyTrend = [];
+  for (let i = 11; i >= 0; i--) {
+    const ws = new Date(weekStart); ws.setDate(ws.getDate() - i * 7);
+    const we = new Date(ws);        we.setDate(we.getDate() + 6);
+    const wsStr = ws.toISOString().split('T')[0];
+    const weStr = we.toISOString().split('T')[0];
+    const row = db.prepare(`SELECT COALESCE(SUM(fare),0) as total, COUNT(*) as jobs FROM bookings WHERE date>=? AND date<=? AND status='completed'`).get(wsStr, weStr);
+    weeklyTrend.push({ weekStart: wsStr, total: row.total, jobs: row.jobs });
+  }
+
+  // Driver performance
+  const drivers = db.prepare(`
+    SELECT u.id, u.full_name,
+      COUNT(CASE WHEN b.status='completed' THEN 1 END) as jobs_completed,
+      COALESCE(SUM(CASE WHEN b.status='completed' THEN b.fare ELSE 0 END), 0) as total_earnings,
+      COUNT(CASE WHEN b.status IN ('completed','confirmed','active') THEN 1 END) as jobs_accepted,
+      COUNT(b.id) as jobs_offered,
+      COALESCE(AVG(CASE WHEN b.status='completed' THEN CAST(b.fare AS REAL) END), 0) as avg_fare
+    FROM users u
+    LEFT JOIN bookings b ON b.driver_id = u.id
+    WHERE u.role IN ('driver','owner') AND u.active = 1
+    GROUP BY u.id ORDER BY total_earnings DESC
+  `).all();
+
+  // Busiest times heatmap — [dayOfWeek 0=Mon][hour 0-23]
+  const heatmap = Array.from({length:7}, () => Array(24).fill(0));
+  db.prepare(`SELECT date, time FROM bookings WHERE status != 'cancelled' AND date IS NOT NULL AND time IS NOT NULL`).all().forEach(b => {
+    const d = new Date(b.date);
+    if (isNaN(d.getTime())) return;
+    const dow = (d.getDay() + 6) % 7;
+    const hr = parseInt((b.time || '').split(':')[0], 10);
+    if (isNaN(hr) || hr < 0 || hr > 23) return;
+    heatmap[dow][hr]++;
+  });
+
+  // Top customers
+  const topCustomers = db.prepare(`
+    SELECT c.id, c.full_name, c.email,
+      COUNT(b.id) as total_bookings,
+      COALESCE(SUM(CASE WHEN b.status='completed' THEN b.fare ELSE 0 END), 0) as total_spend
+    FROM customers c
+    LEFT JOIN bookings b ON b.customer_id = c.id
+    WHERE c.active = 1
+    GROUP BY c.id HAVING total_bookings > 0
+    ORDER BY total_bookings DESC LIMIT 10
+  `).all();
+
+  // Booking breakdown
+  const byStatus  = db.prepare(`SELECT status, COUNT(*) as count FROM bookings GROUP BY status`).all();
+  const byPayment = db.prepare(`SELECT payment, COUNT(*) as count, COALESCE(SUM(CASE WHEN status='completed' THEN fare ELSE 0 END),0) as total FROM bookings WHERE payment IS NOT NULL GROUP BY payment`).all();
+
+  res.json({ ok: true, revenue: { today: revToday, week: revWeek, month: revMonth, allTime: revAllTime }, weeklyTrend, drivers, heatmap, topCustomers, byStatus, byPayment });
+});
+
 // ── Stripe Payouts (owner only) ──────────────────────────────────────────
 const stripe = require('./stripe');
 
