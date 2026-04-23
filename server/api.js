@@ -751,7 +751,7 @@ router.get('/drivers', (req, res) => {
            license_no, license_expiry, dbs_no, dbs_expiry, vehicle, reg,
            phv_no, insurance_no, driver_notes, photo, is_default_driver,
            max_passengers, max_bags, luggage_notes,
-           created_at
+           onboarding_status, created_at
     FROM users WHERE role IN ('driver','owner') ORDER BY created_at DESC
   `).all().map(sanitizeDriver);
   res.json({ ok: true, drivers: rows });
@@ -794,24 +794,37 @@ router.post('/drivers', (req, res) => {
     return res.status(400).json({ error: 'Full name required' });
   }
 
-  const wantsLogin = !!(username && password);
-  if (username && !password) return res.status(400).json({ error: 'Password required when setting username' });
-  if (password && !username) return res.status(400).json({ error: 'Username required when setting password' });
-  if (password && String(password).length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
-
   const db = getDb();
   const bcrypt = require('bcryptjs');
   const crypto = require('crypto');
 
-  let finalUsername, finalHash;
-  if (wantsLogin) {
+  // Always auto-generate credentials for onboarding flow.
+  // If admin supplies explicit username+password, use those instead.
+  const wantsManualLogin = !!(username && password);
+  if (username && !password) return res.status(400).json({ error: 'Password required when setting username' });
+  if (password && !username) return res.status(400).json({ error: 'Username required when setting password' });
+  if (password && String(password).length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
+
+  let finalUsername, finalHash, tempPassword = null;
+
+  if (wantsManualLogin) {
     const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(username.trim());
     if (existing) return res.status(409).json({ error: 'Username already exists' });
     finalUsername = username.trim();
     finalHash = bcrypt.hashSync(password, 12);
   } else {
-    finalUsername = '__nolgn_' + Date.now().toString(36) + '_' + crypto.randomBytes(3).toString('hex');
-    finalHash = bcrypt.hashSync(crypto.randomBytes(32).toString('hex'), 10);
+    // Auto-generate: "firstname" + 3 random digits, e.g. "james472"
+    const firstName = full_name.trim().split(/\s+/)[0].toLowerCase().replace(/[^a-z]/g, '') || 'driver';
+    let candidate = firstName + (Math.floor(Math.random() * 900) + 100);
+    let attempts = 0;
+    while (db.prepare('SELECT id FROM users WHERE username = ?').get(candidate) && attempts++ < 20) {
+      candidate = firstName + (Math.floor(Math.random() * 9000) + 1000);
+    }
+    finalUsername = candidate;
+    // Temp password: readable 8 chars — "Wph" + 5 random mixed-case alphanumeric
+    const pool = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    tempPassword = 'Wph' + Array.from({length:5}, () => pool[Math.floor(Math.random() * pool.length)]).join('');
+    finalHash = bcrypt.hashSync(tempPassword, 12);
   }
 
   let result;
@@ -821,12 +834,12 @@ router.post('/drivers', (req, res) => {
         (username, password, role, full_name, email, phone, active, has_login,
          license_no, license_expiry, dbs_no, dbs_expiry,
          vehicle, reg, phv_no, insurance_no, driver_notes, photo,
-         max_passengers, max_bags, luggage_notes)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+         max_passengers, max_bags, luggage_notes, onboarding_status)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     `).run(
       finalUsername, finalHash, role || 'driver', full_name.trim(),
       email || null, phone || null,
-      active === 0 ? 0 : 1, wantsLogin ? 1 : 0,
+      active === 0 ? 0 : 1, 1,  // has_login always 1 — they get real credentials
       license_no || null, license_expiry || null,
       dbs_no || null, dbs_expiry || null,
       vehicle || null, reg || null,
@@ -834,7 +847,8 @@ router.post('/drivers', (req, res) => {
       photo || null,
       max_passengers == null || max_passengers === '' ? null : parseInt(max_passengers, 10),
       max_bags == null || max_bags === '' ? null : parseInt(max_bags, 10),
-      luggage_notes || null
+      luggage_notes || null,
+      'pending'
     );
   } catch (e) {
     console.error('[API] driver insert failed:', e.message);
@@ -846,7 +860,17 @@ router.post('/drivers', (req, res) => {
       .run('user', req.auth.id, 'driver_created', full_name, req.ip);
   } catch (e) { /* audit failure must not block response */ }
 
-  res.status(201).json({ ok: true, driver: { id: result.lastInsertRowid, has_login: wantsLogin } });
+  res.status(201).json({
+    ok: true,
+    driver: {
+      id: result.lastInsertRowid,
+      username: finalUsername,
+      temp_password: tempPassword,   // null if admin supplied their own password
+      has_login: true,
+      onboarding_status: 'pending',
+      app_url: '/westmere-driver.html'
+    }
+  });
 });
 
 // Update driver (admin/owner)

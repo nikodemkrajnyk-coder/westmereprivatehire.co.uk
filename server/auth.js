@@ -134,7 +134,7 @@ router.get('/me', (req, res) => {
       if (!customer) return res.status(401).json({ error: 'Account not found' });
       return res.json({ ok: true, type: 'customer', customer });
     } else {
-      const user = db.prepare('SELECT id, username, role, full_name, email FROM users WHERE id = ? AND active = 1').get(payload.id);
+      const user = db.prepare('SELECT id, username, role, full_name, email, onboarding_status FROM users WHERE id = ? AND active = 1').get(payload.id);
       if (!user) return res.status(401).json({ error: 'Account not found' });
       return res.json({ ok: true, type: 'user', user });
     }

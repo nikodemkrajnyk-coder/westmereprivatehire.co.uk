@@ -524,6 +524,42 @@ function migrate() {
     try { db.exec('ROLLBACK'); } catch (_) {}
     console.error('[DB] bookings status CHECK rebuild failed:', e.message);
   }
+
+  // ── Driver onboarding: driver_documents table + onboarding columns ────────
+  try {
+    db.exec(`CREATE TABLE IF NOT EXISTS driver_documents (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      driver_id     INTEGER NOT NULL REFERENCES users(id),
+      type          TEXT    NOT NULL,
+      file_path     TEXT    NOT NULL,
+      original_name TEXT,
+      mime_type     TEXT,
+      uploaded_at   TEXT    NOT NULL DEFAULT (datetime('now')),
+      status        TEXT    NOT NULL DEFAULT 'pending'
+                            CHECK(status IN ('pending','approved','rejected')),
+      reviewed_at   TEXT,
+      reviewed_by   INTEGER,
+      notes         TEXT
+    )`);
+  } catch(e) { console.error('[DB] driver_documents table failed:', e.message); }
+
+  try {
+    const uInfo = db.prepare('PRAGMA table_info(users)').all();
+    for (const [name, type] of [
+      ['onboarding_status', "TEXT NOT NULL DEFAULT 'pending'"],
+      ['address_line1', 'TEXT'], ['address_line2', 'TEXT'],
+      ['city', 'TEXT'], ['postcode', 'TEXT'],
+    ]) {
+      if (!uInfo.find(c => c.name === name)) {
+        db.exec(`ALTER TABLE users ADD COLUMN ${name} ${type}`);
+        console.log('[DB] Added ' + name + ' to users');
+      }
+    }
+    // Existing drivers with real logins are already onboarded
+    db.prepare(`UPDATE users SET onboarding_status='approved'
+      WHERE role IN ('driver','owner') AND onboarding_status='pending'
+      AND has_login=1 AND username NOT LIKE '__nolgn_%'`).run();
+  } catch(e) { console.error('[DB] onboarding columns failed:', e.message); }
 }
 
 function seedDefaults() {
