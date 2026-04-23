@@ -2470,6 +2470,7 @@ function showBookingCard(bk){
     +'<div class="msg-booking-row">'+rows.join('<br>')+'</div>'
     +'<div class="msg-booking-actions">'
     +'<button class="mba-confirm" onclick="confirmAssistBooking()">Confirm &amp; Book</button>'
+    +'<button class="mba-cal" onclick="calOnlyAssistBooking()" style="padding:.6rem 1rem;background:rgba(184,152,90,.1);border:1px solid rgba(184,152,90,.35);color:var(--gold);font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:6px">Add to Calendar Only</button>'
     +'<button class="mba-cancel" onclick="cancelAssistBooking()">Cancel</button>'
     +'</div></div></div>';
   appendHTML(html);
@@ -2482,6 +2483,28 @@ function confirmAssistBooking(){
 function cancelAssistBooking(){
   ASSIST_PENDING_BOOKING=null;
   sendToAssist('Cancel');
+}
+async function calOnlyAssistBooking(){
+  var bk=ASSIST_PENDING_BOOKING;
+  if(!bk)return;
+  ASSIST_PENDING_BOOKING=null;
+  setAssistStatus('thinking','Adding to calendar…');
+  try{
+    var r=await fetch('/api/google/events',{method:'POST',credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({date:bk.date,time:bk.time,pickup:bk.pickup,destination:bk.destination,
+        name:bk.name,phone:bk.phone,fare:bk.fare,notes:bk.notes})});
+    var d=await r.json();
+    if(d.ok){
+      appendW('Added to your Google Calendar — won\'t appear in Westmere bookings.');
+      showToast('Calendar event created');
+    } else {
+      appendW('Could not add to calendar: '+(d.error||'Unknown error'));
+    }
+  }catch(e){
+    appendW('Network error adding to calendar.');
+  }
+  setAssistStatus('live','Listening');
 }
 
 async function createBookingFromAssist(bk){

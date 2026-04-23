@@ -78,6 +78,73 @@ router.get('/external-events', requireStaff, async (req, res) => {
   }
 });
 
+// ── POST /api/google/events — create a one-off calendar event (no booking) ──
+// Used by the "Add to Calendar Only" button in the AI assistant for jobs from
+// other operators that don't need to go through the Westmere booking system.
+router.post('/events', requireStaff, async (req, res) => {
+  if (!gcal.isConfigured()) return res.status(503).json({ error: 'Google Calendar not configured' });
+  const status = gcal.getStatus();
+  if (!status.connected) return res.status(503).json({ error: 'Google Calendar not connected' });
+
+  const { title, date, time, pickup, destination, name, phone, fare, notes } = req.body;
+  if (!date) return res.status(400).json({ error: 'date is required' });
+
+  const tz = 'Europe/London';
+  let eventBody;
+
+  if (time && /^\d{2}:\d{2}$/.test(time)) {
+    const startIso = `${date}T${time}:00`;
+    const endDate = new Date(`${date}T${time}:00Z`);
+    endDate.setUTCMinutes(endDate.getUTCMinutes() + 60);
+    const pad = n => String(n).padStart(2, '0');
+    const endIso = `${endDate.getUTCFullYear()}-${pad(endDate.getUTCMonth()+1)}-${pad(endDate.getUTCDate())}T${pad(endDate.getUTCHours())}:${pad(endDate.getUTCMinutes())}:00`;
+    eventBody = {
+      summary: title || `${name || 'Pickup'} — ${pickup || ''}${destination ? ' → ' + destination : ''}`,
+      location: pickup || '',
+      description: [
+        name    ? `Passenger: ${name}`    : null,
+        phone   ? `Phone: ${phone}`       : null,
+        pickup  ? `Pickup: ${pickup}`     : null,
+        destination ? `Drop-off: ${destination}` : null,
+        fare    ? `Fare: £${fare}`        : null,
+        notes   ? `Notes: ${notes}`       : null,
+        '',
+        pickup      ? `Pickup (Waze): https://waze.com/ul?q=${encodeURIComponent(pickup)}`           : null,
+        destination ? `Drop-off (Waze): https://waze.com/ul?q=${encodeURIComponent(destination)}`   : null
+      ].filter(x => x !== null).join('\n'),
+      start: { dateTime: startIso, timeZone: tz },
+      end:   { dateTime: endIso,   timeZone: tz }
+    };
+  } else {
+    eventBody = {
+      summary: title || `${name || 'Pickup'} — ${pickup || ''}${destination ? ' → ' + destination : ''}`,
+      description: [
+        name  ? `Passenger: ${name}`  : null,
+        phone ? `Phone: ${phone}`     : null,
+        notes ? `Notes: ${notes}`     : null
+      ].filter(Boolean).join('\n'),
+      start: { date },
+      end:   { date }
+    };
+  }
+
+  try {
+    const token = await gcal.getAccessToken();
+    const t = gcal.loadTokens();
+    const calId = encodeURIComponent((t && t.calendar_id) || 'primary');
+    const r = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calId}/events`, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify(eventBody)
+    });
+    const d = await r.json();
+    if (!r.ok) return res.status(500).json({ error: (d.error && d.error.message) || 'Calendar API error' });
+    res.json({ ok: true, eventId: d.id, htmlLink: d.htmlLink });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── DELETE /api/google/booking-events — purge all WPH events from calendar ──
 // Lists events in a 90-day window, identifies any with wph_booking_id in their
 // extendedProperties, and deletes them. Used to clean up test bookings.

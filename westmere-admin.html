@@ -1502,6 +1502,7 @@ function aaShowBookingCard(b){
   var timeDisp=b.time||'';
   var fareDisp=b.fare?'£'+b.fare:'—';
 
+  var bJson=JSON.stringify(JSON.stringify(b));
   inner.innerHTML='<div class="abc-title">Extracted Booking</div>'
     +row('Name',b.name)
     +row('Phone',b.phone)
@@ -1515,10 +1516,29 @@ function aaShowBookingCard(b){
     +row('Fare',fareDisp)
     +row('Payment',b.payment)
     +row('Notes',b.notes)
-    +'<button class="abc-btn" onclick="aaFillModal('+JSON.stringify(JSON.stringify(b))+')">Create This Booking</button>';
+    +'<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.75rem">'
+    +'<button class="abc-btn" style="flex:1;min-width:120px" onclick="aaFillModal('+bJson+')">Create This Booking</button>'
+    +'<button class="abc-btn" style="flex:1;min-width:120px;background:rgba(184,152,90,.08);border:1px solid rgba(184,152,90,.3);color:var(--gold)" onclick="aaCalOnly('+bJson+')">Add to Calendar Only</button>'
+    +'</div>';
 
   card.appendChild(inner);
   aaAddEl(card);
+}
+
+async function aaCalOnly(bookingJson){
+  var b;
+  try{b=JSON.parse(bookingJson);}catch(e){return;}
+  var thinking=aaAddBot('Adding to calendar…',{thinking:true});
+  try{
+    var r=await fetch('/api/google/events',{method:'POST',credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({date:b.date,time:b.time,pickup:b.pickup,destination:b.destination,
+        name:b.name,phone:b.phone,fare:b.fare,notes:b.notes})});
+    var d=await r.json();
+    thinking.remove();
+    if(d.ok){aaAddBot('Added to Google Calendar — not in the Westmere booking system.');}
+    else{aaAddBot('Could not add to calendar: '+(d.error||'Unknown error'));}
+  }catch(e){thinking.remove();aaAddBot('Network error adding to calendar.');}
 }
 
 function aaFillModal(bookingJson){
