@@ -1131,8 +1131,8 @@ function bkInitCard() {
   if (!_bk.cardEl && _bk.stripe) {
     _bk.cardEl = _bk.stripe.elements().create("card",{
       style:{ base:{ fontFamily:'"Jost","Helvetica Neue",Arial,sans-serif',
-        fontSize:"15px", fontWeight:"300", color:"#1C2A3E",
-        "::placeholder":{ color:"#BDB8B0" }},
+        fontSize:"15px", fontWeight:"300", color:"#ffffff",
+        "::placeholder":{ color:"rgba(255,255,255,0.45)" }},
         invalid:{ color:"#e05252", iconColor:"#e05252" }}
     });
     _bk.cardEl.mount("#stripe-card-el");
