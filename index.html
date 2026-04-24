@@ -32,17 +32,6 @@ nav.solid .nav-end{position:fixed;top:1rem;right:6%;z-index:102}
 .app-icon-w{font-family:'Cormorant Garamond',Georgia,serif;font-size:1.6rem;font-weight:500;color:#B8985A;line-height:1}
 .app-icon-lbl{font-family:var(--sans);font-size:.62rem;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.65)}
 /* Rider PWA prompt modal */
-#rider-prompt{display:none;position:fixed;inset:0;z-index:1000;align-items:flex-end;justify-content:center;padding:0}
-#rider-prompt.open{display:flex}
-#rider-prompt-bg{position:absolute;inset:0;background:rgba(6,12,20,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-#rider-prompt-card{position:relative;background:#0D1B2A;border:1px solid rgba(184,152,90,.3);border-radius:18px 18px 0 0;padding:1.6rem 1.5rem 1.8rem;width:100%;max-width:460px;box-shadow:0 -8px 40px rgba(0,0,0,.5);animation:rpSlide .28s cubic-bezier(.32,.72,0,1)}
-@keyframes rpSlide{from{transform:translateY(100%)}to{transform:translateY(0)}}
-.rp-tag{font-family:var(--sans);font-size:.6rem;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:.6rem}
-.rp-title{font-family:var(--serif);font-size:1.5rem;font-weight:300;color:#fff;margin-bottom:1.2rem;letter-spacing:.04em}
-.rp-btns{display:flex;flex-direction:column}
-.rp-btn-primary{background:var(--gold);color:#0D1B2A;font-family:var(--sans);font-size:.8rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:none;border-radius:6px;padding:.75rem 1rem;cursor:pointer;text-align:center;text-decoration:none;display:block;transition:opacity .2s}
-.rp-btn-primary:hover{opacity:.88}
-@media(min-width:600px){#rider-prompt{align-items:center}#rider-prompt-card{border-radius:14px;margin:1rem;max-width:400px}}
 .brand-name{font-family:var(--serif);font-size:1.4rem;font-weight:500;letter-spacing:.15em;text-transform:uppercase;color:#fff;line-height:1}
 .brand-sub{font-size:1rem;font-weight:300;letter-spacing:.28em;text-transform:uppercase;color:#fff}.brand-sub2{font-size:.8rem;color:#fff;letter-spacing:.38em;text-transform:uppercase;font-weight:300}
 .nav-r{display:flex;flex-direction:column;align-items:flex-end;gap:.5rem;transition:opacity .3s ease}
@@ -362,7 +351,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 
   <!-- App icon — below booking form -->
   <div style="display:flex;justify-content:center;padding:1.5rem 0 2rem">
-    <a class="app-icon-wrap" href="/westmere-rider.html" onclick="return showRiderPrompt(event)" aria-label="Westmere Rider App">
+    <a class="app-icon-wrap" href="/westmere-rider.html" aria-label="Westmere Rider App">
       <div class="app-icon-badge"><span class="app-icon-w">W</span></div>
       <span class="app-icon-lbl">Get the App</span>
     </a>
@@ -1475,31 +1464,5 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 
-<!-- Rider PWA install prompt -->
-<div id="rider-prompt" role="dialog" aria-modal="true" aria-labelledby="rp-title">
-  <div id="rider-prompt-bg" onclick="dismissRiderPrompt()"></div>
-  <div id="rider-prompt-card">
-    <div class="rp-tag">Westmere</div>
-    <div class="rp-title" id="rp-title">Add to Home Screen</div>
-    <div class="rp-btns">
-      <a class="rp-btn-primary" href="/westmere-rider.html" onclick="sessionStorage.setItem('wph_rider_prompted','1')">Add to Home Screen</a>
-    </div>
-  </div>
-</div>
-
-<script>
-function showRiderPrompt(e){
-  if(sessionStorage.getItem('wph_rider_prompted')){return true;}
-  if(e)e.preventDefault();
-  document.getElementById('rider-prompt').classList.add('open');
-  return false;
-}
-function dismissRiderPrompt(){
-  sessionStorage.setItem('wph_rider_prompted','1');
-  var p=document.getElementById('rider-prompt');
-  p.classList.remove('open');
-}
-document.addEventListener('keydown',function(e){if(e.key==='Escape')dismissRiderPrompt();});
-</script>
 </body>
 </html>

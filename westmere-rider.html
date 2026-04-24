@@ -411,6 +411,14 @@ body.mode-day .pay-method{border-color:rgba(26,38,56,.12)}
 body.mode-day .pay-method.sel{border-color:#7A6230;background:rgba(122,98,48,.08)}
 body.mode-day #stripe-card-el{border-bottom-color:rgba(26,38,56,.25)}
 body.mode-day #stripe-card-el.StripeElement--focus{border-bottom-color:#7A6230}
+/* iOS install banner */
+#ios-install-banner{display:none;position:fixed;top:0;left:0;right:0;z-index:500;background:#111D2C;border-bottom:1px solid rgba(184,152,90,.35);padding:.65rem 1rem .65rem 1.1rem;align-items:center;gap:.8rem}
+#ios-install-banner.show{display:flex}
+.iib-text{flex:1;font-family:var(--sans,sans-serif);font-size:.78rem;color:rgba(255,255,255,.85);font-weight:300;line-height:1.45}
+.iib-text strong{color:#B8985A;font-weight:500}
+.iib-share{display:inline-flex;vertical-align:middle;margin:0 .15rem}
+.iib-close{background:none;border:none;color:rgba(255,255,255,.4);font-size:1.1rem;line-height:1;cursor:pointer;padding:.25rem .3rem;flex-shrink:0;transition:color .15s}
+.iib-close:hover{color:#fff}
 </style>
 <script src="/config.js"></script>
 <script src="https://js.stripe.com/v3/" async></script>
@@ -428,6 +436,17 @@ body.mode-day #stripe-card-el.StripeElement--focus{border-bottom-color:#7A6230}
 </head>
 <body>
 
+<!-- iOS PWA install banner -->
+<div id="ios-install-banner" role="banner">
+  <div class="iib-text">
+    Tap
+    <span class="iib-share" aria-label="Share">
+      <svg width="14" height="17" viewBox="0 0 14 17" fill="none" stroke="#B8985A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 1v10M4 4l3-3 3 3"/><rect x="1" y="7" width="12" height="9" rx="1.5"/></svg>
+    </span>
+    then <strong>'Add to Home Screen'</strong> for the best experience.
+  </div>
+  <button class="iib-close" onclick="dismissIOSBanner()" aria-label="Dismiss">&#x2715;</button>
+</div>
 
 <!-- ═══ LOGIN SCREEN ═══ -->
 <div id="login-screen">
@@ -1750,6 +1769,25 @@ if('serviceWorker' in navigator){
 }
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',_autoBoot);}
 else{_autoBoot();}
+
+/* ── iOS install banner ── */
+function dismissIOSBanner(){
+  var b=document.getElementById('ios-install-banner');
+  if(b)b.classList.remove('show');
+  try{localStorage.setItem('wph_ios_banner_dismissed',String(Date.now()));}catch(e){}
+}
+(function(){
+  var isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  var isSafari=/safari/i.test(navigator.userAgent)&&!/crios|fxios|opios|edgios/i.test(navigator.userAgent);
+  var isStandalone=window.navigator.standalone===true;
+  if(!isIOS||!isSafari||isStandalone)return;
+  try{
+    var last=parseInt(localStorage.getItem('wph_ios_banner_dismissed')||'0',10);
+    if(Date.now()-last<86400000)return; // shown within 24h
+  }catch(e){}
+  var b=document.getElementById('ios-install-banner');
+  if(b)b.classList.add('show');
+})();
 </script>
 <footer class="mini-foot">&copy; 2026 Westmere Private Hire &middot; All rights reserved &middot; Licensed by Lewes District Council<span class="mini-legal"><a href="westmere-terms.html">Terms</a><a href="westmere-privacy.html">Privacy</a><a href="westmere-cookies.html">Cookies</a></span></footer>
 </body>
