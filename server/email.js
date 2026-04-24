@@ -676,9 +676,43 @@ async function sendDriverWelcome(driver) {
   return ok;
 }
 
+// ── Customer email verification ──────────────────────────────────────────
+async function sendVerificationEmail(customer, token) {
+  if (!customer || !customer.email) return false;
+  const { email, full_name } = customer;
+  const firstName = (full_name || '').split(' ')[0] || 'there';
+  const verifyUrl = `https://westmereprivatehire.co.uk/api/auth/customer/verify?token=${token}`;
+
+  const body = `
+  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Verify your email</p>
+  <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
+  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Thank you for creating a Westmere account. Please verify your email address to activate it.</p>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0">
+    <tr>
+      <td align="center">
+        <a href="${verifyUrl}" style="display:inline-block;padding:14px 36px;background:${INK};color:#FFFFFF;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;text-decoration:none">Verify Email Address</a>
+      </td>
+    </tr>
+  </table>
+
+  <p style="margin:0 0 8px;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">If the button above does not work, copy and paste this link into your browser:</p>
+  <p style="margin:0 0 22px;font-family:Menlo,Consolas,monospace;font-size:11px;color:${GOLD};word-break:break-all;line-height:1.6">${escHtml(verifyUrl)}</p>
+
+  <p style="margin:0 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_MUTED};line-height:1.6">This link will remain valid until your account is verified. If you did not create a Westmere account, you can safely ignore this email.</p>
+  <p style="margin:22px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
+
+  const html = emailShell(body);
+  const subject = 'Verify your Westmere account';
+  const preheader = 'One click to activate your account — then you can book and manage journeys online.';
+  const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
+  if (ok) console.log('[EMAIL] Verification email sent to', email);
+  return ok;
+}
+
 module.exports = {
   sendCustomerConfirmation, sendCustomerConfirmed, sendAdminAlert,
   sendCustomerWelcome, sendCustomerInvoice, sendBespokeInvoice,
   sendCustomerCancellation, sendDriverStatement, sendDriverWelcome,
-  sendEmail, isConfigured
+  sendVerificationEmail, sendEmail, isConfigured
 };

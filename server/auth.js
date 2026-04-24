@@ -83,6 +83,11 @@ router.post('/customer/login', (req, res) => {
     return res.status(401).json({ error: 'Invalid credentials' });
   }
 
+  // Block unverified self-registered accounts
+  if (customer.verified === 0) {
+    return res.status(403).json({ error: 'Please verify your email address first. Check your inbox for the verification link.' });
+  }
+
   const expiry = remember ? JWT_EXPIRY_REMEMBER : JWT_EXPIRY;
   const maxAge = remember ? COOKIE_MAX_AGE_REMEMBER : COOKIE_MAX_AGE;
 
@@ -111,13 +116,82 @@ router.post('/customer/login', (req, res) => {
   });
 });
 
-// ── Customer registration — DISABLED for public self-service ─────────────
-// Accounts are now opened by admin only via POST /api/customers. Keeping
-// the route so we can return a friendly error instead of a 404.
-router.post('/customer/register', (req, res) => {
-  return res.status(403).json({
-    error: 'Accounts are opened by Westmere on request. Please contact bookings@westmereprivatehire.co.uk or call 07930 342593.'
-  });
+// ── Customer self-registration ───────────────────────────────────────────
+router.post('/customer/register', async (req, res) => {
+  const { full_name, email, phone, password, account_type } = req.body;
+  if (!full_name || !email || !password) {
+    return res.status(400).json({ error: 'Full name, email and password are required' });
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: 'Invalid email address' });
+  }
+  if (password.length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters' });
+  }
+
+  const db = getDb();
+  const cleanEmail = email.trim().toLowerCase();
+  const existing = db.prepare('SELECT id, verified FROM customers WHERE email = ?').get(cleanEmail);
+  if (existing) {
+    if (existing.verified === 0) {
+      return res.status(409).json({ error: 'An account with this email is awaiting verification. Please check your inbox.' });
+    }
+    return res.status(409).json({ error: 'An account with this email already exists. Please sign in.' });
+  }
+
+  const hash = bcrypt.hashSync(password, 12);
+  const verificationToken = require('crypto').randomUUID().replace(/-/g, '');
+  const acType = ['personal', 'business'].includes(account_type) ? account_type : 'personal';
+
+  let newId;
+  try {
+    const result = db.prepare(`
+      INSERT INTO customers (email, password, full_name, phone, account_type, verified, verification_token)
+      VALUES (?, ?, ?, ?, ?, 0, ?)
+    `).run(cleanEmail, hash, full_name.trim(), phone || null, acType, verificationToken);
+    newId = result.lastInsertRowid;
+  } catch (e) {
+    console.error('[AUTH] customer register insert failed:', e.message);
+    return res.status(500).json({ error: 'Registration failed. Please try again.' });
+  }
+
+  // Send verification email (non-blocking)
+  const { sendVerificationEmail } = require('./email');
+  sendVerificationEmail({ email: cleanEmail, full_name: full_name.trim() }, verificationToken)
+    .catch(e => console.error('[AUTH] verification email failed:', e.message));
+
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run('customer', newId, 'customer_registered', cleanEmail, req.ip);
+  } catch (_) {}
+
+  res.status(201).json({ ok: true, message: 'Account created. Please check your email to verify your address.' });
+});
+
+// ── Email verification ───────────────────────────────────────────────────
+router.get('/customer/verify', (req, res) => {
+  const token = String(req.query.token || '').replace(/[^a-f0-9]/gi, '');
+  if (!token || token.length < 16) {
+    return res.redirect('/westmere-account.html?verified=error&reason=invalid_token');
+  }
+
+  const db = getDb();
+  const customer = db.prepare('SELECT * FROM customers WHERE verification_token = ?').get(token);
+  if (!customer) {
+    return res.redirect('/westmere-account.html?verified=error&reason=invalid_token');
+  }
+  if (customer.verified === 1) {
+    return res.redirect('/westmere-account.html?verified=already');
+  }
+
+  db.prepare("UPDATE customers SET verified = 1, verification_token = NULL, updated_at = datetime('now') WHERE id = ?").run(customer.id);
+
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, ip) VALUES (?,?,?,?)')
+      .run('customer', customer.id, 'email_verified', req.ip);
+  } catch (_) {}
+
+  return res.redirect('/westmere-account.html?verified=1');
 });
 
 // ── Verify session ──────────────────────────────────────────────────────

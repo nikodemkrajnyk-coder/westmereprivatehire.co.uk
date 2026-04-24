@@ -384,13 +384,29 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
       <div class="fg"><label class="fl">Password</label><input class="fi" type="password" id="l-pass" placeholder="Your password"></div>
       <label style="display:flex;align-items:center;gap:.5rem;margin-top:.6rem;cursor:pointer;font-size:.78rem;color:rgba(17,29,44,.5);font-weight:300"><input type="checkbox" id="l-remember" style="accent-color:var(--gold)"> Keep me logged in</label>
       <button class="btn-main" onclick="doLogin()">Sign In</button>
-      <div class="lb-switch" style="line-height:1.6">Accounts are opened by Westmere on request.<br>Call <a href="tel:+447930342593" style="color:var(--gold);text-decoration:none">07930 342593</a> or email <a href="mailto:bookings@westmereprivatehire.co.uk" style="color:var(--gold);text-decoration:none">bookings@westmereprivatehire.co.uk</a> to request one.</div>
+      <div class="lb-switch">No account? <button onclick="swFrm('register')">Create one here</button></div>
     </div>
     <div id="frm-register" class="lb-body" style="display:none">
-      <div class="lb-title">Accounts are invite-only</div>
-      <p class="lb-desc" style="margin-bottom:1rem">Westmere opens accounts for customers who want monthly invoicing. Please get in touch and we'll set one up for you.</p>
-      <a href="tel:+447930342593" class="btn-main" style="display:block;text-align:center;text-decoration:none">Call 07930 342593</a>
+      <div class="lb-title">Create an Account</div>
+      <p class="lb-desc">Book and manage journeys online</p>
+      <div class="fg"><label class="fl">Full Name</label><input class="fi" type="text" id="r-name" placeholder="Your full name" autocomplete="name"></div>
+      <div class="fg"><label class="fl">Email Address</label><input class="fi" type="email" id="r-email" placeholder="your@email.com" autocomplete="email"></div>
+      <div class="fg"><label class="fl">Mobile Number</label><input class="fi" type="tel" id="r-mobile" placeholder="+44 7700 000 000" autocomplete="tel"></div>
+      <div class="fg"><label class="fl">Password</label><div style="position:relative"><input class="fi" type="password" id="r-pass" placeholder="Min 8 characters" autocomplete="new-password" style="padding-right:3.5rem"><button type="button" onclick="togglePass('r-pass',this)" style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(17,29,44,.4);font-size:.72rem;font-family:var(--sans);letter-spacing:.05em;padding:0">Show</button></div></div>
+      <div class="type-row">
+        <div class="type-opt on" onclick="selType(this)"><div class="type-name">Personal</div><div class="type-sub">Pay per journey</div></div>
+        <div class="type-opt" onclick="selType(this)"><div class="type-name">Business</div><div class="type-sub">Monthly invoicing</div></div>
+      </div>
+      <button class="btn-main" onclick="doLoginReg()">Create Account</button>
+      <div class="lb-err" id="reg-err" style="color:#c0392b;font-size:.78rem;margin-top:.5rem;min-height:1.2em"></div>
       <div class="lb-switch">Already have an account? <button onclick="swFrm('login')">Sign in</button></div>
+    </div>
+    <div id="frm-verify" class="lb-body" style="display:none">
+      <div class="lb-title">Check your inbox</div>
+      <p class="lb-desc" style="line-height:1.7">We've sent a verification link to <strong id="verify-email-hint"></strong>.<br>Click the link to activate your account, then sign in here.</p>
+      <div style="text-align:center;padding:1.5rem 0;font-size:2rem">&#9993;</div>
+      <p style="font-size:.75rem;color:rgba(17,29,44,.4);text-align:center;line-height:1.6">Didn't receive it? Check your spam folder.<br>The link is valid until your account is verified.</p>
+      <div class="lb-switch" style="margin-top:1rem">Already verified? <button onclick="swFrm('login')">Sign in</button></div>
     </div>
     <div class="lb-foot">
       <a href="index.html">Back to site</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="tel:+447930342593">07930 342593</a>
@@ -423,42 +439,19 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
     <!-- OVERVIEW -->
     <div class="view on" id="view-overview">
       <div class="stats">
-        <div class="stat s-gold"><div class="stat-v">3</div><div class="stat-l">Upcoming</div><div class="stat-s">Next: 25 Mar 04:30</div></div>
-        <div class="stat s-green"><div class="stat-v">12</div><div class="stat-l">Total Journeys</div><div class="stat-s">Since joining</div></div>
-        <div class="stat s-navy"><div class="stat-v">£840</div><div class="stat-l">Total Spent</div><div class="stat-s">All time</div></div>
-        <div class="stat s-red"><div class="stat-v">£192</div><div class="stat-l">Outstanding</div><div class="stat-s">Invoice due 31 Mar</div></div>
+        <div class="stat s-gold"><div class="stat-v" id="stat-upcoming">—</div><div class="stat-l">Upcoming</div><div class="stat-s" id="stat-next">Loading…</div></div>
+        <div class="stat s-green"><div class="stat-v" id="stat-total">—</div><div class="stat-l">Total Journeys</div><div class="stat-s">Since joining</div></div>
+        <div class="stat s-navy"><div class="stat-v" id="stat-spent">£—</div><div class="stat-l">Total Spent</div><div class="stat-s">Completed journeys</div></div>
       </div>
       <div class="g2">
         <div class="card">
           <div class="ch"><div class="ct">Next Journey</div><button onclick="sv('bookings',document.querySelectorAll('.nav-tab')[1])" style="font-size:.58rem;color:var(--gold);background:none;border:none;cursor:pointer;font-family:var(--sans);letter-spacing:.1em;text-transform:uppercase;opacity:.7">View all →</button></div>
-          <div class="cb">
-            <div class="brow">
-              <div class="bdate"><span class="bday">25</span><span class="bmon">Mar</span></div>
-              <div class="binfo"><div class="broute">Lewes → Gatwick Airport</div><div class="bmeta">04:30 · 1 passenger · EZY1234</div></div>
-              <div class="bright"><span class="bfare">£78</span><span class="btag t-up">Upcoming</span></div>
-            </div>
-          </div>
+          <div class="cb" id="ov-next-content"><p style="padding:.8rem 0;color:var(--muted);font-size:.82rem">Loading…</p></div>
         </div>
       </div>
       <div class="card">
         <div class="ch"><div class="ct">Recent Journeys</div><button onclick="sv('bookings',document.querySelectorAll('.nav-tab')[1])" style="font-size:.58rem;color:var(--gold);background:none;border:none;cursor:pointer;font-family:var(--sans);letter-spacing:.1em;text-transform:uppercase;opacity:.7">Full history →</button></div>
-        <div class="cb">
-          <div class="brow">
-            <div class="bdate"><span class="bday">14</span><span class="bmon">Mar</span></div>
-            <div class="binfo"><div class="broute">Lewes → Heathrow T5</div><div class="bmeta">07:30 · BA0117 · Card · Drop-off +£7</div></div>
-            <div class="bright"><span class="bfare">£140</span><span class="btag t-done">Completed</span></div>
-          </div>
-          <div class="brow">
-            <div class="bdate"><span class="bday">02</span><span class="bmon">Mar</span></div>
-            <div class="binfo"><div class="broute">Lewes → Gatwick</div><div class="bmeta">05:15 · EZY2214 · Cash · Drop-off +£10</div></div>
-            <div class="bright"><span class="bfare">£78</span><span class="btag t-done">Completed</span></div>
-          </div>
-          <div class="brow">
-            <div class="bdate"><span class="bday">18</span><span class="bmon">Feb</span></div>
-            <div class="binfo"><div class="broute">Brighton → Gatwick</div><div class="bmeta">06:00 · FR1084 · Cash · Drop-off +£10</div></div>
-            <div class="bright"><span class="bfare">£72</span><span class="btag t-done">Completed</span></div>
-          </div>
-        </div>
+        <div class="cb" id="ov-recent-content"><p style="padding:.8rem 0;color:var(--muted);font-size:.82rem">Loading…</p></div>
       </div>
     </div>
 
@@ -466,69 +459,11 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
     <div class="view" id="view-bookings">
       <div class="card">
         <div class="ch"><div class="ct">Upcoming Journeys</div></div>
-        <div class="cb">
-          <div class="brow">
-            <div class="bdate"><span class="bday">25</span><span class="bmon">Mar</span></div>
-            <div class="binfo">
-              <div class="broute">Lewes → Gatwick Airport</div>
-              <div class="bmeta">04:30 · 1 passenger · EZY1234 · Cash · Drop-off +£10</div>
-              <div class="brow-actions">
-                <button class="ba-btn" onclick="showToast('Confirmation resent')">Resend Confirmation</button>
-                <button class="ba-btn danger" onclick="showToast('To cancel please call us')">Cancel</button>
-              </div>
-            </div>
-            <div class="bright"><span class="bfare">£78</span><span class="btag t-up">Upcoming</span></div>
-          </div>
-          <div class="brow">
-            <div class="bdate"><span class="bday">02</span><span class="bmon">Apr</span></div>
-            <div class="binfo">
-              <div class="broute">Brighton → Heathrow T2</div>
-              <div class="bmeta">06:00 · 2 passengers · BA0026 · Card · Drop-off +£7</div>
-              <div class="brow-actions">
-                <button class="ba-btn" onclick="showToast('Confirmation resent')">Resend Confirmation</button>
-                <button class="ba-btn danger" onclick="showToast('To cancel please call us')">Cancel</button>
-              </div>
-            </div>
-            <div class="bright"><span class="bfare">£128</span><span class="btag t-up">Upcoming</span></div>
-          </div>
-          <div class="brow">
-            <div class="bdate"><span class="bday">10</span><span class="bmon">Apr</span></div>
-            <div class="binfo">
-              <div class="broute">Lewes → Stansted Airport</div>
-              <div class="bmeta">03:45 · 1 passenger · FR2244 · Account · Drop-off +£6</div>
-              <div class="brow-actions">
-                <button class="ba-btn" onclick="showToast('Confirmation resent')">Resend Confirmation</button>
-                <button class="ba-btn danger" onclick="showToast('To cancel please call us')">Cancel</button>
-              </div>
-            </div>
-            <div class="bright"><span class="bfare">£225</span><span class="btag t-up">Upcoming</span></div>
-          </div>
-        </div>
+        <div class="cb" id="bk-upcoming-content"><p style="padding:.8rem 0;color:var(--muted);font-size:.82rem">Loading…</p></div>
       </div>
       <div class="card">
         <div class="ch"><div class="ct">Past Journeys</div></div>
-        <div class="cb">
-          <div class="brow">
-            <div class="bdate"><span class="bday">14</span><span class="bmon">Mar</span></div>
-            <div class="binfo"><div class="broute">Lewes → Heathrow T5</div><div class="bmeta">07:30 · BA0117 · Card · Drop-off +£7</div></div>
-            <div class="bright"><span class="bfare">£140</span><span class="btag t-done">Completed</span></div>
-          </div>
-          <div class="brow">
-            <div class="bdate"><span class="bday">02</span><span class="bmon">Mar</span></div>
-            <div class="binfo"><div class="broute">Lewes → Gatwick</div><div class="bmeta">05:15 · EZY2214 · Cash · Drop-off +£10</div></div>
-            <div class="bright"><span class="bfare">£78</span><span class="btag t-done">Completed</span></div>
-          </div>
-          <div class="brow">
-            <div class="bdate"><span class="bday">18</span><span class="bmon">Feb</span></div>
-            <div class="binfo"><div class="broute">Brighton → Gatwick</div><div class="bmeta">06:00 · FR1084 · Cash · Drop-off +£10</div></div>
-            <div class="bright"><span class="bfare">£72</span><span class="btag t-done">Completed</span></div>
-          </div>
-          <div class="brow">
-            <div class="bdate"><span class="bday">05</span><span class="bmon">Feb</span></div>
-            <div class="binfo"><div class="broute">Gatwick → Lewes</div><div class="bmeta">14:20 · EZY5512 · Account · Pickup +£8</div></div>
-            <div class="bright"><span class="bfare">£74</span><span class="btag t-done">Completed</span></div>
-          </div>
-        </div>
+        <div class="cb" id="bk-past-content"><p style="padding:.8rem 0;color:var(--muted);font-size:.82rem">Loading…</p></div>
       </div>
     </div>
 
@@ -608,7 +543,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
         <div class="cb">
           <div class="prow"><span class="pl">Full Name</span><span class="pv" id="pv-name">—</span><button class="pedit" onclick="showToast('Edit coming soon')">Edit</button></div>
           <div class="prow"><span class="pl">Email</span><span class="pv" id="pv-email">—</span><button class="pedit" onclick="showToast('Edit coming soon')">Edit</button></div>
-          <div class="prow"><span class="pl">Mobile</span><span class="pv">+44 7700 000 000</span><button class="pedit" onclick="showToast('Edit coming soon')">Edit</button></div>
+          <div class="prow"><span class="pl">Mobile</span><span class="pv" id="pv-phone">—</span><button class="pedit" onclick="showToast('Edit coming soon')">Edit</button></div>
           <div class="prow"><span class="pl">Account Type</span><span class="pv" id="pv-actype">Personal · Pay per journey</span></div>
           <div class="prow"><span class="pl">Member Since</span><span class="pv">January 2025</span></div>
         </div>
@@ -1061,7 +996,7 @@ async function doLogin(){
     });
     var data=await res.json();
     if(res.ok&&data.ok){
-      bootDash(data.customer.full_name,false,data.customer.account_type+' · Account',data.customer.email,false);
+      bootDash(data.customer.full_name,false,data.customer.account_type+' · Account',data.customer.email,data.customer.phone||'',false);
       return;
     }
     // Try admin/owner login
@@ -1072,7 +1007,7 @@ async function doLogin(){
     });
     var data2=await res2.json();
     if(res2.ok&&data2.ok){
-      bootDash(data2.user.full_name||data2.user.username,true,'Admin · Full access',data2.user.email||email,false);
+      bootDash(data2.user.full_name||data2.user.username,true,'Admin · Full access',data2.user.email||email,'',false);
       return;
     }
     showToast(data.error||'Incorrect credentials.');
@@ -1098,20 +1033,34 @@ async function doLoginReg(){
     });
     var data=await res.json();
     if(res.ok&&data.ok){
-      bootDash(data.customer.full_name,false,data.customer.account_type+' · Account',data.customer.email,true);
+      // Registration successful — show "check email" panel, don't log in yet
+      var hint=document.getElementById('verify-email-hint');
+      if(hint)hint.textContent=email;
+      swFrm('verify');
     } else {
-      showToast(data.error||'Registration failed.');
+      var errEl=document.getElementById('reg-err');
+      if(errEl)errEl.textContent=data.error||'Registration failed.';
+      else showToast(data.error||'Registration failed.');
     }
   }catch(e){
     showToast('Connection error. Please try again.');
   }
 }
-function bootDash(name,admin,actype,email,showWelcome){
+function togglePass(inputId,btn){
+  var inp=document.getElementById(inputId);
+  if(!inp)return;
+  var show=inp.type==='password';
+  inp.type=show?'text':'password';
+  btn.textContent=show?'Hide':'Show';
+}
+function bootDash(name,admin,actype,email,phone,showWelcome){
   document.getElementById('login-page').style.display='none';
   document.getElementById('tb-user').textContent=name;
   document.getElementById('pv-name').textContent=name;
   document.getElementById('pv-email').textContent=email||'—';
+  var pvPhone=document.getElementById('pv-phone');if(pvPhone)pvPhone.textContent=phone||'Not set';
   document.getElementById('pv-actype').textContent=actype;
+  if(!admin)loadCustomerData();
   if(showWelcome){
     var ws=document.getElementById('welcome-screen');
     if(ws)ws.classList.add('show');
@@ -1124,8 +1073,60 @@ function bootDash(name,admin,actype,email,showWelcome){
     document.getElementById('dashboard').style.display='block';
   }
 }
+function loadCustomerData(){
+  fetch('/api/bookings',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
+    if(!d.ok)return;
+    var bks=d.bookings||[];
+    var today=new Date().toISOString().split('T')[0];
+    var upcoming=bks.filter(function(b){return b.date>=today&&['confirmed','active','offered','pending'].includes(b.status);}).sort(function(a,b){return a.date<b.date?-1:1;});
+    var past=bks.filter(function(b){return b.date<today||b.status==='completed';}).sort(function(a,b){return a.date<b.date?1:-1;});
+    var totalSpent=bks.filter(function(b){return b.status==='completed';}).reduce(function(s,b){return s+(+b.fare||0);},0);
+    var upEl=document.getElementById('stat-upcoming');if(upEl)upEl.textContent=upcoming.length;
+    var totEl=document.getElementById('stat-total');if(totEl)totEl.textContent=bks.length;
+    var sEl=document.getElementById('stat-spent');if(sEl)sEl.textContent='\u00a3'+(totalSpent||0).toFixed(0);
+    var nextEl=document.getElementById('stat-next');
+    if(nextEl)nextEl.textContent=upcoming.length?fmtBkDate(upcoming[0]):'No upcoming journeys';
+    var ovNext=document.getElementById('ov-next-content');
+    if(ovNext)ovNext.innerHTML=upcoming.length?renderBkRow(upcoming[0],true):'<p style="padding:.8rem 0;color:var(--muted);font-size:.82rem">No upcoming journeys.</p>';
+    var ovRec=document.getElementById('ov-recent-content');
+    if(ovRec)ovRec.innerHTML=past.slice(0,3).map(function(b){return renderBkRow(b,false);}).join('')||'<p style="padding:.8rem 0;color:var(--muted);font-size:.82rem">No past journeys yet.</p>';
+    var bkUp=document.getElementById('bk-upcoming-content');
+    if(bkUp)bkUp.innerHTML=upcoming.map(function(b){return renderBkRow(b,true);}).join('')||'<p style="padding:.8rem 0;color:var(--muted);font-size:.82rem">No upcoming journeys.</p>';
+    var bkPast=document.getElementById('bk-past-content');
+    if(bkPast)bkPast.innerHTML=past.map(function(b){return renderBkRow(b,false);}).join('')||'<p style="padding:.8rem 0;color:var(--muted);font-size:.82rem">No past journeys.</p>';
+  }).catch(function(){});
+}
+function fmtBkDate(b){
+  if(!b.date)return'—';
+  var d=new Date(b.date+'T00:00');
+  var mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+  return d.getDate()+' '+mo+(b.time&&b.time!=='ASAP'?' \u00b7 '+b.time:'');
+}
+function renderBkRow(b,showActions){
+  var d=b.date?new Date(b.date+'T00:00'):null;
+  var day=d?d.getDate():'—';
+  var mo=d?['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]:'—';
+  var route=(b.pickup||'')+(b.destination?' \u2192 '+b.destination:'');
+  var meta=[b.time&&b.time!=='ASAP'?b.time:null,b.passengers>1?b.passengers+' passengers':null,b.flight||null,b.payment==='card'?'Card':'Cash'].filter(Boolean).join(' \u00b7 ');
+  var fareStr=b.fare?'\u00a3'+parseFloat(b.fare).toFixed(0):'—';
+  var stMap={confirmed:'t-up',active:'t-active',completed:'t-done',cancelled:'t-can',pending:'t-up',offered:'t-up'};
+  var stLbl={confirmed:'Confirmed',active:'Active',completed:'Completed',cancelled:'Cancelled',pending:'Pending',offered:'Offered'};
+  var stCls=stMap[b.status]||'t-up';
+  var stTxt=stLbl[b.status]||b.status;
+  var actions=showActions?'<div class="brow-actions"><button class="ba-btn" onclick="showToast(\'To cancel please call 07930 342593\')">Cancel</button></div>':'';
+  return '<div class="brow"><div class="bdate"><span class="bday">'+day+'</span><span class="bmon">'+mo+'</span></div>'
+    +'<div class="binfo"><div class="broute">'+route+'</div><div class="bmeta">'+meta+'</div>'+actions+'</div>'
+    +'<div class="bright"><span class="bfare">'+fareStr+'</span><span class="btag '+stCls+'">'+stTxt+'</span></div></div>';
+}
 async function doLogout(){await fetch('/api/auth/logout',{method:'POST'});document.getElementById('dashboard').style.display='none';document.getElementById('login-page').style.display='flex';}
-function swFrm(f){document.getElementById('frm-login').style.display=f==='login'?'block':'none';document.getElementById('frm-register').style.display=f==='register'?'block':'none';}
+function swFrm(f){
+  ['frm-login','frm-register','frm-verify'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.style.display='none';
+  });
+  var show=document.getElementById('frm-'+f);if(show)show.style.display='block';
+  // Clear reg error on switch
+  var errEl=document.getElementById('reg-err');if(errEl)errEl.textContent='';
+}
 function selType(el){document.querySelectorAll('.type-opt').forEach(function(o){o.classList.remove('on')});el.classList.add('on');}
 function sv(id,btn){
   document.querySelectorAll('.view').forEach(function(v){v.classList.remove('on')});
@@ -1194,6 +1195,23 @@ function showToast(msg){
 }
 document.querySelectorAll('input[type=date]').forEach(function(d){d.min=new Date().toISOString().split('T')[0]});
 
+/* ── Handle ?verified URL param ── */
+(function(){
+  var p=new URLSearchParams(location.search);
+  var v=p.get('verified');
+  if(v==='1'){
+    // Show login form with a success message after email verification
+    setTimeout(function(){showToast('Email verified \u2014 please sign in');},400);
+    history.replaceState(null,'',location.pathname);
+  } else if(v==='error'){
+    setTimeout(function(){showToast('Verification link invalid or expired \u2014 please register again');},400);
+    history.replaceState(null,'',location.pathname);
+  } else if(v==='already'){
+    setTimeout(function(){showToast('Email already verified \u2014 please sign in');},400);
+    history.replaceState(null,'',location.pathname);
+  }
+})();
+
 /* ── Auth check via backend ── */
 (async function(){
   try{
@@ -1201,9 +1219,9 @@ document.querySelectorAll('input[type=date]').forEach(function(d){d.min=new Date
     var data=await res.json();
     if(res.ok&&data.ok){
       if(data.type==='customer'){
-        bootDash(data.customer.full_name,false,data.customer.account_type+' · Account',data.customer.email,false);
+        bootDash(data.customer.full_name,false,data.customer.account_type+' · Account',data.customer.email,data.customer.phone||'',false);
       } else {
-        bootDash(data.user.full_name||data.user.username,true,'Admin · Full access',data.user.email||'',false);
+        bootDash(data.user.full_name||data.user.username,true,'Admin · Full access',data.user.email||'','',false);
       }
     } else {
       document.getElementById('login-page').style.display='flex';

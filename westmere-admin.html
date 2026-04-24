@@ -2086,7 +2086,8 @@ function loadLiveBookings(){
       }
       cg.innerHTML=d.customers.map(function(c){
         var safeName=(c.full_name||'Unknown').replace(/"/g,'&quot;').replace(/'/g,"\\'");
-        return '<div class="cust-card"><div class="cc-name">'+(c.full_name||'Unknown')+'</div>'
+        var unvBadge=c.verified===0?'<span style="margin-left:.5rem;padding:.15rem .45rem;font-size:.6rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:rgba(184,152,90,.15);color:#B8985A;border-radius:2px">Unverified</span>':'';
+        return '<div class="cust-card"><div class="cc-name">'+(c.full_name||'Unknown')+unvBadge+'</div>'
           +'<div class="cc-meta">'+(c.email||'')+(c.phone?' \u00b7 '+c.phone:'')+'</div>'
           +'<div class="cc-actions"><button class="cc-btn" onclick="sendInvoice('+c.id+',\''+safeName+'\')">Send Invoice</button></div>'
           +'</div>';

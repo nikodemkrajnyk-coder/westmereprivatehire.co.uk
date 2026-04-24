@@ -395,16 +395,19 @@ function migrate() {
   }
 
   // Customer billing details — for invoicing (address + bank).
+  // Also adds email verification columns for self-service registration.
   try {
     const info = db.prepare("PRAGMA table_info(customers)").all();
     const custCols = [
-      ['address_line1',    'TEXT'],
-      ['address_line2',    'TEXT'],
-      ['postcode',         'TEXT'],
-      ['bank_name',        'TEXT'],
-      ['bank_sort_code',   'TEXT'],
-      ['bank_account_no',  'TEXT'],
-      ['bank_account_name','TEXT']
+      ['address_line1',      'TEXT'],
+      ['address_line2',      'TEXT'],
+      ['postcode',           'TEXT'],
+      ['bank_name',          'TEXT'],
+      ['bank_sort_code',     'TEXT'],
+      ['bank_account_no',    'TEXT'],
+      ['bank_account_name',  'TEXT'],
+      ['verified',           'INTEGER NOT NULL DEFAULT 1'],  // 1 = verified (legacy admin-created accounts auto-verified)
+      ['verification_token', 'TEXT']
     ];
     for (const [n, t] of custCols) {
       if (!info.find(c => c.name === n)) {

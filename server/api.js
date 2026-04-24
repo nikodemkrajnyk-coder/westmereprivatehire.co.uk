@@ -276,7 +276,7 @@ router.get('/customers', (req, res) => {
   }
   const db = getDb();
   const rows = db.prepare(`
-    SELECT id, email, full_name, phone, account_type, active, created_at,
+    SELECT id, email, full_name, phone, account_type, active, verified, created_at,
            address_line1, address_line2, postcode,
            bank_name, bank_sort_code, bank_account_no, bank_account_name
       FROM customers ORDER BY created_at DESC

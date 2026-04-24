@@ -466,11 +466,20 @@ body.mode-day #stripe-card-el.StripeElement--focus{border-bottom-color:#7A6230}
       </div>
       <div class="ls-fg">
         <label class="ls-label">Password</label>
-        <input class="ls-input" type="password" id="r-pass" placeholder="Min 8 characters" autocomplete="new-password">
+        <div style="position:relative">
+          <input class="ls-input" type="password" id="r-pass" placeholder="Min 8 characters" autocomplete="new-password" style="padding-right:3.5rem">
+          <button type="button" onclick="toggleRPass()" id="r-pass-toggle" style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,.35);font-size:.72rem;font-family:inherit;letter-spacing:.05em;padding:0">Show</button>
+        </div>
       </div>
       <button class="ls-btn" onclick="doRegister()">Create Account</button>
       <div class="ls-err" id="reg-err"></div>
       <div class="ls-switch">Already have an account? <button onclick="swFrm('login')">Sign in</button></div>
+    </div>
+    <div id="frm-verify" class="ls-body" style="display:none">
+      <div style="text-align:center;padding:1rem 0;font-size:2rem">&#9993;</div>
+      <p style="text-align:center;font-size:.9rem;color:rgba(255,255,255,.8);line-height:1.7;margin:0 0 1rem">We've sent a verification link to <strong id="verify-email-hint" style="color:#fff"></strong>.<br>Click the link in your email to activate your account.</p>
+      <p style="text-align:center;font-size:.72rem;color:rgba(255,255,255,.35);line-height:1.6">Didn't receive it? Check your spam folder.</p>
+      <div class="ls-switch" style="margin-top:1rem">Already verified? <button onclick="swFrm('login')">Sign in</button></div>
     </div>
     <div class="ls-foot">
       <a href="index.html">Back to site</a>&nbsp;&nbsp;&middot;&nbsp;&nbsp;<a href="tel:+447930342593">07930 342593</a>
@@ -789,16 +798,29 @@ async function doRegister(){
     var r=await fetch('/api/auth/customer/register',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:pass,full_name:name,phone:phone})});
     var data=await r.json();
     if(!r.ok){errEl.textContent=data.error||'Registration failed.';errEl.classList.add('show');return;}
-    _currentUser={name:name,email:email,phone:phone,loggedIn:true};
-    bootApp();
+    // Show "check your email" — account needs verification before login
+    var hint=document.getElementById('verify-email-hint');
+    if(hint)hint.textContent=email;
+    swFrm('verify');
   }catch(e){
     errEl.textContent='Connection error. Please try again.';
     errEl.classList.add('show');
   }
 }
+function toggleRPass(){
+  var inp=document.getElementById('r-pass');
+  var btn=document.getElementById('r-pass-toggle');
+  if(!inp)return;
+  var show=inp.type==='password';
+  inp.type=show?'text':'password';
+  if(btn)btn.textContent=show?'Hide':'Show';
+}
 function swFrm(f){
-  document.getElementById('frm-login').style.display=f==='login'?'block':'none';
-  document.getElementById('frm-register').style.display=f==='register'?'block':'none';
+  ['frm-login','frm-register','frm-verify'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.style.display='none';
+  });
+  var show=document.getElementById('frm-'+f);if(show)show.style.display='block';
+  var errEl=document.getElementById('reg-err');if(errEl){errEl.textContent='';errEl.classList.remove('show');}
 }
 function showLogin(){
   document.getElementById('login-screen').style.display='flex';
@@ -806,7 +828,10 @@ function showLogin(){
 }
 document.addEventListener('keydown',function(e){
   if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none'){
-    if(document.getElementById('frm-register').style.display!=='none')doRegister();
+    var reg=document.getElementById('frm-register');
+    var ver=document.getElementById('frm-verify');
+    if(ver&&ver.style.display!=='none')return;
+    if(reg&&reg.style.display!=='none')doRegister();
     else doLogin();
   }
 });
