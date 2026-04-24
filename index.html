@@ -341,17 +341,6 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
   </div><!-- /bk-wrap -->
 </div><!-- /booking -->
 
-  <!-- Rider app section -->
-  <div id="rider-app-section" style="max-width:680px;margin:2.5rem auto 0;padding:1.6rem 1.4rem;background:rgba(17,29,44,.96);border-radius:12px;color:#fff;display:flex;gap:1.4rem;align-items:center;flex-wrap:wrap">
-    <div style="flex:0 0 auto;width:52px;height:52px;background:rgba(184,152,90,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(184,152,90,.3)">
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#B8985A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-    </div>
-    <div style="flex:1;min-width:200px">
-      <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:1.15rem;font-weight:400;color:#fff;margin-bottom:.3rem">Track your journey <em style="color:#B8985A;font-style:italic">live</em></div>
-      <div style="font-size:.78rem;font-weight:300;color:rgba(255,255,255,.6);line-height:1.5">After booking, open the Westmere rider app to track your driver in real time, view your booking history and get notified when your car is outside.</div>
-    </div>
-    <a href="/westmere-rider.html" style="display:inline-block;padding:.7rem 1.4rem;background:#B8985A;color:#111D2C;font-size:.72rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;text-decoration:none;border-radius:6px;white-space:nowrap;flex-shrink:0">Open rider app</a>
-  </div>
 
   </div><!-- /main-content -->
 
@@ -1456,5 +1445,12 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+<!-- Rider app icon — subtle fixed badge, bottom-right -->
+<a href="/westmere-rider.html" title="Westmere Rider App" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:200;display:flex;flex-direction:column;align-items:center;gap:.22rem;text-decoration:none;opacity:.55;transition:opacity .3s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.55'" aria-label="Westmere Rider App">
+  <div style="width:40px;height:40px;background:rgba(17,29,44,.88);border:1px solid rgba(184,152,90,.45);border-radius:9px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 2px 12px rgba(0,0,0,.3)">
+    <span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:1.25rem;font-weight:400;color:#B8985A;line-height:1">W</span>
+  </div>
+  <span style="font-family:'Jost','Helvetica Neue',Arial,sans-serif;font-size:.5rem;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.55)">App</span>
+</a>
 </body>
 </html>
