@@ -430,7 +430,7 @@ body.mode-day #stripe-card-el.StripeElement--focus{border-bottom-color:#7A6230}
 
 
 <!-- ═══ LOGIN SCREEN ═══ -->
-<div id="login-screen" style="display:none">
+<div id="login-screen">
   <div class="ls-inner">
     <div class="ls-hd">
       <div class="ls-crest">W</div>
@@ -1700,7 +1700,7 @@ async function _autoBoot(){
     }
   }catch(e){}
   _currentUser={name:'',email:'',phone:'',loggedIn:false};
-  bootApp();
+  showLogin();
 }
 function updateProfile(){
   var n=document.getElementById('pv-name');if(n)n.textContent=_currentUser.name||'Guest';
@@ -1732,9 +1732,7 @@ function doLogout(){
   fetch('/api/auth/logout',{method:'POST',credentials:'include'}).catch(function(){});
   _currentUser={name:'',email:'',phone:'',loggedIn:false};
   localStorage.removeItem('wph_rider_bookings');
-  showToast('Signed out');
-  goPage('book');
-  updateProfileUI();
+  showLogin();
 }
 function updateProfileUI(){
   var loginBtn=document.getElementById('prof-login-btn');
