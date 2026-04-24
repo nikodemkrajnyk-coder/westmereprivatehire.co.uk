@@ -38,12 +38,6 @@ nav.solid .nav-end{display:flex;position:fixed;top:.85rem;right:6%;z-index:102;a
 .rp-tag{font-family:var(--sans);font-size:.6rem;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:.5rem}
 .rp-title{font-family:var(--serif);font-size:1.45rem;font-weight:300;color:#fff;margin-bottom:.35rem;letter-spacing:.04em}
 .rp-sub{font-size:.82rem;color:rgba(255,255,255,.6);font-weight:300;line-height:1.6;margin-bottom:1.3rem}
-.rp-steps{display:flex;align-items:center;gap:.85rem;margin-bottom:1.5rem;background:rgba(184,152,90,.07);border:1px solid rgba(184,152,90,.15);border-radius:10px;padding:.85rem 1rem}
-.rp-step{display:flex;flex-direction:column;align-items:center;gap:.3rem;flex:1;text-align:center}
-.rp-step-icon{width:36px;height:36px;border-radius:8px;background:rgba(184,152,90,.12);border:1px solid rgba(184,152,90,.25);display:flex;align-items:center;justify-content:center}
-.rp-step-icon svg{width:18px;height:18px;stroke:#B8985A;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.rp-step-lbl{font-family:var(--sans);font-size:.62rem;color:rgba(255,255,255,.55);font-weight:300;line-height:1.35;letter-spacing:.01em}
-.rp-arrow{color:rgba(184,152,90,.45);font-size:.85rem;flex-shrink:0;margin-bottom:.85rem}
 .rp-btns{display:flex;flex-direction:column;gap:.6rem}
 .rp-btn-primary{background:var(--gold);color:#0D1B2A;font-family:var(--sans);font-size:.8rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:none;border-radius:6px;padding:.7rem 1rem;cursor:pointer;text-align:center;text-decoration:none;display:block;transition:opacity .2s}
 .rp-btn-primary:hover{opacity:.88}
@@ -1479,34 +1473,11 @@ if ('serviceWorker' in navigator) {
   <div id="rider-prompt-bg" onclick="dismissRiderPrompt()"></div>
   <div id="rider-prompt-card">
     <div class="rp-tag">Westmere Rider App</div>
-    <div class="rp-title" id="rp-title">Get the best experience</div>
-    <div class="rp-sub">Add Westmere to your Home Screen for a full app experience — instant access, offline support, and no browser bars.</div>
-    <div class="rp-steps">
-      <div class="rp-step">
-        <div class="rp-step-icon">
-          <!-- iOS share icon -->
-          <svg viewBox="0 0 24 24"><path d="M12 3v12M8 7l4-4 4 4"/><rect x="3" y="11" width="18" height="10" rx="2"/></svg>
-        </div>
-        <div class="rp-step-lbl">Tap the<br><strong style="color:rgba(255,255,255,.75)">Share</strong> button</div>
-      </div>
-      <div class="rp-arrow">›</div>
-      <div class="rp-step">
-        <div class="rp-step-icon">
-          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><path d="M17 13v8M13 17h8"/></svg>
-        </div>
-        <div class="rp-step-lbl"><strong style="color:rgba(255,255,255,.75)">'Add to<br>Home Screen'</strong></div>
-      </div>
-      <div class="rp-arrow">›</div>
-      <div class="rp-step">
-        <div class="rp-step-icon">
-          <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M9 12l2 2 4-4"/></svg>
-        </div>
-        <div class="rp-step-lbl">Open like a<br><strong style="color:rgba(255,255,255,.75)">native app</strong></div>
-      </div>
-    </div>
+    <div class="rp-title" id="rp-title">Add Westmere to your Home Screen</div>
+    <div class="rp-sub">Tap <strong style="color:rgba(255,255,255,.8)">'Add to Home Screen'</strong> in your browser menu for instant access.</div>
     <div class="rp-btns">
       <a class="rp-btn-primary" href="/westmere-rider.html" onclick="sessionStorage.setItem('wph_rider_prompted','1')">Continue to App</a>
-      <button class="rp-btn-ghost" onclick="dismissRiderPrompt()">Got it, I'll add it later</button>
+      <button class="rp-btn-ghost" onclick="dismissRiderPrompt()">Close</button>
     </div>
   </div>
 </div>
