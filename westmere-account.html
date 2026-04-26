@@ -219,27 +219,6 @@ select.fi option{background:#fff;color:var(--navy)}
 .wc-btn:hover{background:var(--gold2)}
 
 /* ── RECURRING TRIPS ── */
-.recur-card{background:#fff;border:1px solid rgba(17,29,44,.08);margin-bottom:1rem}
-.recur-ch{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.3rem;border-bottom:1px solid rgba(17,29,44,.06)}
-.recur-cb{padding:1.3rem 1.4rem}
-.rc-active{border-left:2px solid var(--green)}
-.rc-paused{border-left:2px solid rgba(17,29,44,.12);opacity:.65}
-.rc-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.5rem}
-.rc-route{font-size:.9rem;font-weight:400;color:var(--navy)}
-.rc-badge{font-size:.5rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.14rem .5rem}
-.rc-badge.active{background:var(--green-bg);color:var(--green)}
-.rc-badge.paused{background:rgba(17,29,44,.04);color:rgba(17,29,44,.35)}
-.rc-meta{font-size:.74rem;color:rgba(17,29,44,.4);font-weight:300;line-height:1.7}
-.rc-actions{display:flex;gap:.5rem;margin-top:.7rem}
-.rc-btn{font-family:var(--sans);font-size:.58rem;font-weight:400;letter-spacing:.12em;text-transform:uppercase;padding:.38rem .9rem;cursor:pointer;border:1px solid rgba(17,29,44,.1);background:transparent;color:rgba(17,29,44,.4);transition:all .25s}
-.rc-btn:hover{border-color:rgba(17,29,44,.3);color:var(--navy)}
-.rc-btn.danger:hover{border-color:var(--red);color:var(--red)}
-.new-recur-form{background:rgba(17,29,44,.02);border:1px solid rgba(17,29,44,.06);padding:1.4rem;margin-top:1rem;display:none}
-.new-recur-form.open{display:block;animation:up .3s ease}
-.nr-title{font-size:.56rem;font-weight:400;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem}
-.r2f{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
-.btn-nr{font-family:var(--sans);font-size:.68rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;background:var(--gold);color:var(--navy);border:none;padding:.9rem 1.5rem;cursor:pointer;transition:all .25s;min-height:50px;margin-top:.6rem}
-.btn-nr:hover{background:var(--gold2)}
 
 /* ── ANIMATIONS ── */
 @keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
@@ -250,7 +229,7 @@ select.fi option{background:#fff;color:var(--navy)}
 /* ── RESPONSIVE ── */
 @media(max-width:780px){body{background-attachment:scroll;background-size:cover}}
 @media(max-width:800px){.stats{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}
-@media(max-width:560px){.bdate{display:none}.r2{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.r2f{grid-template-columns:1fr}.pl{width:auto;min-width:100px}}
+@media(max-width:560px){.bdate{display:none}.r2{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.pl{width:auto;min-width:100px}}
 @media(max-width:480px){
   .stats{grid-template-columns:1fr}
   .topbar{padding:0 4%}
@@ -431,7 +410,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
     <button class="nav-tab" onclick="sv('bookings',this)">My Bookings</button>
     <button class="nav-tab" onclick="sv('quickbook',this)">New Journey</button>
     <button class="nav-tab" onclick="sv('balance',this)">Invoices</button>
-    <button class="nav-tab" onclick="sv('recurring',this)">Recurring Trips</button>
+
     <button class="nav-tab" onclick="sv('profile',this)">Profile</button>
   </div>
   <div class="content">
@@ -592,97 +571,6 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 
 
 
-    <!-- RECURRING TRIPS -->
-    <div class="view" id="view-recurring">
-      <div class="card">
-        <div class="ch">
-          <div class="ct">Recurring Trips</div>
-          <button onclick="toggleNewRecur()" style="font-size:.58rem;font-weight:400;letter-spacing:.14em;text-transform:uppercase;background:transparent;color:var(--gold);border:1px solid rgba(184,152,90,.2);padding:.4rem .9rem;cursor:pointer;font-family:var(--sans);transition:all .25s">+ New Trip</button>
-        </div>
-        <div class="cb">
-          <p style="font-size:.8rem;color:rgba(255,255,255,.35);font-weight:300;margin-bottom:1.2rem;line-height:1.75">Set up regular journeys once and we'll have them in the calendar automatically. Perfect for weekly airport runs, regular commutes or recurring appointments.</p>
-
-          <!-- Existing recurring trips -->
-          <div id="recur-list">
-            <div class="recur-card rc-active">
-              <div class="recur-cb">
-                <div class="rc-top">
-                  <div class="rc-route">Lewes → Gatwick Airport</div>
-                  <span class="rc-badge active">Active</span>
-                </div>
-                <div class="rc-meta">
-                  Every Monday · 04:30 · Airport Drop-off · EZY morning flights<br>
-                  Next journey: Mon 31 March · £78 fixed fare
-                </div>
-                <div class="rc-actions">
-                  <button class="rc-btn" onclick="showToast('Trip paused — no further bookings will be made')">Pause</button>
-                  <button class="rc-btn" onclick="showToast('Edit coming soon')">Edit</button>
-                  <button class="rc-btn danger" onclick="showToast('Trip cancelled')">Cancel</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- New recurring trip form -->
-          <div class="new-recur-form" id="new-recur-form">
-            <div class="nr-title">New Recurring Trip</div>
-            <div class="r2f">
-              <div class="fg"><label class="fl">Pickup Address</label><input class="fi" type="text" id="nr-from" placeholder="e.g. 14 High Street, Lewes"></div>
-              <div class="fg"><label class="fl">Destination</label><input class="fi" type="text" id="nr-dest" placeholder="e.g. Gatwick Airport"></div>
-              <div class="fg"><label class="fl">Journey Type</label>
-                <select class="fi">
-                  <option>Airport Drop-off</option>
-                  <option>Airport Pickup</option>
-                  <option>Private Hire</option>
-                </select>
-              </div>
-              <div class="fg"><label class="fl">Pickup Time</label><input class="fi" type="time" value="05:00"></div>
-              <div class="fg"><label class="fl">Repeats</label>
-                <select class="fi" id="nr-freq">
-                  <option value="weekly">Every week</option>
-                  <option value="fortnightly">Every 2 weeks</option>
-                  <option value="monthly">Every month</option>
-                  <option value="custom">Custom dates</option>
-                </select>
-              </div>
-              <div class="fg"><label class="fl">Day of Week</label>
-                <select class="fi">
-                  <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
-                  <option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option>
-                </select>
-              </div>
-              <div class="fg"><label class="fl">Starting From</label><input class="fi" type="date" id="nr-start"></div>
-              <div class="fg"><label class="fl">Until (optional)</label><input class="fi" type="date" id="nr-end" placeholder="Leave blank for ongoing"></div>
-              <div class="fg full" style="grid-column:1/-1"><label class="fl">Flight Number (if applicable)</label><input class="fi" type="text" placeholder="e.g. EZY1234 — we track it for every trip"></div>
-              <div class="fg full" style="grid-column:1/-1"><label class="fl">Notes</label><input class="fi" type="text" placeholder="Luggage, requirements, preferences…"></div>
-            </div>
-            <button class="btn-nr" onclick="saveRecur()">Set Up Recurring Trip</button>
-            <button onclick="toggleNewRecur()" style="font-family:var(--sans);font-size:.62rem;color:rgba(255,255,255,.35);background:none;border:none;cursor:pointer;text-decoration:underline;margin-left:1rem">Cancel</button>
-          </div>
-
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="ch"><div class="ct">How It Works</div></div>
-        <div class="cb">
-          <div style="display:flex;flex-direction:column;gap:.8rem">
-            <div style="display:flex;gap:.8rem;align-items:flex-start">
-              <div style="width:22px;height:22px;border:1px solid rgba(184,152,90,.25);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:400;color:var(--gold);flex-shrink:0">1</div>
-              <div style="font-size:.82rem;color:rgba(255,255,255,.45);font-weight:300;line-height:1.6"><strong style="color:rgba(255,255,255,.75);font-weight:400">Set it up once.</strong> Choose your route, time, day and how often — weekly, fortnightly or monthly.</div>
-            </div>
-            <div style="display:flex;gap:.8rem;align-items:flex-start">
-              <div style="width:22px;height:22px;border:1px solid rgba(184,152,90,.25);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:400;color:var(--gold);flex-shrink:0">2</div>
-              <div style="font-size:.82rem;color:rgba(255,255,255,.45);font-weight:300;line-height:1.6"><strong style="color:rgba(255,255,255,.75);font-weight:400">We confirm each trip.</strong> You'll receive a confirmation before every journey — same driver, same car, same fixed fare.</div>
-            </div>
-            <div style="display:flex;gap:.8rem;align-items:flex-start">
-              <div style="width:22px;height:22px;border:1px solid rgba(184,152,90,.25);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:400;color:var(--gold);flex-shrink:0">3</div>
-              <div style="font-size:.82rem;color:rgba(255,255,255,.45);font-weight:300;line-height:1.6"><strong style="color:rgba(255,255,255,.75);font-weight:400">Pause or cancel anytime.</strong> No contracts, no lock-in. Pause for a holiday, cancel any trip, or stop the recurring booking whenever you like.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
   </div>
 </div>
@@ -1168,22 +1056,6 @@ function submitBooking(){
     if(btn){btn.disabled=false;btn.textContent='Book This Journey';}
     showToast('Connection error \u2014 please try again');
   });
-}
-function toggleNewRecur(){
-  var f=document.getElementById('new-recur-form');
-  f.classList.toggle('open');
-  if(f.classList.contains('open')){
-    var d=new Date();d.setDate(d.getDate()+7);
-    var ns=document.getElementById('nr-start');if(ns)ns.value=d.toISOString().split('T')[0];
-    var nf=document.getElementById('nr-from');if(nf)nf.focus();
-  }
-}
-function saveRecur(){
-  var from=document.getElementById('nr-from').value;
-  var dest=document.getElementById('nr-dest').value;
-  if(!from||!dest){showToast('Please enter pickup and destination');return;}
-  showToast('Recurring trip saved — we\u2019ll confirm each journey');
-  document.getElementById('new-recur-form').classList.remove('open');
 }
 
 var tt;
