@@ -178,6 +178,13 @@ select.fi option{background:#fff;color:var(--navy)}
 .fr-item .fi-v{font-size:.82rem;color:rgba(17,29,44,.5);font-weight:300}
 .btn-book{width:100%;padding:1rem;background:var(--gold);color:var(--navy);border:none;font-family:var(--sans);font-size:.68rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;transition:all .25s;min-height:52px;margin-top:1.2rem}
 .btn-book:hover{background:var(--gold2)}
+.qb-loc-btn{display:inline-flex;align-items:center;gap:.3rem;background:none;border:none;font-family:var(--sans);font-size:.75rem;font-weight:300;color:rgba(17,29,44,.45);cursor:pointer;padding:.25rem 0;margin-top:.2rem;transition:color .18s}
+.qb-loc-btn:hover{color:var(--gold)}
+.qb-pay-row{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.6rem}
+.qb-pc{border:1px solid rgba(17,29,44,.12);border-radius:6px;padding:.85rem 1rem;background:#fff;cursor:pointer;transition:border-color .2s,background .15s;font-family:var(--sans);text-align:left}
+.qb-pc:hover,.qb-pc.sel{border-color:var(--gold);background:rgba(184,152,90,.06)}
+.qb-pc-ttl{font-size:.75rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--navy)}
+.qb-pc-sub{font-size:.62rem;color:rgba(17,29,44,.4);margin-top:.18rem;line-height:1.4}
 .r2{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
 
 /* ── ADMIN ── */
@@ -454,7 +461,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
         <div class="ch"><div class="ct">Book a Journey</div></div>
         <div class="cb">
           <div class="r2">
-            <div class="fg" style="grid-column:1/-1;position:relative"><label class="fl">Pickup Address or Postcode</label><input class="fi" type="text" id="qb-from" placeholder="e.g. 14 High Street, Lewes BN7" oninput="addrSearch(this,'qb-sug-from')" onchange="qbCalc()" autocomplete="off"><div class="sug-drop" id="qb-sug-from"></div></div>
+            <div class="fg" style="grid-column:1/-1;position:relative"><label class="fl">Pickup Address or Postcode</label><input class="fi" type="text" id="qb-from" placeholder="e.g. 14 High Street, Lewes BN7" oninput="addrSearch(this,'qb-sug-from')" onchange="qbCalc()" autocomplete="off"><div class="sug-drop" id="qb-sug-from"></div><button class="qb-loc-btn" type="button" onclick="useQbLocation()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/></svg> Use my location</button></div>
             <div class="fg" style="grid-column:1/-1;position:relative"><label class="fl">Destination</label><input class="fi" type="text" id="qb-dest" placeholder="e.g. Gatwick Airport" oninput="addrSearch(this,'qb-sug-dest')" onchange="qbCalc()" autocomplete="off"><div class="sug-drop" id="qb-sug-dest"></div></div>
             <div class="fg"><label class="fl">Date</label>
               <div class="custom-date-trigger" id="qb-cdt-wrap">
@@ -485,6 +492,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
               <div class="fr-item"><div class="fi-l">Surcharge</div><div class="fi-v" id="fr-surcharge">—</div></div>
             </div>
           </div>
+          <div style="margin-bottom:.4rem"><label class="fl" style="display:block;margin-bottom:.55rem">Payment Method</label><div class="qb-pay-row"><button class="qb-pc sel" id="qb-pay-cash" type="button" onclick="selectQbPay('cash')"><div class="qb-pc-ttl">Cash</div><div class="qb-pc-sub">Pay the driver directly</div></button><button class="qb-pc" id="qb-pay-card" type="button" onclick="selectQbPay('card')"><div class="qb-pc-ttl">Card</div><div class="qb-pc-sub">Invoiced to your account</div></button></div></div>
           <button class="btn-book" onclick="submitBooking()">Book This Journey</button>
         </div>
       </div>
@@ -1024,6 +1032,36 @@ function sv(id,btn){
   var v=document.getElementById('view-'+id);if(v)v.classList.add('on');
   if(btn)btn.classList.add('on');
 }
+function selectQbPay(method){
+  document.querySelectorAll('.qb-pc').forEach(function(b){b.classList.remove('sel');});
+  var el=document.getElementById('qb-pay-'+method);
+  if(el)el.classList.add('sel');
+}
+function _revGeoNom(lat,lon,cb){
+  fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat='+lat+'&lon='+lon,{headers:{'Accept-Language':'en'}})
+    .then(function(r){return r.json();})
+    .then(function(d){cb(d.display_name||'');})
+    .catch(function(){cb('');});
+}
+function useQbLocation(){
+  if(!navigator.geolocation){showToast('Geolocation not supported');return;}
+  var btn=document.querySelector('.qb-loc-btn');
+  if(btn)btn.textContent='Locating\u2026';
+  navigator.geolocation.getCurrentPosition(function(pos){
+    _revGeoNom(pos.coords.latitude,pos.coords.longitude,function(addr){
+      if(btn){btn.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/></svg> Use my location';}
+      if(addr){
+        document.getElementById('qb-from').value=addr;
+        qbCalc();
+      } else {
+        showToast('Could not determine address');
+      }
+    });
+  },function(){
+    if(btn){btn.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/></svg> Use my location';}
+    showToast('Location access denied');
+  },{timeout:8000});
+}
 function submitBooking(){
   var from=document.getElementById('qb-from').value;
   var dest=document.getElementById('qb-dest').value;
@@ -1036,12 +1074,14 @@ function submitBooking(){
   var notes=(document.getElementById('qb-notes')||{}).value||'';
   var fareEl=document.getElementById('fr-amt');
   var fare=fareEl?parseFloat(fareEl.textContent.replace(/[^0-9.]/g,'')):null;
+  var selPay=document.querySelector('.qb-pc.sel');
+  var payment=selPay?selPay.id.replace('qb-pay-',''):'cash';
   var btn=document.querySelector('.btn-book');
   if(btn){btn.disabled=true;btn.textContent='Submitting\u2026';}
   fetch('/api/bookings',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({pickup:from,destination:dest,date:date,time:time,passengers:parseInt(pax)||1,bags:bags,flight:flight,fare:fare,payment:'cash',notes:notes})
+    body:JSON.stringify({pickup:from,destination:dest,date:date,time:time,passengers:parseInt(pax)||1,bags:bags,flight:flight,fare:fare,payment:payment,notes:notes})
   }).then(function(r){return r.json();}).then(function(d){
     if(btn){btn.disabled=false;btn.textContent='Book This Journey';}
     if(d.ok){
