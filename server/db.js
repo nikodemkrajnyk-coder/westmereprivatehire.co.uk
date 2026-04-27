@@ -471,6 +471,25 @@ function migrate() {
     console.error('[DB] invoices table creation failed:', e.message);
   }
 
+  // Saved invoice recipients for auto-fill
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS invoice_recipients (
+        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+        name         TEXT    NOT NULL,
+        email        TEXT    UNIQUE,
+        address      TEXT,
+        phone        TEXT,
+        company      TEXT,
+        last_used_at TEXT    NOT NULL DEFAULT (datetime('now')),
+        created_at   TEXT    NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_invoice_recipients_used ON invoice_recipients(last_used_at);
+    `);
+  } catch (e) {
+    console.error('[DB] invoice_recipients table creation failed:', e.message);
+  }
+
   // Key-value settings columns in integrations table
   try {
     const cols = db.prepare("PRAGMA table_info(integrations)").all();

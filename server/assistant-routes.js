@@ -187,6 +187,24 @@ async function executeCalendarTool(name, input) {
     }
     case 'create_invoice': {
       const db = getDb();
+      // Auto-fill missing recipient details from saved recipients
+      if (input.recipient_name && (!input.recipient_email || !input.recipient_address)) {
+        try {
+          const saved = db.prepare(`
+            SELECT * FROM invoice_recipients
+            WHERE LOWER(name) LIKE ? OR LOWER(name) LIKE ?
+            ORDER BY last_used_at DESC LIMIT 1
+          `).get(
+            '%' + input.recipient_name.toLowerCase() + '%',
+            input.recipient_name.toLowerCase().split(' ')[0] + '%'
+          );
+          if (saved) {
+            if (!input.recipient_email && saved.email) input = { ...input, recipient_email: saved.email };
+            if (!input.recipient_address && saved.address) input = { ...input, recipient_address: saved.address };
+            if (!input.recipient_name || input.recipient_name.length < saved.name.length) input = { ...input, recipient_name: saved.name };
+          }
+        } catch (e) { /* ignore */ }
+      }
       const items = (input.items || []).map(it => ({
         description: it.description,
         amount: Number(it.amount) || 0,

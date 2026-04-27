@@ -684,12 +684,44 @@ router.post('/invoices/bespoke', async (req, res) => {
     console.error('[INVOICE] persist bespoke failed:', e.message);
   }
 
+  // Upsert recipient into saved recipients for future auto-fill
+  try {
+    if (cleanRecipient.name) {
+      if (cleanRecipient.email) {
+        db.prepare(`
+          INSERT INTO invoice_recipients (name, email, address, phone, last_used_at)
+          VALUES (?, ?, ?, ?, datetime('now'))
+          ON CONFLICT(email) DO UPDATE SET
+            name         = excluded.name,
+            address      = COALESCE(excluded.address, invoice_recipients.address),
+            phone        = COALESCE(excluded.phone, invoice_recipients.phone),
+            last_used_at = datetime('now')
+        `).run(cleanRecipient.name, cleanRecipient.email, cleanRecipient.address || null, cleanRecipient.phone || null);
+      } else {
+        db.prepare(`INSERT INTO invoice_recipients (name, address, phone, last_used_at) VALUES (?, ?, ?, datetime('now'))`)
+          .run(cleanRecipient.name, cleanRecipient.address || null, cleanRecipient.phone || null);
+      }
+    }
+  } catch (e) {
+    console.error('[API] invoice_recipients upsert failed:', e.message);
+  }
+
   res.json({
     ok: true, invoiceNo, total, bespoke: true,
     recipient: cleanRecipient, items: cleanItems,
     period: { label: '', dueDate, issuedDate, notes: notes || '' },
     settings, emailed: shouldEmail
   });
+});
+
+// Saved invoice recipients for auto-fill
+router.get('/invoice-recipients', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const rows = db.prepare('SELECT * FROM invoice_recipients ORDER BY last_used_at DESC LIMIT 100').all();
+  res.json({ ok: true, recipients: rows });
 });
 
 // List stored invoices (admin/owner). Supports optional ?customer_id, ?kind filters.

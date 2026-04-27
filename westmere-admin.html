@@ -723,7 +723,7 @@ if ('serviceWorker' in navigator) {
         <div class="ch"><div class="ct">History</div><button class="btn btn-navy btn-sm" onclick="openNewInvoice()">+ New Invoice</button></div>
         <div style="overflow-x:auto">
           <table class="inv-table">
-            <thead><tr><th>Invoice No.</th><th>Customer</th><th>Issued</th></tr></thead>
+            <thead><tr><th>Invoice No.</th><th>Recipient</th><th style="text-align:right">Total</th><th>Type</th><th>Issued</th><th></th></tr></thead>
             <tbody id="invoice-history-body">
               <tr><td colspan="3" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">Loading...</td></tr>
             </tbody>
@@ -1310,9 +1310,15 @@ if ('serviceWorker' in navigator) {
 
       <!-- Bespoke / one-off mode -->
       <div id="ni-bespoke-fields" style="display:none">
-        <div style="font-size:.72rem;color:rgba(17,29,44,.5);margin-bottom:.9rem;line-height:1.5">Create a bespoke invoice with custom line items. You can prefill from an existing account customer or type a new recipient.</div>
+        <div style="font-size:.72rem;color:rgba(17,29,44,.5);margin-bottom:.9rem;line-height:1.5">Create a bespoke invoice with custom line items. You can prefill from a previous recipient or type a new one.</div>
         <div class="fg">
-          <label class="fl">Prefill from customer (optional)</label>
+          <label class="fl">Previous recipient</label>
+          <select class="fi" id="ni-saved-recipient" onchange="prefillFromSavedRecipient(this.value)">
+            <option value="">— Select saved recipient —</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="fl">Prefill from account customer (optional)</label>
           <select class="fi" id="ni-rec-prefill" onchange="prefillBespokeFromCustomer(this.value)">
             <option value="">— New recipient —</option>
           </select>
@@ -2636,6 +2642,7 @@ function setInvoiceMode(mode){
     accFields.style.display='none';
     bsFields.style.display='';
     if(!document.querySelectorAll('#ni-items .ni-item').length)addBespokeItem();
+    loadSavedRecipients();
   } else {
     bsBtn.style.background='';bsBtn.style.color='';
     accBtn.style.background='var(--navy)';accBtn.style.color='#fff';
@@ -2700,6 +2707,7 @@ function openNewInvoice(){
   document.getElementById('ni-notes').value='';
   document.getElementById('ni-due-days').value='14';
   document.getElementById('ni-items').innerHTML='';
+  var sr=document.getElementById('ni-saved-recipient');if(sr)sr.value='';
   addBespokeItem();
   openModal('modal-new-invoice');
   window._BESPOKE_CUST_INDEX={};
@@ -2717,6 +2725,27 @@ function openNewInvoice(){
     sel.innerHTML=opts.join('');
     var pre=document.getElementById('ni-rec-prefill');if(pre)pre.innerHTML=prefillOpts.join('');
   }).catch(function(){sel.innerHTML='<option value="">Error loading customers</option>';});
+}
+
+var _SAVED_RECIPIENTS=[];
+function loadSavedRecipients(){
+  fetch('/api/invoice-recipients',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
+    _SAVED_RECIPIENTS=d.recipients||[];
+    var sel=document.getElementById('ni-saved-recipient');if(!sel)return;
+    sel.innerHTML='<option value="">— Select saved recipient —</option>'
+      +_SAVED_RECIPIENTS.map(function(r,i){
+        return '<option value="'+i+'">'+escTo(r.name)+(r.email?' ('+escTo(r.email)+')':'')+'</option>';
+      }).join('');
+  }).catch(function(){});
+}
+
+function prefillFromSavedRecipient(idx){
+  if(idx==='')return;
+  var r=_SAVED_RECIPIENTS[+idx];if(!r)return;
+  document.getElementById('ni-rec-name').value=r.name||'';
+  document.getElementById('ni-rec-email').value=r.email||'';
+  document.getElementById('ni-rec-phone').value=r.phone||'';
+  document.getElementById('ni-rec-address').value=r.address||'';
 }
 
 function prefillBespokeFromCustomer(id){
@@ -2951,20 +2980,55 @@ function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'
 
 function loadInvoiceHistory(){
   var tbody=document.getElementById('invoice-history-body');if(!tbody)return;
-  fetch('/api/audit?limit=500',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
-    if(!d.ok){tbody.innerHTML='<tr><td colspan="3" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">Unable to load history</td></tr>';return;}
-    var invoices=(d.logs||[]).filter(function(l){return l.action==='invoice_sent';});
+  fetch('/api/invoices',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
+    if(!d.ok){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">Unable to load history</td></tr>';return;}
+    var invoices=d.invoices||[];
     if(!invoices.length){
-      tbody.innerHTML='<tr><td colspan="3" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">No invoices sent yet</td></tr>';return;
+      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">No invoices yet</td></tr>';return;
     }
-    tbody.innerHTML=invoices.map(function(l){
-      var parts=String(l.detail||'').split(' to ');
-      var invNo=parts[0]||'';
-      var to=parts[1]||'';
-      var issued=(l.created_at||'').split(' ')[0]||'';
-      return '<tr><td>'+escTo(invNo)+'</td><td>'+escTo(to)+'</td><td>'+escTo(issued)+'</td></tr>';
+    tbody.innerHTML=invoices.map(function(inv){
+      var total='£'+(+inv.total||0).toFixed(2);
+      var kind=inv.kind==='bespoke'?'One-off':'Account';
+      return '<tr style="cursor:pointer" onclick="viewInvoice('+inv.id+')">'
+        +'<td style="font-family:Menlo,Consolas,monospace;font-size:.78rem">'+escTo(inv.invoice_no)+'</td>'
+        +'<td>'+escTo(inv.recipient_name||'')+(inv.recipient_email?'<br><span style="font-size:.72rem;color:rgba(17,29,44,.45)">'+escTo(inv.recipient_email)+'</span>':'')+'</td>'
+        +'<td style="text-align:right;font-family:Georgia,serif;color:var(--navy)">'+total+'</td>'
+        +'<td><span style="font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)">'+kind+'</span></td>'
+        +'<td style="white-space:nowrap">'+escTo(inv.issued_date||'')+'</td>'
+        +'<td><button class="btn btn-ghost btn-sm" style="font-size:.65rem;padding:.3rem .7rem" onclick="event.stopPropagation();viewInvoice('+inv.id+')">View</button></td>'
+        +'</tr>';
     }).join('');
-  }).catch(function(){tbody.innerHTML='<tr><td colspan="3" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">Unable to load history</td></tr>';});
+  }).catch(function(){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">Unable to load history</td></tr>';});
+}
+
+var _INV_SETTINGS_CACHE=null;
+function viewInvoice(id){
+  var doOpen=function(settings){
+    fetch('/api/invoices/'+id,{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
+      if(!d.ok){showToast('Could not load invoice.');return;}
+      var inv=d.invoice;
+      var data={
+        invoiceNo:inv.invoice_no,
+        total:inv.total,
+        bespoke:inv.kind==='bespoke',
+        settings:settings||{},
+        period:{issuedDate:inv.issued_date,dueDate:inv.due_date||'',label:inv.period_label||'',notes:inv.notes||''}
+      };
+      if(inv.kind==='bespoke'){
+        data.items=inv.line_items||[];
+        data.recipient={name:inv.recipient_name,email:inv.recipient_email||'',phone:inv.recipient_phone||'',address:inv.recipient_addr||''};
+      } else {
+        data.customer={full_name:inv.recipient_name,email:inv.recipient_email||'',phone:inv.recipient_phone||''};
+        data.bookings=inv.line_items||[];
+      }
+      openInvoicePreview(data);
+    }).catch(function(){showToast('Network error loading invoice.');});
+  };
+  if(_INV_SETTINGS_CACHE){doOpen(_INV_SETTINGS_CACHE);return;}
+  fetch('/api/settings/invoice',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
+    _INV_SETTINGS_CACHE=d.settings||{};
+    doOpen(_INV_SETTINGS_CACHE);
+  }).catch(function(){doOpen({});});
 }
 
 // ── SEND INVOICE (from customer card) ──
