@@ -2545,7 +2545,19 @@ async function createInvoiceFromAssist(inv){
       body:JSON.stringify({recipient:{name:r.name||'',email:r.email||null,address:r.address||null},items:inv.items||[],notes:inv.notes||null,due_days:inv.due_days||14})
     });
     var d=await resp.json();
-    if(d.ok){appendW('Invoice created — Ref: '+(d.invoice_no||d.invoiceNo||'done'));}
+    if(d.ok){
+      var ref=d.invoice_no||d.invoiceNo||'';
+      var iHtml='<div class="msg-w"><div class="msg-w-crest">W</div><div class="msg-booking">'
+        +'<div class="msg-booking-title">Invoice Created — '+escH(ref)+'</div>'
+        +'<div class="msg-booking-row">';
+      if(d.recipient&&d.recipient.name)iHtml+='<strong>Recipient:</strong> '+escH(d.recipient.name)+'<br>';
+      if(d.recipient&&d.recipient.email)iHtml+='<strong>Email:</strong> '+escH(d.recipient.email)+'<br>';
+      (d.items||[]).forEach(function(it){iHtml+='<strong>'+escH(it.description)+':</strong> £'+Number(it.amount).toFixed(2)+'<br>';});
+      iHtml+='<strong>Total: £'+Number(d.total||0).toFixed(2)+'</strong>';
+      if(d.period&&d.period.dueDate)iHtml+='<br>Due: '+escH(d.period.dueDate);
+      iHtml+='</div></div></div>';
+      appendHTML(iHtml);
+    }
     else{appendW('Could not create invoice: '+(d.error||'Unknown error'));}
   }catch(e){appendW('Connection error creating invoice.');}
   setAssistStatus('live','Listening');

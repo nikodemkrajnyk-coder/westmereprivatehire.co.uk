@@ -204,7 +204,8 @@ async function executeCalendarTool(name, input) {
           input.recipient_name || '', input.recipient_email || null, input.recipient_address || null,
           JSON.stringify(items), total, input.notes || null, today2, dueDate
         );
-        return `Invoice ${invoiceNo} created for ${input.recipient_name} — total £${total.toFixed(2)}, due ${dueDate}.`;
+        const itemLines = items.map(it => `  • ${it.description}${it.quantity > 1 ? ' ×' + it.quantity : ''}: £${(it.amount * it.quantity).toFixed(2)}`).join('\n');
+        return `Invoice ${invoiceNo} created.\nRecipient: ${input.recipient_name}${input.recipient_email ? ' <' + input.recipient_email + '>' : ''}\nItems:\n${itemLines}\nTotal: £${total.toFixed(2)}\nDue: ${dueDate}`;
       } catch (e) {
         return 'Failed to create invoice: ' + e.message;
       }
@@ -226,8 +227,13 @@ async function executeCalendarTool(name, input) {
         ? `No calendar events found between ${input.start_date} and ${input.end_date || input.start_date}.`
         : 'No events found.';
       return events.map(e => {
-        const start = e.allDay ? e.start : new Date(e.start).toLocaleString('en-GB', { timeZone: 'Europe/London', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-        return `ID:${e.id} | ${e.title} | ${start}${e.location ? ' @ ' + e.location : ''}`;
+        const fmtOpts = { timeZone: 'Europe/London', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' };
+        const start = e.allDay ? e.start : new Date(e.start).toLocaleString('en-GB', fmtOpts);
+        const end = (!e.allDay && e.end) ? ' – ' + new Date(e.end).toLocaleTimeString('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' }) : '';
+        let line = `ID:${e.id} | ${e.title} | ${start}${end}`;
+        if (e.location) line += ` @ ${e.location}`;
+        if (e.notes) line += `\n  Description: ${e.notes}`;
+        return line;
       }).join('\n');
     }
     case 'create_calendar_event': {

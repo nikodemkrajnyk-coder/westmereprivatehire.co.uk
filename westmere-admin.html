@@ -1594,7 +1594,19 @@ async function aaCreateInvoice(invJson){
     var res=await fetch('/api/invoices/bespoke',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     var d=await res.json();
     thinking.remove();
-    if(d.ok){aaAddBot('Invoice created — Ref: '+(d.invoice_no||d.invoiceNo||'done'));}
+    if(d.ok){
+      function _esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+      var ref=d.invoice_no||d.invoiceNo||'';
+      var card=document.createElement('div');card.className='aa-msg bot';card.style.padding='0';
+      var inner=document.createElement('div');inner.className='aa-booking-card';
+      var iHtml='<div class="abc-title">Invoice Created — '+_esc(ref)+'</div>';
+      if(d.recipient&&d.recipient.name)iHtml+='<div class="abc-row"><span class="abc-lbl">Recipient</span><span class="abc-val">'+_esc(d.recipient.name)+'</span></div>';
+      if(d.recipient&&d.recipient.email)iHtml+='<div class="abc-row"><span class="abc-lbl">Email</span><span class="abc-val">'+_esc(d.recipient.email)+'</span></div>';
+      (d.items||[]).forEach(function(it){iHtml+='<div class="abc-row"><span class="abc-lbl">'+_esc(it.description)+'</span><span class="abc-val">£'+Number(it.amount).toFixed(2)+'</span></div>';});
+      iHtml+='<div class="abc-row" style="border-top:1px solid rgba(184,152,90,.2);margin-top:.3rem;padding-top:.4rem"><span class="abc-lbl" style="font-weight:600">Total</span><span class="abc-val" style="font-weight:600;color:var(--navy)">£'+Number(d.total||0).toFixed(2)+'</span></div>';
+      if(d.period&&d.period.dueDate)iHtml+='<div class="abc-row"><span class="abc-lbl">Due</span><span class="abc-val">'+_esc(d.period.dueDate)+'</span></div>';
+      inner.innerHTML=iHtml;card.appendChild(inner);aaAddEl(card);
+    }
     else{aaAddBot('Could not create invoice: '+(d.error||'Unknown error'));}
   }catch(e){thinking.remove();aaAddBot('Network error creating invoice.');}
 }
