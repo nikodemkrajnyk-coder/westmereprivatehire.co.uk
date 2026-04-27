@@ -1311,11 +1311,14 @@ if ('serviceWorker' in navigator) {
       <!-- Bespoke / one-off mode -->
       <div id="ni-bespoke-fields" style="display:none">
         <div style="font-size:.72rem;color:rgba(17,29,44,.5);margin-bottom:.9rem;line-height:1.5">Create a bespoke invoice with custom line items. You can prefill from a previous recipient or type a new one.</div>
-        <div class="fg">
+        <div class="fg" style="position:relative">
           <label class="fl">Previous recipient</label>
-          <select class="fi" id="ni-saved-recipient" onchange="prefillFromSavedRecipient(this.value)">
-            <option value="">— Select saved recipient —</option>
-          </select>
+          <input class="fi" id="ni-saved-recipient-input" placeholder="Type to search saved recipients…" autocomplete="off"
+            oninput="filterSavedRecipients(this.value)"
+            onfocus="filterSavedRecipients(this.value)"
+            onkeydown="savedRecipientKeydown(event)"
+            style="padding-right:2rem">
+          <div id="ni-saved-recipient-list" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid rgba(17,29,44,.18);border-top:none;border-radius:0 0 6px 6px;max-height:200px;overflow-y:auto;z-index:60;box-shadow:0 6px 18px rgba(17,29,44,.1)"></div>
         </div>
         <div class="fg">
           <label class="fl">Prefill from account customer (optional)</label>
@@ -1342,6 +1345,51 @@ if ('serviceWorker' in navigator) {
       <button class="btn btn-ghost" onclick="closeModal('modal-new-invoice')">Cancel</button>
       <button class="btn btn-ghost" id="ni-preview-btn" onclick="previewInvoice()" style="border:1px solid rgba(17,29,44,.2)">Preview / Download</button>
       <button class="btn btn-navy" id="ni-send-btn" onclick="submitNewInvoice()">Send to Email</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: INVOICE DETAIL -->
+<div class="overlay" id="modal-invoice-detail">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-hd">
+      <div>
+        <div class="modal-title" id="mid-invoice-no" style="font-family:Menlo,Consolas,monospace;letter-spacing:.04em"></div>
+        <div id="mid-badge" style="font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-top:.2rem"></div>
+      </div>
+      <button class="modal-x" onclick="closeModal('modal-invoice-detail')">&times;</button>
+    </div>
+    <div class="modal-body" style="padding-bottom:.5rem">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:1.2rem">
+        <div>
+          <div style="font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.3rem">Issued</div>
+          <div id="mid-issued" style="font-size:.9rem;color:var(--navy)"></div>
+        </div>
+        <div>
+          <div style="font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.3rem">Due</div>
+          <div id="mid-due" style="font-size:.9rem;color:var(--navy)"></div>
+        </div>
+      </div>
+      <div style="margin-bottom:1.2rem">
+        <div style="font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.4rem">Recipient</div>
+        <div id="mid-recipient" style="font-size:.88rem;color:var(--navy);line-height:1.6"></div>
+      </div>
+      <div id="mid-period" style="font-size:.75rem;color:rgba(17,29,44,.5);margin-bottom:.8rem;font-style:italic"></div>
+      <div style="overflow-x:auto;margin-bottom:1rem">
+        <table class="inv-table" id="mid-items-table">
+          <thead id="mid-items-head"></thead>
+          <tbody id="mid-items-body"></tbody>
+        </table>
+      </div>
+      <div style="text-align:right;padding:.6rem 0;border-top:2px solid var(--navy)">
+        <span style="font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-right:.8rem">Total</span>
+        <span id="mid-total" style="font-family:Georgia,serif;font-size:1.3rem;color:var(--navy);font-weight:700"></span>
+      </div>
+      <div id="mid-notes" style="display:none;margin-top:.8rem;padding:.6rem .8rem;background:rgba(184,152,90,.07);border-left:3px solid var(--gold);font-size:.8rem;color:var(--navy);line-height:1.6;border-radius:0 4px 4px 0"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-invoice-detail')">Close</button>
+      <button class="btn btn-ghost" id="mid-print-btn" onclick="midOpenPrint()" style="border:1px solid rgba(17,29,44,.2)">Print / Download</button>
     </div>
   </div>
 </div>
@@ -2707,7 +2755,8 @@ function openNewInvoice(){
   document.getElementById('ni-notes').value='';
   document.getElementById('ni-due-days').value='14';
   document.getElementById('ni-items').innerHTML='';
-  var sr=document.getElementById('ni-saved-recipient');if(sr)sr.value='';
+  var sri=document.getElementById('ni-saved-recipient-input');if(sri)sri.value='';
+  var srl=document.getElementById('ni-saved-recipient-list');if(srl)srl.style.display='none';
   addBespokeItem();
   openModal('modal-new-invoice');
   window._BESPOKE_CUST_INDEX={};
@@ -2728,24 +2777,84 @@ function openNewInvoice(){
 }
 
 var _SAVED_RECIPIENTS=[];
+var _SR_ACTIVE_IDX=-1;
 function loadSavedRecipients(){
   fetch('/api/invoice-recipients',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
     _SAVED_RECIPIENTS=d.recipients||[];
-    var sel=document.getElementById('ni-saved-recipient');if(!sel)return;
-    sel.innerHTML='<option value="">— Select saved recipient —</option>'
-      +_SAVED_RECIPIENTS.map(function(r,i){
-        return '<option value="'+i+'">'+escTo(r.name)+(r.email?' ('+escTo(r.email)+')':'')+'</option>';
-      }).join('');
+    filterSavedRecipients('');
   }).catch(function(){});
 }
 
-function prefillFromSavedRecipient(idx){
-  if(idx==='')return;
-  var r=_SAVED_RECIPIENTS[+idx];if(!r)return;
+function filterSavedRecipients(q){
+  var list=document.getElementById('ni-saved-recipient-list');if(!list)return;
+  var term=(q||'').trim().toLowerCase();
+  var matches=term
+    ?_SAVED_RECIPIENTS.filter(function(r){
+        return (r.name||'').toLowerCase().includes(term)||(r.email||'').toLowerCase().includes(term);
+      })
+    :_SAVED_RECIPIENTS;
+  _SR_ACTIVE_IDX=-1;
+  if(!matches.length){
+    list.style.display='none';return;
+  }
+  list.innerHTML=matches.map(function(r,i){
+    return '<div class="sr-opt" data-idx="'+_SAVED_RECIPIENTS.indexOf(r)+'"'
+      +' onmousedown="selectSavedRecipient('+_SAVED_RECIPIENTS.indexOf(r)+')"'
+      +' style="padding:.55rem .8rem;cursor:pointer;font-size:.83rem;color:var(--navy);border-bottom:1px solid rgba(17,29,44,.06)">'
+      +'<span style="font-weight:500">'+escTo(r.name||'')+'</span>'
+      +(r.email?'<span style="color:rgba(17,29,44,.45);font-size:.75rem;margin-left:.4rem">'+escTo(r.email)+'</span>':'')
+      +(r.phone?'<span style="color:rgba(17,29,44,.35);font-size:.72rem;margin-left:.35rem">'+escTo(r.phone)+'</span>':'')
+      +'</div>';
+  }).join('');
+  list.style.display='';
+  // Close when clicking outside
+  document.removeEventListener('click',_srOutsideHandler);
+  document.addEventListener('click',_srOutsideHandler);
+}
+
+function _srOutsideHandler(e){
+  var wrap=document.querySelector('#ni-saved-recipient-input');
+  var list=document.getElementById('ni-saved-recipient-list');
+  if(!wrap||!list)return;
+  if(!wrap.contains(e.target)&&!list.contains(e.target)){
+    list.style.display='none';
+    document.removeEventListener('click',_srOutsideHandler);
+  }
+}
+
+function selectSavedRecipient(idx){
+  var r=_SAVED_RECIPIENTS[idx];if(!r)return;
+  document.getElementById('ni-saved-recipient-input').value=r.name+(r.email?' ('+r.email+')':'');
+  document.getElementById('ni-saved-recipient-list').style.display='none';
   document.getElementById('ni-rec-name').value=r.name||'';
   document.getElementById('ni-rec-email').value=r.email||'';
   document.getElementById('ni-rec-phone').value=r.phone||'';
   document.getElementById('ni-rec-address').value=r.address||'';
+}
+
+function savedRecipientKeydown(e){
+  var list=document.getElementById('ni-saved-recipient-list');
+  var opts=list?list.querySelectorAll('.sr-opt'):[];
+  if(!opts.length)return;
+  if(e.key==='ArrowDown'){
+    e.preventDefault();
+    _SR_ACTIVE_IDX=Math.min(_SR_ACTIVE_IDX+1,opts.length-1);
+    opts.forEach(function(o,i){o.style.background=i===_SR_ACTIVE_IDX?'rgba(17,29,44,.06)':'';});
+  } else if(e.key==='ArrowUp'){
+    e.preventDefault();
+    _SR_ACTIVE_IDX=Math.max(_SR_ACTIVE_IDX-1,0);
+    opts.forEach(function(o,i){o.style.background=i===_SR_ACTIVE_IDX?'rgba(17,29,44,.06)':'';});
+  } else if(e.key==='Enter'&&_SR_ACTIVE_IDX>=0){
+    e.preventDefault();
+    var idx=+opts[_SR_ACTIVE_IDX].dataset.idx;
+    selectSavedRecipient(idx);
+  } else if(e.key==='Escape'){
+    list.style.display='none';_SR_ACTIVE_IDX=-1;
+  }
+}
+
+function prefillFromSavedRecipient(idx){
+  selectSavedRecipient(+idx);
 }
 
 function prefillBespokeFromCustomer(id){
@@ -3002,6 +3111,7 @@ function loadInvoiceHistory(){
 }
 
 var _INV_SETTINGS_CACHE=null;
+var _MID_PRINT_DATA=null;
 function viewInvoice(id){
   var doOpen=function(settings){
     fetch('/api/invoices/'+id,{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
@@ -3021,7 +3131,8 @@ function viewInvoice(id){
         data.customer={full_name:inv.recipient_name,email:inv.recipient_email||'',phone:inv.recipient_phone||''};
         data.bookings=inv.line_items||[];
       }
-      openInvoicePreview(data);
+      _MID_PRINT_DATA=data;
+      openInvoiceDetailModal(data);
     }).catch(function(){showToast('Network error loading invoice.');});
   };
   if(_INV_SETTINGS_CACHE){doOpen(_INV_SETTINGS_CACHE);return;}
@@ -3029,6 +3140,77 @@ function viewInvoice(id){
     _INV_SETTINGS_CACHE=d.settings||{};
     doOpen(_INV_SETTINGS_CACHE);
   }).catch(function(){doOpen({});});
+}
+
+function openInvoiceDetailModal(data){
+  var p=data.period||{};
+  var isBespoke=!!data.bespoke;
+  document.getElementById('mid-invoice-no').textContent=data.invoiceNo||'';
+  document.getElementById('mid-badge').textContent=isBespoke?'One-off Invoice':'Account Invoice';
+  document.getElementById('mid-issued').textContent=p.issuedDate||'—';
+  document.getElementById('mid-due').textContent=p.dueDate||'—';
+  document.getElementById('mid-total').textContent='£'+(+data.total||0).toFixed(2);
+
+  // Recipient
+  var recEl=document.getElementById('mid-recipient');
+  if(isBespoke){
+    var r=data.recipient||{};
+    var parts=[escTo(r.name||'')];
+    if(r.address)parts.push(escTo(r.address).replace(/\n/g,'<br>'));
+    if(r.phone)parts.push(escTo(r.phone));
+    if(r.email)parts.push('<a href="mailto:'+escTo(r.email)+'" style="color:var(--gold)">'+escTo(r.email)+'</a>');
+    recEl.innerHTML=parts.join('<br>');
+  } else {
+    var c=data.customer||{};
+    var cparts=[escTo(c.full_name||'')];
+    if(c.phone)cparts.push(escTo(c.phone));
+    if(c.email)cparts.push('<a href="mailto:'+escTo(c.email)+'" style="color:var(--gold)">'+escTo(c.email)+'</a>');
+    recEl.innerHTML=cparts.join('<br>');
+  }
+
+  // Period label
+  var periodEl=document.getElementById('mid-period');
+  periodEl.textContent=p.label?'Period: '+p.label:'';
+
+  // Notes
+  var notesEl=document.getElementById('mid-notes');
+  if(p.notes){
+    notesEl.style.display='';
+    notesEl.textContent=p.notes;
+  } else {
+    notesEl.style.display='none';
+  }
+
+  // Line items table
+  var head=document.getElementById('mid-items-head');
+  var body=document.getElementById('mid-items-body');
+  if(isBespoke){
+    head.innerHTML='<tr><th>Description</th><th style="text-align:right">Amount</th></tr>';
+    var items=data.items||[];
+    body.innerHTML=items.length
+      ? items.map(function(it){
+          return '<tr><td>'+escTo(it.description||'')+'</td>'
+            +'<td style="text-align:right;font-family:Georgia,serif">£'+(+it.amount||0).toFixed(2)+'</td></tr>';
+        }).join('')
+      : '<tr><td colspan="2" style="text-align:center;padding:1.2rem;color:rgba(17,29,44,.35)">No items</td></tr>';
+  } else {
+    head.innerHTML='<tr><th>Date / Ref</th><th>Journey</th><th style="text-align:right">Fare</th></tr>';
+    var bks=data.bookings||[];
+    body.innerHTML=bks.length
+      ? bks.map(function(b){
+          var ref=b.ref?'<br><span style="font-family:Menlo,Consolas,monospace;font-size:.7rem;color:rgba(17,29,44,.4)">'+escTo(b.ref)+'</span>':'';
+          var route=escTo(b.pickup||'')+(b.destination?' → '+escTo(b.destination):'');
+          return '<tr><td>'+escTo(b.date||'')+(b.time&&b.time!=='ASAP'?' '+escTo(b.time):'')+ref+'</td>'
+            +'<td>'+route+'</td>'
+            +'<td style="text-align:right;font-family:Georgia,serif;white-space:nowrap">£'+(+b.fare||0).toFixed(2)+'</td></tr>';
+        }).join('')
+      : '<tr><td colspan="3" style="text-align:center;padding:1.2rem;color:rgba(17,29,44,.35)">No journeys in period</td></tr>';
+  }
+  openModal('modal-invoice-detail');
+}
+
+function midOpenPrint(){
+  if(_MID_PRINT_DATA)openInvoicePreview(_MID_PRINT_DATA);
 }
 
 // ── SEND INVOICE (from customer card) ──
