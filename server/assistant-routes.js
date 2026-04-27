@@ -43,8 +43,7 @@ const CREATE_INVOICE_TOOL = {
           required: ['description', 'amount']
         }
       },
-      notes:    { type: 'string', description: 'Additional notes or payment terms' },
-      due_days: { type: 'number', description: 'Days until payment is due (default 14)' }
+      notes:    { type: 'string', description: 'Additional notes shown on the invoice' }
     },
     required: ['recipient_name', 'items']
   }
@@ -211,16 +210,14 @@ async function executeCalendarTool(name, input) {
         quantity: Number(it.quantity) || 1
       }));
       const total = items.reduce((s, it) => s + it.amount * it.quantity, 0);
-      const dueDays = input.due_days || 14;
       const today2 = new Date().toISOString().split('T')[0];
-      const dueDate = new Date(Date.now() + dueDays * 864e5).toISOString().split('T')[0];
       const invoiceNo = 'INV-' + Date.now().toString(36).toUpperCase();
       try {
-        db.prepare(`INSERT INTO invoices (invoice_no, kind, recipient_name, recipient_email, recipient_addr, line_items_json, total, notes, issued_date, due_date)
-          VALUES (?,?,?,?,?,?,?,?,?,?)`).run(
+        db.prepare(`INSERT INTO invoices (invoice_no, kind, recipient_name, recipient_email, recipient_addr, line_items_json, total, notes, issued_date)
+          VALUES (?,?,?,?,?,?,?,?,?)`).run(
           invoiceNo, 'bespoke',
           input.recipient_name || '', input.recipient_email || null, input.recipient_address || null,
-          JSON.stringify(items), total, input.notes || null, today2, dueDate
+          JSON.stringify(items), total, input.notes || null, today2
         );
         const itemLines = items.map(it => `  • ${it.description}${it.quantity > 1 ? ' ×' + it.quantity : ''}: £${(it.amount * it.quantity).toFixed(2)}`).join('\n');
         return `Invoice ${invoiceNo} created.\nRecipient: ${input.recipient_name}${input.recipient_email ? ' <' + input.recipient_email + '>' : ''}\nItems:\n${itemLines}\nTotal: £${total.toFixed(2)}\nDue: ${dueDate}`;
@@ -467,7 +464,7 @@ For bookings (always use array format, even for one booking):
 
 For invoice/billing:
 <<<INVOICE>>>
-{"recipient":{"name":"...","email":"...","address":"..."},"items":[{"description":"...","amount":0,"quantity":1}],"notes":"...","due_days":14}
+{"recipient":{"name":"...","email":"...","address":"..."},"items":[{"description":"...","amount":0,"quantity":1}],"notes":"..."}
 <<<END_INVOICE>>>
 
 Start your response with a brief one-line summary of what you found.

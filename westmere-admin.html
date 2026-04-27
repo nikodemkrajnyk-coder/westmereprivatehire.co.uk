@@ -1335,8 +1335,7 @@ if ('serviceWorker' in navigator) {
           <div id="ni-items" style="display:flex;flex-direction:column;gap:.5rem;margin-bottom:.5rem"></div>
           <button class="btn btn-ghost btn-sm" onclick="addBespokeItem()" style="font-size:.68rem;padding:.4rem .8rem">+ Add Line</button>
         </div>
-        <div class="fg"><label class="fl">Payment Due (days)</label><input class="fi" type="number" id="ni-due-days" value="14" min="0" max="90" style="max-width:120px"></div>
-        <div class="fg"><label class="fl">Notes (optional)</label><textarea class="fi" id="ni-notes" rows="2" placeholder="Additional notes shown on the invoice" style="resize:vertical;min-height:60px"></textarea></div>
+<div class="fg"><label class="fl">Notes (optional)</label><textarea class="fi" id="ni-notes" rows="2" placeholder="Additional notes shown on the invoice" style="resize:vertical;min-height:60px"></textarea></div>
       </div>
 
       <div id="ni-err" style="display:none;margin-top:.6rem;padding:.55rem .8rem;background:rgba(156,40,40,.08);color:#9C2828;font-size:.78rem;border-radius:6px"></div>
@@ -1360,15 +1359,9 @@ if ('serviceWorker' in navigator) {
       <button class="modal-x" onclick="closeModal('modal-invoice-detail')">&times;</button>
     </div>
     <div class="modal-body" style="padding-bottom:.5rem">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:1.2rem">
-        <div>
-          <div style="font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.3rem">Issued</div>
-          <div id="mid-issued" style="font-size:.9rem;color:var(--navy)"></div>
-        </div>
-        <div>
-          <div style="font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.3rem">Due</div>
-          <div id="mid-due" style="font-size:.9rem;color:var(--navy)"></div>
-        </div>
+      <div style="margin-bottom:1.2rem">
+        <div style="font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.3rem">Issued</div>
+        <div id="mid-issued" style="font-size:.9rem;color:var(--navy)"></div>
       </div>
       <div style="margin-bottom:1.2rem">
         <div style="font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.4rem">Recipient</div>
@@ -1643,7 +1636,7 @@ function aaShowInvoiceCard(inv){
 async function aaCreateInvoice(invJson){
   var inv;try{inv=JSON.parse(invJson);}catch(e){aaAddBot('Invalid invoice data.');return;}
   var r=inv.recipient||{};
-  var body={recipient:{name:r.name||'',email:r.email||null,address:r.address||null},items:inv.items||[],notes:inv.notes||null,due_days:inv.due_days||14};
+  var body={recipient:{name:r.name||'',email:r.email||null,address:r.address||null},items:inv.items||[],notes:inv.notes||null};
   var thinking=aaAddBot('Creating invoice…',{thinking:true});
   try{
     var res=await fetch('/api/invoices/bespoke',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -1659,7 +1652,6 @@ async function aaCreateInvoice(invJson){
       if(d.recipient&&d.recipient.email)iHtml+='<div class="abc-row"><span class="abc-lbl">Email</span><span class="abc-val">'+_esc(d.recipient.email)+'</span></div>';
       (d.items||[]).forEach(function(it){iHtml+='<div class="abc-row"><span class="abc-lbl">'+_esc(it.description)+'</span><span class="abc-val">£'+Number(it.amount).toFixed(2)+'</span></div>';});
       iHtml+='<div class="abc-row" style="border-top:1px solid rgba(184,152,90,.2);margin-top:.3rem;padding-top:.4rem"><span class="abc-lbl" style="font-weight:600">Total</span><span class="abc-val" style="font-weight:600;color:var(--navy)">£'+Number(d.total||0).toFixed(2)+'</span></div>';
-      if(d.period&&d.period.dueDate)iHtml+='<div class="abc-row"><span class="abc-lbl">Due</span><span class="abc-val">'+_esc(d.period.dueDate)+'</span></div>';
       inner.innerHTML=iHtml;card.appendChild(inner);aaAddEl(card);
     }
     else{aaAddBot('Could not create invoice: '+(d.error||'Unknown error'));}
@@ -2754,7 +2746,6 @@ function openNewInvoice(){
   document.getElementById('ni-rec-phone').value='';
   document.getElementById('ni-rec-address').value='';
   document.getElementById('ni-notes').value='';
-  document.getElementById('ni-due-days').value='14';
   document.getElementById('ni-items').innerHTML='';
   var sri=document.getElementById('ni-saved-recipient-input');if(sri)sri.value='';
   var srl=document.getElementById('ni-saved-recipient-list');if(srl)srl.style.display='none';
@@ -2886,14 +2877,13 @@ function buildInvoiceRequest(sendEmail){
     var phone=document.getElementById('ni-rec-phone').value.trim();
     var address=document.getElementById('ni-rec-address').value.trim();
     var notes=document.getElementById('ni-notes').value.trim();
-    var dueDays=+document.getElementById('ni-due-days').value||14;
     var items=getBespokeItems();
     if(!name){err.textContent='Recipient name is required.';err.style.display='';return null;}
     if(!items.length){err.textContent='Add at least one line item with description and amount.';err.style.display='';return null;}
     if(sendEmail&&!email){err.textContent='Email required to send. Add an email or use Preview / Download.';err.style.display='';return null;}
     return{
       url:'/api/invoices/bespoke',
-      body:{recipient:{name:name,email:email,phone:phone,address:address},items:items,due_days:dueDays,notes:notes,send_email:sendEmail}
+      body:{recipient:{name:name,email:email,phone:phone,address:address},items:items,notes:notes,send_email:sendEmail}
     };
   } else {
     var cid=document.getElementById('ni-customer').value;
@@ -3151,7 +3141,6 @@ function openInvoiceDetailModal(data){
   document.getElementById('mid-invoice-no').textContent=data.invoiceNo||'';
   document.getElementById('mid-badge').textContent=isBespoke?'One-off Invoice':'Account Invoice';
   document.getElementById('mid-issued').textContent=p.issuedDate||'—';
-  document.getElementById('mid-due').textContent=p.dueDate||'—';
   document.getElementById('mid-total').textContent='£'+(+data.total||0).toFixed(2);
 
   // Recipient

@@ -189,11 +189,9 @@ function drawInvoice(doc, data) {
   y += 12;
 
   doc.font('Helvetica').fontSize(7.5).fillColor(MUTED).text('ISSUED', M, y, { lineBreak: false });
-  if (dueDate) doc.font('Helvetica').fontSize(7.5).fillColor(MUTED).text('DUE', MID, y, { lineBreak: false });
   y += 12;
 
   doc.font('Times-Roman').fontSize(11).fillColor(NAVY).text(fmtDate(issuedDate) || '—', M, y, { lineBreak: false });
-  if (dueDate) doc.font('Times-Roman').fontSize(11).fillColor(NAVY).text(fmtDate(dueDate), MID, y, { lineBreak: false });
   y += 16;
 
   if (periodLabel) {
