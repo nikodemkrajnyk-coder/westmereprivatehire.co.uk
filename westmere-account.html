@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
+<script src="https://js.stripe.com/v3/"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{--navy:#111D2C;--navy2:#1C2A3E;--cream:#F5F2ED;--gold:#B8985A;--gold2:#C9A96E;--text:#111D2C;--muted:rgba(17,29,44,.55);--border:rgba(17,29,44,.12);--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif;
@@ -185,6 +186,11 @@ select.fi option{background:#fff;color:var(--navy)}
 .qb-pc:hover,.qb-pc.sel{border-color:var(--gold);background:rgba(184,152,90,.06)}
 .qb-pc-ttl{font-size:.75rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--navy)}
 .qb-pc-sub{font-size:.62rem;color:rgba(17,29,44,.4);margin-top:.18rem;line-height:1.4}
+.qb-card-wrap{display:none;margin-top:.8rem;margin-bottom:.2rem;background:#fff;border:1px solid rgba(17,29,44,.12);border-radius:8px;padding:.9rem 1rem}
+.qb-card-wrap.show{display:block}
+.qb-card-label{font-size:.58rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.6);margin-bottom:.6rem;display:block}
+#qb-stripe-el{padding:.45rem 0;min-height:24px}
+.qb-card-err{font-size:.75rem;color:#c0392b;margin-top:.4rem;min-height:1.1rem}
 .r2{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
 
 /* ── ADMIN ── */
@@ -493,7 +499,9 @@ footer.mini-foot{display:none}
               <div class="fr-item"><div class="fi-l">Surcharge</div><div class="fi-v" id="fr-surcharge">—</div></div>
             </div>
           </div>
-          <div style="margin-bottom:.4rem"><label class="fl" style="display:block;margin-bottom:.55rem">Payment Method</label><div class="qb-pay-row"><button class="qb-pc sel" id="qb-pay-cash" type="button" onclick="selectQbPay('cash')"><div class="qb-pc-ttl">Cash</div><div class="qb-pc-sub">Pay the driver directly</div></button><button class="qb-pc" id="qb-pay-card" type="button" onclick="selectQbPay('card')"><div class="qb-pc-ttl">Card</div><div class="qb-pc-sub">Invoiced to your account</div></button></div></div>
+          <div style="margin-bottom:.4rem"><label class="fl" style="display:block;margin-bottom:.55rem">Payment Method</label><div class="qb-pay-row"><button class="qb-pc sel" id="qb-pay-cash" type="button" onclick="selectQbPay('cash')"><div class="qb-pc-ttl">Cash</div><div class="qb-pc-sub">Pay the driver directly</div></button><button class="qb-pc" id="qb-pay-card" type="button" onclick="selectQbPay('card')"><div class="qb-pc-ttl">Card</div><div class="qb-pc-sub">Pay securely by card</div></button></div>
+            <div class="qb-card-wrap" id="qb-card-wrap"><span class="qb-card-label">Card Details</span><div id="qb-stripe-el"></div><div class="qb-card-err" id="qb-card-err"></div></div>
+          </div>
           <button class="btn-book" onclick="submitBooking()">Book This Journey</button>
         </div>
       </div>
@@ -648,22 +656,25 @@ function esc(s){if(!s)return '';var d=document.createElement('div');d.appendChil
 var _gc={};
 function geocode(a){if(_gc[a])return Promise.resolve(_gc[a]);return fetch('https://nominatim.openstreetmap.org/search?format=json&countrycodes=gb&limit=1&q='+encodeURIComponent(a),{headers:{'Accept-Language':'en'}}).then(function(r){return r.json();}).then(function(d){var r=d&&d[0]?{lat:parseFloat(d[0].lat),lon:parseFloat(d[0].lon)}:null;if(r)_gc[a]=r;return r;});}
 function haverMiles(a,b,c,d){var R=3958.8,dL=(c-a)*Math.PI/180,dn=(d-b)*Math.PI/180,x=Math.sin(dL/2)*Math.sin(dL/2)+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dn/2)*Math.sin(dn/2);return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
+var TOWN_CENTRE_RADIUS=3;var PER_MILE_ADJ=2.25;
 function nearestTown(coord){var best=null,bd=999;Object.keys(TC).forEach(function(k){var d=haverMiles(coord.lat,coord.lon,TC[k].lat,TC[k].lon);if(d<bd){bd=d;best=k;}});return best;}
+function nearestTownWithDist(coord){var best=null,bd=999;Object.keys(TC).forEach(function(k){var d=haverMiles(coord.lat,coord.lon,TC[k].lat,TC[k].lon);if(d<bd){bd=d;best=k;}});return{town:best,dist:bd};}
+function _calcRoute(la1,lo1,la2,lo2){return fetch('https://router.project-osrm.org/route/v1/driving/'+lo1+','+la1+';'+lo2+','+la2+'?overview=false').then(function(r){return r.json();}).then(function(d){if(d.routes&&d.routes.length)return{distance:d.routes[0].distance,duration:d.routes[0].duration};return null;}).catch(function(){return null;});}
 
 /* ── Address autocomplete ── */
 var AIRPORTS=[
-  {name:'Gatwick Airport',sub:'London Gatwick \u00b7 LGW \u00b7 pick a terminal below',key:'ga'},
-  {name:'Gatwick Airport \u2014 South Terminal',sub:'LGW South \u00b7 easyJet, BA short-haul, Wizz, Vueling',key:'ga'},
-  {name:'Gatwick Airport \u2014 North Terminal',sub:'LGW North \u00b7 BA long-haul, Virgin, TUI, Norse',key:'ga'},
-  {name:'Heathrow Airport',sub:'London Heathrow \u00b7 LHR \u00b7 pick a terminal below',key:'he'},
-  {name:'Heathrow Airport \u2014 Terminal 2',sub:'LHR T2 \u00b7 Star Alliance',key:'he'},
-  {name:'Heathrow Airport \u2014 Terminal 3',sub:'LHR T3 \u00b7 oneworld',key:'he'},
-  {name:'Heathrow Airport \u2014 Terminal 4',sub:'LHR T4 \u00b7 SkyTeam',key:'he'},
-  {name:'Heathrow Airport \u2014 Terminal 5',sub:'LHR T5 \u00b7 British Airways & Iberia',key:'he'},
-  {name:'Stansted Airport',sub:'London Stansted \u00b7 STN',key:'st'},
-  {name:'Luton Airport',sub:'London Luton \u00b7 LTN',key:'lu'},
-  {name:'Southampton Airport',sub:'Southampton \u00b7 SOU',key:'so'},
-  {name:'London City Airport',sub:'London City \u00b7 LCY',key:'ci'}
+  {name:'Gatwick Airport',sub:'London Gatwick \u00b7 LGW \u00b7 pick a terminal below',key:'ga',lat:51.1537,lon:-0.1821},
+  {name:'Gatwick Airport \u2014 South Terminal',sub:'LGW South \u00b7 easyJet, BA short-haul, Wizz, Vueling',key:'ga',lat:51.1561,lon:-0.1610},
+  {name:'Gatwick Airport \u2014 North Terminal',sub:'LGW North \u00b7 BA long-haul, Virgin, TUI, Norse',key:'ga',lat:51.1537,lon:-0.1821},
+  {name:'Heathrow Airport',sub:'London Heathrow \u00b7 LHR \u00b7 pick a terminal below',key:'he',lat:51.4700,lon:-0.4543},
+  {name:'Heathrow Airport \u2014 Terminal 2',sub:'LHR T2 \u00b7 Star Alliance',key:'he',lat:51.4775,lon:-0.4614},
+  {name:'Heathrow Airport \u2014 Terminal 3',sub:'LHR T3 \u00b7 oneworld',key:'he',lat:51.4732,lon:-0.4525},
+  {name:'Heathrow Airport \u2014 Terminal 4',sub:'LHR T4 \u00b7 SkyTeam',key:'he',lat:51.4588,lon:-0.4473},
+  {name:'Heathrow Airport \u2014 Terminal 5',sub:'LHR T5 \u00b7 British Airways & Iberia',key:'he',lat:51.4775,lon:-0.4876},
+  {name:'Stansted Airport',sub:'London Stansted \u00b7 STN',key:'st',lat:51.8850,lon:0.2350},
+  {name:'Luton Airport',sub:'London Luton \u00b7 LTN',key:'lu',lat:51.8747,lon:-0.3683},
+  {name:'Southampton Airport',sub:'Southampton \u00b7 SOU',key:'so',lat:50.9503,lon:-1.3568},
+  {name:'London City Airport',sub:'London City \u00b7 LCY',key:'ci',lat:51.5048,lon:0.0495}
 ];
 var STATIONS=[
   {name:'Gatwick Airport Railway Station',sub:'GTW \u00b7 Thameslink, Southern, Gatwick Express'},
@@ -826,46 +837,106 @@ function qbShowFare(fare,mi,ti,lbl,apNote){
   document.getElementById('fare-reveal').classList.add('show');
 }
 function qbRunCalc(from,to){
-  var tm=(document.getElementById('qb-time').value)||'08:00';
+  var tm=(document.getElementById('qb-time')||{value:'08:00'}).value||'08:00';
   var h=parseInt(tm.split(':')[0]),night=isNight(h);
   var puAP=nAP(from),deAP=nAP(to),puT=nT(from),deT=nT(to);
-  // destination is airport -> drop-off (use .out)
+
+  /* ── Town → Airport (drop-off) ── */
   if(deAP&&!puAP){
-    var rt=sh(puT),base=rt&&CF[rt]&&CF[rt][deAP]?CF[rt][deAP].out:null;
-    if(base){qbShowFare(base,null,null,'Fixed price','');return;}
+    var rt=sh(puT);
+    if(rt&&CF[rt]&&CF[rt][deAP]){qbShowFare(CF[rt][deAP].out,null,null,'Fixed price',APFULL[deAP]+' drop-off');return;}
     document.getElementById('fr-amt').textContent='Calculating\u2026';document.getElementById('fare-reveal').classList.add('show');
-    geocode(from+' UK').then(function(c){if(!c){qbShowFare(calcMile(20,night,deAP),null,null,'Estimated');return;}var nn=nearestTown(c);var b2=nn&&CF[nn]&&CF[nn][deAP]?CF[nn][deAP].out:calcMile(20,night,deAP);qbShowFare(Math.ceil(b2/0.5)*0.5,null,null,'Fixed price');}).catch(function(){qbShowFare(calcMile(20,night,deAP),null,null,'Estimated');});
+    geocode(/\bUK\b/i.test(from)?from:from+' UK').then(function(c){
+      if(!c){qbShowFare(calcMile(20,night,deAP),null,null,'Estimated');return;}
+      var txtTown=sh(nT(from));
+      if(txtTown&&CF[txtTown]&&CF[txtTown][deAP]){qbShowFare(CF[txtTown][deAP].out,null,null,'Fixed price',APFULL[deAP]+' drop-off');return;}
+      var nt=nearestTownWithDist(c);
+      if(nt.town&&nt.dist<=TOWN_CENTRE_RADIUS&&CF[nt.town]&&CF[nt.town][deAP]){
+        qbShowFare(CF[nt.town][deAP].out,null,null,'Fixed price',APFULL[deAP]+' drop-off');
+      } else if(nt.town&&CF[nt.town]&&CF[nt.town][deAP]){
+        var apCoord=null;AIRPORTS.forEach(function(a){if(a.key===deAP&&a.lat)apCoord={lat:a.lat,lon:a.lon};});
+        if(!apCoord){qbShowFare(calcMile(20,night,null),null,null,'Estimated');return;}
+        var townCoord=TC[nt.town];
+        Promise.all([_calcRoute(c.lat,c.lon,apCoord.lat,apCoord.lon),_calcRoute(townCoord.lat,townCoord.lon,apCoord.lat,apCoord.lon)]).then(function(rs){
+          if(!rs[0]||!rs[1]){qbShowFare(calcMile(20,night,null),null,null,'Estimated');return;}
+          var actualMi=Math.round(rs[0].distance/1609.34*10)/10,baseMi=Math.round(rs[1].distance/1609.34*10)/10;
+          var baseFare=CF[nt.town][deAP].out,adj=Math.round(actualMi-baseMi)*PER_MILE_ADJ;
+          var fare=Math.max(baseFare+adj,baseFare*0.7);
+          qbShowFare(Math.round(fare),actualMi,Math.round(rs[0].duration/60),'Fixed price',APFULL[deAP]+' drop-off');
+        }).catch(function(){qbShowFare(calcMile(20,night,null),null,null,'Estimated');});
+      } else {
+        var apCoord2=null;AIRPORTS.forEach(function(a){if(a.key===deAP&&a.lat)apCoord2={lat:a.lat,lon:a.lon};});
+        if(apCoord2){
+          _calcRoute(c.lat,c.lon,apCoord2.lat,apCoord2.lon).then(function(r){
+            if(!r){qbShowFare(calcMile(20,night,null),null,null,'Estimated');return;}
+            var mi=Math.round(r.distance/1609.34*10)/10,ti=Math.round(r.duration/60);
+            qbShowFare(Math.round(calcMile(mi,night,null)),mi,ti,'Per mile');
+          }).catch(function(){qbShowFare(calcMile(20,night,null),null,null,'Estimated');});
+        } else {qbShowFare(calcMile(20,night,null),null,null,'Estimated');}
+      }
+    }).catch(function(){qbShowFare(calcMile(20,night,deAP),null,null,'Estimated');});
     return;
   }
-  // pickup is airport -> pickup (use .ret)
+
+  /* ── Airport → Town (pickup) ── */
   if(puAP&&!deAP){
-    var rt2=sh(deT),base2=rt2&&CF[rt2]&&CF[rt2][puAP]?CF[rt2][puAP].ret:null;
-    if(base2){qbShowFare(base2,null,null,'Fixed price','');return;}
-    qbShowFare(calcMile(20,night,puAP),null,null,'Estimated');return;
+    var rt2=sh(deT);
+    if(rt2&&CF[rt2]&&CF[rt2][puAP]){qbShowFare(CF[rt2][puAP].ret,null,null,'Fixed price',APFULL[puAP]+' pickup');return;}
+    document.getElementById('fr-amt').textContent='Calculating\u2026';document.getElementById('fare-reveal').classList.add('show');
+    geocode(/\bUK\b/i.test(to)?to:to+' UK').then(function(c){
+      if(!c){qbShowFare(calcMile(20,night,puAP),null,null,'Estimated');return;}
+      var txtTown2=sh(nT(to));
+      if(txtTown2&&CF[txtTown2]&&CF[txtTown2][puAP]){qbShowFare(CF[txtTown2][puAP].ret,null,null,'Fixed price',APFULL[puAP]+' pickup');return;}
+      var nt2=nearestTownWithDist(c);
+      if(nt2.town&&nt2.dist<=TOWN_CENTRE_RADIUS&&CF[nt2.town]&&CF[nt2.town][puAP]){
+        qbShowFare(CF[nt2.town][puAP].ret,null,null,'Fixed price',APFULL[puAP]+' pickup');
+      } else if(nt2.town&&CF[nt2.town]&&CF[nt2.town][puAP]){
+        var apCoord3=null;AIRPORTS.forEach(function(a){if(a.key===puAP&&a.lat)apCoord3={lat:a.lat,lon:a.lon};});
+        if(!apCoord3){qbShowFare(calcMile(20,night,null),null,null,'Estimated');return;}
+        var townCoord2=TC[nt2.town];
+        Promise.all([_calcRoute(apCoord3.lat,apCoord3.lon,c.lat,c.lon),_calcRoute(apCoord3.lat,apCoord3.lon,townCoord2.lat,townCoord2.lon)]).then(function(rs){
+          if(!rs[0]||!rs[1]){qbShowFare(calcMile(20,night,null),null,null,'Estimated');return;}
+          var actualMi=Math.round(rs[0].distance/1609.34*10)/10,baseMi=Math.round(rs[1].distance/1609.34*10)/10;
+          var baseFare=CF[nt2.town][puAP].ret,adj=Math.round(actualMi-baseMi)*PER_MILE_ADJ;
+          var fare=Math.max(baseFare+adj,baseFare*0.7);
+          qbShowFare(Math.round(fare),actualMi,Math.round(rs[0].duration/60),'Fixed price',APFULL[puAP]+' pickup');
+        }).catch(function(){qbShowFare(calcMile(20,night,null),null,null,'Estimated');});
+      } else {
+        var apCoord4=null;AIRPORTS.forEach(function(a){if(a.key===puAP&&a.lat)apCoord4={lat:a.lat,lon:a.lon};});
+        if(apCoord4){
+          _calcRoute(apCoord4.lat,apCoord4.lon,c.lat,c.lon).then(function(r){
+            if(!r){qbShowFare(calcMile(20,night,null),null,null,'Estimated');return;}
+            var mi=Math.round(r.distance/1609.34*10)/10,ti=Math.round(r.duration/60);
+            qbShowFare(Math.round(calcMile(mi,night,null)),mi,ti,'Per mile');
+          }).catch(function(){qbShowFare(calcMile(20,night,null),null,null,'Estimated');});
+        } else {qbShowFare(calcMile(20,night,null),null,null,'Estimated');}
+      }
+    }).catch(function(){qbShowFare(calcMile(20,night,puAP),null,null,'Estimated');});
+    return;
   }
-  // airport to airport
+
+  /* ── Airport → Airport ── */
   if(puAP&&deAP){
     document.getElementById('fr-amt').textContent='Calculating\u2026';document.getElementById('fare-reveal').classList.add('show');
-    Promise.all([geocode(from+' UK'),geocode(to+' UK')]).then(function(cs){
+    Promise.all([geocode(/\bUK\b/i.test(from)?from:from+' UK'),geocode(/\bUK\b/i.test(to)?to:to+' UK')]).then(function(cs){
       if(!cs[0]||!cs[1]){qbShowFare(calcMile(40,night,null)+APC[puAP][1]+APC[deAP][0],null,null,'Estimated');return;}
-      fetch('https://router.project-osrm.org/route/v1/driving/'+cs[0].lon+','+cs[0].lat+';'+cs[1].lon+','+cs[1].lat+'?overview=false')
-      .then(function(r){return r.json();}).then(function(data){
-        if(!data||!data.routes||!data.routes[0]){qbShowFare(calcMile(40,night,null)+APC[puAP][1]+APC[deAP][0],null,null,'Estimated');return;}
-        var mi=Math.round(data.routes[0].distance/1609.34*10)/10,ti=Math.round(data.routes[0].duration/60);
+      _calcRoute(cs[0].lat,cs[0].lon,cs[1].lat,cs[1].lon).then(function(r){
+        if(!r){qbShowFare(calcMile(40,night,null)+APC[puAP][1]+APC[deAP][0],null,null,'Estimated');return;}
+        var mi=Math.round(r.distance/1609.34*10)/10,ti=Math.round(r.duration/60);
         qbShowFare(calcMile(mi,night,null)+APC[puAP][1]+APC[deAP][0],mi,ti,'Fixed price',APFULL[puAP]+' pickup +\u00a3'+APC[puAP][1]+' \u00b7 '+APFULL[deAP]+' drop-off +\u00a3'+APC[deAP][0]);
       }).catch(function(){qbShowFare(calcMile(40,night,null)+APC[puAP][1]+APC[deAP][0],null,null,'Estimated');});
     }).catch(function(){qbShowFare(calcMile(40,night,null)+APC[puAP][1]+APC[deAP][0],null,null,'Estimated');});
     return;
   }
-  // Town-to-town: live routing
+
+  /* ── Town → Town ── */
   document.getElementById('fr-amt').textContent='Calculating\u2026';document.getElementById('fare-reveal').classList.add('show');
-  Promise.all([geocode(from+' UK'),geocode(to+' UK')]).then(function(cs){
+  Promise.all([geocode(/\bUK\b/i.test(from)?from:from+' UK'),geocode(/\bUK\b/i.test(to)?to:to+' UK')]).then(function(cs){
     if(!cs[0]||!cs[1]){qbShowFare(calcMile(8,night,null),null,null,'Estimated');return;}
-    fetch('https://router.project-osrm.org/route/v1/driving/'+cs[0].lon+','+cs[0].lat+';'+cs[1].lon+','+cs[1].lat+'?overview=false')
-    .then(function(r){return r.json();}).then(function(data){
-      if(!data||!data.routes||!data.routes[0]){qbShowFare(calcMile(8,night,null),null,null,'Estimated');return;}
-      var mi=Math.round(data.routes[0].distance/1609.34*10)/10,ti=Math.round(data.routes[0].duration/60);
-      qbShowFare(calcMile(mi,night,puAP||deAP||null),mi,ti,'Fixed price');
+    _calcRoute(cs[0].lat,cs[0].lon,cs[1].lat,cs[1].lon).then(function(r){
+      if(!r){qbShowFare(calcMile(8,night,null),null,null,'Estimated');return;}
+      var mi=Math.round(r.distance/1609.34*10)/10,ti=Math.round(r.duration/60);
+      qbShowFare(Math.round(calcMile(mi,night,null)),mi,ti,'Fixed price');
     }).catch(function(){qbShowFare(calcMile(8,night,null),null,null,'Estimated');});
   }).catch(function(){qbShowFare(calcMile(8,night,null),null,null,'Estimated');});
 }
@@ -1054,10 +1125,25 @@ function sv(id,btn){
   var v=document.getElementById('view-'+id);if(v)v.classList.add('on');
   if(btn)btn.classList.add('on');
 }
+var _qbStripe=null,_qbCardEl=null;
+function _qbInitStripe(){
+  if(_qbStripe)return;
+  var sk=window._SK||'';
+  if(typeof Stripe==='undefined'||!sk)return;
+  _qbStripe=Stripe(sk);
+  _qbCardEl=_qbStripe.elements().create('card',{style:{base:{fontFamily:'"Jost","Helvetica Neue",Arial,sans-serif',fontSize:'15px',fontWeight:'400',color:'#111D2C','::placeholder':{color:'rgba(17,29,44,0.4)'}},invalid:{color:'#c0392b',iconColor:'#c0392b'}}});
+  _qbCardEl.mount('#qb-stripe-el');
+  _qbCardEl.on('change',function(ev){var e=document.getElementById('qb-card-err');if(e)e.textContent=ev.error?ev.error.message:'';});
+}
 function selectQbPay(method){
   document.querySelectorAll('.qb-pc').forEach(function(b){b.classList.remove('sel');});
   var el=document.getElementById('qb-pay-'+method);
   if(el)el.classList.add('sel');
+  var wrap=document.getElementById('qb-card-wrap');
+  if(wrap){
+    if(method==='card'){wrap.classList.add('show');_qbInitStripe();}
+    else{wrap.classList.remove('show');}
+  }
 }
 function _revGeoNom(lat,lon,cb){
   fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat='+lat+'&lon='+lon,{headers:{'Accept-Language':'en'}})
@@ -1084,6 +1170,29 @@ function useQbLocation(){
     showToast('Location access denied');
   },{timeout:8000});
 }
+function _qbSaveBooking(from,dest,date,time,pax,bags,flight,fare,payment,notes,stripePaymentIntentId){
+  var btn=document.querySelector('.btn-book');
+  var body={pickup:from,destination:dest,date:date,time:time,passengers:parseInt(pax)||1,bags:bags,flight:flight,fare:fare,payment:payment,notes:notes};
+  if(stripePaymentIntentId)body.stripe_payment_intent=stripePaymentIntentId;
+  fetch('/api/bookings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+  .then(function(r){return r.json();}).then(function(d){
+    if(btn){btn.disabled=false;btn.textContent='Book This Journey';}
+    if(d.ok){
+      showToast('Booking confirmed \u2014 Ref: '+d.booking.ref);
+      document.getElementById('qb-from').value='';
+      document.getElementById('qb-dest').value='';
+      if(document.getElementById('qb-flight'))document.getElementById('qb-flight').value='';
+      if(document.getElementById('qb-notes'))document.getElementById('qb-notes').value='';
+      document.getElementById('fare-reveal').classList.remove('show');
+      selectQbPay('cash');
+    } else {
+      showToast(d.error||'Booking failed');
+    }
+  }).catch(function(){
+    if(btn){btn.disabled=false;btn.textContent='Book This Journey';}
+    showToast('Connection error \u2014 please try again');
+  });
+}
 function submitBooking(){
   var from=document.getElementById('qb-from').value;
   var dest=document.getElementById('qb-dest').value;
@@ -1100,26 +1209,41 @@ function submitBooking(){
   var payment=selPay?selPay.id.replace('qb-pay-',''):'cash';
   var btn=document.querySelector('.btn-book');
   if(btn){btn.disabled=true;btn.textContent='Submitting\u2026';}
-  fetch('/api/bookings',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({pickup:from,destination:dest,date:date,time:time,passengers:parseInt(pax)||1,bags:bags,flight:flight,fare:fare,payment:payment,notes:notes})
-  }).then(function(r){return r.json();}).then(function(d){
-    if(btn){btn.disabled=false;btn.textContent='Book This Journey';}
-    if(d.ok){
-      showToast('Booking confirmed \u2014 Ref: '+d.booking.ref);
-      document.getElementById('qb-from').value='';
-      document.getElementById('qb-dest').value='';
-      if(document.getElementById('qb-flight'))document.getElementById('qb-flight').value='';
-      if(document.getElementById('qb-notes'))document.getElementById('qb-notes').value='';
-      document.getElementById('fare-reveal').classList.remove('show');
-    } else {
-      showToast(d.error||'Booking failed');
+
+  if(payment==='card'){
+    if(!_qbStripe||!_qbCardEl){
+      if(btn){btn.disabled=false;btn.textContent='Book This Journey';}
+      showToast('Card payment not ready \u2014 please refresh');return;
     }
-  }).catch(function(){
-    if(btn){btn.disabled=false;btn.textContent='Book This Journey';}
-    showToast('Connection error \u2014 please try again');
-  });
+    if(!fare||fare<=0){
+      if(btn){btn.disabled=false;btn.textContent='Book This Journey';}
+      showToast('Please wait for fare to calculate before paying by card');return;
+    }
+    var errEl=document.getElementById('qb-card-err');
+    if(btn)btn.textContent='Processing payment\u2026';
+    fetch('/api/public/create-payment-intent',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({amount:Math.max(Math.round(fare*100),100),currency:'gbp',booking:{pickup:from,destination:dest,date:date,time:time,passengers:parseInt(pax)||1,fare:fare}})
+    }).then(function(r){return r.json();}).then(function(d){
+      if(!d.clientSecret){throw new Error(d.error||'Payment setup failed');}
+      return _qbStripe.confirmCardPayment(d.clientSecret,{payment_method:{card:_qbCardEl}});
+    }).then(function(result){
+      if(result.error){
+        if(errEl)errEl.textContent=result.error.message;
+        if(btn){btn.disabled=false;btn.textContent='Book This Journey';}
+      } else {
+        if(errEl)errEl.textContent='';
+        _qbSaveBooking(from,dest,date,time,pax,bags,flight,fare,'card',notes,result.paymentIntent.id);
+      }
+    }).catch(function(e){
+      if(errEl)errEl.textContent=e.message||'Payment failed \u2014 please try again';
+      if(btn){btn.disabled=false;btn.textContent='Book This Journey';}
+    });
+    return;
+  }
+
+  _qbSaveBooking(from,dest,date,time,pax,bags,flight,fare,'cash',notes,null);
 }
 
 function cancelBooking(id,ref){
