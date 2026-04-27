@@ -13,7 +13,8 @@ function isConfigured() {
   return !!process.env.RESEND_API_KEY;
 }
 
-async function sendEmail(to, subject, html, fromLabel, preheader) {
+// opts: { attachments: [{ filename, content }] }  (optional)
+async function sendEmail(to, subject, html, fromLabel, preheader, opts) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     console.warn('[EMAIL] RESEND_API_KEY not set — email disabled');
@@ -31,6 +32,18 @@ async function sendEmail(to, subject, html, fromLabel, preheader) {
     finalHtml = html.replace('<body', hidden + '<body').replace(/<body([^>]*)>/, '<body$1>' + hidden);
   }
 
+  const payload = {
+    from: (fromLabel || 'Westmere Private Hire') + ' <bookings@westmereprivatehire.co.uk>',
+    to: to,
+    reply_to: replyTo || undefined,
+    subject: subject,
+    html: finalHtml
+  };
+
+  if (opts && Array.isArray(opts.attachments) && opts.attachments.length) {
+    payload.attachments = opts.attachments;
+  }
+
   try {
     const res = await fetch(RESEND_URL, {
       method: 'POST',
@@ -38,13 +51,7 @@ async function sendEmail(to, subject, html, fromLabel, preheader) {
         'Authorization': 'Bearer ' + apiKey,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        from: (fromLabel || 'Westmere Private Hire') + ' <bookings@westmereprivatehire.co.uk>',
-        to: to,
-        reply_to: replyTo || undefined,
-        subject: subject,
-        html: finalHtml
-      })
+      body: JSON.stringify(payload)
     });
 
     const data = await res.json();
@@ -343,7 +350,8 @@ async function sendCustomerWelcome(customer) {
 // `period`   = { label: 'November 2025', dueDate: 'YYYY-MM-DD' }
 // `invoiceNo`= 'INV-202511-0001'
 // `settings` = { business_name, owner_name, address_line1, address_line2, postcode, phone, email, bank_name, sort_code, account_no, account_name }
-async function sendCustomerInvoice(customer, bookings, period, invoiceNo, settings) {
+// `pdfBuffer` = optional Buffer — attached to the email as a PDF file
+async function sendCustomerInvoice(customer, bookings, period, invoiceNo, settings, pdfBuffer) {
   if (!customer || !customer.email) return false;
   const { email, full_name } = customer;
   const firstName = (full_name || '').split(' ')[0] || 'there';
@@ -395,7 +403,8 @@ async function sendCustomerInvoice(customer, bookings, period, invoiceNo, settin
   const body = `
   <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Invoice &middot; ${escHtml(period.label || '')}</p>
   <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
-  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Please find below your statement of journeys for ${escHtml(period.label || 'this period')}.</p>
+  <p style="margin:0 0 10px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Please find attached your invoice <span style="font-family:Menlo,Consolas,monospace;font-size:13px">${escHtml(invoiceNo)}</span> for ${escHtml(period.label || 'this period')}.</p>
+  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">The total amount of <strong style="color:${INK}">&pound;${total.toFixed(2)}</strong> is due by ${dueStr ? escHtml(dueStr) : '14 days from the date of this invoice'}. Payment details are included below for your convenience.</p>
 
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px">
     <tr>
@@ -441,13 +450,18 @@ async function sendCustomerInvoice(customer, bookings, period, invoiceNo, settin
 
   ${bankSection}
 
-  <p style="margin:18px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
+  <p style="margin:18px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">We hope this is all in order. If you have any questions or would like to discuss anything, please don't hesitate to get in touch &mdash; we&rsquo;re always happy to help.</p>
+  <p style="margin:12px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">Thank you as always for choosing Westmere Private Hire. We look forward to welcoming you on your next journey.</p>
+  <p style="margin:16px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
 
   const html = emailShell(body);
   const subject = 'Invoice ' + (invoiceNo || '') + ' \u2014 ' + (period.label || '');
   const preheader = summaryCount + ' journey' + (summaryCount === 1 ? '' : 's') + ' \u00b7 \u00a3' + total.toFixed(2) + ' total';
-  const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
-  if (ok) console.log('[EMAIL] Invoice', invoiceNo, 'sent to', email);
+  const attachments = pdfBuffer
+    ? [{ filename: (invoiceNo || 'invoice') + '.pdf', content: pdfBuffer.toString('base64') }]
+    : undefined;
+  const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader, attachments ? { attachments } : undefined);
+  if (ok) console.log('[EMAIL] Invoice', invoiceNo, 'sent to', email, pdfBuffer ? '(with PDF)' : '');
   return ok;
 }
 
@@ -455,7 +469,8 @@ async function sendCustomerInvoice(customer, bookings, period, invoiceNo, settin
 // `recipient` = { name, email, phone, address }
 // `items`     = [{ description, amount }]
 // `period`    = { dueDate, issuedDate, notes }
-async function sendBespokeInvoice(recipient, items, period, invoiceNo, settings) {
+// `pdfBuffer` = optional Buffer — attached to the email as a PDF file
+async function sendBespokeInvoice(recipient, items, period, invoiceNo, settings, pdfBuffer) {
   if (!recipient || !recipient.email) return false;
   settings = settings || {};
   const firstName = (recipient.name || '').split(' ')[0] || 'there';
@@ -505,10 +520,16 @@ async function sendBespokeInvoice(recipient, items, period, invoiceNo, settings)
   const notesSection = period && period.notes ? `
   <p style="margin:20px 0 0;padding:12px 14px;background:rgba(184,152,90,.08);border-left:2px solid ${GOLD};font-family:Georgia,serif;font-size:13px;color:${INK};line-height:1.6">${escHtml(period.notes).replace(/\n/g, '<br>')}</p>` : '';
 
+  // Compute due days for the message
+  const dueDays = (period && period.issuedDate && period.dueDate)
+    ? Math.max(1, Math.round((new Date(period.dueDate) - new Date(period.issuedDate)) / 86400000))
+    : 14;
+
   const body = `
   <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Invoice</p>
   <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
-  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Please find your invoice below for services provided by Westmere Private Hire.</p>
+  <p style="margin:0 0 10px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Please find attached invoice <span style="font-family:Menlo,Consolas,monospace;font-size:13px">${escHtml(invoiceNo)}</span> from Westmere Private Hire.</p>
+  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">The total amount of <strong style="color:${INK}">&pound;${total.toFixed(2)}</strong> is due within <strong style="color:${INK}">${dueDays} day${dueDays === 1 ? '' : 's'}</strong>. Payment details are included below for your convenience.</p>
 
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px">
     <tr>
@@ -554,13 +575,18 @@ async function sendBespokeInvoice(recipient, items, period, invoiceNo, settings)
   ${notesSection}
   ${bankSection}
 
-  <p style="margin:18px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
+  <p style="margin:18px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">If you have any questions about this invoice, please don&rsquo;t hesitate to get in touch &mdash; we&rsquo;re always happy to help.</p>
+  <p style="margin:12px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">Thank you for choosing Westmere Private Hire.</p>
+  <p style="margin:16px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
 
   const html = emailShell(body);
   const subject = 'Invoice ' + (invoiceNo || '') + ' \u2014 Westmere Private Hire';
   const preheader = 'Invoice \u00b7 \u00a3' + total.toFixed(2) + ' due';
-  const ok = await sendEmail(recipient.email, subject, html, 'Westmere Private Hire', preheader);
-  if (ok) console.log('[EMAIL] Bespoke invoice', invoiceNo, 'sent to', recipient.email);
+  const attachments = pdfBuffer
+    ? [{ filename: (invoiceNo || 'invoice') + '.pdf', content: pdfBuffer.toString('base64') }]
+    : undefined;
+  const ok = await sendEmail(recipient.email, subject, html, 'Westmere Private Hire', preheader, attachments ? { attachments } : undefined);
+  if (ok) console.log('[EMAIL] Bespoke invoice', invoiceNo, 'sent to', recipient.email, pdfBuffer ? '(with PDF)' : '');
   return ok;
 }
 

@@ -1389,7 +1389,8 @@ if ('serviceWorker' in navigator) {
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-invoice-detail')">Close</button>
-      <button class="btn btn-ghost" id="mid-print-btn" onclick="midOpenPrint()" style="border:1px solid rgba(17,29,44,.2)">Print / Download</button>
+      <button class="btn btn-ghost" id="mid-pdf-btn" onclick="midDownloadPdf()" style="border:1px solid rgba(17,29,44,.2)">Download PDF</button>
+      <button class="btn btn-ghost" id="mid-print-btn" onclick="midOpenPrint()" style="border:1px solid rgba(17,29,44,.2)">Print Preview</button>
     </div>
   </div>
 </div>
@@ -3112,6 +3113,7 @@ function loadInvoiceHistory(){
 
 var _INV_SETTINGS_CACHE=null;
 var _MID_PRINT_DATA=null;
+var _MID_INVOICE_ID=null;
 function viewInvoice(id){
   var doOpen=function(settings){
     fetch('/api/invoices/'+id,{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
@@ -3132,6 +3134,7 @@ function viewInvoice(id){
         data.bookings=inv.line_items||[];
       }
       _MID_PRINT_DATA=data;
+      _MID_INVOICE_ID=id;
       openInvoiceDetailModal(data);
     }).catch(function(){showToast('Network error loading invoice.');});
   };
@@ -3211,6 +3214,9 @@ function openInvoiceDetailModal(data){
 
 function midOpenPrint(){
   if(_MID_PRINT_DATA)openInvoicePreview(_MID_PRINT_DATA);
+}
+function midDownloadPdf(){
+  if(_MID_INVOICE_ID)window.location.href='/api/invoices/'+_MID_INVOICE_ID+'/pdf';
 }
 
 // ── SEND INVOICE (from customer card) ──

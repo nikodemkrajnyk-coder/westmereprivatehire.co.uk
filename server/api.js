@@ -1,9 +1,13 @@
 const express = require('express');
-const { getDb } = require('./db');
+const path = require('path');
+const fs = require('fs');
+const { getDb, DATA_DIR } = require('./db');
 const { sendAdminAlert } = require('./email');
 const { sendAdminBookingWhatsApp } = require('./whatsapp');
 const gcal = require('./google-calendar');
 const events = require('./events');
+
+const INVOICES_DIR = path.join(DATA_DIR, 'invoices');
 
 const router = express.Router();
 
@@ -566,10 +570,32 @@ router.post('/customers/:id/invoice', async (req, res) => {
   const total = bookings.reduce((s, b) => s + (+b.fare || 0), 0);
   const shouldEmail = send_email !== false;
 
+  // ── Generate PDF ─────────────────────────────────────────────────────────
+  let pdfBuffer = null;
+  try {
+    const { buildInvoicePdf } = require('./invoice-pdf');
+    const lineItemsForPdf = bookings.map(b => ({
+      date: b.date, time: b.time, ref: b.ref,
+      pickup: b.pickup, destination: b.destination,
+      flight: b.flight, fare: b.fare
+    }));
+    pdfBuffer = await buildInvoicePdf({
+      invoiceNo, kind: 'account', total, settings,
+      customer: { full_name: customer.full_name, email: customer.email, phone: customer.phone },
+      bookings: lineItemsForPdf,
+      period: { issuedDate, dueDate, label: periodLabel }
+    });
+    fs.mkdirSync(INVOICES_DIR, { recursive: true });
+    fs.writeFileSync(path.join(INVOICES_DIR, invoiceNo + '.pdf'), pdfBuffer);
+    console.log('[INVOICE] PDF saved:', invoiceNo + '.pdf');
+  } catch (e) {
+    console.error('[INVOICE] PDF generation failed:', e.message);
+  }
+
   if (shouldEmail) {
     if (!customer.email) return res.status(400).json({ error: 'Customer has no email address' });
     const { sendCustomerInvoice } = require('./email');
-    const ok = await sendCustomerInvoice(customer, bookings, { label: periodLabel, dueDate }, invoiceNo, settings);
+    const ok = await sendCustomerInvoice(customer, bookings, { label: periodLabel, dueDate }, invoiceNo, settings, pdfBuffer);
     if (!ok) return res.status(502).json({ error: 'Email delivery failed' });
 
     db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
@@ -655,13 +681,30 @@ router.post('/invoices/bespoke', async (req, res) => {
     address: recipient.address ? String(recipient.address).trim() : ''
   };
 
+  // ── Generate PDF ─────────────────────────────────────────────────────────
+  let pdfBuffer = null;
+  try {
+    const { buildInvoicePdf } = require('./invoice-pdf');
+    pdfBuffer = await buildInvoicePdf({
+      invoiceNo, kind: 'bespoke', total, notes: notes || '', settings,
+      recipient: cleanRecipient,
+      items: cleanItems,
+      period: { issuedDate, dueDate, label: '' }
+    });
+    fs.mkdirSync(INVOICES_DIR, { recursive: true });
+    fs.writeFileSync(path.join(INVOICES_DIR, invoiceNo + '.pdf'), pdfBuffer);
+    console.log('[INVOICE] PDF saved:', invoiceNo + '.pdf');
+  } catch (e) {
+    console.error('[INVOICE] PDF generation failed:', e.message);
+  }
+
   if (shouldEmail) {
     if (!cleanRecipient.email) return res.status(400).json({ error: 'Recipient email required to send' });
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanRecipient.email)) {
       return res.status(400).json({ error: 'Invalid recipient email' });
     }
     const { sendBespokeInvoice } = require('./email');
-    const ok = await sendBespokeInvoice(cleanRecipient, cleanItems, { dueDate, issuedDate, notes }, invoiceNo, settings);
+    const ok = await sendBespokeInvoice(cleanRecipient, cleanItems, { dueDate, issuedDate, notes }, invoiceNo, settings, pdfBuffer);
     if (!ok) return res.status(502).json({ error: 'Email delivery failed' });
 
     db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
@@ -759,6 +802,76 @@ router.get('/invoices/:id', (req, res) => {
   delete row.line_items_json;
   delete row.booking_ids_json;
   res.json({ ok: true, invoice: row });
+});
+
+// Serve (or regenerate) the PDF for a stored invoice.
+router.get('/invoices/:id/pdf', async (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid invoice ID' });
+
+  const row = db.prepare('SELECT * FROM invoices WHERE id = ?').get(id);
+  if (!row) return res.status(404).json({ error: 'Invoice not found' });
+
+  const safeNo = (row.invoice_no || '').replace(/[^A-Za-z0-9\-_]/g, '');
+  const pdfPath = path.join(INVOICES_DIR, safeNo + '.pdf');
+
+  // Serve cached file if it exists
+  if (fs.existsSync(pdfPath)) {
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="' + safeNo + '.pdf"');
+    return res.sendFile(pdfPath);
+  }
+
+  // Regenerate from stored invoice data
+  try {
+    let settings = {};
+    try {
+      const sr = db.prepare("SELECT value FROM integrations WHERE key = 'invoice_settings'").get();
+      if (sr) settings = JSON.parse(sr.value);
+    } catch (_) {}
+
+    let lineItems = [];
+    try { lineItems = JSON.parse(row.line_items_json || '[]'); } catch (_) {}
+
+    const data = {
+      invoiceNo: row.invoice_no,
+      kind: row.kind,
+      total: row.total,
+      notes: row.notes || '',
+      settings,
+      period: { issuedDate: row.issued_date, dueDate: row.due_date || '', label: row.period_label || '' }
+    };
+
+    if (row.kind === 'bespoke') {
+      data.recipient = {
+        name: row.recipient_name, email: row.recipient_email || '',
+        phone: row.recipient_phone || '', address: row.recipient_addr || ''
+      };
+      data.items = lineItems;
+    } else {
+      data.customer = {
+        full_name: row.recipient_name, email: row.recipient_email || '', phone: row.recipient_phone || ''
+      };
+      data.bookings = lineItems;
+    }
+
+    const { buildInvoicePdf } = require('./invoice-pdf');
+    const buf = await buildInvoicePdf(data);
+
+    fs.mkdirSync(INVOICES_DIR, { recursive: true });
+    fs.writeFileSync(pdfPath, buf);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="' + safeNo + '.pdf"');
+    res.send(buf);
+  } catch (e) {
+    console.error('[INVOICE PDF]', e.message);
+    res.status(500).json({ error: 'Failed to generate PDF' });
+  }
 });
 
 // Invoice settings (business details + bank details for invoices)

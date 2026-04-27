@@ -653,4 +653,4 @@ function seedDefaults() {
   } catch (e) {}
 }
 
-module.exports = { getDb };
+module.exports = { getDb, DATA_DIR };
