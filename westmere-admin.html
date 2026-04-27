@@ -1491,10 +1491,12 @@ function aaHandleImage(dataUrl,mimeType){
         return;
       }
       var bookings=d.bookings&&d.bookings.length?d.bookings:(d.booking?[d.booking]:[]);
-      if(bookings.length){
-        var intro=d.reply||(bookings.length===1?'Booking details extracted.':'Found '+bookings.length+' bookings:');
+      var hasInvoice=!!(d.invoice&&d.invoice.recipient);
+      if(bookings.length||hasInvoice){
+        var intro=d.reply||(bookings.length===1&&!hasInvoice?'Booking details extracted.':(bookings.length>1?'Found '+bookings.length+' bookings'+(hasInvoice?' and an invoice':''):hasInvoice?'Invoice details extracted.':'Found '+bookings.length+' bookings:'));
         aaAddBot(intro);
         bookings.forEach(function(b,i){aaShowBookingCard(b,i,bookings.length);});
+        if(hasInvoice)aaShowInvoiceCard(d.invoice);
         var histText=bookings.map(function(b,i){
           return 'Booking '+(i+1)+': '
             +(b.name?'Passenger: '+b.name+'. ':'')
@@ -1508,7 +1510,7 @@ function aaHandleImage(dataUrl,mimeType){
         AA_HIST.push({role:'user',content:'[User scanned an image]'});
         AA_HIST.push({role:'assistant',content:intro+'\n'+histText});
       } else {
-        var noMatch=d.reply||'No booking details found in this image.';
+        var noMatch=d.reply||'No booking or invoice details found in this image.';
         aaAddBot(noMatch);
         AA_HIST.push({role:'user',content:'[User scanned an image]'});
         AA_HIST.push({role:'assistant',content:noMatch});
@@ -1558,6 +1560,48 @@ function aaShowBookingCard(b,idx,total){
   aaAddEl(card);
 }
 
+function aaShowInvoiceCard(inv){
+  function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  var card=document.createElement('div');
+  card.className='aa-msg bot';
+  card.style.padding='0';
+  var inner=document.createElement('div');
+  inner.className='aa-booking-card';
+  var items=inv.items||[];
+  var total=items.reduce(function(s,it){return s+(Number(it.amount)||0)*(Number(it.quantity)||1);},0);
+  var itemsHtml=items.map(function(it){
+    var qty=Number(it.quantity)||1;
+    var amt=Number(it.amount)||0;
+    return '<div class="abc-row"><span class="abc-lbl">'+escHtml(it.description)+(qty>1?' ×'+qty:'')+'</span><span class="abc-val">£'+escHtml((amt*qty).toFixed(2))+'</span></div>';
+  }).join('');
+  var r=inv.recipient||{};
+  var iJson=JSON.stringify(JSON.stringify(inv));
+  inner.innerHTML='<div class="abc-title">Invoice Details</div>'
+    +'<div class="abc-row"><span class="abc-lbl">Recipient</span><span class="abc-val">'+escHtml(r.name)+'</span></div>'
+    +(r.email?'<div class="abc-row"><span class="abc-lbl">Email</span><span class="abc-val">'+escHtml(r.email)+'</span></div>':'')
+    +(r.address?'<div class="abc-row"><span class="abc-lbl">Address</span><span class="abc-val">'+escHtml(r.address)+'</span></div>':'')
+    +itemsHtml
+    +'<div class="abc-row" style="border-top:1px solid rgba(184,152,90,.2);margin-top:.3rem;padding-top:.4rem"><span class="abc-lbl" style="font-weight:600">Total</span><span class="abc-val" style="font-weight:600;color:var(--navy)">£'+total.toFixed(2)+'</span></div>'
+    +(inv.notes?'<div class="abc-row"><span class="abc-lbl">Notes</span><span class="abc-val">'+escHtml(inv.notes)+'</span></div>':'')
+    +'<div style="margin-top:.75rem">'
+    +'<button class="abc-btn" style="width:100%" onclick="aaCreateInvoice('+iJson+')">Create Invoice</button>'
+    +'</div>';
+  card.appendChild(inner);
+  aaAddEl(card);
+}
+async function aaCreateInvoice(invJson){
+  var inv;try{inv=JSON.parse(invJson);}catch(e){aaAddBot('Invalid invoice data.');return;}
+  var r=inv.recipient||{};
+  var body={recipient:{name:r.name||'',email:r.email||null,address:r.address||null},items:inv.items||[],notes:inv.notes||null,due_days:inv.due_days||14};
+  var thinking=aaAddBot('Creating invoice…',{thinking:true});
+  try{
+    var res=await fetch('/api/invoices/bespoke',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var d=await res.json();
+    thinking.remove();
+    if(d.ok){aaAddBot('Invoice created — Ref: '+(d.invoice_no||d.invoiceNo||'done'));}
+    else{aaAddBot('Could not create invoice: '+(d.error||'Unknown error'));}
+  }catch(e){thinking.remove();aaAddBot('Network error creating invoice.');}
+}
 async function aaCalOnly(bookingJson){
   var b;
   try{b=JSON.parse(bookingJson);}catch(e){return;}

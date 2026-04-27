@@ -20,7 +20,36 @@ const REFERENCE_FARES = [
   'Outside town centre: nearest town price + £2.50/extra mile'
 ].join('\n');
 
-// ── Google Calendar tool definitions ─────────────────────────────────────
+// ── Tool definitions ─────────────────────────────────────────────────────
+const CREATE_INVOICE_TOOL = {
+  name: 'create_invoice',
+  description: 'Create a bespoke invoice for a recipient. Use this when the user asks to create an invoice for a person or company, or mentions billing details, amounts owed, or line items.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      recipient_name:    { type: 'string',  description: 'Full name or company name of invoice recipient' },
+      recipient_email:   { type: 'string',  description: 'Recipient email address' },
+      recipient_address: { type: 'string',  description: 'Recipient postal address' },
+      items: {
+        type: 'array',
+        description: 'Line items on the invoice',
+        items: {
+          type: 'object',
+          properties: {
+            description: { type: 'string', description: 'Description of the service or item' },
+            amount:      { type: 'number', description: 'Unit price in GBP' },
+            quantity:    { type: 'number', description: 'Quantity (default 1)' }
+          },
+          required: ['description', 'amount']
+        }
+      },
+      notes:    { type: 'string', description: 'Additional notes or payment terms' },
+      due_days: { type: 'number', description: 'Days until payment is due (default 14)' }
+    },
+    required: ['recipient_name', 'items']
+  }
+};
+
 const CALENDAR_TOOLS = [
   {
     name: 'list_calendar_events',
@@ -80,6 +109,30 @@ const CALENDAR_TOOLS = [
 
 async function executeCalendarTool(name, input) {
   switch (name) {
+    case 'create_invoice': {
+      const db = getDb();
+      const items = (input.items || []).map(it => ({
+        description: it.description,
+        amount: Number(it.amount) || 0,
+        quantity: Number(it.quantity) || 1
+      }));
+      const total = items.reduce((s, it) => s + it.amount * it.quantity, 0);
+      const dueDays = input.due_days || 14;
+      const today2 = new Date().toISOString().split('T')[0];
+      const dueDate = new Date(Date.now() + dueDays * 864e5).toISOString().split('T')[0];
+      const invoiceNo = 'INV-' + Date.now().toString(36).toUpperCase();
+      try {
+        db.prepare(`INSERT INTO invoices (invoice_no, kind, recipient_name, recipient_email, recipient_addr, line_items_json, total, notes, issued_date, due_date)
+          VALUES (?,?,?,?,?,?,?,?,?,?)`).run(
+          invoiceNo, 'bespoke',
+          input.recipient_name || '', input.recipient_email || null, input.recipient_address || null,
+          JSON.stringify(items), total, input.notes || null, today2, dueDate
+        );
+        return `Invoice ${invoiceNo} created for ${input.recipient_name} — total £${total.toFixed(2)}, due ${dueDate}.`;
+      } catch (e) {
+        return 'Failed to create invoice: ' + e.message;
+      }
+    }
     case 'list_calendar_events': {
       const days = Math.min(60, Math.max(1, input.days || 14));
       const events = await gcal.listExternalEvents({ days });
@@ -142,6 +195,7 @@ RULES:
 - Dates: "tomorrow" = tomorrow's date, "next Monday" = compute from today, etc.
 - If driver says just a time like "3pm", assume today's date.
 - You can manage the Google Calendar: list upcoming events, create block-outs or appointments, edit or delete events. Use the calendar tools when asked.
+- You can create invoices. If the driver mentions billing someone, creating an invoice, or gives line item details (name, amount, description), use the create_invoice tool. Confirm back with the invoice number and total.
 
 Fixed fares (drop-off / return):
 ${REFERENCE_FARES}
@@ -189,7 +243,7 @@ router.post('/chat', async (req, res) => {
           model: MODEL,
           max_tokens: 1000,
           system,
-          tools: CALENDAR_TOOLS,
+          tools: [...CALENDAR_TOOLS, CREATE_INVOICE_TOOL],
           messages: currentMessages
         })
       });
@@ -250,11 +304,15 @@ router.post('/scan', async (req, res) => {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Europe/London'
   });
 
-  const scanSystem = `You are a booking extraction assistant for Westmere Private Hire, Sussex UK.
+  const scanSystem = `You are an extraction assistant for Westmere Private Hire, Sussex UK.
 Today is ${today}.
 
-TASK: Read the image and extract ALL private hire / taxi booking details. There may be ONE or MULTIPLE bookings.
+TASK: Read the image and determine what it contains — it may be:
+A) One or more private hire / taxi BOOKINGS (WhatsApp, text, email with trip details)
+B) An INVOICE or BILLING REQUEST (email/letter requesting payment, listing services and amounts)
+C) Both
 
+── BOOKINGS ──
 The image may be a screenshot of a WhatsApp conversation, email, text message, booking form, or handwritten note.
 
 MULTIPLE BOOKING RULES:
@@ -281,22 +339,25 @@ For EACH booking extract:
 Fixed airport fares (out/return):
 ${REFERENCE_FARES}
 
-ALWAYS respond with:
-1. A brief summary: "Found X booking(s): [one line per booking]"
-2. ALL extracted bookings as a JSON array inside <<<BOOKINGS>>> and <<<END>>> markers
+── INVOICE / BILLING ──
+If the image contains billing information, invoice details, or a request to pay for services:
+Extract: recipient name, email, address, line items (description, amount, quantity), notes, due date / payment terms.
 
-Format exactly like this (always use the array format, even for a single booking):
-Found 2 bookings: James Smith to Gatwick on 14 May, return on 21 May.
+OUTPUT FORMAT — include ONLY the blocks that apply:
 
+For bookings (always use array format, even for one booking):
 <<<BOOKINGS>>>
-[
-  {"name":"James Smith","phone":"07700900123","email":null,"pickup":"14 High Street, Horsham","destination":"Gatwick Airport","date":"2025-05-14","time":"06:00","passengers":1,"flight":null,"fare":55,"payment":"cash","notes":null},
-  {"name":"James Smith","phone":"07700900123","email":null,"pickup":"Gatwick Airport","destination":"14 High Street, Horsham","date":"2025-05-21","time":"13:30","passengers":1,"flight":"BA2490","fare":50,"payment":"cash","notes":"return leg"}
-]
+[{"name":"...","phone":"...","email":null,"pickup":"...","destination":"...","date":"YYYY-MM-DD","time":"HH:MM","passengers":1,"flight":null,"fare":0,"payment":"cash","notes":null}]
 <<<END>>>
 
-If no booking details are found, just say so clearly without the JSON block.
-Use null for any field you cannot determine. For fare, use 0 if unknown.`;
+For invoice/billing:
+<<<INVOICE>>>
+{"recipient":{"name":"...","email":"...","address":"..."},"items":[{"description":"...","amount":0,"quantity":1}],"notes":"...","due_days":14}
+<<<END_INVOICE>>>
+
+Start your response with a brief one-line summary of what you found.
+If nothing relevant is found, say so clearly without any JSON blocks.
+Use null for any field you cannot determine.`;
 
   try {
     const apiRes = await fetch(API_URL, {
@@ -345,17 +406,26 @@ Use null for any field you cannot determine. For fare, use 0 if unknown.`;
       try { bookings = [JSON.parse(singleMatch[1].trim())]; } catch (_) {}
     }
 
-    // Strip the marker block from the reply text shown to the user
+    // Parse invoice block
+    let invoice = null;
+    const invoiceMatch = reply.match(/<<<INVOICE>>>([\s\S]*?)<<<END_INVOICE>>>/);
+    if (invoiceMatch) {
+      try { invoice = JSON.parse(invoiceMatch[1].trim()); } catch (_) {}
+    }
+
+    // Strip all marker blocks from the reply text shown to the user
     const cleanReply = reply
       .replace(/<<<BOOKINGS>>>[\s\S]*?<<<END>>>/g, '')
       .replace(/<<<BOOKING>>>[\s\S]*?<<<END>>>/g, '')
+      .replace(/<<<INVOICE>>>[\s\S]*?<<<END_INVOICE>>>/g, '')
       .trim();
 
     res.json({
       ok: true,
       reply: cleanReply,
       bookings,                       // always an array
-      booking: bookings[0] || null    // backwards compat for old frontend code
+      booking: bookings[0] || null,   // backwards compat for old frontend code
+      invoice                         // invoice object or null
     });
   } catch (e) {
     res.status(502).json({ error: 'Scan unavailable: ' + e.message });

@@ -2323,15 +2323,17 @@ function assistHandleImage(dataUrl,mimeType){
         ASSIST_BUSY=false;setAssistStatus('live','Listening');return;
       }
       var bookings=data.bookings&&data.bookings.length?data.bookings:(data.booking?[data.booking]:[]);
-      if(bookings.length){
-        var intro=data.reply||(bookings.length===1?'Got it — here\'s what I found:':'Found '+bookings.length+' bookings:');
+      var hasInv=!!(data.invoice&&data.invoice.recipient);
+      if(bookings.length||hasInv){
+        var intro=data.reply||(bookings.length===1&&!hasInv?'Got it — here\'s what I found:':(hasInv&&!bookings.length?'Invoice details found:':'Found '+bookings.length+' booking(s)'+(hasInv?' and an invoice':'')+':'));
         appendW(intro);
         // Show a card for each booking
         bookings.forEach(function(bk,i){
           showScannedBookingCard(bk,i,bookings.length);
         });
+        if(hasInv)showInvoiceCard(data.invoice);
         // Set pending to first booking for voice-confirm flow
-        ASSIST_PENDING_BOOKING=bookings[0];
+        if(bookings.length)ASSIST_PENDING_BOOKING=bookings[0];
         // Add all to history
         var histText=bookings.map(function(bk,i){
           return 'Booking '+(i+1)+': '
@@ -2346,7 +2348,7 @@ function assistHandleImage(dataUrl,mimeType){
         ASSIST_HISTORY.push({role:'user',content:'[User scanned an image]'});
         ASSIST_HISTORY.push({role:'assistant',content:intro+'\n'+histText});
       } else {
-        var replyMsg=data.reply||'I could see the image but couldn\'t extract any bookings. Try typing the details.';
+        var replyMsg=data.reply||'I could see the image but couldn\'t find any bookings or invoice details. Try typing the details.';
         appendW(replyMsg);
         ASSIST_HISTORY.push({role:'user',content:'[User scanned an image]'});
         ASSIST_HISTORY.push({role:'assistant',content:replyMsg});
@@ -2513,6 +2515,43 @@ function showScannedBookingCard(bk,idx,total){
     +'<button class="mba-cal" onclick="calOnlyFromData(JSON.parse(this.dataset.bk))" data-bk="'+bkJson+'" style="padding:.6rem 1rem;background:rgba(184,152,90,.1);border:1px solid rgba(184,152,90,.35);color:var(--gold);font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:6px">Calendar Only</button>'
     +'</div></div></div>';
   appendHTML(html);
+}
+function showInvoiceCard(inv){
+  var r=inv.recipient||{};
+  var items=inv.items||[];
+  var total=items.reduce(function(s,it){return s+(Number(it.amount)||0)*(Number(it.quantity)||1);},0);
+  var itemsHtml=items.map(function(it){
+    var qty=Number(it.quantity)||1;var amt=Number(it.amount)||0;
+    return '<strong>'+escH(it.description)+(qty>1?' ×'+qty:'')+':</strong> £'+(amt*qty).toFixed(2);
+  }).join('<br>');
+  var invJson=escH(JSON.stringify(inv));
+  var html='<div class="msg-w"><div class="msg-w-crest">W</div><div class="msg-booking">'
+    +'<div class="msg-booking-title">Invoice Details</div>'
+    +'<div class="msg-booking-row">'
+    +(r.name?'<strong>Recipient:</strong> '+escH(r.name)+'<br>':'')
+    +(r.email?'<strong>Email:</strong> '+escH(r.email)+'<br>':'')
+    +itemsHtml
+    +'<br><strong>Total: £'+total.toFixed(2)+'</strong>'
+    +(inv.notes?'<br><strong>Notes:</strong> '+escH(inv.notes):'')
+    +'</div>'
+    +'<div class="msg-booking-actions">'
+    +'<button class="mba-confirm" onclick="createInvoiceFromAssist(JSON.parse(decodeURIComponent(this.dataset.inv)))" data-inv="'+encodeURIComponent(JSON.stringify(inv))+'">Create Invoice</button>'
+    +'</div></div></div>';
+  appendHTML(html);
+}
+async function createInvoiceFromAssist(inv){
+  setAssistStatus('thinking','Creating invoice…');
+  var r=inv.recipient||{};
+  try{
+    var resp=await fetch('/api/invoices/bespoke',{
+      method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
+      body:JSON.stringify({recipient:{name:r.name||'',email:r.email||null,address:r.address||null},items:inv.items||[],notes:inv.notes||null,due_days:inv.due_days||14})
+    });
+    var d=await resp.json();
+    if(d.ok){appendW('Invoice created — Ref: '+(d.invoice_no||d.invoiceNo||'done'));}
+    else{appendW('Could not create invoice: '+(d.error||'Unknown error'));}
+  }catch(e){appendW('Connection error creating invoice.');}
+  setAssistStatus('live','Listening');
 }
 async function calOnlyFromData(bk){
   setAssistStatus('thinking','Adding to calendar…');
