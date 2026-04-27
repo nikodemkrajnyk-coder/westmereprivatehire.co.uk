@@ -236,6 +236,58 @@ router.patch('/bookings/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+// Customer self-cancel — only the owning customer may cancel their own booking
+// and only if the booking is still in a cancellable state.
+router.post('/customer/bookings/:id/cancel', (req, res) => {
+  if (req.auth.role !== 'customer') {
+    return res.status(403).json({ error: 'Customer access required' });
+  }
+
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+
+  const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+  if (!booking) return res.status(404).json({ error: 'Booking not found' });
+
+  // Ownership check — the booking must belong to this customer
+  if (booking.customer_id !== req.auth.id) {
+    return res.status(403).json({ error: 'You can only cancel your own bookings' });
+  }
+
+  // State guard — can't cancel a trip that's already underway or done
+  const cancellable = ['pending', 'confirmed', 'offered'];
+  if (!cancellable.includes(booking.status)) {
+    return res.status(409).json({ error: 'This booking cannot be cancelled at this stage' });
+  }
+
+  try {
+    db.prepare(`UPDATE bookings SET status = 'cancelled', notes = CASE WHEN notes IS NULL OR notes = '' THEN 'Cancelled by customer' ELSE notes || ' | Cancelled by customer' END, updated_at = datetime('now') WHERE id = ?`).run(id);
+  } catch (e) {
+    console.error('[API] customer cancel failed:', e.message);
+    return res.status(500).json({ error: 'Failed to cancel booking. Please try again.' });
+  }
+
+  db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+    .run('customer', req.auth.id, 'booking_cancelled_by_customer', booking.ref, req.ip);
+
+  events.broadcast('booking:updated', {
+    id, ref: booking.ref, status: 'cancelled', prev_status: booking.status
+  });
+
+  // Remove from Google Calendar in background
+  if (booking.calendar_event_id) {
+    const gcal = require('./google-calendar');
+    gcal.deleteEvent(booking.calendar_event_id).then(ok => {
+      if (ok) {
+        try { db.prepare('UPDATE bookings SET calendar_event_id = NULL WHERE id = ?').run(id); } catch (e) {}
+      }
+    }).catch(() => {});
+  }
+
+  res.json({ ok: true });
+});
+
 // Delete booking (admin/owner only — permanently removes the record)
 router.delete('/bookings/:id', (req, res) => {
   if (!['admin', 'owner'].includes(req.auth.role)) {

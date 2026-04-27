@@ -138,6 +138,8 @@ select.fi option{background:#fff;color:var(--navy)}
 .ba-btn{font-family:var(--sans);font-size:.54rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;padding:.3rem .75rem;cursor:pointer;transition:all .25s;border:1px solid rgba(17,29,44,.12);background:transparent;color:rgba(17,29,44,.5);border-radius:6px}
 .ba-btn:hover{border-color:rgba(17,29,44,.3);color:var(--navy)}
 .ba-btn.danger:hover{border-color:var(--red);color:var(--red)}
+.ba-cancel{color:var(--red);border-color:rgba(139,34,34,.2)}
+.ba-cancel:hover{background:rgba(139,34,34,.06);border-color:var(--red);color:var(--red)}
 
 /* ── BALANCE (removed) ── */
 
@@ -1030,7 +1032,8 @@ function renderBkRow(b,showActions){
   var stLbl={confirmed:'Confirmed',active:'Active',completed:'Completed',cancelled:'Cancelled',pending:'Pending',offered:'Offered'};
   var stCls=stMap[b.status]||'t-up';
   var stTxt=stLbl[b.status]||b.status;
-  var actions=showActions?'<div class="brow-actions"><button class="ba-btn" onclick="showToast(\'To cancel please call 07930 342593\')">Cancel</button></div>':'';
+  var canCancel=showActions&&['pending','confirmed','offered'].includes(b.status);
+  var actions=canCancel?'<div class="brow-actions"><button class="ba-btn ba-cancel" onclick="cancelBooking('+b.id+',\''+b.ref+'\')">Cancel booking</button></div>':'';
   return '<div class="brow"><div class="bdate"><span class="bday">'+day+'</span><span class="bmon">'+mo+'</span></div>'
     +'<div class="binfo"><div class="broute">'+route+'</div><div class="bmeta">'+meta+'</div>'+actions+'</div>'
     +'<div class="bright"><span class="bfare">'+fareStr+'</span><span class="btag '+stCls+'">'+stTxt+'</span></div></div>';
@@ -1119,6 +1122,20 @@ function submitBooking(){
   });
 }
 
+function cancelBooking(id,ref){
+  if(!confirm('Cancel booking '+ref+'?\n\nThis cannot be undone.'))return;
+  fetch('/api/customer/bookings/'+id+'/cancel',{method:'POST',headers:{'Content-Type':'application/json'}})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.ok){
+        showToast('Booking '+ref+' cancelled');
+        if(typeof loadCustomerData==='function')loadCustomerData();
+      } else {
+        showToast(d.error||'Could not cancel — please try again');
+      }
+    })
+    .catch(function(){showToast('Connection error — please try again');});
+}
 var tt;
 function showToast(msg){
   var el=document.getElementById('toast');
