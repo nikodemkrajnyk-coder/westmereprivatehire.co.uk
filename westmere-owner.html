@@ -2397,9 +2397,6 @@ document.addEventListener('paste',function(e){
 function closeAssistant(){
   ASSIST_PANEL_OPEN=false;
   document.getElementById('assist-panel').classList.remove('on');
-  // Clear history so next session starts fresh
-  ASSIST_HISTORY=[];
-  ASSIST_PENDING_BOOKING=null;
 }
 function greetAssist(){
   appendW('Paste a WhatsApp message, type booking details, or tap the camera to scan a screenshot. I\'ll extract everything and set it up.\n\nJust confirm and the booking is created.');

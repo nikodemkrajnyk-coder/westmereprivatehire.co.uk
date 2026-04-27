@@ -1405,10 +1405,6 @@ function aaToggle(){
   if(p.classList.contains('on')){
     if(!AA_HIST.length)aaGreet();
     setTimeout(function(){document.getElementById('aa-input').focus();},250);
-  } else {
-    // Clear history so next session starts fresh
-    AA_HIST=[];
-    document.getElementById('aa-feed').innerHTML='';
   }
 }
 function aaClear(){AA_HIST=[];document.getElementById('aa-feed').innerHTML='';aaGreet();}
