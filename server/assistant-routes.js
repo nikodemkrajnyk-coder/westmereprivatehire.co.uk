@@ -68,11 +68,13 @@ const SEARCH_BOOKINGS_TOOL = {
 const CALENDAR_TOOLS = [
   {
     name: 'list_calendar_events',
-    description: 'List upcoming Google Calendar events to check the schedule or find event IDs for editing/deletion.',
+    description: 'List Google Calendar events — past OR future. Use start_date/end_date to look up a specific date or range (e.g. a past job). Use days for a rolling forward window. If the user mentions a specific past date, always use start_date and end_date.',
     input_schema: {
       type: 'object',
       properties: {
-        days: { type: 'number', description: 'How many days ahead to look (default 14, max 60)' }
+        start_date: { type: 'string', description: 'Start date in YYYY-MM-DD format. Use this to look up events on or after a specific date (including past dates).' },
+        end_date:   { type: 'string', description: 'End date in YYYY-MM-DD format. Use together with start_date.' },
+        days:       { type: 'number', description: 'Alternative to start_date/end_date: look N days ahead from today (default 14, max 60). Do NOT use this for past dates.' }
       }
     }
   },
@@ -208,9 +210,21 @@ async function executeCalendarTool(name, input) {
       }
     }
     case 'list_calendar_events': {
-      const days = Math.min(60, Math.max(1, input.days || 14));
-      const events = await gcal.listExternalEvents({ days });
-      if (!events.length) return 'No upcoming events found in the next ' + days + ' days.';
+      let gcalOpts;
+      if (input.start_date) {
+        // Specific date range — works for past and future dates
+        const from = input.start_date;
+        const to   = input.end_date || input.start_date; // single day if no end_date
+        gcalOpts = { from, to };
+      } else {
+        // Rolling forward window
+        const days = Math.min(60, Math.max(1, input.days || 14));
+        gcalOpts = { days };
+      }
+      const events = await gcal.listExternalEvents(gcalOpts);
+      if (!events.length) return input.start_date
+        ? `No calendar events found between ${input.start_date} and ${input.end_date || input.start_date}.`
+        : 'No events found.';
       return events.map(e => {
         const start = e.allDay ? e.start : new Date(e.start).toLocaleString('en-GB', { timeZone: 'Europe/London', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
         return `ID:${e.id} | ${e.title} | ${start}${e.location ? ' @ ' + e.location : ''}`;
