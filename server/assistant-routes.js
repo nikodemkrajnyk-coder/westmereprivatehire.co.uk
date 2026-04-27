@@ -50,6 +50,21 @@ const CREATE_INVOICE_TOOL = {
   }
 };
 
+const SEARCH_BOOKINGS_TOOL = {
+  name: 'search_bookings',
+  description: 'Search the Westmere bookings database by date, time, customer name, pickup or destination. Use this to find a past or upcoming job so you can pull the fare, customer details, and route for invoicing or answering questions.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      date:        { type: 'string', description: 'Date in YYYY-MM-DD format' },
+      time:        { type: 'string', description: 'Approximate time in HH:MM — matches within ±1 hour' },
+      customer:    { type: 'string', description: 'Customer or passenger name to search for (partial match)' },
+      pickup:      { type: 'string', description: 'Pickup address keyword to search for' },
+      destination: { type: 'string', description: 'Destination keyword to search for' }
+    }
+  }
+};
+
 const CALENDAR_TOOLS = [
   {
     name: 'list_calendar_events',
@@ -109,6 +124,65 @@ const CALENDAR_TOOLS = [
 
 async function executeCalendarTool(name, input) {
   switch (name) {
+    case 'search_bookings': {
+      const db = getDb();
+      const conditions = [];
+      const params = [];
+
+      if (input.date) {
+        conditions.push('b.date = ?');
+        params.push(input.date);
+      }
+      if (input.customer) {
+        conditions.push('(LOWER(COALESCE(c.full_name, b.passenger_name, \'\')) LIKE ? OR LOWER(b.notes) LIKE ?)');
+        const q = '%' + input.customer.toLowerCase() + '%';
+        params.push(q, q);
+      }
+      if (input.pickup) {
+        conditions.push('LOWER(b.pickup) LIKE ?');
+        params.push('%' + input.pickup.toLowerCase() + '%');
+      }
+      if (input.destination) {
+        conditions.push('LOWER(b.destination) LIKE ?');
+        params.push('%' + input.destination.toLowerCase() + '%');
+      }
+
+      const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
+      const rows = db.prepare(`
+        SELECT b.id, b.ref, b.date, b.time, b.pickup, b.destination, b.fare, b.payment,
+               b.passengers, b.flight, b.notes, b.status,
+               COALESCE(c.full_name, b.passenger_name) AS customer_name,
+               COALESCE(c.email, b.passenger_email) AS customer_email,
+               COALESCE(c.phone, b.passenger_phone) AS customer_phone
+        FROM bookings b
+        LEFT JOIN customers c ON b.customer_id = c.id
+        ${where}
+        ORDER BY b.date DESC, b.time DESC
+        LIMIT 10
+      `).all(...params);
+
+      if (!rows.length) return 'No bookings found matching those criteria.';
+
+      // If a time was given, narrow to bookings within ±90 minutes
+      let results = rows;
+      if (input.time) {
+        const [th, tm] = input.time.split(':').map(Number);
+        const pivot = th * 60 + (tm || 0);
+        results = rows.filter(r => {
+          if (!r.time) return true;
+          const [rh, rm] = r.time.split(':').map(Number);
+          return Math.abs(rh * 60 + (rm || 0) - pivot) <= 90;
+        });
+        if (!results.length) results = rows; // fall back to all if none match window
+      }
+
+      return results.map(r =>
+        `Ref:${r.ref} | ${r.date} ${r.time || ''} | ${r.customer_name || 'Unknown'} | ${r.pickup} → ${r.destination} | £${r.fare || '?'} | ${r.payment || 'cash'} | Status:${r.status}` +
+        (r.customer_email ? ` | Email:${r.customer_email}` : '') +
+        (r.customer_phone ? ` | Phone:${r.customer_phone}` : '') +
+        (r.notes ? ` | Notes:${r.notes}` : '')
+      ).join('\n');
+    }
     case 'create_invoice': {
       const db = getDb();
       const items = (input.items || []).map(it => ({
@@ -195,7 +269,10 @@ RULES:
 - Dates: "tomorrow" = tomorrow's date, "next Monday" = compute from today, etc.
 - If driver says just a time like "3pm", assume today's date.
 - You can manage the Google Calendar: list upcoming events, create block-outs or appointments, edit or delete events. Use the calendar tools when asked.
-- You can create invoices. If the driver mentions billing someone, creating an invoice, or gives line item details (name, amount, description), use the create_invoice tool. Confirm back with the invoice number and total.
+- You can search past and upcoming bookings using the search_bookings tool — search by date, time, customer name, pickup, or destination.
+- You can create invoices using the create_invoice tool. When the user asks to invoice a job, first call search_bookings to find the booking (use the date and/or time and/or customer name they mention), then create_invoice using the fare, customer name, email, and route from the booking. If no booking is found in the database, fall back to list_calendar_events to find the job in the calendar, then create the invoice from those details.
+- If the user says something like "invoice Tuesday's 11am job for ABD" — search_bookings(date: that Tuesday's date, time: "11:00"), find the match, then create_invoice with the found details.
+- You can also create invoices from scratch if the user provides all details directly.
 
 Fixed fares (drop-off / return):
 ${REFERENCE_FARES}
@@ -243,7 +320,7 @@ router.post('/chat', async (req, res) => {
           model: MODEL,
           max_tokens: 1000,
           system,
-          tools: [...CALENDAR_TOOLS, CREATE_INVOICE_TOOL],
+          tools: [...CALENDAR_TOOLS, SEARCH_BOOKINGS_TOOL, CREATE_INVOICE_TOOL],
           messages: currentMessages
         })
       });
