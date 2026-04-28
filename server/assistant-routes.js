@@ -20,7 +20,183 @@ const REFERENCE_FARES = [
   'Outside town centre: nearest town price + £2.50/extra mile'
 ].join('\n');
 
+// ── Fare engine (server-side mirror of westmere-rider.html) ─────────────
+const FARE_CF = {
+  brighton:      { ga:{out:72,ret:68},  he:{out:128,ret:133}, st:{out:215,ret:220}, lu:{out:168,ret:173}, so:{out:92,ret:88},   ci:{out:185,ret:190} },
+  lewes:         { ga:{out:78,ret:74},  he:{out:140,ret:145}, st:{out:225,ret:230}, lu:{out:180,ret:185}, so:{out:105,ret:100}, ci:{out:195,ret:200} },
+  horsham:       { ga:{out:55,ret:50},  he:{out:120,ret:125}, st:{out:205,ret:210}, lu:{out:160,ret:165}, so:{out:85,ret:80},   ci:{out:175,ret:180} },
+  crawley:       { ga:{out:35,ret:32},  he:{out:95,ret:100},  st:{out:190,ret:195}, lu:{out:145,ret:150}, so:{out:78,ret:75},   ci:{out:160,ret:165} },
+  worthing:      { ga:{out:82,ret:78},  he:{out:138,ret:143}, st:{out:228,ret:233}, lu:{out:178,ret:183}, so:{out:75,ret:72},   ci:{out:198,ret:203} },
+  haywards:      { ga:{out:52,ret:48},  he:{out:115,ret:120}, st:{out:200,ret:205}, lu:{out:155,ret:160}, so:{out:95,ret:90},   ci:{out:172,ret:177} },
+  burgess:       { ga:{out:55,ret:50},  he:{out:118,ret:123}, st:{out:202,ret:207}, lu:{out:158,ret:163}, so:{out:92,ret:88},   ci:{out:175,ret:180} },
+  seaford:       { ga:{out:85,ret:80},  he:{out:148,ret:153}, st:{out:235,ret:240}, lu:{out:188,ret:193}, so:{out:112,ret:108}, ci:{out:205,ret:210} },
+  eastbourne:    { ga:{out:95,ret:90},  he:{out:158,ret:163}, st:{out:245,ret:250}, lu:{out:198,ret:203}, so:{out:122,ret:118}, ci:{out:215,ret:220} },
+  uckfield:      { ga:{out:60,ret:55},  he:{out:125,ret:130}, st:{out:208,ret:213}, lu:{out:162,ret:167}, so:{out:98,ret:94},   ci:{out:178,ret:183} },
+  eastgrinstead: { ga:{out:42,ret:38},  he:{out:105,ret:110}, st:{out:192,ret:197}, lu:{out:148,ret:153}, so:{out:88,ret:84},   ci:{out:165,ret:170} },
+  pulborough:    { ga:{out:68,ret:64},  he:{out:118,ret:123}, st:{out:205,ret:210}, lu:{out:158,ret:163}, so:{out:75,ret:72},   ci:{out:172,ret:177} },
+  arundel:       { ga:{out:78,ret:74},  he:{out:128,ret:133}, st:{out:215,ret:220}, lu:{out:168,ret:173}, so:{out:72,ret:68},   ci:{out:182,ret:187} },
+  chichester:    { ga:{out:88,ret:84},  he:{out:135,ret:140}, st:{out:228,ret:233}, lu:{out:178,ret:183}, so:{out:55,ret:50},   ci:{out:195,ret:200} },
+  midhurst:      { ga:{out:82,ret:78},  he:{out:115,ret:120}, st:{out:208,ret:213}, lu:{out:158,ret:163}, so:{out:65,ret:60},   ci:{out:178,ret:183} }
+};
+// Airport surcharges [drop-off, pickup]
+const FARE_APC = { ga:[10,10], he:[7,10], st:[10,10], lu:[7,7], so:[5,5], ci:[8,8] };
+const FARE_APFULL = { ga:'Gatwick', he:'Heathrow', st:'Stansted', lu:'Luton', so:'Southampton', ci:'London City' };
+// Airport coords for routing when town is unknown
+const FARE_AP_COORDS = {
+  ga:{lat:51.1537,lon:-0.1821}, he:{lat:51.47,lon:-0.4543},
+  st:{lat:51.885,lon:0.235},    lu:{lat:51.8747,lon:-0.3684},
+  so:{lat:50.9503,lon:-1.3568}, ci:{lat:51.5048,lon:0.0495}
+};
+
+function _fareNormTown(s) {
+  if (!s) return null;
+  const l = s.toLowerCase();
+  const pc = [['rh12','horsham'],['rh13','horsham'],['rh10','crawley'],['rh11','crawley'],['rh16','haywards'],['rh15','burgess'],['rh19','eastgrinstead'],['rh20','pulborough'],['bn1','brighton'],['bn2','brighton'],['bn3','brighton'],['bn7','lewes'],['bn8','lewes'],['bn11','worthing'],['bn18','arundel'],['bn21','eastbourne'],['bn22','eastbourne'],['bn25','seaford'],['tn22','uckfield'],['po18','chichester'],['po19','chichester'],['gu29','midhurst']];
+  for (const [k, v] of pc) { if (new RegExp('\\b'+k+'\\b').test(l)) return v; }
+  const nm = [['haywards heath','haywards'],['burgess hill','burgess'],['east grinstead','eastgrinstead'],['eastbourne','eastbourne'],['pulborough','pulborough'],['chichester','chichester'],['midhurst','midhurst'],['horsham','horsham'],['crawley','crawley'],['worthing','worthing'],['arundel','arundel'],['seaford','seaford'],['uckfield','uckfield'],['eastgrinstead','eastgrinstead'],['brighton','brighton'],['hove','brighton'],['lewes','lewes']];
+  for (const [k, v] of nm) { if (l.includes(k)) return v; }
+  return null;
+}
+
+function _fareNormAirport(s) {
+  if (!s) return null;
+  const l = s.toLowerCase();
+  if (l.includes('gatwick')) return 'ga';
+  if (l.includes('heathrow')) return 'he';
+  if (l.includes('stansted')) return 'st';
+  if (l.includes('luton')) return 'lu';
+  if (l.includes('southampton')) return 'so';
+  if (l.includes('london city') || l.includes('city airport')) return 'ci';
+  return null;
+}
+
+function _fareCalcMile(mi, night) {
+  const m = Math.max(mi, 10); // 10-mile minimum
+  let f;
+  if (night) {
+    f = m <= 10 ? m * 3.42 : m <= 20 ? 34.2 + (m - 10) * 2.79 : 62.1 + (m - 20) * 2.52;
+  } else {
+    f = m <= 10 ? m * 3.60 : m <= 20 ? 36 + (m - 10) * 2.25 : 58.5 + (m - 20) * 2.03;
+  }
+  return Math.ceil(f / 0.5) * 0.5;
+}
+
+async function _fareGeocode(addr) {
+  const q = /\bUK\b/i.test(addr) ? addr : addr + ', UK';
+  try {
+    const r = await fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q) + '&format=json&limit=1&countrycodes=gb', {
+      headers: { 'Accept': 'application/json', 'User-Agent': 'WestmerePrivateHire/1.0' }
+    });
+    const arr = await r.json();
+    if (arr && arr[0]) return { lat: parseFloat(arr[0].lat), lon: parseFloat(arr[0].lon) };
+  } catch (_) {}
+  return null;
+}
+
+async function _fareRoute(lat1, lon1, lat2, lon2) {
+  try {
+    const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${lon1},${lat1};${lon2},${lat2}?overview=false`);
+    const d = await r.json();
+    if (d.routes && d.routes.length) return { distance: d.routes[0].distance, duration: d.routes[0].duration };
+  } catch (_) {}
+  return null;
+}
+
+async function calculateFare(pickup, destination, timeStr) {
+  const h = timeStr ? parseInt(timeStr.split(':')[0], 10) : new Date().getHours();
+  const night = h >= 22 || h < 6;
+  const rateLabel = night ? 'night rate' : 'day rate';
+
+  const puAP = _fareNormAirport(pickup);
+  const deAP = _fareNormAirport(destination);
+  const puT  = _fareNormTown(pickup);
+  const deT  = _fareNormTown(destination);
+
+  // ── Destination is airport ──────────────────────────────────────────────
+  if (deAP && !puAP) {
+    const townKey = puT;
+    if (townKey && FARE_CF[townKey] && FARE_CF[townKey][deAP]) {
+      const base = FARE_CF[townKey][deAP].out;
+      const sur  = FARE_APC[deAP][0];
+      const total = base + sur;
+      const rdKey = townKey + '_' + deAP;
+      // Use known reference distances if available
+      const RD = { horsham_ga:{m:12,t:22}, horsham_he:{m:38,t:55}, lewes_ga:{m:28,t:38}, lewes_he:{m:62,t:80}, brighton_ga:{m:27,t:40}, brighton_he:{m:58,t:75}, worthing_ga:{m:28,t:42}, worthing_he:{m:55,t:70}, burgess_ga:{m:10,t:18}, burgess_he:{m:42,t:58}, haywards_ga:{m:12,t:22}, haywards_he:{m:44,t:60}, crawley_ga:{m:8,t:15}, crawley_he:{m:32,t:48}, eastbourne_ga:{m:40,t:55}, eastbourne_he:{m:72,t:95}, seaford_ga:{m:35,t:48}, uckfield_ga:{m:18,t:28}, eastgrinstead_ga:{m:14,t:22} };
+      const rd = RD[rdKey] || {};
+      return { fare: total, distance_miles: rd.m || null, duration_min: rd.t || null, rate_type: 'fixed', breakdown: `Fixed airport fare: £${base} + ${FARE_APFULL[deAP]} drop-off surcharge £${sur} = £${total}` };
+    }
+    // Unknown town — geocode + OSRM
+    const [gc, apCoords] = await Promise.all([_fareGeocode(pickup), Promise.resolve(FARE_AP_COORDS[deAP])]);
+    if (gc && apCoords) {
+      const rt = await _fareRoute(gc.lat, gc.lon, apCoords.lat, apCoords.lon);
+      if (rt) {
+        const mi = Math.round(rt.distance / 1609.34 * 10) / 10;
+        const ti = Math.round(rt.duration / 60);
+        const sur = FARE_APC[deAP][0];
+        const f = _fareCalcMile(mi, night) + sur;
+        return { fare: Math.ceil(f/0.5)*0.5, distance_miles: mi, duration_min: ti, rate_type: rateLabel, breakdown: `${mi} miles × tapered ${rateLabel} + ${FARE_APFULL[deAP]} drop-off surcharge £${sur}` };
+      }
+    }
+    const fallback = _fareCalcMile(15, night) + FARE_APC[deAP][0];
+    return { fare: fallback, distance_miles: null, duration_min: null, rate_type: rateLabel + ' (estimated)', breakdown: 'Estimated ~15 miles + ' + FARE_APFULL[deAP] + ' drop-off surcharge' };
+  }
+
+  // ── Pickup is airport ───────────────────────────────────────────────────
+  if (puAP && !deAP) {
+    const townKey = deT;
+    if (townKey && FARE_CF[townKey] && FARE_CF[townKey][puAP]) {
+      const base = FARE_CF[townKey][puAP].ret;
+      const sur  = FARE_APC[puAP][1];
+      const total = base + sur;
+      return { fare: total, distance_miles: null, duration_min: null, rate_type: 'fixed', breakdown: `Fixed airport fare (return): £${base} + ${FARE_APFULL[puAP]} pickup surcharge £${sur} = £${total}` };
+    }
+    const [apCoords, gc] = [FARE_AP_COORDS[puAP], await _fareGeocode(destination)];
+    if (gc && apCoords) {
+      const rt = await _fareRoute(apCoords.lat, apCoords.lon, gc.lat, gc.lon);
+      if (rt) {
+        const mi = Math.round(rt.distance / 1609.34 * 10) / 10;
+        const ti = Math.round(rt.duration / 60);
+        const sur = FARE_APC[puAP][1];
+        const f = _fareCalcMile(mi, night) + sur;
+        return { fare: Math.ceil(f/0.5)*0.5, distance_miles: mi, duration_min: ti, rate_type: rateLabel, breakdown: `${mi} miles × tapered ${rateLabel} + ${FARE_APFULL[puAP]} pickup surcharge £${sur}` };
+      }
+    }
+    const fallback = _fareCalcMile(15, night) + FARE_APC[puAP][1];
+    return { fare: fallback, distance_miles: null, duration_min: null, rate_type: rateLabel + ' (estimated)', breakdown: 'Estimated ~15 miles + ' + FARE_APFULL[puAP] + ' pickup surcharge' };
+  }
+
+  // ── Town-to-town: live routing ──────────────────────────────────────────
+  const [gc1, gc2] = await Promise.all([_fareGeocode(pickup), _fareGeocode(destination)]);
+  if (gc1 && gc2) {
+    const rt = await _fareRoute(gc1.lat, gc1.lon, gc2.lat, gc2.lon);
+    if (rt) {
+      const mi = Math.round(rt.distance / 1609.34 * 10) / 10;
+      const ti = Math.round(rt.duration / 60);
+      const f = _fareCalcMile(mi, night);
+      const minNote = mi < 10 ? ' (10-mile minimum applies)' : '';
+      return { fare: f, distance_miles: mi, duration_min: ti, rate_type: rateLabel, breakdown: `${mi} miles × tapered ${rateLabel}${minNote}` };
+    }
+  }
+  // Fallback
+  const f = _fareCalcMile(8, night);
+  return { fare: f, distance_miles: null, duration_min: null, rate_type: rateLabel + ' (estimated)', breakdown: 'Could not geocode route — estimated short local journey' };
+}
+
 // ── Tool definitions ─────────────────────────────────────────────────────
+const CALCULATE_FARE_TOOL = {
+  name: 'calculate_fare',
+  description: 'Calculate the fare for a journey between two locations using the Westmere fare engine. Checks fixed airport fares first (Gatwick, Heathrow, Stansted, Luton, Southampton, London City), then falls back to tapered per-mile calculation via OSRM routing. Use this whenever the driver asks for a price/quote/fare.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      pickup:      { type: 'string', description: 'Pickup address or location name' },
+      destination: { type: 'string', description: 'Destination address or location name' },
+      time:        { type: 'string', description: 'Journey time in HH:MM 24h format. Used to determine day/night rate. Omit to use current time.' }
+    },
+    required: ['pickup', 'destination']
+  }
+};
+
 const CREATE_INVOICE_TOOL = {
   name: 'create_invoice',
   description: 'Create a bespoke invoice for a recipient. Use this when the user asks to create an invoice for a person or company, or mentions billing details, amounts owed, or line items.',
@@ -125,6 +301,16 @@ const CALENDAR_TOOLS = [
 
 async function executeCalendarTool(name, input) {
   switch (name) {
+    case 'calculate_fare': {
+      try {
+        const result = await calculateFare(input.pickup, input.destination, input.time || null);
+        const mi = result.distance_miles != null ? result.distance_miles + ' miles' : 'distance unknown';
+        const ti = result.duration_min != null ? '~' + result.duration_min + ' min' : 'duration unknown';
+        return `Fare: £${result.fare} | ${mi} | ${ti} | Rate: ${result.rate_type} | ${result.breakdown}`;
+      } catch (e) {
+        return 'Fare calculation error: ' + e.message;
+      }
+    }
     case 'search_bookings': {
       const db = getDb();
       const conditions = [];
@@ -220,7 +406,7 @@ async function executeCalendarTool(name, input) {
           JSON.stringify(items), total, input.notes || null, today2
         );
         const itemLines = items.map(it => `  • ${it.description}${it.quantity > 1 ? ' ×' + it.quantity : ''}: £${(it.amount * it.quantity).toFixed(2)}`).join('\n');
-        return `Invoice ${invoiceNo} created.\nRecipient: ${input.recipient_name}${input.recipient_email ? ' <' + input.recipient_email + '>' : ''}\nItems:\n${itemLines}\nTotal: £${total.toFixed(2)}\nDue: ${dueDate}`;
+        return `Invoice ${invoiceNo} created.\nRecipient: ${input.recipient_name}${input.recipient_email ? ' <' + input.recipient_email + '>' : ''}\nItems:\n${itemLines}\nTotal: £${total.toFixed(2)}`;
       } catch (e) {
         return 'Failed to create invoice: ' + e.message;
       }
@@ -299,7 +485,7 @@ RULES:
 - Use null for unknown optional fields. For fare, look up from the reference table if the route matches.
 - If the driver says "yes", "confirm", "book it", "go ahead" after seeing a summary, output <<<CONFIRM>>> on its own line.
 - If driver says "cancel", "no", "forget it", output <<<CANCEL>>> on its own line.
-- For general questions (fare quotes, schedule, etc.), just answer directly.
+- For fare quotes, ALWAYS use the calculate_fare tool — never guess or estimate from memory. Say something like "Horsham to Gatwick is £55 (fixed airport fare, 12 miles, ~22 min)" or "Crawley to Brighton is £36 (~10 miles, day rate)".
 - "payment" should default to "cash" unless stated otherwise. Options: cash, card, account, invoice.
 - Dates: "tomorrow" = tomorrow's date, "next Monday" = compute from today, etc.
 - If driver says just a time like "3pm", assume today's date.
@@ -308,6 +494,7 @@ RULES:
 - You can create invoices using the create_invoice tool. When the user asks to invoice a job, first call search_bookings to find the booking (use the date and/or time and/or customer name they mention), then create_invoice using the fare, customer name, email, and route from the booking. If no booking is found in the database, fall back to list_calendar_events to find the job in the calendar, then create the invoice from those details.
 - If the user says something like "invoice Tuesday's 11am job for ABD" — search_bookings(date: that Tuesday's date, time: "11:00"), find the match, then create_invoice with the found details.
 - You can also create invoices from scratch if the user provides all details directly.
+- You can calculate fares using the calculate_fare tool. Use it whenever someone asks "how much to go to X" or "what's the fare from X to Y". It checks fixed airport fares first, then uses live routing for anything else. Day rate applies 06:00–21:59, night rate 22:00–05:59.
 
 Fixed fares (drop-off / return):
 ${REFERENCE_FARES}
@@ -355,7 +542,7 @@ router.post('/chat', async (req, res) => {
           model: MODEL,
           max_tokens: 1000,
           system,
-          tools: [...CALENDAR_TOOLS, SEARCH_BOOKINGS_TOOL, CREATE_INVOICE_TOOL],
+          tools: [...CALENDAR_TOOLS, SEARCH_BOOKINGS_TOOL, CREATE_INVOICE_TOOL, CALCULATE_FARE_TOOL],
           messages: currentMessages
         })
       });
