@@ -219,11 +219,12 @@ const CREATE_INVOICE_TOOL = {
       recipient_address: { type: 'string',  description: 'Recipient postal address' },
       items: {
         type: 'array',
-        description: 'Line items on the invoice',
+        description: 'Line items on the invoice. Each item can be from a different date — include the date so it appears on the invoice. For multi-job invoices, add one item per job.',
         items: {
           type: 'object',
           properties: {
-            description: { type: 'string', description: 'Description of the service or item' },
+            date:        { type: 'string', description: 'Date of the job in YYYY-MM-DD format (optional but recommended)' },
+            description: { type: 'string', description: 'Description of the service or item, e.g. "Horsham → Gatwick"' },
             amount:      { type: 'number', description: 'Unit price in GBP' },
             quantity:    { type: 'number', description: 'Quantity (default 1)' }
           },
@@ -476,6 +477,7 @@ async function executeCalendarTool(name, input) {
         } catch (e) { /* ignore */ }
       }
       const items = (input.items || []).map(it => ({
+        date: it.date || null,
         description: it.description,
         amount: Number(it.amount) || 0,
         quantity: Number(it.quantity) || 1
@@ -490,7 +492,7 @@ async function executeCalendarTool(name, input) {
           input.recipient_name || '', input.recipient_email || null, input.recipient_address || null,
           JSON.stringify(items), total, input.notes || null, today2
         );
-        const itemLines = items.map(it => `  • ${it.description}${it.quantity > 1 ? ' ×' + it.quantity : ''}: £${(it.amount * it.quantity).toFixed(2)}`).join('\n');
+        const itemLines = items.map(it => `  • ${it.date ? it.date + ' — ' : ''}${it.description}${it.quantity > 1 ? ' ×' + it.quantity : ''}: £${(it.amount * it.quantity).toFixed(2)}`).join('\n');
         return `Invoice ${invoiceNo} created.\nRecipient: ${input.recipient_name}${input.recipient_email ? ' <' + input.recipient_email + '>' : ''}\nItems:\n${itemLines}\nTotal: £${total.toFixed(2)}`;
       } catch (e) {
         return 'Failed to create invoice: ' + e.message;

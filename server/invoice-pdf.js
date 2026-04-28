@@ -222,12 +222,21 @@ function drawInvoice(doc, data) {
     const items = data.items || [];
     for (let i = 0; i < items.length; i++) {
       const it = items[i];
-      if (i % 2 === 1) vbox(doc, M, y, CW, ROW_H, IVORY);
+      const hasDate = !!(it.date && String(it.date).trim());
+      const rowH = hasDate ? ROW_H + 12 : ROW_H;
+      if (i % 2 === 1) vbox(doc, M, y, CW, rowH, IVORY);
+      if (hasDate) {
+        doc.font('Helvetica').fontSize(7.5).fillColor(MUTED)
+           .text(fmtDate(it.date), M + 6, y + 5, { lineBreak: false });
+        doc.font('Times-Roman').fontSize(11).fillColor(NAVY)
+           .text(String(it.description || ''), M + 6, y + 16, { width: CW - 90, lineBreak: false });
+      } else {
+        doc.font('Times-Roman').fontSize(11).fillColor(NAVY)
+           .text(String(it.description || ''), M + 6, y + 7, { width: CW - 90, lineBreak: false });
+      }
       doc.font('Times-Roman').fontSize(11).fillColor(NAVY)
-         .text(String(it.description || ''), M + 6, y + 7, { width: CW - 90, lineBreak: false });
-      doc.font('Times-Roman').fontSize(11).fillColor(NAVY)
-         .text('£' + (+it.amount || 0).toFixed(2), M, y + 7, { width: CW - 6, align: 'right', lineBreak: false });
-      y += ROW_H;
+         .text('£' + (+it.amount || 0).toFixed(2), M, y + (hasDate ? 16 : 7), { width: CW - 6, align: 'right', lineBreak: false });
+      y += rowH;
     }
     if (!items.length) {
       doc.font('Times-Roman').fontSize(11).fillColor(MUTED)

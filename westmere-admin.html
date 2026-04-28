@@ -1332,8 +1332,17 @@ if ('serviceWorker' in navigator) {
         <div class="fg"><label class="fl">Recipient Address</label><textarea class="fi" id="ni-rec-address" rows="3" placeholder="Street, Town, Postcode" style="resize:vertical;min-height:70px"></textarea></div>
         <div class="fg">
           <label class="fl">Line Items *</label>
-          <div id="ni-items" style="display:flex;flex-direction:column;gap:.5rem;margin-bottom:.5rem"></div>
-          <button class="btn btn-ghost btn-sm" onclick="addBespokeItem()" style="font-size:.68rem;padding:.4rem .8rem">+ Add Line</button>
+          <div style="display:grid;grid-template-columns:110px 1fr 100px 28px;gap:.35rem;margin-bottom:.25rem">
+            <div style="font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.4)">Date</div>
+            <div style="font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.4)">Description</div>
+            <div style="font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.4);text-align:right">Amount £</div>
+            <div></div>
+          </div>
+          <div id="ni-items" style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:.5rem"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.2rem">
+            <button class="btn btn-ghost btn-sm" onclick="addBespokeItem()" style="font-size:.68rem;padding:.4rem .8rem">+ Add Line</button>
+            <div style="font-size:.78rem;color:rgba(17,29,44,.5)">Total: <strong id="ni-running-total" style="color:var(--navy)">£0.00</strong></div>
+          </div>
         </div>
 <div class="fg"><label class="fl">Notes (optional)</label><textarea class="fi" id="ni-notes" rows="2" placeholder="Additional notes shown on the invoice" style="resize:vertical;min-height:60px"></textarea></div>
       </div>
@@ -2692,24 +2701,34 @@ function setInvoiceMode(mode){
   }
 }
 
-function addBespokeItem(){
+function addBespokeItem(date,desc,amt){
   var wrap=document.getElementById('ni-items');
   var row=document.createElement('div');
   row.className='ni-item';
-  row.style.cssText='display:grid;grid-template-columns:1fr 120px 32px;gap:.4rem;align-items:center';
-  row.innerHTML='<input class="fi ni-desc" placeholder="Description" style="font-size:.85rem">'
-    +'<input class="fi ni-amt" type="number" step="0.01" min="0" placeholder="0.00" style="font-size:.85rem">'
-    +'<button onclick="this.parentNode.remove()" style="background:transparent;border:none;color:rgba(17,29,44,.4);cursor:pointer;font-size:1.2rem;padding:0">&times;</button>';
+  row.style.cssText='display:grid;grid-template-columns:110px 1fr 100px 28px;gap:.35rem;align-items:center';
+  row.innerHTML='<input class="fi ni-date" type="date" style="font-size:.82rem;padding:.45rem .4rem" value="'+(date||'')+'">'
+    +'<input class="fi ni-desc" placeholder="e.g. Horsham → Gatwick" style="font-size:.85rem" value="'+escTo(desc||'')+'">'
+    +'<input class="fi ni-amt" type="number" step="0.01" min="0" placeholder="0.00" style="font-size:.85rem;text-align:right" value="'+(amt||'')+'" oninput="updateBespokeTotal()">'
+    +'<button onclick="this.parentNode.remove();updateBespokeTotal()" style="background:transparent;border:none;color:rgba(17,29,44,.35);cursor:pointer;font-size:1.1rem;padding:0;line-height:1">&times;</button>';
   wrap.appendChild(row);
+  updateBespokeTotal();
+}
+
+function updateBespokeTotal(){
+  var total=0;
+  document.querySelectorAll('#ni-items .ni-amt').forEach(function(i){total+=parseFloat(i.value)||0;});
+  var el=document.getElementById('ni-running-total');
+  if(el)el.textContent='£'+total.toFixed(2);
 }
 
 function getBespokeItems(){
   var rows=document.querySelectorAll('#ni-items .ni-item');
   var items=[];
   rows.forEach(function(r){
+    var date=r.querySelector('.ni-date')?r.querySelector('.ni-date').value.trim():'';
     var desc=r.querySelector('.ni-desc').value.trim();
     var amt=+r.querySelector('.ni-amt').value;
-    if(desc&&amt>0)items.push({description:desc,amount:amt});
+    if(desc&&amt>0)items.push({date:date||null,description:desc,amount:amt});
   });
   return items;
 }
@@ -2747,6 +2766,7 @@ function openNewInvoice(){
   document.getElementById('ni-rec-address').value='';
   document.getElementById('ni-notes').value='';
   document.getElementById('ni-items').innerHTML='';
+  var rt=document.getElementById('ni-running-total');if(rt)rt.textContent='£0.00';
   var sri=document.getElementById('ni-saved-recipient-input');if(sri)sri.value='';
   var srl=document.getElementById('ni-saved-recipient-list');if(srl)srl.style.display='none';
   addBespokeItem();
@@ -3095,10 +3115,23 @@ function loadInvoiceHistory(){
         +'<td style="text-align:right;font-family:Georgia,serif;color:var(--navy)">'+total+'</td>'
         +'<td><span style="font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)">'+kind+'</span></td>'
         +'<td style="white-space:nowrap">'+escTo(inv.issued_date||'')+'</td>'
-        +'<td><button class="btn btn-ghost btn-sm" style="font-size:.65rem;padding:.3rem .7rem" onclick="event.stopPropagation();viewInvoice('+inv.id+')">View</button></td>'
+        +'<td style="white-space:nowrap">'
+          +'<button class="btn btn-ghost btn-sm" style="font-size:.65rem;padding:.3rem .7rem" onclick="event.stopPropagation();viewInvoice('+inv.id+')">View</button>'
+          +' <button class="btn btn-ghost btn-sm" style="font-size:.65rem;padding:.3rem .7rem;color:#a33;border-color:rgba(163,51,51,.25)" onclick="event.stopPropagation();deleteInvoice('+inv.id+',\''+escTo(inv.invoice_no)+'\')">Delete</button>'
+        +'</td>'
         +'</tr>';
     }).join('');
   }).catch(function(){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">Unable to load history</td></tr>';});
+}
+
+async function deleteInvoice(id, invoiceNo){
+  if(!confirm('Delete invoice '+invoiceNo+'? This cannot be undone.'))return;
+  try{
+    var r=await fetch('/api/invoices/'+id,{method:'DELETE',credentials:'include'});
+    var d=await r.json();
+    if(d.ok){showToast('Invoice '+invoiceNo+' deleted');loadInvoiceHistory();}
+    else showToast(d.error||'Delete failed');
+  }catch(e){showToast('Network error');}
 }
 
 var _INV_SETTINGS_CACHE=null;
