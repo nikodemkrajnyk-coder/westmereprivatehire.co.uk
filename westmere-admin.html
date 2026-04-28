@@ -1340,7 +1340,7 @@ if ('serviceWorker' in navigator) {
           </div>
           <div id="ni-items" style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:.5rem"></div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.2rem">
-            <button class="btn btn-ghost btn-sm" onclick="addBespokeItem()" style="font-size:.68rem;padding:.4rem .8rem">+ Add Line</button>
+            <button class="btn btn-ghost btn-sm" onclick="addBespokeItem()" style="font-size:.68rem;padding:.4rem .8rem">+ Add Line Item</button>
             <div style="font-size:.78rem;color:rgba(17,29,44,.5)">Total: <strong id="ni-running-total" style="color:var(--navy)">£0.00</strong></div>
           </div>
         </div>
@@ -2706,10 +2706,11 @@ function addBespokeItem(date,desc,amt){
   var row=document.createElement('div');
   row.className='ni-item';
   row.style.cssText='display:grid;grid-template-columns:110px 1fr 100px 28px;gap:.35rem;align-items:center';
-  row.innerHTML='<input class="fi ni-date" type="date" style="font-size:.82rem;padding:.45rem .4rem" value="'+(date||'')+'">'
+  var today=new Date().toISOString().slice(0,10);
+  row.innerHTML='<input class="fi ni-date" type="date" style="font-size:.82rem;padding:.45rem .4rem" value="'+(date||today)+'">'
     +'<input class="fi ni-desc" placeholder="e.g. Horsham → Gatwick" style="font-size:.85rem" value="'+escTo(desc||'')+'">'
     +'<input class="fi ni-amt" type="number" step="0.01" min="0" placeholder="0.00" style="font-size:.85rem;text-align:right" value="'+(amt||'')+'" oninput="updateBespokeTotal()">'
-    +'<button onclick="this.parentNode.remove();updateBespokeTotal()" style="background:transparent;border:none;color:rgba(17,29,44,.35);cursor:pointer;font-size:1.1rem;padding:0;line-height:1">&times;</button>';
+    +'<button onclick="this.parentNode.remove();updateBespokeTotal()" title="Remove" style="background:transparent;border:none;color:#c0392b;cursor:pointer;font-size:1.2rem;padding:0;line-height:1;opacity:.7" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.7">&times;</button>';
   wrap.appendChild(row);
   updateBespokeTotal();
 }
