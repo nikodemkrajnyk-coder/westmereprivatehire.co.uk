@@ -804,6 +804,24 @@ router.get('/invoices/:id', (req, res) => {
   res.json({ ok: true, invoice: row });
 });
 
+// Delete a stored invoice (admin/owner only).
+router.delete('/invoices/:id', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid invoice ID' });
+  const row = db.prepare('SELECT invoice_no FROM invoices WHERE id = ?').get(id);
+  if (!row) return res.status(404).json({ error: 'Invoice not found' });
+  db.prepare('DELETE FROM invoices WHERE id = ?').run(id);
+  try {
+    const pdfPath = path.join(INVOICES_DIR, row.invoice_no + '.pdf');
+    if (fs.existsSync(pdfPath)) fs.unlinkSync(pdfPath);
+  } catch (e) {}
+  res.json({ ok: true });
+});
+
 // Serve (or regenerate) the PDF for a stored invoice.
 router.get('/invoices/:id/pdf', async (req, res) => {
   if (!['admin', 'owner'].includes(req.auth.role)) {
