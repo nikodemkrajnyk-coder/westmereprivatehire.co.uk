@@ -181,13 +181,16 @@ select.fi option{background:#fff;color:var(--navy)}
 .btn-book:hover{background:var(--gold2)}
 .qb-loc-btn{display:inline-flex;align-items:center;gap:.3rem;background:none;border:none;font-family:var(--sans);font-size:.75rem;font-weight:300;color:rgba(17,29,44,.45);cursor:pointer;padding:.25rem 0;margin-top:.2rem;transition:color .18s}
 .qb-loc-btn:hover{color:var(--gold)}
-.qb-pay-row{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.6rem}
+.qb-pay-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.7rem;margin-bottom:.6rem}
 .qb-pc{border:1px solid rgba(17,29,44,.12);border-radius:6px;padding:.85rem 1rem;background:#fff;cursor:pointer;transition:border-color .2s,background .15s;font-family:var(--sans);text-align:left}
 .qb-pc:hover,.qb-pc.sel{border-color:var(--gold);background:rgba(184,152,90,.06)}
 .qb-pc-ttl{font-size:.75rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--navy)}
 .qb-pc-sub{font-size:.62rem;color:rgba(17,29,44,.4);margin-top:.18rem;line-height:1.4}
 .qb-card-wrap{display:none;margin-top:.8rem;margin-bottom:.2rem;background:#fff;border:1px solid rgba(17,29,44,.12);border-radius:8px;padding:.9rem 1rem}
 .qb-card-wrap.show{display:block}
+.qb-wallet-wrap{display:none;margin-top:.8rem;margin-bottom:.2rem}
+.qb-wallet-wrap.show{display:block}
+.qb-no-wallet{font-size:.7rem;color:rgba(17,29,44,.45);padding:.4rem 0;line-height:1.4}
 .qb-card-label{font-size:.58rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.6);margin-bottom:.6rem;display:block}
 #qb-stripe-el{padding:.45rem 0;min-height:24px}
 .qb-card-err{font-size:.75rem;color:#c0392b;margin-top:.4rem;min-height:1.1rem}
@@ -499,8 +502,9 @@ footer.mini-foot{display:none}
               <div class="fr-item"><div class="fi-l">Surcharge</div><div class="fi-v" id="fr-surcharge">—</div></div>
             </div>
           </div>
-          <div style="margin-bottom:.4rem"><label class="fl" style="display:block;margin-bottom:.55rem">Payment Method</label><div class="qb-pay-row"><button class="qb-pc sel" id="qb-pay-cash" type="button" onclick="selectQbPay('cash')"><div class="qb-pc-ttl">Cash</div><div class="qb-pc-sub">Pay the driver directly</div></button><button class="qb-pc" id="qb-pay-card" type="button" onclick="selectQbPay('card')"><div class="qb-pc-ttl">Card</div><div class="qb-pc-sub">Pay securely by card</div></button></div>
+          <div style="margin-bottom:.4rem"><label class="fl" style="display:block;margin-bottom:.55rem">Payment Method</label><div class="qb-pay-row"><button class="qb-pc sel" id="qb-pay-cash" type="button" onclick="selectQbPay('cash')"><div class="qb-pc-ttl">Cash</div><div class="qb-pc-sub">Pay the driver directly</div></button><button class="qb-pc" id="qb-pay-card" type="button" onclick="selectQbPay('card')"><div class="qb-pc-ttl">Card</div><div class="qb-pc-sub">Pay securely by card</div></button><button class="qb-pc" id="qb-pay-wallet" type="button" onclick="selectQbPay('wallet')"><div class="qb-pc-ttl">Wallet</div><div class="qb-pc-sub">Apple Pay · Google Pay</div></button></div>
             <div class="qb-card-wrap" id="qb-card-wrap"><span class="qb-card-label">Card Details</span><div id="qb-stripe-el"></div><div class="qb-card-err" id="qb-card-err"></div></div>
+            <div class="qb-wallet-wrap" id="qb-wallet-wrap"><div id="payment-request-button"></div><div class="qb-no-wallet" id="qb-no-wallet" style="display:none"></div></div>
           </div>
           <button class="btn-book" onclick="submitBooking()">Book This Journey</button>
         </div>
@@ -654,7 +658,7 @@ function esc(s){if(!s)return '';var d=document.createElement('div');d.appendChil
 
 /* ── Geocoding & routing ── */
 var _gc={};
-function geocode(a){if(_gc[a])return Promise.resolve(_gc[a]);return fetch('https://nominatim.openstreetmap.org/search?format=json&countrycodes=gb&limit=1&q='+encodeURIComponent(a),{headers:{'Accept-Language':'en'}}).then(function(r){return r.json();}).then(function(d){var r=d&&d[0]?{lat:parseFloat(d[0].lat),lon:parseFloat(d[0].lon)}:null;if(r)_gc[a]=r;return r;});}
+function geocode(a){if(_gc[a])return Promise.resolve(_gc[a]);return fetch('https://nominatim.openstreetmap.org/search?format=json&countrycodes=gb&limit=1&q='+encodeURIComponent(a),{headers:{'Accept-Language':'en'}}).then(function(r){return r.json();}).then(function(d){var r=d&&d[0]?{lat:parseFloat(d[0].lat),lon:parseFloat(d[0].lon)}:null;if(r)_gc[a]=r;return r;}).catch(function(){return null;});}
 function haverMiles(a,b,c,d){var R=3958.8,dL=(c-a)*Math.PI/180,dn=(d-b)*Math.PI/180,x=Math.sin(dL/2)*Math.sin(dL/2)+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dn/2)*Math.sin(dn/2);return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
 var TOWN_CENTRE_RADIUS=3;var PER_MILE_ADJ=2.25;
 function nearestTown(coord){var best=null,bd=999;Object.keys(TC).forEach(function(k){var d=haverMiles(coord.lat,coord.lon,TC[k].lat,TC[k].lon);if(d<bd){bd=d;best=k;}});return best;}
@@ -830,6 +834,8 @@ function qbCalc(){
 function qbShowFare(fare,mi,ti,lbl,apNote){
   fare=Math.ceil(fare/0.5)*0.5;
   document.getElementById('fr-amt').textContent='\u00a3'+fare;
+  if(_qbPR){try{_qbPR.update({total:{label:'Westmere Private Hire',amount:Math.round(fare*100)}});}catch(e){}}
+  else{var ws=document.getElementById('qb-pay-wallet');if(ws&&ws.classList.contains('sel'))_qbInitWallet();}
   var n=document.getElementById('fr-note');if(n)n.textContent=(lbl||'Fixed price')+' \u00b7 No meters \u00b7 No surprises';
   var bd=document.getElementById('fr-breakdown');
   if(mi){bd.style.display='flex';document.getElementById('fr-dist').textContent=mi+' mi';document.getElementById('fr-time').textContent='~'+ti+' min';document.getElementById('fr-surcharge').textContent=apNote||'\u2014';}
@@ -932,13 +938,23 @@ function qbRunCalc(from,to){
   /* ── Town → Town ── */
   document.getElementById('fr-amt').textContent='Calculating\u2026';document.getElementById('fare-reveal').classList.add('show');
   Promise.all([geocode(/\bUK\b/i.test(from)?from:from+' UK'),geocode(/\bUK\b/i.test(to)?to:to+' UK')]).then(function(cs){
-    if(!cs[0]||!cs[1]){qbShowFare(calcMile(8,night,null),null,null,'Estimated');return;}
+    if(!cs[0]||!cs[1]){
+      var fk=sh(puT),tk=sh(deT);
+      var fc=fk&&TC[fk]?TC[fk]:null,tc2=tk&&TC[tk]?TC[tk]:null;
+      var fbMi=(fc&&tc2)?Math.round(haverMiles(fc.lat,fc.lon,tc2.lat,tc2.lon)*10)/10:15;
+      qbShowFare(calcMile(fbMi,night,null),null,null,'Estimated');return;
+    }
     _calcRoute(cs[0].lat,cs[0].lon,cs[1].lat,cs[1].lon).then(function(r){
-      if(!r){qbShowFare(calcMile(8,night,null),null,null,'Estimated');return;}
+      if(!r){var hMi=Math.round(haverMiles(cs[0].lat,cs[0].lon,cs[1].lat,cs[1].lon)*10)/10;qbShowFare(calcMile(hMi,night,null),null,null,'Estimated');return;}
       var mi=Math.round(r.distance/1609.34*10)/10,ti=Math.round(r.duration/60);
       qbShowFare(Math.round(calcMile(mi,night,null)),mi,ti,'Fixed price');
-    }).catch(function(){qbShowFare(calcMile(8,night,null),null,null,'Estimated');});
-  }).catch(function(){qbShowFare(calcMile(8,night,null),null,null,'Estimated');});
+    }).catch(function(){var hMi=Math.round(haverMiles(cs[0].lat,cs[0].lon,cs[1].lat,cs[1].lon)*10)/10;qbShowFare(calcMile(hMi,night,null),null,null,'Estimated');});
+  }).catch(function(){
+    var fk=sh(puT),tk=sh(deT);
+    var fc=fk&&TC[fk]?TC[fk]:null,tc2=tk&&TC[tk]?TC[tk]:null;
+    var fbMi=(fc&&tc2)?Math.round(haverMiles(fc.lat,fc.lon,tc2.lat,tc2.lon)*10)/10:15;
+    qbShowFare(calcMile(fbMi,night,null),null,null,'Estimated');
+  });
 }
 var ADMIN_DATA=[
   {ref:'WPH-240312',date:'25 Mar',time:'04:30',name:'Sarah Mitchell',route:'Lewes → Gatwick',type:'Drop-off',fare:'£78',pay:'Cash',status:'upcoming'},
@@ -1125,7 +1141,8 @@ function sv(id,btn){
   var v=document.getElementById('view-'+id);if(v)v.classList.add('on');
   if(btn)btn.classList.add('on');
 }
-var _qbStripe=null,_qbCardEl=null;
+var _qbStripe=null,_qbCardEl=null,_qbPR=null,_qbPREl=null;
+function _qbGetFare(){var el=document.getElementById('fr-amt');var v=el?el.textContent.replace(/[^0-9.]/g,''):'';return v?parseFloat(v):0;}
 function _qbInitStripe(){
   if(_qbStripe)return;
   var sk=window._SK||'';
@@ -1135,14 +1152,88 @@ function _qbInitStripe(){
   _qbCardEl.mount('#qb-stripe-el');
   _qbCardEl.on('change',function(ev){var e=document.getElementById('qb-card-err');if(e)e.textContent=ev.error?ev.error.message:'';});
 }
+function _qbInitWallet(){
+  var sk=window._SK||'';
+  if(typeof Stripe==='undefined'||!sk)return;
+  if(!_qbStripe){_qbStripe=Stripe(sk);}
+  var fare=_qbGetFare();
+  var noWallet=document.getElementById('qb-no-wallet');
+  var prBtn=document.getElementById('payment-request-button');
+  if(!fare||fare<=0){
+    if(prBtn)prBtn.innerHTML='';
+    if(noWallet){noWallet.style.display='block';noWallet.textContent='Calculate a fare first to use Apple Pay or Google Pay';}
+    return;
+  }
+  if(_qbPR){
+    try{_qbPR.update({total:{label:'Westmere Private Hire',amount:Math.round(fare*100)}});}catch(e){}
+    if(noWallet)noWallet.style.display='none';
+    return;
+  }
+  _qbPR=_qbStripe.paymentRequest({country:'GB',currency:'gbp',total:{label:'Westmere Private Hire',amount:Math.round(fare*100)},requestPayerName:true});
+  _qbPR.canMakePayment().then(function(result){
+    if(result){
+      if(noWallet)noWallet.style.display='none';
+      if(!_qbPREl){
+        _qbPREl=_qbStripe.elements().create('paymentRequestButton',{paymentRequest:_qbPR,style:{paymentRequestButton:{type:'default',theme:'dark',height:'44px'}}});
+        _qbPREl.mount('#payment-request-button');
+      }
+    } else {
+      if(prBtn)prBtn.innerHTML='';
+      if(noWallet){noWallet.style.display='block';noWallet.textContent='Apple Pay and Google Pay are not available on this device or browser';}
+    }
+  });
+  _qbPR.on('paymentmethod',function(ev){
+    var from=document.getElementById('qb-from').value;
+    var dest=document.getElementById('qb-dest').value;
+    var date=(document.getElementById('qb-date')||{}).value||'';
+    var time=(document.getElementById('qb-time')||{}).value||'';
+    var pax=(document.getElementById('qb-pax')||{}).value||'1';
+    var bags=(document.getElementById('qb-bags')||{}).value||'';
+    var flight=(document.getElementById('qb-flight')||{}).value||'';
+    var notes=(document.getElementById('qb-notes')||{}).value||'';
+    var fare=_qbGetFare();
+    if(!fare){ev.complete('fail');return;}
+    fetch('/api/public/create-payment-intent',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:Math.round(fare*100),currency:'gbp',booking:{pickup:from,destination:dest,date:date,time:time,passengers:parseInt(pax)||1,fare:fare}})})
+    .then(function(r){return r.json();}).then(function(d){
+      if(!d.clientSecret){ev.complete('fail');showToast('Payment setup failed');return Promise.resolve();}
+      return _qbStripe.confirmCardPayment(d.clientSecret,{payment_method:ev.paymentMethod.id},{handleActions:false}).then(function(result){
+        if(result.error){ev.complete('fail');showToast(result.error.message);}
+        else{
+          ev.complete('success');
+          if(result.paymentIntent.status==='requires_action'){
+            _qbStripe.confirmCardPayment(d.clientSecret).then(function(r2){
+              if(r2.error)showToast(r2.error.message);
+              else _qbSaveBooking(from,dest,date,time,pax,bags,flight,fare,'card',notes,r2.paymentIntent.id);
+            });
+          } else {
+            _qbSaveBooking(from,dest,date,time,pax,bags,flight,fare,'card',notes,result.paymentIntent.id);
+          }
+        }
+      });
+    }).catch(function(){ev.complete('fail');showToast('Connection error \u2014 please try again');});
+  });
+}
 function selectQbPay(method){
   document.querySelectorAll('.qb-pc').forEach(function(b){b.classList.remove('sel');});
   var el=document.getElementById('qb-pay-'+method);
   if(el)el.classList.add('sel');
   var wrap=document.getElementById('qb-card-wrap');
-  if(wrap){
-    if(method==='card'){wrap.classList.add('show');_qbInitStripe();}
-    else{wrap.classList.remove('show');}
+  var ww=document.getElementById('qb-wallet-wrap');
+  var bookBtn=document.querySelector('.btn-book');
+  if(method==='card'){
+    if(wrap)wrap.classList.add('show');
+    if(ww)ww.classList.remove('show');
+    if(bookBtn)bookBtn.style.display='';
+    _qbInitStripe();
+  } else if(method==='wallet'){
+    if(wrap)wrap.classList.remove('show');
+    if(ww)ww.classList.add('show');
+    if(bookBtn)bookBtn.style.display='none';
+    _qbInitWallet();
+  } else {
+    if(wrap)wrap.classList.remove('show');
+    if(ww)ww.classList.remove('show');
+    if(bookBtn)bookBtn.style.display='';
   }
 }
 function _revGeoNom(lat,lon,cb){
@@ -1210,6 +1301,7 @@ function submitBooking(){
   var btn=document.querySelector('.btn-book');
   if(btn){btn.disabled=true;btn.textContent='Submitting\u2026';}
 
+  if(payment==='wallet'){if(btn){btn.disabled=false;btn.textContent='Book This Journey';}showToast('Use the Apple Pay or Google Pay button above');return;}
   if(payment==='card'){
     if(!_qbStripe||!_qbCardEl){
       if(btn){btn.disabled=false;btn.textContent='Book This Journey';}

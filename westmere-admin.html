@@ -3118,6 +3118,7 @@ function loadInvoiceHistory(){
         +'<td style="white-space:nowrap">'+escTo(inv.issued_date||'')+'</td>'
         +'<td style="white-space:nowrap">'
           +'<button class="btn btn-ghost btn-sm" style="font-size:.65rem;padding:.3rem .7rem" onclick="event.stopPropagation();viewInvoice('+inv.id+')">View</button>'
+          +' <button class="btn btn-ghost btn-sm" style="font-size:.65rem;padding:.3rem .7rem" onclick="event.stopPropagation();downloadInvoice('+inv.id+',\''+escTo(inv.invoice_no)+'\')">Download</button>'
           +' <button class="btn btn-ghost btn-sm" style="font-size:.65rem;padding:.3rem .7rem;color:#a33;border-color:rgba(163,51,51,.25)" onclick="event.stopPropagation();deleteInvoice('+inv.id+',\''+escTo(inv.invoice_no)+'\')">Delete</button>'
         +'</td>'
         +'</tr>';
@@ -3133,6 +3134,17 @@ async function deleteInvoice(id, invoiceNo){
     if(d.ok){showToast('Invoice '+invoiceNo+' deleted');loadInvoiceHistory();}
     else showToast(d.error||'Delete failed');
   }catch(e){showToast('Network error');}
+}
+
+function downloadInvoice(id, invoiceNo){
+  fetch('/api/invoices/'+id+'/pdf',{credentials:'include'})
+  .then(function(r){if(!r.ok)throw new Error('PDF not found');return r.blob();})
+  .then(function(blob){
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url;a.download='invoice-'+invoiceNo+'.pdf';a.click();
+    URL.revokeObjectURL(url);
+  }).catch(function(){showToast('Could not download PDF');});
 }
 
 var _INV_SETTINGS_CACHE=null;
