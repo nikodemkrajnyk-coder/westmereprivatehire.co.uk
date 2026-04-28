@@ -183,6 +183,17 @@ async function calculateFare(pickup, destination, timeStr) {
 }
 
 // ── Tool definitions ─────────────────────────────────────────────────────
+const CHECK_VEHICLE_TOOL = {
+  name: 'check_vehicle',
+  description: 'Check the Tesla vehicle status — battery level, estimated range in miles, charging state, and odometer. Use this when the driver asks about the car charge, range, or whether they can make it to a destination. If a destination is provided, also calculate the route distance and compare to available range.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      destination: { type: 'string', description: 'Optional destination to check range against (e.g. "Heathrow Airport"). If provided, will calculate route distance and compare to battery range.' }
+    }
+  }
+};
+
 const CALCULATE_FARE_TOOL = {
   name: 'calculate_fare',
   description: 'Calculate the fare for a journey between two locations using the Westmere fare engine. Checks fixed airport fares first (Gatwick, Heathrow, Stansted, Luton, Southampton, London City), then falls back to tapered per-mile calculation via OSRM routing. Use this whenever the driver asks for a price/quote/fare.',
@@ -301,6 +312,80 @@ const CALENDAR_TOOLS = [
 
 async function executeCalendarTool(name, input) {
   switch (name) {
+    case 'check_vehicle': {
+      try {
+        // Get Tesla status from DB directly (no HTTP round-trip needed server-side)
+        const { getDb: _gdb } = require('./db');
+        const teslaRow = _gdb().prepare("SELECT * FROM integrations WHERE provider='tesla'").get();
+        if (!teslaRow || !teslaRow.access_token) {
+          return 'Tesla not connected. The driver has not linked their Tesla account yet.';
+        }
+
+        // Re-use tesla-routes token logic inline
+        const nowSec = Math.floor(Date.now() / 1000);
+        let accessToken = teslaRow.access_token;
+        if (teslaRow.expires_at && teslaRow.expires_at - nowSec < 300 && teslaRow.refresh_token) {
+          const rb = new URLSearchParams({ grant_type:'refresh_token', client_id:process.env.TESLA_CLIENT_ID||'', client_secret:process.env.TESLA_CLIENT_SECRET||'', refresh_token:teslaRow.refresh_token });
+          const rr = await fetch('https://auth.tesla.com/oauth2/v3/token', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:rb.toString() });
+          if (rr.ok) { const rt = await rr.json(); accessToken = rt.access_token; }
+        }
+
+        const TESLA_BASE = 'https://fleet-api.prd.eu.vn.cloud.tesla.com';
+        const listR = await fetch(TESLA_BASE + '/api/1/vehicles', { headers: { Authorization: 'Bearer ' + accessToken } });
+        if (!listR.ok) return 'Could not reach Tesla API (HTTP ' + listR.status + ')';
+        const listD = await listR.json();
+        const vehicles = listD.response || [];
+        if (!vehicles.length) return 'No vehicles found on the Tesla account.';
+
+        const vid = vehicles[0].id;
+        let vd = null;
+        try {
+          const vr = await fetch(`${TESLA_BASE}/api/1/vehicles/${vid}/vehicle_data?endpoints=charge_state%3Bdrive_state%3Bvehicle_state`, { headers: { Authorization: 'Bearer ' + accessToken } });
+          if (vr.ok) vd = (await vr.json()).response;
+        } catch (_) {}
+
+        if (!vd) {
+          const state = vehicles[0].state || 'unknown';
+          return `Tesla is ${state}. Could not retrieve live data — car may be asleep. Last known charge unavailable.`;
+        }
+
+        const charge = vd.charge_state || {};
+        const battPct   = charge.battery_level ?? null;
+        const rangeMi   = charge.battery_range != null ? Math.round(charge.battery_range) : null;
+        const chargeSt  = charge.charging_state ?? 'Unknown';
+        const odo       = (vd.vehicle_state || {}).odometer != null ? Math.round(vd.vehicle_state.odometer) : null;
+
+        let summary = `Tesla ${vehicles[0].display_name || 'Model S'}: `;
+        summary += battPct != null ? `${battPct}% battery` : 'battery unknown';
+        summary += rangeMi != null ? `, ~${rangeMi} miles range` : '';
+        summary += `, ${chargeSt}`;
+        if (odo) summary += `, odometer ${odo.toLocaleString()} mi`;
+
+        // If destination provided, check if range is sufficient
+        if (input.destination && rangeMi != null) {
+          try {
+            const gc = await _fareGeocode(input.destination);
+            // Use driver home coords as rough origin (Horsham area)
+            const HOME = { lat: 51.0632, lon: -0.3234 };
+            if (gc) {
+              const rt = await _fareRoute(HOME.lat, HOME.lon, gc.lat, gc.lon);
+              if (rt) {
+                const distMi = Math.round(rt.distance / 1609.34);
+                const margin = rangeMi - distMi;
+                summary += `. Route to ${input.destination}: ~${distMi} miles.`;
+                if (margin > 20) summary += ` Range is sufficient — ${margin} miles to spare.`;
+                else if (margin > 0) summary += ` Range is tight — only ${margin} miles to spare. Consider charging first.`;
+                else summary += ` RANGE INSUFFICIENT — ${Math.abs(margin)} miles short. Charge before this trip.`;
+              }
+            }
+          } catch (_) {}
+        }
+
+        return summary;
+      } catch (e) {
+        return 'Vehicle check error: ' + e.message;
+      }
+    }
     case 'calculate_fare': {
       try {
         const result = await calculateFare(input.pickup, input.destination, input.time || null);
@@ -494,6 +579,7 @@ RULES:
 - You can create invoices using the create_invoice tool. When the user asks to invoice a job, first call search_bookings to find the booking (use the date and/or time and/or customer name they mention), then create_invoice using the fare, customer name, email, and route from the booking. If no booking is found in the database, fall back to list_calendar_events to find the job in the calendar, then create the invoice from those details.
 - If the user says something like "invoice Tuesday's 11am job for ABD" — search_bookings(date: that Tuesday's date, time: "11:00"), find the match, then create_invoice with the found details.
 - You can also create invoices from scratch if the user provides all details directly.
+- You can check the Tesla vehicle status using the check_vehicle tool. Use it when the driver asks about charge level, range, or "can I make it to X". It returns battery %, range in miles, charging state, and optionally compares range to a route distance.
 - You can calculate fares using the calculate_fare tool. Use it whenever someone asks "how much to go to X" or "what's the fare from X to Y". It checks fixed airport fares first, then uses live routing for anything else. Day rate applies 06:00–21:59, night rate 22:00–05:59.
 
 Fixed fares (drop-off / return):
@@ -542,7 +628,7 @@ router.post('/chat', async (req, res) => {
           model: MODEL,
           max_tokens: 1000,
           system,
-          tools: [...CALENDAR_TOOLS, SEARCH_BOOKINGS_TOOL, CREATE_INVOICE_TOOL, CALCULATE_FARE_TOOL],
+          tools: [...CALENDAR_TOOLS, SEARCH_BOOKINGS_TOOL, CREATE_INVOICE_TOOL, CALCULATE_FARE_TOOL, CHECK_VEHICLE_TOOL],
           messages: currentMessages
         })
       });

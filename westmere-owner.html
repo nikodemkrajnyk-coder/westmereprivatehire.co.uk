@@ -528,6 +528,12 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
       <div>
         <div class="tb-mode-label" id="tb-mode-label">Drive Mode</div>
       </div>
+      <!-- Tesla battery pill -->
+      <div id="tb-tesla-pill" style="display:none;margin-left:.5rem;display:flex;align-items:center;gap:.35rem;background:rgba(17,29,44,.06);border-radius:20px;padding:.22rem .65rem;font-size:.65rem;font-family:var(--sans);font-weight:500;color:var(--navy);letter-spacing:.04em">
+        <svg width="14" height="7" viewBox="0 0 14 7" style="flex-shrink:0"><rect x="0" y="1" width="12" height="5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="12.2" y="2.5" width="1.5" height="2" rx=".5" fill="currentColor" opacity=".5"/><rect id="tb-tesla-bar" x="1" y="2" width="0" height="3" rx=".8" fill="#2A9D5C"/></svg>
+        <span id="tb-tesla-pct">—</span>
+        <span style="color:rgba(17,29,44,.4);font-size:.58rem" id="tb-tesla-range"></span>
+      </div>
     </div>
     <div style="display:flex;align-items:center;gap:.7rem">
       <div class="mode-toggle">
@@ -597,6 +603,11 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
         <div style="display:flex;justify-content:flex-end;padding:.25rem 0 0">
           <a href="#" id="gcal-sync-link" onclick="syncGoogleCalendar(event)" style="display:none;font-size:.68rem;color:var(--gold);text-decoration:none;letter-spacing:.08em;text-transform:uppercase">Sync now &rarr;</a>
         </div>
+      </div>
+
+      <div style="background:rgba(17,29,44,.03);border-radius:12px;padding:1.1rem 1rem;margin-top:1rem" id="sett-tesla-section">
+        <div style="font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.9rem">Tesla Vehicle</div>
+        <div id="sett-tesla-body"><div style="font-size:.78rem;color:rgba(17,29,44,.4)">Loading…</div></div>
       </div>
 
       <a href="/westmere-admin.html" target="_blank" style="display:flex;align-items:center;justify-content:space-between;background:var(--navy);border-radius:12px;padding:1.1rem 1.2rem;margin-top:1rem;text-decoration:none;gap:.75rem">
@@ -882,6 +893,7 @@ function openSettings(){
   el.style.display='flex';
   if(window.syncDisplayUI)window.syncDisplayUI();
   checkGoogleCalendarStatus();
+  loadOwnerTeslaSettings();
 }
 function closeSettings(){
   var el=document.getElementById('settings-overlay');
@@ -1582,6 +1594,82 @@ async function loadPayoutHistory(){
   }catch(e){
     el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:#a33">Failed to load</div>';
   }
+}
+
+// ── TESLA ─────────────────────────────────────────────────────────────────────
+var _ownerTeslaTimer = null;
+
+async function loadOwnerTesla() {
+  try {
+    var r = await fetch('/api/tesla/status', { credentials: 'include' });
+    var d = await r.json();
+    if (!d.ok || !d.connected) { updateTeslaPill(null); return; }
+    var vr = await fetch('/api/tesla/vehicle', { credentials: 'include' });
+    var vd = await vr.json();
+    if (vd.ok && vd.vehicle) updateTeslaPill(vd.vehicle);
+    else updateTeslaPill(null);
+  } catch (e) { updateTeslaPill(null); }
+}
+
+function updateTeslaPill(v) {
+  var pill = document.getElementById('tb-tesla-pill');
+  if (!pill) return;
+  if (!v || v.battery_level == null) { pill.style.display = 'none'; return; }
+  pill.style.display = 'flex';
+  var pct = v.battery_level;
+  var bar = document.getElementById('tb-tesla-bar');
+  if (bar) { bar.setAttribute('width', Math.round(pct / 100 * 10)); bar.setAttribute('fill', pct > 50 ? '#2A9D5C' : pct > 20 ? '#B8985A' : '#e05252'); }
+  var pctEl = document.getElementById('tb-tesla-pct');
+  if (pctEl) pctEl.textContent = pct + '%';
+  var rngEl = document.getElementById('tb-tesla-range');
+  if (rngEl) rngEl.textContent = v.battery_range_miles ? v.battery_range_miles + ' mi' : '';
+  // Schedule next refresh in 60s
+  clearTimeout(_ownerTeslaTimer);
+  _ownerTeslaTimer = setTimeout(loadOwnerTesla, 60000);
+}
+
+async function loadOwnerTeslaSettings() {
+  var body = document.getElementById('sett-tesla-body');
+  if (!body) return;
+  try {
+    var r = await fetch('/api/tesla/status', { credentials: 'include' });
+    var d = await r.json();
+    if (!d.ok || !d.connected) {
+      body.innerHTML = '<div style="font-size:.78rem;color:rgba(17,29,44,.5);margin-bottom:.7rem">Not connected</div>'
+        + (d.reason !== 'not_configured' ? '<button onclick="ownerConnectTesla()" style="width:100%;padding:.7rem;background:var(--navy);color:#fff;border:none;border-radius:8px;font-size:.72rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;font-family:var(--sans)">Connect Tesla</button>' : '<div style="font-size:.72rem;color:rgba(17,29,44,.4)">TESLA_CLIENT_ID / TESLA_CLIENT_SECRET not set in Railway</div>');
+      return;
+    }
+    var vr = await fetch('/api/tesla/vehicle', { credentials: 'include' });
+    var vd = await vr.json();
+    var v = vd.vehicle;
+    if (!v) { body.innerHTML = '<div style="font-size:.78rem;color:rgba(17,29,44,.4)">Connected — no vehicle data</div>'; return; }
+    var pct = v.battery_level != null ? v.battery_level + '%' : '—';
+    var range = v.battery_range_miles != null ? v.battery_range_miles + ' mi' : '—';
+    var status = v.charging_state || (v.state === 'asleep' ? 'Asleep' : '—');
+    body.innerHTML =
+      '<div style="display:flex;justify-content:space-between;font-size:.8rem;color:rgba(17,29,44,.7);padding:.25rem 0;border-bottom:1px solid rgba(17,29,44,.06)"><span>Battery</span><span style="font-weight:500;color:var(--navy)">' + pct + '</span></div>'
+      +'<div style="display:flex;justify-content:space-between;font-size:.8rem;color:rgba(17,29,44,.7);padding:.25rem 0;border-bottom:1px solid rgba(17,29,44,.06)"><span>Range</span><span style="font-weight:500;color:var(--navy)">' + range + '</span></div>'
+      +'<div style="display:flex;justify-content:space-between;font-size:.8rem;color:rgba(17,29,44,.7);padding:.25rem 0"><span>Status</span><span style="font-weight:500;color:var(--navy)">' + escH(status) + '</span></div>'
+      +'<button onclick="ownerDisconnectTesla()" style="margin-top:.75rem;width:100%;padding:.6rem;background:transparent;border:1px solid rgba(17,29,44,.12);border-radius:6px;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.45);cursor:pointer;font-family:var(--sans)">Disconnect Tesla</button>';
+  } catch (e) {
+    body.innerHTML = '<div style="font-size:.78rem;color:#a33">Failed to load</div>';
+  }
+}
+
+async function ownerConnectTesla() {
+  try {
+    var r = await fetch('/api/tesla/auth-url?from=/westmere-owner.html', { credentials: 'include' });
+    var d = await r.json();
+    if (d.url) window.location.href = d.url;
+    else alert(d.error || 'Could not get Tesla auth URL');
+  } catch (e) { alert('Network error'); }
+}
+
+async function ownerDisconnectTesla() {
+  if (!confirm('Disconnect Tesla account?')) return;
+  await fetch('/api/tesla/disconnect', { method: 'POST', credentials: 'include' });
+  loadOwnerTeslaSettings();
+  updateTeslaPill(null);
 }
 
 // ── INBOX (Gmail via Google OAuth) ────────────────────────────────────────
@@ -3240,6 +3328,11 @@ function initApp(){
   document.getElementById('sd-date').value=new Date().toISOString().split('T')[0];
   setMode('drive');
   loadOwnerBookings();
+  loadOwnerTesla();
+  // Handle redirect back from Tesla OAuth
+  var _tq=new URLSearchParams(window.location.search);
+  if(_tq.get('tesla')==='connected'){history.replaceState({},'',window.location.pathname);showToast('Tesla connected');}
+  else if(_tq.get('tesla')==='error'){history.replaceState({},'',window.location.pathname);showToast('Tesla connection failed: '+(_tq.get('reason')||'unknown'));}
 }
 // Select-on-focus for inputs
 ['owner-user','owner-pass','assist-input'].forEach(function(id){
