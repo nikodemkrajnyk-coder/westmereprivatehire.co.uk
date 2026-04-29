@@ -540,7 +540,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
         <button class="mode-btn on" id="mode-drive" onclick="setMode('drive')">Drive</button>
         <button class="mode-btn" id="mode-admin" onclick="setMode('admin')">Admin</button>
       </div>
-      <a href="/westmere-admin.html" target="_blank" title="Full Admin Panel" style="background:transparent;border:1px solid rgba(17,29,44,.1);height:34px;border-radius:17px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(17,29,44,.55);text-decoration:none;font-family:var(--sans);font-size:.62rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:0 .8rem;white-space:nowrap">Admin</a>
+      <span title="Open on desktop: westmereprivatehire.co.uk/westmere-admin.html" style="border:1px solid rgba(17,29,44,.1);height:34px;border-radius:17px;display:flex;align-items:center;justify-content:center;color:rgba(17,29,44,.3);font-family:var(--sans);font-size:.62rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:0 .8rem;white-space:nowrap">Admin ↗</span>
       <button onclick="openSettings()" title="Settings" style="background:transparent;border:1px solid rgba(17,29,44,.1);width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(17,29,44,.55)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
@@ -1342,8 +1342,7 @@ async function toggleDriverDocs(drvId){
     html+='</div>';
     // Driver info
     html+='<div style="font-size:.72rem;color:rgba(17,29,44,.5);margin-bottom:.7rem">'
-      +(driver.email?owEsc(driver.email)+'<br>':'')
-      +(driver.phone?owEsc(driver.phone):'')
+      +(driver.email?owEsc(driver.email):'')
       +'</div>';
     // Approve driver button (only if submitted or pending with some docs)
     if(driver.onboarding_status!=='approved'){
@@ -2352,7 +2351,7 @@ function renderInbox(){
     var srcCls=m.source==='email'?'email':'wa';
     var srcLabel=m.source==='email'?'Email':'WhatsApp';
     var extract='';
-    if(m.analysis&&m.analysis.name){extract='<div class="msg-extract">'+escH(m.analysis.name)+' · '+escH(m.analysis.pickup)+' → '+escH(m.analysis.dest)+' · '+escH(m.analysis.date)+' '+escH(m.analysis.time)+' · <strong style="color:var(--gold)">£'+escH(String(m.analysis.fare))+'</strong></div>';}
+    if(m.analysis&&m.analysis.name){extract='<div class="msg-extract">'+escH(m.analysis.name)+' · '+escH(_shortAddr(m.analysis.pickup||''))+' → '+escH(_shortAddr(m.analysis.dest||''))+' · '+escH(m.analysis.date)+' '+escH(m.analysis.time)+' · <strong style="color:var(--gold)">£'+escH(String(m.analysis.fare))+'</strong></div>';}
     if(m.analysis&&m.analysis.conflict){
       var cj=m.analysis.conflictJob;
       var canMake=false;var reason='';
