@@ -19,7 +19,6 @@ const trackingRouter = require('./tracking-routes');
 const publicTrackingRouter = require('./public-tracking-routes');
 const onboardingRouter = require('./driver-onboarding-routes');
 const driverCalRouter = require('./driver-cal-routes');
-const teslaRouter = require('./tesla-routes');
 const { createAuthMiddleware } = require('./middleware');
 const gcal = require('./google-calendar');
 const intake = require('./intake');
@@ -47,7 +46,7 @@ app.use(helmet({
       imgSrc: ["'self'", "data:", "https:", "blob:"],
       connectSrc: ["'self'", "https://api.mapbox.com", "https://events.mapbox.com",
         "https://nominatim.openstreetmap.org", "https://router.project-osrm.org",
-        "https://api.stripe.com", "https://auth.tesla.com", "https://fleet-api.prd.eu.vn.cloud.tesla.com"],
+        "https://api.stripe.com"],
       frameSrc: ["'self'", "https://js.stripe.com", "https://www.google.com"],
       scriptSrcAttr: ["'unsafe-inline'"],
     }
@@ -98,9 +97,6 @@ app.use('/api/public', apiLimiter, publicTrackingRouter);
 // Google Calendar OAuth callback (public — Google redirects here after consent)
 app.use('/api/google', apiLimiter, googleRouter.publicCallback);
 
-// Tesla OAuth callback (public — Tesla redirects here after consent)
-app.use('/api/tesla', apiLimiter, teslaRouter.publicCallback);
-
 // Driver .ics calendar subscription feed (public — token-protected)
 app.use('/api/driver', apiLimiter, driverCalRouter);
 
@@ -124,9 +120,6 @@ app.use('/api/intake', apiLimiter, requireAuth, intakeRouter);
 
 // Protected driver-offer workflow (offer/accept/decline/done/cancel)
 app.use('/api', apiLimiter, requireAuth, offerRouter);
-
-// Protected Tesla routes (vehicle data, connect/disconnect)
-app.use('/api/tesla', apiLimiter, requireAuth, teslaRouter);
 
 // Protected assistant (voice booking helper)
 app.use('/api/assistant', apiLimiter, requireAuth, assistantRouter);
