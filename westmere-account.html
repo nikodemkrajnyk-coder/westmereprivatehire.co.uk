@@ -98,7 +98,7 @@ select.fi option{background:#fff;color:var(--navy)}
 .view.on{display:block}
 
 /* ── STAT CARDS ── */
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-bottom:1.4rem}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1.4rem}
 .stat{background:#fff;border:1px solid rgba(17,29,44,.07);box-shadow:0 1px 4px rgba(17,29,44,.05);border-radius:14px;padding:1.1rem 1.2rem;position:relative;overflow:hidden;transition:border-color .25s}
 .stat:hover{border-color:rgba(17,29,44,.12)}
 .stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:14px 14px 0 0}
@@ -181,7 +181,8 @@ select.fi option{background:#fff;color:var(--navy)}
 .btn-book:hover{background:var(--gold2)}
 .qb-loc-btn{display:inline-flex;align-items:center;gap:.3rem;background:none;border:none;font-family:var(--sans);font-size:.75rem;font-weight:300;color:rgba(17,29,44,.45);cursor:pointer;padding:.25rem 0;margin-top:.2rem;transition:color .18s}
 .qb-loc-btn:hover{color:var(--gold)}
-.qb-pay-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.7rem;margin-bottom:.6rem}
+.qb-pay-row{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.6rem}
+#qb-pay-wallet{display:none}
 .qb-pc{border:1px solid rgba(17,29,44,.12);border-radius:6px;padding:.85rem 1rem;background:#fff;cursor:pointer;transition:border-color .2s,background .15s;font-family:var(--sans);text-align:left}
 .qb-pc:hover,.qb-pc.sel{border-color:var(--gold);background:rgba(184,152,90,.06)}
 .qb-pc-ttl{font-size:.75rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--navy)}
@@ -245,7 +246,9 @@ select.fi option{background:#fff;color:var(--navy)}
 /* ── RESPONSIVE ── */
 @media(max-width:780px){body{background-attachment:scroll;background-size:cover}}
 @media(max-width:800px){.stats{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}
-@media(max-width:560px){.bdate{display:none}.r2{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.pl{width:auto;min-width:100px}}
+@media(max-width:560px){.bdate{display:none}.r2{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.pl{width:auto;min-width:100px}
+.cal-drop,.time-drop{left:0;right:auto;width:calc(100vw - 8%)}.time-drop{right:auto}
+.qb-pay-row{grid-template-columns:1fr 1fr}}
 @media(max-width:480px){
   .stats{grid-template-columns:1fr 1fr}
   .topbar{padding:0 4%}
@@ -267,7 +270,7 @@ select.fi option{background:#fff;color:var(--navy)}
 /* ── CUSTOM DATE & TIME PICKERS ── */
 .custom-date-trigger,.custom-time-trigger{cursor:pointer;position:relative}
 .cdt-val{pointer-events:none;-webkit-user-select:none;user-select:none}
-.cal-drop{display:none;position:absolute;top:calc(100% + 8px);left:0;z-index:400;background:rgba(255,255,255,.97);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid rgba(184,152,90,.35);border-radius:12px;padding:1.1rem;width:290px;min-height:310px;box-shadow:0 20px 60px rgba(0,0,0,.7)}
+.cal-drop{display:none;position:absolute;top:calc(100% + 8px);left:0;z-index:400;background:rgba(255,255,255,.97);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid rgba(184,152,90,.35);border-radius:12px;padding:1.1rem;width:290px;min-height:310px;box-shadow:0 20px 60px rgba(0,0,0,.15)}
 .cal-drop.open{display:block}
 .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem}
 .cal-month-label{font-family:var(--serif);font-size:1.15rem;font-weight:300;color:var(--navy);letter-spacing:.06em}
@@ -281,7 +284,7 @@ select.fi option{background:#fff;color:var(--navy)}
 .cal-day.cal-sel{background:var(--gold);color:#111;font-weight:500}
 .cal-day.cal-past{color:rgba(17,29,44,.22);cursor:not-allowed}
 .cal-day.cal-empty{cursor:default}
-.time-drop{display:none;position:absolute;top:calc(100% + 8px);right:0;left:auto;z-index:400;background:rgba(255,255,255,.97);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid rgba(184,152,90,.35);border-radius:12px;padding:1.1rem;width:290px;height:310px;box-shadow:0 20px 60px rgba(0,0,0,.7)}
+.time-drop{display:none;position:absolute;top:calc(100% + 8px);right:0;left:auto;z-index:400;background:rgba(255,255,255,.97);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid rgba(184,152,90,.35);border-radius:12px;padding:1.1rem;width:290px;height:310px;box-shadow:0 20px 60px rgba(0,0,0,.15)}
 .time-drop.open{display:block}
 .time-cols{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.8rem}
 .time-col{display:flex;flex-direction:column;gap:2px;overflow-y:auto;max-height:218px;scrollbar-width:thin;scrollbar-color:rgba(184,152,90,.3) transparent}
@@ -1230,6 +1233,10 @@ function _qbInitWallet(){
   _qbPR.canMakePayment().then(function(result){
     if(result){
       if(noWallet)noWallet.style.display='none';
+      var walletBtn=document.getElementById('qb-pay-wallet');
+      var payRow=document.querySelector('.qb-pay-row');
+      if(walletBtn)walletBtn.style.display='';
+      if(payRow)payRow.style.gridTemplateColumns='1fr 1fr 1fr';
       if(!_qbPREl){
         _qbPREl=_qbStripe.elements().create('paymentRequestButton',{paymentRequest:_qbPR,style:{paymentRequestButton:{type:'default',theme:'dark',height:'44px'}}});
         _qbPREl.mount('#payment-request-button');
