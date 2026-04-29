@@ -610,6 +610,21 @@ function seedDefaults() {
     console.log('[DB] Default admin user created (westmere / sussex)');
   }
 
+  // Ensure owner login account exists (nikodem) — persists across fresh DB deploys
+  try {
+    const owner = db.prepare("SELECT id FROM users WHERE username = 'nikodem'").get();
+    if (!owner) {
+      const hash = bcrypt.hashSync('Owner2026!', 10);
+      db.prepare(`
+        INSERT INTO users (username, password, role, full_name, email, phone, active, has_login, vehicle, is_default_driver, max_passengers, max_bags)
+        VALUES (?, ?, 'owner', 'Nikodem Krajnyk', 'nikodem.krajnyk@gmail.com', '07930342593', 1, 1, 'Tesla Model S', 1, 4, 4)
+      `).run('nikodem', hash);
+      console.log('[DB] Owner account seeded (nikodem / Owner2026!)');
+    }
+  } catch (e) {
+    console.error('[DB] owner seed failed:', e.message);
+  }
+
   // Seed default driver (Nikodem Krajnyk) — owner drives his own jobs
   // by default, so every new booking gets allocated to him automatically.
   // Admin can later add more drivers and reassign via the admin UI.
@@ -653,6 +668,21 @@ function seedDefaults() {
       console.log('[DB] Seeded default invoice settings');
     }
   } catch (e) {}
+
+  // Ensure rider/customer portal account exists — persists across fresh DB deploys
+  try {
+    const rider = db.prepare("SELECT id FROM customers WHERE email = 'nikodem.krajnyk@gmail.com'").get();
+    if (!rider) {
+      const hash = bcrypt.hashSync('Rider2026!', 10);
+      db.prepare(`
+        INSERT INTO customers (full_name, email, phone, password, verified, active)
+        VALUES (?, ?, ?, ?, 1, 1)
+      `).run('Nikodem Krajnyk', 'nikodem.krajnyk@gmail.com', '07930342593', hash);
+      console.log('[DB] Rider customer account seeded (nikodem.krajnyk@gmail.com / Rider2026!)');
+    }
+  } catch (e) {
+    console.error('[DB] rider customer seed failed:', e.message);
+  }
 }
 
 module.exports = { getDb, DATA_DIR };
