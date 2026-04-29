@@ -42,26 +42,33 @@ async function sendEmail(to, subject, html, fromLabel, preheader, opts) {
 
   if (opts && Array.isArray(opts.attachments) && opts.attachments.length) {
     payload.attachments = opts.attachments;
+    console.log('[EMAIL] Attachments in payload:', payload.attachments.map(a => ({
+      filename: a.filename,
+      contentLen: a.content ? a.content.length : 0,
+      hasContentType: !!a.content_type
+    })));
   }
 
   try {
+    const body = JSON.stringify(payload);
+    console.log('[EMAIL] Sending to Resend — payload size:', body.length, 'bytes, has_attachments:', !!payload.attachments);
     const res = await fetch(RESEND_URL, {
       method: 'POST',
       headers: {
         'Authorization': 'Bearer ' + apiKey,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(payload)
+      body
     });
 
     const data = await res.json();
 
     if (!res.ok) {
-      console.error('[EMAIL] Resend error:', JSON.stringify(data));
+      console.error('[EMAIL] Resend error', res.status, ':', JSON.stringify(data));
       return false;
     }
 
-    console.log('[EMAIL] Sent to', to, '— id:', data.id);
+    console.log('[EMAIL] Resend accepted — id:', data.id, 'full response:', JSON.stringify(data));
     return true;
   } catch (err) {
     console.error('[EMAIL] Failed:', err.message);
@@ -452,11 +459,14 @@ async function sendCustomerInvoice(customer, bookings, period, invoiceNo, settin
   const html = emailShell(body);
   const subject = 'Invoice ' + (invoiceNo || '') + ' \u2014 ' + (period.label || '');
   const preheader = summaryCount + ' journey' + (summaryCount === 1 ? '' : 's') + ' \u00b7 \u00a3' + total.toFixed(2) + ' total';
-  const attachments = pdfBuffer
-    ? [{ filename: (invoiceNo || 'invoice') + '.pdf', content: pdfBuffer.toString('base64'), content_type: 'application/pdf' }]
-    : undefined;
-  if (pdfBuffer) console.log('[EMAIL] Attaching PDF:', (invoiceNo || 'invoice') + '.pdf', pdfBuffer.length, 'bytes');
-  else console.warn('[EMAIL] No PDF buffer — sending invoice', invoiceNo, 'without attachment');
+  let attachments;
+  if (pdfBuffer) {
+    const b64 = Buffer.isBuffer(pdfBuffer) ? pdfBuffer.toString('base64') : Buffer.from(pdfBuffer).toString('base64');
+    console.log('[EMAIL] PDF buffer:', pdfBuffer.length, 'bytes → base64 length:', b64.length, 'chars');
+    attachments = [{ filename: (invoiceNo || 'invoice') + '.pdf', content: b64 }];
+  } else {
+    console.warn('[EMAIL] No PDF buffer — sending invoice', invoiceNo, 'without attachment');
+  }
   const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader, attachments ? { attachments } : undefined);
   if (ok) console.log('[EMAIL] Invoice', invoiceNo, 'sent to', email, pdfBuffer ? '(with PDF attachment)' : '(NO PDF)');
   return ok;
@@ -576,11 +586,14 @@ async function sendBespokeInvoice(recipient, items, period, invoiceNo, settings,
   const html = emailShell(body);
   const subject = 'Invoice ' + (invoiceNo || '') + ' \u2014 Westmere Private Hire';
   const preheader = 'Invoice \u00b7 \u00a3' + total.toFixed(2);
-  const attachments = pdfBuffer
-    ? [{ filename: (invoiceNo || 'invoice') + '.pdf', content: pdfBuffer.toString('base64'), content_type: 'application/pdf' }]
-    : undefined;
-  if (pdfBuffer) console.log('[EMAIL] Attaching PDF:', (invoiceNo || 'invoice') + '.pdf', pdfBuffer.length, 'bytes');
-  else console.warn('[EMAIL] No PDF buffer — sending bespoke invoice', invoiceNo, 'without attachment');
+  let attachments;
+  if (pdfBuffer) {
+    const b64 = Buffer.isBuffer(pdfBuffer) ? pdfBuffer.toString('base64') : Buffer.from(pdfBuffer).toString('base64');
+    console.log('[EMAIL] PDF buffer:', pdfBuffer.length, 'bytes → base64 length:', b64.length, 'chars');
+    attachments = [{ filename: (invoiceNo || 'invoice') + '.pdf', content: b64 }];
+  } else {
+    console.warn('[EMAIL] No PDF buffer — sending bespoke invoice', invoiceNo, 'without attachment');
+  }
   const ok = await sendEmail(recipient.email, subject, html, 'Westmere Private Hire', preheader, attachments ? { attachments } : undefined);
   if (ok) console.log('[EMAIL] Bespoke invoice', invoiceNo, 'sent to', recipient.email, pdfBuffer ? '(with PDF attachment)' : '(NO PDF)');
   return ok;
