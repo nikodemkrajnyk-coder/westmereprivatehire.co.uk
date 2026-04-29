@@ -407,7 +407,9 @@ function migrate() {
       ['bank_account_no',    'TEXT'],
       ['bank_account_name',  'TEXT'],
       ['verified',           'INTEGER NOT NULL DEFAULT 1'],  // 1 = verified (legacy admin-created accounts auto-verified)
-      ['verification_token', 'TEXT']
+      ['verification_token', 'TEXT'],
+      ['reset_token',        'TEXT'],
+      ['reset_token_expires','TEXT']
     ];
     for (const [n, t] of custCols) {
       if (!info.find(c => c.name === n)) {

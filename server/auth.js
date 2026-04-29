@@ -267,4 +267,62 @@ router.post('/change-password', (req, res) => {
   }
 });
 
+// ── Forgot password (request reset link) ────────────────────────────────
+router.post('/customer/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email required' });
+
+  const db = getDb();
+  const customer = db.prepare(
+    'SELECT id, email, full_name, verified FROM customers WHERE email = ? COLLATE NOCASE'
+  ).get(email.trim().toLowerCase());
+
+  // Always return success — prevents email enumeration
+  if (!customer || !customer.verified) {
+    return res.json({ ok: true });
+  }
+
+  const token = require('crypto').randomBytes(32).toString('hex');
+  const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
+
+  db.prepare(
+    "UPDATE customers SET reset_token = ?, reset_token_expires = ?, updated_at = datetime('now') WHERE id = ?"
+  ).run(token, expires, customer.id);
+
+  const { sendPasswordResetEmail } = require('./email');
+  sendPasswordResetEmail({ email: customer.email, full_name: customer.full_name }, token)
+    .catch(e => console.error('[AUTH] reset email failed:', e.message));
+
+  res.json({ ok: true });
+});
+
+// ── Reset password (consume token, set new password) ─────────────────────
+router.post('/customer/reset-password', (req, res) => {
+  const { token, password } = req.body;
+  if (!token || !password) return res.status(400).json({ error: 'Token and password required' });
+  if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
+
+  const db = getDb();
+  const customer = db.prepare(
+    'SELECT id, reset_token_expires FROM customers WHERE reset_token = ?'
+  ).get(String(token).replace(/[^a-f0-9]/gi, ''));
+
+  if (!customer) return res.status(400).json({ error: 'Invalid or expired reset link' });
+  if (new Date(customer.reset_token_expires) < new Date()) {
+    return res.status(400).json({ error: 'Reset link has expired. Please request a new one.' });
+  }
+
+  const hash = bcrypt.hashSync(password, 12);
+  db.prepare(
+    "UPDATE customers SET password = ?, reset_token = NULL, reset_token_expires = NULL, updated_at = datetime('now') WHERE id = ?"
+  ).run(hash, customer.id);
+
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, ip) VALUES (?,?,?,?)')
+      .run('customer', customer.id, 'password_reset', req.ip);
+  } catch (_) {}
+
+  res.json({ ok: true });
+});
+
 module.exports = { router, JWT_SECRET };

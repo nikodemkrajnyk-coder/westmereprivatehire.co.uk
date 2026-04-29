@@ -382,6 +382,7 @@ footer.mini-foot{display:none}
       <div class="fg"><label class="fl">Password</label><input class="fi" type="password" id="l-pass" placeholder="Your password"></div>
       <label style="display:flex;align-items:center;gap:.5rem;margin-top:.6rem;cursor:pointer;font-size:.78rem;color:rgba(17,29,44,.5);font-weight:300"><input type="checkbox" id="l-remember" style="accent-color:var(--gold)"> Keep me logged in</label>
       <button class="btn-main" onclick="doLogin()">Sign In</button>
+      <div style="text-align:center;margin-top:.6rem"><button onclick="swFrm('forgot')" style="background:none;border:none;cursor:pointer;font-family:var(--sans);font-size:.75rem;color:rgba(17,29,44,.45);text-decoration:underline;padding:0">Forgot password?</button></div>
       <div class="lb-switch">No account? <button onclick="swFrm('register')">Create one here</button></div>
     </div>
     <div id="frm-register" class="lb-body" style="display:none">
@@ -406,8 +407,24 @@ footer.mini-foot{display:none}
       <p style="font-size:.75rem;color:rgba(17,29,44,.4);text-align:center;line-height:1.6">Didn't receive it? Check your spam folder.<br>The link is valid until your account is verified.</p>
       <div class="lb-switch" style="margin-top:1rem">Already verified? <button onclick="swFrm('login')">Sign in</button></div>
     </div>
+    <div id="frm-forgot" class="lb-body" style="display:none">
+      <div class="lb-title">Reset Password</div>
+      <p class="lb-desc">Enter your email and we'll send a reset link</p>
+      <div class="fg"><label class="fl">Email Address</label><input class="fi" type="email" id="fp-email" placeholder="your@email.com" autocomplete="email"></div>
+      <button class="btn-main" onclick="doForgot()">Send Reset Link</button>
+      <div class="lb-err" id="fp-msg" style="font-size:.78rem;margin-top:.5rem;min-height:1.2em"></div>
+      <div class="lb-switch">Remember it? <button onclick="swFrm('login')">Sign in</button></div>
+    </div>
+    <div id="frm-reset" class="lb-body" style="display:none">
+      <div class="lb-title">New Password</div>
+      <p class="lb-desc">Choose a new password for your account</p>
+      <div class="fg"><label class="fl">New Password</label><input class="fi" type="password" id="rp-pass" placeholder="At least 8 characters" autocomplete="new-password"></div>
+      <div class="fg"><label class="fl">Confirm Password</label><input class="fi" type="password" id="rp-pass2" placeholder="Repeat your new password" autocomplete="new-password"></div>
+      <button class="btn-main" onclick="doReset()">Set New Password</button>
+      <div class="lb-err" id="rp-err" style="color:#c0392b;font-size:.78rem;margin-top:.5rem;min-height:1.2em"></div>
+    </div>
     <div class="lb-foot">
-      <a href="index.html">Back to site</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="tel:+447930342593">07930 342593</a>
+      <a href="index.html">Back to site</a>
     </div>
   </div>
 </div>
@@ -1019,10 +1036,13 @@ async function doLoginReg(){
     });
     var data=await res.json();
     if(res.ok&&data.ok){
-      // Registration successful — show "check email" panel, don't log in yet
       var hint=document.getElementById('verify-email-hint');
       if(hint)hint.textContent=email;
       swFrm('verify');
+    } else if(data.error&&data.error.includes('already exists')){
+      var li=document.getElementById('l-email');if(li)li.value=email;
+      swFrm('login');
+      showToast('Account exists \u2014 please sign in');
     } else {
       var errEl=document.getElementById('reg-err');
       if(errEl)errEl.textContent=data.error||'Registration failed.';
@@ -1032,6 +1052,43 @@ async function doLoginReg(){
     showToast('Connection error. Please try again.');
   }
 }
+async function doForgot(){
+  var email=(document.getElementById('fp-email').value||'').trim();
+  var msg=document.getElementById('fp-msg');
+  if(!email){showToast('Please enter your email');return;}
+  if(msg)msg.textContent='';
+  try{
+    await fetch('/api/auth/customer/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})});
+    if(msg){msg.style.color='rgba(17,29,44,.55)';msg.textContent='If that email is registered you\'ll receive a reset link shortly. Check your inbox.';}
+  }catch(e){if(msg){msg.style.color='#c0392b';msg.textContent='Connection error. Please try again.';}}
+}
+var _resetToken=null;
+async function doReset(){
+  var pass=(document.getElementById('rp-pass').value||'').trim();
+  var pass2=(document.getElementById('rp-pass2').value||'').trim();
+  var errEl=document.getElementById('rp-err');
+  if(!pass||!pass2){showToast('Please fill in both fields');return;}
+  if(pass.length<8){if(errEl)errEl.textContent='Password must be at least 8 characters';return;}
+  if(pass!==pass2){if(errEl)errEl.textContent='Passwords do not match';return;}
+  if(!_resetToken){if(errEl)errEl.textContent='Invalid reset link';return;}
+  if(errEl)errEl.textContent='';
+  try{
+    var res=await fetch('/api/auth/customer/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:_resetToken,password:pass})});
+    var data=await res.json();
+    if(data.ok){
+      _resetToken=null;
+      showToast('Password updated \u2014 please sign in');
+      swFrm('login');
+    } else {
+      if(errEl)errEl.textContent=data.error||'Reset failed. The link may have expired.';
+    }
+  }catch(e){if(errEl)errEl.textContent='Connection error. Please try again.';}
+}
+(function(){
+  var p=new URLSearchParams(window.location.search);
+  var rt=p.get('reset_token');
+  if(rt){_resetToken=rt;if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',function(){swFrm('reset');});}else{swFrm('reset');}}
+})();
 function togglePass(inputId,btn){
   var inp=document.getElementById(inputId);
   if(!inp)return;
@@ -1127,11 +1184,11 @@ function renderBkRow(b,showActions){
 }
 async function doLogout(){await fetch('/api/auth/logout',{method:'POST'});document.getElementById('dashboard').style.display='none';document.getElementById('login-page').style.display='flex';}
 function swFrm(f){
-  ['frm-login','frm-register','frm-verify'].forEach(function(id){
+  ['frm-login','frm-register','frm-verify','frm-forgot','frm-reset'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.style.display='none';
   });
   var show=document.getElementById('frm-'+f);if(show)show.style.display='block';
-  // Clear reg error on switch
+  // Clear errors on switch
   var errEl=document.getElementById('reg-err');if(errEl)errEl.textContent='';
 }
 function selType(el){document.querySelectorAll('.type-opt').forEach(function(o){o.classList.remove('on')});el.classList.add('on');}
