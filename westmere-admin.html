@@ -240,6 +240,8 @@ textarea.fi{resize:vertical;min-height:80px}
 .cc-actions{margin-top:.75rem;padding-top:.65rem;border-top:1px solid rgba(17,29,44,.06);display:flex;gap:.4rem}
 .cc-btn{flex:1;padding:.5rem .6rem;background:transparent;color:var(--navy);border:1px solid rgba(17,29,44,.15);border-radius:6px;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .2s}
 .cc-btn:hover{background:var(--gold);color:#fff;border-color:var(--gold)}
+.cc-btn-del{color:var(--red)!important;border-color:rgba(139,34,34,.2)!important}
+.cc-btn-del:hover{background:var(--red)!important;border-color:var(--red)!important;color:#fff!important}
 .cc-stats{display:flex;gap:.8rem;margin-top:.45rem}
 .cc-stat{font-size:.68rem;color:rgba(17,29,44,.45)}
 .cc-stat span{color:var(--gold);font-weight:500}
@@ -712,7 +714,72 @@ if ('serviceWorker' in navigator) {
           <div id="nc-err" style="display:none;padding:.6rem .8rem;background:rgba(197,64,64,.08);color:#c54040;font-size:.8rem;border-radius:6px;margin-bottom:.8rem"></div>
           <button onclick="submitNewCustomer()" id="nc-submit" style="width:100%;padding:.9rem;background:#111D2C;color:#fff;border:none;border-radius:8px;font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Create Account</button>
         </div>
-        <div style="font-size:.72rem;color:rgba(17,29,44,.5);margin-top:.7rem;line-height:1.55">Accounts are managed by Westmere. The customer will receive a welcome email confirming the account was opened. Send invoices from the Invoices page.</div>
+        <!-- Post-create actions -->
+        <div id="nc-post-create" style="display:none">
+          <div style="text-align:center;padding:1.2rem 0 .8rem">
+            <div style="font-size:1.5rem;margin-bottom:.6rem">&#10003;</div>
+            <div style="font-family:Georgia,serif;font-size:1.1rem;color:#111D2C;margin-bottom:.3rem" id="nc-success-msg">Account created</div>
+            <div style="font-size:.78rem;color:rgba(17,29,44,.45)" id="nc-success-sub"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:.6rem;margin-top:.8rem">
+            <button id="nc-welcome-btn" onclick="sendWelcomeEmailNew()" style="width:100%;padding:.85rem;background:transparent;color:#111D2C;border:1px solid rgba(17,29,44,.18);border-radius:8px;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Send Welcome Email</button>
+            <button onclick="createInvoiceNew()" style="width:100%;padding:.85rem;background:var(--gold,#B8985A);color:#fff;border:none;border-radius:8px;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Create Invoice</button>
+            <button onclick="closeNewCustomerModal()" style="width:100%;padding:.85rem;background:transparent;color:rgba(17,29,44,.5);border:none;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Done</button>
+          </div>
+        </div>
+        <div style="font-size:.72rem;color:rgba(17,29,44,.5);margin-top:.7rem;line-height:1.55">Accounts are managed by Westmere. No email is sent automatically — use the button above to notify the customer.</div>
+      </div>
+    </div>
+
+    <!-- Customer detail / edit modal -->
+    <div class="overlay" id="modal-cust-detail" onclick="if(event.target===this)closeModal('modal-cust-detail')">
+      <div class="modal" style="max-width:560px">
+        <div class="modal-hd">
+          <div class="modal-title" id="cd-title">Customer</div>
+          <button class="modal-x" onclick="closeModal('modal-cust-detail')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <!-- View state -->
+          <div id="cd-view">
+            <div id="cd-content"></div>
+            <div style="margin-top:1.4rem;padding-top:1rem;border-top:1px solid rgba(17,29,44,.07)">
+              <div style="font-size:.6rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-bottom:.7rem">Recent Bookings</div>
+              <div id="cd-bookings" style="font-size:.8rem;color:rgba(17,29,44,.45)">Loading...</div>
+            </div>
+          </div>
+          <!-- Edit state -->
+          <div id="cd-edit" style="display:none">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.7rem">
+              <div><label style="display:block;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.3rem">Full Name *</label><input id="ce-name" type="text" class="fi" style="border:1px solid rgba(17,29,44,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem"></div>
+              <div><label style="display:block;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.3rem">Email *</label><input id="ce-email" type="email" class="fi" style="border:1px solid rgba(17,29,44,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem"></div>
+            </div>
+            <div style="margin-bottom:.7rem"><label style="display:block;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.3rem">Phone</label><input id="ce-phone" type="tel" class="fi" style="border:1px solid rgba(17,29,44,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;width:100%"></div>
+            <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:.9rem 0 .4rem">Billing Address</div>
+            <div style="margin-bottom:.6rem"><input id="ce-addr1" type="text" placeholder="Address line 1" class="fi" style="border:1px solid rgba(17,29,44,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;width:100%"></div>
+            <div style="display:grid;grid-template-columns:1fr 120px;gap:.5rem;margin-bottom:.7rem">
+              <input id="ce-addr2" type="text" placeholder="Town / City" class="fi" style="border:1px solid rgba(17,29,44,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem">
+              <input id="ce-postcode" type="text" placeholder="Postcode" class="fi" style="border:1px solid rgba(17,29,44,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem">
+            </div>
+            <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:.9rem 0 .4rem">Bank Details</div>
+            <div style="margin-bottom:.6rem"><input id="ce-bank-name" type="text" placeholder="Bank name" class="fi" style="border:1px solid rgba(17,29,44,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;width:100%"></div>
+            <div style="margin-bottom:.6rem"><input id="ce-bank-acc-name" type="text" placeholder="Account name" class="fi" style="border:1px solid rgba(17,29,44,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;width:100%"></div>
+            <div style="display:grid;grid-template-columns:130px 1fr;gap:.5rem;margin-bottom:.7rem">
+              <input id="ce-bank-sort" type="text" placeholder="Sort code" class="fi" style="border:1px solid rgba(17,29,44,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;font-family:Menlo,Consolas,monospace">
+              <input id="ce-bank-acc" type="text" placeholder="Account number" class="fi" style="border:1px solid rgba(17,29,44,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;font-family:Menlo,Consolas,monospace">
+            </div>
+            <div id="ce-err" style="display:none;padding:.55rem .75rem;background:rgba(197,64,64,.08);color:#c54040;font-size:.78rem;border-radius:6px;margin-bottom:.7rem"></div>
+          </div>
+        </div>
+        <div class="modal-foot" id="cd-foot-view">
+          <button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(139,34,34,.2)" onclick="deleteCustomer(window._CD_ID,window._CD_NAME)">Delete</button>
+          <button class="btn btn-ghost btn-sm" onclick="openInvoiceForCustomerById(window._CD_ID)">New Invoice</button>
+          <button class="btn btn-navy btn-sm" onclick="switchCustDetail('edit')">Edit</button>
+          <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-cust-detail')">Close</button>
+        </div>
+        <div class="modal-foot" id="cd-foot-edit" style="display:none">
+          <button class="btn btn-ghost btn-sm" onclick="switchCustDetail('view')">Cancel</button>
+          <button class="btn btn-navy btn-sm" id="ce-save-btn" onclick="saveEditCustomer()">Save Changes</button>
+        </div>
       </div>
     </div>
 
@@ -2195,9 +2262,15 @@ function loadLiveBookings(){
       cg.innerHTML=d.customers.map(function(c){
         var safeName=(c.full_name||'Unknown').replace(/"/g,'&quot;').replace(/'/g,"\\'");
         var unvBadge=c.verified===0?'<span style="margin-left:.5rem;padding:.15rem .45rem;font-size:.6rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:rgba(184,152,90,.15);color:#B8985A;border-radius:2px">Unverified</span>':'';
+        var typeBadge=c.account_type==='business'?'<span class="cc-type cc-business">Business</span>':'<span class="cc-type cc-personal">Personal</span>';
         return '<div class="cust-card"><div class="cc-name">'+(c.full_name||'Unknown')+unvBadge+'</div>'
+          +typeBadge
           +'<div class="cc-meta">'+(c.email||'')+(c.phone?' \u00b7 '+c.phone:'')+'</div>'
-          +'<div class="cc-actions"><button class="cc-btn" onclick="sendInvoice('+c.id+',\''+safeName+'\')">Send Invoice</button></div>'
+          +'<div class="cc-actions">'
+          +'<button class="cc-btn" onclick="viewCustomer('+c.id+')">View</button>'
+          +'<button class="cc-btn" onclick="openEditCustomer('+c.id+')">Edit</button>'
+          +'<button class="cc-btn cc-btn-del" onclick="deleteCustomer('+c.id+',\''+safeName+'\')">Delete</button>'
+          +'</div>'
           +'</div>';
       }).join('');
     }).catch(function(){});
@@ -2643,6 +2716,9 @@ function openNewCustomerModal(){
 }
 function closeNewCustomerModal(){
   document.getElementById('modal-new-customer').style.display='none';
+  document.getElementById('nc-form').style.display='';
+  document.getElementById('nc-post-create').style.display='none';
+  window._NC_CUSTOMER=null;
 }
 async function submitNewCustomer(){
   const errEl=document.getElementById('nc-err');
@@ -2668,13 +2744,176 @@ async function submitNewCustomer(){
     const d=await r.json();
     if(!r.ok||!d.ok){errEl.textContent=d.error||'Failed to create account.';errEl.style.display='';btn.disabled=false;btn.textContent='Create Account';return;}
     btn.disabled=false;btn.textContent='Create Account';
-    closeNewCustomerModal();
-    showToast('Account opened — welcome email sent to '+d.customer.email);
+    window._NC_CUSTOMER=d.customer;
+    document.getElementById('nc-form').style.display='none';
+    var pc=document.getElementById('nc-post-create');
+    document.getElementById('nc-success-msg').textContent='Account created for '+d.customer.full_name;
+    document.getElementById('nc-success-sub').textContent=d.customer.email;
+    pc.style.display='';
     if(typeof loadCustomers==='function')loadCustomers();
   }catch(e){
     errEl.textContent='Network error. Please try again.';errEl.style.display='';
     btn.disabled=false;btn.textContent='Create Account';
   }
+}
+
+// ── CUSTOMER POST-CREATE ACTIONS ──
+async function sendWelcomeEmailNew(){
+  var c=window._NC_CUSTOMER;if(!c)return;
+  var btn=document.getElementById('nc-welcome-btn');
+  btn.disabled=true;btn.textContent='Sending...';
+  try{
+    var r=await fetch('/api/customers/'+c.id+'/welcome',{method:'POST',credentials:'include'});
+    var d=await r.json();
+    if(!r.ok||!d.ok){showToast('Failed: '+(d.error||'unknown error'));btn.disabled=false;btn.textContent='Send Welcome Email';return;}
+    btn.textContent='Sent \u2713';btn.style.background='rgba(45,110,71,.1)';btn.style.color='var(--green)';btn.style.borderColor='rgba(45,110,71,.2)';
+  }catch(e){showToast('Network error');btn.disabled=false;btn.textContent='Send Welcome Email';}
+}
+function createInvoiceNew(){
+  var c=window._NC_CUSTOMER;if(!c)return;
+  closeNewCustomerModal();
+  openInvoiceForCustomer(c);
+}
+
+// ── CUSTOMER VIEW / EDIT ──
+window._CD_ID=null;
+window._CD_NAME='';
+
+function viewCustomer(id){
+  window._CD_ID=id;
+  document.getElementById('cd-title').textContent='Customer';
+  document.getElementById('cd-content').innerHTML='<div style="color:rgba(17,29,44,.4);font-size:.82rem">Loading...</div>';
+  document.getElementById('cd-bookings').innerHTML='Loading...';
+  switchCustDetail('view');
+  openModal('modal-cust-detail');
+  fetch('/api/customers/'+id,{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
+    if(!d.ok)return;
+    var c=d.customer;
+    window._CD_NAME=c.full_name||'Customer';
+    document.getElementById('cd-title').textContent=c.full_name||'Customer';
+    var html='';
+    var typeCls=c.account_type==='business'?'cc-business':'cc-personal';
+    html+='<div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.9rem">'
+      +'<span class="cc-type '+typeCls+'" style="font-size:.6rem">'+escTo(c.account_type||'personal')+'</span>'
+      +(c.verified?'':'<span style="padding:.12rem .45rem;font-size:.6rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:rgba(184,152,90,.15);color:#B8985A;border-radius:2px">Unverified</span>')
+      +'</div>';
+    var rows=[['Email',c.email],['Phone',c.phone],['Address',[c.address_line1,c.address_line2,c.postcode].filter(Boolean).join(', ')],['Bank',[c.bank_name,c.bank_account_name].filter(Boolean).join(' / ')],['Sort / Acc',[c.bank_sort_code,c.bank_account_no].filter(Boolean).join(' / ')],['Member since',c.created_at?c.created_at.slice(0,10):'']];
+    rows.forEach(function(row){
+      if(!row[1])return;
+      html+='<div style="display:flex;gap:.8rem;margin-bottom:.45rem;font-size:.82rem">'
+        +'<span style="min-width:90px;color:rgba(17,29,44,.4);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;padding-top:.1rem">'+row[0]+'</span>'
+        +'<span style="color:var(--navy)">'+escTo(String(row[1]))+'</span></div>';
+    });
+    document.getElementById('cd-content').innerHTML=html;
+    // Bookings
+    if(!d.bookings||!d.bookings.length){
+      document.getElementById('cd-bookings').innerHTML='<div style="color:rgba(17,29,44,.35);font-size:.8rem">No bookings yet.</div>';
+      return;
+    }
+    var bhtml='<table style="width:100%;border-collapse:collapse;font-size:.76rem">'
+      +'<tr style="color:rgba(17,29,44,.4);font-size:.65rem;letter-spacing:.08em;text-transform:uppercase"><th style="text-align:left;padding:.35rem 0;font-weight:500">Ref</th><th style="text-align:left;padding:.35rem .4rem;font-weight:500">Date</th><th style="text-align:left;padding:.35rem .4rem;font-weight:500">Route</th><th style="text-align:right;padding:.35rem 0;font-weight:500">Fare</th></tr>';
+    d.bookings.slice(0,10).forEach(function(b){
+      var statusCol=b.status==='completed'?'var(--green)':b.status==='cancelled'?'var(--red)':'var(--gold)';
+      bhtml+='<tr style="border-top:1px solid rgba(17,29,44,.05)">'
+        +'<td style="padding:.35rem 0;color:var(--navy);font-weight:400">'+escTo(b.ref)+'</td>'
+        +'<td style="padding:.35rem .4rem;color:rgba(17,29,44,.55)">'+escTo(b.date)+'</td>'
+        +'<td style="padding:.35rem .4rem;color:rgba(17,29,44,.55);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escTo(b.pickup)+' &rarr; '+escTo(b.destination)+'</td>'
+        +'<td style="padding:.35rem 0;text-align:right;color:'+statusCol+'">'+(b.fare?'£'+Number(b.fare).toFixed(0):'—')+'</td>'
+        +'</tr>';
+    });
+    bhtml+='</table>';
+    document.getElementById('cd-bookings').innerHTML=bhtml;
+    // stash customer for edit prefill
+    window._CD_CUST=c;
+  }).catch(function(){
+    document.getElementById('cd-content').innerHTML='<div style="color:rgba(17,29,44,.4)">Failed to load customer.</div>';
+  });
+}
+
+function openEditCustomer(id){
+  viewCustomer(id);
+  // switch to edit once data loads — use a brief delay
+  setTimeout(function(){switchCustDetail('edit');},300);
+}
+
+function switchCustDetail(state){
+  var isEdit=state==='edit';
+  document.getElementById('cd-view').style.display=isEdit?'none':'';
+  document.getElementById('cd-edit').style.display=isEdit?'':'none';
+  document.getElementById('cd-foot-view').style.display=isEdit?'none':'';
+  document.getElementById('cd-foot-edit').style.display=isEdit?'':'none';
+  if(isEdit&&window._CD_CUST){
+    var c=window._CD_CUST;
+    document.getElementById('ce-name').value=c.full_name||'';
+    document.getElementById('ce-email').value=c.email||'';
+    document.getElementById('ce-phone').value=c.phone||'';
+    document.getElementById('ce-addr1').value=c.address_line1||'';
+    document.getElementById('ce-addr2').value=c.address_line2||'';
+    document.getElementById('ce-postcode').value=c.postcode||'';
+    document.getElementById('ce-bank-name').value=c.bank_name||'';
+    document.getElementById('ce-bank-acc-name').value=c.bank_account_name||'';
+    document.getElementById('ce-bank-sort').value=c.bank_sort_code||'';
+    document.getElementById('ce-bank-acc').value=c.bank_account_no||'';
+    document.getElementById('ce-err').style.display='none';
+  }
+}
+
+async function saveEditCustomer(){
+  var id=window._CD_ID;if(!id)return;
+  var errEl=document.getElementById('ce-err');errEl.style.display='none';
+  var name=document.getElementById('ce-name').value.trim();
+  var email=document.getElementById('ce-email').value.trim();
+  if(!name||!email){errEl.textContent='Name and email are required.';errEl.style.display='';return;}
+  var payload={
+    full_name:name,email:email,
+    phone:document.getElementById('ce-phone').value.trim(),
+    address_line1:document.getElementById('ce-addr1').value.trim(),
+    address_line2:document.getElementById('ce-addr2').value.trim(),
+    postcode:document.getElementById('ce-postcode').value.trim(),
+    bank_name:document.getElementById('ce-bank-name').value.trim(),
+    bank_account_name:document.getElementById('ce-bank-acc-name').value.trim(),
+    bank_sort_code:document.getElementById('ce-bank-sort').value.trim(),
+    bank_account_no:document.getElementById('ce-bank-acc').value.trim()
+  };
+  var btn=document.getElementById('ce-save-btn');btn.disabled=true;btn.textContent='Saving...';
+  try{
+    var r=await fetch('/api/customers/'+id,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    var d=await r.json();
+    if(!r.ok||!d.ok){errEl.textContent=d.error||'Failed to save.';errEl.style.display='';btn.disabled=false;btn.textContent='Save Changes';return;}
+    btn.disabled=false;btn.textContent='Save Changes';
+    showToast('Customer updated');
+    closeModal('modal-cust-detail');
+    if(typeof loadCustomers==='function')loadCustomers();
+  }catch(e){errEl.textContent='Network error. Please try again.';errEl.style.display='';btn.disabled=false;btn.textContent='Save Changes';}
+}
+
+async function deleteCustomer(id,name){
+  if(!confirm('Delete customer account for '+(name||'this customer')+'?\n\nTheir booking history will be preserved but the account will be deactivated.'))return;
+  try{
+    var r=await fetch('/api/customers/'+id,{method:'DELETE',credentials:'include'});
+    var d=await r.json();
+    if(!r.ok||!d.ok){showToast(d.error||'Delete failed');return;}
+    showToast('Customer deleted');
+    closeModal('modal-cust-detail');
+    if(typeof loadCustomers==='function')loadCustomers();
+  }catch(e){showToast('Network error');}
+}
+
+// ── INVOICE FROM CUSTOMER ──
+function openInvoiceForCustomer(c){
+  // Open invoice modal in bespoke mode, pre-filled with customer's details
+  openNewInvoice();
+  setInvoiceMode('bespoke');
+  document.getElementById('ni-rec-name').value=c.full_name||'';
+  document.getElementById('ni-rec-email').value=c.email||'';
+  document.getElementById('ni-rec-phone').value=c.phone||'';
+  var addr=[c.address_line1,c.address_line2,c.postcode].filter(Boolean).join('\n');
+  document.getElementById('ni-rec-address').value=addr;
+}
+function openInvoiceForCustomerById(id){
+  closeModal('modal-cust-detail');
+  var c=window._CD_CUST||{id:id};
+  openInvoiceForCustomer(c);
 }
 
 // ── NEW INVOICE MODAL ──

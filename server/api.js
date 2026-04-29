@@ -335,7 +335,7 @@ router.get('/customers', (req, res) => {
     SELECT id, email, full_name, phone, account_type, active, verified, created_at,
            address_line1, address_line2, postcode,
            bank_name, bank_sort_code, bank_account_no, bank_account_name
-      FROM customers ORDER BY created_at DESC
+      FROM customers WHERE active = 1 ORDER BY created_at DESC
   `).all();
   res.json({ ok: true, customers: rows });
 });
@@ -395,14 +395,74 @@ router.post('/customers', (req, res) => {
       .run(req.auth.type || 'user', req.auth.id, 'customer_created_by_admin', cleanEmail, req.ip);
   } catch (e) { /* audit failure must not block response */ }
 
-  const { sendCustomerWelcome } = require('./email');
-  sendCustomerWelcome({ email: cleanEmail, full_name: full_name.trim() })
-    .catch(e => console.error('[API] sendCustomerWelcome failed:', e.message));
-
   res.status(201).json({
     ok: true,
     customer: { id: result.lastInsertRowid, email: cleanEmail, full_name: full_name.trim() }
   });
+});
+
+// Get single customer with recent bookings (admin/owner)
+router.get('/customers/:id', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid customer ID' });
+  const customer = db.prepare(`
+    SELECT id, email, full_name, phone, account_type, active, verified, created_at,
+           address_line1, address_line2, postcode,
+           bank_name, bank_sort_code, bank_account_no, bank_account_name
+      FROM customers WHERE id = ?
+  `).get(id);
+  if (!customer) return res.status(404).json({ error: 'Customer not found' });
+  const bookings = db.prepare(`
+    SELECT ref, date, time, pickup, destination, fare, status, payment
+      FROM bookings WHERE customer_id = ? ORDER BY date DESC, time DESC LIMIT 20
+  `).all(id);
+  res.json({ ok: true, customer, bookings });
+});
+
+// Send welcome email to customer (admin/owner, on demand)
+router.post('/customers/:id/welcome', async (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid customer ID' });
+  const customer = db.prepare('SELECT id, email, full_name FROM customers WHERE id = ?').get(id);
+  if (!customer) return res.status(404).json({ error: 'Customer not found' });
+  const { sendCustomerWelcome } = require('./email');
+  try {
+    await sendCustomerWelcome({ email: customer.email, full_name: customer.full_name });
+  } catch (e) {
+    console.error('[API] sendCustomerWelcome failed:', e.message);
+    return res.status(500).json({ error: 'Failed to send welcome email' });
+  }
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run('user', req.auth.id, 'customer_welcome_sent', customer.email, req.ip);
+  } catch (_) {}
+  res.json({ ok: true });
+});
+
+// Delete customer — soft delete (sets active=0)
+router.delete('/customers/:id', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid customer ID' });
+  const customer = db.prepare('SELECT id, email FROM customers WHERE id = ?').get(id);
+  if (!customer) return res.status(404).json({ error: 'Customer not found' });
+  db.prepare("UPDATE customers SET active = 0, updated_at = datetime('now') WHERE id = ?").run(id);
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run('user', req.auth.id, 'customer_deleted', customer.email, req.ip);
+  } catch (_) {}
+  res.json({ ok: true });
 });
 
 // Update customer (admin/owner)
