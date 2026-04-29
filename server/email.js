@@ -453,10 +453,12 @@ async function sendCustomerInvoice(customer, bookings, period, invoiceNo, settin
   const subject = 'Invoice ' + (invoiceNo || '') + ' \u2014 ' + (period.label || '');
   const preheader = summaryCount + ' journey' + (summaryCount === 1 ? '' : 's') + ' \u00b7 \u00a3' + total.toFixed(2) + ' total';
   const attachments = pdfBuffer
-    ? [{ filename: (invoiceNo || 'invoice') + '.pdf', content: pdfBuffer.toString('base64') }]
+    ? [{ filename: (invoiceNo || 'invoice') + '.pdf', content: pdfBuffer.toString('base64'), content_type: 'application/pdf' }]
     : undefined;
+  if (pdfBuffer) console.log('[EMAIL] Attaching PDF:', (invoiceNo || 'invoice') + '.pdf', pdfBuffer.length, 'bytes');
+  else console.warn('[EMAIL] No PDF buffer — sending invoice', invoiceNo, 'without attachment');
   const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader, attachments ? { attachments } : undefined);
-  if (ok) console.log('[EMAIL] Invoice', invoiceNo, 'sent to', email, pdfBuffer ? '(with PDF)' : '');
+  if (ok) console.log('[EMAIL] Invoice', invoiceNo, 'sent to', email, pdfBuffer ? '(with PDF attachment)' : '(NO PDF)');
   return ok;
 }
 
@@ -575,10 +577,12 @@ async function sendBespokeInvoice(recipient, items, period, invoiceNo, settings,
   const subject = 'Invoice ' + (invoiceNo || '') + ' \u2014 Westmere Private Hire';
   const preheader = 'Invoice \u00b7 \u00a3' + total.toFixed(2);
   const attachments = pdfBuffer
-    ? [{ filename: (invoiceNo || 'invoice') + '.pdf', content: pdfBuffer.toString('base64') }]
+    ? [{ filename: (invoiceNo || 'invoice') + '.pdf', content: pdfBuffer.toString('base64'), content_type: 'application/pdf' }]
     : undefined;
+  if (pdfBuffer) console.log('[EMAIL] Attaching PDF:', (invoiceNo || 'invoice') + '.pdf', pdfBuffer.length, 'bytes');
+  else console.warn('[EMAIL] No PDF buffer — sending bespoke invoice', invoiceNo, 'without attachment');
   const ok = await sendEmail(recipient.email, subject, html, 'Westmere Private Hire', preheader, attachments ? { attachments } : undefined);
-  if (ok) console.log('[EMAIL] Bespoke invoice', invoiceNo, 'sent to', recipient.email, pdfBuffer ? '(with PDF)' : '');
+  if (ok) console.log('[EMAIL] Bespoke invoice', invoiceNo, 'sent to', recipient.email, pdfBuffer ? '(with PDF attachment)' : '(NO PDF)');
   return ok;
 }
 
