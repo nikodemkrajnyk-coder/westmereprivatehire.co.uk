@@ -34,7 +34,7 @@ nav#nav{display:none}
 
 /* ── APP SHELL ── */
 .app{display:flex;flex-direction:column;height:100vh;height:100dvh;position:relative;z-index:1;overflow:hidden;max-width:100vw}
-.topbar{background:rgba(255,255,255,.92);backdrop-filter:blur(24px);padding:calc(var(--safe-top) + .35rem) 1.2rem .35rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid rgba(17,29,44,.06);box-shadow:0 1px 8px rgba(17,29,44,.04);z-index:60;height:50px}
+.topbar{background:rgba(255,255,255,.92);backdrop-filter:blur(24px);padding:calc(var(--safe-top) + .35rem) 1.2rem .35rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid rgba(17,29,44,.06);box-shadow:0 1px 8px rgba(17,29,44,.04);z-index:60;min-height:50px}
 .tb-left{display:flex;align-items:center;gap:.8rem}
 .tb-crest{width:36px;height:36px;border:1px solid rgba(184,152,90,.22);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1rem;color:var(--navy);flex-shrink:0}
 .tb-name{font-family:var(--serif);font-size:1rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--navy)}
@@ -529,13 +529,13 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
         <div class="tb-mode-label" id="tb-mode-label">Drive Mode</div>
       </div>
       <!-- Tesla battery pill -->
-      <div id="tb-tesla-pill" style="display:none;margin-left:.5rem;display:flex;align-items:center;gap:.35rem;background:rgba(17,29,44,.06);border-radius:20px;padding:.22rem .65rem;font-size:.65rem;font-family:var(--sans);font-weight:500;color:var(--navy);letter-spacing:.04em">
+      <div id="tb-tesla-pill" style="display:none;margin-left:.5rem;align-items:center;gap:.35rem;background:rgba(17,29,44,.06);border-radius:20px;padding:.22rem .65rem;font-size:.65rem;font-family:var(--sans);font-weight:500;color:var(--navy);letter-spacing:.04em">
         <svg width="14" height="7" viewBox="0 0 14 7" style="flex-shrink:0"><rect x="0" y="1" width="12" height="5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="12.2" y="2.5" width="1.5" height="2" rx=".5" fill="currentColor" opacity=".5"/><rect id="tb-tesla-bar" x="1" y="2" width="0" height="3" rx=".8" fill="#2A9D5C"/></svg>
         <span id="tb-tesla-pct">—</span>
         <span style="color:rgba(17,29,44,.4);font-size:.58rem" id="tb-tesla-range"></span>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:.7rem">
+    <div style="display:flex;align-items:center;gap:.4rem">
       <div class="mode-toggle">
         <button class="mode-btn on" id="mode-drive" onclick="setMode('drive')">Drive</button>
         <button class="mode-btn" id="mode-admin" onclick="setMode('admin')">Admin</button>
@@ -1084,6 +1084,13 @@ async function loadDecisions(){
 }
 
 function decEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function _shortAddr(a){
+  if(!a)return '';
+  var parts=a.split(',').map(function(p){return p.trim();}).filter(Boolean);
+  var skip=/^(england|united kingdom|uk|gb|great britain|west sussex|east sussex|surrey|kent|hampshire|essex|sussex|berkshire|london)\b/i;
+  var out=parts.filter(function(p){return !skip.test(p);});
+  return (out.length>3?out.slice(0,3):out).join(', ');
+}
 
 function renderDecisionsPending(list){
   var el=document.getElementById('dec-pending-list');if(!el)return;
@@ -1092,7 +1099,7 @@ function renderDecisionsPending(list){
   el.innerHTML=list.map(function(b){
     return '<div style="padding:.85rem 1rem;border-top:1px solid var(--rule)">'
       +'<div style="font-weight:500;color:var(--navy);font-size:.85rem">'+decEsc(b.ref||'')+' \u00b7 '+decEsc(b.customer_name||'Guest')+'</div>'
-      +'<div style="font-size:.72rem;color:rgba(17,29,44,.6);margin-top:.2rem">'+decEsc(b.pickup||'')+' \u2192 '+decEsc(b.destination||'')+'</div>'
+      +'<div style="font-size:.72rem;color:rgba(17,29,44,.6);margin-top:.2rem">'+decEsc(_shortAddr(b.pickup||''))+' \u2192 '+decEsc(_shortAddr(b.destination||''))+'</div>'
       +'<div style="font-size:.72rem;color:rgba(17,29,44,.5);margin-top:.15rem">'+decEsc(b.date||'')+' at '+decEsc(b.time||'')+(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')+'</div>'
       +(b.intake_reason?'<div style="font-size:.7rem;color:#9C5800;margin-top:.25rem;font-style:italic">'+decEsc(b.intake_reason)+'</div>':'')
       +'<div style="display:flex;gap:.5rem;margin-top:.7rem">'
@@ -1118,7 +1125,7 @@ function renderDecisionsOffered(list){
     }
     return '<div style="padding:.85rem 1rem;border-top:1px solid var(--rule)">'
       +'<div style="font-weight:500;color:var(--navy);font-size:.85rem">'+decEsc(b.ref||'')+' \u00b7 '+decEsc(b.customer_name||'Guest')+'</div>'
-      +'<div style="font-size:.72rem;color:rgba(17,29,44,.6);margin-top:.2rem">'+decEsc(b.pickup||'')+' \u2192 '+decEsc(b.destination||'')+'</div>'
+      +'<div style="font-size:.72rem;color:rgba(17,29,44,.6);margin-top:.2rem">'+decEsc(_shortAddr(b.pickup||''))+' \u2192 '+decEsc(_shortAddr(b.destination||''))+'</div>'
       +'<div style="font-size:.72rem;color:rgba(17,29,44,.5);margin-top:.15rem">'+decEsc(b.date||'')+' at '+decEsc(b.time||'')+(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')+'</div>'
       +'<div style="font-size:.74rem;color:#2A3A66;margin-top:.25rem">Awaiting <strong>'+decEsc(b.offered_driver_name||'driver')+'</strong>'+timer+'</div>'
       +'<div style="display:flex;gap:.5rem;margin-top:.5rem">'
@@ -2003,8 +2010,8 @@ function buildCard(j,isOffered){
   var puEnc=encodeURIComponent(j.pickup||'');
   var deEnc=encodeURIComponent(j.dest||'');
   var route='<div class="jc2-route">'
-    +'<div class="jc2-loc"><div class="jc2-pin pu"></div><div class="jc2-addr" onclick="navChoice(\''+puEnc+'\')">'+escH(j.pickup||'')+'</div></div>'
-    +'<div class="jc2-loc" style="margin-top:.18rem"><div class="jc2-pin de"></div><div class="jc2-addr" onclick="navChoice(\''+deEnc+'\')">'+escH(j.dest||'')+'</div></div>'
+    +'<div class="jc2-loc"><div class="jc2-pin pu"></div><div class="jc2-addr" onclick="navChoice(\''+puEnc+'\')">'+escH(_shortAddr(j.pickup)||'')+'</div></div>'
+    +'<div class="jc2-loc" style="margin-top:.18rem"><div class="jc2-pin de"></div><div class="jc2-addr" onclick="navChoice(\''+deEnc+'\')">'+escH(_shortAddr(j.dest)||'')+'</div></div>'
     +(j.flight?'<div style="margin-top:.4rem;font-size:.72rem;color:rgba(17,29,44,.5)">✈ '+escH(j.flight)+'</div>':'')
     +'</div>';
 
@@ -2178,7 +2185,7 @@ function buildOffered(){
       +  '<div style="font-weight:500;color:var(--navy);font-size:.92rem;font-family:var(--serif)">'+escH(j.name)+'</div>'
       +  '<span style="display:inline-flex;align-items:center;padding:.2rem .5rem;font-size:.52rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:'+stColor+';background:'+stBg+';border-radius:4px;white-space:nowrap">'+stLabel+'</span>'
       +'</div>'
-      +'<div style="font-size:.8rem;color:rgba(17,29,44,.6);margin-bottom:.15rem">'+escH(j.pickup||'')+' → '+escH(j.dest||'')+'</div>'
+      +'<div style="font-size:.8rem;color:rgba(17,29,44,.6);margin-bottom:.15rem">'+escH(_shortAddr(j.pickup||''))+' → '+escH(_shortAddr(j.dest||''))+'</div>'
       +'<div style="font-size:.72rem;color:rgba(17,29,44,.4)">'+(j.time||'ASAP')+(j.fare?' · £'+Number(j.fare).toFixed(0):'')+(j.pax>1?' · '+j.pax+' pax':'')+(j.payment==='card'?' · Card':'')+'</div>';
 
     if(j.apiStatus==='pending'){
@@ -2984,13 +2991,13 @@ function jobDetailCard(j){
   // Pickup
   h+='<div style="margin-bottom:.5rem">';
   h+='<div style="font-size:.58rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-bottom:.15rem">Pickup</div>';
-  h+='<div style="font-size:.95rem;color:var(--navy);line-height:1.4">'+escH(j.pickup)+'</div>';
+  h+='<div style="font-size:.95rem;color:var(--navy);line-height:1.4">'+escH(_shortAddr(j.pickup))+'</div>';
   h+='</div>';
 
   // Destination
   h+='<div style="margin-bottom:.65rem">';
   h+='<div style="font-size:.58rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-bottom:.15rem">Drop-off</div>';
-  h+='<div style="font-size:.95rem;color:var(--navy);line-height:1.4">'+escH(j.dest)+'</div>';
+  h+='<div style="font-size:.95rem;color:var(--navy);line-height:1.4">'+escH(_shortAddr(j.dest))+'</div>';
   h+='</div>';
 
   // Flight
