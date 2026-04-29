@@ -404,7 +404,7 @@ async function sendCustomerInvoice(customer, bookings, period, invoiceNo, settin
   <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Invoice &middot; ${escHtml(period.label || '')}</p>
   <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
   <p style="margin:0 0 10px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Please find attached your invoice <span style="font-family:Menlo,Consolas,monospace;font-size:13px">${escHtml(invoiceNo)}</span> for ${escHtml(period.label || 'this period')}.</p>
-  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">The total amount due is <strong style="color:${INK}">&pound;${total.toFixed(2)}</strong>. Payment details are included below for your convenience.</p>
+  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">The total amount is <strong style="color:${INK}">&pound;${total.toFixed(2)}</strong>. Payment details are included below for your convenience.</p>
 
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px">
     <tr>
@@ -437,7 +437,7 @@ async function sendCustomerInvoice(customer, bookings, period, invoiceNo, settin
         <td style="padding:14px 0 6px;font-family:Georgia,serif;font-size:13px;color:${INK};text-align:right">&pound;${subtotal.toFixed(2)}</td>
       </tr>
       <tr>
-        <td colspan="2" style="padding:6px 10px 6px 0;border-top:1px solid ${HAIRLINE};font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:1.8px;text-transform:uppercase;color:${INK};text-align:right;font-weight:600">Total due</td>
+        <td colspan="2" style="padding:6px 10px 6px 0;border-top:1px solid ${HAIRLINE};font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:1.8px;text-transform:uppercase;color:${INK};text-align:right;font-weight:600">Total</td>
         <td style="padding:6px 0;border-top:1px solid ${HAIRLINE};font-family:Georgia,serif;font-size:18px;color:${GOLD};text-align:right;font-weight:500">&pound;${total.toFixed(2)}</td>
       </tr>
     </tfoot>
@@ -472,8 +472,14 @@ async function sendBespokeInvoice(recipient, items, period, invoiceNo, settings,
 
   const rows = (items || []).map(it => {
     const amount = +it.amount || 0;
+    let datePrefix = '';
+    if (it.date && String(it.date).trim()) {
+      try {
+        datePrefix = new Date(it.date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ' \u2014 ';
+      } catch (_) {}
+    }
     return `<tr>
-      <td style="padding:10px 0;border-bottom:1px solid ${HAIRLINE};font-family:Georgia,serif;font-size:13px;color:${INK};line-height:1.5;vertical-align:top">${escHtml(it.description || '')}</td>
+      <td style="padding:10px 0;border-bottom:1px solid ${HAIRLINE};font-family:Georgia,serif;font-size:13px;color:${INK};line-height:1.5;vertical-align:top">${datePrefix ? `<span style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;color:${INK_MUTED}">${escHtml(datePrefix)}</span>` : ''}${escHtml(it.description || '')}</td>
       <td style="padding:10px 0;border-bottom:1px solid ${HAIRLINE};font-family:Georgia,serif;font-size:13px;color:${INK};text-align:right;vertical-align:top;white-space:nowrap">&pound;${amount.toFixed(2)}</td>
     </tr>`;
   }).join('');
@@ -519,7 +525,7 @@ async function sendBespokeInvoice(recipient, items, period, invoiceNo, settings,
   <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Invoice</p>
   <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
   <p style="margin:0 0 10px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Please find attached invoice <span style="font-family:Menlo,Consolas,monospace;font-size:13px">${escHtml(invoiceNo)}</span> from Westmere Private Hire.</p>
-  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">The total amount due is <strong style="color:${INK}">&pound;${total.toFixed(2)}</strong>. Payment details are included below for your convenience.</p>
+  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">The total amount is <strong style="color:${INK}">&pound;${total.toFixed(2)}</strong>. Payment details are included below for your convenience.</p>
 
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px">
     <tr>
@@ -552,7 +558,7 @@ async function sendBespokeInvoice(recipient, items, period, invoiceNo, settings,
     <tbody>${rows}</tbody>
     <tfoot>
       <tr>
-        <td style="padding:14px 0 6px;border-top:1px solid ${HAIRLINE};font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:1.8px;text-transform:uppercase;color:${INK};text-align:right;font-weight:600">Total due</td>
+        <td style="padding:14px 0 6px;border-top:1px solid ${HAIRLINE};font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:1.8px;text-transform:uppercase;color:${INK};text-align:right;font-weight:600">Total</td>
         <td style="padding:14px 0 6px;border-top:1px solid ${HAIRLINE};font-family:Georgia,serif;font-size:18px;color:${GOLD};text-align:right;font-weight:500">&pound;${total.toFixed(2)}</td>
       </tr>
     </tfoot>
@@ -567,7 +573,7 @@ async function sendBespokeInvoice(recipient, items, period, invoiceNo, settings,
 
   const html = emailShell(body);
   const subject = 'Invoice ' + (invoiceNo || '') + ' \u2014 Westmere Private Hire';
-  const preheader = 'Invoice \u00b7 \u00a3' + total.toFixed(2) + ' due';
+  const preheader = 'Invoice \u00b7 \u00a3' + total.toFixed(2);
   const attachments = pdfBuffer
     ? [{ filename: (invoiceNo || 'invoice') + '.pdf', content: pdfBuffer.toString('base64') }]
     : undefined;

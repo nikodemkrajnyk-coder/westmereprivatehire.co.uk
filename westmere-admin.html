@@ -3215,8 +3215,12 @@ function openInvoicePreview(data){
     var items=data.items||[];
     var itemRows=items.map(function(it){
       var amt=(+it.amount||0).toFixed(2);
+      var datePrefix='';
+      if(it.date&&String(it.date).trim()){
+        try{var d=new Date(it.date+'T00:00:00');datePrefix=d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' \u2014 ';}catch(_){}
+      }
       return '<tr>'
-        +'<td style="padding:12px 8px;border-bottom:1px solid rgba(17,29,44,.08);font-size:13px;color:#111D2C;line-height:1.5;vertical-align:top">'+esc(it.description||'')+'</td>'
+        +'<td style="padding:12px 8px;border-bottom:1px solid rgba(17,29,44,.08);font-size:13px;color:#111D2C;line-height:1.5;vertical-align:top">'+(datePrefix?'<span style="color:#9AA3B2;font-size:11px;font-family:Helvetica Neue,Arial,sans-serif">'+esc(datePrefix)+'</span>':'')+''+esc(it.description||'')+'</td>'
         +'<td style="padding:12px 8px;border-bottom:1px solid rgba(17,29,44,.08);font-size:14px;color:#111D2C;text-align:right;vertical-align:top;white-space:nowrap;font-family:Georgia,serif">&pound;'+amt+'</td>'
         +'</tr>';
     }).join('');
@@ -3313,7 +3317,7 @@ function openInvoicePreview(data){
       +'<div class="brand-mark"><div class="brand-name">WESTMERE</div><div class="brand-sub">Private Hire &middot; Sussex</div></div>'
       +'<div class="inv-badge"><div class="inv-label">Invoice</div>'
       +'<div class="inv-no">'+esc(data.invoiceNo||'')+'</div>'
-      +'<div class="inv-meta">Issued '+esc(issuedStr)+(dueStr?'<br>Due '+esc(dueStr):'')+'</div>'
+      +'<div class="inv-meta">Issued '+esc(issuedStr)+'</div>'
       +'</div></div>'
     +'<div class="gold-rule"></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-bottom:36px">'
@@ -3323,7 +3327,7 @@ function openInvoicePreview(data){
     +periodLine
     +tableHtml
     +'<div style="display:flex;flex-direction:column;align-items:flex-end;margin-bottom:32px">'
-      +'<div style="display:flex;justify-content:space-between;width:260px;padding:14px 0 8px;border-top:2px solid #B8985A;margin-top:4px"><span style="font-family:Helvetica Neue,Arial,sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:600;color:#111D2C;align-self:center">Total due</span><span style="font-size:26px;font-weight:500;color:#B8985A;font-family:Georgia,serif">&pound;'+total+'</span></div>'
+      +'<div style="display:flex;justify-content:space-between;width:260px;padding:14px 0 8px;border-top:2px solid #B8985A;margin-top:4px"><span style="font-family:Helvetica Neue,Arial,sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:600;color:#111D2C;align-self:center">Total</span><span style="font-size:26px;font-weight:500;color:#B8985A;font-family:Georgia,serif">&pound;'+total+'</span></div>'
     +'</div>'
     +bankHtml
     +'<div style="text-align:center;padding-top:24px;margin-top:20px;border-top:1px solid rgba(17,29,44,.1);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#9AA3B2;font-family:Helvetica Neue,Arial,sans-serif;font-weight:500">'

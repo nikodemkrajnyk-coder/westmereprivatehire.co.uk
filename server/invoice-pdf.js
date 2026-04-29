@@ -323,9 +323,9 @@ function drawInvoice(doc, data) {
   doc.save().moveTo(TX, y).lineTo(PAGE_W - M, y).lineWidth(0.5).strokeColor(NAVY).stroke().restore();
   y += 7;
 
-  // TOTAL DUE
+  // TOTAL
   doc.font('Helvetica-Bold').fontSize(9.5).fillColor(NAVY)
-     .text('TOTAL DUE', TX, y + 3, { width: LW, align: 'right', lineBreak: false });
+     .text('TOTAL', TX, y + 3, { width: LW, align: 'right', lineBreak: false });
   doc.font('Times-Bold').fontSize(16).fillColor(GOLD)
      .text('£' + total.toFixed(2), VX, y, { width: VW, align: 'right', lineBreak: false });
   y += 30;
