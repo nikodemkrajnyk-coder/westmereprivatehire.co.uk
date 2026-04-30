@@ -476,6 +476,8 @@ input[type=date]::placeholder,input[type=text]::placeholder{color:rgba(17,29,44,
 .sug-drop div:hover,.sug-drop div:active{background:rgba(184,152,90,.12);color:var(--navy)}
 
 footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-size:.68rem;letter-spacing:.1em;color:rgba(17,29,44,.4);background:rgba(17,29,44,.03);border-top:1px solid rgba(17,29,44,.06);position:relative;z-index:1}.mini-legal{margin-left:.6rem}.mini-legal a{color:rgba(17,29,44,.35);text-decoration:none;margin-left:.5rem;transition:color .2s;letter-spacing:.08em}.mini-legal a:hover{color:rgba(184,152,90,.8)}
+.fi{font-family:var(--sans);color:var(--navy);background:#fff;border:1px solid rgba(17,29,44,.15);border-radius:5px;padding:.42rem .5rem;outline:none;width:100%;box-sizing:border-box;-webkit-appearance:none}
+.fi:focus{border-color:var(--gold)}
 </style>
 <meta name="description" content="Westmere owner dashboard — fleet and operations overview.">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23111D2C'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='38' font-weight='500' text-anchor='middle' fill='%23B8985A'%3EW%3C/text%3E%3C/svg%3E">
@@ -792,55 +794,154 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
     <!-- Invoices -->
     <div class="pg" id="pg-invoices">
       <div class="sec-title"><em>Invoices</em></div>
-      <div class="sec-sub">Create &amp; send bespoke invoices</div>
+      <div class="sec-sub">Create, send &amp; manage invoices</div>
 
-      <!-- New invoice form -->
-      <div class="card" style="margin-top:.9rem">
-        <div class="ch">New Invoice</div>
-        <div class="cb" style="padding:.85rem 1rem">
-          <!-- Recipient -->
+      <!-- Action bar -->
+      <div style="padding:.75rem 1rem 0">
+        <button onclick="invOpenNew()" style="width:100%;padding:.7rem;background:var(--gold);color:var(--navy);border:none;font-family:var(--sans);font-size:.72rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;border-radius:6px">+ New Invoice</button>
+      </div>
+
+      <!-- Invoice list -->
+      <div class="card" style="margin-top:.85rem">
+        <div class="ch">Invoice History</div>
+        <div id="inv-list-body" style="font-size:.78rem;color:rgba(17,29,44,.4);padding:1rem;text-align:center">Loading…</div>
+      </div>
+    </div>
+
+    <!-- Invoice form overlay (full-screen sheet) -->
+    <div id="inv-sheet" style="display:none;position:fixed;inset:0;z-index:200;background:#F5F2ED;overflow-y:auto;padding:var(--safe-top) 0 calc(var(--safe-bottom)+1rem)">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;background:var(--navy);position:sticky;top:0;z-index:10">
+        <span style="font-family:var(--serif);font-size:1.05rem;color:#fff;font-weight:300;letter-spacing:.04em">New Invoice</span>
+        <button onclick="invCloseSheet()" style="background:transparent;border:none;color:rgba(255,255,255,.6);font-size:1.5rem;line-height:1;cursor:pointer">&times;</button>
+      </div>
+      <div style="padding:1rem">
+
+        <!-- Mode toggle -->
+        <div style="display:flex;gap:.4rem;margin-bottom:1rem;border-bottom:1px solid rgba(17,29,44,.1);padding-bottom:.75rem">
+          <button id="inv-mode-account" onclick="invSetMode('account')" style="flex:1;padding:.55rem;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:5px;border:1px solid rgba(17,29,44,.2);background:var(--navy);color:#fff">Account Customer</button>
+          <button id="inv-mode-bespoke" onclick="invSetMode('bespoke')" style="flex:1;padding:.55rem;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:5px;border:1px solid rgba(17,29,44,.2);background:transparent;color:var(--navy)">One-off Invoice</button>
+        </div>
+
+        <!-- Account customer mode -->
+        <div id="inv-account-fields">
+          <div style="margin-bottom:.7rem">
+            <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.22rem">Customer *</div>
+            <select id="inv-customer" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);background:#fff;font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px"><option value="">Loading…</option></select>
+          </div>
+          <div style="margin-bottom:.7rem">
+            <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.4rem">Period</div>
+            <div style="display:flex;gap:.4rem;margin-bottom:.5rem">
+              <button id="inv-btn-week" onclick="invSetPeriod('week')" style="flex:1;padding:.45rem;font-size:.65rem;letter-spacing:.06em;text-transform:uppercase;font-family:var(--sans);cursor:pointer;border-radius:5px;border:1px solid rgba(17,29,44,.2);background:transparent;color:var(--navy)">Last Week</button>
+              <button id="inv-btn-month" onclick="invSetPeriod('month')" style="flex:1;padding:.45rem;font-size:.65rem;letter-spacing:.06em;text-transform:uppercase;font-family:var(--sans);cursor:pointer;border-radius:5px;border:1px solid rgba(17,29,44,.2);background:transparent;color:var(--navy)">Last Month</button>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem">
+              <div>
+                <div style="font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.18rem">From</div>
+                <input id="inv-from" type="date" style="width:100%;padding:.45rem .5rem;border:1px solid rgba(17,29,44,.15);background:#fff;font-family:var(--sans);font-size:.82rem;color:var(--navy);border-radius:5px;box-sizing:border-box">
+              </div>
+              <div>
+                <div style="font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.18rem">To</div>
+                <input id="inv-to" type="date" style="width:100%;padding:.45rem .5rem;border:1px solid rgba(17,29,44,.15);background:#fff;font-family:var(--sans);font-size:.82rem;color:var(--navy);border-radius:5px;box-sizing:border-box">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bespoke mode -->
+        <div id="inv-bespoke-fields" style="display:none">
+          <!-- Saved recipients search -->
+          <div style="margin-bottom:.6rem;position:relative">
+            <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.22rem">Previous recipient</div>
+            <input id="inv-sr-input" type="text" placeholder="Type to search saved recipients…" autocomplete="off"
+              style="width:100%;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);background:#fff;font-family:var(--sans);font-size:.85rem;color:var(--navy);border-radius:6px;box-sizing:border-box"
+              oninput="invFilterSR(this.value)" onfocus="invFilterSR(this.value)" onkeydown="invSRKeydown(event)">
+            <div id="inv-sr-list" style="display:none;position:absolute;left:0;right:0;background:#fff;border:1px solid rgba(17,29,44,.18);border-top:none;border-radius:0 0 6px 6px;max-height:180px;overflow-y:auto;z-index:60;box-shadow:0 6px 18px rgba(17,29,44,.1)"></div>
+          </div>
+          <div style="margin-bottom:.6rem">
+            <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.22rem">Prefill from customer</div>
+            <select id="inv-rec-prefill" onchange="invPrefillFromCustomer(this.value)" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);background:#fff;font-family:var(--sans);font-size:.85rem;color:var(--navy);border-radius:6px"><option value="">— New recipient —</option></select>
+          </div>
           <div style="margin-bottom:.6rem">
             <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.22rem">Recipient Name *</div>
-            <input id="inv-recip-name" type="text" placeholder="e.g. John Smith" autocomplete="off"
-              style="width:100%;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);background:#fff;font-family:var(--sans);font-size:.9rem;color:var(--navy);border-radius:6px;box-sizing:border-box"
-              oninput="invRecipSearch(this.value)">
-            <div id="inv-recip-suggestions" style="display:none;border:1px solid rgba(17,29,44,.12);border-top:none;border-radius:0 0 6px 6px;background:#fff;max-height:140px;overflow-y:auto"></div>
+            <input id="inv-rec-name" type="text" placeholder="e.g. Sussex Corporate Ltd" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);background:#fff;font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
+          </div>
+          <div style="margin-bottom:.6rem">
+            <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.22rem">Recipient Email</div>
+            <input id="inv-rec-email" type="email" placeholder="accounts@example.com" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);background:#fff;font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
+          </div>
+          <div style="margin-bottom:.6rem">
+            <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.22rem">Recipient Phone</div>
+            <input id="inv-rec-phone" type="tel" placeholder="Optional" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);background:#fff;font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
           </div>
           <div style="margin-bottom:.8rem">
-            <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.22rem">Recipient Email *</div>
-            <input id="inv-recip-email" type="email" placeholder="customer@email.com"
-              style="width:100%;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);background:#fff;font-family:var(--sans);font-size:.9rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
+            <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.22rem">Recipient Address</div>
+            <textarea id="inv-rec-address" rows="2" placeholder="Street, Town, Postcode" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);background:#fff;font-family:var(--sans);font-size:.85rem;color:var(--navy);border-radius:6px;resize:vertical;box-sizing:border-box"></textarea>
           </div>
 
           <!-- Line items -->
-          <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.4rem">Line Items</div>
-          <div id="inv-items"></div>
-          <button onclick="invAddItem()" style="width:100%;padding:.5rem;margin-bottom:.8rem;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;background:rgba(17,29,44,.04);border:1px dashed rgba(17,29,44,.2);color:rgba(17,29,44,.5);font-family:var(--sans);cursor:pointer;border-radius:6px">+ Add Line Item</button>
+          <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.3rem">Line Items *</div>
+          <div style="display:grid;grid-template-columns:100px 1fr 80px 28px;gap:.3rem;margin-bottom:.2rem">
+            <div style="font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.35)">Date</div>
+            <div style="font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.35)">Description</div>
+            <div style="font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.35);text-align:right">Amt £</div>
+            <div></div>
+          </div>
+          <div id="ni-items" style="display:flex;flex-direction:column;gap:.35rem;margin-bottom:.5rem"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem">
+            <button onclick="addBespokeItem()" style="padding:.45rem .8rem;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);cursor:pointer;border-radius:5px;border:1px solid rgba(17,29,44,.2);background:transparent;color:var(--navy)">+ Add Item</button>
+            <div style="font-size:.78rem;color:rgba(17,29,44,.5)">Total: <strong id="ni-running-total" style="color:var(--navy)">£0.00</strong></div>
+          </div>
 
-          <!-- Notes -->
           <div style="margin-bottom:.8rem">
             <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.22rem">Notes (optional)</div>
-            <textarea id="inv-notes" rows="2" placeholder="Any additional notes…"
-              style="width:100%;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);background:#fff;font-family:var(--sans);font-size:.85rem;color:var(--navy);border-radius:6px;resize:vertical;box-sizing:border-box"></textarea>
+            <textarea id="ni-notes" rows="2" placeholder="Additional notes shown on the invoice" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);background:#fff;font-family:var(--sans);font-size:.85rem;color:var(--navy);border-radius:6px;resize:vertical;box-sizing:border-box"></textarea>
           </div>
+        </div>
 
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem">
-            <span style="font-size:.78rem;color:rgba(17,29,44,.5)">Total: <strong id="inv-total-display" style="color:var(--navy)">£0.00</strong></span>
-            <label style="font-size:.78rem;color:rgba(17,29,44,.6);display:flex;align-items:center;gap:.35rem;cursor:pointer">
-              <input type="checkbox" id="inv-send-email" checked style="width:16px;height:16px"> Send email
-            </label>
-          </div>
+        <div id="inv-err" style="display:none;padding:.55rem .8rem;background:rgba(156,40,40,.08);color:#9C2828;font-size:.78rem;border-radius:6px;margin-bottom:.6rem"></div>
 
-          <div id="inv-err" style="font-size:.78rem;color:var(--red);min-height:1em;margin-bottom:.4rem"></div>
-          <button onclick="invSubmit()" style="width:100%;padding:.75rem;background:var(--gold);color:var(--navy);border:none;font-family:var(--sans);font-size:.75rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;border-radius:6px">Send Invoice</button>
-          <div id="inv-success" style="display:none;margin-top:.7rem;padding:.7rem;background:rgba(45,110,71,.08);border:1px solid rgba(45,110,71,.2);border-radius:6px;font-size:.82rem;color:var(--green);text-align:center"></div>
+        <div style="display:flex;gap:.5rem">
+          <button onclick="invPreview()" style="flex:1;padding:.7rem;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:6px;border:1px solid rgba(17,29,44,.2);background:transparent;color:var(--navy)">Preview / Download</button>
+          <button onclick="invSend()" id="inv-send-btn" style="flex:1;padding:.7rem;background:var(--gold);color:var(--navy);border:none;font-family:var(--sans);font-size:.7rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:6px">Send to Email</button>
         </div>
       </div>
+    </div>
 
-      <!-- Recent invoices -->
-      <div class="card" style="margin-top:.85rem">
-        <div class="ch">Recent Invoices</div>
-        <div id="inv-recent-list" style="font-size:.78rem;color:rgba(17,29,44,.4);padding:1rem;text-align:center">Loading…</div>
+    <!-- Invoice detail sheet -->
+    <div id="inv-detail-sheet" style="display:none;position:fixed;inset:0;z-index:200;background:#F5F2ED;overflow-y:auto;padding:var(--safe-top) 0 calc(var(--safe-bottom)+1rem)">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;background:var(--navy);position:sticky;top:0;z-index:10">
+        <div>
+          <div id="inv-det-no" style="font-family:Menlo,Consolas,monospace;font-size:.9rem;color:#fff;letter-spacing:.04em"></div>
+          <div id="inv-det-badge" style="font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-top:.1rem"></div>
+        </div>
+        <button onclick="invCloseDetail()" style="background:transparent;border:none;color:rgba(255,255,255,.6);font-size:1.5rem;line-height:1;cursor:pointer">&times;</button>
+      </div>
+      <div style="padding:1rem">
+        <div style="margin-bottom:1rem">
+          <div style="font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.2rem">Issued</div>
+          <div id="inv-det-issued" style="font-size:.9rem;color:var(--navy)"></div>
+        </div>
+        <div style="margin-bottom:1rem">
+          <div style="font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.3rem">Recipient</div>
+          <div id="inv-det-recipient" style="font-size:.88rem;color:var(--navy);line-height:1.6"></div>
+        </div>
+        <div id="inv-det-period" style="font-size:.75rem;color:rgba(17,29,44,.5);margin-bottom:.8rem;font-style:italic"></div>
+        <div id="inv-det-notes" style="display:none;margin-bottom:.8rem;padding:.55rem .7rem;background:rgba(184,152,90,.07);border-left:3px solid var(--gold);font-size:.8rem;color:var(--navy);line-height:1.6;border-radius:0 4px 4px 0"></div>
+        <div style="overflow-x:auto;margin-bottom:1rem">
+          <table style="width:100%;border-collapse:collapse" id="inv-det-table">
+            <thead id="inv-det-head"></thead>
+            <tbody id="inv-det-body"></tbody>
+          </table>
+        </div>
+        <div style="text-align:right;padding:.6rem 0;border-top:2px solid var(--navy)">
+          <span style="font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-right:.6rem">Total</span>
+          <span id="inv-det-total" style="font-family:var(--serif);font-size:1.3rem;color:var(--navy);font-weight:700"></span>
+        </div>
+        <div style="display:flex;gap:.5rem;margin-top:1.2rem;flex-wrap:wrap">
+          <a id="inv-det-pdf-btn" href="#" target="_blank" style="flex:1;padding:.65rem;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:6px;border:1px solid rgba(17,29,44,.2);background:transparent;color:var(--navy);text-align:center;text-decoration:none">Download PDF</a>
+          <button onclick="invDetailPreview()" style="flex:1;padding:.65rem;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:6px;border:1px solid rgba(17,29,44,.2);background:transparent;color:var(--navy)">Print Preview</button>
+          <button onclick="invDetailDelete()" style="flex:1;padding:.65rem;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:6px;border:1px solid rgba(163,51,51,.3);background:transparent;color:var(--red)">Delete</button>
+        </div>
       </div>
     </div>
 
@@ -3379,134 +3480,483 @@ async function loadOwnerBookings(){
 }
 
 // ── INVOICES ──────────────────────────────────────────────────────────────────
-var INV_RECIPIENTS = [];
-var INV_ITEM_COUNT = 0;
+var _INV_MODE='account';
+var _INV_SAVED_RECIPIENTS=[];
+var _INV_SR_IDX=-1;
+var _INV_CUST_IDX={};
+var _INV_SETTINGS_CACHE=null;
+var _INV_PRINT_DATA=null;
+var _INV_DETAIL_ID=null;
 
 function invLoad(){
-  invAddItem(); // start with one row
-  invLoadRecipients();
-  invLoadRecent();
+  invLoadList();
 }
 
-async function invLoadRecipients(){
-  try{
-    var r=await fetch('/api/invoice-recipients',{credentials:'include'});
-    var d=await r.json();
-    if(d.ok)INV_RECIPIENTS=d.recipients||[];
-  }catch(e){}
+function invOpenNew(){
+  var sel=document.getElementById('inv-customer');
+  sel.innerHTML='<option value="">Loading…</option>';
+  document.getElementById('inv-err').style.display='none';
+  invSetPeriod('month');
+  invSetMode('account');
+  document.getElementById('inv-rec-name').value='';
+  document.getElementById('inv-rec-email').value='';
+  document.getElementById('inv-rec-phone').value='';
+  document.getElementById('inv-rec-address').value='';
+  document.getElementById('inv-notes').value='';
+  document.getElementById('ni-items').innerHTML='';
+  var rt=document.getElementById('ni-running-total');if(rt)rt.textContent='£0.00';
+  var sri=document.getElementById('inv-sr-input');if(sri)sri.value='';
+  var srl=document.getElementById('inv-sr-list');if(srl)srl.style.display='none';
+  addBespokeItem();
+  document.getElementById('inv-sheet').style.display='';
+  _INV_CUST_IDX={};
+  fetch('/api/customers',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
+    if(!d.ok||!d.customers.length){sel.innerHTML='<option value="">No customers yet</option>';return;}
+    var opts=['<option value="">-- Select customer --</option>'];
+    var prefillOpts=['<option value="">— New recipient —</option>'];
+    d.customers.forEach(function(c){
+      opts.push('<option value="'+c.id+'">'+owEsc(c.full_name||'Unknown')+'</option>');
+      prefillOpts.push('<option value="'+c.id+'">'+owEsc(c.full_name||'Unknown')+(c.email?' ('+owEsc(c.email)+')':'')+'</option>');
+      _INV_CUST_IDX[c.id]=c;
+    });
+    sel.innerHTML=opts.join('');
+    var pre=document.getElementById('inv-rec-prefill');if(pre)pre.innerHTML=prefillOpts.join('');
+  }).catch(function(){sel.innerHTML='<option value="">Error loading customers</option>';});
 }
 
-function invRecipSearch(val){
-  var box=document.getElementById('inv-recip-suggestions');
-  if(!val||val.length<2){box.style.display='none';return;}
-  var q=val.toLowerCase();
-  var matches=INV_RECIPIENTS.filter(function(r){return (r.name||'').toLowerCase().includes(q)||(r.email||'').toLowerCase().includes(q);}).slice(0,6);
-  if(!matches.length){box.style.display='none';return;}
-  box.innerHTML=matches.map(function(r){
-    return '<div style="padding:.5rem .7rem;font-size:.82rem;cursor:pointer;border-bottom:1px solid rgba(17,29,44,.05)" onclick="invSelectRecip(\''+owEsc(r.name)+'\',\''+owEsc(r.email||'')+'\')">'+owEsc(r.name)+(r.email?'<br><span style=\"font-size:.7rem;color:rgba(17,29,44,.45)\">'+owEsc(r.email)+'</span>':'')+'</div>';
-  }).join('');
-  box.style.display='';
+function invCloseSheet(){document.getElementById('inv-sheet').style.display='none';}
+function invCloseDetail(){document.getElementById('inv-detail-sheet').style.display='none';}
+
+function invSetMode(mode){
+  _INV_MODE=mode;
+  var accBtn=document.getElementById('inv-mode-account');
+  var bsBtn=document.getElementById('inv-mode-bespoke');
+  var accFields=document.getElementById('inv-account-fields');
+  var bsFields=document.getElementById('inv-bespoke-fields');
+  document.getElementById('inv-err').style.display='none';
+  if(mode==='bespoke'){
+    accBtn.style.background='';accBtn.style.color='';
+    bsBtn.style.background='var(--navy)';bsBtn.style.color='#fff';
+    accFields.style.display='none';
+    bsFields.style.display='';
+    if(!document.querySelectorAll('#ni-items .ni-item').length)addBespokeItem();
+    _invLoadSavedRecipients();
+  } else {
+    bsBtn.style.background='';bsBtn.style.color='';
+    accBtn.style.background='var(--navy)';accBtn.style.color='#fff';
+    accFields.style.display='';
+    bsFields.style.display='none';
+  }
 }
 
-function invSelectRecip(name,email){
-  document.getElementById('inv-recip-name').value=name;
-  document.getElementById('inv-recip-email').value=email;
-  document.getElementById('inv-recip-suggestions').style.display='none';
-}
-
-function invAddItem(){
-  INV_ITEM_COUNT++;
-  var id=INV_ITEM_COUNT;
-  var container=document.getElementById('inv-items');
+function addBespokeItem(date,desc,amt){
+  var wrap=document.getElementById('ni-items');
   var row=document.createElement('div');
-  row.id='inv-item-'+id;
-  row.style.cssText='background:rgba(17,29,44,.03);border:1px solid rgba(17,29,44,.08);border-radius:6px;padding:.6rem .7rem;margin-bottom:.5rem;position:relative';
-  row.innerHTML='<div style="display:flex;gap:.4rem;margin-bottom:.4rem">'
-    +'<div style="flex:1"><div style="font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.18rem">Date</div>'
-    +'<input type="date" class="inv-item-date" style="width:100%;padding:.42rem .5rem;border:1px solid rgba(17,29,44,.15);background:#fff;font-family:var(--sans);font-size:.82rem;color:var(--navy);border-radius:5px;box-sizing:border-box"></div>'
-    +'<div style="width:72px"><div style="font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.18rem">Amount £</div>'
-    +'<input type="number" min="0" step="0.01" class="inv-item-amt" placeholder="0.00" style="width:100%;padding:.42rem .5rem;border:1px solid rgba(17,29,44,.15);background:#fff;font-family:var(--sans);font-size:.82rem;color:var(--navy);border-radius:5px;box-sizing:border-box" oninput="invUpdateTotal()"></div>'
-    +'</div>'
-    +'<div><div style="font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.18rem">Description *</div>'
-    +'<div style="display:flex;gap:.4rem;align-items:center">'
-    +'<input type="text" class="inv-item-desc" placeholder="e.g. Horsham to Gatwick" style="flex:1;padding:.42rem .5rem;border:1px solid rgba(17,29,44,.15);background:#fff;font-family:var(--sans);font-size:.82rem;color:var(--navy);border-radius:5px;box-sizing:border-box">'
-    +(id>1?'<button onclick="invRemoveItem('+id+')" style="padding:.3rem .5rem;font-size:.75rem;background:rgba(180,30,30,.08);border:1px solid rgba(180,30,30,.2);color:var(--red);cursor:pointer;border-radius:4px;flex-shrink:0">✕</button>':'')
-    +'</div></div>';
-  container.appendChild(row);
+  row.className='ni-item';
+  row.style.cssText='display:grid;grid-template-columns:110px 1fr 100px 28px;gap:.35rem;align-items:center';
+  var today=new Date().toISOString().slice(0,10);
+  row.innerHTML='<input class="fi ni-date" type="date" style="font-size:.82rem;padding:.45rem .4rem" value="'+(date||today)+'">'
+    +'<input class="fi ni-desc" placeholder="e.g. Horsham → Gatwick" style="font-size:.85rem" value="'+owEsc(desc||'')+'">'
+    +'<input class="fi ni-amt" type="number" step="0.01" min="0" placeholder="0.00" style="font-size:.85rem;text-align:right" value="'+(amt||'')+'" oninput="updateBespokeTotal()">'
+    +'<button onclick="this.parentNode.remove();updateBespokeTotal()" title="Remove" style="background:transparent;border:none;color:#c0392b;cursor:pointer;font-size:1.2rem;padding:0;line-height:1;opacity:.7" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.7">&times;</button>';
+  wrap.appendChild(row);
+  updateBespokeTotal();
 }
 
-function invRemoveItem(id){
-  var el=document.getElementById('inv-item-'+id);
-  if(el)el.remove();
-  invUpdateTotal();
-}
-
-function invUpdateTotal(){
+function updateBespokeTotal(){
   var total=0;
-  document.querySelectorAll('.inv-item-amt').forEach(function(i){total+=parseFloat(i.value)||0;});
-  document.getElementById('inv-total-display').textContent='£'+total.toFixed(2);
+  document.querySelectorAll('#ni-items .ni-amt').forEach(function(i){total+=parseFloat(i.value)||0;});
+  var el=document.getElementById('ni-running-total');
+  if(el)el.textContent='£'+total.toFixed(2);
 }
 
-async function invSubmit(){
-  var errEl=document.getElementById('inv-err');
-  var sucEl=document.getElementById('inv-success');
-  errEl.textContent='';sucEl.style.display='none';
-  var name=(document.getElementById('inv-recip-name').value||'').trim();
-  var email=(document.getElementById('inv-recip-email').value||'').trim();
-  if(!name){errEl.textContent='Recipient name is required';return;}
-  if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){errEl.textContent='Valid email is required';return;}
+function getBespokeItems(){
+  var rows=document.querySelectorAll('#ni-items .ni-item');
   var items=[];
-  document.getElementById('inv-items').querySelectorAll('[id^=inv-item-]').forEach(function(row){
-    var desc=(row.querySelector('.inv-item-desc').value||'').trim();
-    var amt=parseFloat(row.querySelector('.inv-item-amt').value)||0;
-    var date=row.querySelector('.inv-item-date').value||null;
-    if(desc&&amt>0)items.push({description:desc,amount:amt,date:date||null});
+  rows.forEach(function(r){
+    var date=r.querySelector('.ni-date')?r.querySelector('.ni-date').value.trim():'';
+    var desc=r.querySelector('.ni-desc').value.trim();
+    var amt=+r.querySelector('.ni-amt').value;
+    if(desc&&amt>0)items.push({date:date||null,description:desc,amount:amt});
   });
-  if(!items.length){errEl.textContent='Add at least one line item with description and amount';return;}
-  var notes=(document.getElementById('inv-notes').value||'').trim();
-  var sendEmail=document.getElementById('inv-send-email').checked;
-  try{
-    var r=await fetch('/api/invoices/bespoke',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({recipient:{name,email},items,notes:notes||undefined,send_email:sendEmail})});
-    var d=await r.json();
-    if(!r.ok||!d.ok){errEl.textContent=d.error||'Failed to send invoice';return;}
-    sucEl.textContent=(sendEmail?'Invoice '+d.invoiceNo+' sent to '+email:'Invoice '+d.invoiceNo+' created — £'+Number(d.total).toFixed(2));
-    sucEl.style.display='';
-    // Reset form
-    document.getElementById('inv-recip-name').value='';
-    document.getElementById('inv-recip-email').value='';
-    document.getElementById('inv-notes').value='';
-    document.getElementById('inv-items').innerHTML='';
-    INV_ITEM_COUNT=0;
-    invAddItem();
-    invUpdateTotal();
-    invLoadRecent();
-  }catch(e){errEl.textContent='Network error';}
+  return items;
 }
 
-async function invLoadRecent(){
-  var el=document.getElementById('inv-recent-list');
-  try{
-    var r=await fetch('/api/invoices',{credentials:'include'});
-    var d=await r.json();
-    var list=d.invoices||[];
-    if(!list.length){el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">No invoices yet</div>';return;}
-    el.innerHTML=list.slice(0,20).map(function(inv){
-      var total=typeof inv.total==='number'?'£'+inv.total.toFixed(2):'—';
-      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:.7rem 1rem;border-bottom:1px solid rgba(17,29,44,.05)">'
-        +'<div><div style="font-size:.82rem;font-weight:500;color:var(--navy)">'+owEsc(inv.invoice_no||'')+'</div>'
-        +'<div style="font-size:.68rem;color:rgba(17,29,44,.45);margin-top:.1rem">'+owEsc(inv.recipient_name||'')+(inv.issued_date?' · '+inv.issued_date:'')+'</div></div>'
-        +'<div style="display:flex;align-items:center;gap:.5rem">'
-        +'<span style="font-family:var(--serif);font-size:.95rem;color:var(--gold)">'+total+'</span>'
-        +'<a href="/api/public/invoice/'+owEsc(inv.invoice_no)+'/pdf" target="_blank" style="font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;padding:.25rem .5rem;border:1px solid rgba(17,29,44,.15);color:rgba(17,29,44,.5);text-decoration:none;border-radius:4px;font-family:var(--sans)">PDF</a>'
+function invSetPeriod(type){
+  var now=new Date();
+  var from=document.getElementById('inv-from');
+  var to=document.getElementById('inv-to');
+  document.querySelectorAll('#inv-btn-week,#inv-btn-month').forEach(function(b){b.style.background='';b.style.color='';});
+  var btn=document.getElementById('inv-btn-'+type);
+  if(btn){btn.style.background='var(--navy)';btn.style.color='#fff';}
+  if(type==='week'){
+    var weekEnd=new Date(now);weekEnd.setDate(weekEnd.getDate()-weekEnd.getDay());
+    var weekStart=new Date(weekEnd);weekStart.setDate(weekStart.getDate()-6);
+    from.value=weekStart.toISOString().slice(0,10);
+    to.value=weekEnd.toISOString().slice(0,10);
+  } else if(type==='month'){
+    var y=now.getMonth()===0?now.getFullYear()-1:now.getFullYear();
+    var m=now.getMonth()===0?12:now.getMonth();
+    from.value=y+'-'+String(m).padStart(2,'0')+'-01';
+    var lastDay=new Date(y,m,0).getDate();
+    to.value=y+'-'+String(m).padStart(2,'0')+'-'+String(lastDay).padStart(2,'0');
+  }
+}
+
+function _invLoadSavedRecipients(){
+  fetch('/api/invoice-recipients',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
+    _INV_SAVED_RECIPIENTS=d.recipients||[];
+    invFilterSR('');
+  }).catch(function(){});
+}
+
+function invFilterSR(q){
+  var list=document.getElementById('inv-sr-list');if(!list)return;
+  var term=(q||'').trim().toLowerCase();
+  var matches=term
+    ?_INV_SAVED_RECIPIENTS.filter(function(r){
+        return (r.name||'').toLowerCase().includes(term)||(r.email||'').toLowerCase().includes(term);
+      })
+    :_INV_SAVED_RECIPIENTS;
+  _INV_SR_IDX=-1;
+  if(!matches.length){list.style.display='none';return;}
+  list.innerHTML=matches.map(function(r,i){
+    return '<div class="inv-sr-opt" data-idx="'+_INV_SAVED_RECIPIENTS.indexOf(r)+'"'
+      +' onmousedown="invSelectSR('+_INV_SAVED_RECIPIENTS.indexOf(r)+')"'
+      +' style="padding:.55rem .8rem;cursor:pointer;font-size:.83rem;color:var(--navy);border-bottom:1px solid rgba(17,29,44,.06)">'
+      +'<span style="font-weight:500">'+owEsc(r.name||'')+'</span>'
+      +(r.email?'<span style="color:rgba(17,29,44,.45);font-size:.75rem;margin-left:.4rem">'+owEsc(r.email)+'</span>':'')
+      +(r.phone?'<span style="color:rgba(17,29,44,.35);font-size:.72rem;margin-left:.35rem">'+owEsc(r.phone)+'</span>':'')
+      +'</div>';
+  }).join('');
+  list.style.display='';
+}
+
+function invSRKeydown(e){
+  var list=document.getElementById('inv-sr-list');
+  var opts=list?list.querySelectorAll('.inv-sr-opt'):[];
+  if(!opts.length)return;
+  if(e.key==='ArrowDown'){
+    e.preventDefault();
+    _INV_SR_IDX=Math.min(_INV_SR_IDX+1,opts.length-1);
+    opts.forEach(function(o,i){o.style.background=i===_INV_SR_IDX?'rgba(17,29,44,.06)':'';});
+  } else if(e.key==='ArrowUp'){
+    e.preventDefault();
+    _INV_SR_IDX=Math.max(_INV_SR_IDX-1,0);
+    opts.forEach(function(o,i){o.style.background=i===_INV_SR_IDX?'rgba(17,29,44,.06)':'';});
+  } else if(e.key==='Enter'&&_INV_SR_IDX>=0){
+    e.preventDefault();
+    var idx=+opts[_INV_SR_IDX].dataset.idx;
+    invSelectSR(idx);
+  } else if(e.key==='Escape'){
+    list.style.display='none';_INV_SR_IDX=-1;
+  }
+}
+
+function invSelectSR(idx){
+  var r=_INV_SAVED_RECIPIENTS[idx];if(!r)return;
+  var input=document.getElementById('inv-sr-input');
+  if(input)input.value=r.name+(r.email?' ('+r.email+')':'');
+  var list=document.getElementById('inv-sr-list');
+  if(list)list.style.display='none';
+  document.getElementById('inv-rec-name').value=r.name||'';
+  document.getElementById('inv-rec-email').value=r.email||'';
+  document.getElementById('inv-rec-phone').value=r.phone||'';
+  document.getElementById('inv-rec-address').value=r.address||'';
+}
+
+function invPrefillFromCustomer(id){
+  if(!id)return;
+  var c=_INV_CUST_IDX[id];if(!c)return;
+  document.getElementById('inv-rec-name').value=c.full_name||'';
+  document.getElementById('inv-rec-email').value=c.email||'';
+  document.getElementById('inv-rec-phone').value=c.phone||'';
+  var addr=[c.address_line1,c.address_line2,c.postcode].filter(Boolean).join('\n');
+  document.getElementById('inv-rec-address').value=addr;
+}
+
+function _invGetDates(){
+  var from=document.getElementById('inv-from').value;
+  var to=document.getElementById('inv-to').value;
+  if(!from||!to)return null;
+  var toDate=new Date(to+'T00:00:00');
+  toDate.setDate(toDate.getDate()+1);
+  return{from:from,to:toDate.toISOString().slice(0,10)};
+}
+
+function invBuildRequest(sendEmail){
+  var err=document.getElementById('inv-err');err.style.display='none';
+  if(_INV_MODE==='bespoke'){
+    var name=document.getElementById('inv-rec-name').value.trim();
+    var email=document.getElementById('inv-rec-email').value.trim();
+    var phone=document.getElementById('inv-rec-phone').value.trim();
+    var address=document.getElementById('inv-rec-address').value.trim();
+    var notes=document.getElementById('inv-notes').value.trim();
+    var items=getBespokeItems();
+    if(!name){err.textContent='Recipient name is required.';err.style.display='';return null;}
+    if(!items.length){err.textContent='Add at least one line item with description and amount.';err.style.display='';return null;}
+    if(sendEmail&&!email){err.textContent='Email required to send. Add an email or use Preview / Download.';err.style.display='';return null;}
+    return{url:'/api/invoices/bespoke',body:{recipient:{name:name,email:email,phone:phone,address:address},items:items,notes:notes,send_email:sendEmail}};
+  } else {
+    var cid=document.getElementById('inv-customer').value;
+    var dates=_invGetDates();
+    if(!cid){err.textContent='Pick a customer.';err.style.display='';return null;}
+    if(!dates){err.textContent='Pick a date range.';err.style.display='';return null;}
+    return{url:'/api/customers/'+cid+'/invoice',body:{from:dates.from,to:dates.to,send_email:sendEmail}};
+  }
+}
+
+function invSend(){
+  var req=invBuildRequest(true);if(!req)return;
+  var err=document.getElementById('inv-err');
+  var btn=document.getElementById('inv-send-btn');
+  btn.disabled=true;btn.textContent='Sending…';
+  fetch(req.url,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(req.body)})
+  .then(function(r){return r.json().then(function(d){return{ok:r.ok,status:r.status,d:d};});})
+  .then(function(res){
+    btn.disabled=false;btn.textContent='Send to Email';
+    if(!res.ok||!res.d.ok){err.textContent=res.d.error||('Invoice failed ('+res.status+')');err.style.display='';return;}
+    var total=(+res.d.total||0).toFixed(2);
+    var to=res.d.bespoke?res.d.recipient.email:(res.d.customer&&res.d.customer.email);
+    invCloseSheet();
+    showToast('Invoice '+res.d.invoiceNo+' emailed to '+to+' — £'+total);
+    invLoadList();
+  }).catch(function(){btn.disabled=false;btn.textContent='Send to Email';err.textContent='Network error.';err.style.display='';});
+}
+
+function invPreview(){
+  var req=invBuildRequest(false);if(!req)return;
+  var err=document.getElementById('inv-err');
+  fetch(req.url,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(req.body)})
+  .then(function(r){return r.json().then(function(d){return{ok:r.ok,status:r.status,d:d};});})
+  .then(function(res){
+    if(!res.ok||!res.d.ok){err.textContent=res.d.error||('Invoice failed ('+res.status+')');err.style.display='';return;}
+    openInvoicePreview(res.d);
+    invLoadList();
+  }).catch(function(){err.textContent='Network error.';err.style.display='';});
+}
+
+function openInvoicePreview(data){
+  function _e(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  var s=data.settings||{};
+  var p=data.period||{};
+  var total=(+data.total||0).toFixed(2);
+  var isBespoke=!!data.bespoke;
+  var tableHtml='';
+  var toAddr='';
+  var periodLine='';
+  if(isBespoke){
+    var items=data.items||[];
+    var itemRows=items.map(function(it){
+      var amt=(+it.amount||0).toFixed(2);
+      var datePrefix='';
+      if(it.date&&String(it.date).trim()){
+        try{var d=new Date(it.date+'T00:00:00');datePrefix=d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' \u2014 ';}catch(_){}
+      }
+      return '<tr>'
+        +'<td style="padding:12px 8px;border-bottom:1px solid rgba(17,29,44,.08);font-size:13px;color:#111D2C;line-height:1.5;vertical-align:top">'+(datePrefix?'<span style="color:#9AA3B2;font-size:11px;font-family:Helvetica Neue,Arial,sans-serif">'+_e(datePrefix)+'</span>':'')+''+_e(it.description||'')+'</td>'
+        +'<td style="padding:12px 8px;border-bottom:1px solid rgba(17,29,44,.08);font-size:14px;color:#111D2C;text-align:right;vertical-align:top;white-space:nowrap;font-family:Georgia,serif">&pound;'+amt+'</td>'
+        +'</tr>';
+    }).join('');
+    tableHtml='<table style="width:100%;border-collapse:collapse;margin-bottom:24px">'
+      +'<thead><tr>'
+      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#B8985A;padding:8px;border-bottom:2px solid #B8985A;text-align:left;font-weight:600">Description</th>'
+      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#B8985A;padding:8px;border-bottom:2px solid #B8985A;text-align:right;font-weight:600">Amount</th>'
+      +'</tr></thead>'
+      +'<tbody>'+itemRows+'</tbody>'
+      +'</table>';
+    var r=data.recipient||{};
+    toAddr=[_e(r.name||''),r.address?_e(r.address).replace(/\n/g,'<br>'):'',r.phone?_e(r.phone):'',r.email?_e(r.email):''].filter(Boolean).join('<br>');
+    if(p.notes)periodLine='<div style="margin-bottom:18px;padding:12px 14px;background:rgba(184,152,90,.08);border-left:3px solid #B8985A;font-size:13px;color:#111D2C;line-height:1.6">'+_e(p.notes).replace(/\n/g,'<br>')+'</div>';
+  } else {
+    var c=data.customer||{};
+    var bks=data.bookings||[];
+    var bookingRows=bks.map(function(b){
+      var fare=(+b.fare||0).toFixed(2);
+      return '<tr>'
+        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(17,29,44,.08);font-size:13px;color:#111D2C;vertical-align:top">'+_e(b.date||'')+(b.time&&b.time!=='ASAP'?' '+_e(b.time):b.time==='ASAP'?' ASAP':'')+'<br><span style="font-family:Menlo,Consolas,monospace;font-size:10px;color:#9AA3B2">'+_e(b.ref||'')+'</span></td>'
+        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(17,29,44,.08);font-size:13px;color:#111D2C;line-height:1.5;vertical-align:top">'+_e(b.pickup||'')+' &rarr; '+_e(b.destination||'')+(b.flight?'<br><span style="font-size:11px;color:#9AA3B2">Flight '+_e(b.flight)+'</span>':'')+'</td>'
+        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(17,29,44,.08);font-size:14px;color:#111D2C;text-align:right;vertical-align:top;white-space:nowrap;font-family:Georgia,serif">&pound;'+fare+'</td>'
+        +'</tr>';
+    }).join('');
+    if(!bookingRows){bookingRows='<tr><td colspan="3" style="padding:24px;text-align:center;font-size:13px;color:#9AA3B2;font-style:italic">No journeys in this period.</td></tr>';}
+    tableHtml='<table style="width:100%;border-collapse:collapse;margin-bottom:24px">'
+      +'<thead><tr>'
+      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#B8985A;padding:8px;border-bottom:2px solid #B8985A;text-align:left;font-weight:600">Date / Ref</th>'
+      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#B8985A;padding:8px;border-bottom:2px solid #B8985A;text-align:left;font-weight:600">Journey</th>'
+      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#B8985A;padding:8px;border-bottom:2px solid #B8985A;text-align:right;font-weight:600">Fare</th>'
+      +'</tr></thead>'
+      +'<tbody>'+bookingRows+'</tbody>'
+      +'</table>';
+    toAddr=[_e(c.full_name||''),c.phone?_e(c.phone):'',c.email?_e(c.email):''].filter(Boolean).join('<br>');
+    if(p.label)periodLine='<div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#9AA3B2;margin-bottom:6px;font-weight:500">Period: '+_e(p.label)+'</div>';
+  }
+  var fromAddr=[s.business_name||'Westmere Private Hire',s.owner_name||'',s.address_line1||'',(s.address_line2||'')+(s.postcode?' '+s.postcode:''),s.phone||'',s.email||''].filter(Boolean).map(_e).join('<br>');
+  var bankHtml='';
+  if(s.sort_code&&s.account_no){
+    bankHtml='<div style="background:rgba(17,29,44,.04);border:1px solid rgba(17,29,44,.08);padding:20px 24px;margin-bottom:32px">'
+      +'<div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#B8985A;font-weight:600;margin-bottom:10px">Payment Details</div>'
+      +'<table style="font-size:13px;color:#111D2C;line-height:1.8">'
+      +(s.bank_name?'<tr><td style="color:#9AA3B2;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Bank</td><td>'+_e(s.bank_name)+'</td></tr>':'')
+      +(s.account_name?'<tr><td style="color:#9AA3B2;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Name</td><td>'+_e(s.account_name)+'</td></tr>':'')
+      +'<tr><td style="color:#9AA3B2;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Sort code</td><td style="font-family:Menlo,Consolas,monospace">'+_e(s.sort_code)+'</td></tr>'
+      +'<tr><td style="color:#9AA3B2;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Account no.</td><td style="font-family:Menlo,Consolas,monospace">'+_e(s.account_no)+'</td></tr>'
+      +'<tr><td style="color:#9AA3B2;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Reference</td><td style="font-family:Menlo,Consolas,monospace">'+_e(data.invoiceNo||'')+'</td></tr>'
+      +'</table></div>';
+  } else {
+    bankHtml='<div style="font-size:13px;color:#5A6B7F;margin-bottom:32px">Payment is appreciated within 14 days by bank transfer. Please contact us for account details.</div>';
+  }
+  var issuedStr=p.issuedDate||new Date().toISOString().slice(0,10);
+  var html='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Invoice '+_e(data.invoiceNo||'')+'</title>'
+    +'<style>@page{size:A4;margin:0}@media print{.no-print{display:none!important}body{background:#fff!important}.wrap{box-shadow:none!important;margin:0!important;max-width:none!important}}*{box-sizing:border-box;margin:0;padding:0}body{font-family:Georgia,"Times New Roman",serif;color:#111D2C;background:#f5f2ed;-webkit-print-color-adjust:exact;print-color-adjust:exact}.wrap{max-width:800px;margin:0 auto;background:#fff;position:relative;overflow:hidden;box-shadow:0 2px 20px rgba(0,0,0,.08)}.wrap::before{content:"";position:absolute;top:0;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,#B8985A 18%,#B8985A 82%,transparent 100%);z-index:2}.wrap::after{content:"";position:absolute;bottom:0;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,#B8985A 18%,#B8985A 82%,transparent 100%);z-index:2}.corner-mark{position:absolute;top:28px;right:32px;font-family:Helvetica Neue,Arial,sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:rgba(17,29,44,.28);z-index:1}.toolbar{background:#111D2C;padding:12px 24px;display:flex;gap:12px;align-items:center;position:relative;z-index:3}.toolbar button{font-family:Helvetica Neue,Arial,sans-serif;font-size:12px;padding:8px 18px;border:none;cursor:pointer;letter-spacing:.5px}.toolbar .btn-dl{background:#B8985A;color:#111D2C}.toolbar .btn-cl{background:transparent;color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.2)}.page{position:relative;z-index:1;padding:64px 56px 56px}.brand-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}.brand-mark{display:inline-block;padding-bottom:14px;border-bottom:1px solid rgba(17,29,44,.12);min-width:220px}.brand-name{font-family:Georgia,serif;font-size:26px;letter-spacing:10px;font-weight:400;color:#111D2C;line-height:1}.brand-sub{font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:4px;text-transform:uppercase;color:#B8985A;margin-top:8px;font-weight:500}.inv-badge{text-align:right}.inv-label{font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#B8985A;font-weight:600;margin-bottom:8px}.inv-no{font-family:Menlo,Consolas,monospace;font-size:14px;color:#111D2C;margin-bottom:6px;letter-spacing:.5px}.inv-meta{font-size:12px;color:#5A6B7F;line-height:1.6}.gold-rule{width:36px;height:1px;background:#B8985A;margin:18px 0 32px}</style></head><body>'
+    +'<div class="wrap">'
+    +'<div class="toolbar no-print"><button class="btn-dl" onclick="window.print()">Print / Save as PDF</button><button class="btn-cl" onclick="window.close()">Close</button></div>'
+    +'<div class="corner-mark">Est. Sussex</div>'
+    +'<div class="page">'
+    +'<div class="brand-head"><div class="brand-mark"><div class="brand-name">WESTMERE</div><div class="brand-sub">Private Hire &middot; Sussex</div></div>'
+    +'<div class="inv-badge"><div class="inv-label">Invoice</div><div class="inv-no">'+_e(data.invoiceNo||'')+'</div><div class="inv-meta">Issued '+_e(issuedStr)+'</div></div></div>'
+    +'<div class="gold-rule"></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-bottom:36px">'
+    +'<div><div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#B8985A;margin-bottom:8px;font-weight:600">From</div><div style="font-size:13px;color:#111D2C;line-height:1.7">'+fromAddr+'</div></div>'
+    +'<div><div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#B8985A;margin-bottom:8px;font-weight:600">Bill To</div><div style="font-size:13px;color:#111D2C;line-height:1.7">'+toAddr+'</div></div>'
+    +'</div>'+periodLine+tableHtml
+    +'<div style="display:flex;flex-direction:column;align-items:flex-end;margin-bottom:32px">'
+    +'<div style="display:flex;justify-content:space-between;width:260px;padding:14px 0 8px;border-top:2px solid #B8985A;margin-top:4px"><span style="font-family:Helvetica Neue,Arial,sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:600;color:#111D2C;align-self:center">Total</span><span style="font-size:26px;font-weight:500;color:#B8985A;font-family:Georgia,serif">&pound;'+total+'</span></div>'
+    +'</div>'+bankHtml
+    +'<div style="text-align:center;padding-top:24px;margin-top:20px;border-top:1px solid rgba(17,29,44,.1);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#9AA3B2;font-family:Helvetica Neue,Arial,sans-serif;font-weight:500">Westmere Private Hire &middot; Licensed by Lewes District Council &middot; westmereprivatehire.co.uk</div>'
+    +'</div></div></body></html>';
+  var w=window.open('','_blank','width=850,height=1100');
+  if(w){w.document.write(html);w.document.close();}
+  else{showToast('Pop-up blocked — please allow pop-ups for this site.');}
+}
+
+function invLoadList(){
+  var el=document.getElementById('inv-list-body');
+  if(!el)return;
+  fetch('/api/invoices',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
+    if(!d.ok){el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">Unable to load</div>';return;}
+    var invoices=d.invoices||[];
+    if(!invoices.length){el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">No invoices yet</div>';return;}
+    el.innerHTML=invoices.map(function(inv){
+      var total='£'+(+inv.total||0).toFixed(2);
+      var kind=inv.kind==='bespoke'?'One-off':'Account';
+      return '<div style="display:flex;align-items:center;gap:.5rem;padding:.7rem 1rem;border-bottom:1px solid rgba(17,29,44,.06);cursor:pointer" onclick="invViewDetail('+inv.id+')">'
+        +'<div style="flex:1;min-width:0">'
+        +'<div style="font-family:Menlo,Consolas,monospace;font-size:.75rem;color:var(--navy)">'+owEsc(inv.invoice_no||'')+'</div>'
+        +'<div style="font-size:.7rem;color:rgba(17,29,44,.5);margin-top:.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+owEsc(inv.recipient_name||'')+(inv.issued_date?' · '+inv.issued_date:'')+'</div>'
+        +'<div style="font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin-top:.1rem">'+kind+'</div>'
+        +'</div>'
+        +'<div style="display:flex;align-items:center;gap:.35rem;flex-shrink:0">'
+        +'<span style="font-family:var(--serif);font-size:.95rem;color:var(--navy)">'+total+'</span>'
+        +'<button onclick="event.stopPropagation();invViewDetail('+inv.id+')" style="font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;padding:.25rem .5rem;border:1px solid rgba(17,29,44,.15);color:rgba(17,29,44,.55);background:transparent;cursor:pointer;border-radius:4px;font-family:var(--sans)">View</button>'
+        +'<a href="/api/public/invoice/'+owEsc(inv.invoice_no)+'/pdf" onclick="event.stopPropagation()" target="_blank" style="font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;padding:.25rem .5rem;border:1px solid rgba(17,29,44,.15);color:rgba(17,29,44,.55);text-decoration:none;border-radius:4px;font-family:var(--sans)">PDF</a>'
+        +'<button onclick="event.stopPropagation();_invDelete('+inv.id+',\''+owEsc(inv.invoice_no)+'\')" style="font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;padding:.25rem .5rem;border:1px solid rgba(163,51,51,.25);color:var(--red);background:transparent;cursor:pointer;border-radius:4px;font-family:var(--sans)">Del</button>'
         +'</div></div>';
     }).join('');
-  }catch(e){el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:var(--red)">Failed to load</div>';}
+  }).catch(function(){el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:var(--red)">Failed to load</div>';});
 }
 
-// Close recipient suggestions on outside click
+function invViewDetail(id){
+  var doOpen=function(settings){
+    fetch('/api/invoices/'+id,{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
+      if(!d.ok){showToast('Could not load invoice');return;}
+      var inv=d.invoice;
+      var data={invoiceNo:inv.invoice_no,total:inv.total,bespoke:inv.kind==='bespoke',settings:settings||{},period:{issuedDate:inv.issued_date,dueDate:inv.due_date||'',label:inv.period_label||'',notes:inv.notes||''}};
+      if(inv.kind==='bespoke'){
+        data.items=inv.line_items||[];
+        data.recipient={name:inv.recipient_name,email:inv.recipient_email||'',phone:inv.recipient_phone||'',address:inv.recipient_addr||''};
+      } else {
+        data.customer={full_name:inv.recipient_name,email:inv.recipient_email||'',phone:inv.recipient_phone||''};
+        data.bookings=inv.line_items||[];
+      }
+      _INV_PRINT_DATA=data;
+      _INV_DETAIL_ID=id;
+      // Populate detail sheet
+      var p=data.period||{};
+      var isBespoke=!!data.bespoke;
+      document.getElementById('inv-det-no').textContent=data.invoiceNo||'';
+      document.getElementById('inv-det-badge').textContent=isBespoke?'One-off Invoice':'Account Invoice';
+      document.getElementById('inv-det-issued').textContent=p.issuedDate||'—';
+      document.getElementById('inv-det-total').textContent='£'+(+data.total||0).toFixed(2);
+      var recEl=document.getElementById('inv-det-recipient');
+      if(isBespoke){
+        var r=data.recipient||{};
+        var parts=[owEsc(r.name||'')];
+        if(r.address)parts.push(owEsc(r.address).replace(/\n/g,'<br>'));
+        if(r.phone)parts.push(owEsc(r.phone));
+        if(r.email)parts.push('<a href="mailto:'+owEsc(r.email)+'" style="color:var(--gold)">'+owEsc(r.email)+'</a>');
+        recEl.innerHTML=parts.join('<br>');
+      } else {
+        var c=data.customer||{};
+        var cparts=[owEsc(c.full_name||'')];
+        if(c.phone)cparts.push(owEsc(c.phone));
+        if(c.email)cparts.push('<a href="mailto:'+owEsc(c.email)+'" style="color:var(--gold)">'+owEsc(c.email)+'</a>');
+        recEl.innerHTML=cparts.join('<br>');
+      }
+      document.getElementById('inv-det-period').textContent=p.label?'Period: '+p.label:'';
+      var notesEl=document.getElementById('inv-det-notes');
+      if(p.notes){notesEl.style.display='';notesEl.textContent=p.notes;}else{notesEl.style.display='none';}
+      var head=document.getElementById('inv-det-head');
+      var body=document.getElementById('inv-det-body');
+      if(isBespoke){
+        head.innerHTML='<tr><th style="text-align:left;padding:.4rem .5rem;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.45)">Description</th><th style="text-align:right;padding:.4rem .5rem;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.45)">Amount</th></tr>';
+        var its=data.items||[];
+        body.innerHTML=its.length
+          ?its.map(function(it){return '<tr><td style="padding:.5rem .5rem;font-size:.82rem;color:var(--navy);border-bottom:1px solid rgba(17,29,44,.05)">'+owEsc(it.description||'')+'</td><td style="padding:.5rem .5rem;font-size:.88rem;text-align:right;font-family:var(--serif);color:var(--navy);border-bottom:1px solid rgba(17,29,44,.05);white-space:nowrap">£'+(+it.amount||0).toFixed(2)+'</td></tr>';}).join('')
+          :'<tr><td colspan="2" style="text-align:center;padding:1.2rem;font-size:.78rem;color:rgba(17,29,44,.35)">No items</td></tr>';
+      } else {
+        head.innerHTML='<tr><th style="text-align:left;padding:.4rem .5rem;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.45)">Date / Ref</th><th style="text-align:left;padding:.4rem .5rem;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.45)">Journey</th><th style="text-align:right;padding:.4rem .5rem;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.45)">Fare</th></tr>';
+        var bks=data.bookings||[];
+        body.innerHTML=bks.length
+          ?bks.map(function(b){
+              var ref=b.ref?'<br><span style="font-family:Menlo,Consolas,monospace;font-size:.65rem;color:rgba(17,29,44,.4)">'+owEsc(b.ref)+'</span>':'';
+              var route=owEsc(b.pickup||'')+(b.destination?' → '+owEsc(b.destination):'');
+              return '<tr><td style="padding:.5rem .5rem;font-size:.78rem;color:var(--navy);border-bottom:1px solid rgba(17,29,44,.05)">'+owEsc(b.date||'')+(b.time&&b.time!=='ASAP'?' '+owEsc(b.time):'')+ref+'</td>'
+                +'<td style="padding:.5rem .5rem;font-size:.78rem;color:var(--navy);border-bottom:1px solid rgba(17,29,44,.05)">'+route+'</td>'
+                +'<td style="padding:.5rem .5rem;font-size:.88rem;text-align:right;font-family:var(--serif);color:var(--navy);border-bottom:1px solid rgba(17,29,44,.05);white-space:nowrap">£'+(+b.fare||0).toFixed(2)+'</td></tr>';
+            }).join('')
+          :'<tr><td colspan="3" style="text-align:center;padding:1.2rem;font-size:.78rem;color:rgba(17,29,44,.35)">No journeys in period</td></tr>';
+      }
+      var pdfBtn=document.getElementById('inv-det-pdf-btn');
+      if(pdfBtn)pdfBtn.href='/api/public/invoice/'+encodeURIComponent(data.invoiceNo||'')+'/pdf';
+      document.getElementById('inv-detail-sheet').style.display='';
+    }).catch(function(){showToast('Network error loading invoice');});
+  };
+  if(_INV_SETTINGS_CACHE){doOpen(_INV_SETTINGS_CACHE);return;}
+  fetch('/api/settings/invoice',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
+    _INV_SETTINGS_CACHE=d.settings||{};
+    doOpen(_INV_SETTINGS_CACHE);
+  }).catch(function(){doOpen({});});
+}
+
+function invDetailPreview(){if(_INV_PRINT_DATA)openInvoicePreview(_INV_PRINT_DATA);}
+
+async function invDetailDelete(){
+  if(!_INV_DETAIL_ID)return;
+  if(!confirm('Delete this invoice? This cannot be undone.'))return;
+  try{
+    var r=await fetch('/api/invoices/'+_INV_DETAIL_ID,{method:'DELETE',credentials:'include'});
+    var d=await r.json();
+    if(d.ok){showToast('Invoice deleted');invCloseDetail();invLoadList();}
+    else showToast(d.error||'Delete failed');
+  }catch(e){showToast('Network error');}
+}
+
+async function _invDelete(id,invoiceNo){
+  if(!confirm('Delete invoice '+invoiceNo+'? This cannot be undone.'))return;
+  try{
+    var r=await fetch('/api/invoices/'+id,{method:'DELETE',credentials:'include'});
+    var d=await r.json();
+    if(d.ok){showToast('Invoice '+invoiceNo+' deleted');invLoadList();}
+    else showToast(d.error||'Delete failed');
+  }catch(e){showToast('Network error');}
+}
+
+// Close saved recipient dropdown on outside click
 document.addEventListener('click',function(e){
-  var sug=document.getElementById('inv-recip-suggestions');
-  if(sug&&!sug.contains(e.target)&&e.target!==document.getElementById('inv-recip-name'))sug.style.display='none';
+  var inp=document.getElementById('inv-sr-input');
+  var list=document.getElementById('inv-sr-list');
+  if(inp&&list&&!inp.contains(e.target)&&!list.contains(e.target))list.style.display='none';
 });
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
