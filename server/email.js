@@ -7,22 +7,14 @@
  *   ADMIN_EMAIL   — Where admin booking alerts go
  */
 
-const RESEND_URL = 'https://api.resend.com/emails';
-const AdmZip = require('adm-zip');
-
-// Wraps a PDF buffer in a ZIP so email clients cannot render it inline.
-// ZIP attachments always appear as downloadable files — never previewed.
-function pdfToZip(pdfBuffer, pdfFilename) {
-  const zip = new AdmZip();
-  zip.addFile(pdfFilename, pdfBuffer);
-  return zip.toBuffer();
-}
+const { Resend } = require('resend');
 
 function isConfigured() {
   return !!process.env.RESEND_API_KEY;
 }
 
 // opts: { attachments: [{ filename, content }] }  (optional)
+// content should be a raw Buffer — the Resend SDK handles encoding.
 async function sendEmail(to, subject, html, fromLabel, preheader, opts) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -32,9 +24,6 @@ async function sendEmail(to, subject, html, fromLabel, preheader, opts) {
 
   const replyTo = process.env.GMAIL_USER || process.env.ADMIN_EMAIL || '';
 
-  // Inject a hidden preheader (the snippet email clients show next to the
-  // subject) so the inbox preview reads cleanly instead of pulling random
-  // body text.
   let finalHtml = html;
   if (preheader) {
     const hidden = `<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#FAF7F1;opacity:0">${preheader}</div>`;
@@ -51,33 +40,20 @@ async function sendEmail(to, subject, html, fromLabel, preheader, opts) {
 
   if (opts && Array.isArray(opts.attachments) && opts.attachments.length) {
     payload.attachments = opts.attachments;
-    console.log('[EMAIL] Attachments in payload:', payload.attachments.map(a => ({
+    console.log('[EMAIL] Attachments:', payload.attachments.map(a => ({
       filename: a.filename,
-      contentLen: a.content ? a.content.length : 0,
-      hasContentType: !!a.content_type
+      contentBytes: Buffer.isBuffer(a.content) ? a.content.length : (a.content || '').length
     })));
   }
 
   try {
-    const body = JSON.stringify(payload);
-    console.log('[EMAIL] Sending to Resend — payload size:', body.length, 'bytes, has_attachments:', !!payload.attachments);
-    const res = await fetch(RESEND_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + apiKey,
-        'Content-Type': 'application/json'
-      },
-      body
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      console.error('[EMAIL] Resend error', res.status, ':', JSON.stringify(data));
+    const resend = new Resend(apiKey);
+    const { data, error } = await resend.emails.send(payload);
+    if (error) {
+      console.error('[EMAIL] Resend error:', JSON.stringify(error));
       return false;
     }
-
-    console.log('[EMAIL] Resend accepted — id:', data.id, 'full response:', JSON.stringify(data));
+    console.log('[EMAIL] Sent to', to, '— id:', data.id);
     return true;
   } catch (err) {
     console.error('[EMAIL] Failed:', err.message);
@@ -470,16 +446,14 @@ async function sendCustomerInvoice(customer, bookings, period, invoiceNo, settin
   const preheader = summaryCount + ' journey' + (summaryCount === 1 ? '' : 's') + ' \u00b7 \u00a3' + total.toFixed(2) + ' total';
   let attachments;
   if (pdfBuffer) {
-    const pdfName = (invoiceNo || 'invoice') + '.pdf';
-    const zipBuffer = pdfToZip(Buffer.isBuffer(pdfBuffer) ? pdfBuffer : Buffer.from(pdfBuffer), pdfName);
-    const b64 = zipBuffer.toString('base64');
-    console.log('[EMAIL] PDF', pdfBuffer.length, 'bytes → ZIP', zipBuffer.length, 'bytes → base64', b64.length, 'chars');
-    attachments = [{ filename: (invoiceNo || 'invoice') + '.zip', content: b64 }];
+    const buf = Buffer.isBuffer(pdfBuffer) ? pdfBuffer : Buffer.from(pdfBuffer);
+    console.log('[EMAIL] Attaching PDF:', (invoiceNo || 'invoice') + '.pdf', buf.length, 'bytes');
+    attachments = [{ filename: (invoiceNo || 'invoice') + '.pdf', content: buf }];
   } else {
     console.warn('[EMAIL] No PDF buffer — sending invoice', invoiceNo, 'without attachment');
   }
   const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader, attachments ? { attachments } : undefined);
-  if (ok) console.log('[EMAIL] Invoice', invoiceNo, 'sent to', email, pdfBuffer ? '(with ZIP attachment)' : '(NO attachment)');
+  if (ok) console.log('[EMAIL] Invoice', invoiceNo, 'sent to', email, pdfBuffer ? '(with PDF)' : '(NO attachment)');
   return ok;
 }
 
@@ -599,16 +573,14 @@ async function sendBespokeInvoice(recipient, items, period, invoiceNo, settings,
   const preheader = 'Invoice \u00b7 \u00a3' + total.toFixed(2);
   let attachments;
   if (pdfBuffer) {
-    const pdfName = (invoiceNo || 'invoice') + '.pdf';
-    const zipBuffer = pdfToZip(Buffer.isBuffer(pdfBuffer) ? pdfBuffer : Buffer.from(pdfBuffer), pdfName);
-    const b64 = zipBuffer.toString('base64');
-    console.log('[EMAIL] PDF', pdfBuffer.length, 'bytes → ZIP', zipBuffer.length, 'bytes → base64', b64.length, 'chars');
-    attachments = [{ filename: (invoiceNo || 'invoice') + '.zip', content: b64 }];
+    const buf = Buffer.isBuffer(pdfBuffer) ? pdfBuffer : Buffer.from(pdfBuffer);
+    console.log('[EMAIL] Attaching PDF:', (invoiceNo || 'invoice') + '.pdf', buf.length, 'bytes');
+    attachments = [{ filename: (invoiceNo || 'invoice') + '.pdf', content: buf }];
   } else {
     console.warn('[EMAIL] No PDF buffer — sending bespoke invoice', invoiceNo, 'without attachment');
   }
   const ok = await sendEmail(recipient.email, subject, html, 'Westmere Private Hire', preheader, attachments ? { attachments } : undefined);
-  if (ok) console.log('[EMAIL] Bespoke invoice', invoiceNo, 'sent to', recipient.email, pdfBuffer ? '(with ZIP attachment)' : '(NO attachment)');
+  if (ok) console.log('[EMAIL] Bespoke invoice', invoiceNo, 'sent to', recipient.email, pdfBuffer ? '(with PDF)' : '(NO attachment)');
   return ok;
 }
 
