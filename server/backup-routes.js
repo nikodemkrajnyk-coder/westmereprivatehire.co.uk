@@ -302,6 +302,47 @@ router.post('/save', async (req, res) => {
   }
 });
 
+// POST /api/backup/purge-test-data — delete test/demo data (admin/owner only)
+// Keeps: driver ID 2 (Nikodem), seeded/real customers, real bookings/invoices
+router.post('/purge-test-data', (req, res) => {
+  if (!['owner', 'admin'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin only' });
+  }
+  const db = getDb();
+  try {
+    // Delete test drivers (keep id=2 which is Nikodem)
+    const driversDeleted = db.prepare(
+      "DELETE FROM users WHERE role='driver' AND id != 2 AND (full_name LIKE '%test%' OR full_name LIKE '%demo%' OR email LIKE '%test%' OR email LIKE '%example%')"
+    ).run().changes;
+
+    // Delete test customers (not seeded/real — identified by test/example email or name)
+    const custsDeleted = db.prepare(
+      "DELETE FROM customers WHERE email LIKE '%test%' OR email LIKE '%example%' OR full_name LIKE '%test%' OR full_name LIKE '%demo%' OR full_name LIKE '%Test%' OR full_name LIKE '%Demo%'"
+    ).run().changes;
+
+    // Delete test bookings (test in passenger name or pickup or notes)
+    const bookingsDeleted = db.prepare(
+      "DELETE FROM bookings WHERE passenger_name LIKE '%test%' OR passenger_name LIKE '%Test%' OR pickup_name LIKE '%test%' OR notes LIKE '%[test]%' OR notes LIKE '%[demo]%'"
+    ).run().changes;
+
+    // Delete test invoices (test in recipient name)
+    const invoicesDeleted = db.prepare(
+      "DELETE FROM invoices WHERE recipient_name LIKE '%test%' OR recipient_name LIKE '%Test%' OR recipient_name LIKE '%demo%' OR recipient_email LIKE '%test%' OR recipient_email LIKE '%example%'"
+    ).run().changes;
+
+    // Delete test invoice recipients
+    const recipientsDeleted = db.prepare(
+      "DELETE FROM invoice_recipients WHERE name LIKE '%test%' OR name LIKE '%Test%' OR email LIKE '%test%' OR email LIKE '%example%'"
+    ).run().changes;
+
+    console.log(`[PURGE] drivers=${driversDeleted} customers=${custsDeleted} bookings=${bookingsDeleted} invoices=${invoicesDeleted} recipients=${recipientsDeleted}`);
+    res.json({ ok: true, deleted: { drivers: driversDeleted, customers: custsDeleted, bookings: bookingsDeleted, invoices: invoicesDeleted, recipients: recipientsDeleted } });
+  } catch (e) {
+    console.error('[PURGE] failed:', e.message);
+    res.status(500).json({ error: 'Purge failed: ' + e.message });
+  }
+});
+
 // GET /api/backup/export — download a full JSON data dump (all tables)
 router.get('/export', (req, res) => {
   if (!['owner', 'admin'].includes(req.auth.role)) {
