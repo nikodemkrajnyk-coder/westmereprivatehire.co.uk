@@ -7,14 +7,14 @@
  *   ADMIN_EMAIL   — Where admin booking alerts go
  */
 
-const { Resend } = require('resend');
+const RESEND_URL = 'https://api.resend.com/emails';
 
 function isConfigured() {
   return !!process.env.RESEND_API_KEY;
 }
 
-// opts: { attachments: [{ filename, content }] }  (optional)
-// content should be a raw Buffer — the Resend SDK handles encoding.
+// opts: { attachments: [{ filename, content }] }
+// content must be a base64 string for Resend's HTTP API.
 async function sendEmail(to, subject, html, fromLabel, preheader, opts) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -32,25 +32,25 @@ async function sendEmail(to, subject, html, fromLabel, preheader, opts) {
 
   const payload = {
     from: (fromLabel || 'Westmere Private Hire') + ' <bookings@westmereprivatehire.co.uk>',
-    to: to,
+    to,
     reply_to: replyTo || undefined,
-    subject: subject,
+    subject,
     html: finalHtml
   };
 
   if (opts && Array.isArray(opts.attachments) && opts.attachments.length) {
     payload.attachments = opts.attachments;
-    console.log('[EMAIL] Attachments:', payload.attachments.map(a => ({
-      filename: a.filename,
-      contentBytes: Buffer.isBuffer(a.content) ? a.content.length : (a.content || '').length
-    })));
   }
 
   try {
-    const resend = new Resend(apiKey);
-    const { data, error } = await resend.emails.send(payload);
-    if (error) {
-      console.error('[EMAIL] Resend error:', JSON.stringify(error));
+    const res = await fetch(RESEND_URL, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      console.error('[EMAIL] Resend error', res.status, ':', JSON.stringify(data));
       return false;
     }
     console.log('[EMAIL] Sent to', to, '— id:', data.id);
@@ -447,8 +447,8 @@ async function sendCustomerInvoice(customer, bookings, period, invoiceNo, settin
   let attachments;
   if (pdfBuffer) {
     const buf = Buffer.isBuffer(pdfBuffer) ? pdfBuffer : Buffer.from(pdfBuffer);
+    attachments = [{ filename: (invoiceNo || 'invoice') + '.pdf', content: buf.toString('base64') }];
     console.log('[EMAIL] Attaching PDF:', (invoiceNo || 'invoice') + '.pdf', buf.length, 'bytes');
-    attachments = [{ filename: (invoiceNo || 'invoice') + '.pdf', content: buf }];
   } else {
     console.warn('[EMAIL] No PDF buffer — sending invoice', invoiceNo, 'without attachment');
   }
@@ -574,8 +574,8 @@ async function sendBespokeInvoice(recipient, items, period, invoiceNo, settings,
   let attachments;
   if (pdfBuffer) {
     const buf = Buffer.isBuffer(pdfBuffer) ? pdfBuffer : Buffer.from(pdfBuffer);
+    attachments = [{ filename: (invoiceNo || 'invoice') + '.pdf', content: buf.toString('base64') }];
     console.log('[EMAIL] Attaching PDF:', (invoiceNo || 'invoice') + '.pdf', buf.length, 'bytes');
-    attachments = [{ filename: (invoiceNo || 'invoice') + '.pdf', content: buf }];
   } else {
     console.warn('[EMAIL] No PDF buffer — sending bespoke invoice', invoiceNo, 'without attachment');
   }
