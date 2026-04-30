@@ -107,7 +107,7 @@ app.get('/api/public/invoice/:invoiceNo/pdf', apiLimiter, async (req, res) => {
   const INVOICES_DIR = process.env.INVOICES_DIR || '/data/invoices';
   const pdfPath = path.join(INVOICES_DIR, safeNo + '.pdf');
   if (fs.existsSync(pdfPath)) {
-    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Type', 'application/octet-stream');
     res.setHeader('Content-Disposition', 'attachment; filename="' + safeNo + '.pdf"');
     return res.sendFile(pdfPath);
   }
@@ -123,7 +123,7 @@ app.get('/api/public/invoice/:invoiceNo/pdf', apiLimiter, async (req, res) => {
     const buf = await buildInvoicePdf(data);
     fs.mkdirSync(INVOICES_DIR, { recursive: true });
     fs.writeFileSync(pdfPath, buf);
-    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Type', 'application/octet-stream');
     res.setHeader('Content-Disposition', 'attachment; filename="' + safeNo + '.pdf"');
     res.send(buf);
   } catch (e) {
