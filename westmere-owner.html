@@ -888,7 +888,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
           </div>
           <div id="ni-items" style="display:flex;flex-direction:column;gap:.35rem;margin-bottom:.5rem"></div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem">
-            <button onclick="addBespokeItem()" style="padding:.45rem .8rem;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);cursor:pointer;border-radius:5px;border:1px solid rgba(17,29,44,.2);background:transparent;color:var(--navy)">+ Add Item</button>
+            <button onclick="invAddItem()" style="padding:.45rem .8rem;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);cursor:pointer;border-radius:5px;border:1px solid rgba(17,29,44,.2);background:transparent;color:var(--navy)">+ Add Item</button>
             <div style="font-size:.78rem;color:rgba(17,29,44,.5)">Total: <strong id="ni-running-total" style="color:var(--navy)">£0.00</strong></div>
           </div>
 
@@ -901,7 +901,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
         <div id="inv-err" style="display:none;padding:.55rem .8rem;background:rgba(156,40,40,.08);color:#9C2828;font-size:.78rem;border-radius:6px;margin-bottom:.6rem"></div>
 
         <div style="display:flex;gap:.5rem">
-          <button onclick="invPreview()" style="flex:1;padding:.7rem;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:6px;border:1px solid rgba(17,29,44,.2);background:transparent;color:var(--navy)">Preview / Download</button>
+          <button id="inv-preview-btn" onclick="invPreview()" style="flex:1;padding:.7rem;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:6px;border:1px solid rgba(17,29,44,.2);background:transparent;color:var(--navy)">Preview / Download</button>
           <button onclick="invSend()" id="inv-send-btn" style="flex:1;padding:.7rem;background:var(--gold);color:var(--navy);border:none;font-family:var(--sans);font-size:.7rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:6px">Send to Email</button>
         </div>
       </div>
@@ -3480,39 +3480,69 @@ async function loadOwnerBookings(){
 }
 
 // ── INVOICES ──────────────────────────────────────────────────────────────────
-var _INV_MODE='account';
-var _INV_SAVED_RECIPIENTS=[];
-var _INV_SR_IDX=-1;
-var _INV_CUST_IDX={};
-var _INV_SETTINGS_CACHE=null;
-var _INV_PRINT_DATA=null;
-var _INV_DETAIL_ID=null;
+var _INV_MODE = 'account';
+var _INV_SAVED_RECIPIENTS = [];
+var _INV_SR_IDX = -1;
+var _INV_CUST_IDX = {};
+var _INV_SETTINGS_CACHE = null;
+var _INV_PRINT_DATA = null;
+var _INV_DETAIL_ID = null;
 
-function invLoad(){
-  invLoadList();
+function invLoad(){ invLoadList(); }
+
+function invLoadList(){
+  var el=document.getElementById('inv-list-body');
+  if(!el)return;
+  el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">Loading…</div>';
+  fetch('/api/invoices',{credentials:'include'})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(!d.ok){el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">Unable to load invoices</div>';return;}
+    var invoices=d.invoices||[];
+    if(!invoices.length){el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">No invoices yet</div>';return;}
+    el.innerHTML=invoices.map(function(inv){
+      var total='£'+(+inv.total||0).toFixed(2);
+      var kind=inv.kind==='bespoke'?'One-off':'Account';
+      return '<div style="display:flex;align-items:center;gap:.5rem;padding:.7rem 1rem;border-bottom:1px solid rgba(17,29,44,.06);cursor:pointer" onclick="invViewDetail('+inv.id+')">'
+        +'<div style="flex:1;min-width:0">'
+        +'<div style="font-family:Menlo,Consolas,monospace;font-size:.75rem;color:var(--navy)">'+owEsc(inv.invoice_no||'')+'</div>'
+        +'<div style="font-size:.7rem;color:rgba(17,29,44,.5);margin-top:.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+owEsc(inv.recipient_name||'')+(inv.issued_date?' · '+inv.issued_date:'')+'</div>'
+        +'<div style="font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin-top:.1rem">'+kind+'</div>'
+        +'</div>'
+        +'<div style="display:flex;align-items:center;gap:.35rem;flex-shrink:0">'
+        +'<span style="font-family:var(--serif);font-size:.95rem;color:var(--navy)">'+total+'</span>'
+        +'<button onclick="event.stopPropagation();invViewDetail('+inv.id+')" style="font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;padding:.25rem .5rem;border:1px solid rgba(17,29,44,.15);color:rgba(17,29,44,.55);background:transparent;cursor:pointer;border-radius:4px;font-family:var(--sans)">View</button>'
+        +'<a href="/api/public/invoice/'+owEsc(inv.invoice_no)+'/pdf" onclick="event.stopPropagation()" target="_blank" style="font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;padding:.25rem .5rem;border:1px solid rgba(17,29,44,.15);color:rgba(17,29,44,.55);text-decoration:none;border-radius:4px;font-family:var(--sans)">PDF</a>'
+        +'<button onclick="event.stopPropagation();invDelete('+inv.id+',\''+owEsc(inv.invoice_no)+'\')" style="font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;padding:.25rem .5rem;border:1px solid rgba(163,51,51,.25);color:var(--red);background:transparent;cursor:pointer;border-radius:4px;font-family:var(--sans)">Del</button>'
+        +'</div></div>';
+    }).join('');
+  })
+  .catch(function(){el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:var(--red)">Failed to load invoices</div>';});
 }
 
 function invOpenNew(){
   var sel=document.getElementById('inv-customer');
   sel.innerHTML='<option value="">Loading…</option>';
   document.getElementById('inv-err').style.display='none';
-  invSetPeriod('month');
-  invSetMode('account');
+  document.getElementById('ni-items').innerHTML='';
+  document.getElementById('ni-notes').value='';
+  var rt=document.getElementById('ni-running-total');if(rt)rt.textContent='£0.00';
+  var sri=document.getElementById('inv-sr-input');if(sri)sri.value='';
+  var srl=document.getElementById('inv-sr-list');if(srl)srl.style.display='none';
   document.getElementById('inv-rec-name').value='';
   document.getElementById('inv-rec-email').value='';
   document.getElementById('inv-rec-phone').value='';
   document.getElementById('inv-rec-address').value='';
-  document.getElementById('ni-notes').value='';
-  document.getElementById('ni-items').innerHTML='';
-  var rt=document.getElementById('ni-running-total');if(rt)rt.textContent='£0.00';
-  var sri=document.getElementById('inv-sr-input');if(sri)sri.value='';
-  var srl=document.getElementById('inv-sr-list');if(srl)srl.style.display='none';
-  addBespokeItem();
+  invSetPeriod('month');
+  invSetMode('account');
+  invAddItem();
   document.getElementById('inv-sheet').style.display='';
   _INV_CUST_IDX={};
-  fetch('/api/customers',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
-    if(!d.ok||!d.customers.length){sel.innerHTML='<option value="">No customers yet</option>';return;}
-    var opts=['<option value="">-- Select customer --</option>'];
+  fetch('/api/customers',{credentials:'include'})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(!d.ok||!d.customers||!d.customers.length){sel.innerHTML='<option value="">No customers yet</option>';return;}
+    var opts=['<option value="">— Select customer —</option>'];
     var prefillOpts=['<option value="">— New recipient —</option>'];
     d.customers.forEach(function(c){
       opts.push('<option value="'+c.id+'">'+owEsc(c.full_name||'Unknown')+'</option>');
@@ -3521,7 +3551,8 @@ function invOpenNew(){
     });
     sel.innerHTML=opts.join('');
     var pre=document.getElementById('inv-rec-prefill');if(pre)pre.innerHTML=prefillOpts.join('');
-  }).catch(function(){sel.innerHTML='<option value="">Error loading customers</option>';});
+  })
+  .catch(function(){sel.innerHTML='<option value="">Error loading customers</option>';});
 }
 
 function invCloseSheet(){document.getElementById('inv-sheet').style.display='none';}
@@ -3535,48 +3566,58 @@ function invSetMode(mode){
   var bsFields=document.getElementById('inv-bespoke-fields');
   document.getElementById('inv-err').style.display='none';
   if(mode==='bespoke'){
-    accBtn.style.background='';accBtn.style.color='';
+    accBtn.style.background='transparent';accBtn.style.color='var(--navy)';
     bsBtn.style.background='var(--navy)';bsBtn.style.color='#fff';
     accFields.style.display='none';
     bsFields.style.display='';
-    if(!document.querySelectorAll('#ni-items .ni-item').length)addBespokeItem();
-    _invLoadSavedRecipients();
+    if(!document.querySelectorAll('#ni-items .ni-item').length)invAddItem();
+    invLoadRecipients();
   } else {
-    bsBtn.style.background='';bsBtn.style.color='';
+    bsBtn.style.background='transparent';bsBtn.style.color='var(--navy)';
     accBtn.style.background='var(--navy)';accBtn.style.color='#fff';
     accFields.style.display='';
     bsFields.style.display='none';
   }
 }
 
-function addBespokeItem(date,desc,amt){
+function invAddItem(date,desc,amt){
   var wrap=document.getElementById('ni-items');
+  if(!wrap)return;
   var row=document.createElement('div');
   row.className='ni-item';
-  row.style.cssText='display:grid;grid-template-columns:110px 1fr 100px 28px;gap:.35rem;align-items:center';
+  row.style.cssText='display:grid;grid-template-columns:100px 1fr 80px 28px;gap:.3rem;align-items:center';
   var today=new Date().toISOString().slice(0,10);
-  row.innerHTML='<input class="fi ni-date" type="date" style="font-size:.82rem;padding:.45rem .4rem" value="'+(date||today)+'">'
-    +'<input class="fi ni-desc" placeholder="e.g. Horsham → Gatwick" style="font-size:.85rem" value="'+owEsc(desc||'')+'">'
-    +'<input class="fi ni-amt" type="number" step="0.01" min="0" placeholder="0.00" style="font-size:.85rem;text-align:right" value="'+(amt||'')+'" oninput="updateBespokeTotal()">'
-    +'<button onclick="this.parentNode.remove();updateBespokeTotal()" title="Remove" style="background:transparent;border:none;color:#c0392b;cursor:pointer;font-size:1.2rem;padding:0;line-height:1;opacity:.7" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.7">&times;</button>';
+  row.innerHTML='<input class="fi ni-date" type="date" style="font-size:.8rem;padding:.4rem .35rem;box-sizing:border-box" value="'+(date||today)+'">'
+    +'<input class="fi ni-desc" placeholder="Description" style="font-size:.83rem;box-sizing:border-box" value="'+owEsc(desc||'')+'">'
+    +'<input class="fi ni-amt" type="number" step="0.01" min="0" placeholder="0.00" style="font-size:.83rem;text-align:right;box-sizing:border-box" value="'+(amt||'')+'" oninput="invCalcTotal()">'
+    +'<button onclick="invRemoveItem(this)" title="Remove" style="background:transparent;border:none;color:#c0392b;cursor:pointer;font-size:1.2rem;padding:0;line-height:1;flex-shrink:0">&times;</button>';
   wrap.appendChild(row);
-  updateBespokeTotal();
+  invCalcTotal();
 }
 
-function updateBespokeTotal(){
+function invRemoveItem(btn){
+  if(btn&&btn.parentNode)btn.parentNode.remove();
+  invCalcTotal();
+}
+
+function invCalcTotal(){
   var total=0;
   document.querySelectorAll('#ni-items .ni-amt').forEach(function(i){total+=parseFloat(i.value)||0;});
   var el=document.getElementById('ni-running-total');
   if(el)el.textContent='£'+total.toFixed(2);
 }
 
-function getBespokeItems(){
+function invGetItems(){
   var rows=document.querySelectorAll('#ni-items .ni-item');
   var items=[];
   rows.forEach(function(r){
-    var date=r.querySelector('.ni-date')?r.querySelector('.ni-date').value.trim():'';
-    var desc=r.querySelector('.ni-desc').value.trim();
-    var amt=+r.querySelector('.ni-amt').value;
+    var dateEl=r.querySelector('.ni-date');
+    var descEl=r.querySelector('.ni-desc');
+    var amtEl=r.querySelector('.ni-amt');
+    if(!descEl||!amtEl)return;
+    var date=dateEl?dateEl.value.trim():'';
+    var desc=descEl.value.trim();
+    var amt=parseFloat(amtEl.value)||0;
     if(desc&&amt>0)items.push({date:date||null,description:desc,amount:amt});
   });
   return items;
@@ -3586,7 +3627,8 @@ function invSetPeriod(type){
   var now=new Date();
   var from=document.getElementById('inv-from');
   var to=document.getElementById('inv-to');
-  document.querySelectorAll('#inv-btn-week,#inv-btn-month').forEach(function(b){b.style.background='';b.style.color='';});
+  if(!from||!to)return;
+  document.querySelectorAll('#inv-btn-week,#inv-btn-month').forEach(function(b){b.style.background='transparent';b.style.color='var(--navy)';});
   var btn=document.getElementById('inv-btn-'+type);
   if(btn){btn.style.background='var(--navy)';btn.style.color='#fff';}
   if(type==='week'){
@@ -3603,27 +3645,24 @@ function invSetPeriod(type){
   }
 }
 
-function _invLoadSavedRecipients(){
-  fetch('/api/invoice-recipients',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
-    _INV_SAVED_RECIPIENTS=d.recipients||[];
-    invFilterSR('');
-  }).catch(function(){});
+function invLoadRecipients(){
+  fetch('/api/invoice-recipients',{credentials:'include'})
+  .then(function(r){return r.json();})
+  .then(function(d){_INV_SAVED_RECIPIENTS=d.recipients||[];invFilterSR('');})
+  .catch(function(){});
 }
 
 function invFilterSR(q){
   var list=document.getElementById('inv-sr-list');if(!list)return;
   var term=(q||'').trim().toLowerCase();
   var matches=term
-    ?_INV_SAVED_RECIPIENTS.filter(function(r){
-        return (r.name||'').toLowerCase().includes(term)||(r.email||'').toLowerCase().includes(term);
-      })
+    ?_INV_SAVED_RECIPIENTS.filter(function(r){return (r.name||'').toLowerCase().includes(term)||(r.email||'').toLowerCase().includes(term);})
     :_INV_SAVED_RECIPIENTS;
   _INV_SR_IDX=-1;
   if(!matches.length){list.style.display='none';return;}
-  list.innerHTML=matches.map(function(r,i){
-    return '<div class="inv-sr-opt" data-idx="'+_INV_SAVED_RECIPIENTS.indexOf(r)+'"'
-      +' onmousedown="invSelectSR('+_INV_SAVED_RECIPIENTS.indexOf(r)+')"'
-      +' style="padding:.55rem .8rem;cursor:pointer;font-size:.83rem;color:var(--navy);border-bottom:1px solid rgba(17,29,44,.06)">'
+  list.innerHTML=matches.map(function(r){
+    var idx=_INV_SAVED_RECIPIENTS.indexOf(r);
+    return '<div class="inv-sr-opt" data-idx="'+idx+'" onmousedown="invSelectSR('+idx+')" style="padding:.55rem .8rem;cursor:pointer;font-size:.83rem;color:var(--navy);border-bottom:1px solid rgba(17,29,44,.06)">'
       +'<span style="font-weight:500">'+owEsc(r.name||'')+'</span>'
       +(r.email?'<span style="color:rgba(17,29,44,.45);font-size:.75rem;margin-left:.4rem">'+owEsc(r.email)+'</span>':'')
       +(r.phone?'<span style="color:rgba(17,29,44,.35);font-size:.72rem;margin-left:.35rem">'+owEsc(r.phone)+'</span>':'')
@@ -3637,17 +3676,13 @@ function invSRKeydown(e){
   var opts=list?list.querySelectorAll('.inv-sr-opt'):[];
   if(!opts.length)return;
   if(e.key==='ArrowDown'){
-    e.preventDefault();
-    _INV_SR_IDX=Math.min(_INV_SR_IDX+1,opts.length-1);
+    e.preventDefault();_INV_SR_IDX=Math.min(_INV_SR_IDX+1,opts.length-1);
     opts.forEach(function(o,i){o.style.background=i===_INV_SR_IDX?'rgba(17,29,44,.06)':'';});
   } else if(e.key==='ArrowUp'){
-    e.preventDefault();
-    _INV_SR_IDX=Math.max(_INV_SR_IDX-1,0);
+    e.preventDefault();_INV_SR_IDX=Math.max(_INV_SR_IDX-1,0);
     opts.forEach(function(o,i){o.style.background=i===_INV_SR_IDX?'rgba(17,29,44,.06)':'';});
   } else if(e.key==='Enter'&&_INV_SR_IDX>=0){
-    e.preventDefault();
-    var idx=+opts[_INV_SR_IDX].dataset.idx;
-    invSelectSR(idx);
+    e.preventDefault();invSelectSR(+opts[_INV_SR_IDX].dataset.idx);
   } else if(e.key==='Escape'){
     list.style.display='none';_INV_SR_IDX=-1;
   }
@@ -3675,7 +3710,7 @@ function invPrefillFromCustomer(id){
   document.getElementById('inv-rec-address').value=addr;
 }
 
-function _invGetDates(){
+function invGetDates(){
   var from=document.getElementById('inv-from').value;
   var to=document.getElementById('inv-to').value;
   if(!from||!to)return null;
@@ -3692,16 +3727,16 @@ function invBuildRequest(sendEmail){
     var phone=document.getElementById('inv-rec-phone').value.trim();
     var address=document.getElementById('inv-rec-address').value.trim();
     var notes=document.getElementById('ni-notes').value.trim();
-    var items=getBespokeItems();
+    var items=invGetItems();
     if(!name){err.textContent='Recipient name is required.';err.style.display='';return null;}
-    if(!items.length){err.textContent='Add at least one line item with description and amount.';err.style.display='';return null;}
-    if(sendEmail&&!email){err.textContent='Email required to send. Add an email or use Preview / Download.';err.style.display='';return null;}
+    if(!items.length){err.textContent='Add at least one line item with a description and amount.';err.style.display='';return null;}
+    if(sendEmail&&!email){err.textContent='Recipient email is required to send. Add an email or use Preview.';err.style.display='';return null;}
     return{url:'/api/invoices/bespoke',body:{recipient:{name:name,email:email,phone:phone,address:address},items:items,notes:notes,send_email:sendEmail}};
   } else {
     var cid=document.getElementById('inv-customer').value;
-    var dates=_invGetDates();
-    if(!cid){err.textContent='Pick a customer.';err.style.display='';return null;}
-    if(!dates){err.textContent='Pick a date range.';err.style.display='';return null;}
+    var dates=invGetDates();
+    if(!cid){err.textContent='Please select a customer.';err.style.display='';return null;}
+    if(!dates){err.textContent='Please select a date range.';err.style.display='';return null;}
     return{url:'/api/customers/'+cid+'/invoice',body:{from:dates.from,to:dates.to,send_email:sendEmail}};
   }
 }
@@ -3710,30 +3745,39 @@ function invSend(){
   var req=invBuildRequest(true);if(!req)return;
   var err=document.getElementById('inv-err');
   var btn=document.getElementById('inv-send-btn');
-  btn.disabled=true;btn.textContent='Sending…';
+  if(btn){btn.disabled=true;btn.textContent='Sending…';}
   fetch(req.url,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(req.body)})
   .then(function(r){return r.json().then(function(d){return{ok:r.ok,status:r.status,d:d};});})
   .then(function(res){
-    btn.disabled=false;btn.textContent='Send to Email';
-    if(!res.ok||!res.d.ok){err.textContent=res.d.error||('Invoice failed ('+res.status+')');err.style.display='';return;}
+    if(btn){btn.disabled=false;btn.textContent='Send to Email';}
+    if(!res.ok||!res.d.ok){err.textContent=res.d&&res.d.error?res.d.error:'Invoice failed ('+res.status+')';err.style.display='';return;}
     var total=(+res.d.total||0).toFixed(2);
-    var to=res.d.bespoke?res.d.recipient.email:(res.d.customer&&res.d.customer.email);
+    var to=res.d.bespoke?(res.d.recipient&&res.d.recipient.email||''):(res.d.customer&&res.d.customer.email||'');
     invCloseSheet();
-    showToast('Invoice '+res.d.invoiceNo+' emailed to '+to+' — £'+total);
+    showToast('Invoice '+res.d.invoiceNo+' sent'+(to?' to '+to:'')+' — £'+total);
     invLoadList();
-  }).catch(function(){btn.disabled=false;btn.textContent='Send to Email';err.textContent='Network error.';err.style.display='';});
+  })
+  .catch(function(){if(btn){btn.disabled=false;btn.textContent='Send to Email';}err.textContent='Network error. Please try again.';err.style.display='';});
 }
 
 function invPreview(){
   var req=invBuildRequest(false);if(!req)return;
   var err=document.getElementById('inv-err');
+  var btn=document.getElementById('inv-preview-btn');
+  if(btn){btn.disabled=true;btn.textContent='Loading…';}
   fetch(req.url,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(req.body)})
   .then(function(r){return r.json().then(function(d){return{ok:r.ok,status:r.status,d:d};});})
   .then(function(res){
-    if(!res.ok||!res.d.ok){err.textContent=res.d.error||('Invoice failed ('+res.status+')');err.style.display='';return;}
+    if(btn){btn.disabled=false;btn.textContent='Preview / Download';}
+    if(!res.ok||!res.d.ok){err.textContent=res.d&&res.d.error?res.d.error:'Invoice failed ('+res.status+')';err.style.display='';return;}
     openInvoicePreview(res.d);
     invLoadList();
-  }).catch(function(){err.textContent='Network error.';err.style.display='';});
+  })
+  .catch(function(){if(btn){btn.disabled=false;btn.textContent='Preview / Download';}err.textContent='Network error. Please try again.';err.style.display='';});
+}
+
+function invDownload(invoiceNo){
+  window.open('/api/public/invoice/'+encodeURIComponent(invoiceNo)+'/pdf','_blank');
 }
 
 function openInvoicePreview(data){
@@ -3942,7 +3986,7 @@ async function invDetailDelete(){
   }catch(e){showToast('Network error');}
 }
 
-async function _invDelete(id,invoiceNo){
+async function invDelete(id,invoiceNo){
   if(!confirm('Delete invoice '+invoiceNo+'? This cannot be undone.'))return;
   try{
     var r=await fetch('/api/invoices/'+id,{method:'DELETE',credentials:'include'});
