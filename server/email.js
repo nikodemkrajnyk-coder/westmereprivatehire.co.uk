@@ -437,6 +437,10 @@ async function sendCustomerInvoice(customer, bookings, period, invoiceNo, settin
 
   ${bankSection}
 
+  <div style="text-align:center;margin:28px 0 10px">
+    <a href="https://westmereprivatehire.co.uk/api/public/invoice/${escHtml(invoiceNo)}/pdf" style="display:inline-block;padding:13px 32px;background:#0E2540;color:#ffffff;text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:.03em">Download Invoice PDF</a>
+  </div>
+
   <p style="margin:18px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">We hope this is all in order. If you have any questions or would like to discuss anything, please don't hesitate to get in touch &mdash; we&rsquo;re always happy to help.</p>
   <p style="margin:12px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">Thank you as always for choosing Westmere Private Hire. We look forward to welcoming you on your next journey.</p>
   <p style="margin:16px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
@@ -563,6 +567,10 @@ async function sendBespokeInvoice(recipient, items, period, invoiceNo, settings,
 
   ${notesSection}
   ${bankSection}
+
+  <div style="text-align:center;margin:28px 0 10px">
+    <a href="https://westmereprivatehire.co.uk/api/public/invoice/${escHtml(invoiceNo)}/pdf" style="display:inline-block;padding:13px 32px;background:#0E2540;color:#ffffff;text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:.03em">Download Invoice PDF</a>
+  </div>
 
   <p style="margin:18px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">If you have any questions about this invoice, please don&rsquo;t hesitate to get in touch &mdash; we&rsquo;re always happy to help.</p>
   <p style="margin:12px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">Thank you for choosing Westmere Private Hire.</p>

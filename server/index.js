@@ -94,6 +94,44 @@ app.use('/api/public', apiLimiter, publicApiRouter);
 // Public tracking (rider views their own booking by ref + phone)
 app.use('/api/public', apiLimiter, publicTrackingRouter);
 
+// Public invoice download — no auth required. Invoice number is the access key.
+// Used by the "Download Invoice PDF" button in emailed invoices.
+app.get('/api/public/invoice/:invoiceNo/pdf', apiLimiter, async (req, res) => {
+  const fs = require('fs');
+  const path = require('path');
+  const db = getDb();
+  const safeNo = (req.params.invoiceNo || '').replace(/[^A-Za-z0-9\-_]/g, '');
+  if (!safeNo) return res.status(400).send('Invalid invoice number');
+  const row = db.prepare("SELECT * FROM invoices WHERE invoice_no = ?").get(safeNo);
+  if (!row) return res.status(404).send('Invoice not found');
+  const INVOICES_DIR = process.env.INVOICES_DIR || '/data/invoices';
+  const pdfPath = path.join(INVOICES_DIR, safeNo + '.pdf');
+  if (fs.existsSync(pdfPath)) {
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="' + safeNo + '.pdf"');
+    return res.sendFile(pdfPath);
+  }
+  // Regenerate if not cached
+  try {
+    let settings = {};
+    try { const sr = db.prepare("SELECT value FROM integrations WHERE key = 'invoice_settings'").get(); if (sr) settings = JSON.parse(sr.value); } catch (_) {}
+    let lineItems = []; try { lineItems = JSON.parse(row.line_items_json || '[]'); } catch (_) {}
+    const data = { invoiceNo: row.invoice_no, kind: row.kind, total: row.total, notes: row.notes || '', settings, period: { issuedDate: row.issued_date, dueDate: row.due_date || '', label: row.period_label || '' } };
+    if (row.kind === 'bespoke') { data.recipient = { name: row.recipient_name, email: row.recipient_email || '', phone: row.recipient_phone || '', address: row.recipient_addr || '' }; data.items = lineItems; }
+    else { data.customer = { full_name: row.recipient_name, email: row.recipient_email || '', phone: row.recipient_phone || '' }; data.bookings = lineItems; }
+    const { buildInvoicePdf } = require('./invoice-pdf');
+    const buf = await buildInvoicePdf(data);
+    fs.mkdirSync(INVOICES_DIR, { recursive: true });
+    fs.writeFileSync(pdfPath, buf);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="' + safeNo + '.pdf"');
+    res.send(buf);
+  } catch (e) {
+    console.error('[PUBLIC PDF]', e.message);
+    res.status(500).send('Failed to generate PDF');
+  }
+});
+
 // Google Calendar OAuth callback (public — Google redirects here after consent)
 app.use('/api/google', apiLimiter, googleRouter.publicCallback);
 
