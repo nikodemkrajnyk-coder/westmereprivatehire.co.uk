@@ -9,37 +9,33 @@ const MODEL = process.env.ASSISTANT_MODEL || 'claude-sonnet-4-6';
 const API_URL = 'https://api.anthropic.com/v1/messages';
 
 const REFERENCE_FARES = [
-  'Brighton→Gatwick £72/£68, Brighton→Heathrow £128/£133, Brighton→Stansted £215/£220, Brighton→Luton £205/£210, Brighton→Southampton £152/£147, Brighton→City £166/£171',
-  'Lewes→Gatwick £78/£74, Lewes→Heathrow £140/£145, Lewes→Stansted £225/£230, Lewes→Luton £215/£220',
-  'Horsham→Gatwick £55/£50, Horsham→Heathrow £120/£125',
-  'Crawley→Gatwick £35/£32, Crawley→Heathrow £95/£100',
-  'Worthing→Gatwick £72/£68, Worthing→Heathrow £130/£135',
-  'Haywards Heath→Gatwick £52/£48, Burgess Hill→Gatwick £48/£44',
-  'Eastbourne→Gatwick £98/£94, Eastbourne→Heathrow £162/£167',
-  'Seaford→Gatwick £92/£88, Uckfield→Gatwick £62/£58, East Grinstead→Gatwick £42/£38',
-  'Outside town centre: nearest town price + £2.50/extra mile'
+  'Brighton/Hove/Saltdean/Rottingdean→Gatwick £72 (ret £68), →Heathrow £128 (ret £133), →Stansted £215 (ret £220), →Luton £205 (ret £210), →Southampton £152 (ret £147), →London City £166 (ret £171)',
+  'Lewes→Gatwick £78 (ret £74), →Heathrow £140 (ret £145), →Stansted £225 (ret £230), →Luton £215 (ret £220), →Southampton £160 (ret £155), →London City £175 (ret £180)',
+  'Horsham→Gatwick £55 (ret £50), →Heathrow £120 (ret £125), →Stansted £180 (ret £185), →Luton £155 (ret £160), →Southampton £135 (ret £130), →London City £160 (ret £165)',
+  'Crawley→Gatwick £35 (ret £32), →Heathrow £95 (ret £100)',
+  'Worthing/Lancing/Shoreham→Gatwick £72 (ret £68), →Heathrow £130 (ret £135)',
+  'Haywards Heath→Gatwick £52 (ret £48), Burgess Hill→Gatwick £48 (ret £44)',
+  'Eastbourne→Gatwick £98 (ret £94), →Heathrow £162 (ret £167)',
+  'Seaford→Gatwick £92 (ret £88), Uckfield→Gatwick £62 (ret £58), East Grinstead→Gatwick £42 (ret £38)',
+  'All fares are all-in fixed prices — no surcharges added on top'
 ].join('\n');
 
-// ── Fare engine (server-side mirror of westmere-rider.html) ─────────────
+// ── Fare engine (exact mirror of CF table in index.html) ─────────────────
+// Values are ALL-IN fixed fares — no surcharges to add on top.
+// out = town→airport (drop-off), ret = airport→town (pickup)
 const FARE_CF = {
-  brighton:      { ga:{out:72,ret:68},  he:{out:128,ret:133}, st:{out:215,ret:220}, lu:{out:168,ret:173}, so:{out:92,ret:88},   ci:{out:185,ret:190} },
-  lewes:         { ga:{out:78,ret:74},  he:{out:140,ret:145}, st:{out:225,ret:230}, lu:{out:180,ret:185}, so:{out:105,ret:100}, ci:{out:195,ret:200} },
-  horsham:       { ga:{out:55,ret:50},  he:{out:120,ret:125}, st:{out:205,ret:210}, lu:{out:160,ret:165}, so:{out:85,ret:80},   ci:{out:175,ret:180} },
-  crawley:       { ga:{out:35,ret:32},  he:{out:95,ret:100},  st:{out:190,ret:195}, lu:{out:145,ret:150}, so:{out:78,ret:75},   ci:{out:160,ret:165} },
-  worthing:      { ga:{out:82,ret:78},  he:{out:138,ret:143}, st:{out:228,ret:233}, lu:{out:178,ret:183}, so:{out:75,ret:72},   ci:{out:198,ret:203} },
-  haywards:      { ga:{out:52,ret:48},  he:{out:115,ret:120}, st:{out:200,ret:205}, lu:{out:155,ret:160}, so:{out:95,ret:90},   ci:{out:172,ret:177} },
-  burgess:       { ga:{out:55,ret:50},  he:{out:118,ret:123}, st:{out:202,ret:207}, lu:{out:158,ret:163}, so:{out:92,ret:88},   ci:{out:175,ret:180} },
-  seaford:       { ga:{out:85,ret:80},  he:{out:148,ret:153}, st:{out:235,ret:240}, lu:{out:188,ret:193}, so:{out:112,ret:108}, ci:{out:205,ret:210} },
-  eastbourne:    { ga:{out:95,ret:90},  he:{out:158,ret:163}, st:{out:245,ret:250}, lu:{out:198,ret:203}, so:{out:122,ret:118}, ci:{out:215,ret:220} },
-  uckfield:      { ga:{out:60,ret:55},  he:{out:125,ret:130}, st:{out:208,ret:213}, lu:{out:162,ret:167}, so:{out:98,ret:94},   ci:{out:178,ret:183} },
-  eastgrinstead: { ga:{out:42,ret:38},  he:{out:105,ret:110}, st:{out:192,ret:197}, lu:{out:148,ret:153}, so:{out:88,ret:84},   ci:{out:165,ret:170} },
-  pulborough:    { ga:{out:68,ret:64},  he:{out:118,ret:123}, st:{out:205,ret:210}, lu:{out:158,ret:163}, so:{out:75,ret:72},   ci:{out:172,ret:177} },
-  arundel:       { ga:{out:78,ret:74},  he:{out:128,ret:133}, st:{out:215,ret:220}, lu:{out:168,ret:173}, so:{out:72,ret:68},   ci:{out:182,ret:187} },
-  chichester:    { ga:{out:88,ret:84},  he:{out:135,ret:140}, st:{out:228,ret:233}, lu:{out:178,ret:183}, so:{out:55,ret:50},   ci:{out:195,ret:200} },
-  midhurst:      { ga:{out:82,ret:78},  he:{out:115,ret:120}, st:{out:208,ret:213}, lu:{out:158,ret:163}, so:{out:65,ret:60},   ci:{out:178,ret:183} }
+  brighton:      { ga:{out:72,ret:68},  he:{out:128,ret:133}, st:{out:215,ret:220}, lu:{out:205,ret:210}, so:{out:152,ret:147}, ci:{out:166,ret:171} },
+  lewes:         { ga:{out:78,ret:74},  he:{out:140,ret:145}, st:{out:225,ret:230}, lu:{out:215,ret:220}, so:{out:160,ret:155}, ci:{out:175,ret:180} },
+  horsham:       { ga:{out:55,ret:50},  he:{out:120,ret:125}, st:{out:180,ret:185}, lu:{out:155,ret:160}, so:{out:135,ret:130}, ci:{out:160,ret:165} },
+  crawley:       { ga:{out:35,ret:32},  he:{out:95,ret:100} },
+  worthing:      { ga:{out:72,ret:68},  he:{out:130,ret:135} },
+  haywards:      { ga:{out:52,ret:48} },
+  burgess:       { ga:{out:48,ret:44} },
+  eastbourne:    { ga:{out:98,ret:94},  he:{out:162,ret:167} },
+  seaford:       { ga:{out:92,ret:88} },
+  uckfield:      { ga:{out:62,ret:58} },
+  eastgrinstead: { ga:{out:42,ret:38} }
 };
-// Airport surcharges [drop-off, pickup]
-const FARE_APC = { ga:[10,10], he:[7,10], st:[10,10], lu:[7,7], so:[5,5], ci:[8,8] };
 const FARE_APFULL = { ga:'Gatwick', he:'Heathrow', st:'Stansted', lu:'Luton', so:'Southampton', ci:'London City' };
 // Airport coords for routing when town is unknown
 const FARE_AP_COORDS = {
@@ -51,9 +47,57 @@ const FARE_AP_COORDS = {
 function _fareNormTown(s) {
   if (!s) return null;
   const l = s.toLowerCase();
-  const pc = [['rh12','horsham'],['rh13','horsham'],['rh10','crawley'],['rh11','crawley'],['rh16','haywards'],['rh15','burgess'],['rh19','eastgrinstead'],['rh20','pulborough'],['bn1','brighton'],['bn2','brighton'],['bn3','brighton'],['bn7','lewes'],['bn8','lewes'],['bn11','worthing'],['bn18','arundel'],['bn21','eastbourne'],['bn22','eastbourne'],['bn25','seaford'],['tn22','uckfield'],['po18','chichester'],['po19','chichester'],['gu29','midhurst']];
+  // Postcode prefixes (checked first — most precise)
+  const pc = [
+    ['rh12','horsham'],['rh13','horsham'],['rh14','horsham'],['bn5','horsham'],
+    ['rh10','crawley'], ['rh11','crawley'],
+    ['rh16','haywards'],['bn6','haywards'],['rh17','haywards'],
+    ['rh15','burgess'],
+    ['rh19','eastgrinstead'],
+    ['bn1','brighton'], ['bn2','brighton'], ['bn3','brighton'],
+    ['bn41','brighton'],  // Portslade
+    ['bn10','brighton'],  // Peacehaven
+    ['bn7','lewes'],  ['bn8','lewes'],  ['bn9','lewes'],
+    ['bn11','worthing'],['bn12','worthing'],['bn13','worthing'],['bn14','worthing'],
+    ['bn43','worthing'], // Shoreham
+    ['bn44','worthing'], // Steyning area
+    ['bn42','worthing'], // Southwick
+    ['bn15','worthing'], // Lancing
+    ['bn21','eastbourne'],['bn22','eastbourne'],['bn23','eastbourne'],['bn26','eastbourne'],
+    ['bn25','seaford'],
+    ['tn22','uckfield'], ['tn21','uckfield'], ['tn20','uckfield'],
+  ];
   for (const [k, v] of pc) { if (new RegExp('\\b'+k+'\\b').test(l)) return v; }
-  const nm = [['haywards heath','haywards'],['burgess hill','burgess'],['east grinstead','eastgrinstead'],['eastbourne','eastbourne'],['pulborough','pulborough'],['chichester','chichester'],['midhurst','midhurst'],['horsham','horsham'],['crawley','crawley'],['worthing','worthing'],['arundel','arundel'],['seaford','seaford'],['uckfield','uckfield'],['eastgrinstead','eastgrinstead'],['brighton','brighton'],['hove','brighton'],['lewes','lewes']];
+  // Named places — order matters: longer/more-specific strings first
+  const nm = [
+    ['haywards heath','haywards'],
+    ['burgess hill','burgess'],
+    ['east grinstead','eastgrinstead'],
+    ['saltdean','brighton'],
+    ['rottingdean','brighton'],
+    ['peacehaven','brighton'],
+    ['woodingdean','brighton'],
+    ['patcham','brighton'],
+    ['portslade','brighton'],
+    ['moulsecoomb','brighton'],
+    ['coldean','brighton'],
+    ['hollingbury','brighton'],
+    ['withdean','brighton'],
+    ['hove','brighton'],
+    ['brighton','brighton'],
+    ['shoreham','worthing'],
+    ['lancing','worthing'],
+    ['southwick','worthing'],
+    ['worthing','worthing'],
+    ['eastbourne','eastbourne'],
+    ['polegate','eastbourne'],
+    ['seaford','seaford'],
+    ['newhaven','lewes'],
+    ['lewes','lewes'],
+    ['uckfield','uckfield'],
+    ['horsham','horsham'],
+    ['crawley','crawley'],
+  ];
   for (const [k, v] of nm) { if (l.includes(k)) return v; }
   return null;
 }
@@ -116,39 +160,35 @@ async function calculateFare(pickup, destination, timeStr) {
   if (deAP && !puAP) {
     const townKey = puT;
     if (townKey && FARE_CF[townKey] && FARE_CF[townKey][deAP]) {
-      const base = FARE_CF[townKey][deAP].out;
-      const sur  = FARE_APC[deAP][0];
-      const total = base + sur;
+      // Fixed all-in fare — no surcharge to add
+      const fare = FARE_CF[townKey][deAP].out;
       const rdKey = townKey + '_' + deAP;
-      // Use known reference distances if available
-      const RD = { horsham_ga:{m:12,t:22}, horsham_he:{m:38,t:55}, lewes_ga:{m:28,t:38}, lewes_he:{m:62,t:80}, brighton_ga:{m:27,t:40}, brighton_he:{m:58,t:75}, worthing_ga:{m:28,t:42}, worthing_he:{m:55,t:70}, burgess_ga:{m:10,t:18}, burgess_he:{m:42,t:58}, haywards_ga:{m:12,t:22}, haywards_he:{m:44,t:60}, crawley_ga:{m:8,t:15}, crawley_he:{m:32,t:48}, eastbourne_ga:{m:40,t:55}, eastbourne_he:{m:72,t:95}, seaford_ga:{m:35,t:48}, uckfield_ga:{m:18,t:28}, eastgrinstead_ga:{m:14,t:22} };
+      const RD = { horsham_ga:{m:12,t:22}, horsham_he:{m:38,t:55}, lewes_ga:{m:28,t:38}, lewes_he:{m:62,t:80}, brighton_ga:{m:27,t:40}, brighton_he:{m:58,t:75}, worthing_ga:{m:28,t:42}, worthing_he:{m:55,t:70}, burgess_ga:{m:10,t:18}, haywards_ga:{m:18,t:28}, crawley_ga:{m:4,t:12}, crawley_he:{m:32,t:48}, eastbourne_ga:{m:42,t:55}, eastbourne_he:{m:72,t:92}, seaford_ga:{m:35,t:45}, uckfield_ga:{m:22,t:32}, eastgrinstead_ga:{m:14,t:22} };
       const rd = RD[rdKey] || {};
-      return { fare: total, distance_miles: rd.m || null, duration_min: rd.t || null, rate_type: 'fixed', breakdown: `Fixed airport fare: £${base} + ${FARE_APFULL[deAP]} drop-off surcharge £${sur} = £${total}` };
+      return { fare, distance_miles: rd.m || null, duration_min: rd.t || null, rate_type: 'fixed', breakdown: `Fixed all-in fare: £${fare} (${FARE_APFULL[deAP]} drop-off)` };
     }
-    // Unknown town — geocode + OSRM
+    // Unknown town — geocode + OSRM (per-mile fallback only)
     const [gc, apCoords] = await Promise.all([_fareGeocode(pickup), Promise.resolve(FARE_AP_COORDS[deAP])]);
     if (gc && apCoords) {
       const rt = await _fareRoute(gc.lat, gc.lon, apCoords.lat, apCoords.lon);
       if (rt) {
         const mi = Math.round(rt.distance / 1609.34 * 10) / 10;
         const ti = Math.round(rt.duration / 60);
-        const sur = FARE_APC[deAP][0];
-        const f = _fareCalcMile(mi, night) + sur;
-        return { fare: Math.ceil(f/0.5)*0.5, distance_miles: mi, duration_min: ti, rate_type: rateLabel, breakdown: `${mi} miles × tapered ${rateLabel} + ${FARE_APFULL[deAP]} drop-off surcharge £${sur}` };
+        const f = _fareCalcMile(mi, night);
+        return { fare: Math.ceil(f/0.5)*0.5, distance_miles: mi, duration_min: ti, rate_type: rateLabel, breakdown: `${mi} miles × tapered ${rateLabel} (no fixed fare for this area)` };
       }
     }
-    const fallback = _fareCalcMile(15, night) + FARE_APC[deAP][0];
-    return { fare: fallback, distance_miles: null, duration_min: null, rate_type: rateLabel + ' (estimated)', breakdown: 'Estimated ~15 miles + ' + FARE_APFULL[deAP] + ' drop-off surcharge' };
+    const fallback = _fareCalcMile(15, night);
+    return { fare: fallback, distance_miles: null, duration_min: null, rate_type: rateLabel + ' (estimated)', breakdown: 'Estimated ~15 miles (no fixed fare for this area)' };
   }
 
   // ── Pickup is airport ───────────────────────────────────────────────────
   if (puAP && !deAP) {
     const townKey = deT;
     if (townKey && FARE_CF[townKey] && FARE_CF[townKey][puAP]) {
-      const base = FARE_CF[townKey][puAP].ret;
-      const sur  = FARE_APC[puAP][1];
-      const total = base + sur;
-      return { fare: total, distance_miles: null, duration_min: null, rate_type: 'fixed', breakdown: `Fixed airport fare (return): £${base} + ${FARE_APFULL[puAP]} pickup surcharge £${sur} = £${total}` };
+      // Fixed all-in fare — no surcharge to add
+      const fare = FARE_CF[townKey][puAP].ret;
+      return { fare, distance_miles: null, duration_min: null, rate_type: 'fixed', breakdown: `Fixed all-in fare: £${fare} (${FARE_APFULL[puAP]} pickup)` };
     }
     const [apCoords, gc] = [FARE_AP_COORDS[puAP], await _fareGeocode(destination)];
     if (gc && apCoords) {
@@ -156,13 +196,12 @@ async function calculateFare(pickup, destination, timeStr) {
       if (rt) {
         const mi = Math.round(rt.distance / 1609.34 * 10) / 10;
         const ti = Math.round(rt.duration / 60);
-        const sur = FARE_APC[puAP][1];
-        const f = _fareCalcMile(mi, night) + sur;
-        return { fare: Math.ceil(f/0.5)*0.5, distance_miles: mi, duration_min: ti, rate_type: rateLabel, breakdown: `${mi} miles × tapered ${rateLabel} + ${FARE_APFULL[puAP]} pickup surcharge £${sur}` };
+        const f = _fareCalcMile(mi, night);
+        return { fare: Math.ceil(f/0.5)*0.5, distance_miles: mi, duration_min: ti, rate_type: rateLabel, breakdown: `${mi} miles × tapered ${rateLabel} (no fixed fare for this area)` };
       }
     }
-    const fallback = _fareCalcMile(15, night) + FARE_APC[puAP][1];
-    return { fare: fallback, distance_miles: null, duration_min: null, rate_type: rateLabel + ' (estimated)', breakdown: 'Estimated ~15 miles + ' + FARE_APFULL[puAP] + ' pickup surcharge' };
+    const fallback = _fareCalcMile(15, night);
+    return { fare: fallback, distance_miles: null, duration_min: null, rate_type: rateLabel + ' (estimated)', breakdown: 'Estimated ~15 miles (no fixed fare for this area)' };
   }
 
   // ── Town-to-town: live routing ──────────────────────────────────────────
