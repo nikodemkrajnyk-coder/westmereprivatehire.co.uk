@@ -10,6 +10,7 @@
     "node": ">=18"
   },
   "dependencies": {
+    "adm-zip": "^0.5.17",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.8.0",
     "cookie-parser": "^1.4.7",

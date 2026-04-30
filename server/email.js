@@ -8,6 +8,15 @@
  */
 
 const RESEND_URL = 'https://api.resend.com/emails';
+const AdmZip = require('adm-zip');
+
+// Wraps a PDF buffer in a ZIP so email clients cannot render it inline.
+// ZIP attachments always appear as downloadable files — never previewed.
+function pdfToZip(pdfBuffer, pdfFilename) {
+  const zip = new AdmZip();
+  zip.addFile(pdfFilename, pdfBuffer);
+  return zip.toBuffer();
+}
 
 function isConfigured() {
   return !!process.env.RESEND_API_KEY;
@@ -461,14 +470,16 @@ async function sendCustomerInvoice(customer, bookings, period, invoiceNo, settin
   const preheader = summaryCount + ' journey' + (summaryCount === 1 ? '' : 's') + ' \u00b7 \u00a3' + total.toFixed(2) + ' total';
   let attachments;
   if (pdfBuffer) {
-    const b64 = Buffer.isBuffer(pdfBuffer) ? pdfBuffer.toString('base64') : Buffer.from(pdfBuffer).toString('base64');
-    console.log('[EMAIL] PDF buffer:', pdfBuffer.length, 'bytes → base64 length:', b64.length, 'chars');
-    attachments = [{ filename: (invoiceNo || 'invoice') + '.pdf', content: b64 }];
+    const pdfName = (invoiceNo || 'invoice') + '.pdf';
+    const zipBuffer = pdfToZip(Buffer.isBuffer(pdfBuffer) ? pdfBuffer : Buffer.from(pdfBuffer), pdfName);
+    const b64 = zipBuffer.toString('base64');
+    console.log('[EMAIL] PDF', pdfBuffer.length, 'bytes → ZIP', zipBuffer.length, 'bytes → base64', b64.length, 'chars');
+    attachments = [{ filename: (invoiceNo || 'invoice') + '.zip', content: b64 }];
   } else {
     console.warn('[EMAIL] No PDF buffer — sending invoice', invoiceNo, 'without attachment');
   }
   const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader, attachments ? { attachments } : undefined);
-  if (ok) console.log('[EMAIL] Invoice', invoiceNo, 'sent to', email, pdfBuffer ? '(with PDF attachment)' : '(NO PDF)');
+  if (ok) console.log('[EMAIL] Invoice', invoiceNo, 'sent to', email, pdfBuffer ? '(with ZIP attachment)' : '(NO attachment)');
   return ok;
 }
 
@@ -588,14 +599,16 @@ async function sendBespokeInvoice(recipient, items, period, invoiceNo, settings,
   const preheader = 'Invoice \u00b7 \u00a3' + total.toFixed(2);
   let attachments;
   if (pdfBuffer) {
-    const b64 = Buffer.isBuffer(pdfBuffer) ? pdfBuffer.toString('base64') : Buffer.from(pdfBuffer).toString('base64');
-    console.log('[EMAIL] PDF buffer:', pdfBuffer.length, 'bytes → base64 length:', b64.length, 'chars');
-    attachments = [{ filename: (invoiceNo || 'invoice') + '.pdf', content: b64 }];
+    const pdfName = (invoiceNo || 'invoice') + '.pdf';
+    const zipBuffer = pdfToZip(Buffer.isBuffer(pdfBuffer) ? pdfBuffer : Buffer.from(pdfBuffer), pdfName);
+    const b64 = zipBuffer.toString('base64');
+    console.log('[EMAIL] PDF', pdfBuffer.length, 'bytes → ZIP', zipBuffer.length, 'bytes → base64', b64.length, 'chars');
+    attachments = [{ filename: (invoiceNo || 'invoice') + '.zip', content: b64 }];
   } else {
     console.warn('[EMAIL] No PDF buffer — sending bespoke invoice', invoiceNo, 'without attachment');
   }
   const ok = await sendEmail(recipient.email, subject, html, 'Westmere Private Hire', preheader, attachments ? { attachments } : undefined);
-  if (ok) console.log('[EMAIL] Bespoke invoice', invoiceNo, 'sent to', recipient.email, pdfBuffer ? '(with PDF attachment)' : '(NO PDF)');
+  if (ok) console.log('[EMAIL] Bespoke invoice', invoiceNo, 'sent to', recipient.email, pdfBuffer ? '(with ZIP attachment)' : '(NO attachment)');
   return ok;
 }
 
