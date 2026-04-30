@@ -20,7 +20,8 @@ const router = express.Router();
 router.post('/book', async (req, res) => {
   try {
     const { name, email, phone, pickup, destination, date, time,
-            passengers, bags, flight, fare, payment, notes, source } = req.body;
+            passengers, bags, flight, fare, payment, notes, source,
+            returnTrip } = req.body;
 
     // Validate required fields
     if (!name || !phone || !pickup || !destination) {
@@ -142,6 +143,62 @@ router.post('/book', async (req, res) => {
       (phone || '').trim() || null,
       (email || '').trim().toLowerCase() || null
     );
+
+    // Return (round) trip — create a linked return booking if requested
+    let returnRef = null;
+    let returnBookingId = null;
+    if (returnTrip && returnTrip.date && returnTrip.date >= todayStr) {
+      try {
+        returnRef = 'WM-' + (Date.now() + 1).toString(36).toUpperCase().slice(-6);
+        const retResult = db.prepare(`
+          INSERT INTO bookings (ref, customer_id, driver_id, pickup, destination, date, time,
+                                passengers, bags, trip_type, flight, fare, payment, notes, status,
+                                passenger_name, passenger_phone, passenger_email,
+                                linked_booking_id, trip_group)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          returnRef, customerId, finalDriverId,
+          destination, pickup,          // swapped: airport → home
+          returnTrip.date, returnTrip.time || 'ASAP',
+          passengers || 1, bags || '0', null,
+          returnTrip.flight || null, returnTrip.fare || null, payment || 'cash',
+          `Return journey (linked to ${ref})`,
+          finalStatus,
+          (name || '').trim() || null,
+          (phone || '').trim() || null,
+          (email || '').trim().toLowerCase() || null,
+          result.lastInsertRowid, ref
+        );
+        returnBookingId = retResult.lastInsertRowid;
+        // Link the outbound to its return leg
+        try {
+          db.prepare('UPDATE bookings SET linked_booking_id = ?, trip_group = ? WHERE id = ?')
+            .run(returnBookingId, ref, result.lastInsertRowid);
+        } catch (_) {}
+        // Admin alert for return leg
+        Promise.allSettled([
+          sendAdminAlert({ ref: returnRef, name, email, phone,
+            pickup: destination, destination: pickup,
+            date: returnTrip.date, time: returnTrip.time,
+            passengers, bags, flight: returnTrip.flight,
+            fare: returnTrip.fare, payment, notes: `Return leg (outbound: ${ref})` })
+        ]).catch(() => {});
+        // Calendar + intake for return leg
+        gcal.createEvent({ id: returnBookingId, ref: returnRef, pickup: destination, destination: pickup,
+          date: returnTrip.date, time: returnTrip.time || 'ASAP',
+          passengers, bags, flight: returnTrip.flight, fare: returnTrip.fare, payment,
+          notes: `Return leg (outbound: ${ref})`, customer_name: name, customer_phone: phone, status: finalStatus
+        }).then(eid => { if (eid) { try { db.prepare('UPDATE bookings SET calendar_event_id = ? WHERE id = ?').run(eid, returnBookingId); } catch (_) {} } }).catch(() => {});
+        intake.evaluate(returnBookingId).catch(() => {});
+        events.broadcast('booking:created', { id: returnBookingId, ref: returnRef, name,
+          pickup: destination, destination: pickup,
+          date: returnTrip.date, time: returnTrip.time || 'ASAP',
+          payment: payment || 'cash', fare: returnTrip.fare || null });
+      } catch (retErr) {
+        console.error('[BOOK] Return trip insert failed (non-blocking):', retErr.message);
+        returnRef = null; returnBookingId = null;
+      }
+    }
 
     // Audit log
     db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')

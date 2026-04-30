@@ -793,7 +793,8 @@ function buildCard(j,isOffered){
     +  '<div class="jd-row"><span class="jd-key">Pickup</span><span class="jd-val">'+esc(j.pickup)+'</span></div>'
     +  '<div class="jd-row"><span class="jd-key">Drop-off</span><span class="jd-val">'+esc(j.dest)+'</span></div>'
     +  (j.flight?'<div class="jd-row"><span class="jd-key">Flight</span><span class="jd-val">'+fb+'</span></div>':'')
-    +  '<div class="jd-row"><span class="jd-key">Fare</span><span class="jd-val accent">\u00a3'+esc(j.fare)+' \u00b7 '+esc(j.payment)+'</span></div>'
+    +  (j.ref?'<div class="jd-row"><span class="jd-key">Ref</span><span class="jd-val" style="font-family:Menlo,Consolas,monospace;font-size:.76rem;letter-spacing:.02em">'+esc(j.ref)+'</span></div>':'')
+  +  '<div class="jd-row"><span class="jd-key">Fare</span><span class="jd-val accent">\u00a3'+esc(j.fare)+' \u00b7 '+esc(j.payment)+'</span></div>'
     +  (j.note?'<div class="jd-row"><span class="jd-key">Note</span><span class="jd-val" style="color:rgba(17,29,44,.5);font-size:.78rem">'+drvEnrichNotes(j.note)+'</span></div>':'')
     +'</div>'
     +contact+actions

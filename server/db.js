@@ -596,6 +596,19 @@ function migrate() {
       WHERE role IN ('driver','owner') AND onboarding_status='pending'
       AND has_login=1 AND username NOT LIKE '__nolgn_%'`).run();
   } catch(e) { console.error('[DB] onboarding columns failed:', e.message); }
+
+  // Return / round-trip bookings: link outbound and return legs
+  try {
+    const bInfo = db.prepare("PRAGMA table_info(bookings)").all();
+    if (!bInfo.find(c => c.name === 'linked_booking_id')) {
+      db.exec(`ALTER TABLE bookings ADD COLUMN linked_booking_id INTEGER REFERENCES bookings(id)`);
+      console.log('[DB] Added linked_booking_id column to bookings');
+    }
+    if (!bInfo.find(c => c.name === 'trip_group')) {
+      db.exec(`ALTER TABLE bookings ADD COLUMN trip_group TEXT`);
+      console.log('[DB] Added trip_group column to bookings');
+    }
+  } catch(e) { console.error('[DB] linked_booking_id migration failed:', e.message); }
 }
 
 function seedDefaults() {

@@ -347,6 +347,29 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
         <div class="fm"><div class="fm-l">Duration</div><div class="fm-v" id="fr-dur">&mdash;</div></div>
       </div>
     </div>
+    <div id="return-trip-block" style="display:none;margin:.75rem 0 0;padding:.85rem;background:rgba(17,29,44,.04);border:1px solid rgba(17,29,44,.12);border-radius:8px">
+      <label style="display:flex;align-items:center;gap:.55rem;cursor:pointer;font-size:.9rem;font-weight:500;color:var(--navy)">
+        <input type="checkbox" id="return-toggle" onchange="toggleReturn(this.checked)" style="width:1.1rem;height:1.1rem;accent-color:var(--gold)">
+        Add a return pickup from the airport
+      </label>
+      <div id="return-fields" style="display:none;margin-top:.85rem">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.55rem">
+          <div>
+            <label style="font-size:.75rem;font-weight:600;color:var(--navy);opacity:.65;letter-spacing:.04em;text-transform:uppercase;display:block;margin-bottom:.3rem">Return Date</label>
+            <input type="date" id="ret-date" class="fi" style="width:100%;box-sizing:border-box" oninput="updateReturnTotal()">
+          </div>
+          <div>
+            <label style="font-size:.75rem;font-weight:600;color:var(--navy);opacity:.65;letter-spacing:.04em;text-transform:uppercase;display:block;margin-bottom:.3rem">Return Time</label>
+            <input type="time" id="ret-time" class="fi" value="12:00" style="width:100%;box-sizing:border-box">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:.75rem;font-weight:600;color:var(--navy);opacity:.65;letter-spacing:.04em;text-transform:uppercase;display:block;margin-bottom:.3rem">Return Flight <span style="font-weight:400;opacity:.8;text-transform:none">(optional)</span></label>
+          <input type="text" id="ret-flight" class="fi" placeholder="e.g. EZY8012" style="width:100%;box-sizing:border-box">
+        </div>
+        <div id="return-total-row" style="margin-top:.75rem;font-size:.88rem;color:var(--navy)"></div>
+      </div>
+    </div>
     <button class="btn-book-j" id="btn-book-j" onclick="openBookingModal()">Book this journey &nbsp;&rarr;</button>
 
   </div><!-- /bk-wrap -->
@@ -730,11 +753,16 @@ function doEstimate(){
   clearTimeout(_et);checkFlight();
   var from=document.getElementById('b-from').value.trim();
   var to=document.getElementById('b-to').value.trim();
-  if(!from||from.length<2||!to||to.length<2)return;
+  if(!from||from.length<2||!to||to.length<2){
+    var rb=document.getElementById('return-trip-block');if(rb)rb.style.display='none';
+    _retFare=null;_outFare=null;
+    return;
+  }
   _et=setTimeout(function(){runCalc(from,to);},550);
 }
 function showFare(fare,mi,ti,lbl,apNote){
   fare=Math.ceil(fare/0.5)*0.5;
+  _outFare=fare;
   document.getElementById('fr-price').textContent='£'+fare;
   var d=document.getElementById('fr-dist');if(d)d.textContent=mi?mi+' mi':'—';
   var t=document.getElementById('fr-dur');if(t)t.textContent=ti?'~'+ti+' min':'—';
@@ -742,6 +770,57 @@ function showFare(fare,mi,ti,lbl,apNote){
   var ap=document.getElementById('fr-ap');if(ap){if(apNote){ap.textContent=apNote;ap.style.display='block';}else{ap.style.display='none';}}
   var r=document.getElementById('fare-reveal');if(r)r.classList.add('show');
   var btn=document.getElementById('btn-book-j');if(btn)btn.classList.add('show');
+  // Check if destination is an airport and offer return trip
+  var fromV=document.getElementById('b-from');var toV=document.getElementById('b-to');
+  if(fromV&&toV)checkReturnOption(fromV.value.trim(),toV.value.trim());
+  updateReturnTotal();
+}
+function checkReturnOption(from,to){
+  var retBlock=document.getElementById('return-trip-block');
+  if(!retBlock)return;
+  var deAP=nAP(to);
+  if(!deAP){retBlock.style.display='none';_retFare=null;return;}
+  // Compute return fare (airport → home town)
+  var puT=sh(nT(from));
+  _retFare=null;
+  if(puT&&CF[puT]&&CF[puT][deAP])_retFare=CF[puT][deAP].ret;
+  retBlock.style.display='block';
+}
+function toggleReturn(checked){
+  var fields=document.getElementById('return-fields');
+  if(!fields)return;
+  fields.style.display=checked?'block':'none';
+  if(checked){
+    var outDate=document.getElementById('b-date');
+    var retDate=document.getElementById('ret-date');
+    if(retDate&&!retDate.value){
+      var base=outDate&&outDate.value?new Date(outDate.value+' 12:00'):new Date();
+      base.setDate(base.getDate()+7);
+      retDate.value=base.toISOString().split('T')[0];
+    }
+    if(retDate&&outDate&&outDate.value)retDate.min=outDate.value;
+  }
+  updateReturnTotal();
+}
+function updateReturnTotal(){
+  var row=document.getElementById('return-total-row');
+  if(!row)return;
+  var tog=document.getElementById('return-toggle');
+  if(!_retFare){row.innerHTML='';return;}
+  if(!tog||!tog.checked){
+    row.innerHTML='<span style="opacity:.65;font-size:.85rem">Return fare: <strong>£'+_retFare+'</strong></span>';
+    return;
+  }
+  var html='';
+  if(_outFare){
+    var total=_outFare+_retFare;
+    html='<div style="display:flex;justify-content:space-between;margin-bottom:.2rem;opacity:.75"><span>Outbound</span><span>£'+_outFare+'</span></div>'
+        +'<div style="display:flex;justify-content:space-between;margin-bottom:.2rem;opacity:.75"><span>Return</span><span>£'+_retFare+'</span></div>'
+        +'<div style="display:flex;justify-content:space-between;font-weight:700;border-top:1px solid rgba(17,29,44,.18);padding-top:.4rem;margin-top:.2rem"><span>Total</span><span style="color:var(--gold)">£'+total+'</span></div>';
+  } else {
+    html='<span style="opacity:.75">Return fare: <strong>£'+_retFare+'</strong></span>';
+  }
+  row.innerHTML=html;
 }
 function _calcRoute(lat1,lon1,lat2,lon2){
   return fetch('https://router.project-osrm.org/route/v1/driving/'+lon1+','+lat1+';'+lon2+','+lat2+'?overview=false')
@@ -877,6 +956,8 @@ var BOOKING_API_URL = "/api/public/book";
 // =====================================================
 
 var _bk = { step:0, pay:"", method:"", stripe:null, cardEl:null, fare:0, j:{} };
+var _retFare = null;   // return fare (airport→home) for currently-shown route
+var _outFare = null;   // outbound fare stored by showFare()
 
 // ── TOAST ─────────────────────────────────────────────
 function bkToast(msg, type) {
@@ -904,7 +985,9 @@ function bkSubmitBooking(data) {
     body: JSON.stringify(data)
   }).then(function(r){ return r.json(); }).then(function(d){
     if (d.ok) {
-      bkToast("Booking saved — confirmation sent", "ok");
+      var msg = "Booking saved — confirmation sent";
+      if (d.returnRef) msg += " · Return: " + d.returnRef;
+      bkToast(msg, "ok");
     } else {
       bkShowFail((d.error || "We couldn't save your booking") + (d.detail ? " — " + d.detail : ""));
     }
@@ -1216,6 +1299,21 @@ function bkConfirm(type) {
   var crEl = document.getElementById("bk-cr");
   if (crEl) crEl.textContent = "Ref: " + ref;
 
+  // Check if return trip was requested
+  var retToggle = document.getElementById("return-toggle");
+  var retDate   = document.getElementById("ret-date");
+  var retTime   = document.getElementById("ret-time");
+  var retFlight = document.getElementById("ret-flight");
+  var returnTrip = null;
+  if (retToggle && retToggle.checked && retDate && retDate.value) {
+    returnTrip = {
+      date:   retDate.value,
+      time:   retTime && retTime.value ? retTime.value : "ASAP",
+      flight: retFlight ? retFlight.value.trim() : "",
+      fare:   _retFare || null
+    };
+  }
+
   var rows = [
     { k:"Passenger", v: name + " · " + phone },
     { k:"From",      v: j.from },
@@ -1223,6 +1321,7 @@ function bkConfirm(type) {
     j.date  ? { k:"Date",    v: j.date + (j.time ? " at " + j.time : "") } : null,
     j.flight? { k:"Flight",  v: j.flight } : null,
     j.price&&j.price!=="—" ? { k:"Fare", v: j.price + " — fixed" } : null,
+    returnTrip ? { k:"Return", v: returnTrip.date + (returnTrip.time && returnTrip.time!=="ASAP" ? " at " + returnTrip.time : "") + (returnTrip.fare ? " · £" + returnTrip.fare : "") } : null,
     { k:"Payment",   v: type==="driver" ? "To driver on the day" : "Paid online ✓" }
   ].filter(Boolean);
 
@@ -1251,7 +1350,8 @@ function bkConfirm(type) {
     bags:       document.getElementById("b-bags").value || "",
     notes:      document.getElementById("bk-notes") ? document.getElementById("bk-notes").value : "",
     payment:    type==="driver" ? "cash" : "card",
-    source:     "website"
+    source:     "website",
+    returnTrip: returnTrip || undefined
   });
 
   bkGoS(6);

@@ -522,6 +522,29 @@ footer.mini-foot{display:none}
               <div class="fr-item"><div class="fi-l">Surcharge</div><div class="fi-v" id="fr-surcharge">—</div></div>
             </div>
           </div>
+          <div id="qb-return-block" style="display:none;margin:.75rem 0 0;padding:.85rem;background:rgba(17,29,44,.04);border:1px solid rgba(17,29,44,.12);border-radius:8px">
+            <label style="display:flex;align-items:center;gap:.55rem;cursor:pointer;font-size:.9rem;font-weight:500;color:var(--navy)">
+              <input type="checkbox" id="qb-return-toggle" onchange="toggleQbReturn(this.checked)" style="width:1.1rem;height:1.1rem;accent-color:var(--gold)">
+              Add a return pickup from the airport
+            </label>
+            <div id="qb-return-fields" style="display:none;margin-top:.85rem">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.55rem">
+                <div>
+                  <label class="fl" style="display:block;margin-bottom:.3rem">Return Date</label>
+                  <input type="date" id="qb-ret-date" class="fi" style="width:100%;box-sizing:border-box" oninput="updateQbReturnTotal()">
+                </div>
+                <div>
+                  <label class="fl" style="display:block;margin-bottom:.3rem">Return Time</label>
+                  <input type="time" id="qb-ret-time" class="fi" value="12:00" style="width:100%;box-sizing:border-box">
+                </div>
+              </div>
+              <div>
+                <label class="fl" style="display:block;margin-bottom:.3rem">Return Flight <span style="font-weight:400;opacity:.8">(optional)</span></label>
+                <input type="text" id="qb-ret-flight" class="fi" placeholder="e.g. EZY8012" style="width:100%;box-sizing:border-box">
+              </div>
+              <div id="qb-return-total" style="margin-top:.75rem;font-size:.88rem;color:var(--navy)"></div>
+            </div>
+          </div>
           <div style="margin-bottom:.4rem"><label class="fl" style="display:block;margin-bottom:.55rem">Payment Method</label><div class="qb-pay-row"><button class="qb-pc sel" id="qb-pay-cash" type="button" onclick="selectQbPay('cash')"><div class="qb-pc-ttl">Cash</div><div class="qb-pc-sub">Pay the driver directly</div></button><button class="qb-pc" id="qb-pay-card" type="button" onclick="selectQbPay('card')"><div class="qb-pc-ttl">Card</div><div class="qb-pc-sub">Pay securely by card</div></button><button class="qb-pc" id="qb-pay-wallet" type="button" onclick="selectQbPay('wallet')"><div class="qb-pc-ttl">Wallet</div><div class="qb-pc-sub">Apple Pay · Google Pay</div></button></div>
             <div class="qb-card-wrap" id="qb-card-wrap"><span class="qb-card-label">Card Details</span><div id="qb-stripe-el"></div><div class="qb-card-err" id="qb-card-err"></div></div>
             <div class="qb-wallet-wrap" id="qb-wallet-wrap"><div id="payment-request-button"></div><div class="qb-no-wallet" id="qb-no-wallet" style="display:none"></div></div>
@@ -844,15 +867,23 @@ function checkFlight(){
   if(bags)bags.style.display=isAP?'':'none';
 }
 var _et=null;
+var _qbRetFare=null;  // return fare (airport→home) for current route
+var _qbOutFare=null;  // outbound fare stored by qbShowFare()
 function qbCalc(){
   clearTimeout(_et);checkFlight();
   var from=document.getElementById('qb-from').value.trim();
   var dest=document.getElementById('qb-dest').value.trim();
-  if(!from||from.length<2||!dest||dest.length<2){document.getElementById('fare-reveal').classList.remove('show');return;}
+  if(!from||from.length<2||!dest||dest.length<2){
+    document.getElementById('fare-reveal').classList.remove('show');
+    var rb=document.getElementById('qb-return-block');if(rb)rb.style.display='none';
+    _qbRetFare=null;_qbOutFare=null;
+    return;
+  }
   _et=setTimeout(function(){qbRunCalc(from,dest);},550);
 }
 function qbShowFare(fare,mi,ti,lbl,apNote){
   fare=Math.ceil(fare/0.5)*0.5;
+  _qbOutFare=fare;
   document.getElementById('fr-amt').textContent='\u00a3'+fare;
   if(_qbPR){try{_qbPR.update({total:{label:'Westmere Private Hire',amount:Math.round(fare*100)}});}catch(e){}}
   else{var ws=document.getElementById('qb-pay-wallet');if(ws&&ws.classList.contains('sel'))_qbInitWallet();}
@@ -861,6 +892,56 @@ function qbShowFare(fare,mi,ti,lbl,apNote){
   if(mi){bd.style.display='flex';document.getElementById('fr-dist').textContent=mi+' mi';document.getElementById('fr-time').textContent='~'+ti+' min';document.getElementById('fr-surcharge').textContent=apNote||'\u2014';}
   else if(bd) bd.style.display='none';
   document.getElementById('fare-reveal').classList.add('show');
+  // Check return option after fare is shown
+  var fromV=document.getElementById('qb-from');var toV=document.getElementById('qb-dest');
+  if(fromV&&toV)checkQbReturnOption(fromV.value.trim(),toV.value.trim());
+  updateQbReturnTotal();
+}
+function checkQbReturnOption(from,to){
+  var retBlock=document.getElementById('qb-return-block');
+  if(!retBlock)return;
+  var deAP=nAP(to);
+  if(!deAP){retBlock.style.display='none';_qbRetFare=null;return;}
+  var puT=sh(nT(from));
+  _qbRetFare=null;
+  if(puT&&CF[puT]&&CF[puT][deAP])_qbRetFare=CF[puT][deAP].ret;
+  retBlock.style.display='block';
+}
+function toggleQbReturn(checked){
+  var fields=document.getElementById('qb-return-fields');
+  if(!fields)return;
+  fields.style.display=checked?'block':'none';
+  if(checked){
+    var outDate=document.getElementById('qb-date');
+    var retDate=document.getElementById('qb-ret-date');
+    if(retDate&&!retDate.value){
+      var base=outDate&&outDate.value?new Date(outDate.value+' 12:00'):new Date();
+      base.setDate(base.getDate()+7);
+      retDate.value=base.toISOString().split('T')[0];
+    }
+    if(retDate&&outDate&&outDate.value)retDate.min=outDate.value;
+  }
+  updateQbReturnTotal();
+}
+function updateQbReturnTotal(){
+  var row=document.getElementById('qb-return-total');
+  if(!row)return;
+  var tog=document.getElementById('qb-return-toggle');
+  if(!_qbRetFare){row.innerHTML='';return;}
+  if(!tog||!tog.checked){
+    row.innerHTML='<span style="opacity:.65;font-size:.85rem">Return fare: <strong>\u00a3'+_qbRetFare+'</strong></span>';
+    return;
+  }
+  var html='';
+  if(_qbOutFare){
+    var total=_qbOutFare+_qbRetFare;
+    html='<div style="display:flex;justify-content:space-between;margin-bottom:.2rem;opacity:.75"><span>Outbound</span><span>\u00a3'+_qbOutFare+'</span></div>'
+        +'<div style="display:flex;justify-content:space-between;margin-bottom:.2rem;opacity:.75"><span>Return</span><span>\u00a3'+_qbRetFare+'</span></div>'
+        +'<div style="display:flex;justify-content:space-between;font-weight:700;border-top:1px solid rgba(17,29,44,.18);padding-top:.4rem;margin-top:.2rem"><span>Total</span><span style="color:var(--gold)">\u00a3'+total+'</span></div>';
+  } else {
+    html='<span style="opacity:.75">Return fare: <strong>\u00a3'+_qbRetFare+'</strong></span>';
+  }
+  row.innerHTML=html;
 }
 function qbRunCalc(from,to){
   var tm=(document.getElementById('qb-time')||{value:'08:00'}).value||'08:00';
@@ -1173,7 +1254,7 @@ function renderBkRow(b,showActions){
   var day=d?d.getDate():'—';
   var mo=d?['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]:'—';
   var route=_shortAddr(b.pickup||'')+(b.destination?' \u2192 '+_shortAddr(b.destination):'');
-  var meta=[b.time&&b.time!=='ASAP'?b.time:null,b.passengers>1?b.passengers+' passengers':null,b.flight||null,b.payment==='card'?'Card':'Cash'].filter(Boolean).join(' \u00b7 ');
+  var meta=[b.ref?b.ref:null,b.time&&b.time!=='ASAP'?b.time:null,b.passengers>1?b.passengers+' passengers':null,b.flight||null,b.payment==='card'?'Card':'Cash'].filter(Boolean).join(' \u00b7 ');
   var fareStr=b.fare?'\u00a3'+parseFloat(b.fare).toFixed(0):'—';
   var stMap={confirmed:'t-up',active:'t-active',completed:'t-done',cancelled:'t-can',pending:'t-up',offered:'t-up'};
   var stLbl={confirmed:'Confirmed',active:'Active',completed:'Completed',cancelled:'Cancelled',pending:'Pending',offered:'Offered'};
@@ -1333,12 +1414,36 @@ function _qbSaveBooking(from,dest,date,time,pax,bags,flight,fare,payment,notes,s
   .then(function(r){return r.json();}).then(function(d){
     if(btn){btn.disabled=false;btn.textContent='Book This Journey';}
     if(d.ok){
-      showToast('Booking confirmed \u2014 Ref: '+d.booking.ref);
+      var outRef=d.booking.ref;
+      var retTog=document.getElementById('qb-return-toggle');
+      var retDate=document.getElementById('qb-ret-date');
+      var retTime=document.getElementById('qb-ret-time');
+      var retFlight=document.getElementById('qb-ret-flight');
+      if(retTog&&retTog.checked&&retDate&&retDate.value){
+        // Book return leg: airport → home (swapped pickup/destination)
+        var retBody={pickup:dest,destination:from,
+          date:retDate.value,time:retTime&&retTime.value?retTime.value:'ASAP',
+          passengers:parseInt(pax)||1,bags:bags,
+          flight:retFlight?retFlight.value.trim():'',
+          fare:_qbRetFare||null,payment:payment,
+          notes:'Return journey (outbound: '+outRef+')'};
+        fetch('/api/bookings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(retBody)})
+        .then(function(r2){return r2.json();}).then(function(d2){
+          if(d2.ok){showToast('Booked \u2014 '+outRef+' + Return: '+d2.booking.ref);}
+          else{showToast('Outbound booked ('+outRef+') \u2014 return booking failed: '+(d2.error||'unknown'));}
+        }).catch(function(){showToast('Outbound booked ('+outRef+') \u2014 return booking failed');});
+      } else {
+        showToast('Booking confirmed \u2014 Ref: '+outRef);
+      }
       document.getElementById('qb-from').value='';
       document.getElementById('qb-dest').value='';
       if(document.getElementById('qb-flight'))document.getElementById('qb-flight').value='';
       if(document.getElementById('qb-notes'))document.getElementById('qb-notes').value='';
       document.getElementById('fare-reveal').classList.remove('show');
+      var rb=document.getElementById('qb-return-block');if(rb)rb.style.display='none';
+      var rTog=document.getElementById('qb-return-toggle');if(rTog)rTog.checked=false;
+      var rFields=document.getElementById('qb-return-fields');if(rFields)rFields.style.display='none';
+      _qbRetFare=null;_qbOutFare=null;
       selectQbPay('cash');
     } else {
       showToast(d.error||'Booking failed');
