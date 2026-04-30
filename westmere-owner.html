@@ -3502,7 +3502,7 @@ function invOpenNew(){
   document.getElementById('inv-rec-email').value='';
   document.getElementById('inv-rec-phone').value='';
   document.getElementById('inv-rec-address').value='';
-  document.getElementById('inv-notes').value='';
+  document.getElementById('ni-notes').value='';
   document.getElementById('ni-items').innerHTML='';
   var rt=document.getElementById('ni-running-total');if(rt)rt.textContent='£0.00';
   var sri=document.getElementById('inv-sr-input');if(sri)sri.value='';
@@ -3691,7 +3691,7 @@ function invBuildRequest(sendEmail){
     var email=document.getElementById('inv-rec-email').value.trim();
     var phone=document.getElementById('inv-rec-phone').value.trim();
     var address=document.getElementById('inv-rec-address').value.trim();
-    var notes=document.getElementById('inv-notes').value.trim();
+    var notes=document.getElementById('ni-notes').value.trim();
     var items=getBespokeItems();
     if(!name){err.textContent='Recipient name is required.';err.style.display='';return null;}
     if(!items.length){err.textContent='Add at least one line item with description and amount.';err.style.display='';return null;}
@@ -3961,7 +3961,6 @@ document.addEventListener('click',function(e){
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
 function initApp(){
-  document.getElementById('sd-date').value=new Date().toISOString().split('T')[0];
   setMode('drive');
   loadOwnerBookings();
   loadOwnerTesla();
