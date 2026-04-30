@@ -614,25 +614,31 @@ function migrate() {
 function seedDefaults() {
   const userCount = db.prepare('SELECT COUNT(*) as c FROM users').get().c;
   if (userCount === 0) {
-    const hash = bcrypt.hashSync('sussex', 12);
+    // Default admin password: read from env var, fall back to a local-dev default.
+    // In production set ADMIN_DEFAULT_PASSWORD as a Railway env var.
+    const adminPw = process.env.ADMIN_DEFAULT_PASSWORD || 'changeme-admin';
+    const hash = bcrypt.hashSync(adminPw, 12);
     db.prepare(`
       INSERT INTO users (username, password, role, full_name, email)
       VALUES (?, ?, ?, ?, ?)
     `).run('westmere', hash, 'admin', 'Westmere Admin', 'admin@westmereprivatehire.co.uk');
 
-    console.log('[DB] Default admin user created (westmere / sussex)');
+    console.log('[DB] Default admin user created (username: westmere)');
   }
 
   // Ensure owner login account exists (nikodem) — persists across fresh DB deploys
   try {
     const owner = db.prepare("SELECT id FROM users WHERE username = 'nikodem'").get();
     if (!owner) {
-      const hash = bcrypt.hashSync('Owner2026!', 10);
+      // Owner password: read from env var, fall back to a local-dev default.
+      // In production set OWNER_DEFAULT_PASSWORD as a Railway env var.
+      const ownerPw = process.env.OWNER_DEFAULT_PASSWORD || 'changeme-owner';
+      const hash = bcrypt.hashSync(ownerPw, 12);
       db.prepare(`
         INSERT INTO users (username, password, role, full_name, email, phone, active, has_login, vehicle, is_default_driver, max_passengers, max_bags)
         VALUES (?, ?, 'owner', 'Nikodem Krajnyk', 'nikodem.krajnyk@gmail.com', '07930342593', 1, 1, 'Tesla Model S', 1, 4, 4)
       `).run('nikodem', hash);
-      console.log('[DB] Owner account seeded (nikodem / Owner2026!)');
+      console.log('[DB] Owner account seeded (username: nikodem)');
     }
   } catch (e) {
     console.error('[DB] owner seed failed:', e.message);

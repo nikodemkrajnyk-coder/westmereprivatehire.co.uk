@@ -54,7 +54,7 @@ app.use(helmet({
 }));
 
 app.use(cookieParser());
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json({ limit: '2mb' }));
 
 // Rate limiting on auth endpoints
 const authLimiter = rateLimit({
@@ -239,7 +239,6 @@ app.listen(PORT, () => {
 ║  Westmere Private Hire — Backend Server       ║
 ║  http://localhost:${PORT}                        ║
 ║                                               ║
-║  Admin login: westmere / sussex               ║
 ║  Database: data/westmere.db                   ║
 ║                                               ║
 ║  Stripe:   ${pad(stripeOk() ? 'ACTIVE' : 'NOT CONFIGURED')}               ║
