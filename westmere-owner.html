@@ -540,7 +540,6 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
         <button class="mode-btn on" id="mode-drive" onclick="setMode('drive')">Drive</button>
         <button class="mode-btn" id="mode-admin" onclick="setMode('admin')">Admin</button>
       </div>
-      <span title="Open on desktop: westmereprivatehire.co.uk/westmere-admin.html" style="border:1px solid rgba(17,29,44,.1);height:34px;border-radius:17px;display:flex;align-items:center;justify-content:center;color:rgba(17,29,44,.3);font-family:var(--sans);font-size:.62rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:0 .8rem;white-space:nowrap">Admin ↗</span>
       <button onclick="openSettings()" title="Settings" style="background:transparent;border:1px solid rgba(17,29,44,.1);width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(17,29,44,.55)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
@@ -610,13 +609,6 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
         <div id="sett-tesla-body"><div style="font-size:.78rem;color:rgba(17,29,44,.4)">Loading…</div></div>
       </div>
 
-      <a href="/westmere-admin.html" target="_blank" style="display:flex;align-items:center;justify-content:space-between;background:var(--navy);border-radius:12px;padding:1.1rem 1.2rem;margin-top:1rem;text-decoration:none;gap:.75rem">
-        <div>
-          <div style="font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:.25rem">Desktop</div>
-          <div style="font-family:var(--serif);font-size:1.1rem;color:#fff;font-weight:300;letter-spacing:.04em">Admin Panel</div>
-        </div>
-        <span style="font-size:1.4rem;color:var(--gold);line-height:1">&rsaquo;</span>
-      </a>
     </div>
   </div>
 
@@ -797,6 +789,61 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
       </div>
     </div>
 
+    <!-- Invoices -->
+    <div class="pg" id="pg-invoices">
+      <div class="sec-title"><em>Invoices</em></div>
+      <div class="sec-sub">Create &amp; send bespoke invoices</div>
+
+      <!-- New invoice form -->
+      <div class="card" style="margin-top:.9rem">
+        <div class="ch">New Invoice</div>
+        <div class="cb" style="padding:.85rem 1rem">
+          <!-- Recipient -->
+          <div style="margin-bottom:.6rem">
+            <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.22rem">Recipient Name *</div>
+            <input id="inv-recip-name" type="text" placeholder="e.g. John Smith" autocomplete="off"
+              style="width:100%;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);background:#fff;font-family:var(--sans);font-size:.9rem;color:var(--navy);border-radius:6px;box-sizing:border-box"
+              oninput="invRecipSearch(this.value)">
+            <div id="inv-recip-suggestions" style="display:none;border:1px solid rgba(17,29,44,.12);border-top:none;border-radius:0 0 6px 6px;background:#fff;max-height:140px;overflow-y:auto"></div>
+          </div>
+          <div style="margin-bottom:.8rem">
+            <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.22rem">Recipient Email *</div>
+            <input id="inv-recip-email" type="email" placeholder="customer@email.com"
+              style="width:100%;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);background:#fff;font-family:var(--sans);font-size:.9rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
+          </div>
+
+          <!-- Line items -->
+          <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.4rem">Line Items</div>
+          <div id="inv-items"></div>
+          <button onclick="invAddItem()" style="width:100%;padding:.5rem;margin-bottom:.8rem;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;background:rgba(17,29,44,.04);border:1px dashed rgba(17,29,44,.2);color:rgba(17,29,44,.5);font-family:var(--sans);cursor:pointer;border-radius:6px">+ Add Line Item</button>
+
+          <!-- Notes -->
+          <div style="margin-bottom:.8rem">
+            <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.22rem">Notes (optional)</div>
+            <textarea id="inv-notes" rows="2" placeholder="Any additional notes…"
+              style="width:100%;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);background:#fff;font-family:var(--sans);font-size:.85rem;color:var(--navy);border-radius:6px;resize:vertical;box-sizing:border-box"></textarea>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem">
+            <span style="font-size:.78rem;color:rgba(17,29,44,.5)">Total: <strong id="inv-total-display" style="color:var(--navy)">£0.00</strong></span>
+            <label style="font-size:.78rem;color:rgba(17,29,44,.6);display:flex;align-items:center;gap:.35rem;cursor:pointer">
+              <input type="checkbox" id="inv-send-email" checked style="width:16px;height:16px"> Send email
+            </label>
+          </div>
+
+          <div id="inv-err" style="font-size:.78rem;color:var(--red);min-height:1em;margin-bottom:.4rem"></div>
+          <button onclick="invSubmit()" style="width:100%;padding:.75rem;background:var(--gold);color:var(--navy);border:none;font-family:var(--sans);font-size:.75rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;border-radius:6px">Send Invoice</button>
+          <div id="inv-success" style="display:none;margin-top:.7rem;padding:.7rem;background:rgba(45,110,71,.08);border:1px solid rgba(45,110,71,.2);border-radius:6px;font-size:.82rem;color:var(--green);text-align:center"></div>
+        </div>
+      </div>
+
+      <!-- Recent invoices -->
+      <div class="card" style="margin-top:.85rem">
+        <div class="ch">Recent Invoices</div>
+        <div id="inv-recent-list" style="font-size:.78rem;color:rgba(17,29,44,.4);padding:1rem;text-align:center">Loading…</div>
+      </div>
+    </div>
+
   </div><!-- /page-scroll -->
 
   <!-- BOTTOM NAV -->
@@ -805,8 +852,9 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
     <button class="bn" id="bn-offered" onclick="goPage('offered',this)"><div class="bn-bar"></div><div class="bn-label">Upcoming</div><div class="bn-dot" id="offered-dot"></div></button>
     <button class="bn" id="bn-tesla" onclick="goPage('tesla',this)"><div class="bn-bar"></div><div class="bn-label">Tesla</div></button>
     <button class="bn" id="bn-calendar" onclick="goPage('calendar',this)"><div class="bn-bar"></div><div class="bn-label">Calendar</div></button>
-    <button class="bn" id="bn-drivers" onclick="goPage('drivers',this)"><div class="bn-bar"></div><div class="bn-label">Drivers</div><div class="bn-dot" id="drivers-dot" style="display:none"></div></button>
+    <button class="bn" id="bn-drivers" onclick="goPage('drivers',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Drivers</div><div class="bn-dot" id="drivers-dot" style="display:none"></div></button>
     <button class="bn" id="bn-decisions" onclick="goPage('decisions',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Decisions</div><div class="bn-dot" id="decisions-dot" style="display:none"></div></button>
+    <button class="bn" id="bn-invoices" onclick="goPage('invoices',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Invoices</div></button>
     <button class="bn" id="bn-earnings" onclick="goPage('earnings',this)"><div class="bn-bar"></div><div class="bn-label">Earnings</div></button>
   </div>
 
@@ -1037,7 +1085,7 @@ function setMode(mode){
   document.getElementById('mode-admin').classList.toggle('on', mode==='admin');
   document.getElementById('tb-mode-label').textContent = mode==='drive' ? 'Drive Mode' : 'Admin Mode';
   var driveItems = ['bn-today','bn-offered','bn-tesla'];
-  var adminItems = ['bn-decisions'];
+  var adminItems = ['bn-decisions','bn-drivers','bn-invoices'];
   driveItems.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=mode==='drive'?'':'none';});
   adminItems.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=mode==='admin'?'':'none';});
   var fab=document.getElementById('assist-fab');
@@ -1061,6 +1109,7 @@ function goPage(id,btn){
   if(id==='earnings')buildEarnings();
   if(id==='decisions')loadDecisions();
   if(id==='drivers')loadDriversList();
+  if(id==='invoices')invLoad();
   if(id==='smart'){var d=new Date();document.getElementById('sd-date').value=d.toISOString().split('T')[0];}
 }
 
@@ -3328,6 +3377,137 @@ async function loadOwnerBookings(){
 
   }catch(e){console.error('[OWNER] Failed to load bookings:',e);_setConnDot(false);}
 }
+
+// ── INVOICES ──────────────────────────────────────────────────────────────────
+var INV_RECIPIENTS = [];
+var INV_ITEM_COUNT = 0;
+
+function invLoad(){
+  invAddItem(); // start with one row
+  invLoadRecipients();
+  invLoadRecent();
+}
+
+async function invLoadRecipients(){
+  try{
+    var r=await fetch('/api/invoice-recipients',{credentials:'include'});
+    var d=await r.json();
+    if(d.ok)INV_RECIPIENTS=d.recipients||[];
+  }catch(e){}
+}
+
+function invRecipSearch(val){
+  var box=document.getElementById('inv-recip-suggestions');
+  if(!val||val.length<2){box.style.display='none';return;}
+  var q=val.toLowerCase();
+  var matches=INV_RECIPIENTS.filter(function(r){return (r.name||'').toLowerCase().includes(q)||(r.email||'').toLowerCase().includes(q);}).slice(0,6);
+  if(!matches.length){box.style.display='none';return;}
+  box.innerHTML=matches.map(function(r){
+    return '<div style="padding:.5rem .7rem;font-size:.82rem;cursor:pointer;border-bottom:1px solid rgba(17,29,44,.05)" onclick="invSelectRecip(\''+owEsc(r.name)+'\',\''+owEsc(r.email||'')+'\')">'+owEsc(r.name)+(r.email?'<br><span style=\"font-size:.7rem;color:rgba(17,29,44,.45)\">'+owEsc(r.email)+'</span>':'')+'</div>';
+  }).join('');
+  box.style.display='';
+}
+
+function invSelectRecip(name,email){
+  document.getElementById('inv-recip-name').value=name;
+  document.getElementById('inv-recip-email').value=email;
+  document.getElementById('inv-recip-suggestions').style.display='none';
+}
+
+function invAddItem(){
+  INV_ITEM_COUNT++;
+  var id=INV_ITEM_COUNT;
+  var container=document.getElementById('inv-items');
+  var row=document.createElement('div');
+  row.id='inv-item-'+id;
+  row.style.cssText='background:rgba(17,29,44,.03);border:1px solid rgba(17,29,44,.08);border-radius:6px;padding:.6rem .7rem;margin-bottom:.5rem;position:relative';
+  row.innerHTML='<div style="display:flex;gap:.4rem;margin-bottom:.4rem">'
+    +'<div style="flex:1"><div style="font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.18rem">Date</div>'
+    +'<input type="date" class="inv-item-date" style="width:100%;padding:.42rem .5rem;border:1px solid rgba(17,29,44,.15);background:#fff;font-family:var(--sans);font-size:.82rem;color:var(--navy);border-radius:5px;box-sizing:border-box"></div>'
+    +'<div style="width:72px"><div style="font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.18rem">Amount £</div>'
+    +'<input type="number" min="0" step="0.01" class="inv-item-amt" placeholder="0.00" style="width:100%;padding:.42rem .5rem;border:1px solid rgba(17,29,44,.15);background:#fff;font-family:var(--sans);font-size:.82rem;color:var(--navy);border-radius:5px;box-sizing:border-box" oninput="invUpdateTotal()"></div>'
+    +'</div>'
+    +'<div><div style="font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.18rem">Description *</div>'
+    +'<div style="display:flex;gap:.4rem;align-items:center">'
+    +'<input type="text" class="inv-item-desc" placeholder="e.g. Horsham to Gatwick" style="flex:1;padding:.42rem .5rem;border:1px solid rgba(17,29,44,.15);background:#fff;font-family:var(--sans);font-size:.82rem;color:var(--navy);border-radius:5px;box-sizing:border-box">'
+    +(id>1?'<button onclick="invRemoveItem('+id+')" style="padding:.3rem .5rem;font-size:.75rem;background:rgba(180,30,30,.08);border:1px solid rgba(180,30,30,.2);color:var(--red);cursor:pointer;border-radius:4px;flex-shrink:0">✕</button>':'')
+    +'</div></div>';
+  container.appendChild(row);
+}
+
+function invRemoveItem(id){
+  var el=document.getElementById('inv-item-'+id);
+  if(el)el.remove();
+  invUpdateTotal();
+}
+
+function invUpdateTotal(){
+  var total=0;
+  document.querySelectorAll('.inv-item-amt').forEach(function(i){total+=parseFloat(i.value)||0;});
+  document.getElementById('inv-total-display').textContent='£'+total.toFixed(2);
+}
+
+async function invSubmit(){
+  var errEl=document.getElementById('inv-err');
+  var sucEl=document.getElementById('inv-success');
+  errEl.textContent='';sucEl.style.display='none';
+  var name=(document.getElementById('inv-recip-name').value||'').trim();
+  var email=(document.getElementById('inv-recip-email').value||'').trim();
+  if(!name){errEl.textContent='Recipient name is required';return;}
+  if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){errEl.textContent='Valid email is required';return;}
+  var items=[];
+  document.getElementById('inv-items').querySelectorAll('[id^=inv-item-]').forEach(function(row){
+    var desc=(row.querySelector('.inv-item-desc').value||'').trim();
+    var amt=parseFloat(row.querySelector('.inv-item-amt').value)||0;
+    var date=row.querySelector('.inv-item-date').value||null;
+    if(desc&&amt>0)items.push({description:desc,amount:amt,date:date||null});
+  });
+  if(!items.length){errEl.textContent='Add at least one line item with description and amount';return;}
+  var notes=(document.getElementById('inv-notes').value||'').trim();
+  var sendEmail=document.getElementById('inv-send-email').checked;
+  try{
+    var r=await fetch('/api/invoices/bespoke',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({recipient:{name,email},items,notes:notes||undefined,send_email:sendEmail})});
+    var d=await r.json();
+    if(!r.ok||!d.ok){errEl.textContent=d.error||'Failed to send invoice';return;}
+    sucEl.textContent=(sendEmail?'Invoice '+d.invoiceNo+' sent to '+email:'Invoice '+d.invoiceNo+' created — £'+Number(d.total).toFixed(2));
+    sucEl.style.display='';
+    // Reset form
+    document.getElementById('inv-recip-name').value='';
+    document.getElementById('inv-recip-email').value='';
+    document.getElementById('inv-notes').value='';
+    document.getElementById('inv-items').innerHTML='';
+    INV_ITEM_COUNT=0;
+    invAddItem();
+    invUpdateTotal();
+    invLoadRecent();
+  }catch(e){errEl.textContent='Network error';}
+}
+
+async function invLoadRecent(){
+  var el=document.getElementById('inv-recent-list');
+  try{
+    var r=await fetch('/api/invoices',{credentials:'include'});
+    var d=await r.json();
+    var list=d.invoices||[];
+    if(!list.length){el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">No invoices yet</div>';return;}
+    el.innerHTML=list.slice(0,20).map(function(inv){
+      var total=typeof inv.total==='number'?'£'+inv.total.toFixed(2):'—';
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:.7rem 1rem;border-bottom:1px solid rgba(17,29,44,.05)">'
+        +'<div><div style="font-size:.82rem;font-weight:500;color:var(--navy)">'+owEsc(inv.invoice_no||'')+'</div>'
+        +'<div style="font-size:.68rem;color:rgba(17,29,44,.45);margin-top:.1rem">'+owEsc(inv.recipient_name||'')+(inv.issued_date?' · '+inv.issued_date:'')+'</div></div>'
+        +'<div style="display:flex;align-items:center;gap:.5rem">'
+        +'<span style="font-family:var(--serif);font-size:.95rem;color:var(--gold)">'+total+'</span>'
+        +'<a href="/api/public/invoice/'+owEsc(inv.invoice_no)+'/pdf" target="_blank" style="font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;padding:.25rem .5rem;border:1px solid rgba(17,29,44,.15);color:rgba(17,29,44,.5);text-decoration:none;border-radius:4px;font-family:var(--sans)">PDF</a>'
+        +'</div></div>';
+    }).join('');
+  }catch(e){el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:var(--red)">Failed to load</div>';}
+}
+
+// Close recipient suggestions on outside click
+document.addEventListener('click',function(e){
+  var sug=document.getElementById('inv-recip-suggestions');
+  if(sug&&!sug.contains(e.target)&&e.target!==document.getElementById('inv-recip-name'))sug.style.display='none';
+});
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
 function initApp(){
