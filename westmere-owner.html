@@ -1060,9 +1060,9 @@ async function changeOwnerPassword(){
   var cf=document.getElementById('cp-confirm').value.trim();
   if(!cur||!nw||!cf){showToast('Please fill in all password fields');return;}
   if(nw!==cf){showToast('New passwords do not match');return;}
-  if(nw.length<6){showToast('New password must be at least 6 characters');return;}
+  if(nw.length<8){showToast('New password must be at least 8 characters');return;}
   try{
-    var r=await fetch('/api/auth/change-password',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({currentPassword:cur,newPassword:nw})});
+    var r=await fetch('/api/auth/change-password',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({current_password:cur,new_password:nw})});
     var d=await r.json();
     if(d.ok){showToast('Password updated');document.getElementById('cp-current').value='';document.getElementById('cp-new').value='';document.getElementById('cp-confirm').value='';}
     else showToast(d.error||'Failed to update password');
