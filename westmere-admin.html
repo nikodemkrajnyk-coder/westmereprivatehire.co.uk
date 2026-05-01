@@ -852,6 +852,15 @@ if ('serviceWorker' in navigator) {
           </div>
         </div>
         <div class="card">
+          <div class="ch"><div class="ct">Change Password</div></div>
+          <div class="cb">
+            <div class="fg"><label class="fl">Current Password</label><input type="password" class="fi" id="cp-current" placeholder="Current password"></div>
+            <div class="fg"><label class="fl">New Password</label><input type="password" class="fi" id="cp-new" placeholder="New password"></div>
+            <div class="fg"><label class="fl">Confirm New Password</label><input type="password" class="fi" id="cp-confirm" placeholder="Confirm new password"></div>
+            <button class="btn btn-navy btn-full" style="margin-top:.5rem" onclick="changeAdminPassword()">Update Password</button>
+          </div>
+        </div>
+        <div class="card">
           <div class="ch"><div class="ct">Integrations</div></div>
           <div class="cb">
             <div class="setting-row"><div><div class="sr-title">Google Calendar</div><div class="sr-sub">Two-way sync with your calendar</div></div><button class="btn btn-green btn-sm" id="gcal-connect-btn" onclick="connectGoogleCalendar()">Connect</button></div>
@@ -3561,6 +3570,21 @@ function saveInvoiceSettings(){
     .then(function(r){return r.json();})
     .then(function(d){if(d.ok)showToast('Invoice settings saved');else showToast(d.error||'Failed to save');})
     .catch(function(){showToast('Network error saving settings');});
+}
+
+async function changeAdminPassword(){
+  var cur=document.getElementById('cp-current').value.trim();
+  var nw=document.getElementById('cp-new').value.trim();
+  var cf=document.getElementById('cp-confirm').value.trim();
+  if(!cur||!nw||!cf){showToast('Please fill in all password fields');return;}
+  if(nw!==cf){showToast('New passwords do not match');return;}
+  if(nw.length<6){showToast('New password must be at least 6 characters');return;}
+  try{
+    var r=await fetch('/api/auth/change-password',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({currentPassword:cur,newPassword:nw})});
+    var d=await r.json();
+    if(d.ok){showToast('Password updated');document.getElementById('cp-current').value='';document.getElementById('cp-new').value='';document.getElementById('cp-confirm').value='';}
+    else showToast(d.error||'Failed to update password');
+  }catch(e){showToast('Network error');}
 }
 
 function adminPurgeTestData(){
