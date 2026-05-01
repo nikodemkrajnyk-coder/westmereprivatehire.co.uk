@@ -468,6 +468,7 @@ body.mode-day #stripe-card-el.StripeElement--focus{border-bottom-color:#7A6230}
       <button class="ls-btn" onclick="doLogin()">Sign In</button>
       <div class="ls-err" id="login-err"></div>
       <div style="text-align:center;margin-top:.4rem;font-size:.7rem;color:rgba(17,29,44,.35)" id="login-att"></div>
+      <div style="text-align:center;margin-top:.5rem"><button onclick="swFrm('forgot')" style="background:none;border:none;cursor:pointer;font-family:var(--sans);font-size:.75rem;color:rgba(17,29,44,.4);text-decoration:underline;padding:0">Forgot password?</button></div>
       <div class="ls-switch">No account? <button onclick="swFrm('register')">Create one here</button></div>
     </div>
     <div id="frm-register" class="ls-body" style="display:none">
@@ -499,6 +500,27 @@ body.mode-day #stripe-card-el.StripeElement--focus{border-bottom-color:#7A6230}
       <p style="text-align:center;font-size:.9rem;color:rgba(255,255,255,.8);line-height:1.7;margin:0 0 1rem">We've sent a verification link to <strong id="verify-email-hint" style="color:#fff"></strong>.<br>Click the link in your email to activate your account.</p>
       <p style="text-align:center;font-size:.72rem;color:rgba(255,255,255,.35);line-height:1.6">Didn't receive it? Check your spam folder.</p>
       <div class="ls-switch" style="margin-top:1rem">Already verified? <button onclick="swFrm('login')">Sign in</button></div>
+    </div>
+    <div id="frm-forgot" class="ls-body" style="display:none">
+      <div class="ls-fg">
+        <label class="ls-label">Email Address</label>
+        <input class="ls-input" type="email" id="fp-email" placeholder="your@email.com" autocomplete="email">
+      </div>
+      <button class="ls-btn" onclick="doForgot()">Send Reset Link</button>
+      <div class="ls-err" id="fp-msg" style="display:block;background:none;border:none;color:rgba(17,29,44,.5);font-size:.75rem;text-align:center;margin-top:.5rem;padding:0"></div>
+      <div class="ls-switch">Remember it? <button onclick="swFrm('login')">Sign in</button></div>
+    </div>
+    <div id="frm-reset" class="ls-body" style="display:none">
+      <div class="ls-fg">
+        <label class="ls-label">New Password</label>
+        <input class="ls-input" type="password" id="rp-pass" placeholder="At least 8 characters" autocomplete="new-password">
+      </div>
+      <div class="ls-fg">
+        <label class="ls-label">Confirm Password</label>
+        <input class="ls-input" type="password" id="rp-pass2" placeholder="Repeat your new password" autocomplete="new-password">
+      </div>
+      <button class="ls-btn" onclick="doReset()">Set New Password</button>
+      <div class="ls-err" id="rp-err"></div>
     </div>
     <div class="ls-foot">
       <a href="index.html">Back to site</a>
@@ -816,7 +838,17 @@ async function doRegister(){
   try{
     var r=await fetch('/api/auth/customer/register',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:pass,full_name:name,phone:phone})});
     var data=await r.json();
-    if(!r.ok){errEl.textContent=data.error||'Registration failed.';errEl.classList.add('show');return;}
+    if(!r.ok){
+      if(data.error&&data.error.includes('already exists')){
+        var fp=document.getElementById('fp-email');if(fp)fp.value=email;
+        var li=document.getElementById('l-email');if(li)li.value=email;
+        errEl.innerHTML='An account with this email already exists.<div style="display:flex;gap:.5rem;margin-top:.6rem"><button onclick="swFrm(\'login\')" style="flex:1;padding:.5rem;background:var(--gold);color:var(--navy);border:none;font-family:var(--sans);font-size:.72rem;cursor:pointer">Sign in</button><button onclick="swFrm(\'forgot\')" style="flex:1;padding:.5rem;background:transparent;border:1px solid rgba(17,29,44,.25);color:rgba(17,29,44,.7);border-radius:0;font-family:var(--sans);font-size:.72rem;cursor:pointer">Forgot password?</button></div>';
+        errEl.classList.add('show');
+      } else {
+        errEl.textContent=data.error||'Registration failed.';errEl.classList.add('show');
+      }
+      return;
+    }
     // Show "check your email" — account needs verification before login
     var hint=document.getElementById('verify-email-hint');
     if(hint)hint.textContent=email;
@@ -835,16 +867,44 @@ function toggleRPass(){
   if(btn)btn.textContent=show?'Hide':'Show';
 }
 function swFrm(f){
-  ['frm-login','frm-register','frm-verify'].forEach(function(id){
+  ['frm-login','frm-register','frm-verify','frm-forgot','frm-reset'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.style.display='none';
   });
   var show=document.getElementById('frm-'+f);if(show)show.style.display='block';
-  var errEl=document.getElementById('reg-err');if(errEl){errEl.textContent='';errEl.classList.remove('show');}
+  var errEl=document.getElementById('reg-err');if(errEl){errEl.textContent='';errEl.innerHTML='';errEl.classList.remove('show');}
 }
 function showLogin(){
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('scr-app').classList.remove('on');
 }
+async function doForgot(){
+  var email=(document.getElementById('fp-email').value||'').trim();
+  var msg=document.getElementById('fp-msg');
+  if(!email){if(msg){msg.textContent='Please enter your email';msg.style.color='var(--red)';}return;}
+  if(msg){msg.textContent='';msg.style.color='';}
+  try{
+    await fetch('/api/auth/customer/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})});
+    if(msg){msg.textContent='If that email is registered you\'ll receive a reset link shortly. Check your inbox.';msg.style.color='rgba(17,29,44,.55)';}
+  }catch(e){if(msg){msg.textContent='Connection error. Please try again.';msg.style.color='var(--red)';}}
+}
+var _resetToken=null;
+async function doReset(){
+  var pass=(document.getElementById('rp-pass').value||'').trim();
+  var pass2=(document.getElementById('rp-pass2').value||'').trim();
+  var errEl=document.getElementById('rp-err');
+  if(!pass||!pass2){if(errEl){errEl.textContent='Please fill in both fields';errEl.classList.add('show');}return;}
+  if(pass.length<8){if(errEl){errEl.textContent='Password must be at least 8 characters';errEl.classList.add('show');}return;}
+  if(pass!==pass2){if(errEl){errEl.textContent='Passwords do not match';errEl.classList.add('show');}return;}
+  if(!_resetToken){if(errEl){errEl.textContent='Invalid reset link';errEl.classList.add('show');}return;}
+  if(errEl){errEl.textContent='';errEl.classList.remove('show');}
+  try{
+    var res=await fetch('/api/auth/customer/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:_resetToken,password:pass})});
+    var data=await res.json();
+    if(data.ok){_resetToken=null;swFrm('login');var le=document.getElementById('login-err');if(le){le.textContent='Password updated — please sign in';le.style.color='rgba(17,29,44,.55)';le.classList.add('show');}}
+    else if(errEl){errEl.textContent=data.error||'Reset failed';errEl.classList.add('show');}
+  }catch(e){if(errEl){errEl.textContent='Connection error. Please try again.';errEl.classList.add('show');}}
+}
+(function(){var p=new URLSearchParams(window.location.search);var rt=p.get('reset_token');if(rt){_resetToken=rt;if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',function(){swFrm('reset');});}else{swFrm('reset');}}})();
 document.addEventListener('keydown',function(e){
   if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none'){
     var reg=document.getElementById('frm-register');

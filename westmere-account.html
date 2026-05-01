@@ -1124,9 +1124,11 @@ async function doLoginReg(){
       if(hint)hint.textContent=email;
       swFrm('verify');
     } else if(data.error&&data.error.includes('already exists')){
+      var fp=document.getElementById('fp-email');if(fp)fp.value=email;
       var li=document.getElementById('l-email');if(li)li.value=email;
-      swFrm('login');
-      showToast('Account exists \u2014 please sign in');
+      var errEl=document.getElementById('reg-err');
+      if(errEl){errEl.innerHTML='An account with this email already exists.<div style="display:flex;gap:.5rem;margin-top:.6rem"><button onclick="swFrm(\'login\')" style="flex:1;padding:.5rem;background:var(--navy);color:#fff;border:none;border-radius:6px;font-family:var(--sans);font-size:.72rem;cursor:pointer">Sign in</button><button onclick="swFrm(\'forgot\')" style="flex:1;padding:.5rem;background:transparent;border:1px solid rgba(17,29,44,.25);color:rgba(17,29,44,.7);border-radius:6px;font-family:var(--sans);font-size:.72rem;cursor:pointer">Forgot password?</button></div>';}
+      else showToast('Account exists \u2014 please sign in');
     } else {
       var errEl=document.getElementById('reg-err');
       if(errEl)errEl.textContent=data.error||'Registration failed.';
@@ -1272,8 +1274,7 @@ function swFrm(f){
     var el=document.getElementById(id);if(el)el.style.display='none';
   });
   var show=document.getElementById('frm-'+f);if(show)show.style.display='block';
-  // Clear errors on switch
-  var errEl=document.getElementById('reg-err');if(errEl)errEl.textContent='';
+  var errEl=document.getElementById('reg-err');if(errEl){errEl.textContent='';errEl.innerHTML='';}
 }
 function selType(el){document.querySelectorAll('.type-opt').forEach(function(o){o.classList.remove('on')});el.classList.add('on');}
 function sv(id,btn){
