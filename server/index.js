@@ -5,7 +5,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 
-const { getDb } = require('./db');
+const { getDb, DATA_DIR } = require('./db');
 const { router: authRouter, JWT_SECRET } = require('./auth');
 const apiRouter = require('./api');
 const publicApiRouter = require('./public-api');
@@ -202,6 +202,35 @@ app.get('/rider-sw.js', (req, res) => {
 
 // ── Health check (Railway uses this) ─────────────────────────────────────
 app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
+
+// ── DB path diagnostic (admin/owner only) ────────────────────────────────
+app.get('/api/debug/db-path', requireAuth, (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth && req.auth.role)) {
+    return res.status(403).json({ error: 'Admin only' });
+  }
+  const fs = require('fs');
+  const dbFile = require('path').join(DATA_DIR, 'westmere.db');
+  const dataDir = DATA_DIR;
+  let fileExists = false, fileSizeBytes = null, dirExists = false, dirWritable = false;
+  try { dirExists = fs.existsSync(dataDir); } catch (_) {}
+  try {
+    const probe = require('path').join(dataDir, '.probe');
+    fs.writeFileSync(probe, ''); fs.unlinkSync(probe);
+    dirWritable = true;
+  } catch (_) {}
+  try { fileExists = fs.existsSync(dbFile); } catch (_) {}
+  try { if (fileExists) fileSizeBytes = fs.statSync(dbFile).size; } catch (_) {}
+  res.json({
+    SQLITE_DB_env: process.env.SQLITE_DB || null,
+    resolved_db_path: dbFile,
+    data_dir: dataDir,
+    dir_exists: dirExists,
+    dir_writable: dirWritable,
+    file_exists: fileExists,
+    file_size_bytes: fileSizeBytes,
+    node_env: process.env.NODE_ENV || null,
+  });
+});
 
 // ── Redirect legacy account page to rider app ───────────────────────────
 app.get('/westmere-account.html', (req, res) => res.redirect(301, '/westmere-rider.html'));
