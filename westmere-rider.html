@@ -65,10 +65,10 @@ nav#nav{display:none}
 .tb-date{font-family:var(--serif);font-size:.85rem;color:rgba(17,29,44,.5);font-weight:300;letter-spacing:.04em;font-style:italic}
 
 /* ── BOTTOM NAV ── */
-.bottom-nav{background:rgba(255,255,255,.92);backdrop-filter:blur(24px);border-top:1px solid rgba(17,29,44,.06);box-shadow:0 -1px 8px rgba(17,29,44,.04);display:flex;padding-bottom:env(safe-area-inset-bottom,0px);flex-shrink:0;z-index:50;padding-top:2px}
-.bn-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:.15rem;padding:.4rem .4rem;background:none;border:none;cursor:pointer;transition:color .2s;color:rgba(17,29,44,.4);font-family:var(--sans);min-height:40px;position:relative}
+.bottom-nav{background:rgba(255,255,255,.92);backdrop-filter:blur(24px);border-top:1px solid rgba(17,29,44,.06);box-shadow:0 -1px 8px rgba(17,29,44,.04);display:flex;padding-bottom:env(safe-area-inset-bottom,0px);flex-shrink:0;z-index:50;padding-top:0}
+.bn-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:.1rem;padding:6px .4rem;background:none;border:none;cursor:pointer;transition:color .2s;color:rgba(17,29,44,.4);font-family:var(--sans);min-height:0;position:relative}
 .bn-item.on{color:var(--gold)}
-.bn-label{font-family:var(--serif);font-size:.82rem;font-weight:400;letter-spacing:.12em;text-transform:uppercase;font-style:italic}
+.bn-label{font-family:var(--serif);font-size:11px;font-weight:400;letter-spacing:.12em;text-transform:uppercase;font-style:italic}
 .bn-bar{width:20px;height:1px;background:currentColor;opacity:0;transition:opacity .2s;margin-bottom:.1rem}
 .bn-item.on .bn-bar{opacity:1}
 .bn-badge{position:absolute;top:.42rem;right:calc(50% - 16px);background:var(--red);color:#fff;font-size:.48rem;font-weight:700;min-width:14px;height:14px;border-radius:7px;padding:0 3px;display:none;align-items:center;justify-content:center}
@@ -966,16 +966,16 @@ function showToast(msg,type){
 
 /* Fixed fare tables (matching main website) */
 var CF={
-  brighton:{ga:{out:72,ret:68},he:{out:128,ret:133},st:{out:215,ret:220},lu:{out:168,ret:173},so:{out:92,ret:88},ci:{out:185,ret:190},lo:{out:155,ret:160}},
-  lewes:{ga:{out:78,ret:74},he:{out:140,ret:145},st:{out:225,ret:230},lu:{out:180,ret:185},so:{out:105,ret:100},ci:{out:195,ret:200},lo:{out:168,ret:173}},
-  horsham:{ga:{out:55,ret:50},he:{out:120,ret:125},st:{out:205,ret:210},lu:{out:160,ret:165},so:{out:85,ret:80},ci:{out:175,ret:180},lo:{out:142,ret:147}},
+  brighton:{ga:{out:72,ret:68},he:{out:128,ret:133},st:{out:215,ret:220},lu:{out:205,ret:210},so:{out:152,ret:147},ci:{out:166,ret:171},lo:{out:155,ret:160}},
+  lewes:{ga:{out:78,ret:74},he:{out:140,ret:145},st:{out:225,ret:230},lu:{out:215,ret:220},so:{out:160,ret:155},ci:{out:175,ret:180},lo:{out:168,ret:173}},
+  horsham:{ga:{out:55,ret:50},he:{out:120,ret:125},st:{out:180,ret:185},lu:{out:155,ret:160},so:{out:135,ret:130},ci:{out:160,ret:165},lo:{out:142,ret:147}},
   crawley:{ga:{out:35,ret:32},he:{out:95,ret:100},st:{out:190,ret:195},lu:{out:145,ret:150},so:{out:78,ret:75},ci:{out:160,ret:165},lo:{out:128,ret:133}},
-  worthing:{ga:{out:82,ret:78},he:{out:138,ret:143},st:{out:228,ret:233},lu:{out:178,ret:183},so:{out:75,ret:72},ci:{out:198,ret:203},lo:{out:165,ret:170}},
+  worthing:{ga:{out:72,ret:68},he:{out:130,ret:135},st:{out:228,ret:233},lu:{out:178,ret:183},so:{out:75,ret:72},ci:{out:198,ret:203},lo:{out:165,ret:170}},
   haywards:{ga:{out:52,ret:48},he:{out:115,ret:120},st:{out:200,ret:205},lu:{out:155,ret:160},so:{out:95,ret:90},ci:{out:172,ret:177},lo:{out:140,ret:145}},
-  burgess:{ga:{out:55,ret:50},he:{out:118,ret:123},st:{out:202,ret:207},lu:{out:158,ret:163},so:{out:92,ret:88},ci:{out:175,ret:180},lo:{out:143,ret:148}},
-  seaford:{ga:{out:85,ret:80},he:{out:148,ret:153},st:{out:235,ret:240},lu:{out:188,ret:193},so:{out:112,ret:108},ci:{out:205,ret:210},lo:{out:175,ret:180}},
-  eastbourne:{ga:{out:95,ret:90},he:{out:158,ret:163},st:{out:245,ret:250},lu:{out:198,ret:203},so:{out:122,ret:118},ci:{out:215,ret:220},lo:{out:185,ret:190}},
-  uckfield:{ga:{out:60,ret:55},he:{out:125,ret:130},st:{out:208,ret:213},lu:{out:162,ret:167},so:{out:98,ret:94},ci:{out:178,ret:183},lo:{out:148,ret:153}},
+  burgess:{ga:{out:48,ret:44},he:{out:118,ret:123},st:{out:202,ret:207},lu:{out:158,ret:163},so:{out:92,ret:88},ci:{out:175,ret:180},lo:{out:143,ret:148}},
+  seaford:{ga:{out:92,ret:88},he:{out:148,ret:153},st:{out:235,ret:240},lu:{out:188,ret:193},so:{out:112,ret:108},ci:{out:205,ret:210},lo:{out:175,ret:180}},
+  eastbourne:{ga:{out:98,ret:94},he:{out:162,ret:167},st:{out:245,ret:250},lu:{out:198,ret:203},so:{out:122,ret:118},ci:{out:215,ret:220},lo:{out:185,ret:190}},
+  uckfield:{ga:{out:62,ret:58},he:{out:125,ret:130},st:{out:208,ret:213},lu:{out:162,ret:167},so:{out:98,ret:94},ci:{out:178,ret:183},lo:{out:148,ret:153}},
   eastgrinstead:{ga:{out:42,ret:38},he:{out:105,ret:110},st:{out:192,ret:197},lu:{out:148,ret:153},so:{out:88,ret:84},ci:{out:165,ret:170},lo:{out:135,ret:140}},
   pulborough:{ga:{out:68,ret:64},he:{out:118,ret:123},st:{out:205,ret:210},lu:{out:158,ret:163},so:{out:75,ret:72},ci:{out:172,ret:177},lo:{out:138,ret:143}},
   arundel:{ga:{out:78,ret:74},he:{out:128,ret:133},st:{out:215,ret:220},lu:{out:168,ret:173},so:{out:72,ret:68},ci:{out:182,ret:187},lo:{out:148,ret:153}},
@@ -1259,7 +1259,7 @@ function bkRunCalc(from,to){
   // Destination is airport
   if(deAP&&!puAP){
     var rt=sh(puT),base=rt&&CF[rt]&&CF[rt][deAP]?CF[rt][deAP].out:null;
-    if(base){bkSetFare(base+APC[deAP][0],null,null,'Fixed price',APC[deAP][0]>0?APFULL[deAP]+' drop-off +\u00a3'+APC[deAP][0]:'');return;}
+    if(base){bkSetFare(base,null,null,'Fixed price',APFULL[deAP]+' drop-off');return;}
     /* Unknown town – live route from actual coords to airport, then per-mile calc */
     var ap1=null;for(var i=0;i<AIRPORTS.length;i++){if(AIRPORTS[i].key===deAP){ap1=AIRPORTS[i];break;}}
     geocode(/\bUK\b/i.test(from)?from:from+' UK').then(function(c){
@@ -1276,7 +1276,7 @@ function bkRunCalc(from,to){
   // Pickup is airport
   if(puAP&&!deAP){
     var rt2=sh(deT),base2=rt2&&CF[rt2]&&CF[rt2][puAP]?CF[rt2][puAP].ret:null;
-    if(base2){bkSetFare(base2+APC[puAP][1],null,null,'Fixed price',APFULL[puAP]+' pickup +\u00a3'+APC[puAP][1]);return;}
+    if(base2){bkSetFare(base2,null,null,'Fixed price',APFULL[puAP]+' pickup');return;}
     /* Unknown town – live route from airport to actual coords, then per-mile calc */
     var ap2=null;for(var j=0;j<AIRPORTS.length;j++){if(AIRPORTS[j].key===puAP){ap2=AIRPORTS[j];break;}}
     geocode(/\bUK\b/i.test(to)?to:to+' UK').then(function(c){
