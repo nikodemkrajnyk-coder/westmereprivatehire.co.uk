@@ -1508,6 +1508,13 @@ function openConfirmModal(){
   var pax=(document.getElementById('bk-pax')||{}).value||'1';
   if(!from||!dest){showToast('Please enter pickup and destination','error');return;}
   if(_baseFare===null){showToast('Please get a quote first','error');return;}
+  var _bkDate=(document.getElementById('bk-date')||{}).value||'';
+  var _bkTime=(document.getElementById('bk-time')||{}).value||'';
+  if(_bkDate&&_bkTime){
+    var _jDT=new Date(_bkDate+'T'+_bkTime),_now=new Date(),_diff=_jDT-_now;
+    if(_diff<0){showToast('Booking time must be in the future.','error');return;}
+    if(_diff<3600000){showToast('Bookings must be made at least 1 hour before departure. For urgent bookings please call us.','error');return;}
+  }
   var fare=Math.ceil((_baseFare*_selectedVehMult)/0.5)*0.5;
   var html='';
   html+='<div class="modal-row"><span class="modal-rk">Pickup</span><span class="modal-rv">'+esc(from)+'</span></div>';

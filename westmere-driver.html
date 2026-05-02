@@ -334,6 +334,16 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
       <button class="ls-btn" onclick="driverLogin()">Sign In</button>
       <div class="ls-err" id="drv-err"></div>
       <div style="text-align:center;margin-top:.4rem;font-size:.7rem;color:rgba(17,29,44,.35)" id="drv-att"></div>
+      <div style="text-align:center;margin-top:.5rem"><button onclick="swDrvFrm('forgot')" style="background:none;border:none;cursor:pointer;font-family:var(--sans);font-size:.75rem;color:rgba(17,29,44,.4);text-decoration:underline;padding:0">Forgot password?</button></div>
+    </div>
+    <div id="frm-drv-forgot" class="ls-body" style="display:none">
+      <div class="ls-fg">
+        <label class="ls-label">Email Address</label>
+        <input class="ls-input" type="email" id="drv-fp-email" placeholder="your@email.com" autocomplete="email">
+      </div>
+      <button class="ls-btn" onclick="drvDoForgot()">Send Reset Link</button>
+      <div id="drv-fp-msg" style="font-size:.75rem;color:rgba(17,29,44,.5);text-align:center;margin-top:.5rem;min-height:1.2em"></div>
+      <div class="ls-switch">Remember it? <button onclick="swDrvFrm('login')">Sign in</button></div>
     </div>
     <div class="ls-foot">Westmere Private Hire &middot; Sussex</div>
   </div>
@@ -638,9 +648,26 @@ async function driverLogin(){
 // Allow Enter key to submit login
 document.addEventListener('keydown',function(e){
   if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none'){
-    driverLogin();
+    if(document.getElementById('frm-drv-forgot')&&document.getElementById('frm-drv-forgot').style.display!=='none')drvDoForgot();
+    else driverLogin();
   }
 });
+function swDrvFrm(f){
+  var loginBody=document.querySelector('#login-screen .ls-body');
+  var forgotBody=document.getElementById('frm-drv-forgot');
+  if(f==='forgot'){if(loginBody)loginBody.style.display='none';if(forgotBody)forgotBody.style.display='block';}
+  else{if(loginBody)loginBody.style.display='';if(forgotBody)forgotBody.style.display='none';}
+}
+async function drvDoForgot(){
+  var email=(document.getElementById('drv-fp-email').value||'').trim();
+  var msg=document.getElementById('drv-fp-msg');
+  if(!email){if(msg){msg.textContent='Please enter your email';msg.style.color='var(--red)';}return;}
+  if(msg){msg.textContent='';msg.style.color='';}
+  try{
+    await fetch('/api/auth/customer/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})});
+    if(msg){msg.textContent='If that email is registered you\'ll receive a reset link shortly.';msg.style.color='rgba(17,29,44,.55)';}
+  }catch(e){if(msg){msg.textContent='Connection error. Please try again.';msg.style.color='var(--red)';}}
+}
 
 // ─── DATA ─────────────────────────────────────────────────────────────────────
 var DRIVER = {

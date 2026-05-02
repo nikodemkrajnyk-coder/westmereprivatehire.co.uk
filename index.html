@@ -1064,6 +1064,14 @@ function openBookingModal() {
   var dur      = (document.getElementById("fr-dur") ||{textContent:"—"}).textContent;
   var fareNum  = parseFloat((priceTxt||"").replace(/[^0-9.]/g,""))||0;
 
+  if (date && time) {
+    var _jDT = new Date(date + 'T' + time);
+    var _now = new Date();
+    var _diff = _jDT - _now;
+    if (_diff < 0) { bkToast('Booking time must be in the future.', 'err'); return; }
+    if (_diff < 3600000) { bkToast('Bookings must be made at least 1 hour before departure. For urgent bookings please call us.', 'err'); return; }
+  }
+
   _bk.fare = fareNum;
   _bk.j = { from:from, to:to, date:date, time:time, flight:fl,
              price:priceTxt, dist:dist, dur:dur };

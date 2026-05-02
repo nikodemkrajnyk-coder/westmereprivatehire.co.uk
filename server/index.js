@@ -179,7 +179,6 @@ const protectedPages = [
   'westmere-admin.html',
   'westmere-owner.html',
   'westmere-driver.html',
-  'westmere-account.html',
 ];
 
 for (const page of protectedPages) {
@@ -203,6 +202,9 @@ app.get('/rider-sw.js', (req, res) => {
 
 // ── Health check (Railway uses this) ─────────────────────────────────────
 app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
+
+// ── Redirect legacy account page to rider app ───────────────────────────
+app.get('/westmere-account.html', (req, res) => res.redirect(301, '/westmere-rider.html'));
 
 // ── Static files (public pages, CSS, JS, images) ────────────────────────
 app.use(express.static(path.join(__dirname, '..'), {
