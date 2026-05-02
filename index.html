@@ -26,6 +26,11 @@ nav.solid .brand{opacity:0;pointer-events:none;width:0;overflow:hidden;padding:0
 nav.solid .nav-r{opacity:0;pointer-events:none;width:0;overflow:hidden;transition:opacity .3s ease}
 nav.solid .nav-end{position:fixed;top:1rem;right:6%;z-index:102}
 .nav-end{display:flex;align-items:center}
+/* App icon below booking form */
+.app-icon-wrap{display:flex;flex-direction:column;align-items:center;gap:.55rem;margin-top:2.4rem;margin-bottom:.5rem;text-decoration:none;cursor:pointer}
+.app-icon-badge{width:50px;height:50px;background:#111D2C;border:1.5px solid #B8985A;border-radius:12px;display:flex;align-items:center;justify-content:center}
+.app-icon-w{font-family:'Cormorant Garamond',Georgia,serif;font-size:1.6rem;font-weight:500;color:#B8985A;line-height:1}
+.app-icon-lbl{font-family:var(--sans);font-size:.62rem;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.65)}
 /* Rider PWA prompt modal */
 .brand-name{font-family:var(--serif);font-size:1.4rem;font-weight:500;letter-spacing:.15em;text-transform:uppercase;color:#fff;line-height:1}
 .brand-sub{font-size:1rem;font-weight:300;letter-spacing:.28em;text-transform:uppercase;color:#fff}.brand-sub2{font-size:.8rem;color:#fff;letter-spacing:.38em;text-transform:uppercase;font-weight:300}
@@ -371,7 +376,13 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
   </div><!-- /bk-wrap -->
 </div><!-- /booking -->
 
-
+  <!-- App icon — below booking form -->
+  <div style="display:flex;justify-content:center;padding:1.5rem 0 2rem">
+    <a class="app-icon-wrap" href="/westmere-rider.html" aria-label="Westmere Rider App">
+      <div class="app-icon-badge"><span class="app-icon-w">W</span></div>
+      <span class="app-icon-lbl">Get the App</span>
+    </a>
+  </div>
 
   </div><!-- /main-content -->
 
