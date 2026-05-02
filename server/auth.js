@@ -75,7 +75,7 @@ router.post('/customer/login', (req, res) => {
   }
 
   const db = getDb();
-  const customer = db.prepare('SELECT * FROM customers WHERE email = ? AND active = 1').get(email.trim().toLowerCase());
+  const customer = db.prepare('SELECT * FROM customers WHERE email = ? AND active = 1 ORDER BY id DESC LIMIT 1').get(email.trim().toLowerCase());
 
   if (!customer || !bcrypt.compareSync(password, customer.password)) {
     db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')

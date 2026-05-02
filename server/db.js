@@ -419,6 +419,16 @@ function migrate() {
     }
   } catch (e) { console.error('[DB] customer billing migration failed:', e.message); }
 
+  // Deduplicate customers by email and enforce unique index.
+  // Removes any duplicate rows created before the UNIQUE constraint existed,
+  // keeping the highest id (most recent) per email. Also hard-deletes any
+  // soft-deleted records with clearly synthetic/test email domains.
+  try {
+    db.exec(`DELETE FROM customers WHERE active = 0 AND email LIKE '%.invalid'`);
+    db.exec(`DELETE FROM customers WHERE id NOT IN (SELECT MAX(id) FROM customers GROUP BY lower(email))`);
+    db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_email_unique ON customers(email COLLATE NOCASE)`);
+  } catch (e) { console.error('[DB] customer dedup migration failed:', e.message); }
+
   // Driver locations — latest GPS position per driver for live rider tracking.
   // One row per driver_id (UPSERT), kept fresh by the driver app posting
   // every few seconds while on a job.
@@ -690,7 +700,7 @@ function seedDefaults() {
 
   // Ensure rider/customer portal account exists — persists across fresh DB deploys
   try {
-    const rider = db.prepare("SELECT id FROM customers WHERE email = 'nikodem.krajnyk@gmail.com'").get();
+    const rider = db.prepare("SELECT id, active FROM customers WHERE email = 'nikodem.krajnyk@gmail.com' COLLATE NOCASE").get();
     if (!rider) {
       const hash = bcrypt.hashSync('Rider2026!', 10);
       db.prepare(`
@@ -698,6 +708,9 @@ function seedDefaults() {
         VALUES (?, ?, ?, ?, 1, 1)
       `).run('Nikodem Krajnyk', 'nikodem.krajnyk@gmail.com', '07930342593', hash);
       console.log('[DB] Rider customer account seeded (nikodem.krajnyk@gmail.com / Rider2026!)');
+    } else if (rider.active === 0) {
+      db.prepare("UPDATE customers SET active = 1, verified = 1, updated_at = datetime('now') WHERE id = ?").run(rider.id);
+      console.log('[DB] Rider customer account reactivated');
     }
   } catch (e) {
     console.error('[DB] rider customer seed failed:', e.message);
