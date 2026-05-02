@@ -131,8 +131,15 @@ router.post('/customer/register', async (req, res) => {
 
   const db = getDb();
   const cleanEmail = email.trim().toLowerCase();
-  const existing = db.prepare('SELECT id, verified FROM customers WHERE email = ?').get(cleanEmail);
+  const existing = db.prepare('SELECT id, verified, active FROM customers WHERE email = ?').get(cleanEmail);
   if (existing) {
+    if (existing.active === 0) {
+      // Soft-deleted account — reactivate with new credentials
+      const hash = bcrypt.hashSync(password, 12);
+      db.prepare("UPDATE customers SET password = ?, full_name = ?, phone = ?, active = 1, verified = 1, reset_token = NULL, reset_token_expires = NULL, updated_at = datetime('now') WHERE id = ?")
+        .run(hash, full_name.trim(), phone || null, existing.id);
+      return res.status(409).json({ error: 'An account with this email already exists. Please sign in.' });
+    }
     if (existing.verified === 0) {
       return res.status(409).json({ error: 'An account with this email is awaiting verification. Please check your inbox.' });
     }
@@ -274,11 +281,11 @@ router.post('/customer/forgot-password', async (req, res) => {
 
   const db = getDb();
   const customer = db.prepare(
-    'SELECT id, email, full_name, verified FROM customers WHERE email = ? COLLATE NOCASE'
+    'SELECT id, email, full_name FROM customers WHERE email = ? COLLATE NOCASE'
   ).get(email.trim().toLowerCase());
 
   // Always return success — prevents email enumeration
-  if (!customer || !customer.verified) {
+  if (!customer) {
     return res.json({ ok: true });
   }
 
@@ -314,7 +321,7 @@ router.post('/customer/reset-password', (req, res) => {
 
   const hash = bcrypt.hashSync(password, 12);
   db.prepare(
-    "UPDATE customers SET password = ?, reset_token = NULL, reset_token_expires = NULL, updated_at = datetime('now') WHERE id = ?"
+    "UPDATE customers SET password = ?, active = 1, verified = 1, reset_token = NULL, reset_token_expires = NULL, updated_at = datetime('now') WHERE id = ?"
   ).run(hash, customer.id);
 
   try {

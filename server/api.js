@@ -535,6 +535,19 @@ router.patch('/customers/:id', (req, res) => {
 // ── Set / reset a customer's portal password (admin-only) ───────────────
 // Allows admin to grant a customer access to the account portal by setting
 // a password. Customer then logs in via POST /api/auth/customer/login.
+router.post('/customers/reactivate-by-email', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const { email } = req.body || {};
+  if (!email) return res.status(400).json({ error: 'email required' });
+  const db = getDb();
+  const customer = db.prepare('SELECT id, email, full_name, active, verified FROM customers WHERE email = ? COLLATE NOCASE').get(email.trim().toLowerCase());
+  if (!customer) return res.status(404).json({ error: 'Customer not found' });
+  db.prepare("UPDATE customers SET active = 1, verified = 1, updated_at = datetime('now') WHERE id = ?").run(customer.id);
+  res.json({ ok: true, customer: { id: customer.id, email: customer.email, full_name: customer.full_name, was_active: customer.active, was_verified: customer.verified } });
+});
+
 router.post('/customers/:id/set-password', (req, res) => {
   if (!['admin', 'owner'].includes(req.auth.role)) {
     return res.status(403).json({ error: 'Admin access required' });
