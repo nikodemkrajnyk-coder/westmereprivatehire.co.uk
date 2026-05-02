@@ -1034,7 +1034,7 @@ router.get('/drivers', (req, res) => {
            phv_no, insurance_no, driver_notes, photo, is_default_driver,
            max_passengers, max_bags, luggage_notes,
            onboarding_status, created_at
-    FROM users WHERE role IN ('driver','owner') ORDER BY created_at DESC
+    FROM users WHERE role IN ('driver','owner') AND active = 1 ORDER BY created_at DESC
   `).all().map(sanitizeDriver);
   res.json({ ok: true, drivers: rows });
 });

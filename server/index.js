@@ -233,7 +233,10 @@ app.get('/api/debug/db-path', requireAuth, (req, res) => {
 });
 
 // ── Redirect legacy account page to rider app ───────────────────────────
-app.get('/westmere-account.html', (req, res) => res.redirect(301, '/westmere-rider.html'));
+app.get('/westmere-account.html', (req, res) => {
+  const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
+  res.redirect(301, '/westmere-rider.html' + qs);
+});
 
 // ── Static files (public pages, CSS, JS, images) ────────────────────────
 app.use(express.static(path.join(__dirname, '..'), {

@@ -845,22 +845,6 @@ if ('serviceWorker' in navigator) {
           </div>
         </div>
         <div class="card">
-          <div class="ch"><div class="ct">Database</div></div>
-          <div class="cb">
-            <div style="font-size:.72rem;color:rgba(17,29,44,.45);margin-bottom:1rem;line-height:1.5">Purge test/demo data from the live database. Keeps driver ID 2 (Nikodem) and any real customers/bookings/invoices that don't match test patterns.</div>
-            <button class="btn btn-ghost btn-full" style="color:#a33;border-color:rgba(163,51,51,.3);margin-bottom:.6rem" onclick="adminPurgeTestData()">Purge Test Data</button>
-          </div>
-        </div>
-        <div class="card">
-          <div class="ch"><div class="ct">Change Password</div></div>
-          <div class="cb">
-            <div class="fg"><label class="fl">Current Password</label><input type="password" class="fi" id="cp-current" placeholder="Current password"></div>
-            <div class="fg"><label class="fl">New Password</label><input type="password" class="fi" id="cp-new" placeholder="New password"></div>
-            <div class="fg"><label class="fl">Confirm New Password</label><input type="password" class="fi" id="cp-confirm" placeholder="Confirm new password"></div>
-            <button class="btn btn-navy btn-full" style="margin-top:.5rem" onclick="changeAdminPassword()">Update Password</button>
-          </div>
-        </div>
-        <div class="card">
           <div class="ch"><div class="ct">Integrations</div></div>
           <div class="cb">
             <div class="setting-row"><div><div class="sr-title">Google Calendar</div><div class="sr-sub">Two-way sync with your calendar</div></div><button class="btn btn-green btn-sm" id="gcal-connect-btn" onclick="connectGoogleCalendar()">Connect</button></div>
@@ -2685,11 +2669,23 @@ function buildDrivers(){
       +'<div class="dc-status '+(d.status==='active'?'on':'off')+'">'
         +'<div class="dc-dot"></div>'+(d.status==='active'?'Active':'Inactive')
       +'</div>'
-      +'<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEditDriver('+d.id+')" style="margin-top:.7rem;width:100%;font-size:.66rem;padding:.45rem .8rem">Edit</button>'
+      +'<div style="display:flex;gap:.4rem;margin-top:.7rem">'
+      +'<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEditDriver('+d.id+')" style="flex:1;font-size:.66rem;padding:.45rem .8rem">Edit</button>'
+      +'<button class="btn btn-sm" onclick="event.stopPropagation();deleteDriver('+d.id+',\''+escTo(d.name)+'\')" style="flex:0 0 auto;font-size:.66rem;padding:.45rem .8rem;background:rgba(163,51,51,.08);color:#a33;border:1px solid rgba(163,51,51,.2)">Delete</button>'
+      +'</div>'
       +'</div>';
   }).join('');
 }
 
+async function deleteDriver(id,name){
+  if(!confirm('Delete driver "'+name+'"?\n\nThis cannot be undone.'))return;
+  try{
+    var r=await fetch('/api/drivers/'+id,{method:'DELETE',credentials:'include'});
+    var d=await r.json();
+    if(d.ok){showToast('Driver deleted');DRIVERS=DRIVERS.filter(function(dr){return dr.id!==id;});buildDrivers();}
+    else showToast(d.error||'Failed to delete driver');
+  }catch(e){showToast('Network error');}
+}
 
 // ── CLOCK ──
 function tick(){const n=new Date();document.getElementById('clock').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')}
@@ -3581,20 +3577,6 @@ function saveInvoiceSettings(){
     .catch(function(){showToast('Network error saving settings');});
 }
 
-async function changeAdminPassword(){
-  var cur=document.getElementById('cp-current').value.trim();
-  var nw=document.getElementById('cp-new').value.trim();
-  var cf=document.getElementById('cp-confirm').value.trim();
-  if(!cur||!nw||!cf){showToast('Please fill in all password fields');return;}
-  if(nw!==cf){showToast('New passwords do not match');return;}
-  if(nw.length<6){showToast('New password must be at least 6 characters');return;}
-  try{
-    var r=await fetch('/api/auth/change-password',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({currentPassword:cur,newPassword:nw})});
-    var d=await r.json();
-    if(d.ok){showToast('Password updated');document.getElementById('cp-current').value='';document.getElementById('cp-new').value='';document.getElementById('cp-confirm').value='';}
-    else showToast(d.error||'Failed to update password');
-  }catch(e){showToast('Network error');}
-}
 
 async function adChangePassword(){
   var cur=(document.getElementById('ad-cp-current').value||'').trim();
@@ -3611,17 +3593,6 @@ async function adChangePassword(){
   }catch(e){showToast('Network error');}
 }
 
-function adminPurgeTestData(){
-  if(!confirm('Delete all test/demo data?\n\nThis will remove:\n- Test drivers (keeps Nikodem ID 2)\n- Test customers (matching "test"/"demo"/"example")\n- Test bookings\n- Test invoices and invoice recipients\n\nThis CANNOT be undone.'))return;
-  fetch('/api/backup/purge-test-data',{method:'POST',credentials:'include'})
-  .then(function(r){return r.json();})
-  .then(function(d){
-    if(!d.ok){showToast(d.error||'Purge failed');return;}
-    var r=d.deleted;
-    showToast('Purged: '+r.drivers+' drivers, '+r.customers+' customers, '+r.bookings+' bookings, '+r.invoices+' invoices, '+r.recipients+' recipients');
-  })
-  .catch(function(){showToast('Network error during purge');});
-}
 
 // ── MARK DONE ──
 function markDone(btn){

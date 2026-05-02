@@ -597,7 +597,7 @@ async function sendPasswordResetEmail(customer, token) {
   if (!customer || !customer.email) return false;
   const { email, full_name } = customer;
   const firstName = (full_name || '').split(' ')[0] || 'there';
-  const resetUrl = `https://westmereprivatehire.co.uk/westmere-account.html?reset_token=${token}`;
+  const resetUrl = `https://westmereprivatehire.co.uk/westmere-rider.html?reset_token=${token}`;
 
   const body = `
   <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Password reset</p>
