@@ -888,8 +888,10 @@ async function doForgot(){
 }
 var _resetToken=null;
 async function doReset(){
-  var pass=(document.getElementById('rp-pass').value||'').trim();
-  var pass2=(document.getElementById('rp-pass2').value||'').trim();
+  await new Promise(function(r){setTimeout(r,100);}); // let iOS autofill settle before reading
+  var pass=document.getElementById('rp-pass').value||'';
+  var pass2=document.getElementById('rp-pass2').value||'';
+  console.log('[doReset] rp-pass length:',pass.length,'rp-pass2 length:',pass2.length);
   var errEl=document.getElementById('rp-err');
   if(!pass||!pass2){if(errEl){errEl.textContent='Please fill in both fields';errEl.classList.add('show');}return;}
   if(pass.length<8){if(errEl){errEl.textContent='Password must be at least 8 characters';errEl.classList.add('show');}return;}
