@@ -3182,9 +3182,12 @@ function jobDetailCard(j){
   }
 
   // Fare
-  h+='<div style="display:flex;align-items:baseline;gap:.5rem;margin-bottom:.8rem">';
+  h+='<div style="margin-bottom:.8rem">';
+  h+='<div style="display:flex;align-items:baseline;gap:.5rem">';
   h+='<span style="font-family:var(--serif);font-size:1.3rem;color:var(--gold)">£'+escH(String(j.fare||0))+'</span>';
   h+='<span style="font-size:.75rem;color:rgba(17,29,44,.4)">'+escH(j.payment||'cash')+'</span>';
+  h+='</div>';
+  if(j.deadMilesFee)h+='<div style="font-size:.7rem;color:rgba(17,29,44,.4);margin-top:.2rem">incl. £'+escH(String(Number(j.deadMilesFee).toFixed(0)))+' dead miles</div>';
   h+='</div>';
 
   // Notes
@@ -3456,6 +3459,7 @@ async function loadOwnerBookings(){
         flightDeparts:'',
         fare:b.fare||0,
         driverFare:b.fare||0,
+        deadMilesFee:b.dead_miles_fee||0,
         payment:b.payment||'cash',
         apiStatus:b.status||'',
         status:b.status==='completed'?'done':b.status==='active'?'enroute':b.status==='cancelled'?'done':'upcoming',

@@ -2210,7 +2210,7 @@ function loadLiveBookings(){
             +'<td><div class="main-v">'+(b.customer_name||'Guest')+'</div>'+(b.customer_phone?'<div class="sub-v">'+b.customer_phone+'</div>':'')+'</td>'
             +'<td><div class="main-v">'+b.pickup+' \u2192 '+b.destination+'</div>'+(b.flight?'<div class="sub-v">'+b.flight+'</div>':'')+'</td>'
             +'<td><span class="tag tag-upcoming" style="font-size:.5rem">'+(b.flight?'Airport':'Local')+'</span></td>'
-            +'<td><span style="color:var(--gold);font-family:var(--serif);font-size:1.1rem">'+(b.fare?'\u00a3'+Number(b.fare).toFixed(0):'TBC')+'</span></td>'
+            +'<td><span style="color:var(--gold);font-family:var(--serif);font-size:1.1rem">'+(b.fare?'\u00a3'+Number(b.fare).toFixed(0):'TBC')+'</span>'+(b.dead_miles_fee?'<div style="font-size:.55rem;color:rgba(17,29,44,.4);margin-top:.1rem">incl. \u00a3'+Number(b.dead_miles_fee).toFixed(0)+' dead mi</div>':'')+'</td>'
             +'<td><span class="tag '+payClass+'">'+payLabel+'</span></td>'
             +'<td><span class="tag '+statusClass+'">'+statusLabel+'</span></td>'
             +'<td>'+actionBtns+'</td>'

@@ -619,6 +619,17 @@ function migrate() {
       console.log('[DB] Added trip_group column to bookings');
     }
   } catch(e) { console.error('[DB] linked_booking_id migration failed:', e.message); }
+
+  // Dead miles — collection distance fee baked into the fare
+  try {
+    const dmInfo = db.prepare("PRAGMA table_info(bookings)").all();
+    for (const [n, t] of [['dead_miles_fee', 'REAL DEFAULT 0'], ['dead_miles_km', 'REAL DEFAULT 0']]) {
+      if (!dmInfo.find(c => c.name === n)) {
+        db.exec(`ALTER TABLE bookings ADD COLUMN ${n} ${t}`);
+        console.log('[DB] Added ' + n + ' column to bookings');
+      }
+    }
+  } catch(e) { console.error('[DB] dead_miles migration failed:', e.message); }
 }
 
 function seedDefaults() {
