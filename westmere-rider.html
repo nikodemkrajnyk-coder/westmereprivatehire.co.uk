@@ -1042,7 +1042,7 @@ function nT(s){if(!s)return null;var l=s.toLowerCase();
   return null;
 }
 function isNight(h){return h>=22||h<6;}
-function calcMile(mi,night,ap){var f;if(night){f=mi<=10?Math.max(mi,10)*3.42:mi<=20?34.2+(mi-10)*2.79:62.1+(mi-20)*2.52;}else{f=mi<=10?Math.max(mi,10)*4.00:mi<=20?40+(mi-10)*2.50:65+(mi-20)*2.25;}if(ap&&APC[ap])f+=APC[ap][0];return Math.ceil(f/0.5)*0.5;}
+function calcMile(mi,night,ap){var f;if(night){f=mi<=10?Math.max(mi,10)*3.80:mi<=20?38+(mi-10)*3.10:69+(mi-20)*2.79;}else{f=mi<=10?Math.max(mi,10)*4.00:mi<=20?40+(mi-10)*2.50:65+(mi-20)*2.25;}if(ap&&APC[ap])f+=APC[ap][0];return Math.ceil(f/0.5)*0.5;}
 function sh(t){return t?t.replace('haywards heath','haywards').replace('burgess hill','burgess').replace('east grinstead','eastgrinstead'):t;}
 
 /* Geocoding – Mapbox */

@@ -118,7 +118,7 @@ function _fareCalcMile(mi, night) {
   const m = Math.max(mi, 10); // 10-mile minimum
   let f;
   if (night) {
-    f = m <= 10 ? m * 3.42 : m <= 20 ? 34.2 + (m - 10) * 2.79 : 62.1 + (m - 20) * 2.52;
+    f = m <= 10 ? m * 3.80 : m <= 20 ? 38 + (m - 10) * 3.10 : 69 + (m - 20) * 2.79;
   } else {
     f = m <= 10 ? m * 4.00 : m <= 20 ? 40 + (m - 10) * 2.50 : 65 + (m - 20) * 2.25;
   }
