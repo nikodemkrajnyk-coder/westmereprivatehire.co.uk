@@ -4082,6 +4082,45 @@ var CURRENT_USER = null;
   }
 })();
 
+// ── Background GPS broadcaster ───────────────────────────────────────────
+// Silently posts owner position to the driver_locations table so the dead
+// miles calculation in public-api.js always has a fresh starting point.
+(function(){
+  var _gpsWatch = null;
+  var _gpsTimer = null;
+  var _lastPos  = null;
+  var _lastSent = 0;
+
+  function _sendPos() {
+    if (!_lastPos) return;
+    _lastSent = Date.now();
+    fetch('/api/driver/location', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lat: _lastPos.lat, lng: _lastPos.lng,
+        heading: _lastPos.heading, speed: _lastPos.speed, accuracy: _lastPos.accuracy })
+    }).catch(function(){});
+  }
+
+  function startOwnerGps() {
+    if (!navigator.geolocation || _gpsWatch !== null) return;
+    _gpsWatch = navigator.geolocation.watchPosition(function(pos) {
+      _lastPos = { lat: pos.coords.latitude, lng: pos.coords.longitude,
+        heading: pos.coords.heading, speed: pos.coords.speed, accuracy: pos.coords.accuracy };
+      if (Date.now() - _lastSent > 30000) _sendPos();
+    }, function(){}, { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 });
+    // Backstop: send every 45s even if watchPosition hasn't fired
+    _gpsTimer = setInterval(function() { if (_lastPos && Date.now() - _lastSent > 44000) _sendPos(); }, 45000);
+  }
+
+  // Start GPS once the user is confirmed logged in (initApp fires after auth check)
+  var _origInitApp = window.initApp;
+  window.initApp = function() {
+    if (_origInitApp) _origInitApp.apply(this, arguments);
+    startOwnerGps();
+  };
+})();
+
 // Real-time push: refresh the owner's lists when bookings change
 window.addEventListener('wm:event', function(){
   if(typeof loadOwnerBookings==='function')loadOwnerBookings();
