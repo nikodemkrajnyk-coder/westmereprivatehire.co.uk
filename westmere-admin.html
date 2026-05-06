@@ -803,7 +803,7 @@ if ('serviceWorker' in navigator) {
     <div class="view" id="view-fares">
       <div class="page-hd"><div class="page-title">Fare <em>Editor</em></div></div>
       <div class="card">
-        <div class="ch"><div class="ct">Airport Fixed Fares — Town Centre Rates</div><button class="btn btn-navy btn-sm" onclick="showToast('Fares saved. Estimator updated.')">💾 Save Fares</button></div>
+        <div class="ch"><div class="ct">Airport Fares — Town Centre Rates</div><button class="btn btn-navy btn-sm" onclick="showToast('Fares saved. Estimator updated.')">💾 Save Fares</button></div>
         <div class="cb" style="overflow-x:auto">
           <table class="fare-table" id="fare-tbody-wrap" style="min-width:560px">
             <thead><tr><th style="text-align:left">From</th><th>Gatwick</th><th>Heathrow</th><th>Stansted</th><th>Luton</th><th>Southampton</th><th>City</th></tr></thead>
@@ -1164,6 +1164,7 @@ if ('serviceWorker' in navigator) {
       <div class="fg"><label class="fl">Email</label><input class="fi" type="email" id="nb-email" placeholder="customer@email.com"></div>
       <div class="fg"><label class="fl">Payment Method</label>
         <select class="fi" id="nb-pay"><option value="cash">Cash on the Day</option><option value="card">Card -- Pre-paid</option><option value="account">Account / Monthly Invoice</option></select></div>
+      <div class="fg"><label class="fl">Fare Override (£) — leave blank to use calculated fare</label><input class="fi" type="number" id="nb-fare-override" min="0" step="0.50" placeholder="e.g. 55"></div>
 
       <!-- Availability check -->
       <div class="avail" id="nb-avail">
@@ -1180,7 +1181,7 @@ if ('serviceWorker' in navigator) {
 
       <!-- Price -->
       <div class="price-box" id="nb-price">
-        <div class="pb-label"><div class="pb-dot"></div>Estimated Fixed Fare</div>
+        <div class="pb-label"><div class="pb-dot"></div>Estimated Fare</div>
         <div class="pb-amount" id="nb-pb-amount">£—</div>
         <div class="pb-sub">Fixed price · No meters · No surge pricing</div>
         <div class="pb-row">
@@ -2201,6 +2202,9 @@ function loadLiveBookings(){
           if(isCancellable){
             actionBtns+='<button class="btn btn-red btn-sm" onclick="cancelJob('+b.id+',this)">Cancel</button>';
           }
+          if(isCancelled){
+            actionBtns+='<button class="btn btn-red btn-sm" onclick="deleteJob('+b.id+',this)">Delete</button>';
+          }
           var reasonRow=b.intake_reason?'<div class="sub-v" style="color:#9C5800;font-style:italic;margin-top:.2rem">'+escTo(b.intake_reason)+'</div>':'';
           var rowStyle=isCancelled?'opacity:.45;text-decoration:line-through':'';
           return '<tr data-bid="'+b.id+'" style="'+rowStyle+'">'
@@ -2314,6 +2318,13 @@ function cancelJob(id,btn){
     .then(function(d){if(d.ok){showToast('Booking cancelled');loadLiveBookings();}else{showToast(d.error||'Error cancelling');}})
     .catch(function(){showToast('Error cancelling booking');});
 }
+function deleteJob(id,btn){
+  if(!confirm('Permanently delete this cancelled booking?'))return;
+  fetch('/api/bookings/'+id,{method:'DELETE',headers:{'Content-Type':'application/json'}})
+    .then(function(r){return r.json();})
+    .then(function(d){if(d.ok){showToast('Booking deleted');loadLiveBookings();}else{showToast(d.error||'Error deleting');}})
+    .catch(function(){showToast('Error deleting booking');});
+}
 
 async function submitBooking(){
   var date=document.getElementById('nb-date').value;
@@ -2325,8 +2336,9 @@ async function submitBooking(){
   var email=document.getElementById('nb-email').value.trim();
   var pax=document.getElementById('nb-pax').value;
   var payment=document.getElementById('nb-pay').value;
-  var fareText=document.getElementById('nb-pb-amount').textContent.replace(/[^0-9.]/g,'');
-  var fare=fareText?parseFloat(fareText):null;
+  var fareOverride=document.getElementById('nb-fare-override').value;
+  var fare=fareOverride?parseFloat(fareOverride):null;
+  if(!fare){var fareText=document.getElementById('nb-pb-amount').textContent.replace(/[^0-9.]/g,'');fare=fareText?parseFloat(fareText):null;}
 
   if(!pickup||!dest){showToast('Enter pickup and destination');return;}
   if(!date){showToast('Pick a date');return;}

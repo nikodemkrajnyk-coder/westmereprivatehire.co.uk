@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#111D2C">
 <link rel="manifest" href="/manifest-rider.webmanifest">
 <title>Westmere Private Hire | Sussex Airport Transfers</title>
-<meta name="description" content="Premium private hire across Sussex. Fixed fares. Licensed by Lewes District Council.">
+<meta name="description" content="Premium private hire across Sussex. Licensed by Lewes District Council.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
 <style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--navy:#111D2C;--navy2:#1C2A3E;--cream:#F5F2ED;--gold:#B8985A;--gold2:#C9A96E;--text:#1C2A3E;--muted:#6B7280;--border:#E5E0D8;--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif;}
@@ -26,11 +26,6 @@ nav.solid .brand{opacity:0;pointer-events:none;width:0;overflow:hidden;padding:0
 nav.solid .nav-r{opacity:0;pointer-events:none;width:0;overflow:hidden;transition:opacity .3s ease}
 nav.solid .nav-end{position:fixed;top:1rem;right:6%;z-index:102}
 .nav-end{display:flex;align-items:center}
-/* App icon below booking form */
-.app-icon-wrap{display:flex;flex-direction:column;align-items:center;gap:.55rem;margin-top:2.4rem;margin-bottom:.5rem;text-decoration:none;cursor:pointer}
-.app-icon-badge{width:50px;height:50px;background:#111D2C;border:1.5px solid #B8985A;border-radius:12px;display:flex;align-items:center;justify-content:center}
-.app-icon-w{font-family:'Cormorant Garamond',Georgia,serif;font-size:1.6rem;font-weight:500;color:#B8985A;line-height:1}
-.app-icon-lbl{font-family:var(--sans);font-size:.62rem;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.65)}
 /* Rider PWA prompt modal */
 .brand-name{font-family:var(--serif);font-size:1.4rem;font-weight:500;letter-spacing:.15em;text-transform:uppercase;color:#fff;line-height:1}
 .brand-sub{font-size:1rem;font-weight:300;letter-spacing:.28em;text-transform:uppercase;color:#fff}.brand-sub2{font-size:.8rem;color:#fff;letter-spacing:.38em;text-transform:uppercase;font-weight:300}
@@ -284,13 +279,13 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23111D2C'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='38' font-weight='500' text-anchor='middle' fill='%23B8985A'%3EW%3C/text%3E%3C/svg%3E">
 <meta name="robots" content="index,follow">
 <meta property="og:title" content="Westmere Private Hire | Sussex Airport Transfers">
-<meta property="og:description" content="Premium private hire across Sussex. Fixed fares, professional chauffeurs, 24/7 airport transfers to Gatwick, Heathrow, Stansted, Luton and beyond.">
+<meta property="og:description" content="Premium private hire across Sussex. Professional chauffeurs, 24/7 airport transfers to Gatwick, Heathrow, Stansted, Luton and beyond.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://westmereprivatehire.co.uk/">
 <meta property="og:site_name" content="Westmere Private Hire">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Westmere Private Hire | Sussex Airport Transfers">
-<meta name="twitter:description" content="Premium private hire across Sussex. Fixed fares, professional chauffeurs, 24/7 airport transfers to Gatwick, Heathrow, Stansted, Luton and beyond.">
+<meta name="twitter:description" content="Premium private hire across Sussex. Professional chauffeurs, 24/7 airport transfers to Gatwick, Heathrow, Stansted, Luton and beyond.">
 </head>
 <body>
 
@@ -338,7 +333,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
     </div>
     <div class="fare-reveal" id="fare-reveal">
       <div class="fr-left">
-        <div class="frl"><div class="fr-pulse"></div>Fixed Fare</div>
+        <div class="frl"><div class="fr-pulse"></div>Fare</div>
         <div class="fr-price" id="fr-price">&#163;&mdash;</div>
         <div class="fr-ap" id="fr-ap" style="display:none;font-size:.72rem;color:var(--gold);margin-top:.35rem;letter-spacing:.03em"></div>
       </div>
@@ -375,14 +370,6 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 
   </div><!-- /bk-wrap -->
 </div><!-- /booking -->
-
-  <!-- App icon — below booking form -->
-  <div style="display:flex;justify-content:center;padding:1.5rem 0 2rem">
-    <a class="app-icon-wrap" href="/westmere-rider.html" aria-label="Westmere Rider App">
-      <div class="app-icon-badge"><span class="app-icon-w">W</span></div>
-      <span class="app-icon-lbl">Get the App</span>
-    </a>
-  </div>
 
   </div><!-- /main-content -->
 
@@ -510,17 +497,17 @@ uckfield_gatwick:{m:22,t:32,d:52},uckfield_heathrow:{m:55,t:72,d:115}
 };
 /* Fixed fare tables — out = town→airport (drop-off), ret = airport→town (pickup) */
 var CF={
-  brighton:{ga:{out:72,ret:68},he:{out:128,ret:133},st:{out:215,ret:220},lu:{out:205,ret:210},so:{out:152,ret:147},ci:{out:166,ret:171}},
-  lewes:{ga:{out:78,ret:74},he:{out:140,ret:145},st:{out:225,ret:230},lu:{out:215,ret:220},so:{out:160,ret:155},ci:{out:175,ret:180}},
-  horsham:{ga:{out:55,ret:50},he:{out:120,ret:125},st:{out:180,ret:185},lu:{out:155,ret:160},so:{out:135,ret:130},ci:{out:160,ret:165}},
-  crawley:{ga:{out:35,ret:32},he:{out:95,ret:100}},
-  worthing:{ga:{out:72,ret:68},he:{out:130,ret:135}},
-  haywards:{ga:{out:52,ret:48}},
-  burgess:{ga:{out:48,ret:44}},
-  eastbourne:{ga:{out:98,ret:94},he:{out:162,ret:167}},
-  seaford:{ga:{out:92,ret:88}},
-  uckfield:{ga:{out:62,ret:58}},
-  eastgrinstead:{ga:{out:42,ret:38}}
+  brighton:{ga:{out:68,ret:65},he:{out:122,ret:126},st:{out:204,ret:209},lu:{out:195,ret:200},so:{out:144,ret:140},ci:{out:158,ret:162}},
+  lewes:{ga:{out:74,ret:70},he:{out:133,ret:138},st:{out:214,ret:219},lu:{out:204,ret:209},so:{out:152,ret:147},ci:{out:166,ret:171}},
+  horsham:{ga:{out:52,ret:48},he:{out:114,ret:119},st:{out:171,ret:176},lu:{out:147,ret:152},so:{out:128,ret:124},ci:{out:152,ret:157}},
+  crawley:{ga:{out:33,ret:30},he:{out:90,ret:95}},
+  worthing:{ga:{out:68,ret:65},he:{out:124,ret:128}},
+  haywards:{ga:{out:49,ret:46}},
+  burgess:{ga:{out:46,ret:42}},
+  eastbourne:{ga:{out:93,ret:89},he:{out:154,ret:159}},
+  seaford:{ga:{out:87,ret:84}},
+  uckfield:{ga:{out:59,ret:55}},
+  eastgrinstead:{ga:{out:40,ret:36}}
 };
 var APC={ga:[10,10],he:[7,10],st:[10,10],lu:[7,7],so:[5,5],ci:[8,8],lo:[0,0]};
 var APNAMES={ga:'gatwick',he:'heathrow',st:'stansted',lu:'luton',so:'southampton',ci:'cityairport',lo:'london'};
@@ -546,9 +533,9 @@ function haverMiles(a,b,c,d){var R=3958.8,dL=(c-a)*Math.PI/180,dn=(d-b)*Math.PI/
 function nAP(s){if(!s)return null;var l=s.toLowerCase();if(l.includes('gatwick')||l.includes('lgw'))return 'ga';if(l.includes('heathrow')||l.includes('lhr'))return 'he';if(l.includes('stansted')||l.includes('stn'))return 'st';if(l.includes('luton')||l.match(/\bltn\b/))return 'lu';if(l.includes('southampton airport')||l.includes('southampton sou'))return 'so';if(l.includes('london city')||l.includes('city airport')||l.includes('lcy'))return 'ci';return null;}
 function nT(s){if(!s)return null;var l=s.toLowerCase();var m={'horsham':'horsham','lewes':'lewes','brighton':'brighton','hove':'brighton','crawley':'crawley','worthing':'worthing','haywards heath':'haywards','haywards':'haywards','burgess hill':'burgess','burgess':'burgess','east grinstead':'eastgrinstead','seaford':'seaford','uckfield':'uckfield','eastbourne':'eastbourne','polegate':'eastbourne','rh12':'horsham','rh13':'horsham','bn7':'lewes','bn8':'lewes','bn1':'brighton','bn2':'brighton','bn3':'brighton','rh10':'crawley','rh11':'crawley','bn11':'worthing','rh16':'haywards','rh15':'burgess','rh19':'eastgrinstead','bn25':'seaford','tn22':'uckfield','bn21':'eastbourne','bn22':'eastbourne','rh14':'horsham','bn5':'horsham','bn6':'haywards','bn26':'eastbourne','rh17':'haywards','tn21':'uckfield','tn20':'uckfield','bn18':'worthing','bn9':'lewes','bn43':'worthing','bn44':'worthing'};for(var k in m){if(l.includes(k))return m[k];}return null;}
 function isNight(h){return h>=22||h<6;}
-function calcMile(mi,night,ap){// Day:   £4.20/mi (0-10, min £42) · £2.62/mi (10-20) · £2.36/mi (20+)
-// Night: £3.99/mi (0-10, min £39.90) · £3.26/mi (10-20) · £2.93/mi (20+)
-var f;if(night){f=mi<=10?Math.max(mi,10)*3.99:mi<=20?39.9+(mi-10)*3.26:72.5+(mi-20)*2.93;}else{f=mi<=10?Math.max(mi,10)*4.20:mi<=20?42+(mi-10)*2.62:68.2+(mi-20)*2.36;}if(ap&&APC[ap])f+=APC[ap][0];return Math.ceil(f/0.5)*0.5;}
+function calcMile(mi,night,ap){// Day:   £3.99/mi (0-10, min £39.90) · £2.49/mi (10-20) · £2.24/mi (20+)
+// Night: £3.79/mi (0-10, min £37.90) · £3.10/mi (10-20) · £2.78/mi (20+)
+var f;if(night){f=mi<=10?Math.max(mi,10)*3.79:mi<=20?37.9+(mi-10)*3.10:68.9+(mi-20)*2.78;}else{f=mi<=10?Math.max(mi,10)*3.99:mi<=20?39.9+(mi-10)*2.49:64.8+(mi-20)*2.24;}if(ap&&APC[ap])f+=APC[ap][0];return Math.ceil(f/0.5)*0.5;}
 function sh(t){return t?t.replace('haywards heath','haywards').replace('burgess hill','burgess').replace('east grinstead','eastgrinstead'):t;}
 var TOWN_CENTRE_RADIUS=3;
 var PER_MILE_ADJ=2.50;

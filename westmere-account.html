@@ -360,7 +360,7 @@ footer.mini-foot{display:none}
     <div class="wc-divider"></div>
     <p class="wc-sub">Premium private hire across Lewes, Brighton, Horsham and wider Sussex. Your journey starts here.</p>
     <div class="wc-perks">
-      <div class="wc-perk"><span class="wc-perk-icon">✈</span><div><div class="wc-perk-title">Airport Transfers</div><div class="wc-perk-sub">Fixed fares to all major airports. No surprises.</div></div></div>
+      <div class="wc-perk"><span class="wc-perk-icon">✈</span><div><div class="wc-perk-title">Airport Transfers</div><div class="wc-perk-sub">Transparent pricing to all major airports. No surprises.</div></div></div>
       <div class="wc-perk"><span class="wc-perk-icon">💬</span><div><div class="wc-perk-title">WhatsApp Confirmation</div><div class="wc-perk-sub">Every booking confirmed instantly to your phone.</div></div></div>
       <div class="wc-perk"><span class="wc-perk-icon">📄</span><div><div class="wc-perk-title">Monthly Invoicing</div><div class="wc-perk-sub">Business accounts billed automatically on the 1st.</div></div></div>
       <div class="wc-perk"><span class="wc-perk-icon">🚗</span><div><div class="wc-perk-title">Tesla Model S</div><div class="wc-perk-sub">Zero emissions. Up to 4 passengers in comfort.</div></div></div>
@@ -513,7 +513,7 @@ footer.mini-foot{display:none}
             <div class="fg" style="grid-column:1/-1"><label class="fl">Special Requirements</label><input class="fi" type="text" id="qb-notes" placeholder="Child seat, meet &amp; greet, additional requirements…"></div>
           </div>
           <div class="fare-reveal" id="fare-reveal">
-            <div class="fr-lbl">Fixed Fare</div>
+            <div class="fr-lbl">Your Fare</div>
             <div class="fr-amt" id="fr-amt">£—</div>
             <div class="fr-lbl2" id="fr-note">Fixed price · No meters · No surprises</div>
             <div class="fr-breakdown" id="fr-breakdown" style="display:none">
@@ -673,17 +673,17 @@ footer.mini-foot{display:none}
 
 /* ── Fare config (homepage engine) ── */
 var CF={
-  brighton:{ga:{out:72,ret:68},he:{out:128,ret:133},st:{out:215,ret:220},lu:{out:168,ret:173},so:{out:92,ret:88},ci:{out:185,ret:190},lo:{out:155,ret:160}},
-  lewes:{ga:{out:78,ret:74},he:{out:140,ret:145},st:{out:225,ret:230},lu:{out:180,ret:185},so:{out:105,ret:100},ci:{out:195,ret:200},lo:{out:168,ret:173}},
-  horsham:{ga:{out:55,ret:50},he:{out:120,ret:125},st:{out:205,ret:210},lu:{out:160,ret:165},so:{out:85,ret:80},ci:{out:175,ret:180},lo:{out:142,ret:147}},
-  crawley:{ga:{out:35,ret:32},he:{out:95,ret:100},st:{out:190,ret:195},lu:{out:145,ret:150},so:{out:78,ret:75},ci:{out:160,ret:165},lo:{out:128,ret:133}},
-  worthing:{ga:{out:82,ret:78},he:{out:138,ret:143},st:{out:228,ret:233},lu:{out:178,ret:183},so:{out:75,ret:72},ci:{out:198,ret:203},lo:{out:165,ret:170}},
-  haywards:{ga:{out:52,ret:48},he:{out:115,ret:120},st:{out:200,ret:205},lu:{out:155,ret:160},so:{out:95,ret:90},ci:{out:172,ret:177},lo:{out:140,ret:145}},
-  burgess:{ga:{out:55,ret:50},he:{out:118,ret:123},st:{out:202,ret:207},lu:{out:158,ret:163},so:{out:92,ret:88},ci:{out:175,ret:180},lo:{out:143,ret:148}},
-  seaford:{ga:{out:85,ret:80},he:{out:148,ret:153},st:{out:235,ret:240},lu:{out:188,ret:193},so:{out:112,ret:108},ci:{out:205,ret:210},lo:{out:175,ret:180}},
-  eastbourne:{ga:{out:95,ret:90},he:{out:158,ret:163},st:{out:245,ret:250},lu:{out:198,ret:203},so:{out:122,ret:118},ci:{out:215,ret:220},lo:{out:185,ret:190}},
-  uckfield:{ga:{out:60,ret:55},he:{out:125,ret:130},st:{out:208,ret:213},lu:{out:162,ret:167},so:{out:98,ret:94},ci:{out:178,ret:183},lo:{out:148,ret:153}},
-  eastgrinstead:{ga:{out:42,ret:38},he:{out:105,ret:110},st:{out:192,ret:197},lu:{out:148,ret:153},so:{out:88,ret:84},ci:{out:165,ret:170},lo:{out:135,ret:140}}
+  brighton:{ga:{out:68,ret:65},he:{out:122,ret:126},st:{out:204,ret:209},lu:{out:160,ret:164},so:{out:87,ret:84},ci:{out:176,ret:181},lo:{out:147,ret:152}},
+  lewes:{ga:{out:74,ret:70},he:{out:133,ret:138},st:{out:214,ret:219},lu:{out:171,ret:176},so:{out:100,ret:95},ci:{out:185,ret:190},lo:{out:160,ret:164}},
+  horsham:{ga:{out:52,ret:48},he:{out:114,ret:119},st:{out:195,ret:200},lu:{out:152,ret:157},so:{out:81,ret:76},ci:{out:166,ret:171},lo:{out:135,ret:140}},
+  crawley:{ga:{out:33,ret:30},he:{out:90,ret:95},st:{out:181,ret:185},lu:{out:138,ret:143},so:{out:74,ret:71},ci:{out:152,ret:157},lo:{out:122,ret:126}},
+  worthing:{ga:{out:78,ret:74},he:{out:131,ret:136},st:{out:217,ret:221},lu:{out:169,ret:174},so:{out:71,ret:68},ci:{out:188,ret:193},lo:{out:157,ret:162}},
+  haywards:{ga:{out:49,ret:46},he:{out:109,ret:114},st:{out:190,ret:195},lu:{out:147,ret:152},so:{out:90,ret:86},ci:{out:163,ret:168},lo:{out:133,ret:138}},
+  burgess:{ga:{out:52,ret:48},he:{out:112,ret:117},st:{out:192,ret:197},lu:{out:150,ret:155},so:{out:87,ret:84},ci:{out:166,ret:171},lo:{out:136,ret:141}},
+  seaford:{ga:{out:81,ret:76},he:{out:141,ret:145},st:{out:223,ret:228},lu:{out:179,ret:183},so:{out:106,ret:103},ci:{out:195,ret:200},lo:{out:166,ret:171}},
+  eastbourne:{ga:{out:90,ret:86},he:{out:150,ret:155},st:{out:233,ret:238},lu:{out:188,ret:193},so:{out:116,ret:112},ci:{out:204,ret:209},lo:{out:176,ret:181}},
+  uckfield:{ga:{out:57,ret:52},he:{out:119,ret:124},st:{out:198,ret:202},lu:{out:154,ret:159},so:{out:93,ret:89},ci:{out:169,ret:174},lo:{out:141,ret:145}},
+  eastgrinstead:{ga:{out:40,ret:36},he:{out:100,ret:105},st:{out:182,ret:187},lu:{out:141,ret:145},so:{out:84,ret:80},ci:{out:157,ret:162},lo:{out:128,ret:133}}
 };
 var APC={ga:[10,10],he:[7,10],st:[10,10],lu:[7,7],so:[5,5],ci:[8,8],lo:[0,0]};
 var APNAMES={ga:'gatwick',he:'heathrow',st:'stansted',lu:'luton',so:'southampton',ci:'cityairport',lo:'london'};
@@ -693,7 +693,7 @@ var TC={horsham:{lat:51.0632,lon:-0.3234},lewes:{lat:50.874,lon:0.0131},brighton
 function nAP(s){if(!s)return null;var l=s.toLowerCase();if(l.includes('gatwick'))return 'ga';if(l.includes('heathrow'))return 'he';if(l.includes('stansted'))return 'st';if(l.includes('luton'))return 'lu';if(l.includes('southampton airport'))return 'so';if(l.includes('london city')||l.includes('city airport'))return 'ci';if(l.match(/\blondon\b/)&&!l.includes('city'))return 'lo';return null;}
 function nT(s){if(!s)return null;var l=s.toLowerCase();var m={'horsham':'horsham','lewes':'lewes','brighton':'brighton','hove':'brighton','crawley':'crawley','worthing':'worthing','haywards heath':'haywards','haywards':'haywards','burgess hill':'burgess','burgess':'burgess','east grinstead':'eastgrinstead','seaford':'seaford','uckfield':'uckfield','eastbourne':'eastbourne','polegate':'eastbourne','rh12':'horsham','rh13':'horsham','bn7':'lewes','bn8':'lewes','bn1':'brighton','bn2':'brighton','bn3':'brighton','rh10':'crawley','rh11':'crawley','bn11':'worthing','rh16':'haywards','rh15':'burgess','rh19':'eastgrinstead','bn25':'seaford','tn22':'uckfield','bn21':'eastbourne','bn22':'eastbourne','rh14':'horsham','bn5':'horsham','bn6':'haywards','bn26':'eastbourne','rh17':'haywards','tn21':'uckfield','tn20':'uckfield','bn18':'worthing','bn9':'lewes','bn43':'worthing','bn44':'worthing'};for(var k in m){if(l.includes(k))return m[k];}return null;}
 function isNight(h){return h>=22||h<6;}
-function calcMile(mi,night,ap){var f;if(night){f=mi<=10?Math.max(mi,10)*3.99:mi<=20?39.9+(mi-10)*3.26:72.5+(mi-20)*2.93;}else{f=mi<=10?Math.max(mi,10)*4.20:mi<=20?42+(mi-10)*2.62:68.2+(mi-20)*2.36;}if(ap&&APC[ap])f+=APC[ap][0];return Math.ceil(f/0.5)*0.5;}
+function calcMile(mi,night,ap){var f;if(night){f=mi<=10?Math.max(mi,10)*3.79:mi<=20?37.9+(mi-10)*3.10:68.9+(mi-20)*2.78;}else{f=mi<=10?Math.max(mi,10)*3.99:mi<=20?39.9+(mi-10)*2.49:64.8+(mi-20)*2.24;}if(ap&&APC[ap])f+=APC[ap][0];return Math.ceil(f/0.5)*0.5;}
 function sh(t){return t?t.replace('haywards heath','haywards').replace('burgess hill','burgess').replace('east grinstead','eastgrinstead'):t;}
 
 /* ── Security: HTML escape to prevent XSS ── */

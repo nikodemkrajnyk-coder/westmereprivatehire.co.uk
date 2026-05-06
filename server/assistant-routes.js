@@ -9,32 +9,32 @@ const MODEL = process.env.ASSISTANT_MODEL || 'claude-sonnet-4-6';
 const API_URL = 'https://api.anthropic.com/v1/messages';
 
 const REFERENCE_FARES = [
-  'Brighton/Hove/Saltdean/Rottingdean→Gatwick £72 (ret £68), →Heathrow £128 (ret £133), →Stansted £215 (ret £220), →Luton £205 (ret £210), →Southampton £152 (ret £147), →London City £166 (ret £171)',
-  'Lewes→Gatwick £78 (ret £74), →Heathrow £140 (ret £145), →Stansted £225 (ret £230), →Luton £215 (ret £220), →Southampton £160 (ret £155), →London City £175 (ret £180)',
-  'Horsham→Gatwick £55 (ret £50), →Heathrow £120 (ret £125), →Stansted £180 (ret £185), →Luton £155 (ret £160), →Southampton £135 (ret £130), →London City £160 (ret £165)',
-  'Crawley→Gatwick £35 (ret £32), →Heathrow £95 (ret £100)',
-  'Worthing/Lancing/Shoreham→Gatwick £72 (ret £68), →Heathrow £130 (ret £135)',
-  'Haywards Heath→Gatwick £52 (ret £48), Burgess Hill→Gatwick £48 (ret £44)',
-  'Eastbourne→Gatwick £98 (ret £94), →Heathrow £162 (ret £167)',
-  'Seaford→Gatwick £92 (ret £88), Uckfield→Gatwick £62 (ret £58), East Grinstead→Gatwick £42 (ret £38)',
-  'All fares are all-in fixed prices — no surcharges added on top'
+  'Brighton/Hove/Saltdean/Rottingdean→Gatwick £68 (ret £65), →Heathrow £122 (ret £126), →Stansted £204 (ret £209), →Luton £195 (ret £200), →Southampton £144 (ret £140), →London City £158 (ret £162)',
+  'Lewes→Gatwick £74 (ret £70), →Heathrow £133 (ret £138), →Stansted £214 (ret £219), →Luton £204 (ret £209), →Southampton £152 (ret £147), →London City £166 (ret £171)',
+  'Horsham→Gatwick £52 (ret £48), →Heathrow £114 (ret £119), →Stansted £171 (ret £176), →Luton £147 (ret £152), →Southampton £128 (ret £124), →London City £152 (ret £157)',
+  'Crawley→Gatwick £33 (ret £30), →Heathrow £90 (ret £95)',
+  'Worthing/Lancing/Shoreham→Gatwick £68 (ret £65), →Heathrow £124 (ret £128)',
+  'Haywards Heath→Gatwick £49 (ret £46), Burgess Hill→Gatwick £46 (ret £42)',
+  'Eastbourne→Gatwick £93 (ret £89), →Heathrow £154 (ret £159)',
+  'Seaford→Gatwick £87 (ret £84), Uckfield→Gatwick £59 (ret £55), East Grinstead→Gatwick £40 (ret £36)',
+  'All fares include all charges — no surcharges added on top'
 ].join('\n');
 
 // ── Fare engine (exact mirror of CF table in index.html) ─────────────────
 // Values are ALL-IN fixed fares — no surcharges to add on top.
 // out = town→airport (drop-off), ret = airport→town (pickup)
 const FARE_CF = {
-  brighton:      { ga:{out:72,ret:68},  he:{out:128,ret:133}, st:{out:215,ret:220}, lu:{out:205,ret:210}, so:{out:152,ret:147}, ci:{out:166,ret:171} },
-  lewes:         { ga:{out:78,ret:74},  he:{out:140,ret:145}, st:{out:225,ret:230}, lu:{out:215,ret:220}, so:{out:160,ret:155}, ci:{out:175,ret:180} },
-  horsham:       { ga:{out:55,ret:50},  he:{out:120,ret:125}, st:{out:180,ret:185}, lu:{out:155,ret:160}, so:{out:135,ret:130}, ci:{out:160,ret:165} },
-  crawley:       { ga:{out:35,ret:32},  he:{out:95,ret:100} },
-  worthing:      { ga:{out:72,ret:68},  he:{out:130,ret:135} },
-  haywards:      { ga:{out:52,ret:48} },
-  burgess:       { ga:{out:48,ret:44} },
-  eastbourne:    { ga:{out:98,ret:94},  he:{out:162,ret:167} },
-  seaford:       { ga:{out:92,ret:88} },
-  uckfield:      { ga:{out:62,ret:58} },
-  eastgrinstead: { ga:{out:42,ret:38} }
+  brighton:      { ga:{out:68,ret:65},  he:{out:122,ret:126}, st:{out:204,ret:209}, lu:{out:195,ret:200}, so:{out:144,ret:140}, ci:{out:158,ret:162} },
+  lewes:         { ga:{out:74,ret:70},  he:{out:133,ret:138}, st:{out:214,ret:219}, lu:{out:204,ret:209}, so:{out:152,ret:147}, ci:{out:166,ret:171} },
+  horsham:       { ga:{out:52,ret:48},  he:{out:114,ret:119}, st:{out:171,ret:176}, lu:{out:147,ret:152}, so:{out:128,ret:124}, ci:{out:152,ret:157} },
+  crawley:       { ga:{out:33,ret:30},  he:{out:90,ret:95} },
+  worthing:      { ga:{out:68,ret:65},  he:{out:124,ret:128} },
+  haywards:      { ga:{out:49,ret:46} },
+  burgess:       { ga:{out:46,ret:42} },
+  eastbourne:    { ga:{out:93,ret:89},  he:{out:154,ret:159} },
+  seaford:       { ga:{out:87,ret:84} },
+  uckfield:      { ga:{out:59,ret:55} },
+  eastgrinstead: { ga:{out:40,ret:36} }
 };
 const FARE_APFULL = { ga:'Gatwick', he:'Heathrow', st:'Stansted', lu:'Luton', so:'Southampton', ci:'London City' };
 // Airport coords for routing when town is unknown
@@ -118,9 +118,9 @@ function _fareCalcMile(mi, night) {
   const m = Math.max(mi, 10); // 10-mile minimum
   let f;
   if (night) {
-    f = m <= 10 ? m * 3.99 : m <= 20 ? 39.9 + (m - 10) * 3.26 : 72.5 + (m - 20) * 2.93;
+    f = m <= 10 ? m * 3.79 : m <= 20 ? 37.9 + (m - 10) * 3.10 : 68.9 + (m - 20) * 2.78;
   } else {
-    f = m <= 10 ? m * 4.20 : m <= 20 ? 42 + (m - 10) * 2.62 : 68.2 + (m - 20) * 2.36;
+    f = m <= 10 ? m * 3.99 : m <= 20 ? 39.9 + (m - 10) * 2.49 : 64.8 + (m - 20) * 2.24;
   }
   return Math.ceil(f / 0.5) * 0.5;
 }
@@ -431,7 +431,38 @@ async function executeCalendarTool(name, input) {
         const result = await calculateFare(input.pickup, input.destination, input.time || null);
         const mi = result.distance_miles != null ? result.distance_miles + ' miles' : 'distance unknown';
         const ti = result.duration_min != null ? '~' + result.duration_min + ' min' : 'duration unknown';
-        return `Fare: £${result.fare} | ${mi} | ${ti} | Rate: ${result.rate_type} | ${result.breakdown}`;
+
+        // Dead miles: check driver current GPS vs pickup, charge £2/mi beyond 5-mile free threshold
+        let deadNote = '';
+        try {
+          const db = getDb();
+          const driverLoc = db.prepare(
+            `SELECT dl.lat, dl.lng FROM driver_locations dl
+             JOIN users u ON dl.driver_id = u.id
+             WHERE u.is_default_driver = 1
+             ORDER BY dl.updated_at DESC LIMIT 1`
+          ).get();
+          if (driverLoc && driverLoc.lat && driverLoc.lng) {
+            const pickupGc = await _fareGeocode(input.pickup);
+            if (pickupGc) {
+              const rt = await _fareRoute(driverLoc.lat, driverLoc.lng, pickupGc.lat, pickupGc.lon);
+              if (rt) {
+                const deadMi = Math.round(rt.distance / 1609.34 * 10) / 10;
+                const FREE_MI = 5;
+                const chargeableMi = Math.max(0, deadMi - FREE_MI);
+                if (chargeableMi > 0) {
+                  const deadFee = Math.ceil(chargeableMi * 2 * 2) / 2; // £2/mi, round up to nearest 50p
+                  const total = result.fare + deadFee;
+                  deadNote = ` | Dead miles: ${deadMi.toFixed(1)} mi (${FREE_MI} mi free → ${chargeableMi.toFixed(1)} mi @ £2/mi = +£${deadFee.toFixed(0)}) | Total inc. dead miles: £${total}`;
+                } else {
+                  deadNote = ` | Dead miles: ${deadMi.toFixed(1)} mi (within ${FREE_MI} mi free threshold — no charge)`;
+                }
+              }
+            }
+          }
+        } catch (_) { /* GPS unavailable — skip dead miles */ }
+
+        return `Fare: £${result.fare} | ${mi} | ${ti} | Rate: ${result.rate_type} | ${result.breakdown}${deadNote}`;
       } catch (e) {
         return 'Fare calculation error: ' + e.message;
       }

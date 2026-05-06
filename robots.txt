@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /westmere-admin.html
+Disallow: /westmere-owner.html
+Disallow: /westmere-driver.html
+Disallow: /westmere-driver-gps.html
+Disallow: /westmere-cookies.html
+Allow: /

@@ -39,9 +39,6 @@ nav#nav{display:none}
 .tb-crest{width:36px;height:36px;border:1px solid rgba(184,152,90,.22);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1rem;color:var(--navy);flex-shrink:0}
 .tb-name{font-family:var(--serif);font-size:1rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--navy)}
 .tb-mode-label{font-size:.48rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
-.mode-toggle{display:flex;background:rgba(17,29,44,.04);border:1px solid rgba(184,152,90,.15);gap:1px}
-.mode-btn{padding:.5rem 1rem;background:transparent;border:none;font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.5);cursor:pointer;transition:all .25s;white-space:nowrap}
-.mode-btn.on{background:var(--gold);color:var(--navy)}
 .status-dot{width:8px;height:8px;border-radius:50%;background:rgba(17,29,44,.2);flex-shrink:0;transition:background .4s}
 .status-dot.ok{background:var(--green);animation:pulse 2.5s infinite}
 .status-dot.err{background:var(--red);animation:none}
@@ -359,8 +356,6 @@ input[type=date]::placeholder,input[type=text]::placeholder{color:rgba(17,29,44,
   .sbt{min-width:100%}
   .jc-links{flex-wrap:wrap}
   .jl{flex:1;min-width:70px}
-  .mode-toggle{gap:0}
-  .mode-btn{padding:.4rem .65rem;font-size:.5rem}
   .scorecard{grid-template-columns:repeat(3,1fr)}
 }
 @media(max-width:380px){
@@ -368,7 +363,6 @@ input[type=date]::placeholder,input[type=text]::placeholder{color:rgba(17,29,44,
   .sec-title{font-size:1.4rem}
   .jc-time{font-size:1.5rem}
   .jc-name{font-size:.9rem}
-  .mode-btn{padding:.35rem .55rem;font-size:.48rem}
 }
 
 /* ── EARNINGS STAT CARDS ── */
@@ -528,7 +522,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
     <div class="tb-left">
       <div class="tb-crest">W</div>
       <div>
-        <div class="tb-mode-label" id="tb-mode-label">Drive Mode</div>
+        <div class="tb-mode-label" id="tb-mode-label">Westmere</div>
       </div>
       <!-- Tesla battery pill -->
       <div id="tb-tesla-pill" style="display:none;margin-left:.5rem;align-items:center;gap:.35rem;background:rgba(17,29,44,.06);border-radius:20px;padding:.22rem .65rem;font-size:.65rem;font-family:var(--sans);font-weight:500;color:var(--navy);letter-spacing:.04em">
@@ -538,10 +532,6 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:.4rem">
-      <div class="mode-toggle">
-        <button class="mode-btn on" id="mode-drive" onclick="setMode('drive')">Drive</button>
-        <button class="mode-btn" id="mode-admin" onclick="setMode('admin')">Admin</button>
-      </div>
       <button onclick="openSettings()" title="Settings" style="background:transparent;border:1px solid rgba(17,29,44,.1);width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(17,29,44,.55)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
@@ -957,9 +947,9 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
     <button class="bn" id="bn-offered" onclick="goPage('offered',this)"><div class="bn-bar"></div><div class="bn-label">Upcoming</div><div class="bn-dot" id="offered-dot"></div></button>
     <button class="bn" id="bn-tesla" onclick="goPage('tesla',this)"><div class="bn-bar"></div><div class="bn-label">Tesla</div></button>
     <button class="bn" id="bn-calendar" onclick="goPage('calendar',this)"><div class="bn-bar"></div><div class="bn-label">Calendar</div></button>
-    <button class="bn" id="bn-drivers" onclick="goPage('drivers',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Drivers</div><div class="bn-dot" id="drivers-dot" style="display:none"></div></button>
-    <button class="bn" id="bn-decisions" onclick="goPage('decisions',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Decisions</div><div class="bn-dot" id="decisions-dot" style="display:none"></div></button>
-    <button class="bn" id="bn-invoices" onclick="goPage('invoices',this)" style="display:none"><div class="bn-bar"></div><div class="bn-label">Invoices</div></button>
+    <button class="bn" id="bn-drivers" onclick="goPage('drivers',this)"><div class="bn-bar"></div><div class="bn-label">Drivers</div><div class="bn-dot" id="drivers-dot" style="display:none"></div></button>
+    <button class="bn" id="bn-decisions" onclick="goPage('decisions',this)"><div class="bn-bar"></div><div class="bn-label">Decisions</div><div class="bn-dot" id="decisions-dot" style="display:none"></div></button>
+    <button class="bn" id="bn-invoices" onclick="goPage('invoices',this)"><div class="bn-bar"></div><div class="bn-label">Invoices</div></button>
     <button class="bn" id="bn-earnings" onclick="goPage('earnings',this)"><div class="bn-bar"></div><div class="bn-label">Earnings</div></button>
   </div>
 
@@ -1196,24 +1186,7 @@ var SD_JOBS = [];
 var TESLA = {battery:0,rangeMiles:0,location:'Not connected',status:'Offline'};
 var ASSIST_HISTORY = [];
 var ASSIST_BUSY = false;
-var currentMode = 'drive';
 var HOME_BASE = '';
-
-// ── MODE ─────────────────────────────────────────────────────────────────────
-function setMode(mode){
-  currentMode = mode;
-  document.getElementById('mode-drive').classList.toggle('on', mode==='drive');
-  document.getElementById('mode-admin').classList.toggle('on', mode==='admin');
-  document.getElementById('tb-mode-label').textContent = mode==='drive' ? 'Drive Mode' : 'Admin Mode';
-  var driveItems = ['bn-today','bn-offered','bn-tesla'];
-  var adminItems = ['bn-decisions','bn-drivers','bn-invoices'];
-  driveItems.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=mode==='drive'?'':'none';});
-  adminItems.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=mode==='admin'?'':'none';});
-  var fab=document.getElementById('assist-fab');
-  if(fab) fab.style.display=mode==='admin'?'flex':'none';
-  if(mode==='drive') goPage('today', document.getElementById('bn-today'));
-  else goPage('decisions', document.getElementById('bn-decisions'));
-}
 
 // ── NAVIGATION ────────────────────────────────────────────────────────────────
 function goPage(id,btn){
@@ -1278,7 +1251,7 @@ function renderDecisionsPending(list){
       +'</div>'
       +'<div style="display:flex;gap:.4rem;margin-top:.4rem;align-items:center">'
       +  '<select class="fi" id="dec-sel-'+b.id+'" style="flex:1;font-size:.7rem;padding:.4rem .5rem;min-width:0;color:rgba(17,29,44,.5)">'+drvOpts+'</select>'
-      +  '<button style="padding:.4rem .7rem;font-size:.68rem;background:var(--navy);color:#fff;border:none;border-radius:6px;cursor:pointer;white-space:nowrap;letter-spacing:.06em;text-transform:uppercase" onclick="decOffer('+b.id+')">Offer</button>'
+      +  '<button style="padding:.4rem .7rem;font-size:.68rem;background:var(--navy);color:#fff;border:none;border-radius:6px;cursor:pointer;white-space:nowrap;letter-spacing:.06em;text-transform:uppercase" onclick="decOffer('+b.id+')">Pass to Driver</button>'
       +'</div>'
       +'</div>';
   }).join('');
@@ -2814,6 +2787,7 @@ async function sendToAssist(msg){
 // Card for image-scanned bookings — direct action buttons (no pending flow needed)
 function showScannedBookingCard(bk,idx,total){
   var label=total>1?'Booking '+(idx+1)+' of '+total:'Booking';
+  var cardId='scan-card-'+Date.now()+'-'+idx;
   var rows=[];
   if(bk.name) rows.push('<strong>Passenger:</strong> '+escH(bk.name));
   if(bk.phone) rows.push('<strong>Phone:</strong> '+escH(bk.phone));
@@ -2823,15 +2797,18 @@ function showScannedBookingCard(bk,idx,total){
   if(bk.time) rows.push('<strong>Time:</strong> '+escH(bk.time));
   if(bk.passengers&&bk.passengers>1) rows.push('<strong>Passengers:</strong> '+bk.passengers);
   if(bk.flight) rows.push('<strong>Flight:</strong> '+escH(bk.flight));
-  if(bk.fare) rows.push('<strong>Fare:</strong> £'+bk.fare);
   if(bk.payment) rows.push('<strong>Payment:</strong> '+escH(bk.payment));
   if(bk.notes) rows.push('<strong>Notes:</strong> '+escH(bk.notes));
   var bkJson=escH(JSON.stringify(bk));
-  var html='<div class="msg-w"><div class="msg-w-crest">W</div><div class="msg-booking">'
+  var html='<div class="msg-w" id="'+cardId+'"><div class="msg-w-crest">W</div><div class="msg-booking">'
     +'<div class="msg-booking-title">'+escH(label)+'</div>'
     +'<div class="msg-booking-row">'+rows.join('<br>')+'</div>'
+    +'<div style="margin-top:.6rem;display:flex;align-items:center;gap:.5rem">'
+    +'<label style="font-size:.72rem;color:rgba(17,29,44,.5);white-space:nowrap">Fare £</label>'
+    +'<input type="number" id="'+cardId+'-fare" min="0" step="0.5" placeholder="'+(bk.fare||'')+'" value="'+(bk.fare||'')+'" style="width:80px;border:1px solid rgba(184,152,90,.4);border-radius:4px;padding:.35rem .5rem;font-size:.9rem;font-family:inherit;color:var(--navy);background:#fff">'
+    +'</div>'
     +'<div class="msg-booking-actions">'
-    +'<button class="mba-confirm" onclick="createBookingFromAssist(JSON.parse(this.dataset.bk))" data-bk="'+bkJson+'">Create Booking</button>'
+    +'<button class="mba-confirm" onclick="(function(btn){var bk=JSON.parse(btn.dataset.bk);var fi=document.getElementById(btn.dataset.cid+\'-fare\');if(fi&&fi.value)bk.fare=parseFloat(fi.value);createBookingFromAssist(bk);})(this)" data-bk="'+bkJson+'" data-cid="'+cardId+'">Create Booking</button>'
     +'<button class="mba-cal" onclick="calOnlyFromData(JSON.parse(this.dataset.bk))" data-bk="'+bkJson+'" style="padding:.6rem 1rem;background:rgba(184,152,90,.1);border:1px solid rgba(184,152,90,.35);color:var(--gold);font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:6px">Calendar Only</button>'
     +'</div></div></div>';
   appendHTML(html);
@@ -2909,13 +2886,16 @@ function showBookingCard(bk){
   if(bk.time) rows.push('<strong>Time:</strong> '+escH(bk.time));
   if(bk.passengers) rows.push('<strong>Passengers:</strong> '+bk.passengers);
   if(bk.flight) rows.push('<strong>Flight:</strong> '+escH(bk.flight));
-  if(bk.fare) rows.push('<strong>Fare:</strong> £'+bk.fare);
   if(bk.payment) rows.push('<strong>Payment:</strong> '+escH(bk.payment));
   if(bk.notes) rows.push('<strong>Notes:</strong> '+escH(bk.notes));
 
   var html='<div class="msg-w"><div class="msg-w-crest">W</div><div class="msg-booking">'
     +'<div class="msg-booking-title">New Booking</div>'
     +'<div class="msg-booking-row">'+rows.join('<br>')+'</div>'
+    +'<div style="margin-top:.6rem;display:flex;align-items:center;gap:.5rem">'
+    +'<label style="font-size:.72rem;color:rgba(17,29,44,.5);white-space:nowrap">Fare £</label>'
+    +'<input type="number" id="voice-fare-override" min="0" step="0.5" placeholder="'+(bk.fare||'')+'" value="'+(bk.fare||'')+'" style="width:80px;border:1px solid rgba(184,152,90,.4);border-radius:4px;padding:.35rem .5rem;font-size:.9rem;font-family:inherit;color:var(--navy);background:#fff">'
+    +'</div>'
     +'<div class="msg-booking-actions">'
     +'<button class="mba-confirm" onclick="confirmAssistBooking()">Confirm &amp; Book</button>'
     +'<button class="mba-cal" onclick="calOnlyAssistBooking()" style="padding:.6rem 1rem;background:rgba(184,152,90,.1);border:1px solid rgba(184,152,90,.35);color:var(--gold);font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:6px">Add to Calendar Only</button>'
@@ -2926,6 +2906,8 @@ function showBookingCard(bk){
 
 function confirmAssistBooking(){
   if(!ASSIST_PENDING_BOOKING) return;
+  var fareEl=document.getElementById('voice-fare-override');
+  if(fareEl&&fareEl.value)ASSIST_PENDING_BOOKING=Object.assign({},ASSIST_PENDING_BOOKING,{fare:parseFloat(fareEl.value)});
   sendToAssist('Confirm');
 }
 function cancelAssistBooking(){
@@ -2956,6 +2938,7 @@ async function calOnlyAssistBooking(){
 }
 
 async function createBookingFromAssist(bk){
+  ASSIST_BUSY=true;
   setAssistStatus('thinking','Creating booking...');
   try{
     var body={
@@ -2974,13 +2957,15 @@ async function createBookingFromAssist(bk){
     if(data.ok){
       appendW('Booked! Ref: '+data.booking.ref+'. Customer will be notified.');
       showToast('Booking created — '+data.booking.ref);
-
     } else {
       appendW('Could not create booking: '+(data.error||'Unknown error'));
     }
   }catch(e){
     appendW('Network error creating booking.');
   }
+  ASSIST_BUSY=false;
+  ASSIST_PENDING_BOOKING=null;
+  setAssistStatus('live','Listening');
 }
 
 function setAssistStatus(state,text){
@@ -4039,7 +4024,9 @@ document.addEventListener('click',function(e){
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
 function initApp(){
-  setMode('drive');
+  // Show assist fab and navigate to Today tab
+  var fab=document.getElementById('assist-fab');if(fab)fab.style.display='flex';
+  goPage('today', document.getElementById('bn-today'));
   loadOwnerBookings();
   loadOwnerTesla();
   // Handle redirect back from Tesla OAuth
