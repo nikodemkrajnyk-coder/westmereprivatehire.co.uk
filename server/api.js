@@ -1390,7 +1390,7 @@ router.get('/drivers/:id/earnings', (req, res) => {
       FROM bookings
      WHERE driver_id = ?
        AND date >= ? AND date <= ?
-       AND status IN ('confirmed','active','completed','done')
+       AND status IN ('completed','done')
      ORDER BY date ASC, time ASC
   `).all(id, from, to);
 
@@ -1446,7 +1446,7 @@ router.get('/me/earnings', (req, res) => {
            driver_pay, admin_fee
       FROM bookings
      WHERE driver_id = ? AND date >= ? AND date <= ?
-       AND status IN ('confirmed','active','completed','done')
+       AND status IN ('completed','done')
      ORDER BY date ASC, time ASC
   `).all(req.auth.id, from, to);
   let gross = 0, commission = 0, net = 0;

@@ -390,6 +390,11 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 
     <!-- Step 1: Contact -->
     <div class="bk-step active" id="bk-s1">
+      <div id="bk-fare-display" style="display:none;text-align:center;padding:.85rem 0 1rem;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:1rem">
+        <div style="font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:.25rem">Estimated Fare</div>
+        <div id="bk-fare-big" style="font-family:var(--serif);font-size:2.8rem;font-weight:300;color:var(--gold);line-height:1"></div>
+        <div id="bk-fare-meta" style="font-size:.72rem;color:rgba(255,255,255,.4);margin-top:.2rem"></div>
+      </div>
       <div class="bkf"><label>Full name</label><input type="text" id="bk-name" placeholder="Your full name" autocomplete="name" inputmode="text"></div>
       <div class="bkf"><label>Email address</label><input type="email" id="bk-email" placeholder="your@email.com" autocomplete="email" inputmode="email"></div>
       <div class="bkf"><label>Mobile number</label><input type="tel" id="bk-phone" placeholder="+44 7xxx xxxxxx" autocomplete="tel" inputmode="tel"></div>
@@ -742,9 +747,12 @@ function doEstimate(){
   var to=document.getElementById('b-to').value.trim();
   if(!from||from.length<2||!to||to.length<2){
     var rb=document.getElementById('return-trip-block');if(rb)rb.style.display='none';
+    var btn=document.getElementById('btn-book-j');if(btn)btn.classList.remove('show');
     _retFare=null;_outFare=null;
     return;
   }
+  // Show book button immediately when both addresses filled; fare shown in modal
+  var btn=document.getElementById('btn-book-j');if(btn)btn.classList.add('show');
   _et=setTimeout(function(){runCalc(from,to);},550);
 }
 function showFare(fare,mi,ti,lbl,apNote){
@@ -755,7 +763,7 @@ function showFare(fare,mi,ti,lbl,apNote){
   var t=document.getElementById('fr-dur');if(t)t.textContent=ti?'~'+ti+' min':'—';
   var n=document.getElementById('fr-note');if(n)n.textContent='';
   var ap=document.getElementById('fr-ap');if(ap){if(apNote){ap.textContent=apNote;ap.style.display='block';}else{ap.style.display='none';}}
-  var r=document.getElementById('fare-reveal');if(r)r.classList.add('show');
+  // fare-reveal is hidden on main page — fare shown in booking modal instead
   var btn=document.getElementById('btn-book-j');if(btn)btn.classList.add('show');
   // Check if destination is an airport and offer return trip
   var fromV=document.getElementById('b-from');var toV=document.getElementById('b-to');
@@ -830,7 +838,7 @@ function runCalc(from,to){
   var tm=document.getElementById('b-time')?document.getElementById('b-time').value:'08:00';
   var h=parseInt((tm||'08:00').split(':')[0]),night=isNight(h);
   var puAP=nAP(from),deAP=nAP(to),puT=nT(from),deT=nT(to);
-  document.getElementById('fr-price').textContent='Calculating\u2026';document.getElementById('fare-reveal').classList.add('show');
+  document.getElementById('fr-price').textContent='Calculating\u2026';
 
   /* ── Town → Airport (drop-off) ── */
   if(deAP&&!puAP){
@@ -1098,6 +1106,16 @@ function openBookingModal() {
 
   var pa = document.getElementById("bk-pay-amt");
   if (pa) pa.textContent = (priceTxt&&priceTxt!=="—") ? priceTxt : "";
+  var fd=document.getElementById("bk-fare-display");
+  var fb=document.getElementById("bk-fare-big");
+  var fm=document.getElementById("bk-fare-meta");
+  if(fd&&fb){
+    if(fareNum>0){
+      fb.textContent='£'+fareNum.toFixed(0);
+      if(fm)fm.textContent=(dist&&dist!=='—'?dist+' · ':'')+(dur&&dur!=='—'?'~'+dur+' min':'');
+      fd.style.display='block';
+    } else { fd.style.display='none'; }
+  }
 
   bkSmartDay(time);
   bkGoS(1);
