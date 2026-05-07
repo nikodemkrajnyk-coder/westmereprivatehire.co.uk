@@ -47,7 +47,7 @@ router.get('/bookings', (req, res) => {
     `).all(id);
   } else if (type === 'customer') {
     rows = db.prepare(`
-      SELECT b.*, u.full_name as driver_name
+      SELECT b.*, u.full_name as driver_name, u.vehicle as driver_vehicle, u.reg as driver_reg
       FROM bookings b
       LEFT JOIN users u ON b.driver_id = u.id
       WHERE b.customer_id = ?
@@ -1002,6 +1002,40 @@ router.put('/settings/invoice', (req, res) => {
     console.error('[API] invoice settings save failed:', e.message);
     return res.status(500).json({ error: 'Failed to save settings. Please try again.' });
   }
+  res.json({ ok: true });
+});
+
+// ── Owner self-profile ──────────────────────────────────────────────────
+
+router.get('/owner/profile', (req, res) => {
+  if (req.auth.role !== 'owner') return res.status(403).json({ error: 'Owner access only' });
+  const db = getDb();
+  const row = db.prepare(`
+    SELECT id, full_name, email, phone, vehicle, reg,
+           license_no, license_expiry, dbs_no, dbs_expiry,
+           phv_no, insurance_no
+    FROM users WHERE id = ?
+  `).get(req.auth.id);
+  if (!row) return res.status(404).json({ error: 'Profile not found' });
+  res.json({ ok: true, profile: row });
+});
+
+router.patch('/owner/profile', (req, res) => {
+  if (req.auth.role !== 'owner') return res.status(403).json({ error: 'Owner access only' });
+  const db = getDb();
+  const allowed = ['full_name', 'phone', 'vehicle', 'reg', 'license_no', 'license_expiry', 'dbs_no', 'dbs_expiry', 'phv_no', 'insurance_no'];
+  const updates = [];
+  const values = [];
+  for (const f of allowed) {
+    if (req.body[f] !== undefined) {
+      updates.push(`${f} = ?`);
+      values.push(req.body[f] === '' ? null : String(req.body[f]).trim());
+    }
+  }
+  if (!updates.length) return res.status(400).json({ error: 'No fields to update' });
+  updates.push("updated_at = datetime('now')");
+  values.push(req.auth.id);
+  db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...values);
   res.json({ ok: true });
 });
 

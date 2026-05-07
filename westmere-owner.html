@@ -315,12 +315,6 @@ input[type=date]:focus,input[type=text]:focus{border-bottom-color:var(--gold)!im
 input[type=date]::-webkit-calendar-picker-indicator{filter:none}
 input[type=date]::placeholder,input[type=text]::placeholder{color:rgba(17,29,44,.3)}
 
-/* ── TESLA SUPERCHARGER LIST FIX ── */
-.tesla-charger{padding:.82rem 1rem;border-bottom:1px solid rgba(17,29,44,.06)}
-.tesla-charger:last-child{border-bottom:none}
-.tesla-charger .tc-name{font-size:.85rem;font-weight:500;color:var(--navy)}
-.tesla-charger .tc-dist{font-size:.7rem;color:rgba(17,29,44,.4);margin-top:.1rem}
-.tesla-charger .tc-avail{font-size:.7rem;margin-top:.1rem}
 
 /* ── QUICK CMD BUTTONS ── */
 .qcmd{text-align:left;background:rgba(17,29,44,.03);border:1px solid rgba(17,29,44,.08);padding:.75rem 1rem;cursor:pointer;font-family:var(--sans);font-size:.92rem;font-weight:300;color:rgba(17,29,44,.65);width:100%;transition:all .25s}
@@ -524,12 +518,6 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
       <div>
         <div class="tb-mode-label" id="tb-mode-label">Westmere</div>
       </div>
-      <!-- Tesla battery pill -->
-      <div id="tb-tesla-pill" style="display:none;margin-left:.5rem;align-items:center;gap:.35rem;background:rgba(17,29,44,.06);border-radius:20px;padding:.22rem .65rem;font-size:.65rem;font-family:var(--sans);font-weight:500;color:var(--navy);letter-spacing:.04em">
-        <svg width="14" height="7" viewBox="0 0 14 7" style="flex-shrink:0"><rect x="0" y="1" width="12" height="5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="12.2" y="2.5" width="1.5" height="2" rx=".5" fill="currentColor" opacity=".5"/><rect id="tb-tesla-bar" x="1" y="2" width="0" height="3" rx=".8" fill="#2A9D5C"/></svg>
-        <span id="tb-tesla-pct">—</span>
-        <span style="color:rgba(17,29,44,.4);font-size:.58rem" id="tb-tesla-range"></span>
-      </div>
     </div>
     <div style="display:flex;align-items:center;gap:.4rem">
       <button onclick="openSettings()" title="Settings" style="background:transparent;border:1px solid rgba(17,29,44,.1);width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(17,29,44,.55)">
@@ -549,6 +537,23 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem">
         <div style="font-family:var(--serif);font-size:1.3rem;color:var(--navy);font-style:italic">Settings</div>
         <button onclick="closeSettings()" style="background:transparent;border:none;font-size:1.4rem;cursor:pointer;color:rgba(17,29,44,.5)">&times;</button>
+      </div>
+
+      <!-- Owner Profile -->
+      <div id="sett-owner-profile" style="background:rgba(17,29,44,.03);border-radius:12px;padding:1.1rem 1rem;margin-bottom:1rem">
+        <div style="font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.9rem">My Profile</div>
+        <div id="op-loading" style="font-size:.78rem;color:rgba(17,29,44,.4)">Loading…</div>
+        <div id="op-body" style="display:none">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.55rem .8rem;margin-bottom:.75rem">
+            <div><label style="font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.45);display:block;margin-bottom:.2rem">Full Name</label><input id="op-name" class="fi" style="font-size:.82rem;padding:.45rem .6rem" type="text" autocomplete="off"></div>
+            <div><label style="font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.45);display:block;margin-bottom:.2rem">Phone</label><input id="op-phone" class="fi" style="font-size:.82rem;padding:.45rem .6rem" type="tel" autocomplete="off"></div>
+            <div><label style="font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.45);display:block;margin-bottom:.2rem">Vehicle</label><input id="op-vehicle" class="fi" style="font-size:.82rem;padding:.45rem .6rem" type="text" autocomplete="off"></div>
+            <div><label style="font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.45);display:block;margin-bottom:.2rem">Registration</label><input id="op-reg" class="fi" style="font-size:.82rem;padding:.45rem .6rem" type="text" autocomplete="off" style="text-transform:uppercase"></div>
+          </div>
+          <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.4);margin:.7rem 0 .45rem">Documents &amp; Expiry</div>
+          <div id="op-docs" style="display:grid;grid-template-columns:1fr 1fr;gap:.55rem .8rem;margin-bottom:.75rem"></div>
+          <button onclick="ownerProfileSave()" style="width:100%;padding:.7rem;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:var(--sans);font-size:.72rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Save Profile</button>
+        </div>
       </div>
 
       <div style="background:rgba(17,29,44,.03);border-radius:12px;padding:1.1rem 1rem;margin-bottom:1rem">
@@ -596,10 +601,6 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
         </div>
       </div>
 
-      <div style="background:rgba(17,29,44,.03);border-radius:12px;padding:1.1rem 1rem;margin-top:1rem" id="sett-tesla-section">
-        <div style="font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.9rem">Tesla Vehicle</div>
-        <div id="sett-tesla-body"><div style="font-size:.78rem;color:rgba(17,29,44,.4)">Loading…</div></div>
-      </div>
 
       <div style="background:rgba(17,29,44,.03);border-radius:12px;padding:1.1rem 1rem;margin-top:1rem">
         <div style="font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.9rem">Change Password</div>
@@ -641,31 +642,6 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
       <div id="offered-list"></div>
     </div>
 
-    <!-- Tesla -->
-    <div class="pg" id="pg-tesla">
-      <div class="sec-title">Tesla <em>Model S</em></div>
-      <div class="sec-sub">Battery · Range · Job feasibility</div>
-      <div style="background:#fff;padding:1.4rem;margin-bottom:.85rem;border:1px solid rgba(17,29,44,.08);box-shadow:0 2px 12px rgba(17,29,44,.04);position:relative;overflow:hidden">
-        <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(-45deg,transparent,transparent 60px,rgba(184,152,90,.02) 60px,rgba(184,152,90,.02) 61px);pointer-events:none"></div>
-        <div style="font-size:.5rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-bottom:.8rem;position:relative">XX21 WPH</div>
-        <div style="display:flex;gap:2rem;flex-wrap:wrap;margin-bottom:1rem;position:relative">
-          <div><div style="font-size:.5rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-bottom:.2rem">Battery</div><div style="font-family:var(--serif);font-size:3.2rem;color:var(--navy);line-height:1" id="tesla-pct">&mdash;<span style="font-size:.85rem;font-family:var(--sans);font-weight:300;color:rgba(17,29,44,.4)">%</span></div></div>
-          <div><div style="font-size:.5rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-bottom:.2rem">Range</div><div style="font-family:var(--serif);font-size:1.8rem;color:var(--gold);line-height:1" id="tesla-range">&mdash; <span style="font-size:.85rem;font-family:var(--sans);font-weight:300;color:rgba(17,29,44,.4)">mi</span></div></div>
-          <div><div style="font-size:.5rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-bottom:.2rem">Status</div><div id="tesla-status" style="font-size:.78rem;color:rgba(17,29,44,.6);margin-top:.25rem">Not connected</div></div>
-        </div>
-        <div style="height:7px;background:rgba(255,255,255,.08);margin-bottom:.4rem;position:relative"><div id="tesla-bar" style="height:100%;width:0%;background:linear-gradient(to right,var(--gold),#7ecfa0);transition:width 1s ease"></div></div>
-        <div style="font-size:.58rem;color:rgba(17,29,44,.3);position:relative" id="tesla-last">Connect Tesla to sync battery &amp; range</div>
-      </div>
-      <div class="card"><div class="ch">Range Check — Today's Jobs</div><div id="tesla-rc"></div></div>
-      <div class="card">
-        <div class="ch">Nearest Superchargers</div>
-        <div style="padding:1.1rem 1rem;font-size:.78rem;color:rgba(17,29,44,.4);text-align:center">Connect Tesla to see nearest superchargers.</div>
-      </div>
-      <div style="display:flex;gap:.6rem;margin-top:.2rem">
-        <button onclick="refreshTesla()" class="ibtn-primary">Refresh</button>
-        <button onclick="showToast('Tesla OAuth ready — connect when live')" class="ibtn-ghost">Connect Tesla</button>
-      </div>
-    </div>
 
     <!-- Calendar -->
     <div class="pg" id="pg-calendar">
@@ -945,7 +921,6 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
   <div class="bottom-nav" id="bottom-nav">
     <button class="bn on" id="bn-today" onclick="goPage('today',this)"><div class="bn-bar"></div><div class="bn-label">Today</div></button>
     <button class="bn" id="bn-offered" onclick="goPage('offered',this)"><div class="bn-bar"></div><div class="bn-label">Upcoming</div><div class="bn-dot" id="offered-dot"></div></button>
-    <button class="bn" id="bn-tesla" onclick="goPage('tesla',this)"><div class="bn-bar"></div><div class="bn-label">Tesla</div></button>
     <button class="bn" id="bn-calendar" onclick="goPage('calendar',this)"><div class="bn-bar"></div><div class="bn-label">Calendar</div></button>
     <button class="bn" id="bn-drivers" onclick="goPage('drivers',this)"><div class="bn-bar"></div><div class="bn-label">Drivers</div><div class="bn-dot" id="drivers-dot" style="display:none"></div></button>
     <button class="bn" id="bn-decisions" onclick="goPage('decisions',this)"><div class="bn-bar"></div><div class="bn-label">Decisions</div><div class="bn-dot" id="decisions-dot" style="display:none"></div></button>
@@ -1036,7 +1011,67 @@ function openSettings(){
   el.style.display='flex';
   if(window.syncDisplayUI)window.syncDisplayUI();
   checkGoogleCalendarStatus();
-  loadOwnerTeslaSettings();
+  loadOwnerProfile();
+}
+
+async function loadOwnerProfile(){
+  var loading=document.getElementById('op-loading');
+  var body=document.getElementById('op-body');
+  if(!loading||!body)return;
+  loading.style.display='block';body.style.display='none';
+  try{
+    var r=await fetch('/api/owner/profile',{credentials:'include'});
+    var d=await r.json();
+    if(!d.ok){loading.textContent='Failed to load profile';return;}
+    var p=d.profile;
+    var setVal=function(id,val){var el=document.getElementById(id);if(el)el.value=val||'';};
+    setVal('op-name',p.full_name);setVal('op-phone',p.phone);setVal('op-vehicle',p.vehicle);setVal('op-reg',p.reg);
+    // Documents with expiry warnings
+    var today=new Date();today.setHours(0,0,0,0);
+    var docs=[
+      {label:'Driving Licence No',idNo:'op-lic-no',noVal:p.license_no,idExp:'op-lic-exp',expVal:p.license_expiry},
+      {label:'DBS No',idNo:'op-dbs-no',noVal:p.dbs_no,idExp:'op-dbs-exp',expVal:p.dbs_expiry},
+      {label:'PHV Licence No',idNo:'op-phv-no',noVal:p.phv_no,idExp:'op-phv-exp',expVal:null},
+      {label:'Insurance No',idNo:'op-ins-no',noVal:p.insurance_no,idExp:'op-ins-exp',expVal:null}
+    ];
+    var docsEl=document.getElementById('op-docs');
+    docsEl.innerHTML=docs.map(function(doc){
+      var warn='';
+      if(doc.expVal){
+        var expDate=new Date(doc.expVal);expDate.setHours(0,0,0,0);
+        var daysLeft=Math.round((expDate-today)/(1000*60*60*24));
+        var warnColor=daysLeft<30?'#c0392b':daysLeft<90?'#9C5800':'#2D6E47';
+        var warnText=daysLeft<0?'EXPIRED':'Expires in '+daysLeft+' days';
+        warn='<div style="font-size:.58rem;color:'+warnColor+';font-weight:600;margin-top:.15rem">'+warnText+'</div>';
+      }
+      return '<div><label style="font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.4);display:block;margin-bottom:.15rem">'+doc.label+'</label>'
+        +'<input id="'+doc.idNo+'" class="fi" style="font-size:.8rem;padding:.4rem .5rem;margin-bottom:.2rem" type="text" placeholder="Reference no." value="'+owEsc(doc.noVal||'')+'">'
+        +(doc.idExp?'<input id="'+doc.idExp+'" class="fi" style="font-size:.8rem;padding:.4rem .5rem" type="date" value="'+owEsc(doc.expVal||'')+'">'+warn:'')
+        +'</div>';
+    }).join('');
+    loading.style.display='none';body.style.display='block';
+  }catch(e){loading.textContent='Network error';}
+}
+
+async function ownerProfileSave(){
+  var body={
+    full_name:document.getElementById('op-name').value.trim(),
+    phone:document.getElementById('op-phone').value.trim(),
+    vehicle:document.getElementById('op-vehicle').value.trim(),
+    reg:document.getElementById('op-reg').value.trim().toUpperCase(),
+    license_no:(document.getElementById('op-lic-no')||{}).value||'',
+    license_expiry:(document.getElementById('op-lic-exp')||{}).value||'',
+    dbs_no:(document.getElementById('op-dbs-no')||{}).value||'',
+    dbs_expiry:(document.getElementById('op-dbs-exp')||{}).value||'',
+    phv_no:(document.getElementById('op-phv-no')||{}).value||'',
+    insurance_no:(document.getElementById('op-ins-no')||{}).value||''
+  };
+  try{
+    var r=await fetch('/api/owner/profile',{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var d=await r.json();
+    if(d.ok){showToast('Profile saved');loadOwnerProfile();}
+    else showToast(d.error||'Failed to save');
+  }catch(e){showToast('Network error');}
 }
 function closeSettings(){
   var el=document.getElementById('settings-overlay');
@@ -1183,7 +1218,6 @@ var TODAY_JOBS = [];
 var OFFERED_JOBS = [];
 var INBOX_MSGS = [];
 var SD_JOBS = [];
-var TESLA = {battery:0,rangeMiles:0,location:'Not connected',status:'Offline'};
 var ASSIST_HISTORY = [];
 var ASSIST_BUSY = false;
 var HOME_BASE = '';
@@ -1197,7 +1231,6 @@ function goPage(id,btn){
   document.getElementById('page-scroll').scrollTo(0,0);
   if(id==='today')buildToday();
   if(id==='offered')buildOffered();
-  if(id==='tesla'){updateTeslaUI();buildTeslaRC();}
   if(id==='inbox')oLoadInbox();
   if(id==='calendar')loadCalendarExternal();
   if(id==='earnings')buildEarnings();
@@ -1216,7 +1249,7 @@ async function loadDecisions(){
       fetch('/api/drivers',{credentials:'include'}).then(function(r){return r.json();}).catch(function(){return{ok:false,drivers:[]};})
     ]);
     var bookings=(results[0]&&results[0].ok)?results[0].bookings:[];
-    DEC_DRIVERS=(results[1]&&results[1].ok)?results[1].drivers.filter(function(x){return x.active;}):[];
+    DEC_DRIVERS=(results[1]&&results[1].ok)?results[1].drivers.filter(function(x){return x.active&&!x.is_default_driver;}):[];
     var pending=bookings.filter(function(b){return b.status==='pending';});
     var offered=bookings.filter(function(b){return b.status==='offered';});
     renderDecisionsPending(pending);
@@ -1241,7 +1274,7 @@ function renderDecisionsPending(list){
   var drvOpts='<option value="">\u2014 Offer to driver \u2014</option>'+DEC_DRIVERS.map(function(d){return '<option value="'+d.id+'">'+decEsc(d.full_name||('Driver #'+d.id))+'</option>';}).join('');
   el.innerHTML=list.map(function(b){
     return '<div style="padding:.85rem 1rem;border-top:1px solid var(--rule)">'
-      +'<div style="font-weight:500;color:var(--navy);font-size:.85rem">'+decEsc(b.ref||'')+' \u00b7 '+decEsc(b.customer_name||'Guest')+'</div>'
+      +'<div style="font-weight:500;color:var(--navy);font-size:.85rem">'+decEsc(b.ref||'')+' \u00b7 '+decEsc(b.customer_name||'')+'</div>'
       +'<div style="font-size:.72rem;color:rgba(17,29,44,.6);margin-top:.2rem">'+decEsc(_shortAddr(b.pickup||''))+' \u2192 '+decEsc(_shortAddr(b.destination||''))+'</div>'
       +'<div style="font-size:.72rem;color:rgba(17,29,44,.5);margin-top:.15rem">'+decEsc(b.date||'')+' at '+decEsc(b.time||'')+(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')+'</div>'
       +(b.intake_reason?'<div style="font-size:.7rem;color:#9C5800;margin-top:.25rem;font-style:italic">'+decEsc(b.intake_reason)+'</div>':'')
@@ -1267,7 +1300,7 @@ function renderDecisionsOffered(list){
       timer='<span class="dec-offer-timer" data-offer-expires="'+exp+'" style="font-variant-numeric:tabular-nums;color:#6b7b9a;margin-left:.35rem"></span>';
     }
     return '<div style="padding:.85rem 1rem;border-top:1px solid var(--rule)">'
-      +'<div style="font-weight:500;color:var(--navy);font-size:.85rem">'+decEsc(b.ref||'')+' \u00b7 '+decEsc(b.customer_name||'Guest')+'</div>'
+      +'<div style="font-weight:500;color:var(--navy);font-size:.85rem">'+decEsc(b.ref||'')+' \u00b7 '+decEsc(b.customer_name||'')+'</div>'
       +'<div style="font-size:.72rem;color:rgba(17,29,44,.6);margin-top:.2rem">'+decEsc(_shortAddr(b.pickup||''))+' \u2192 '+decEsc(_shortAddr(b.destination||''))+'</div>'
       +'<div style="font-size:.72rem;color:rgba(17,29,44,.5);margin-top:.15rem">'+decEsc(b.date||'')+' at '+decEsc(b.time||'')+(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')+'</div>'
       +'<div style="font-size:.74rem;color:#2A3A66;margin-top:.25rem">Awaiting <strong>'+decEsc(b.offered_driver_name||'driver')+'</strong>'+timer+'</div>'
@@ -1414,7 +1447,8 @@ async function loadDriversList(){
     var r=await fetch('/api/drivers',{credentials:'include'});
     var data=await r.json();
     if(!data.ok){el.innerHTML='<div style="padding:1rem;color:var(--red);font-size:.8rem">'+owEsc(data.error||'Failed to load')+'</div>';return;}
-    var drivers=data.drivers||[];
+    // Exclude the owner/default driver — Nikodem manages jobs but isn't an external hired driver
+    var drivers=(data.drivers||[]).filter(function(d){return !d.is_default_driver;});
     // Update badge
     var pendingCount=drivers.filter(function(d){return d.onboarding_status&&d.onboarding_status!=='approved';}).length;
     var dot=document.getElementById('drivers-dot');
@@ -1748,81 +1782,6 @@ async function loadPayoutHistory(){
   }
 }
 
-// ── TESLA ─────────────────────────────────────────────────────────────────────
-var _ownerTeslaTimer = null;
-
-async function loadOwnerTesla() {
-  try {
-    var r = await fetch('/api/tesla/status', { credentials: 'include' });
-    var d = await r.json();
-    if (!d.ok || !d.connected) { updateTeslaPill(null); return; }
-    var vr = await fetch('/api/tesla/vehicle', { credentials: 'include' });
-    var vd = await vr.json();
-    if (vd.ok && vd.vehicle) updateTeslaPill(vd.vehicle);
-    else updateTeslaPill(null);
-  } catch (e) { updateTeslaPill(null); }
-}
-
-function updateTeslaPill(v) {
-  var pill = document.getElementById('tb-tesla-pill');
-  if (!pill) return;
-  if (!v || v.battery_level == null) { pill.style.display = 'none'; return; }
-  pill.style.display = 'flex';
-  var pct = v.battery_level;
-  var bar = document.getElementById('tb-tesla-bar');
-  if (bar) { bar.setAttribute('width', Math.round(pct / 100 * 10)); bar.setAttribute('fill', pct > 50 ? '#2A9D5C' : pct > 20 ? '#B8985A' : '#e05252'); }
-  var pctEl = document.getElementById('tb-tesla-pct');
-  if (pctEl) pctEl.textContent = pct + '%';
-  var rngEl = document.getElementById('tb-tesla-range');
-  if (rngEl) rngEl.textContent = v.battery_range_miles ? v.battery_range_miles + ' mi' : '';
-  // Schedule next refresh in 60s
-  clearTimeout(_ownerTeslaTimer);
-  _ownerTeslaTimer = setTimeout(loadOwnerTesla, 60000);
-}
-
-async function loadOwnerTeslaSettings() {
-  var body = document.getElementById('sett-tesla-body');
-  if (!body) return;
-  try {
-    var r = await fetch('/api/tesla/status', { credentials: 'include' });
-    var d = await r.json();
-    if (!d.ok || !d.connected) {
-      body.innerHTML = '<div style="font-size:.78rem;color:rgba(17,29,44,.5);margin-bottom:.7rem">Not connected</div>'
-        + (d.reason !== 'not_configured' ? '<button onclick="ownerConnectTesla()" style="width:100%;padding:.7rem;background:var(--navy);color:#fff;border:none;border-radius:8px;font-size:.72rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;font-family:var(--sans)">Connect Tesla</button>' : '<div style="font-size:.72rem;color:rgba(17,29,44,.4)">TESLA_CLIENT_ID / TESLA_CLIENT_SECRET not set in Railway</div>');
-      return;
-    }
-    var vr = await fetch('/api/tesla/vehicle', { credentials: 'include' });
-    var vd = await vr.json();
-    var v = vd.vehicle;
-    if (!v) { body.innerHTML = '<div style="font-size:.78rem;color:rgba(17,29,44,.4)">Connected — no vehicle data</div>'; return; }
-    var pct = v.battery_level != null ? v.battery_level + '%' : '—';
-    var range = v.battery_range_miles != null ? v.battery_range_miles + ' mi' : '—';
-    var status = v.charging_state || (v.state === 'asleep' ? 'Asleep' : '—');
-    body.innerHTML =
-      '<div style="display:flex;justify-content:space-between;font-size:.8rem;color:rgba(17,29,44,.7);padding:.25rem 0;border-bottom:1px solid rgba(17,29,44,.06)"><span>Battery</span><span style="font-weight:500;color:var(--navy)">' + pct + '</span></div>'
-      +'<div style="display:flex;justify-content:space-between;font-size:.8rem;color:rgba(17,29,44,.7);padding:.25rem 0;border-bottom:1px solid rgba(17,29,44,.06)"><span>Range</span><span style="font-weight:500;color:var(--navy)">' + range + '</span></div>'
-      +'<div style="display:flex;justify-content:space-between;font-size:.8rem;color:rgba(17,29,44,.7);padding:.25rem 0"><span>Status</span><span style="font-weight:500;color:var(--navy)">' + escH(status) + '</span></div>'
-      +'<button onclick="ownerDisconnectTesla()" style="margin-top:.75rem;width:100%;padding:.6rem;background:transparent;border:1px solid rgba(17,29,44,.12);border-radius:6px;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.45);cursor:pointer;font-family:var(--sans)">Disconnect Tesla</button>';
-  } catch (e) {
-    body.innerHTML = '<div style="font-size:.78rem;color:#a33">Failed to load</div>';
-  }
-}
-
-async function ownerConnectTesla() {
-  try {
-    var r = await fetch('/api/tesla/auth-url?from=/westmere-owner.html', { credentials: 'include' });
-    var d = await r.json();
-    if (d.url) window.location.href = d.url;
-    else alert(d.error || 'Could not get Tesla auth URL');
-  } catch (e) { alert('Network error'); }
-}
-
-async function ownerDisconnectTesla() {
-  if (!confirm('Disconnect Tesla account?')) return;
-  await fetch('/api/tesla/disconnect', { method: 'POST', credentials: 'include' });
-  loadOwnerTeslaSettings();
-  updateTeslaPill(null);
-}
 
 // ── INBOX (Gmail via Google OAuth) ────────────────────────────────────────
 var O_INBOX_FOLDER='inbox';
@@ -2195,7 +2154,7 @@ function buildCard(j,isOffered){
   return '<div class="jc2 '+stClass+'" id="jc-'+escH(j.id)+'">'
     +'<div class="jc2-hd">'
       +'<div class="jc2-time">'+escH(j.time||'ASAP')+'</div>'
-      +'<div class="jc2-right"><div class="jc2-name">'+escH(j.name||'Guest')+'</div><div class="jc2-pax">'+escH(j.phone||'')+'</div></div>'
+      +'<div class="jc2-right"><div class="jc2-name">'+escH(j.name||'')+'</div><div class="jc2-pax">'+escH(j.phone||'')+'</div></div>'
     +'</div>'
     +'<div class="jc2-badge '+bdClass+'">'+bdLabel+'</div>'
     +progHtml
@@ -2298,32 +2257,70 @@ function _fmtUpcomingDate(dateStr){
   return days[d.getDay()]+' '+parseInt(p[2])+' '+_CAL_MONTHS_S[parseInt(p[1])-1];
 }
 
-function buildOffered(){
+async function buildOffered(){
   var list=document.getElementById('offered-list');
   var dot=document.getElementById('offered-dot');
   var pendingCount=OFFERED_JOBS.filter(function(j){return j.apiStatus==='pending';}).length;
   dot.textContent=pendingCount||OFFERED_JOBS.length;
   dot.style.display=OFFERED_JOBS.length?'flex':'none';
 
-  if(!OFFERED_JOBS.length){
+  // Fetch Google Calendar personal events for next 60 days
+  var today=new Date();
+  var from=dk(today.getFullYear(),today.getMonth(),today.getDate());
+  var future=new Date(today);future.setDate(future.getDate()+60);
+  var to=dk(future.getFullYear(),future.getMonth(),future.getDate());
+  var extEvents=[];
+  try{
+    var er=await fetch('/api/google/external-events?from='+from+'&to='+to,{credentials:'include'});
+    var ed=await er.json();
+    if(ed&&ed.ok&&ed.events)extEvents=ed.events;
+  }catch(e){}
+
+  // Convert external events to a common format (type:'personal')
+  var personalItems=extEvents.map(function(ev){
+    var dateKey=_evDateKeyO(ev)||'';
+    var timeStr='';
+    if(!ev.allDay&&ev.start){try{var d=new Date(ev.start);timeStr=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}catch(e){}}
+    return{type:'personal',date:dateKey,time:timeStr,title:ev.title||'Personal event',allDay:ev.allDay||false};
+  }).filter(function(x){return x.date>=from;});
+
+  // Merge with booking jobs, sort by date then time
+  var allItems=OFFERED_JOBS.map(function(j){return Object.assign({type:'booking'},j);}).concat(personalItems);
+  allItems.sort(function(a,b){
+    var dc=(a.date||'').localeCompare(b.date||'');
+    if(dc!==0)return dc;
+    return (a.time||'').localeCompare(b.time||'');
+  });
+
+  if(!allItems.length){
     list.innerHTML='<div class="empty"><div class="empty-title">No upcoming jobs</div><div class="empty-sub">New bookings will appear here</div></div>';
     return;
   }
 
   var lastDate='';
-  list.innerHTML=OFFERED_JOBS.map(function(j){
-    var stLabel,stColor,stBg;
-    if(j.apiStatus==='pending'){stLabel='Needs decision';stColor='#9C5800';stBg='rgba(156,88,0,.08)';}
-    else if(j.apiStatus==='offered'){stLabel='Awaiting driver';stColor='#2A3A66';stBg='rgba(42,58,102,.07)';}
-    else if(j.apiStatus==='active'){stLabel='Active';stColor='#2D6E47';stBg='rgba(45,110,71,.1)';}
-    else{stLabel='Confirmed';stColor='#2D6E47';stBg='rgba(45,110,71,.08)';}
-
+  list.innerHTML=allItems.map(function(j){
     var dateLabel=_fmtUpcomingDate(j.date);
     var dateSep='';
     if(j.date!==lastDate){
       lastDate=j.date;
       dateSep='<div style="padding:.45rem 1rem .2rem;font-size:.56rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(17,29,44,.35);background:rgba(17,29,44,.02);border-top:1px solid var(--rule)">'+dateLabel+'</div>';
     }
+
+    if(j.type==='personal'){
+      return dateSep+'<div style="padding:.8rem 1rem;border-top:1px solid var(--rule);opacity:.7">'
+        +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;margin-bottom:.2rem">'
+        +  '<div style="font-weight:500;color:rgba(17,29,44,.75);font-size:.88rem">'+escH(j.title)+'</div>'
+        +  '<span style="display:inline-flex;align-items:center;padding:.2rem .5rem;font-size:.52rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#5a6a7a;background:rgba(17,29,44,.05);border-radius:4px;white-space:nowrap">'+(j.allDay?'All day':j.time||'')+'</span>'
+        +'</div>'
+        +'<div style="font-size:.68rem;color:rgba(17,29,44,.35);letter-spacing:.06em;text-transform:uppercase">Personal calendar</div>'
+        +'</div>';
+    }
+
+    var stLabel,stColor,stBg;
+    if(j.apiStatus==='pending'){stLabel='Needs decision';stColor='#9C5800';stBg='rgba(156,88,0,.08)';}
+    else if(j.apiStatus==='offered'){stLabel='Awaiting driver';stColor='#2A3A66';stBg='rgba(42,58,102,.07)';}
+    else if(j.apiStatus==='active'){stLabel='Active';stColor='#2D6E47';stBg='rgba(45,110,71,.1)';}
+    else{stLabel='Confirmed';stColor='#2D6E47';stBg='rgba(45,110,71,.08)';}
 
     var html=dateSep+'<div style="padding:.8rem 1rem;border-top:1px solid var(--rule)">'
       +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;margin-bottom:.2rem">'
@@ -2333,12 +2330,13 @@ function buildOffered(){
       +'<div style="font-size:.8rem;color:rgba(17,29,44,.6);margin-bottom:.15rem">'+escH(_shortAddr(j.pickup||''))+' → '+escH(_shortAddr(j.dest||''))+'</div>'
       +'<div style="font-size:.72rem;color:rgba(17,29,44,.4)">'+(j.time||'ASAP')+(j.fare?' · £'+Number(j.fare).toFixed(0):'')+(j.pax>1?' · '+j.pax+' pax':'')+(j.payment==='card'?' · Card':'')+'</div>';
 
+    html+='<div style="display:flex;gap:.4rem;margin-top:.6rem;flex-wrap:wrap">';
     if(j.apiStatus==='pending'){
-      html+='<div style="display:flex;gap:.4rem;margin-top:.6rem">'
-        +'<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(45,110,71,.12);color:#2D6E47;border:1.5px solid rgba(45,110,71,.3);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingConfirm('+j.id+')">Confirm</button>'
-        +'<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(139,34,34,.08);color:#8B2222;border:1.5px solid rgba(139,34,34,.2);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingCancel('+j.id+')">Cancel</button>'
-        +'</div>';
+      html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(45,110,71,.12);color:#2D6E47;border:1.5px solid rgba(45,110,71,.3);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingConfirm('+j.id+')">Confirm</button>';
     }
+    html+='<button style="padding:.6rem .85rem;font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(17,29,44,.06);color:rgba(17,29,44,.6);border:1px solid rgba(17,29,44,.12);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingEdit('+j.id+')">Edit</button>'
+      +'<button style="padding:.6rem .85rem;font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(139,34,34,.08);color:#8B2222;border:1.5px solid rgba(139,34,34,.2);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingDelete('+j.id+')">Delete</button>';
+    html+='</div>';
     html+='</div>';
     return html;
   }).join('');
@@ -2363,9 +2361,78 @@ async function upcomingCancel(bookingId){
   }catch(e){showToast('Network error');console.error('[upcomingCancel]',e);}
 }
 
+async function upcomingDelete(bookingId){
+  if(!confirm('Delete this booking permanently?'))return;
+  try{
+    var r=await fetch('/api/bookings/'+bookingId,{method:'DELETE',credentials:'include'});
+    var d=await r.json();
+    if(r.ok&&d.ok){showToast('Booking deleted');loadOwnerBookings();}
+    else showToast(d.error||('Failed ('+r.status+')'));
+  }catch(e){showToast('Network error');}
+}
+
+function upcomingEdit(bookingId){
+  var j=OFFERED_JOBS.find(function(x){return String(x.id)===String(bookingId);});
+  if(!j)return;
+  var el=document.getElementById('edit-booking-overlay');
+  if(!el){
+    el=document.createElement('div');
+    el.id='edit-booking-overlay';
+    el.style.cssText='position:fixed;inset:0;background:rgba(10,14,20,.65);backdrop-filter:blur(6px);z-index:300;display:flex;align-items:flex-end;justify-content:center;padding:1rem';
+    el.innerHTML='<div style="background:#fff;border-radius:18px 18px 0 0;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;padding:1.6rem 1.4rem">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem">'
+      +'<div style="font-family:var(--serif);font-size:1.3rem;color:var(--navy);font-style:italic">Edit Booking</div>'
+      +'<button onclick="document.getElementById(\'edit-booking-overlay\').remove()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:rgba(17,29,44,.45)">&times;</button>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.7rem">'
+      +'<div><label style="font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);display:block;margin-bottom:.3rem">Date</label>'
+      +'<input id="eb-date" type="date" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(17,29,44,.15);border-radius:8px;font-family:inherit;font-size:.9rem;color:var(--navy)"></div>'
+      +'<div><label style="font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);display:block;margin-bottom:.3rem">Time</label>'
+      +'<input id="eb-time" type="time" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(17,29,44,.15);border-radius:8px;font-family:inherit;font-size:.9rem;color:var(--navy)"></div>'
+      +'</div>'
+      +'<div style="margin-bottom:.7rem"><label style="font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);display:block;margin-bottom:.3rem">Fare £</label>'
+      +'<input id="eb-fare" type="number" min="0" step="0.5" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(17,29,44,.15);border-radius:8px;font-family:inherit;font-size:.9rem;color:var(--navy)"></div>'
+      +'<div style="margin-bottom:1.2rem"><label style="font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);display:block;margin-bottom:.3rem">Notes</label>'
+      +'<textarea id="eb-notes" rows="3" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(17,29,44,.15);border-radius:8px;font-family:inherit;font-size:.9rem;color:var(--navy);resize:vertical"></textarea></div>'
+      +'<input type="hidden" id="eb-id">'
+      +'<div style="display:flex;gap:.6rem">'
+      +'<button onclick="document.getElementById(\'edit-booking-overlay\').remove()" style="flex:1;padding:.75rem;background:transparent;border:1px solid rgba(17,29,44,.15);border-radius:10px;font-family:inherit;font-size:.82rem;font-weight:500;color:rgba(17,29,44,.5);cursor:pointer">Cancel</button>'
+      +'<button onclick="upcomingSave()" style="flex:2;padding:.75rem;background:var(--navy);border:none;border-radius:10px;font-family:inherit;font-size:.82rem;font-weight:500;color:#fff;cursor:pointer;letter-spacing:.04em">Save Changes</button>'
+      +'</div></div>';
+    document.body.appendChild(el);
+    el.addEventListener('click',function(ev){if(ev.target===el)el.remove();});
+  }
+  document.getElementById('eb-id').value=bookingId;
+  document.getElementById('eb-date').value=j.date||'';
+  document.getElementById('eb-time').value=j.time||'';
+  document.getElementById('eb-fare').value=j.fare||'';
+  document.getElementById('eb-notes').value=j.note||'';
+  el.style.display='flex';
+}
+
+async function upcomingSave(){
+  var id=document.getElementById('eb-id').value;
+  var date=document.getElementById('eb-date').value;
+  var time=document.getElementById('eb-time').value;
+  var fare=parseFloat(document.getElementById('eb-fare').value)||null;
+  var notes=document.getElementById('eb-notes').value.trim();
+  if(!id)return;
+  try{
+    var body={};
+    if(date)body.date=date;
+    if(time)body.time=time;
+    if(fare)body.fare=fare;
+    if(notes!==undefined)body.notes=notes;
+    var r=await fetch('/api/bookings/'+id,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var d=await r.json();
+    if(r.ok&&d.ok){showToast('Booking updated');document.getElementById('edit-booking-overlay').remove();loadOwnerBookings();}
+    else showToast(d.error||('Failed ('+r.status+')'));
+  }catch(e){showToast('Network error');}
+}
+
 // Legacy: kept so old SSE-path calls don't throw
 function acceptJob(id){upcomingConfirm(id);}
-function declineJob(id){upcomingCancel(id);}
+function declineJob(id){upcomingDelete(id);}
 
 // ── STATUS ────────────────────────────────────────────────────────────────────
 function navChoice(addr){
@@ -2469,19 +2536,10 @@ function cancelJ(id){
 function showNB(name,fare){document.getElementById('nb-name').textContent=name;document.getElementById('nb-sub').textContent='Westmere Private Hire · Sussex';document.getElementById('nb-overlay').classList.add('on');if(navigator.wakeLock)navigator.wakeLock.request('screen').catch(function(){});}
 
 // ── TESLA ─────────────────────────────────────────────────────────────────────
-function refreshTesla(){if(!TESLA.battery){showToast('Connect Tesla first');return;}updateTeslaUI();buildTeslaRC();showToast('Tesla refreshed');}
-function updateTeslaUI(){
-  var p=document.getElementById('tesla-pct');var r=document.getElementById('tesla-range');var b=document.getElementById('tesla-bar');var s=document.getElementById('tesla-status');
-  var connected=TESLA.battery>0;
-  if(p)p.innerHTML=(connected?TESLA.battery:'\u2014')+'<span style="font-size:.85rem;font-family:var(--sans);font-weight:300;color:rgba(17,29,44,.4)">%</span>';
-  if(r)r.innerHTML=(connected?TESLA.rangeMiles:'\u2014')+' <span style="font-size:.85rem;font-family:var(--sans);font-weight:300;color:rgba(17,29,44,.4)">mi</span>';
-  if(b){b.style.width=(connected?TESLA.battery:0)+'%';b.style.background=TESLA.battery>50?'linear-gradient(to right,var(--gold),#7ecfa0)':TESLA.battery>25?'linear-gradient(to right,var(--amber),var(--gold))':'linear-gradient(to right,var(--red),var(--amber))';}
-  if(s)s.textContent=connected?(TESLA.status+' · '+TESLA.location):'Not connected';
-}
 function buildTeslaRC(){
   var el=document.getElementById('tesla-rc');if(!el)return;
   if(!TODAY_JOBS.length){el.innerHTML='<div style="padding:.82rem 1rem;font-size:.78rem;color:rgba(255,255,255,.4)">No jobs today</div>';return;}
-  var cum=0,prev=TESLA.location;
+  var cum=0,prev='Home';
   el.innerHTML=TODAY_JOBS.map(function(j){var dead=getDist(prev,j.pickup);var jmi=getDist(j.pickup,j.dest);cum+=dead+jmi;prev=j.dest;var left=Math.max(0,TESLA.rangeMiles-cum);var ok=TESLA.rangeMiles>cum+20;var col=ok?'var(--green)':left<15?'var(--red)':'var(--amber)';var lbl=ok?'Range OK':left<15?'Charge first':'Low';return '<div style="display:flex;justify-content:space-between;align-items:center;padding:.8rem 1rem;border-bottom:1px solid rgba(255,255,255,.06)"><div><div style="font-size:.82rem;font-weight:500;color:#fff">'+j.time+' · '+j.name+'</div><div style="font-size:.68rem;color:rgba(255,255,255,.4);margin-top:.08rem">~'+cum+' mi cumulative · '+left+' mi after</div></div><div style="font-size:.56rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .65rem;border:1px solid '+col+';color:'+col+'">'+lbl+'</div></div>';}).join('');
 }
 
@@ -3076,18 +3134,21 @@ function buildCalendar(){
     var jobs=CAL_JOBS[key];var n=jobs?jobs.length:0;
     var ext=CAL_EXTERNAL[key];var nExt=ext?ext.length:0;
     var cls='cal-day'+(isToday?' today':'')+(isSel?' selected':'');
-    var dots='';
-    if(n>0||nExt>0){
-      dots='<div class="cal-dots">';
-      for(var j=0;j<Math.min(n,3);j++)dots+='<span></span>';
-      for(var j=0;j<Math.min(nExt,2);j++)dots+='<span style="background:rgba(17,29,44,.25)"></span>';
-      dots+='</div>';
+    var jobLines='';
+    if(jobs){
+      var sortedJ=jobs.slice().sort(function(a,b){return toMins(a.time)-toMins(b.time);});
+      jobLines=sortedJ.slice(0,3).map(function(j){
+        var t=(j.time||'').slice(0,5);
+        var nameShort=(j.name||'').split(' ')[0];
+        return '<div style="font-size:.5rem;line-height:1.3;color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px">'+t+' '+escH(nameShort)+'</div>';
+      }).join('');
+      if(n>3)jobLines+='<div style="font-size:.5rem;color:rgba(17,29,44,.4)">+' +(n-3)+'</div>';
     }
+    if(nExt>0&&!jobs)jobLines='<div style="font-size:.5rem;color:rgba(17,29,44,.3);margin-top:1px">'+nExt+' event'+(nExt>1?'s':'')+'</div>';
     html+='<div class="'+cls+'" onclick="selectCalDay(\''+key+'\')">'
       +'<div class="cal-num">'+d+'</div>'
       +(isToday?'<div class="cal-today-label">Today</div>':'')
-      +dots
-      +(n>1?'<div class="cal-job-count">'+n+'</div>':'')
+      +jobLines
       +'</div>';
   }
   var totalCells=startDay+daysInMonth;var fill=totalCells%7?7-totalCells%7:0;
@@ -3430,7 +3491,7 @@ async function loadOwnerBookings(){
       return{
         id:String(b.id),ref:b.ref||'',time:b.time||'ASAP',
         date:b.date||'',
-        name:b.customer_name||b.passenger_name||'Guest',
+        name:b.customer_name||b.passenger_name||'',
         phone:b.customer_phone||b.passenger_phone||'',
         email:b.customer_email||b.passenger_email||'',
         contactPref:'whatsapp',
@@ -3471,7 +3532,7 @@ async function loadOwnerBookings(){
       var key=b.date;
       if(!key)return;
       if(!CAL_JOBS[key])CAL_JOBS[key]=[];
-      CAL_JOBS[key].push({id:b.id,time:b.time||'ASAP',name:b.customer_name||b.passenger_name||'Guest',phone:b.customer_phone||b.passenger_phone||'',pickup:b.pickup,dest:b.destination,fare:b.fare||0,payment:b.payment||'cash',flight:b.flight||'',pax:b.passengers||1,bags:b.bags||'',notes:b.notes||'',status:b.status});
+      CAL_JOBS[key].push({id:b.id,time:b.time||'ASAP',name:b.customer_name||b.passenger_name||'',phone:b.customer_phone||b.passenger_phone||'',pickup:b.pickup,dest:b.destination,fare:b.fare||0,payment:b.payment||'cash',flight:b.flight||'',pax:b.passengers||1,bags:b.bags||'',notes:b.notes||'',status:b.status});
     });
 
     // Update upcoming dot — show count of pending bookings needing attention
@@ -4028,11 +4089,6 @@ function initApp(){
   var fab=document.getElementById('assist-fab');if(fab)fab.style.display='flex';
   goPage('today', document.getElementById('bn-today'));
   loadOwnerBookings();
-  loadOwnerTesla();
-  // Handle redirect back from Tesla OAuth
-  var _tq=new URLSearchParams(window.location.search);
-  if(_tq.get('tesla')==='connected'){history.replaceState({},'',window.location.pathname);showToast('Tesla connected');}
-  else if(_tq.get('tesla')==='error'){history.replaceState({},'',window.location.pathname);showToast('Tesla connection failed: '+(_tq.get('reason')||'unknown'));}
 }
 // Select-on-focus for inputs
 ['owner-user','owner-pass','assist-input'].forEach(function(id){

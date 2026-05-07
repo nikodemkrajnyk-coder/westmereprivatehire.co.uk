@@ -1347,7 +1347,7 @@ function showToast(msg){
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 function _toDriverJob(b){
-  return{id:String(b.id),ref:b.ref||'',time:b.time||'ASAP',name:b.customer_name||b.passenger_name||'Guest',
+  return{id:String(b.id),ref:b.ref||'',time:b.time||'ASAP',name:b.customer_name||b.passenger_name||'',
     phone:b.customer_phone||b.passenger_phone||'',email:b.customer_email||b.passenger_email||'',contactPref:'whatsapp',
     pax:b.passengers||1,bags:b.bags||'0',pickup:b.pickup,dest:b.destination,
     type:b.trip_type||'',flight:b.flight||'',flightStatus:b.flight?'ontime':'',
@@ -1624,7 +1624,7 @@ function drvJobDetailCard(j){
   var h='<div style="padding:.85rem 1rem;border-bottom:1px solid rgba(17,29,44,.06)">';
   h+='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.35rem">';
   h+='<div style="font-size:1.3rem;color:var(--gold);font-weight:300">'+drvEsc(j.time||'ASAP')+'</div>';
-  h+='<div style="font-size:1rem;color:var(--navy);font-weight:500;text-align:right">'+drvEsc(j.customer_name||'Guest')+'</div></div>';
+  h+='<div style="font-size:1rem;color:var(--navy);font-weight:500;text-align:right">'+drvEsc(j.customer_name||'')+'</div></div>';
   if((j.passengers&&j.passengers>1)||j.bags) h+='<div style="font-size:.72rem;color:rgba(17,29,44,.45);margin-bottom:.45rem;text-align:right">'+(j.passengers||1)+' pax'+(j.bags?' · '+j.bags+' bags':'')+'</div>';
   h+='<div style="display:flex;align-items:baseline;gap:.6rem;margin-bottom:.2rem"><span style="font-size:.6rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.4);width:50px;flex-shrink:0">Pickup</span><span style="font-size:.88rem;color:var(--navy)">'+drvEsc(j.pickup||'')+'</span></div>';
   h+='<div style="display:flex;align-items:baseline;gap:.6rem;margin-bottom:.2rem"><span style="font-size:.6rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.4);width:50px;flex-shrink:0">Drop</span>';
@@ -1636,7 +1636,7 @@ function drvJobDetailCard(j){
   h+='<div style="display:flex;align-items:baseline;gap:.6rem"><span style="font-size:.6rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.4);width:50px;flex-shrink:0">Fare</span><span style="font-size:1rem;color:var(--gold)">£'+(j.fare?Number(j.fare).toFixed(0):'TBC')+'</span><span style="font-size:.72rem;color:rgba(17,29,44,.4);margin-left:.25rem">'+drvEsc(j.payment||'cash')+'</span></div>';
   if(j.notes) h+='<div style="margin-top:.4rem;padding:.4rem .55rem;background:rgba(17,29,44,.03);border-left:2px solid var(--gold);font-size:.74rem;color:rgba(17,29,44,.6);line-height:1.4">'+drvEnrichNotes(j.notes)+'</div>';
   if(j.customer_phone){
-    var nm=drvEsc((j.customer_name||'Guest').split(' ')[0]);
+    var nm=drvEsc((j.customer_name||'').split(' ')[0]);
     var wm=encodeURIComponent('Hi '+nm+', this is your Westmere driver.');
     h+='<div style="display:flex;gap:1px;margin-top:.55rem;background:rgba(17,29,44,.04);border-radius:8px;overflow:hidden">';
     h+='<a href="tel:'+drvEsc(j.customer_phone)+'" style="flex:1;padding:.65rem;text-align:center;font-size:.72rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.55);text-decoration:none;background:rgba(17,29,44,.04)">Call</a>';

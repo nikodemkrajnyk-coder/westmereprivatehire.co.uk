@@ -1758,7 +1758,22 @@ function renderActiveTrip(){
   h+='<div class="aj-meta-cell"><div class="aj-meta-k">Time</div><div class="aj-meta-v">'+esc(active.time)+'</div></div>';
   h+='<div class="aj-meta-cell"><div class="aj-meta-k">Fare</div><div class="aj-meta-v aj-fare">\u00a3'+active.fare+'</div></div>';
   h+='</div>';
-  h+='<div style="text-align:center;padding:.6rem 0"><a href="tel:+447930342593" class="aj-call-btn" style="display:inline-block;padding:.6rem 1.2rem">Call Driver</a></div>';
+  if(active.driverName){
+    var initials=active.driverName.split(' ').map(function(p){return p[0]||'';}).join('').toUpperCase().slice(0,2);
+    var vehicleStr=active.vehicle||'';
+    var regStr=active.driverReg?active.driverReg.toUpperCase():'';
+    var vehicleDetail=[vehicleStr,regStr].filter(Boolean).join(' · ');
+    h+='<div class="aj-driver-info">'
+      +'<div class="aj-driver-avatar">'+esc(initials)+'</div>'
+      +'<div class="aj-driver-details">'
+        +'<div class="aj-driver-name">'+esc(active.driverName)+'</div>'
+        +(vehicleDetail?'<div class="aj-driver-vehicle">'+esc(vehicleDetail)+'</div>':'')
+      +'</div>'
+      +'<a href="tel:+447930342593" class="aj-call-btn">Call</a>'
+    +'</div>';
+  } else {
+    h+='<div style="text-align:center;padding:.6rem 0"><a href="tel:+447930342593" class="aj-call-btn" style="display:inline-block;padding:.6rem 1.2rem">Call Driver</a></div>';
+  }
   body.innerHTML=h;
 }
 
@@ -1790,7 +1805,7 @@ async function _autoBoot(){
   showLogin();
 }
 function updateProfile(){
-  var n=document.getElementById('pv-name');if(n)n.textContent=_currentUser.name||'Guest';
+  var n=document.getElementById('pv-name');if(n)n.textContent=_currentUser.name||'';
   var e=document.getElementById('pv-email');if(e)e.textContent=_currentUser.email||'--';
   var p=document.getElementById('pv-phone');if(p)p.textContent=_currentUser.phone||'--';
   if(_currentUser.loggedIn){
@@ -1808,7 +1823,7 @@ async function loadServerTrips(){
     var data=await r.json();
     if(data.bookings&&data.bookings.length){
       var mapped=data.bookings.map(function(b){
-        return{ref:b.ref,from:b.pickup,dest:b.destination,date:b.date,time:b.time,flight:b.flight||'',pax:b.passengers||1,vehicle:'',fare:b.fare||0,status:b.status,created:b.created_at};
+        return{ref:b.ref,from:b.pickup,dest:b.destination,date:b.date,time:b.time,flight:b.flight||'',pax:b.passengers||1,vehicle:b.driver_vehicle||'',fare:b.fare||0,status:b.status,created:b.created_at,driverName:b.driver_name||'',driverReg:b.driver_reg||''};
       });
       localStorage.setItem('wph_rider_bookings',JSON.stringify(mapped));
       renderTrips('upcoming');

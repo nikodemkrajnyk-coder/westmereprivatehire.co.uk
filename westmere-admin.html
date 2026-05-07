@@ -2144,7 +2144,7 @@ function loadLiveBookings(){
         tl.innerHTML=sorted.map(function(b,i){
           var statusTag=b.status==='completed'?'<span class="tag tag-done">Done</span>':b.status==='confirmed'?'<span class="tag tag-upcoming">Confirmed</span>':'<span class="tag tag-upcoming">Pending</span>';
           return '<div class="tl-item"><div class="tl-time-col"><div class="tl-time">'+(b.time||'ASAP')+'</div>'+(i<sorted.length-1?'<div class="tl-line"></div>':'')+'</div>'
-            +'<div class="tl-card"><div class="tl-top"><div class="tl-name">'+(b.customer_name||'Guest')+'</div>'+statusTag+'</div>'
+            +'<div class="tl-card"><div class="tl-top"><div class="tl-name">'+(b.customer_name||'')+'</div>'+statusTag+'</div>'
             +'<div class="tl-route">'+b.pickup+' \u2192 '+b.destination+(b.flight?' \u00b7 '+b.flight:'')
             +(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')
             +' '+(b.payment==='card'?'Card':'Cash')+'</div></div></div>';
@@ -2167,7 +2167,7 @@ function loadLiveBookings(){
         todayTl.innerHTML=sorted.map(function(b,i){
           var statusTag=b.status==='completed'?'<span class="tag tag-done">Done</span>':b.status==='confirmed'?'<span class="tag tag-upcoming">Confirmed</span>':'<span class="tag tag-upcoming">Pending</span>';
           return '<div class="tl-item"><div class="tl-time-col"><div class="tl-time">'+(b.time||'ASAP')+'</div>'+(i<sorted.length-1?'<div class="tl-line"></div>':'')+'</div>'
-            +'<div class="tl-card active"><div class="tl-top"><div class="tl-name">'+(b.customer_name||'Guest')+'</div>'+statusTag+'</div>'
+            +'<div class="tl-card active"><div class="tl-top"><div class="tl-name">'+(b.customer_name||'')+'</div>'+statusTag+'</div>'
             +'<div class="tl-route">'+b.pickup+' \u2192 '+b.destination+'</div>'
             +'<div class="tl-route" style="margin-top:.2rem">'+(b.flight?'Flight '+b.flight+' \u00b7 ':'')+b.passengers+' pax'+(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')+' '+(b.payment==='card'?'Card':'Cash')+'</div>'
             +'<div class="tl-actions">'
@@ -2211,7 +2211,7 @@ function loadLiveBookings(){
             +'<td><div class="main-v">'+b.ref+'</div>'+reasonRow+'</td>'
             +'<td>'+dateStr+'</td>'
             +'<td>'+(b.time||'ASAP')+'</td>'
-            +'<td><div class="main-v">'+(b.customer_name||'Guest')+'</div>'+(b.customer_phone?'<div class="sub-v">'+b.customer_phone+'</div>':'')+'</td>'
+            +'<td><div class="main-v">'+(b.customer_name||'')+'</div>'+(b.customer_phone?'<div class="sub-v">'+b.customer_phone+'</div>':'')+'</td>'
             +'<td><div class="main-v">'+b.pickup+' \u2192 '+b.destination+'</div>'+(b.flight?'<div class="sub-v">'+b.flight+'</div>':'')+'</td>'
             +'<td><span class="tag tag-upcoming" style="font-size:.5rem">'+(b.flight?'Airport':'Local')+'</span></td>'
             +'<td><span style="color:var(--gold);font-family:var(--serif);font-size:1.1rem">'+(b.fare?'\u00a3'+Number(b.fare).toFixed(0):'TBC')+'</span>'+(b.dead_miles_fee?'<div style="font-size:.55rem;color:rgba(17,29,44,.4);margin-top:.1rem">incl. \u00a3'+Number(b.dead_miles_fee).toFixed(0)+' dead mi</div>':'')+'</td>'
@@ -2231,7 +2231,7 @@ function loadLiveBookings(){
       var html=recent.map(function(b){
         var ago='';
         try{var mins=Math.floor((Date.now()-new Date(b.created_at).getTime())/60000);ago=mins<60?mins+' min ago':mins<1440?Math.floor(mins/60)+' hours ago':Math.floor(mins/1440)+' days ago';}catch(e){ago='';}
-        return '<div class="notif"><div class="notif-dot" style="background:var(--gold)"></div><div><div class="notif-text"><strong>'+b.ref+'</strong> \u2014 '+(b.customer_name||'Guest')+', '+b.pickup+' \u2192 '+b.destination+(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')+'</div><div class="notif-time">'+ago+'</div></div></div>';
+        return '<div class="notif"><div class="notif-dot" style="background:var(--gold)"></div><div><div class="notif-text"><strong>'+b.ref+'</strong> \u2014 '+(b.customer_name||'')+', '+b.pickup+' \u2192 '+b.destination+(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')+'</div><div class="notif-time">'+ago+'</div></div></div>';
       }).join('');
       if(actDiv)actDiv.innerHTML=html;
       if(notifDiv)notifDiv.innerHTML=html;
@@ -3966,7 +3966,7 @@ function buildRecordBook(){
       +'<td style="color:var(--text-light);font-size:.72rem">'+(i+1)+'</td>'
       +'<td style="font-weight:400;color:var(--navy)">'+dateStr+'</td>'
       +'<td>'+(b.time||'ASAP')+'</td>'
-      +'<td style="font-weight:400;color:var(--navy)">'+(b.customer_name||'Guest')+'</td>'
+      +'<td style="font-weight:400;color:var(--navy)">'+(b.customer_name||'')+'</td>'
       +'<td style="font-size:.75rem">'+b.pickup+'</td>'
       +'<td style="font-size:.75rem">'+b.destination+'</td>'
       +'<td><span class="tag tag-upcoming" style="font-size:.5rem">'+(b.flight?'Airport':'Local')+'</span></td>'
@@ -3989,7 +3989,7 @@ function downloadRecordBook(){
 
   var rows=data.map(function(b,i){
     var dateStr='';try{dateStr=new Date(b.date).toLocaleDateString('en-GB');}catch(e){dateStr=b.date||'';}
-    return (i+1)+','+dateStr+','+(b.time||'ASAP')+',"'+(b.customer_name||'Guest')+'","'+b.pickup+'","'+b.destination+'","'+(b.flight?'Airport':'Local')+'",\u00a3'+(b.fare||0)+','+(b.payment||'cash')+','+(b.flight||'\u2014');
+    return (i+1)+','+dateStr+','+(b.time||'ASAP')+',"'+(b.customer_name||'')+'","'+b.pickup+'","'+b.destination+'","'+(b.flight?'Airport':'Local')+'",\u00a3'+(b.fare||0)+','+(b.payment||'cash')+','+(b.flight||'\u2014');
   }).join('\n');
 
   var csv='Westmere Private Hire \u2014 Operator Journey Record\nLicensed by Lewes District Council\nPeriod: '+period+'\nGenerated: '+new Date().toLocaleDateString('en-GB')+'\n\n'
@@ -4024,7 +4024,7 @@ function printRecordBook(){
       +'<td style="color:#718096">'+(i+1)+'</td>'
       +'<td class="navy">'+dateStr+'</td>'
       +'<td>'+(b.time||'ASAP')+'</td>'
-      +'<td class="navy">'+(b.customer_name||'Guest')+'</td>'
+      +'<td class="navy">'+(b.customer_name||'')+'</td>'
       +'<td>'+b.pickup+'</td>'
       +'<td>'+b.destination+'</td>'
       +'<td>'+(b.flight?'Airport':'Local')+'</td>'
@@ -4167,7 +4167,7 @@ function renderFlaggedBanner(list){
     div.innerHTML='<div class="ch"><div class="ct" style="color:#9C5800">⚠️ '+list.length+' booking'+(list.length>1?'s':'')+' need'+(list.length>1?'':'s')+' your attention</div></div>'
       +'<div class="cb" style="padding:0">'+list.map(function(b){
         return '<div style="display:flex;justify-content:space-between;align-items:center;padding:.7rem 1rem;border-top:1px solid rgba(244,184,96,.4)">'
-          +'<div><div style="font-weight:600;color:var(--navy);font-size:.85rem">'+escTo(b.ref)+' · '+escTo(b.customer_name||'Guest')+'</div>'
+          +'<div><div style="font-weight:600;color:var(--navy);font-size:.85rem">'+escTo(b.ref)+' · '+escTo(b.customer_name||'')+'</div>'
           +'<div style="font-size:.72rem;color:var(--text-light);margin-top:.2rem">'+escTo(b.pickup)+' → '+escTo(b.destination)+' · '+escTo(b.date)+' '+escTo(b.time)+'</div>'
           +'<div style="font-size:.72rem;color:#9C5800;margin-top:.2rem"><em>'+escTo(b.intake_reason||'No driver available')+'</em></div></div>'
           +'<button class="btn btn-navy btn-sm" onclick="openReassign('+b.id+')">Resolve</button>'
@@ -4183,7 +4183,7 @@ async function openReassign(bookingId){
   var b=FLAGGED_CACHE[bookingId];
   if(!b){showToast('Booking not loaded');return;}
   REASSIGN_CURRENT=b;
-  document.getElementById('rs-summary').innerHTML='<strong style="color:var(--navy)">'+escTo(b.ref)+'</strong> · '+escTo(b.customer_name||'Guest')+'<br>'+escTo(b.pickup)+' → '+escTo(b.destination)+'<br>'+escTo(b.date)+' at '+escTo(b.time);
+  document.getElementById('rs-summary').innerHTML='<strong style="color:var(--navy)">'+escTo(b.ref)+'</strong> · '+escTo(b.customer_name||'')+'<br>'+escTo(b.pickup)+' → '+escTo(b.destination)+'<br>'+escTo(b.date)+' at '+escTo(b.time);
   document.getElementById('rs-reason').textContent=b.intake_reason||'Cannot fit alongside existing jobs.';
   document.getElementById('rs-apology').style.display='none';
   // Load drivers
@@ -4371,7 +4371,7 @@ function buildAdminCalendar(){
       inner+='<div class="adm-cal-pill '+pillCls+'">'+jobs.length+' job'+(jobs.length>1?'s':'')+'</div>';
       // Show top 2 mini lines
       jobs.slice(0,2).forEach(function(j){
-        inner+='<div class="adm-cal-job-mini">'+escTo((j.time||'')+' '+(j.customer_name||'Guest'))+'</div>';
+        inner+='<div class="adm-cal-job-mini">'+escTo((j.time||'')+' '+(j.customer_name||''))+'</div>';
       });
       if(jobs.length>2)inner+='<div class="adm-cal-job-mini" style="color:var(--gold)">+'+(jobs.length-2)+' more</div>';
     }
@@ -4476,7 +4476,7 @@ function admShowDay(key){
       return '<div class="adm-cal-detail-job">'
         +'<div class="adm-cal-time">'+escTo(j.time||'ASAP')+'</div>'
         +'<div class="adm-cal-info">'
-          +'<div class="adm-cal-name">'+escTo(j.ref||'')+' \u00b7 '+escTo(j.customer_name||'Guest')+waiting+'</div>'
+          +'<div class="adm-cal-name">'+escTo(j.ref||'')+' \u00b7 '+escTo(j.customer_name||'')+waiting+'</div>'
           +'<div class="adm-cal-route">'+escTo(j.pickup||'')+' \u2192 '+escTo(j.destination||'')+'</div>'
           +notesHtml
         +'</div>'
