@@ -45,7 +45,8 @@ nav#nav{display:none}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
 /* ── BOTTOM NAV ── */
-.bottom-nav{background:rgba(255,255,255,.92);backdrop-filter:blur(24px);border-top:1px solid rgba(17,29,44,.06);box-shadow:0 -1px 8px rgba(17,29,44,.04);display:flex;flex-wrap:wrap;padding-bottom:var(--safe-bottom);flex-shrink:0;z-index:60}
+.bottom-nav{background:rgba(255,255,255,.92);backdrop-filter:blur(24px);border-top:1px solid rgba(17,29,44,.06);box-shadow:0 -1px 8px rgba(17,29,44,.04);display:flex;flex-direction:column;padding-bottom:var(--safe-bottom);flex-shrink:0;z-index:60}
+.bn-row{display:flex;width:100%}
 .bn{flex:1;display:flex;flex-direction:column;align-items:center;gap:.22rem;padding:.85rem .3rem;background:none;border:none;cursor:pointer;transition:color .2s;color:rgba(17,29,44,.35);font-family:var(--sans);min-height:60px;position:relative}
 .bn.on{color:var(--gold)}
 .bn-bar{width:18px;height:1px;background:currentColor;opacity:0;transition:opacity .2s}
@@ -234,11 +235,11 @@ nav#nav{display:none}
 .ma-pass{background:transparent;color:rgba(17,29,44,.4);border:1px solid rgba(17,29,44,.15)}.ma-pass:hover{border-color:rgba(17,29,44,.3);color:var(--navy)}
 
 /* ── ASSISTANT FAB + PANEL ── */
-.assist-fab{position:fixed;bottom:calc(80px + var(--safe-bottom));right:1.2rem;width:56px;height:56px;border-radius:50%;background:var(--gold);border:none;color:var(--navy);cursor:pointer;z-index:150;display:none;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(184,152,90,.4);transition:all .3s;font-family:var(--serif);font-size:1.3rem;font-weight:400}
+.assist-fab{position:fixed;bottom:calc(120px + var(--safe-bottom));right:1.2rem;width:56px;height:56px;border-radius:50%;background:var(--gold);border:none;color:var(--navy);cursor:pointer;z-index:150;display:none;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(184,152,90,.4);transition:all .3s;font-family:var(--serif);font-size:1.3rem;font-weight:400}
 @media(min-width:720px){.assist-fab{right:calc(50% - 210px + 1rem)}}
 .assist-fab:hover{transform:scale(1.06);box-shadow:0 6px 20px rgba(184,152,90,.5)}
-.assist-panel{position:fixed;bottom:0;left:0;right:0;top:0;background:rgba(245,242,237,.98);backdrop-filter:blur(20px);z-index:100;display:none;flex-direction:column}
-.assist-panel.on{display:flex}
+.assist-panel{position:fixed;bottom:0;left:0;right:0;top:0;background:rgba(245,242,237,.98);backdrop-filter:blur(20px);z-index:100;display:none;flex-direction:column;pointer-events:none}
+.assist-panel.on{display:flex;pointer-events:auto}
 @media(min-width:720px){.assist-panel{max-width:420px;margin:0 auto}}
 .assist-header{display:flex;align-items:center;justify-content:space-between;padding:calc(var(--safe-top) + .6rem) 1rem .6rem;border-bottom:1px solid rgba(17,29,44,.06);flex-shrink:0}
 .assist-title{font-family:var(--serif);font-size:1.1rem;font-weight:400;color:var(--navy);letter-spacing:.08em}
@@ -919,13 +920,17 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
 
   <!-- BOTTOM NAV -->
   <div class="bottom-nav" id="bottom-nav">
-    <button class="bn on" id="bn-today" onclick="goPage('today',this)"><div class="bn-bar"></div><div class="bn-label">Today</div></button>
-    <button class="bn" id="bn-offered" onclick="goPage('offered',this)"><div class="bn-bar"></div><div class="bn-label">Upcoming</div><div class="bn-dot" id="offered-dot"></div></button>
-    <button class="bn" id="bn-calendar" onclick="goPage('calendar',this)"><div class="bn-bar"></div><div class="bn-label">Calendar</div></button>
-    <button class="bn" id="bn-drivers" onclick="goPage('drivers',this)"><div class="bn-bar"></div><div class="bn-label">Drivers</div><div class="bn-dot" id="drivers-dot" style="display:none"></div></button>
-    <button class="bn" id="bn-decisions" onclick="goPage('decisions',this)"><div class="bn-bar"></div><div class="bn-label">Decisions</div><div class="bn-dot" id="decisions-dot" style="display:none"></div></button>
-    <button class="bn" id="bn-invoices" onclick="goPage('invoices',this)"><div class="bn-bar"></div><div class="bn-label">Invoices</div></button>
-    <button class="bn" id="bn-earnings" onclick="goPage('earnings',this)"><div class="bn-bar"></div><div class="bn-label">Earnings</div></button>
+    <div class="bn-row">
+      <button class="bn on" id="bn-today" onclick="goPage('today',this)"><div class="bn-bar"></div><div class="bn-label">Today</div></button>
+      <button class="bn" id="bn-offered" onclick="goPage('offered',this)"><div class="bn-bar"></div><div class="bn-label">Upcoming</div><div class="bn-dot" id="offered-dot"></div></button>
+      <button class="bn" id="bn-calendar" onclick="goPage('calendar',this)"><div class="bn-bar"></div><div class="bn-label">Calendar</div></button>
+      <button class="bn" id="bn-drivers" onclick="goPage('drivers',this)"><div class="bn-bar"></div><div class="bn-label">Drivers</div><div class="bn-dot" id="drivers-dot" style="display:none"></div></button>
+    </div>
+    <div class="bn-row">
+      <button class="bn" id="bn-decisions" onclick="goPage('decisions',this)"><div class="bn-bar"></div><div class="bn-label">Decisions</div><div class="bn-dot" id="decisions-dot" style="display:none"></div></button>
+      <button class="bn" id="bn-invoices" onclick="goPage('invoices',this)"><div class="bn-bar"></div><div class="bn-label">Invoices</div></button>
+      <button class="bn" id="bn-earnings" onclick="goPage('earnings',this)"><div class="bn-bar"></div><div class="bn-label">Earnings</div></button>
+    </div>
   </div>
 
 </div><!-- /app -->
@@ -3139,8 +3144,10 @@ function buildCalendar(){
       var sortedJ=jobs.slice().sort(function(a,b){return toMins(a.time)-toMins(b.time);});
       jobLines=sortedJ.slice(0,3).map(function(j){
         var t=(j.time||'').slice(0,5);
-        var nameShort=(j.name||'').split(' ')[0];
-        return '<div style="font-size:.5rem;line-height:1.3;color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px">'+t+' '+escH(nameShort)+'</div>';
+        var pu=_shortAddr(j.pickup||'').split(',')[0];
+        var de=_shortAddr(j.dest||'').split(',')[0];
+        var route=pu&&de?pu+'→'+de:(pu||de||(j.name||'').split(' ')[0]);
+        return '<div style="font-size:.48rem;line-height:1.25;color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px"><b>'+escH(t)+'</b> '+escH(route)+'</div>';
       }).join('');
       if(n>3)jobLines+='<div style="font-size:.5rem;color:rgba(17,29,44,.4)">+' +(n-3)+'</div>';
     }

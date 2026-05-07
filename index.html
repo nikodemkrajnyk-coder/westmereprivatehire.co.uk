@@ -1456,7 +1456,7 @@ window.closeAllPickers=function(){document.querySelectorAll('.pick-drop,.cal-dro
       var past=isToday&&_tH===nowH&&mm<=nowM;
       if(past)return;
       var s=(_tM===mm)?' t-sel':'';
-      var click=' onclick="window._tSelM('+mm+')"';
+      var click=' onclick="event.stopPropagation();window._tSelM('+mm+')"';
       mHtml+='<div class="time-opt'+s+'"'+click+'>'+_f2(mm)+'</div>';
     });
     drop.innerHTML='<div class="time-cols"><div class="time-col" id="tc-h">'+hHtml+'</div><div class="time-col" id="tc-m">'+mHtml+'</div></div>';
