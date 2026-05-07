@@ -131,7 +131,7 @@ input[type="time"].fi,input[type="date"].fi{-webkit-appearance:auto;appearance:a
 .bk-toast.bk-toast-err{border-left:3px solid #e05252}
 #bk-overlay{position:fixed;inset:0;z-index:300;background:rgba(10,7,4,.65);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;pointer-events:none;transition:opacity .25s}
 #bk-overlay.open{opacity:1;pointer-events:all}
-#bk-card{background:#F5F2ED!important;border-radius:10px;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;padding:2rem 2.2rem;position:relative}
+#bk-card{background:#F5F2ED!important;border-radius:10px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:1.4rem 1.5rem;position:relative}
 .bk-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.1rem}
 .bk-header h3{font-family:var(--serif);font-size:1.6rem;font-weight:300;color:#111D2C;margin:0;letter-spacing:.06em}
 .bk-close{background:none;border:none;font-size:1.5rem;cursor:pointer;color:rgba(17,29,44,.4);padding:.3rem;line-height:1;transition:color .15s}
@@ -352,11 +352,11 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.55rem">
           <div>
             <label style="font-size:.75rem;font-weight:600;color:rgba(255,255,255,.82);letter-spacing:.04em;text-transform:uppercase;display:block;margin-bottom:.3rem">Return Date</label>
-            <input type="date" id="ret-date" class="fi" style="width:100%;box-sizing:border-box" oninput="updateReturnTotal()">
+            <input type="date" id="ret-date" class="fi" style="width:100%;box-sizing:border-box;color-scheme:dark" oninput="updateReturnTotal()" onclick="event.stopPropagation()">
           </div>
           <div>
             <label style="font-size:.75rem;font-weight:600;color:rgba(255,255,255,.82);letter-spacing:.04em;text-transform:uppercase;display:block;margin-bottom:.3rem">Return Time</label>
-            <input type="time" id="ret-time" class="fi" value="12:00" style="width:100%;box-sizing:border-box">
+            <input type="time" id="ret-time" class="fi" value="12:00" style="width:100%;box-sizing:border-box;color-scheme:dark" onclick="event.stopPropagation()">
           </div>
         </div>
         <div>
@@ -390,15 +390,15 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 
     <!-- Step 1: Contact -->
     <div class="bk-step active" id="bk-s1">
-      <div id="bk-fare-display" style="display:none;text-align:center;padding:.85rem 0 1rem;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:1rem">
-        <div style="font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:.25rem">Estimated Fare</div>
+      <div id="bk-fare-display" style="display:none;text-align:center;padding:.85rem 0 1rem;border-bottom:1px solid rgba(17,29,44,.12);margin-bottom:1rem">
+        <div style="font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.25rem">Estimated Fare</div>
         <div id="bk-fare-big" style="font-family:var(--serif);font-size:2.8rem;font-weight:300;color:var(--gold);line-height:1"></div>
-        <div id="bk-fare-meta" style="font-size:.72rem;color:rgba(255,255,255,.4);margin-top:.2rem"></div>
+        <div id="bk-fare-meta" style="font-size:.72rem;color:rgba(17,29,44,.45);margin-top:.2rem"></div>
       </div>
       <div class="bkf"><label>Full name</label><input type="text" id="bk-name" placeholder="Your full name" autocomplete="name" inputmode="text"></div>
       <div class="bkf"><label>Email address</label><input type="email" id="bk-email" placeholder="your@email.com" autocomplete="email" inputmode="email"></div>
       <div class="bkf"><label>Mobile number</label><input type="tel" id="bk-phone" placeholder="+44 7xxx xxxxxx" autocomplete="tel" inputmode="tel"></div>
-      <div class="bkf"><label>Notes for your driver <span style="opacity:.6;font-weight:400">(optional)</span></label><textarea id="bk-notes" placeholder="Terminal, child seat, meet &amp; greet, extra stop&hellip;" rows="3" style="width:100%;font-family:var(--sans);font-size:.94rem;font-weight:400;color:#111D2C;background:#fff;border:1px solid rgba(17,29,44,.18);border-radius:5px;padding:.7rem .85rem;resize:vertical;min-height:3.2rem;outline:none;box-sizing:border-box;-webkit-appearance:none"></textarea></div>
+      <div class="bkf"><label>Notes <span style="opacity:.6;font-weight:400">(optional)</span></label><textarea id="bk-notes" rows="3" style="width:100%;font-family:var(--sans);font-size:.94rem;font-weight:400;color:#111D2C;background:#fff;border:1px solid rgba(17,29,44,.18);border-radius:5px;padding:.7rem .85rem;resize:vertical;min-height:3.2rem;outline:none;box-sizing:border-box;-webkit-appearance:none"></textarea></div>
       <button class="bk-btn-p" onclick="bkToStep2()">Continue &rarr;</button>
     </div>
 
