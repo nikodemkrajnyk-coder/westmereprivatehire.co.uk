@@ -9,14 +9,14 @@ const MODEL = process.env.ASSISTANT_MODEL || 'claude-sonnet-4-6';
 const API_URL = 'https://api.anthropic.com/v1/messages';
 
 const REFERENCE_FARES = [
-  'Brighton/Hove/Saltdean/Rottingdean→Gatwick £68 (ret £65), →Heathrow £122 (ret £126), →Stansted £204 (ret £209), →Luton £195 (ret £200), →Southampton £144 (ret £140), →London City £158 (ret £162)',
-  'Lewes→Gatwick £74 (ret £70), →Heathrow £133 (ret £138), →Stansted £214 (ret £219), →Luton £204 (ret £209), →Southampton £152 (ret £147), →London City £166 (ret £171)',
-  'Horsham→Gatwick £52 (ret £48), →Heathrow £114 (ret £119), →Stansted £171 (ret £176), →Luton £147 (ret £152), →Southampton £128 (ret £124), →London City £152 (ret £157)',
-  'Crawley→Gatwick £33 (ret £30), →Heathrow £90 (ret £95)',
-  'Worthing/Lancing/Shoreham→Gatwick £68 (ret £65), →Heathrow £124 (ret £128)',
-  'Haywards Heath→Gatwick £49 (ret £46), Burgess Hill→Gatwick £46 (ret £42)',
-  'Eastbourne→Gatwick £93 (ret £89), →Heathrow £154 (ret £159)',
-  'Seaford→Gatwick £87 (ret £84), Uckfield→Gatwick £59 (ret £55), East Grinstead→Gatwick £40 (ret £36)',
+  'Brighton/Hove/Saltdean/Rottingdean→Gatwick £65 (ret £62), →Heathrow £116 (ret £120), →Stansted £194 (ret £199), →Luton £185 (ret £190), →Southampton £137 (ret £133), →London City £150 (ret £154)',
+  'Lewes→Gatwick £70 (ret £67), →Heathrow £126 (ret £131), →Stansted £203 (ret £208), →Luton £194 (ret £199), →Southampton £144 (ret £140), →London City £158 (ret £162)',
+  'Horsham→Gatwick £49 (ret £46), →Heathrow £108 (ret £113), →Stansted £162 (ret £167), →Luton £140 (ret £144), →Southampton £122 (ret £118), →London City £144 (ret £149)',
+  'Crawley→Gatwick £31 (ret £29), →Heathrow £86 (ret £90)',
+  'Worthing/Lancing/Shoreham→Gatwick £65 (ret £62), →Heathrow £118 (ret £122)',
+  'Haywards Heath→Gatwick £47 (ret £44), Burgess Hill→Gatwick £44 (ret £40)',
+  'Eastbourne→Gatwick £88 (ret £85), →Heathrow £146 (ret £151)',
+  'Seaford→Gatwick £83 (ret £80), Uckfield→Gatwick £56 (ret £52), East Grinstead→Gatwick £38 (ret £34)',
   'All fares include all charges — no surcharges added on top'
 ].join('\n');
 
@@ -24,17 +24,17 @@ const REFERENCE_FARES = [
 // Values are ALL-IN fixed fares — no surcharges to add on top.
 // out = town→airport (drop-off), ret = airport→town (pickup)
 const FARE_CF = {
-  brighton:      { ga:{out:68,ret:65},  he:{out:122,ret:126}, st:{out:204,ret:209}, lu:{out:195,ret:200}, so:{out:144,ret:140}, ci:{out:158,ret:162} },
-  lewes:         { ga:{out:74,ret:70},  he:{out:133,ret:138}, st:{out:214,ret:219}, lu:{out:204,ret:209}, so:{out:152,ret:147}, ci:{out:166,ret:171} },
-  horsham:       { ga:{out:52,ret:48},  he:{out:114,ret:119}, st:{out:171,ret:176}, lu:{out:147,ret:152}, so:{out:128,ret:124}, ci:{out:152,ret:157} },
-  crawley:       { ga:{out:33,ret:30},  he:{out:90,ret:95} },
-  worthing:      { ga:{out:68,ret:65},  he:{out:124,ret:128} },
-  haywards:      { ga:{out:49,ret:46} },
-  burgess:       { ga:{out:46,ret:42} },
-  eastbourne:    { ga:{out:93,ret:89},  he:{out:154,ret:159} },
-  seaford:       { ga:{out:87,ret:84} },
-  uckfield:      { ga:{out:59,ret:55} },
-  eastgrinstead: { ga:{out:40,ret:36} }
+  brighton:      { ga:{out:65,ret:62},  he:{out:116,ret:120}, st:{out:194,ret:199}, lu:{out:185,ret:190}, so:{out:137,ret:133}, ci:{out:150,ret:154} },
+  lewes:         { ga:{out:70,ret:67},  he:{out:126,ret:131}, st:{out:203,ret:208}, lu:{out:194,ret:199}, so:{out:144,ret:140}, ci:{out:158,ret:162} },
+  horsham:       { ga:{out:49,ret:46},  he:{out:108,ret:113}, st:{out:162,ret:167}, lu:{out:140,ret:144}, so:{out:122,ret:118}, ci:{out:144,ret:149} },
+  crawley:       { ga:{out:31,ret:29},  he:{out:86,ret:90} },
+  worthing:      { ga:{out:65,ret:62},  he:{out:118,ret:122} },
+  haywards:      { ga:{out:47,ret:44} },
+  burgess:       { ga:{out:44,ret:40} },
+  eastbourne:    { ga:{out:88,ret:85},  he:{out:146,ret:151} },
+  seaford:       { ga:{out:83,ret:80} },
+  uckfield:      { ga:{out:56,ret:52} },
+  eastgrinstead: { ga:{out:38,ret:34} }
 };
 const FARE_APFULL = { ga:'Gatwick', he:'Heathrow', st:'Stansted', lu:'Luton', so:'Southampton', ci:'London City' };
 // Airport coords for routing when town is unknown
@@ -118,9 +118,9 @@ function _fareCalcMile(mi, night) {
   const m = Math.max(mi, 10); // 10-mile minimum
   let f;
   if (night) {
-    f = m <= 10 ? m * 3.79 : m <= 20 ? 37.9 + (m - 10) * 3.10 : 68.9 + (m - 20) * 2.78;
+    f = m <= 10 ? m * 3.60 : m <= 20 ? 36.0 + (m - 10) * 2.95 : 65.5 + (m - 20) * 2.64;
   } else {
-    f = m <= 10 ? m * 3.99 : m <= 20 ? 39.9 + (m - 10) * 2.49 : 64.8 + (m - 20) * 2.24;
+    f = m <= 10 ? m * 3.79 : m <= 20 ? 37.9 + (m - 10) * 2.37 : 61.6 + (m - 20) * 2.13;
   }
   return Math.ceil(f / 0.5) * 0.5;
 }

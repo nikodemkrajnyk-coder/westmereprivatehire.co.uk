@@ -497,17 +497,17 @@ uckfield_gatwick:{m:22,t:32,d:52},uckfield_heathrow:{m:55,t:72,d:115}
 };
 /* Fixed fare tables — out = town→airport (drop-off), ret = airport→town (pickup) */
 var CF={
-  brighton:{ga:{out:68,ret:65},he:{out:122,ret:126},st:{out:204,ret:209},lu:{out:195,ret:200},so:{out:144,ret:140},ci:{out:158,ret:162}},
-  lewes:{ga:{out:74,ret:70},he:{out:133,ret:138},st:{out:214,ret:219},lu:{out:204,ret:209},so:{out:152,ret:147},ci:{out:166,ret:171}},
-  horsham:{ga:{out:52,ret:48},he:{out:114,ret:119},st:{out:171,ret:176},lu:{out:147,ret:152},so:{out:128,ret:124},ci:{out:152,ret:157}},
-  crawley:{ga:{out:33,ret:30},he:{out:90,ret:95}},
-  worthing:{ga:{out:68,ret:65},he:{out:124,ret:128}},
-  haywards:{ga:{out:49,ret:46}},
-  burgess:{ga:{out:46,ret:42}},
-  eastbourne:{ga:{out:93,ret:89},he:{out:154,ret:159}},
-  seaford:{ga:{out:87,ret:84}},
-  uckfield:{ga:{out:59,ret:55}},
-  eastgrinstead:{ga:{out:40,ret:36}}
+  brighton:{ga:{out:65,ret:62},he:{out:116,ret:120},st:{out:194,ret:199},lu:{out:185,ret:190},so:{out:137,ret:133},ci:{out:150,ret:154}},
+  lewes:{ga:{out:70,ret:67},he:{out:126,ret:131},st:{out:203,ret:208},lu:{out:194,ret:199},so:{out:144,ret:140},ci:{out:158,ret:162}},
+  horsham:{ga:{out:49,ret:46},he:{out:108,ret:113},st:{out:162,ret:167},lu:{out:140,ret:144},so:{out:122,ret:118},ci:{out:144,ret:149}},
+  crawley:{ga:{out:31,ret:29},he:{out:86,ret:90}},
+  worthing:{ga:{out:65,ret:62},he:{out:118,ret:122}},
+  haywards:{ga:{out:47,ret:44}},
+  burgess:{ga:{out:44,ret:40}},
+  eastbourne:{ga:{out:88,ret:85},he:{out:146,ret:151}},
+  seaford:{ga:{out:83,ret:80}},
+  uckfield:{ga:{out:56,ret:52}},
+  eastgrinstead:{ga:{out:38,ret:34}}
 };
 var APC={ga:[10,10],he:[7,10],st:[10,10],lu:[7,7],so:[5,5],ci:[8,8],lo:[0,0]};
 var APNAMES={ga:'gatwick',he:'heathrow',st:'stansted',lu:'luton',so:'southampton',ci:'cityairport',lo:'london'};
@@ -533,9 +533,9 @@ function haverMiles(a,b,c,d){var R=3958.8,dL=(c-a)*Math.PI/180,dn=(d-b)*Math.PI/
 function nAP(s){if(!s)return null;var l=s.toLowerCase();if(l.includes('gatwick')||l.includes('lgw'))return 'ga';if(l.includes('heathrow')||l.includes('lhr'))return 'he';if(l.includes('stansted')||l.includes('stn'))return 'st';if(l.includes('luton')||l.match(/\bltn\b/))return 'lu';if(l.includes('southampton airport')||l.includes('southampton sou'))return 'so';if(l.includes('london city')||l.includes('city airport')||l.includes('lcy'))return 'ci';return null;}
 function nT(s){if(!s)return null;var l=s.toLowerCase();var m={'horsham':'horsham','lewes':'lewes','brighton':'brighton','hove':'brighton','crawley':'crawley','worthing':'worthing','haywards heath':'haywards','haywards':'haywards','burgess hill':'burgess','burgess':'burgess','east grinstead':'eastgrinstead','seaford':'seaford','uckfield':'uckfield','eastbourne':'eastbourne','polegate':'eastbourne','rh12':'horsham','rh13':'horsham','bn7':'lewes','bn8':'lewes','bn1':'brighton','bn2':'brighton','bn3':'brighton','rh10':'crawley','rh11':'crawley','bn11':'worthing','rh16':'haywards','rh15':'burgess','rh19':'eastgrinstead','bn25':'seaford','tn22':'uckfield','bn21':'eastbourne','bn22':'eastbourne','rh14':'horsham','bn5':'horsham','bn6':'haywards','bn26':'eastbourne','rh17':'haywards','tn21':'uckfield','tn20':'uckfield','bn18':'worthing','bn9':'lewes','bn43':'worthing','bn44':'worthing'};for(var k in m){if(l.includes(k))return m[k];}return null;}
 function isNight(h){return h>=22||h<6;}
-function calcMile(mi,night,ap){// Day:   £3.99/mi (0-10, min £39.90) · £2.49/mi (10-20) · £2.24/mi (20+)
-// Night: £3.79/mi (0-10, min £37.90) · £3.10/mi (10-20) · £2.78/mi (20+)
-var f;if(night){f=mi<=10?Math.max(mi,10)*3.79:mi<=20?37.9+(mi-10)*3.10:68.9+(mi-20)*2.78;}else{f=mi<=10?Math.max(mi,10)*3.99:mi<=20?39.9+(mi-10)*2.49:64.8+(mi-20)*2.24;}if(ap&&APC[ap])f+=APC[ap][0];return Math.ceil(f/0.5)*0.5;}
+function calcMile(mi,night,ap){// Day:   £3.79/mi (0-10, min £37.90) · £2.37/mi (10-20) · £2.13/mi (20+)
+// Night: £3.60/mi (0-10, min £36.00) · £2.95/mi (10-20) · £2.64/mi (20+)
+var f;if(night){f=mi<=10?Math.max(mi,10)*3.60:mi<=20?36.0+(mi-10)*2.95:65.5+(mi-20)*2.64;}else{f=mi<=10?Math.max(mi,10)*3.79:mi<=20?37.9+(mi-10)*2.37:61.6+(mi-20)*2.13;}if(ap&&APC[ap])f+=APC[ap][0];return Math.ceil(f/0.5)*0.5;}
 function sh(t){return t?t.replace('haywards heath','haywards').replace('burgess hill','burgess').replace('east grinstead','eastgrinstead'):t;}
 var TOWN_CENTRE_RADIUS=3;
 var PER_MILE_ADJ=2.50;
