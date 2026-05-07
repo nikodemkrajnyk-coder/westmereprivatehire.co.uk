@@ -45,7 +45,7 @@ nav#nav{display:none}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
 /* ── BOTTOM NAV ── */
-.bottom-nav{background:rgba(255,255,255,.92);backdrop-filter:blur(24px);border-top:1px solid rgba(17,29,44,.06);box-shadow:0 -1px 8px rgba(17,29,44,.04);display:flex;padding-bottom:var(--safe-bottom);flex-shrink:0;z-index:60}
+.bottom-nav{background:rgba(255,255,255,.92);backdrop-filter:blur(24px);border-top:1px solid rgba(17,29,44,.06);box-shadow:0 -1px 8px rgba(17,29,44,.04);display:flex;flex-wrap:wrap;padding-bottom:var(--safe-bottom);flex-shrink:0;z-index:60}
 .bn{flex:1;display:flex;flex-direction:column;align-items:center;gap:.22rem;padding:.85rem .3rem;background:none;border:none;cursor:pointer;transition:color .2s;color:rgba(17,29,44,.35);font-family:var(--sans);min-height:60px;position:relative}
 .bn.on{color:var(--gold)}
 .bn-bar{width:18px;height:1px;background:currentColor;opacity:0;transition:opacity .2s}
@@ -72,10 +72,10 @@ nav#nav{display:none}
 .row-v.serif{font-family:var(--serif);font-size:1.1rem}
 
 /* ── JOB CARDS ── */
-.job-card{background:#fff;border:1px solid rgba(17,29,44,.08);box-shadow:0 2px 12px rgba(17,29,44,.04);margin-bottom:.85rem;overflow:hidden;border-radius:12px}
-.job-card.active-job{border-color:var(--gold)}
+.job-card{background:#fff;border:1px solid rgba(17,29,44,.12);box-shadow:0 2px 14px rgba(17,29,44,.07);margin-bottom:.85rem;overflow:hidden;border-radius:12px}
+.job-card.active-job{border-color:var(--gold);border-width:2px;box-shadow:0 4px 18px rgba(184,152,90,.18)}
 .job-card.done-job{opacity:.6}
-.jc-bar{height:3px;background:rgba(17,29,44,.06)}
+.jc-bar{height:4px;background:var(--navy)}
 .job-card.active-job .jc-bar{background:var(--gold)}
 .job-card.done-job .jc-bar{background:var(--green)}
 .jc-header{display:flex;align-items:center;justify-content:space-between;padding:.95rem 1.1rem .8rem;border-bottom:1px solid rgba(184,152,90,.12)}
@@ -390,7 +390,7 @@ input[type=date]::placeholder,input[type=text]::placeholder{color:rgba(17,29,44,
 /* ── CALENDAR ── */
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:rgba(17,29,44,.06);overflow:hidden}
 .cal-hd{padding:.55rem .2rem;text-align:center;font-size:.65rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.5);background:rgba(245,242,237,.8)}
-.cal-day{min-height:56px;padding:.4rem .35rem;background:#fff;cursor:pointer;transition:background .2s;position:relative;overflow:hidden}
+.cal-day{min-height:72px;padding:.4rem .35rem;background:#fff;cursor:pointer;transition:background .2s;position:relative;overflow:hidden}
 .cal-day:active{background:rgba(184,152,90,.15)}
 .cal-day.today{background:rgba(184,152,90,.15);border:2px solid var(--gold)}
 .cal-day.selected{background:rgba(184,152,90,.1);border:1px solid rgba(184,152,90,.4)}
@@ -2303,7 +2303,7 @@ async function buildOffered(){
     var dateSep='';
     if(j.date!==lastDate){
       lastDate=j.date;
-      dateSep='<div style="padding:.45rem 1rem .2rem;font-size:.56rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(17,29,44,.35);background:rgba(17,29,44,.02);border-top:1px solid var(--rule)">'+dateLabel+'</div>';
+      dateSep='<div style="padding:.55rem 1rem .45rem;font-size:.78rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#fff;background:var(--navy);border-top:2px solid var(--gold)">'+dateLabel+'</div>';
     }
 
     if(j.type==='personal'){
