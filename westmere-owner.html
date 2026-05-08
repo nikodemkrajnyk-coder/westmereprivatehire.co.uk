@@ -389,9 +389,9 @@ input[type=date]::placeholder,input[type=text]::placeholder{color:rgba(17,29,44,
 .ls-body{padding:2.2rem 2.2rem 1.8rem}
 .ls-foot{text-align:center;padding:1.4rem 2.2rem;border-top:1px solid rgba(17,29,44,.06);font-size:.78rem;color:rgba(17,29,44,.35)}
 /* ── CALENDAR ── */
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:rgba(17,29,44,.06);overflow:hidden}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:0;border:1px solid rgba(17,29,44,.1);overflow:hidden;width:100%}
 .cal-hd{padding:.55rem .2rem;text-align:center;font-size:.65rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.5);background:rgba(245,242,237,.8)}
-.cal-day{min-height:80px;padding:.35rem .3rem;background:#fff;cursor:pointer;transition:background .2s;position:relative;overflow:visible}
+.cal-day{min-height:70px;padding:.3rem .25rem;background:#fff;cursor:pointer;transition:background .2s;position:relative;overflow:hidden;border-right:1px solid rgba(17,29,44,.07);border-bottom:1px solid rgba(17,29,44,.07);box-sizing:border-box}
 .cal-day:active{background:rgba(184,152,90,.15)}
 .cal-day.today{background:rgba(184,152,90,.2);border:2px solid var(--gold);box-shadow:inset 0 0 0 1px rgba(184,152,90,.25)}
 .cal-day.selected{background:rgba(17,29,44,.07);border:2px solid var(--navy)}
@@ -645,7 +645,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
 
 
     <!-- Calendar -->
-    <div class="pg" id="pg-calendar">
+    <div class="pg" id="pg-calendar" style="max-width:100%;padding-left:.5rem;padding-right:.5rem">
       <div class="sec-title"><em>Calendar</em></div>
       <div class="sec-sub" id="cal-sub">Your booked jobs at a glance</div>
       <div class="card" style="margin-bottom:.85rem">
@@ -2264,9 +2264,9 @@ function _fmtUpcomingDate(dateStr){
 async function buildOffered(){
   var list=document.getElementById('offered-list');
   var dot=document.getElementById('offered-dot');
-  var pendingCount=OFFERED_JOBS.filter(function(j){return j.apiStatus==='pending';}).length;
-  dot.textContent=pendingCount||OFFERED_JOBS.length;
-  dot.style.display=OFFERED_JOBS.length?'flex':'none';
+  // Clear badge when user views Upcoming — only re-badge if new pending arrive via SSE
+  dot.textContent='';
+  dot.style.display='none';
 
   // Fetch Google Calendar personal events for next 60 days
   var today=new Date();
@@ -3164,10 +3164,10 @@ function buildCalendar(){
       var shown=sortedJ.slice(0,2);
       pills+=shown.map(function(j){
         var t=(j.time||'').slice(0,5);
-        var pu=(_shortAddr(j.pickup||'')||'').split(',')[0].slice(0,8);
-        var de=(_shortAddr(j.dest||'')||'').split(',')[0].slice(0,7);
-        var route=pu&&de?pu+'→'+de:(pu||de||(j.name||'').split(' ')[0].slice(0,10));
-        return '<div style="margin-top:2px;padding:1px 3px;background:rgba(184,152,90,.2);border-radius:2px;font-size:10px;line-height:1.4;color:#111D2C;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><b style="color:#8A6A20">'+escH(t)+'</b> '+escH(route)+'</div>';
+        var pu=(j.pickup||'').split(',')[0].trim().slice(0,9);
+        var de=(j.dest||'').split(',')[0].trim().slice(0,9);
+        var label=t+(pu&&de?' '+pu+'→'+de:'');
+        return '<div style="margin-top:2px;padding:1px 3px;background:rgba(184,152,90,.22);border-radius:2px;font-size:10px;line-height:1.45;color:#111D2C;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(label)+'</div>';
       }).join('');
       var remaining=(n-shown.length)+(nExt>0?nExt:0);
       if(remaining>0)pills+='<div style="font-size:9px;color:rgba(17,29,44,.45);margin-top:2px">+'+remaining+' more</div>';
@@ -3570,12 +3570,12 @@ async function loadOwnerBookings(){
       CAL_JOBS[key].push({id:b.id,time:b.time||'ASAP',name:b.customer_name||b.passenger_name||'',phone:b.customer_phone||b.passenger_phone||'',pickup:b.pickup,dest:b.destination,fare:b.fare||0,payment:b.payment||'cash',flight:b.flight||'',pax:b.passengers||1,bags:b.bags||'',notes:b.notes||'',status:b.status});
     });
 
-    // Update upcoming dot — show count of pending bookings needing attention
+    // Update upcoming dot — only badge pending (unconfirmed) bookings
     var dot=document.getElementById('offered-dot');
     if(dot){
       var pendingCount=OFFERED_JOBS.filter(function(j){return j.apiStatus==='pending';}).length;
-      dot.textContent=pendingCount||OFFERED_JOBS.length;
-      dot.style.display=OFFERED_JOBS.length?'flex':'none';
+      dot.textContent=pendingCount||'';
+      dot.style.display=pendingCount?'flex':'none';
     }
 
     // Rebuild current view

@@ -1099,8 +1099,7 @@ function openBookingModal() {
   if (bar) {
     bar.innerHTML = "<strong>"+from+"</strong> &rarr; <strong>"+to+"</strong>"
       + (dStr ? "<br>"+dStr+(time?" at "+time:"") : "")
-      + (fl   ? "<br>Flight: <strong>"+fl+"</strong>" : "")
-      + (priceTxt&&priceTxt!=="—" ? "<br><span class=\"bk-fare-badge\">"+priceTxt+"</span>" : "");
+      + (fl   ? "<br>Flight: <strong>"+fl+"</strong>" : "");
     bar.style.display = "";
   }
 
