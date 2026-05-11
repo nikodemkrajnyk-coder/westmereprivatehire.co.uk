@@ -21,6 +21,7 @@ router.post('/book', async (req, res) => {
   try {
     const { name, email, phone, pickup, destination, date, time,
             passengers, bags, flight, fare, payment, notes, source,
+            pickup_lat: clientPickupLat, pickup_lng: clientPickupLng,
             returnTrip } = req.body;
 
     // Validate required fields
@@ -220,14 +221,22 @@ router.post('/book', async (req, res) => {
         const driverLat = driverLoc ? driverLoc.lat : 51.0632;
         const driverLng = driverLoc ? driverLoc.lng : -0.3254;
 
-        // Geocode pickup address
-        const geoResp = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&countrycodes=gb&limit=1&q=${encodeURIComponent(pickup)}`,
-          { headers: { 'Accept-Language': 'en', 'User-Agent': 'WestmerePrivateHire/1.0' } }
-        );
-        const geoData = await geoResp.json();
-        const pickup_lat = geoData && geoData[0] ? parseFloat(geoData[0].lat) : null;
-        const pickup_lng = geoData && geoData[0] ? parseFloat(geoData[0].lon) : null;
+        // Use client-provided coords if available (from autocomplete cache),
+        // otherwise geocode via Nominatim as fallback
+        let pickup_lat = clientPickupLat ? parseFloat(clientPickupLat) : null;
+        let pickup_lng = clientPickupLng ? parseFloat(clientPickupLng) : null;
+        if (!pickup_lat || !pickup_lng) {
+          const geoResp = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&countrycodes=gb&limit=1&q=${encodeURIComponent(pickup)}`,
+            { headers: { 'Accept-Language': 'en', 'User-Agent': 'WestmerePrivateHire/1.0' } }
+          );
+          const geoData = await geoResp.json();
+          pickup_lat = geoData && geoData[0] ? parseFloat(geoData[0].lat) : null;
+          pickup_lng = geoData && geoData[0] ? parseFloat(geoData[0].lon) : null;
+          console.log(`[DEAD_MILES] ${ref}: client coords missing, nominatim ${pickup} → ${pickup_lat},${pickup_lng}`);
+        } else {
+          console.log(`[DEAD_MILES] ${ref}: using client coords for ${pickup}: ${pickup_lat},${pickup_lng}`);
+        }
 
         if (pickup_lat && pickup_lng) {
           const dmRes = await fetch(
@@ -247,7 +256,7 @@ router.post('/book', async (req, res) => {
                 if (tm) bookingHour = parseInt(tm[1], 10);
               }
               const isNight = bookingHour >= 22 || bookingHour < 6;
-              const ratePerMile = 2.00; // flat dead miles rate, day and night
+              const ratePerMile = 1.00; // flat dead miles rate, day and night
               deadMilesFee = Math.ceil(chargeableMiles * ratePerMile * 2) / 2; // round up to nearest £0.50
               deadMilesKm = parseFloat(totalKm.toFixed(2));
               finalFare = parseFloat(((fare || 0) + deadMilesFee).toFixed(2));

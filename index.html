@@ -1364,6 +1364,8 @@ function bkConfirm(type) {
     phone:      phone,
     pickup:     j.from,
     destination:j.to,
+    pickup_lat: (_gc[j.from]||{}).lat || null,
+    pickup_lng: (_gc[j.from]||{}).lon || null,
     date:       j.date  || "",
     time:       j.time  || "",
     flight:     j.flight|| "",
