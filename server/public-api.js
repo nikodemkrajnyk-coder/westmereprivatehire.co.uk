@@ -256,7 +256,7 @@ router.post('/book', async (req, res) => {
                 if (tm) bookingHour = parseInt(tm[1], 10);
               }
               const isNight = bookingHour >= 22 || bookingHour < 6;
-              const ratePerMile = 1.00; // flat dead miles rate, day and night
+              const ratePerMile = 1.50; // flat dead miles rate, day and night
               deadMilesFee = Math.ceil(chargeableMiles * ratePerMile * 2) / 2; // round up to nearest £0.50
               deadMilesKm = parseFloat(totalKm.toFixed(2));
               finalFare = parseFloat(((fare || 0) + deadMilesFee).toFixed(2));
