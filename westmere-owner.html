@@ -235,9 +235,6 @@ nav#nav{display:none}
 .ma-pass{background:transparent;color:rgba(17,29,44,.4);border:1px solid rgba(17,29,44,.15)}.ma-pass:hover{border-color:rgba(17,29,44,.3);color:var(--navy)}
 
 /* ── ASSISTANT FAB + PANEL ── */
-.assist-fab{position:fixed;top:1rem;right:1rem;width:48px;height:48px;border-radius:50%;background:var(--gold);border:none;color:var(--navy);cursor:pointer;z-index:150;display:none;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(184,152,90,.4);transition:all .3s;font-family:var(--serif);font-size:1.2rem;font-weight:400}
-@media(min-width:720px){.assist-fab{right:calc(50% - 210px + 1rem)}}
-.assist-fab:hover{transform:scale(1.06);box-shadow:0 6px 20px rgba(184,152,90,.5)}
 .assist-panel{position:fixed;bottom:0;left:0;right:0;top:0;background:rgba(245,242,237,.98);backdrop-filter:blur(20px);z-index:100;display:none;flex-direction:column;pointer-events:none}
 .assist-panel.on{display:flex;pointer-events:auto}
 @media(min-width:720px){.assist-panel{max-width:420px;margin:0 auto}}
@@ -520,6 +517,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
         <div class="tb-mode-label" id="tb-mode-label">Westmere</div>
       </div>
     </div>
+    <button id="assist-fab" onclick="openAssistant()" title="Assistant" style="display:none;background:var(--gold);border:none;color:var(--navy);cursor:pointer;width:38px;height:38px;border-radius:50%;font-family:var(--serif);font-size:1.1rem;font-weight:400;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(184,152,90,.35);flex-shrink:0">W</button>
     <div style="display:flex;align-items:center;gap:.4rem">
       <button onclick="openSettings()" title="Settings" style="background:transparent;border:1px solid rgba(17,29,44,.1);width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(17,29,44,.55)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -934,9 +932,6 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
   </div>
 
 </div><!-- /app -->
-
-<!-- ASSISTANT FAB (outside app to avoid overflow:hidden clipping) -->
-<button class="assist-fab" id="assist-fab" onclick="openAssistant()" title="Assistant">W</button>
 
 <!-- ASSISTANT PANEL (overlay) -->
 <div class="assist-panel" id="assist-panel">

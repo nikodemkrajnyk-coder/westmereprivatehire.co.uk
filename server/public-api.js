@@ -210,7 +210,7 @@ router.post('/book', async (req, res) => {
     let deadMilesFee = 0;
     let deadMilesKm = 0;
     let finalFare = fare || null;
-    if (fare && pickup) {
+    if (pickup) {
       try {
         // Default driver (owner) GPS position; fall back to Horsham base
         const defaultDriver = db.prepare('SELECT id FROM users WHERE is_default_driver = 1 AND active = 1 LIMIT 1').get();
@@ -250,10 +250,10 @@ router.post('/book', async (req, res) => {
               const ratePerMile = 2.00; // flat dead miles rate, day and night
               deadMilesFee = Math.ceil(chargeableMiles * ratePerMile * 2) / 2; // round up to nearest £0.50
               deadMilesKm = parseFloat(totalKm.toFixed(2));
-              finalFare = parseFloat((fare + deadMilesFee).toFixed(2));
+              finalFare = parseFloat(((fare || 0) + deadMilesFee).toFixed(2));
               db.prepare('UPDATE bookings SET fare = ?, dead_miles_fee = ?, dead_miles_km = ? WHERE id = ?')
                 .run(finalFare, deadMilesFee, deadMilesKm, result.lastInsertRowid);
-              console.log(`[DEAD_MILES] ${ref}: driver ${totalMi.toFixed(1)}mi from pickup, ${chargeableMiles.toFixed(1)} chargeable, fee £${deadMilesFee}, fare £${fare}→£${finalFare}`);
+              console.log(`[DEAD_MILES] ${ref}: driver ${totalMi.toFixed(1)}mi from pickup, ${chargeableMiles.toFixed(1)} chargeable, fee £${deadMilesFee}, fare £${fare||0}→£${finalFare}`);
             }
           }
         }
