@@ -9,32 +9,32 @@ const MODEL = process.env.ASSISTANT_MODEL || 'claude-sonnet-4-6';
 const API_URL = 'https://api.anthropic.com/v1/messages';
 
 const REFERENCE_FARES = [
-  'Brighton/Hove/Saltdean/Rottingdean→Gatwick £65 (ret £62), →Heathrow £116 (ret £120), →Stansted £194 (ret £199), →Luton £185 (ret £190), →Southampton £137 (ret £133), →London City £150 (ret £154)',
-  'Lewes→Gatwick £70 (ret £67), →Heathrow £126 (ret £131), →Stansted £203 (ret £208), →Luton £194 (ret £199), →Southampton £144 (ret £140), →London City £158 (ret £162)',
-  'Horsham→Gatwick £49 (ret £46), →Heathrow £108 (ret £113), →Stansted £162 (ret £167), →Luton £140 (ret £144), →Southampton £122 (ret £118), →London City £144 (ret £149)',
-  'Crawley→Gatwick £31 (ret £29), →Heathrow £86 (ret £90)',
-  'Worthing/Lancing/Shoreham→Gatwick £65 (ret £62), →Heathrow £118 (ret £122)',
-  'Haywards Heath→Gatwick £47 (ret £44), Burgess Hill→Gatwick £44 (ret £40)',
-  'Eastbourne→Gatwick £88 (ret £85), →Heathrow £146 (ret £151)',
-  'Seaford→Gatwick £83 (ret £80), Uckfield→Gatwick £56 (ret £52), East Grinstead→Gatwick £38 (ret £34)',
-  'All fares include all charges — no surcharges added on top'
+  'Brighton/Hove/Saltdean/Rottingdean→Gatwick £104 (ret £101), →Heathrow £152 (ret £156), →Stansted £233 (ret £238), →Luton £221 (ret £226), →Southampton £172 (ret £168), →London City £187 (ret £191)',
+  'Lewes→Gatwick £106 (ret £103), →Heathrow £159 (ret £164), →Stansted £239 (ret £244), →Luton £227 (ret £232), →Southampton £176 (ret £172), →London City £192 (ret £196)',
+  'Horsham→Gatwick £59 (ret £56), →Heathrow £115 (ret £120), →Stansted £172 (ret £177), →Luton £147 (ret £151), →Southampton £128 (ret £124), →London City £152 (ret £157)',
+  'Crawley→Gatwick £46 (ret £44), →Heathrow £98 (ret £102)',
+  'Worthing/Lancing/Shoreham→Gatwick £98 (ret £95), →Heathrow £148 (ret £152)',
+  'Haywards Heath→Gatwick £71 (ret £68), Burgess Hill→Gatwick £71 (ret £67)',
+  'Eastbourne→Gatwick £143 (ret £140), →Heathrow £198 (ret £203)',
+  'Seaford→Gatwick £128 (ret £125), Uckfield→Gatwick £83 (ret £79), East Grinstead→Gatwick £68 (ret £64)',
+  'All fares are all-inclusive — airport charges, dead miles and road tolls included'
 ].join('\n');
 
 // ── Fare engine (exact mirror of CF table in index.html) ─────────────────
-// Values are ALL-IN fixed fares — no surcharges to add on top.
+// Values are ALL-IN fixed fares — airport charges and dead miles included.
 // out = town→airport (drop-off), ret = airport→town (pickup)
 const FARE_CF = {
-  brighton:      { ga:{out:94,ret:91},  he:{out:145,ret:149}, st:{out:223,ret:228}, lu:{out:214,ret:219}, so:{out:166,ret:162}, ci:{out:179,ret:183} },
-  lewes:         { ga:{out:96,ret:93},  he:{out:152,ret:157}, st:{out:229,ret:234}, lu:{out:220,ret:225}, so:{out:170,ret:166}, ci:{out:184,ret:188} },
-  horsham:       { ga:{out:49,ret:46},  he:{out:108,ret:113}, st:{out:162,ret:167}, lu:{out:140,ret:144}, so:{out:122,ret:118}, ci:{out:144,ret:149} },
-  crawley:       { ga:{out:36,ret:34},  he:{out:91,ret:95} },
-  worthing:      { ga:{out:88,ret:85},  he:{out:141,ret:145} },
-  haywards:      { ga:{out:61,ret:58} },
-  burgess:       { ga:{out:61,ret:57} },
-  eastbourne:    { ga:{out:133,ret:130}, he:{out:191,ret:196} },
-  seaford:       { ga:{out:118,ret:115} },
-  uckfield:      { ga:{out:73,ret:69} },
-  eastgrinstead: { ga:{out:58,ret:54} }
+  brighton:      { ga:{out:104,ret:101}, he:{out:152,ret:156}, st:{out:233,ret:238}, lu:{out:221,ret:226}, so:{out:172,ret:168}, ci:{out:187,ret:191} },
+  lewes:         { ga:{out:106,ret:103}, he:{out:159,ret:164}, st:{out:239,ret:244}, lu:{out:227,ret:232}, so:{out:176,ret:172}, ci:{out:192,ret:196} },
+  horsham:       { ga:{out:59,ret:56},  he:{out:115,ret:120}, st:{out:172,ret:177}, lu:{out:147,ret:151}, so:{out:128,ret:124}, ci:{out:152,ret:157} },
+  crawley:       { ga:{out:46,ret:44},  he:{out:98,ret:102} },
+  worthing:      { ga:{out:98,ret:95},  he:{out:148,ret:152} },
+  haywards:      { ga:{out:71,ret:68} },
+  burgess:       { ga:{out:71,ret:67} },
+  eastbourne:    { ga:{out:143,ret:140}, he:{out:198,ret:203} },
+  seaford:       { ga:{out:128,ret:125} },
+  uckfield:      { ga:{out:83,ret:79} },
+  eastgrinstead: { ga:{out:68,ret:64} }
 };
 const FARE_APFULL = { ga:'Gatwick', he:'Heathrow', st:'Stansted', lu:'Luton', so:'Southampton', ci:'London City' };
 // Airport coords for routing when town is unknown

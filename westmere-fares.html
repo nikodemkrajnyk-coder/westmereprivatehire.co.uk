@@ -111,9 +111,9 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 <script>
 /* ── Tab data ── */
 var AREAS = [
-  {id:"brighton", name:"Brighton", fares:[["Gatwick Airport","~27 mi · ~40 min",94,91],["Heathrow Airport","~58 mi · ~75 min",145,149],["Stansted Airport","~88 mi · ~100 min",223,228],["Luton Airport","~80 mi · ~95 min",214,219],["Southampton Airport","~48 mi · ~58 min",166,162],["London City Airport","~58 mi · ~80 min",179,183]]},
-  {id:"lewes", name:"Lewes", fares:[["Gatwick Airport","~28 mi · ~38 min",96,93],["Heathrow Airport","~62 mi · ~80 min",152,157],["Stansted Airport","~92 mi · ~105 min",229,234],["Luton Airport","~85 mi · ~100 min",220,225],["Southampton Airport","~65 mi · ~72 min",170,166],["London City Airport","~68 mi · ~92 min",184,188]]},
-  {id:"horsham", name:"Horsham", fares:[["Gatwick Airport","~12 mi · ~22 min",49,46],["Heathrow Airport","~38 mi · ~55 min",108,113],["Stansted Airport","~72 mi · ~90 min",162,167],["Luton Airport","~65 mi · ~82 min",140,144],["Southampton Airport","~48 mi · ~58 min",122,118],["London City Airport","~52 mi · ~78 min",144,149]]}
+  {id:"brighton", name:"Brighton", fares:[["Gatwick Airport","~27 mi · ~40 min",104,101],["Heathrow Airport","~58 mi · ~75 min",152,156],["Stansted Airport","~88 mi · ~100 min",233,238],["Luton Airport","~80 mi · ~95 min",221,226],["Southampton Airport","~48 mi · ~58 min",172,168],["London City Airport","~58 mi · ~80 min",187,191]]},
+  {id:"lewes", name:"Lewes", fares:[["Gatwick Airport","~28 mi · ~38 min",106,103],["Heathrow Airport","~62 mi · ~80 min",159,164],["Stansted Airport","~92 mi · ~105 min",239,244],["Luton Airport","~85 mi · ~100 min",227,232],["Southampton Airport","~65 mi · ~72 min",176,172],["London City Airport","~68 mi · ~92 min",192,196]]},
+  {id:"horsham", name:"Horsham", fares:[["Gatwick Airport","~12 mi · ~22 min",59,56],["Heathrow Airport","~38 mi · ~55 min",115,120],["Stansted Airport","~72 mi · ~90 min",172,177],["Luton Airport","~65 mi · ~82 min",147,151],["Southampton Airport","~48 mi · ~58 min",128,124],["London City Airport","~52 mi · ~78 min",152,157]]}
 ];
 
 /* ── Render everything via JS — guaranteed to work ── */
@@ -145,7 +145,8 @@ AREAS.forEach(function(area, i) {
           + '<td class="prices"><div class="prow"><span class="ptype">Drop-off</span><span class="price">from £' + f[2] + '</span></div>'
           + '<div class="prow"><span class="ptype">Pickup</span><span class="price">from £' + f[3] + '</span></div></td></tr>';
   });
-  panel.innerHTML = subHtml + '<table class="ftable">' + rows + '</table>';
+  panel.innerHTML = subHtml + '<table class="ftable">' + rows + '</table>'
+    + '<p class="note" style="margin-top:1.2rem">All prices are all-inclusive. Airport drop-off &amp; pickup charges, collection costs and road tolls are already included &mdash; no extras added on top.</p>';
   panelsEl.appendChild(panel);
 });
 </script>
