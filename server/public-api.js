@@ -205,67 +205,9 @@ router.post('/book', async (req, res) => {
     db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
       .run('public', customerId || 0, 'booking_created', ref, req.ip);
 
-    // ── Dead miles — bake collection cost into fare invisibly ────────────────
-    // If the driver is more than 5 miles from the pickup, charge for the
-    // excess at the standard per-mile rate. Customer sees one total price.
-    let deadMilesFee = 0;
-    let deadMilesKm = 0;
-    let finalFare = fare || null;
-    if (pickup) {
-      try {
-        // Always calculate from Horsham home base (predictable, not GPS-dependent)
-        const driverLat = 51.0632;
-        const driverLng = -0.3254;
-
-        // Use client-provided coords if available (from autocomplete cache),
-        // otherwise geocode via Nominatim as fallback
-        let pickup_lat = clientPickupLat ? parseFloat(clientPickupLat) : null;
-        let pickup_lng = clientPickupLng ? parseFloat(clientPickupLng) : null;
-        if (!pickup_lat || !pickup_lng) {
-          const geoResp = await fetch(
-            `https://nominatim.openstreetmap.org/search?format=json&countrycodes=gb&limit=1&q=${encodeURIComponent(pickup)}`,
-            { headers: { 'Accept-Language': 'en', 'User-Agent': 'WestmerePrivateHire/1.0' } }
-          );
-          const geoData = await geoResp.json();
-          pickup_lat = geoData && geoData[0] ? parseFloat(geoData[0].lat) : null;
-          pickup_lng = geoData && geoData[0] ? parseFloat(geoData[0].lon) : null;
-          console.log(`[DEAD_MILES] ${ref}: client coords missing, nominatim ${pickup} → ${pickup_lat},${pickup_lng}`);
-        } else {
-          console.log(`[DEAD_MILES] ${ref}: using client coords for ${pickup}: ${pickup_lat},${pickup_lng}`);
-        }
-
-        if (pickup_lat && pickup_lng) {
-          const dmRes = await fetch(
-            `https://router.project-osrm.org/route/v1/driving/${driverLng},${driverLat};${pickup_lng},${pickup_lat}?overview=false`
-          );
-          const dmData = await dmRes.json();
-          if (dmData.routes && dmData.routes[0]) {
-            const totalKm = dmData.routes[0].distance / 1000;
-            const totalMi = totalKm * 0.621371;
-            const FREE_THRESHOLD = 5; // miles
-            if (totalMi > FREE_THRESHOLD) {
-              const chargeableMiles = totalMi - FREE_THRESHOLD;
-              // Day/night rate based on booking time
-              let bookingHour = ukHour;
-              if (time && time !== 'ASAP') {
-                const tm = String(time).match(/^(\d{1,2}):/);
-                if (tm) bookingHour = parseInt(tm[1], 10);
-              }
-              const isNight = bookingHour >= 22 || bookingHour < 6;
-              const ratePerMile = 1.50; // flat dead miles rate, day and night
-              deadMilesFee = Math.ceil(chargeableMiles * ratePerMile * 2) / 2; // round up to nearest £0.50
-              deadMilesKm = parseFloat(totalKm.toFixed(2));
-              finalFare = parseFloat(((fare || 0) + deadMilesFee).toFixed(2));
-              db.prepare('UPDATE bookings SET fare = ?, dead_miles_fee = ?, dead_miles_km = ? WHERE id = ?')
-                .run(finalFare, deadMilesFee, deadMilesKm, result.lastInsertRowid);
-              console.log(`[DEAD_MILES] ${ref}: driver ${totalMi.toFixed(1)}mi from pickup, ${chargeableMiles.toFixed(1)} chargeable, fee £${deadMilesFee}, fare £${fare||0}→£${finalFare}`);
-            }
-          }
-        }
-      } catch (dmErr) {
-        console.error('[DEAD_MILES] Calculation failed (non-blocking):', dmErr.message);
-      }
-    }
+    // Dead miles are now baked into all fixed airport fare tables on the client.
+    // No dynamic dead miles calculation needed here.
+    const finalFare = fare || null;
 
     // Build notification payload
     const booking = {
