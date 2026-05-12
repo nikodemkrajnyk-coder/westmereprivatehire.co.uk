@@ -3603,7 +3603,7 @@ async function loadAdminDocs(){
         +'<button class="btn btn-navy btn-sm" onclick="adminDocUpload(\''+dt.type+'\')">'+(doc?'Replace':'Upload')+'</button>'
         +viewBtn
         +'</div>'
-        +'<input type="file" id="adfile-'+dt.type+'" accept="image/*,application/pdf" capture="environment" style="display:none" onchange="adminDocSubmit(\''+dt.type+'\')">'
+        +'<input type="file" id="adfile-'+dt.type+'" accept="image/*,application/pdf" style="display:none" onchange="adminDocSubmit(\''+dt.type+'\')">'
         +'</div>';
     }).join('')+'</div>';
   }catch(e){list.innerHTML='<div style="color:#c0392b;font-size:.85rem">Network error</div>';}

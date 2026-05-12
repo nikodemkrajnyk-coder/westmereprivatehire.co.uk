@@ -1147,7 +1147,7 @@ async function loadOwnerDocs(){
         +'<button onclick="ownerDocUpload(\''+dt.type+'\')" style="padding:.32rem .65rem;background:var(--navy);border:none;border-radius:6px;font-size:.63rem;color:#fff;cursor:pointer;white-space:nowrap">'+(doc?'Replace':'Upload')+'</button>'
         +viewBtn
         +'</div>'
-        +'<input type="file" id="odfile-'+dt.type+'" accept="image/*,application/pdf" capture="environment" style="display:none" onchange="ownerDocSubmit(\''+dt.type+'\')">'
+        +'<input type="file" id="odfile-'+dt.type+'" accept="image/*,application/pdf" style="display:none" onchange="ownerDocSubmit(\''+dt.type+'\')">'
         +'</div>';
     }).join('');
     var warn=document.getElementById('doc-expiry-warn');
