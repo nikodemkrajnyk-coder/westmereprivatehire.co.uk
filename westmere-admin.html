@@ -877,6 +877,10 @@ if ('serviceWorker' in navigator) {
             <button class="btn btn-navy btn-full" onclick="adChangePassword()">Update Password</button>
           </div>
         </div>
+        <div class="card" style="grid-column:1/-1">
+          <div class="ch"><div class="ct">My Documents</div><button class="btn btn-ghost btn-sm" onclick="loadAdminDocs()">Refresh</button></div>
+          <div class="cb" id="admin-docs-list"><div style="color:rgba(17,29,44,.4);font-size:.85rem;padding:.5rem">Loading…</div></div>
+        </div>
       </div>
     </div>
 
@@ -2718,7 +2722,7 @@ function nav(id,btn){
   if(id==='time-off'&&typeof loadTimeOff==='function')loadTimeOff();
   if(id==='all-jobs'&&typeof loadFlaggedBookings==='function')loadFlaggedBookings();
   if(id==='invoices'&&typeof loadInvoiceHistory==='function')loadInvoiceHistory();
-  if(id==='settings'&&typeof loadInvoiceSettings==='function')loadInvoiceSettings();
+  if(id==='settings'&&typeof loadInvoiceSettings==='function'){loadInvoiceSettings();loadAdminDocs();}
   if(id==='today'&&typeof loadFlaggedBookings==='function')loadFlaggedBookings();
   if(id==='calendar'&&typeof loadAdminCalendar==='function')loadAdminCalendar();
   if(id==='analytics'&&typeof loadAnalytics==='function')loadAnalytics();
@@ -3550,6 +3554,87 @@ function sendInvoice(customerId, customerName){
     showToast('Invoice '+res.d.invoiceNo+' sent -- '+res.d.journeys+' journeys -- £'+total);
   }).catch(function(){showToast('Network error sending invoice');});
 }
+
+// ── ADMIN DOCUMENTS ──────────────────────────────────────────────────────────
+var ADMIN_DOC_DEFS=[
+  {type:'phv_driver_lic',label:'Private Hire Driver Licence'},
+  {type:'phv_vehicle_lic',label:'Private Hire Vehicle Licence'},
+  {type:'driving_lic',label:'Driving Licence'},
+  {type:'mot',label:'MOT Certificate'},
+  {type:'vst',label:'VST (Vehicle Safety Test)'},
+  {type:'road_tax',label:'Road Tax'},
+  {type:'car_insurance',label:'Car Insurance'}
+];
+
+async function loadAdminDocs(){
+  var list=document.getElementById('admin-docs-list');
+  if(!list)return;
+  try{
+    var r=await fetch('/api/owner/documents',{credentials:'include'});
+    var d=await r.json();
+    if(!d.ok){list.innerHTML='<div style="color:#c0392b;font-size:.85rem">Failed to load</div>';return;}
+    var today=new Date();today.setHours(0,0,0,0);
+    var docsMap={};
+    (d.documents||[]).forEach(function(doc){docsMap[doc.type]=doc;});
+    list.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:.75rem">'+ADMIN_DOC_DEFS.map(function(dt){
+      var doc=docsMap[dt.type]||null;
+      var expiry=doc?doc.expiry_date:null;
+      var statusClass='color:rgba(17,29,44,.45)';var statusText='Not uploaded';
+      if(doc){
+        if(expiry){
+          var expDate=new Date(expiry);expDate.setHours(0,0,0,0);
+          var daysLeft=Math.round((expDate-today)/(1000*60*60*24));
+          if(daysLeft<0){statusClass='color:#c0392b;font-weight:600';statusText='Expired';}
+          else if(daysLeft<=30){statusClass='color:#9C5800;font-weight:600';statusText='Expires in '+daysLeft+'d';}
+          else{statusClass='color:#2D6E47';statusText='Valid';}
+        }else{statusClass='color:#2D6E47';statusText='Uploaded';}
+      }
+      var info=doc?'<div style="font-size:.72rem;color:rgba(17,29,44,.4);margin:.2rem 0 .4rem">'+doc.uploaded_at.slice(0,10)+'</div>':'';
+      var viewBtn=doc?'<button class="btn btn-ghost btn-sm" onclick="adminViewDoc('+doc.id+')">View</button>':'<button class="btn btn-ghost btn-sm" disabled style="opacity:.4">View</button>';
+      var saveBtn=doc?'<button class="btn btn-ghost btn-sm" onclick="adminDocSaveExpiry('+doc.id+',\''+dt.type+'\')">Save</button>':'';
+      return '<div style="border:1px solid rgba(17,29,44,.08);border-radius:8px;padding:.8rem">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">'
+        +'<div style="font-size:.82rem;color:var(--navy);font-weight:500">'+dt.label+'</div>'
+        +'<span style="font-size:.72rem;'+statusClass+'">'+statusText+'</span>'
+        +'</div>'+info
+        +'<div style="display:flex;gap:.4rem;align-items:center">'
+        +'<input type="date" id="adexp-'+dt.type+'" value="'+(expiry||'')+'" style="flex:1;min-width:0;font-size:.78rem;padding:.3rem .5rem;border:1px solid rgba(17,29,44,.15);border-radius:6px">'
+        +saveBtn
+        +'<button class="btn btn-navy btn-sm" onclick="adminDocUpload(\''+dt.type+'\')">'+(doc?'Replace':'Upload')+'</button>'
+        +viewBtn
+        +'</div>'
+        +'<input type="file" id="adfile-'+dt.type+'" accept="image/*,application/pdf" capture="environment" style="display:none" onchange="adminDocSubmit(\''+dt.type+'\')">'
+        +'</div>';
+    }).join('')+'</div>';
+  }catch(e){list.innerHTML='<div style="color:#c0392b;font-size:.85rem">Network error</div>';}
+}
+
+function adminDocUpload(type){var fi=document.getElementById('adfile-'+type);if(fi)fi.click();}
+
+async function adminDocSubmit(type){
+  var fi=document.getElementById('adfile-'+type);
+  if(!fi||!fi.files[0])return;
+  var expInput=document.getElementById('adexp-'+type);
+  var fd=new FormData();fd.append('file',fi.files[0]);fd.append('type',type);
+  if(expInput&&expInput.value)fd.append('expiry_date',expInput.value);
+  showToast('Uploading…');
+  try{
+    var r=await fetch('/api/owner/documents',{method:'POST',credentials:'include',body:fd});
+    var d=await r.json();
+    if(d.ok){showToast('Document saved');loadAdminDocs();}else showToast(d.error||'Upload failed');
+  }catch(e){showToast('Network error');}
+}
+
+async function adminDocSaveExpiry(docId,type){
+  var expInput=document.getElementById('adexp-'+type);
+  try{
+    var r=await fetch('/api/owner/documents/'+docId+'/expiry',{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({expiry_date:expInput?expInput.value||null:null})});
+    var d=await r.json();
+    if(d.ok){showToast('Expiry saved');loadAdminDocs();}else showToast(d.error||'Failed');
+  }catch(e){showToast('Network error');}
+}
+
+function adminViewDoc(docId){window.open('/api/owner-docs/'+docId,'_blank');}
 
 // ── INVOICE SETTINGS ──
 function loadInvoiceSettings(){

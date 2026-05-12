@@ -530,6 +530,11 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
     </div>
   </div>
 
+  <!-- DOCUMENT EXPIRY WARNING BAR -->
+  <div id="doc-expiry-warn" style="display:none;background:#9C5800;color:#fff;font-size:.7rem;text-align:center;padding:.3rem 1rem;letter-spacing:.05em;cursor:pointer;flex-shrink:0" onclick="openSettings()">
+    &#9888; Documents expiring soon — tap to review
+  </div>
+
   <!-- SETTINGS OVERLAY -->
   <div id="settings-overlay" style="display:none;position:fixed;inset:0;background:rgba(10,14,20,.6);backdrop-filter:blur(6px);z-index:200;align-items:flex-end;justify-content:center;padding:1rem" onclick="if(event.target===this)closeSettings()">
     <div style="background:#fff;border-radius:18px 18px 0 0;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;padding:1.6rem 1.4rem;box-shadow:0 -10px 40px rgba(0,0,0,.3)">
@@ -553,6 +558,15 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
           <div id="op-docs" style="display:grid;grid-template-columns:1fr 1fr;gap:.55rem .8rem;margin-bottom:.75rem"></div>
           <button onclick="ownerProfileSave()" style="width:100%;padding:.7rem;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:var(--sans);font-size:.72rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Save Profile</button>
         </div>
+      </div>
+
+      <!-- My Documents -->
+      <div id="sett-owner-docs" style="background:rgba(17,29,44,.03);border-radius:12px;padding:1.1rem 1rem;margin-bottom:1rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.9rem">
+          <div style="font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(17,29,44,.5)">My Documents</div>
+          <button onclick="loadOwnerDocs()" style="background:transparent;border:none;font-size:.63rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.35);cursor:pointer">Refresh</button>
+        </div>
+        <div id="owner-docs-list"><div style="font-size:.78rem;color:rgba(17,29,44,.4);text-align:center;padding:.8rem">Loading…</div></div>
       </div>
 
       <div style="background:rgba(17,29,44,.03);border-radius:12px;padding:1.1rem 1rem;margin-bottom:1rem">
@@ -1012,6 +1026,7 @@ function openSettings(){
   if(window.syncDisplayUI)window.syncDisplayUI();
   checkGoogleCalendarStatus();
   loadOwnerProfile();
+  loadOwnerDocs();
 }
 
 async function loadOwnerProfile(){
@@ -1076,6 +1091,120 @@ async function ownerProfileSave(){
 function closeSettings(){
   var el=document.getElementById('settings-overlay');
   if(el)el.style.display='none';
+}
+
+// ── OWNER DOCUMENTS ───────────────────────────────────────────────────────────
+var OWNER_DOC_DEFS=[
+  {type:'phv_driver_lic',label:'Private Hire Driver Licence'},
+  {type:'phv_vehicle_lic',label:'Private Hire Vehicle Licence'},
+  {type:'driving_lic',label:'Driving Licence'},
+  {type:'mot',label:'MOT Certificate'},
+  {type:'vst',label:'VST (Vehicle Safety Test)'},
+  {type:'road_tax',label:'Road Tax'},
+  {type:'car_insurance',label:'Car Insurance'}
+];
+
+async function loadOwnerDocs(){
+  var list=document.getElementById('owner-docs-list');
+  if(!list)return;
+  try{
+    var r=await fetch('/api/owner/documents',{credentials:'include'});
+    var d=await r.json();
+    if(!d.ok){list.innerHTML='<div style="font-size:.78rem;color:#c0392b;padding:.8rem">Failed to load</div>';return;}
+    var today=new Date();today.setHours(0,0,0,0);
+    var docsMap={};
+    (d.documents||[]).forEach(function(doc){docsMap[doc.type]=doc;});
+    var hasExpiring=false;
+    list.innerHTML=OWNER_DOC_DEFS.map(function(dt){
+      var doc=docsMap[dt.type]||null;
+      var expiry=doc?doc.expiry_date:null;
+      var statusHtml='<span style="font-size:.58rem;padding:.15rem .5rem;border-radius:10px;background:rgba(17,29,44,.08);color:rgba(17,29,44,.5)">Not uploaded</span>';
+      if(doc){
+        if(expiry){
+          var expDate=new Date(expiry);expDate.setHours(0,0,0,0);
+          var daysLeft=Math.round((expDate-today)/(1000*60*60*24));
+          if(daysLeft<0){statusHtml='<span style="font-size:.58rem;padding:.15rem .5rem;border-radius:10px;background:#fde8e8;color:#c0392b;font-weight:600">Expired</span>';hasExpiring=true;}
+          else if(daysLeft<=30){statusHtml='<span style="font-size:.58rem;padding:.15rem .5rem;border-radius:10px;background:#fff3cd;color:#9C5800;font-weight:600">'+daysLeft+'d left</span>';hasExpiring=true;}
+          else{statusHtml='<span style="font-size:.58rem;padding:.15rem .5rem;border-radius:10px;background:#e8f5e9;color:#2D6E47">Valid</span>';}
+        }else{
+          statusHtml='<span style="font-size:.58rem;padding:.15rem .5rem;border-radius:10px;background:#e8f5e9;color:#2D6E47">Uploaded</span>';
+        }
+      }
+      var info=doc?'<div style="font-size:.6rem;color:rgba(17,29,44,.35);margin:.2rem 0 .3rem">Uploaded '+doc.uploaded_at.slice(0,10)+'</div>':'';
+      var viewBtn=doc
+        ?'<button onclick="viewOwnerDoc('+doc.id+')" style="padding:.32rem .65rem;background:transparent;border:1px solid rgba(17,29,44,.15);border-radius:6px;font-size:.63rem;color:rgba(17,29,44,.6);cursor:pointer;white-space:nowrap">View</button>'
+        :'<button disabled style="padding:.32rem .65rem;background:transparent;border:1px solid rgba(17,29,44,.08);border-radius:6px;font-size:.63rem;color:rgba(17,29,44,.25);cursor:not-allowed;white-space:nowrap">View</button>';
+      var saveExpiryBtn=doc
+        ?'<button onclick="ownerDocSaveExpiry('+doc.id+',\''+dt.type+'\')" style="padding:.32rem .5rem;background:transparent;border:1px solid rgba(17,29,44,.12);border-radius:6px;font-size:.6rem;color:rgba(17,29,44,.5);cursor:pointer;white-space:nowrap">Save</button>'
+        :'';
+      return '<div style="padding:.65rem 0;border-bottom:1px solid rgba(17,29,44,.06)">'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.25rem">'
+        +'<div style="font-size:.8rem;color:var(--navy)">'+dt.label+'</div>'+statusHtml
+        +'</div>'+info
+        +'<div style="display:flex;align-items:center;gap:.35rem">'
+        +'<input type="date" id="odexp-'+dt.type+'" value="'+(expiry||'')+'" style="flex:1;min-width:0;font-size:.72rem;padding:.3rem .5rem;border:1px solid rgba(17,29,44,.15);border-radius:6px;color:var(--navy);background:#fff">'
+        +saveExpiryBtn
+        +'<button onclick="ownerDocUpload(\''+dt.type+'\')" style="padding:.32rem .65rem;background:var(--navy);border:none;border-radius:6px;font-size:.63rem;color:#fff;cursor:pointer;white-space:nowrap">'+(doc?'Replace':'Upload')+'</button>'
+        +viewBtn
+        +'</div>'
+        +'<input type="file" id="odfile-'+dt.type+'" accept="image/*,application/pdf" capture="environment" style="display:none" onchange="ownerDocSubmit(\''+dt.type+'\')">'
+        +'</div>';
+    }).join('');
+    var warn=document.getElementById('doc-expiry-warn');
+    if(warn)warn.style.display=hasExpiring?'block':'none';
+  }catch(e){list.innerHTML='<div style="font-size:.78rem;color:#c0392b;padding:.8rem">Network error</div>';}
+}
+
+function ownerDocUpload(type){
+  var fi=document.getElementById('odfile-'+type);if(fi)fi.click();
+}
+
+async function ownerDocSubmit(type){
+  var fi=document.getElementById('odfile-'+type);
+  if(!fi||!fi.files[0])return;
+  var expInput=document.getElementById('odexp-'+type);
+  var fd=new FormData();
+  fd.append('file',fi.files[0]);
+  fd.append('type',type);
+  if(expInput&&expInput.value)fd.append('expiry_date',expInput.value);
+  showToast('Uploading…');
+  try{
+    var r=await fetch('/api/owner/documents',{method:'POST',credentials:'include',body:fd});
+    var d=await r.json();
+    if(d.ok){showToast('Document saved');loadOwnerDocs();}
+    else showToast(d.error||'Upload failed');
+  }catch(e){showToast('Network error');}
+}
+
+async function ownerDocSaveExpiry(docId,type){
+  var expInput=document.getElementById('odexp-'+type);
+  var expiry=expInput?expInput.value:'';
+  try{
+    var r=await fetch('/api/owner/documents/'+docId+'/expiry',{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({expiry_date:expiry||null})});
+    var d=await r.json();
+    if(d.ok){showToast('Expiry saved');loadOwnerDocs();}
+    else showToast(d.error||'Failed to save');
+  }catch(e){showToast('Network error');}
+}
+
+function viewOwnerDoc(docId){
+  window.open('/api/owner-docs/'+docId,'_blank');
+}
+
+async function checkDocExpiry(){
+  try{
+    var r=await fetch('/api/owner/documents',{credentials:'include'});
+    var d=await r.json();
+    if(!d.ok)return;
+    var today=new Date();today.setHours(0,0,0,0);
+    var hasExpiring=(d.documents||[]).some(function(doc){
+      if(!doc.expiry_date)return false;
+      var expDate=new Date(doc.expiry_date);expDate.setHours(0,0,0,0);
+      return Math.round((expDate-today)/(1000*60*60*24))<=30;
+    });
+    var warn=document.getElementById('doc-expiry-warn');
+    if(warn)warn.style.display=hasExpiring?'block':'none';
+  }catch(e){}
 }
 
 // ── CHANGE PASSWORD ───────────────────────────────────────────────────────────
@@ -4119,6 +4248,7 @@ function initApp(){
   var fab=document.getElementById('assist-fab');if(fab)fab.style.display='flex';
   goPage('today', document.getElementById('bn-today'));
   loadOwnerBookings();
+  checkDocExpiry();
 }
 // Select-on-focus for inputs
 ['owner-user','owner-pass','assist-input'].forEach(function(id){

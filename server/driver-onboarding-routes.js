@@ -223,4 +223,104 @@ router.post('/drivers/:id/approve', requireAdminOrOwner, (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Owner / Admin document uploads ──────────────────────────────────────────
+const OWNER_DOC_TYPES = ['phv_driver_lic', 'phv_vehicle_lic', 'driving_lic', 'mot', 'vst', 'road_tax', 'car_insurance'];
+
+const ownerStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const userId = req.auth.id;
+    const baseDir = process.env.DOCS_DIR
+      ? path.join(process.env.DOCS_DIR, '..', 'owner-docs')
+      : (process.env.SQLITE_DB
+          ? path.join(path.dirname(process.env.SQLITE_DB), 'owner-docs')
+          : path.join(__dirname, '..', 'data', 'owner-docs'));
+    const dir = path.join(baseDir, String(userId));
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const type = (req.body.type || 'doc').replace(/[^a-z0-9_]/gi, '');
+    const ext = path.extname(file.originalname).toLowerCase() || '.bin';
+    cb(null, `${type}-${Date.now()}${ext}`);
+  }
+});
+
+const ownerUpload = multer({
+  storage: ownerStorage,
+  limits: { fileSize: 15 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ok = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].includes(file.mimetype);
+    cb(ok ? null : new Error('Only JPEG, PNG, WebP, or PDF accepted'), ok);
+  }
+});
+
+function requireOwnerOrAdmin(req, res, next) {
+  if (!['owner', 'admin'].includes(req.auth.role)) return res.status(403).json({ error: 'Owner/admin access required' });
+  next();
+}
+
+// GET /api/owner/documents
+router.get('/owner/documents', requireOwnerOrAdmin, (req, res) => {
+  const db = getDb();
+  const docs = db.prepare(`
+    SELECT id, driver_id, type, original_name, mime_type, uploaded_at, expiry_date, status
+    FROM driver_documents WHERE driver_id = ? ORDER BY type ASC
+  `).all(req.auth.id);
+  res.json({ ok: true, documents: docs });
+});
+
+// POST /api/owner/documents
+router.post('/owner/documents', requireOwnerOrAdmin, (req, res, next) => {
+  ownerUpload.single('file')(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+    next();
+  });
+}, (req, res) => {
+  const { type, expiry_date } = req.body;
+  if (!OWNER_DOC_TYPES.includes(type)) {
+    if (req.file) fs.unlink(req.file.path, () => {});
+    return res.status(400).json({ error: `Invalid document type` });
+  }
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+  const db = getDb();
+  const userId = req.auth.id;
+
+  const existing = db.prepare('SELECT * FROM driver_documents WHERE driver_id = ? AND type = ?').get(userId, type);
+  if (existing) {
+    db.prepare('DELETE FROM driver_documents WHERE id = ?').run(existing.id);
+    try { fs.unlinkSync(existing.file_path); } catch (_) {}
+  }
+
+  const result = db.prepare(`
+    INSERT INTO driver_documents (driver_id, type, file_path, original_name, mime_type, status, expiry_date)
+    VALUES (?, ?, ?, ?, ?, 'approved', ?)
+  `).run(userId, type, req.file.path, req.file.originalname, req.file.mimetype, expiry_date || null);
+
+  res.status(201).json({ ok: true, doc: { id: result.lastInsertRowid, type } });
+});
+
+// PATCH /api/owner/documents/:id/expiry — save expiry date without re-uploading
+router.patch('/owner/documents/:id/expiry', requireOwnerOrAdmin, (req, res) => {
+  const db = getDb();
+  const docId = parseInt(req.params.id, 10);
+  const doc = db.prepare('SELECT id FROM driver_documents WHERE id = ? AND driver_id = ?').get(docId, req.auth.id);
+  if (!doc) return res.status(404).json({ error: 'Document not found' });
+  db.prepare('UPDATE driver_documents SET expiry_date = ? WHERE id = ?').run(req.body.expiry_date || null, docId);
+  res.json({ ok: true });
+});
+
+// GET /api/owner-docs/:docId — serve owner document file
+router.get('/owner-docs/:docId', requireOwnerOrAdmin, (req, res) => {
+  const docId = parseInt(req.params.docId, 10);
+  if (isNaN(docId)) return res.status(400).json({ error: 'Invalid ID' });
+  const db = getDb();
+  const doc = db.prepare('SELECT * FROM driver_documents WHERE id = ? AND driver_id = ?').get(docId, req.auth.id);
+  if (!doc) return res.status(404).json({ error: 'Document not found' });
+  if (!fs.existsSync(doc.file_path)) return res.status(404).json({ error: 'File not found on disk' });
+  res.setHeader('Content-Type', doc.mime_type || 'application/octet-stream');
+  res.setHeader('Content-Disposition', `inline; filename="${doc.original_name || 'document'}"`);
+  res.sendFile(path.resolve(doc.file_path));
+});
+
 module.exports = router;

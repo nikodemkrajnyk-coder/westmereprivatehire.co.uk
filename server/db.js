@@ -630,6 +630,15 @@ function migrate() {
       }
     }
   } catch(e) { console.error('[DB] dead_miles migration failed:', e.message); }
+
+  // Owner/driver documents: add expiry_date column
+  try {
+    const ddInfo = db.prepare("PRAGMA table_info(driver_documents)").all();
+    if (!ddInfo.find(c => c.name === 'expiry_date')) {
+      db.exec(`ALTER TABLE driver_documents ADD COLUMN expiry_date TEXT`);
+      console.log('[DB] Added expiry_date to driver_documents');
+    }
+  } catch(e) { console.error('[DB] driver_documents expiry_date migration failed:', e.message); }
 }
 
 function seedDefaults() {
