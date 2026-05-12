@@ -432,19 +432,11 @@ async function executeCalendarTool(name, input) {
         const mi = result.distance_miles != null ? result.distance_miles + ' miles' : 'distance unknown';
         const ti = result.duration_min != null ? '~' + result.duration_min + ' min' : 'duration unknown';
 
-        // Dead miles: driver GPS → pickup, £1.50/mi beyond 5-mile free threshold
-        // Always runs — falls back to Horsham base if no GPS fix
+        // Dead miles: always from Horsham home base → pickup, £1.50/mi beyond 5-mile free threshold
         let deadNote = '';
         try {
-          const db = getDb();
-          const driverLoc = db.prepare(
-            `SELECT dl.lat, dl.lng FROM driver_locations dl
-             JOIN users u ON dl.driver_id = u.id
-             WHERE u.is_default_driver = 1
-             ORDER BY dl.updated_at DESC LIMIT 1`
-          ).get();
-          const driverLat = (driverLoc && driverLoc.lat) ? driverLoc.lat : 51.0632;
-          const driverLng = (driverLoc && driverLoc.lng) ? driverLoc.lng : -0.3254;
+          const driverLat = 51.0632;
+          const driverLng = -0.3254;
           const pickupGc = await _fareGeocode(input.pickup);
           if (pickupGc) {
             const rt = await _fareRoute(driverLat, driverLng, pickupGc.lat, pickupGc.lon);

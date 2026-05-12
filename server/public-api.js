@@ -213,13 +213,9 @@ router.post('/book', async (req, res) => {
     let finalFare = fare || null;
     if (pickup) {
       try {
-        // Default driver (owner) GPS position; fall back to Horsham base
-        const defaultDriver = db.prepare('SELECT id FROM users WHERE is_default_driver = 1 AND active = 1 LIMIT 1').get();
-        const driverLoc = defaultDriver
-          ? db.prepare('SELECT lat, lng FROM driver_locations WHERE driver_id = ? ORDER BY updated_at DESC LIMIT 1').get(defaultDriver.id)
-          : db.prepare('SELECT lat, lng FROM driver_locations ORDER BY updated_at DESC LIMIT 1').get();
-        const driverLat = driverLoc ? driverLoc.lat : 51.0632;
-        const driverLng = driverLoc ? driverLoc.lng : -0.3254;
+        // Always calculate from Horsham home base (predictable, not GPS-dependent)
+        const driverLat = 51.0632;
+        const driverLng = -0.3254;
 
         // Use client-provided coords if available (from autocomplete cache),
         // otherwise geocode via Nominatim as fallback
