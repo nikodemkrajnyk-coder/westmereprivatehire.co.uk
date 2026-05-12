@@ -432,7 +432,8 @@ async function executeCalendarTool(name, input) {
         const mi = result.distance_miles != null ? result.distance_miles + ' miles' : 'distance unknown';
         const ti = result.duration_min != null ? '~' + result.duration_min + ' min' : 'duration unknown';
 
-        // Dead miles: check driver current GPS vs pickup, charge £2/mi beyond 5-mile free threshold
+        // Dead miles: driver GPS → pickup, £1.50/mi beyond 5-mile free threshold
+        // Always runs — falls back to Horsham base if no GPS fix
         let deadNote = '';
         try {
           const db = getDb();
@@ -442,25 +443,26 @@ async function executeCalendarTool(name, input) {
              WHERE u.is_default_driver = 1
              ORDER BY dl.updated_at DESC LIMIT 1`
           ).get();
-          if (driverLoc && driverLoc.lat && driverLoc.lng) {
-            const pickupGc = await _fareGeocode(input.pickup);
-            if (pickupGc) {
-              const rt = await _fareRoute(driverLoc.lat, driverLoc.lng, pickupGc.lat, pickupGc.lon);
-              if (rt) {
-                const deadMi = Math.round(rt.distance / 1609.34 * 10) / 10;
-                const FREE_MI = 5;
-                const chargeableMi = Math.max(0, deadMi - FREE_MI);
-                if (chargeableMi > 0) {
-                  const deadFee = Math.ceil(chargeableMi * 2 * 2) / 2; // £2/mi, round up to nearest 50p
-                  const total = result.fare + deadFee;
-                  deadNote = ` | Dead miles: ${deadMi.toFixed(1)} mi (${FREE_MI} mi free → ${chargeableMi.toFixed(1)} mi @ £2/mi = +£${deadFee.toFixed(0)}) | Total inc. dead miles: £${total}`;
-                } else {
-                  deadNote = ` | Dead miles: ${deadMi.toFixed(1)} mi (within ${FREE_MI} mi free threshold — no charge)`;
-                }
+          const driverLat = (driverLoc && driverLoc.lat) ? driverLoc.lat : 51.0632;
+          const driverLng = (driverLoc && driverLoc.lng) ? driverLoc.lng : -0.3254;
+          const pickupGc = await _fareGeocode(input.pickup);
+          if (pickupGc) {
+            const rt = await _fareRoute(driverLat, driverLng, pickupGc.lat, pickupGc.lon);
+            if (rt) {
+              const deadMi = Math.round(rt.distance / 1609.34 * 10) / 10;
+              const FREE_MI = 5;
+              const chargeableMi = Math.max(0, deadMi - FREE_MI);
+              const RATE = 1.50;
+              if (chargeableMi > 0) {
+                const deadFee = Math.ceil(chargeableMi * RATE * 2) / 2; // round up to nearest 50p
+                const total = parseFloat((result.fare + deadFee).toFixed(2));
+                deadNote = ` | Dead miles: ${deadMi.toFixed(1)} mi (${FREE_MI} mi free → ${chargeableMi.toFixed(1)} mi @ £${RATE}/mi = +£${deadFee.toFixed(2)}) | Total inc. collection: £${total}`;
+              } else {
+                deadNote = ` | Dead miles: ${deadMi.toFixed(1)} mi (within ${FREE_MI} mi free — no charge)`;
               }
             }
           }
-        } catch (_) { /* GPS unavailable — skip dead miles */ }
+        } catch (dmErr) { deadNote = ' | Dead miles: unavailable'; }
 
         return `Fare: £${result.fare} | ${mi} | ${ti} | Rate: ${result.rate_type} | ${result.breakdown}${deadNote}`;
       } catch (e) {
