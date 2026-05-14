@@ -8,7 +8,8 @@ const gcal = require('./google-calendar');
 const events = require('./events');
 
 const INVOICES_DIR = path.join(DATA_DIR, 'invoices');
-const autoFile = require('./auto-file');
+let autoFile;
+try { autoFile = require('./auto-file'); } catch(e) { autoFile = { fileBooking(){}, fileCustomer(){}, fileInvoice(){}, removeBooking(){}, removeInvoice(){}, updateEarnings(){}, fileDriverProfile(){}, fileDriverDoc(){} }; console.error('[AUTOFILE] Module failed:', e.message); }
 
 const router = express.Router();
 

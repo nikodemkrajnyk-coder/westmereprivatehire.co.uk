@@ -3,7 +3,8 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { getDb } = require('./db');
-const autoFile = require('./auto-file');
+let autoFile;
+try { autoFile = require('./auto-file'); } catch(e) { autoFile = { fileDriverDoc(){}, fileDriverProfile(){} }; console.error('[AUTOFILE] Module failed:', e.message); }
 
 const router = express.Router();
 

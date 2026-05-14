@@ -13,7 +13,8 @@ const { createPaymentIntent, isConfigured: stripeConfigured } = require('./strip
 const gcal = require('./google-calendar');
 const intake = require('./intake');
 const events = require('./events');
-const autoFile = require('./auto-file');
+let autoFile;
+try { autoFile = require('./auto-file'); } catch(e) { autoFile = { fileBooking(){} }; console.error('[AUTOFILE] Module failed:', e.message); }
 
 const router = express.Router();
 

@@ -15,7 +15,8 @@ const intakeRouter = require('./intake-routes');
 const offerRouter = require('./offer-routes');
 const assistantRouter = require('./assistant-routes');
 const backupRouter = require('./backup-routes');
-const exportRouter = require('./export-routes');
+let exportRouter;
+try { exportRouter = require('./export-routes'); } catch(e) { console.error('[EXPORT] Module failed:', e.message); }
 const trackingRouter = require('./tracking-routes');
 const publicTrackingRouter = require('./public-tracking-routes');
 const onboardingRouter = require('./driver-onboarding-routes');
@@ -167,7 +168,7 @@ app.use('/api/assistant', apiLimiter, requireAuth, assistantRouter);
 app.use('/api/backup', apiLimiter, requireAuth, backupRouter);
 
 // Full data export — ZIP download of all business data
-app.use('/api/export', apiLimiter, requireAuth, exportRouter);
+if (exportRouter) app.use('/api/export', apiLimiter, requireAuth, exportRouter);
 
 // ── Real-time push (SSE) ───────────────────────────────────────────────
 // Long-lived stream — must NOT pass through the api rate limiter (one

@@ -2,7 +2,8 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { getDb } = require('./db');
-const autoFile = require('./auto-file');
+let autoFile;
+try { autoFile = require('./auto-file'); } catch(e) { autoFile = { fileCustomer(){} }; console.error('[AUTOFILE] Module failed:', e.message); }
 
 const router = express.Router();
 
