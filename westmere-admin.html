@@ -881,6 +881,13 @@ if ('serviceWorker' in navigator) {
           <div class="ch"><div class="ct">My Documents</div><button class="btn btn-ghost btn-sm" onclick="loadAdminDocs()">Refresh</button></div>
           <div class="cb" id="admin-docs-list"><div style="color:rgba(17,29,44,.4);font-size:.85rem;padding:.5rem">Loading…</div></div>
         </div>
+        <div class="card" style="grid-column:1/-1">
+          <div class="ch"><div class="ct">Download All Data</div></div>
+          <div class="cb">
+            <p style="font-size:.78rem;color:rgba(17,29,44,.5);margin-bottom:1rem;line-height:1.5">Exports all bookings, customers, invoices, driver profiles, documents and earnings as a structured ZIP archive. Save to iCloud Drive for automatic sync to all Apple devices.</p>
+            <button id="admin-export-btn" class="btn btn-navy btn-full" onclick="adminExportZip()">Download ZIP</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -3635,6 +3642,25 @@ async function adminDocSaveExpiry(docId,type){
 }
 
 function adminViewDoc(docId){window.open('/api/owner-docs/'+docId,'_blank');}
+
+// ── EXPORT ZIP ──
+async function adminExportZip(){
+  var btn=document.getElementById('admin-export-btn');
+  if(btn){btn.textContent='Preparing…';btn.disabled=true;}
+  try{
+    var r=await fetch('/api/export/zip',{credentials:'include'});
+    if(!r.ok){showToast('Export failed: '+r.status);return;}
+    var blob=await r.blob();
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url;
+    a.download='westmere-data-'+new Date().toISOString().slice(0,10)+'.zip';
+    document.body.appendChild(a);a.click();
+    setTimeout(function(){URL.revokeObjectURL(url);a.remove();},2000);
+    showToast('Download started');
+  }catch(e){showToast('Network error');}
+  finally{if(btn){btn.textContent='Download ZIP';btn.disabled=false;}}
+}
 
 // ── INVOICE SETTINGS ──
 function loadInvoiceSettings(){

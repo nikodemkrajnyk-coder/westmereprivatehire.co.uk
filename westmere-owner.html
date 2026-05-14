@@ -616,6 +616,12 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
 
 
       <div style="background:rgba(17,29,44,.03);border-radius:12px;padding:1.1rem 1rem;margin-top:1rem">
+        <div style="font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.6rem">Download All Data</div>
+        <div style="font-size:.73rem;color:rgba(17,29,44,.5);line-height:1.5;margin-bottom:.8rem">Exports all bookings, customers, invoices, driver profiles, documents and earnings as a ZIP archive. Save to iCloud Drive for automatic backup to all your Apple devices.</div>
+        <button id="owner-export-btn" onclick="ownerExportZip()" style="width:100%;padding:.75rem;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:var(--sans);font-size:.72rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Download ZIP</button>
+      </div>
+
+      <div style="background:rgba(17,29,44,.03);border-radius:12px;padding:1.1rem 1rem;margin-top:1rem">
         <div style="font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.9rem">Change Password</div>
         <div class="fg" style="margin-bottom:.6rem"><input type="password" id="cp-current" class="fi" placeholder="Current password" autocomplete="off"></div>
         <div class="fg" style="margin-bottom:.6rem"><input type="password" id="cp-new" class="fi" placeholder="New password" autocomplete="off"></div>
@@ -1091,6 +1097,25 @@ async function ownerProfileSave(){
 function closeSettings(){
   var el=document.getElementById('settings-overlay');
   if(el)el.style.display='none';
+}
+
+// ── EXPORT ZIP ────────────────────────────────────────────────────────────────
+async function ownerExportZip(){
+  var btn=document.getElementById('owner-export-btn');
+  if(btn){btn.textContent='Preparing…';btn.disabled=true;}
+  try{
+    var r=await fetch('/api/export/zip',{credentials:'include'});
+    if(!r.ok){showToast('Export failed: '+r.status);return;}
+    var blob=await r.blob();
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url;
+    a.download='westmere-data-'+new Date().toISOString().slice(0,10)+'.zip';
+    document.body.appendChild(a);a.click();
+    setTimeout(function(){URL.revokeObjectURL(url);a.remove();},2000);
+    showToast('Download started');
+  }catch(e){showToast('Network error');}
+  finally{if(btn){btn.textContent='Download ZIP';btn.disabled=false;}}
 }
 
 // ── OWNER DOCUMENTS ───────────────────────────────────────────────────────────
