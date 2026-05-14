@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { getDb } = require('./db');
+const autoFile = require('./auto-file');
 
 const router = express.Router();
 
@@ -161,6 +162,10 @@ router.post('/customer/register', async (req, res) => {
     console.error('[AUTH] customer register insert failed:', e.message);
     return res.status(500).json({ error: 'Registration failed. Please try again.' });
   }
+
+  // Auto-file new customer (non-blocking)
+  const newCust = db.prepare('SELECT * FROM customers WHERE id = ?').get(newId);
+  if (newCust) autoFile.fileCustomer(newCust);
 
   // Send verification email (non-blocking)
   const { sendVerificationEmail } = require('./email');

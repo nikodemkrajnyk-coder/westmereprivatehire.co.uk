@@ -8,6 +8,7 @@ const gcal = require('./google-calendar');
 const events = require('./events');
 
 const INVOICES_DIR = path.join(DATA_DIR, 'invoices');
+const autoFile = require('./auto-file');
 
 const router = express.Router();
 
@@ -145,6 +146,10 @@ router.post('/bookings', (req, res) => {
     }
   }).catch(() => {});
 
+  // Auto-file (non-blocking)
+  const newBk = db.prepare('SELECT * FROM bookings WHERE id = ?').get(result.lastInsertRowid);
+  if (newBk) autoFile.fileBooking(newBk);
+
   res.status(201).json({ ok: true, booking: { id: result.lastInsertRowid, ref } });
 });
 
@@ -218,6 +223,10 @@ router.patch('/bookings/:id', (req, res) => {
     WHERE b.id = ?
   `).get(req.params.id);
   if (updated) {
+    // Auto-file updated booking (non-blocking)
+    autoFile.fileBooking(updated);
+    if (updated.status === 'completed') autoFile.updateEarnings(updated.date ? updated.date.slice(0, 7) : null, getDb);
+
     // ── Operator's shared calendar ───────────────────────────────────────
     if (updated.status === 'cancelled' && updated.calendar_event_id) {
       gcal.deleteEvent(updated.calendar_event_id).then(ok => {
@@ -309,6 +318,7 @@ router.delete('/bookings/:id', (req, res) => {
 
   try {
     db.prepare('DELETE FROM bookings WHERE id = ?').run(id);
+    autoFile.removeBooking(booking.ref, booking.date);
   } catch (e) {
     console.error('[API] booking delete failed:', e.message);
     return res.status(500).json({ error: 'Failed to delete booking. Please try again.' });
@@ -394,6 +404,10 @@ router.post('/customers', (req, res) => {
     db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
       .run(req.auth.type || 'user', req.auth.id, 'customer_created_by_admin', cleanEmail, req.ip);
   } catch (e) { /* audit failure must not block response */ }
+
+  // Auto-file (non-blocking)
+  const newCust = db.prepare('SELECT * FROM customers WHERE id = ?').get(result.lastInsertRowid);
+  if (newCust) autoFile.fileCustomer(newCust);
 
   res.status(201).json({
     ok: true,
@@ -698,6 +712,10 @@ router.post('/customers/:id/invoice', async (req, res) => {
     console.error('[INVOICE] persist failed:', e.message);
   }
 
+  // Auto-file (non-blocking)
+  const invRow = db.prepare('SELECT * FROM invoices WHERE invoice_no = ?').get(invoiceNo);
+  if (invRow) autoFile.fileInvoice(invoiceNo, invRow, pdfBuffer);
+
   res.json({
     ok: true, invoiceNo, journeys: bookings.length, total,
     customer: { id: customer.id, email: customer.email, full_name: customer.full_name, phone: customer.phone },
@@ -821,6 +839,10 @@ router.post('/invoices/bespoke', async (req, res) => {
   } catch (e) {
     console.error('[API] invoice_recipients upsert failed:', e.message);
   }
+
+  // Auto-file (non-blocking)
+  const bespInvRow = db.prepare('SELECT * FROM invoices WHERE invoice_no = ?').get(invoiceNo);
+  if (bespInvRow) autoFile.fileInvoice(invoiceNo, bespInvRow, pdfBuffer);
 
   res.json({
     ok: true, invoiceNo, total, bespoke: true,
@@ -967,6 +989,7 @@ router.delete('/invoices/:id', async (req, res) => {
   } catch (e) { /* non-fatal */ }
 
   db.prepare('DELETE FROM invoices WHERE id = ?').run(id);
+  autoFile.removeInvoice(row.invoice_no);
   res.json({ ok: true });
 });
 

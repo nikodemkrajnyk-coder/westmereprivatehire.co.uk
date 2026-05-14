@@ -13,6 +13,7 @@ const { createPaymentIntent, isConfigured: stripeConfigured } = require('./strip
 const gcal = require('./google-calendar');
 const intake = require('./intake');
 const events = require('./events');
+const autoFile = require('./auto-file');
 
 const router = express.Router();
 
@@ -253,6 +254,10 @@ router.post('/book', async (req, res) => {
       date: bookingDate, time: time || 'ASAP',
       payment: payment || 'cash', fare: finalFare || null
     });
+
+    // Auto-file to organized folder structure (non-blocking)
+    const fullBooking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(result.lastInsertRowid);
+    if (fullBooking) autoFile.fileBooking(fullBooking);
 
     res.status(201).json({ ok: true, ref, bookingId: result.lastInsertRowid });
 

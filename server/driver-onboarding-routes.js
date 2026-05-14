@@ -3,6 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { getDb } = require('./db');
+const autoFile = require('./auto-file');
 
 const router = express.Router();
 
@@ -120,10 +121,14 @@ router.post('/driver/documents', requireDriver, (req, res, next) => {
   `).run(driverId, type, req.file.path, req.file.originalname, req.file.mimetype);
 
   // Mark onboarding as submitted once at least one doc is uploaded
-  const user = db.prepare('SELECT onboarding_status FROM users WHERE id = ?').get(driverId);
+  const user = db.prepare('SELECT onboarding_status, full_name FROM users WHERE id = ?').get(driverId);
   if (user && user.onboarding_status === 'pending') {
     db.prepare("UPDATE users SET onboarding_status = 'submitted' WHERE id = ?").run(driverId);
   }
+
+  // Auto-file (non-blocking)
+  const newDoc = db.prepare('SELECT * FROM driver_documents WHERE id = ?').get(result.lastInsertRowid);
+  if (newDoc) autoFile.fileDriverDoc(user ? user.full_name : String(driverId), newDoc);
 
   res.status(201).json({ ok: true, doc: { id: result.lastInsertRowid, type, status: 'pending' } });
 });
@@ -296,6 +301,11 @@ router.post('/owner/documents', requireOwnerOrAdmin, (req, res, next) => {
     INSERT INTO driver_documents (driver_id, type, file_path, original_name, mime_type, status, expiry_date)
     VALUES (?, ?, ?, ?, ?, 'approved', ?)
   `).run(userId, type, req.file.path, req.file.originalname, req.file.mimetype, expiry_date || null);
+
+  // Auto-file (non-blocking)
+  const ownerUser = db.prepare('SELECT full_name FROM users WHERE id = ?').get(userId);
+  const ownerDoc = db.prepare('SELECT * FROM driver_documents WHERE id = ?').get(result.lastInsertRowid);
+  if (ownerDoc) autoFile.fileDriverDoc(ownerUser ? ownerUser.full_name : String(userId), ownerDoc);
 
   res.status(201).json({ ok: true, doc: { id: result.lastInsertRowid, type } });
 });
