@@ -24,17 +24,17 @@ const REFERENCE_FARES = [
 // Values are ALL-IN fixed fares — airport charges and dead miles included.
 // out = town→airport (drop-off), ret = airport→town (pickup)
 const FARE_CF = {
-  brighton:      { ga:{out:114,ret:111}, he:{out:159,ret:163}, st:{out:243,ret:248}, lu:{out:228,ret:233}, so:{out:178,ret:174}, ci:{out:195,ret:199} },
-  lewes:         { ga:{out:116,ret:113}, he:{out:166,ret:171}, st:{out:249,ret:254}, lu:{out:234,ret:239}, so:{out:182,ret:178}, ci:{out:200,ret:204} },
-  horsham:       { ga:{out:69,ret:66},  he:{out:122,ret:127}, st:{out:182,ret:187}, lu:{out:154,ret:158}, so:{out:134,ret:130}, ci:{out:160,ret:165} },
-  crawley:       { ga:{out:56,ret:54},  he:{out:105,ret:109} },
-  worthing:      { ga:{out:108,ret:105}, he:{out:155,ret:159} },
-  haywards:      { ga:{out:81,ret:78} },
-  burgess:       { ga:{out:81,ret:77} },
-  eastbourne:    { ga:{out:153,ret:150}, he:{out:205,ret:210} },
-  seaford:       { ga:{out:138,ret:135} },
-  uckfield:      { ga:{out:93,ret:89} },
-  eastgrinstead: { ga:{out:78,ret:74} }
+  brighton:      { ga:{out:109,ret:106}, he:{out:151,ret:155}, st:{out:231,ret:236}, lu:{out:217,ret:222}, so:{out:169,ret:166}, ci:{out:186,ret:189} },
+  lewes:         { ga:{out:111,ret:108}, he:{out:158,ret:163}, st:{out:237,ret:242}, lu:{out:223,ret:227}, so:{out:173,ret:169}, ci:{out:190,ret:194} },
+  horsham:       { ga:{out:66,ret:63},  he:{out:116,ret:121}, st:{out:173,ret:178}, lu:{out:147,ret:150}, so:{out:128,ret:124}, ci:{out:152,ret:157} },
+  crawley:       { ga:{out:54,ret:52},  he:{out:100,ret:104} },
+  worthing:      { ga:{out:103,ret:100}, he:{out:148,ret:151} },
+  haywards:      { ga:{out:77,ret:75} },
+  burgess:       { ga:{out:77,ret:74} },
+  eastbourne:    { ga:{out:146,ret:143}, he:{out:195,ret:200} },
+  seaford:       { ga:{out:132,ret:129} },
+  uckfield:      { ga:{out:89,ret:85} },
+  eastgrinstead: { ga:{out:75,ret:71} }
 };
 const FARE_APFULL = { ga:'Gatwick', he:'Heathrow', st:'Stansted', lu:'Luton', so:'Southampton', ci:'London City' };
 // Airport coords for routing when town is unknown
