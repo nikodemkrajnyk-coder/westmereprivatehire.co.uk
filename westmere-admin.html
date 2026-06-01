@@ -1017,8 +1017,19 @@ if ('serviceWorker' in navigator) {
 
       <div style="display:flex;gap:.7rem;margin-bottom:1.4rem;flex-wrap:wrap;align-items:center">
         <div class="fg" style="margin:0;flex:0 0 auto">
+          <select class="fi" id="rb-view" style="padding:.42rem .85rem;min-height:auto;font-size:.8rem" onchange="switchRecordView()">
+            <option value="month">Monthly</option>
+            <option value="year">Yearly</option>
+          </select>
+        </div>
+        <div class="fg" id="rb-month-wrap" style="margin:0;flex:0 0 auto">
           <select class="fi" id="rb-month" style="padding:.42rem .85rem;min-height:auto;font-size:.8rem" onchange="buildRecordBook()">
             <option value="">Select month...</option>
+          </select>
+        </div>
+        <div class="fg" id="rb-year-wrap" style="margin:0;flex:0 0 auto;display:none">
+          <select class="fi" id="rb-year" style="padding:.42rem .85rem;min-height:auto;font-size:.8rem" onchange="buildRecordBook()">
+            <option value="">Select year...</option>
           </select>
         </div>
         <button class="btn btn-navy" onclick="downloadRecordBook()">📄 Download PDF</button>
@@ -3495,7 +3506,8 @@ function loadInvoiceHistory(){
     tbody.innerHTML=invoices.map(function(inv){
       var kind=inv.kind==='bespoke'?'One-off':'Account';
       // Legacy invoices (sent before the invoices table existed) come from the
-      // audit log: they have no stored record/PDF, so no id and no actions.
+      // audit log: they have no stored record/PDF, so no id, view or download —
+      // but they can still be deleted (by invoice number).
       var isLegacy=inv.legacy||inv.id==null;
       var total=(inv.total==null)?'—':('£'+(+inv.total||0).toFixed(2));
       if(isLegacy){
@@ -3505,7 +3517,10 @@ function loadInvoiceHistory(){
           +'<td style="text-align:right;font-family:Georgia,serif;color:var(--navy)">'+total+'</td>'
           +'<td><span style="font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)">'+kind+'</span></td>'
           +'<td style="white-space:nowrap">'+escTo(inv.issued_date||'')+'</td>'
-          +'<td style="white-space:nowrap"><span style="font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(17,29,44,.4)">Sent · archived</span></td>'
+          +'<td style="white-space:nowrap">'
+            +'<span style="font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-right:.5rem">Sent · archived</span>'
+            +'<button class="btn btn-ghost btn-sm" style="font-size:.65rem;padding:.3rem .7rem;color:#a33;border-color:rgba(163,51,51,.25)" onclick="deleteInvoice(\''+escTo(inv.invoice_no)+'\',\''+escTo(inv.invoice_no)+'\')">Delete</button>'
+          +'</td>'
           +'</tr>';
       }
       return '<tr style="cursor:pointer" onclick="viewInvoice('+inv.id+')">'
@@ -3527,7 +3542,7 @@ function loadInvoiceHistory(){
 async function deleteInvoice(id, invoiceNo){
   if(!confirm('Delete invoice '+invoiceNo+'? This cannot be undone.'))return;
   try{
-    var r=await fetch('/api/invoices/'+id,{method:'DELETE',credentials:'include'});
+    var r=await fetch('/api/invoices/'+encodeURIComponent(id),{method:'DELETE',credentials:'include'});
     var d=await r.json();
     if(d.ok){showToast('Invoice '+invoiceNo+' deleted');loadInvoiceHistory();}
     else showToast(d.error||'Delete failed');
@@ -4161,122 +4176,191 @@ var RECORD_DATA = {};
 // month never rebuilds the option list out from under the user. (Rebuilding a
 // <select>'s options inside its own change handler resets the selection in some
 // browsers, which is why the picker previously appeared not to work.)
+function rbMonthLabel(m){
+  var parts=(m||'').split('-');
+  if(parts.length!==2)return m||'—';
+  return new Date(parseInt(parts[0],10),parseInt(parts[1],10)-1).toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+}
+
 function populateRecordMonths(){
-  var sel=document.getElementById('rb-month');
-  if(!sel)return;
-  var prev=sel.value;
+  var monthSel=document.getElementById('rb-month');
+  var yearSel=document.getElementById('rb-year');
+  if(!monthSel)return;
   var months=Object.keys(RECORD_DATA).filter(Boolean).sort().reverse();
+
+  var prevMonth=monthSel.value;
   if(!months.length){
-    sel.innerHTML='<option value="">No journeys recorded</option>';
+    monthSel.innerHTML='<option value="">No journeys recorded</option>';
   }else{
-    sel.innerHTML=months.map(function(m){
-      var parts=m.split('-');
-      var label=new Date(parseInt(parts[0],10),parseInt(parts[1],10)-1).toLocaleDateString('en-GB',{month:'long',year:'numeric'});
-      return '<option value="'+m+'">'+label+'</option>';
+    monthSel.innerHTML=months.map(function(m){
+      return '<option value="'+m+'">'+rbMonthLabel(m)+'</option>';
     }).join('');
-    sel.value=months.indexOf(prev)>=0?prev:months[0];
+    monthSel.value=months.indexOf(prevMonth)>=0?prevMonth:months[0];
+  }
+
+  if(yearSel){
+    var years=[];
+    months.forEach(function(m){var y=m.slice(0,4);if(years.indexOf(y)<0)years.push(y);});
+    years.sort().reverse();
+    var prevYear=yearSel.value;
+    if(!years.length){
+      yearSel.innerHTML='<option value="">No journeys recorded</option>';
+    }else{
+      yearSel.innerHTML=years.map(function(y){return '<option value="'+y+'">'+y+'</option>';}).join('');
+      yearSel.value=years.indexOf(prevYear)>=0?prevYear:years[0];
+    }
   }
   buildRecordBook();
+}
+
+// Toggle between the Monthly and Yearly pickers, then re-render.
+function switchRecordView(){
+  var mode=(document.getElementById('rb-view')||{}).value||'month';
+  var mWrap=document.getElementById('rb-month-wrap');
+  var yWrap=document.getElementById('rb-year-wrap');
+  if(mWrap)mWrap.style.display=(mode==='year')?'none':'';
+  if(yWrap)yWrap.style.display=(mode==='year')?'':'none';
+  buildRecordBook();
+}
+
+// Resolve the bookings to show for the current view.
+//   Monthly -> a single section for the selected month.
+//   Yearly  -> one section per month of the selected year, oldest first.
+function currentRecordData(){
+  var mode=(document.getElementById('rb-view')||{}).value||'month';
+  if(mode==='year'){
+    var year=(document.getElementById('rb-year')||{}).value||'';
+    var ymonths=Object.keys(RECORD_DATA).filter(function(m){return m.slice(0,4)===year;}).sort();
+    var sections=ymonths.map(function(m){return {label:rbMonthLabel(m),bookings:RECORD_DATA[m]||[]};});
+    var all=sections.reduce(function(a,s){return a.concat(s.bookings);},[]);
+    return {mode:'year',periodLabel:year||'—',sections:sections,all:all};
+  }
+  var month=(document.getElementById('rb-month')||{}).value||'';
+  var bookings=RECORD_DATA[month]||[];
+  return {mode:'month',periodLabel:rbMonthLabel(month),sections:[{label:rbMonthLabel(month),bookings:bookings}],all:bookings};
+}
+
+function rbDateStr(b){
+  try{return new Date(b.date).toLocaleDateString('en-GB');}catch(e){return b.date||'';}
 }
 
 // Render the record-book table for the month currently selected in the
 // dropdown. This is the picker's onchange handler — it only reads the
 // selection and renders; it never touches the dropdown's options.
+// Render the record-book table for the current selection. This is the pickers'
+// onchange handler -- it only reads the selection and renders; it never touches
+// the dropdown options.
 function buildRecordBook(){
-  var sel=document.getElementById('rb-month');
-  if(!sel)return;
-  var month=sel.value;
-  var data=RECORD_DATA[month]||[];
-  var parts=(month||'').split('-');
-  var periodLabel=(parts.length===2)
-    ?new Date(parseInt(parts[0],10),parseInt(parts[1],10)-1).toLocaleDateString('en-GB',{month:'long',year:'numeric'})
-    :'—';
-  document.getElementById('rb-period').textContent=periodLabel;
+  if(!document.getElementById('rb-month'))return;
+  var view=currentRecordData();
+  document.getElementById('rb-period').textContent=view.periodLabel;
   document.getElementById('rb-generated').textContent=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
   var tbody=document.getElementById('rb-tbody');
-  if(!data.length){
-    tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">No journeys recorded this month</td></tr>';
+  if(!view.all.length){
+    var emptyMsg=view.mode==='year'?'No journeys recorded this year':'No journeys recorded this month';
+    tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">'+emptyMsg+'</td></tr>';
     document.getElementById('rb-count').textContent='0';
-    document.getElementById('rb-total').textContent='\u00a30.00';
+    document.getElementById('rb-total').textContent='£0.00';
     return;
   }
-  tbody.innerHTML=data.map(function(b,i){
-    var dateStr='';
-    try{dateStr=new Date(b.date).toLocaleDateString('en-GB');}catch(e){dateStr=b.date||'';}
-    return '<tr>'
-      +'<td style="color:var(--text-light);font-size:.72rem">'+(i+1)+'</td>'
-      +'<td style="font-weight:400;color:var(--navy)">'+dateStr+'</td>'
-      +'<td>'+(b.time||'ASAP')+'</td>'
-      +'<td style="font-weight:400;color:var(--navy)">'+(b.customer_name||'')+'</td>'
-      +'<td style="font-size:.75rem">'+b.pickup+'</td>'
-      +'<td style="font-size:.75rem">'+b.destination+'</td>'
-      +'<td><span class="tag tag-upcoming" style="font-size:.5rem">'+(b.flight?'Airport':'Local')+'</span></td>'
-      +'<td style="font-family:var(--serif);font-size:1rem;color:var(--gold)">'+(b.fare?'\u00a3'+Number(b.fare).toFixed(0):'TBC')+'</td>'
-      +'<td>'+(b.payment||'cash')+'</td>'
-      +'<td style="font-size:.75rem;color:var(--text-mid)">'+(b.flight||'\u2014')+'</td>'
-      +'</tr>';
-  }).join('');
-  var total=data.reduce(function(s,b){return s+(b.fare||0);},0);
-  document.getElementById('rb-count').textContent=data.length;
-  document.getElementById('rb-total').textContent='\u00a3'+total.toFixed(2);
+  var html='';
+  var n=0;
+  view.sections.forEach(function(sec){
+    if(!sec.bookings.length)return;
+    // In yearly view, separate each month with a labelled divider row.
+    if(view.mode==='year'){
+      var secTotal=sec.bookings.reduce(function(s,b){return s+(b.fare||0);},0);
+      html+='<tr style="background:rgba(17,29,44,.04)"><td colspan="10" style="padding:.5rem .7rem;font-weight:600;color:var(--navy);font-size:.78rem;letter-spacing:.04em">'
+        +escTo(sec.label)+' <span style="font-weight:400;color:var(--text-light)">· '+sec.bookings.length+' journeys · £'+secTotal.toFixed(2)+'</span></td></tr>';
+    }
+    sec.bookings.forEach(function(b){
+      n++;
+      html+='<tr>'
+        +'<td style="color:var(--text-light);font-size:.72rem">'+n+'</td>'
+        +'<td style="font-weight:400;color:var(--navy)">'+rbDateStr(b)+'</td>'
+        +'<td>'+(b.time||'ASAP')+'</td>'
+        +'<td style="font-weight:400;color:var(--navy)">'+(b.customer_name||'')+'</td>'
+        +'<td style="font-size:.75rem">'+b.pickup+'</td>'
+        +'<td style="font-size:.75rem">'+b.destination+'</td>'
+        +'<td><span class="tag tag-upcoming" style="font-size:.5rem">'+(b.flight?'Airport':'Local')+'</span></td>'
+        +'<td style="font-family:var(--serif);font-size:1rem;color:var(--gold)">'+(b.fare?'£'+Number(b.fare).toFixed(0):'TBC')+'</td>'
+        +'<td>'+(b.payment||'cash')+'</td>'
+        +'<td style="font-size:.75rem;color:var(--text-mid)">'+(b.flight||'—')+'</td>'
+        +'</tr>';
+    });
+  });
+  tbody.innerHTML=html;
+  var total=view.all.reduce(function(s,b){return s+(b.fare||0);},0);
+  document.getElementById('rb-count').textContent=view.all.length;
+  document.getElementById('rb-total').textContent='£'+total.toFixed(2);
 }
 
 function downloadRecordBook(){
-  var month=document.getElementById('rb-month').value;
-  var parts=month.split('-');
-  var period=new Date(parseInt(parts[0]),parseInt(parts[1])-1).toLocaleDateString('en-GB',{month:'long',year:'numeric'});
-  var data=RECORD_DATA[month]||[];
-  var total=data.reduce(function(s,b){return s+(b.fare||0);},0);
+  var view=currentRecordData();
+  var total=view.all.reduce(function(s,b){return s+(b.fare||0);},0);
 
-  var rows=data.map(function(b,i){
-    var dateStr='';try{dateStr=new Date(b.date).toLocaleDateString('en-GB');}catch(e){dateStr=b.date||'';}
-    return (i+1)+','+dateStr+','+(b.time||'ASAP')+',"'+(b.customer_name||'')+'","'+b.pickup+'","'+b.destination+'","'+(b.flight?'Airport':'Local')+'",\u00a3'+(b.fare||0)+','+(b.payment||'cash')+','+(b.flight||'\u2014');
-  }).join('\n');
+  var lines=[];
+  var n=0;
+  view.sections.forEach(function(sec){
+    if(!sec.bookings.length)return;
+    if(view.mode==='year')lines.push('"'+sec.label+'"');
+    sec.bookings.forEach(function(b){
+      n++;
+      lines.push(n+','+rbDateStr(b)+','+(b.time||'ASAP')+',"'+(b.customer_name||'')+'","'+b.pickup+'","'+b.destination+'","'+(b.flight?'Airport':'Local')+'",£'+(b.fare||0)+','+(b.payment||'cash')+','+(b.flight||'—'));
+    });
+  });
 
-  var csv='Westmere Private Hire \u2014 Operator Journey Record\nLicensed by Lewes District Council\nPeriod: '+period+'\nGenerated: '+new Date().toLocaleDateString('en-GB')+'\n\n'
+  var csv='Westmere Private Hire — Operator Journey Record\nLicensed by Lewes District Council\nPeriod: '+view.periodLabel+'\nGenerated: '+new Date().toLocaleDateString('en-GB')+'\n\n'
     +'#,Date,Time,Passenger,Pickup Address,Destination,Type,Fare,Payment,Flight No.\n'
-    +rows
-    +'\n\nTotal journeys:,'+data.length+'\nTotal revenue:,\u00a3'+total.toFixed(2);
+    +lines.join('\n')
+    +'\n\nTotal journeys:,'+view.all.length+'\nTotal revenue:,£'+total.toFixed(2);
 
   var blob=new Blob([csv],{type:'text/csv'});
   var a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  a.download='Westmere-Record-Book-'+period.replace(' ','-')+'.csv';
+  a.download='Westmere-Record-Book-'+String(view.periodLabel).replace(/\s+/g,'-')+'.csv';
   a.click();
-  showToast('Record book downloaded \u2014 open in Excel or Numbers');
+  showToast('Record book downloaded — open in Excel or Numbers');
 }
 
 function printRecordBook(){
+  var view=currentRecordData();
   var w=window.open('','_blank');
-  var printCSS='*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:Jost,Helvetica Neue,Arial,sans-serif;font-weight:300;color:#222;background:#fff;line-height:1.7;padding:2rem}h2{font-family:Cormorant Garamond,Georgia,serif;font-weight:400;margin-bottom:.3rem}p{color:#666;margin-bottom:1.5rem;font-size:.9rem}table{width:100%;border-collapse:collapse;margin-bottom:1.5rem}th{font-size:.65rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#888;padding:.5rem .6rem;border-bottom:2px solid #ddd;text-align:left}td{font-size:.82rem;padding:.5rem .6rem;border-bottom:1px solid #eee;color:#444}.navy{color:#111D2C;font-weight:400}.gold{color:#B8985A;font-family:Cormorant Garamond,Georgia,serif;font-size:1rem}.footer{display:flex;justify-content:space-between;padding-top:1rem;border-top:2px solid #ddd;font-size:.78rem;color:#888}@media print{body{padding:1rem}}';
+  var printCSS='*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:Jost,Helvetica Neue,Arial,sans-serif;font-weight:300;color:#222;background:#fff;line-height:1.7;padding:2rem}h2{font-family:Cormorant Garamond,Georgia,serif;font-weight:400;margin-bottom:.3rem}p{color:#666;margin-bottom:1.5rem;font-size:.9rem}table{width:100%;border-collapse:collapse;margin-bottom:1.5rem}th{font-size:.65rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#888;padding:.5rem .6rem;border-bottom:2px solid #ddd;text-align:left}td{font-size:.82rem;padding:.5rem .6rem;border-bottom:1px solid #eee;color:#444}.navy{color:#111D2C;font-weight:400}.gold{color:#B8985A;font-family:Cormorant Garamond,Georgia,serif;font-size:1rem}.msep td{background:#f3f4f6;font-weight:600;color:#111D2C;letter-spacing:.04em}.footer{display:flex;justify-content:space-between;padding-top:1rem;border-top:2px solid #ddd;font-size:.78rem;color:#888}@media print{body{padding:1rem}}';
   w.document.write('<html><head><title>Westmere Record Book</title><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"><style>'+printCSS+'</style></head><body>');
-  w.document.write('<h2>Westmere Private Hire \u2014 Operator Record Book</h2>');
-  w.document.write('<p>Licensed by Lewes District Council &nbsp;\u00b7&nbsp; Period: '
-    +document.getElementById('rb-period').textContent
-    +' &nbsp;\u00b7&nbsp; Generated: '+new Date().toLocaleDateString('en-GB')+'</p>');
+  w.document.write('<h2>Westmere Private Hire — Operator Record Book</h2>');
+  w.document.write('<p>Licensed by Lewes District Council &nbsp;·&nbsp; Period: '
+    +view.periodLabel
+    +' &nbsp;·&nbsp; Generated: '+new Date().toLocaleDateString('en-GB')+'</p>');
   w.document.write('<table><thead><tr>'
     +'<th>#</th><th>Date</th><th>Time</th><th>Passenger</th><th>Pickup Address</th><th>Destination</th><th>Type</th><th>Fare</th><th>Payment</th><th>Flight No.</th>'
     +'</tr></thead><tbody>');
-  var month=document.getElementById('rb-month').value;
-  var data=RECORD_DATA[month]||[];
-  data.forEach(function(b,i){
-    var dateStr='';try{dateStr=new Date(b.date).toLocaleDateString('en-GB');}catch(e){dateStr=b.date||'';}
-    w.document.write('<tr>'
-      +'<td style="color:#718096">'+(i+1)+'</td>'
-      +'<td class="navy">'+dateStr+'</td>'
-      +'<td>'+(b.time||'ASAP')+'</td>'
-      +'<td class="navy">'+(b.customer_name||'')+'</td>'
-      +'<td>'+b.pickup+'</td>'
-      +'<td>'+b.destination+'</td>'
-      +'<td>'+(b.flight?'Airport':'Local')+'</td>'
-      +'<td class="gold">'+(b.fare?'\u00a3'+Number(b.fare).toFixed(0):'TBC')+'</td>'
-      +'<td>'+(b.payment||'cash')+'</td>'
-      +'<td>'+(b.flight||'\u2014')+'</td>'
-      +'</tr>');
+  var n=0;
+  view.sections.forEach(function(sec){
+    if(!sec.bookings.length)return;
+    if(view.mode==='year'){
+      var secTotal=sec.bookings.reduce(function(s,b){return s+(b.fare||0);},0);
+      w.document.write('<tr class="msep"><td colspan="10">'+sec.label+' · '+sec.bookings.length+' journeys · £'+secTotal.toFixed(2)+'</td></tr>');
+    }
+    sec.bookings.forEach(function(b){
+      n++;
+      w.document.write('<tr>'
+        +'<td style="color:#718096">'+n+'</td>'
+        +'<td class="navy">'+rbDateStr(b)+'</td>'
+        +'<td>'+(b.time||'ASAP')+'</td>'
+        +'<td class="navy">'+(b.customer_name||'')+'</td>'
+        +'<td>'+b.pickup+'</td>'
+        +'<td>'+b.destination+'</td>'
+        +'<td>'+(b.flight?'Airport':'Local')+'</td>'
+        +'<td class="gold">'+(b.fare?'£'+Number(b.fare).toFixed(0):'TBC')+'</td>'
+        +'<td>'+(b.payment||'cash')+'</td>'
+        +'<td>'+(b.flight||'—')+'</td>'
+        +'</tr>');
+    });
   });
-  var total=data.reduce(function(s,b){return s+(b.fare||0);},0);
+  var total=view.all.reduce(function(s,b){return s+(b.fare||0);},0);
   w.document.write('</tbody></table>');
-  w.document.write('<div class="footer"><span>Total journeys: <strong>'+data.length+'</strong></span><span>Total revenue: <strong style="color:#B8985A">\u00a3'+total.toFixed(2)+'</strong></span><span>Westmere Private Hire \u00b7 Lewes District Council Licence</span></div>');
+  w.document.write('<div class="footer"><span>Total journeys: <strong>'+view.all.length+'</strong></span><span>Total revenue: <strong style="color:#B8985A">£'+total.toFixed(2)+'</strong></span><span>Westmere Private Hire · Lewes District Council Licence</span></div>');
   w.document.write('</body><\/html>');
   w.document.close();
   w.focus();

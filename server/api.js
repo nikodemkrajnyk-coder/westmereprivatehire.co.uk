@@ -1010,27 +1010,62 @@ router.get('/invoices/:id/pdf', async (req, res) => {
   }
 });
 
-// Delete invoice — removes DB row and cached PDF
+// Delete invoice — removes DB row and cached PDF.
+// The :id param is either a numeric invoices.id (stored invoices) or an
+// invoice number like "INV-202604-0001" (legacy invoices that only exist as
+// 'invoice_sent' rows in audit_log). Both kinds can be deleted from the admin
+// history.
 router.delete('/invoices/:id', async (req, res) => {
   if (!['admin', 'owner'].includes(req.auth.role)) {
     return res.status(403).json({ error: 'Access denied' });
   }
   const db = getDb();
-  const id = parseInt(req.params.id, 10);
-  if (isNaN(id)) return res.status(400).json({ error: 'Invalid invoice ID' });
+  const raw = String(req.params.id || '').trim();
 
-  const row = db.prepare('SELECT id, invoice_no FROM invoices WHERE id = ?').get(id);
-  if (!row) return res.status(404).json({ error: 'Invoice not found' });
+  // ── Numeric id → stored invoice in the invoices table ──
+  if (/^\d+$/.test(raw)) {
+    const id = parseInt(raw, 10);
+    const row = db.prepare('SELECT id, invoice_no FROM invoices WHERE id = ?').get(id);
+    if (!row) return res.status(404).json({ error: 'Invoice not found' });
 
-  // Delete cached PDF if it exists
+    // Delete cached PDF if it exists
+    try {
+      const safeNo = (row.invoice_no || '').replace(/[^A-Za-z0-9\-_]/g, '');
+      const pdfPath = path.join(INVOICES_DIR, safeNo + '.pdf');
+      if (fs.existsSync(pdfPath)) fs.unlinkSync(pdfPath);
+    } catch (e) { /* non-fatal */ }
+
+    db.prepare('DELETE FROM invoices WHERE id = ?').run(id);
+    autoFile.removeInvoice(row.invoice_no);
+    return res.json({ ok: true });
+  }
+
+  // ── Otherwise treat as an invoice number ──
+  const invoiceNo = raw.replace(/[^A-Za-z0-9\-_]/g, '');
+  if (!invoiceNo) return res.status(400).json({ error: 'Invalid invoice reference' });
+
+  // It may still exist in the invoices table (e.g. deleted by number) — remove it.
+  const stored = db.prepare('SELECT id FROM invoices WHERE invoice_no = ?').get(invoiceNo);
+  if (stored) db.prepare('DELETE FROM invoices WHERE id = ?').run(stored.id);
+
+  // Remove the legacy audit_log record(s) so the archived row disappears.
+  // Match the exact number or "INV-… to email" form — not a bare prefix, so
+  // INV-…-0001 can't also delete INV-…-00010.
+  const result = db.prepare(
+    "DELETE FROM audit_log WHERE action = 'invoice_sent' AND (detail = ? OR detail LIKE ?)"
+  ).run(invoiceNo, invoiceNo + ' %');
+
+  if (!stored && result.changes === 0) {
+    return res.status(404).json({ error: 'Invoice not found' });
+  }
+
+  // Clean up any cached PDF / filed copy keyed by the number.
   try {
-    const safeNo = (row.invoice_no || '').replace(/[^A-Za-z0-9\-_]/g, '');
-    const pdfPath = path.join(INVOICES_DIR, safeNo + '.pdf');
+    const pdfPath = path.join(INVOICES_DIR, invoiceNo + '.pdf');
     if (fs.existsSync(pdfPath)) fs.unlinkSync(pdfPath);
   } catch (e) { /* non-fatal */ }
+  autoFile.removeInvoice(invoiceNo);
 
-  db.prepare('DELETE FROM invoices WHERE id = ?').run(id);
-  autoFile.removeInvoice(row.invoice_no);
   res.json({ ok: true });
 });
 

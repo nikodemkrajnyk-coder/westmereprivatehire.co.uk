@@ -5,8 +5,53 @@ const gcal = require('./google-calendar');
 const router = express.Router();
 
 const API_KEY = process.env.ANTHROPIC_API_KEY || '';
-const MODEL = process.env.ASSISTANT_MODEL || 'claude-sonnet-4-6';
+// Two tiers to keep token costs down: Haiku handles simple lookups (fares,
+// calendar checks, vehicle status), Sonnet handles complex work (reading
+// screenshots, building invoices). MODEL is kept as the complex default for
+// the vision/scan path which always needs the stronger model.
+const MODEL_COMPLEX = process.env.ASSISTANT_MODEL || 'claude-sonnet-4-6';
+const MODEL_SIMPLE  = process.env.ASSISTANT_MODEL_SIMPLE || 'claude-haiku-4-5-20251001';
+const MODEL = MODEL_COMPLEX;
 const API_URL = 'https://api.anthropic.com/v1/messages';
+
+// Pick the cheapest model that can handle the conversation. Anything with an
+// image, or an explicit complex intent (invoicing, extracting from a message),
+// goes to Sonnet; everything else (fare quotes, calendar/vehicle checks) to Haiku.
+function pickChatModel(messages) {
+  const hasImage = (messages || []).some(m =>
+    Array.isArray(m.content) && m.content.some(b => b && b.type === 'image'));
+  if (hasImage) return MODEL_COMPLEX;
+  const lastUser = [...(messages || [])].reverse().find(m => m.role === 'user');
+  let text = '';
+  if (lastUser) {
+    if (typeof lastUser.content === 'string') text = lastUser.content;
+    else if (Array.isArray(lastUser.content)) {
+      text = lastUser.content.map(b => (b && b.text) || '').join(' ');
+    }
+  }
+  return /invoice|screenshot|scan|extract|statement|reconcile/i.test(text)
+    ? MODEL_COMPLEX : MODEL_SIMPLE;
+}
+
+// In-memory cache for repeated fare quotes (5-minute TTL). Fare lookups are
+// pure functions of pickup/destination/time, so identical queries within a
+// few minutes can skip both the routing call and the model round-trip.
+const FARE_CACHE = new Map();
+const FARE_CACHE_TTL = 5 * 60 * 1000;
+function fareCacheGet(key) {
+  const hit = FARE_CACHE.get(key);
+  if (!hit) return null;
+  if (Date.now() - hit.t > FARE_CACHE_TTL) { FARE_CACHE.delete(key); return null; }
+  return hit.v;
+}
+function fareCacheSet(key, value) {
+  FARE_CACHE.set(key, { v: value, t: Date.now() });
+  // Bound the cache so it can't grow without limit.
+  if (FARE_CACHE.size > 200) {
+    const oldest = FARE_CACHE.keys().next().value;
+    FARE_CACHE.delete(oldest);
+  }
+}
 
 const REFERENCE_FARES = [
   'Brighton/Hove/Saltdean/Rottingdean→Gatwick £114 (ret £111), →Heathrow £159 (ret £163), →Stansted £243 (ret £248), →Luton £228 (ret £233), →Southampton £178 (ret £174), →London City £195 (ret £199)',
@@ -428,6 +473,15 @@ async function executeCalendarTool(name, input) {
     }
     case 'calculate_fare': {
       try {
+        // Serve repeated identical fare queries from the 5-minute cache.
+        const cacheKey = [
+          (input.pickup || '').trim().toLowerCase(),
+          (input.destination || '').trim().toLowerCase(),
+          (input.time || '').trim()
+        ].join('|');
+        const cached = fareCacheGet(cacheKey);
+        if (cached) return cached;
+
         const result = await calculateFare(input.pickup, input.destination, input.time || null);
         const mi = result.distance_miles != null ? result.distance_miles + ' miles' : 'distance unknown';
         const ti = result.duration_min != null ? '~' + result.duration_min + ' min' : 'duration unknown';
@@ -456,7 +510,9 @@ async function executeCalendarTool(name, input) {
           }
         } catch (dmErr) { deadNote = ' | Dead miles: unavailable'; }
 
-        return `Fare: £${result.fare} | ${mi} | ${ti} | Rate: ${result.rate_type} | ${result.breakdown}${deadNote}`;
+        const out = `Fare: £${result.fare} | ${mi} | ${ti} | Rate: ${result.rate_type} | ${result.breakdown}${deadNote}`;
+        fareCacheSet(cacheKey, out);
+        return out;
       } catch (e) {
         return 'Fare calculation error: ' + e.message;
       }
@@ -624,32 +680,16 @@ function buildSystemPrompt(todayJobs) {
     ? todayJobs.map(j => `${j.time} ${j.customer_name || 'Guest'} ${j.pickup}→${j.destination} £${j.fare || '?'} ${j.payment || ''}`).join('\n')
     : 'No bookings today.';
 
-  return `You are Westmere, the voice assistant for Westmere Private Hire — a luxury chauffeur service in Sussex, UK. The operator is driving and dictating to you hands-free.
+  return `You are Westmere, the hands-free voice assistant for Westmere Private Hire (luxury chauffeur service, Sussex UK). The operator is driving.
 
 RULES:
-- Be extremely concise. One or two short sentences max. The driver is on the road.
-- Today is ${today}.
-- When the driver dictates booking details (from a message, WhatsApp, phone call etc.), extract all details you can.
-- Ask for any MISSING required fields: pickup, destination, date, time, passenger name. Phone/email are optional but useful.
-- When you believe you have enough details for a booking, output a confirmation summary followed by a JSON block on a new line starting with <<<BOOKING>>> and ending with <<<END>>>
-- The JSON must contain: { "name", "phone", "email", "pickup", "destination", "date" (YYYY-MM-DD), "time" (HH:MM), "passengers", "flight", "fare", "payment", "notes" }
-- Use null for unknown optional fields. For fare, look up from the reference table if the route matches.
-- If the driver says "yes", "confirm", "book it", "go ahead" after seeing a summary, output <<<CONFIRM>>> on its own line.
-- If driver says "cancel", "no", "forget it", output <<<CANCEL>>> on its own line.
-- For fare quotes, ALWAYS use the calculate_fare tool — never guess or estimate from memory. Say something like "Horsham to Gatwick is £55 (fixed airport fare, 12 miles, ~22 min)" or "Crawley to Brighton is £36 (~10 miles, day rate)".
-- "payment" should default to "cash" unless stated otherwise. Options: cash, card, account, invoice.
-- Dates: "tomorrow" = tomorrow's date, "next Monday" = compute from today, etc.
-- If driver says just a time like "3pm", assume today's date.
-- You can manage the Google Calendar: list upcoming events, create block-outs or appointments, edit or delete events. Use the calendar tools when asked.
-- You can search past and upcoming bookings using the search_bookings tool — search by date, time, customer name, pickup, or destination.
-- You can create invoices using the create_invoice tool. When the user asks to invoice a job, first call search_bookings to find the booking (use the date and/or time and/or customer name they mention), then create_invoice using the fare, customer name, email, and route from the booking. If no booking is found in the database, fall back to list_calendar_events to find the job in the calendar, then create the invoice from those details.
-- If the user says something like "invoice Tuesday's 11am job for ABD" — search_bookings(date: that Tuesday's date, time: "11:00"), find the match, then create_invoice with the found details.
-- You can also create invoices from scratch if the user provides all details directly.
-- You can check the Tesla vehicle status using the check_vehicle tool. Use it when the driver asks about charge level, range, or "can I make it to X". It returns battery %, range in miles, charging state, and optionally compares range to a route distance.
-- You can calculate fares using the calculate_fare tool. Use it whenever someone asks "how much to go to X" or "what's the fare from X to Y". It checks fixed airport fares first, then uses live routing for anything else. Day rate applies 06:00–21:59, night rate 22:00–05:59.
-
-Fixed fares (drop-off / return):
-${REFERENCE_FARES}
+- Be extremely concise: one or two short sentences. Today is ${today}.
+- BOOKINGS: extract all details the driver dictates. Ask only for missing required fields (pickup, destination, date, time, passenger name). When you have enough, output a one-line summary then a JSON block on its own line:
+  <<<BOOKING>>>{ "name", "phone", "email", "pickup", "destination", "date" (YYYY-MM-DD), "time" (HH:MM), "passengers", "flight", "fare", "payment", "notes" }<<<END>>>
+  Use null for unknown optional fields. payment defaults to "cash" (also: card, account, invoice). "tomorrow"/"next Monday"/"3pm" resolve relative to today.
+- After a summary: "yes/confirm/book it" → output <<<CONFIRM>>> on its own line; "cancel/no" → <<<CANCEL>>>.
+- FARES: ALWAYS use the calculate_fare tool, never guess. Day rate 06:00–21:59, night 22:00–05:59.
+- TOOLS: calculate_fare (fare quotes), search_bookings (find jobs by date/time/name/route), create_invoice (to invoice a job, search_bookings first — or list_calendar_events if not found — then create_invoice from the fare/name/email/route), check_vehicle (Tesla charge/range/"can I make it to X"), and the Google Calendar tools (list/create/edit/delete events).
 
 Today's schedule:
 ${jobsSummary}`;
@@ -677,8 +717,11 @@ router.post('/chat', async (req, res) => {
   const system = buildSystemPrompt(todayJobs);
 
   try {
-    // Agentic loop — handles calendar tool calls, max 5 iterations
-    let currentMessages = messages.slice(-16);
+    // Cap history at the last 10 messages to keep the prompt (and cost) small.
+    let currentMessages = messages.slice(-10);
+    // Choose model once per request: Haiku for simple lookups, Sonnet for
+    // complex tasks (invoicing, anything with an image).
+    const model = pickChatModel(currentMessages);
     let finalReply = '';
     const MAX_ITER = 5;
 
@@ -691,8 +734,8 @@ router.post('/chat', async (req, res) => {
           'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
-          model: MODEL,
-          max_tokens: 1000,
+          model,
+          max_tokens: 600,
           system,
           tools: [...CALENDAR_TOOLS, SEARCH_BOOKINGS_TOOL, CREATE_INVOICE_TOOL, CALCULATE_FARE_TOOL, CHECK_VEHICLE_TOOL],
           messages: currentMessages
@@ -819,8 +862,9 @@ Use null for any field you cannot determine.`;
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 1500,
+        // Screenshot extraction is a complex vision task — keep the strong model.
+        model: MODEL_COMPLEX,
+        max_tokens: 1200,
         system: scanSystem,
         messages: [{
           role: 'user',
@@ -886,7 +930,7 @@ Use null for any field you cannot determine.`;
 router.post('/analyse', async (req, res) => {
   if (!API_KEY) return res.status(503).json({ error: 'Assistant not configured' });
 
-  const { system, prompt, max_tokens } = req.body;
+  const { system, prompt, max_tokens, complex } = req.body;
   if (!prompt) return res.status(400).json({ error: 'prompt required' });
 
   try {
@@ -898,8 +942,9 @@ router.post('/analyse', async (req, res) => {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: MODEL,
-        max_tokens: Math.min(max_tokens || 300, 2000),
+        // Default to the cheap model; callers can opt into Sonnet with complex:true.
+        model: complex ? MODEL_COMPLEX : MODEL_SIMPLE,
+        max_tokens: Math.min(max_tokens || 300, 1024),
         system: system || undefined,
         messages: [{ role: 'user', content: prompt }]
       })
