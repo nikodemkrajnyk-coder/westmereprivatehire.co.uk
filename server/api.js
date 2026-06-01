@@ -880,6 +880,46 @@ router.get('/invoices', (req, res) => {
                  FROM invoices ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
                  ORDER BY created_at DESC LIMIT 500`;
   const rows = db.prepare(sql).all(...params);
+
+  // Merge in legacy invoices that predate the invoices table. Before the table
+  // existed, sent invoices were only recorded in audit_log as 'invoice_sent'
+  // actions with detail "INV-XXXX to email@example.com". Without this, every
+  // invoice issued before the table was added is invisible in the history.
+  // Skip when a customer_id/kind filter is set — legacy rows carry neither.
+  if (!where.length) {
+    try {
+      const seen = new Set(rows.map(r => r.invoice_no));
+      const legacy = db.prepare(
+        "SELECT detail, created_at FROM audit_log WHERE action = 'invoice_sent' ORDER BY created_at DESC"
+      ).all();
+      for (const l of legacy) {
+        const m = (l.detail || '').match(/^(INV-[A-Za-z0-9-]+)(?:\s+to\s+(\S+))?/);
+        if (!m) continue;
+        const invoiceNo = m[1];
+        if (seen.has(invoiceNo)) continue;
+        seen.add(invoiceNo);
+        rows.push({
+          id: null,
+          invoice_no: invoiceNo,
+          kind: 'account',
+          customer_id: null,
+          recipient_name: '',
+          recipient_email: m[2] || '',
+          issued_date: (l.created_at || '').slice(0, 10),
+          due_date: null,
+          period_label: null,
+          total: null,
+          emailed: 1,
+          created_at: l.created_at,
+          legacy: true
+        });
+      }
+      rows.sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+    } catch (e) {
+      console.error('[INVOICES] legacy audit_log merge failed:', e.message);
+    }
+  }
+
   res.json({ ok: true, invoices: rows });
 });
 

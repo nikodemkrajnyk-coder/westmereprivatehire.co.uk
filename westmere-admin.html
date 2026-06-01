@@ -452,14 +452,41 @@ if ('serviceWorker' in navigator) {
       <span class="al-sub">Admin Panel</span>
     </div>
     <div class="al-body">
-      <div class="al-title">Admin Sign In</div>
-      <p class="al-desc">Authorised personnel only</p>
-      <div class="al-err" id="al-err"></div>
-      <div class="fg"><label class="fl">Username</label><input class="fi" type="text" id="al-user" placeholder="Username" autocomplete="username" autocapitalize="none"></div>
-      <div class="fg"><label class="fl">Password</label><input class="fi" type="password" id="al-pass" placeholder="Password" autocomplete="current-password"></div>
-      <label style="display:flex;align-items:center;gap:.5rem;margin-top:.8rem;cursor:pointer;font-size:.78rem;color:rgba(17,29,44,.5);font-weight:300"><input type="checkbox" id="al-remember" style="accent-color:var(--gold)"> Keep me logged in</label>
-      <button class="btn-main" onclick="adminLogin()" style="margin-top:.8rem">Sign In</button>
-      <div class="al-attempts" id="al-attempts"></div>
+      <!-- Sign in -->
+      <div id="al-signin">
+        <div class="al-title">Admin Sign In</div>
+        <p class="al-desc">Authorised personnel only</p>
+        <div class="al-err" id="al-err"></div>
+        <div class="fg"><label class="fl">Username</label><input class="fi" type="text" id="al-user" placeholder="Username" autocomplete="username" autocapitalize="none"></div>
+        <div class="fg"><label class="fl">Password</label><input class="fi" type="password" id="al-pass" placeholder="Password" autocomplete="current-password"></div>
+        <label style="display:flex;align-items:center;gap:.5rem;margin-top:.8rem;cursor:pointer;font-size:.78rem;color:rgba(17,29,44,.5);font-weight:300"><input type="checkbox" id="al-remember" style="accent-color:var(--gold)"> Keep me logged in</label>
+        <button class="btn-main" onclick="adminLogin()" style="margin-top:.8rem">Sign In</button>
+        <div style="text-align:center;margin-top:.9rem"><a href="#" onclick="showForgotPassword();return false;" style="font-size:.78rem;color:var(--gold);text-decoration:none;font-weight:400">Forgot password?</a></div>
+        <div class="al-attempts" id="al-attempts"></div>
+      </div>
+
+      <!-- Forgot password -->
+      <div id="al-forgot" style="display:none">
+        <div class="al-title">Reset Password</div>
+        <p class="al-desc">Enter your account email and we'll send you a reset link.</p>
+        <div class="al-err" id="al-forgot-err"></div>
+        <div class="al-ok" id="al-forgot-ok" style="display:none;background:rgba(34,139,34,.08);color:#1e7d1e;padding:.7rem .9rem;border-radius:8px;font-size:.82rem;margin-bottom:.8rem;line-height:1.5"></div>
+        <div class="fg"><label class="fl">Email</label><input class="fi" type="email" id="al-forgot-email" placeholder="you@example.com" autocomplete="email" autocapitalize="none"></div>
+        <button class="btn-main" onclick="submitForgotPassword()" style="margin-top:.8rem">Send reset link</button>
+        <div style="text-align:center;margin-top:.9rem"><a href="#" onclick="showSignIn();return false;" style="font-size:.78rem;color:rgba(17,29,44,.5);text-decoration:none;font-weight:400">← Back to sign in</a></div>
+      </div>
+
+      <!-- Set new password (from reset link) -->
+      <div id="al-reset" style="display:none">
+        <div class="al-title">Set New Password</div>
+        <p class="al-desc">Choose a new password for your admin account.</p>
+        <div class="al-err" id="al-reset-err"></div>
+        <div class="al-ok" id="al-reset-ok" style="display:none;background:rgba(34,139,34,.08);color:#1e7d1e;padding:.7rem .9rem;border-radius:8px;font-size:.82rem;margin-bottom:.8rem;line-height:1.5"></div>
+        <div class="fg"><label class="fl">New password</label><input class="fi" type="password" id="al-reset-pass" placeholder="At least 8 characters" autocomplete="new-password"></div>
+        <div class="fg"><label class="fl">Confirm password</label><input class="fi" type="password" id="al-reset-pass2" placeholder="Re-enter password" autocomplete="new-password"></div>
+        <button class="btn-main" onclick="submitResetPassword()" style="margin-top:.8rem">Update password</button>
+        <div style="text-align:center;margin-top:.9rem"><a href="#" onclick="showSignIn();return false;" style="font-size:.78rem;color:rgba(17,29,44,.5);text-decoration:none;font-weight:400">← Back to sign in</a></div>
+      </div>
     </div>
   </div>
 </div>
@@ -2267,7 +2294,7 @@ function loadLiveBookings(){
       if(!RECORD_DATA[key])RECORD_DATA[key]=[];
       RECORD_DATA[key].push(b);
     });
-    buildRecordBook();
+    populateRecordMonths();
 
   }).catch(function(e){console.warn('[BOOKINGS]',e);});
 
@@ -2376,8 +2403,79 @@ async function submitBooking(){
   }
 }
 
+// ── FORGOT / RESET PASSWORD ─────────────────────────────────────────────
+function showSignIn(){
+  document.getElementById('al-signin').style.display='';
+  document.getElementById('al-forgot').style.display='none';
+  document.getElementById('al-reset').style.display='none';
+}
+function showForgotPassword(){
+  document.getElementById('al-signin').style.display='none';
+  document.getElementById('al-reset').style.display='none';
+  document.getElementById('al-forgot').style.display='';
+  document.getElementById('al-forgot-err').classList.remove('show');
+  document.getElementById('al-forgot-ok').style.display='none';
+  var em=document.getElementById('al-forgot-email');if(em)em.focus();
+}
+function showResetPassword(){
+  document.getElementById('admin-login').style.display='flex';
+  document.getElementById('admin-app').style.display='none';
+  document.getElementById('al-signin').style.display='none';
+  document.getElementById('al-forgot').style.display='none';
+  document.getElementById('al-reset').style.display='';
+}
+async function submitForgotPassword(){
+  var err=document.getElementById('al-forgot-err');
+  var ok=document.getElementById('al-forgot-ok');
+  var email=(document.getElementById('al-forgot-email').value||'').trim();
+  err.classList.remove('show');ok.style.display='none';
+  if(!email){err.textContent='Please enter your email address.';err.classList.add('show');return;}
+  try{
+    var r=await fetch('/api/auth/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})});
+    var d=await r.json();
+    if(r.ok&&d.ok){
+      ok.textContent='If that email matches an admin account, a reset link is on its way. Please check your inbox.';
+      ok.style.display='block';
+    }else{
+      err.textContent=d.error||'Something went wrong. Please try again.';err.classList.add('show');
+    }
+  }catch(e){err.textContent='Connection error. Please try again.';err.classList.add('show');}
+}
+async function submitResetPassword(){
+  var err=document.getElementById('al-reset-err');
+  var ok=document.getElementById('al-reset-ok');
+  var p1=document.getElementById('al-reset-pass').value||'';
+  var p2=document.getElementById('al-reset-pass2').value||'';
+  err.classList.remove('show');ok.style.display='none';
+  if(p1.length<8){err.textContent='Password must be at least 8 characters.';err.classList.add('show');return;}
+  if(p1!==p2){err.textContent='Passwords do not match.';err.classList.add('show');return;}
+  var params=new URLSearchParams(window.location.search);
+  var token=params.get('reset_token')||'';
+  if(!token){err.textContent='Reset link is invalid. Please request a new one.';err.classList.add('show');return;}
+  try{
+    var r=await fetch('/api/auth/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:token,password:p1})});
+    var d=await r.json();
+    if(r.ok&&d.ok){
+      ok.textContent='Password updated. You can now sign in with your new password.';
+      ok.style.display='block';
+      // Drop the token from the URL and return to sign in shortly.
+      try{history.replaceState({},'',window.location.pathname);}catch(_){}
+      setTimeout(showSignIn,1800);
+    }else{
+      err.textContent=d.error||'Could not reset password.';err.classList.add('show');
+    }
+  }catch(e){err.textContent='Connection error. Please try again.';err.classList.add('show');}
+}
+
 // Auth check via backend
 (async function(){
+  // A password-reset link lands here with ?reset_token=… — show the
+  // set-new-password form straight away and skip the normal session check.
+  var resetToken=new URLSearchParams(window.location.search).get('reset_token');
+  if(resetToken){
+    showResetPassword();
+    return;
+  }
   try{
     const res=await fetch('/api/auth/me');
     const data=await res.json();
@@ -3395,8 +3493,21 @@ function loadInvoiceHistory(){
       tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">No invoices yet</td></tr>';return;
     }
     tbody.innerHTML=invoices.map(function(inv){
-      var total='£'+(+inv.total||0).toFixed(2);
       var kind=inv.kind==='bespoke'?'One-off':'Account';
+      // Legacy invoices (sent before the invoices table existed) come from the
+      // audit log: they have no stored record/PDF, so no id and no actions.
+      var isLegacy=inv.legacy||inv.id==null;
+      var total=(inv.total==null)?'—':('£'+(+inv.total||0).toFixed(2));
+      if(isLegacy){
+        return '<tr>'
+          +'<td style="font-family:Menlo,Consolas,monospace;font-size:.78rem">'+escTo(inv.invoice_no)+'</td>'
+          +'<td>'+escTo(inv.recipient_name||'')+(inv.recipient_email?'<span style="font-size:.72rem;color:rgba(17,29,44,.45)">'+escTo(inv.recipient_email)+'</span>':'')+'</td>'
+          +'<td style="text-align:right;font-family:Georgia,serif;color:var(--navy)">'+total+'</td>'
+          +'<td><span style="font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)">'+kind+'</span></td>'
+          +'<td style="white-space:nowrap">'+escTo(inv.issued_date||'')+'</td>'
+          +'<td style="white-space:nowrap"><span style="font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(17,29,44,.4)">Sent · archived</span></td>'
+          +'</tr>';
+      }
       return '<tr style="cursor:pointer" onclick="viewInvoice('+inv.id+')">'
         +'<td style="font-family:Menlo,Consolas,monospace;font-size:.78rem">'+escTo(inv.invoice_no)+'</td>'
         +'<td>'+escTo(inv.recipient_name||'')+(inv.recipient_email?'<br><span style="font-size:.72rem;color:rgba(17,29,44,.45)">'+escTo(inv.recipient_email)+'</span>':'')+'</td>'
@@ -4044,23 +4155,42 @@ if(nbDate)nbDate.value=tom.toISOString().split('T')[0];
 // ── RECORD BOOK ──────────────────────────────────────────────────────
 var RECORD_DATA = {};
 
-function buildRecordBook(){
-  // Build month selector from RECORD_DATA keys
+// Build (or refresh) the month dropdown from the loaded booking data,
+// preserving the user's current selection where possible. Called once whenever
+// bookings are (re)loaded — NOT from the picker's onchange — so selecting a
+// month never rebuilds the option list out from under the user. (Rebuilding a
+// <select>'s options inside its own change handler resets the selection in some
+// browsers, which is why the picker previously appeared not to work.)
+function populateRecordMonths(){
   var sel=document.getElementById('rb-month');
-  var months=Object.keys(RECORD_DATA).sort().reverse();
-  if(months.length){
-    var curVal=sel.value;
+  if(!sel)return;
+  var prev=sel.value;
+  var months=Object.keys(RECORD_DATA).filter(Boolean).sort().reverse();
+  if(!months.length){
+    sel.innerHTML='<option value="">No journeys recorded</option>';
+  }else{
     sel.innerHTML=months.map(function(m){
       var parts=m.split('-');
-      var label=new Date(parseInt(parts[0]),parseInt(parts[1])-1).toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+      var label=new Date(parseInt(parts[0],10),parseInt(parts[1],10)-1).toLocaleDateString('en-GB',{month:'long',year:'numeric'});
       return '<option value="'+m+'">'+label+'</option>';
     }).join('');
-    if(months.indexOf(curVal)>=0)sel.value=curVal;
+    sel.value=months.indexOf(prev)>=0?prev:months[0];
   }
+  buildRecordBook();
+}
+
+// Render the record-book table for the month currently selected in the
+// dropdown. This is the picker's onchange handler — it only reads the
+// selection and renders; it never touches the dropdown's options.
+function buildRecordBook(){
+  var sel=document.getElementById('rb-month');
+  if(!sel)return;
   var month=sel.value;
   var data=RECORD_DATA[month]||[];
-  var parts=month.split('-');
-  var periodLabel=new Date(parseInt(parts[0]),parseInt(parts[1])-1).toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+  var parts=(month||'').split('-');
+  var periodLabel=(parts.length===2)
+    ?new Date(parseInt(parts[0],10),parseInt(parts[1],10)-1).toLocaleDateString('en-GB',{month:'long',year:'numeric'})
+    :'—';
   document.getElementById('rb-period').textContent=periodLabel;
   document.getElementById('rb-generated').textContent=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
   var tbody=document.getElementById('rb-tbody');

@@ -292,7 +292,9 @@ function migrate() {
       ['is_default_driver', 'INTEGER NOT NULL DEFAULT 0'],
       ['max_passengers',    'INTEGER'],
       ['max_bags',          'INTEGER'],
-      ['luggage_notes',     'TEXT']
+      ['luggage_notes',     'TEXT'],
+      ['reset_token',       'TEXT'],
+      ['reset_token_expires','TEXT']
     ];
     for (const [name, type] of driverCols) {
       if (!info.find(c => c.name === name)) {

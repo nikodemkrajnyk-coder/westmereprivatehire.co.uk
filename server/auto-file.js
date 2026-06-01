@@ -26,7 +26,7 @@
 const path = require('path');
 const fs   = require('fs');
 const os   = require('os');
-const { DATA_DIR } = require('./db');
+const { DATA_DIR, getDb } = require('./db');
 
 // ── Destination roots ────────────────────────────────────────────────────────
 
@@ -50,10 +50,37 @@ function ensureDir(dir) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
-/** Write JSON to path, creating parent dirs as needed. */
-function writeJson(filePath, data) {
+/** Write text (CSV) to path, creating parent dirs as needed. */
+function writeText(filePath, text) {
   ensureDir(path.dirname(filePath));
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+  fs.writeFileSync(filePath, text, 'utf8');
+}
+
+// ── CSV helpers ────────────────────────────────────────────────────────────
+
+/** Escape a single CSV field per RFC 4180 (quote if it contains , " or newline). */
+function csvField(v) {
+  const s = v == null ? '' : String(v);
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+/** Join an array of fields into one CSV row. */
+function csvRow(fields) {
+  return fields.map(csvField).join(',');
+}
+
+/** Build a complete CSV document from a header array and an array of row arrays. */
+function buildCsv(header, rows) {
+  return [csvRow(header), ...rows.map(csvRow)].join('\r\n') + '\r\n';
+}
+
+/** Look up a driver's display name by id (returns '' on any failure). */
+function driverNameById(driverId) {
+  if (!driverId) return '';
+  try {
+    const u = getDb().prepare('SELECT full_name FROM users WHERE id = ?').get(driverId);
+    return u && u.full_name ? u.full_name : '';
+  } catch (_) { return ''; }
 }
 
 /** Write a buffer/string to path, creating parent dirs as needed. */
@@ -101,14 +128,29 @@ function safeName(s) {
  * File or update a single booking.
  * booking — full booking row from DB
  */
+const BOOKING_CSV_HEADER = [
+  'ref', 'date', 'time', 'pickup', 'destination', 'fare', 'status',
+  'passenger_name', 'driver_name', 'payment'
+];
+
+function bookingRow(b) {
+  return [
+    b.ref, b.date, b.time, b.pickup, b.destination, b.fare, b.status,
+    b.passenger_name || b.customer_name || '',
+    b.driver_name || driverNameById(b.driver_id),
+    b.payment || 'cash'
+  ];
+}
+
 function fileBooking(booking) {
   if (!booking) return;
   setImmediate(() => {
     try {
       const mon = (booking.date || 'unknown').slice(0, 7);
       const ref = (booking.ref || 'unknown').replace(/[^a-zA-Z0-9\-_]/g, '');
-      const rel = `Bookings/${mon}/${ref}.json`;
-      writeToRoots(rel, p => writeJson(p, booking));
+      const rel = `Bookings/${mon}/${ref}.csv`;
+      const csv = buildCsv(BOOKING_CSV_HEADER, [bookingRow(booking)]);
+      writeToRoots(rel, p => writeText(p, csv));
     } catch (e) {
       console.error('[AUTO-FILE] fileBooking error:', e.message);
     }
@@ -125,7 +167,7 @@ function removeBooking(ref, date) {
     try {
       const mon = (date || '').slice(0, 7) || 'unknown';
       const safeRef = ref.replace(/[^a-zA-Z0-9\-_]/g, '');
-      deleteFromRoots(`Bookings/${mon}/${safeRef}.json`);
+      deleteFromRoots(`Bookings/${mon}/${safeRef}.csv`);
     } catch (e) {
       console.error('[AUTO-FILE] removeBooking error:', e.message);
     }
@@ -141,12 +183,17 @@ function fileCustomer(customer) {
   setImmediate(() => {
     try {
       const name = safeName(customer.full_name || customer.email || String(customer.id));
-      const rel = `Customers/${customer.id}_${name}.json`;
-      // Strip password hash before filing
-      const safe = { ...customer };
-      delete safe.password;
-      delete safe.verification_token;
-      writeToRoots(rel, p => writeJson(p, safe));
+      const rel = `Customers/${customer.id}_${name}.csv`;
+      const header = [
+        'id', 'full_name', 'email', 'phone', 'account_type',
+        'address_line1', 'address_line2', 'postcode', 'created_at'
+      ];
+      const row = [
+        customer.id, customer.full_name, customer.email, customer.phone,
+        customer.account_type, customer.address_line1, customer.address_line2,
+        customer.postcode, customer.created_at
+      ];
+      writeToRoots(rel, p => writeText(p, buildCsv(header, [row])));
     } catch (e) {
       console.error('[AUTO-FILE] fileCustomer error:', e.message);
     }
@@ -162,11 +209,17 @@ function fileDriverProfile(driver) {
   setImmediate(() => {
     try {
       const name = safeName(driver.full_name || String(driver.id));
-      const safe = { ...driver };
-      delete safe.password;
-      delete safe.calendar_token;
-      const rel = `Drivers/${name}/profile.json`;
-      writeToRoots(rel, p => writeJson(p, safe));
+      const rel = `Drivers/${name}/profile.csv`;
+      const header = [
+        'id', 'full_name', 'email', 'phone', 'role', 'vehicle', 'reg',
+        'phv_no', 'license_no', 'onboarding_status', 'active', 'created_at'
+      ];
+      const row = [
+        driver.id, driver.full_name, driver.email, driver.phone, driver.role,
+        driver.vehicle, driver.reg, driver.phv_no, driver.license_no,
+        driver.onboarding_status, driver.active, driver.created_at
+      ];
+      writeToRoots(rel, p => writeText(p, buildCsv(header, [row])));
     } catch (e) {
       console.error('[AUTO-FILE] fileDriverProfile error:', e.message);
     }
@@ -204,7 +257,16 @@ function fileInvoice(invoiceNo, invoiceData, pdfBuffer) {
   setImmediate(() => {
     try {
       const safe = invoiceNo.replace(/[^a-zA-Z0-9\-_]/g, '');
-      writeToRoots(`Invoices/${safe}.json`, p => writeJson(p, invoiceData));
+      const d = invoiceData || {};
+      const header = [
+        'invoice_no', 'kind', 'recipient_name', 'recipient_email',
+        'issued_date', 'due_date', 'period_label', 'total', 'emailed'
+      ];
+      const row = [
+        d.invoice_no || invoiceNo, d.kind, d.recipient_name, d.recipient_email,
+        d.issued_date, d.due_date, d.period_label, d.total, d.emailed
+      ];
+      writeToRoots(`Invoices/${safe}.csv`, p => writeText(p, buildCsv(header, [row])));
       if (pdfBuffer) {
         writeToRoots(`Invoices/${safe}.pdf`, p => writeBuf(p, pdfBuffer));
       }
@@ -222,7 +284,7 @@ function removeInvoice(invoiceNo) {
   setImmediate(() => {
     try {
       const safe = invoiceNo.replace(/[^a-zA-Z0-9\-_]/g, '');
-      deleteFromRoots(`Invoices/${safe}.json`);
+      deleteFromRoots(`Invoices/${safe}.csv`);
       deleteFromRoots(`Invoices/${safe}.pdf`);
     } catch (e) {
       console.error('[AUTO-FILE] removeInvoice error:', e.message);
@@ -247,16 +309,16 @@ function updateEarnings(month, getDb) {
       `).all(month + '%');
 
       const total = bookings.reduce((s, b) => s + (parseFloat(b.fare) || 0), 0);
-      const summary = {
-        month,
-        completed_trips: bookings.length,
-        total_earnings: parseFloat(total.toFixed(2)),
-        updated_at: new Date().toISOString(),
-        bookings
-      };
 
-      const rel = `Earnings/monthly/${month}.json`;
-      writeToRoots(rel, p => writeJson(p, summary));
+      const header = ['ref', 'date', 'time', 'pickup', 'destination', 'fare', 'status'];
+      const rows = bookings.map(b => [
+        b.ref, b.date, b.time, b.pickup, b.destination, b.fare, b.status
+      ]);
+      // Totals row at the foot of the CSV.
+      rows.push(['TOTAL', month, '', '', bookings.length + ' trips', total.toFixed(2), 'completed']);
+
+      const rel = `Earnings/monthly/${month}.csv`;
+      writeToRoots(rel, p => writeText(p, buildCsv(header, rows)));
     } catch (e) {
       console.error('[AUTO-FILE] updateEarnings error:', e.message);
     }

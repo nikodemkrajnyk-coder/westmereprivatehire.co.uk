@@ -338,4 +338,69 @@ router.post('/customer/reset-password', (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Admin/owner forgot password (request reset link) ─────────────────────
+// Separate from the customer flow: only admin/owner accounts in the users
+// table are eligible, and the reset link lands on the admin console.
+router.post('/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email required' });
+
+  const db = getDb();
+  const user = db.prepare(
+    "SELECT id, email, full_name FROM users WHERE email = ? COLLATE NOCASE AND role IN ('admin','owner') AND active = 1"
+  ).get(email.trim().toLowerCase());
+
+  // Always return success — prevents email enumeration
+  if (!user || !user.email) {
+    return res.json({ ok: true });
+  }
+
+  const token = require('crypto').randomBytes(32).toString('hex');
+  const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
+
+  db.prepare(
+    "UPDATE users SET reset_token = ?, reset_token_expires = ?, updated_at = datetime('now') WHERE id = ?"
+  ).run(token, expires, user.id);
+
+  const { sendAdminPasswordResetEmail } = require('./email');
+  sendAdminPasswordResetEmail({ email: user.email, full_name: user.full_name }, token)
+    .catch(e => console.error('[AUTH] admin reset email failed:', e.message));
+
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, ip) VALUES (?,?,?,?)')
+      .run('user', user.id, 'admin_password_reset_requested', req.ip);
+  } catch (_) {}
+
+  res.json({ ok: true });
+});
+
+// ── Admin/owner reset password (consume token, set new password) ─────────
+router.post('/reset-password', (req, res) => {
+  const { token, password } = req.body;
+  if (!token || !password) return res.status(400).json({ error: 'Token and password required' });
+  if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
+
+  const db = getDb();
+  const user = db.prepare(
+    "SELECT id, reset_token_expires FROM users WHERE reset_token = ? AND role IN ('admin','owner') AND active = 1"
+  ).get(String(token).replace(/[^a-f0-9]/gi, ''));
+
+  if (!user) return res.status(400).json({ error: 'Invalid or expired reset link' });
+  if (!user.reset_token_expires || new Date(user.reset_token_expires) < new Date()) {
+    return res.status(400).json({ error: 'Reset link has expired. Please request a new one.' });
+  }
+
+  const hash = bcrypt.hashSync(password, 12);
+  db.prepare(
+    "UPDATE users SET password = ?, reset_token = NULL, reset_token_expires = NULL, updated_at = datetime('now') WHERE id = ?"
+  ).run(hash, user.id);
+
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, ip) VALUES (?,?,?,?)')
+      .run('user', user.id, 'admin_password_reset', req.ip);
+  } catch (_) {}
+
+  res.json({ ok: true });
+});
+
 module.exports = { router, JWT_SECRET };

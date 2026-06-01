@@ -623,6 +623,39 @@ async function sendPasswordResetEmail(customer, token) {
   return ok;
 }
 
+// ── Admin / owner password reset ─────────────────────────────────────────
+// Separate from the customer reset: the link lands on the admin console
+// (westmere-admin.html), not the rider page.
+async function sendAdminPasswordResetEmail(user, token) {
+  if (!user || !user.email) return false;
+  const { email, full_name } = user;
+  const firstName = (full_name || '').split(' ')[0] || 'there';
+  const resetUrl = `https://westmereprivatehire.co.uk/westmere-admin.html?reset_token=${token}`;
+
+  const body = `
+  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Admin password reset</p>
+  <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
+  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">We received a request to reset the password for your Westmere admin account. Click the button below to choose a new one.</p>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0">
+    <tr>
+      <td align="center">
+        <a href="${resetUrl}" style="display:inline-block;padding:14px 36px;background:${INK};color:#FFFFFF;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;text-decoration:none">Reset Password</a>
+      </td>
+    </tr>
+  </table>
+
+  <p style="margin:0 0 8px;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">This link will expire in one hour. If you did not request a password reset, you can safely ignore this email &mdash; your password will not change.</p>
+  <p style="margin:22px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
+
+  const html = emailShell(body);
+  const subject = 'Reset your Westmere admin password';
+  const preheader = 'Click the link to set a new admin password. This link expires in one hour.';
+  const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
+  if (ok) console.log('[EMAIL] Admin password reset sent to', email);
+  return ok;
+}
+
 // ── Customer booking CANCELLED (apology) ─────────────────────────────────
 async function sendCustomerCancellation(booking) {
   const { ref, name, email, pickup, destination, date, time, fare, flight, cancellation_reason } = booking;
@@ -773,5 +806,6 @@ module.exports = {
   sendCustomerConfirmation, sendCustomerConfirmed, sendAdminAlert,
   sendCustomerWelcome, sendCustomerInvoice, sendBespokeInvoice,
   sendCustomerCancellation, sendDriverStatement, sendDriverWelcome,
-  sendVerificationEmail, sendPasswordResetEmail, sendEmail, isConfigured
+  sendVerificationEmail, sendPasswordResetEmail, sendAdminPasswordResetEmail,
+  sendEmail, isConfigured
 };
