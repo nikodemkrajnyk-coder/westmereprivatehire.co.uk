@@ -728,7 +728,7 @@ function seedDefaults() {
       db.prepare(`
         INSERT INTO customers (full_name, email, phone, password, verified, active)
         VALUES (?, ?, ?, ?, 1, 1)
-      `).run('Nikodem Krajnyk', 'nikodem.krajnyk@gmail.com', '07930342593', hash);
+      `).run('Nikodem Test Rider', 'nikodem.krajnyk@gmail.com', '07930342593', hash);
       console.log('[DB] Rider customer account seeded (nikodem.krajnyk@gmail.com / Rider2026!)');
     } else if (rider.active === 0) {
       db.prepare("UPDATE customers SET active = 1, verified = 1, updated_at = datetime('now') WHERE id = ?").run(rider.id);
@@ -736,6 +736,30 @@ function seedDefaults() {
     }
   } catch (e) {
     console.error('[DB] rider customer seed failed:', e.message);
+  }
+
+  // Ensure Andy Pantelidou customer account exists and is active — restored
+  // from backup after the account was deactivated (active=0). Preserves the
+  // original bcrypt hash so the existing portal login keeps working.
+  try {
+    const andy = db.prepare("SELECT id, active FROM customers WHERE email = 'andylucas8@gmail.com' COLLATE NOCASE").get();
+    if (!andy) {
+      db.prepare(`
+        INSERT INTO customers (full_name, email, phone, password, verified, active,
+                               address_line1, address_line2, postcode, created_at)
+        VALUES (?, ?, ?, ?, 1, 1, ?, ?, ?, '2026-05-04 08:06:56')
+      `).run(
+        'Andy Pantelidou', 'andylucas8@gmail.com', '07981 785858',
+        '$2b$12$JTdBsBpIWewkX/Q7mwwzXOBV/.fZM7Z/Ftzo9dvpW.QYK2v4pNQh.',
+        '9 EFFINGHAM CLOSE', 'saltdean', 'BN2 8FX'
+      );
+      console.log('[DB] Andy Pantelidou customer account restored from backup');
+    } else if (andy.active === 0) {
+      db.prepare("UPDATE customers SET active = 1, verified = 1, updated_at = datetime('now') WHERE id = ?").run(andy.id);
+      console.log('[DB] Andy Pantelidou customer account reactivated');
+    }
+  } catch (e) {
+    console.error('[DB] Andy Pantelidou customer seed failed:', e.message);
   }
 }
 
