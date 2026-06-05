@@ -234,6 +234,54 @@ async function sendCustomerConfirmed(booking) {
   if (ok) console.log('[EMAIL] Customer confirmed sent (' + ref + ')');
 }
 
+// ── Customer ESTIMATE (operator sends a manual quote for a request) ──────
+// The customer no longer sees a fare when booking — they request an estimate.
+// The owner reviews the request, sets a price, and sends this email. The
+// booking stays pending until the customer replies to confirm.
+async function sendCustomerEstimate(booking) {
+  const ref         = booking.ref;
+  const name        = booking.name  || booking.passenger_name;
+  const email       = booking.email || booking.passenger_email;
+  const pickup      = booking.pickup;
+  const destination = booking.destination;
+  const { date, time, flight, passengers, fare } = booking;
+  if (!email) return false;
+
+  const fareNum = typeof fare === 'number' ? fare : parseFloat(fare);
+  if (!fareNum || isNaN(fareNum)) return false;
+  const fareStr = '£' + fareNum.toFixed(2);
+
+  const dateStr = formatDate(date, time);
+  const firstName = (name || '').split(' ')[0] || 'there';
+
+  let rows = '';
+  rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:'+INK+'">' + escHtml(ref) + '</span>');
+  rows += rowDivider();
+  rows += detailRow('Pickup', escHtml(pickup));
+  rows += detailRow('Drop-off', escHtml(destination));
+  rows += rowDivider();
+  rows += detailRow('Date', dateStr);
+  if (flight) rows += detailRow('Flight', escHtml(flight));
+  if (passengers && passengers > 1) rows += detailRow('Travellers', passengers + ' passengers');
+  rows += rowDivider();
+  rows += detailRow('Estimated fare', fareStr, { gold: true, large: true });
+
+  const body = `
+  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Your estimate</p>
+  <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
+  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Thank you for your enquiry. Here is the estimate for your journey below.</p>
+  ${buildDetailsTable(rows)}
+  <p style="margin:24px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.65">To confirm this booking, simply reply to this email or call us on <a href="tel:+447930342593" style="color:${INK};text-decoration:none">07930 342593</a>. There is nothing to pay now — the fare is settled on the day with your driver, by cash or card.</p>
+  <p style="margin:22px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Executive Private Hire</span></p>`;
+
+  const html = emailShell(body);
+  const subject = 'Your estimate — ' + ref;
+  const preheader = 'Estimated fare ' + fareStr + ' — reply to confirm your journey.';
+  const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
+  if (ok) console.log('[EMAIL] Customer estimate sent (' + ref + ')');
+  return ok;
+}
+
 // ── Admin booking alert ──────────────────────────────────────────────────
 async function sendAdminAlert(booking) {
   const adminEmail = process.env.ADMIN_EMAIL || process.env.GMAIL_USER;
@@ -803,7 +851,7 @@ async function sendVerificationEmail(customer, token) {
 }
 
 module.exports = {
-  sendCustomerConfirmation, sendCustomerConfirmed, sendAdminAlert,
+  sendCustomerConfirmation, sendCustomerConfirmed, sendCustomerEstimate, sendAdminAlert,
   sendCustomerWelcome, sendCustomerInvoice, sendBespokeInvoice,
   sendCustomerCancellation, sendDriverStatement, sendDriverWelcome,
   sendVerificationEmail, sendPasswordResetEmail, sendAdminPasswordResetEmail,

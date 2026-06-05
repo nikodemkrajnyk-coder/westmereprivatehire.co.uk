@@ -126,8 +126,12 @@ router.post('/book', async (req, res) => {
       }
     }
 
-    const finalDriverId = autoConfirm ? defaultDriverId : null;
-    const finalStatus   = autoConfirm ? 'confirmed' : 'pending';
+    // Quote-request flow: public bookings are now estimate requests, not
+    // instant confirmations. They always start pending with no driver and no
+    // fare — the owner reviews the request, sends a manual estimate, and the
+    // booking is confirmed only once the customer replies to accept it.
+    const finalDriverId = null;
+    const finalStatus   = 'pending';
 
     // Insert booking
     const result = db.prepare(`
@@ -192,7 +196,7 @@ router.post('/book', async (req, res) => {
           passengers, bags, flight: returnTrip.flight, fare: returnTrip.fare, payment,
           notes: `Return leg (outbound: ${ref})`, customer_name: name, customer_phone: phone, status: finalStatus
         }).then(eid => { if (eid) { try { db.prepare('UPDATE bookings SET calendar_event_id = ? WHERE id = ?').run(eid, returnBookingId); } catch (_) {} } }).catch(() => {});
-        intake.evaluate(returnBookingId).catch(() => {});
+        // (intake auto-confirm intentionally skipped — see note on the outbound leg)
         events.broadcast('booking:created', { id: returnBookingId, ref: returnRef, name,
           pickup: destination, destination: pickup,
           date: returnTrip.date, time: returnTrip.time || 'ASAP',
@@ -242,12 +246,11 @@ router.post('/book', async (req, res) => {
       }
     }).catch(() => {});
 
-    // Smart intake: ask Claude if we can fit it. Runs in background, never
-    // blocks the booking response. If ANTHROPIC_API_KEY is missing this is
-    // a graceful no-op.
-    intake.evaluate(result.lastInsertRowid).catch(e => {
-      console.error('[INTAKE] evaluate threw:', e.message);
-    });
+    // Smart intake (auto-confirm) is intentionally NOT run for public quote
+    // requests. Auto-confirming would email the customer a "Booking confirmed"
+    // notice and skip the estimate step. Instead the booking stays pending so
+    // the owner can review it, set a price, and send a manual estimate. The
+    // admin still gets the alert above.
 
     // Push a real-time notification to every open staff app.
     events.broadcast('booking:created', {

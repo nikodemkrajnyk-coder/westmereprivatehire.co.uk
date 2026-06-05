@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const { getDb, DATA_DIR } = require('./db');
-const { sendAdminAlert } = require('./email');
+const { sendAdminAlert, sendCustomerEstimate } = require('./email');
 const { sendAdminBookingWhatsApp } = require('./whatsapp');
 const gcal = require('./google-calendar');
 const events = require('./events');
@@ -248,6 +248,55 @@ router.patch('/bookings/:id', (req, res) => {
   }
 
   res.json({ ok: true });
+});
+
+// Send a manual fare estimate to the customer by email. The customer requested
+// a quote (no fare shown to them at booking); the owner/admin sets the price
+// here and emails it. The booking stays pending until the customer confirms.
+// Optionally accepts a `fare` in the body so the price can be set + sent in one
+// click.
+router.post('/bookings/:id/send-estimate', async (req, res) => {
+  const { role } = req.auth;
+  if (!['admin', 'owner'].includes(role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+  const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+  if (!booking) return res.status(404).json({ error: 'Booking not found' });
+
+  // Optionally set the fare in the same call (owner types the price, hits send)
+  if (req.body && req.body.fare !== undefined && req.body.fare !== null && req.body.fare !== '') {
+    const fare = parseFloat(req.body.fare);
+    if (isNaN(fare) || fare <= 0) return res.status(400).json({ error: 'Enter a valid fare amount' });
+    db.prepare("UPDATE bookings SET fare = ?, updated_at = datetime('now') WHERE id = ?").run(fare, id);
+    booking.fare = fare;
+  }
+
+  if (!booking.fare || Number(booking.fare) <= 0) {
+    return res.status(400).json({ error: 'Set a fare before sending an estimate' });
+  }
+  if (!booking.passenger_email) {
+    return res.status(400).json({ error: 'This booking has no customer email address' });
+  }
+
+  let sent = false;
+  try {
+    sent = await sendCustomerEstimate(booking);
+  } catch (e) {
+    console.error('[API] send-estimate failed:', e.message);
+  }
+  if (!sent) return res.status(502).json({ error: 'Estimate email could not be sent' });
+
+  db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+    .run(req.auth.type, req.auth.id, 'estimate_sent', booking.ref, req.ip);
+  events.broadcast('booking:updated', {
+    id, ref: booking.ref, status: booking.status, prev_status: booking.status
+  });
+
+  res.json({ ok: true, fare: Number(booking.fare) });
 });
 
 // Customer self-cancel — only the owning customer may cancel their own booking

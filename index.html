@@ -275,7 +275,7 @@ input[type="time"].fi,input[type="date"].fi{-webkit-appearance:auto;appearance:a
 .sug-powered{padding:.4rem 1rem;text-align:right;font-size:.55rem;color:rgba(255,255,255,.25);letter-spacing:.04em}
 footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);font-size:.66rem;letter-spacing:.1em;color:rgba(255,255,255,.38);background:rgba(13,10,6,.55);border-top:1px solid rgba(184,152,90,.12);position:relative;z-index:1}.mini-legal{margin-left:.6rem}.mini-legal a{color:rgba(255,255,255,.28);text-decoration:none;margin-left:.5rem;transition:color .2s;letter-spacing:.08em}.mini-legal a:hover{color:rgba(184,152,90,.7)}
 </style>
-<script src="https://js.stripe.com/v3/" async></script>
+<!-- Stripe removed: no online payment; the fare is settled on the day. -->
 <script src="/config.js"></script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23111D2C'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='38' font-weight='500' text-anchor='middle' fill='%23B8985A'%3EW%3C/text%3E%3C/svg%3E">
 <meta name="robots" content="index,follow">
@@ -368,7 +368,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
         <div id="return-total-detail" style="margin-top:.75rem;font-size:.88rem;color:rgba(255,255,255,.75)"></div>
       </div>
     </div>
-    <button class="btn-book-j" id="btn-book-j" onclick="openBookingModal()">Book this journey &nbsp;&rarr;</button>
+    <button class="btn-book-j" id="btn-book-j" onclick="openBookingModal()">Request an Estimate &nbsp;&rarr;</button>
 
   </div><!-- /bk-wrap -->
 </div><!-- /booking -->
@@ -388,7 +388,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
       <button class="bk-close" onclick="closeBkModal()" aria-label="Close">&times;</button>
     </div>
     <div class="bk-journey-bar" id="bk-j-bar"></div>
-    <div class="bk-progress"><div class="bk-pd done"></div><div class="bk-pd" id="bkp2"></div><div class="bk-pd" id="bkp3"></div><div class="bk-pd" id="bkp4"></div></div>
+    <div class="bk-progress" style="display:none"><div class="bk-pd done"></div><div class="bk-pd" id="bkp2"></div><div class="bk-pd" id="bkp3"></div><div class="bk-pd" id="bkp4"></div></div>
 
     <!-- Step 1: Contact -->
     <div class="bk-step active" id="bk-s1">
@@ -401,57 +401,11 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
       <div class="bkf"><label>Email address</label><input type="email" id="bk-email" placeholder="your@email.com" autocomplete="email" inputmode="email"></div>
       <div class="bkf"><label>Mobile number</label><input type="tel" id="bk-phone" placeholder="+44 7xxx xxxxxx" autocomplete="tel" inputmode="tel"></div>
       <div class="bkf"><label>Notes <span style="opacity:.6;font-weight:400">(optional)</span></label><textarea id="bk-notes" rows="3" style="width:100%;font-family:var(--sans);font-size:.94rem;font-weight:400;color:#111D2C;background:#fff;border:1px solid rgba(17,29,44,.18);border-radius:5px;padding:.7rem .85rem;resize:vertical;min-height:3.2rem;outline:none;box-sizing:border-box;-webkit-appearance:none"></textarea></div>
-      <button class="bk-btn-p" onclick="bkToStep2()">Continue &rarr;</button>
+      <button class="bk-btn-p" onclick="bkToStep2()">Request my estimate &rarr;</button>
     </div>
 
-    <!-- Step 2: Pay now or driver -->
-    <div class="bk-step" id="bk-s2">
-      <p class="bk-sub-lbl">How would you like to pay?</p>
-      <div class="bk-pay-grid">
-        <div class="bk-pc" id="bk-pc-now" onclick="bkChoosePay('now')">
-          <div class="bk-pc-rule"></div>
-          <div class="bk-pc-ttl">Pay Now</div>
-          <div class="bk-pc-sub">Apple Pay, Google Pay or debit card &mdash; secured by Stripe</div>
-        </div>
-        <div class="bk-pc" id="bk-pc-drv" onclick="bkChoosePay('driver')">
-          <div class="bk-pc-rule"></div>
-          <div class="bk-pc-ttl">Pay Driver</div>
-          <div class="bk-pc-sub">Cash or card on the day of travel</div>
-        </div>
-      </div>
-      <button class="bk-back" onclick="bkGoS(1)">&#8592; Back</button>
-    </div>
-
-    <!-- Step 3: Payment method -->
-    <div class="bk-step" id="bk-s3">
-      <p class="bk-sub-lbl">Select payment method</p>
-      <div class="bk-methods">
-        <div class="bk-method" id="bk-pm-wallet" onclick="bkChooseMethod('wallet')">
-          <div class="bk-mtype">AP&thinsp;/&thinsp;GP</div>
-          <div><div class="bk-method-ttl">Apple Pay / Google Pay</div><div class="bk-method-sub">One tap &mdash; no card number needed</div></div>
-        </div>
-        <div class="bk-method" id="bk-pm-card" onclick="bkChooseMethod('card')">
-          <div class="bk-mtype">CARD</div>
-          <div><div class="bk-method-ttl">Debit or Credit Card</div><div class="bk-method-sub">Visa &middot; Mastercard &middot; Amex</div></div>
-        </div>
-      </div>
-      <button class="bk-back" onclick="bkGoS(2)">&#8592; Back</button>
-    </div>
-
-    <!-- Step 4a: Apple/Google Pay -->
-    <div class="bk-step" id="bk-s4w">
-      <p class="bk-sub-lbl">Complete payment below</p>
-      <div id="bk-pr-btn"></div>
-      <div class="bk-unavail" id="bk-pr-na">Apple Pay and Google Pay are not available in this browser. Please go back and select card payment.</div>
-      <button class="bk-back" onclick="bkGoS(3)">&#8592; Back</button>
-    </div>
-
-    <!-- Step 4b: Card -->
-    <div class="bk-step" id="bk-s4c">
-      <div class="bkf"><label>Card details</label><div id="stripe-card-el"></div><div id="bk-card-error"></div></div>
-      <button class="bk-btn-p" id="bk-pay-btn" onclick="bkPayCard()">Pay <span id="bk-pay-amt"></span></button>
-      <button class="bk-back" onclick="bkGoS(3)">&#8592; Back</button>
-    </div>
+    <!-- Payment steps removed: customers now request an estimate; the
+         fare is agreed by email and settled on the day. No card capture. -->
 
     <!-- Step 5: Welcome to Westmere -->
     <div class="bk-step" id="bk-s5">
@@ -463,7 +417,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
         <div class="bk-welcome-ref" id="bk-cr"></div>
       </div>
       <div class="bk-confirm-dl" id="bk-cd"></div>
-      <div class="bk-driver-note" id="bk-driver-note">We have been notified and will confirm your booking shortly &mdash; you&rsquo;ll receive an email and WhatsApp message once a driver has been assigned.</div>
+      <div class="bk-driver-note" id="bk-driver-note">Thank you! We will contact you shortly with an estimate for your journey. Once you&rsquo;re happy with the price, simply reply to confirm &mdash; there&rsquo;s nothing to pay until the day of travel.</div>
       <button class="bk-btn-p" style="margin-top:1.3rem" onclick="closeBkModal()">All done</button>
     </div>
 
@@ -813,21 +767,10 @@ function updateReturnTotal(){
   var detail=document.getElementById('return-total-detail');
   var tog=document.getElementById('return-toggle');
   if(!hint)return;
-  if(!_retFare){hint.innerHTML='';if(detail)detail.innerHTML='';return;}
-  // Always show the return fare hint below the checkbox
-  hint.innerHTML='<span style="opacity:.65;font-size:.85rem">Return pickup fare: <strong>£'+_retFare+'</strong> — add dates below</span>';
-  if(!tog||!tog.checked){if(detail)detail.innerHTML='';return;}
-  // When toggled on, show full breakdown in the detail row (inside fields)
-  if(detail){
-    if(_outFare){
-      var total=_outFare+_retFare;
-      detail.innerHTML='<div style="display:flex;justify-content:space-between;margin-bottom:.2rem;color:rgba(255,255,255,.65)"><span>Outbound</span><span>£'+_outFare+'</span></div>'
-        +'<div style="display:flex;justify-content:space-between;margin-bottom:.2rem;color:rgba(255,255,255,.65)"><span>Return pickup</span><span>£'+_retFare+'</span></div>'
-        +'<div style="display:flex;justify-content:space-between;font-weight:700;border-top:1px solid rgba(255,255,255,.15);padding-top:.4rem;margin-top:.2rem;color:rgba(255,255,255,.9)"><span>Total</span><span style="color:var(--gold)">£'+total+'</span></div>';
-    } else {
-      detail.innerHTML='<span style="opacity:.75">Return pickup fare: <strong>£'+_retFare+'</strong></span>';
-    }
-  }
+  // Quote-request flow: no fares are shown to the customer. Just acknowledge
+  // the optional return leg so they can add its date & time.
+  hint.innerHTML='<span style="opacity:.65;font-size:.85rem">Add a return pickup — include the date &amp; time below and we&rsquo;ll quote it with your estimate.</span>';
+  if(detail) detail.innerHTML = (tog&&tog.checked) ? '<span style="opacity:.75">Your return journey will be included in your estimate.</span>' : '';
 }
 function _calcRoute(lat1,lon1,lat2,lon2){
   return fetch('https://router.project-osrm.org/route/v1/driving/'+lon1+','+lat1+';'+lon2+','+lat2+'?overview=false')
@@ -992,7 +935,7 @@ function bkSubmitBooking(data) {
     body: JSON.stringify(data)
   }).then(function(r){ return r.json(); }).then(function(d){
     if (d.ok) {
-      var msg = "Booking saved — confirmation sent";
+      var msg = "Request received — we will be in touch with your estimate";
       if (d.returnRef) msg += " · Return: " + d.returnRef;
       bkToast(msg, "ok");
     } else {
@@ -1114,7 +1057,7 @@ function openBookingModal() {
     if(fareNum>0){
       fb.textContent='£'+fareNum.toFixed(0);
       if(fm)fm.textContent=(dist&&dist!=='—'?dist+' · ':'')+(dur&&dur!=='—'?'~'+dur+' min':'');
-      fd.style.display='block';
+      fd.style.display='none';
     } else { fd.style.display='none'; }
   }
 
@@ -1173,7 +1116,7 @@ function bkToStep2() {
   if (!name) { document.getElementById("bk-name").classList.add("err"); document.getElementById("bk-name").focus(); return; }
   if (!email||!email.includes("@")) { document.getElementById("bk-email").classList.add("err"); document.getElementById("bk-email").focus(); return; }
   if (!phone) { document.getElementById("bk-phone").classList.add("err"); document.getElementById("bk-phone").focus(); return; }
-  bkGoS(2);
+  bkConfirm('quote');
 }
 
 // ── PAY CHOICE ────────────────────────────────────────
@@ -1318,7 +1261,7 @@ function bkConfirm(type) {
 
   // ── Welcome screen ──
   var wsub = document.getElementById("bk-wsub");
-  if (wsub) wsub.textContent = firstName + ", your booking request has been received";
+  if (wsub) wsub.textContent = "Thank you, " + firstName + "!";
 
   var crEl = document.getElementById("bk-cr");
   if (crEl) crEl.textContent = "Ref: " + ref;
@@ -1334,7 +1277,7 @@ function bkConfirm(type) {
       date:   retDate.value,
       time:   retTime && retTime.value ? retTime.value : "ASAP",
       flight: retFlight ? retFlight.value.trim() : "",
-      fare:   _retFare || null
+      fare:   null
     };
   }
 
@@ -1344,9 +1287,7 @@ function bkConfirm(type) {
     { k:"To",        v: j.to },
     j.date  ? { k:"Date",    v: j.date + (j.time ? " at " + j.time : "") } : null,
     j.flight? { k:"Flight",  v: j.flight } : null,
-    j.price&&j.price!=="—" ? { k:"Fare", v: j.price + " — fixed" } : null,
-    returnTrip ? { k:"Return", v: returnTrip.date + (returnTrip.time && returnTrip.time!=="ASAP" ? " at " + returnTrip.time : "") + (returnTrip.fare ? " · £" + returnTrip.fare : "") } : null,
-    { k:"Payment",   v: type==="driver" ? "To driver on the day" : "Paid online ✓" }
+    returnTrip ? { k:"Return", v: returnTrip.date + (returnTrip.time && returnTrip.time!=="ASAP" ? " at " + returnTrip.time : "") } : null
   ].filter(Boolean);
 
   var cdEl = document.getElementById("bk-cd");
@@ -1371,11 +1312,11 @@ function bkConfirm(type) {
     date:       j.date  || "",
     time:       j.time  || "",
     flight:     j.flight|| "",
-    fare:       _bk.fare || null,
+    fare:       null,
     passengers: parseInt(document.getElementById("b-pax").value) || 1,
     bags:       document.getElementById("b-bags").value || "",
     notes:      document.getElementById("bk-notes") ? document.getElementById("bk-notes").value : "",
-    payment:    type==="driver" ? "cash" : "card",
+    payment:    "cash",
     source:     "website",
     returnTrip: returnTrip || undefined
   });

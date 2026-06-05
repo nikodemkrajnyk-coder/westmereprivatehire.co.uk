@@ -4543,6 +4543,22 @@ async function reclaimOffer(bookingId){
   if(d.ok){showToast('Offer reclaimed');if(typeof loadAdminCalendar==='function')loadAdminCalendar();loadFlaggedBookings();}
   else showToast(d.error||'Failed');
 }
+
+// Quote-request flow: customer asked for an estimate (no fare shown to them).
+// Operator sets the price here and emails it; the booking stays pending until
+// the customer replies to confirm.
+async function admSendEstimate(bookingId){
+  var j=FLAGGED_CACHE[bookingId]||{};
+  var cur=j&&j.fare?Number(j.fare):'';
+  var v=prompt('Estimated fare to email the customer (£):',cur);
+  if(v===null)return;
+  var fare=parseFloat(String(v).replace(/[^0-9.]/g,''));
+  if(!fare||fare<=0){showToast('Enter a valid fare amount');return;}
+  var r=await fetch('/api/bookings/'+bookingId+'/send-estimate',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({fare:fare})});
+  var d=await r.json();
+  if(r.ok&&d.ok){showToast('Estimate sent (£'+fare.toFixed(0)+')');if(typeof loadAdminCalendar==='function')loadAdminCalendar();loadFlaggedBookings();}
+  else showToast(d.error||'Failed');
+}
 async function rsApology(){
   if(!REASSIGN_CURRENT)return;
   document.getElementById('rs-ap-subj').value='Drafting…';
@@ -4779,12 +4795,13 @@ function admShowDay(key){
     html+=jobs.map(function(j){
       var st=j.status||'pending';
       var stCls=j.needs_reassignment?'flagged':st;
-      var stTxt=j.needs_reassignment?'Needs reassign':st;
+      var stTxt=j.needs_reassignment?'Needs reassign':(st==='pending'?'Quote requested':st);
       var actions='';
       if(j.needs_reassignment){
         actions='<button class="btn btn-navy btn-sm" onclick="event.stopPropagation();openReassign('+j.id+')">Resolve</button>';
       } else if(st==='pending'){
-        actions='<button class="btn btn-navy btn-sm" onclick="event.stopPropagation();openReassign('+j.id+')">Offer</button>';
+        actions='<button class="btn btn-sm" style="background:rgba(184,152,90,.14);color:#8B7230;border:1px solid rgba(184,152,90,.4)" onclick="event.stopPropagation();admSendEstimate('+j.id+')">Send Estimate</button>'
+          +'<button class="btn btn-navy btn-sm" onclick="event.stopPropagation();openReassign('+j.id+')">Offer</button>';
       } else if(st==='offered'){
         actions='<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();reclaimOffer('+j.id+')">Reclaim</button>';
       }

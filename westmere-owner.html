@@ -2470,7 +2470,7 @@ async function buildOffered(){
     }
 
     var stLabel,stColor,stBg;
-    if(j.apiStatus==='pending'){stLabel='Needs decision';stColor='#9C5800';stBg='rgba(156,88,0,.08)';}
+    if(j.apiStatus==='pending'){stLabel='Quote requested';stColor='#9C5800';stBg='rgba(156,88,0,.08)';}
     else if(j.apiStatus==='offered'){stLabel='Awaiting driver';stColor='#2A3A66';stBg='rgba(42,58,102,.07)';}
     else if(j.apiStatus==='active'){stLabel='Active';stColor='#2D6E47';stBg='rgba(45,110,71,.1)';}
     else{stLabel='Confirmed';stColor='#2D6E47';stBg='rgba(45,110,71,.08)';}
@@ -2498,6 +2498,7 @@ async function buildOffered(){
         +'</table>'
         +'<div style="display:flex;gap:.4rem;flex-wrap:wrap">';
     if(j.apiStatus==='pending'){
+      html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(184,152,90,.14);color:#8B7230;border:1.5px solid rgba(184,152,90,.35);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerSendEstimate('+j.id+')">Send Estimate</button>';
       html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(45,110,71,.12);color:#2D6E47;border:1.5px solid rgba(45,110,71,.3);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingConfirm('+j.id+')">Confirm</button>';
     }
     html+='<button style="padding:.6rem .85rem;font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(17,29,44,.06);color:rgba(17,29,44,.6);border:1px solid rgba(17,29,44,.12);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingEdit('+j.id+')">Edit</button>'
@@ -2520,6 +2521,25 @@ async function upcomingConfirm(bookingId){
     if(r.ok&&d.ok){showToast('Booking confirmed');loadOwnerBookings();}
     else showToast(d.error||('Failed ('+r.status+')'));
   }catch(e){showToast('Network error');console.error('[upcomingConfirm]',e);}
+}
+
+// Quote-request flow: the customer asked for an estimate (no fare shown to
+// them). The owner sets the price here and emails it. The server stores the
+// fare and sends the quote; the booking stays pending until the customer
+// replies to confirm.
+async function ownerSendEstimate(bookingId){
+  var j=OFFERED_JOBS.find(function(x){return String(x.id)===String(bookingId);});
+  var cur=j&&j.fare?Number(j.fare):'';
+  var v=prompt('Estimated fare to email the customer (£):',cur);
+  if(v===null)return;
+  var fare=parseFloat(String(v).replace(/[^0-9.]/g,''));
+  if(!fare||fare<=0){showToast('Enter a valid fare amount');return;}
+  try{
+    var r=await fetch('/api/bookings/'+bookingId+'/send-estimate',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({fare:fare})});
+    var d=await r.json();
+    if(r.ok&&d.ok){showToast('Estimate sent to customer (£'+fare.toFixed(0)+')');loadOwnerBookings();}
+    else showToast(d.error||('Failed ('+r.status+')'));
+  }catch(e){showToast('Network error');console.error('[ownerSendEstimate]',e);}
 }
 
 async function upcomingCancel(bookingId){

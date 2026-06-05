@@ -631,7 +631,7 @@ body.mode-day #stripe-card-el.StripeElement--focus{border-bottom-color:#7A6230}
         <button class="btn-main" onclick="openConfirmModal()" style="margin-top:1rem">Book This Journey</button>
       </div>
 
-      <button class="btn-main" id="bk-calc-btn" onclick="bkCalcFare()">Book Your Journey</button>
+      <button class="btn-main" id="bk-calc-btn" onclick="openConfirmModal()">Request an Estimate</button>
     </div>
 
     <!-- ─── MY TRIPS ─── -->
@@ -695,37 +695,12 @@ body.mode-day #stripe-card-el.StripeElement--focus{border-bottom-color:#7A6230}
 <div class="modal-overlay" id="confirm-modal">
   <div class="modal-box">
     <div class="modal-hd">
-      <div class="modal-title">Confirm Booking</div>
+      <div class="modal-title">Request an Estimate</div>
       <button class="modal-close" onclick="closeModal()">&times;</button>
     </div>
     <div class="modal-bd" id="modal-details"></div>
-    <div class="modal-bd" style="border-top:1px solid rgba(17,29,44,.06);padding-top:1rem">
-      <div style="font-size:.56rem;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:.6rem">Payment</div>
-      <div class="pay-grid">
-        <div class="pay-card sel" id="pay-driver" onclick="riderPayChoice('driver')">
-          <div class="pay-card-ttl">Pay Driver</div>
-          <div class="pay-card-sub">Cash or card on the day</div>
-        </div>
-        <div class="pay-card" id="pay-now" onclick="riderPayChoice('now')">
-          <div class="pay-card-ttl">Pay Now</div>
-          <div class="pay-card-sub">Debit or credit card</div>
-        </div>
-      </div>
-      <div class="pay-methods" id="pay-methods">
-        <div class="pay-method sel" id="pm-card" onclick="riderMethodChoice('card')">
-          <div class="pay-method-type">Card</div>
-          <div><div class="pay-method-ttl">Debit or Credit Card</div><div class="pay-method-sub">Visa / Mastercard / Amex</div></div>
-        </div>
-      </div>
-      <div id="stripe-card-wrap">
-        <div id="stripe-card-el"></div>
-        <div id="bk-card-error"></div>
-      </div>
-      <div id="bk-pr-btn"></div>
-      <div class="bk-pr-na" id="bk-pr-na"></div>
-    </div>
     <div class="modal-ft">
-      <button class="btn-main" id="bk-confirm-btn" onclick="confirmBooking()" style="margin-top:0">Confirm Booking</button>
+      <button class="btn-main" id="bk-confirm-btn" onclick="confirmBooking()" style="margin-top:0">Request Estimate</button>
     </div>
   </div>
 </div>
@@ -1227,17 +1202,12 @@ function updateFareDisplay(){
 /* ── FARE CALCULATOR ── */
 var _fareTimer=null;
 function bkCalcFare(){
+  // Quote-request flow: no fare is calculated or shown to the customer.
+  // We still detect airports so the flight-number field can appear.
   clearTimeout(_fareTimer);
   checkFlightField();
-  var from=(document.getElementById('bk-from')||{}).value||'';
-  var dest=(document.getElementById('bk-dest')||{}).value||'';
-  if(!from||from.length<2||!dest||dest.length<2){
-    document.getElementById('fare-reveal').classList.remove('show');
-    document.getElementById('bk-calc-btn').style.display='block';
-    _baseFare=null;
-    return;
-  }
-  _fareTimer=setTimeout(function(){bkRunCalc(from.trim(),dest.trim());},550);
+  var fr=document.getElementById('fare-reveal'); if(fr) fr.classList.remove('show');
+  _baseFare=null;
 }
 
 function bkSetFare(fare,mi,ti,lbl,surNote){
@@ -1508,7 +1478,6 @@ function openConfirmModal(){
   var flight=(document.getElementById('bk-flight')||{}).value||'';
   var pax=(document.getElementById('bk-pax')||{}).value||'1';
   if(!from||!dest){showToast('Please enter pickup and destination','error');return;}
-  if(_baseFare===null){showToast('Please get a quote first','error');return;}
   var _bkDate=(document.getElementById('bk-date')||{}).value||'';
   var _bkTime=(document.getElementById('bk-time')||{}).value||'';
   if(_bkDate&&_bkTime){
@@ -1516,7 +1485,6 @@ function openConfirmModal(){
     if(_diff<0){showToast('Booking time must be in the future.','error');return;}
     if(_diff<3600000){showToast('Bookings must be made at least 1 hour before departure. For urgent bookings please call us.','error');return;}
   }
-  var fare=Math.ceil((_baseFare*_selectedVehMult)/0.5)*0.5;
   var html='';
   html+='<div class="modal-row"><span class="modal-rk">Pickup</span><span class="modal-rv">'+esc(from)+'</span></div>';
   html+='<div class="modal-row"><span class="modal-rk">Destination</span><span class="modal-rv">'+esc(dest)+'</span></div>';
@@ -1524,19 +1492,10 @@ function openConfirmModal(){
   html+='<div class="modal-row"><span class="modal-rk">Time</span><span class="modal-rv">'+esc(time)+'</span></div>';
   if(flight)html+='<div class="modal-row"><span class="modal-rk">Flight</span><span class="modal-rv">'+esc(flight)+'</span></div>';
   html+='<div class="modal-row"><span class="modal-rk">Passengers</span><span class="modal-rv">'+esc(pax)+'</span></div>';
-  html+='<div class="modal-row"><span class="modal-rk">Vehicle</span><span class="modal-rv">'+esc(_selectedVehName)+'</span></div>';
-  html+='<div class="modal-fare"><div class="modal-fare-lbl">Total Fare</div><div class="modal-fare-amt">\u00a3'+fare.toFixed(0)+'</div></div>';
-  if(_fareDistance){
-    html+='<div style="text-align:center;font-size:.68rem;color:rgba(17,29,44,.35);font-weight:300;margin-top:.3rem">'+esc(_fareDistance)+' miles \u00b7 ~'+esc(_fareTime)+' min'+(_fareSurcharge?' \u00b7 '+esc(_fareSurcharge):'')+'</div>';
-  }
+  html+='<div style="text-align:center;font-size:.78rem;color:rgba(17,29,44,.5);font-weight:300;margin-top:1rem;line-height:1.6">No fare to pay now. We will review your request and email you an estimate. Settle on the day, by cash or card.</div>';
   document.getElementById('modal-details').innerHTML=html;
-  _rPayChoice='driver';
-  document.getElementById('pay-driver').classList.add('sel');
-  document.getElementById('pay-now').classList.remove('sel');
-  document.getElementById('pay-methods').style.display='none';
-  document.getElementById('stripe-card-wrap').style.display='none';
   var btn=document.getElementById('bk-confirm-btn');
-  btn.textContent='Confirm Booking';btn.disabled=false;
+  btn.textContent='Request Estimate';btn.disabled=false;
   document.getElementById('confirm-modal').classList.add('on');
 }
 function closeModal(){
@@ -1597,7 +1556,7 @@ async function confirmBooking(){
   var name=(document.getElementById('bk-name')||{}).value||'';
   var phone=(document.getElementById('bk-phone')||{}).value||'';
   var email=(document.getElementById('bk-email')||{}).value||'';
-  var fare=Math.ceil((_baseFare*_selectedVehMult)/0.5)*0.5;
+  var fare=null;
 
   if(!name||!phone){
     showToast('Please enter your name and phone number','error');
@@ -1607,32 +1566,15 @@ async function confirmBooking(){
   var paymentType=_rPayChoice==='now'?'card':'cash';
   var btn=document.getElementById('bk-confirm-btn');
 
-  if(_rPayChoice==='now'){
-    if(!_rStripe||!_rCardEl){showToast('Payment system not ready. Please refresh.','error');return;}
-    btn.disabled=true;btn.textContent='Processing...';
-    try{
-      var amtPence=Math.max(Math.round(fare*100),100);
-      var piRes=await fetch('/api/public/create-payment-intent',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:amtPence,currency:'gbp',booking:{pickup:from,destination:dest,date:date,time:time},customer:{name:name,email:email,phone:phone}})});
-      var piData=await piRes.json();
-      if(!piRes.ok||!piData.clientSecret){btn.disabled=false;btn.textContent='Pay \u00a3'+fare.toFixed(0);showToast(piData.error||'Payment setup failed','error');return;}
-      var result=await _rStripe.confirmCardPayment(piData.clientSecret,{payment_method:{card:_rCardEl,billing_details:{name:name,email:email||undefined}}});
-      if(result.error){btn.disabled=false;btn.textContent='Pay \u00a3'+fare.toFixed(0);var errEl=document.getElementById('bk-card-error');if(errEl)errEl.textContent=result.error.message;return;}
-    }catch(e){
-      btn.disabled=false;btn.textContent='Pay \u00a3'+fare.toFixed(0);
-      showToast('Payment failed. Please try again.','error');
-      return;
-    }
-  }
-
   try{
     var r=await fetch('/api/public/book',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name:name,phone:phone,email:email||null,pickup:from,destination:dest,date:date,time:time||'ASAP',passengers:parseInt(pax)||1,bags:bags,flight:flight||null,fare:fare,payment:paymentType,notes:_selectedVehName?'Vehicle: '+_selectedVehName:'',source:'rider-app'})
+      body:JSON.stringify({name:name,phone:phone,email:email||null,pickup:from,destination:dest,date:date,time:time||'ASAP',passengers:parseInt(pax)||1,bags:bags,flight:flight||null,fare:null,payment:paymentType,notes:_selectedVehName?'Vehicle: '+_selectedVehName:'',source:'rider-app'})
     });
     var data=await r.json();
     if(!r.ok){
-      btn.disabled=false;btn.textContent=_rPayChoice==='now'?'Pay \u00a3'+fare.toFixed(0):'Confirm Booking';
+      btn.disabled=false;btn.textContent='Request Estimate';
       showToast(data.error||'Booking failed','error');
       return;
     }
@@ -1647,8 +1589,8 @@ async function confirmBooking(){
       pax:pax,
       bags:bags,
       vehicle:_selectedVehName,
-      fare:fare,
-      status:paymentType==='card'?'confirmed':'pending',
+      fare:null,
+      status:'pending',
       payment:paymentType,
       created:new Date().toISOString()
     };
@@ -1656,7 +1598,7 @@ async function confirmBooking(){
     bookings.unshift(booking);
     localStorage.setItem('wph_rider_bookings',JSON.stringify(bookings));
     closeModal();
-    showToast(paymentType==='card'?'Paid and booked: '+data.ref:'Booking received: '+data.ref,'success');
+    showToast('Thank you! We will email you an estimate shortly.','success');
     document.getElementById('bk-from').value='';
     document.getElementById('bk-dest').value='';
     document.getElementById('bk-flight').value='';
@@ -1666,7 +1608,7 @@ async function confirmBooking(){
     renderTrips('upcoming');
     setTimeout(function(){goPage('trips');},600);
   }catch(e){
-    btn.disabled=false;btn.textContent=_rPayChoice==='now'?'Pay \u00a3'+fare.toFixed(0):'Confirm Booking';
+    btn.disabled=false;btn.textContent='Request Estimate';
     showToast('Connection error. Please try again.','error');
   }
 }
@@ -1701,7 +1643,7 @@ function renderTrips(filter){
     var statusLabel=b.status.charAt(0).toUpperCase()+b.status.slice(1);
     var canCancel=(b.status==='confirmed'&&b.date>=now);
     html+='<div class="trip-card">';
-    html+='<div class="tc-top"><span class="tc-date">'+esc(b.dateDisp||b.date)+'</span><span class="tc-fare">\u00a3'+b.fare+'</span></div>';
+    html+='<div class="tc-top"><span class="tc-date">'+esc(b.dateDisp||b.date)+'</span><span class="tc-fare">'+(b.fare?'\u00a3'+b.fare:'Estimate pending')+'</span></div>';
     html+='<div class="tc-route">'+esc(b.from)+' \u2192 '+esc(b.dest)+'</div>';
     html+='<div class="tc-meta">'+esc(b.time)+' \u00b7 '+esc(b.vehicle)+' \u00b7 '+esc(b.pax)+' pax'+(b.flight?' \u00b7 '+esc(b.flight):'')+'</div>';
     html+='<div class="tc-bottom"><span class="tc-badge '+badgeClass+'">'+esc(statusLabel)+'</span>';
@@ -1756,7 +1698,7 @@ function renderActiveTrip(){
   h+='<div class="aj-meta-grid">';
   h+='<div class="aj-meta-cell"><div class="aj-meta-k">Date</div><div class="aj-meta-v">'+esc(active.date)+'</div></div>';
   h+='<div class="aj-meta-cell"><div class="aj-meta-k">Time</div><div class="aj-meta-v">'+esc(active.time)+'</div></div>';
-  h+='<div class="aj-meta-cell"><div class="aj-meta-k">Fare</div><div class="aj-meta-v aj-fare">\u00a3'+active.fare+'</div></div>';
+  h+='<div class="aj-meta-cell"><div class="aj-meta-k">Fare</div><div class="aj-meta-v aj-fare">'+(active.fare?'\u00a3'+active.fare:'Pending')+'</div></div>';
   h+='</div>';
   if(active.driverName){
     var initials=active.driverName.split(' ').map(function(p){return p[0]||'';}).join('').toUpperCase().slice(0,2);
