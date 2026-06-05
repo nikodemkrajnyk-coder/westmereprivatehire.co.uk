@@ -631,7 +631,7 @@ body.mode-day #stripe-card-el.StripeElement--focus{border-bottom-color:#7A6230}
         <button class="btn-main" onclick="openConfirmModal()" style="margin-top:1rem">Book This Journey</button>
       </div>
 
-      <button class="btn-main" id="bk-calc-btn" onclick="openConfirmModal()">Request an Estimate</button>
+      <button class="btn-main" id="bk-calc-btn" onclick="openConfirmModal()">Request a Quote</button>
     </div>
 
     <!-- ─── MY TRIPS ─── -->
@@ -695,12 +695,12 @@ body.mode-day #stripe-card-el.StripeElement--focus{border-bottom-color:#7A6230}
 <div class="modal-overlay" id="confirm-modal">
   <div class="modal-box">
     <div class="modal-hd">
-      <div class="modal-title">Request an Estimate</div>
+      <div class="modal-title">Request a Quote</div>
       <button class="modal-close" onclick="closeModal()">&times;</button>
     </div>
     <div class="modal-bd" id="modal-details"></div>
     <div class="modal-ft">
-      <button class="btn-main" id="bk-confirm-btn" onclick="confirmBooking()" style="margin-top:0">Request Estimate</button>
+      <button class="btn-main" id="bk-confirm-btn" onclick="confirmBooking()" style="margin-top:0">Request a Quote</button>
     </div>
   </div>
 </div>
@@ -1495,7 +1495,7 @@ function openConfirmModal(){
   html+='<div style="text-align:center;font-size:.78rem;color:rgba(17,29,44,.5);font-weight:300;margin-top:1rem;line-height:1.6">No fare to pay now. We will review your request and email you an estimate. Settle on the day, by cash or card.</div>';
   document.getElementById('modal-details').innerHTML=html;
   var btn=document.getElementById('bk-confirm-btn');
-  btn.textContent='Request Estimate';btn.disabled=false;
+  btn.textContent='Request a Quote';btn.disabled=false;
   document.getElementById('confirm-modal').classList.add('on');
 }
 function closeModal(){
@@ -1574,7 +1574,7 @@ async function confirmBooking(){
     });
     var data=await r.json();
     if(!r.ok){
-      btn.disabled=false;btn.textContent='Request Estimate';
+      btn.disabled=false;btn.textContent='Request a Quote';
       showToast(data.error||'Booking failed','error');
       return;
     }
@@ -1598,7 +1598,7 @@ async function confirmBooking(){
     bookings.unshift(booking);
     localStorage.setItem('wph_rider_bookings',JSON.stringify(bookings));
     closeModal();
-    showToast('Thank you! We will email you an estimate shortly.','success');
+    showToast('We will contact you shortly with an estimate.','success');
     document.getElementById('bk-from').value='';
     document.getElementById('bk-dest').value='';
     document.getElementById('bk-flight').value='';
@@ -1608,7 +1608,7 @@ async function confirmBooking(){
     renderTrips('upcoming');
     setTimeout(function(){goPage('trips');},600);
   }catch(e){
-    btn.disabled=false;btn.textContent='Request Estimate';
+    btn.disabled=false;btn.textContent='Request a Quote';
     showToast('Connection error. Please try again.','error');
   }
 }
