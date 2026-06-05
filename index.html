@@ -240,7 +240,8 @@ input[type="time"].fi,input[type="date"].fi{-webkit-appearance:auto;appearance:a
 #intro{position:fixed;inset:0;z-index:600;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;animation:introOut 1.2s cubic-bezier(.4,0,1,1) 3.8s forwards}
 @keyframes introOut{to{opacity:0;visibility:hidden}}
 .intro-w{font-family:var(--serif);font-size:clamp(2.2rem,6vw,10rem);font-weight:300;color:#fff;letter-spacing:.05em;text-transform:uppercase;line-height:.9;opacity:0;animation:introUp 2s cubic-bezier(.16,1,.3,1) .3s forwards}
-.intro-ph{font-family:var(--serif);font-size:clamp(1.4rem,4vw,2.6rem);font-weight:300;letter-spacing:.45em;text-transform:uppercase;color:rgba(255,255,255,.75);margin-top:1.2rem;opacity:0;animation:introUp 1.8s cubic-bezier(.16,1,.3,1) 1.7s forwards}
+.intro-exec{font-family:var(--serif);font-size:clamp(1.5rem,4.4vw,3rem);font-weight:400;letter-spacing:.5em;text-transform:uppercase;color:var(--gold);margin-top:1.2rem;opacity:0;animation:introUp 1.8s cubic-bezier(.16,1,.3,1) 1.6s forwards}
+.intro-ph{font-family:var(--serif);font-size:clamp(1rem,2.6vw,1.6rem);font-weight:300;letter-spacing:.45em;text-transform:uppercase;color:rgba(255,255,255,.72);margin-top:.55rem;opacity:0;animation:introUp 1.8s cubic-bezier(.16,1,.3,1) 2.1s forwards}
 .intro-ss{font-size:.8rem;font-weight:300;letter-spacing:.7em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-top:.9rem;opacity:0;animation:introUp 1.5s cubic-bezier(.16,1,.3,1) 2.8s forwards}
 .intro-line{width:0;height:1px;background:var(--gold);margin:.8rem auto 0;animation:lineGrow 1.4s cubic-bezier(.16,1,.3,1) .7s forwards}
 @keyframes introUp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
@@ -293,7 +294,8 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 <div id="intro">
   <span class="intro-w">Westmere</span>
   <div class="intro-line"></div>
-  <span class="intro-ph">Executive Private Hire</span>
+  <span class="intro-exec">Executive</span>
+  <span class="intro-ph">Private Hire</span>
   <span class="intro-ss">Sussex</span>
 </div>
 
