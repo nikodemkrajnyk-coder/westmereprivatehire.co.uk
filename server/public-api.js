@@ -211,8 +211,13 @@ router.post('/book', async (req, res) => {
     db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
       .run('public', customerId || 0, 'booking_created', ref, req.ip);
 
-    // Dead miles are now baked into all fixed airport fare tables on the client.
-    // No dynamic dead miles calculation needed here.
+    // Dead miles (collection fee) are NOT recomputed here. Two reasons:
+    //   1. Fixed airport fares already bake the collection cost into the client
+    //      fare tables — recomputing would double-charge.
+    //   2. Custom journeys come in as estimate requests (fare = null); the owner
+    //      quotes them manually via the AI assistant, whose calculate_fare tool
+    //      applies the tiered dead-miles rate (see server/dead-miles.js:
+    //      5 mi free, next 20 mi @ £1.50, remainder @ £1.00).
     const finalFare = fare || null;
 
     // Build notification payload
@@ -300,6 +305,90 @@ router.post('/create-payment-intent', async (req, res) => {
   }
 });
 
+// ── Pre-payment: booking pay-info ────────────────────────────────────────
+// The "Pay Now" link in the confirmation email points here. Access is gated by
+// the per-booking pay_token (a random secret in the link) so booking refs can't
+// be enumerated to leak fares or addresses. Returns just enough to render the
+// payment page.
+router.get('/pay/:ref', (req, res) => {
+  try {
+    const db = getDb();
+    const ref = String(req.params.ref || '').trim().toUpperCase();
+    const token = String(req.query.t || req.query.token || '').trim();
+    if (!ref || !token) return res.status(400).json({ error: 'Booking reference and token required' });
+
+    const b = db.prepare(`
+      SELECT ref, pickup, destination, date, time, fare, status, payment, pay_token, paid_at
+        FROM bookings WHERE ref = ?
+    `).get(ref);
+    if (!b || !b.pay_token || b.pay_token !== token) {
+      return res.status(404).json({ error: 'Payment link not found or has expired' });
+    }
+
+    const paid = !!b.paid_at || b.payment === 'card';
+    res.json({
+      ok: true,
+      stripeReady: stripeConfigured(),
+      booking: {
+        ref: b.ref,
+        pickup: b.pickup,
+        destination: b.destination,
+        date: b.date,
+        time: b.time,
+        fare: b.fare,
+        status: b.status,
+        paid,
+        cancelled: b.status === 'cancelled',
+        payable: !paid && b.status !== 'cancelled' && !!b.fare && Number(b.fare) > 0
+      }
+    });
+  } catch (err) {
+    console.error('[PAY] pay-info error:', err.message);
+    res.status(500).json({ error: 'Could not load payment details' });
+  }
+});
+
+// ── Pre-payment: create PaymentIntent for a confirmed booking ────────────
+// Unlike the generic create-payment-intent above, the amount is taken from the
+// booking's stored fare (server-side) — never trusted from the client — and the
+// caller must present the matching pay_token.
+router.post('/pay/:ref/intent', async (req, res) => {
+  try {
+    if (!stripeConfigured()) {
+      return res.status(503).json({ error: 'Payment system not configured' });
+    }
+    const db = getDb();
+    const ref = String(req.params.ref || '').trim().toUpperCase();
+    const token = String((req.body && (req.body.token || req.body.t)) || '').trim();
+    if (!ref || !token) return res.status(400).json({ error: 'Booking reference and token required' });
+
+    const b = db.prepare(`
+      SELECT ref, pickup, destination, date, time, fare, status, payment, pay_token, paid_at,
+             passenger_name, passenger_phone, passenger_email
+        FROM bookings WHERE ref = ?
+    `).get(ref);
+    if (!b || !b.pay_token || b.pay_token !== token) {
+      return res.status(404).json({ error: 'Payment link not found or has expired' });
+    }
+    if (b.status === 'cancelled') return res.status(409).json({ error: 'This booking has been cancelled' });
+    if (b.paid_at || b.payment === 'card') return res.status(409).json({ error: 'This booking is already paid' });
+    if (!b.fare || Number(b.fare) <= 0) return res.status(409).json({ error: 'No fare is set for this booking yet' });
+
+    const amount = Math.round(Number(b.fare) * 100);
+    const intent = await createPaymentIntent({
+      amount,
+      currency: 'gbp',
+      booking: { ref: b.ref, from: b.pickup, to: b.destination, date: b.date, time: b.time },
+      customer: { name: b.passenger_name, email: b.passenger_email, phone: b.passenger_phone }
+    });
+
+    res.json({ ok: true, clientSecret: intent.client_secret, amount });
+  } catch (err) {
+    console.error('[PAY] intent error:', err.message);
+    res.status(500).json({ error: 'Payment processing failed' });
+  }
+});
+
 // ── Stripe webhook (payment confirmation) ────────────────────────────────
 router.post('/stripe-webhook', express.raw({ type: 'application/json' }), (req, res) => {
   const { verifyWebhook } = require('./stripe');
@@ -324,13 +413,23 @@ router.post('/stripe-webhook', express.raw({ type: 'application/json' }), (req, 
       if (row && row.fare && Math.round(row.fare * 100) !== intent.amount) {
         console.error('[STRIPE] Amount mismatch for', ref, '- expected', Math.round(row.fare * 100), 'got', intent.amount);
       }
-      db.prepare("UPDATE bookings SET payment = 'card', status = 'confirmed', updated_at = datetime('now') WHERE ref = ?").run(ref);
+      // Mark paid online. Stamp paid_at and clear pay_token so the "Pay Now"
+      // link can't be reused. Keep status confirmed (cancelled stays cancelled).
+      db.prepare(`UPDATE bookings
+                     SET payment = 'card',
+                         paid_at = COALESCE(paid_at, datetime('now')),
+                         pay_token = NULL,
+                         status = CASE WHEN status = 'cancelled' THEN status ELSE 'confirmed' END,
+                         updated_at = datetime('now')
+                   WHERE ref = ?`).run(ref);
       console.log('[STRIPE] Payment confirmed for', ref);
       // Fire customer "Booking confirmed" on the pending → confirmed edge
       if (row && row.status === 'pending') {
         intake.notifyCustomerConfirmed(row.id)
           .catch(e => console.error('[STRIPE] notifyCustomerConfirmed failed:', e.message));
         events.broadcast('booking:confirmed', { id: row.id, ref, reason: 'Paid online' });
+      } else {
+        events.broadcast('booking:updated', { id: row?.id, ref, reason: 'Paid online' });
       }
     }
   }

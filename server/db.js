@@ -641,6 +641,20 @@ function migrate() {
       console.log('[DB] Added expiry_date to driver_documents');
     }
   } catch(e) { console.error('[DB] driver_documents expiry_date migration failed:', e.message); }
+
+  // Online pre-payment after estimate confirmed:
+  //   pay_token — random secret embedded in the "Pay Now" email link. Gates
+  //               the public pay page/intent so booking refs can't be enumerated.
+  //   paid_at   — timestamp the customer paid online (NULL = unpaid / cash on day).
+  try {
+    const ppInfo = db.prepare("PRAGMA table_info(bookings)").all();
+    for (const [n, t] of [['pay_token', 'TEXT'], ['paid_at', 'TEXT']]) {
+      if (!ppInfo.find(c => c.name === n)) {
+        db.exec(`ALTER TABLE bookings ADD COLUMN ${n} ${t}`);
+        console.log('[DB] Added ' + n + ' column to bookings');
+      }
+    }
+  } catch(e) { console.error('[DB] pre-payment column migration failed:', e.message); }
 }
 
 function seedDefaults() {

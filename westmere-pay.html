@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#111D2C">
+<title>Pay for your journey | Westmere Executive Private Hire</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
+<script src="https://js.stripe.com/v3/"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--navy:#111D2C;--navy2:#1C2A3E;--cream:#F5F2ED;--gold:#B8985A;--gold2:#C9A96E;--text:#1C2A3E;--muted:#6B7280;--border:#E5E0D8;--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif}
+html{font-size:16px}
+body{font-family:var(--sans);font-weight:300;color:var(--text);background:var(--navy);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.card{width:100%;max-width:440px;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.head{background:var(--navy);color:#fff;padding:30px 32px 26px;text-align:center;border-bottom:3px solid var(--gold)}
+.brand{font-family:var(--sans);font-size:10px;letter-spacing:3.5px;text-transform:uppercase;color:var(--gold);font-weight:500}
+.brand-name{font-family:var(--serif);font-size:26px;font-weight:400;letter-spacing:.5px;margin-top:6px}
+.body{padding:30px 32px 34px}
+.lead{font-family:var(--serif);font-size:21px;font-weight:400;color:var(--navy);margin-bottom:4px}
+.sub{font-size:13.5px;color:var(--muted);line-height:1.55;margin-bottom:22px}
+.detail{border:1px solid var(--border);border-radius:10px;padding:4px 16px;margin-bottom:22px}
+.row{display:flex;justify-content:space-between;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--border)}
+.row:last-child{border-bottom:none}
+.row .k{font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted);font-weight:500}
+.row .v{font-family:var(--serif);font-size:15px;color:var(--navy);text-align:right;max-width:62%}
+.row.fare .v{font-size:24px;color:var(--gold);font-weight:500}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted);font-weight:500;margin-bottom:8px}
+#card-el{background:#fff;border:1px solid var(--border);border-radius:8px;padding:13px 14px;min-height:50px;transition:border-color .2s}
+#card-el.StripeElement--focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(184,152,90,.16)}
+.err{color:#c0392b;font-size:12.5px;min-height:18px;margin:8px 2px 0;line-height:1.4}
+.btn{width:100%;border:none;border-radius:8px;background:var(--navy);color:#fff;font-family:var(--sans);font-size:15px;font-weight:400;letter-spacing:.4px;padding:16px;cursor:pointer;transition:background .2s,opacity .2s;margin-top:6px}
+.btn:hover{background:var(--navy2)}
+.btn:disabled{opacity:.55;cursor:default}
+.note{font-size:12px;color:var(--muted);font-style:italic;text-align:center;line-height:1.5;margin-top:16px}
+.secure{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:18px;font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;color:#9aa3b2}
+.secure svg{width:13px;height:13px;opacity:.7}
+.state{text-align:center;padding:8px 0}
+.state .ico{width:60px;height:60px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px}
+.state .ico.ok{background:rgba(184,152,90,.14);color:var(--gold)}
+.state .ico.info{background:rgba(28,42,62,.08);color:var(--navy)}
+.state h2{font-family:var(--serif);font-size:23px;font-weight:400;color:var(--navy);margin-bottom:8px}
+.state p{font-size:13.5px;color:var(--muted);line-height:1.6}
+.muted-ref{font-family:'Menlo','Consolas',monospace;font-size:12px;letter-spacing:.5px;color:var(--navy)}
+.spin{display:inline-block;width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.hidden{display:none!important}
+a.link{color:var(--gold);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="head">
+    <div class="brand">Executive Private Hire</div>
+    <div class="brand-name">Westmere</div>
+  </div>
+  <div class="body">
+
+    <!-- Loading -->
+    <div id="view-loading" class="state"><div class="spin"></div><p style="margin-top:16px">Loading your booking…</p></div>
+
+    <!-- Error / invalid link -->
+    <div id="view-error" class="state hidden">
+      <div class="ico info">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+      </div>
+      <h2>Link not available</h2>
+      <p id="error-msg">We couldn't find this payment link. It may have expired or already been settled.</p>
+      <p style="margin-top:14px">Questions? Call us on <a class="link" href="tel:+447930342593">07930&nbsp;342593</a>.</p>
+    </div>
+
+    <!-- Already paid -->
+    <div id="view-paid" class="state hidden">
+      <div class="ico ok">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 6L9 17l-5-5"/></svg>
+      </div>
+      <h2>Already paid</h2>
+      <p>This journey has been paid in full. We look forward to welcoming you.</p>
+      <p style="margin-top:12px" class="muted-ref" id="paid-ref"></p>
+    </div>
+
+    <!-- Pay form -->
+    <div id="view-pay" class="hidden">
+      <div class="lead">Settle your fare</div>
+      <div class="sub">Pay securely now, or simply settle with your driver on the day — entirely your choice.</div>
+
+      <div class="detail">
+        <div class="row"><span class="k">Reference</span><span class="v muted-ref" id="d-ref"></span></div>
+        <div class="row"><span class="k">Pickup</span><span class="v" id="d-from"></span></div>
+        <div class="row"><span class="k">Drop-off</span><span class="v" id="d-to"></span></div>
+        <div class="row"><span class="k">Date</span><span class="v" id="d-when"></span></div>
+        <div class="row fare"><span class="k">Fare</span><span class="v" id="d-fare"></span></div>
+      </div>
+
+      <div class="field">
+        <label for="card-el">Card details</label>
+        <div id="card-el"></div>
+        <div class="err" id="card-err"></div>
+      </div>
+
+      <button class="btn" id="pay-btn">Pay <span id="pay-amt"></span></button>
+
+      <div class="note">Paying ahead is optional. If you'd rather pay on the day, you can close this page — your booking stays confirmed.</div>
+
+      <div class="secure">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
+        Secured by Stripe · TLS encrypted
+      </div>
+    </div>
+
+    <!-- Success -->
+    <div id="view-success" class="state hidden">
+      <div class="ico ok">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 6L9 17l-5-5"/></svg>
+      </div>
+      <h2>Payment received</h2>
+      <p>Thank you — your fare is paid in full. A receipt is on its way to your email.</p>
+      <p style="margin-top:12px" class="muted-ref" id="success-ref"></p>
+    </div>
+
+  </div>
+</div>
+
+<script src="/config.js"></script>
+<script>
+(function(){
+  "use strict";
+  var qs = new URLSearchParams(location.search);
+  var REF = (qs.get("ref") || "").trim().toUpperCase();
+  var TOKEN = (qs.get("t") || qs.get("token") || "").trim();
+
+  var views = {
+    loading: document.getElementById("view-loading"),
+    error:   document.getElementById("view-error"),
+    paid:    document.getElementById("view-paid"),
+    pay:     document.getElementById("view-pay"),
+    success: document.getElementById("view-success")
+  };
+  function show(name){ Object.keys(views).forEach(function(k){ views[k].classList.toggle("hidden", k!==name); }); }
+  function showError(msg){ if(msg) document.getElementById("error-msg").textContent = msg; show("error"); }
+
+  var stripe = null, cardEl = null, booking = null;
+
+  function fmtMoney(n){ return "£" + Number(n).toFixed(2); }
+  function fmtWhen(date, time){
+    if(!date) return "—";
+    var d;
+    try { d = new Date(date + "T00:00:00"); } catch(e){ d = null; }
+    var ds = (d && !isNaN(d)) ? d.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"long",year:"numeric"}) : date;
+    var t = (time && time !== "ASAP") ? (" · " + time) : (time === "ASAP" ? " · ASAP" : "");
+    return ds + t;
+  }
+
+  if(!REF || !TOKEN){ showError("This payment link is incomplete. Please use the link from your confirmation email."); return; }
+
+  // Load booking pay-info
+  fetch("/api/public/pay/" + encodeURIComponent(REF) + "?t=" + encodeURIComponent(TOKEN))
+    .then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
+    .then(function(res){
+      if(!res.ok || !res.j || !res.j.ok){ showError((res.j && res.j.error) || "We couldn't find this payment link."); return; }
+      booking = res.j.booking;
+      if(booking.cancelled){ showError("This booking has been cancelled. Please call us if you need to rebook."); return; }
+      if(booking.paid){
+        document.getElementById("paid-ref").textContent = "Ref: " + booking.ref;
+        show("paid"); return;
+      }
+      if(!booking.payable){ showError("There's nothing to pay on this booking just yet. Please call us if you have any questions."); return; }
+      if(!res.j.stripeReady){ showError("Online payment is temporarily unavailable. You can settle with your driver on the day."); return; }
+
+      // Populate details
+      document.getElementById("d-ref").textContent = booking.ref;
+      document.getElementById("d-from").textContent = booking.pickup || "—";
+      document.getElementById("d-to").textContent = booking.destination || "—";
+      document.getElementById("d-when").textContent = fmtWhen(booking.date, booking.time);
+      document.getElementById("d-fare").textContent = fmtMoney(booking.fare);
+      document.getElementById("pay-amt").textContent = fmtMoney(booking.fare);
+
+      initStripe();
+      show("pay");
+    })
+    .catch(function(){ showError("We couldn't load your booking. Please check your connection and try again."); });
+
+  function initStripe(){
+    var key = window._SK || "";
+    if(typeof Stripe === "undefined" || !key){
+      showError("Online payment is temporarily unavailable. You can settle with your driver on the day."); return;
+    }
+    stripe = Stripe(key);
+    cardEl = stripe.elements().create("card", {
+      style:{ base:{ fontFamily:'"Jost","Helvetica Neue",Arial,sans-serif', fontSize:"15px", fontWeight:"300", color:"#1C2A3E",
+        "::placeholder":{ color:"rgba(28,42,62,0.4)" } }, invalid:{ color:"#c0392b", iconColor:"#c0392b" } }
+    });
+    cardEl.mount("#card-el");
+    cardEl.on("change", function(ev){ document.getElementById("card-err").textContent = ev.error ? ev.error.message : ""; });
+  }
+
+  document.getElementById("pay-btn").addEventListener("click", function(){
+    if(!stripe || !cardEl) return;
+    var btn = this;
+    btn.disabled = true; btn.textContent = "Processing…";
+    var cardErr = document.getElementById("card-err");
+    cardErr.textContent = "";
+
+    fetch("/api/public/pay/" + encodeURIComponent(REF) + "/intent", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ token: TOKEN })
+    })
+    .then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
+    .then(function(res){
+      if(!res.ok || !res.j || !res.j.clientSecret){ throw new Error((res.j && res.j.error) || "Could not start payment"); }
+      return stripe.confirmCardPayment(res.j.clientSecret, { payment_method:{ card: cardEl } });
+    })
+    .then(function(result){
+      if(result.error){
+        cardErr.textContent = result.error.message || "Payment failed. Please check your card details.";
+        btn.disabled = false; btn.innerHTML = "Pay " + fmtMoney(booking.fare);
+        return;
+      }
+      if(result.paymentIntent && result.paymentIntent.status === "succeeded"){
+        document.getElementById("success-ref").textContent = "Ref: " + booking.ref;
+        show("success");
+      } else {
+        cardErr.textContent = "Payment is pending confirmation. If you're charged, your booking will update shortly.";
+        btn.disabled = false; btn.innerHTML = "Pay " + fmtMoney(booking.fare);
+      }
+    })
+    .catch(function(e){
+      cardErr.textContent = (e && e.message) || "Payment failed. Please try again.";
+      btn.disabled = false; btn.innerHTML = "Pay " + fmtMoney(booking.fare);
+    });
+  });
+})();
+</script>
+</body>
+</html>

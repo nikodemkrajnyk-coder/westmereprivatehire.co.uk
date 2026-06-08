@@ -272,6 +272,22 @@ async function notifyCustomerConfirmed(bookingId) {
   `).get(bookingId);
   if (!row) return;
 
+  // Pre-payment: if this confirmed booking has a fare and hasn't been paid
+  // yet, mint a pay_token (once) so the confirmation email can carry a secure
+  // "Pay Now" link. Paying online is always optional — cash on the day is fine.
+  let payToken = row.pay_token || null;
+  if (!row.paid_at && row.fare && Number(row.fare) > 0) {
+    if (!payToken) {
+      try {
+        payToken = require('crypto').randomBytes(16).toString('hex');
+        db.prepare("UPDATE bookings SET pay_token = ? WHERE id = ?").run(payToken, bookingId);
+      } catch (e) {
+        console.error('[INTAKE] pay_token generation failed:', e.message);
+        payToken = null;
+      }
+    }
+  }
+
   const payload = {
     ref: row.ref,
     name: row.cust_name || row.notes || 'Guest',
@@ -284,7 +300,9 @@ async function notifyCustomerConfirmed(bookingId) {
     fare: row.fare,
     payment: row.payment,
     flight: row.flight,
-    passengers: row.passengers
+    passengers: row.passengers,
+    pay_token: row.paid_at ? null : payToken,
+    paid: !!row.paid_at
   };
 
   await Promise.allSettled([

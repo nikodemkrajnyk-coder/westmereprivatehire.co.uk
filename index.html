@@ -1439,6 +1439,12 @@ window.closeAllPickers=function(){document.querySelectorAll('.pick-drop,.cal-dro
     if(!trigger||!drop)return;
     var disp=document.getElementById('ctt-display');
     if(disp)disp.value=_tStr(_tH,_tM);
+    // Keep the hidden value in sync with what's shown. Without this the hidden
+    // input keeps its HTML default (08:00) until the user opens the picker, so a
+    // same-day booking made after 08:00 would be silently rejected as "in the
+    // past" even though the picker displays a valid current time.
+    var hid=document.getElementById('b-time');
+    if(hid){hid.value=_tStr(_tH,_tM);hid.dispatchEvent(new Event('change'));}
     trigger.addEventListener('click',function(e){e.stopPropagation();var wasOpen=drop.classList.contains('open');window.closeAllPickers();if(!wasOpen){drop.classList.add('open');_renderTP();}});
     document.addEventListener('click',function(e){if(!trigger.contains(e.target))drop.classList.remove('open');});
   });

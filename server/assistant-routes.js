@@ -1,6 +1,7 @@
 const express = require('express');
 const { getDb } = require('./db');
 const gcal = require('./google-calendar');
+const { deadMilesFee } = require('./dead-miles');
 
 const router = express.Router();
 
@@ -486,7 +487,10 @@ async function executeCalendarTool(name, input) {
         const mi = result.distance_miles != null ? result.distance_miles + ' miles' : 'distance unknown';
         const ti = result.duration_min != null ? '~' + result.duration_min + ' min' : 'duration unknown';
 
-        // Dead miles: always from Horsham home base → pickup, £1.50/mi beyond 5-mile free threshold
+        // Dead miles: always from Horsham home base → pickup. First 5 miles are
+        // free; beyond that the rate is TIERED to keep long collections fair:
+        //   • next 20 chargeable miles @ £1.50/mi
+        //   • everything above that  @ £1.00/mi
         let deadNote = '';
         try {
           const driverLat = 51.0632;
@@ -496,15 +500,12 @@ async function executeCalendarTool(name, input) {
             const rt = await _fareRoute(driverLat, driverLng, pickupGc.lat, pickupGc.lon);
             if (rt) {
               const deadMi = Math.round(rt.distance / 1609.34 * 10) / 10;
-              const FREE_MI = 5;
-              const chargeableMi = Math.max(0, deadMi - FREE_MI);
-              const RATE = 1.50;
-              if (chargeableMi > 0) {
-                const deadFee = Math.ceil(chargeableMi * RATE * 2) / 2; // round up to nearest 50p
-                const total = parseFloat((result.fare + deadFee).toFixed(2));
-                deadNote = ` | Dead miles: ${deadMi.toFixed(1)} mi (${FREE_MI} mi free → ${chargeableMi.toFixed(1)} mi @ £${RATE}/mi = +£${deadFee.toFixed(2)}) | Total inc. collection: £${total}`;
+              const dm = deadMilesFee(deadMi);
+              if (dm.fee > 0) {
+                const total = parseFloat((result.fare + dm.fee).toFixed(2));
+                deadNote = ` | Dead miles: ${deadMi.toFixed(1)} mi (${dm.freeMi} mi free → ${dm.chargeableMi.toFixed(1)} mi: ${dm.breakdown} = +£${dm.fee.toFixed(2)}) | Total inc. collection: £${total}`;
               } else {
-                deadNote = ` | Dead miles: ${deadMi.toFixed(1)} mi (within ${FREE_MI} mi free — no charge)`;
+                deadNote = ` | Dead miles: ${deadMi.toFixed(1)} mi (within ${dm.freeMi} mi free — no charge)`;
               }
             }
           }

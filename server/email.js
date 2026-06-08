@@ -200,12 +200,14 @@ async function sendCustomerConfirmation(booking) {
 
 // ── Customer booking CONFIRMED (sent after Claude or operator approves) ──
 async function sendCustomerConfirmed(booking) {
-  const { ref, name, email, pickup, destination, date, time, fare, payment, flight, passengers } = booking;
+  const { ref, name, email, pickup, destination, date, time, fare, payment, flight, passengers, pay_token, paid } = booking;
   if (!email) return;
 
   const dateStr = formatDate(date, time);
-  const fareStr = fare ? ('\u00a3' + (typeof fare === 'number' ? fare.toFixed(2) : fare)) : null;
+  const fareNum = typeof fare === 'number' ? fare : parseFloat(fare);
+  const fareStr = (fareNum && !isNaN(fareNum)) ? ('\u00a3' + fareNum.toFixed(2)) : null;
   const firstName = (name || '').split(' ')[0] || 'there';
+  const alreadyPaid = paid || payment === 'card';
 
   let rows = '';
   rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:'+INK+'">' + ref + '</span>');
@@ -218,13 +220,29 @@ async function sendCustomerConfirmed(booking) {
   if (passengers && passengers > 1) rows += detailRow('Travellers', passengers + ' passengers');
   rows += rowDivider();
   if (fareStr) rows += detailRow('Fare', fareStr, { gold: true, large: true });
-  rows += detailRow('Payment', payment === 'card' ? 'Paid online' : 'Pay driver on arrival');
+  rows += detailRow('Payment', alreadyPaid ? 'Paid online' : 'Pay now or on the day');
+
+  // Optional "Pay Now" button \u2014 only when we have a fare, a pay token, and the
+  // booking hasn't already been paid online. Paying ahead is entirely optional;
+  // the customer can still settle with cash or card on the day.
+  let payBlock = '';
+  if (!alreadyPaid && pay_token && fareStr) {
+    const payUrl = `https://westmereprivatehire.co.uk/westmere-pay.html?ref=${encodeURIComponent(ref)}&t=${encodeURIComponent(pay_token)}`;
+    payBlock = `
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:26px 0 4px">
+    <tr><td align="center">
+      <a href="${payUrl}" style="display:inline-block;padding:13px 38px;background:${GOLD};color:#ffffff;text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:.03em">Pay ${fareStr} now</a>
+    </td></tr>
+  </table>
+  <p style="margin:10px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_MUTED};font-style:italic;line-height:1.55;text-align:center">Paying ahead is optional \u2014 you're welcome to settle with your driver on the day, by cash or card.</p>`;
+  }
 
   const body = `
   <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Confirmed</p>
   <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
   <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Your journey is confirmed. A driver has been assigned and we look forward to welcoming you on the day.</p>
   ${buildDetailsTable(rows)}
+  ${payBlock}
   <p style="margin:26px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
 
   const html = emailShell(body);
