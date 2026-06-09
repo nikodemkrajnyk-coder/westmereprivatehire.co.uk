@@ -772,15 +772,11 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
 
     <!-- Decisions (native — offer/reclaim bookings that need a driver) -->
     <div class="pg" id="pg-decisions">
-      <div class="sec-title"><em>Decisions</em></div>
-      <div class="sec-sub">Pending bookings</div>
+      <div class="sec-title"><em>Job Requests</em></div>
+      <div class="sec-sub">New booking requests</div>
       <div class="card" style="margin-top:.9rem">
-        <div class="ch">Needs action</div>
+        <div class="ch">New requests</div>
         <div class="cb" id="dec-pending-list"><div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">Loading\u2026</div></div>
-      </div>
-      <div class="card" style="margin-top:.85rem">
-        <div class="ch">Currently offered</div>
-        <div class="cb" id="dec-offered-list"><div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">Loading\u2026</div></div>
       </div>
     </div>
 
@@ -945,7 +941,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
       <button class="bn" id="bn-drivers" onclick="goPage('drivers',this)"><div class="bn-bar"></div><div class="bn-label">Drivers</div><div class="bn-dot" id="drivers-dot" style="display:none"></div></button>
     </div>
     <div class="bn-row">
-      <button class="bn" id="bn-decisions" onclick="goPage('decisions',this)"><div class="bn-bar"></div><div class="bn-label">Decisions</div><div class="bn-dot" id="decisions-dot" style="display:none"></div></button>
+      <button class="bn" id="bn-decisions" onclick="goPage('decisions',this)"><div class="bn-bar"></div><div class="bn-label">Job Requests</div><div class="bn-dot" id="decisions-dot" style="display:none"></div></button>
       <button class="bn" id="bn-invoices" onclick="goPage('invoices',this)"><div class="bn-bar"></div><div class="bn-label">Invoices</div></button>
       <button class="bn" id="bn-earnings" onclick="goPage('earnings',this)"><div class="bn-bar"></div><div class="bn-label">Earnings</div></button>
     </div>
@@ -1394,22 +1390,15 @@ function goPage(id,btn){
   if(id==='smart'){var d=new Date();document.getElementById('sd-date').value=d.toISOString().split('T')[0];}
 }
 
-// ── DECISIONS (native — pending + offered bookings) ─────────────────────
-var DEC_DRIVERS = [];
+// ── JOB REQUESTS (native — confirm/cancel new booking requests) ─────────
 async function loadDecisions(){
   try{
-    var results=await Promise.all([
-      fetch('/api/bookings',{credentials:'include'}).then(function(r){return r.json();}).catch(function(){return{ok:false,bookings:[]};}),
-      fetch('/api/drivers',{credentials:'include'}).then(function(r){return r.json();}).catch(function(){return{ok:false,drivers:[]};})
-    ]);
-    var bookings=(results[0]&&results[0].ok)?results[0].bookings:[];
-    DEC_DRIVERS=(results[1]&&results[1].ok)?results[1].drivers.filter(function(x){return x.active&&!x.is_default_driver;}):[];
+    var res=await fetch('/api/bookings',{credentials:'include'}).then(function(r){return r.json();}).catch(function(){return{ok:false,bookings:[]};});
+    var bookings=(res&&res.ok)?res.bookings:[];
     var pending=bookings.filter(function(b){return b.status==='pending';});
-    var offered=bookings.filter(function(b){return b.status==='offered';});
     renderDecisionsPending(pending);
-    renderDecisionsOffered(offered);
     var dot=document.getElementById('decisions-dot');
-    if(dot){var n=pending.length+offered.length;dot.textContent=n||'';dot.style.display=n?'flex':'none';}
+    if(dot){var n=pending.length;dot.textContent=n||'';dot.style.display=n?'flex':'none';}
   }catch(e){console.error('[OWNER] loadDecisions failed:',e);}
 }
 
@@ -1424,81 +1413,48 @@ function _shortAddr(a){
 
 function renderDecisionsPending(list){
   var el=document.getElementById('dec-pending-list');if(!el)return;
-  if(!list.length){el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">Nothing awaiting offer</div>';return;}
-  var drvOpts='<option value="">\u2014 Offer to driver \u2014</option>'+DEC_DRIVERS.map(function(d){return '<option value="'+d.id+'">'+decEsc(d.full_name||('Driver #'+d.id))+'</option>';}).join('');
+  if(!list.length){el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">No new requests</div>';return;}
   el.innerHTML=list.map(function(b){
-    return '<div style="padding:.85rem 1rem;border-top:1px solid var(--rule)">'
-      +'<div style="font-weight:500;color:var(--navy);font-size:.85rem">'+decEsc(b.ref||'')+' \u00b7 '+decEsc(b.customer_name||'')+'</div>'
-      +'<div style="font-size:.72rem;color:rgba(17,29,44,.6);margin-top:.2rem">'+decEsc(_shortAddr(b.pickup||''))+' \u2192 '+decEsc(_shortAddr(b.destination||''))+'</div>'
-      +'<div style="font-size:.72rem;color:rgba(17,29,44,.5);margin-top:.15rem">'+decEsc(b.date||'')+' at '+decEsc(b.time||'')+(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')+'</div>'
-      +(b.intake_reason?'<div style="font-size:.7rem;color:#9C5800;margin-top:.25rem;font-style:italic">'+decEsc(b.intake_reason)+'</div>':'')
-      +'<div style="display:flex;gap:.5rem;margin-top:.7rem">'
-      +  '<button style="flex:1;padding:.75rem;font-size:.88rem;font-weight:500;background:#e8f5e9;color:#2d6e47;border:1.5px solid rgba(45,110,71,.35);border-radius:8px;cursor:pointer;letter-spacing:.04em" onclick="decAccept('+b.id+')">Accept</button>'
+    var sug=(b.suggested_fare!=null&&b.suggested_fare!=='')?Number(b.suggested_fare):(b.fare!=null?Number(b.fare):null);
+    var priceVal=(sug!=null&&!isNaN(sug))?sug.toFixed(2):'';
+    var phone=b.customer_phone||b.passenger_phone||'';
+    return '<div style="padding:.95rem 1rem;border-top:1px solid var(--rule)">'
+      +'<div style="font-size:.82rem;color:var(--navy);font-weight:500">'+decEsc(_shortAddr(b.pickup||''))+' \u2192 '+decEsc(_shortAddr(b.destination||''))+'</div>'
+      +'<div style="font-size:.72rem;color:rgba(17,29,44,.55);margin-top:.25rem">'+decEsc(b.date||'')+' at '+decEsc(b.time||'')+'</div>'
+      +'<div style="font-size:.78rem;color:var(--navy);margin-top:.3rem">'+decEsc(b.customer_name||'Guest')+(phone?' \u00b7 <a href="tel:'+decEsc(phone)+'" style="color:var(--navy);text-decoration:none">'+decEsc(phone)+'</a>':'')+'</div>'
+      +'<div style="display:flex;align-items:center;gap:.5rem;margin-top:.65rem">'
+      +  '<span style="font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.45)">Price \u00a3</span>'
+      +  '<input id="dec-price-'+b.id+'" type="number" inputmode="decimal" step="0.50" value="'+priceVal+'" style="width:92px;padding:.45rem .55rem;border:1px solid rgba(17,29,44,.2);border-radius:6px;font-size:.95rem;color:var(--navy)">'
+      +  (sug!=null&&!isNaN(sug)?'<span style="font-size:.66rem;color:rgba(17,29,44,.45)">Suggested \u00a3'+sug.toFixed(0)+'</span>':'<span style="font-size:.66rem;color:rgba(17,29,44,.4)">No suggestion</span>')
+      +'</div>'
+      +'<div style="display:flex;gap:.5rem;margin-top:.75rem">'
+      +  '<button style="flex:1;padding:.75rem;font-size:.88rem;font-weight:500;background:#e8f5e9;color:#2d6e47;border:1.5px solid rgba(45,110,71,.35);border-radius:8px;cursor:pointer;letter-spacing:.04em" onclick="decConfirm('+b.id+')">Confirm</button>'
       +  '<button style="flex:1;padding:.75rem;font-size:.88rem;font-weight:500;background:rgba(139,34,34,.1);color:#8B2222;border:1.5px solid rgba(139,34,34,.25);border-radius:8px;cursor:pointer;letter-spacing:.04em" onclick="decCancel('+b.id+')">Cancel</button>'
       +'</div>'
-      +'<div style="display:flex;gap:.4rem;margin-top:.4rem;align-items:center">'
-      +  '<select class="fi" id="dec-sel-'+b.id+'" style="flex:1;font-size:.7rem;padding:.4rem .5rem;min-width:0;color:rgba(17,29,44,.5)">'+drvOpts+'</select>'
-      +  '<button style="padding:.4rem .7rem;font-size:.68rem;background:var(--navy);color:#fff;border:none;border-radius:6px;cursor:pointer;white-space:nowrap;letter-spacing:.06em;text-transform:uppercase" onclick="decOffer('+b.id+')">Pass to Driver</button>'
-      +'</div>'
       +'</div>';
   }).join('');
 }
 
-function renderDecisionsOffered(list){
-  var el=document.getElementById('dec-offered-list');if(!el)return;
-  if(!list.length){el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">No offers in flight</div>';return;}
-  el.innerHTML=list.map(function(b){
-    var timer='';
-    if(b.offered_at){
-      var exp=new Date((b.offered_at||'').replace(' ','T')+'Z').getTime()+10*60*1000;
-      timer='<span class="dec-offer-timer" data-offer-expires="'+exp+'" style="font-variant-numeric:tabular-nums;color:#6b7b9a;margin-left:.35rem"></span>';
-    }
-    return '<div style="padding:.85rem 1rem;border-top:1px solid var(--rule)">'
-      +'<div style="font-weight:500;color:var(--navy);font-size:.85rem">'+decEsc(b.ref||'')+' \u00b7 '+decEsc(b.customer_name||'')+'</div>'
-      +'<div style="font-size:.72rem;color:rgba(17,29,44,.6);margin-top:.2rem">'+decEsc(_shortAddr(b.pickup||''))+' \u2192 '+decEsc(_shortAddr(b.destination||''))+'</div>'
-      +'<div style="font-size:.72rem;color:rgba(17,29,44,.5);margin-top:.15rem">'+decEsc(b.date||'')+' at '+decEsc(b.time||'')+(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')+'</div>'
-      +'<div style="font-size:.74rem;color:#2A3A66;margin-top:.25rem">Awaiting <strong>'+decEsc(b.offered_driver_name||'driver')+'</strong>'+timer+'</div>'
-      +'<div style="display:flex;gap:.5rem;margin-top:.5rem">'
-      +  '<button class="btn btn-ghost btn-sm" onclick="decReclaim('+b.id+')">Reclaim</button>'
-      +  '<button class="btn btn-sm" style="background:rgba(139,34,34,.12);color:#8B2222;border:1px solid rgba(139,34,34,.2)" onclick="decCancel('+b.id+')">Cancel</button>'
-      +'</div>'
-      +'</div>';
-  }).join('');
-}
-
-async function decAccept(bookingId){
+async function decConfirm(bookingId){
+  var inp=document.getElementById('dec-price-'+bookingId);
+  var price=inp?parseFloat(inp.value):NaN;
+  if(!price||isNaN(price)||price<=0){showToast('Enter a price first');return;}
   try{
-    var body={status:'confirmed'};
+    var body={status:'confirmed',fare:price};
     if(CURRENT_USER&&CURRENT_USER.id)body.driver_id=CURRENT_USER.id;
     var r=await fetch('/api/bookings/'+bookingId,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     var d=await r.json();
-    if(r.ok&&d.ok){showToast('Accepted');loadDecisions();if(typeof loadOwnerBookings==='function')loadOwnerBookings();}
+    if(r.ok&&d.ok){showToast('Confirmed \u2014 customer emailed');loadDecisions();if(typeof loadOwnerBookings==='function')loadOwnerBookings();}
     else showToast(d.error||('Failed ('+r.status+')'));
-  }catch(e){showToast('Network error');console.error('[decAccept]',e);}
-}
-
-async function decOffer(bookingId){
-  var sel=document.getElementById('dec-sel-'+bookingId);
-  var driver_id=sel&&sel.value;
-  if(!driver_id){showToast('Pick a driver first');return;}
-  var r=await fetch('/api/bookings/'+bookingId+'/offer',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({driver_id:parseInt(driver_id,10)})});
-  var d=await r.json();
-  if(d.ok){showToast('Offer sent');loadDecisions();}else showToast(d.error||'Failed');
-}
-
-async function decReclaim(bookingId){
-  if(!confirm('Reclaim this offer? Driver loses the job.'))return;
-  var r=await fetch('/api/bookings/'+bookingId+'/reclaim',{method:'POST',credentials:'include'});
-  var d=await r.json();
-  if(d.ok){showToast('Reclaimed');loadDecisions();}else showToast(d.error||'Failed');
+  }catch(e){showToast('Network error');console.error('[decConfirm]',e);}
 }
 
 async function decCancel(bookingId){
-  if(!confirm('Delete this booking permanently?'))return;
+  if(!confirm('Cancel this booking? The customer will be emailed.'))return;
   try{
-    var r=await fetch('/api/bookings/'+bookingId,{method:'DELETE',credentials:'include'});
+    var r=await fetch('/api/bookings/'+bookingId,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'cancelled'})});
     var d=await r.json();
-    if(r.ok&&d.ok){showToast('Booking deleted');loadDecisions();if(typeof loadOwnerBookings==='function')loadOwnerBookings();}
+    if(r.ok&&d.ok){showToast('Cancelled \u2014 customer emailed');loadDecisions();if(typeof loadOwnerBookings==='function')loadOwnerBookings();}
     else showToast(d.error||('Failed ('+r.status+')'));
   }catch(e){showToast('Network error');console.error('[decCancel]',e);}
 }

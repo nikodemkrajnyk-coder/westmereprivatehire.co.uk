@@ -623,9 +623,11 @@ function migrate() {
   } catch(e) { console.error('[DB] linked_booking_id migration failed:', e.message); }
 
   // Dead miles — collection distance fee baked into the fare
+  // suggested_fare — fare engine's all-in estimate, computed when the booking
+  // is created so the owner/admin can confirm at the suggested price or adjust.
   try {
     const dmInfo = db.prepare("PRAGMA table_info(bookings)").all();
-    for (const [n, t] of [['dead_miles_fee', 'REAL DEFAULT 0'], ['dead_miles_km', 'REAL DEFAULT 0']]) {
+    for (const [n, t] of [['dead_miles_fee', 'REAL DEFAULT 0'], ['dead_miles_km', 'REAL DEFAULT 0'], ['suggested_fare', 'REAL']]) {
       if (!dmInfo.find(c => c.name === n)) {
         db.exec(`ALTER TABLE bookings ADD COLUMN ${n} ${t}`);
         console.log('[DB] Added ' + n + ' column to bookings');

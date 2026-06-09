@@ -747,7 +747,7 @@ async function sendCustomerCancellation(booking) {
   const body = `
   <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Cancellation</p>
   <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
-  <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">We are very sorry \u2014 your journey with Westmere Private Hire can no longer go ahead and we must cancel the booking below.</p>
+  <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Unfortunately we\u2019re unable to accommodate your booking. We apologise for the inconvenience.</p>
   ${reasonBlock}
   <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">If you have already paid by card we will refund you in full within two working days. Please reply to this email or call us if you would like us to arrange an alternative \u2014 we will do our best to help.</p>
   ${buildDetailsTable(rows)}

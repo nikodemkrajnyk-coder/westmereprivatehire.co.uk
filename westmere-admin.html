@@ -2261,6 +2261,17 @@ function loadLiveBookings(){
           var conflictMark=_conflicts[b.id]
             ?'<div title="Calendar conflict" style="color:#c0392b;font-weight:700;font-size:.9rem;margin-top:.15rem">\u2717</div>'
             :'<div title="No conflict" style="color:#1a8a4a;font-weight:700;font-size:.9rem;margin-top:.15rem">\u2713</div>';
+          // New job requests (pending): show the engine's suggested price in an
+          // editable field so the operator can confirm at the suggestion or adjust.
+          var fareCellHtml;
+          if(b.status==='pending'){
+            var _sug=(b.suggested_fare!=null&&b.suggested_fare!=='')?Number(b.suggested_fare):(b.fare!=null?Number(b.fare):null);
+            var _pv=(_sug!=null&&!isNaN(_sug))?_sug.toFixed(2):'';
+            fareCellHtml='<input id="adm-fare-'+b.id+'" type="number" step="0.50" inputmode="decimal" value="'+_pv+'" style="width:74px;padding:.3rem .4rem;border:1px solid rgba(17,29,44,.25);border-radius:5px;font-size:.9rem;color:var(--navy)">'
+              +((_sug!=null&&!isNaN(_sug))?'<div style="font-size:.55rem;color:rgba(17,29,44,.45);margin-top:.15rem">Suggested \u00a3'+_sug.toFixed(0)+'</div>':'<div style="font-size:.55rem;color:rgba(17,29,44,.4);margin-top:.15rem">No suggestion</div>');
+          } else {
+            fareCellHtml='<span style="color:var(--gold);font-family:var(--serif);font-size:1.1rem">'+(b.fare?'\u00a3'+Number(b.fare).toFixed(0):'TBC')+'</span>'+(b.dead_miles_fee?'<div style="font-size:.55rem;color:rgba(17,29,44,.4);margin-top:.1rem">incl. \u00a3'+Number(b.dead_miles_fee).toFixed(0)+' dead mi</div>':'');
+          }
           return '<tr data-bid="'+b.id+'" style="'+rowStyle+'">'
             +'<td><div class="main-v">'+b.ref+'</div>'+conflictMark+reasonRow+'</td>'
             +'<td>'+dateStr+'</td>'
@@ -2268,7 +2279,7 @@ function loadLiveBookings(){
             +'<td><div class="main-v">'+(b.customer_name||'')+'</div>'+(b.customer_phone?'<div class="sub-v">'+b.customer_phone+'</div>':'')+'</td>'
             +'<td><div class="main-v">'+b.pickup+'</div>'+(b.flight?'<div class="sub-v">'+b.flight+'</div>':'')+'</td>'
             +'<td><div class="main-v">'+b.destination+'</div></td>'
-            +'<td><span style="color:var(--gold);font-family:var(--serif);font-size:1.1rem">'+(b.fare?'\u00a3'+Number(b.fare).toFixed(0):'TBC')+'</span>'+(b.dead_miles_fee?'<div style="font-size:.55rem;color:rgba(17,29,44,.4);margin-top:.1rem">incl. \u00a3'+Number(b.dead_miles_fee).toFixed(0)+' dead mi</div>':'')+'</td>'
+            +'<td>'+fareCellHtml+'</td>'
             +'<td><span class="tag '+payClass+'">'+payLabel+'</span></td>'
             +'<td><span class="tag '+statusClass+'">'+statusLabel+'</span></td>'
             +'<td>'+actionBtns+'</td>'
@@ -2366,10 +2377,19 @@ function markJobDone(id,btn){
     .then(function(){showToast('Journey completed');loadLiveBookings();}).catch(function(){showToast('Error updating');});
 }
 function confirmJob(id,btn){
+  // Confirm at the suggested (or operator-edited) price. Setting the fare here
+  // means the confirmation email carries the price + secure payment link.
+  var inp=document.getElementById('adm-fare-'+id);
+  var body={status:'confirmed'};
+  if(inp){
+    var price=parseFloat(inp.value);
+    if(!price||isNaN(price)||price<=0){showToast('Enter a price first');return;}
+    body.fare=price;
+  }
   if(btn){btn.disabled=true;btn.textContent='…';}
-  fetch('/api/bookings/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'confirmed'})})
+  fetch('/api/bookings/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(function(r){return r.json();})
-    .then(function(d){if(d.ok){showToast('Booking confirmed');loadLiveBookings();}else{showToast(d.error||'Error confirming');if(btn){btn.disabled=false;btn.textContent='Confirm';}}})
+    .then(function(d){if(d.ok){showToast('Confirmed — customer emailed');loadLiveBookings();}else{showToast(d.error||'Error confirming');if(btn){btn.disabled=false;btn.textContent='Confirm';}}})
     .catch(function(){showToast('Error confirming booking');if(btn){btn.disabled=false;btn.textContent='Confirm';}});
 }
 function cancelJob(id,btn){

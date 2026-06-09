@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const { getDb, DATA_DIR } = require('./db');
-const { sendAdminAlert, sendCustomerEstimate } = require('./email');
+const { sendAdminAlert, sendCustomerEstimate, sendCustomerCancellation } = require('./email');
 const { sendAdminBookingWhatsApp } = require('./whatsapp');
 const gcal = require('./google-calendar');
 const events = require('./events');
@@ -202,6 +202,17 @@ router.patch('/bookings/:id', (req, res) => {
     intake.notifyCustomerConfirmed(parseInt(req.params.id, 10))
       .catch(e => console.error('[API] notifyCustomerConfirmed failed:', e.message));
     events.broadcast('booking:confirmed', { id: parseInt(req.params.id, 10), ref: booking.ref, reason: 'Confirmed by operator' });
+  }
+
+  // If THIS update cancelled a live booking, email the customer our apology.
+  // Only fire on the edge (was not already cancelled) so re-cancelling is quiet.
+  const becameCancelled = req.body.status === 'cancelled' && booking.status !== 'cancelled';
+  if (becameCancelled && booking.passenger_email) {
+    sendCustomerCancellation({
+      ref: booking.ref, name: booking.passenger_name, email: booking.passenger_email,
+      pickup: booking.pickup, destination: booking.destination,
+      date: booking.date, time: booking.time, fare: booking.fare, flight: booking.flight
+    }).catch(e => console.error('[API] sendCustomerCancellation failed:', e.message));
   }
 
   db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')

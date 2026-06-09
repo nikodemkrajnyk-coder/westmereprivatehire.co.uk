@@ -10,6 +10,7 @@ const { getDb } = require('./db');
 const { sendAdminAlert } = require('./email');
 const { sendAdminBookingWhatsApp } = require('./whatsapp');
 const { createPaymentIntent, isConfigured: stripeConfigured } = require('./stripe');
+const { computeSuggestedFare } = require('./fare-engine');
 const gcal = require('./google-calendar');
 const intake = require('./intake');
 const events = require('./events');
@@ -181,12 +182,23 @@ router.post('/book', async (req, res) => {
     const finalDriverId = null;
     const finalStatus   = 'pending';
 
+    // Suggested fare — run the fare engine server-side so the owner/admin sees a
+    // recommended all-in price on the Job Request and can confirm or adjust it.
+    // Best-effort: a routing/geocode failure just leaves it null (price TBC).
+    let suggestedFare = null;
+    try {
+      const sf = await computeSuggestedFare(pickup, destination, time);
+      if (sf && sf.fare) suggestedFare = sf.fare;
+    } catch (sfErr) {
+      console.error('[BOOK] suggested fare failed (non-blocking):', sfErr.message);
+    }
+
     // Insert booking
     const result = db.prepare(`
       INSERT INTO bookings (ref, customer_id, driver_id, pickup, destination, date, time,
                             passengers, bags, trip_type, flight, fare, payment, notes, status,
-                            passenger_name, passenger_phone, passenger_email)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            passenger_name, passenger_phone, passenger_email, suggested_fare)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       ref, customerId, finalDriverId,
       pickup, destination, bookingDate, time || 'ASAP',
@@ -196,7 +208,8 @@ router.post('/book', async (req, res) => {
       finalStatus,
       (name || '').trim() || null,
       (phone || '').trim() || null,
-      (email || '').trim().toLowerCase() || null
+      (email || '').trim().toLowerCase() || null,
+      suggestedFare
     );
 
     // Return (round) trip — create a linked return booking if requested
@@ -205,12 +218,19 @@ router.post('/book', async (req, res) => {
     if (returnTrip && returnTrip.date && returnTrip.date >= todayStr) {
       try {
         returnRef = 'WM-' + (Date.now() + 1).toString(36).toUpperCase().slice(-6);
+        // Return leg runs the opposite way (destination → pickup), so quote it
+        // separately rather than reusing the outbound suggestion.
+        let retSuggestedFare = null;
+        try {
+          const rsf = await computeSuggestedFare(destination, pickup, returnTrip.time);
+          if (rsf && rsf.fare) retSuggestedFare = rsf.fare;
+        } catch (_) {}
         const retResult = db.prepare(`
           INSERT INTO bookings (ref, customer_id, driver_id, pickup, destination, date, time,
                                 passengers, bags, trip_type, flight, fare, payment, notes, status,
                                 passenger_name, passenger_phone, passenger_email,
-                                linked_booking_id, trip_group)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                linked_booking_id, trip_group, suggested_fare)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
           returnRef, customerId, finalDriverId,
           destination, pickup,          // swapped: airport → home
@@ -222,7 +242,7 @@ router.post('/book', async (req, res) => {
           (name || '').trim() || null,
           (phone || '').trim() || null,
           (email || '').trim().toLowerCase() || null,
-          result.lastInsertRowid, ref
+          result.lastInsertRowid, ref, retSuggestedFare
         );
         returnBookingId = retResult.lastInsertRowid;
         // Link the outbound to its return leg
@@ -309,14 +329,15 @@ router.post('/book', async (req, res) => {
     events.broadcast('booking:created', {
       id: result.lastInsertRowid, ref, name, pickup, destination,
       date: bookingDate, time: time || 'ASAP',
-      payment: payment || 'pending', fare: finalFare || null
+      payment: payment || 'pending', fare: finalFare || null,
+      suggested_fare: suggestedFare
     });
 
     // Auto-file to organized folder structure (non-blocking)
     const fullBooking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(result.lastInsertRowid);
     if (fullBooking) autoFile.fileBooking(fullBooking);
 
-    res.status(201).json({ ok: true, ref, bookingId: result.lastInsertRowid });
+    res.status(201).json({ ok: true, ref, bookingId: result.lastInsertRowid, suggested_fare: suggestedFare });
 
   } catch (err) {
     console.error('[BOOK] Error creating booking:', err && err.stack || err);
