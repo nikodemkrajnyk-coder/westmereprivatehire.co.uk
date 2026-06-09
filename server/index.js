@@ -56,7 +56,17 @@ app.use(helmet({
 }));
 
 app.use(cookieParser());
-app.use(express.json({ limit: '2mb' }));
+
+// IMPORTANT: the Stripe webhook needs the *raw* request body to verify the
+// signature. express.json() would consume and parse the stream first, leaving
+// the raw bytes unavailable — signature verification then fails with a 400 and
+// the booking is never marked paid. Skip JSON parsing for the webhook path so
+// the express.raw() parser inside the route sees the untouched body.
+const jsonParser = express.json({ limit: '2mb' });
+app.use((req, res, next) => {
+  if (req.originalUrl === '/api/public/stripe-webhook') return next();
+  return jsonParser(req, res, next);
+});
 
 // Rate limiting on auth endpoints
 const authLimiter = rateLimit({

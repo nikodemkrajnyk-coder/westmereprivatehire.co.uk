@@ -516,13 +516,21 @@ router.post('/stripe-webhook', express.raw({ type: 'application/json' }), (req, 
 
   if (!event) return res.status(400).json({ error: 'Webhook not configured' });
 
+  console.log('[STRIPE] Webhook received:', event.type);
+
   // Handle payment success
   if (event.type === 'payment_intent.succeeded') {
     const intent = event.data.object;
     const ref = intent.metadata?.booking_ref;
+    if (!ref) {
+      console.error('[STRIPE] payment_intent.succeeded with no booking_ref in metadata — intent', intent.id);
+    }
     if (ref) {
       const db = getDb();
       const row = db.prepare("SELECT id, status, fare FROM bookings WHERE ref = ?").get(ref);
+      if (!row) {
+        console.error('[STRIPE] payment_intent.succeeded for unknown booking ref', ref);
+      }
       if (row && row.fare && Math.round(row.fare * 100) !== intent.amount) {
         console.error('[STRIPE] Amount mismatch for', ref, '- expected', Math.round(row.fare * 100), 'got', intent.amount);
       }

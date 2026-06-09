@@ -30,6 +30,7 @@ body{font-family:var(--sans);font-weight:300;color:var(--text);background:var(--
 .field{margin-bottom:14px}
 .field label{display:block;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted);font-weight:500;margin-bottom:8px}
 #card-el{background:#fff;border:1px solid var(--border);border-radius:8px;padding:13px 14px;min-height:50px;transition:border-color .2s}
+#payment-request-button{min-height:50px}
 #card-el.StripeElement--focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(184,152,90,.16)}
 .err{color:#c0392b;font-size:12.5px;min-height:18px;margin:8px 2px 0;line-height:1.4}
 .btn{width:100%;border:none;border-radius:8px;background:var(--navy);color:#fff;font-family:var(--sans);font-size:15px;font-weight:400;letter-spacing:.4px;padding:16px;cursor:pointer;transition:background .2s,opacity .2s;margin-top:6px}
@@ -98,6 +99,16 @@ a.link{color:var(--gold);text-decoration:none}
         <div class="row"><span class="k">Drop-off</span><span class="v" id="d-to"></span></div>
         <div class="row"><span class="k">Date</span><span class="v" id="d-when"></span></div>
         <div class="row fare"><span class="k">Fare</span><span class="v" id="d-fare"></span></div>
+      </div>
+
+      <!-- Apple Pay / Google Pay (shown only on supported devices) -->
+      <div id="wallet-wrap" class="hidden">
+        <div class="field" style="margin-bottom:0">
+          <label>Express checkout</label>
+          <div id="payment-request-button"></div>
+          <div class="err" id="wallet-err"></div>
+        </div>
+        <div class="or-divider"><span>or pay by card</span></div>
       </div>
 
       <div class="field">
@@ -204,6 +215,85 @@ a.link{color:var(--gold);text-decoration:none}
     });
     cardEl.mount("#card-el");
     cardEl.on("change", function(ev){ document.getElementById("card-err").textContent = ev.error ? ev.error.message : ""; });
+
+    initWallet();
+  }
+
+  // Apple Pay / Google Pay via Stripe's Payment Request API. The button only
+  // appears on devices that actually support a wallet (Apple Pay on iOS/Safari,
+  // Google Pay on Chrome) — otherwise the card form stands on its own.
+  function initWallet(){
+    if(!stripe || !booking || !booking.fare) return;
+    var amount = Math.round(Number(booking.fare) * 100);
+    if(!amount || amount < 1) return;
+
+    var paymentRequest;
+    try {
+      paymentRequest = stripe.paymentRequest({
+        country: "GB",
+        currency: "gbp",
+        total: { label: "Westmere Private Hire · " + booking.ref, amount: amount },
+        requestPayerName: true,
+        requestPayerEmail: true
+      });
+    } catch(e){ return; }
+
+    var prButton = stripe.elements().create("paymentRequestButton", {
+      paymentRequest: paymentRequest,
+      style: { paymentRequestButton: { type: "default", theme: "dark", height: "50px" } }
+    });
+
+    paymentRequest.canMakePayment().then(function(result){
+      if(result){
+        prButton.mount("#payment-request-button");
+        document.getElementById("wallet-wrap").classList.remove("hidden");
+      }
+    }).catch(function(){ /* wallet unavailable — card form remains */ });
+
+    paymentRequest.on("paymentmethod", function(ev){
+      var walletErr = document.getElementById("wallet-err");
+      walletErr.textContent = "";
+
+      // Ask the server for a fresh PaymentIntent (amount comes from the booking
+      // server-side), then confirm it with the wallet's payment method.
+      fetch("/api/public/pay/" + encodeURIComponent(REF) + "/intent", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ token: TOKEN })
+      })
+      .then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
+      .then(function(res){
+        if(!res.ok || !res.j || !res.j.clientSecret){ throw new Error((res.j && res.j.error) || "Could not start payment"); }
+        return stripe.confirmCardPayment(res.j.clientSecret,
+          { payment_method: ev.paymentMethod.id }, { handleActions: false });
+      })
+      .then(function(confirm){
+        if(confirm.error){
+          ev.complete("fail");
+          walletErr.textContent = confirm.error.message || "Payment failed. Please try card instead.";
+          return;
+        }
+        ev.complete("success");
+        var pi = confirm.paymentIntent;
+        if(pi && pi.status === "requires_action"){
+          // 3-D Secure or similar — let Stripe handle the next action.
+          stripe.confirmCardPayment(pi.client_secret).then(function(r2){
+            if(r2.error){
+              walletErr.textContent = r2.error.message || "Payment could not be completed.";
+            } else {
+              document.getElementById("success-ref").textContent = "Ref: " + booking.ref;
+              show("success");
+            }
+          });
+        } else {
+          document.getElementById("success-ref").textContent = "Ref: " + booking.ref;
+          show("success");
+        }
+      })
+      .catch(function(e){
+        ev.complete("fail");
+        walletErr.textContent = (e && e.message) || "Payment failed. Please try card instead.";
+      });
+    });
   }
 
   // "Pay on the Day" — hand off to the GET cash endpoint, which marks the

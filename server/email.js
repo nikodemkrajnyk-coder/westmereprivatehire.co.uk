@@ -231,10 +231,10 @@ async function sendCustomerConfirmed(booking) {
     payBlock = `
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:26px 0 4px">
     <tr><td align="center">
-      <a href="${payUrl}" style="display:block;padding:13px 24px;background:${GOLD};color:#ffffff;text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:.03em;text-align:center">View payment options</a>
+      <a href="${payUrl}" style="display:block;padding:13px 24px;background:${GOLD};color:#ffffff;text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:.03em;text-align:center">Pay with Apple Pay, Google Pay, or card</a>
     </td></tr>
   </table>
-  <p style="margin:12px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_MUTED};font-style:italic;line-height:1.55;text-align:center">Tap above to pay ${fareStr} securely by card now, or choose to settle the fare on the day.</p>`;
+  <p style="margin:12px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_MUTED};font-style:italic;line-height:1.55;text-align:center">Tap above to pay ${fareStr} securely now with Apple Pay, Google Pay, or card — or choose to settle the fare with your driver on the day.</p>`;
   }
 
   const body = `
