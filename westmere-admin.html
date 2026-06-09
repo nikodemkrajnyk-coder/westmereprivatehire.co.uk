@@ -123,8 +123,10 @@ a{color:var(--gold)}
 .tag-done{background:var(--green-bg);color:var(--green)}
 .tag-cancel{background:var(--red-bg);color:var(--red)}
 .tag-account{background:var(--purple-bg);color:var(--purple)}
-.tag-cash{background:var(--green-bg);color:var(--green)}
+.tag-cash{background:rgba(184,152,90,.16);color:#8B7230}
 .tag-card{background:rgba(59,130,246,.08);color:#60A5FA}
+.tag-prepaid{background:var(--green-bg);color:var(--green)}
+.tag-await{background:rgba(17,29,44,.07);color:rgba(17,29,44,.5)}
 /* BUTTONS */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;font-family:var(--sans);font-size:.62rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;padding:.6rem 1.2rem;cursor:pointer;border:none;transition:all .2s;text-decoration:none;white-space:nowrap}
 .btn:active{transform:scale(.97)}
@@ -2196,7 +2198,7 @@ function loadLiveBookings(){
             +'<div class="tl-card"><div class="tl-top"><div class="tl-name">'+(b.customer_name||'')+'</div>'+statusTag+'</div>'
             +'<div class="tl-route">'+b.pickup+' \u2192 '+b.destination+(b.flight?' \u00b7 '+b.flight:'')
             +(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')
-            +' '+(b.payment==='card'?'Card':'Cash')+'</div></div></div>';
+            +' '+admPayTag(b).label+'</div></div></div>';
         }).join('');
       } else {
         tl.innerHTML='<div style="text-align:center;padding:1.5rem;color:rgba(17,29,44,.3);font-size:.82rem">No jobs today</div>';
@@ -2218,7 +2220,7 @@ function loadLiveBookings(){
           return '<div class="tl-item"><div class="tl-time-col"><div class="tl-time">'+(b.time||'ASAP')+'</div>'+(i<sorted.length-1?'<div class="tl-line"></div>':'')+'</div>'
             +'<div class="tl-card active"><div class="tl-top"><div class="tl-name">'+(b.customer_name||'')+'</div>'+statusTag+'</div>'
             +'<div class="tl-route">'+b.pickup+' \u2192 '+b.destination+'</div>'
-            +'<div class="tl-route" style="margin-top:.2rem">'+(b.flight?'Flight '+b.flight+' \u00b7 ':'')+b.passengers+' pax'+(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')+' '+(b.payment==='card'?'Card':'Cash')+'</div>'
+            +'<div class="tl-route" style="margin-top:.2rem">'+(b.flight?'Flight '+b.flight+' \u00b7 ':'')+b.passengers+' pax'+(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')+' '+admPayTag(b).label+'</div>'
             +'<div class="tl-actions">'
             +'<button class="btn btn-green btn-sm" onclick="markJobDone('+b.id+',this)">\u2713 Done</button>'
             +'<button class="btn btn-red btn-sm" onclick="cancelJob('+b.id+',this)">\u2715 Cancel</button>'
@@ -2240,8 +2242,7 @@ function loadLiveBookings(){
           try{var dd=new Date(b.date);dateStr=dd.toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'2-digit'});}catch(e){dateStr=b.date||'';}
           var statusClass=b.status==='completed'?'tag-done':b.status==='cancelled'?'tag-cancel':'tag-upcoming';
           var statusLabel=b.status?b.status.charAt(0).toUpperCase()+b.status.slice(1):'Pending';
-          var payClass=b.payment==='card'?'tag-card':'tag-cash';
-          var payLabel=b.payment==='card'?'Card':'Cash';
+          var _pp=admPayTag(b);var payClass=_pp.cls,payLabel=_pp.label;
           var isCancellable=['pending','offered','confirmed'].includes(b.status);
           var isCancelled=b.status==='cancelled';
           var actionBtns='';
@@ -2857,6 +2858,23 @@ function showToast(msg){
   el.classList.add('on');
   clearTimeout(tt);
   tt=setTimeout(()=>el.classList.remove('on'),3500);
+}
+
+// ── Payment status tag (Prepaid ✓ / Cash / Account / Awaiting payment) ──────
+function admPayTag(b){
+  if(b&&(b.paid_at||b.payment==='card'))return{cls:'tag-prepaid',label:'Prepaid ✓'};
+  if(b&&b.payment==='cash')return{cls:'tag-cash',label:'Cash'};
+  if(b&&b.payment==='account')return{cls:'tag-account',label:'Account'};
+  return{cls:'tag-await',label:'Awaiting'};
+}
+// Flag same-day bookings whose pickup times fall within ~2h of each other.
+function admFindOverlaps(jobs){
+  function mins(t){if(!t||t==='ASAP')return null;var p=String(t).split(':');return parseInt(p[0],10)*60+parseInt(p[1]||'0',10);}
+  var WIN=120,flagged={},a,b2,wm=jobs.map(function(j){return{id:j.id,m:mins(j.time)};});
+  for(a=0;a<wm.length;a++){if(wm[a].m==null)continue;
+    for(b2=a+1;b2<wm.length;b2++){if(wm[b2].m==null)continue;
+      if(Math.abs(wm[a].m-wm[b2].m)<WIN){flagged[wm[a].id]=1;flagged[wm[b2].id]=1;}}}
+  return flagged;
 }
 
 // ── NEW CUSTOMER MODAL ──
@@ -4792,8 +4810,16 @@ function admShowDay(key){
   if(!jobs.length){
     html+='<div style="padding:1.5rem;text-align:center;color:rgba(17,29,44,.4);font-size:.85rem">No jobs scheduled</div>';
   } else {
+    var _ov=admFindOverlaps(jobs);
+    if(Object.keys(_ov).length){
+      var _clash=jobs.filter(function(j){return _ov[j.id];}).map(function(j){return (j.time||'ASAP')+' '+(j.ref||'');});
+      html+='<div style="background:#FBE9E1;border-bottom:1px solid var(--rule);padding:.7rem 1rem;font-size:.76rem;color:#9C3A1E;line-height:1.5">⚠ <strong>Possible double-booking</strong> — these pickups are within 2 hours of each other: '+escTo(_clash.join('  ·  '))+'</div>';
+    }
     html+=jobs.map(function(j){
       var st=j.status||'pending';
+      var _pt=admPayTag(j);
+      var payChip='<span class="tag '+_pt.cls+'" style="font-size:.5rem;margin-top:.15rem">'+_pt.label+'</span>';
+      var ovChip=_ov[j.id]?'<span class="tag" style="font-size:.5rem;background:#FBE9E1;color:#9C3A1E;margin-left:.3rem">⚠ Overlap</span>':'';
       var stCls=j.needs_reassignment?'flagged':st;
       var stTxt=j.needs_reassignment?'Needs reassign':(st==='pending'?'Quote requested':st);
       var actions='';
@@ -4820,6 +4846,7 @@ function admShowDay(key){
         +'<div class="adm-cal-info">'
           +'<div class="adm-cal-name">'+escTo(j.ref||'')+' \u00b7 '+escTo(j.customer_name||'')+waiting+'</div>'
           +'<div class="adm-cal-route">'+escTo(j.pickup||'')+' \u2192 '+escTo(j.destination||'')+'</div>'
+          +'<div style="margin-top:.25rem">'+payChip+ovChip+'</div>'
           +notesHtml
         +'</div>'
         +'<div class="adm-cal-fare">'+(j.fare?'\u00a3'+Number(j.fare).toFixed(0):'TBC')+'</div>'

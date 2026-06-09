@@ -220,21 +220,27 @@ async function sendCustomerConfirmed(booking) {
   if (passengers && passengers > 1) rows += detailRow('Travellers', passengers + ' passengers');
   rows += rowDivider();
   if (fareStr) rows += detailRow('Fare', fareStr, { gold: true, large: true });
-  rows += detailRow('Payment', alreadyPaid ? 'Paid online' : 'Pay now or on the day');
+  rows += detailRow('Payment', alreadyPaid ? 'Paid online' : 'Choose below');
 
-  // Optional "Pay Now" button \u2014 only when we have a fare, a pay token, and the
-  // booking hasn't already been paid online. Paying ahead is entirely optional;
-  // the customer can still settle with cash or card on the day.
+  // Two payment buttons \u2014 only when we have a fare, a pay token, and the
+  // booking hasn't already been paid online:
+  //   1. "Pay <fare> now"  \u2014 secure online card / Apple Pay (westmere-pay.html)
+  //   2. "Pay on the day"  \u2014 tells us the customer will settle with the driver;
+  //                           marks the booking as cash and notifies the owner.
   let payBlock = '';
   if (!alreadyPaid && pay_token && fareStr) {
-    const payUrl = `https://westmereprivatehire.co.uk/westmere-pay.html?ref=${encodeURIComponent(ref)}&t=${encodeURIComponent(pay_token)}`;
+    const payUrl  = `https://westmereprivatehire.co.uk/westmere-pay.html?ref=${encodeURIComponent(ref)}&t=${encodeURIComponent(pay_token)}`;
+    const cashUrl = `https://westmereprivatehire.co.uk/api/public/pay/${encodeURIComponent(ref)}/cash?t=${encodeURIComponent(pay_token)}`;
     payBlock = `
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:26px 0 4px">
+    <tr><td align="center" style="padding-bottom:10px">
+      <a href="${payUrl}" style="display:block;padding:13px 24px;background:${GOLD};color:#ffffff;text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:.03em;text-align:center">Pay ${fareStr} now</a>
+    </td></tr>
     <tr><td align="center">
-      <a href="${payUrl}" style="display:inline-block;padding:13px 38px;background:${GOLD};color:#ffffff;text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:.03em">Pay ${fareStr} now</a>
+      <a href="${cashUrl}" style="display:block;padding:13px 24px;background:#ffffff;color:${INK};text-decoration:none;border:1px solid ${INK};border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:.03em;text-align:center">Pay on the day</a>
     </td></tr>
   </table>
-  <p style="margin:10px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_MUTED};font-style:italic;line-height:1.55;text-align:center">Paying ahead is optional \u2014 you're welcome to settle with your driver on the day, by cash or card.</p>`;
+  <p style="margin:12px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_MUTED};font-style:italic;line-height:1.55;text-align:center">Pay ${fareStr} securely online now, or tap <strong>Pay on the day</strong> and we'll note that you'll settle the fare directly.</p>`;
   }
 
   const body = `
@@ -289,7 +295,7 @@ async function sendCustomerEstimate(booking) {
   <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
   <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Thank you for your enquiry. Here is the estimate for your journey below.</p>
   ${buildDetailsTable(rows)}
-  <p style="margin:24px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.65">To confirm this booking, simply reply to this email or call us on <a href="tel:+447930342593" style="color:${INK};text-decoration:none">07930 342593</a>. There is nothing to pay now — the fare is settled on the day with your driver, by cash or card.</p>
+  <p style="margin:24px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.65">To confirm this booking, simply reply to this email or call us on <a href="tel:+447930342593" style="color:${INK};text-decoration:none">07930 342593</a>. There is nothing to pay now — once your journey is confirmed we'll email you a secure link to pay online, or to let us know you'll settle on the day.</p>
   <p style="margin:22px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Executive Private Hire</span></p>`;
 
   const html = emailShell(body);
@@ -332,7 +338,7 @@ async function sendAdminAlert(booking) {
   if (bags && bags !== '0' && bags !== '0s+0l') rows += detailRow('Luggage', escHtml(bags));
   rows += rowDivider();
   rows += detailRow('Fare', fareStr, { gold: true, large: true });
-  rows += detailRow('Payment', payment === 'card' ? 'Paid online' : 'Pay driver');
+  rows += detailRow('Payment', payment === 'card' ? 'Paid online' : (payment === 'cash' ? 'Cash on the day' : 'To be decided'));
   if (notes) { rows += rowDivider(); rows += detailRow('Notes', escHtml(notes)); }
 
   const body = `

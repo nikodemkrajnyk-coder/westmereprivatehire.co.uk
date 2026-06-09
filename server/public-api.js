@@ -18,6 +18,54 @@ try { autoFile = require('./auto-file'); } catch(e) { autoFile = { fileBooking()
 
 const router = express.Router();
 
+// ── Branded standalone page for the "Pay on the day" link ────────────────
+// Self-contained HTML (no build step) matching the westmere-pay.html styling.
+// state: 'ok' | 'paid' | 'error'
+function cashPage(state, message, ref) {
+  const okIcon   = '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 6L9 17l-5-5"/></svg>';
+  const infoIcon = '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>';
+  const isErr = state === 'error';
+  const heading = state === 'ok' ? 'Thank you' : (state === 'paid' ? 'Already paid' : 'Link not available');
+  const icoCls = isErr ? 'info' : 'ok';
+  const ico = isErr ? infoIcon : okIcon;
+  const refLine = ref ? `<p style="margin-top:12px" class="muted-ref">Ref: ${String(ref).replace(/[<>&"]/g, '')}</p>` : '';
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#111D2C"><meta name="robots" content="noindex,nofollow">
+<title>Your journey | Westmere Executive Private Hire</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--navy:#111D2C;--gold:#B8985A;--text:#1C2A3E;--muted:#6B7280;--border:#E5E0D8;--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif}
+html{font-size:16px}
+body{font-family:var(--sans);font-weight:300;color:var(--text);background:var(--navy);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.card{width:100%;max-width:440px;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.head{background:var(--navy);color:#fff;padding:30px 32px 26px;text-align:center;border-bottom:3px solid var(--gold)}
+.brand{font-family:var(--sans);font-size:10px;letter-spacing:3.5px;text-transform:uppercase;color:var(--gold);font-weight:500}
+.brand-name{font-family:var(--serif);font-size:26px;font-weight:400;letter-spacing:.5px;margin-top:6px}
+.body{padding:34px 32px 36px}
+.state{text-align:center}
+.ico{width:60px;height:60px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:18px}
+.ico.ok{background:rgba(184,152,90,.14);color:var(--gold)}
+.ico.info{background:rgba(28,42,62,.08);color:var(--navy)}
+.state h2{font-family:var(--serif);font-size:24px;font-weight:400;color:var(--navy);margin-bottom:10px}
+.state p{font-size:14px;color:var(--muted);line-height:1.6}
+.muted-ref{font-family:'Menlo','Consolas',monospace;font-size:12px;letter-spacing:.5px;color:var(--navy)}
+a.link{color:var(--gold);text-decoration:none}
+</style></head>
+<body><div class="card">
+  <div class="head"><div class="brand">Executive Private Hire</div><div class="brand-name">Westmere</div></div>
+  <div class="body"><div class="state">
+    <div class="ico ${icoCls}">${ico}</div>
+    <h2>${heading}</h2>
+    <p>${message}</p>
+    ${refLine}
+    <p style="margin-top:16px;font-size:13px">Questions? Call us on <a class="link" href="tel:+447930342593">07930&nbsp;342593</a>.</p>
+  </div></div>
+</div></body></html>`;
+}
+
 // ── Create booking (public form) ─────────────────────────────────────────
 router.post('/book', async (req, res) => {
   try {
@@ -143,7 +191,7 @@ router.post('/book', async (req, res) => {
       ref, customerId, finalDriverId,
       pickup, destination, bookingDate, time || 'ASAP',
       passengers || 1, bags || '0', null,
-      flight || null, fare || null, payment || 'cash',
+      flight || null, fare || null, payment || 'pending',
       notes || null,
       finalStatus,
       (name || '').trim() || null,
@@ -168,7 +216,7 @@ router.post('/book', async (req, res) => {
           destination, pickup,          // swapped: airport → home
           returnTrip.date, returnTrip.time || 'ASAP',
           passengers || 1, bags || '0', null,
-          returnTrip.flight || null, returnTrip.fare || null, payment || 'cash',
+          returnTrip.flight || null, returnTrip.fare || null, payment || 'pending',
           `Return journey (linked to ${ref})`,
           finalStatus,
           (name || '').trim() || null,
@@ -200,7 +248,7 @@ router.post('/book', async (req, res) => {
         events.broadcast('booking:created', { id: returnBookingId, ref: returnRef, name,
           pickup: destination, destination: pickup,
           date: returnTrip.date, time: returnTrip.time || 'ASAP',
-          payment: payment || 'cash', fare: returnTrip.fare || null });
+          payment: payment || 'pending', fare: returnTrip.fare || null });
       } catch (retErr) {
         console.error('[BOOK] Return trip insert failed (non-blocking):', retErr.message);
         returnRef = null; returnBookingId = null;
@@ -261,7 +309,7 @@ router.post('/book', async (req, res) => {
     events.broadcast('booking:created', {
       id: result.lastInsertRowid, ref, name, pickup, destination,
       date: bookingDate, time: time || 'ASAP',
-      payment: payment || 'cash', fare: finalFare || null
+      payment: payment || 'pending', fare: finalFare || null
     });
 
     // Auto-file to organized folder structure (non-blocking)
@@ -389,6 +437,50 @@ router.post('/pay/:ref/intent', async (req, res) => {
   }
 });
 
+// ── Pay on the day: customer opts to settle with the driver ──────────────
+// The "Pay on the day" button in the confirmation email points here. Gated by
+// the same per-booking pay_token. Marks the booking payment = 'cash', notifies
+// the owner over SSE, and returns a friendly thank-you page. Idempotent — a
+// repeat click just re-marks it. The pay_token is intentionally left intact so
+// the customer can still change their mind and pay online later.
+router.get('/pay/:ref/cash', (req, res) => {
+  try {
+    const db = getDb();
+    const ref = String(req.params.ref || '').trim().toUpperCase();
+    const token = String(req.query.t || req.query.token || '').trim();
+    if (!ref || !token) {
+      return res.status(400).send(cashPage('error', 'This link is incomplete. Please use the link from your confirmation email.'));
+    }
+
+    const b = db.prepare(`SELECT id, ref, fare, status, payment, pay_token, paid_at FROM bookings WHERE ref = ?`).get(ref);
+    if (!b || !b.pay_token || b.pay_token !== token) {
+      return res.status(404).send(cashPage('error', "We couldn't find this booking. The link may have expired or already been settled."));
+    }
+    if (b.status === 'cancelled') {
+      return res.status(409).send(cashPage('error', 'This booking has been cancelled. Please call us if you need to rebook.'));
+    }
+    if (b.paid_at || b.payment === 'card') {
+      return res.send(cashPage('paid', 'This journey has already been paid online — there is nothing further to do.', b.ref));
+    }
+
+    db.prepare(`UPDATE bookings SET payment = 'cash', updated_at = datetime('now') WHERE id = ?`).run(b.id);
+
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run('public', 0, 'payment_cash_chosen', b.ref, req.ip);
+
+    // Notify the owner in real time.
+    try {
+      events.broadcast('booking:payment', { id: b.id, ref: b.ref, mode: 'cash', fare: b.fare || null });
+    } catch (_) {}
+
+    console.log('[PAY] Cash on the day chosen for', b.ref);
+    res.send(cashPage('ok', "You're all set — please settle the fare with your driver on the day, by cash or card. We look forward to welcoming you.", b.ref));
+  } catch (err) {
+    console.error('[PAY] cash error:', err.message);
+    res.status(500).send(cashPage('error', 'Something went wrong. Please call us on 07930 342593 and we will sort it out.'));
+  }
+});
+
 // ── Stripe webhook (payment confirmation) ────────────────────────────────
 router.post('/stripe-webhook', express.raw({ type: 'application/json' }), (req, res) => {
   const { verifyWebhook } = require('./stripe');
@@ -423,6 +515,11 @@ router.post('/stripe-webhook', express.raw({ type: 'application/json' }), (req, 
                          updated_at = datetime('now')
                    WHERE ref = ?`).run(ref);
       console.log('[STRIPE] Payment confirmed for', ref);
+      // Tell the owner the customer paid online (amount in pounds for the toast).
+      events.broadcast('booking:payment', {
+        id: row?.id, ref, mode: 'online',
+        fare: row && row.fare != null ? row.fare : (intent.amount ? intent.amount / 100 : null)
+      });
       // Fire customer "Booking confirmed" on the pending → confirmed edge
       if (row && row.status === 'pending') {
         intake.notifyCustomerConfirmed(row.id)

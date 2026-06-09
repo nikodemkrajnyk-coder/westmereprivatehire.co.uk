@@ -58,6 +58,14 @@ async function sendMessage(to, text) {
 }
 
 // ── Booking RECEIVED notice to customer (sent immediately on booking) ────
+// Customer-facing payment label. No fixed "pay driver" default any more — the
+// customer chooses Pay now / Pay on the day from the confirmation email.
+function custPayLabel(b) {
+  if (b.payment === 'card' || b.paid_at) return 'Paid online';
+  if (b.payment === 'cash') return 'Cash on the day';
+  return 'Pay online or on the day';
+}
+
 async function sendCustomerBookingWhatsApp(booking) {
   if (!isConfigured() || !booking.phone) return;
 
@@ -74,7 +82,7 @@ async function sendCustomerBookingWhatsApp(booking) {
 
   if (booking.flight) lines.push(`Flight: ${booking.flight}`);
   if (booking.fare) lines.push(`Fare: \u00a3${typeof booking.fare === 'number' ? booking.fare.toFixed(2) : booking.fare}`);
-  lines.push(`Payment: ${booking.payment === 'card' ? 'Paid online' : 'Pay driver'}`);
+  lines.push(`Payment: ${custPayLabel(booking)}`);
   lines.push('');
   lines.push('We\'ll be in touch shortly to confirm your driver.');
 
@@ -103,7 +111,7 @@ async function sendCustomerBookingConfirmedWhatsApp(booking) {
 
   if (booking.flight) lines.push(`Flight: ${booking.flight}`);
   if (booking.fare) lines.push(`Fare: \u00a3${typeof booking.fare === 'number' ? booking.fare.toFixed(2) : booking.fare}`);
-  lines.push(`Payment: ${booking.payment === 'card' ? 'Paid online' : 'Pay driver'}`);
+  lines.push(`Payment: ${custPayLabel(booking)}`);
   lines.push('');
   lines.push('Your driver has been assigned. Thank you for choosing Westmere.');
 
@@ -132,7 +140,7 @@ async function sendAdminBookingWhatsApp(booking) {
   if (booking.passengers) lines.push(`Pax: ${booking.passengers}`);
   if (booking.bags) lines.push(`Bags: ${booking.bags}`);
   if (booking.fare) lines.push(`Fare: \u00a3${typeof booking.fare === 'number' ? booking.fare.toFixed(2) : booking.fare}`);
-  lines.push(`Payment: ${booking.payment === 'card' ? 'PAID' : 'PAY DRIVER'}`);
+  lines.push(`Payment: ${booking.payment === 'card' || booking.paid_at ? 'PAID' : (booking.payment === 'cash' ? 'CASH' : 'AWAITING')}`);
   if (booking.notes) lines.push(`Notes: ${booking.notes}`);
 
   try {

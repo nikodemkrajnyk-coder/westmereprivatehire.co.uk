@@ -122,6 +122,19 @@
         msg = (payload.ref||'') + (payload.reason ? ' \u2014 ' + payload.reason : '');
         toast(title + ': ' + (payload.ref||''), 'ok'); desktopNotify(title, msg);
         break;
+      case 'booking:payment':
+        if (payload.mode === 'cash') {
+          title = 'Cash on the day';
+          msg = (payload.ref||'') + ' — customer will pay the driver';
+          chime(); toast('Customer will pay cash on the day — ' + (payload.ref||''), 'ok');
+        } else {
+          var amt = payload.fare ? ' £' + Number(payload.fare).toFixed(0) : '';
+          title = 'Paid online';
+          msg = (payload.ref||'') + ' — paid' + amt + ' online';
+          chime(); toast('Customer paid' + amt + ' online — ' + (payload.ref||''), 'ok');
+        }
+        desktopNotify(title, msg);
+        break;
       case 'booking:flagged':
         title = 'Booking needs attention';
         msg = (payload.ref||'') + (payload.reason ? ' \u2014 ' + payload.reason : '');
@@ -187,7 +200,7 @@
     try { es = new EventSource('/api/events', { withCredentials: true }); }
     catch(e){ scheduleReconnect(); return; }
 
-    var EVENTS = ['hello','booking:created','booking:confirmed','booking:updated','booking:deleted','booking:flagged','booking:assigned','booking:declined',
+    var EVENTS = ['hello','booking:created','booking:confirmed','booking:updated','booking:deleted','booking:flagged','booking:payment','booking:assigned','booking:declined',
       'job:offered','job:accepted','job:declined','job:offer_expired','job:started','job:done','job:cancelled'];
     EVENTS.forEach(function(name){
       es.addEventListener(name, function(e){

@@ -2238,6 +2238,29 @@ loadExternalCalEvents();
 setInterval(loadExternalCalEvents,5*60*1000);
 
 // ── JOB CARD ──────────────────────────────────────────────────────────────────
+// ── Payment status ──────────────────────────────────────────────────────────
+// Prepaid (paid online), Cash (customer chose to pay the driver on the day),
+// Account (monthly invoice), or Awaiting payment (estimate confirmed, not yet
+// settled). Drives the small badge shown on every booking.
+function wmPayStatus(j){
+  if(j&&(j.paid_at||j.payment==='card'))return{key:'prepaid',label:'Prepaid',short:'Prepaid ✓',color:'#2D6E47',bg:'rgba(45,110,71,.12)'};
+  if(j&&j.payment==='cash')return{key:'cash',label:'Cash',short:'Cash',color:'#8B7230',bg:'rgba(184,152,90,.16)'};
+  if(j&&j.payment==='account')return{key:'account',label:'Account',short:'Account',color:'#3A5A8C',bg:'rgba(58,90,140,.12)'};
+  return{key:'await',label:'Awaiting payment',short:'Awaiting',color:'rgba(17,29,44,.5)',bg:'rgba(17,29,44,.07)'};
+}
+function wmPayBadge(j){var p=wmPayStatus(j);return'<span style="display:inline-block;padding:.12rem .45rem;font-size:.58rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:'+p.color+';background:'+p.bg+';border-radius:4px;white-space:nowrap">'+p.short+'</span>';}
+
+// Flag bookings whose pickup time falls within ~2h of another booking on the
+// same day (journey + buffer) — surfaces potential double-bookings. Keyed by id.
+function wmFindOverlaps(jobs){
+  var WIN=120,flagged={},a,b;
+  var wm=jobs.map(function(j){return{id:j.id,m:toMins(j.time)};});
+  for(a=0;a<wm.length;a++){if(wm[a].m==null)continue;
+    for(b=a+1;b<wm.length;b++){if(wm[b].m==null)continue;
+      if(Math.abs(wm[a].m-wm[b].m)<WIN){flagged[wm[a].id]=1;flagged[wm[b].id]=1;}}}
+  return flagged;
+}
+
 function buildCard(j,isOffered){
   var isDone=j.status==='done';
   var stClass=isDone?'st-done':'st-'+j.status;
@@ -2275,7 +2298,7 @@ function buildCard(j,isOffered){
   // Fare
   var fareHtml='<div class="jc2-meta">'
     +'<div><div class="jc2-fare">'+(j.fare?'£'+escH(String(Number(j.fare).toFixed(0))):'TBC')+'</div>'
-    +(j.fare?'<div class="jc2-pay">'+escH(j.payment||'cash')+'</div>':'')+'</div>'
+    +'<div class="jc2-pay" style="margin-top:.2rem">'+wmPayBadge(j)+'</div></div>'
     +'<div style="text-align:right"><div style="font-size:.72rem;color:rgba(17,29,44,.45)">' +escH(j.pax||1)+' pax'+(j.bags&&j.bags!=='0'?' · '+escH(j.bags)+' bags':'')+'</div>'
     +'<div style="font-size:.68rem;color:rgba(17,29,44,.35);margin-top:.1rem">'+escH(j.name)+'</div></div>'
     +'</div>';
@@ -2483,7 +2506,8 @@ async function buildOffered(){
         +  '<span style="display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .5rem;font-size:.52rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:'+stColor+';background:'+stBg+';border-radius:4px;white-space:nowrap">'+stLabel+'<span style="font-size:.7rem;opacity:.6">▼</span></span>'
         +'</div>'
         +'<div style="font-size:.8rem;color:rgba(17,29,44,.6);margin-bottom:.15rem">'+escH(_shortAddr(j.pickup||''))+' → '+escH(_shortAddr(j.dest||''))+'</div>'
-        +'<div style="font-size:.72rem;color:rgba(17,29,44,.4)">'+(j.time||'ASAP')+(j.fare?' · £'+Number(j.fare).toFixed(0):'')+(j.pax>1?' · '+j.pax+' pax':'')+(j.payment==='card'?' · Card':'')+'</div>'
+        +'<div style="font-size:.72rem;color:rgba(17,29,44,.4)">'+(j.time||'ASAP')+(j.fare?' · £'+Number(j.fare).toFixed(0):'')+(j.pax>1?' · '+j.pax+' pax':'')+'</div>'
+        +'<div style="margin-top:.3rem">'+wmPayBadge(j)+'</div>'
       +'</div>'
       +'<div id="'+detailId+'" style="display:none;padding:0 1rem .9rem;border-top:1px solid rgba(17,29,44,.06);background:rgba(17,29,44,.02)">'
         +'<table style="width:100%;font-size:.78rem;color:rgba(17,29,44,.7);border-collapse:collapse;margin-bottom:.7rem">'
@@ -2493,7 +2517,7 @@ async function buildOffered(){
           +(j.phone?'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Phone</td><td><a href="tel:'+escH(j.phone)+'" style="color:var(--navy)">'+escH(j.phone)+'</a></td></tr>':'')
           +(j.fare?'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Fare</td><td style="font-weight:600;color:var(--navy)">£'+Number(j.fare).toFixed(2)+'</td></tr>':'')
           +(j.pax>1?'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Pax</td><td>'+j.pax+'</td></tr>':'')
-          +(j.payment?'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Payment</td><td>'+escH(j.payment)+'</td></tr>':'')
+          +'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Payment</td><td>'+wmPayBadge(j)+'</td></tr>'
           +(j.notes?'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4);vertical-align:top">Notes</td><td>'+escH(j.notes)+'</td></tr>':'')
         +'</table>'
         +'<div style="display:flex;gap:.4rem;flex-wrap:wrap">';
@@ -3435,7 +3459,7 @@ function jobDetailCard(j){
   h+='<div style="margin-bottom:.8rem">';
   h+='<div style="display:flex;align-items:baseline;gap:.5rem">';
   h+='<span style="font-family:var(--serif);font-size:1.3rem;color:var(--gold)">£'+escH(String(j.fare||0))+'</span>';
-  h+='<span style="font-size:.75rem;color:rgba(17,29,44,.4)">'+escH(j.payment||'cash')+'</span>';
+  h+=wmPayBadge(j);
   h+='</div>';
   if(j.deadMilesFee)h+='<div style="font-size:.7rem;color:rgba(17,29,44,.4);margin-top:.2rem">incl. £'+escH(String(Number(j.deadMilesFee).toFixed(0)))+' dead miles</div>';
   h+='</div>';
@@ -3489,6 +3513,12 @@ function showCalDay(key){
   var sorted=jobs.slice().sort(function(a,b){return toMins(a.time)-toMins(b.time);});
   var totalFare=sorted.reduce(function(s,j){return s+(j.fare||0);},0);
   var html='<div class="card cal-day-detail"><div class="ch">'+label+(sorted.length?(' · '+sorted.length+' job'+(sorted.length>1?'s':'')+'<span style="color:var(--navy);font-size:.78rem;font-family:var(--serif)">£'+totalFare+'</span>'):'')+'</div>';
+  // Overlap check — warn if two pickups fall within ~2h of each other.
+  var _ov=wmFindOverlaps(sorted);
+  if(Object.keys(_ov).length){
+    var _clash=sorted.filter(function(j){return _ov[j.id];}).map(function(j){return (j.time||'ASAP')+' '+_shortAddr(j.pickup||'');});
+    html+='<div style="margin:.6rem 1rem;padding:.6rem .8rem;background:rgba(184,80,40,.1);border:1px solid rgba(184,80,40,.3);border-radius:7px;font-size:.74rem;color:#9C3A1E;line-height:1.5">⚠ Possible double-booking — these pickups are close together: '+escH(_clash.join('  ·  '))+'</div>';
+  }
   if(ext.length){
     html+='<div style="background:rgba(96,108,145,.06);padding:.65rem 1rem;border-bottom:1px solid rgba(17,29,44,.06)">';
     html+='<div style="font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.4rem;font-weight:500">From your calendar</div>';
@@ -3710,7 +3740,8 @@ async function loadOwnerBookings(){
         fare:b.fare||0,
         driverFare:b.fare||0,
         deadMilesFee:b.dead_miles_fee||0,
-        payment:b.payment||'cash',
+        payment:b.payment||'pending',
+        paid_at:b.paid_at||null,
         apiStatus:b.status||'',
         status:b.status==='completed'?'done':b.status==='active'?'enroute':b.status==='cancelled'?'done':'upcoming',
         note:b.notes||''
@@ -3736,7 +3767,7 @@ async function loadOwnerBookings(){
       var key=b.date;
       if(!key)return;
       if(!CAL_JOBS[key])CAL_JOBS[key]=[];
-      CAL_JOBS[key].push({id:b.id,time:b.time||'ASAP',name:b.customer_name||b.passenger_name||'',phone:b.customer_phone||b.passenger_phone||'',pickup:b.pickup,dest:b.destination,fare:b.fare||0,payment:b.payment||'cash',flight:b.flight||'',pax:b.passengers||1,bags:b.bags||'',notes:b.notes||'',status:b.status});
+      CAL_JOBS[key].push({id:b.id,time:b.time||'ASAP',name:b.customer_name||b.passenger_name||'',phone:b.customer_phone||b.passenger_phone||'',pickup:b.pickup,dest:b.destination,fare:b.fare||0,payment:b.payment||'pending',paid_at:b.paid_at||null,flight:b.flight||'',pax:b.passengers||1,bags:b.bags||'',notes:b.notes||'',status:b.status});
     });
 
     // Update upcoming dot — only badge pending (unconfirmed) bookings
