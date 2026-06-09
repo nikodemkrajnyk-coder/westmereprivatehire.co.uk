@@ -655,7 +655,7 @@ if ('serviceWorker' in navigator) {
         </div>
         <div style="overflow-x:auto">
           <table class="jtable">
-            <thead><tr><th>Ref</th><th>Date</th><th>Time</th><th>Passenger</th><th>Route</th><th>Type</th><th>Fare</th><th>Payment</th><th>Status</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Ref</th><th>Date</th><th>Time</th><th>Passenger</th><th style="width:25%">Pickup</th><th style="width:25%">Destination</th><th>Type</th><th>Fare</th><th>Payment</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody id="jobs-tbody">
             </tbody>
           </table>
@@ -2235,8 +2235,9 @@ function loadLiveBookings(){
     var tbody=el('jobs-tbody');
     if(tbody){
       if(!bookings.length){
-        tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">No bookings yet</td></tr>';
+        tbody.innerHTML='<tr><td colspan="11" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">No bookings yet</td></tr>';
       } else {
+        var _conflicts=admFindOverlaps(bookings);
         tbody.innerHTML=bookings.map(function(b){
           var dateStr='';
           try{var dd=new Date(b.date);dateStr=dd.toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'2-digit'});}catch(e){dateStr=b.date||'';}
@@ -2257,12 +2258,16 @@ function loadLiveBookings(){
           }
           var reasonRow=b.intake_reason?'<div class="sub-v" style="color:#9C5800;font-style:italic;margin-top:.2rem">'+escTo(b.intake_reason)+'</div>':'';
           var rowStyle=isCancelled?'opacity:.45;text-decoration:line-through':'';
+          var conflictMark=_conflicts[b.id]
+            ?'<div title="Calendar conflict" style="color:#c0392b;font-weight:700;font-size:.9rem;margin-top:.15rem">\u2717</div>'
+            :'<div title="No conflict" style="color:#1a8a4a;font-weight:700;font-size:.9rem;margin-top:.15rem">\u2713</div>';
           return '<tr data-bid="'+b.id+'" style="'+rowStyle+'">'
-            +'<td><div class="main-v">'+b.ref+'</div>'+reasonRow+'</td>'
+            +'<td><div class="main-v">'+b.ref+'</div>'+conflictMark+reasonRow+'</td>'
             +'<td>'+dateStr+'</td>'
             +'<td>'+(b.time||'ASAP')+'</td>'
             +'<td><div class="main-v">'+(b.customer_name||'')+'</div>'+(b.customer_phone?'<div class="sub-v">'+b.customer_phone+'</div>':'')+'</td>'
-            +'<td><div class="main-v">'+b.pickup+' \u2192 '+b.destination+'</div>'+(b.flight?'<div class="sub-v">'+b.flight+'</div>':'')+'</td>'
+            +'<td><div class="main-v">'+b.pickup+'</div>'+(b.flight?'<div class="sub-v">'+b.flight+'</div>':'')+'</td>'
+            +'<td><div class="main-v">'+b.destination+'</div></td>'
             +'<td><span class="tag tag-upcoming" style="font-size:.5rem">'+(b.flight?'Airport':'Local')+'</span></td>'
             +'<td><span style="color:var(--gold);font-family:var(--serif);font-size:1.1rem">'+(b.fare?'\u00a3'+Number(b.fare).toFixed(0):'TBC')+'</span>'+(b.dead_miles_fee?'<div style="font-size:.55rem;color:rgba(17,29,44,.4);margin-top:.1rem">incl. \u00a3'+Number(b.dead_miles_fee).toFixed(0)+' dead mi</div>':'')+'</td>'
             +'<td><span class="tag '+payClass+'">'+payLabel+'</span></td>'

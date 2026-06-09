@@ -222,25 +222,19 @@ async function sendCustomerConfirmed(booking) {
   if (fareStr) rows += detailRow('Fare', fareStr, { gold: true, large: true });
   rows += detailRow('Payment', alreadyPaid ? 'Paid online' : 'Choose below');
 
-  // Two payment buttons \u2014 only when we have a fare, a pay token, and the
-  // booking hasn't already been paid online:
-  //   1. "Pay <fare> now"  \u2014 secure online card / Apple Pay (westmere-pay.html)
-  //   2. "Pay on the day"  \u2014 tells us the customer will settle with the driver;
-  //                           marks the booking as cash and notifies the owner.
+  // Single payment button \u2014 only when we have a fare, a pay token, and the
+  // booking hasn't already been paid online. The button links to the pay page
+  // where the customer chooses between paying by card now or on the day.
   let payBlock = '';
   if (!alreadyPaid && pay_token && fareStr) {
     const payUrl  = `https://westmereprivatehire.co.uk/westmere-pay.html?ref=${encodeURIComponent(ref)}&t=${encodeURIComponent(pay_token)}`;
-    const cashUrl = `https://westmereprivatehire.co.uk/api/public/pay/${encodeURIComponent(ref)}/cash?t=${encodeURIComponent(pay_token)}`;
     payBlock = `
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:26px 0 4px">
-    <tr><td align="center" style="padding-bottom:10px">
-      <a href="${payUrl}" style="display:block;padding:13px 24px;background:${GOLD};color:#ffffff;text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:.03em;text-align:center">Pay ${fareStr} now</a>
-    </td></tr>
     <tr><td align="center">
-      <a href="${cashUrl}" style="display:block;padding:13px 24px;background:#ffffff;color:${INK};text-decoration:none;border:1px solid ${INK};border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:.03em;text-align:center">Pay on the day</a>
+      <a href="${payUrl}" style="display:block;padding:13px 24px;background:${GOLD};color:#ffffff;text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:.03em;text-align:center">View payment options</a>
     </td></tr>
   </table>
-  <p style="margin:12px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_MUTED};font-style:italic;line-height:1.55;text-align:center">Pay ${fareStr} securely online now, or tap <strong>Pay on the day</strong> and we'll note that you'll settle the fare directly.</p>`;
+  <p style="margin:12px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_MUTED};font-style:italic;line-height:1.55;text-align:center">Tap above to pay ${fareStr} securely by card now, or choose to settle the fare on the day.</p>`;
   }
 
   const body = `

@@ -105,7 +105,7 @@ router.post('/bookings', (req, res) => {
     result = db.prepare(`
       INSERT INTO bookings (ref, customer_id, pickup, destination, date, time, passengers, bags, trip_type, flight, fare, payment, notes, passenger_name, passenger_phone, passenger_email)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(ref, customerId, pickup, destination, date, time, passengers || 1, bags || 0, trip_type || null, flight || null, fare || null, payment || 'cash', notes || null,
+    `).run(ref, customerId, pickup, destination, date, time, passengers || 1, bags || 0, trip_type || null, flight || null, fare || null, payment || 'pending', notes || null,
            passenger_name || null, passenger_phone || null, passenger_email || null);
   } catch (e) {
     console.error('[API] booking insert failed:', e.message);

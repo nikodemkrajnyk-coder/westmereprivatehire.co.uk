@@ -35,6 +35,11 @@ body{font-family:var(--sans);font-weight:300;color:var(--text);background:var(--
 .btn{width:100%;border:none;border-radius:8px;background:var(--navy);color:#fff;font-family:var(--sans);font-size:15px;font-weight:400;letter-spacing:.4px;padding:16px;cursor:pointer;transition:background .2s,opacity .2s;margin-top:6px}
 .btn:hover{background:var(--navy2)}
 .btn:disabled{opacity:.55;cursor:default}
+.btn-alt{width:100%;border:1px solid var(--navy);border-radius:8px;background:#fff;color:var(--navy);font-family:var(--sans);font-size:15px;font-weight:400;letter-spacing:.4px;padding:16px;cursor:pointer;transition:background .2s,color .2s;margin-top:10px}
+.btn-alt:hover{background:var(--navy);color:#fff}
+.or-divider{display:flex;align-items:center;text-align:center;color:var(--muted);font-size:10px;letter-spacing:1.6px;text-transform:uppercase;margin:18px 0 4px}
+.or-divider::before,.or-divider::after{content:"";flex:1;height:1px;background:var(--border)}
+.or-divider span{padding:0 12px}
 .note{font-size:12px;color:var(--muted);font-style:italic;text-align:center;line-height:1.5;margin-top:16px}
 .secure{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:18px;font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;color:#9aa3b2}
 .secure svg{width:13px;height:13px;opacity:.7}
@@ -101,9 +106,13 @@ a.link{color:var(--gold);text-decoration:none}
         <div class="err" id="card-err"></div>
       </div>
 
-      <button class="btn" id="pay-btn">Pay <span id="pay-amt"></span></button>
+      <button class="btn" id="pay-btn">Pay <span id="pay-amt"></span> now</button>
 
-      <div class="note">Paying ahead is optional. If you'd rather pay on the day, you can close this page — your booking stays confirmed.</div>
+      <div class="or-divider"><span>or</span></div>
+
+      <button class="btn-alt" id="cash-btn">Pay on the Day</button>
+
+      <div class="note">Pay securely by card now, or choose <strong>Pay on the Day</strong> to settle the fare with your driver — by cash or card — when you travel.</div>
 
       <div class="secure">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
@@ -196,6 +205,14 @@ a.link{color:var(--gold);text-decoration:none}
     cardEl.mount("#card-el");
     cardEl.on("change", function(ev){ document.getElementById("card-err").textContent = ev.error ? ev.error.message : ""; });
   }
+
+  // "Pay on the Day" — hand off to the GET cash endpoint, which marks the
+  // booking as cash and renders its own confirmation page.
+  document.getElementById("cash-btn").addEventListener("click", function(){
+    var btn = this;
+    btn.disabled = true; btn.textContent = "One moment…";
+    location.href = "/api/public/pay/" + encodeURIComponent(REF) + "/cash?token=" + encodeURIComponent(TOKEN);
+  });
 
   document.getElementById("pay-btn").addEventListener("click", function(){
     if(!stripe || !cardEl) return;
