@@ -655,7 +655,7 @@ if ('serviceWorker' in navigator) {
         </div>
         <div style="overflow-x:auto">
           <table class="jtable">
-            <thead><tr><th>Ref</th><th>Date</th><th>Time</th><th>Passenger</th><th style="width:25%">Pickup</th><th style="width:25%">Destination</th><th>Type</th><th>Fare</th><th>Payment</th><th>Status</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Ref</th><th>Date</th><th>Time</th><th>Passenger</th><th style="width:25%">Pickup</th><th style="width:25%">Destination</th><th>Fare</th><th>Payment</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody id="jobs-tbody">
             </tbody>
           </table>
@@ -2235,7 +2235,7 @@ function loadLiveBookings(){
     var tbody=el('jobs-tbody');
     if(tbody){
       if(!bookings.length){
-        tbody.innerHTML='<tr><td colspan="11" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">No bookings yet</td></tr>';
+        tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">No bookings yet</td></tr>';
       } else {
         var _conflicts=admFindOverlaps(bookings);
         tbody.innerHTML=bookings.map(function(b){
@@ -2247,8 +2247,8 @@ function loadLiveBookings(){
           var isCancellable=['pending','offered','confirmed'].includes(b.status);
           var isCancelled=b.status==='cancelled';
           var actionBtns='';
-          if(b.status==='pending'&&!b.needs_reassignment){
-            actionBtns+='<button class="btn btn-navy btn-sm" onclick="reevaluateBooking('+b.id+',this)" title="Ask Claude to re-check feasibility">Re-check</button> ';
+          if(b.status==='pending'){
+            actionBtns+='<button class="btn btn-navy btn-sm" onclick="confirmJob('+b.id+',this)">Confirm</button> ';
           }
           if(isCancellable){
             actionBtns+='<button class="btn btn-red btn-sm" onclick="cancelJob('+b.id+',this)">Cancel</button>';
@@ -2268,7 +2268,6 @@ function loadLiveBookings(){
             +'<td><div class="main-v">'+(b.customer_name||'')+'</div>'+(b.customer_phone?'<div class="sub-v">'+b.customer_phone+'</div>':'')+'</td>'
             +'<td><div class="main-v">'+b.pickup+'</div>'+(b.flight?'<div class="sub-v">'+b.flight+'</div>':'')+'</td>'
             +'<td><div class="main-v">'+b.destination+'</div></td>'
-            +'<td><span class="tag tag-upcoming" style="font-size:.5rem">'+(b.flight?'Airport':'Local')+'</span></td>'
             +'<td><span style="color:var(--gold);font-family:var(--serif);font-size:1.1rem">'+(b.fare?'\u00a3'+Number(b.fare).toFixed(0):'TBC')+'</span>'+(b.dead_miles_fee?'<div style="font-size:.55rem;color:rgba(17,29,44,.4);margin-top:.1rem">incl. \u00a3'+Number(b.dead_miles_fee).toFixed(0)+' dead mi</div>':'')+'</td>'
             +'<td><span class="tag '+payClass+'">'+payLabel+'</span></td>'
             +'<td><span class="tag '+statusClass+'">'+statusLabel+'</span></td>'
@@ -2365,6 +2364,13 @@ function loadLiveBookings(){
 function markJobDone(id,btn){
   fetch('/api/bookings/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'completed'})})
     .then(function(){showToast('Journey completed');loadLiveBookings();}).catch(function(){showToast('Error updating');});
+}
+function confirmJob(id,btn){
+  if(btn){btn.disabled=true;btn.textContent='…';}
+  fetch('/api/bookings/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'confirmed'})})
+    .then(function(r){return r.json();})
+    .then(function(d){if(d.ok){showToast('Booking confirmed');loadLiveBookings();}else{showToast(d.error||'Error confirming');if(btn){btn.disabled=false;btn.textContent='Confirm';}}})
+    .catch(function(){showToast('Error confirming booking');if(btn){btn.disabled=false;btn.textContent='Confirm';}});
 }
 function cancelJob(id,btn){
   if(!confirm('Are you sure you want to cancel this booking?'))return;
@@ -2870,7 +2876,7 @@ function admPayTag(b){
   if(b&&(b.paid_at||b.payment==='card'))return{cls:'tag-prepaid',label:'Prepaid ✓'};
   if(b&&b.payment==='cash')return{cls:'tag-cash',label:'Cash'};
   if(b&&b.payment==='account')return{cls:'tag-account',label:'Account'};
-  return{cls:'tag-await',label:'Awaiting'};
+  return{cls:'tag-await',label:'Pending'};
 }
 // Flag same-day bookings whose pickup times fall within ~2h of each other.
 function admFindOverlaps(jobs){
@@ -4461,27 +4467,6 @@ async function delTimeOff(id){
   var d=await r.json();
   if(d.ok){showToast('Removed');loadTimeOff();}
   else showToast(d.error||'Failed');
-}
-
-// ── Re-run Claude's intake check on a stuck pending booking ─────────────
-// Useful when a booking was created before ANTHROPIC_API_KEY was set,
-// before a model fix, or when the operator just wants a fresh decision.
-async function reevaluateBooking(id,btn){
-  if(btn){btn.disabled=true;btn.textContent='Checking…';}
-  try{
-    var r=await fetch('/api/intake/bookings/'+id+'/reevaluate',{method:'POST',credentials:'include'});
-    var d=await r.json();
-    if(!d.ok){showToast(d.error||'Re-check failed');return;}
-    var res=d.result||{};
-    if(res.skipped==='no_api_key'){showToast('ANTHROPIC_API_KEY not set on Railway');}
-    else if(res.decision&&res.decision.feasible){showToast('Confirmed by Claude');}
-    else if(res.decision){showToast('Flagged: '+(res.decision.reason||'cannot fit'));}
-    else{showToast('Re-check: '+(res.reason||'inconclusive'));}
-    // Pull fresh data so the table redraws with new status / reason
-    if(typeof loadLiveBookings==='function')loadLiveBookings();
-    if(typeof loadFlaggedBookings==='function')loadFlaggedBookings();
-  }catch(e){showToast('Re-check error');}
-  finally{if(btn){btn.disabled=false;btn.textContent='Re-check';}}
 }
 
 // ── FLAGGED BOOKINGS (needs_reassignment) ───────────────────────────────
