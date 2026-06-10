@@ -71,7 +71,31 @@ footer{background:transparent;padding:1rem 5%;border-top:none}
 
 
 
-#booking{background:transparent;padding:0;width:100%;max-width:460px}
+/* Booking form rendered as a contained cream card floating on the background
+   image, with the form's palette flipped to dark-on-cream so the fields are
+   readable. These base styles apply at all screen sizes (full-width card with
+   small margins on mobile); the desktop media query only caps the width and
+   centres it. */
+#booking{background:var(--cream);padding:2.2rem 1.5rem 1.8rem;width:100%;margin-left:auto;margin-right:auto;border-radius:16px;box-shadow:0 30px 70px rgba(0,0,0,.45);border:1px solid rgba(184,152,90,.28)}
+#booking .bk-title{color:var(--navy)}
+#booking .bk-sub{color:var(--muted)}
+#booking .fl{color:var(--navy)}
+#booking .fi{color:var(--navy);border-bottom-color:rgba(17,29,44,.22)}
+#booking input[type="time"].fi,#booking input[type="date"].fi{color:var(--navy)}
+#booking .fi::placeholder{color:rgba(17,29,44,.42)}
+#booking .fi:focus{border-bottom-color:var(--gold)}
+#booking .loc-btn{color:var(--muted)}
+#booking .frl{color:var(--muted)}
+#booking .fr-note{color:var(--muted)}
+#booking .fm .fm-l{color:var(--muted)}
+#booking .fm .fm-v{color:var(--navy)}
+#booking .btn-quote{color:var(--muted);border-top-color:rgba(17,29,44,.12)}
+#booking .btn-book-j{color:var(--navy)}
+#booking .bk-trust{color:var(--muted)}
+/* Return-trip block uses inline white styles — override for the cream card. */
+#booking #return-trip-block{background:rgba(17,29,44,.04)!important;border-color:rgba(17,29,44,.14)!important}
+#booking #return-trip-block label,#booking #return-fields label{color:var(--navy)!important}
+#booking #return-total-row,#booking #return-total-detail,#booking #return-fields label span{color:var(--muted)!important}
 .bk-wrap{background:none;border:none;backdrop-filter:none;-webkit-backdrop-filter:none;border-radius:0;padding:0;max-width:100%;margin:0}
 .bk-title{font-family:var(--serif);font-size:clamp(1.8rem,3.5vw,2.6rem);font-weight:300;color:#fff;margin-bottom:.3rem;letter-spacing:.05em}
 .bk-title em{font-style:italic;color:var(--gold)}
@@ -120,29 +144,9 @@ input[type="time"].fi,input[type="date"].fi{-webkit-appearance:auto;appearance:a
 .licence-bar{margin-top:1.8rem;padding-top:1.3rem;border-top:1px solid rgba(255,255,255,.08);font-size:.68rem;color:rgba(255,255,255,.5);font-weight:300;line-height:1.9}
 @media(min-width:769px){
   #main-content{align-items:center!important}
-  /* Desktop: render the booking form as a contained cream card floating on the
-     background image, and flip the form's white-on-dark palette to dark-on-cream
-     so the fields are readable inside the card. */
-  #booking{max-width:760px!important;margin-left:auto;margin-right:auto;background:var(--cream);padding:2.6rem 2.8rem 2.2rem;border-radius:16px;box-shadow:0 30px 70px rgba(0,0,0,.45);border:1px solid rgba(184,152,90,.28)}
-  #booking .bk-title{color:var(--navy)}
-  #booking .bk-sub{color:var(--muted)}
-  #booking .fl{color:var(--navy)}
-  #booking .fi{color:var(--navy);border-bottom-color:rgba(17,29,44,.22)}
-  #booking input[type="time"].fi,#booking input[type="date"].fi{color:var(--navy)}
-  #booking .fi::placeholder{color:rgba(17,29,44,.42)}
-  #booking .fi:focus{border-bottom-color:var(--gold)}
-  #booking .loc-btn{color:var(--muted)}
-  #booking .frl{color:var(--muted)}
-  #booking .fr-note{color:var(--muted)}
-  #booking .fm .fm-l{color:var(--muted)}
-  #booking .fm .fm-v{color:var(--navy)}
-  #booking .btn-quote{color:var(--muted);border-top-color:rgba(17,29,44,.12)}
-  #booking .btn-book-j{color:var(--navy)}
-  #booking .bk-trust{color:var(--muted)}
-  /* Return-trip block uses inline white styles — override for the cream card. */
-  #booking #return-trip-block{background:rgba(17,29,44,.04)!important;border-color:rgba(17,29,44,.14)!important}
-  #booking #return-trip-block label,#booking #return-fields label{color:var(--navy)!important}
-  #booking #return-total-row,#booking #return-total-detail,#booking #return-fields label span{color:var(--muted)!important}
+  /* Desktop: cap the cream card's width and centre it. The cream card styling
+     itself now lives in the base styles so it applies on mobile too. */
+  #booking{max-width:760px!important;margin-left:auto;margin-right:auto;padding:2.6rem 2.8rem 2.2rem}
   #bk-card{max-width:600px!important}
 }
 @media(min-width:1100px){#booking{max-width:760px!important}#bk-card{max-width:660px!important}}
