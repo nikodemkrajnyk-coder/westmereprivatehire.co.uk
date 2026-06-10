@@ -4572,19 +4572,20 @@ async function reclaimOffer(bookingId){
   else showToast(d.error||'Failed');
 }
 
-// Quote-request flow: customer asked for an estimate (no fare shown to them).
-// Operator sets the price here and emails it; the booking stays pending until
-// the customer replies to confirm.
+// Set the price and confirm in one step. This does exactly what Confirm does —
+// sets the fare, marks the booking confirmed, mints a pay_token, and sends the
+// customer the confirmation email with journey details + payment link (pay now
+// or pay on the day).
 async function admSendEstimate(bookingId){
   var j=FLAGGED_CACHE[bookingId]||{};
   var cur=j&&j.fare?Number(j.fare):'';
-  var v=prompt('Estimated fare to email the customer (£):',cur);
+  var v=prompt('Fare to confirm and email the customer (£):',cur);
   if(v===null)return;
   var fare=parseFloat(String(v).replace(/[^0-9.]/g,''));
   if(!fare||fare<=0){showToast('Enter a valid fare amount');return;}
-  var r=await fetch('/api/bookings/'+bookingId+'/send-estimate',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({fare:fare})});
+  var r=await fetch('/api/bookings/'+bookingId,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'confirmed',fare:fare})});
   var d=await r.json();
-  if(r.ok&&d.ok){showToast('Estimate sent (£'+fare.toFixed(0)+')');if(typeof loadAdminCalendar==='function')loadAdminCalendar();loadFlaggedBookings();}
+  if(r.ok&&d.ok){showToast('Booking confirmed — payment link sent (£'+fare.toFixed(0)+')');if(typeof loadAdminCalendar==='function')loadAdminCalendar();loadFlaggedBookings();}
   else showToast(d.error||'Failed');
 }
 async function rsApology(){

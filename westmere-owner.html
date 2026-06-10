@@ -2503,21 +2503,21 @@ async function upcomingConfirm(bookingId){
   }catch(e){showToast('Network error');console.error('[upcomingConfirm]',e);}
 }
 
-// Quote-request flow: the customer asked for an estimate (no fare shown to
-// them). The owner sets the price here and emails it. The server stores the
-// fare and sends the quote; the booking stays pending until the customer
-// replies to confirm.
+// Set the price and confirm in one step. This does exactly what Confirm does —
+// sets the fare, marks the booking confirmed, mints a pay_token, and sends the
+// customer the confirmation email with journey details + payment link (pay now
+// or pay on the day). Same backend flow as upcomingConfirm.
 async function ownerSendEstimate(bookingId){
   var j=OFFERED_JOBS.find(function(x){return String(x.id)===String(bookingId);});
   var cur=j&&j.fare?Number(j.fare):'';
-  var v=prompt('Estimated fare to email the customer (£):',cur);
+  var v=prompt('Fare to confirm and email the customer (£):',cur);
   if(v===null)return;
   var fare=parseFloat(String(v).replace(/[^0-9.]/g,''));
   if(!fare||fare<=0){showToast('Enter a valid fare amount');return;}
   try{
-    var r=await fetch('/api/bookings/'+bookingId+'/send-estimate',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({fare:fare})});
+    var r=await fetch('/api/bookings/'+bookingId,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'confirmed',fare:fare})});
     var d=await r.json();
-    if(r.ok&&d.ok){showToast('Estimate sent to customer (£'+fare.toFixed(0)+')');loadOwnerBookings();}
+    if(r.ok&&d.ok){showToast('Booking confirmed — payment link sent (£'+fare.toFixed(0)+')');loadOwnerBookings();}
     else showToast(d.error||('Failed ('+r.status+')'));
   }catch(e){showToast('Network error');console.error('[ownerSendEstimate]',e);}
 }
