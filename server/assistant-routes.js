@@ -55,14 +55,14 @@ function fareCacheSet(key, value) {
 }
 
 const REFERENCE_FARES = [
-  'Brighton/Hove/Saltdean/Rottingdean→Gatwick £114 (ret £111), →Heathrow £159 (ret £163), →Stansted £243 (ret £248), →Luton £228 (ret £233), →Southampton £178 (ret £174), →London City £195 (ret £199)',
-  'Lewes→Gatwick £116 (ret £113), →Heathrow £166 (ret £171), →Stansted £249 (ret £254), →Luton £234 (ret £239), →Southampton £182 (ret £178), →London City £200 (ret £204)',
-  'Horsham→Gatwick £69 (ret £66), →Heathrow £122 (ret £127), →Stansted £182 (ret £187), →Luton £154 (ret £158), →Southampton £134 (ret £130), →London City £160 (ret £165)',
-  'Crawley→Gatwick £56 (ret £54), →Heathrow £105 (ret £109)',
-  'Worthing/Lancing/Shoreham→Gatwick £108 (ret £105), →Heathrow £155 (ret £159)',
-  'Haywards Heath→Gatwick £81 (ret £78), Burgess Hill→Gatwick £81 (ret £77)',
-  'Eastbourne→Gatwick £153 (ret £150), →Heathrow £205 (ret £210)',
-  'Seaford→Gatwick £138 (ret £135), Uckfield→Gatwick £93 (ret £89), East Grinstead→Gatwick £78 (ret £74)',
+  'Brighton/Hove/Saltdean/Rottingdean→Gatwick £104 (ret £101), →Heathrow £144 (ret £148), →Stansted £220 (ret £224), →Luton £206 (ret £210), →Southampton £161 (ret £157), →London City £176 (ret £180)',
+  'Lewes→Gatwick £105 (ret £103), →Heathrow £150 (ret £155), →Stansted £225 (ret £230), →Luton £211 (ret £216), →Southampton £164 (ret £161), →London City £181 (ret £184)',
+  'Horsham→Gatwick £63 (ret £60), →Heathrow £111 (ret £115), →Stansted £165 (ret £169), →Luton £139 (ret £143), →Southampton £121 (ret £118), →London City £145 (ret £149)',
+  'Crawley→Gatwick £51 (ret £50), →Heathrow £95 (ret £99)',
+  'Worthing/Lancing/Shoreham→Gatwick £98 (ret £96), →Heathrow £140 (ret £144)',
+  'Haywards Heath→Gatwick £74 (ret £71), Burgess Hill→Gatwick £74 (ret £70)',
+  'Eastbourne→Gatwick £139 (ret £136), →Heathrow £185 (ret £190)',
+  'Seaford→Gatwick £125 (ret £123), Uckfield→Gatwick £85 (ret £81), East Grinstead→Gatwick £71 (ret £68)',
   'All fares are all-inclusive — airport charges, dead miles and road tolls included'
 ].join('\n');
 

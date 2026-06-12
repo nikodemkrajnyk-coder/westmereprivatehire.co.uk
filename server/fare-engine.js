@@ -20,17 +20,17 @@ const DRIVER_BASE = { lat: 51.0632, lon: -0.3254 };
 // Values are ALL-IN fixed fares — airport charges and dead miles included.
 // out = town→airport (drop-off), ret = airport→town (pickup)
 const FARE_CF = {
-  brighton:      { ga:{out:109,ret:106}, he:{out:151,ret:155}, st:{out:231,ret:236}, lu:{out:217,ret:222}, so:{out:169,ret:166}, ci:{out:186,ret:189} },
-  lewes:         { ga:{out:111,ret:108}, he:{out:158,ret:163}, st:{out:237,ret:242}, lu:{out:223,ret:227}, so:{out:173,ret:169}, ci:{out:190,ret:194} },
-  horsham:       { ga:{out:66,ret:63},  he:{out:116,ret:121}, st:{out:173,ret:178}, lu:{out:147,ret:150}, so:{out:128,ret:124}, ci:{out:152,ret:157} },
-  crawley:       { ga:{out:54,ret:52},  he:{out:100,ret:104} },
-  worthing:      { ga:{out:103,ret:100}, he:{out:148,ret:151} },
-  haywards:      { ga:{out:77,ret:75} },
-  burgess:       { ga:{out:77,ret:74} },
-  eastbourne:    { ga:{out:146,ret:143}, he:{out:195,ret:200} },
-  seaford:       { ga:{out:132,ret:129} },
-  uckfield:      { ga:{out:89,ret:85} },
-  eastgrinstead: { ga:{out:75,ret:71} }
+  brighton:      { ga:{out:99,ret:96}, he:{out:137,ret:141}, st:{out:209,ret:213}, lu:{out:196,ret:201}, so:{out:153,ret:150}, ci:{out:168,ret:171} },
+  lewes:         { ga:{out:101,ret:98}, he:{out:143,ret:148}, st:{out:214,ret:219}, lu:{out:201,ret:205}, so:{out:156,ret:153}, ci:{out:172,ret:175} },
+  horsham:       { ga:{out:60,ret:58},  he:{out:105,ret:110}, st:{out:157,ret:161}, lu:{out:133,ret:136}, so:{out:116,ret:112}, ci:{out:138,ret:142} },
+  crawley:       { ga:{out:50,ret:48},  he:{out:91,ret:95} },
+  worthing:      { ga:{out:94,ret:91}, he:{out:134,ret:137} },
+  haywards:      { ga:{out:70,ret:69} },
+  burgess:       { ga:{out:70,ret:68} },
+  eastbourne:    { ga:{out:132,ret:130}, he:{out:176,ret:181} },
+  seaford:       { ga:{out:120,ret:117} },
+  uckfield:      { ga:{out:81,ret:78} },
+  eastgrinstead: { ga:{out:69,ret:65} }
 };
 const FARE_APFULL = { ga:'Gatwick', he:'Heathrow', st:'Stansted', lu:'Luton', so:'Southampton', ci:'London City' };
 // Airport coords for routing when town is unknown
