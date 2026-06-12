@@ -62,6 +62,7 @@ nav.solid .burger{display:flex;position:fixed;top:1rem;right:6%;z-index:101}
 .prow{display:flex;justify-content:flex-end;align-items:baseline;gap:.55rem;line-height:1.7}
 .ptype{font-size:.58rem;font-weight:300;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.45)}
 .price{font-family:var(--serif);font-size:1.25rem;font-weight:300;color:#fff}
+.ppark{font-size:.62rem;font-weight:300;letter-spacing:.04em;color:rgba(255,255,255,.45)}
 .note{font-size:.72rem;color:rgba(255,255,255,.82);margin-top:1rem;line-height:1.9;font-weight:300}
 
 
@@ -111,9 +112,9 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 <script>
 /* ── Tab data ── */
 var AREAS = [
-  {id:"brighton", name:"Brighton", fares:[["Gatwick Airport","~27 mi · ~40 min",99,96],["Heathrow Airport","~58 mi · ~75 min",137,141],["Stansted Airport","~88 mi · ~100 min",209,213],["Luton Airport","~80 mi · ~95 min",196,201],["Southampton Airport","~48 mi · ~58 min",153,150],["London City Airport","~58 mi · ~80 min",168,171]]},
-  {id:"lewes", name:"Lewes", fares:[["Gatwick Airport","~28 mi · ~38 min",101,98],["Heathrow Airport","~62 mi · ~80 min",143,148],["Stansted Airport","~92 mi · ~105 min",214,219],["Luton Airport","~85 mi · ~100 min",201,205],["Southampton Airport","~65 mi · ~72 min",156,153],["London City Airport","~68 mi · ~92 min",172,175]]},
-  {id:"horsham", name:"Horsham", fares:[["Gatwick Airport","~12 mi · ~22 min",60,58],["Heathrow Airport","~38 mi · ~55 min",105,110],["Stansted Airport","~72 mi · ~90 min",157,161],["Luton Airport","~65 mi · ~82 min",133,136],["Southampton Airport","~48 mi · ~58 min",116,112],["London City Airport","~52 mi · ~78 min",138,142]]}
+  {id:"brighton", name:"Brighton", fares:[["Gatwick Airport","~27 mi · ~40 min",89,86],["Heathrow Airport","~58 mi · ~75 min",130,134],["Stansted Airport","~88 mi · ~100 min",199,203],["Luton Airport","~80 mi · ~95 min",189,194],["Southampton Airport","~48 mi · ~58 min",148,145],["London City Airport","~58 mi · ~80 min",160,163]]},
+  {id:"lewes", name:"Lewes", fares:[["Gatwick Airport","~28 mi · ~38 min",91,88],["Heathrow Airport","~62 mi · ~80 min",136,141],["Stansted Airport","~92 mi · ~105 min",204,209],["Luton Airport","~85 mi · ~100 min",194,198],["Southampton Airport","~65 mi · ~72 min",151,148],["London City Airport","~68 mi · ~92 min",164,167]]},
+  {id:"horsham", name:"Horsham", fares:[["Gatwick Airport","~12 mi · ~22 min",50,48],["Heathrow Airport","~38 mi · ~55 min",98,103],["Stansted Airport","~72 mi · ~90 min",147,151],["Luton Airport","~65 mi · ~82 min",126,129],["Southampton Airport","~48 mi · ~58 min",111,107],["London City Airport","~52 mi · ~78 min",130,134]]}
 ];
 
 /* ── Render everything via JS — guaranteed to work ── */
@@ -142,11 +143,11 @@ AREAS.forEach(function(area, i) {
   var rows = "";
   area.fares.forEach(function(f) {
     rows += '<tr><td><div class="dest">' + f[0] + '</div><div class="meta">' + f[1] + '</div></td>'
-          + '<td class="prices"><div class="prow"><span class="ptype">Drop-off</span><span class="price">from £' + f[2] + '</span></div>'
-          + '<div class="prow"><span class="ptype">Pickup</span><span class="price">from £' + f[3] + '</span></div></td></tr>';
+          + '<td class="prices"><div class="prow"><span class="ptype">Drop-off</span><span class="price">from £' + f[2] + '</span><span class="ppark">+ parking</span></div>'
+          + '<div class="prow"><span class="ptype">Pickup</span><span class="price">from £' + f[3] + '</span><span class="ppark">+ parking</span></div></td></tr>';
   });
   panel.innerHTML = subHtml + '<table class="ftable">' + rows + '</table>'
-    + '<p class="note" style="margin-top:1.2rem">All prices are all-inclusive. Airport drop-off &amp; pickup charges, collection costs and road tolls are already included &mdash; no extras added on top.</p>';
+    + '<p class="note" style="margin-top:1.2rem">Prices shown are the base fare &mdash; collection costs and road tolls are already included. Airport parking charges apply and will be added to your fare.</p>';
   panelsEl.appendChild(panel);
 });
 </script>
