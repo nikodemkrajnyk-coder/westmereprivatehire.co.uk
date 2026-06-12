@@ -1353,6 +1353,29 @@ function bkConfirm(type) {
 
   bkGoS(6);
   bkToast("Ref: " + ref, "ok");
+
+  // After the customer has seen the thank-you screen, gently return them to the
+  // homepage with the landscape hero. Closing the overlay reveals the hero
+  // underneath; we also reset the form so a fresh booking starts clean. Guarded
+  // on step 6 so a failed submission (which jumps to step 7) isn't closed out.
+  setTimeout(function(){
+    if (_bk.step !== 6) return;
+    closeBkModal();
+    setTimeout(bkResetForm, 320);
+  }, 3500);
+}
+
+// Reset the booking form back to its initial state for the next journey.
+function bkResetForm() {
+  ["bk-name","bk-email","bk-phone","bk-notes"].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) { el.value = ""; el.classList.remove("err"); }
+  });
+  var retToggle = document.getElementById("return-toggle");
+  if (retToggle) retToggle.checked = false;
+  if (typeof toggleReturn === "function") toggleReturn(false);
+  _bk.step = 0; _bk.pay = ""; _bk.method = ""; _bk.fare = 0; _bk.j = {};
+  bkGoS(1);
 }
 
 // ── Calendar min date ─────────────────────────────────
