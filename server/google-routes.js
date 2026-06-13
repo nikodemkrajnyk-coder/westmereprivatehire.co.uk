@@ -19,6 +19,25 @@ const { getDb } = require('./db');
 
 const router = express.Router();
 
+// Single distinctive token (airport or town) for short calendar titles.
+const _SKIP_ADDR = /^(england|scotland|wales|northern ireland|united kingdom|uk|gb|great britain|west sussex|east sussex|sussex|surrey|kent|hampshire|hants|essex|berkshire|berks|london|greater london)$/i;
+const _POSTCODE = /^[A-Z]{1,2}\d[A-Z\d]?(\s*\d[A-Z]{2})?$/i;
+const _AIRPORTS = [
+  [/gatwick/i, 'Gatwick'], [/heathrow/i, 'Heathrow'], [/stansted/i, 'Stansted'],
+  [/luton/i, 'Luton'], [/\bcity airport\b|london city/i, 'London City'],
+  [/southampton airport/i, 'Southampton'], [/\bbristol airport\b/i, 'Bristol'],
+  [/st pancras|kings cross|king's cross/i, 'St Pancras'],
+  [/\beuston\b/i, 'Euston'], [/\bvictoria station\b/i, 'Victoria']
+];
+function _tinyAddr(a) {
+  if (!a) return '';
+  for (const [re, name] of _AIRPORTS) if (re.test(a)) return name;
+  const parts = String(a).split(',').map(p => p.trim()).filter(Boolean)
+    .filter(p => !_SKIP_ADDR.test(p) && !_POSTCODE.test(p));
+  if (!parts.length) return String(a).split(',')[0].trim().slice(0, 24);
+  return parts[parts.length - 1].slice(0, 24);
+}
+
 function requireStaff(req, res, next) {
   if (req.auth && ['admin', 'owner'].includes(req.auth.role)) return next();
   return res.status(403).json({ error: 'Access denied' });
@@ -117,7 +136,7 @@ router.post('/events', requireStaff, async (req, res) => {
     const pad = n => String(n).padStart(2, '0');
     const endIso = `${endDate.getUTCFullYear()}-${pad(endDate.getUTCMonth()+1)}-${pad(endDate.getUTCDate())}T${pad(endDate.getUTCHours())}:${pad(endDate.getUTCMinutes())}:00`;
     eventBody = {
-      summary: title || `${name || 'Pickup'} — ${pickup || ''}${destination ? ' → ' + destination : ''}`,
+      summary: title || `Pickup: ${_tinyAddr(pickup) || '?'}${destination ? ' → ' + _tinyAddr(destination) : ''}`,
       location: pickup || '',
       description: [
         name    ? `Passenger: ${name}`    : null,
@@ -135,7 +154,7 @@ router.post('/events', requireStaff, async (req, res) => {
     };
   } else {
     eventBody = {
-      summary: title || `${name || 'Pickup'} — ${pickup || ''}${destination ? ' → ' + destination : ''}`,
+      summary: title || `Pickup: ${_tinyAddr(pickup) || '?'}${destination ? ' → ' + _tinyAddr(destination) : ''}`,
       description: [
         name  ? `Passenger: ${name}`  : null,
         phone ? `Phone: ${phone}`     : null,

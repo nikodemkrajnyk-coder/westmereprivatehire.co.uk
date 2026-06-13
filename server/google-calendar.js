@@ -197,6 +197,41 @@ async function apiCall(method, pathSuffix, body) {
   return data;
 }
 
+// ── Address shortening ───────────────────────────────────────────────────
+// Strips country/county noise from an address so calendar titles and
+// descriptions stay readable. Shared by the title (tiny, single token) and
+// the description/location (short, up to a few parts).
+const _SKIP_ADDR = /^(england|scotland|wales|northern ireland|united kingdom|uk|gb|great britain|west sussex|east sussex|sussex|surrey|kent|hampshire|hants|essex|berkshire|berks|london|greater london)$/i;
+const _POSTCODE = /^[A-Z]{1,2}\d[A-Z\d]?(\s*\d[A-Z]{2})?$/i;
+const _AIRPORTS = [
+  [/gatwick/i, 'Gatwick'], [/heathrow/i, 'Heathrow'], [/stansted/i, 'Stansted'],
+  [/luton/i, 'Luton'], [/\bcity airport\b|london city/i, 'London City'],
+  [/southampton airport/i, 'Southampton'], [/\bbristol airport\b/i, 'Bristol'],
+  [/\bbirmingham airport\b/i, 'Birmingham'], [/\bmanchester airport\b/i, 'Manchester'],
+  [/\bstanding\b|st pancras|kings cross|king's cross/i, 'St Pancras'],
+  [/\beuston\b/i, 'Euston'], [/\bvictoria station\b/i, 'Victoria']
+];
+
+// Single most-distinctive token for the event title (airport name or town).
+function _tinyAddr(a) {
+  if (!a) return '';
+  for (const [re, name] of _AIRPORTS) if (re.test(a)) return name;
+  const parts = String(a).split(',').map(p => p.trim()).filter(Boolean)
+    .filter(p => !_SKIP_ADDR.test(p) && !_POSTCODE.test(p));
+  if (!parts.length) return String(a).split(',')[0].trim().slice(0, 24);
+  // Town is usually the last remaining part before the stripped county/postcode.
+  return parts[parts.length - 1].slice(0, 24);
+}
+
+// Up to three meaningful parts for description/location fields.
+function _shortAddr(a) {
+  if (!a) return '';
+  for (const [re, name] of _AIRPORTS) if (re.test(a)) return name;
+  const parts = String(a).split(',').map(p => p.trim()).filter(Boolean)
+    .filter(p => !_SKIP_ADDR.test(p));
+  return (parts.length > 3 ? parts.slice(0, 3) : parts).join(', ');
+}
+
 // Convert a booking row into a Google Calendar event body
 function bookingToEvent(booking) {
   // Build start/end datetimes. Default 90 min if no explicit duration.
@@ -213,7 +248,7 @@ function bookingToEvent(booking) {
   } else {
     // All-day if no time
     return {
-      summary: `WPH ${booking.ref || ''} — ${booking.customer_name || 'Guest'}`,
+      summary: `Pickup: ${_tinyAddr(booking.pickup) || '?'} → ${_tinyAddr(booking.destination) || '?'}`,
       description: buildDescription(booking),
       start: { date: booking.date },
       end: { date: booking.date }
@@ -221,9 +256,9 @@ function bookingToEvent(booking) {
   }
 
   return {
-    summary: `WPH ${booking.ref || ''} — ${booking.customer_name || 'Guest'} (${booking.pickup || ''} → ${booking.destination || ''})`,
+    summary: `Pickup: ${_tinyAddr(booking.pickup) || '?'} → ${_tinyAddr(booking.destination) || '?'}`,
     description: buildDescription(booking),
-    location: booking.pickup || '',
+    location: _shortAddr(booking.pickup) || booking.pickup || '',
     start: { dateTime: startIso, timeZone: tz },
     end:   { dateTime: endIso,   timeZone: tz },
     extendedProperties: {
@@ -236,22 +271,25 @@ function bookingToEvent(booking) {
 }
 
 function buildDescription(b) {
+  // Concise \u2014 one fact per line. Passenger, phone, route, money, then refs/nav.
+  const money = [
+    b.time ? b.time : null,
+    b.fare ? `\u00a3${b.fare}` : null,
+    b.payment || null
+  ].filter(Boolean).join('  \u00b7  ');
+  const extras = [
+    b.passengers ? `${b.passengers} pax` : null,
+    b.bags ? `${b.bags} bags` : null,
+    b.flight ? `Flight ${b.flight}` : null
+  ].filter(Boolean).join('  \u00b7  ');
   const lines = [
-    `Ref: ${b.ref || ''}`,
-    `Customer: ${b.customer_name || 'Guest'}`,
-    b.customer_phone ? `Phone: ${b.customer_phone}` : null,
-    `Pickup: ${b.pickup || ''}`,
-    `Destination: ${b.destination || ''}`,
-    b.passengers ? `Passengers: ${b.passengers}` : null,
-    b.bags ? `Bags: ${b.bags}` : null,
-    b.flight ? `Flight: ${b.flight}` : null,
-    b.fare ? `Fare: \u00a3${b.fare}` : null,
-    b.payment ? `Payment: ${b.payment}` : null,
+    `${b.customer_name || 'Guest'}${b.customer_phone ? '  \u00b7  ' + b.customer_phone : ''}`,
+    `${_shortAddr(b.pickup) || '?'} \u2192 ${_shortAddr(b.destination) || '?'}`,
+    money || null,
+    extras || null,
     b.notes ? `Notes: ${b.notes}` : null,
-    `Status: ${b.status || 'pending'}`,
-    '',
-    b.destination ? `Navigate to destination (Waze): https://waze.com/ul?q=${encodeURIComponent(b.destination)}` : null,
-    b.pickup ? `Navigate to pickup (Waze): https://waze.com/ul?q=${encodeURIComponent(b.pickup)}` : null
+    `${b.ref ? b.ref + ' \u00b7 ' : ''}${b.status || 'pending'}`,
+    b.destination ? `Navigate (Waze): https://waze.com/ul?q=${encodeURIComponent(b.destination)}` : null
   ].filter(Boolean);
   return lines.join('\n');
 }

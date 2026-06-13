@@ -15,6 +15,25 @@ const { getDb } = require('./db');
 
 const router = express.Router();
 
+// ── Address shortening (airport-aware) — keeps SUMMARY lines readable ──────
+const _SKIP_ADDR = /^(england|scotland|wales|northern ireland|united kingdom|uk|gb|great britain|west sussex|east sussex|sussex|surrey|kent|hampshire|hants|essex|berkshire|berks|london|greater london)$/i;
+const _POSTCODE = /^[A-Z]{1,2}\d[A-Z\d]?(\s*\d[A-Z]{2})?$/i;
+const _AIRPORTS = [
+  [/gatwick/i, 'Gatwick'], [/heathrow/i, 'Heathrow'], [/stansted/i, 'Stansted'],
+  [/luton/i, 'Luton'], [/\bcity airport\b|london city/i, 'London City'],
+  [/southampton airport/i, 'Southampton'], [/\bbristol airport\b/i, 'Bristol'],
+  [/st pancras|kings cross|king's cross/i, 'St Pancras'],
+  [/\beuston\b/i, 'Euston'], [/\bvictoria station\b/i, 'Victoria']
+];
+function _tinyAddr(a) {
+  if (!a) return '';
+  for (const [re, name] of _AIRPORTS) if (re.test(a)) return name;
+  const parts = String(a).split(',').map(p => p.trim()).filter(Boolean)
+    .filter(p => !_SKIP_ADDR.test(p) && !_POSTCODE.test(p));
+  if (!parts.length) return String(a).split(',')[0].trim().slice(0, 24);
+  return parts[parts.length - 1].slice(0, 24);
+}
+
 // Escape text for iCalendar DESCRIPTION / SUMMARY (RFC 5545 §3.3.11)
 // Commas, semicolons and backslashes must be escaped; newlines become \n
 function icsEscape(str) {
@@ -92,7 +111,7 @@ function buildVEvent(booking) {
       foldLine('UID:' + bookingUid(booking)),
       'DTSTART;VALUE=DATE:' + y + pad(mo) + pad(day),
       'DTEND;VALUE=DATE:'   + y + pad(mo) + pad(day),
-      foldLine('SUMMARY:'  + icsEscape(`WPH ${booking.ref || ''} — ${booking.pickup || ''}`)),
+      foldLine('SUMMARY:'  + icsEscape(`Pickup: ${_tinyAddr(booking.pickup) || '?'}`)),
       foldLine('LOCATION:' + icsEscape(booking.pickup || '')),
       'STATUS:CONFIRMED',
       'END:VEVENT'
@@ -125,7 +144,7 @@ function buildVEvent(booking) {
     'DTSTAMP:'             + now,
     'DTSTART:'             + toIcsDate(dtStart),
     'DTEND:'               + toIcsDate(dtEnd),
-    foldLine('SUMMARY:'   + icsEscape(`WPH ${booking.ref || ''} — ${booking.pickup || ''} \u2192 ${booking.destination || ''}`)),
+    foldLine('SUMMARY:'   + icsEscape(`Pickup: ${_tinyAddr(booking.pickup) || '?'} \u2192 ${_tinyAddr(booking.destination) || '?'}`)),
     foldLine('LOCATION:'  + icsEscape(booking.pickup || '')),
     foldLine('DESCRIPTION:' + icsEscape(descLines)),
     'STATUS:CONFIRMED',
