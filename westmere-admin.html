@@ -15,8 +15,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-:root{--navy:#111D2C;--navy2:#1C2A3E;--cream:#F5F2ED;--gold:#B8985A;--gold2:#C9A96E;--text:#111D2C;--muted:rgba(17,29,44,.55);--border:rgba(17,29,44,.12);--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif;
---green:#2D6E47;--green-bg:rgba(45,110,71,.18);--red:#8B2222;--red-bg:rgba(139,34,34,.15);--amber:#B8985A;--amber-bg:rgba(184,152,90,.1);--purple:#9B7FD4;--purple-bg:rgba(155,127,212,.1);--text-light:rgba(17,29,44,.45);--text-mid:rgba(17,29,44,.65);--cream-dark:rgba(17,29,44,.04);--rule:rgba(17,29,44,.08);}
+:root{--navy:#111D2C;--navy2:#1C2A3E;--cream:#F5F2ED;--gold:#B8985A;--gold2:#C9A96E;--text:#111D2C;--muted:rgba(17,29,44,.72);--border:rgba(17,29,44,.12);--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif;
+--green:#2D6E47;--green-bg:rgba(45,110,71,.18);--red:#8B2222;--red-bg:rgba(139,34,34,.15);--amber:#B8985A;--amber-bg:rgba(184,152,90,.1);--purple:#9B7FD4;--purple-bg:rgba(155,127,212,.1);--text-light:rgba(17,29,44,.68);--text-mid:rgba(17,29,44,.8);--cream-dark:rgba(17,29,44,.04);--rule:rgba(17,29,44,.08);}
 html{font-size:16px;scroll-behavior:smooth}
 body{font-family:var(--sans);font-weight:300;color:var(--navy);background:#F5F2ED;line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh;display:flex}
 body::before{display:none}
@@ -30,10 +30,10 @@ a{color:var(--gold)}
 
 /* ── LOGIN FORM ── */
 .fg{display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem}
-.fl{font-family:var(--sans);font-size:.58rem;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:rgba(17,29,44,.5)}
+.fl{font-family:var(--sans);font-size:.58rem;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:rgba(17,29,44,.7)}
 .fi{font-family:var(--sans);font-size:.92rem;font-weight:300;color:var(--navy);background:transparent;border:none;border-bottom:1px solid rgba(17,29,44,.15);padding:.78rem 0;outline:none;width:100%;transition:border-color .3s;min-height:48px;-webkit-appearance:none}
 .fi:focus{border-bottom-color:var(--gold)}
-.fi::placeholder{color:rgba(17,29,44,.3)}
+.fi::placeholder{color:rgba(17,29,44,.62)}
 .btn-main{width:100%;padding:1rem;background:var(--gold);color:var(--navy);border:none;font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;transition:all .25s;min-height:52px}
 .btn-main:hover{background:var(--gold2)}
 /* ── ADMIN APP ── */
@@ -45,10 +45,10 @@ a{color:var(--gold)}
 .al-sub{font-size:.54rem;font-weight:400;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);display:block;margin-top:.15rem}
 .al-body{padding:2rem}
 .al-title{font-family:var(--serif);font-size:1.3rem;font-weight:400;color:var(--navy);margin-bottom:.2rem}
-.al-desc{font-size:.78rem;color:rgba(17,29,44,.45);margin-bottom:1.5rem;font-weight:300}
+.al-desc{font-size:.78rem;color:rgba(17,29,44,.68);margin-bottom:1.5rem;font-weight:300}
 .al-err{display:none;background:var(--red-bg);border:1px solid rgba(139,34,34,.4);padding:.65rem .9rem;font-size:.78rem;color:var(--red);margin-bottom:.9rem}
 .al-err.show{display:block}
-.al-attempts{font-size:.7rem;color:rgba(17,29,44,.35);text-align:center;margin-top:.7rem}
+.al-attempts{font-size:.7rem;color:rgba(17,29,44,.64);text-align:center;margin-top:.7rem}
 /* SIDEBAR */
 .sidebar{width:220px;flex-shrink:0;background:rgba(255,255,255,.95);backdrop-filter:blur(20px);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50;overflow-y:auto;border-right:1px solid rgba(17,29,44,.06);transition:transform .3s}
 .sb-logo{padding:1.4rem 1.2rem 1.1rem;border-bottom:1px solid rgba(17,29,44,.06);flex-shrink:0}
@@ -56,15 +56,15 @@ a{color:var(--gold)}
 .sb-name{font-family:var(--serif);font-size:1.1rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);display:block;line-height:1.1}
 .sb-sub{font-size:.52rem;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);display:block;margin-top:.15rem}
 .sb-section{padding:.6rem 0;border-bottom:1px solid rgba(17,29,44,.06)}
-.sb-label{font-size:.52rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:rgba(17,29,44,.3);padding:.4rem 1.2rem;display:block}
-.sb-item{display:flex;align-items:center;gap:.65rem;padding:.55rem 1.2rem;cursor:pointer;font-family:var(--sans);font-size:.75rem;font-weight:300;color:rgba(17,29,44,.45);transition:all .15s;border:none;background:transparent;width:100%;text-align:left;text-decoration:none;letter-spacing:.02em}
+.sb-label{font-size:.52rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:rgba(17,29,44,.62);padding:.4rem 1.2rem;display:block}
+.sb-item{display:flex;align-items:center;gap:.65rem;padding:.55rem 1.2rem;cursor:pointer;font-family:var(--sans);font-size:.75rem;font-weight:300;color:rgba(17,29,44,.68);transition:all .15s;border:none;background:transparent;width:100%;text-align:left;text-decoration:none;letter-spacing:.02em}
 .sb-item:hover{color:var(--navy);background:rgba(17,29,44,.04)}
 .sb-item.on{color:var(--gold);background:rgba(184,152,90,.08);font-weight:400}
 .sb-icon{width:18px;height:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sb-icon svg{width:16px;height:16px;display:block}
 .sb-badge{margin-left:auto;background:var(--gold);color:var(--navy);font-size:.5rem;font-weight:700;padding:.12rem .4rem;border-radius:10px}
 .sb-badge.red{background:var(--red);color:white}
 .sb-bottom{margin-top:auto;padding:1rem 1.2rem;border-top:1px solid rgba(17,29,44,.06);flex-shrink:0}
-.sb-version{font-size:.55rem;color:rgba(17,29,44,.25);letter-spacing:.08em}
+.sb-version{font-size:.55rem;color:rgba(17,29,44,.6);letter-spacing:.08em}
 /* MAIN */
 .main{margin-left:220px;flex:1;min-height:100vh;display:flex;flex-direction:column}
 .topbar{background:rgba(255,255,255,.92)!important;backdrop-filter:blur(16px)!important;border-bottom:1px solid rgba(17,29,44,.06)!important;box-shadow:0 1px 8px rgba(17,29,44,.04)!important;padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:64px;position:sticky;top:0;z-index:40;flex-shrink:0}
@@ -74,7 +74,7 @@ a{color:var(--gold)}
 .tb-title{font-family:var(--serif);font-size:1.2rem;font-weight:500;letter-spacing:.04em;color:var(--navy)}
 .tb-right{display:flex;align-items:center;gap:.8rem}
 .tb-clock{font-family:var(--serif);font-size:1.1rem;color:var(--gold)}
-.tb-live{display:flex;align-items:center;gap:.35rem;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.4)}
+.tb-live{display:flex;align-items:center;gap:.35rem;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.66)}
 .live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;flex-shrink:0}
 .btn-new{font-family:var(--sans);font-size:.65rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;background:var(--gold);color:var(--navy);padding:.6rem 1.2rem;border:none;cursor:pointer;transition:all .2s;white-space:nowrap}
 .btn-new:hover{background:var(--gold2);color:var(--navy)}
@@ -85,7 +85,7 @@ a{color:var(--gold)}
 .page-hd{margin-bottom:1.8rem}
 .page-title{font-family:var(--serif);font-size:2rem;font-weight:400;color:var(--navy);line-height:1}
 .page-title em{font-style:italic;color:var(--gold)}
-.page-sub{font-size:.82rem;color:rgba(17,29,44,.45);font-weight:300;margin-top:.3rem}
+.page-sub{font-size:.82rem;color:rgba(17,29,44,.68);font-weight:300;margin-top:.3rem}
 /* STATS */
 .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:1.8rem}
 .stat{background:#fff;border:1px solid rgba(17,29,44,.08);box-shadow:0 2px 8px rgba(17,29,44,.03);padding:1.1rem 1.2rem;cursor:pointer;transition:border-color .2s;position:relative;overflow:hidden}
@@ -96,8 +96,8 @@ a{color:var(--gold)}
 .stat.s-red::before{background:var(--red)}
 .stat.s-purple::before{background:var(--purple)}
 .sv{font-family:var(--serif);font-size:2rem;color:var(--navy);line-height:1}
-.sl{font-size:.56rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-top:.25rem}
-.ss{font-size:.7rem;color:rgba(17,29,44,.3);margin-top:.12rem;font-weight:300}
+.sl{font-size:.56rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.66);margin-top:.25rem}
+.ss{font-size:.7rem;color:rgba(17,29,44,.62);margin-top:.12rem;font-weight:300}
 /* CARD */
 .card{background:#fff;border:1px solid rgba(17,29,44,.08);box-shadow:0 2px 12px rgba(17,29,44,.04);margin-bottom:1.2rem}
 .ch{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.3rem;border-bottom:1px solid rgba(17,29,44,.06)}
@@ -115,7 +115,7 @@ a{color:var(--gold)}
 .tl-card.done{border-left:3px solid var(--green);opacity:.65}
 .tl-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem}
 .tl-name{font-size:.85rem;font-weight:500;color:var(--navy)}
-.tl-route{font-size:.78rem;color:rgba(17,29,44,.5);margin-bottom:.4rem}
+.tl-route{font-size:.78rem;color:rgba(17,29,44,.7);margin-bottom:.4rem}
 .tl-actions{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.5rem}
 /* TAGS */
 .tag{display:inline-flex;align-items:center;font-size:.54rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.15rem .5rem}
@@ -126,13 +126,13 @@ a{color:var(--gold)}
 .tag-cash{background:rgba(184,152,90,.16);color:#8B7230}
 .tag-card{background:rgba(59,130,246,.08);color:#60A5FA}
 .tag-prepaid{background:var(--green-bg);color:var(--green)}
-.tag-await{background:rgba(17,29,44,.07);color:rgba(17,29,44,.5)}
+.tag-await{background:rgba(17,29,44,.07);color:rgba(17,29,44,.7)}
 /* BUTTONS */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;font-family:var(--sans);font-size:.62rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;padding:.6rem 1.2rem;cursor:pointer;border:none;transition:all .2s;text-decoration:none;white-space:nowrap}
 .btn:active{transform:scale(.97)}
 .btn-gold{background:var(--gold);color:var(--navy);border:1px solid var(--gold)}.btn-gold:hover{background:var(--gold2)}
 .btn-navy{background:rgba(17,29,44,.06);color:var(--navy);border:1px solid rgba(17,29,44,.15)}.btn-navy:hover{background:var(--gold);border-color:var(--gold);color:var(--navy)}
-.btn-ghost{background:transparent;color:rgba(17,29,44,.65);border:1px solid rgba(17,29,44,.18)}.btn-ghost:hover{color:var(--navy);border-color:rgba(17,29,44,.4);background:rgba(17,29,44,.03)}
+.btn-ghost{background:transparent;color:rgba(17,29,44,.78);border:1px solid rgba(17,29,44,.18)}.btn-ghost:hover{color:var(--navy);border-color:rgba(17,29,44,.4);background:rgba(17,29,44,.03)}
 .btn-green{background:var(--green-bg);color:var(--green);border:1px solid rgba(45,110,71,.3)}.btn-green:hover{background:rgba(45,110,71,.25)}
 .btn-red{background:var(--red-bg);color:var(--red);border:1px solid rgba(139,34,34,.3)}.btn-red:hover{background:rgba(139,34,34,.25)}
 .btn-blue{background:rgba(59,130,246,.08);color:#60A5FA;border:1px solid rgba(59,130,246,.2)}.btn-blue:hover{background:rgba(59,130,246,.15)}
@@ -141,10 +141,10 @@ a{color:var(--gold)}
 .btn-lg{padding:.9rem 2rem;font-size:.72rem}
 /* FORMS */
 .fg{display:flex;flex-direction:column;gap:.38rem;margin-bottom:.9rem}
-.fl{font-size:.58rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:rgba(17,29,44,.5)}
+.fl{font-size:.58rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:rgba(17,29,44,.7)}
 .fi{font-family:var(--sans);font-size:.92rem;font-weight:300;color:var(--navy);background:rgba(17,29,44,.03);border:none;border-bottom:1px solid rgba(17,29,44,.12);padding:.78rem 1rem;outline:none;width:100%;transition:border-color .2s;min-height:50px;-webkit-appearance:none}
 .fi:focus{border-bottom-color:var(--gold);background:rgba(17,29,44,.04)}
-.fi::placeholder{color:rgba(17,29,44,.3)}
+.fi::placeholder{color:rgba(17,29,44,.62)}
 select.fi{cursor:pointer}
 select.fi option{background:#fff;color:var(--navy)}
 textarea.fi{resize:vertical;min-height:80px}
@@ -161,8 +161,8 @@ textarea.fi{resize:vertical;min-height:80px}
 .avail.free .avail-title{color:var(--green)}
 .avail.tight .avail-title{color:var(--gold)}
 .avail.no .avail-title{color:var(--red)}
-.avail-detail{font-weight:300;color:rgba(17,29,44,.5);font-size:.8rem}
-.sub-offer{display:none;margin-top:.6rem;padding:.8rem;background:var(--purple-bg);border:1px solid rgba(155,127,212,.2);font-size:.82rem;font-weight:300;color:rgba(17,29,44,.6);line-height:1.7}
+.avail-detail{font-weight:300;color:rgba(17,29,44,.7);font-size:.8rem}
+.sub-offer{display:none;margin-top:.6rem;padding:.8rem;background:var(--purple-bg);border:1px solid rgba(155,127,212,.2);font-size:.82rem;font-weight:300;color:rgba(17,29,44,.74);line-height:1.7}
 .sub-offer.show{display:block}
 /* PRICE BOX */
 .price-box{display:none;background:rgba(255,255,255,.95);padding:1.4rem 1.6rem;margin-top:1rem;border:1px solid rgba(184,152,90,.15)}
@@ -170,10 +170,10 @@ textarea.fi{resize:vertical;min-height:80px}
 .pb-label{font-size:.58rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(184,152,90,.6);margin-bottom:.3rem;display:flex;align-items:center;gap:.35rem}
 .pb-dot{width:5px;height:5px;border-radius:50%;background:var(--gold);animation:pulse 1.8s infinite}
 .pb-amount{font-family:var(--serif);font-size:3.5rem;color:var(--gold);line-height:1;margin-bottom:.2rem}
-.pb-sub{font-size:.65rem;color:rgba(17,29,44,.3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem;font-weight:300}
+.pb-sub{font-size:.65rem;color:rgba(17,29,44,.62);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem;font-weight:300}
 .pb-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;padding-top:1rem;border-top:1px solid rgba(17,29,44,.06)}
-.pb-item .pbi-l{font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.3);margin-bottom:.12rem}
-.pb-item .pbi-v{font-size:.86rem;color:rgba(17,29,44,.65);font-weight:300}
+.pb-item .pbi-l{font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.62);margin-bottom:.12rem}
+.pb-item .pbi-v{font-size:.86rem;color:rgba(17,29,44,.78);font-weight:300}
 /* NOTIFICATION OPTIONS */
 .notify-list{display:flex;flex-direction:column;gap:.6rem;margin-top:.5rem}
 .notify-opt{display:flex;align-items:center;gap:.8rem;padding:.9rem 1rem;background:#fff;border:1px solid rgba(17,29,44,.08);cursor:pointer;transition:all .2s}
@@ -181,17 +181,17 @@ textarea.fi{resize:vertical;min-height:80px}
 .notify-opt:hover{border-color:var(--gold)}
 .no-icon{font-size:1rem;flex-shrink:0}
 .no-name{font-size:.86rem;font-weight:400;color:var(--navy)}
-.no-sub{font-size:.72rem;color:rgba(17,29,44,.4);margin-top:.05rem}
+.no-sub{font-size:.72rem;color:rgba(17,29,44,.66);margin-top:.05rem}
 .no-chk{width:18px;height:18px;border-radius:50%;border:1px solid rgba(17,29,44,.15);background:rgba(17,29,44,.04);display:flex;align-items:center;justify-content:center;font-size:.58rem;margin-left:auto;flex-shrink:0;transition:all .2s;color:transparent}
 .notify-opt.on .no-chk{background:var(--gold);border-color:var(--gold);color:var(--navy);font-weight:700}
 /* JOBS TABLE */
 .jtable{width:100%;border-collapse:collapse}
-.jtable th{font-size:.56rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.4);padding:.6rem .8rem;border-bottom:1px solid rgba(17,29,44,.08);text-align:left;white-space:nowrap;background:rgba(17,29,44,.03)}
-.jtable td{font-size:.8rem;padding:.65rem .8rem;border-bottom:1px solid rgba(17,29,44,.05);color:rgba(17,29,44,.65);vertical-align:middle}
+.jtable th{font-size:.56rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.66);padding:.6rem .8rem;border-bottom:1px solid rgba(17,29,44,.08);text-align:left;white-space:nowrap;background:rgba(17,29,44,.03)}
+.jtable td{font-size:.8rem;padding:.65rem .8rem;border-bottom:1px solid rgba(17,29,44,.05);color:rgba(17,29,44,.78);vertical-align:middle}
 .jtable tr:last-child td{border-bottom:none}
 .jtable tr:hover td{color:var(--navy)}
 .jtable .main-v{color:var(--navy);font-weight:400}
-.jtable .sub-v{font-size:.66rem;color:rgba(17,29,44,.35);margin-top:.08rem}
+.jtable .sub-v{font-size:.66rem;color:rgba(17,29,44,.64);margin-top:.08rem}
 /* FARE TABLE */
 .fare-table{width:100%;border-collapse:collapse}
 .fare-table th{font-size:.56rem;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);padding:.5rem .7rem;background:rgba(17,29,44,.04);text-align:center}
@@ -203,14 +203,14 @@ textarea.fi{resize:vertical;min-height:80px}
 .notif{display:flex;align-items:flex-start;gap:.65rem;padding:.7rem 0;border-bottom:1px solid rgba(17,29,44,.06)}
 .notif:last-child{border-bottom:none}
 .notif-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:.35rem}
-.notif-text{font-size:.78rem;color:rgba(17,29,44,.6);line-height:1.55}
+.notif-text{font-size:.78rem;color:rgba(17,29,44,.74);line-height:1.55}
 .notif-text strong{color:var(--navy)}
-.notif-time{font-size:.62rem;color:rgba(17,29,44,.3);margin-top:.12rem}
+.notif-time{font-size:.62rem;color:rgba(17,29,44,.62);margin-top:.12rem}
 /* SETTING ROW */
 .setting-row{display:flex;align-items:center;justify-content:space-between;padding:.9rem 0;border-bottom:1px solid rgba(17,29,44,.06)}
 .setting-row:last-child{border-bottom:none}
 .sr-title{font-size:.84rem;color:var(--navy);font-weight:400}
-.sr-sub{font-size:.7rem;color:rgba(17,29,44,.4);margin-top:.08rem;font-weight:300}
+.sr-sub{font-size:.7rem;color:rgba(17,29,44,.66);margin-top:.08rem;font-weight:300}
 /* MODAL */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:flex-start;justify-content:center;padding:1.5rem;overflow-y:auto}
 .overlay.on{display:flex;animation:fadeIn .2s ease}
@@ -222,7 +222,7 @@ textarea.fi{resize:vertical;min-height:80px}
 @media (max-width:900px){.fi{font-size:16px}}
 .modal-hd{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.5rem;border-bottom:1px solid rgba(17,29,44,.08);position:sticky;top:0;background:#fff;z-index:1}
 .modal-title{font-family:var(--serif);font-size:1.3rem;font-weight:500;color:var(--navy)}
-.modal-x{background:none;border:none;color:rgba(17,29,44,.4);cursor:pointer;font-size:1.1rem;line-height:1}
+.modal-x{background:none;border:none;color:rgba(17,29,44,.66);cursor:pointer;font-size:1.1rem;line-height:1}
 .modal-x:hover{color:var(--navy)}
 .modal-body{padding:1.5rem}
 .modal-foot{padding:1rem 1.5rem;border-top:1px solid rgba(17,29,44,.08);display:flex;gap:.6rem;justify-content:flex-end}
@@ -238,19 +238,19 @@ textarea.fi{resize:vertical;min-height:80px}
 .cc-type{display:inline-block;font-size:.54rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.12rem .45rem;margin-bottom:.4rem}
 .cc-business{background:var(--purple-bg);color:var(--purple)}
 .cc-personal{background:rgba(59,130,246,.08);color:#60A5FA}
-.cc-meta{font-size:.72rem;color:rgba(17,29,44,.4);font-weight:300}
+.cc-meta{font-size:.72rem;color:rgba(17,29,44,.66);font-weight:300}
 .cc-actions{margin-top:.75rem;padding-top:.65rem;border-top:1px solid rgba(17,29,44,.06);display:flex;gap:.4rem}
 .cc-btn{flex:1;padding:.5rem .6rem;background:transparent;color:var(--navy);border:1px solid rgba(17,29,44,.15);border-radius:6px;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .2s}
 .cc-btn:hover{background:var(--gold);color:#fff;border-color:var(--gold)}
 .cc-btn-del{color:var(--red)!important;border-color:rgba(139,34,34,.2)!important}
 .cc-btn-del:hover{background:var(--red)!important;border-color:var(--red)!important;color:#fff!important}
 .cc-stats{display:flex;gap:.8rem;margin-top:.45rem}
-.cc-stat{font-size:.68rem;color:rgba(17,29,44,.45)}
+.cc-stat{font-size:.68rem;color:rgba(17,29,44,.68)}
 .cc-stat span{color:var(--gold);font-weight:500}
 /* INVOICE TABLE */
 .inv-table{width:100%;border-collapse:collapse}
-.inv-table th{font-size:.56rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.4);padding:.6rem .8rem;border-bottom:1px solid rgba(17,29,44,.08);text-align:left;background:rgba(17,29,44,.03)}
-.inv-table td{font-size:.82rem;padding:.7rem .8rem;border-bottom:1px solid rgba(17,29,44,.05);color:rgba(17,29,44,.65);vertical-align:middle}
+.inv-table th{font-size:.56rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.66);padding:.6rem .8rem;border-bottom:1px solid rgba(17,29,44,.08);text-align:left;background:rgba(17,29,44,.03)}
+.inv-table td{font-size:.82rem;padding:.7rem .8rem;border-bottom:1px solid rgba(17,29,44,.05);color:rgba(17,29,44,.78);vertical-align:middle}
 .inv-table tr:last-child td{border-bottom:none}
 .inv-table tr:hover td{color:var(--navy)}
 /* DRIVER CARDS */
@@ -262,14 +262,14 @@ textarea.fi{resize:vertical;min-height:80px}
 .driver-card.inactive::before{background:rgba(17,29,44,.15)}
 .dc-avatar{width:44px;height:44px;background:rgba(17,29,44,.06);border:1px solid rgba(184,152,90,.25);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.2rem;color:var(--navy);margin-bottom:.7rem}
 .dc-name{font-size:.92rem;font-weight:500;color:var(--navy);margin-bottom:.15rem}
-.dc-role{font-size:.6rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.5rem}
-.dc-meta{font-size:.72rem;color:rgba(17,29,44,.4);font-weight:300;line-height:1.6}
+.dc-role{font-size:.6rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.66);margin-bottom:.5rem}
+.dc-meta{font-size:.72rem;color:rgba(17,29,44,.66);font-weight:300;line-height:1.6}
 .dc-status{display:inline-flex;align-items:center;gap:.3rem;font-size:.58rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;margin-top:.5rem}
 .dc-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .dc-status.on .dc-dot{background:var(--green)}
 .dc-status.off .dc-dot{background:rgba(17,29,44,.3)}
 .dc-status.on{color:var(--green)}
-.dc-status.off{color:rgba(17,29,44,.3)}
+.dc-status.off{color:rgba(17,29,44,.62)}
 /* ── INVOICE & EMAIL PREVIEW MODALS ── */
 .modal-doc{max-width:700px}
 .inv-doc{background:var(--cream);color:var(--navy);padding:2.5rem 2.8rem;font-family:var(--sans);font-weight:300;line-height:1.7}
@@ -355,7 +355,7 @@ textarea.fi{resize:vertical;min-height:80px}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
 /* ── CALENDAR ── */
 .adm-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:rgba(17,29,44,.06);overflow:hidden;border:1px solid rgba(17,29,44,.06)}
-.adm-cal-hd{padding:.55rem .2rem;text-align:center;font-size:.65rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.5);background:rgba(245,242,237,.7)}
+.adm-cal-hd{padding:.55rem .2rem;text-align:center;font-size:.65rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.7);background:rgba(245,242,237,.7)}
 .adm-cal-day{min-height:78px;padding:.4rem .45rem;background:#fff;cursor:pointer;transition:background .15s;position:relative;overflow:hidden}
 .adm-cal-day:hover{background:rgba(184,152,90,.06)}
 .adm-cal-day.today{background:rgba(184,152,90,.12);box-shadow:inset 0 0 0 2px var(--gold)}
@@ -367,7 +367,7 @@ textarea.fi{resize:vertical;min-height:80px}
 .adm-cal-pill{margin-top:.25rem;font-size:.62rem;color:#fff;background:var(--navy);padding:1px 5px;border-radius:3px;display:inline-block;line-height:1.4}
 .adm-cal-pill.warn{background:#9C5800}
 .adm-cal-pill.off{background:#a33}
-.adm-cal-job-mini{font-size:.62rem;color:rgba(17,29,44,.55);line-height:1.25;margin-top:.18rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.adm-cal-job-mini{font-size:.62rem;color:rgba(17,29,44,.72);line-height:1.25;margin-top:.18rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .adm-cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;gap:.5rem}
 .adm-cal-month{font-family:var(--serif);font-size:1.25rem;font-weight:400;color:var(--navy)}
 .adm-cal-detail{margin-top:1.1rem}
@@ -395,10 +395,10 @@ textarea.fi{resize:vertical;min-height:80px}
 .sug-item{padding:.7rem 1rem;cursor:pointer;border-bottom:1px solid rgba(17,29,44,.05);transition:background .15s}
 .sug-item:hover{background:rgba(184,152,90,.15)}
 .si-main{font-size:.85rem;color:var(--navy);font-weight:300}
-.si-sub{font-size:.68rem;color:rgba(17,29,44,.4);margin-top:.15rem}
-.sug-powered{padding:.4rem 1rem;text-align:right;font-size:.55rem;color:rgba(17,29,44,.25);letter-spacing:.04em}
+.si-sub{font-size:.68rem;color:rgba(17,29,44,.66);margin-top:.15rem}
+.sug-powered{padding:.4rem 1rem;text-align:right;font-size:.55rem;color:rgba(17,29,44,.6);letter-spacing:.04em}
 
-footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);font-size:.66rem;letter-spacing:.1em;color:rgba(17,29,44,.4);background:rgba(17,29,44,.03);border-top:1px solid rgba(17,29,44,.06);position:relative;z-index:1}.mini-legal{margin-left:.6rem}.mini-legal a{color:rgba(17,29,44,.3);text-decoration:none;margin-left:.5rem;transition:color .2s;letter-spacing:.08em}.mini-legal a:hover{color:rgba(184,152,90,.8)}
+footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);font-size:.66rem;letter-spacing:.1em;color:rgba(17,29,44,.66);background:rgba(17,29,44,.03);border-top:1px solid rgba(17,29,44,.06);position:relative;z-index:1}.mini-legal{margin-left:.6rem}.mini-legal a{color:rgba(17,29,44,.62);text-decoration:none;margin-left:.5rem;transition:color .2s;letter-spacing:.08em}.mini-legal a:hover{color:rgba(184,152,90,.8)}
 </style>
 <script src="/config.js"></script>
 <script>
@@ -429,7 +429,7 @@ if ('serviceWorker' in navigator) {
 <nav id="nav" style="display:none">
   <a href="index.html" class="brand" style="text-decoration:none;display:flex;flex-direction:column;gap:.18rem">
     <span style="font-family:var(--serif);font-size:1.15rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--navy);line-height:1">Westmere</span>
-    <span class="brand-sub" style="font-size:.52rem;font-weight:300;letter-spacing:.3em;text-transform:uppercase;color:rgba(17,29,44,.45)">Private Hire</span><span class="brand-sub brand-sub2" style="font-size:.8rem;color:var(--navy);letter-spacing:.38em;text-transform:uppercase;font-weight:300">Sussex</span>
+    <span class="brand-sub" style="font-size:.52rem;font-weight:300;letter-spacing:.3em;text-transform:uppercase;color:rgba(17,29,44,.68)">Private Hire</span><span class="brand-sub brand-sub2" style="font-size:.8rem;color:var(--navy);letter-spacing:.38em;text-transform:uppercase;font-weight:300">Sussex</span>
   </a>
   <div style="display:flex;align-items:center;gap:1.6rem">
     <a href="index.html">Home</a>
@@ -461,7 +461,7 @@ if ('serviceWorker' in navigator) {
         <div class="al-err" id="al-err"></div>
         <div class="fg"><label class="fl">Username</label><input class="fi" type="text" id="al-user" placeholder="Username" autocomplete="username" autocapitalize="none"></div>
         <div class="fg"><label class="fl">Password</label><input class="fi" type="password" id="al-pass" placeholder="Password" autocomplete="current-password"></div>
-        <label style="display:flex;align-items:center;gap:.5rem;margin-top:.8rem;cursor:pointer;font-size:.78rem;color:rgba(17,29,44,.5);font-weight:300"><input type="checkbox" id="al-remember" style="accent-color:var(--gold)"> Keep me logged in</label>
+        <label style="display:flex;align-items:center;gap:.5rem;margin-top:.8rem;cursor:pointer;font-size:.78rem;color:rgba(17,29,44,.7);font-weight:300"><input type="checkbox" id="al-remember" style="accent-color:var(--gold)"> Keep me logged in</label>
         <button class="btn-main" onclick="adminLogin()" style="margin-top:.8rem">Sign In</button>
         <div style="text-align:center;margin-top:.9rem"><a href="#" onclick="showForgotPassword();return false;" style="font-size:.78rem;color:var(--gold);text-decoration:none;font-weight:400">Forgot password?</a></div>
         <div class="al-attempts" id="al-attempts"></div>
@@ -475,7 +475,7 @@ if ('serviceWorker' in navigator) {
         <div class="al-ok" id="al-forgot-ok" style="display:none;background:rgba(34,139,34,.08);color:#1e7d1e;padding:.7rem .9rem;border-radius:8px;font-size:.82rem;margin-bottom:.8rem;line-height:1.5"></div>
         <div class="fg"><label class="fl">Email</label><input class="fi" type="email" id="al-forgot-email" placeholder="you@example.com" autocomplete="email" autocapitalize="none"></div>
         <button class="btn-main" onclick="submitForgotPassword()" style="margin-top:.8rem">Send reset link</button>
-        <div style="text-align:center;margin-top:.9rem"><a href="#" onclick="showSignIn();return false;" style="font-size:.78rem;color:rgba(17,29,44,.5);text-decoration:none;font-weight:400">← Back to sign in</a></div>
+        <div style="text-align:center;margin-top:.9rem"><a href="#" onclick="showSignIn();return false;" style="font-size:.78rem;color:rgba(17,29,44,.7);text-decoration:none;font-weight:400">← Back to sign in</a></div>
       </div>
 
       <!-- Set new password (from reset link) -->
@@ -487,7 +487,7 @@ if ('serviceWorker' in navigator) {
         <div class="fg"><label class="fl">New password</label><input class="fi" type="password" id="al-reset-pass" placeholder="At least 8 characters" autocomplete="new-password"></div>
         <div class="fg"><label class="fl">Confirm password</label><input class="fi" type="password" id="al-reset-pass2" placeholder="Re-enter password" autocomplete="new-password"></div>
         <button class="btn-main" onclick="submitResetPassword()" style="margin-top:.8rem">Update password</button>
-        <div style="text-align:center;margin-top:.9rem"><a href="#" onclick="showSignIn();return false;" style="font-size:.78rem;color:rgba(17,29,44,.5);text-decoration:none;font-weight:400">← Back to sign in</a></div>
+        <div style="text-align:center;margin-top:.9rem"><a href="#" onclick="showSignIn();return false;" style="font-size:.78rem;color:rgba(17,29,44,.7);text-decoration:none;font-weight:400">← Back to sign in</a></div>
       </div>
     </div>
   </div>
@@ -598,7 +598,7 @@ if ('serviceWorker' in navigator) {
           <div class="ch"><div class="ct">Today's Jobs</div><button class="btn btn-ghost btn-sm" onclick="nav('today',document.querySelector('[onclick*=today]'))">View All</button></div>
           <div class="cb">
             <div class="timeline" id="dash-timeline">
-              <div style="text-align:center;padding:1.5rem;color:rgba(17,29,44,.3);font-size:.82rem">No jobs today</div>
+              <div style="text-align:center;padding:1.5rem;color:rgba(17,29,44,.62);font-size:.82rem">No jobs today</div>
             </div>
           </div>
         </div>
@@ -606,13 +606,13 @@ if ('serviceWorker' in navigator) {
         <div class="card">
           <div class="ch"><div class="ct">Recent Activity</div></div>
           <div class="cb" id="dash-activity">
-            <div style="text-align:center;padding:1.5rem;color:rgba(17,29,44,.3);font-size:.82rem">No recent activity</div>
+            <div style="text-align:center;padding:1.5rem;color:rgba(17,29,44,.62);font-size:.82rem">No recent activity</div>
           </div>
         </div>
       </div>
 
       <div class="card" id="dash-personal-card" style="display:none">
-        <div class="ch"><div class="ct">Your Schedule <span style="font-size:.65rem;color:rgba(17,29,44,.4);font-weight:400;letter-spacing:.06em;margin-left:.4rem">NEXT 7 DAYS &middot; FROM CALENDAR</span></div></div>
+        <div class="ch"><div class="ct">Your Schedule <span style="font-size:.65rem;color:rgba(17,29,44,.66);font-weight:400;letter-spacing:.06em;margin-left:.4rem">NEXT 7 DAYS &middot; FROM CALENDAR</span></div></div>
         <div class="cb" id="dash-personal-list"></div>
       </div>
 
@@ -628,12 +628,12 @@ if ('serviceWorker' in navigator) {
         <div class="ch"><div class="ct">Schedule</div><button class="btn btn-navy btn-sm" onclick="openModal('modal-book')">+ Add Job</button></div>
         <div class="cb">
           <div class="timeline" id="today-timeline">
-            <div style="text-align:center;padding:2rem;color:rgba(17,29,44,.3);font-size:.85rem">No jobs scheduled for today</div>
+            <div style="text-align:center;padding:2rem;color:rgba(17,29,44,.62);font-size:.85rem">No jobs scheduled for today</div>
           </div>
         </div>
       </div>
       <div class="card" id="today-personal-card" style="display:none">
-        <div class="ch"><div class="ct">Other Commitments <span style="font-size:.65rem;color:rgba(17,29,44,.4);font-weight:400;letter-spacing:.06em;margin-left:.4rem">FROM YOUR CALENDAR</span></div></div>
+        <div class="ch"><div class="ct">Other Commitments <span style="font-size:.65rem;color:rgba(17,29,44,.66);font-weight:400;letter-spacing:.06em;margin-left:.4rem">FROM YOUR CALENDAR</span></div></div>
         <div class="cb">
           <div id="today-personal-list"></div>
         </div>
@@ -703,7 +703,7 @@ if ('serviceWorker' in navigator) {
         <button class="btn btn-navy" onclick="openNewCustomerModal()">+ New Customer</button>
       </div>
       <div class="cust-grid" id="cust-grid">
-        <div style="grid-column:1/-1;text-align:center;padding:2rem;color:rgba(17,29,44,.3);font-size:.85rem">Loading customers...</div>
+        <div style="grid-column:1/-1;text-align:center;padding:2rem;color:rgba(17,29,44,.62);font-size:.85rem">Loading customers...</div>
       </div>
     </div>
 
@@ -712,19 +712,19 @@ if ('serviceWorker' in navigator) {
       <div style="background:#fff;border-radius:14px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;padding:1.6rem 1.5rem;box-shadow:0 20px 60px rgba(0,0,0,.35)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem">
           <div style="font-family:Georgia,serif;font-size:1.25rem;color:#111D2C">Open a Customer Account</div>
-          <button onclick="closeNewCustomerModal()" style="background:transparent;border:none;font-size:1.6rem;color:rgba(17,29,44,.4);cursor:pointer;line-height:1">&times;</button>
+          <button onclick="closeNewCustomerModal()" style="background:transparent;border:none;font-size:1.6rem;color:rgba(17,29,44,.66);cursor:pointer;line-height:1">&times;</button>
         </div>
         <div id="nc-form">
           <div style="margin-bottom:.8rem">
-            <label style="display:block;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.35rem">Full name</label>
+            <label style="display:block;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.7);margin-bottom:.35rem">Full name</label>
             <input id="nc-name" type="text" placeholder="Jane Smith" style="width:100%;padding:.7rem .85rem;border:1px solid rgba(17,29,44,.14);border-radius:8px;font-size:.9rem">
           </div>
           <div style="margin-bottom:.8rem">
-            <label style="display:block;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.35rem">Email</label>
+            <label style="display:block;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.7);margin-bottom:.35rem">Email</label>
             <input id="nc-email" type="email" placeholder="jane@example.com" style="width:100%;padding:.7rem .85rem;border:1px solid rgba(17,29,44,.14);border-radius:8px;font-size:.9rem">
           </div>
           <div style="margin-bottom:.8rem">
-            <label style="display:block;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.35rem">Mobile (optional)</label>
+            <label style="display:block;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.7);margin-bottom:.35rem">Mobile (optional)</label>
             <input id="nc-phone" type="tel" placeholder="+44 7700 000 000" style="width:100%;padding:.7rem .85rem;border:1px solid rgba(17,29,44,.14);border-radius:8px;font-size:.9rem">
           </div>
           <div style="font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:1rem 0 .45rem">Billing Address</div>
@@ -748,15 +748,15 @@ if ('serviceWorker' in navigator) {
           <div style="text-align:center;padding:1.2rem 0 .8rem">
             <div style="font-size:1.5rem;margin-bottom:.6rem">&#10003;</div>
             <div style="font-family:Georgia,serif;font-size:1.1rem;color:#111D2C;margin-bottom:.3rem" id="nc-success-msg">Account created</div>
-            <div style="font-size:.78rem;color:rgba(17,29,44,.45)" id="nc-success-sub"></div>
+            <div style="font-size:.78rem;color:rgba(17,29,44,.68)" id="nc-success-sub"></div>
           </div>
           <div style="display:flex;flex-direction:column;gap:.6rem;margin-top:.8rem">
             <button id="nc-welcome-btn" onclick="sendWelcomeEmailNew()" style="width:100%;padding:.85rem;background:transparent;color:#111D2C;border:1px solid rgba(17,29,44,.18);border-radius:8px;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Send Welcome Email</button>
             <button onclick="createInvoiceNew()" style="width:100%;padding:.85rem;background:var(--gold,#B8985A);color:#fff;border:none;border-radius:8px;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Create Invoice</button>
-            <button onclick="closeNewCustomerModal()" style="width:100%;padding:.85rem;background:transparent;color:rgba(17,29,44,.5);border:none;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Done</button>
+            <button onclick="closeNewCustomerModal()" style="width:100%;padding:.85rem;background:transparent;color:rgba(17,29,44,.7);border:none;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Done</button>
           </div>
         </div>
-        <div style="font-size:.72rem;color:rgba(17,29,44,.5);margin-top:.7rem;line-height:1.55">Accounts are managed by Westmere. No email is sent automatically — use the button above to notify the customer.</div>
+        <div style="font-size:.72rem;color:rgba(17,29,44,.7);margin-top:.7rem;line-height:1.55">Accounts are managed by Westmere. No email is sent automatically — use the button above to notify the customer.</div>
       </div>
     </div>
 
@@ -772,17 +772,17 @@ if ('serviceWorker' in navigator) {
           <div id="cd-view">
             <div id="cd-content"></div>
             <div style="margin-top:1.4rem;padding-top:1rem;border-top:1px solid rgba(17,29,44,.07)">
-              <div style="font-size:.6rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-bottom:.7rem">Recent Bookings</div>
-              <div id="cd-bookings" style="font-size:.8rem;color:rgba(17,29,44,.45)">Loading...</div>
+              <div style="font-size:.6rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.64);margin-bottom:.7rem">Recent Bookings</div>
+              <div id="cd-bookings" style="font-size:.8rem;color:rgba(17,29,44,.68)">Loading...</div>
             </div>
           </div>
           <!-- Edit state -->
           <div id="cd-edit" style="display:none">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.7rem">
-              <div><label style="display:block;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.3rem">Full Name *</label><input id="ce-name" type="text" class="fi" style="border:1px solid rgba(17,29,44,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem"></div>
-              <div><label style="display:block;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.3rem">Email *</label><input id="ce-email" type="email" class="fi" style="border:1px solid rgba(17,29,44,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem"></div>
+              <div><label style="display:block;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.7);margin-bottom:.3rem">Full Name *</label><input id="ce-name" type="text" class="fi" style="border:1px solid rgba(17,29,44,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem"></div>
+              <div><label style="display:block;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.7);margin-bottom:.3rem">Email *</label><input id="ce-email" type="email" class="fi" style="border:1px solid rgba(17,29,44,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem"></div>
             </div>
-            <div style="margin-bottom:.7rem"><label style="display:block;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.3rem">Phone</label><input id="ce-phone" type="tel" class="fi" style="border:1px solid rgba(17,29,44,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;width:100%"></div>
+            <div style="margin-bottom:.7rem"><label style="display:block;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.7);margin-bottom:.3rem">Phone</label><input id="ce-phone" type="tel" class="fi" style="border:1px solid rgba(17,29,44,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;width:100%"></div>
             <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:.9rem 0 .4rem">Billing Address</div>
             <div style="margin-bottom:.6rem"><input id="ce-addr1" type="text" placeholder="Address line 1" class="fi" style="border:1px solid rgba(17,29,44,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;width:100%"></div>
             <div style="display:grid;grid-template-columns:1fr 120px;gap:.5rem;margin-bottom:.7rem">
@@ -821,7 +821,7 @@ if ('serviceWorker' in navigator) {
           <table class="inv-table">
             <thead><tr><th>Invoice No.</th><th>Recipient</th><th style="text-align:right">Total</th><th>Type</th><th>Issued</th><th></th></tr></thead>
             <tbody id="invoice-history-body">
-              <tr><td colspan="3" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">Loading...</td></tr>
+              <tr><td colspan="3" style="text-align:center;padding:2rem;color:rgba(17,29,44,.62)">Loading...</td></tr>
             </tbody>
           </table>
         </div>
@@ -855,7 +855,7 @@ if ('serviceWorker' in navigator) {
         <div class="card">
           <div class="ch"><div class="ct">Invoice / Business Details</div></div>
           <div class="cb">
-            <div style="font-size:.72rem;color:rgba(17,29,44,.45);margin-bottom:1rem;line-height:1.5">These details appear on every invoice you generate or email.</div>
+            <div style="font-size:.72rem;color:rgba(17,29,44,.68);margin-bottom:1rem;line-height:1.5">These details appear on every invoice you generate or email.</div>
             <div class="fg"><label class="fl">Business Name</label><input class="fi" id="is-business-name" value="Westmere Private Hire"></div>
             <div class="fg"><label class="fl">Owner Name</label><input class="fi" id="is-owner-name" placeholder="Your legal name"></div>
             <div class="fg"><label class="fl">Address Line 1</label><input class="fi" id="is-address1" placeholder="66 High Street"></div>
@@ -908,12 +908,12 @@ if ('serviceWorker' in navigator) {
         </div>
         <div class="card" style="grid-column:1/-1">
           <div class="ch"><div class="ct">My Documents</div><button class="btn btn-ghost btn-sm" onclick="loadAdminDocs()">Refresh</button></div>
-          <div class="cb" id="admin-docs-list"><div style="color:rgba(17,29,44,.4);font-size:.85rem;padding:.5rem">Loading…</div></div>
+          <div class="cb" id="admin-docs-list"><div style="color:rgba(17,29,44,.66);font-size:.85rem;padding:.5rem">Loading…</div></div>
         </div>
         <div class="card" style="grid-column:1/-1">
           <div class="ch"><div class="ct">Download All Data</div></div>
           <div class="cb">
-            <p style="font-size:.78rem;color:rgba(17,29,44,.5);margin-bottom:1rem;line-height:1.5">Exports all bookings, customers, invoices, driver profiles, documents and earnings as a structured ZIP archive. Save to iCloud Drive for automatic sync to all Apple devices.</p>
+            <p style="font-size:.78rem;color:rgba(17,29,44,.7);margin-bottom:1rem;line-height:1.5">Exports all bookings, customers, invoices, driver profiles, documents and earnings as a structured ZIP archive. Save to iCloud Drive for automatic sync to all Apple devices.</p>
             <button id="admin-export-btn" class="btn btn-navy btn-full" onclick="adminExportZip()">Download ZIP</button>
           </div>
         </div>
@@ -932,7 +932,7 @@ if ('serviceWorker' in navigator) {
           </div>
         </div>
         <div class="cb" id="inbox-list" style="padding:0">
-          <div style="text-align:center;padding:3rem 1rem;color:rgba(17,29,44,.35);font-size:.85rem">Connect Google (Settings → Integrations) then refresh.</div>
+          <div style="text-align:center;padding:3rem 1rem;color:rgba(17,29,44,.64);font-size:.85rem">Connect Google (Settings → Integrations) then refresh.</div>
         </div>
       </div>
     </div>
@@ -942,8 +942,8 @@ if ('serviceWorker' in navigator) {
       <div class="modal" style="max-width:720px">
         <div class="mh"><div class="mt" id="iv-subject">Message</div><button class="mclose" onclick="closeModal('modal-inbox-view')">&times;</button></div>
         <div class="mb">
-          <div style="font-size:.78rem;color:rgba(17,29,44,.55);margin-bottom:.4rem">From: <span id="iv-from" style="color:var(--navy)"></span></div>
-          <div style="font-size:.72rem;color:rgba(17,29,44,.45);margin-bottom:1rem"><span id="iv-date"></span></div>
+          <div style="font-size:.78rem;color:rgba(17,29,44,.72);margin-bottom:.4rem">From: <span id="iv-from" style="color:var(--navy)"></span></div>
+          <div style="font-size:.72rem;color:rgba(17,29,44,.68);margin-bottom:1rem"><span id="iv-date"></span></div>
           <div id="iv-body" style="background:#fff;padding:1rem;border-radius:8px;border:1px solid rgba(17,29,44,.06);max-height:420px;overflow-y:auto;font-size:.88rem;line-height:1.6"></div>
           <div style="margin-top:1rem;display:flex;gap:.5rem">
             <button class="btn btn-navy btn-sm" onclick="replyFromViewer()">Reply</button>
@@ -972,7 +972,7 @@ if ('serviceWorker' in navigator) {
       <div class="card">
         <div class="ch"><div class="ct">All Activity</div></div>
         <div class="cb" id="notif-list">
-          <div style="text-align:center;padding:2rem;color:rgba(17,29,44,.3);font-size:.85rem">No notifications yet</div>
+          <div style="text-align:center;padding:2rem;color:rgba(17,29,44,.62);font-size:.85rem">No notifications yet</div>
         </div>
       </div>
     </div>
@@ -1005,7 +1005,7 @@ if ('serviceWorker' in navigator) {
       <div class="card">
         <div class="ch"><div class="ct">Current Blackouts</div></div>
         <div class="cb" id="to-list">
-          <div style="text-align:center;padding:2rem;color:rgba(17,29,44,.3);font-size:.85rem">Loading…</div>
+          <div style="text-align:center;padding:2rem;color:rgba(17,29,44,.62);font-size:.85rem">Loading…</div>
         </div>
       </div>
     </div>
@@ -1119,7 +1119,7 @@ if ('serviceWorker' in navigator) {
       <div class="g2">
         <!-- Weekly trend chart -->
         <div class="card" style="grid-column:1/-1">
-          <div class="ch"><div class="ct">Revenue Trend <span style="font-size:.65rem;color:rgba(17,29,44,.4);font-weight:400;letter-spacing:.06em;margin-left:.4rem">LAST 12 WEEKS</span></div></div>
+          <div class="ch"><div class="ct">Revenue Trend <span style="font-size:.65rem;color:rgba(17,29,44,.66);font-weight:400;letter-spacing:.06em;margin-left:.4rem">LAST 12 WEEKS</span></div></div>
           <div class="cb" style="padding:1.2rem 1.4rem 1rem">
             <svg id="an-chart" width="100%" height="160" style="display:block;overflow:visible"></svg>
             <div id="an-chart-labels" style="display:flex;justify-content:space-between;margin-top:.35rem;padding:0 2px"></div>
@@ -1133,11 +1133,11 @@ if ('serviceWorker' in navigator) {
           <div class="ch"><div class="ct">Booking Breakdown</div></div>
           <div class="cb">
             <div style="margin-bottom:.9rem">
-              <div style="font-size:.6rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.5rem">By Status</div>
+              <div style="font-size:.6rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.66);margin-bottom:.5rem">By Status</div>
               <div id="an-by-status"></div>
             </div>
             <div>
-              <div style="font-size:.6rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.5rem">By Payment Method (completed)</div>
+              <div style="font-size:.6rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.66);margin-bottom:.5rem">By Payment Method (completed)</div>
               <div id="an-by-payment"></div>
             </div>
           </div>
@@ -1145,7 +1145,7 @@ if ('serviceWorker' in navigator) {
 
         <!-- Busiest times heatmap -->
         <div class="card">
-          <div class="ch"><div class="ct">Busiest Times <span style="font-size:.65rem;color:rgba(17,29,44,.4);font-weight:400;letter-spacing:.06em;margin-left:.4rem">BY DAY &amp; HOUR</span></div></div>
+          <div class="ch"><div class="ct">Busiest Times <span style="font-size:.65rem;color:rgba(17,29,44,.66);font-weight:400;letter-spacing:.06em;margin-left:.4rem">BY DAY &amp; HOUR</span></div></div>
           <div class="cb" style="padding:.8rem 1rem">
             <div id="an-heatmap" style="overflow-x:auto"></div>
           </div>
@@ -1275,14 +1275,14 @@ if ('serviceWorker' in navigator) {
 
       <div style="font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:.2rem 0 .6rem">Photo</div>
       <div style="display:flex;gap:1rem;align-items:center;margin-bottom:.9rem">
-        <div id="dm-photo-preview" style="width:72px;height:72px;border-radius:50%;background:rgba(17,29,44,.06);border:1px solid rgba(17,29,44,.12);display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:.68rem;color:rgba(17,29,44,.4);letter-spacing:.1em;text-transform:uppercase;flex-shrink:0">None</div>
+        <div id="dm-photo-preview" style="width:72px;height:72px;border-radius:50%;background:rgba(17,29,44,.06);border:1px solid rgba(17,29,44,.12);display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:.68rem;color:rgba(17,29,44,.66);letter-spacing:.1em;text-transform:uppercase;flex-shrink:0">None</div>
         <div style="flex:1">
           <label class="btn btn-ghost btn-sm" style="display:inline-block;cursor:pointer;font-size:.68rem;padding:.4rem .9rem">
             Upload Photo
             <input type="file" accept="image/*" id="dm-photo-file" onchange="dmPhotoPick(this)" style="display:none">
           </label>
           <button type="button" class="btn btn-ghost btn-sm" onclick="dmPhotoClear()" style="font-size:.68rem;padding:.4rem .9rem;margin-left:.4rem">Remove</button>
-          <div style="font-size:.66rem;color:rgba(17,29,44,.45);margin-top:.35rem">Square JPG/PNG, resized to 512px. Shown to riders during live tracking.</div>
+          <div style="font-size:.66rem;color:rgba(17,29,44,.68);margin-top:.35rem">Square JPG/PNG, resized to 512px. Shown to riders during live tracking.</div>
         </div>
       </div>
 
@@ -1325,7 +1325,7 @@ if ('serviceWorker' in navigator) {
 
       <div style="font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:1.2rem 0 .4rem;display:flex;justify-content:space-between;align-items:center">
         <span>Driver App Access</span>
-        <label style="font-size:.7rem;color:rgba(17,29,44,.6);text-transform:none;letter-spacing:normal;font-weight:400;cursor:pointer;display:flex;align-items:center;gap:.4rem">
+        <label style="font-size:.7rem;color:rgba(17,29,44,.74);text-transform:none;letter-spacing:normal;font-weight:400;cursor:pointer;display:flex;align-items:center;gap:.4rem">
           <input type="checkbox" id="dm-has-login" onchange="toggleDriverLoginSection()" style="accent-color:var(--gold)">Grant app login
         </label>
       </div>
@@ -1334,20 +1334,20 @@ if ('serviceWorker' in navigator) {
           <div class="fg"><label class="fl">Username</label><input class="fi" type="text" id="dm-username" placeholder="driver_username" autocomplete="off"></div>
           <div class="fg"><label class="fl">Password</label><input class="fi" type="password" id="dm-password" placeholder="Min 8 characters" autocomplete="new-password"></div>
         </div>
-        <div style="font-size:.68rem;color:rgba(17,29,44,.5);margin-top:.2rem">Driver uses these credentials in the Driver app. Leave blank to add them later.</div>
+        <div style="font-size:.68rem;color:rgba(17,29,44,.7);margin-top:.2rem">Driver uses these credentials in the Driver app. Leave blank to add them later.</div>
       </div>
 
       <!-- Earnings (populated on edit) -->
       <div id="dm-earnings" style="display:none;margin-top:1.3rem;padding:1rem 1.1rem;background:rgba(184,152,90,.06);border:1px solid rgba(184,152,90,.2);border-radius:6px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">
           <div style="font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:600">This Week (Mon–Sun)</div>
-          <div style="font-size:.66rem;color:rgba(17,29,44,.5)" id="dm-earn-period">—</div>
+          <div style="font-size:.66rem;color:rgba(17,29,44,.7)" id="dm-earn-period">—</div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:.7rem">
-          <div style="text-align:center"><div style="font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(17,29,44,.5)">Jobs</div><div style="font-size:1.2rem;font-weight:500;color:var(--navy);margin-top:.15rem" id="dm-earn-jobs">0</div></div>
-          <div style="text-align:center"><div style="font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(17,29,44,.5)">Gross</div><div style="font-size:1.2rem;font-weight:500;color:var(--navy);margin-top:.15rem" id="dm-earn-gross">£0</div></div>
-          <div style="text-align:center"><div style="font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(17,29,44,.5)">Commission (10%)</div><div style="font-size:1.2rem;font-weight:500;color:#9C2828;margin-top:.15rem" id="dm-earn-comm">£0</div></div>
-          <div style="text-align:center"><div style="font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(17,29,44,.5)">Driver Net</div><div style="font-size:1.2rem;font-weight:500;color:var(--gold);margin-top:.15rem" id="dm-earn-net">£0</div></div>
+          <div style="text-align:center"><div style="font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(17,29,44,.7)">Jobs</div><div style="font-size:1.2rem;font-weight:500;color:var(--navy);margin-top:.15rem" id="dm-earn-jobs">0</div></div>
+          <div style="text-align:center"><div style="font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(17,29,44,.7)">Gross</div><div style="font-size:1.2rem;font-weight:500;color:var(--navy);margin-top:.15rem" id="dm-earn-gross">£0</div></div>
+          <div style="text-align:center"><div style="font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(17,29,44,.7)">Commission (10%)</div><div style="font-size:1.2rem;font-weight:500;color:#9C2828;margin-top:.15rem" id="dm-earn-comm">£0</div></div>
+          <div style="text-align:center"><div style="font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(17,29,44,.7)">Driver Net</div><div style="font-size:1.2rem;font-weight:500;color:var(--gold);margin-top:.15rem" id="dm-earn-net">£0</div></div>
         </div>
         <div id="dm-earn-list" style="max-height:180px;overflow-y:auto;border-top:1px solid rgba(17,29,44,.08);padding-top:.6rem;font-size:.78rem"></div>
         <div style="display:flex;gap:.5rem;margin-top:.7rem;flex-wrap:wrap">
@@ -1432,13 +1432,13 @@ if ('serviceWorker' in navigator) {
             <div><label class="fl">From</label><input class="fi" type="date" id="ni-from"></div>
             <div><label class="fl">To</label><input class="fi" type="date" id="ni-to"></div>
           </div>
-          <div style="font-size:.68rem;color:rgba(17,29,44,.45);margin-top:.35rem">Only confirmed/completed bookings in this date range will be included.</div>
+          <div style="font-size:.68rem;color:rgba(17,29,44,.68);margin-top:.35rem">Only confirmed/completed bookings in this date range will be included.</div>
         </div>
       </div>
 
       <!-- Bespoke / one-off mode -->
       <div id="ni-bespoke-fields" style="display:none">
-        <div style="font-size:.72rem;color:rgba(17,29,44,.5);margin-bottom:.9rem;line-height:1.5">Create a bespoke invoice with custom line items. You can prefill from a previous recipient or type a new one.</div>
+        <div style="font-size:.72rem;color:rgba(17,29,44,.7);margin-bottom:.9rem;line-height:1.5">Create a bespoke invoice with custom line items. You can prefill from a previous recipient or type a new one.</div>
         <div class="fg" style="position:relative">
           <label class="fl">Previous recipient</label>
           <input class="fi" id="ni-saved-recipient-input" placeholder="Type to search saved recipients…" autocomplete="off"
@@ -1461,15 +1461,15 @@ if ('serviceWorker' in navigator) {
         <div class="fg">
           <label class="fl">Line Items *</label>
           <div style="display:grid;grid-template-columns:110px 1fr 100px 28px;gap:.35rem;margin-bottom:.25rem">
-            <div style="font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.4)">Date</div>
-            <div style="font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.4)">Description</div>
-            <div style="font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.4);text-align:right">Amount £</div>
+            <div style="font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.66)">Date</div>
+            <div style="font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.66)">Description</div>
+            <div style="font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.66);text-align:right">Amount £</div>
             <div></div>
           </div>
           <div id="ni-items" style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:.5rem"></div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.2rem">
             <button class="btn btn-ghost btn-sm" onclick="addBespokeItem()" style="font-size:.68rem;padding:.4rem .8rem">+ Add Line Item</button>
-            <div style="font-size:.78rem;color:rgba(17,29,44,.5)">Total: <strong id="ni-running-total" style="color:var(--navy)">£0.00</strong></div>
+            <div style="font-size:.78rem;color:rgba(17,29,44,.7)">Total: <strong id="ni-running-total" style="color:var(--navy)">£0.00</strong></div>
           </div>
         </div>
 <div class="fg"><label class="fl">Notes (optional)</label><textarea class="fi" id="ni-notes" rows="2" placeholder="Additional notes shown on the invoice" style="resize:vertical;min-height:60px"></textarea></div>
@@ -1497,14 +1497,14 @@ if ('serviceWorker' in navigator) {
     </div>
     <div class="modal-body" style="padding-bottom:.5rem">
       <div style="margin-bottom:1.2rem">
-        <div style="font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.3rem">Issued</div>
+        <div style="font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.66);margin-bottom:.3rem">Issued</div>
         <div id="mid-issued" style="font-size:.9rem;color:var(--navy)"></div>
       </div>
       <div style="margin-bottom:1.2rem">
-        <div style="font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.4rem">Recipient</div>
+        <div style="font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.66);margin-bottom:.4rem">Recipient</div>
         <div id="mid-recipient" style="font-size:.88rem;color:var(--navy);line-height:1.6"></div>
       </div>
-      <div id="mid-period" style="font-size:.75rem;color:rgba(17,29,44,.5);margin-bottom:.8rem;font-style:italic"></div>
+      <div id="mid-period" style="font-size:.75rem;color:rgba(17,29,44,.7);margin-bottom:.8rem;font-style:italic"></div>
       <div style="overflow-x:auto;margin-bottom:1rem">
         <table class="inv-table" id="mid-items-table">
           <thead id="mid-items-head"></thead>
@@ -1512,7 +1512,7 @@ if ('serviceWorker' in navigator) {
         </table>
       </div>
       <div style="text-align:right;padding:.6rem 0;border-top:2px solid var(--navy)">
-        <span style="font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-right:.8rem">Total</span>
+        <span style="font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.7);margin-right:.8rem">Total</span>
         <span id="mid-total" style="font-family:Georgia,serif;font-size:1.3rem;color:var(--navy);font-weight:700"></span>
       </div>
       <div id="mid-notes" style="display:none;margin-top:.8rem;padding:.6rem .8rem;background:rgba(184,152,90,.07);border-left:3px solid var(--gold);font-size:.8rem;color:var(--navy);line-height:1.6;border-radius:0 4px 4px 0"></div>
@@ -1536,26 +1536,26 @@ if ('serviceWorker' in navigator) {
 .aa-hd{padding:1.05rem 1.2rem;border-bottom:1px solid rgba(17,29,44,.08);display:flex;align-items:center;gap:.6rem;justify-content:space-between}
 .aa-hd-t{font-family:Georgia,serif;font-size:1.05rem;color:var(--navy)}
 .aa-hd-s{font-size:.56rem;letter-spacing:.26em;text-transform:uppercase;color:var(--gold);margin-top:.15rem}
-.aa-close{background:transparent;border:none;color:rgba(17,29,44,.4);cursor:pointer;font-size:1.4rem;line-height:1}
-.aa-clear{background:transparent;border:none;font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(17,29,44,.5);cursor:pointer;padding:.2rem .4rem}
+.aa-close{background:transparent;border:none;color:rgba(17,29,44,.66);cursor:pointer;font-size:1.4rem;line-height:1}
+.aa-clear{background:transparent;border:none;font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(17,29,44,.7);cursor:pointer;padding:.2rem .4rem}
 .aa-clear:hover{color:var(--navy)}
 .aa-feed{flex:1;overflow-y:auto;padding:1rem 1.2rem;display:flex;flex-direction:column;gap:.7rem;background:#fafaf7}
 .aa-msg{max-width:88%;padding:.65rem .85rem;font-size:.85rem;line-height:1.45;border-radius:10px;word-wrap:break-word;white-space:pre-wrap}
 .aa-msg.user{align-self:flex-end;background:var(--navy);color:#fff;border-bottom-right-radius:3px}
 .aa-msg.bot{align-self:flex-start;background:#fff;color:var(--navy);border:1px solid rgba(17,29,44,.08);border-bottom-left-radius:3px}
-.aa-msg.bot.thinking{color:rgba(17,29,44,.5);font-style:italic}
+.aa-msg.bot.thinking{color:rgba(17,29,44,.7);font-style:italic}
 .aa-in{padding:.85rem 1rem;border-top:1px solid rgba(17,29,44,.08);display:flex;gap:.5rem;background:#fff}
 .aa-in textarea{flex:1;resize:none;font-family:inherit;font-size:.85rem;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);border-radius:6px;outline:none;background:#fafafa;color:var(--navy);min-height:42px;max-height:110px;line-height:1.4}
 .aa-in textarea:focus{border-color:var(--gold);background:#fff}
 .aa-send{background:var(--gold);color:var(--navy);border:none;padding:0 1rem;font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;font-weight:600;cursor:pointer;border-radius:4px}
 .aa-send:disabled{opacity:.5;cursor:not-allowed}
-.aa-hint{font-size:.66rem;color:rgba(17,29,44,.45);padding:.5rem 1.2rem .7rem;background:#fafaf7;border-top:1px solid rgba(17,29,44,.06)}
-.aa-img-btn{background:none;border:1px solid rgba(17,29,44,.15);color:rgba(17,29,44,.5);width:34px;height:34px;border-radius:6px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:border-color .15s,color .15s}
+.aa-hint{font-size:.66rem;color:rgba(17,29,44,.68);padding:.5rem 1.2rem .7rem;background:#fafaf7;border-top:1px solid rgba(17,29,44,.06)}
+.aa-img-btn{background:none;border:1px solid rgba(17,29,44,.15);color:rgba(17,29,44,.7);width:34px;height:34px;border-radius:6px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:border-color .15s,color .15s}
 .aa-img-btn:hover{border-color:var(--gold);color:var(--gold)}
 .aa-booking-card{background:#f4f8ff;border:1.5px solid var(--gold);border-radius:10px;padding:.9rem 1rem;margin:.4rem 0;font-size:.8rem;line-height:1.6;color:var(--navy);max-width:100%}
 .aa-booking-card .abc-title{font-weight:700;font-size:.82rem;margin-bottom:.5rem;color:var(--navy)}
 .aa-booking-card .abc-row{display:flex;gap:.4rem;margin:.1rem 0}
-.aa-booking-card .abc-lbl{color:rgba(17,29,44,.5);min-width:70px;flex-shrink:0}
+.aa-booking-card .abc-lbl{color:rgba(17,29,44,.7);min-width:70px;flex-shrink:0}
 .aa-booking-card .abc-val{color:var(--navy);font-weight:500}
 .aa-booking-card .abc-btn{margin-top:.75rem;width:100%;background:var(--gold);color:var(--navy);border:none;padding:.55rem;font-weight:700;font-size:.78rem;border-radius:6px;cursor:pointer;letter-spacing:.03em}
 .aa-booking-card .abc-btn:hover{opacity:.88}
@@ -1974,8 +1974,8 @@ function renderTodayPersonal(events){
   if(!todayEvents.length){card.style.display='none';return;}
   card.style.display='';
   list.innerHTML=todayEvents.map(function(ev){
-    var loc=ev.location?'<div style="font-size:.72rem;color:rgba(17,29,44,.5);margin-top:.15rem">\ud83d\udccd '+_esc(ev.location)+'</div>':'';
-    var notes=ev.notes?'<div style="font-size:.72rem;color:rgba(17,29,44,.6);margin-top:.3rem;padding:.35rem .5rem;background:rgba(91,107,154,.06);border-left:2px solid #5b6b9a;white-space:pre-wrap;line-height:1.4">'+_esc(ev.notes)+'</div>':'';
+    var loc=ev.location?'<div style="font-size:.72rem;color:rgba(17,29,44,.7);margin-top:.15rem">\ud83d\udccd '+_esc(ev.location)+'</div>':'';
+    var notes=ev.notes?'<div style="font-size:.72rem;color:rgba(17,29,44,.74);margin-top:.3rem;padding:.35rem .5rem;background:rgba(91,107,154,.06);border-left:2px solid #5b6b9a;white-space:pre-wrap;line-height:1.4">'+_esc(ev.notes)+'</div>':'';
     return '<div style="display:flex;gap:.85rem;padding:.7rem 0;border-bottom:1px solid rgba(17,29,44,.06)">'
       +'<div style="min-width:88px;font-size:.78rem;color:var(--gold);font-weight:500;font-variant-numeric:tabular-nums">'+_evRange(ev)+'</div>'
       +'<div style="flex:1"><div style="font-size:.86rem;color:var(--navy);font-weight:500">'+_esc(ev.title)+'</div>'+loc+notes+'</div>'
@@ -2002,13 +2002,13 @@ function renderDashPersonal(events){
     var label=k===todayKey?'Today':d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
     var rows=byDate[k].map(function(ev){
       var loc=ev.location?' \u00b7 '+_esc(ev.location):'';
-      var notes=ev.notes?'<div style="margin-top:.25rem;padding:.3rem .45rem;background:rgba(91,107,154,.06);border-left:2px solid #5b6b9a;font-size:.72rem;color:rgba(17,29,44,.6);white-space:pre-wrap;line-height:1.4">'+_esc(ev.notes)+'</div>':'';
+      var notes=ev.notes?'<div style="margin-top:.25rem;padding:.3rem .45rem;background:rgba(91,107,154,.06);border-left:2px solid #5b6b9a;font-size:.72rem;color:rgba(17,29,44,.74);white-space:pre-wrap;line-height:1.4">'+_esc(ev.notes)+'</div>':'';
       return '<div style="display:flex;gap:.7rem;padding:.35rem 0;font-size:.8rem">'
         +'<div style="min-width:90px;color:var(--gold);font-variant-numeric:tabular-nums">'+_evRange(ev)+'</div>'
-        +'<div style="flex:1;color:var(--navy)">'+_esc(ev.title)+'<span style="color:rgba(17,29,44,.45);font-size:.75rem">'+loc+'</span>'+notes+'</div>'
+        +'<div style="flex:1;color:var(--navy)">'+_esc(ev.title)+'<span style="color:rgba(17,29,44,.68);font-size:.75rem">'+loc+'</span>'+notes+'</div>'
         +'</div>';
     }).join('');
-    return '<div style="margin-bottom:.85rem"><div style="font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.25rem">'+label+'</div>'+rows+'</div>';
+    return '<div style="margin-bottom:.85rem"><div style="font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.68);margin-bottom:.25rem">'+label+'</div>'+rows+'</div>';
   }).join('');
   list.innerHTML=html;
 }
@@ -2030,17 +2030,17 @@ function setInboxFolder(folder,btn){
 }
 function loadInbox(){
   var list=document.getElementById('inbox-list');
-  list.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.35);font-size:.85rem">Loading…</div>';
+  list.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.64);font-size:.85rem">Loading…</div>';
   fetch('/api/gmail/messages?folder='+encodeURIComponent(INBOX_FOLDER)+'&limit=40').then(function(r){return r.json().then(function(d){return{status:r.status,d:d};});}).then(function(o){
     if(o.status===400&&o.d&&o.d.error==='gmail_scope_missing'){
-      list.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.55);font-size:.85rem">Gmail access not granted.<br><br><button class="btn btn-navy btn-sm" onclick="reconnectForGmail()">Reconnect Google to enable Inbox</button></div>';return;
+      list.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.72);font-size:.85rem">Gmail access not granted.<br><br><button class="btn btn-navy btn-sm" onclick="reconnectForGmail()">Reconnect Google to enable Inbox</button></div>';return;
     }
     if(o.status===400&&o.d&&o.d.error==='not_connected'){
-      list.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.55);font-size:.85rem">Google not connected.<br><br><button class="btn btn-navy btn-sm" onclick="connectGoogleCalendar()">Connect Google</button></div>';return;
+      list.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.72);font-size:.85rem">Google not connected.<br><br><button class="btn btn-navy btn-sm" onclick="connectGoogleCalendar()">Connect Google</button></div>';return;
     }
     if(!o.d||!o.d.ok){list.innerHTML='<div style="text-align:center;padding:2rem;color:#c54040;font-size:.85rem">'+escHtml((o.d&&o.d.error)||'Failed to load inbox')+'</div>';return;}
     var msgs=o.d.messages||[];
-    if(!msgs.length){list.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.35);font-size:.85rem">No messages.</div>';return;}
+    if(!msgs.length){list.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.64);font-size:.85rem">No messages.</div>';return;}
     var badge=document.getElementById('sb-inbox-badge');
     var unread=msgs.filter(function(m){return m.unread;}).length;
     if(badge){if(unread>0){badge.textContent=unread;badge.style.display='';}else{badge.style.display='none';}}
@@ -2049,9 +2049,9 @@ function loadInbox(){
       var weight=m.unread?'600':'400';
       var dot=m.unread?'<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gold);margin-right:.5rem;vertical-align:middle"></span>':'<span style="display:inline-block;width:6px;margin-right:.5rem"></span>';
       return '<div class="inbox-row" onclick="openInboxMessage(\''+escHtml(m.id)+'\')" style="padding:.8rem 1rem;border-bottom:1px solid rgba(17,29,44,.05);cursor:pointer;font-size:.85rem" onmouseover="this.style.background=\'rgba(17,29,44,.03)\'" onmouseout="this.style.background=\'\'">'+
-        '<div style="display:flex;justify-content:space-between;gap:1rem"><div style="font-weight:'+weight+';color:var(--navy);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+dot+escHtml(m.from)+'</div><div style="color:rgba(17,29,44,.4);font-size:.75rem;flex-shrink:0">'+escHtml(date)+'</div></div>'+
+        '<div style="display:flex;justify-content:space-between;gap:1rem"><div style="font-weight:'+weight+';color:var(--navy);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+dot+escHtml(m.from)+'</div><div style="color:rgba(17,29,44,.66);font-size:.75rem;flex-shrink:0">'+escHtml(date)+'</div></div>'+
         '<div style="color:var(--navy);font-weight:'+weight+';margin-top:.2rem;font-size:.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(m.subject)+'</div>'+
-        '<div style="color:rgba(17,29,44,.5);margin-top:.15rem;font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(m.snippet)+'</div>'+
+        '<div style="color:rgba(17,29,44,.7);margin-top:.15rem;font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(m.snippet)+'</div>'+
         '</div>';
     }).join('');
   }).catch(function(){list.innerHTML='<div style="text-align:center;padding:2rem;color:#c54040;font-size:.85rem">Network error</div>';});
@@ -2201,7 +2201,7 @@ function loadLiveBookings(){
             +' '+admPayTag(b).label+'</div></div></div>';
         }).join('');
       } else {
-        tl.innerHTML='<div style="text-align:center;padding:1.5rem;color:rgba(17,29,44,.3);font-size:.82rem">No jobs today</div>';
+        tl.innerHTML='<div style="text-align:center;padding:1.5rem;color:rgba(17,29,44,.62);font-size:.82rem">No jobs today</div>';
       }
     }
 
@@ -2227,7 +2227,7 @@ function loadLiveBookings(){
             +'</div></div></div>';
         }).join('');
       } else {
-        todayTl.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.3);font-size:.85rem">No jobs scheduled for today</div>';
+        todayTl.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.62);font-size:.85rem">No jobs scheduled for today</div>';
       }
     }
 
@@ -2235,7 +2235,7 @@ function loadLiveBookings(){
     var tbody=el('jobs-tbody');
     if(tbody){
       if(!bookings.length){
-        tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">No bookings yet</td></tr>';
+        tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:2rem;color:rgba(17,29,44,.62)">No bookings yet</td></tr>';
       } else {
         var _conflicts=admFindOverlaps(bookings);
         tbody.innerHTML=bookings.map(function(b){
@@ -2268,9 +2268,9 @@ function loadLiveBookings(){
             var _sug=(b.suggested_fare!=null&&b.suggested_fare!=='')?Number(b.suggested_fare):(b.fare!=null?Number(b.fare):null);
             var _pv=(_sug!=null&&!isNaN(_sug))?_sug.toFixed(2):'';
             fareCellHtml='<input id="adm-fare-'+b.id+'" type="number" step="0.50" inputmode="decimal" value="'+_pv+'" style="width:74px;padding:.3rem .4rem;border:1px solid rgba(17,29,44,.25);border-radius:5px;font-size:.9rem;color:var(--navy)">'
-              +((_sug!=null&&!isNaN(_sug))?'<div style="font-size:.55rem;color:rgba(17,29,44,.45);margin-top:.15rem">Suggested \u00a3'+_sug.toFixed(0)+'</div>':'<div style="font-size:.55rem;color:rgba(17,29,44,.4);margin-top:.15rem">No suggestion</div>');
+              +((_sug!=null&&!isNaN(_sug))?'<div style="font-size:.55rem;color:rgba(17,29,44,.68);margin-top:.15rem">Suggested \u00a3'+_sug.toFixed(0)+'</div>':'<div style="font-size:.55rem;color:rgba(17,29,44,.66);margin-top:.15rem">No suggestion</div>');
           } else {
-            fareCellHtml='<span style="color:var(--gold);font-family:var(--serif);font-size:1.1rem">'+(b.fare?'\u00a3'+Number(b.fare).toFixed(0):'TBC')+'</span>'+(b.dead_miles_fee?'<div style="font-size:.55rem;color:rgba(17,29,44,.4);margin-top:.1rem">incl. \u00a3'+Number(b.dead_miles_fee).toFixed(0)+' dead mi</div>':'');
+            fareCellHtml='<span style="color:var(--gold);font-family:var(--serif);font-size:1.1rem">'+(b.fare?'\u00a3'+Number(b.fare).toFixed(0):'TBC')+'</span>'+(b.dead_miles_fee?'<div style="font-size:.55rem;color:rgba(17,29,44,.66);margin-top:.1rem">incl. \u00a3'+Number(b.dead_miles_fee).toFixed(0)+' dead mi</div>':'');
           }
           return '<tr data-bid="'+b.id+'" style="'+rowStyle+'">'
             +'<td><div class="main-v">'+b.ref+'</div>'+conflictMark+reasonRow+'</td>'
@@ -2334,7 +2334,7 @@ function loadLiveBookings(){
       if(dc)dc.textContent=d.customers.length;
       if(!cg)return;
       if(!d.customers.length){
-        cg.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:2rem;color:rgba(17,29,44,.3);font-size:.85rem">No customers yet. Click \u201c+ New Customer\u201d to open one.</div>';
+        cg.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:2rem;color:rgba(17,29,44,.62);font-size:.85rem">No customers yet. Click \u201c+ New Customer\u201d to open one.</div>';
         return;
       }
       cg.innerHTML=d.customers.map(function(c){
@@ -2667,10 +2667,10 @@ async function dmLoadEarnings(which){
     document.getElementById('dm-earn-comm').textContent='£'+d.totals.commission.toFixed(2);
     document.getElementById('dm-earn-net').textContent='£'+d.totals.net.toFixed(2);
     var list=document.getElementById('dm-earn-list');
-    if(!d.items.length){list.innerHTML='<div style="color:rgba(17,29,44,.45);padding:.4rem 0">No jobs in this period.</div>';return;}
+    if(!d.items.length){list.innerHTML='<div style="color:rgba(17,29,44,.68);padding:.4rem 0">No jobs in this period.</div>';return;}
     list.innerHTML=d.items.map(function(it){
       return '<div style="display:grid;grid-template-columns:76px 1fr auto;gap:.5rem;padding:.45rem 0;border-bottom:1px solid rgba(17,29,44,.05)">'
-        +'<div style="color:rgba(17,29,44,.55);font-size:.72rem">'+escTo(it.date)+'</div>'
+        +'<div style="color:rgba(17,29,44,.72);font-size:.72rem">'+escTo(it.date)+'</div>'
         +'<div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escTo(it.pickup)+' → '+escTo(it.destination)+'">'+escTo(it.ref)+' · '+escTo(it.pickup)+' → '+escTo(it.destination)+'</div>'
         +'<div style="text-align:right;white-space:nowrap;font-family:Menlo,Consolas,monospace;font-size:.72rem">£'+it.fare.toFixed(2)+' <span style="color:#9C2828">−£'+it.commission.toFixed(2)+'</span> = <span style="color:var(--gold);font-weight:500">£'+it.net.toFixed(2)+'</span></div>'
       +'</div>';
@@ -2809,12 +2809,12 @@ function buildDrivers(){
     return;
   }
   grid.innerHTML=DRIVERS.map(function(d){
-    var vehicleLine=d.vehicle?d.vehicle:'<span style="color:rgba(17,29,44,.3)">No vehicle set</span>';
+    var vehicleLine=d.vehicle?d.vehicle:'<span style="color:rgba(17,29,44,.62)">No vehicle set</span>';
     var regLine=d.reg?d.reg:'';
     var phvLine=d.phv?('PHV: '+d.phv):'';
     var loginBadge=d.has_login
       ? '<span style="font-size:.6rem;color:var(--green);background:var(--green-bg);padding:.15rem .4rem;border-radius:3px;letter-spacing:.08em;text-transform:uppercase">App access</span>'
-      : '<span style="font-size:.6rem;color:rgba(17,29,44,.5);background:rgba(17,29,44,.06);padding:.15rem .4rem;border-radius:3px;letter-spacing:.08em;text-transform:uppercase">No login</span>';
+      : '<span style="font-size:.6rem;color:rgba(17,29,44,.7);background:rgba(17,29,44,.06);padding:.15rem .4rem;border-radius:3px;letter-spacing:.08em;text-transform:uppercase">No login</span>';
     var defaultBadge=d.is_default
       ? '<span style="font-size:.6rem;color:#B8985A;background:rgba(184,152,90,.12);padding:.15rem .4rem;border-radius:3px;letter-spacing:.08em;text-transform:uppercase;margin-left:.3rem">★ Default</span>'
       : '';
@@ -2984,7 +2984,7 @@ window._CD_NAME='';
 function viewCustomer(id){
   window._CD_ID=id;
   document.getElementById('cd-title').textContent='Customer';
-  document.getElementById('cd-content').innerHTML='<div style="color:rgba(17,29,44,.4);font-size:.82rem">Loading...</div>';
+  document.getElementById('cd-content').innerHTML='<div style="color:rgba(17,29,44,.66);font-size:.82rem">Loading...</div>';
   document.getElementById('cd-bookings').innerHTML='Loading...';
   switchCustDetail('view');
   openModal('modal-cust-detail');
@@ -3003,23 +3003,23 @@ function viewCustomer(id){
     rows.forEach(function(row){
       if(!row[1])return;
       html+='<div style="display:flex;gap:.8rem;margin-bottom:.45rem;font-size:.82rem">'
-        +'<span style="min-width:90px;color:rgba(17,29,44,.4);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;padding-top:.1rem">'+row[0]+'</span>'
+        +'<span style="min-width:90px;color:rgba(17,29,44,.66);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;padding-top:.1rem">'+row[0]+'</span>'
         +'<span style="color:var(--navy)">'+escTo(String(row[1]))+'</span></div>';
     });
     document.getElementById('cd-content').innerHTML=html;
     // Bookings
     if(!d.bookings||!d.bookings.length){
-      document.getElementById('cd-bookings').innerHTML='<div style="color:rgba(17,29,44,.35);font-size:.8rem">No bookings yet.</div>';
+      document.getElementById('cd-bookings').innerHTML='<div style="color:rgba(17,29,44,.64);font-size:.8rem">No bookings yet.</div>';
       return;
     }
     var bhtml='<table style="width:100%;border-collapse:collapse;font-size:.76rem">'
-      +'<tr style="color:rgba(17,29,44,.4);font-size:.65rem;letter-spacing:.08em;text-transform:uppercase"><th style="text-align:left;padding:.35rem 0;font-weight:500">Ref</th><th style="text-align:left;padding:.35rem .4rem;font-weight:500">Date</th><th style="text-align:left;padding:.35rem .4rem;font-weight:500">Route</th><th style="text-align:right;padding:.35rem 0;font-weight:500">Fare</th></tr>';
+      +'<tr style="color:rgba(17,29,44,.66);font-size:.65rem;letter-spacing:.08em;text-transform:uppercase"><th style="text-align:left;padding:.35rem 0;font-weight:500">Ref</th><th style="text-align:left;padding:.35rem .4rem;font-weight:500">Date</th><th style="text-align:left;padding:.35rem .4rem;font-weight:500">Route</th><th style="text-align:right;padding:.35rem 0;font-weight:500">Fare</th></tr>';
     d.bookings.slice(0,10).forEach(function(b){
       var statusCol=b.status==='completed'?'var(--green)':b.status==='cancelled'?'var(--red)':'var(--gold)';
       bhtml+='<tr style="border-top:1px solid rgba(17,29,44,.05)">'
         +'<td style="padding:.35rem 0;color:var(--navy);font-weight:400">'+escTo(b.ref)+'</td>'
-        +'<td style="padding:.35rem .4rem;color:rgba(17,29,44,.55)">'+escTo(b.date)+'</td>'
-        +'<td style="padding:.35rem .4rem;color:rgba(17,29,44,.55);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escTo(b.pickup)+' &rarr; '+escTo(b.destination)+'</td>'
+        +'<td style="padding:.35rem .4rem;color:rgba(17,29,44,.72)">'+escTo(b.date)+'</td>'
+        +'<td style="padding:.35rem .4rem;color:rgba(17,29,44,.72);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escTo(b.pickup)+' &rarr; '+escTo(b.destination)+'</td>'
         +'<td style="padding:.35rem 0;text-align:right;color:'+statusCol+'">'+(b.fare?'£'+Number(b.fare).toFixed(0):'—')+'</td>'
         +'</tr>';
     });
@@ -3028,7 +3028,7 @@ function viewCustomer(id){
     // stash customer for edit prefill
     window._CD_CUST=c;
   }).catch(function(){
-    document.getElementById('cd-content').innerHTML='<div style="color:rgba(17,29,44,.4)">Failed to load customer.</div>';
+    document.getElementById('cd-content').innerHTML='<div style="color:rgba(17,29,44,.66)">Failed to load customer.</div>';
   });
 }
 
@@ -3220,7 +3220,8 @@ function openNewInvoice(){
     }
     var opts=['<option value="">-- Select customer --</option>'];
     var prefillOpts=['<option value="">— New recipient —</option>'];
-    d.customers.forEach(function(c){
+    // Only active customers belong in the invoice pickers — never deleted ones.
+    d.customers.filter(function(c){return c.active!==0&&c.active!==false;}).forEach(function(c){
       opts.push('<option value="'+c.id+'">'+escTo(c.full_name||'Unknown')+'</option>');
       prefillOpts.push('<option value="'+c.id+'">'+escTo(c.full_name||'Unknown')+(c.email?' ('+escTo(c.email)+')':'')+'</option>');
       window._BESPOKE_CUST_INDEX[c.id]=c;
@@ -3256,8 +3257,8 @@ function filterSavedRecipients(q){
       +' onmousedown="selectSavedRecipient('+_SAVED_RECIPIENTS.indexOf(r)+')"'
       +' style="padding:.55rem .8rem;cursor:pointer;font-size:.83rem;color:var(--navy);border-bottom:1px solid rgba(17,29,44,.06)">'
       +'<span style="font-weight:500">'+escTo(r.name||'')+'</span>'
-      +(r.email?'<span style="color:rgba(17,29,44,.45);font-size:.75rem;margin-left:.4rem">'+escTo(r.email)+'</span>':'')
-      +(r.phone?'<span style="color:rgba(17,29,44,.35);font-size:.72rem;margin-left:.35rem">'+escTo(r.phone)+'</span>':'')
+      +(r.email?'<span style="color:rgba(17,29,44,.68);font-size:.75rem;margin-left:.4rem">'+escTo(r.email)+'</span>':'')
+      +(r.phone?'<span style="color:rgba(17,29,44,.64);font-size:.72rem;margin-left:.35rem">'+escTo(r.phone)+'</span>':'')
       +'</div>';
   }).join('');
   list.style.display='';
@@ -3494,7 +3495,7 @@ function openInvoicePreview(data){
     +'.wrap::before{content:"";position:absolute;top:0;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,#B8985A 18%,#B8985A 82%,transparent 100%);z-index:2}'
     +'.wrap::after{content:"";position:absolute;bottom:0;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,#B8985A 18%,#B8985A 82%,transparent 100%);z-index:2}'
     +'/* watermark removed */'
-    +'.corner-mark{position:absolute;top:28px;right:32px;font-family:Helvetica Neue,Arial,sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:rgba(17,29,44,.28);z-index:1}'
+    +'.corner-mark{position:absolute;top:28px;right:32px;font-family:Helvetica Neue,Arial,sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:rgba(17,29,44,.6);z-index:1}'
     +'.toolbar{background:#111D2C;padding:12px 24px;display:flex;gap:12px;align-items:center;position:relative;z-index:3}'
     +'.toolbar button{font-family:Helvetica Neue,Arial,sans-serif;font-size:12px;padding:8px 18px;border:none;cursor:pointer;letter-spacing:.5px}'
     +'.toolbar .btn-dl{background:#B8985A;color:#111D2C}'
@@ -3547,12 +3548,15 @@ function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'
 function loadInvoiceHistory(){
   var tbody=document.getElementById('invoice-history-body');if(!tbody)return;
   fetch('/api/invoices',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
-    if(!d.ok){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">Unable to load history</td></tr>';return;}
+    if(!d.ok){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:rgba(17,29,44,.62)">Unable to load history</td></tr>';return;}
     var invoices=d.invoices||[];
     if(!invoices.length){
-      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">No invoices yet</td></tr>';return;
+      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:rgba(17,29,44,.62)">No invoices yet</td></tr>';return;
     }
+    // Keep every invoice (stored + legacy) accessible for the View buttons.
+    window._INV_HISTORY={};
     tbody.innerHTML=invoices.map(function(inv){
+      window._INV_HISTORY[inv.invoice_no]=inv;
       var kind=inv.kind==='bespoke'?'One-off':'Account';
       // Legacy invoices (sent before the invoices table existed) come from the
       // audit log: they have no stored record/PDF, so no id, view or download —
@@ -3560,21 +3564,23 @@ function loadInvoiceHistory(){
       var isLegacy=inv.legacy||inv.id==null;
       var total=(inv.total==null)?'—':('£'+(+inv.total||0).toFixed(2));
       if(isLegacy){
-        return '<tr>'
+        var legacyNoJs=escTo(inv.invoice_no).replace(/'/g,"\\'");
+        return '<tr style="cursor:pointer" onclick="viewLegacyInvoice(\''+legacyNoJs+'\')">'
           +'<td style="font-family:Menlo,Consolas,monospace;font-size:.78rem">'+escTo(inv.invoice_no)+'</td>'
-          +'<td>'+escTo(inv.recipient_name||'')+(inv.recipient_email?'<span style="font-size:.72rem;color:rgba(17,29,44,.45)">'+escTo(inv.recipient_email)+'</span>':'')+'</td>'
+          +'<td>'+escTo(inv.recipient_name||inv.recipient_email||'—')+(inv.recipient_name&&inv.recipient_email?'<br><span style="font-size:.72rem;color:rgba(17,29,44,.68)">'+escTo(inv.recipient_email)+'</span>':'')+'</td>'
           +'<td style="text-align:right;font-family:Georgia,serif;color:var(--navy)">'+total+'</td>'
           +'<td><span style="font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)">'+kind+'</span></td>'
           +'<td style="white-space:nowrap">'+escTo(inv.issued_date||'')+'</td>'
           +'<td style="white-space:nowrap">'
-            +'<span style="font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-right:.5rem">Sent · archived</span>'
-            +'<button class="btn btn-ghost btn-sm" style="font-size:.65rem;padding:.3rem .7rem;color:#a33;border-color:rgba(163,51,51,.25)" onclick="deleteInvoice(\''+escTo(inv.invoice_no)+'\',\''+escTo(inv.invoice_no)+'\')">Delete</button>'
+            +'<span style="font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(17,29,44,.66);margin-right:.5rem">archived</span>'
+            +'<button class="btn btn-ghost btn-sm" style="font-size:.65rem;padding:.3rem .7rem" onclick="event.stopPropagation();viewLegacyInvoice(\''+legacyNoJs+'\')">View</button>'
+            +' <button class="btn btn-ghost btn-sm" style="font-size:.65rem;padding:.3rem .7rem;color:#a33;border-color:rgba(163,51,51,.25)" onclick="event.stopPropagation();deleteInvoice(\''+legacyNoJs+'\',\''+legacyNoJs+'\')">Delete</button>'
           +'</td>'
           +'</tr>';
       }
       return '<tr style="cursor:pointer" onclick="viewInvoice('+inv.id+')">'
         +'<td style="font-family:Menlo,Consolas,monospace;font-size:.78rem">'+escTo(inv.invoice_no)+'</td>'
-        +'<td>'+escTo(inv.recipient_name||'')+(inv.recipient_email?'<br><span style="font-size:.72rem;color:rgba(17,29,44,.45)">'+escTo(inv.recipient_email)+'</span>':'')+'</td>'
+        +'<td>'+escTo(inv.recipient_name||'')+(inv.recipient_email?'<br><span style="font-size:.72rem;color:rgba(17,29,44,.68)">'+escTo(inv.recipient_email)+'</span>':'')+'</td>'
         +'<td style="text-align:right;font-family:Georgia,serif;color:var(--navy)">'+total+'</td>'
         +'<td><span style="font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)">'+kind+'</span></td>'
         +'<td style="white-space:nowrap">'+escTo(inv.issued_date||'')+'</td>'
@@ -3585,7 +3591,7 @@ function loadInvoiceHistory(){
         +'</td>'
         +'</tr>';
     }).join('');
-  }).catch(function(){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">Unable to load history</td></tr>';});
+  }).catch(function(){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:rgba(17,29,44,.62)">Unable to load history</td></tr>';});
 }
 
 async function deleteInvoice(id, invoiceNo){
@@ -3643,13 +3649,45 @@ function viewInvoice(id){
   }).catch(function(){doOpen({});});
 }
 
+// Legacy invoices live only in the audit log: no stored record, no PDF, no id.
+// We still show whatever was captured at send time (recipient, amount, date)
+// using the same detail modal, just without line items or a PDF download.
+function viewLegacyInvoice(invoiceNo){
+  var inv=(window._INV_HISTORY||{})[invoiceNo];
+  if(!inv){showToast('Invoice details unavailable.');return;}
+  var doOpen=function(settings){
+    var hasTotal=inv.total!=null;
+    var data={
+      invoiceNo:inv.invoice_no,
+      total:hasTotal?inv.total:0,
+      bespoke:false,
+      legacy:true,
+      settings:settings||{},
+      period:{issuedDate:inv.issued_date||'',dueDate:inv.due_date||'',label:inv.period_label||'',notes:hasTotal?'':'Archived invoice — recorded in the audit log before full invoice records were kept. Amount and line items were not stored.'},
+      customer:{full_name:inv.recipient_name||'',email:inv.recipient_email||'',phone:''},
+      bookings:[]
+    };
+    _MID_PRINT_DATA=data;
+    _MID_INVOICE_ID=null;
+    openInvoiceDetailModal(data);
+  };
+  if(_INV_SETTINGS_CACHE){doOpen(_INV_SETTINGS_CACHE);return;}
+  fetch('/api/settings/invoice',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
+    _INV_SETTINGS_CACHE=d.settings||{};
+    doOpen(_INV_SETTINGS_CACHE);
+  }).catch(function(){doOpen({});});
+}
+
 function openInvoiceDetailModal(data){
   var p=data.period||{};
   var isBespoke=!!data.bespoke;
   document.getElementById('mid-invoice-no').textContent=data.invoiceNo||'';
   document.getElementById('mid-badge').textContent=isBespoke?'One-off Invoice':'Account Invoice';
   document.getElementById('mid-issued').textContent=p.issuedDate||'—';
-  document.getElementById('mid-total').textContent='£'+(+data.total||0).toFixed(2);
+  document.getElementById('mid-total').textContent=(data.legacy&&(data.total==null||+data.total===0))?'—':('£'+(+data.total||0).toFixed(2));
+  // Legacy/archived invoices have no stored PDF — hide the download button.
+  var pdfBtn=document.getElementById('mid-pdf-btn');
+  if(pdfBtn)pdfBtn.style.display=data.legacy?'none':'';
 
   // Recipient
   var recEl=document.getElementById('mid-recipient');
@@ -3692,19 +3730,19 @@ function openInvoiceDetailModal(data){
           return '<tr><td>'+escTo(it.description||'')+'</td>'
             +'<td style="text-align:right;font-family:Georgia,serif">£'+(+it.amount||0).toFixed(2)+'</td></tr>';
         }).join('')
-      : '<tr><td colspan="2" style="text-align:center;padding:1.2rem;color:rgba(17,29,44,.35)">No items</td></tr>';
+      : '<tr><td colspan="2" style="text-align:center;padding:1.2rem;color:rgba(17,29,44,.64)">No items</td></tr>';
   } else {
     head.innerHTML='<tr><th>Date / Ref</th><th>Journey</th><th style="text-align:right">Fare</th></tr>';
     var bks=data.bookings||[];
     body.innerHTML=bks.length
       ? bks.map(function(b){
-          var ref=b.ref?'<br><span style="font-family:Menlo,Consolas,monospace;font-size:.7rem;color:rgba(17,29,44,.4)">'+escTo(b.ref)+'</span>':'';
+          var ref=b.ref?'<br><span style="font-family:Menlo,Consolas,monospace;font-size:.7rem;color:rgba(17,29,44,.66)">'+escTo(b.ref)+'</span>':'';
           var route=escTo(b.pickup||'')+(b.destination?' → '+escTo(b.destination):'');
           return '<tr><td>'+escTo(b.date||'')+(b.time&&b.time!=='ASAP'?' '+escTo(b.time):'')+ref+'</td>'
             +'<td>'+route+'</td>'
             +'<td style="text-align:right;font-family:Georgia,serif;white-space:nowrap">£'+(+b.fare||0).toFixed(2)+'</td></tr>';
         }).join('')
-      : '<tr><td colspan="3" style="text-align:center;padding:1.2rem;color:rgba(17,29,44,.35)">No journeys in period</td></tr>';
+      : '<tr><td colspan="3" style="text-align:center;padding:1.2rem;color:rgba(17,29,44,.64)">No journeys in period</td></tr>';
   }
   openModal('modal-invoice-detail');
 }
@@ -3761,7 +3799,7 @@ async function loadAdminDocs(){
     list.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:.75rem">'+ADMIN_DOC_DEFS.map(function(dt){
       var doc=docsMap[dt.type]||null;
       var expiry=doc?doc.expiry_date:null;
-      var statusClass='color:rgba(17,29,44,.45)';var statusText='Not uploaded';
+      var statusClass='color:rgba(17,29,44,.68)';var statusText='Not uploaded';
       if(doc){
         if(expiry){
           var expDate=new Date(expiry);expDate.setHours(0,0,0,0);
@@ -3771,7 +3809,7 @@ async function loadAdminDocs(){
           else{statusClass='color:#2D6E47';statusText='Valid';}
         }else{statusClass='color:#2D6E47';statusText='Uploaded';}
       }
-      var info=doc?'<div style="font-size:.72rem;color:rgba(17,29,44,.4);margin:.2rem 0 .4rem">'+doc.uploaded_at.slice(0,10)+'</div>':'';
+      var info=doc?'<div style="font-size:.72rem;color:rgba(17,29,44,.66);margin:.2rem 0 .4rem">'+doc.uploaded_at.slice(0,10)+'</div>':'';
       var viewBtn=doc?'<button class="btn btn-ghost btn-sm" onclick="adminViewDoc('+doc.id+')">View</button>':'<button class="btn btn-ghost btn-sm" disabled style="opacity:.4">View</button>';
       var saveBtn=doc?'<button class="btn btn-ghost btn-sm" onclick="adminDocSaveExpiry('+doc.id+',\''+dt.type+'\')">Save</button>':'';
       return '<div style="border:1px solid rgba(17,29,44,.08);border-radius:8px;padding:.8rem">'
@@ -4307,7 +4345,7 @@ function buildRecordBook(){
   var tbody=document.getElementById('rb-tbody');
   if(!view.all.length){
     var emptyMsg=view.mode==='year'?'No journeys recorded this year':'No journeys recorded this month';
-    tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:2rem;color:rgba(17,29,44,.3)">'+emptyMsg+'</td></tr>';
+    tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:2rem;color:rgba(17,29,44,.62)">'+emptyMsg+'</td></tr>';
     document.getElementById('rb-count').textContent='0';
     document.getElementById('rb-total').textContent='£0.00';
     return;
@@ -4459,12 +4497,12 @@ function admEnrichNotes(text){
 async function loadTimeOff(){
   var list=document.getElementById('to-list');
   if(!list)return;
-  list.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.3);font-size:.85rem">Loading…</div>';
+  list.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.62);font-size:.85rem">Loading…</div>';
   try{
     var r=await fetch('/api/intake/time-off',{credentials:'include'});
     var d=await r.json();
     if(!d.ok){list.innerHTML='<div style="padding:1.4rem;color:#a33">'+escTo(d.error||'Error')+'</div>';return;}
-    if(!d.timeOff.length){list.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.3);font-size:.85rem">No blackouts set. The smart intake will treat every day as available.</div>';return;}
+    if(!d.timeOff.length){list.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.62);font-size:.85rem">No blackouts set. The smart intake will treat every day as available.</div>';return;}
     list.innerHTML=d.timeOff.map(function(t){
       var range=t.end_date&&t.end_date!==t.date?(t.date+' → '+t.end_date):t.date;
       var hrs=(t.start_time||t.end_time)?((t.start_time||'00:00')+'–'+(t.end_time||'23:59')):'All day';
@@ -4837,11 +4875,11 @@ function admShowDay(key){
       var when=ev.allDay?'All day':_evRange(ev);
       var loc=ev.location?' &middot; '+escTo(ev.location):'';
       var notes=ev.notes?'<div style="margin-top:.2rem;margin-left:0;padding:.35rem .5rem;background:#fff;border-left:2px solid #5b6b9a;font-size:.72rem;color:rgba(17,29,44,.75);white-space:pre-wrap;line-height:1.4">'+escTo(ev.notes)+'</div>':'';
-      return '<div style="padding:.25rem 0"><strong style="color:#2A3A66">'+when+'</strong> &middot; '+escTo(ev.title)+'<span style="color:rgba(17,29,44,.5)">'+loc+'</span>'+notes+'</div>';
+      return '<div style="padding:.25rem 0"><strong style="color:#2A3A66">'+when+'</strong> &middot; '+escTo(ev.title)+'<span style="color:rgba(17,29,44,.7)">'+loc+'</span>'+notes+'</div>';
     }).join('')+'</div>';
   }
   if(!jobs.length){
-    html+='<div style="padding:1.5rem;text-align:center;color:rgba(17,29,44,.4);font-size:.85rem">No jobs scheduled</div>';
+    html+='<div style="padding:1.5rem;text-align:center;color:rgba(17,29,44,.66);font-size:.85rem">No jobs scheduled</div>';
   } else {
     var _ov=admFindOverlaps(jobs);
     if(Object.keys(_ov).length){
@@ -4873,7 +4911,7 @@ function admShowDay(key){
         }
         waiting='<span class="offer-wait">Awaiting '+escTo(j.offered_driver_name)+exp+'</span>';
       }
-      var notesHtml=j.notes?'<div style="margin-top:.3rem;padding:.3rem .5rem;background:rgba(17,29,44,.03);border-left:2px solid #B8989A;font-size:.72rem;color:rgba(17,29,44,.6);line-height:1.35">'+admEnrichNotes(j.notes)+'</div>':'';
+      var notesHtml=j.notes?'<div style="margin-top:.3rem;padding:.3rem .5rem;background:rgba(17,29,44,.03);border-left:2px solid #B8989A;font-size:.72rem;color:rgba(17,29,44,.74);line-height:1.35">'+admEnrichNotes(j.notes)+'</div>':'';
       return '<div class="adm-cal-detail-job">'
         +'<div class="adm-cal-time">'+escTo(j.time||'ASAP')+'</div>'
         +'<div class="adm-cal-info">'
@@ -4996,7 +5034,7 @@ function _renderChart(weeks) {
   labels.innerHTML = weeks.map((w, i) => {
     const d = new Date(w.weekStart);
     const lbl = i % 3 === 0 ? d.toLocaleDateString('en-GB', {day:'numeric',month:'short'}) : '';
-    return `<span style="font-size:.62rem;color:rgba(17,29,44,.4);flex:1;text-align:center">${lbl}</span>`;
+    return `<span style="font-size:.62rem;color:rgba(17,29,44,.66);flex:1;text-align:center">${lbl}</span>`;
   }).join('');
 }
 
@@ -5012,10 +5050,10 @@ function _renderBreakdown(byStatus, byPayment) {
       <div style="width:10px;height:10px;border-radius:2px;background:${col};flex-shrink:0"></div>
       <div style="flex:1;font-size:.78rem;color:var(--navy);text-transform:capitalize">${_anEsc(r.status)}</div>
       <div style="font-size:.78rem;font-weight:500;color:var(--navy);font-variant-numeric:tabular-nums">${r.count}</div>
-      <div style="font-size:.7rem;color:rgba(17,29,44,.45);width:32px;text-align:right">${pct}%</div>
+      <div style="font-size:.7rem;color:rgba(17,29,44,.68);width:32px;text-align:right">${pct}%</div>
     </div>`;
   });
-  document.getElementById('an-by-status').innerHTML = sh || '<div style="color:rgba(17,29,44,.35);font-size:.78rem">No data</div>';
+  document.getElementById('an-by-status').innerHTML = sh || '<div style="color:rgba(17,29,44,.64);font-size:.78rem">No data</div>';
 
   let ph = '';
   byPayment.sort((a,b) => b.count - a.count).forEach(r => {
@@ -5025,7 +5063,7 @@ function _renderBreakdown(byStatus, byPayment) {
       <div style="font-size:.78rem;color:var(--gold);font-variant-numeric:tabular-nums;min-width:70px;text-align:right">${_anFmt(r.total)}</div>
     </div>`;
   });
-  document.getElementById('an-by-payment').innerHTML = ph || '<div style="color:rgba(17,29,44,.35);font-size:.78rem">No completed bookings</div>';
+  document.getElementById('an-by-payment').innerHTML = ph || '<div style="color:rgba(17,29,44,.64);font-size:.78rem">No completed bookings</div>';
 }
 
 function _renderHeatmap(heatmap) {
@@ -5036,13 +5074,13 @@ function _renderHeatmap(heatmap) {
   const max = Math.max(...heatmap.flat(), 1);
 
   let html = '<table style="border-collapse:collapse;font-size:.62rem;width:100%"><thead><tr>';
-  html += '<th style="padding:.2rem .4rem;text-align:left;color:rgba(17,29,44,.4);font-weight:400;white-space:nowrap"></th>';
+  html += '<th style="padding:.2rem .4rem;text-align:left;color:rgba(17,29,44,.66);font-weight:400;white-space:nowrap"></th>';
   hours.forEach(h => {
-    html += `<th style="padding:.15rem .25rem;text-align:center;color:rgba(17,29,44,.4);font-weight:400;min-width:22px">${h}:00</th>`;
+    html += `<th style="padding:.15rem .25rem;text-align:center;color:rgba(17,29,44,.66);font-weight:400;min-width:22px">${h}:00</th>`;
   });
   html += '</tr></thead><tbody>';
   heatmap.forEach((row, di) => {
-    html += `<tr><td style="padding:.25rem .4rem;color:rgba(17,29,44,.6);font-weight:500;white-space:nowrap">${days[di]}</td>`;
+    html += `<tr><td style="padding:.25rem .4rem;color:rgba(17,29,44,.74);font-weight:500;white-space:nowrap">${days[di]}</td>`;
     hours.forEach(h => {
       const v = row[h] || 0;
       const alpha = v === 0 ? 0 : Math.max(0.08, v / max);
@@ -5059,7 +5097,7 @@ function _renderHeatmap(heatmap) {
 function _renderDriverTable(drivers) {
   const tbody = document.querySelector('#an-driver-tbl tbody');
   if (!tbody) return;
-  if (!drivers || !drivers.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:rgba(17,29,44,.35);font-size:.82rem">No driver data</td></tr>'; return; }
+  if (!drivers || !drivers.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:rgba(17,29,44,.64);font-size:.82rem">No driver data</td></tr>'; return; }
   tbody.innerHTML = drivers.map(d => {
     const rate = d.jobs_offered > 0 ? Math.round(d.jobs_accepted / d.jobs_offered * 100) : '—';
     return `<tr>
@@ -5075,9 +5113,9 @@ function _renderDriverTable(drivers) {
 function _renderCustomerTable(customers) {
   const tbody = document.querySelector('#an-cust-tbl tbody');
   if (!tbody) return;
-  if (!customers || !customers.length) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:1.5rem;color:rgba(17,29,44,.35);font-size:.82rem">No customer data</td></tr>'; return; }
+  if (!customers || !customers.length) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:1.5rem;color:rgba(17,29,44,.64);font-size:.82rem">No customer data</td></tr>'; return; }
   tbody.innerHTML = customers.map((c, i) => `<tr>
-    <td><span style="font-size:.65rem;font-weight:500;color:rgba(17,29,44,.35);margin-right:.5rem">#${i+1}</span>${_anEsc(c.full_name)}</td>
+    <td><span style="font-size:.65rem;font-weight:500;color:rgba(17,29,44,.64);margin-right:.5rem">#${i+1}</span>${_anEsc(c.full_name)}</td>
     <td style="font-variant-numeric:tabular-nums">${c.total_bookings}</td>
     <td style="font-variant-numeric:tabular-nums;color:var(--gold)">${_anFmt(c.total_spend)}</td>
   </tr>`).join('');
