@@ -722,9 +722,9 @@ function seedDefaults() {
       db.prepare("INSERT INTO integrations (provider, key, value) VALUES ('invoice_settings', 'invoice_settings', ?)").run(JSON.stringify({
         business_name: 'Westmere Private Hire',
         owner_name: 'Nikodem Krajnyk',
-        address_line1: '4 Fisher Street',
+        address_line1: '66 High Street',
         address_line2: 'Lewes, East Sussex',
-        postcode: 'BN7 2DG',
+        postcode: 'BN7 1XG',
         phone: '07930 342593',
         email: 'bookings@westmereprivatehire.co.uk',
         bank_name: '',
