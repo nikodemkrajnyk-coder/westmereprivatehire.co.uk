@@ -2521,11 +2521,12 @@ async function renderJobList(list, jobs, opts){
 }
 
 // Confirmed Jobs — accepted, scheduled jobs (status confirmed/active) with a
-// FUTURE date only. No completed jobs, no calendar events (those live on the
-// Calendar tab). Soonest first.
+// FUTURE date only. No completed jobs. Personal calendar events are merged in,
+// but only from today onwards (renderJobList already filters to date>=today).
+// Soonest first.
 function buildConfirmed(){
   return renderJobList(document.getElementById('confirmed-list'), CONFIRMED_JOBS, {
-    includePersonal:false, order:'asc',
+    includePersonal:true, order:'asc',
     emptyTitle:'No confirmed jobs', emptySub:'Accepted, scheduled jobs appear here'
   });
 }
