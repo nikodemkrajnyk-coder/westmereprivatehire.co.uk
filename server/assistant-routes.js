@@ -141,6 +141,28 @@ const SEARCH_BOOKINGS_TOOL = {
   }
 };
 
+const CREATE_BOOKING_TOOL = {
+  name: 'create_booking',
+  description: 'Create a booking in the Westmere bookings database. Use this when the owner asks to book a job, record a trip, or "put a job in the books". PAST DATES ARE ALLOWED — use this to record completed jobs for record-keeping. If the owner is recording a trip that already happened, set status to "completed" and use the correct (past) date. If no date is given, use today. Required: pickup and destination. Ask for pickup, destination, date, time, passenger name and fare if missing.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      pickup:           { type: 'string', description: 'Pickup address or location' },
+      destination:      { type: 'string', description: 'Destination address or location' },
+      date:             { type: 'string', description: 'Date in YYYY-MM-DD format. May be in the past for recording completed jobs. Defaults to today if omitted.' },
+      time:             { type: 'string', description: 'Pickup time in HH:MM 24h format (or "ASAP"). Defaults to ASAP.' },
+      passengers:       { type: 'number', description: 'Number of passengers (default 1)' },
+      passenger_name:   { type: 'string', description: 'Passenger / customer full name' },
+      passenger_phone:  { type: 'string', description: 'Passenger / customer phone number' },
+      fare:             { type: 'number', description: 'Fare in GBP' },
+      payment:          { type: 'string', description: 'Payment method: cash or card (default cash). Also accepts account/invoice.' },
+      status:           { type: 'string', description: 'Booking status: pending, confirmed, or completed. Use "completed" when recording a past/finished job. Default pending.' },
+      notes:            { type: 'string', description: 'Any notes (luggage, flight number, special requests, etc.)' }
+    },
+    required: ['pickup', 'destination']
+  }
+};
+
 const CALENDAR_TOOLS = [
   {
     name: 'list_calendar_events',
@@ -200,7 +222,7 @@ const CALENDAR_TOOLS = [
   }
 ];
 
-async function executeCalendarTool(name, input) {
+async function executeCalendarTool(name, input, req) {
   switch (name) {
     case 'check_vehicle': {
       try {
@@ -381,6 +403,83 @@ async function executeCalendarTool(name, input) {
         (r.notes ? ` | Notes:${r.notes}` : '')
       ).join('\n');
     }
+    case 'create_booking': {
+      const db = getDb();
+      const pickup = (input.pickup || '').trim();
+      const destination = (input.destination || '').trim();
+      if (!pickup || !destination) return 'Cannot create booking: pickup and destination are both required.';
+
+      // Resolve "today" in Europe/London. Past dates ARE allowed here — the
+      // assistant records completed jobs for the books, so there is no
+      // future-date restriction (unlike the public booking flow).
+      const ukParts = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit'
+      }).formatToParts(new Date()).reduce((o, p) => { o[p.type] = p.value; return o; }, {});
+      const todayStr = `${ukParts.year}-${ukParts.month}-${ukParts.day}`;
+
+      let date = (input.date || '').trim() || todayStr;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return 'Cannot create booking: date must be in YYYY-MM-DD format.';
+      const time = (input.time || '').trim() || 'ASAP';
+
+      const status = ['pending', 'confirmed', 'completed', 'active', 'cancelled'].includes((input.status || '').toLowerCase())
+        ? input.status.toLowerCase() : 'pending';
+      const payment = ['cash', 'card', 'account', 'invoice'].includes((input.payment || '').toLowerCase())
+        ? input.payment.toLowerCase() : 'cash';
+      const fare = (input.fare != null && input.fare !== '') ? Number(input.fare) : null;
+      const passengers = input.passengers ? (parseInt(input.passengers, 10) || 1) : 1;
+
+      // Completed jobs get a done_at stamp set to the booking date (plus time
+      // when known) so they land correctly in records and earnings reports.
+      let doneAt = null;
+      if (status === 'completed') {
+        const t = /^\d{1,2}:\d{2}$/.test(time) ? time : '12:00';
+        doneAt = `${date} ${t}:00`;
+      }
+
+      const ref = 'WPH-' + Date.now().toString(36).toUpperCase();
+      let result;
+      try {
+        result = db.prepare(`
+          INSERT INTO bookings (ref, pickup, destination, date, time, passengers, fare, payment, status, notes, passenger_name, passenger_phone, done_at)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+        `).run(ref, pickup, destination, date, time, passengers, fare, payment, status, input.notes || null,
+               input.passenger_name || null, input.passenger_phone || null, doneAt);
+      } catch (e) {
+        return 'Failed to create booking: ' + e.message;
+      }
+
+      // Audit trail, using the admin/owner auth from the request.
+      try {
+        if (req && req.auth) {
+          db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+            .run(req.auth.type || 'user', req.auth.id, 'booking_created', ref + ' (assistant)', req.ip);
+        }
+      } catch (e) { /* non-fatal */ }
+
+      // Push genuinely upcoming bookings to Google Calendar; skip past records
+      // and completed/cancelled jobs so the calendar isn't cluttered.
+      if (status !== 'completed' && status !== 'cancelled' && date >= todayStr) {
+        try {
+          gcal.createEvent({
+            id: result.lastInsertRowid, ref, pickup, destination, date, time,
+            passengers, fare, payment, notes: input.notes || '',
+            customer_name: input.passenger_name || 'Guest',
+            customer_phone: input.passenger_phone || '',
+            status
+          }).then(eventId => {
+            if (eventId) {
+              try { getDb().prepare('UPDATE bookings SET calendar_event_id = ? WHERE id = ?').run(eventId, result.lastInsertRowid); } catch (_) {}
+            }
+          }).catch(() => {});
+        } catch (_) {}
+      }
+
+      return `Booking ${ref} created — ${date} ${time} | ${pickup} → ${destination} | ${passengers} passenger(s)` +
+        (fare != null ? ` | £${fare.toFixed(2)}` : '') +
+        ` | ${payment} | status: ${status}` +
+        (input.passenger_name ? ` | ${input.passenger_name}` : '') +
+        (doneAt ? ` | recorded as completed (done_at ${date})` : '');
+    }
     case 'create_invoice': {
       const db = getDb();
       // Auto-fill missing recipient details from saved recipients
@@ -494,7 +593,8 @@ RULES:
   Use null for unknown optional fields. payment defaults to "cash" (also: card, account, invoice). "tomorrow"/"next Monday"/"3pm" resolve relative to today.
 - After a summary: "yes/confirm/book it" → output <<<CONFIRM>>> on its own line; "cancel/no" → <<<CANCEL>>>.
 - FARES: ALWAYS use the calculate_fare tool, never guess. Day rate 06:00–21:59, night 22:00–05:59.
-- TOOLS: calculate_fare (fare quotes), search_bookings (find jobs by date/time/name/route), create_invoice (to invoice a job, search_bookings first — or list_calendar_events if not found — then create_invoice from the fare/name/email/route), check_vehicle (Tesla charge/range/"can I make it to X"), and the Google Calendar tools (list/create/edit/delete events).
+- CREATING BOOKINGS: You can create bookings for the owner using the create_booking tool. If they ask to record a past trip or put a job in the books, create a booking with the "completed" status and the correct date. You can create bookings with past dates for record-keeping purposes. Ask for: pickup, destination, date, time, passenger name and fare. If they don't specify a date, use today's date.
+- TOOLS: calculate_fare (fare quotes), create_booking (book a job or record a past/completed trip — past dates allowed), search_bookings (find jobs by date/time/name/route), create_invoice (to invoice a job, search_bookings first — or list_calendar_events if not found — then create_invoice from the fare/name/email/route), check_vehicle (Tesla charge/range/"can I make it to X"), and the Google Calendar tools (list/create/edit/delete events).
 
 Today's schedule:
 ${jobsSummary}`;
@@ -542,7 +642,7 @@ router.post('/chat', async (req, res) => {
           model,
           max_tokens: 600,
           system,
-          tools: [...CALENDAR_TOOLS, SEARCH_BOOKINGS_TOOL, CREATE_INVOICE_TOOL, CALCULATE_FARE_TOOL, CHECK_VEHICLE_TOOL],
+          tools: [...CALENDAR_TOOLS, SEARCH_BOOKINGS_TOOL, CREATE_BOOKING_TOOL, CREATE_INVOICE_TOOL, CALCULATE_FARE_TOOL, CHECK_VEHICLE_TOOL],
           messages: currentMessages
         })
       });
@@ -569,7 +669,7 @@ router.post('/chat', async (req, res) => {
       const toolResults = await Promise.all(toolUseBlocks.map(async (tb) => {
         let result;
         try {
-          result = await executeCalendarTool(tb.name, tb.input || {});
+          result = await executeCalendarTool(tb.name, tb.input || {}, req);
         } catch (e) {
           result = 'Tool error: ' + e.message;
         }
