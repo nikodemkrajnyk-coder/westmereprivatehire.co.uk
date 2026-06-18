@@ -141,6 +141,18 @@ const SEARCH_BOOKINGS_TOOL = {
   }
 };
 
+const LIST_INVOICES_TOOL = {
+  name: 'list_invoices',
+  description: 'List invoices from the Westmere invoices database (including legacy invoices from the audit log). Use this to answer questions like "show me my invoices", "what invoices are unpaid", or "how much has X been invoiced". Optionally filter by recipient name (partial match) and/or paid status. Returns invoice number, recipient, total, date, and paid/unpaid status with payment date.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      recipient: { type: 'string', description: 'Recipient name or email to filter by (partial, case-insensitive match). Omit to list all.' },
+      paid:      { type: 'string', description: 'Filter by payment status: "paid" for paid only, "unpaid" for unpaid only. Omit for both.' }
+    }
+  }
+};
+
 const CREATE_BOOKING_TOOL = {
   name: 'create_booking',
   description: 'Create a booking in the Westmere bookings database. Use this when the owner asks to book a job, record a trip, or "put a job in the books". PAST DATES ARE ALLOWED — use this to record completed jobs for record-keeping. If the owner is recording a trip that already happened, set status to "completed" and use the correct (past) date. If no date is given, use today. Required: pickup and destination. Ask for pickup, destination, date, time, passenger name and fare if missing.',
@@ -403,6 +415,99 @@ async function executeCalendarTool(name, input, req) {
         (r.notes ? ` | Notes:${r.notes}` : '')
       ).join('\n');
     }
+    case 'list_invoices': {
+      const db = getDb();
+
+      // Stored invoices.
+      const stored = db.prepare(`
+        SELECT invoice_no, recipient_name, recipient_email, total, paid, paid_at, created_at, issued_date
+        FROM invoices ORDER BY created_at DESC LIMIT 500
+      `).all();
+
+      const keyOf = (no) => String(no || '').trim().toUpperCase();
+      const seen = new Set();
+      let invoices = [];
+      for (const r of stored) {
+        const key = keyOf(r.invoice_no);
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        invoices.push({
+          invoice_no: r.invoice_no,
+          recipient_name: r.recipient_name || '',
+          recipient_email: r.recipient_email || '',
+          total: r.total,
+          paid: r.paid == 1,
+          paid_at: r.paid_at || null,
+          created_at: r.created_at,
+          issued_date: r.issued_date || (r.created_at || '').slice(0, 10),
+          legacy: false
+        });
+      }
+
+      // Merge legacy invoices recorded only in the audit log (same logic as
+      // GET /api/invoices): an audit entry is shown only when there's no
+      // stored row for that invoice number.
+      try {
+        const legacy = db.prepare(
+          "SELECT detail, created_at FROM audit_log WHERE action = 'invoice_sent' ORDER BY created_at DESC"
+        ).all();
+        for (const l of legacy) {
+          const m = (l.detail || '').match(/^(INV-[A-Za-z0-9-]+)(?:\s+to\s+(\S+))?/);
+          if (!m) continue;
+          const key = keyOf(m[1]);
+          if (seen.has(key)) continue;
+          seen.add(key);
+          invoices.push({
+            invoice_no: m[1],
+            recipient_name: '',
+            recipient_email: m[2] || '',
+            total: null,
+            paid: false,
+            paid_at: null,
+            created_at: l.created_at,
+            issued_date: (l.created_at || '').slice(0, 10),
+            legacy: true
+          });
+        }
+      } catch (e) { /* non-fatal */ }
+
+      invoices.sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+
+      // Apply optional filters.
+      if (input.recipient) {
+        const q = input.recipient.toLowerCase();
+        invoices = invoices.filter(i =>
+          (i.recipient_name || '').toLowerCase().includes(q) ||
+          (i.recipient_email || '').toLowerCase().includes(q));
+      }
+      const paidFilter = (input.paid || '').toLowerCase();
+      if (paidFilter === 'paid') invoices = invoices.filter(i => i.paid);
+      else if (paidFilter === 'unpaid') invoices = invoices.filter(i => !i.paid);
+
+      if (!invoices.length) return 'No invoices found matching those criteria.';
+
+      const shown = invoices.slice(0, 50);
+      let paidTotal = 0, unpaidTotal = 0, knownTotal = 0;
+      invoices.forEach(i => {
+        const amt = (i.total != null) ? Number(i.total) : 0;
+        if (i.total != null) { knownTotal += amt; if (i.paid) paidTotal += amt; else unpaidTotal += amt; }
+      });
+
+      const lines = shown.map(i =>
+        `${i.invoice_no} | ${i.recipient_name || i.recipient_email || 'Unknown'}` +
+        (i.recipient_email && i.recipient_name ? ` <${i.recipient_email}>` : '') +
+        ` | ${i.total != null ? '£' + Number(i.total).toFixed(2) : 'amount n/a'}` +
+        ` | ${i.issued_date || ''}` +
+        ` | ${i.paid ? 'PAID' + (i.paid_at ? ' (' + String(i.paid_at).slice(0, 10) + ')' : '') : 'UNPAID'}` +
+        (i.legacy ? ' | (archived)' : '')
+      );
+
+      const summary = `${invoices.length} invoice(s)` +
+        (invoices.length > shown.length ? ` (showing first ${shown.length})` : '') +
+        ` | Total invoiced £${knownTotal.toFixed(2)} (paid £${paidTotal.toFixed(2)}, unpaid £${unpaidTotal.toFixed(2)})`;
+
+      return summary + '\n' + lines.join('\n');
+    }
     case 'create_booking': {
       const db = getDb();
       const pickup = (input.pickup || '').trim();
@@ -594,7 +699,8 @@ RULES:
 - After a summary: "yes/confirm/book it" → output <<<CONFIRM>>> on its own line; "cancel/no" → <<<CANCEL>>>.
 - FARES: ALWAYS use the calculate_fare tool, never guess. Day rate 06:00–21:59, night 22:00–05:59.
 - CREATING BOOKINGS: You can create bookings for the owner using the create_booking tool. If they ask to record a past trip or put a job in the books, create a booking with the "completed" status and the correct date. You can create bookings with past dates for record-keeping purposes. Ask for: pickup, destination, date, time, passenger name and fare. If they don't specify a date, use today's date.
-- TOOLS: calculate_fare (fare quotes), create_booking (book a job or record a past/completed trip — past dates allowed), search_bookings (find jobs by date/time/name/route), create_invoice (to invoice a job, search_bookings first — or list_calendar_events if not found — then create_invoice from the fare/name/email/route), check_vehicle (Tesla charge/range/"can I make it to X"), and the Google Calendar tools (list/create/edit/delete events).
+- INVOICES: You can look up invoices with the list_invoices tool — use it to answer "show me my invoices", "what invoices are unpaid", or "how much has X been invoiced" (it returns totals plus paid/unpaid status, and includes archived legacy invoices).
+- TOOLS: calculate_fare (fare quotes), create_booking (book a job or record a past/completed trip — past dates allowed), search_bookings (find jobs by date/time/name/route), create_invoice (to invoice a job, search_bookings first — or list_calendar_events if not found — then create_invoice from the fare/name/email/route), list_invoices (look up existing invoices, unpaid/paid totals, amount invoiced to a recipient), check_vehicle (Tesla charge/range/"can I make it to X"), and the Google Calendar tools (list/create/edit/delete events).
 
 Today's schedule:
 ${jobsSummary}`;
@@ -642,7 +748,7 @@ router.post('/chat', async (req, res) => {
           model,
           max_tokens: 600,
           system,
-          tools: [...CALENDAR_TOOLS, SEARCH_BOOKINGS_TOOL, CREATE_BOOKING_TOOL, CREATE_INVOICE_TOOL, CALCULATE_FARE_TOOL, CHECK_VEHICLE_TOOL],
+          tools: [...CALENDAR_TOOLS, SEARCH_BOOKINGS_TOOL, CREATE_BOOKING_TOOL, CREATE_INVOICE_TOOL, LIST_INVOICES_TOOL, CALCULATE_FARE_TOOL, CHECK_VEHICLE_TOOL],
           messages: currentMessages
         })
       });
