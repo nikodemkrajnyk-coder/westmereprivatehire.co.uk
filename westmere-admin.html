@@ -3568,7 +3568,7 @@ function loadInvoiceHistory(){
       if(isLegacy){
         var legacyNoJs=escTo(inv.invoice_no).replace(/'/g,"\\'");
         return '<tr style="cursor:pointer" onclick="viewLegacyInvoice(\''+legacyNoJs+'\')">'
-          +'<td>'+escTo(inv.recipient_name||inv.recipient_email||'—')+(inv.recipient_name&&inv.recipient_email?'<br><span style="font-size:.72rem;color:rgba(17,29,44,.68)">'+escTo(inv.recipient_email)+'</span>':'')+'</td>'
+          +'<td style="white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;word-break:break-word;max-width:none"><span style="font-weight:600;font-size:.9rem;color:var(--navy)">'+escTo(inv.recipient_name||inv.recipient_email||'—')+'</span>'+(inv.recipient_name&&inv.recipient_email?'<br><span style="font-size:.72rem;color:rgba(17,29,44,.68)">'+escTo(inv.recipient_email)+'</span>':'')+'</td>'
           +'<td style="text-align:right;font-family:Georgia,serif;color:var(--navy)">'+total+'</td>'
           +'<td><span style="font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)">'+kind+'</span></td>'
           +'<td style="white-space:nowrap">'+escTo(inv.issued_date||'')+'</td>'
@@ -3581,7 +3581,7 @@ function loadInvoiceHistory(){
           +'</tr>';
       }
       return '<tr style="cursor:pointer" onclick="viewInvoice('+inv.id+')">'
-        +'<td>'+escTo(inv.recipient_name||'')+(inv.recipient_email?'<br><span style="font-size:.72rem;color:rgba(17,29,44,.68)">'+escTo(inv.recipient_email)+'</span>':'')+'</td>'
+        +'<td style="white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;word-break:break-word;max-width:none"><span style="font-weight:600;font-size:.9rem;color:var(--navy)">'+escTo(inv.recipient_name||'')+'</span>'+(inv.recipient_email?'<br><span style="font-size:.72rem;color:rgba(17,29,44,.68)">'+escTo(inv.recipient_email)+'</span>':'')+'</td>'
         +'<td style="text-align:right;font-family:Georgia,serif;color:var(--navy)">'+total+'</td>'
         +'<td><span style="font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)">'+kind+'</span></td>'
         +'<td style="white-space:nowrap">'+escTo(inv.issued_date||'')+'</td>'
