@@ -817,6 +817,17 @@ if ('serviceWorker' in navigator) {
       <div class="page-hd"><div class="page-title">Invoices</div></div>
       <div class="card">
         <div class="ch"><div class="ct">History</div><button class="btn btn-navy btn-sm" onclick="openNewInvoice()">+ New Invoice</button></div>
+        <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:.6rem;padding:.8rem 1.3rem;border-bottom:1px solid rgba(17,29,44,.08)">
+          <div>
+            <div style="font-size:.56rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.55);margin-bottom:.25rem">From</div>
+            <input type="date" id="inv-filter-from" onchange="loadInvoiceHistory()" style="padding:.45rem .55rem;border:1px solid rgba(17,29,44,.15);border-radius:5px;background:#fff;color:var(--navy);font-family:var(--sans);font-size:.82rem">
+          </div>
+          <div>
+            <div style="font-size:.56rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.55);margin-bottom:.25rem">To</div>
+            <input type="date" id="inv-filter-to" onchange="loadInvoiceHistory()" style="padding:.45rem .55rem;border:1px solid rgba(17,29,44,.15);border-radius:5px;background:#fff;color:var(--navy);font-family:var(--sans);font-size:.82rem">
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="clearInvoiceFilter()">Clear</button>
+        </div>
         <div style="overflow-x:auto">
           <table class="inv-table">
             <thead><tr><th>Recipient</th><th style="text-align:right">Total</th><th>Type</th><th>Issued</th><th>Status</th><th></th></tr></thead>
@@ -3559,13 +3570,33 @@ function openInvoicePreview(data){
 
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
+// Clear the invoice date-range filter and show all invoices again.
+function clearInvoiceFilter(){
+  var f=document.getElementById('inv-filter-from'),t=document.getElementById('inv-filter-to');
+  if(f)f.value='';if(t)t.value='';
+  loadInvoiceHistory();
+}
+
 function loadInvoiceHistory(){
   var tbody=document.getElementById('invoice-history-body');if(!tbody)return;
   fetch('/api/invoices',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
     if(!d.ok){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:rgba(17,29,44,.62)">Unable to load history</td></tr>';return;}
     var invoices=d.invoices||[];
+    // Optional date-range filter (by invoice issued date, falling back to created_at).
+    var fromV=(document.getElementById('inv-filter-from')||{}).value||'';
+    var toV=(document.getElementById('inv-filter-to')||{}).value||'';
+    var filtered=(fromV||toV);
+    if(filtered){
+      invoices=invoices.filter(function(inv){
+        var d2=inv.issued_date||(inv.created_at||'').slice(0,10)||'';
+        if(!d2)return false;
+        if(fromV&&d2<fromV)return false;
+        if(toV&&d2>toV)return false;
+        return true;
+      });
+    }
     if(!invoices.length){
-      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:rgba(17,29,44,.62)">No invoices yet</td></tr>';return;
+      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:rgba(17,29,44,.62)">'+(filtered?'No invoices in this date range':'No invoices yet')+'</td></tr>';return;
     }
     // Keep every invoice (stored + legacy) accessible for the View buttons.
     window._INV_HISTORY={};

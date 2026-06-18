@@ -810,6 +810,17 @@ h1,h2,h3,h4{font-family:var(--serif);color:var(--navy)}
         </div>
         <div class="card" style="margin-top:.85rem">
           <div class="ch">Invoice History</div>
+          <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:.5rem;padding:.7rem 1rem .35rem;border-bottom:1px solid var(--gold-rule)">
+            <div style="flex:1;min-width:96px">
+              <div style="font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.2rem">From</div>
+              <input type="date" id="inv-filter-from" onchange="invLoadList()" style="width:100%;padding:.4rem .5rem;border:1px solid rgba(17,29,44,.15);border-radius:6px;background:var(--card);color:var(--navy);font-family:var(--sans);font-size:.78rem;-webkit-appearance:none">
+            </div>
+            <div style="flex:1;min-width:96px">
+              <div style="font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.2rem">To</div>
+              <input type="date" id="inv-filter-to" onchange="invLoadList()" style="width:100%;padding:.4rem .5rem;border:1px solid rgba(17,29,44,.15);border-radius:6px;background:var(--card);color:var(--navy);font-family:var(--sans);font-size:.78rem;-webkit-appearance:none">
+            </div>
+            <button onclick="invClearFilter()" style="padding:.45rem .8rem;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;background:rgba(17,29,44,.06);color:rgba(17,29,44,.6);border:1px solid rgba(17,29,44,.15);border-radius:6px;cursor:pointer;min-height:38px">Clear</button>
+          </div>
           <div id="inv-list-body" style="font-size:.78rem;color:rgba(17,29,44,.4);padding:1rem;text-align:center">Loading…</div>
         </div>
       </div>
@@ -4333,13 +4344,33 @@ function openInvoicePreview(data){
   else{showToast('Pop-up blocked — please allow pop-ups for this site.');}
 }
 
+// Clear the invoice date-range filter and show all invoices again.
+function invClearFilter(){
+  var f=document.getElementById('inv-filter-from'),t=document.getElementById('inv-filter-to');
+  if(f)f.value='';if(t)t.value='';
+  invLoadList();
+}
+
 function invLoadList(){
   var el=document.getElementById('inv-list-body');
   if(!el)return;
   fetch('/api/invoices',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
     if(!d.ok){el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">Unable to load</div>';return;}
     var invoices=d.invoices||[];
-    if(!invoices.length){el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">No invoices yet</div>';return;}
+    // Optional date-range filter (by invoice issued date, falling back to created_at).
+    var fromV=(document.getElementById('inv-filter-from')||{}).value||'';
+    var toV=(document.getElementById('inv-filter-to')||{}).value||'';
+    var filtered=(fromV||toV);
+    if(filtered){
+      invoices=invoices.filter(function(inv){
+        var d2=inv.issued_date||(inv.created_at||'').slice(0,10)||'';
+        if(!d2)return false;
+        if(fromV&&d2<fromV)return false;
+        if(toV&&d2>toV)return false;
+        return true;
+      });
+    }
+    if(!invoices.length){el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">'+(filtered?'No invoices in this date range':'No invoices yet')+'</div>';return;}
     el.innerHTML=invoices.map(function(inv){
       var total='£'+(+inv.total||0).toFixed(2);
       var kind=inv.kind==='bespoke'?'One-off':'Account';
