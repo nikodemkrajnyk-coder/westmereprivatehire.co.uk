@@ -475,6 +475,8 @@ function migrate() {
         booking_ids_json TEXT,
         total           REAL    NOT NULL DEFAULT 0,
         emailed         INTEGER NOT NULL DEFAULT 0,
+        paid            INTEGER NOT NULL DEFAULT 0,
+        paid_at         TEXT,
         created_by      INTEGER REFERENCES users(id),
         created_at      TEXT    NOT NULL DEFAULT (datetime('now'))
       );
@@ -484,6 +486,23 @@ function migrate() {
   } catch (e) {
     console.error('[DB] invoices table creation failed:', e.message);
   }
+
+  // Invoice payment tracking — add paid/paid_at to DBs whose invoices table
+  // was created before these columns existed (CREATE TABLE IF NOT EXISTS skips
+  // them on an existing table).
+  try {
+    const invInfo = db.prepare("PRAGMA table_info(invoices)").all();
+    const invCols = [
+      ['paid',    'INTEGER NOT NULL DEFAULT 0'],
+      ['paid_at', 'TEXT']
+    ];
+    for (const [n, t] of invCols) {
+      if (!invInfo.find(c => c.name === n)) {
+        db.exec(`ALTER TABLE invoices ADD COLUMN ${n} ${t}`);
+        console.log('[DB] Added ' + n + ' column to invoices');
+      }
+    }
+  } catch (e) { console.error('[DB] invoice paid migration failed:', e.message); }
 
   // Saved invoice recipients for auto-fill
   try {

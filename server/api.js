@@ -892,7 +892,7 @@ router.get('/invoices', (req, res) => {
     where.push('kind = ?'); params.push(req.query.kind);
   }
   const sql = `SELECT id, invoice_no, kind, customer_id, recipient_name, recipient_email,
-                      issued_date, due_date, period_label, total, emailed, created_at
+                      issued_date, due_date, period_label, total, emailed, paid, paid_at, created_at
                  FROM invoices ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
                  ORDER BY created_at DESC LIMIT 500`;
   const rawRows = db.prepare(sql).all(...params);
@@ -942,6 +942,8 @@ router.get('/invoices', (req, res) => {
           period_label: null,
           total: null,
           emailed: 1,
+          paid: 0,
+          paid_at: null,
           created_at: l.created_at,
           legacy: true
         });
@@ -1100,6 +1102,35 @@ router.delete('/invoices/:id', async (req, res) => {
   autoFile.removeInvoice(invoiceNo);
 
   res.json({ ok: true });
+});
+
+// Mark a stored invoice as paid (records the payment date).
+router.patch('/invoices/:id/mark-paid', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid invoice ID' });
+  const row = db.prepare('SELECT id FROM invoices WHERE id = ?').get(id);
+  if (!row) return res.status(404).json({ error: 'Invoice not found' });
+  db.prepare("UPDATE invoices SET paid = 1, paid_at = datetime('now') WHERE id = ?").run(id);
+  const updated = db.prepare('SELECT paid, paid_at FROM invoices WHERE id = ?').get(id);
+  res.json({ ok: true, paid: updated.paid, paid_at: updated.paid_at });
+});
+
+// Mark a stored invoice as not paid (clears the payment date).
+router.patch('/invoices/:id/mark-unpaid', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid invoice ID' });
+  const row = db.prepare('SELECT id FROM invoices WHERE id = ?').get(id);
+  if (!row) return res.status(404).json({ error: 'Invoice not found' });
+  db.prepare("UPDATE invoices SET paid = 0, paid_at = NULL WHERE id = ?").run(id);
+  res.json({ ok: true, paid: 0, paid_at: null });
 });
 
 // Invoice settings (business details + bank details for invoices)
