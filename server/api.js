@@ -890,6 +890,20 @@ router.get('/invoice-recipients', (req, res) => {
   res.json({ ok: true, recipients: rows });
 });
 
+// Delete a saved invoice recipient by id (admin/owner only).
+router.delete('/invoice-recipients/:id', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid recipient ID' });
+  const row = db.prepare('SELECT id FROM invoice_recipients WHERE id = ?').get(id);
+  if (!row) return res.status(404).json({ error: 'Recipient not found' });
+  db.prepare('DELETE FROM invoice_recipients WHERE id = ?').run(id);
+  res.json({ ok: true });
+});
+
 // List stored invoices (admin/owner). Supports optional ?customer_id, ?kind filters.
 router.get('/invoices', (req, res) => {
   if (!['admin', 'owner'].includes(req.auth.role)) {

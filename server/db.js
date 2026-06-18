@@ -523,14 +523,22 @@ function migrate() {
     console.error('[DB] invoice_recipients table creation failed:', e.message);
   }
 
-  // Purge saved recipients that match a deleted (inactive) customer, so the
-  // invoice autocomplete stops offering accounts that were removed. Runs on
-  // every start, cleaning up the live DB after deploy.
+  // Purge saved recipients that match a deleted (inactive) customer, plus any
+  // obvious test/placeholder emails, so the invoice autocomplete stops offering
+  // accounts that were removed. Runs on every start, cleaning up the live DB
+  // after deploy.
   try {
-    const info = db.prepare(
-      "DELETE FROM invoice_recipients WHERE email IS NOT NULL AND email IN (SELECT email FROM customers WHERE active = 0)"
-    ).run();
-    if (info.changes) console.log('[DB] Removed ' + info.changes + ' saved recipient(s) matching deleted customers');
+    const info = db.prepare(`
+      DELETE FROM invoice_recipients
+      WHERE email IS NOT NULL
+        AND (
+          email IN (SELECT email FROM customers WHERE active = 0)
+          OR email LIKE '%@westmere-test.invalid'
+          OR email LIKE '%@%test%'
+          OR email LIKE '%@%example%'
+        )
+    `).run();
+    if (info.changes) console.log('[DB] Removed ' + info.changes + ' saved recipient(s) matching deleted/test customers');
   } catch (e) {
     console.error('[DB] invoice_recipients cleanup failed:', e.message);
   }
