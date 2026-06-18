@@ -17,12 +17,12 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{--navy:#111D2C;--navy2:#1C2A3E;--navy-deep:#0d1520;--gold:#B8985A;--gold2:#C9A96E;--rule:rgba(17,29,44,.1);--gold-rule:rgba(184,152,90,.22);--text:#1C2A3E;--text-mid:rgba(17,29,44,.65);--text-light:rgba(17,29,44,.4);--white:rgba(17,29,44,.85);--cream:#F5F2ED;--card:#FCFAF6;--paper:#FBF8F2;--cream-dark:rgba(17,29,44,.04);--green:#2D6E47;--green-bg:rgba(45,110,71,.18);--red:#8B2222;--red-bg:rgba(139,34,34,.15);--amber:#B8985A;--amber-bg:rgba(184,152,90,.1);--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',sans-serif;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);}
 html{height:100%;font-size:18px;overflow:hidden}
-body{font-family:var(--sans);font-weight:300;color:var(--navy);background:#F5F2ED;line-height:1.7;-webkit-font-smoothing:antialiased;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:pan-y;max-width:100vw}
+body{font-family:var(--sans);font-weight:300;color:var(--navy);background:#FFFFFF;line-height:1.7;-webkit-font-smoothing:antialiased;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:pan-y;max-width:100vw}
 body::before{display:none}
 /* ── MOBILE-ONLY SHELL — clamp app to phone width on desktop ────────────── */
 @media (min-width: 720px){
   body{background:#0a1420 url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='4' height='4' fill='%23101b2a'/><rect width='2' height='2' fill='%230c1624'/></svg>")}
-  #login-screen,.app,.screen{max-width:420px;margin:0 auto;box-shadow:0 24px 60px rgba(0,0,0,.45);background:#F5F2ED;height:100vh;height:100dvh;border-left:1px solid rgba(0,0,0,.1);border-right:1px solid rgba(0,0,0,.1)}
+  #login-screen,.app,.screen{max-width:420px;margin:0 auto;box-shadow:0 24px 60px rgba(0,0,0,.45);background:#FFFFFF;height:100vh;height:100dvh;border-left:1px solid rgba(0,0,0,.1);border-right:1px solid rgba(0,0,0,.1)}
   body::after{content:"Westmere Owner \2014 mobile app. Best experienced on iPhone or Android.";position:fixed;bottom:1.2rem;left:1.2rem;color:rgba(255,255,255,.38);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;font-family:var(--sans);pointer-events:none}
 }
 h1,h2,h3,h4{font-family:var(--serif);font-weight:300;color:var(--navy);letter-spacing:.05em}
