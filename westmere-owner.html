@@ -17,12 +17,12 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{--navy:#111D2C;--navy2:#1C2A3E;--navy-deep:#0d1520;--gold:#B8985A;--gold2:#C9A96E;--rule:rgba(17,29,44,.1);--gold-rule:rgba(184,152,90,.22);--text:#1C2A3E;--text-mid:rgba(17,29,44,.65);--text-light:rgba(17,29,44,.4);--white:rgba(17,29,44,.85);--cream:#F5F2ED;--card:#FCFAF6;--paper:#FBF8F2;--cream-dark:rgba(17,29,44,.04);--green:#2D6E47;--green-bg:rgba(45,110,71,.18);--red:#8B2222;--red-bg:rgba(139,34,34,.15);--amber:#B8985A;--amber-bg:rgba(184,152,90,.1);--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',sans-serif;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);}
 html{height:100%;font-size:18px;overflow:hidden}
-body{font-family:var(--sans);font-weight:300;color:var(--navy);background:#FFFFFF;line-height:1.7;-webkit-font-smoothing:antialiased;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:pan-y;max-width:100vw}
+body{font-family:var(--sans);font-weight:300;color:var(--navy);background:#111D2C;line-height:1.7;-webkit-font-smoothing:antialiased;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:pan-y;max-width:100vw}
 body::before{display:none}
 /* ── MOBILE-ONLY SHELL — clamp app to phone width on desktop ────────────── */
 @media (min-width: 720px){
   body{background:#0a1420 url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='4' height='4' fill='%23101b2a'/><rect width='2' height='2' fill='%230c1624'/></svg>")}
-  #login-screen,.app,.screen{max-width:420px;margin:0 auto;box-shadow:0 24px 60px rgba(0,0,0,.45);background:#FFFFFF;height:100vh;height:100dvh;border-left:1px solid rgba(0,0,0,.1);border-right:1px solid rgba(0,0,0,.1)}
+  #login-screen,.app,.screen{max-width:420px;margin:0 auto;box-shadow:0 24px 60px rgba(0,0,0,.45);background:#111D2C;height:100vh;height:100dvh;border-left:1px solid rgba(0,0,0,.1);border-right:1px solid rgba(0,0,0,.1)}
   body::after{content:"Westmere Owner \2014 mobile app. Best experienced on iPhone or Android.";position:fixed;bottom:1.2rem;left:1.2rem;color:rgba(255,255,255,.38);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;font-family:var(--sans);pointer-events:none}
 }
 h1,h2,h3,h4{font-family:var(--serif);font-weight:300;color:var(--navy);letter-spacing:.05em}
@@ -34,10 +34,10 @@ nav#nav{display:none}
 
 /* ── APP SHELL ── */
 .app{display:flex;flex-direction:column;height:100vh;height:100dvh;position:relative;z-index:1;overflow:hidden;max-width:100vw}
-.topbar{background:rgba(252,250,246,.94);backdrop-filter:blur(24px);padding:calc(var(--safe-top) + .35rem) 1.2rem .35rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid var(--gold-rule);box-shadow:0 1px 8px rgba(17,29,44,.04);z-index:60;min-height:50px}
+.topbar{background:#111D2C;padding:calc(var(--safe-top) + .35rem) 1.2rem .35rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid rgba(184,152,90,.2);box-shadow:0 1px 8px rgba(0,0,0,.25);z-index:60;min-height:50px}
 .tb-left{display:flex;align-items:center;gap:.8rem}
-.tb-crest{width:36px;height:36px;border:1px solid rgba(184,152,90,.22);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1rem;color:var(--navy);flex-shrink:0}
-.tb-name{font-family:var(--serif);font-size:1rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--navy)}
+.tb-crest{width:36px;height:36px;border:1px solid rgba(184,152,90,.35);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1rem;color:var(--gold);flex-shrink:0}
+.tb-name{font-family:var(--serif);font-size:1rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#F5F2ED}
 .tb-mode-label{font-size:.48rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
 .status-dot{width:8px;height:8px;border-radius:50%;background:rgba(17,29,44,.2);flex-shrink:0;transition:background .4s}
 .status-dot.ok{background:var(--green);animation:pulse 2.5s infinite}
@@ -45,9 +45,9 @@ nav#nav{display:none}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
 /* ── BOTTOM NAV ── */
-.bottom-nav{background:rgba(252,250,246,.94);backdrop-filter:blur(24px);border-top:1px solid var(--gold-rule);box-shadow:0 -1px 8px rgba(17,29,44,.04);display:flex;flex-direction:column;padding-bottom:var(--safe-bottom);flex-shrink:0;z-index:60}
+.bottom-nav{background:#111D2C;border-top:1px solid rgba(184,152,90,.2);box-shadow:0 -1px 8px rgba(0,0,0,.25);display:flex;flex-direction:column;padding-bottom:var(--safe-bottom);flex-shrink:0;z-index:60}
 .bn-row{display:flex;width:100%}
-.bn{flex:1;display:flex;flex-direction:column;align-items:center;gap:.22rem;padding:.85rem .3rem;background:none;border:none;cursor:pointer;transition:color .2s;color:rgba(17,29,44,.35);font-family:var(--sans);min-height:60px;position:relative}
+.bn{flex:1;display:flex;flex-direction:column;align-items:center;gap:.22rem;padding:.85rem .3rem;background:none;border:none;cursor:pointer;transition:color .2s;color:rgba(245,242,237,.5);font-family:var(--sans);min-height:60px;position:relative}
 .bn.on{color:var(--gold)}
 .bn-bar{width:18px;height:1px;background:currentColor;opacity:0;transition:opacity .2s}
 .bn.on .bn-bar{opacity:1}
@@ -58,12 +58,12 @@ nav#nav{display:none}
 .page-scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:none}
 .pg{display:none;padding:1.2rem 1rem;max-width:560px;margin:0 auto;padding-bottom:1.5rem}
 .pg.on{display:block}
-.sec-title{font-family:var(--serif);font-size:2.1rem;font-weight:400;color:var(--navy);line-height:1.05;margin-bottom:.25rem;letter-spacing:.01em}
+.sec-title{font-family:var(--serif);font-size:2.1rem;font-weight:400;color:#F5F2ED;line-height:1.05;margin-bottom:.25rem;letter-spacing:.01em}
 .sec-title em{font-style:italic;color:var(--gold);font-family:var(--serif);font-weight:400}
-.sec-sub{font-size:.7rem;color:var(--gold);font-weight:500;letter-spacing:.18em;text-transform:uppercase;margin-bottom:1.1rem}
+.sec-sub{font-size:.7rem;color:var(--gold2);font-weight:500;letter-spacing:.18em;text-transform:uppercase;margin-bottom:1.1rem}
 
 /* ── CARDS ── */
-.card{background:var(--card);border:1px solid var(--gold-rule);box-shadow:0 3px 16px rgba(17,29,44,.06);margin-bottom:.85rem;border-radius:14px;overflow:hidden}
+.card{background:var(--card);border:1px solid var(--gold-rule);box-shadow:0 4px 20px rgba(0,0,0,.2);margin-bottom:.85rem;border-radius:14px;overflow:hidden}
 .ch{padding:.9rem 1.4rem;border-bottom:1px solid rgba(184,152,90,.12);font-size:.7rem;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;justify-content:space-between}
 .cb{padding:0 1.1rem}
 .row{display:flex;justify-content:space-between;align-items:baseline;padding:.88rem 0;border-bottom:1px solid rgba(17,29,44,.06)}
@@ -358,7 +358,7 @@ input[type=date]::placeholder,input[type=text]::placeholder{color:rgba(17,29,44,
 }
 
 /* ── EARNINGS STAT CARDS ── */
-.earn-stat-card{background:var(--navy);border-radius:10px;padding:.75rem .6rem;text-align:center;position:relative;overflow:hidden}
+.earn-stat-card{background:var(--navy2);border:1px solid rgba(184,152,90,.25);border-radius:10px;padding:.75rem .6rem;text-align:center;position:relative;overflow:hidden}
 .earn-stat-card::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(-45deg,transparent,transparent 12px,rgba(184,152,90,.04) 12px,rgba(184,152,90,.04) 13px);pointer-events:none}
 .earn-stat-card.esk-accent{background:linear-gradient(135deg,#1a2d42 0%,var(--navy) 100%);border:1px solid rgba(184,152,90,.35)}
 .esk-label{font-size:.45rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:.3rem;position:relative}
@@ -467,9 +467,9 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
 
 /* ── Booking-page luxe pass — warm ivory surfaces, gold accents, serif heads ── */
 /* Job/invoice list surfaces render as cream cards with a soft gold edge */
-#confirmed-list,#toconfirm-list,#completed-list,#offered-list,#dec-pending-list,#inv-list-body{
+#confirmed-list,#toconfirm-list,#completed-list,#offered-list,#dec-pending-list,#inv-list-body,#drivers-list{
   background:var(--card);border:1px solid var(--gold-rule);border-radius:14px;
-  box-shadow:0 3px 16px rgba(17,29,44,.06);overflow:hidden;
+  box-shadow:0 3px 16px rgba(0,0,0,.18);overflow:hidden;
 }
 /* Avoid a doubled rule where the first row meets the container edge */
 #confirmed-list>div:first-child,#toconfirm-list>div:first-child,#completed-list>div:first-child,#offered-list>div:first-child{border-top:none}
@@ -534,10 +534,10 @@ h1,h2,h3,h4{font-family:var(--serif);color:var(--navy)}
     </div>
     <button id="assist-fab" onclick="openAssistant()" title="Assistant" style="display:none;background:var(--gold);border:none;color:var(--navy);cursor:pointer;width:38px;height:38px;border-radius:50%;font-family:var(--serif);font-size:1.1rem;font-weight:400;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(184,152,90,.35);flex-shrink:0">W</button>
     <div style="display:flex;align-items:center;gap:.4rem">
-      <button onclick="openSettings()" title="Settings" style="background:transparent;border:1px solid rgba(17,29,44,.1);width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(17,29,44,.55)">
+      <button onclick="openSettings()" title="Settings" style="background:transparent;border:1px solid rgba(245,242,237,.2);width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(245,242,237,.7)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
-      <button onclick="toggleNotifPanel()" title="Activity log" style="background:transparent;border:none;cursor:pointer;position:relative;width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:rgba(17,29,44,.5)">
+      <button onclick="toggleNotifPanel()" title="Activity log" style="background:transparent;border:none;cursor:pointer;position:relative;width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:rgba(245,242,237,.7)">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         <span class="notif-badge-num" id="notif-badge"></span>
       </button>
@@ -667,9 +667,9 @@ h1,h2,h3,h4{font-family:var(--serif);color:var(--navy)}
       <div class="sec-title"><em>Confirmed</em> Jobs</div>
       <div class="sec-sub">Weekly schedule</div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin:.5rem 0 .85rem">
-        <button class="cal-nav-btn" onclick="confirmedWeekNav(-1)">&larr; Prev</button>
-        <div id="confirmed-week-range" style="flex:1;text-align:center;font-weight:600;color:var(--navy);font-size:.85rem"></div>
-        <button class="cal-nav-btn" onclick="confirmedWeekNav(1)">Next &rarr;</button>
+        <button onclick="confirmedWeekNav(-1)" style="background:rgba(245,242,237,.06);border:1px solid rgba(184,152,90,.3);color:#F5F2ED;font-family:var(--sans);font-size:.85rem;padding:.5rem 1rem;cursor:pointer;border-radius:6px;min-height:44px">&larr; Prev</button>
+        <div id="confirmed-week-range" style="flex:1;text-align:center;font-weight:600;color:#F5F2ED;font-size:.85rem"></div>
+        <button onclick="confirmedWeekNav(1)" style="background:rgba(245,242,237,.06);border:1px solid rgba(184,152,90,.3);color:#F5F2ED;font-family:var(--sans);font-size:.85rem;padding:.5rem 1rem;cursor:pointer;border-radius:6px;min-height:44px">Next &rarr;</button>
       </div>
       <div id="confirmed-list"></div>
     </div>
