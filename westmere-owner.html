@@ -2576,7 +2576,8 @@ async function buildConfirmed(){
     return (j.apiStatus==='confirmed'||j.apiStatus==='active')&&j.date>=startKey&&j.date<=endKey;
   }).map(function(j){return Object.assign({type:'booking'},j);});
 
-  // Personal Google Calendar events for this week — today onwards only.
+  // ALL personal Google Calendar events for the selected week (every day
+  // Mon–Sun, not just today onwards).
   var personalItems=[];
   try{
     var er=await fetch('/api/google/external-events?from='+startKey+'&to='+endKey,{credentials:'include'});
@@ -2587,7 +2588,7 @@ async function buildConfirmed(){
         var timeStr='';
         if(!ev.allDay&&ev.start){try{var d=new Date(ev.start);timeStr=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}catch(e){}}
         return{type:'personal',date:dateKey,time:timeStr,title:ev.title||'Personal event',allDay:ev.allDay||false};
-      }).filter(function(x){return x.date>=todayKey&&x.date>=startKey&&x.date<=endKey;});
+      }).filter(function(x){return x.date>=startKey&&x.date<=endKey;});
     }
   }catch(e){}
 
@@ -2600,7 +2601,7 @@ async function buildConfirmed(){
     var dayKey=dk(day.getFullYear(),day.getMonth(),day.getDate());
     var dayItems=items.filter(function(x){return x.date===dayKey;})
       .sort(function(a,b){return (a.time||'').localeCompare(b.time||'');});
-    html+='<div style="padding:.55rem 1rem .45rem;font-size:.78rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#fff;background:var(--navy);border-top:2px solid var(--gold)">'+_fmtDayHeader(day)+'</div>';
+    html+='<div style="padding:.6rem 1rem .5rem;font-size:.74rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--navy);background:#f5f5f5;border-bottom:1px solid rgba(17,29,44,.12)">'+_fmtDayHeader(day)+'</div>';
     html+=dayItems.length
       ? dayItems.map(jobCardHtml).join('')
       : '<div style="padding:.7rem 1rem;border-top:1px solid var(--rule);font-size:.78rem;color:rgba(17,29,44,.4)">No jobs</div>';
