@@ -647,18 +647,25 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
   <!-- PAGE SCROLL -->
   <div class="page-scroll" id="page-scroll">
 
-    <!-- Today's Jobs -->
-    <div class="pg on" id="pg-today">
-      <div class="sec-title">Today's <em>Jobs</em></div>
-      <div class="sec-sub" id="today-sub"></div>
-      <div id="today-list"></div>
+    <!-- Confirmed Jobs (status: confirmed / active) -->
+    <div class="pg on" id="pg-confirmed">
+      <div class="sec-title"><em>Confirmed</em> Jobs</div>
+      <div class="sec-sub">Accepted, scheduled jobs</div>
+      <div id="confirmed-list"></div>
     </div>
 
-    <!-- Upcoming Jobs -->
-    <div class="pg" id="pg-offered">
-      <div class="sec-title"><em>Upcoming</em> Jobs</div>
-      <div class="sec-sub">All confirmed, pending and offered bookings</div>
-      <div id="offered-list"></div>
+    <!-- To Be Confirmed (status: pending — quote requests awaiting your decision) -->
+    <div class="pg" id="pg-toconfirm">
+      <div class="sec-title">To Be <em>Confirmed</em></div>
+      <div class="sec-sub">Quote requests waiting for your decision</div>
+      <div id="toconfirm-list"></div>
+    </div>
+
+    <!-- Completed Jobs (status: completed — for your records) -->
+    <div class="pg" id="pg-completed">
+      <div class="sec-title"><em>Completed</em> Jobs</div>
+      <div class="sec-sub">Finished jobs, for your records</div>
+      <div id="completed-list"></div>
     </div>
 
 
@@ -770,15 +777,6 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
       </div>
     </div>
 
-    <!-- Decisions (native — offer/reclaim bookings that need a driver) -->
-    <div class="pg" id="pg-decisions">
-      <div class="sec-title"><em>Job Requests</em></div>
-      <div class="sec-sub">New booking requests</div>
-      <div class="card" style="margin-top:.9rem">
-        <div class="ch">New requests</div>
-        <div class="cb" id="dec-pending-list"><div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">Loading\u2026</div></div>
-      </div>
-    </div>
 
     <!-- Invoices -->
     <div class="pg" id="pg-invoices">
@@ -939,13 +937,13 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
   <!-- BOTTOM NAV -->
   <div class="bottom-nav" id="bottom-nav">
     <div class="bn-row">
-      <button class="bn on" id="bn-today" onclick="goPage('today',this)"><div class="bn-bar"></div><div class="bn-label">Today</div></button>
-      <button class="bn" id="bn-offered" onclick="goPage('offered',this)"><div class="bn-bar"></div><div class="bn-label">Upcoming</div><div class="bn-dot" id="offered-dot"></div></button>
+      <button class="bn on" id="bn-confirmed" onclick="goPage('confirmed',this)"><div class="bn-bar"></div><div class="bn-label">Confirmed</div></button>
+      <button class="bn" id="bn-toconfirm" onclick="goPage('toconfirm',this)"><div class="bn-bar"></div><div class="bn-label">To Confirm</div><div class="bn-dot" id="toconfirm-dot" style="display:none"></div></button>
+      <button class="bn" id="bn-completed" onclick="goPage('completed',this)"><div class="bn-bar"></div><div class="bn-label">Completed</div></button>
       <button class="bn" id="bn-calendar" onclick="goPage('calendar',this)"><div class="bn-bar"></div><div class="bn-label">Calendar</div></button>
-      <button class="bn" id="bn-drivers" onclick="goPage('drivers',this)"><div class="bn-bar"></div><div class="bn-label">Drivers</div><div class="bn-dot" id="drivers-dot" style="display:none"></div></button>
     </div>
     <div class="bn-row">
-      <button class="bn" id="bn-decisions" onclick="goPage('decisions',this)"><div class="bn-bar"></div><div class="bn-label">Job Requests</div><div class="bn-dot" id="decisions-dot" style="display:none"></div></button>
+      <button class="bn" id="bn-drivers" onclick="goPage('drivers',this)"><div class="bn-bar"></div><div class="bn-label">Drivers</div><div class="bn-dot" id="drivers-dot" style="display:none"></div></button>
       <button class="bn" id="bn-invoices" onclick="goPage('invoices',this)"><div class="bn-bar"></div><div class="bn-label">Invoices</div></button>
       <button class="bn" id="bn-earnings" onclick="goPage('earnings',this)"><div class="bn-bar"></div><div class="bn-label">Earnings</div></button>
     </div>
@@ -1369,7 +1367,10 @@ document.addEventListener('keydown',function(e){
 
 // ── DATA ─────────────────────────────────────────────────────────────────────
 var TODAY_JOBS = [];
-var OFFERED_JOBS = [];
+var OFFERED_JOBS = [];       // union of all non-cancelled jobs — used by action handlers to look up a job by id
+var CONFIRMED_JOBS = [];     // status: confirmed / active
+var TOCONFIRM_JOBS = [];     // status: pending (quote requests awaiting decision)
+var COMPLETED_JOBS = [];     // status: completed
 var INBOX_MSGS = [];
 var SD_JOBS = [];
 var ASSIST_HISTORY = [];
@@ -1383,12 +1384,12 @@ function goPage(id,btn){
   var pg=document.getElementById('pg-'+id);if(pg)pg.classList.add('on');
   if(btn)btn.classList.add('on');
   document.getElementById('page-scroll').scrollTo(0,0);
-  if(id==='today')buildToday();
-  if(id==='offered')buildOffered();
+  if(id==='confirmed')buildConfirmed();
+  if(id==='toconfirm')buildToConfirm();
+  if(id==='completed')buildCompleted();
   if(id==='inbox')oLoadInbox();
   if(id==='calendar')loadCalendarExternal();
   if(id==='earnings')buildEarnings();
-  if(id==='decisions')loadDecisions();
   if(id==='drivers')loadDriversList();
   if(id==='invoices')invLoad();
   if(id==='smart'){var d=new Date();document.getElementById('sd-date').value=d.toISOString().split('T')[0];}
@@ -1476,7 +1477,7 @@ async function decCancel(bookingId){
 
 // Live countdown for offered timer pills on decisions page
 setInterval(function(){
-  var pg=document.getElementById('pg-decisions');
+  var pg=document.getElementById('pg-toconfirm');
   if(!pg||!pg.classList.contains('on'))return;
   document.querySelectorAll('.dec-offer-timer[data-offer-expires]').forEach(function(el){
     var t=parseInt(el.getAttribute('data-offer-expires'),10);
@@ -1491,8 +1492,8 @@ setInterval(function(){
 
 // Refresh when SSE fires any booking/offer event
 window.addEventListener('wm:event',function(){
-  var pg=document.getElementById('pg-decisions');
-  if(pg&&pg.classList.contains('on'))loadDecisions();
+  var pg=document.getElementById('pg-toconfirm');
+  if(pg&&pg.classList.contains('on'))buildToConfirm();
 });
 
 // ── DRIVERS ONBOARDING ────────────────────────────────────────────────────────
@@ -2017,11 +2018,15 @@ function getDist(a,b){
 
 // ── TODAY ─────────────────────────────────────────────────────────────────────
 function buildToday(){
+  // The dedicated Today tab was removed; TODAY_JOBS is still maintained for the
+  // Tesla range planner. Bail out if the old Today containers aren't present.
+  var list=document.getElementById('today-list');
+  if(!list)return;
   var active=TODAY_JOBS.filter(function(j){return j.status!=='done';});
   var done=TODAY_JOBS.filter(function(j){return j.status==='done';});
   var d=new Date();
-  document.getElementById('today-sub').textContent=d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})+(active.length?' · '+active.length+(active.length===1?' job':' jobs')+' active':'');
-  var list=document.getElementById('today-list');
+  var sub=document.getElementById('today-sub');
+  if(sub)sub.textContent=d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})+(active.length?' · '+active.length+(active.length===1?' job':' jobs')+' active':'');
   if(!TODAY_JOBS.length){
     list.innerHTML='<div class="empty"><div class="empty-title">No jobs today</div><div class="empty-sub">New bookings will appear here</div></div>';
     return;
@@ -2404,43 +2409,47 @@ function _fmtUpcomingDate(dateStr){
   return days[d.getDay()]+' '+parseInt(p[2])+' '+_CAL_MONTHS_S[parseInt(p[1])-1];
 }
 
-async function buildOffered(){
-  var list=document.getElementById('offered-list');
-  var dot=document.getElementById('offered-dot');
-  // Clear badge when user views Upcoming — only re-badge if new pending arrive via SSE
-  dot.textContent='';
-  dot.style.display='none';
+// Generic job-list renderer — the SAME card format used across the Confirmed,
+// To Be Confirmed and Completed tabs, just fed a different filtered list.
+//   opts.includePersonal — merge personal Google Calendar events (forward window)
+//   opts.order           — 'asc' (soonest first) or 'desc' (most recent first)
+//   opts.emptyTitle / opts.emptySub — empty-state text
+async function renderJobList(list, jobs, opts){
+  if(!list)return;
+  opts=opts||{};
 
-  // Fetch Google Calendar personal events for next 60 days
-  var today=new Date();
-  var from=dk(today.getFullYear(),today.getMonth(),today.getDate());
-  var future=new Date(today);future.setDate(future.getDate()+60);
-  var to=dk(future.getFullYear(),future.getMonth(),future.getDate());
-  var extEvents=[];
-  try{
-    var er=await fetch('/api/google/external-events?from='+from+'&to='+to,{credentials:'include'});
-    var ed=await er.json();
-    if(ed&&ed.ok&&ed.events)extEvents=ed.events;
-  }catch(e){}
+  // Optionally fetch Google Calendar personal events for the next 60 days
+  var personalItems=[];
+  if(opts.includePersonal){
+    var today=new Date();
+    var from=dk(today.getFullYear(),today.getMonth(),today.getDate());
+    var future=new Date(today);future.setDate(future.getDate()+60);
+    var to=dk(future.getFullYear(),future.getMonth(),future.getDate());
+    var extEvents=[];
+    try{
+      var er=await fetch('/api/google/external-events?from='+from+'&to='+to,{credentials:'include'});
+      var ed=await er.json();
+      if(ed&&ed.ok&&ed.events)extEvents=ed.events;
+    }catch(e){}
+    personalItems=extEvents.map(function(ev){
+      var dateKey=_evDateKeyO(ev)||'';
+      var timeStr='';
+      if(!ev.allDay&&ev.start){try{var d=new Date(ev.start);timeStr=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}catch(e){}}
+      return{type:'personal',date:dateKey,time:timeStr,title:ev.title||'Personal event',allDay:ev.allDay||false};
+    }).filter(function(x){return x.date>=from;});
+  }
 
-  // Convert external events to a common format (type:'personal')
-  var personalItems=extEvents.map(function(ev){
-    var dateKey=_evDateKeyO(ev)||'';
-    var timeStr='';
-    if(!ev.allDay&&ev.start){try{var d=new Date(ev.start);timeStr=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}catch(e){}}
-    return{type:'personal',date:dateKey,time:timeStr,title:ev.title||'Personal event',allDay:ev.allDay||false};
-  }).filter(function(x){return x.date>=from;});
-
-  // Merge with booking jobs, sort by date then time
-  var allItems=OFFERED_JOBS.map(function(j){return Object.assign({type:'booking'},j);}).concat(personalItems);
+  // Merge booking jobs + personal items, sort by date then time (asc or desc)
+  var dir=opts.order==='desc'?-1:1;
+  var allItems=(jobs||[]).map(function(j){return Object.assign({type:'booking'},j);}).concat(personalItems);
   allItems.sort(function(a,b){
     var dc=(a.date||'').localeCompare(b.date||'');
-    if(dc!==0)return dc;
-    return (a.time||'').localeCompare(b.time||'');
+    if(dc!==0)return dc*dir;
+    return (a.time||'').localeCompare(b.time||'')*dir;
   });
 
   if(!allItems.length){
-    list.innerHTML='<div class="empty"><div class="empty-title">No upcoming jobs</div><div class="empty-sub">New bookings will appear here</div></div>';
+    list.innerHTML='<div class="empty"><div class="empty-title">'+escH(opts.emptyTitle||'No jobs')+'</div><div class="empty-sub">'+escH(opts.emptySub||'')+'</div></div>';
     return;
   }
 
@@ -2467,6 +2476,7 @@ async function buildOffered(){
     if(j.apiStatus==='pending'){stLabel='Quote requested';stColor='#9C5800';stBg='rgba(156,88,0,.08)';}
     else if(j.apiStatus==='offered'){stLabel='Awaiting driver';stColor='#2A3A66';stBg='rgba(42,58,102,.07)';}
     else if(j.apiStatus==='active'){stLabel='Active';stColor='#2D6E47';stBg='rgba(45,110,71,.1)';}
+    else if(j.apiStatus==='completed'){stLabel='Completed';stColor='#2D6E47';stBg='rgba(45,110,71,.12)';}
     else{stLabel='Confirmed';stColor='#2D6E47';stBg='rgba(45,110,71,.08)';}
 
     var detailId='uj-det-'+j.id;
@@ -2501,6 +2511,33 @@ async function buildOffered(){
     html+='</div></div></div>';
     return html;
   }).join('');
+}
+
+// Confirmed Jobs — accepted, scheduled jobs (status confirmed/active). Shows
+// soonest first and merges personal calendar events like the old Upcoming tab.
+function buildConfirmed(){
+  return renderJobList(document.getElementById('confirmed-list'), CONFIRMED_JOBS, {
+    includePersonal:true, order:'asc',
+    emptyTitle:'No confirmed jobs', emptySub:'Accepted, scheduled jobs appear here'
+  });
+}
+
+// To Be Confirmed — quote requests waiting for your decision (status pending).
+function buildToConfirm(){
+  var dot=document.getElementById('toconfirm-dot');
+  if(dot){dot.textContent='';dot.style.display='none';}   // viewing clears the badge
+  return renderJobList(document.getElementById('toconfirm-list'), TOCONFIRM_JOBS, {
+    includePersonal:false, order:'asc',
+    emptyTitle:'Nothing to confirm', emptySub:'Quote requests waiting for your decision appear here'
+  });
+}
+
+// Completed Jobs — finished jobs for your records (status completed), newest first.
+function buildCompleted(){
+  return renderJobList(document.getElementById('completed-list'), COMPLETED_JOBS, {
+    includePersonal:false, order:'desc',
+    emptyTitle:'No completed jobs', emptySub:'Finished jobs appear here for your records'
+  });
 }
 
 function upcomingToggle(detailId){
@@ -3720,17 +3757,24 @@ async function loadOwnerBookings(){
       };
     }
 
-    // Today's jobs
+    // Today's jobs (still used by the Tesla range planner widgets)
     var todayBookings=bookings.filter(function(b){return b.date===today&&b.status!=='cancelled';});
     TODAY_JOBS=todayBookings.map(toJob);
 
-    // Upcoming jobs = ALL future + today non-cancelled, sorted by date then time
+    // Union of all non-cancelled jobs, sorted by date then time. Used by the
+    // booking action handlers (confirm/estimate/edit/delete) to look up a job
+    // by id regardless of which tab it lives in.
     OFFERED_JOBS=bookings.filter(function(b){
-      return b.date>=today&&b.status!=='cancelled';
+      return b.status!=='cancelled';
     }).sort(function(a,b){
       if(a.date!==b.date)return a.date<b.date?-1:1;
       return(a.time||'').localeCompare(b.time||'');
     }).map(toJob);
+
+    // Tab-specific filtered lists.
+    CONFIRMED_JOBS=OFFERED_JOBS.filter(function(j){return j.apiStatus==='confirmed'||j.apiStatus==='active';});
+    TOCONFIRM_JOBS=OFFERED_JOBS.filter(function(j){return j.apiStatus==='pending';});
+    COMPLETED_JOBS=OFFERED_JOBS.filter(function(j){return j.apiStatus==='completed';});
 
     // Calendar jobs — group all bookings by date
     CAL_JOBS={};
@@ -3742,19 +3786,23 @@ async function loadOwnerBookings(){
       CAL_JOBS[key].push({id:b.id,time:b.time||'ASAP',name:b.customer_name||b.passenger_name||'',phone:b.customer_phone||b.passenger_phone||'',pickup:b.pickup,dest:b.destination,fare:b.fare||0,payment:b.payment||'pending',paid_at:b.paid_at||null,flight:b.flight||'',pax:b.passengers||1,bags:b.bags||'',notes:b.notes||'',status:b.status});
     });
 
-    // Update upcoming dot — only badge pending (unconfirmed) bookings
-    var dot=document.getElementById('offered-dot');
+    // Update the To Confirm dot — badge the count of pending (unconfirmed) jobs
+    var dot=document.getElementById('toconfirm-dot');
     if(dot){
-      var pendingCount=OFFERED_JOBS.filter(function(j){return j.apiStatus==='pending';}).length;
-      dot.textContent=pendingCount||'';
-      dot.style.display=pendingCount?'flex':'none';
+      var pendingCount=TOCONFIRM_JOBS.length;
+      var onToConfirm=document.getElementById('pg-toconfirm')&&document.getElementById('pg-toconfirm').classList.contains('on');
+      dot.textContent=(pendingCount&&!onToConfirm)?pendingCount:'';
+      dot.style.display=(pendingCount&&!onToConfirm)?'flex':'none';
     }
 
-    // Rebuild current view
+    // Keep Tesla range data fresh, then rebuild whichever tab is showing.
     buildToday();
-    if(document.getElementById('pg-calendar')&&document.getElementById('pg-calendar').classList.contains('on'))buildCalendar();
-    if(document.getElementById('pg-offered')&&document.getElementById('pg-offered').classList.contains('on'))buildOffered();
-    if(document.getElementById('pg-earnings')&&document.getElementById('pg-earnings').classList.contains('on'))buildEarnings();
+    function _onPg(id){var p=document.getElementById('pg-'+id);return p&&p.classList.contains('on');}
+    if(_onPg('confirmed'))buildConfirmed();
+    if(_onPg('toconfirm'))buildToConfirm();
+    if(_onPg('completed'))buildCompleted();
+    if(_onPg('calendar'))buildCalendar();
+    if(_onPg('earnings'))buildEarnings();
 
   }catch(e){console.error('[OWNER] Failed to load bookings:',e);_setConnDot(false);}
 }
@@ -4335,7 +4383,7 @@ document.addEventListener('click',function(e){
 function initApp(){
   // Show assist fab and navigate to Today tab
   var fab=document.getElementById('assist-fab');if(fab)fab.style.display='flex';
-  goPage('today', document.getElementById('bn-today'));
+  goPage('confirmed', document.getElementById('bn-confirmed'));
   loadOwnerBookings();
   checkDocExpiry();
 }
