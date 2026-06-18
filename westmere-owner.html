@@ -864,6 +864,10 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
               <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.22rem">Recipient Address</div>
               <textarea id="inv-rec-address" rows="2" placeholder="Street, Town, Postcode" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);background:#fff;font-family:var(--sans);font-size:.85rem;color:var(--navy);border-radius:6px;resize:vertical;box-sizing:border-box"></textarea>
             </div>
+            <label style="display:flex;align-items:flex-start;gap:.5rem;margin-bottom:.8rem;cursor:pointer;font-size:.78rem;color:rgba(17,29,44,.72);line-height:1.4">
+              <input id="inv-save-customer" type="checkbox" style="width:16px;height:16px;margin-top:.05rem;accent-color:var(--gold);cursor:pointer;flex-shrink:0">
+              <span>Save this recipient as a customer for future bookings &amp; invoices <span style="color:rgba(17,29,44,.45)">(requires an email)</span></span>
+            </label>
             <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.3rem">Line Items *</div>
             <div style="display:grid;grid-template-columns:100px 1fr 80px 28px;gap:.3rem;margin-bottom:.2rem">
               <div style="font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.35)">Date</div>
@@ -3814,6 +3818,7 @@ function invOpenNew(){
   document.getElementById('inv-rec-email').value='';
   document.getElementById('inv-rec-phone').value='';
   document.getElementById('inv-rec-address').value='';
+  var scb=document.getElementById('inv-save-customer');if(scb)scb.checked=false;
   invSetPeriod('month');
   invSetMode('account');
   invAddItem();
@@ -4013,7 +4018,10 @@ function invBuildRequest(sendEmail){
     if(!name){err.textContent='Recipient name is required.';err.style.display='';return null;}
     if(!items.length){err.textContent='Add at least one line item with a description and amount.';err.style.display='';return null;}
     if(sendEmail&&!email){err.textContent='Recipient email is required to send. Add an email or use Preview.';err.style.display='';return null;}
-    return{url:'/api/invoices/bespoke',body:{recipient:{name:name,email:email,phone:phone,address:address},items:items,notes:notes,send_email:sendEmail}};
+    var sc=document.getElementById('inv-save-customer');
+    var saveCustomer=!!(sc&&sc.checked);
+    if(saveCustomer&&!email){err.textContent='Add a recipient email to save them as a customer (or untick "Save this recipient as a customer").';err.style.display='';return null;}
+    return{url:'/api/invoices/bespoke',body:{recipient:{name:name,email:email,phone:phone,address:address},items:items,notes:notes,send_email:sendEmail},saveCustomer:saveCustomer,recipient:{name:name,email:email,phone:phone,address:address}};
   } else {
     var cid=document.getElementById('inv-customer').value;
     var dates=invGetDates();
@@ -4021,6 +4029,21 @@ function invBuildRequest(sendEmail){
     if(!dates){err.textContent='Please select a date range.';err.style.display='';return null;}
     return{url:'/api/customers/'+cid+'/invoice',body:{from:dates.from,to:dates.to,send_email:sendEmail}};
   }
+}
+
+// After a bespoke invoice is created, optionally save the recipient as a full
+// customer so their details are available for future bookings and invoices.
+// The invoice itself has already succeeded, so failures here are non-blocking.
+function invSaveRecipientAsCustomer(rec){
+  if(!rec||!rec.name||!rec.email)return;
+  fetch('/api/customers',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({full_name:rec.name,email:rec.email,phone:rec.phone||'',address_line1:rec.address||''})})
+  .then(function(r){return r.json().then(function(d){return{status:r.status,d:d};});})
+  .then(function(res){
+    if(res.d&&res.d.ok)showToast('Saved '+rec.name+' as a customer');
+    else if(res.status===409)showToast(rec.name+' is already a saved customer');
+  })
+  .catch(function(){});
 }
 
 function invSend(){
@@ -4037,6 +4060,7 @@ function invSend(){
     var to=res.d.bespoke?(res.d.recipient&&res.d.recipient.email||''):(res.d.customer&&res.d.customer.email||'');
     invCloseSheet();
     showToast('Invoice '+res.d.invoiceNo+' sent'+(to?' to '+to:'')+' — £'+total);
+    if(req.saveCustomer)invSaveRecipientAsCustomer(req.recipient);
     invLoadList();
   })
   .catch(function(){if(btn){btn.disabled=false;btn.textContent='Send to Email';}err.textContent='Network error. Please try again.';err.style.display='';});
@@ -4053,6 +4077,7 @@ function invPreview(){
     if(btn){btn.disabled=false;btn.textContent='Preview / Download';}
     if(!res.ok||!res.d.ok){err.textContent=res.d&&res.d.error?res.d.error:'Invoice failed ('+res.status+')';err.style.display='';return;}
     openInvoicePreview(res.d);
+    if(req.saveCustomer)invSaveRecipientAsCustomer(req.recipient);
     invLoadList();
   })
   .catch(function(){if(btn){btn.disabled=false;btn.textContent='Preview / Download';}err.textContent='Network error. Please try again.';err.style.display='';});

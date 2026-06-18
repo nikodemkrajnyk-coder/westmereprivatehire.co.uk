@@ -895,28 +895,44 @@ router.get('/invoices', (req, res) => {
                       issued_date, due_date, period_label, total, emailed, created_at
                  FROM invoices ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
                  ORDER BY created_at DESC LIMIT 500`;
-  const rows = db.prepare(sql).all(...params);
+  const rawRows = db.prepare(sql).all(...params);
+
+  // Deduplicate by invoice_no. The stored invoices table is authoritative.
+  // The same invoice_no can appear more than once when an older DB was created
+  // before the UNIQUE constraint on invoice_no existed, or when a double-submit
+  // races two inserts with the same generated number. Keep only the first
+  // (most-recent, since rows are ordered created_at DESC) stored row per number.
+  const seen = new Set();
+  const invoices = [];
+  const keyOf = (no) => String(no || '').trim().toUpperCase();
+  for (const r of rawRows) {
+    const key = keyOf(r.invoice_no);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    invoices.push(r);
+  }
 
   // Merge in legacy invoices that predate the invoices table. Before the table
   // existed, sent invoices were only recorded in audit_log as 'invoice_sent'
   // actions with detail "INV-XXXX to email@example.com". Without this, every
   // invoice issued before the table was added is invisible in the history.
+  // A legacy entry is only shown when there is NO stored row for that number,
+  // so an invoice present in both the table and the audit_log shows once.
   // Skip when a customer_id/kind filter is set — legacy rows carry neither.
   if (!where.length) {
     try {
-      const seen = new Set(rows.map(r => r.invoice_no));
       const legacy = db.prepare(
         "SELECT detail, created_at FROM audit_log WHERE action = 'invoice_sent' ORDER BY created_at DESC"
       ).all();
       for (const l of legacy) {
         const m = (l.detail || '').match(/^(INV-[A-Za-z0-9-]+)(?:\s+to\s+(\S+))?/);
         if (!m) continue;
-        const invoiceNo = m[1];
-        if (seen.has(invoiceNo)) continue;
-        seen.add(invoiceNo);
-        rows.push({
+        const key = keyOf(m[1]);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        invoices.push({
           id: null,
-          invoice_no: invoiceNo,
+          invoice_no: m[1],
           kind: 'account',
           customer_id: null,
           recipient_name: '',
@@ -930,13 +946,14 @@ router.get('/invoices', (req, res) => {
           legacy: true
         });
       }
-      rows.sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
     } catch (e) {
       console.error('[INVOICES] legacy audit_log merge failed:', e.message);
     }
   }
 
-  res.json({ ok: true, invoices: rows });
+  invoices.sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+
+  res.json({ ok: true, invoices });
 });
 
 // Fetch a single stored invoice with full line items.
