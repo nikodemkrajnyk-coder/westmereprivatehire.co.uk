@@ -2168,9 +2168,12 @@ function loadLiveBookings(){
     // ── Dashboard stats ──
     var todayJobs=bookings.filter(function(b){return b.date===today&&b.status!=='cancelled';});
     var thisMonth=bookings.filter(function(b){return b.date&&b.date.slice(0,7)===today.slice(0,7)&&b.status!=='cancelled';});
-    // Earnings = only completed journeys (paid/done), not pending/upcoming
-    var todayCompleted=todayJobs.filter(function(b){return b.status==='completed';});
-    var monthCompleted=thisMonth.filter(function(b){return b.status==='completed';});
+    // Earnings = money actually received only: cash collected on a completed
+    // job, or any booking with paid_at set (Stripe / online / marked paid).
+    // Pending/unpaid account bookings are NOT counted (invoice income is
+    // tracked separately via the paid flag on invoices).
+    var todayCompleted=todayJobs.filter(isReceived);
+    var monthCompleted=thisMonth.filter(isReceived);
     var monthRev=monthCompleted.reduce(function(s,b){return s+(b.fare||0);},0);
     var todayRev=todayCompleted.reduce(function(s,b){return s+(b.fare||0);},0);
 
@@ -2880,6 +2883,17 @@ function nav(id,btn){
 function openModal(id){document.getElementById(id).classList.add('on')}
 function closeModal(id){document.getElementById(id).classList.remove('on')}
 document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('on')}));
+
+// Earnings rule: a booking counts only once the money is actually received —
+// cash collected on a completed job, or paid_at set (Stripe / online / marked
+// paid). Pending/unpaid account bookings are excluded (invoice income is
+// tracked separately via the paid flag on invoices).
+function isReceived(b){
+  if(!b)return false;
+  var cashCompleted=(String(b.payment||'').toLowerCase()==='cash' && b.status==='completed');
+  var paidOnline=!!b.paid_at;
+  return cashCompleted || paidOnline;
+}
 
 // ── TOAST ──
 let tt;

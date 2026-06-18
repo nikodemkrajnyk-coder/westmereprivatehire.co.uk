@@ -1752,7 +1752,12 @@ router.get('/stats', (req, res) => {
   const pendingBookings = db.prepare("SELECT COUNT(*) as c FROM bookings WHERE status = 'pending'").get().c;
   const totalCustomers = db.prepare('SELECT COUNT(*) as c FROM customers WHERE active = 1').get().c;
   const totalDrivers = db.prepare("SELECT COUNT(*) as c FROM users WHERE role IN ('driver','owner') AND active = 1").get().c;
-  const totalRevenue = db.prepare('SELECT COALESCE(SUM(fare),0) as total FROM bookings WHERE status = ?').get('completed').total;
+  // Revenue = money actually received only: cash collected on a completed job,
+  // or any booking with paid_at set (Stripe / online / marked paid). Pending or
+  // unpaid account/invoice bookings are NOT counted (invoice income is tracked
+  // via the paid flag on invoices).
+  const RECEIVED = "((LOWER(payment)='cash' AND status='completed') OR paid_at IS NOT NULL)";
+  const totalRevenue = db.prepare(`SELECT COALESCE(SUM(fare),0) as total FROM bookings WHERE ${RECEIVED}`).get().total;
 
   res.json({
     ok: true,
@@ -1772,11 +1777,18 @@ router.get('/analytics', (req, res) => {
   const weekStartStr = weekStart.toISOString().split('T')[0];
   const monthStart = today.slice(0, 7) + '-01';
 
+  // Revenue = money actually received only: cash collected on a completed job,
+  // or any booking with paid_at set (Stripe / online / marked paid). Pending or
+  // unpaid account/invoice bookings are NOT counted (invoice income is tracked
+  // separately via the paid flag on invoices). `p` prefixes the columns when the
+  // bookings table is aliased (e.g. 'b.').
+  const recv = (p='') => `((LOWER(${p}payment)='cash' AND ${p}status='completed') OR ${p}paid_at IS NOT NULL)`;
+
   // Revenue overview
-  const revToday   = db.prepare(`SELECT COALESCE(SUM(fare),0) as t FROM bookings WHERE date=? AND status='completed'`).get(today).t;
-  const revWeek    = db.prepare(`SELECT COALESCE(SUM(fare),0) as t FROM bookings WHERE date>=? AND date<=? AND status='completed'`).get(weekStartStr, today).t;
-  const revMonth   = db.prepare(`SELECT COALESCE(SUM(fare),0) as t FROM bookings WHERE date>=? AND status='completed'`).get(monthStart).t;
-  const revAllTime = db.prepare(`SELECT COALESCE(SUM(fare),0) as t FROM bookings WHERE status='completed'`).get().t;
+  const revToday   = db.prepare(`SELECT COALESCE(SUM(fare),0) as t FROM bookings WHERE date=? AND ${recv()}`).get(today).t;
+  const revWeek    = db.prepare(`SELECT COALESCE(SUM(fare),0) as t FROM bookings WHERE date>=? AND date<=? AND ${recv()}`).get(weekStartStr, today).t;
+  const revMonth   = db.prepare(`SELECT COALESCE(SUM(fare),0) as t FROM bookings WHERE date>=? AND ${recv()}`).get(monthStart).t;
+  const revAllTime = db.prepare(`SELECT COALESCE(SUM(fare),0) as t FROM bookings WHERE ${recv()}`).get().t;
 
   // Weekly trend — last 12 weeks (oldest first)
   const weeklyTrend = [];
@@ -1785,7 +1797,7 @@ router.get('/analytics', (req, res) => {
     const we = new Date(ws);        we.setDate(we.getDate() + 6);
     const wsStr = ws.toISOString().split('T')[0];
     const weStr = we.toISOString().split('T')[0];
-    const row = db.prepare(`SELECT COALESCE(SUM(fare),0) as total, COUNT(*) as jobs FROM bookings WHERE date>=? AND date<=? AND status='completed'`).get(wsStr, weStr);
+    const row = db.prepare(`SELECT COALESCE(SUM(fare),0) as total, COUNT(*) as jobs FROM bookings WHERE date>=? AND date<=? AND ${recv()}`).get(wsStr, weStr);
     weeklyTrend.push({ weekStart: wsStr, total: row.total, jobs: row.jobs });
   }
 
@@ -1793,10 +1805,10 @@ router.get('/analytics', (req, res) => {
   const drivers = db.prepare(`
     SELECT u.id, u.full_name,
       COUNT(CASE WHEN b.status='completed' THEN 1 END) as jobs_completed,
-      COALESCE(SUM(CASE WHEN b.status='completed' THEN b.fare ELSE 0 END), 0) as total_earnings,
+      COALESCE(SUM(CASE WHEN ${recv('b.')} THEN b.fare ELSE 0 END), 0) as total_earnings,
       COUNT(CASE WHEN b.status IN ('completed','confirmed','active') THEN 1 END) as jobs_accepted,
       COUNT(b.id) as jobs_offered,
-      COALESCE(AVG(CASE WHEN b.status='completed' THEN CAST(b.fare AS REAL) END), 0) as avg_fare
+      COALESCE(AVG(CASE WHEN ${recv('b.')} THEN CAST(b.fare AS REAL) END), 0) as avg_fare
     FROM users u
     LEFT JOIN bookings b ON b.driver_id = u.id
     WHERE u.role IN ('driver','owner') AND u.active = 1
@@ -1818,7 +1830,7 @@ router.get('/analytics', (req, res) => {
   const topCustomers = db.prepare(`
     SELECT c.id, c.full_name, c.email,
       COUNT(b.id) as total_bookings,
-      COALESCE(SUM(CASE WHEN b.status='completed' THEN b.fare ELSE 0 END), 0) as total_spend
+      COALESCE(SUM(CASE WHEN ${recv('b.')} THEN b.fare ELSE 0 END), 0) as total_spend
     FROM customers c
     LEFT JOIN bookings b ON b.customer_id = c.id
     WHERE c.active = 1
@@ -1828,7 +1840,7 @@ router.get('/analytics', (req, res) => {
 
   // Booking breakdown
   const byStatus  = db.prepare(`SELECT status, COUNT(*) as count FROM bookings GROUP BY status`).all();
-  const byPayment = db.prepare(`SELECT payment, COUNT(*) as count, COALESCE(SUM(CASE WHEN status='completed' THEN fare ELSE 0 END),0) as total FROM bookings WHERE payment IS NOT NULL GROUP BY payment`).all();
+  const byPayment = db.prepare(`SELECT payment, COUNT(*) as count, COALESCE(SUM(CASE WHEN ${recv()} THEN fare ELSE 0 END),0) as total FROM bookings WHERE payment IS NOT NULL GROUP BY payment`).all();
 
   res.json({ ok: true, revenue: { today: revToday, week: revWeek, month: revMonth, allTime: revAllTime }, weeklyTrend, drivers, heatmap, topCustomers, byStatus, byPayment });
 });
