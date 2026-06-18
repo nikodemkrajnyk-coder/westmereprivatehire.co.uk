@@ -647,10 +647,15 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
   <!-- PAGE SCROLL -->
   <div class="page-scroll" id="page-scroll">
 
-    <!-- Confirmed Jobs (status: confirmed / active) -->
+    <!-- Confirmed Jobs (status: confirmed / active) — weekly schedule -->
     <div class="pg on" id="pg-confirmed">
       <div class="sec-title"><em>Confirmed</em> Jobs</div>
-      <div class="sec-sub">Accepted, scheduled jobs</div>
+      <div class="sec-sub">Weekly schedule</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin:.5rem 0 .85rem">
+        <button class="cal-nav-btn" onclick="confirmedWeekNav(-1)">&larr; Prev</button>
+        <div id="confirmed-week-range" style="flex:1;text-align:center;font-weight:600;color:var(--navy);font-size:.85rem"></div>
+        <button class="cal-nav-btn" onclick="confirmedWeekNav(1)">Next &rarr;</button>
+      </div>
       <div id="confirmed-list"></div>
     </div>
 
@@ -1384,7 +1389,7 @@ function goPage(id,btn){
   var pg=document.getElementById('pg-'+id);if(pg)pg.classList.add('on');
   if(btn)btn.classList.add('on');
   document.getElementById('page-scroll').scrollTo(0,0);
-  if(id==='confirmed')buildConfirmed();
+  if(id==='confirmed'){CONFIRMED_WEEK_OFFSET=0;buildConfirmed();}
   if(id==='toconfirm')buildToConfirm();
   if(id==='completed')buildCompleted();
   if(id==='inbox')oLoadInbox();
@@ -2462,73 +2467,145 @@ async function renderJobList(list, jobs, opts){
 
   var lastDate='';
   list.innerHTML=allItems.map(function(j){
-    var dateLabel=_fmtUpcomingDate(j.date);
     var dateSep='';
     if(j.date!==lastDate){
       lastDate=j.date;
-      dateSep='<div style="padding:.55rem 1rem .45rem;font-size:.78rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#fff;background:var(--navy);border-top:2px solid var(--gold)">'+dateLabel+'</div>';
+      dateSep='<div style="padding:.55rem 1rem .45rem;font-size:.78rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#fff;background:var(--navy);border-top:2px solid var(--gold)">'+_fmtUpcomingDate(j.date)+'</div>';
     }
-
-    if(j.type==='personal'){
-      return dateSep+'<div style="padding:.8rem 1rem;border-top:1px solid var(--rule);opacity:.7">'
-        +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;margin-bottom:.2rem">'
-        +  '<div style="font-weight:500;color:rgba(17,29,44,.75);font-size:.88rem">'+escH(j.title)+'</div>'
-        +  '<span style="display:inline-flex;align-items:center;padding:.2rem .5rem;font-size:.52rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#5a6a7a;background:rgba(17,29,44,.05);border-radius:4px;white-space:nowrap">'+(j.allDay?'All day':j.time||'')+'</span>'
-        +'</div>'
-        +'<div style="font-size:.68rem;color:rgba(17,29,44,.35);letter-spacing:.06em;text-transform:uppercase">Personal calendar</div>'
-        +'</div>';
-    }
-
-    var stLabel,stColor,stBg;
-    if(j.apiStatus==='pending'){stLabel='Quote requested';stColor='#9C5800';stBg='rgba(156,88,0,.08)';}
-    else if(j.apiStatus==='offered'){stLabel='Awaiting driver';stColor='#2A3A66';stBg='rgba(42,58,102,.07)';}
-    else if(j.apiStatus==='active'){stLabel='Active';stColor='#2D6E47';stBg='rgba(45,110,71,.1)';}
-    else if(j.apiStatus==='completed'){stLabel='Completed';stColor='#2D6E47';stBg='rgba(45,110,71,.12)';}
-    else{stLabel='Confirmed';stColor='#2D6E47';stBg='rgba(45,110,71,.08)';}
-
-    var detailId='uj-det-'+j.id;
-    var html=dateSep+'<div style="border-top:1px solid var(--rule)">'
-      +'<div style="padding:.8rem 1rem;cursor:pointer" onclick="upcomingToggle(\''+detailId+'\')">'
-        +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;margin-bottom:.2rem">'
-        +  '<div style="font-weight:500;color:var(--navy);font-size:.92rem;font-family:var(--serif)">'+escH(j.name)+'</div>'
-        +  '<span style="display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .5rem;font-size:.52rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:'+stColor+';background:'+stBg+';border-radius:4px;white-space:nowrap">'+stLabel+'<span style="font-size:.7rem;opacity:.6">▼</span></span>'
-        +'</div>'
-        +'<div style="font-size:.8rem;color:rgba(17,29,44,.6);margin-bottom:.15rem">'+escH(_shortAddr(j.pickup||''))+' → '+escH(_shortAddr(j.dest||''))+'</div>'
-        +'<div style="font-size:.72rem;color:rgba(17,29,44,.4)">'+(j.time||'ASAP')+(j.fare?' · £'+Number(j.fare).toFixed(0):'')+(j.pax>1?' · '+j.pax+' pax':'')+'</div>'
-        +'<div style="margin-top:.3rem">'+wmPayBadge(j)+'</div>'
-      +'</div>'
-      +'<div id="'+detailId+'" style="display:none;padding:0 1rem .9rem;border-top:1px solid rgba(17,29,44,.06);background:rgba(17,29,44,.02)">'
-        +'<table style="width:100%;font-size:.78rem;color:rgba(17,29,44,.7);border-collapse:collapse;margin-bottom:.7rem">'
-          +'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4);width:80px">From</td><td>'+escH(j.pickup||'—')+'</td></tr>'
-          +'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">To</td><td>'+escH(j.dest||'—')+'</td></tr>'
-          +'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Date</td><td>'+escH(j.date||'—')+' '+(j.time?'at '+j.time:'')+'</td></tr>'
-          +(j.phone?'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Phone</td><td><a href="tel:'+escH(j.phone)+'" style="color:var(--navy)">'+escH(j.phone)+'</a></td></tr>':'')
-          +(j.fare?'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Fare</td><td style="font-weight:600;color:var(--navy)">£'+Number(j.fare).toFixed(2)+'</td></tr>':'')
-          +(j.pax>1?'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Pax</td><td>'+j.pax+'</td></tr>':'')
-          +'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Payment</td><td>'+wmPayBadge(j)+'</td></tr>'
-          +(j.notes?'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4);vertical-align:top">Notes</td><td>'+escH(j.notes)+'</td></tr>':'')
-        +'</table>'
-        +'<div style="display:flex;gap:.4rem;flex-wrap:wrap">';
-    if(j.apiStatus==='pending'){
-      html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(184,152,90,.14);color:#8B7230;border:1.5px solid rgba(184,152,90,.35);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerSendEstimate('+j.id+')">Send Estimate</button>';
-      html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(45,110,71,.12);color:#2D6E47;border:1.5px solid rgba(45,110,71,.3);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingConfirm('+j.id+')">Confirm</button>';
-    }
-    html+='<button style="padding:.6rem .85rem;font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(17,29,44,.06);color:rgba(17,29,44,.6);border:1px solid rgba(17,29,44,.12);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingEdit('+j.id+')">Edit</button>'
-      +'<button style="padding:.6rem .85rem;font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(139,34,34,.08);color:#8B2222;border:1.5px solid rgba(139,34,34,.2);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingDelete('+j.id+')">Delete</button>';
-    html+='</div></div></div>';
-    return html;
+    return dateSep+jobCardHtml(j);
   }).join('');
 }
 
-// Confirmed Jobs — accepted, scheduled jobs (status confirmed/active) with a
-// FUTURE date only. No completed jobs. Personal calendar events are merged in,
-// but only from today onwards (renderJobList already filters to date>=today).
-// Soonest first.
-function buildConfirmed(){
-  return renderJobList(document.getElementById('confirmed-list'), CONFIRMED_JOBS, {
-    includePersonal:true, order:'asc',
-    emptyTitle:'No confirmed jobs', emptySub:'Accepted, scheduled jobs appear here'
-  });
+// Single job/personal-event card (no date separator). Shared by the flat list
+// renderer (renderJobList) and the weekly Confirmed schedule (buildConfirmed),
+// so every tab shows the exact same card format.
+function jobCardHtml(j){
+  if(j.type==='personal'){
+    return '<div style="padding:.8rem 1rem;border-top:1px solid var(--rule);opacity:.7">'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;margin-bottom:.2rem">'
+      +  '<div style="font-weight:500;color:rgba(17,29,44,.75);font-size:.88rem">'+escH(j.title)+'</div>'
+      +  '<span style="display:inline-flex;align-items:center;padding:.2rem .5rem;font-size:.52rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#5a6a7a;background:rgba(17,29,44,.05);border-radius:4px;white-space:nowrap">'+(j.allDay?'All day':j.time||'')+'</span>'
+      +'</div>'
+      +'<div style="font-size:.68rem;color:rgba(17,29,44,.35);letter-spacing:.06em;text-transform:uppercase">Personal calendar</div>'
+      +'</div>';
+  }
+
+  var stLabel,stColor,stBg;
+  if(j.apiStatus==='pending'){stLabel='Quote requested';stColor='#9C5800';stBg='rgba(156,88,0,.08)';}
+  else if(j.apiStatus==='offered'){stLabel='Awaiting driver';stColor='#2A3A66';stBg='rgba(42,58,102,.07)';}
+  else if(j.apiStatus==='active'){stLabel='Active';stColor='#2D6E47';stBg='rgba(45,110,71,.1)';}
+  else if(j.apiStatus==='completed'){stLabel='Completed';stColor='#2D6E47';stBg='rgba(45,110,71,.12)';}
+  else{stLabel='Confirmed';stColor='#2D6E47';stBg='rgba(45,110,71,.08)';}
+
+  var detailId='uj-det-'+j.id;
+  var html='<div style="border-top:1px solid var(--rule)">'
+    +'<div style="padding:.8rem 1rem;cursor:pointer" onclick="upcomingToggle(\''+detailId+'\')">'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;margin-bottom:.2rem">'
+      +  '<div style="font-weight:500;color:var(--navy);font-size:.92rem;font-family:var(--serif)">'+escH(j.name)+'</div>'
+      +  '<span style="display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .5rem;font-size:.52rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:'+stColor+';background:'+stBg+';border-radius:4px;white-space:nowrap">'+stLabel+'<span style="font-size:.7rem;opacity:.6">▼</span></span>'
+      +'</div>'
+      +'<div style="font-size:.8rem;color:rgba(17,29,44,.6);margin-bottom:.15rem">'+escH(_shortAddr(j.pickup||''))+' → '+escH(_shortAddr(j.dest||''))+'</div>'
+      +'<div style="font-size:.72rem;color:rgba(17,29,44,.4)">'+(j.time||'ASAP')+(j.fare?' · £'+Number(j.fare).toFixed(0):'')+(j.pax>1?' · '+j.pax+' pax':'')+'</div>'
+      +'<div style="margin-top:.3rem">'+wmPayBadge(j)+'</div>'
+    +'</div>'
+    +'<div id="'+detailId+'" style="display:none;padding:0 1rem .9rem;border-top:1px solid rgba(17,29,44,.06);background:rgba(17,29,44,.02)">'
+      +'<table style="width:100%;font-size:.78rem;color:rgba(17,29,44,.7);border-collapse:collapse;margin-bottom:.7rem">'
+        +'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4);width:80px">From</td><td>'+escH(j.pickup||'—')+'</td></tr>'
+        +'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">To</td><td>'+escH(j.dest||'—')+'</td></tr>'
+        +'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Date</td><td>'+escH(j.date||'—')+' '+(j.time?'at '+j.time:'')+'</td></tr>'
+        +(j.phone?'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Phone</td><td><a href="tel:'+escH(j.phone)+'" style="color:var(--navy)">'+escH(j.phone)+'</a></td></tr>':'')
+        +(j.fare?'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Fare</td><td style="font-weight:600;color:var(--navy)">£'+Number(j.fare).toFixed(2)+'</td></tr>':'')
+        +(j.pax>1?'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Pax</td><td>'+j.pax+'</td></tr>':'')
+        +'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Payment</td><td>'+wmPayBadge(j)+'</td></tr>'
+        +(j.notes?'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4);vertical-align:top">Notes</td><td>'+escH(j.notes)+'</td></tr>':'')
+      +'</table>'
+      +'<div style="display:flex;gap:.4rem;flex-wrap:wrap">';
+  if(j.apiStatus==='pending'){
+    html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(184,152,90,.14);color:#8B7230;border:1.5px solid rgba(184,152,90,.35);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerSendEstimate('+j.id+')">Send Estimate</button>';
+    html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(45,110,71,.12);color:#2D6E47;border:1.5px solid rgba(45,110,71,.3);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingConfirm('+j.id+')">Confirm</button>';
+  }
+  html+='<button style="padding:.6rem .85rem;font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(17,29,44,.06);color:rgba(17,29,44,.6);border:1px solid rgba(17,29,44,.12);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingEdit('+j.id+')">Edit</button>'
+    +'<button style="padding:.6rem .85rem;font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(139,34,34,.08);color:#8B2222;border:1.5px solid rgba(139,34,34,.2);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingDelete('+j.id+')">Delete</button>';
+  html+='</div></div></div>';
+  return html;
+}
+
+// ── Confirmed Jobs — WEEKLY schedule view ───────────────────────────────────
+// Shows confirmed/active jobs grouped Monday→Sunday for one week at a time, with
+// Prev/Next week navigation. Personal calendar events are merged in, but only
+// from today onwards. Each day shows its jobs (or "No jobs").
+var CONFIRMED_WEEK_OFFSET=0;   // 0 = current week, -1 = last week, +1 = next week
+
+function confirmedWeekNav(delta){
+  CONFIRMED_WEEK_OFFSET+=delta;
+  buildConfirmed();
+}
+
+// "MONDAY 16 JUN"
+function _fmtDayHeader(d){
+  return d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'}).toUpperCase();
+}
+// "Mon 16 Jun – Sun 22 Jun 2026" (built manually to avoid locale commas)
+function _fmtWeekRange(start){
+  var end=new Date(start);end.setDate(end.getDate()+6);
+  var wd=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function f(d,withYear){return wd[d.getDay()]+' '+d.getDate()+' '+mo[d.getMonth()]+(withYear?' '+d.getFullYear():'');}
+  return f(start,false)+' – '+f(end,true);
+}
+
+async function buildConfirmed(){
+  var list=document.getElementById('confirmed-list');
+  if(!list)return;
+
+  var now=new Date();
+  var todayKey=dk(now.getFullYear(),now.getMonth(),now.getDate());
+  var weekStart=isoWeekStart(now);                       // Monday of current week
+  weekStart.setDate(weekStart.getDate()+CONFIRMED_WEEK_OFFSET*7);
+  weekStart.setHours(0,0,0,0);
+  var weekEnd=new Date(weekStart);weekEnd.setDate(weekEnd.getDate()+6);
+  var startKey=dk(weekStart.getFullYear(),weekStart.getMonth(),weekStart.getDate());
+  var endKey=dk(weekEnd.getFullYear(),weekEnd.getMonth(),weekEnd.getDate());
+
+  var lbl=document.getElementById('confirmed-week-range');
+  if(lbl)lbl.textContent=_fmtWeekRange(weekStart);
+
+  // Confirmed/active bookings falling within this week (any week — past weeks
+  // still show their historical confirmed jobs).
+  var weekJobs=(OFFERED_JOBS||[]).filter(function(j){
+    return (j.apiStatus==='confirmed'||j.apiStatus==='active')&&j.date>=startKey&&j.date<=endKey;
+  }).map(function(j){return Object.assign({type:'booking'},j);});
+
+  // Personal Google Calendar events for this week — today onwards only.
+  var personalItems=[];
+  try{
+    var er=await fetch('/api/google/external-events?from='+startKey+'&to='+endKey,{credentials:'include'});
+    var ed=await er.json();
+    if(ed&&ed.ok&&ed.events){
+      personalItems=ed.events.map(function(ev){
+        var dateKey=_evDateKeyO(ev)||'';
+        var timeStr='';
+        if(!ev.allDay&&ev.start){try{var d=new Date(ev.start);timeStr=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}catch(e){}}
+        return{type:'personal',date:dateKey,time:timeStr,title:ev.title||'Personal event',allDay:ev.allDay||false};
+      }).filter(function(x){return x.date>=todayKey&&x.date>=startKey&&x.date<=endKey;});
+    }
+  }catch(e){}
+
+  var items=weekJobs.concat(personalItems);
+
+  // Render every day Monday→Sunday, with its items underneath (or "No jobs").
+  var html='';
+  for(var i=0;i<7;i++){
+    var day=new Date(weekStart);day.setDate(day.getDate()+i);
+    var dayKey=dk(day.getFullYear(),day.getMonth(),day.getDate());
+    var dayItems=items.filter(function(x){return x.date===dayKey;})
+      .sort(function(a,b){return (a.time||'').localeCompare(b.time||'');});
+    html+='<div style="padding:.55rem 1rem .45rem;font-size:.78rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#fff;background:var(--navy);border-top:2px solid var(--gold)">'+_fmtDayHeader(day)+'</div>';
+    html+=dayItems.length
+      ? dayItems.map(jobCardHtml).join('')
+      : '<div style="padding:.7rem 1rem;border-top:1px solid var(--rule);font-size:.78rem;color:rgba(17,29,44,.4)">No jobs</div>';
+  }
+  list.innerHTML=html;
 }
 
 // To Be Confirmed — quote requests waiting for your decision (status pending).
