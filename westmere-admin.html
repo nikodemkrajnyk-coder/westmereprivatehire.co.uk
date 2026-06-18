@@ -819,7 +819,7 @@ if ('serviceWorker' in navigator) {
         <div class="ch"><div class="ct">History</div><button class="btn btn-navy btn-sm" onclick="openNewInvoice()">+ New Invoice</button></div>
         <div style="overflow-x:auto">
           <table class="inv-table">
-            <thead><tr><th>Invoice No.</th><th>Recipient</th><th style="text-align:right">Total</th><th>Type</th><th>Issued</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>Recipient</th><th style="text-align:right">Total</th><th>Type</th><th>Issued</th><th>Status</th><th></th></tr></thead>
             <tbody id="invoice-history-body">
               <tr><td colspan="3" style="text-align:center;padding:2rem;color:rgba(17,29,44,.62)">Loading...</td></tr>
             </tbody>
@@ -3548,10 +3548,10 @@ function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'
 function loadInvoiceHistory(){
   var tbody=document.getElementById('invoice-history-body');if(!tbody)return;
   fetch('/api/invoices',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
-    if(!d.ok){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:2rem;color:rgba(17,29,44,.62)">Unable to load history</td></tr>';return;}
+    if(!d.ok){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:rgba(17,29,44,.62)">Unable to load history</td></tr>';return;}
     var invoices=d.invoices||[];
     if(!invoices.length){
-      tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:2rem;color:rgba(17,29,44,.62)">No invoices yet</td></tr>';return;
+      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:rgba(17,29,44,.62)">No invoices yet</td></tr>';return;
     }
     // Keep every invoice (stored + legacy) accessible for the View buttons.
     window._INV_HISTORY={};
@@ -3568,7 +3568,6 @@ function loadInvoiceHistory(){
       if(isLegacy){
         var legacyNoJs=escTo(inv.invoice_no).replace(/'/g,"\\'");
         return '<tr style="cursor:pointer" onclick="viewLegacyInvoice(\''+legacyNoJs+'\')">'
-          +'<td style="font-family:Menlo,Consolas,monospace;font-size:.78rem">'+escTo(inv.invoice_no)+'</td>'
           +'<td>'+escTo(inv.recipient_name||inv.recipient_email||'—')+(inv.recipient_name&&inv.recipient_email?'<br><span style="font-size:.72rem;color:rgba(17,29,44,.68)">'+escTo(inv.recipient_email)+'</span>':'')+'</td>'
           +'<td style="text-align:right;font-family:Georgia,serif;color:var(--navy)">'+total+'</td>'
           +'<td><span style="font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)">'+kind+'</span></td>'
@@ -3582,7 +3581,6 @@ function loadInvoiceHistory(){
           +'</tr>';
       }
       return '<tr style="cursor:pointer" onclick="viewInvoice('+inv.id+')">'
-        +'<td style="font-family:Menlo,Consolas,monospace;font-size:.78rem">'+escTo(inv.invoice_no)+'</td>'
         +'<td>'+escTo(inv.recipient_name||'')+(inv.recipient_email?'<br><span style="font-size:.72rem;color:rgba(17,29,44,.68)">'+escTo(inv.recipient_email)+'</span>':'')+'</td>'
         +'<td style="text-align:right;font-family:Georgia,serif;color:var(--navy)">'+total+'</td>'
         +'<td><span style="font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)">'+kind+'</span></td>'

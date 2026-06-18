@@ -875,7 +875,18 @@ router.get('/invoice-recipients', (req, res) => {
     return res.status(403).json({ error: 'Access denied' });
   }
   const db = getDb();
-  const rows = db.prepare('SELECT * FROM invoice_recipients ORDER BY last_used_at DESC LIMIT 100').all();
+  // Exclude any saved recipient whose email matches a deleted (inactive)
+  // customer, so the autocomplete never offers accounts that were removed.
+  // Recipients with no email (one-off bespoke recipients) have no customer
+  // to cross-check against and are always kept.
+  const rows = db.prepare(`
+    SELECT ir.* FROM invoice_recipients ir
+    WHERE NOT EXISTS (
+      SELECT 1 FROM customers c
+      WHERE c.email = ir.email COLLATE NOCASE AND c.active = 0
+    )
+    ORDER BY ir.last_used_at DESC LIMIT 100
+  `).all();
   res.json({ ok: true, recipients: rows });
 });
 
