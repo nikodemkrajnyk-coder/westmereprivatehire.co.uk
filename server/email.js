@@ -658,6 +658,39 @@ async function sendBespokeInvoice(recipient, items, period, invoiceNo, settings,
   return ok;
 }
 
+// ── Invoice payment reminder ──────────────────────────────────────────────
+// Polite, professional nudge for an outstanding (unpaid) invoice.
+async function sendInvoiceReminder(recipient, invoiceNo, total, payUrl) {
+  if (!recipient || !recipient.email) return false;
+  const firstName = (recipient.name || '').split(' ')[0] || 'there';
+  const totalStr = (Number(total) || 0).toFixed(2);
+  const pdfUrl = `https://westmereprivatehire.co.uk/api/public/invoice/${encodeURIComponent(invoiceNo || '')}/pdf`;
+
+  const payBtn = payUrl ? `
+  <div style="text-align:center;margin:26px 0 8px">
+    <a href="${escHtml(payUrl)}" style="display:inline-block;padding:13px 32px;background:${GOLD};color:#0E2540;text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:.03em">Pay Now</a>
+  </div>` : '';
+
+  const body = `
+  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Payment reminder</p>
+  <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">This is a gentle reminder that invoice <span style="font-family:Menlo,Consolas,monospace;font-size:13px">${escHtml(invoiceNo || '')}</span> for <strong style="color:${INK}">&pound;${totalStr}</strong> remains outstanding.</p>
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">If you&rsquo;ve already made payment, please disregard this message &mdash; and thank you.</p>
+  ${payBtn}
+  <div style="text-align:center;margin:${payUrl ? '14px' : '26px'} 0 8px">
+    <a href="${pdfUrl}" style="display:inline-block;padding:13px 32px;background:#0E2540;color:#ffffff;text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:.03em">View Invoice</a>
+  </div>
+  <p style="margin:20px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">If you have any questions about this invoice, please don&rsquo;t hesitate to get in touch &mdash; we&rsquo;re always happy to help.</p>
+  <p style="margin:16px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
+
+  const html = emailShell(body);
+  const subject = 'Payment reminder — Invoice ' + (invoiceNo || '') + ' · Westmere Private Hire';
+  const preheader = 'Invoice ' + (invoiceNo || '') + ' — £' + totalStr + ' outstanding';
+  const ok = await sendEmail(recipient.email, subject, html, 'Westmere Private Hire', preheader);
+  if (ok) console.log('[EMAIL] Invoice reminder', invoiceNo, 'sent to', recipient.email);
+  return ok;
+}
+
 // ── Password reset ────────────────────────────────────────────────────────
 async function sendPasswordResetEmail(customer, token) {
   if (!customer || !customer.email) return false;
@@ -870,7 +903,7 @@ async function sendVerificationEmail(customer, token) {
 
 module.exports = {
   sendCustomerConfirmation, sendCustomerConfirmed, sendCustomerEstimate, sendAdminAlert,
-  sendCustomerWelcome, sendCustomerInvoice, sendBespokeInvoice,
+  sendCustomerWelcome, sendCustomerInvoice, sendBespokeInvoice, sendInvoiceReminder,
   sendCustomerCancellation, sendDriverStatement, sendDriverWelcome,
   sendVerificationEmail, sendPasswordResetEmail, sendAdminPasswordResetEmail,
   sendEmail, isConfigured

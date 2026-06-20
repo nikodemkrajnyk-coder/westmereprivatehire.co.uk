@@ -1158,6 +1158,38 @@ router.patch('/invoices/:id/mark-unpaid', (req, res) => {
   res.json({ ok: true, paid: 0, paid_at: null });
 });
 
+// Send a payment reminder email for an outstanding (unpaid) invoice.
+router.post('/invoices/:id/remind', async (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid invoice ID' });
+  const row = db.prepare('SELECT invoice_no, recipient_name, recipient_email, total, paid FROM invoices WHERE id = ?').get(id);
+  if (!row) return res.status(404).json({ error: 'Invoice not found' });
+  if (!row.recipient_email) return res.status(400).json({ error: 'No email address on file for this invoice' });
+
+  try {
+    const { sendInvoiceReminder } = require('./email');
+    const ok = await sendInvoiceReminder(
+      { name: row.recipient_name || '', email: row.recipient_email },
+      row.invoice_no, row.total, null
+    );
+    if (!ok) return res.status(502).json({ error: 'Email delivery failed' });
+  } catch (e) {
+    console.error('[API] invoice reminder failed:', e.message);
+    return res.status(500).json({ error: 'Failed to send reminder' });
+  }
+
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run(req.auth.type || 'user', req.auth.id, 'invoice_reminder_sent', row.invoice_no + ' to ' + row.recipient_email, req.ip);
+  } catch (e) { /* non-fatal */ }
+
+  res.json({ ok: true });
+});
+
 // Invoice settings (business details + bank details for invoices)
 router.get('/settings/invoice', (req, res) => {
   if (!['admin', 'owner'].includes(req.auth.role)) {

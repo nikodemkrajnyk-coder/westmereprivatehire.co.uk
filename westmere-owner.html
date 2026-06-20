@@ -4395,6 +4395,7 @@ function invLoadList(){
         +paidBadge
         +'<button onclick="event.stopPropagation();invViewDetail('+inv.id+')" style="font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;padding:.25rem .5rem;border:1px solid rgba(17,29,44,.15);color:rgba(17,29,44,.55);background:transparent;cursor:pointer;border-radius:4px;font-family:var(--sans)">View</button>'
         +'<a href="/api/public/invoice/'+owEsc(inv.invoice_no)+'/pdf" onclick="event.stopPropagation()" target="_blank" style="font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;padding:.25rem .5rem;border:1px solid rgba(17,29,44,.15);color:rgba(17,29,44,.55);text-decoration:none;border-radius:4px;font-family:var(--sans)">PDF</a>'
+        +((inv.id&&!paid&&inv.recipient_email)?'<button onclick="event.stopPropagation();invRemind('+inv.id+',this)" style="font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;padding:.25rem .5rem;border:1px solid rgba(184,152,90,.45);color:#8B7230;background:rgba(184,152,90,.12);cursor:pointer;border-radius:4px;font-family:var(--sans)">Remind</button>':'')
         +'<button onclick="event.stopPropagation();invDelete('+inv.id+',\''+owEsc(inv.invoice_no)+'\')" style="font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;padding:.25rem .5rem;border:1px solid rgba(163,51,51,.25);color:var(--red);background:transparent;cursor:pointer;border-radius:4px;font-family:var(--sans)">Del</button>'
         +'</div></div>';
     }).join('');
@@ -4412,6 +4413,25 @@ function invTogglePaid(id,currentlyPaid){
     else showToast((d&&d.error)||'Could not update status');
   })
   .catch(function(){showToast('Network error');});
+}
+
+// Send a payment reminder for an unpaid invoice; flash "Sent!" on the button.
+function invRemind(id,btn){
+  if(!id)return;
+  var orig=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='Sending…';}
+  fetch('/api/invoices/'+id+'/remind',{method:'POST',credentials:'include'})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(d&&d.ok){
+      showToast('Reminder sent');
+      if(btn){btn.textContent='Sent!';setTimeout(function(){btn.disabled=false;btn.textContent=orig||'Remind';},2500);}
+    } else {
+      showToast((d&&d.error)||'Could not send reminder');
+      if(btn){btn.disabled=false;btn.textContent=orig||'Remind';}
+    }
+  })
+  .catch(function(){showToast('Network error');if(btn){btn.disabled=false;btn.textContent=orig||'Remind';}});
 }
 
 function invViewDetail(id){

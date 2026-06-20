@@ -3634,6 +3634,7 @@ function loadInvoiceHistory(){
         +'<td style="white-space:nowrap">'
           +'<button class="btn btn-ghost btn-sm" style="font-size:.65rem;padding:.3rem .7rem" onclick="event.stopPropagation();viewInvoice('+inv.id+')">View</button>'
           +' <button class="btn btn-ghost btn-sm" style="font-size:.65rem;padding:.3rem .7rem" onclick="event.stopPropagation();downloadInvoice('+inv.id+',\''+escTo(inv.invoice_no)+'\')">Download</button>'
+          +((!paid&&inv.recipient_email)?' <button class="btn btn-sm" style="font-size:.65rem;padding:.3rem .7rem;color:#8B7230;background:rgba(184,152,90,.12);border:1px solid rgba(184,152,90,.45)" onclick="event.stopPropagation();remindInvoice('+inv.id+',this)">Remind</button>':'')
           +' <button class="btn btn-ghost btn-sm" style="font-size:.65rem;padding:.3rem .7rem;color:#a33;border-color:rgba(163,51,51,.25)" onclick="event.stopPropagation();deleteInvoice('+inv.id+',\''+escTo(inv.invoice_no)+'\')">Delete</button>'
         +'</td>'
         +'</tr>';
@@ -3661,6 +3662,24 @@ async function toggleInvoicePaid(id, currentlyPaid){
     if(d&&d.ok){showToast(currentlyPaid?'Marked as not paid':'Marked as paid');loadInvoiceHistory();}
     else showToast((d&&d.error)||'Could not update status');
   }catch(e){showToast('Network error');}
+}
+
+// Send a payment reminder for an unpaid invoice; flash "Sent!" on the button.
+async function remindInvoice(id, btn){
+  if(!id)return;
+  var orig=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='Sending…';}
+  try{
+    var r=await fetch('/api/invoices/'+id+'/remind',{method:'POST',credentials:'include'});
+    var d=await r.json();
+    if(d&&d.ok){
+      showToast('Reminder sent');
+      if(btn){btn.textContent='Sent!';setTimeout(function(){btn.disabled=false;btn.textContent=orig||'Remind';},2500);}
+    } else {
+      showToast((d&&d.error)||'Could not send reminder');
+      if(btn){btn.disabled=false;btn.textContent=orig||'Remind';}
+    }
+  }catch(e){showToast('Network error');if(btn){btn.disabled=false;btn.textContent=orig||'Remind';}}
 }
 
 function downloadInvoice(id, invoiceNo){
