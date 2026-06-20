@@ -2532,6 +2532,7 @@ function jobCardHtml(j){
       +'</div>'
       +'<div style="font-size:.8rem;color:rgba(17,29,44,.6);margin-bottom:.15rem">'+escH(_shortAddr(j.pickup||''))+' → '+escH(_shortAddr(j.dest||''))+'</div>'
       +'<div style="font-size:.72rem;color:rgba(17,29,44,.4)">'+(j.time||'ASAP')+(j.fare?' · £'+Number(j.fare).toFixed(0):'')+(j.pax>1?' · '+j.pax+' pax':'')+'</div>'
+      +(j.apiStatus==='pending'&&j.suggestedFare!=null?'<div style="margin-top:.3rem"><span style="display:inline-block;font-size:.72rem;font-weight:600;letter-spacing:.03em;color:#8B7230;background:rgba(184,152,90,.16);border:1px solid rgba(184,152,90,.4);border-radius:5px;padding:.2rem .6rem">Suggested: £'+Number(j.suggestedFare).toFixed(2)+'</span></div>':'')
       +'<div style="margin-top:.3rem">'+wmPayBadge(j)+'</div>'
     +'</div>'
     +'<div id="'+detailId+'" style="display:none;padding:0 1rem .9rem;border-top:1px solid rgba(17,29,44,.06);background:rgba(17,29,44,.02)">'
@@ -2541,6 +2542,7 @@ function jobCardHtml(j){
         +'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Date</td><td>'+escH(j.date||'—')+' '+(j.time?'at '+j.time:'')+'</td></tr>'
         +(j.phone?'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Phone</td><td><a href="tel:'+escH(j.phone)+'" style="color:var(--navy)">'+escH(j.phone)+'</a></td></tr>':'')
         +(j.fare?'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Fare</td><td style="font-weight:600;color:var(--navy)">£'+Number(j.fare).toFixed(2)+'</td></tr>':'')
+        +(j.apiStatus==='pending'&&j.suggestedFare!=null?'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Suggested</td><td style="font-weight:600;color:#8B7230">£'+Number(j.suggestedFare).toFixed(2)+'</td></tr>':'')
         +(j.pax>1?'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Pax</td><td>'+j.pax+'</td></tr>':'')
         +'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Payment</td><td>'+wmPayBadge(j)+'</td></tr>'
         +(j.notes?'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4);vertical-align:top">Notes</td><td>'+escH(j.notes)+'</td></tr>':'')
@@ -3861,6 +3863,7 @@ async function loadOwnerBookings(){
         flightDeparts:'',
         fare:b.fare||0,
         driverFare:b.fare||0,
+        suggestedFare:(b.suggested_fare!=null&&b.suggested_fare!=='')?Number(b.suggested_fare):null,
         deadMilesFee:b.dead_miles_fee||0,
         payment:b.payment||'pending',
         paid_at:b.paid_at||null,
