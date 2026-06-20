@@ -290,8 +290,8 @@ async function notifyCustomerConfirmed(bookingId) {
 
   const payload = {
     ref: row.ref,
-    name: row.cust_name || row.notes || 'Guest',
-    email: row.cust_email || null,
+    name: row.cust_name || row.passenger_name || row.notes || '',
+    email: row.cust_email || row.passenger_email || null,
     phone: row.cust_phone || null,
     pickup: row.pickup,
     destination: row.destination,
