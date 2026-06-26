@@ -2552,6 +2552,16 @@ function jobCardHtml(j){
     html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(184,152,90,.14);color:#8B7230;border:1.5px solid rgba(184,152,90,.35);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerSendEstimate('+j.id+')">Send Estimate</button>';
     html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(45,110,71,.12);color:#2D6E47;border:1.5px solid rgba(45,110,71,.3);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingConfirm('+j.id+')">Confirm</button>';
   }
+  if(j.apiStatus==='confirmed'||j.apiStatus==='active'){
+    html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(45,110,71,.12);color:#2D6E47;border:1.5px solid rgba(45,110,71,.3);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerMarkCompleted('+j.id+')">Mark Completed</button>';
+  }
+  var _isPaid=!!(j.paid_at);
+  if(j.apiStatus==='confirmed'||j.apiStatus==='active'||j.apiStatus==='completed'){
+    html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;'
+      +(_isPaid?'background:rgba(45,110,71,.12);color:#2D6E47;border:1.5px solid rgba(45,110,71,.3)':'background:rgba(184,152,90,.12);color:#8B7230;border:1.5px solid rgba(184,152,90,.35)')
+      +'" onclick="ownerTogglePaid('+j.id+','+(_isPaid?'true':'false')+')">'
+      +(_isPaid?'Paid ✓':'Mark Paid')+'</button>';
+  }
   html+='<button style="padding:.6rem .85rem;font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(17,29,44,.06);color:rgba(17,29,44,.6);border:1px solid rgba(17,29,44,.12);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingEdit('+j.id+')">Edit</button>'
     +'<button style="padding:.6rem .85rem;font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(139,34,34,.08);color:#8B2222;border:1.5px solid rgba(139,34,34,.2);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingDelete('+j.id+')">Delete</button>';
   html+='</div></div></div>';
@@ -2771,6 +2781,27 @@ async function upcomingSave(){
 // Legacy: kept so old SSE-path calls don't throw
 function acceptJob(id){upcomingConfirm(id);}
 function declineJob(id){upcomingDelete(id);}
+
+// ── MARK COMPLETED / MARK PAID ───────────────────────────────────────────────
+async function ownerMarkCompleted(bookingId){
+  if(!confirm('Mark this job as completed?'))return;
+  try{
+    var r=await fetch('/api/bookings/'+bookingId,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'completed'})});
+    var d=await r.json();
+    if(r.ok&&d.ok){showToast('Job marked as completed');loadOwnerBookings();}
+    else showToast(d.error||('Failed ('+r.status+')'));
+  }catch(e){showToast('Network error');console.error('[ownerMarkCompleted]',e);}
+}
+
+async function ownerTogglePaid(bookingId,currentlyPaid){
+  try{
+    var body=currentlyPaid?{paid_at:null}:{paid_at:new Date().toISOString()};
+    var r=await fetch('/api/bookings/'+bookingId,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var d=await r.json();
+    if(r.ok&&d.ok){showToast(currentlyPaid?'Marked as not paid':'Marked as paid');loadOwnerBookings();}
+    else showToast(d.error||('Failed ('+r.status+')'));
+  }catch(e){showToast('Network error');console.error('[ownerTogglePaid]',e);}
+}
 
 // ── STATUS ────────────────────────────────────────────────────────────────────
 function navChoice(addr){
@@ -3941,36 +3972,6 @@ function invLoad(){
   invLoadList();
 }
 
-function invLoadList(){
-  var el=document.getElementById('inv-list-body');
-  if(!el)return;
-  el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">Loading…</div>';
-  fetch('/api/invoices',{credentials:'include'})
-  .then(function(r){return r.json();})
-  .then(function(d){
-    if(!d.ok){el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">Unable to load invoices</div>';return;}
-    var invoices=d.invoices||[];
-    if(!invoices.length){el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">No invoices yet</div>';return;}
-    el.innerHTML=invoices.map(function(inv){
-      var total='£'+(+inv.total||0).toFixed(2);
-      var kind=inv.kind==='bespoke'?'One-off':'Account';
-      return '<div style="display:flex;align-items:center;gap:.5rem;padding:.7rem 1rem;border-bottom:1px solid rgba(17,29,44,.06);cursor:pointer" onclick="invViewDetail('+inv.id+')">'
-        +'<div style="flex:1;min-width:0">'
-        +'<div style="font-family:Menlo,Consolas,monospace;font-size:.75rem;color:var(--navy)">'+owEsc(inv.invoice_no||'')+'</div>'
-        +'<div style="font-size:.7rem;color:rgba(17,29,44,.5);margin-top:.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+owEsc(inv.recipient_name||'')+(inv.issued_date?' · '+inv.issued_date:'')+'</div>'
-        +'<div style="font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin-top:.1rem">'+kind+'</div>'
-        +'</div>'
-        +'<div style="display:flex;align-items:center;gap:.35rem;flex-shrink:0">'
-        +'<span style="font-family:var(--serif);font-size:.95rem;color:var(--navy)">'+total+'</span>'
-        +'<button onclick="event.stopPropagation();invViewDetail('+inv.id+')" style="font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;padding:.25rem .5rem;border:1px solid rgba(17,29,44,.15);color:rgba(17,29,44,.55);background:transparent;cursor:pointer;border-radius:4px;font-family:var(--sans)">View</button>'
-        +'<a href="/api/public/invoice/'+owEsc(inv.invoice_no)+'/pdf" onclick="event.stopPropagation()" target="_blank" style="font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;padding:.25rem .5rem;border:1px solid rgba(17,29,44,.15);color:rgba(17,29,44,.55);text-decoration:none;border-radius:4px;font-family:var(--sans)">PDF</a>'
-        +'<button onclick="event.stopPropagation();invDelete('+inv.id+',\''+owEsc(inv.invoice_no)+'\')" style="font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;padding:.25rem .5rem;border:1px solid rgba(163,51,51,.25);color:var(--red);background:transparent;cursor:pointer;border-radius:4px;font-family:var(--sans)">Del</button>'
-        +'</div></div>';
-    }).join('');
-  })
-  .catch(function(){el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:var(--red)">Failed to load invoices</div>';});
-}
-
 function invOpenNew(){
   var sel=document.getElementById('inv-customer');
   sel.innerHTML='<option value="">Loading…</option>';
@@ -4357,6 +4358,7 @@ function invClearFilter(){
 function invLoadList(){
   var el=document.getElementById('inv-list-body');
   if(!el)return;
+  el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">Loading…</div>';
   fetch('/api/invoices',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
     if(!d.ok){el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(17,29,44,.4)">Unable to load</div>';return;}
     var invoices=d.invoices||[];
