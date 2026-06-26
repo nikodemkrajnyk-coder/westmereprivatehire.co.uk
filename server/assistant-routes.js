@@ -162,7 +162,7 @@ const CREATE_BOOKING_TOOL = {
       pickup:           { type: 'string', description: 'Pickup address or location' },
       destination:      { type: 'string', description: 'Destination address or location' },
       date:             { type: 'string', description: 'Date in YYYY-MM-DD format. May be in the past for recording completed jobs. Defaults to today if omitted.' },
-      time:             { type: 'string', description: 'Pickup time in HH:MM 24h format (or "ASAP"). Defaults to ASAP.' },
+      time:             { type: 'string', description: 'Pickup time in HH:MM 24h format. If the user says "ASAP" or doesn\'t specify a time, omit this field and the server will auto-set it to the next half-hour.' },
       passengers:       { type: 'number', description: 'Number of passengers (default 1)' },
       passenger_name:   { type: 'string', description: 'Passenger / customer full name' },
       passenger_phone:  { type: 'string', description: 'Passenger / customer phone number' },
@@ -524,7 +524,20 @@ async function executeCalendarTool(name, input, req) {
 
       let date = (input.date || '').trim() || todayStr;
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return 'Cannot create booking: date must be in YYYY-MM-DD format.';
-      const time = (input.time || '').trim() || 'ASAP';
+
+      // Resolve ASAP / missing time → next half-hour in UK time
+      let time = (input.time || '').trim();
+      if (!time || /^asap$/i.test(time)) {
+        const ukNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/London' }));
+        let h = ukNow.getHours();
+        let m = ukNow.getMinutes();
+        // Round UP to next 30-min slot
+        if (m === 0) { /* already on the hour — keep */ }
+        else if (m <= 30) { m = 30; }
+        else { m = 0; h = h + 1; }
+        if (h >= 24) { h = h - 24; }
+        time = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+      }
 
       const status = ['pending', 'confirmed', 'completed', 'active', 'cancelled'].includes((input.status || '').toLowerCase())
         ? input.status.toLowerCase() : 'pending';
@@ -698,7 +711,7 @@ RULES:
   Use null for unknown optional fields. payment defaults to "cash" (also: card, account, invoice). "tomorrow"/"next Monday"/"3pm" resolve relative to today.
 - After a summary: "yes/confirm/book it" → output <<<CONFIRM>>> on its own line; "cancel/no" → <<<CANCEL>>>.
 - FARES: ALWAYS use the calculate_fare tool, never guess. Day rate 06:00–21:59, night 22:00–05:59.
-- CREATING BOOKINGS: You can create bookings for the owner using the create_booking tool. If they ask to record a past trip or put a job in the books, create a booking with the "completed" status and the correct date. You can create bookings with past dates for record-keeping purposes. Ask for: pickup, destination, date, time, passenger name and fare. If they don't specify a date, use today's date.
+- CREATING BOOKINGS: You can create bookings for the owner using the create_booking tool. If they ask to record a past trip or put a job in the books, create a booking with the "completed" status and the correct date. You can create bookings with past dates for record-keeping purposes. Ask for: pickup, destination, date, time, passenger name and fare. If they don't specify a date, use today's date. If they say "ASAP" or don't give a time, leave the time field empty — the server will automatically round up to the next half-hour from the current UK time. Never store "ASAP" as the time value.
 - INVOICES: You can look up invoices with the list_invoices tool — use it to answer "show me my invoices", "what invoices are unpaid", or "how much has X been invoiced" (it returns totals plus paid/unpaid status, and includes archived legacy invoices).
 - TOOLS: calculate_fare (fare quotes), create_booking (book a job or record a past/completed trip — past dates allowed), search_bookings (find jobs by date/time/name/route), create_invoice (to invoice a job, search_bookings first — or list_calendar_events if not found — then create_invoice from the fare/name/email/route), list_invoices (look up existing invoices, unpaid/paid totals, amount invoiced to a recipient), check_vehicle (Tesla charge/range/"can I make it to X"), and the Google Calendar tools (list/create/edit/delete events).
 
