@@ -672,6 +672,15 @@ function migrate() {
     }
   } catch(e) { console.error('[DB] dead_miles migration failed:', e.message); }
 
+  // Trip miles — road distance for mileage tracking / tax purposes
+  try {
+    const tmInfo = db.prepare("PRAGMA table_info(bookings)").all();
+    if (!tmInfo.find(c => c.name === 'trip_miles')) {
+      db.exec(`ALTER TABLE bookings ADD COLUMN trip_miles REAL`);
+      console.log('[DB] Added trip_miles column to bookings');
+    }
+  } catch(e) { console.error('[DB] trip_miles migration failed:', e.message); }
+
   // Owner/driver documents: add expiry_date column
   try {
     const ddInfo = db.prepare("PRAGMA table_info(driver_documents)").all();
