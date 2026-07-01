@@ -117,6 +117,21 @@ router.post('/bookings', (req, res) => {
       .run(req.auth.type, req.auth.id, 'booking_created', ref, req.ip);
   } catch (e) { /* audit failure must not block the response */ }
 
+  // Calculate trip miles in background (for mileage tracking)
+  (async () => {
+    try {
+      const { _fareGeocode, _fareRoute } = require('./fare-engine');
+      const [gc1, gc2] = await Promise.all([_fareGeocode(pickup), _fareGeocode(destination)]);
+      if (gc1 && gc2) {
+        const rt = await _fareRoute(gc1.lat, gc1.lon, gc2.lat, gc2.lon);
+        if (rt) {
+          const miles = Math.round(rt.distance / 1609.34 * 10) / 10;
+          db.prepare('UPDATE bookings SET trip_miles = ? WHERE id = ?').run(miles, result.lastInsertRowid);
+        }
+      }
+    } catch (e) { console.error('[API] trip_miles calc failed:', e.message); }
+  })();
+
   // Send admin notifications in background
   const customerName = customerId
     ? (db.prepare('SELECT full_name, email, phone FROM customers WHERE id = ?').get(customerId) || {})
@@ -1789,6 +1804,94 @@ router.get('/stats', (req, res) => {
     ok: true,
     stats: { totalBookings, todayBookings, pendingBookings, totalCustomers, totalDrivers, totalRevenue }
   });
+});
+
+// ── Mileage stats (for tax / HMRC purposes) ─────────────────────────────
+// Returns trip miles + dead miles for today, this week, this month,
+// this tax year (6 Apr → 5 Apr), and all-time. Includes only non-cancelled
+// bookings that have trip_miles recorded.
+router.get('/mileage', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+
+  // UK timezone dates
+  const ukParts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).formatToParts(new Date()).reduce((o, p) => { o[p.type] = p.value; return o; }, {});
+  const today = `${ukParts.year}-${ukParts.month}-${ukParts.day}`;
+  const now = new Date();
+  const dayOfWeek = (now.getDay() + 6) % 7; // Mon=0
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - dayOfWeek);
+  const weekStartStr = weekStart.toISOString().split('T')[0];
+  const monthStart = today.slice(0, 7) + '-01';
+
+  // Tax year: 6 Apr to 5 Apr
+  const yr = parseInt(ukParts.year, 10);
+  const mo = parseInt(ukParts.month, 10);
+  const dy = parseInt(ukParts.day, 10);
+  const taxYearStart = (mo > 4 || (mo === 4 && dy >= 6))
+    ? `${yr}-04-06`
+    : `${yr - 1}-04-06`;
+
+  const base = "SELECT COALESCE(SUM(trip_miles),0) as trip, COALESCE(SUM(dead_miles_km/1.60934),0) as dead, COUNT(*) as jobs FROM bookings WHERE status != 'cancelled' AND trip_miles IS NOT NULL";
+
+  const mToday   = db.prepare(`${base} AND date = ?`).get(today);
+  const mWeek    = db.prepare(`${base} AND date >= ? AND date <= ?`).get(weekStartStr, today);
+  const mMonth   = db.prepare(`${base} AND date >= ?`).get(monthStart);
+  const mTaxYear = db.prepare(`${base} AND date >= ?`).get(taxYearStart);
+  const mAll     = db.prepare(base).get();
+
+  const fmt = r => ({ trip_miles: Math.round(r.trip * 10) / 10, dead_miles: Math.round(r.dead * 10) / 10, total_miles: Math.round((r.trip + r.dead) * 10) / 10, jobs: r.jobs });
+
+  res.json({
+    ok: true,
+    mileage: {
+      today: fmt(mToday),
+      week: fmt(mWeek),
+      month: fmt(mMonth),
+      tax_year: { ...fmt(mTaxYear), start: taxYearStart },
+      all_time: fmt(mAll)
+    }
+  });
+});
+
+// ── Backfill trip_miles for bookings that don't have it ──────────────────
+// Called once on startup and can be triggered manually. Uses OSRM to
+// calculate road distance for each booking with pickup + destination.
+router.post('/mileage/backfill', async (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const { _fareGeocode, _fareRoute } = require('./fare-engine');
+
+  const rows = db.prepare(`
+    SELECT id, pickup, destination FROM bookings
+    WHERE trip_miles IS NULL AND status != 'cancelled'
+    AND pickup IS NOT NULL AND destination IS NOT NULL
+  `).all();
+
+  let updated = 0, failed = 0;
+  for (const row of rows) {
+    try {
+      const [gc1, gc2] = await Promise.all([_fareGeocode(row.pickup), _fareGeocode(row.destination)]);
+      if (gc1 && gc2) {
+        const rt = await _fareRoute(gc1.lat, gc1.lon, gc2.lat, gc2.lon);
+        if (rt) {
+          const miles = Math.round(rt.distance / 1609.34 * 10) / 10;
+          db.prepare('UPDATE bookings SET trip_miles = ? WHERE id = ?').run(miles, row.id);
+          updated++;
+          continue;
+        }
+      }
+      failed++;
+    } catch (e) { failed++; }
+  }
+
+  res.json({ ok: true, total: rows.length, updated, failed });
 });
 
 // ── Analytics ────────────────────────────────────────────────────────────
