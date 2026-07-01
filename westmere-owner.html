@@ -2562,8 +2562,18 @@ function jobCardHtml(j){
       +'" onclick="ownerTogglePaid('+j.id+','+(_isPaid?'true':'false')+')">'
       +(_isPaid?'Paid ✓':'Mark Paid')+'</button>';
   }
+  // Create Invoice button — available on all confirmed/completed jobs with a fare
+  if((j.apiStatus==='confirmed'||j.apiStatus==='active'||j.apiStatus==='completed')&&j.fare){
+    html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(17,29,44,.06);color:var(--navy);border:1.5px solid rgba(17,29,44,.15);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerQuickInvoice('+j.id+',\''+escH(j.name||'')+'\',\''+escH(j.email||'')+'\','+Number(j.fare||0)+',\''+escH(j.pickup||'')+'\',\''+escH(j.dest||'')+'\',\''+escH(j.date||'')+'\')">Create Invoice</button>';
+  }
   html+='<button style="padding:.6rem .85rem;font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(17,29,44,.06);color:rgba(17,29,44,.6);border:1px solid rgba(17,29,44,.12);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingEdit('+j.id+')">Edit</button>'
     +'<button style="padding:.6rem .85rem;font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(139,34,34,.08);color:#8B2222;border:1.5px solid rgba(139,34,34,.2);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingDelete('+j.id+')">Delete</button>';
+  // Email sent indicator
+  if(j.email&&(j.apiStatus==='confirmed'||j.apiStatus==='active'||j.apiStatus==='completed')){
+    html+='<div style="width:100%;text-align:center;margin-top:.35rem;font-size:.62rem;color:rgba(45,110,71,.7);letter-spacing:.04em">✓ Confirmation sent to '+escH(j.email)+'</div>';
+  } else if(!j.email&&j.apiStatus!=='pending'){
+    html+='<div style="width:100%;text-align:center;margin-top:.35rem;font-size:.62rem;color:rgba(156,88,0,.6);letter-spacing:.04em">No email — confirmation not sent</div>';
+  }
   html+='</div></div></div>';
   return html;
 }
@@ -2781,6 +2791,43 @@ async function upcomingSave(){
 // Legacy: kept so old SSE-path calls don't throw
 function acceptJob(id){upcomingConfirm(id);}
 function declineJob(id){upcomingDelete(id);}
+
+// ── QUICK INVOICE FROM JOB CARD ──────────────────────────────────────────────
+async function ownerQuickInvoice(bookingId,name,email,fare,pickup,dest,date){
+  if(!confirm('Create invoice for '+name+' — £'+fare+'?'))return;
+  try{
+    var desc=pickup+' → '+dest;
+    if(date)desc+=' ('+date+')';
+    var body={
+      recipient:{name:name||'Customer',email:email||''},
+      items:[{description:desc,amount:fare}],
+      send_email:false
+    };
+    var r=await fetch('/api/invoices/bespoke',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var d=await r.json();
+    if(r.ok&&d.ok){
+      showToast('Invoice '+d.invoiceNo+' created (£'+d.total+')');
+      // Ask if they want to send it
+      if(email&&confirm('Send invoice to '+email+'?')){
+        // Find the invoice ID and send
+        var lr=await fetch('/api/invoices',{credentials:'include'});
+        var ld=await lr.json();
+        var inv=(ld.invoices||[]).find(function(i){return i.invoice_no===d.invoiceNo;});
+        if(inv){
+          // Need to recreate with send_email:true - delete and recreate
+          await fetch('/api/invoices/'+inv.id,{method:'DELETE',credentials:'include'});
+          body.send_email=true;
+          var r2=await fetch('/api/invoices/bespoke',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+          var d2=await r2.json();
+          if(r2.ok&&d2.ok)showToast('Invoice sent to '+email);
+          else showToast('Invoice created but sending failed');
+        }
+      }
+    } else {
+      showToast(d.error||'Failed to create invoice');
+    }
+  }catch(e){showToast('Network error');console.error('[ownerQuickInvoice]',e);}
+}
 
 // ── MARK COMPLETED / MARK PAID ───────────────────────────────────────────────
 async function ownerMarkCompleted(bookingId){
