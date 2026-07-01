@@ -733,6 +733,29 @@ h1,h2,h3,h4{font-family:var(--serif);color:var(--navy)}
         </div>
       </div>
 
+      <!-- Mileage stats -->
+      <div style="margin-bottom:1rem">
+        <div style="font-family:var(--serif);font-size:.95rem;color:#F5F2ED;margin-bottom:.5rem;font-weight:300">Mileage</div>
+        <div id="mileage-trio" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:.5rem">
+          <div class="earn-stat-card" id="mile-stat-today">
+            <div class="esk-label">Today</div>
+            <div class="esk-amount" style="font-size:1.1rem">— mi</div>
+          </div>
+          <div class="earn-stat-card esk-accent" id="mile-stat-week">
+            <div class="esk-label">This Week</div>
+            <div class="esk-amount" style="font-size:1.1rem">— mi</div>
+          </div>
+          <div class="earn-stat-card" id="mile-stat-month">
+            <div class="esk-label">This Month</div>
+            <div class="esk-amount" style="font-size:1.1rem">— mi</div>
+          </div>
+        </div>
+        <div id="mile-tax-year" style="display:flex;justify-content:space-between;align-items:center;padding:.6rem .8rem;background:var(--navy2);border:1px solid rgba(184,152,90,.2);border-radius:8px">
+          <span style="font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(245,242,237,.4);font-family:var(--sans)">Tax Year Total</span>
+          <span style="font-family:var(--serif);font-size:1.1rem;color:var(--gold)">— miles</span>
+        </div>
+      </div>
+
       <!-- This week detail (hidden on mobile, shown as full card) -->
       <div id="earn-this-week"></div>
 
@@ -1859,6 +1882,27 @@ function buildEarnings(){
   setStatCard('earn-stat-today',todayTotal,todayBookings.length);
   setStatCard('earn-stat-week',thisWeek.total,thisWeek.jobs);
   setStatCard('earn-stat-month',monthTotal,monthBookings.length);
+
+  // Load mileage stats
+  fetch('/api/mileage',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
+    if(!d.ok||!d.mileage)return;
+    var m=d.mileage;
+    function setMile(id,data){
+      var el=document.getElementById(id);
+      if(!el)return;
+      el.querySelector('.esk-amount').textContent=data.total_miles.toFixed(1)+' mi';
+    }
+    setMile('mile-stat-today',m.today);
+    setMile('mile-stat-week',m.week);
+    setMile('mile-stat-month',m.month);
+    var tyEl=document.getElementById('mile-tax-year');
+    if(tyEl){
+      var tyStart=m.tax_year.start||'';
+      var tyLabel='Tax Year'+(tyStart?' (from '+tyStart+')':'');
+      tyEl.innerHTML='<span style="font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(245,242,237,.4);font-family:var(--sans)">'+tyLabel+'</span>'
+        +'<span style="font-family:var(--serif);font-size:1.1rem;color:var(--gold)">'+m.tax_year.total_miles.toFixed(1)+' miles</span>';
+    }
+  }).catch(function(){});
 
   var avg=thisWeek.jobs?(thisWeek.total/thisWeek.jobs):0;
 
