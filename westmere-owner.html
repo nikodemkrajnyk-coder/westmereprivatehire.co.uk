@@ -664,8 +664,13 @@ h1,h2,h3,h4{font-family:var(--serif);color:var(--navy)}
 
     <!-- Confirmed Jobs (status: confirmed / active) — weekly schedule -->
     <div class="pg on" id="pg-confirmed">
-      <div class="sec-title"><em>Confirmed</em> Jobs</div>
-      <div class="sec-sub">Weekly schedule</div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div class="sec-title"><em>Confirmed</em> Jobs</div>
+          <div class="sec-sub">Weekly schedule</div>
+        </div>
+        <button onclick="ownerNewBookingOpen()" style="padding:.55rem 1rem;font-family:var(--sans);font-size:.68rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;background:var(--gold);color:var(--navy);border:none;border-radius:7px;cursor:pointer;min-height:40px;white-space:nowrap">+ New Booking</button>
+      </div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin:.5rem 0 .85rem">
         <button onclick="confirmedWeekNav(-1)" style="background:rgba(245,242,237,.06);border:1px solid rgba(184,152,90,.3);color:#F5F2ED;font-family:var(--sans);font-size:.85rem;padding:.5rem 1rem;cursor:pointer;border-radius:6px;min-height:44px">&larr; Prev</button>
         <div id="confirmed-week-range" style="flex:1;text-align:center;font-weight:600;color:#F5F2ED;font-size:.85rem"></div>
@@ -961,6 +966,70 @@ h1,h2,h3,h4{font-family:var(--serif);color:var(--navy)}
         </div>
       </div>
 
+    </div>
+
+    <!-- ── New Booking Form Sheet ──────────────────── -->
+    <div id="new-booking-sheet" style="display:none">
+      <div style="display:flex;align-items:center;gap:.5rem;padding:.75rem 1rem;background:var(--navy);border-radius:12px 12px 0 0">
+        <button onclick="ownerNewBookingClose()" style="background:transparent;border:none;color:rgba(255,255,255,.75);font-size:1.4rem;line-height:1;cursor:pointer;padding:0 .3rem 0 0">←</button>
+        <span style="font-family:var(--serif);font-size:1.05rem;color:#fff;font-weight:300;letter-spacing:.04em">New Booking</span>
+      </div>
+      <div style="padding:1rem;background:var(--card);border-radius:0 0 12px 12px">
+        <div style="margin-bottom:.7rem">
+          <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.22rem;font-family:var(--sans)">Passenger Name *</div>
+          <input id="nb-name" type="text" placeholder="Full name" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);background:var(--card);font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
+        </div>
+        <div style="margin-bottom:.7rem">
+          <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.22rem;font-family:var(--sans)">Phone</div>
+          <input id="nb-phone" type="tel" placeholder="Phone number" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);background:var(--card);font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
+        </div>
+        <div style="margin-bottom:.7rem">
+          <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.22rem;font-family:var(--sans)">Email</div>
+          <input id="nb-email" type="email" placeholder="Email address" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);background:var(--card);font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
+        </div>
+        <div style="margin-bottom:.7rem">
+          <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.22rem;font-family:var(--sans)">Pickup Address *</div>
+          <input id="nb-pickup" type="text" placeholder="Pickup location" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);background:var(--card);font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
+        </div>
+        <div style="margin-bottom:.7rem">
+          <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.22rem;font-family:var(--sans)">Destination *</div>
+          <input id="nb-dest" type="text" placeholder="Destination" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);background:var(--card);font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.7rem">
+          <div>
+            <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.22rem;font-family:var(--sans)">Date *</div>
+            <input id="nb-date" type="date" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);background:var(--card);font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
+          </div>
+          <div>
+            <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.22rem;font-family:var(--sans)">Time *</div>
+            <input id="nb-time" type="time" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);background:var(--card);font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.7rem">
+          <div>
+            <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.22rem;font-family:var(--sans)">Fare (£)</div>
+            <input id="nb-fare" type="number" step="0.50" placeholder="0.00" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);background:var(--card);font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
+          </div>
+          <div>
+            <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.22rem;font-family:var(--sans)">Passengers</div>
+            <input id="nb-pax" type="number" min="1" max="8" value="1" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);background:var(--card);font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
+          </div>
+        </div>
+        <div style="margin-bottom:.7rem">
+          <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.22rem;font-family:var(--sans)">Notes</div>
+          <textarea id="nb-notes" rows="2" placeholder="Flight number, luggage, special requests…" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);background:var(--card);font-family:var(--sans);font-size:.85rem;color:var(--navy);border-radius:6px;box-sizing:border-box;resize:vertical"></textarea>
+        </div>
+        <div style="margin-bottom:.7rem">
+          <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.22rem;font-family:var(--sans)">Status</div>
+          <select id="nb-status" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);background:var(--card);font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px">
+            <option value="confirmed">Confirmed</option>
+            <option value="pending">Pending (To Be Confirmed)</option>
+            <option value="completed">Completed (record past trip)</option>
+          </select>
+        </div>
+        <div id="nb-err" style="display:none;margin-bottom:.7rem;padding:.5rem .7rem;background:rgba(163,51,51,.08);border:1px solid rgba(163,51,51,.25);border-radius:6px;font-size:.78rem;color:#8B2222"></div>
+        <button id="nb-submit-btn" onclick="ownerNewBookingSubmit()" style="width:100%;padding:.75rem;font-family:var(--sans);font-size:.82rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;background:var(--gold);color:var(--navy);border:none;border-radius:8px;cursor:pointer;min-height:48px">Create Booking</button>
+      </div>
     </div>
 
   </div><!-- /page-scroll -->
@@ -2791,6 +2860,75 @@ async function upcomingSave(){
 // Legacy: kept so old SSE-path calls don't throw
 function acceptJob(id){upcomingConfirm(id);}
 function declineJob(id){upcomingDelete(id);}
+
+// ── NEW BOOKING FORM ─────────────────────────────────────────────────────────
+function ownerNewBookingOpen(){
+  document.getElementById('new-booking-sheet').style.display='';
+  document.getElementById('pg-confirmed').style.display='none';
+  // Pre-fill date with today
+  var today=new Date().toISOString().split('T')[0];
+  document.getElementById('nb-date').value=today;
+  document.getElementById('nb-err').style.display='none';
+  document.getElementById('nb-name').value='';
+  document.getElementById('nb-phone').value='';
+  document.getElementById('nb-email').value='';
+  document.getElementById('nb-pickup').value='';
+  document.getElementById('nb-dest').value='';
+  document.getElementById('nb-time').value='';
+  document.getElementById('nb-fare').value='';
+  document.getElementById('nb-pax').value='1';
+  document.getElementById('nb-notes').value='';
+  document.getElementById('nb-status').value='confirmed';
+}
+function ownerNewBookingClose(){
+  document.getElementById('new-booking-sheet').style.display='none';
+  document.getElementById('pg-confirmed').style.display='';
+}
+async function ownerNewBookingSubmit(){
+  var err=document.getElementById('nb-err');
+  var pickup=(document.getElementById('nb-pickup').value||'').trim();
+  var dest=(document.getElementById('nb-dest').value||'').trim();
+  var date=(document.getElementById('nb-date').value||'').trim();
+  var time=(document.getElementById('nb-time').value||'').trim();
+  var name=(document.getElementById('nb-name').value||'').trim();
+  if(!pickup||!dest){err.textContent='Pickup and destination are required.';err.style.display='';return;}
+  if(!date){err.textContent='Date is required.';err.style.display='';return;}
+  if(!time){err.textContent='Time is required.';err.style.display='';return;}
+  err.style.display='none';
+  var btn=document.getElementById('nb-submit-btn');
+  btn.disabled=true;btn.textContent='Creating…';
+  try{
+    var status=document.getElementById('nb-status').value||'confirmed';
+    var fare=parseFloat(document.getElementById('nb-fare').value)||null;
+    var body={
+      pickup:pickup,destination:dest,date:date,time:time,
+      passenger_name:name||null,
+      passenger_phone:(document.getElementById('nb-phone').value||'').trim()||null,
+      passenger_email:(document.getElementById('nb-email').value||'').trim()||null,
+      fare:fare,
+      passengers:parseInt(document.getElementById('nb-pax').value)||1,
+      notes:(document.getElementById('nb-notes').value||'').trim()||null,
+      payment:'cash'
+    };
+    var r=await fetch('/api/bookings',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var d=await r.json();
+    if(r.ok&&(d.ok||d.id||d.ref)){
+      var bookingId=d.id;
+      // If status is not pending, update it (triggers confirmation email for 'confirmed')
+      if(status!=='pending'&&bookingId){
+        var updates={status:status};
+        if(fare)updates.fare=fare;
+        await fetch('/api/bookings/'+bookingId,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(updates)});
+      }
+      showToast('Booking created'+(d.ref?' — '+d.ref:''));
+      ownerNewBookingClose();
+      loadOwnerBookings();
+    } else {
+      err.textContent=d.error||'Failed to create booking';err.style.display='';
+    }
+  }catch(e){err.textContent='Network error';err.style.display='';console.error('[newBooking]',e);}
+  btn.disabled=false;btn.textContent='Create Booking';
+}
 
 // ── QUICK INVOICE FROM JOB CARD ──────────────────────────────────────────────
 async function ownerQuickInvoice(bookingId,name,email,fare,pickup,dest,date){
