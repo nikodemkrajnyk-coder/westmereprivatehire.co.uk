@@ -1634,41 +1634,6 @@ if(typeof _origBkToStep2==='function'){
   };
 }
 
-// ── Add to Home Screen banner ────────────────────────────────────────────
-(function(){
-  // Don't show if already in standalone mode (installed as PWA)
-  if(window.matchMedia('(display-mode:standalone)').matches)return;
-  if(window.navigator.standalone)return;
-  // Don't show if dismissed in the last 7 days
-  try{
-    var dismissed=localStorage.getItem('wph_a2hs_dismissed');
-    if(dismissed&&(Date.now()-parseInt(dismissed,10))<7*86400000)return;
-  }catch(e){}
-
-  var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
-  var instruction=isIOS
-    ?'Tap <strong style="font-size:.85rem">⎙</strong> Share then <strong>Add to Home Screen</strong>'
-    :'Tap <strong>⋮</strong> Menu then <strong>Add to Home Screen</strong>';
-
-  var banner=document.createElement('div');
-  banner.id='a2hs-banner';
-  banner.innerHTML=
-    '<div style="display:flex;align-items:center;gap:.7rem">'
-    +'<div style="width:36px;height:36px;border-radius:8px;background:#111D2C;display:flex;align-items:center;justify-content:center;flex-shrink:0">'
-    +'<span style="font-family:Cormorant Garamond,Georgia,serif;font-size:1.1rem;color:#B8985A;font-weight:500">W</span></div>'
-    +'<div style="flex:1;min-width:0">'
-    +'<div style="font-family:Cormorant Garamond,Georgia,serif;font-size:.88rem;color:#111D2C;font-weight:400">Add Westmere to your home screen</div>'
-    +'<div style="font-size:.68rem;color:rgba(17,29,44,.5);margin-top:.1rem;font-family:Jost,Helvetica Neue,sans-serif">'+instruction+'</div>'
-    +'</div>'
-    +'<button onclick="document.getElementById(\'a2hs-banner\').style.display=\'none\';try{localStorage.setItem(\'wph_a2hs_dismissed\',Date.now())}catch(e){}" style="background:transparent;border:none;font-size:1.1rem;color:rgba(17,29,44,.35);cursor:pointer;padding:.3rem;line-height:1">&times;</button>'
-    +'</div>';
-  banner.style.cssText='position:fixed;bottom:0;left:0;right:0;z-index:8000;padding:.75rem 1rem;background:#F5F2ED;border-top:1px solid rgba(184,152,90,.25);box-shadow:0 -4px 20px rgba(0,0,0,.08)';
-
-  window.addEventListener('load',function(){
-    setTimeout(function(){document.body.appendChild(banner);},2000);
-  });
-})();
-
 // PWA: register the service worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
