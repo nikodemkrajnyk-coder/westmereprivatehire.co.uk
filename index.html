@@ -434,6 +434,10 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
       <div class="bkf"><label>Email address</label><input type="email" id="bk-email" placeholder="your@email.com" autocomplete="email" inputmode="email"></div>
       <div class="bkf"><label>Mobile number</label><input type="tel" id="bk-phone" placeholder="+44 7xxx xxxxxx" autocomplete="tel" inputmode="tel"></div>
       <div class="bkf"><label>Notes <span style="opacity:.6;font-weight:400">(optional)</span></label><textarea id="bk-notes" rows="3" style="width:100%;font-family:var(--sans);font-size:.94rem;font-weight:400;color:#111D2C;background:#fff;border:1px solid rgba(17,29,44,.18);border-radius:5px;padding:.7rem .85rem;resize:vertical;min-height:3.2rem;outline:none;box-sizing:border-box;-webkit-appearance:none"></textarea></div>
+      <div style="display:flex;align-items:center;gap:.5rem;margin:.6rem 0 .3rem">
+        <input type="checkbox" id="bk-remember" checked style="width:16px;height:16px;accent-color:#B8985A;cursor:pointer">
+        <label for="bk-remember" style="font-size:.78rem;color:rgba(17,29,44,.55);cursor:pointer;font-family:var(--sans)">Remember my details for next time</label>
+      </div>
       <button class="bk-btn-p" onclick="bkToStep2()">Request an Estimate &rarr;</button>
     </div>
 
@@ -1588,6 +1592,80 @@ window.closeAllPickers=function(){document.querySelectorAll('.pick-drop,.cal-dro
       var wasOpen=drop.classList.contains('open');window.closeAllPickers();if(!wasOpen){drop.classList.add('open');_renderBags();}
     });
     document.addEventListener('click',function(e){if(!trigger.contains(e.target))drop.classList.remove('open');});
+  });
+})();
+
+// ── Remember Me: save & restore passenger details ────────────────────────
+(function(){
+  var KEY='wph_remember';
+  function restoreDetails(){
+    try{
+      var saved=JSON.parse(localStorage.getItem(KEY));
+      if(!saved)return;
+      if(saved.name){var n=document.getElementById('bk-name');if(n)n.value=saved.name;}
+      if(saved.email){var e=document.getElementById('bk-email');if(e)e.value=saved.email;}
+      if(saved.phone){var p=document.getElementById('bk-phone');if(p)p.value=saved.phone;}
+    }catch(e){}
+  }
+  window._wphSaveRemember=function(){
+    try{
+      var cb=document.getElementById('bk-remember');
+      if(cb&&cb.checked){
+        var obj={
+          name:(document.getElementById('bk-name')||{}).value||'',
+          email:(document.getElementById('bk-email')||{}).value||'',
+          phone:(document.getElementById('bk-phone')||{}).value||''
+        };
+        localStorage.setItem(KEY,JSON.stringify(obj));
+      } else {
+        localStorage.removeItem(KEY);
+      }
+    }catch(e){}
+  };
+  document.addEventListener('DOMContentLoaded',restoreDetails);
+})();
+
+// Hook into the booking submit to save details
+var _origBkToStep2=window.bkToStep2;
+if(typeof _origBkToStep2==='function'){
+  window.bkToStep2=function(){
+    if(window._wphSaveRemember)window._wphSaveRemember();
+    return _origBkToStep2.apply(this,arguments);
+  };
+}
+
+// ── Add to Home Screen banner ────────────────────────────────────────────
+(function(){
+  // Don't show if already in standalone mode (installed as PWA)
+  if(window.matchMedia('(display-mode:standalone)').matches)return;
+  if(window.navigator.standalone)return;
+  // Don't show if dismissed in the last 7 days
+  try{
+    var dismissed=localStorage.getItem('wph_a2hs_dismissed');
+    if(dismissed&&(Date.now()-parseInt(dismissed,10))<7*86400000)return;
+  }catch(e){}
+
+  var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+  var instruction=isIOS
+    ?'Tap <strong style="font-size:.85rem">⎙</strong> Share then <strong>Add to Home Screen</strong>'
+    :'Tap <strong>⋮</strong> Menu then <strong>Add to Home Screen</strong>';
+
+  var banner=document.createElement('div');
+  banner.id='a2hs-banner';
+  banner.innerHTML=
+    '<div style="display:flex;align-items:center;gap:.7rem">'
+    +'<div style="width:36px;height:36px;border-radius:8px;background:#111D2C;display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+    +'<span style="font-family:Cormorant Garamond,Georgia,serif;font-size:1.1rem;color:#B8985A;font-weight:500">W</span></div>'
+    +'<div style="flex:1;min-width:0">'
+    +'<div style="font-family:Cormorant Garamond,Georgia,serif;font-size:.88rem;color:#111D2C;font-weight:400">Add Westmere to your home screen</div>'
+    +'<div style="font-size:.68rem;color:rgba(17,29,44,.5);margin-top:.1rem;font-family:Jost,Helvetica Neue,sans-serif">'+instruction+'</div>'
+    +'</div>'
+    +'<button onclick="document.getElementById(\'a2hs-banner\').style.display=\'none\';try{localStorage.setItem(\'wph_a2hs_dismissed\',Date.now())}catch(e){}" style="background:transparent;border:none;font-size:1.1rem;color:rgba(17,29,44,.35);cursor:pointer;padding:.3rem;line-height:1">&times;</button>'
+    +'</div>';
+  banner.style.cssText='position:fixed;bottom:0;left:0;right:0;z-index:8000;padding:.75rem 1rem;background:#F5F2ED;border-top:1px solid rgba(184,152,90,.25);box-shadow:0 -4px 20px rgba(0,0,0,.08)';
+
+  window.addEventListener('load',function(){
+    setTimeout(function(){document.body.appendChild(banner);},2000);
   });
 })();
 
