@@ -167,7 +167,7 @@ const CREATE_BOOKING_TOOL = {
       passenger_name:   { type: 'string', description: 'Passenger / customer full name' },
       passenger_phone:  { type: 'string', description: 'Passenger / customer phone number' },
       fare:             { type: 'number', description: 'Fare in GBP' },
-      payment:          { type: 'string', description: 'Payment method: cash or card (default cash). Also accepts account/invoice.' },
+      payment:          { type: 'string', description: 'Payment method. Leave empty — payment is decided after the owner confirms the booking. Only set if the owner explicitly says cash/card/account/invoice.' },
       status:           { type: 'string', description: 'Booking status: pending, confirmed, or completed. Use "completed" when recording a past/finished job. Default pending.' },
       notes:            { type: 'string', description: 'Any notes (luggage, flight number, special requests, etc.)' }
     },
@@ -542,7 +542,7 @@ async function executeCalendarTool(name, input, req) {
       const status = ['pending', 'confirmed', 'completed', 'active', 'cancelled'].includes((input.status || '').toLowerCase())
         ? input.status.toLowerCase() : 'pending';
       const payment = ['cash', 'card', 'account', 'invoice'].includes((input.payment || '').toLowerCase())
-        ? input.payment.toLowerCase() : 'cash';
+        ? input.payment.toLowerCase() : 'pending';
       const fare = (input.fare != null && input.fare !== '') ? Number(input.fare) : null;
       const passengers = input.passengers ? (parseInt(input.passengers, 10) || 1) : 1;
 
@@ -708,7 +708,7 @@ RULES:
 - Be extremely concise: one or two short sentences. Today is ${today}.
 - BOOKINGS: extract all details the driver dictates. Ask only for missing required fields (pickup, destination, date, time, passenger name). When you have enough, output a one-line summary then a JSON block on its own line:
   <<<BOOKING>>>{ "name", "phone", "email", "pickup", "destination", "date" (YYYY-MM-DD), "time" (HH:MM), "passengers", "flight", "fare", "payment", "notes" }<<<END>>>
-  Use null for unknown optional fields. payment defaults to "cash" (also: card, account, invoice). "tomorrow"/"next Monday"/"3pm" resolve relative to today.
+  Use null for unknown optional fields. payment defaults to "pending" — do NOT set payment to cash/card unless the owner explicitly says so. The customer chooses their payment method after receiving the confirmation email. "tomorrow"/"next Monday"/"3pm" resolve relative to today.
 - After a summary: "yes/confirm/book it" → output <<<CONFIRM>>> on its own line; "cancel/no" → <<<CANCEL>>>.
 - FARES: ALWAYS use the calculate_fare tool, never guess. Day rate 06:00–21:59, night 22:00–05:59.
 - CREATING BOOKINGS: You can create bookings for the owner using the create_booking tool. If they ask to record a past trip or put a job in the books, create a booking with the "completed" status and the correct date. You can create bookings with past dates for record-keeping purposes. Ask for: pickup, destination, date, time, passenger name and fare. If they don't specify a date, use today's date. If they say "ASAP" or don't give a time, leave the time field empty — the server will automatically round up to the next half-hour from the current UK time. Never store "ASAP" as the time value.
@@ -851,7 +851,7 @@ For EACH booking extract:
 - passengers (number, default 1)
 - flight (flight number if airport job, e.g. BA2490)
 - fare (numeric — look up from reference table if route matches)
-- payment (cash/card/account — default cash)
+- payment (leave as pending unless owner specifies — customer chooses after confirmation)
 - notes (any special requests, luggage info, etc.)
 
 Fixed airport fares (out/return):
@@ -865,7 +865,7 @@ OUTPUT FORMAT — include ONLY the blocks that apply:
 
 For bookings (always use array format, even for one booking):
 <<<BOOKINGS>>>
-[{"name":"...","phone":"...","email":null,"pickup":"...","destination":"...","date":"YYYY-MM-DD","time":"HH:MM","passengers":1,"flight":null,"fare":0,"payment":"cash","notes":null}]
+[{"name":"...","phone":"...","email":null,"pickup":"...","destination":"...","date":"YYYY-MM-DD","time":"HH:MM","passengers":1,"flight":null,"fare":0,"payment":"pending","notes":null}]
 <<<END>>>
 
 For invoice/billing:
