@@ -901,10 +901,34 @@ async function sendVerificationEmail(customer, token) {
   return ok;
 }
 
+// ── Recommendation email ─────────────────────────────────────────────────
+// Branded invitation using the same emailShell as all other Westmere emails.
+async function sendRecommendation(recipientEmail) {
+  if (!recipientEmail) return false;
+
+  const body = `
+  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">You've been recommended</p>
+  <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Hello,</p>
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Someone you know thought you&rsquo;d appreciate our executive private hire service. We provide premium chauffeur-driven transfers across Sussex &mdash; airport runs to Gatwick and Heathrow, corporate travel, special occasions, and reliable local journeys.</p>
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">Licensed by Lewes District Council. Professional, punctual, and always at your service.</p>
+  <div style="text-align:center;margin:26px 0 8px">
+    <a href="https://westmereprivatehire.co.uk" style="display:inline-block;padding:13px 32px;background:${GOLD};color:#0E2540;text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:.03em">Book Your Journey</a>
+  </div>
+  <p style="margin:20px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">We look forward to welcoming you.</p>
+  <p style="margin:16px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
+
+  const html = emailShell(body);
+  const subject = 'You\u2019ve been recommended \u2014 Westmere Executive Private Hire';
+  const preheader = 'Premium chauffeur-driven transfers across Sussex';
+  const ok = await sendEmail(recipientEmail, subject, html, 'Westmere Private Hire', preheader);
+  if (ok) console.log('[EMAIL] Recommendation sent to', recipientEmail);
+  return ok;
+}
+
 module.exports = {
   sendCustomerConfirmation, sendCustomerConfirmed, sendCustomerEstimate, sendAdminAlert,
   sendCustomerWelcome, sendCustomerInvoice, sendBespokeInvoice, sendInvoiceReminder,
   sendCustomerCancellation, sendDriverStatement, sendDriverWelcome,
   sendVerificationEmail, sendPasswordResetEmail, sendAdminPasswordResetEmail,
-  sendEmail, isConfigured
+  sendRecommendation, sendEmail, isConfigured
 };
