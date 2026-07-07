@@ -194,6 +194,8 @@ router.post('/book', async (req, res) => {
     }
 
     // Insert booking
+    const storedTime = time || 'ASAP';
+    console.log(`[BOOK] ${ref} inserting with time="${storedTime}" (raw input: "${time}")`);
     const result = db.prepare(`
       INSERT INTO bookings (ref, customer_id, driver_id, pickup, destination, date, time,
                             passengers, bags, trip_type, flight, fare, payment, notes, status,
@@ -201,7 +203,7 @@ router.post('/book', async (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       ref, customerId, finalDriverId,
-      pickup, destination, bookingDate, time || 'ASAP',
+      pickup, destination, bookingDate, storedTime,
       passengers || 1, bags || '0', null,
       flight || null, fare || null, payment || 'pending',
       notes || null,
@@ -211,6 +213,16 @@ router.post('/book', async (req, res) => {
       (email || '').trim().toLowerCase() || null,
       suggestedFare
     );
+
+    // Verify stored time matches input
+    try {
+      const check = db.prepare('SELECT time FROM bookings WHERE id = ?').get(result.lastInsertRowid);
+      if (check && check.time !== storedTime) {
+        console.error(`[BOOK] TIME MISMATCH! ${ref}: input="${storedTime}" stored="${check.time}"`);
+      } else {
+        console.log(`[BOOK] ${ref} verified: time="${check ? check.time : '?'}" ✓`);
+      }
+    } catch (_) {}
 
     // Return (round) trip — create a linked return booking if requested
     let returnRef = null;
