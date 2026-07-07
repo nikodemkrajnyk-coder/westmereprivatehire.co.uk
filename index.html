@@ -227,7 +227,7 @@ input[type="time"].fi,input[type="date"].fi{-webkit-appearance:auto;appearance:a
 }
 
 /* ===== ACCOUNT PORTAL ===== */
-.nav-acct{background:none;border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.82);padding:.28rem .7rem;border-radius:3px;font-size:.57rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;font-family:var(--sans);cursor:pointer;transition:border-color .2s,color .2s;margin-right:.35rem;flex-shrink:0}
+.nav-acct{background:none;border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.82);padding:.28rem .7rem;border-radius:3px;font-size:.72rem;font-weight:300;font-style:italic;letter-spacing:.06em;font-family:var(--serif);cursor:pointer;transition:border-color .2s,color .2s;margin-right:.35rem;flex-shrink:0;text-transform:none}
 .nav-acct:hover{border-color:var(--gold);color:var(--gold)}
 #acct-overlay{position:fixed;inset:0;z-index:300;background:rgba(10,7,4,.65);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;pointer-events:none;transition:opacity .25s}
 #acct-overlay.open{opacity:1;pointer-events:all}
@@ -279,7 +279,15 @@ input[type="time"].fi,input[type="date"].fi{-webkit-appearance:auto;appearance:a
 .acct-signout:hover{border-color:rgba(17,29,44,.45);color:#111D2C}
 @media(max-width:540px){
   #acct-overlay{padding:0;align-items:flex-end}
-  #acct-panel{border-radius:14px 14px 0 0;max-height:95vh;padding:1.5rem 1.1rem}
+  #acct-panel{border-radius:14px 14px 0 0;max-height:92vh;padding:1.2rem 1rem;width:100%}
+  .acct-title{font-size:1.35rem}
+  .acct-welcome-name{font-size:1.5rem}
+  .acct-bk-card,.acct-inv-card{padding:.7rem .8rem}
+  .acct-bk-route{font-size:.82rem}
+  .acct-inv-amt{font-size:1.15rem}
+  .acct-f input{font-size:.88rem;padding:.55rem .65rem;min-height:42px}
+  .acct-btn{min-height:46px;font-size:.6rem}
+  .nav-acct{padding:.22rem .55rem;font-size:.65rem}
 }
 
 /* ===== CUSTOM DATE PICKER ===== */
