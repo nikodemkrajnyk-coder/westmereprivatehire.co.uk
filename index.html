@@ -226,6 +226,62 @@ input[type="time"].fi,input[type="date"].fi{-webkit-appearance:auto;appearance:a
   .bk-pay-grid{grid-template-columns:1fr}
 }
 
+/* ===== ACCOUNT PORTAL ===== */
+.nav-acct{background:none;border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.82);padding:.28rem .7rem;border-radius:3px;font-size:.57rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;font-family:var(--sans);cursor:pointer;transition:border-color .2s,color .2s;margin-right:.35rem;flex-shrink:0}
+.nav-acct:hover{border-color:var(--gold);color:var(--gold)}
+#acct-overlay{position:fixed;inset:0;z-index:300;background:rgba(10,7,4,.65);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;pointer-events:none;transition:opacity .25s}
+#acct-overlay.open{opacity:1;pointer-events:all}
+#acct-panel{background:#F5F2ED;border-radius:10px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:1.4rem 1.5rem;position:relative}
+.acct-logo{font-family:var(--serif);font-size:1.05rem;font-weight:300;letter-spacing:.18em;color:rgba(17,29,44,.3);text-transform:uppercase}
+.acct-view{display:none}
+.acct-view.active{display:block}
+.acct-title{font-family:var(--serif);font-size:1.65rem;font-weight:300;color:#111D2C;margin:0 0 .18rem;letter-spacing:.04em}
+.acct-sub{font-size:.76rem;color:rgba(17,29,44,.5);margin-bottom:1.25rem;font-style:italic}
+.acct-f{margin-bottom:.85rem}
+.acct-f label{display:block;font-size:.7rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.55);margin-bottom:.26rem}
+.acct-f input{font-family:var(--sans);font-size:.94rem;font-weight:400;color:#111D2C;background:#fff;border:1px solid rgba(17,29,44,.18);border-radius:5px;padding:.6rem .75rem;outline:none;width:100%;min-height:44px;box-sizing:border-box;transition:border-color .2s;-webkit-appearance:none}
+.acct-f input:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(184,152,90,.15)}
+.acct-f input.err{border-color:#e05252}
+.acct-btn{width:100%;padding:.92rem;background:#111D2C;color:#fff;border:none;border-radius:6px;font-family:var(--sans);font-size:.64rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;transition:background .2s;min-height:52px;margin-top:.5rem;display:flex;align-items:center;justify-content:center}
+.acct-btn:hover{background:#1C2F44}
+.acct-btn:disabled{opacity:.45;cursor:not-allowed}
+.acct-link-btn{background:none;border:none;color:var(--gold);font-family:var(--sans);font-size:.76rem;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px;transition:color .15s}
+.acct-link-btn:hover{color:#7A6230}
+.acct-links-row{display:flex;justify-content:space-between;align-items:center;margin-top:.9rem;font-size:.76rem;color:rgba(17,29,44,.5)}
+.acct-err{color:#c0392b;font-size:.74rem;margin-top:.3rem;min-height:1rem}
+.acct-ok-msg{color:#2e7d4f;font-size:.78rem;margin-top:.5rem;background:rgba(46,125,79,.07);border-left:3px solid #2e7d4f;padding:.6rem .8rem;border-radius:0 4px 4px 0;line-height:1.65}
+.acct-welcome{margin-bottom:1.2rem}
+.acct-welcome-name{font-family:var(--serif);font-size:2rem;font-weight:300;color:#111D2C;letter-spacing:.04em}
+.acct-welcome-sub{font-size:.76rem;color:rgba(17,29,44,.5);font-style:italic}
+.acct-section-ttl{font-size:.6rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(17,29,44,.38);margin:1.4rem 0 .65rem;padding-bottom:.38rem;border-bottom:1px solid rgba(17,29,44,.1)}
+.acct-bk-card{background:#fff;border:1px solid rgba(17,29,44,.1);border-radius:6px;padding:.85rem 1rem;margin-bottom:.6rem}
+.acct-bk-route{font-size:.88rem;color:#111D2C;margin-bottom:.28rem}
+.acct-bk-meta{font-size:.7rem;color:rgba(17,29,44,.48);display:flex;flex-wrap:wrap;gap:.3rem .85rem;margin-bottom:.38rem}
+.acct-status{display:inline-block;font-size:.56rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.18rem .5rem;border-radius:3px}
+.acct-status.s-completed{background:rgba(46,125,79,.1);color:#2e7d4f}
+.acct-status.s-confirmed{background:rgba(184,152,90,.12);color:#7A6230}
+.acct-status.s-pending{background:rgba(17,29,44,.07);color:rgba(17,29,44,.5)}
+.acct-status.s-cancelled{background:rgba(224,82,82,.1);color:#c0392b}
+.acct-status.s-active{background:rgba(59,130,246,.1);color:#1d4ed8}
+.acct-ba-btn{background:none;border:1px solid rgba(184,152,90,.45);color:#7A6230;font-family:var(--sans);font-size:.56rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:.26rem .65rem;border-radius:3px;cursor:pointer;transition:border-color .2s,color .2s;margin-top:.38rem}
+.acct-ba-btn:hover{border-color:var(--gold);color:#B8985A}
+.acct-inv-card{background:#fff;border:1px solid rgba(17,29,44,.1);border-radius:6px;padding:.85rem 1rem;margin-bottom:.6rem;display:flex;justify-content:space-between;align-items:flex-start;gap:1rem}
+.acct-inv-no{font-size:.65rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.15rem}
+.acct-inv-amt{font-family:var(--serif);font-size:1.4rem;font-weight:300;color:#111D2C}
+.acct-inv-date{font-size:.68rem;color:rgba(17,29,44,.42);margin-top:.1rem}
+.acct-inv-dl{display:block;font-size:.58rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);text-decoration:none;margin-top:.38rem;transition:color .15s}
+.acct-inv-dl:hover{color:#7A6230}
+.acct-paid-badge{font-size:.56rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.18rem .5rem;border-radius:3px;white-space:nowrap;flex-shrink:0}
+.acct-paid-badge.paid{background:rgba(46,125,79,.1);color:#2e7d4f}
+.acct-paid-badge.unpaid{background:rgba(224,82,82,.1);color:#c0392b}
+.acct-empty{text-align:center;padding:1.6rem 0;color:rgba(17,29,44,.38);font-size:.8rem;font-style:italic}
+.acct-signout{background:none;border:1px solid rgba(17,29,44,.18);color:rgba(17,29,44,.5);font-family:var(--sans);font-size:.56rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;padding:.4rem .9rem;border-radius:3px;cursor:pointer;transition:border-color .2s,color .2s;margin-top:1.4rem;margin-bottom:.4rem}
+.acct-signout:hover{border-color:rgba(17,29,44,.45);color:#111D2C}
+@media(max-width:540px){
+  #acct-overlay{padding:0;align-items:flex-end}
+  #acct-panel{border-radius:14px 14px 0 0;max-height:95vh;padding:1.5rem 1.1rem}
+}
+
 /* ===== CUSTOM DATE PICKER ===== */
 .custom-date-trigger,.custom-time-trigger{cursor:pointer;position:relative}
 .cdt-val{pointer-events:none;-webkit-user-select:none;user-select:none}
@@ -333,7 +389,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 </div>
 
 <div id="page-wrap">
-<nav id="nav"><a href="index.html" class="brand"><span class="brand-name">Westmere</span></a><div class="nav-r"><div class="nav-links"><a href="index.html" class="on">Home</a><a href="westmere-fares.html">Airport Fares</a><a href="westmere-coverage.html">Coverage</a><a href="westmere-fleet.html">Fleet</a><a href="westmere-about.html">About</a></div><a href="index.html?skip=1" class="nav-book">Book Now</a><div class="nav-socials"><a href="tel:+447930342593" title="Phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.38 2 2 0 0 1 3.6 1.21h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.77a16 16 0 0 0 6.29 6.29l1.63-1.63a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></a><a href="https://wa.me/447930342593" target="_blank" title="WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg></a><a href="mailto:hello@westmere.co.uk" title="Email"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></a><a href="https://instagram.com/westmereprivatehire" target="_blank" title="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".5" fill="currentColor"/></svg></a><a href="https://www.tripadvisor.co.uk/" target="_blank" rel="noopener" title="TripAdvisor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><ellipse cx="12" cy="12" rx="10.5" ry="6.5"/><circle cx="8.5" cy="12" r="2.6"/><circle cx="15.5" cy="12" r="2.6"/><circle cx="8.5" cy="12" r=".7" fill="currentColor"/><circle cx="15.5" cy="12" r=".7" fill="currentColor"/></svg></a></div></div><div class="nav-end"><a class="nav-wa-mobile" href="https://wa.me/447930342593" target="_blank" rel="noopener" aria-label="WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg></a><button class="burger" onclick="toggleMenu()" aria-label="Menu"><span></span><span></span><span></span></button></div></nav><div class="mmenu" id="mmenu"><a href="index.html" onclick="closeMenu()">Home</a><a href="westmere-fares.html" onclick="closeMenu()">Airport Fares</a><a href="westmere-coverage.html" onclick="closeMenu()">Coverage</a><a href="westmere-fleet.html" onclick="closeMenu()">Fleet</a><a href="westmere-about.html" onclick="closeMenu()">About</a><a href="https://wa.me/447930342593" target="_blank" rel="noopener" onclick="closeMenu()" style="display:inline-flex;align-items:center;gap:.6rem"><svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor" style="flex:0 0 auto"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>WhatsApp</a></div>
+<nav id="nav"><a href="index.html" class="brand"><span class="brand-name">Westmere</span></a><div class="nav-r"><div class="nav-links"><a href="index.html" class="on">Home</a><a href="westmere-fares.html">Airport Fares</a><a href="westmere-coverage.html">Coverage</a><a href="westmere-fleet.html">Fleet</a><a href="westmere-about.html">About</a></div><button class="nav-acct" onclick="openAcctPortal()" id="nav-acct-btn">My Account</button><a href="index.html?skip=1" class="nav-book">Book Now</a><div class="nav-socials"><a href="tel:+447930342593" title="Phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.38 2 2 0 0 1 3.6 1.21h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.77a16 16 0 0 0 6.29 6.29l1.63-1.63a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></a><a href="https://wa.me/447930342593" target="_blank" title="WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg></a><a href="mailto:hello@westmere.co.uk" title="Email"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></a><a href="https://instagram.com/westmereprivatehire" target="_blank" title="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".5" fill="currentColor"/></svg></a><a href="https://www.tripadvisor.co.uk/" target="_blank" rel="noopener" title="TripAdvisor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><ellipse cx="12" cy="12" rx="10.5" ry="6.5"/><circle cx="8.5" cy="12" r="2.6"/><circle cx="15.5" cy="12" r="2.6"/><circle cx="8.5" cy="12" r=".7" fill="currentColor"/><circle cx="15.5" cy="12" r=".7" fill="currentColor"/></svg></a></div></div><div class="nav-end"><a class="nav-wa-mobile" href="https://wa.me/447930342593" target="_blank" rel="noopener" aria-label="WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg></a><button class="burger" onclick="toggleMenu()" aria-label="Menu"><span></span><span></span><span></span></button></div></nav><div class="mmenu" id="mmenu"><a href="index.html" onclick="closeMenu()">Home</a><a href="westmere-fares.html" onclick="closeMenu()">Airport Fares</a><a href="westmere-coverage.html" onclick="closeMenu()">Coverage</a><a href="westmere-fleet.html" onclick="closeMenu()">Fleet</a><a href="westmere-about.html" onclick="closeMenu()">About</a><a href="https://wa.me/447930342593" target="_blank" rel="noopener" onclick="closeMenu()" style="display:inline-flex;align-items:center;gap:.6rem"><svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor" style="flex:0 0 auto"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>WhatsApp</a><a href="#" onclick="closeMenu();openAcctPortal()">My Account</a></div>
 
 <div id="main-content">
     <!-- Booking form -->
@@ -485,6 +541,79 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
     </div>
 
     <div class="bk-secure">Secured by Stripe &nbsp;&middot;&nbsp; TLS encrypted</div>
+  </div>
+</div>
+
+<!-- ===== ACCOUNT PORTAL ===== -->
+<div id="acct-overlay" role="dialog" aria-modal="true" aria-label="My Account" style="display:none">
+  <div id="acct-panel">
+    <div class="bk-header">
+      <span class="acct-logo">Westmere</span>
+      <button class="bk-close" onclick="closeAcctPortal()" aria-label="Close">&times;</button>
+    </div>
+
+    <!-- Login -->
+    <div class="acct-view active" id="av-login">
+      <h3 class="acct-title">Sign in</h3>
+      <p class="acct-sub">Welcome back</p>
+      <div class="acct-f"><label>Email</label><input type="email" id="al-email" placeholder="your@email.com" autocomplete="email" inputmode="email"></div>
+      <div class="acct-f"><label>Password</label><input type="password" id="al-pass" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password"></div>
+      <div id="al-err" class="acct-err"></div>
+      <button class="acct-btn" onclick="acctLogin()">Sign In</button>
+      <div class="acct-links-row">
+        <button class="acct-link-btn" onclick="acctShow('av-forgot')">Forgot password?</button>
+        <button class="acct-link-btn" onclick="acctShow('av-register')">Create account</button>
+      </div>
+    </div>
+
+    <!-- Register -->
+    <div class="acct-view" id="av-register">
+      <h3 class="acct-title">Create account</h3>
+      <p class="acct-sub">Manage your bookings and invoices online</p>
+      <div class="acct-f"><label>Full name</label><input type="text" id="ar-name" placeholder="Your full name" autocomplete="name"></div>
+      <div class="acct-f"><label>Email</label><input type="email" id="ar-email" placeholder="your@email.com" autocomplete="email" inputmode="email"></div>
+      <div class="acct-f"><label>Mobile <span style="opacity:.6;font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label><input type="tel" id="ar-phone" placeholder="+44 7xxx xxxxxx" autocomplete="tel" inputmode="tel"></div>
+      <div class="acct-f"><label>Password</label><input type="password" id="ar-pass" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="new-password"></div>
+      <div id="ar-err" class="acct-err"></div>
+      <button class="acct-btn" onclick="acctRegister()">Create Account</button>
+      <div class="acct-links-row" style="justify-content:center">
+        <button class="acct-link-btn" onclick="acctShow('av-login')">Already have an account? Sign in</button>
+      </div>
+    </div>
+
+    <!-- Forgot password -->
+    <div class="acct-view" id="av-forgot">
+      <h3 class="acct-title">Reset password</h3>
+      <p class="acct-sub">We'll send a reset link to your email</p>
+      <div class="acct-f"><label>Email</label><input type="email" id="af-email" placeholder="your@email.com" autocomplete="email" inputmode="email"></div>
+      <div id="af-msg"></div>
+      <button class="acct-btn" onclick="acctForgot()">Send Reset Link</button>
+      <div class="acct-links-row" style="justify-content:center">
+        <button class="acct-link-btn" onclick="acctShow('av-login')">Back to sign in</button>
+      </div>
+    </div>
+
+    <!-- Email verification notice -->
+    <div class="acct-view" id="av-verify">
+      <h3 class="acct-title">Check your email</h3>
+      <div class="acct-ok-msg" id="av-verify-msg">We've sent a verification link to your email address. Please check your inbox and click the link to activate your account, then sign in.</div>
+      <div style="margin-top:1.2rem;text-align:center">
+        <button class="acct-link-btn" onclick="acctShow('av-login')">Back to sign in</button>
+      </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="acct-view" id="av-dashboard">
+      <div class="acct-welcome">
+        <div class="acct-welcome-name" id="acct-dash-name"></div>
+        <div class="acct-welcome-sub">Your Westmere account</div>
+      </div>
+      <div class="acct-section-ttl">My Bookings</div>
+      <div id="acct-bookings-list"></div>
+      <div class="acct-section-ttl">My Invoices</div>
+      <div id="acct-invoices-list"></div>
+      <button class="acct-signout" onclick="acctSignOut()">Sign Out</button>
+    </div>
   </div>
 </div>
 
@@ -1676,6 +1805,234 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(function () {});
   });
 }
+</script>
+
+<script>
+// ===== ACCOUNT PORTAL =====
+(function () {
+  function _esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function acctShow(viewId) {
+    document.querySelectorAll('.acct-view').forEach(function (v) { v.classList.remove('active'); });
+    var v = document.getElementById(viewId);
+    if (v) v.classList.add('active');
+  }
+  window.acctShow = acctShow;
+
+  function openAcctPortal() {
+    var ov = document.getElementById('acct-overlay');
+    ov.style.display = 'flex';
+    requestAnimationFrame(function () { ov.classList.add('open'); });
+    document.body.style.overflow = 'hidden';
+    fetch('/api/auth/me', { credentials: 'include' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.ok && d.type === 'customer') {
+          acctShow('av-dashboard');
+          acctLoadDashboard(d.customer);
+        } else {
+          acctShow('av-login');
+        }
+      })
+      .catch(function () { acctShow('av-login'); });
+  }
+  window.openAcctPortal = openAcctPortal;
+
+  function closeAcctPortal() {
+    var ov = document.getElementById('acct-overlay');
+    ov.classList.remove('open');
+    setTimeout(function () { ov.style.display = 'none'; }, 260);
+    document.body.style.overflow = '';
+  }
+  window.closeAcctPortal = closeAcctPortal;
+
+  document.getElementById('acct-overlay').addEventListener('click', function (e) {
+    if (e.target === this) closeAcctPortal();
+  });
+
+  function _setErr(id, msg) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'acct-err';
+  }
+
+  function acctLogin() {
+    var email = document.getElementById('al-email').value.trim();
+    var pass  = document.getElementById('al-pass').value;
+    _setErr('al-err', '');
+    if (!email || !pass) { _setErr('al-err', 'Please enter your email and password.'); return; }
+    var btn = document.querySelector('#av-login .acct-btn');
+    btn.disabled = true; btn.textContent = '\u2026';
+    fetch('/api/auth/customer/login', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, password: pass })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      btn.disabled = false; btn.textContent = 'Sign In';
+      if (d.ok) {
+        acctShow('av-dashboard');
+        acctLoadDashboard(d.customer);
+      } else {
+        _setErr('al-err', d.error || 'Sign in failed. Please check your details.');
+      }
+    })
+    .catch(function () {
+      btn.disabled = false; btn.textContent = 'Sign In';
+      _setErr('al-err', 'Network error. Please try again.');
+    });
+  }
+  window.acctLogin = acctLogin;
+
+  function acctRegister() {
+    var name  = document.getElementById('ar-name').value.trim();
+    var email = document.getElementById('ar-email').value.trim();
+    var phone = document.getElementById('ar-phone').value.trim();
+    var pass  = document.getElementById('ar-pass').value;
+    _setErr('ar-err', '');
+    if (!name || !email || !pass) { _setErr('ar-err', 'Please fill in all required fields.'); return; }
+    var btn = document.querySelector('#av-register .acct-btn');
+    btn.disabled = true; btn.textContent = '\u2026';
+    fetch('/api/auth/customer/register', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ full_name: name, email: email, phone: phone, password: pass })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      btn.disabled = false; btn.textContent = 'Create Account';
+      if (d.ok) {
+        document.getElementById('av-verify-msg').textContent =
+          'We\'ve sent a verification link to ' + email + '. Please check your inbox and click the link to activate your account, then sign in.';
+        acctShow('av-verify');
+      } else {
+        _setErr('ar-err', d.error || 'Registration failed. Please try again.');
+      }
+    })
+    .catch(function () {
+      btn.disabled = false; btn.textContent = 'Create Account';
+      _setErr('ar-err', 'Network error. Please try again.');
+    });
+  }
+  window.acctRegister = acctRegister;
+
+  function acctForgot() {
+    var email = document.getElementById('af-email').value.trim();
+    var msgEl = document.getElementById('af-msg');
+    msgEl.textContent = ''; msgEl.className = '';
+    if (!email) { msgEl.textContent = 'Please enter your email address.'; msgEl.className = 'acct-err'; return; }
+    var btn = document.querySelector('#av-forgot .acct-btn');
+    btn.disabled = true; btn.textContent = '\u2026';
+    fetch('/api/auth/customer/forgot-password', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email })
+    })
+    .then(function () {
+      btn.disabled = false; btn.textContent = 'Send Reset Link';
+      msgEl.className = 'acct-ok-msg';
+      msgEl.textContent = 'If an account exists for ' + email + ', a reset link has been sent. Please check your inbox.';
+    })
+    .catch(function () {
+      btn.disabled = false; btn.textContent = 'Send Reset Link';
+      msgEl.className = 'acct-err';
+      msgEl.textContent = 'Network error. Please try again.';
+    });
+  }
+  window.acctForgot = acctForgot;
+
+  function acctSignOut() {
+    fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+      .finally(function () {
+        acctShow('av-login');
+        document.getElementById('al-email').value = '';
+        document.getElementById('al-pass').value = '';
+      });
+  }
+  window.acctSignOut = acctSignOut;
+
+  function acctLoadDashboard(customer) {
+    var nameEl = document.getElementById('acct-dash-name');
+    if (nameEl) nameEl.textContent = customer.full_name || customer.email;
+
+    var bList = document.getElementById('acct-bookings-list');
+    bList.innerHTML = '<div class="acct-empty">Loading\u2026</div>';
+    fetch('/api/bookings', { credentials: 'include' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.ok || !d.bookings || !d.bookings.length) {
+          bList.innerHTML = '<div class="acct-empty">No bookings yet.</div>';
+          return;
+        }
+        bList.innerHTML = d.bookings.map(function (b) {
+          var sc = 's-' + (b.status || 'pending');
+          var bookAgain = b.status === 'completed'
+            ? '<br><button class="acct-ba-btn" onclick="acctBookAgain(' + JSON.stringify(b.pickup) + ',' + JSON.stringify(b.destination) + ')">Book Again</button>'
+            : '';
+          return '<div class="acct-bk-card">' +
+            '<div class="acct-bk-route">' + _esc(b.pickup) + ' &rarr; ' + _esc(b.destination) + '</div>' +
+            '<div class="acct-bk-meta">' +
+              '<span>' + _esc(b.date || '') + (b.time ? ' &middot; ' + _esc(b.time) : '') + '</span>' +
+              (b.fare ? '<span>&pound;' + Number(b.fare).toFixed(2) + '</span>' : '') +
+              (b.ref  ? '<span>' + _esc(b.ref) + '</span>' : '') +
+            '</div>' +
+            '<span class="acct-status ' + sc + '">' + _esc(b.status || 'pending') + '</span>' +
+            bookAgain +
+          '</div>';
+        }).join('');
+      })
+      .catch(function () { bList.innerHTML = '<div class="acct-empty">Could not load bookings.</div>'; });
+
+    var iList = document.getElementById('acct-invoices-list');
+    iList.innerHTML = '<div class="acct-empty">Loading\u2026</div>';
+    fetch('/api/customer/invoices', { credentials: 'include' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.ok || !d.invoices || !d.invoices.length) {
+          iList.innerHTML = '<div class="acct-empty">No invoices yet.</div>';
+          return;
+        }
+        iList.innerHTML = d.invoices.map(function (inv) {
+          var paidCls = inv.paid ? 'paid' : 'unpaid';
+          var paidLbl = inv.paid ? 'Paid' : 'Unpaid';
+          return '<div class="acct-inv-card">' +
+            '<div>' +
+              '<div class="acct-inv-no">' + _esc(inv.invoice_no || '') + '</div>' +
+              '<div class="acct-inv-amt">&pound;' + (inv.total ? Number(inv.total).toFixed(2) : '0.00') + '</div>' +
+              '<div class="acct-inv-date">' + _esc(inv.issued_date || inv.created_at || '') + '</div>' +
+              '<a class="acct-inv-dl" href="/api/public/invoice/' + encodeURIComponent(inv.invoice_no || '') + '/pdf" target="_blank" rel="noopener">Download PDF</a>' +
+            '</div>' +
+            '<span class="acct-paid-badge ' + paidCls + '">' + paidLbl + '</span>' +
+          '</div>';
+        }).join('');
+      })
+      .catch(function () { iList.innerHTML = '<div class="acct-empty">Could not load invoices.</div>'; });
+  }
+  window.acctLoadDashboard = acctLoadDashboard;
+
+  function acctBookAgain(pickup, destination) {
+    closeAcctPortal();
+    var fromEl = document.getElementById('b-from');
+    var toEl   = document.getElementById('b-to');
+    if (fromEl) { fromEl.value = pickup;      fromEl.dispatchEvent(new Event('input')); }
+    if (toEl)   { toEl.value   = destination; toEl.dispatchEvent(new Event('input')); toEl.dispatchEvent(new Event('change')); }
+    var bk = document.getElementById('booking');
+    if (bk) bk.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  window.acctBookAgain = acctBookAgain;
+
+  // Enter key support
+  ['al-email', 'al-pass'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('keydown', function (e) { if (e.key === 'Enter') acctLogin(); });
+  });
+  var afEl = document.getElementById('af-email');
+  if (afEl) afEl.addEventListener('keydown', function (e) { if (e.key === 'Enter') acctForgot(); });
+})();
 </script>
 
 </body>
