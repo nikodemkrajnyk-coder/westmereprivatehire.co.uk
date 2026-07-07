@@ -19,12 +19,18 @@ body{font-family:var(--sans);font-weight:300;color:var(--text);background-color:
 @keyframes bgDrift{from{background-position:center 68%}to{background-position:center 55%}}
 body::before{content:"";position:fixed;inset:0;background:rgba(17,29,44,.22);z-index:0;pointer-events:none}
 nav,#contact,footer{position:relative;z-index:1}#booking{position:relative}
-nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:1rem 6%;display:flex;align-items:flex-start;justify-content:space-between;transition:background .3s}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:1rem 6%;padding-top:calc(1rem + env(safe-area-inset-top,0px));display:flex;align-items:flex-start;justify-content:space-between;transition:background .3s}
 nav.solid{background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;padding-left:0;padding-right:0}
 .brand{text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:.3rem;transition:opacity .3s ease}
 nav.solid .brand{opacity:0;pointer-events:none;width:0;overflow:hidden;padding:0;margin:0}
 nav.solid .nav-r{opacity:0;pointer-events:none;width:0;overflow:hidden;transition:opacity .3s ease}
-nav.solid .nav-end{position:fixed;top:1rem;right:6%;z-index:102}
+nav.solid .nav-end{position:fixed;top:calc(1rem + env(safe-area-inset-top,0px));right:6%;z-index:102}
+@media all and (display-mode:standalone){
+  nav{padding-top:calc(1.2rem + env(safe-area-inset-top,0px));background:rgba(17,29,44,.95)!important;backdrop-filter:blur(12px)!important;-webkit-backdrop-filter:blur(12px)!important}
+  nav.solid{background:rgba(17,29,44,.92)!important;backdrop-filter:blur(12px)!important;-webkit-backdrop-filter:blur(12px)!important;padding-left:6%;padding-right:6%}
+  nav.solid .brand{opacity:1;pointer-events:all;width:auto;overflow:visible}
+  nav.solid .nav-end{top:calc(1.2rem + env(safe-area-inset-top,0px))}
+}
 .nav-end{display:flex;align-items:center;gap:1.1rem}
 .nav-wa-mobile{display:none;color:#fff;align-items:center;text-decoration:none;transition:color .2s}
 .nav-wa-mobile:hover{color:var(--gold)}
