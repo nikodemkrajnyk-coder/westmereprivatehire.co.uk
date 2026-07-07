@@ -610,7 +610,8 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
     <!-- Reset password (from email link) -->
     <div class="acct-view" id="av-reset">
       <h3 class="acct-title">New password</h3>
-      <p class="acct-sub">Enter your new password below</p>
+      <p class="acct-sub">Enter your email and new password below</p>
+      <div class="acct-f"><label>Email</label><input type="email" id="ar-email" placeholder="your@email.com" autocomplete="email"></div>
       <div class="acct-f"><label>New password</label><input type="password" id="ar-pass" placeholder="New password (min 8 characters)" autocomplete="new-password"></div>
       <div class="acct-f"><label>Confirm password</label><input type="password" id="ar-pass2" placeholder="Confirm new password" autocomplete="new-password"></div>
       <div class="acct-err" id="ar-err"></div>
@@ -1964,6 +1965,7 @@ if ('serviceWorker' in navigator) {
       btn.disabled = false; btn.textContent = 'Send Reset Link';
       msgEl.className = 'acct-ok-msg';
       msgEl.textContent = 'If an account exists for ' + email + ', a reset link has been sent. Please check your inbox.';
+      _resetEmail = email; // Save for auto-login after reset
     })
     .catch(function () {
       btn.disabled = false; btn.textContent = 'Send Reset Link';
@@ -2063,6 +2065,7 @@ if ('serviceWorker' in navigator) {
 
   // ── Reset password from email link ──────────────────────────────────────
   var _resetToken = null;
+  var _resetEmail = '';
   function acctResetPassword() {
     var pass = (document.getElementById('ar-pass') || {}).value || '';
     var pass2 = (document.getElementById('ar-pass2') || {}).value || '';
@@ -2082,11 +2085,27 @@ if ('serviceWorker' in navigator) {
     }).then(function (r) { return r.json(); }).then(function (d) {
       if (btn) { btn.disabled = false; btn.textContent = 'Set New Password'; }
       if (d.ok) {
-        if (msgEl) msgEl.innerHTML = '<div class="acct-ok-msg">Password updated! You can now sign in with your new password.</div>';
+        if (msgEl) msgEl.innerHTML = '<div class="acct-ok-msg">Password updated! Signing you in&hellip;</div>';
+        var resetEmail = (document.getElementById('ar-email') || {}).value || _resetEmail || '';
         _resetToken = null;
-        // Clean the URL
         if (window.history.replaceState) window.history.replaceState({}, '', window.location.pathname);
-        setTimeout(function () { acctShow('av-login'); }, 2500);
+        // Auto sign-in with the new password
+        if (resetEmail) {
+          fetch('/api/auth/customer/login', {
+            method: 'POST', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: resetEmail, password: pass })
+          }).then(function (r) { return r.json(); }).then(function (ld) {
+            if (ld.ok) {
+              acctShow('av-dashboard');
+              acctLoadDashboard(ld.customer);
+            } else {
+              acctShow('av-login');
+            }
+          }).catch(function () { acctShow('av-login'); });
+        } else {
+          setTimeout(function () { acctShow('av-login'); }, 1500);
+        }
       } else {
         if (errEl) errEl.textContent = d.error || 'Could not reset password';
       }
@@ -2102,10 +2121,13 @@ if ('serviceWorker' in navigator) {
   var resetParam = urlParams.get('reset_token');
   if (resetParam) {
     _resetToken = resetParam;
+    // Skip intro animation and open reset form immediately
+    var intro = document.getElementById('intro');
+    if (intro) { intro.style.display = 'none'; }
     setTimeout(function () {
       openAcctPortal();
       acctShow('av-reset');
-    }, 500);
+    }, 300);
   }
 })();
 </script>
