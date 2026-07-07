@@ -449,13 +449,22 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
       <div class="bk-welcome-block">
         <div class="bk-welcome-w">W</div>
         <div class="bk-welcome-rule"></div>
-        <div class="bk-welcome-ttl">Welcome to Westmere</div>
+        <div class="bk-welcome-ttl">Thank You</div>
         <div class="bk-welcome-sub" id="bk-wsub">Your booking request has been received</div>
         <div class="bk-welcome-ref" id="bk-cr"></div>
       </div>
       <div class="bk-confirm-dl" id="bk-cd"></div>
-      <div class="bk-driver-note" id="bk-driver-note">Thank you &mdash; we&rsquo;ll contact you shortly with an estimate for your journey.</div>
-      <button class="bk-btn-p" style="margin-top:1.3rem" onclick="closeBkModal()">All done</button>
+      <div class="bk-driver-note" id="bk-driver-note">We&rsquo;re working on your estimate and will be in touch shortly.</div>
+      <!-- Recommend to a friend -->
+      <div id="bk-recommend" style="margin-top:1.2rem;padding:1rem;background:rgba(17,29,44,.03);border:1px solid rgba(184,152,90,.2);border-radius:8px;text-align:center">
+        <div style="font-family:var(--serif);font-size:.95rem;color:#111D2C;margin-bottom:.5rem">Recommend us to a friend</div>
+        <div style="display:flex;gap:.4rem">
+          <input type="email" id="bk-rec-email" placeholder="Friend's email address" style="flex:1;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);border-radius:6px;font-family:var(--sans);font-size:.85rem;color:#111D2C;background:#fff;box-sizing:border-box">
+          <button onclick="bkSendRecommend()" id="bk-rec-btn" style="padding:.55rem 1rem;background:#B8985A;color:#111D2C;border:none;border-radius:6px;font-family:var(--sans);font-size:.75rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;white-space:nowrap">Send</button>
+        </div>
+        <div id="bk-rec-msg" style="display:none;margin-top:.4rem;font-size:.72rem;color:#2D6E47"></div>
+      </div>
+      <div id="bk-countdown" style="margin-top:.8rem;text-align:center;font-size:.72rem;color:rgba(17,29,44,.4);font-family:var(--sans)">Returning to homepage in <span id="bk-cd-sec">5</span>s</div>
     </div>
 
     <!-- Step 7: Fallback — online save failed, offer direct contact -->
@@ -1361,15 +1370,18 @@ function bkConfirm(type) {
   bkGoS(6);
   bkToast("Ref: " + ref, "ok");
 
-  // After the customer has seen the thank-you screen, gently return them to the
-  // homepage with the landscape hero. Closing the overlay reveals the hero
-  // underneath; we also reset the form so a fresh booking starts clean. Guarded
-  // on step 6 so a failed submission (which jumps to step 7) isn't closed out.
-  setTimeout(function(){
-    if (_bk.step !== 6) return;
-    closeBkModal();
-    setTimeout(bkResetForm, 320);
-  }, 8000);
+  // 5-second countdown then auto-close back to homepage
+  var _cdLeft=5;
+  var _cdEl=document.getElementById('bk-cd-sec');
+  if(_cdEl)_cdEl.textContent=_cdLeft;
+  var _cdInt=setInterval(function(){
+    _cdLeft--;
+    if(_cdEl)_cdEl.textContent=Math.max(_cdLeft,0);
+    if(_cdLeft<=0){
+      clearInterval(_cdInt);
+      if(_bk.step===6){closeBkModal();setTimeout(bkResetForm,320);}
+    }
+  },1000);
 }
 
 // Reset the booking form back to its initial state for the next journey.
@@ -1590,6 +1602,34 @@ window.closeAllPickers=function(){document.querySelectorAll('.pick-drop,.cal-dro
     document.addEventListener('click',function(e){if(!trigger.contains(e.target))drop.classList.remove('open');});
   });
 })();
+
+// ── Recommend to a friend ────────────────────────────────────────────────
+function bkSendRecommend(){
+  var emailEl=document.getElementById('bk-rec-email');
+  var msgEl=document.getElementById('bk-rec-msg');
+  var btn=document.getElementById('bk-rec-btn');
+  if(!emailEl||!emailEl.value.trim()||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailEl.value.trim())){
+    if(msgEl){msgEl.textContent='Please enter a valid email address';msgEl.style.color='#9C2828';msgEl.style.display='';}
+    return;
+  }
+  btn.disabled=true;btn.textContent='Sending…';
+  fetch('/api/public/recommend',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({email:emailEl.value.trim()})
+  }).then(function(r){return r.json();}).then(function(d){
+    if(d.ok){
+      if(msgEl){msgEl.textContent='Invitation sent! Thank you for the recommendation.';msgEl.style.color='#2D6E47';msgEl.style.display='';}
+      emailEl.value='';
+    } else {
+      if(msgEl){msgEl.textContent=d.error||'Could not send invitation';msgEl.style.color='#9C2828';msgEl.style.display='';}
+    }
+    btn.disabled=false;btn.textContent='Send';
+  }).catch(function(){
+    if(msgEl){msgEl.textContent='Network error — please try again';msgEl.style.color='#9C2828';msgEl.style.display='';}
+    btn.disabled=false;btn.textContent='Send';
+  });
+}
 
 // ── Remember Me: save & restore passenger details ────────────────────────
 (function(){
