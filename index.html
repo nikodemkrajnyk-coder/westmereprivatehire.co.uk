@@ -607,6 +607,20 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
       </div>
     </div>
 
+    <!-- Reset password (from email link) -->
+    <div class="acct-view" id="av-reset">
+      <h3 class="acct-title">New password</h3>
+      <p class="acct-sub">Enter your new password below</p>
+      <div class="acct-f"><label>New password</label><input type="password" id="ar-pass" placeholder="New password (min 8 characters)" autocomplete="new-password"></div>
+      <div class="acct-f"><label>Confirm password</label><input type="password" id="ar-pass2" placeholder="Confirm new password" autocomplete="new-password"></div>
+      <div class="acct-err" id="ar-err"></div>
+      <div id="ar-msg"></div>
+      <button class="acct-btn" onclick="acctResetPassword()">Set New Password</button>
+      <div class="acct-links-row" style="justify-content:center">
+        <button class="acct-link-btn" onclick="acctShow('av-login')">Back to sign in</button>
+      </div>
+    </div>
+
     <!-- Email verification notice -->
     <div class="acct-view" id="av-verify">
       <h3 class="acct-title">Check your email</h3>
@@ -2046,6 +2060,53 @@ if ('serviceWorker' in navigator) {
   });
   var afEl = document.getElementById('af-email');
   if (afEl) afEl.addEventListener('keydown', function (e) { if (e.key === 'Enter') acctForgot(); });
+
+  // ── Reset password from email link ──────────────────────────────────────
+  var _resetToken = null;
+  function acctResetPassword() {
+    var pass = (document.getElementById('ar-pass') || {}).value || '';
+    var pass2 = (document.getElementById('ar-pass2') || {}).value || '';
+    var errEl = document.getElementById('ar-err');
+    var msgEl = document.getElementById('ar-msg');
+    if (errEl) errEl.textContent = '';
+    if (msgEl) msgEl.innerHTML = '';
+    if (pass.length < 8) { if (errEl) errEl.textContent = 'Password must be at least 8 characters'; return; }
+    if (pass !== pass2) { if (errEl) errEl.textContent = 'Passwords do not match'; return; }
+    if (!_resetToken) { if (errEl) errEl.textContent = 'Reset link is invalid or expired'; return; }
+    var btn = document.querySelector('#av-reset .acct-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Updating…'; }
+    fetch('/api/auth/customer/reset-password', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: _resetToken, password: pass })
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Set New Password'; }
+      if (d.ok) {
+        if (msgEl) msgEl.innerHTML = '<div class="acct-ok-msg">Password updated! You can now sign in with your new password.</div>';
+        _resetToken = null;
+        // Clean the URL
+        if (window.history.replaceState) window.history.replaceState({}, '', window.location.pathname);
+        setTimeout(function () { acctShow('av-login'); }, 2500);
+      } else {
+        if (errEl) errEl.textContent = d.error || 'Could not reset password';
+      }
+    }).catch(function () {
+      if (btn) { btn.disabled = false; btn.textContent = 'Set New Password'; }
+      if (errEl) errEl.textContent = 'Network error — please try again';
+    });
+  }
+  window.acctResetPassword = acctResetPassword;
+
+  // Auto-open account panel if reset_token is in the URL
+  var urlParams = new URLSearchParams(window.location.search);
+  var resetParam = urlParams.get('reset_token');
+  if (resetParam) {
+    _resetToken = resetParam;
+    setTimeout(function () {
+      openAcctPortal();
+      acctShow('av-reset');
+    }, 500);
+  }
 })();
 </script>
 
