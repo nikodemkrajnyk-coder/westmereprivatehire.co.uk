@@ -1850,11 +1850,13 @@ if ('serviceWorker' in navigator) {
   }
   window.acctShow = acctShow;
 
-  function openAcctPortal() {
+  function openAcctPortal(forceView) {
     var ov = document.getElementById('acct-overlay');
     ov.style.display = 'flex';
     requestAnimationFrame(function () { ov.classList.add('open'); });
     document.body.style.overflow = 'hidden';
+    // If a specific view is requested (e.g. password reset), show it directly
+    if (forceView) { acctShow(forceView); return; }
     fetch('/api/auth/me', { credentials: 'include' })
       .then(function (r) { return r.json(); })
       .then(function (d) {
@@ -2121,12 +2123,11 @@ if ('serviceWorker' in navigator) {
   var resetParam = urlParams.get('reset_token');
   if (resetParam) {
     _resetToken = resetParam;
-    // Skip intro animation and open reset form immediately
+    // Skip intro animation and open reset form directly
     var intro = document.getElementById('intro');
     if (intro) { intro.style.display = 'none'; }
     setTimeout(function () {
-      openAcctPortal();
-      acctShow('av-reset');
+      openAcctPortal('av-reset');
     }, 300);
   }
 })();
