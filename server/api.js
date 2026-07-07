@@ -333,6 +333,35 @@ router.post('/customer/bookings/:id/cancel', (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Customer self-service endpoints ──────────────────────────────────────
+
+// Customer: view their invoices
+router.get('/customer/invoices', (req, res) => {
+  if (req.auth.type !== 'customer') return res.status(403).json({ error: 'Customer access required' });
+  const db = getDb();
+  const customer = db.prepare('SELECT email FROM customers WHERE id = ?').get(req.auth.id);
+  if (!customer || !customer.email) return res.json({ ok: true, invoices: [] });
+
+  const rows = db.prepare(`
+    SELECT id, invoice_no, kind, recipient_name, recipient_email, issued_date, due_date,
+           total, paid, paid_at, created_at
+    FROM invoices
+    WHERE customer_id = ? OR LOWER(recipient_email) = LOWER(?)
+    ORDER BY created_at DESC LIMIT 50
+  `).all(req.auth.id, customer.email);
+
+  res.json({ ok: true, invoices: rows });
+});
+
+// Customer: view their profile
+router.get('/customer/profile', (req, res) => {
+  if (req.auth.type !== 'customer') return res.status(403).json({ error: 'Customer access required' });
+  const db = getDb();
+  const row = db.prepare('SELECT id, email, full_name, phone, created_at FROM customers WHERE id = ?').get(req.auth.id);
+  if (!row) return res.status(404).json({ error: 'Account not found' });
+  res.json({ ok: true, profile: row });
+});
+
 // Delete booking (admin/owner only — permanently removes the record)
 router.delete('/bookings/:id', (req, res) => {
   if (!['admin', 'owner'].includes(req.auth.role)) {
