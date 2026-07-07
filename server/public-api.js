@@ -563,4 +563,44 @@ router.post('/stripe-webhook', express.raw({ type: 'application/json' }), (req, 
   res.json({ received: true });
 });
 
+// ── Recommend to a friend ────────────────────────────────────────────────
+// Sends a simple invitation email with a link to the booking page.
+router.post('/recommend', async (req, res) => {
+  const { email } = req.body || {};
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: 'Valid email address required' });
+  }
+
+  try {
+    const { sendEmail } = require('./email');
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;background:#F5F2ED">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F2ED"><tr><td align="center" style="padding:32px 16px">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#FFFFF5;border:1px solid #E8E3D5">
+<tr><td style="padding:36px 44px 6px;text-align:center">
+  <p style="margin:0;font-family:Georgia,serif;font-size:20px;color:#0E2540;letter-spacing:8px">WESTMERE</p>
+  <p style="margin:8px 0 0;font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:3.5px;text-transform:uppercase;color:#9AA3B2">Private Hire · Sussex</p>
+</td></tr>
+<tr><td style="padding:22px 44px 0;text-align:center"><div style="width:32px;height:1px;background:#B8985A;margin:0 auto"></div></td></tr>
+<tr><td style="padding:24px 44px 36px">
+  <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:#0E2540;line-height:1.55">Hello,</p>
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:#0E2540;line-height:1.65">A friend thought you might appreciate our executive private hire service. We offer premium chauffeur-driven transfers across Sussex, including airport runs, corporate travel, and special occasions.</p>
+  <div style="text-align:center;margin:26px 0 8px">
+    <a href="https://westmereprivatehire.co.uk" style="display:inline-block;padding:13px 32px;background:#B8985A;color:#0E2540;text-decoration:none;border-radius:6px;font-family:Helvetica Neue,Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:.03em">Book Your Journey</a>
+  </div>
+  <p style="margin:20px 0 0;font-family:Georgia,serif;font-size:13px;color:#5A6B7F;line-height:1.6">With kind regards,<br><span style="color:#0E2540">Westmere Private Hire</span></p>
+</td></tr>
+<tr><td style="padding:18px 44px 28px;border-top:1px solid #E8E3D5">
+  <p style="margin:0;font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;color:#9AA3B2;letter-spacing:.5px">Westmere Private Hire · Licensed by Lewes District Council · westmereprivatehire.co.uk</p>
+</td></tr>
+</table></td></tr></table></body></html>`;
+
+    const ok = await sendEmail(email, 'You\'ve been recommended — Westmere Executive Private Hire', html, 'Westmere Private Hire');
+    if (!ok) return res.status(502).json({ error: 'Could not send email' });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[PUBLIC] recommend failed:', e.message);
+    res.status(500).json({ error: 'Failed to send recommendation' });
+  }
+});
+
 module.exports = router;
