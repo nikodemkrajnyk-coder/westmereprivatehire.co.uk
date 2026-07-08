@@ -228,13 +228,17 @@ async function sendCustomerConfirmed(booking) {
   let payBlock = '';
   if (!alreadyPaid && pay_token && fareStr) {
     const payUrl  = `https://westmereprivatehire.co.uk/westmere-pay.html?ref=${encodeURIComponent(ref)}&t=${encodeURIComponent(pay_token)}`;
+    const cashUrl = `https://westmereprivatehire.co.uk/api/public/pay/${encodeURIComponent(ref)}/cash?t=${encodeURIComponent(pay_token)}`;
     payBlock = `
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:26px 0 4px">
+    <tr><td align="center" style="padding-bottom:10px">
+      <a href="${payUrl}" style="display:block;padding:13px 24px;background:${GOLD};color:#0E2540;text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:.03em;text-align:center">Pay with Apple Pay, Google Pay, or card</a>
+    </td></tr>
     <tr><td align="center">
-      <a href="${payUrl}" style="display:block;padding:13px 24px;background:${GOLD};color:#ffffff;text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:.03em;text-align:center">Pay with Apple Pay, Google Pay, or card</a>
+      <a href="${cashUrl}" style="display:block;padding:13px 24px;background:${INK};color:#ffffff;text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:.03em;text-align:center">Pay on the Day</a>
     </td></tr>
   </table>
-  <p style="margin:12px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_MUTED};font-style:italic;line-height:1.55;text-align:center">Tap above to pay ${fareStr} securely now with Apple Pay, Google Pay, or card — or choose to settle the fare with your driver on the day.</p>`;
+  <p style="margin:12px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_MUTED};font-style:italic;line-height:1.55;text-align:center">Pay ${fareStr} securely now, or settle the fare with your driver on the day by cash or card.</p>`;
   }
 
   const body = `
