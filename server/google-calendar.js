@@ -383,12 +383,18 @@ async function pullChanges() {
         continue;
       }
 
-      // Pull time changes
+      // Pull time changes — use Europe/London timezone so BST/GMT is correct.
+      // FIX: getHours() returns UTC on Railway servers, causing 07:00 BST to
+      // be stored as 06:00. Using Intl.DateTimeFormat with Europe/London instead.
       if (ev.start && ev.start.dateTime) {
         const d = new Date(ev.start.dateTime);
-        const pad = n => String(n).padStart(2, '0');
-        const newDate = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-        const newTime = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        const ukParts = new Intl.DateTimeFormat('en-GB', {
+          timeZone: 'Europe/London',
+          year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', hour12: false
+        }).formatToParts(d).reduce((o, p) => { o[p.type] = p.value; return o; }, {});
+        const newDate = `${ukParts.year}-${ukParts.month}-${ukParts.day}`;
+        const newTime = `${ukParts.hour}:${ukParts.minute}`;
         if (newDate !== booking.date || newTime !== booking.time) {
           db.prepare("UPDATE bookings SET date = ?, time = ?, updated_at = datetime('now') WHERE id = ?").run(newDate, newTime, bookingId);
           changed++;
