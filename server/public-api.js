@@ -194,8 +194,10 @@ router.post('/book', async (req, res) => {
     }
 
     // Insert booking
-    const storedTime = time || 'ASAP';
-    console.log(`[BOOK] ${ref} inserting with time="${storedTime}" (raw input: "${time}")`);
+    // IMPORTANT: The customer sends their LOCAL time (Europe/London).
+    // Store it exactly as received — no timezone conversion.
+    const storedTime = String(time || 'ASAP').trim();
+    console.log(`[BOOK] ${ref} time="${storedTime}" raw="${time}" type=${typeof time} body.time="${req.body.time}"`);
     const result = db.prepare(`
       INSERT INTO bookings (ref, customer_id, driver_id, pickup, destination, date, time,
                             passengers, bags, trip_type, flight, fare, payment, notes, status,
