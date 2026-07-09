@@ -235,66 +235,127 @@ input[type="time"].fi,input[type="date"].fi{-webkit-appearance:auto;appearance:a
 /* ===== ACCOUNT PORTAL ===== */
 .nav-acct{background:none;border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.82);padding:.28rem .7rem;border-radius:3px;font-size:.72rem;font-weight:300;font-style:italic;letter-spacing:.06em;font-family:var(--serif);cursor:pointer;transition:border-color .2s,color .2s;margin-right:.35rem;flex-shrink:0;text-transform:none}
 .nav-acct:hover{border-color:var(--gold);color:var(--gold)}
-#acct-overlay{position:fixed;inset:0;z-index:300;background:rgba(10,7,4,.65);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;pointer-events:none;transition:opacity .25s}
-#acct-overlay.open{opacity:1;pointer-events:all}
-#acct-panel{background:#111D2C;border-radius:10px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:1.4rem 1.5rem;position:relative}
-.acct-logo{font-family:var(--serif);font-size:1.05rem;font-weight:300;letter-spacing:.18em;color:rgba(245,242,237,.3);text-transform:uppercase}
+
+/* Full-screen overlay */
+#acct-overlay{position:fixed;inset:0;z-index:300;background:#111D2C;display:none;flex-direction:column}
+#acct-overlay.open{display:flex}
+#acct-panel{width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden}
+
+/* Topbar */
+.ap-topbar{background:#111D2C;padding:calc(env(safe-area-inset-top,0px) + .35rem) 1.1rem .35rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid rgba(184,152,90,.2);box-shadow:0 1px 8px rgba(0,0,0,.3);min-height:50px}
+.ap-brand{display:flex;align-items:center;gap:.65rem}
+.ap-crest{width:34px;height:34px;border:1px solid rgba(184,152,90,.35);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:.95rem;color:var(--gold);flex-shrink:0}
+.ap-brand-name{font-family:var(--serif);font-size:.95rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#F5F2ED}
+.ap-back-btn{background:none;border:1px solid rgba(245,242,237,.15);color:rgba(245,242,237,.45);font-family:var(--sans);font-size:.56rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;padding:.38rem .8rem;cursor:pointer;transition:all .25s;display:flex;align-items:center;gap:.3rem}
+.ap-back-btn:hover{border-color:rgba(245,242,237,.35);color:#F5F2ED}
+
+/* Auth wrapper (centers the auth card in remaining space) */
+#acct-auth-wrap{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;align-items:center;justify-content:center;padding:1.2rem 1rem calc(1.5rem + env(safe-area-inset-bottom,0px))}
+.ap-auth-card{background:#FCFAF6;border:1px solid rgba(17,29,44,.08);box-shadow:0 4px 28px rgba(0,0,0,.4);width:100%;max-width:400px}
+.ap-auth-head{padding:1.8rem 1.8rem 1.4rem;text-align:center;border-bottom:1px solid rgba(184,152,90,.1)}
+.ap-auth-crest{width:48px;height:48px;border:1px solid rgba(184,152,90,.3);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.25rem;font-weight:500;color:#111D2C;margin:0 auto .75rem;position:relative}
+.ap-auth-crest::before{content:'';position:absolute;inset:-6px;border:1px solid rgba(184,152,90,.1)}
+.ap-brand-label{font-family:var(--serif);font-size:1.25rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:#111D2C;display:block}
+.ap-tagline{font-size:.52rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-top:.15rem;display:block}
+.ap-auth-body{padding:1.6rem 1.8rem 1.4rem}
+.ap-auth-foot{text-align:center;padding:.9rem 1.8rem;border-top:1px solid rgba(17,29,44,.05);font-size:.72rem;color:rgba(17,29,44,.3)}
+.ap-auth-foot a{color:rgba(17,29,44,.35);text-decoration:none}
+.ap-auth-foot a:hover{color:var(--gold)}
+
+/* Auth form elements */
 .acct-view{display:none}
 .acct-view.active{display:block}
-.acct-title{font-family:var(--serif);font-size:1.65rem;font-weight:300;color:#F5F2ED;margin:0 0 .18rem;letter-spacing:.04em}
-.acct-sub{font-size:.76rem;color:rgba(245,242,237,.5);margin-bottom:1.25rem;font-style:italic}
+.acct-title{font-family:var(--serif);font-size:1.45rem;font-weight:300;color:#111D2C;margin:0 0 .15rem;letter-spacing:.04em}
+.acct-sub{font-size:.76rem;color:rgba(17,29,44,.42);margin-bottom:1.3rem;line-height:1.6}
 .acct-f{margin-bottom:.85rem}
-.acct-f label{display:block;font-size:.7rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(245,242,237,.5);margin-bottom:.26rem}
-.acct-f input{font-family:var(--sans);font-size:.94rem;font-weight:400;color:#F5F2ED;background:#1C2A3E;border:1px solid rgba(184,152,90,.25);border-radius:5px;padding:.6rem .75rem;outline:none;width:100%;min-height:44px;box-sizing:border-box;transition:border-color .2s;-webkit-appearance:none}
-.acct-f input:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(184,152,90,.2)}
-.acct-f input.err{border-color:#e05252}
-.acct-f input::placeholder{color:rgba(245,242,237,.3)}
-.acct-btn{width:100%;padding:.92rem;background:var(--gold);color:#111D2C;border:none;border-radius:6px;font-family:var(--sans);font-size:.64rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;transition:background .2s;min-height:52px;margin-top:.5rem;display:flex;align-items:center;justify-content:center}
+.acct-f label{display:block;font-size:.58rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.28rem}
+.acct-f input{font-family:var(--sans);font-size:.9rem;font-weight:300;color:#111D2C;background:transparent;border:none;border-bottom:1px solid rgba(17,29,44,.15);padding:.68rem 0;outline:none;width:100%;min-height:44px;box-sizing:border-box;transition:border-color .2s;-webkit-appearance:none}
+.acct-f input:focus{border-bottom-color:var(--gold)}
+.acct-f input::placeholder{color:rgba(17,29,44,.28)}
+.acct-btn{width:100%;padding:.9rem;background:var(--gold);color:#111D2C;border:none;font-family:var(--sans);font-size:.64rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;transition:background .2s;min-height:50px;margin-top:.5rem;display:flex;align-items:center;justify-content:center}
 .acct-btn:hover{background:#C9A96E}
 .acct-btn:disabled{opacity:.45;cursor:not-allowed}
-.acct-link-btn{background:none;border:none;color:var(--gold);font-family:var(--sans);font-size:.76rem;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px;transition:color .15s}
-.acct-link-btn:hover{color:#C9A96E}
-.acct-links-row{display:flex;justify-content:space-between;align-items:center;margin-top:.9rem;font-size:.76rem;color:rgba(245,242,237,.45)}
-.acct-err{color:#f87171;font-size:.74rem;margin-top:.3rem;min-height:1rem}
-.acct-ok-msg{color:#86efac;font-size:.78rem;margin-top:.5rem;background:rgba(45,110,71,.15);border-left:3px solid #2D6E47;padding:.6rem .8rem;border-radius:0 4px 4px 0;line-height:1.65}
-.acct-welcome{margin-bottom:1.2rem}
-.acct-welcome-name{font-family:var(--serif);font-size:2rem;font-weight:300;color:#F5F2ED;letter-spacing:.04em}
-.acct-welcome-sub{font-size:.76rem;color:rgba(245,242,237,.45);font-style:italic}
-.acct-section-ttl{font-size:.6rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:1.4rem 0 .65rem;padding-bottom:.38rem;border-bottom:1px solid rgba(184,152,90,.2)}
-.acct-bk-card{background:#F5F2ED;border:1px solid rgba(184,152,90,.15);border-radius:10px;padding:.85rem 1rem;margin-bottom:.6rem}
-.acct-bk-route{font-size:.88rem;color:#111D2C;margin-bottom:.28rem}
-.acct-bk-meta{font-size:.7rem;color:rgba(17,29,44,.48);display:flex;flex-wrap:wrap;gap:.3rem .85rem;margin-bottom:.38rem}
-.acct-status{display:inline-block;font-size:.56rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.18rem .5rem;border-radius:3px}
+.acct-link-btn{background:none;border:none;color:var(--gold);font-family:var(--sans);font-size:.76rem;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px}
+.acct-links-row{display:flex;justify-content:space-between;align-items:center;margin-top:.9rem;font-size:.76rem;color:rgba(17,29,44,.45)}
+.acct-err{color:#c0392b;font-size:.74rem;margin-top:.3rem;min-height:1rem}
+.acct-ok-msg{color:#2D6E47;font-size:.78rem;margin-top:.5rem;background:rgba(45,110,71,.1);border-left:3px solid #2D6E47;padding:.6rem .8rem;line-height:1.65}
+
+/* Dashboard shell */
+#av-dashboard{flex:1;display:none;flex-direction:column;overflow:hidden}
+#av-dashboard.active{display:flex}
+.ap-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:none}
+.ap-pg{display:none;padding:1.1rem .9rem 2rem;max-width:560px;margin:0 auto}
+.ap-pg.on{display:block}
+.ap-pg-title{font-family:var(--serif);font-size:1.8rem;font-weight:400;color:#F5F2ED;line-height:1.05;margin-bottom:.2rem}
+.ap-pg-title em{font-style:italic;color:var(--gold)}
+.ap-pg-sub{font-size:.6rem;color:#C9A96E;font-weight:500;letter-spacing:.18em;text-transform:uppercase;margin-bottom:.9rem}
+
+/* Content cards (cream on navy) */
+.ap-card{background:#FCFAF6;border:1px solid rgba(184,152,90,.2);box-shadow:0 3px 16px rgba(0,0,0,.22);margin-bottom:.75rem;border-radius:12px;overflow:hidden}
+.ap-card-head{padding:.7rem 1.1rem;border-bottom:1px solid rgba(184,152,90,.1);font-size:.58rem;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--gold)}
+.ap-card-body{padding:0 .95rem}
+
+/* Booking rows */
+.acct-bk-card{border-bottom:1px solid rgba(17,29,44,.06);padding:.85rem 0;display:flex;align-items:flex-start;gap:.8rem}
+.acct-bk-card:last-child{border-bottom:none}
+.acct-bk-date{flex-shrink:0;min-width:34px;text-align:center}
+.acct-bk-day{font-family:var(--serif);font-size:1.2rem;color:var(--gold);line-height:1;display:block;font-weight:300}
+.acct-bk-mon{font-size:.45rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.4);display:block;margin-top:.05rem}
+.acct-bk-body{flex:1;min-width:0}
+.acct-bk-route{font-size:.84rem;font-weight:500;color:#111D2C;margin-bottom:.14rem;line-height:1.3}
+.acct-bk-meta{font-size:.68rem;color:rgba(17,29,44,.45);display:flex;flex-wrap:wrap;gap:.2rem .7rem;margin-bottom:.2rem}
+.acct-bk-right{text-align:right;flex-shrink:0}
+.acct-bk-fare{font-family:var(--serif);font-size:1.05rem;font-weight:300;color:#111D2C;display:block}
+.acct-status{display:inline-block;font-size:.48rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.13rem .46rem;border-radius:20px;margin-top:.16rem}
 .acct-status.s-completed{background:rgba(45,110,71,.12);color:#2D6E47}
 .acct-status.s-confirmed{background:rgba(184,152,90,.14);color:#8B7230}
-.acct-status.s-pending{background:rgba(17,29,44,.07);color:rgba(17,29,44,.5)}
+.acct-status.s-pending{background:rgba(17,29,44,.06);color:rgba(17,29,44,.45)}
 .acct-status.s-cancelled{background:rgba(139,34,34,.08);color:#8B2222}
 .acct-status.s-active{background:rgba(59,130,246,.1);color:#1d4ed8}
-.acct-ba-btn{background:none;border:1px solid rgba(184,152,90,.45);color:#8B7230;font-family:var(--sans);font-size:.56rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:.26rem .65rem;border-radius:3px;cursor:pointer;transition:border-color .2s,color .2s;margin-top:.38rem}
+.acct-status.s-offered{background:rgba(184,152,90,.14);color:#8B7230}
+.acct-ba-btn{background:none;border:1px solid rgba(184,152,90,.4);color:#8B7230;font-family:var(--sans);font-size:.54rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.22rem .6rem;border-radius:3px;cursor:pointer;transition:border-color .2s,color .2s;margin-top:.3rem;display:inline-block}
 .acct-ba-btn:hover{border-color:var(--gold);color:#B8985A}
-.acct-inv-card{background:#F5F2ED;border:1px solid rgba(184,152,90,.15);border-radius:10px;padding:.85rem 1rem;margin-bottom:.6rem;display:flex;justify-content:space-between;align-items:flex-start;gap:1rem}
-.acct-inv-no{font-size:.65rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.15rem}
-.acct-inv-amt{font-family:var(--serif);font-size:1.4rem;font-weight:300;color:#111D2C}
-.acct-inv-date{font-size:.68rem;color:rgba(17,29,44,.42);margin-top:.1rem}
-.acct-inv-dl{display:block;font-size:.58rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);text-decoration:none;margin-top:.38rem;transition:color .15s}
-.acct-inv-dl:hover{color:#7A6230}
-.acct-paid-badge{font-size:.56rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.18rem .5rem;border-radius:3px;white-space:nowrap;flex-shrink:0}
+
+/* Invoice rows */
+.acct-inv-card{border-bottom:1px solid rgba(17,29,44,.06);padding:.85rem 0;display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem}
+.acct-inv-card:last-child{border-bottom:none}
+.acct-inv-no{font-size:.62rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.38);margin-bottom:.12rem}
+.acct-inv-amt{font-family:var(--serif);font-size:1.25rem;font-weight:300;color:#111D2C}
+.acct-inv-date{font-size:.64rem;color:rgba(17,29,44,.38);margin-top:.08rem}
+.acct-inv-dl{display:inline-block;font-size:.54rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);text-decoration:none;margin-top:.3rem;border:1px solid rgba(184,152,90,.35);padding:.16rem .52rem;border-radius:3px;transition:all .2s}
+.acct-inv-dl:hover{background:rgba(184,152,90,.1)}
+.acct-paid-badge{font-size:.48rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.13rem .46rem;border-radius:20px;white-space:nowrap;flex-shrink:0;display:inline-block}
 .acct-paid-badge.paid{background:rgba(45,110,71,.12);color:#2D6E47}
 .acct-paid-badge.unpaid{background:rgba(139,34,34,.08);color:#8B2222}
-.acct-empty{text-align:center;padding:1.6rem 0;color:rgba(245,242,237,.35);font-size:.8rem;font-style:italic}
-.acct-signout{background:none;border:1px solid rgba(184,152,90,.3);color:rgba(245,242,237,.5);font-family:var(--sans);font-size:.56rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;padding:.4rem .9rem;border-radius:3px;cursor:pointer;transition:border-color .2s,color .2s;margin-top:1.4rem;margin-bottom:.4rem}
-.acct-signout:hover{border-color:var(--gold);color:var(--gold)}
+.acct-paid-badge.overdue{background:rgba(139,34,34,.15);color:#8B2222}
+
+/* Profile rows */
+.ap-pf-row{display:flex;align-items:center;justify-content:space-between;padding:.78rem 0;border-bottom:1px solid rgba(17,29,44,.05)}
+.ap-pf-row:last-child{border-bottom:none}
+.ap-pf-label{font-size:.52rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.4);flex-shrink:0;min-width:85px}
+.ap-pf-val{font-size:.82rem;color:rgba(17,29,44,.78);font-weight:300;flex:1;word-break:break-all}
+
+/* Sign out */
+.acct-signout{width:100%;padding:.82rem;background:transparent;color:rgba(17,29,44,.42);border:1px solid rgba(17,29,44,.1);font-family:var(--sans);font-size:.62rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;transition:all .2s;display:block;margin-top:.3rem}
+.acct-signout:hover{border-color:#8B2222;color:#8B2222}
+
+/* Empty states */
+.acct-empty{text-align:center;padding:1.8rem .5rem;color:rgba(17,29,44,.32);font-size:.78rem}
+
+/* Bottom nav */
+.ap-bottom-nav{background:#111D2C;border-top:1px solid rgba(184,152,90,.2);box-shadow:0 -1px 8px rgba(0,0,0,.3);display:flex;padding-bottom:env(safe-area-inset-bottom,0px);flex-shrink:0}
+.ap-bn{flex:1;display:flex;flex-direction:column;align-items:center;gap:.18rem;padding:.75rem .3rem;background:none;border:none;cursor:pointer;transition:color .2s;color:rgba(245,242,237,.38);font-family:var(--sans);min-height:56px;position:relative}
+.ap-bn.on{color:var(--gold)}
+.ap-bn-bar{width:16px;height:1px;background:currentColor;opacity:0;transition:opacity .2s;margin-bottom:.04rem}
+.ap-bn.on .ap-bn-bar{opacity:1}
+.ap-bn-icon{width:20px;height:20px;display:flex;align-items:center;justify-content:center}
+.ap-bn-icon svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.ap-bn-label{font-size:.52rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase}
+
 @media(max-width:540px){
-  #acct-overlay{padding:0;align-items:flex-end}
-  #acct-panel{border-radius:14px 14px 0 0;max-height:92vh;padding:1.2rem 1rem;width:100%}
-  .acct-title{font-size:1.35rem}
-  .acct-welcome-name{font-size:1.5rem}
-  .acct-bk-card,.acct-inv-card{padding:.7rem .8rem}
-  .acct-bk-route{font-size:.82rem}
-  .acct-inv-amt{font-size:1.15rem}
-  .acct-f input{font-size:.88rem;padding:.55rem .65rem;min-height:42px}
-  .acct-btn{min-height:46px;font-size:.6rem}
   .nav-acct{padding:.22rem .55rem;font-size:.65rem}
+  .ap-auth-body{padding:1.4rem 1.4rem 1.2rem}
+  .ap-auth-head{padding:1.5rem 1.4rem 1.2rem}
 }
 
 /* ===== CUSTOM DATE PICKER ===== */
@@ -560,92 +621,161 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 </div>
 
 <!-- ===== ACCOUNT PORTAL ===== -->
-<div id="acct-overlay" role="dialog" aria-modal="true" aria-label="My Account" style="display:none">
+<div id="acct-overlay" role="dialog" aria-modal="true" aria-label="My Account">
   <div id="acct-panel">
-    <div class="bk-header">
-      <span class="acct-logo">Westmere</span>
-      <button class="bk-close" onclick="closeAcctPortal()" aria-label="Close">&times;</button>
+
+    <!-- Topbar (always visible) -->
+    <div class="ap-topbar">
+      <div class="ap-brand">
+        <div class="ap-crest">W</div>
+        <span class="ap-brand-name">Westmere</span>
+      </div>
+      <button class="ap-back-btn" onclick="closeAcctPortal()" aria-label="Back to booking">&larr; Back</button>
     </div>
 
-    <!-- Login -->
-    <div class="acct-view active" id="av-login">
-      <h3 class="acct-title">Sign in</h3>
-      <p class="acct-sub">Welcome back</p>
-      <div class="acct-f"><label>Email</label><input type="email" id="al-email" placeholder="your@email.com" autocomplete="email" inputmode="email"></div>
-      <div class="acct-f"><label>Password</label><input type="password" id="al-pass" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password"></div>
-      <div id="al-err" class="acct-err"></div>
-      <button class="acct-btn" onclick="acctLogin()">Sign In</button>
-      <div class="acct-links-row">
-        <button class="acct-link-btn" onclick="acctShow('av-forgot')">Forgot password?</button>
-        <button class="acct-link-btn" onclick="acctShow('av-register')">Create account</button>
-      </div>
-    </div>
+    <!-- Auth card (centred in remaining space) -->
+    <div id="acct-auth-wrap">
+      <div class="ap-auth-card">
+        <div class="ap-auth-head">
+          <div class="ap-auth-crest">W</div>
+          <span class="ap-brand-label">Westmere</span>
+          <span class="ap-tagline">Private Hire</span>
+        </div>
 
-    <!-- Register -->
-    <div class="acct-view" id="av-register">
-      <h3 class="acct-title">Create account</h3>
-      <p class="acct-sub">Manage your bookings and invoices online</p>
-      <div class="acct-f"><label>Full name</label><input type="text" id="ar-name" placeholder="Your full name" autocomplete="name"></div>
-      <div class="acct-f"><label>Email</label><input type="email" id="ar-email" placeholder="your@email.com" autocomplete="email" inputmode="email"></div>
-      <div class="acct-f"><label>Mobile <span style="opacity:.6;font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label><input type="tel" id="ar-phone" placeholder="+44 7xxx xxxxxx" autocomplete="tel" inputmode="tel"></div>
-      <div class="acct-f"><label>Password</label><input type="password" id="ar-pass" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="new-password"></div>
-      <div id="ar-err" class="acct-err"></div>
-      <button class="acct-btn" onclick="acctRegister()">Create Account</button>
-      <div class="acct-links-row" style="justify-content:center">
-        <button class="acct-link-btn" onclick="acctShow('av-login')">Already have an account? Sign in</button>
-      </div>
-    </div>
+        <!-- Login -->
+        <div class="acct-view active" id="av-login">
+          <div class="ap-auth-body">
+            <h3 class="acct-title">Sign in</h3>
+            <p class="acct-sub">Welcome back</p>
+            <div class="acct-f"><label>Email</label><input type="email" id="al-email" placeholder="your@email.com" autocomplete="email" inputmode="email"></div>
+            <div class="acct-f"><label>Password</label><input type="password" id="al-pass" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password"></div>
+            <div id="al-err" class="acct-err"></div>
+            <button class="acct-btn" onclick="acctLogin()">Sign In</button>
+            <div class="acct-links-row">
+              <button class="acct-link-btn" onclick="acctShow('av-forgot')">Forgot password?</button>
+              <button class="acct-link-btn" onclick="acctShow('av-register')">Create account</button>
+            </div>
+          </div>
+        </div>
 
-    <!-- Forgot password -->
-    <div class="acct-view" id="av-forgot">
-      <h3 class="acct-title">Reset password</h3>
-      <p class="acct-sub">We'll send a reset link to your email</p>
-      <div class="acct-f"><label>Email</label><input type="email" id="af-email" placeholder="your@email.com" autocomplete="email" inputmode="email"></div>
-      <div id="af-msg"></div>
-      <button class="acct-btn" onclick="acctForgot()">Send Reset Link</button>
-      <div class="acct-links-row" style="justify-content:center">
-        <button class="acct-link-btn" onclick="acctShow('av-login')">Back to sign in</button>
-      </div>
-    </div>
+        <!-- Register -->
+        <div class="acct-view" id="av-register">
+          <div class="ap-auth-body">
+            <h3 class="acct-title">Create account</h3>
+            <p class="acct-sub">Manage your bookings and invoices online</p>
+            <div class="acct-f"><label>Full name</label><input type="text" id="ar-name" placeholder="Your full name" autocomplete="name"></div>
+            <div class="acct-f"><label>Email</label><input type="email" id="ar-email" placeholder="your@email.com" autocomplete="email" inputmode="email"></div>
+            <div class="acct-f"><label>Mobile <span style="opacity:.6;font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label><input type="tel" id="ar-phone" placeholder="+44 7xxx xxxxxx" autocomplete="tel" inputmode="tel"></div>
+            <div class="acct-f"><label>Password</label><input type="password" id="ar-pass" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="new-password"></div>
+            <div id="ar-err" class="acct-err"></div>
+            <button class="acct-btn" onclick="acctRegister()">Create Account</button>
+            <div class="acct-links-row" style="justify-content:center">
+              <button class="acct-link-btn" onclick="acctShow('av-login')">Already have an account? Sign in</button>
+            </div>
+          </div>
+        </div>
 
-    <!-- Reset password (from email link) -->
-    <div class="acct-view" id="av-reset">
-      <h3 class="acct-title">New password</h3>
-      <p class="acct-sub">Enter your email and new password below</p>
-      <div class="acct-f"><label>Email</label><input type="email" id="rst-email" placeholder="your@email.com" autocomplete="email"></div>
-      <div class="acct-f"><label>New password</label><input type="password" id="rst-pass" placeholder="New password (min 8 characters)" autocomplete="new-password"></div>
-      <div class="acct-f"><label>Confirm password</label><input type="password" id="rst-pass2" placeholder="Confirm new password" autocomplete="new-password"></div>
-      <div class="acct-err" id="rst-err"></div>
-      <div id="rst-msg"></div>
-      <button class="acct-btn" onclick="acctResetPassword()">Set New Password</button>
-      <div class="acct-links-row" style="justify-content:center">
-        <button class="acct-link-btn" onclick="acctShow('av-login')">Back to sign in</button>
-      </div>
-    </div>
+        <!-- Forgot password -->
+        <div class="acct-view" id="av-forgot">
+          <div class="ap-auth-body">
+            <h3 class="acct-title">Reset password</h3>
+            <p class="acct-sub">We&rsquo;ll send a reset link to your email</p>
+            <div class="acct-f"><label>Email</label><input type="email" id="af-email" placeholder="your@email.com" autocomplete="email" inputmode="email"></div>
+            <div id="af-msg"></div>
+            <button class="acct-btn" onclick="acctForgot()">Send Reset Link</button>
+            <div class="acct-links-row" style="justify-content:center">
+              <button class="acct-link-btn" onclick="acctShow('av-login')">Back to sign in</button>
+            </div>
+          </div>
+        </div>
 
-    <!-- Email verification notice -->
-    <div class="acct-view" id="av-verify">
-      <h3 class="acct-title">Check your email</h3>
-      <div class="acct-ok-msg" id="av-verify-msg">We've sent a verification link to your email address. Please check your inbox and click the link to activate your account, then sign in.</div>
-      <div style="margin-top:1.2rem;text-align:center">
-        <button class="acct-link-btn" onclick="acctShow('av-login')">Back to sign in</button>
-      </div>
-    </div>
+        <!-- Reset password (from email link) -->
+        <div class="acct-view" id="av-reset">
+          <div class="ap-auth-body">
+            <h3 class="acct-title">New password</h3>
+            <p class="acct-sub">Enter your email and new password below</p>
+            <div class="acct-f"><label>Email</label><input type="email" id="rst-email" placeholder="your@email.com" autocomplete="email"></div>
+            <div class="acct-f"><label>New password</label><input type="password" id="rst-pass" placeholder="New password (min 8 characters)" autocomplete="new-password"></div>
+            <div class="acct-f"><label>Confirm password</label><input type="password" id="rst-pass2" placeholder="Confirm new password" autocomplete="new-password"></div>
+            <div class="acct-err" id="rst-err"></div>
+            <div id="rst-msg"></div>
+            <button class="acct-btn" onclick="acctResetPassword()">Set New Password</button>
+            <div class="acct-links-row" style="justify-content:center">
+              <button class="acct-link-btn" onclick="acctShow('av-login')">Back to sign in</button>
+            </div>
+          </div>
+        </div>
 
-    <!-- Dashboard -->
-    <div class="acct-view" id="av-dashboard">
-      <div class="acct-welcome">
-        <div class="acct-welcome-name" id="acct-dash-name"></div>
-        <div class="acct-welcome-sub">Your Westmere account</div>
+        <!-- Email verification notice -->
+        <div class="acct-view" id="av-verify">
+          <div class="ap-auth-body">
+            <h3 class="acct-title">Check your email</h3>
+            <div class="acct-ok-msg" id="av-verify-msg">We&rsquo;ve sent a verification link to your email address. Please check your inbox and click the link to activate your account, then sign in.</div>
+            <div style="margin-top:1.2rem;text-align:center">
+              <button class="acct-link-btn" onclick="acctShow('av-login')">Back to sign in</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /.ap-auth-card -->
+    </div><!-- /#acct-auth-wrap -->
+
+    <!-- Dashboard (full-screen app shell) -->
+    <div id="av-dashboard">
+      <div class="ap-scroll">
+
+        <!-- Bookings page -->
+        <div class="ap-pg on" id="ap-pg-bookings">
+          <div class="ap-pg-title">My Bookings</div>
+          <div class="ap-pg-sub" style="margin-top:.3rem;margin-bottom:.9rem">Upcoming</div>
+          <div class="ap-card"><div class="ap-card-body" id="acct-bookings-upcoming"></div></div>
+          <div class="ap-pg-sub" id="ap-pg-past-lbl" style="display:none;margin-top:1.2rem">Past</div>
+          <div class="ap-card" id="ap-past-card" style="display:none"><div class="ap-card-body" id="acct-bookings-past"></div></div>
+        </div>
+
+        <!-- Invoices page -->
+        <div class="ap-pg" id="ap-pg-invoices">
+          <div class="ap-pg-title">Invoices</div>
+          <div class="ap-card" style="margin-top:.9rem"><div class="ap-card-body" id="acct-invoices-list"></div></div>
+        </div>
+
+        <!-- Profile page -->
+        <div class="ap-pg" id="ap-pg-profile">
+          <div class="ap-pg-title">Profile</div>
+          <div class="ap-card" style="margin-top:.9rem">
+            <div class="ap-card-body">
+              <div class="ap-pf-row"><span class="ap-pf-label">Name</span><span class="ap-pf-val" id="pf-name"></span></div>
+              <div class="ap-pf-row"><span class="ap-pf-label">Email</span><span class="ap-pf-val" id="pf-email"></span></div>
+              <div class="ap-pf-row"><span class="ap-pf-label">Phone</span><span class="ap-pf-val" id="pf-phone"></span></div>
+            </div>
+          </div>
+          <button class="acct-signout" style="margin-top:1.5rem" onclick="acctSignOut()">Sign Out</button>
+        </div>
+
+      </div><!-- /.ap-scroll -->
+
+      <!-- Bottom nav -->
+      <div class="ap-bottom-nav">
+        <button class="ap-bn on" id="apbn-bookings" onclick="apShowPage('bookings')" aria-label="Bookings">
+          <div class="ap-bn-bar"></div>
+          <div class="ap-bn-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+          <span class="ap-bn-label">Bookings</span>
+        </button>
+        <button class="ap-bn" id="apbn-invoices" onclick="apShowPage('invoices')" aria-label="Invoices">
+          <div class="ap-bn-bar"></div>
+          <div class="ap-bn-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+          <span class="ap-bn-label">Invoices</span>
+        </button>
+        <button class="ap-bn" id="apbn-profile" onclick="apShowPage('profile')" aria-label="Profile">
+          <div class="ap-bn-bar"></div>
+          <div class="ap-bn-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+          <span class="ap-bn-label">Profile</span>
+        </button>
       </div>
-      <div class="acct-section-ttl">My Bookings</div>
-      <div id="acct-bookings-list"></div>
-      <div class="acct-section-ttl">My Invoices</div>
-      <div id="acct-invoices-list"></div>
-      <button class="acct-signout" onclick="acctSignOut()">Sign Out</button>
-    </div>
-  </div>
-</div>
+    </div><!-- /#av-dashboard -->
+
+  </div><!-- /#acct-panel -->
+</div><!-- /#acct-overlay -->
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>window.addEventListener('scroll',function(){var n=document.getElementById('nav');if(n)n.classList.toggle('solid',window.scrollY>50);},{passive:true});
 function toggleMenu(){var m=document.getElementById('mmenu');m.classList.toggle('open');document.body.style.overflow=m.classList.contains('open')?'hidden':'';}
@@ -1844,7 +1974,17 @@ if ('serviceWorker' in navigator) {
     return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
+  // Toggle between auth views or the dashboard
   function acctShow(viewId) {
+    var wrap = document.getElementById('acct-auth-wrap');
+    var dash = document.getElementById('av-dashboard');
+    if (viewId === 'av-dashboard') {
+      wrap.style.display = 'none';
+      dash.style.display = 'flex';
+      return;
+    }
+    dash.style.display = 'none';
+    wrap.style.display = 'flex';
     document.querySelectorAll('.acct-view').forEach(function (v) { v.classList.remove('active'); });
     var v = document.getElementById(viewId);
     if (v) v.classList.add('active');
@@ -1852,11 +1992,8 @@ if ('serviceWorker' in navigator) {
   window.acctShow = acctShow;
 
   function openAcctPortal(forceView) {
-    var ov = document.getElementById('acct-overlay');
-    ov.style.display = 'flex';
-    requestAnimationFrame(function () { ov.classList.add('open'); });
+    document.getElementById('acct-overlay').classList.add('open');
     document.body.style.overflow = 'hidden';
-    // If a specific view is requested (e.g. password reset), show it directly
     if (forceView) { acctShow(forceView); return; }
     fetch('/api/auth/me', { credentials: 'include' })
       .then(function (r) { return r.json(); })
@@ -1873,16 +2010,10 @@ if ('serviceWorker' in navigator) {
   window.openAcctPortal = openAcctPortal;
 
   function closeAcctPortal() {
-    var ov = document.getElementById('acct-overlay');
-    ov.classList.remove('open');
-    setTimeout(function () { ov.style.display = 'none'; }, 260);
+    document.getElementById('acct-overlay').classList.remove('open');
     document.body.style.overflow = '';
   }
   window.closeAcctPortal = closeAcctPortal;
-
-  document.getElementById('acct-overlay').addEventListener('click', function (e) {
-    if (e.target === this) closeAcctPortal();
-  });
 
   function _setErr(id, msg) {
     var el = document.getElementById(id);
@@ -1968,7 +2099,7 @@ if ('serviceWorker' in navigator) {
       btn.disabled = false; btn.textContent = 'Send Reset Link';
       msgEl.className = 'acct-ok-msg';
       msgEl.textContent = 'If an account exists for ' + email + ', a reset link has been sent. Please check your inbox.';
-      _resetEmail = email; // Save for auto-login after reset
+      _resetEmail = email;
     })
     .catch(function () {
       btn.disabled = false; btn.textContent = 'Send Reset Link';
@@ -1988,38 +2119,75 @@ if ('serviceWorker' in navigator) {
   }
   window.acctSignOut = acctSignOut;
 
-  function acctLoadDashboard(customer) {
-    var nameEl = document.getElementById('acct-dash-name');
-    if (nameEl) nameEl.textContent = customer.full_name || customer.email;
+  function apShowPage(name) {
+    ['bookings','invoices','profile'].forEach(function (n) {
+      document.getElementById('ap-pg-' + n).classList.toggle('on', n === name);
+      document.getElementById('apbn-' + n).classList.toggle('on', n === name);
+    });
+  }
+  window.apShowPage = apShowPage;
 
-    var bList = document.getElementById('acct-bookings-list');
-    bList.innerHTML = '<div class="acct-empty">Loading\u2026</div>';
+  function _renderBkCard(b) {
+    var d   = b.date ? new Date(b.date) : null;
+    var day = d ? d.getDate() : '';
+    var mon = d ? d.toLocaleString('en-GB', { month: 'short' }) : '';
+    var sc  = 's-' + (b.status || 'pending');
+    var fare = b.fare ? '&pound;' + Number(b.fare).toFixed(2) : '';
+    var bookAgain = (b.status === 'completed')
+      ? '<br><button class="acct-ba-btn" onclick="acctBookAgain(' + JSON.stringify(b.pickup) + ',' + JSON.stringify(b.destination) + ')">Book Again</button>'
+      : '';
+    return '<div class="acct-bk-card">' +
+      '<div class="acct-bk-date"><span class="acct-bk-day">' + day + '</span><span class="acct-bk-mon">' + _esc(mon) + '</span></div>' +
+      '<div class="acct-bk-body">' +
+        '<div class="acct-bk-route">' + _esc(b.pickup) + ' &rarr; ' + _esc(b.destination) + '</div>' +
+        '<div class="acct-bk-meta">' +
+          (b.time ? '<span>' + _esc(b.time) + '</span>' : '') +
+          (b.ref  ? '<span>' + _esc(b.ref)  + '</span>' : '') +
+        '</div>' +
+        '<span class="acct-status ' + sc + '">' + _esc(b.status || 'pending') + '</span>' +
+        bookAgain +
+      '</div>' +
+      (fare ? '<div class="acct-bk-right"><span class="acct-bk-fare">' + fare + '</span></div>' : '') +
+    '</div>';
+  }
+
+  function acctLoadDashboard(customer) {
+    // Profile fields
+    var el;
+    el = document.getElementById('pf-name');  if (el) el.textContent = customer.full_name || '';
+    el = document.getElementById('pf-email'); if (el) el.textContent = customer.email || '';
+    el = document.getElementById('pf-phone'); if (el) el.textContent = customer.phone || '\u2014';
+
+    // Bookings — split into upcoming / past
+    var upEl   = document.getElementById('acct-bookings-upcoming');
+    var pastEl = document.getElementById('acct-bookings-past');
+    var pastLbl  = document.getElementById('ap-pg-past-lbl');
+    var pastCard = document.getElementById('ap-past-card');
+    upEl.innerHTML = '<div class="acct-empty">Loading\u2026</div>';
     fetch('/api/bookings', { credentials: 'include' })
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (!d.ok || !d.bookings || !d.bookings.length) {
-          bList.innerHTML = '<div class="acct-empty">No bookings yet.</div>';
+          upEl.innerHTML = '<div class="acct-empty">No bookings yet.</div>';
           return;
         }
-        bList.innerHTML = d.bookings.map(function (b) {
-          var sc = 's-' + (b.status || 'pending');
-          var bookAgain = b.status === 'completed'
-            ? '<br><button class="acct-ba-btn" onclick="acctBookAgain(' + JSON.stringify(b.pickup) + ',' + JSON.stringify(b.destination) + ')">Book Again</button>'
-            : '';
-          return '<div class="acct-bk-card">' +
-            '<div class="acct-bk-route">' + _esc(b.pickup) + ' &rarr; ' + _esc(b.destination) + '</div>' +
-            '<div class="acct-bk-meta">' +
-              '<span>' + _esc(b.date || '') + (b.time ? ' &middot; ' + _esc(b.time) : '') + '</span>' +
-              (b.fare ? '<span>&pound;' + Number(b.fare).toFixed(2) + '</span>' : '') +
-              (b.ref  ? '<span>' + _esc(b.ref) + '</span>' : '') +
-            '</div>' +
-            '<span class="acct-status ' + sc + '">' + _esc(b.status || 'pending') + '</span>' +
-            bookAgain +
-          '</div>';
-        }).join('');
+        var now = new Date(); now.setHours(0, 0, 0, 0);
+        var upcoming = [], past = [];
+        d.bookings.forEach(function (b) {
+          var bd = b.date ? new Date(b.date) : null;
+          if (bd && bd < now && b.status !== 'confirmed' && b.status !== 'active') past.push(b);
+          else upcoming.push(b);
+        });
+        upEl.innerHTML = upcoming.length ? upcoming.map(_renderBkCard).join('') : '<div class="acct-empty">No upcoming bookings.</div>';
+        if (past.length) {
+          pastEl.innerHTML = past.map(_renderBkCard).join('');
+          if (pastLbl)  pastLbl.style.display  = '';
+          if (pastCard) pastCard.style.display  = '';
+        }
       })
-      .catch(function () { bList.innerHTML = '<div class="acct-empty">Could not load bookings.</div>'; });
+      .catch(function () { upEl.innerHTML = '<div class="acct-empty">Could not load bookings.</div>'; });
 
+    // Invoices
     var iList = document.getElementById('acct-invoices-list');
     iList.innerHTML = '<div class="acct-empty">Loading\u2026</div>';
     fetch('/api/customer/invoices', { credentials: 'include' })
@@ -2034,7 +2202,7 @@ if ('serviceWorker' in navigator) {
           var paidLbl = inv.paid ? 'Paid' : 'Unpaid';
           return '<div class="acct-inv-card">' +
             '<div>' +
-              '<div class="acct-inv-no">' + _esc(inv.invoice_no || '') + '</div>' +
+              '<div class="acct-inv-no">'  + _esc(inv.invoice_no || '') + '</div>' +
               '<div class="acct-inv-amt">&pound;' + (inv.total ? Number(inv.total).toFixed(2) : '0.00') + '</div>' +
               '<div class="acct-inv-date">' + _esc(inv.issued_date || inv.created_at || '') + '</div>' +
               '<a class="acct-inv-dl" href="/api/public/invoice/' + encodeURIComponent(inv.invoice_no || '') + '/pdf" target="_blank" rel="noopener">Download PDF</a>' +
@@ -2070,17 +2238,17 @@ if ('serviceWorker' in navigator) {
   var _resetToken = null;
   var _resetEmail = '';
   function acctResetPassword() {
-    var pass = (document.getElementById('rst-pass') || {}).value || '';
+    var pass  = (document.getElementById('rst-pass')  || {}).value || '';
     var pass2 = (document.getElementById('rst-pass2') || {}).value || '';
     var errEl = document.getElementById('rst-err');
     var msgEl = document.getElementById('rst-msg');
     if (errEl) errEl.textContent = '';
     if (msgEl) msgEl.innerHTML = '';
     if (pass.length < 8) { if (errEl) errEl.textContent = 'Password must be at least 8 characters'; return; }
-    if (pass !== pass2) { if (errEl) errEl.textContent = 'Passwords do not match'; return; }
-    if (!_resetToken) { if (errEl) errEl.textContent = 'Reset link is invalid or expired. Please request a new one.'; return; }
+    if (pass !== pass2)  { if (errEl) errEl.textContent = 'Passwords do not match'; return; }
+    if (!_resetToken)    { if (errEl) errEl.textContent = 'Reset link is invalid or expired. Please request a new one.'; return; }
     var btn = document.querySelector('#av-reset .acct-btn');
-    if (btn) { btn.disabled = true; btn.textContent = 'Updating…'; }
+    if (btn) { btn.disabled = true; btn.textContent = 'Updating\u2026'; }
     fetch('/api/auth/customer/reset-password', {
       method: 'POST', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -2088,23 +2256,18 @@ if ('serviceWorker' in navigator) {
     }).then(function (r) { return r.json(); }).then(function (d) {
       if (btn) { btn.disabled = false; btn.textContent = 'Set New Password'; }
       if (d.ok) {
-        if (msgEl) msgEl.innerHTML = '<div class="acct-ok-msg">Password updated! Signing you in…</div>';
+        if (msgEl) msgEl.innerHTML = '<div class="acct-ok-msg">Password updated! Signing you in\u2026</div>';
         var resetEmail = (document.getElementById('rst-email') || {}).value || _resetEmail || '';
         _resetToken = null;
         if (window.history.replaceState) window.history.replaceState({}, '', window.location.pathname);
-        // Auto sign-in with the new password
         if (resetEmail) {
           fetch('/api/auth/customer/login', {
             method: 'POST', credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: resetEmail, password: pass })
           }).then(function (r) { return r.json(); }).then(function (ld) {
-            if (ld.ok) {
-              acctShow('av-dashboard');
-              acctLoadDashboard(ld.customer);
-            } else {
-              acctShow('av-login');
-            }
+            if (ld.ok) { acctShow('av-dashboard'); acctLoadDashboard(ld.customer); }
+            else { acctShow('av-login'); }
           }).catch(function () { acctShow('av-login'); });
         } else {
           setTimeout(function () { acctShow('av-login'); }, 1500);
@@ -2114,22 +2277,19 @@ if ('serviceWorker' in navigator) {
       }
     }).catch(function () {
       if (btn) { btn.disabled = false; btn.textContent = 'Set New Password'; }
-      if (errEl) errEl.textContent = 'Network error — please try again';
+      if (errEl) errEl.textContent = 'Network error \u2014 please try again';
     });
   }
   window.acctResetPassword = acctResetPassword;
 
   // Auto-open account panel if reset_token is in the URL
-  var urlParams = new URLSearchParams(window.location.search);
+  var urlParams  = new URLSearchParams(window.location.search);
   var resetParam = urlParams.get('reset_token');
   if (resetParam) {
     _resetToken = resetParam;
-    // Skip intro animation and open reset form directly
     var intro = document.getElementById('intro');
     if (intro) { intro.style.display = 'none'; }
-    setTimeout(function () {
-      openAcctPortal('av-reset');
-    }, 300);
+    setTimeout(function () { openAcctPortal('av-reset'); }, 300);
   }
 })();
 </script>
