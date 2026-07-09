@@ -703,6 +703,47 @@ function migrate() {
       }
     }
   } catch(e) { console.error('[DB] pre-payment column migration failed:', e.message); }
+
+  // Feature 1: Calendar trip miles — mileage from non-booking calendar events
+  // (e.g. Uber runs, school runs for other operators) so the owner gets a full
+  // picture of their total mileage for HMRC / tax purposes.
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS calendar_trip_miles (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_id    TEXT    UNIQUE,
+        event_date  TEXT,
+        description TEXT,
+        trip_miles  REAL,
+        created_at  TEXT    DEFAULT (datetime('now'))
+      )
+    `);
+  } catch(e) { console.error('[DB] calendar_trip_miles table failed:', e.message); }
+
+  // Feature 2: Estimated drop-off time — computed from OSRM routing duration
+  // at booking creation time. Stored as HH:MM so it can be displayed alongside
+  // the pickup time on booking cards.
+  try {
+    const bInfo = db.prepare("PRAGMA table_info(bookings)").all();
+    if (!bInfo.find(c => c.name === 'est_arrival')) {
+      db.exec(`ALTER TABLE bookings ADD COLUMN est_arrival TEXT`);
+      console.log('[DB] Added est_arrival column to bookings');
+    }
+  } catch(e) { console.error('[DB] est_arrival migration failed:', e.message); }
+
+  // Feature 4: Web Push subscriptions — stores browser PushSubscription objects
+  // so the server can notify the owner when a new booking arrives.
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        endpoint   TEXT    UNIQUE NOT NULL,
+        p256dh     TEXT    NOT NULL,
+        auth       TEXT    NOT NULL,
+        created_at TEXT    DEFAULT (datetime('now'))
+      )
+    `);
+  } catch(e) { console.error('[DB] push_subscriptions table failed:', e.message); }
 }
 
 function seedDefaults() {
