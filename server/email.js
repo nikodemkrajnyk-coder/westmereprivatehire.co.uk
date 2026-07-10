@@ -232,13 +232,13 @@ async function sendCustomerConfirmed(booking) {
     payBlock = `
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:26px 0 4px">
     <tr><td align="center" style="padding-bottom:10px">
-      <a href="${payUrl}" style="display:block;padding:13px 24px;background:${GOLD};color:${INK};text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:600;letter-spacing:.03em;text-align:center">Pay Now — Apple Pay, Google Pay, or Card</a>
+      <a href="${payUrl}" style="display:block;padding:13px 24px;background:transparent;color:${INK};text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:600;letter-spacing:.03em;text-align:center;border:1.5px solid ${INK}">Pay Now &mdash; Apple Pay, Google Pay, or Card</a>
     </td></tr>
     <tr><td align="center">
-      <a href="${cashUrl}" style="display:block;padding:13px 24px;background:transparent;color:${INK};text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:600;letter-spacing:.03em;text-align:center;border:1.5px solid ${GOLD}">Pay on the Day</a>
+      <a href="${cashUrl}" style="display:block;padding:13px 24px;background:transparent;color:${INK};text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:600;letter-spacing:.03em;text-align:center;border:1.5px solid ${INK}">Cash</a>
     </td></tr>
   </table>
-  <p style="margin:12px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_MUTED};font-style:italic;line-height:1.55;text-align:center">Pay ${fareStr} securely now, or settle the fare with your driver on the day by cash or card.</p>`;
+  <p style="margin:12px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_MUTED};font-style:italic;line-height:1.55;text-align:center">Pay ${fareStr} securely now, or settle with your driver on the day.</p>`;
   }
 
   const body = `
