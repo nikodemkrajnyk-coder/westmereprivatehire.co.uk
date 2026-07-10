@@ -10,13 +10,28 @@ const { getDb } = require('./db');
 const { sendAdminAlert } = require('./email');
 const { sendAdminBookingWhatsApp } = require('./whatsapp');
 const { createPaymentIntent, isConfigured: stripeConfigured } = require('./stripe');
-const { computeSuggestedFare, _fareGeocode, _fareRoute } = require('./fare-engine');
+const { computeSuggestedFare } = require('./fare-engine');
 const gcal = require('./google-calendar');
 const intake = require('./intake');
 const events = require('./events');
-const push = require('./push');
 let autoFile;
 try { autoFile = require('./auto-file'); } catch(e) { autoFile = { fileBooking(){} }; console.error('[AUTOFILE] Module failed:', e.message); }
+
+// ── UK timezone helper ───────────────────────────────────────────────────
+function ukNow() {
+  const p = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/London',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+  }).formatToParts(new Date()).reduce((o, p) => { o[p.type] = p.value; return o; }, {});
+  return {
+    year: parseInt(p.year), month: parseInt(p.month), day: parseInt(p.day),
+    hour: parseInt(p.hour), minute: parseInt(p.minute), second: parseInt(p.second),
+    dateStr: `${p.year}-${p.month}-${p.day}`,
+    timeStr: `${p.hour}:${p.minute}`,
+    dayOfWeek: new Date(new Date().toLocaleString('en-US', {timeZone:'Europe/London'})).getDay()
+  };
+}
 
 const router = express.Router();
 
@@ -82,7 +97,7 @@ router.post('/book', async (req, res) => {
     }
 
     // Default date to today if not provided
-    const bookingDate = date || new Date().toISOString().split('T')[0];
+    const bookingDate = date || ukNow().dateStr;
 
     // Reject bookings in the past — if a customer picks a date that has
     // already passed, or today with a time that has already gone by, bail
@@ -347,38 +362,6 @@ router.post('/book', async (req, res) => {
       payment: payment || 'pending', fare: finalFare || null,
       suggested_fare: suggestedFare
     });
-
-    // Feature 2: Calculate estimated arrival time + trip_miles in background.
-    (async () => {
-      try {
-        const [gc1, gc2] = await Promise.all([_fareGeocode(pickup), _fareGeocode(destination)]);
-        if (gc1 && gc2) {
-          const rt = await _fareRoute(gc1.lat, gc1.lon, gc2.lat, gc2.lon);
-          if (rt) {
-            const miles = Math.round(rt.distance / 1609.34 * 10) / 10;
-            let estArrival = null;
-            if (storedTime && storedTime !== 'ASAP' && rt.duration) {
-              const tm = storedTime.match(/^(\d{1,2}):(\d{2})/);
-              if (tm) {
-                const arrMins = (+tm[1]) * 60 + (+tm[2]) + Math.round(rt.duration / 60);
-                const arrH = Math.floor(arrMins / 60) % 24;
-                const arrM = arrMins % 60;
-                estArrival = String(arrH).padStart(2, '0') + ':' + String(arrM).padStart(2, '0');
-              }
-            }
-            db.prepare('UPDATE bookings SET trip_miles = ?, est_arrival = ? WHERE id = ?')
-              .run(miles, estArrival, result.lastInsertRowid);
-          }
-        }
-      } catch (_) {}
-    })();
-
-    // Feature 4: Send Web Push notification to subscribed owner browsers.
-    push.sendToAll({
-      title: 'New booking request',
-      body: (name || 'Guest') + ' · ' + (pickup || '') + ' → ' + (destination || '') + ' · ' + (bookingDate || '') + ' ' + (storedTime || 'ASAP'),
-      tag: 'booking-' + ref
-    }).catch(() => {});
 
     // Auto-file to organized folder structure (non-blocking)
     const fullBooking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(result.lastInsertRowid);
