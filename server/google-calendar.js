@@ -248,7 +248,7 @@ function bookingToEvent(booking) {
   } else {
     // All-day if no time
     return {
-      summary: `Pickup: ${_tinyAddr(booking.pickup) || '?'} → ${_tinyAddr(booking.destination) || '?'}`,
+      summary: `${_tinyAddr(booking.pickup) || '?'} → ${_tinyAddr(booking.destination) || '?'}`,
       description: buildDescription(booking),
       start: { date: booking.date },
       end: { date: booking.date }
@@ -256,7 +256,7 @@ function bookingToEvent(booking) {
   }
 
   return {
-    summary: `Pickup: ${_tinyAddr(booking.pickup) || '?'} → ${_tinyAddr(booking.destination) || '?'}`,
+    summary: `${_tinyAddr(booking.pickup) || '?'} → ${_tinyAddr(booking.destination) || '?'}`,
     description: buildDescription(booking),
     location: _shortAddr(booking.pickup) || booking.pickup || '',
     start: { dateTime: startIso, timeZone: tz },
