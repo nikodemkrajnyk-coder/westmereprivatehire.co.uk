@@ -2136,6 +2136,15 @@ if ('serviceWorker' in navigator) {
     var bookAgain = (b.status === 'completed')
       ? '<br><button class="acct-ba-btn" onclick="acctBookAgain(' + JSON.stringify(b.pickup) + ',' + JSON.stringify(b.destination) + ')">Book Again</button>'
       : '';
+    // Payment info
+    var payInfo = '';
+    if (b.paid_at) {
+      var paidDate = b.paid_at.replace('T',' ').slice(0,16);
+      var payMethod = b.payment === 'card' ? 'Card' : b.payment === 'cash' ? 'Cash' : (b.payment || '');
+      payInfo = '<div style="font-size:.6rem;color:#2D6E47;margin-top:.2rem">Paid ' + fare + ' · ' + _esc(payMethod) + ' · ' + _esc(paidDate) + '</div>';
+    } else if (b.fare && b.status !== 'cancelled') {
+      payInfo = '<div style="font-size:.6rem;color:rgba(17,29,44,.4);margin-top:.2rem">Awaiting payment · ' + fare + '</div>';
+    }
     return '<div class="acct-bk-card">' +
       '<div class="acct-bk-date"><span class="acct-bk-day">' + day + '</span><span class="acct-bk-mon">' + _esc(mon) + '</span></div>' +
       '<div class="acct-bk-body">' +
@@ -2145,6 +2154,7 @@ if ('serviceWorker' in navigator) {
           (b.ref  ? '<span>' + _esc(b.ref)  + '</span>' : '') +
         '</div>' +
         '<span class="acct-status ' + sc + '">' + _esc(b.status || 'pending') + '</span>' +
+        payInfo +
         bookAgain +
       '</div>' +
       (fare ? '<div class="acct-bk-right"><span class="acct-bk-fare">' + fare + '</span></div>' : '') +
