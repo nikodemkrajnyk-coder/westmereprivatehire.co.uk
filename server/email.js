@@ -929,10 +929,57 @@ async function sendRecommendation(recipientEmail) {
   return ok;
 }
 
+// ── Partnership outreach email ───────────────────────────────────────────
+// Professional introduction to other private hire operators, offering
+// subcontracting support during busy periods.
+async function sendPartnershipOutreach(recipientEmail, companyName) {
+  if (!recipientEmail) return false;
+  const contactName = companyName || 'there';
+
+  const body = `
+  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Introduction</p>
+  <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(contactName)},</p>
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">I hope this message finds you well. My name is Nikodem Krajnyk and I am the owner and operator of <strong style="color:${INK}">Westmere Executive Private Hire</strong>, a licensed chauffeur service based in Sussex.</p>
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">I&rsquo;m reaching out to introduce myself and to offer my services should you ever find yourself in need of additional driver support during busy periods, overflow work, or when covering a wider area. I understand the demands of running a private hire business and I&rsquo;m always happy to help fellow operators.</p>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;border-top:1px solid ${HAIRLINE};border-bottom:1px solid ${HAIRLINE}">
+    <tr><td style="padding:14px 0 4px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">What I offer</td></tr>
+    <tr><td style="padding:4px 0;font-family:Georgia,serif;font-size:13px;color:${INK};line-height:1.7">&bull; Executive saloon vehicle (Tesla Model S)</td></tr>
+    <tr><td style="padding:4px 0;font-family:Georgia,serif;font-size:13px;color:${INK};line-height:1.7">&bull; Fully licensed by Lewes District Council</td></tr>
+    <tr><td style="padding:4px 0;font-family:Georgia,serif;font-size:13px;color:${INK};line-height:1.7">&bull; Professional, reliable, well-presented</td></tr>
+    <tr><td style="padding:4px 0;font-family:Georgia,serif;font-size:13px;color:${INK};line-height:1.7">&bull; Airport transfers (Gatwick, Heathrow, Stansted, Luton, Southampton, London City)</td></tr>
+    <tr><td style="padding:4px 0;font-family:Georgia,serif;font-size:13px;color:${INK};line-height:1.7">&bull; Corporate &amp; long-distance journeys across Sussex, Surrey &amp; London</td></tr>
+    <tr><td style="padding:4px 0 14px;font-family:Georgia,serif;font-size:13px;color:${INK};line-height:1.7">&bull; Available for subcontract work at competitive rates</td></tr>
+  </table>
+
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">I&rsquo;d welcome the opportunity to discuss how we might work together. Whether it&rsquo;s a one-off job or ongoing support, I&rsquo;m flexible and dependable.</p>
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Please feel free to get in touch at any time &mdash; I&rsquo;d be delighted to hear from you.</p>
+
+  <div style="text-align:center;margin:22px 0 8px">
+    <a href="https://westmereprivatehire.co.uk" style="display:inline-block;padding:13px 32px;background:${GOLD};color:${INK};text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:600;letter-spacing:.03em">Visit Our Website</a>
+  </div>
+
+  <p style="margin:20px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">With warm regards,</p>
+  <p style="margin:4px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65"><strong>Nikodem Krajnyk</strong><br>
+  <span style="color:${INK_SOFT}">Owner &amp; Operator</span><br>
+  <span style="color:${INK_SOFT}">Westmere Executive Private Hire</span></p>
+  <p style="margin:8px 0 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:${INK_MUTED};line-height:1.6">
+  <a href="tel:+447930342593" style="color:${GOLD};text-decoration:none">07930 342 593</a> &nbsp;&middot;&nbsp;
+  <a href="mailto:westmereprivatehire@gmail.com" style="color:${GOLD};text-decoration:none">westmereprivatehire@gmail.com</a><br>
+  66 High Street, Lewes, BN7 1XG &nbsp;&middot;&nbsp; Licensed by Lewes District Council</p>`;
+
+  const html = emailShell(body);
+  const subject = 'Introduction — Westmere Executive Private Hire · Driver Support Available';
+  const preheader = 'Licensed executive chauffeur available for subcontract work across Sussex';
+  const ok = await sendEmail(recipientEmail, subject, html, 'Westmere Private Hire', preheader);
+  if (ok) console.log('[EMAIL] Partnership outreach sent to', recipientEmail);
+  return ok;
+}
+
 module.exports = {
   sendCustomerConfirmation, sendCustomerConfirmed, sendCustomerEstimate, sendAdminAlert,
   sendCustomerWelcome, sendCustomerInvoice, sendBespokeInvoice, sendInvoiceReminder,
   sendCustomerCancellation, sendDriverStatement, sendDriverWelcome,
   sendVerificationEmail, sendPasswordResetEmail, sendAdminPasswordResetEmail,
-  sendRecommendation, sendEmail, isConfigured
+  sendRecommendation, sendPartnershipOutreach, sendEmail, isConfigured
 };
