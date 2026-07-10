@@ -13,6 +13,23 @@ try { autoFile = require('./auto-file'); } catch(e) { autoFile = { fileBooking()
 
 const router = express.Router();
 
+// ── UK timezone helper ───────────────────────────────────────────────────
+// Server runs in UTC on Railway; all business logic must use Europe/London.
+function ukNow() {
+  const p = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/London',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+  }).formatToParts(new Date()).reduce((o, p) => { o[p.type] = p.value; return o; }, {});
+  return {
+    year: parseInt(p.year), month: parseInt(p.month), day: parseInt(p.day),
+    hour: parseInt(p.hour), minute: parseInt(p.minute), second: parseInt(p.second),
+    dateStr: `${p.year}-${p.month}-${p.day}`,
+    timeStr: `${p.hour}:${p.minute}`,
+    dayOfWeek: new Date(new Date().toLocaleString('en-US', {timeZone:'Europe/London'})).getDay()
+  };
+}
+
 // ── Bookings ────────────────────────────────────────────────────────────
 
 // List bookings (admin sees all, driver sees assigned, customer sees own)
@@ -117,7 +134,7 @@ router.post('/bookings', (req, res) => {
       .run(req.auth.type, req.auth.id, 'booking_created', ref, req.ip);
   } catch (e) { /* audit failure must not block the response */ }
 
-  // Calculate trip miles + estimated arrival in background (mileage tracking / Feature 2)
+  // Calculate trip miles in background (for mileage tracking)
   (async () => {
     try {
       const { _fareGeocode, _fareRoute } = require('./fare-engine');
@@ -126,18 +143,7 @@ router.post('/bookings', (req, res) => {
         const rt = await _fareRoute(gc1.lat, gc1.lon, gc2.lat, gc2.lon);
         if (rt) {
           const miles = Math.round(rt.distance / 1609.34 * 10) / 10;
-          let estArrival = null;
-          if (time && time !== 'ASAP' && rt.duration) {
-            const tm = String(time).match(/^(\d{1,2}):(\d{2})/);
-            if (tm) {
-              const arrMins = (+tm[1]) * 60 + (+tm[2]) + Math.round(rt.duration / 60);
-              const arrH = Math.floor(arrMins / 60) % 24;
-              const arrM = arrMins % 60;
-              estArrival = String(arrH).padStart(2, '0') + ':' + String(arrM).padStart(2, '0');
-            }
-          }
-          db.prepare('UPDATE bookings SET trip_miles = ?, est_arrival = ? WHERE id = ?')
-            .run(miles, estArrival, result.lastInsertRowid);
+          db.prepare('UPDATE bookings SET trip_miles = ? WHERE id = ?').run(miles, result.lastInsertRowid);
         }
       }
     } catch (e) { console.error('[API] trip_miles calc failed:', e.message); }
@@ -197,7 +203,7 @@ router.patch('/bookings/:id', (req, res) => {
     return res.status(403).json({ error: 'You can only update your own bookings' });
   }
 
-  const allowed = ['status', 'driver_id', 'fare', 'notes', 'payment', 'passenger_name', 'passenger_phone', 'passenger_email', 'pickup', 'destination', 'date', 'time', 'passengers', 'customer_id', 'paid_at', 'trip_miles', 'est_arrival'];
+  const allowed = ['status', 'driver_id', 'fare', 'notes', 'payment', 'passenger_name', 'passenger_phone', 'passenger_email', 'pickup', 'destination', 'date', 'time', 'passengers', 'customer_id', 'paid_at', 'trip_miles'];
   const updates = [];
   const values = [];
   for (const key of allowed) {
@@ -715,10 +721,10 @@ router.post('/customers/:id/invoice', async (req, res) => {
 
   const invoiceNo = nextInvoiceNo(db, invoicePrefix);
 
-  const due = new Date();
-  due.setDate(due.getDate() + 14);
-  const dueDate = due.toISOString().slice(0, 10);
-  const issuedDate = new Date().toISOString().slice(0, 10);
+  const issuedDate = ukNow().dateStr;
+  const _due = new Date(issuedDate + 'T00:00:00');
+  _due.setDate(_due.getDate() + 14);
+  const dueDate = _due.toISOString().slice(0, 10);
 
   let settings = {};
   try {
@@ -819,14 +825,14 @@ router.post('/invoices/bespoke', async (req, res) => {
   }
 
   const db = getDb();
-  const now = new Date();
-  const invoicePrefix = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0');
+  const _ukn = ukNow();
+  const invoicePrefix = String(_ukn.year) + String(_ukn.month).padStart(2, '0');
   const invoiceNo = nextInvoiceNo(db, invoicePrefix);
 
-  const due = new Date();
-  due.setDate(due.getDate() + (parseInt(due_days, 10) || 14));
-  const dueDate = due.toISOString().slice(0, 10);
-  const issuedDate = now.toISOString().slice(0, 10);
+  const issuedDate = _ukn.dateStr;
+  const _due = new Date(issuedDate + 'T00:00:00');
+  _due.setDate(_due.getDate() + (parseInt(due_days, 10) || 14));
+  const dueDate = _due.toISOString().slice(0, 10);
 
   let settings = {};
   try {
@@ -1638,10 +1644,9 @@ router.get('/drivers/:id/earnings', (req, res) => {
   // Default range: current week (Mon–Sun) if nothing provided.
   let from = req.query.from, to = req.query.to;
   if (!from || !to) {
-    const now = new Date();
-    const day = now.getDay(); // 0=Sun
-    const diffToMon = (day + 6) % 7;
-    const mon = new Date(now); mon.setDate(now.getDate() - diffToMon); mon.setHours(0,0,0,0);
+    const { dateStr: _today, dayOfWeek: _dow } = ukNow();
+    const _diffToMon = (_dow + 6) % 7; // Mon=0
+    const mon = new Date(_today + 'T00:00:00'); mon.setDate(mon.getDate() - _diffToMon);
     const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
     from = mon.toISOString().slice(0, 10);
     to   = sun.toISOString().slice(0, 10);
@@ -1703,9 +1708,9 @@ router.get('/me/earnings', (req, res) => {
   const db = getDb();
   let from = req.query.from, to = req.query.to;
   if (!from || !to) {
-    const now = new Date();
-    const day = now.getDay(); const diffToMon = (day + 6) % 7;
-    const mon = new Date(now); mon.setDate(now.getDate() - diffToMon); mon.setHours(0,0,0,0);
+    const { dateStr: _today2, dayOfWeek: _dow2 } = ukNow();
+    const _diffToMon2 = (_dow2 + 6) % 7; // Mon=0
+    const mon = new Date(_today2 + 'T00:00:00'); mon.setDate(mon.getDate() - _diffToMon2);
     const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
     from = mon.toISOString().slice(0, 10); to = sun.toISOString().slice(0, 10);
   }
@@ -1826,7 +1831,7 @@ router.get('/stats', (req, res) => {
   }
 
   const db = getDb();
-  const today = new Date().toISOString().split('T')[0];
+  const today = ukNow().dateStr;
 
   const totalBookings = db.prepare('SELECT COUNT(*) as c FROM bookings').get().c;
   const todayBookings = db.prepare('SELECT COUNT(*) as c FROM bookings WHERE date = ?').get(today).c;
@@ -1857,27 +1862,17 @@ router.get('/mileage', (req, res) => {
   const db = getDb();
 
   // UK timezone dates
-  const ukParts = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit'
-  }).formatToParts(new Date()).reduce((o, p) => { o[p.type] = p.value; return o; }, {});
-  const today = `${ukParts.year}-${ukParts.month}-${ukParts.day}`;
-  const now = new Date();
-  const dayOfWeek = (now.getDay() + 6) % 7; // Mon=0
-  const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - dayOfWeek);
-  const weekStartStr = weekStart.toISOString().split('T')[0];
+  const { dateStr: today, dayOfWeek: _milDow, year: yr, month: mo, day: dy } = ukNow();
+  const _milDiffToMon = (_milDow + 6) % 7; // Mon=0
+  const weekStart = new Date(today + 'T00:00:00');
+  weekStart.setDate(weekStart.getDate() - _milDiffToMon);
+  const weekStartStr = weekStart.toISOString().slice(0, 10);
   const monthStart = today.slice(0, 7) + '-01';
-
-  // Tax year: 6 Apr to 5 Apr
-  const yr = parseInt(ukParts.year, 10);
-  const mo = parseInt(ukParts.month, 10);
-  const dy = parseInt(ukParts.day, 10);
   const taxYearStart = (mo > 4 || (mo === 4 && dy >= 6))
     ? `${yr}-04-06`
     : `${yr - 1}-04-06`;
 
   const base = "SELECT COALESCE(SUM(trip_miles),0) as trip, COALESCE(SUM(dead_miles_km/1.60934),0) as dead, COUNT(*) as jobs FROM bookings WHERE status != 'cancelled' AND trip_miles IS NOT NULL";
-  const calBase = "SELECT COALESCE(SUM(trip_miles),0) as cal FROM calendar_trip_miles WHERE trip_miles IS NOT NULL";
 
   const mToday   = db.prepare(`${base} AND date = ?`).get(today);
   const mWeek    = db.prepare(`${base} AND date >= ? AND date <= ?`).get(weekStartStr, today);
@@ -1885,35 +1880,16 @@ router.get('/mileage', (req, res) => {
   const mTaxYear = db.prepare(`${base} AND date >= ?`).get(taxYearStart);
   const mAll     = db.prepare(base).get();
 
-  // Calendar miles (Feature 1) — from non-booking Google Calendar trips
-  const cToday   = db.prepare(`${calBase} AND event_date = ?`).get(today);
-  const cWeek    = db.prepare(`${calBase} AND event_date >= ? AND event_date <= ?`).get(weekStartStr, today);
-  const cMonth   = db.prepare(`${calBase} AND event_date >= ?`).get(monthStart);
-  const cTaxYear = db.prepare(`${calBase} AND event_date >= ?`).get(taxYearStart);
-  const cAll     = db.prepare(calBase).get();
-
-  const fmt = (r, cal) => {
-    const booking = Math.round(r.trip * 10) / 10;
-    const calMi   = Math.round(((cal && cal.cal) || 0) * 10) / 10;
-    const dead    = Math.round(r.dead * 10) / 10;
-    return {
-      trip_miles:     booking,    // backward-compat alias
-      booking_miles:  booking,
-      calendar_miles: calMi,
-      dead_miles:     dead,
-      total_miles:    Math.round((booking + calMi + dead) * 10) / 10,
-      jobs:           r.jobs
-    };
-  };
+  const fmt = r => ({ trip_miles: Math.round(r.trip * 10) / 10, dead_miles: Math.round(r.dead * 10) / 10, total_miles: Math.round((r.trip + r.dead) * 10) / 10, jobs: r.jobs });
 
   res.json({
     ok: true,
     mileage: {
-      today:    fmt(mToday,   cToday),
-      week:     fmt(mWeek,    cWeek),
-      month:    fmt(mMonth,   cMonth),
-      tax_year: { ...fmt(mTaxYear, cTaxYear), start: taxYearStart },
-      all_time: fmt(mAll,     cAll)
+      today: fmt(mToday),
+      week: fmt(mWeek),
+      month: fmt(mMonth),
+      tax_year: { ...fmt(mTaxYear), start: taxYearStart },
+      all_time: fmt(mAll)
     }
   });
 });
@@ -1954,123 +1930,15 @@ router.post('/mileage/backfill', async (req, res) => {
   res.json({ ok: true, total: rows.length, updated, failed });
 });
 
-// ── Calendar mileage backfill — Feature 1 ───────────────────────────────
-// Scans Google Calendar events from the start of the current tax year and
-// stores road distances for events that look like trips (contain → or have a
-// location). Idempotent — events already in calendar_trip_miles are skipped.
-router.post('/mileage/calendar-backfill', async (req, res) => {
-  if (!['admin', 'owner'].includes(req.auth.role)) {
-    return res.status(403).json({ error: 'Access denied' });
-  }
-  const db = getDb();
-  const { _fareGeocode, _fareRoute } = require('./fare-engine');
-
-  const ukParts = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit'
-  }).formatToParts(new Date()).reduce((o, p) => { o[p.type] = p.value; return o; }, {});
-  const yr = parseInt(ukParts.year, 10);
-  const mo = parseInt(ukParts.month, 10);
-  const dy = parseInt(ukParts.day, 10);
-  const taxYearStart = (mo > 4 || (mo === 4 && dy >= 6)) ? `${yr}-04-06` : `${yr - 1}-04-06`;
-  const today = `${ukParts.year}-${ukParts.month}-${ukParts.day}`;
-
-  let events = [];
-  try {
-    events = await gcal.listExternalEvents({ from: taxYearStart, to: today });
-  } catch (e) {
-    return res.status(502).json({ error: 'Could not fetch calendar events: ' + e.message });
-  }
-
-  let processed = 0, skipped = 0;
-  for (const ev of events) {
-    if (ev.allDay) { skipped++; continue; }
-    const existing = db.prepare('SELECT id FROM calendar_trip_miles WHERE event_id = ?').get(ev.id);
-    if (existing) { skipped++; continue; }
-
-    const text = (ev.title || '') + ' ' + (ev.notes || '');
-    const hasArrow = /→|->/.test(text);
-    const hasLocation = !!(ev.location && ev.location.trim());
-    if (!hasArrow && !hasLocation) { skipped++; continue; }
-
-    let pickup = null, destination = null;
-    if (hasArrow) {
-      const am = text.match(/^(.+?)(?:→|-{0,1}>)(.+?)(?:\n|$)/);
-      if (am) { pickup = am[1].trim(); destination = am[2].trim().split(/\n/)[0].trim(); }
-    }
-    if (!pickup && hasLocation) {
-      pickup = 'Horsham, West Sussex';
-      destination = ev.location.trim();
-    }
-    if (!pickup || !destination) { skipped++; continue; }
-
-    try {
-      const [gc1, gc2] = await Promise.all([_fareGeocode(pickup), _fareGeocode(destination)]);
-      if (!gc1 || !gc2) { skipped++; continue; }
-      const rt = await _fareRoute(gc1.lat, gc1.lon, gc2.lat, gc2.lon);
-      if (!rt) { skipped++; continue; }
-      const miles = Math.round(rt.distance / 1609.34 * 10) / 10;
-      const eventDate = (ev.start || today).slice(0, 10);
-      const desc = ev.title + ' (' + pickup + ' → ' + destination + ')';
-      db.prepare('INSERT OR IGNORE INTO calendar_trip_miles (event_id, event_date, description, trip_miles) VALUES (?, ?, ?, ?)')
-        .run(ev.id, eventDate, desc, miles);
-      processed++;
-    } catch (_) { skipped++; }
-  }
-
-  res.json({ ok: true, processed, skipped, total: events.length });
-});
-
-// ── Push notifications — Feature 4 ──────────────────────────────────────
-// Return the VAPID public key so the browser can create a push subscription.
-router.get('/push/vapid-key', (req, res) => {
-  const key = process.env.VAPID_PUBLIC_KEY;
-  if (!key) return res.status(503).json({ error: 'Push notifications not configured — set VAPID_PUBLIC_KEY env var' });
-  res.json({ ok: true, publicKey: key });
-});
-
-// Store a PushSubscription object from the owner's browser.
-router.post('/push/subscribe', (req, res) => {
-  const { endpoint, keys } = req.body || {};
-  if (!endpoint || !keys || !keys.p256dh || !keys.auth) {
-    return res.status(400).json({ error: 'Invalid subscription — endpoint and keys required' });
-  }
-  try {
-    const db = getDb();
-    db.prepare(`
-      INSERT INTO push_subscriptions (endpoint, p256dh, auth)
-      VALUES (?, ?, ?)
-      ON CONFLICT(endpoint) DO UPDATE SET p256dh = excluded.p256dh, auth = excluded.auth
-    `).run(endpoint, keys.p256dh, keys.auth);
-    res.json({ ok: true });
-  } catch (e) {
-    console.error('[PUSH] subscribe failed:', e.message);
-    res.status(500).json({ error: 'Failed to save subscription' });
-  }
-});
-
-// Remove a push subscription (browser unsubscribed or user opted out).
-router.delete('/push/subscribe', (req, res) => {
-  const { endpoint } = req.body || {};
-  if (!endpoint) return res.status(400).json({ error: 'endpoint required' });
-  try {
-    const db = getDb();
-    db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').run(endpoint);
-    res.json({ ok: true });
-  } catch (e) {
-    res.status(500).json({ error: 'Failed to remove subscription' });
-  }
-});
-
 // ── Analytics ────────────────────────────────────────────────────────────
 router.get('/analytics', (req, res) => {
   if (!['admin', 'owner'].includes(req.auth.role)) return res.status(403).json({ error: 'Access denied' });
   const db = getDb();
-  const now = new Date();
-  const today = now.toISOString().split('T')[0];
-  const dayOfWeek = (now.getDay() + 6) % 7; // Mon=0
-  const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - dayOfWeek);
-  const weekStartStr = weekStart.toISOString().split('T')[0];
+  const { dateStr: today, dayOfWeek: _anDow } = ukNow();
+  const _anDiffToMon = (_anDow + 6) % 7; // Mon=0
+  const weekStart = new Date(today + 'T00:00:00');
+  weekStart.setDate(weekStart.getDate() - _anDiffToMon);
+  const weekStartStr = weekStart.toISOString().slice(0, 10);
   const monthStart = today.slice(0, 7) + '-01';
 
   // Revenue = money actually received only: cash collected on a completed job,
