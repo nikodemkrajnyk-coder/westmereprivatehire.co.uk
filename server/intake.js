@@ -301,6 +301,7 @@ async function notifyCustomerConfirmed(bookingId) {
     payment: row.payment,
     flight: row.flight,
     passengers: row.passengers,
+    notes: row.notes || null,
     pay_token: row.paid_at ? null : payToken,
     paid: !!row.paid_at
   };
