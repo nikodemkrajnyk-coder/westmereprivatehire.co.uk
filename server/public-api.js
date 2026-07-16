@@ -41,10 +41,11 @@ const router = express.Router();
 function cashPage(state, message, ref) {
   const okIcon   = '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 6L9 17l-5-5"/></svg>';
   const infoIcon = '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>';
+  const isConfirm = state === 'confirm';
   const isErr = state === 'error';
-  const heading = state === 'ok' ? 'Thank you' : (state === 'paid' ? 'Already paid' : 'Link not available');
-  const icoCls = isErr ? 'info' : 'ok';
-  const ico = isErr ? infoIcon : okIcon;
+  const heading = state === 'ok' ? 'Thank you' : (state === 'paid' ? 'Already paid' : (isConfirm ? 'Pay on the day' : 'Link not available'));
+  const icoCls = (isErr || isConfirm) ? 'info' : 'ok';
+  const ico = (isErr || isConfirm) ? infoIcon : okIcon;
   const refLine = ref ? `<p style="margin-top:12px" class="muted-ref">Ref: ${String(ref).replace(/[<>&"]/g, '')}</p>` : '';
   return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
@@ -78,6 +79,7 @@ a.link{color:var(--gold);text-decoration:none}
     <h2>${heading}</h2>
     <p>${message}</p>
     ${refLine}
+    ${isConfirm ? `<form method="POST" style="margin-top:20px"><button type="submit" style="width:100%;padding:14px;background:var(--navy);color:#fff;border:none;border-radius:6px;font-family:var(--sans);font-size:13px;font-weight:500;letter-spacing:2px;text-transform:uppercase;cursor:pointer">Confirm — Pay on the Day</button></form>` : ''}
     <p style="margin-top:16px;font-size:13px">Questions? Call us on <a class="link" href="tel:+447930342593">07930&nbsp;342593</a>.</p>
   </div></div>
 </div></body></html>`;
@@ -494,6 +496,8 @@ router.post('/pay/:ref/intent', async (req, res) => {
 // the owner over SSE, and returns a friendly thank-you page. Idempotent — a
 // repeat click just re-marks it. The pay_token is intentionally left intact so
 // the customer can still change their mind and pay online later.
+// GET shows a confirmation page — does NOT mark as cash. This prevents email
+// clients from auto-triggering cash payment when they pre-fetch links.
 router.get('/pay/:ref/cash', (req, res) => {
   try {
     const db = getDb();
@@ -512,6 +516,36 @@ router.get('/pay/:ref/cash', (req, res) => {
     }
     if (b.paid_at || b.payment === 'card') {
       return res.send(cashPage('paid', 'This journey has already been paid online — there is nothing further to do.', b.ref));
+    }
+    if (b.payment === 'cash') {
+      return res.send(cashPage('ok', "You're all set — please settle the fare with your driver on the day, by cash or card. We look forward to welcoming you.", b.ref));
+    }
+
+    // Show confirmation page — the customer must click the button to confirm
+    const fareStr = b.fare ? '£' + Number(b.fare).toFixed(2) : '';
+    res.send(cashPage('confirm', 'You have chosen to settle the fare' + (fareStr ? ' of ' + fareStr : '') + ' with your driver on the day, by cash or card. Please confirm below.', b.ref));
+  } catch (err) {
+    console.error('[PAY] cash page error:', err.message);
+    res.status(500).send(cashPage('error', 'Something went wrong. Please call us on 07930 342593 and we will sort it out.'));
+  }
+});
+
+// POST actually marks the booking as cash — only triggered by the confirm button
+router.post('/pay/:ref/cash', (req, res) => {
+  try {
+    const db = getDb();
+    const ref = String(req.params.ref || '').trim().toUpperCase();
+    const token = String(req.query.t || req.query.token || '').trim();
+    if (!ref || !token) {
+      return res.status(400).send(cashPage('error', 'This link is incomplete.'));
+    }
+
+    const b = db.prepare(`SELECT id, ref, fare, status, payment, pay_token, paid_at FROM bookings WHERE ref = ?`).get(ref);
+    if (!b || !b.pay_token || b.pay_token !== token) {
+      return res.status(404).send(cashPage('error', "We couldn't find this booking."));
+    }
+    if (b.paid_at || b.payment === 'card') {
+      return res.send(cashPage('paid', 'This journey has already been paid online.', b.ref));
     }
 
     db.prepare(`UPDATE bookings SET payment = 'cash', updated_at = datetime('now') WHERE id = ?`).run(b.id);
