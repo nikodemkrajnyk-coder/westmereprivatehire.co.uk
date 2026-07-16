@@ -41,11 +41,10 @@ const router = express.Router();
 function cashPage(state, message, ref) {
   const okIcon   = '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 6L9 17l-5-5"/></svg>';
   const infoIcon = '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>';
-  const isConfirm = state === 'confirm';
   const isErr = state === 'error';
-  const heading = state === 'ok' ? 'Thank you' : (state === 'paid' ? 'Already paid' : (isConfirm ? 'Pay on the day' : 'Link not available'));
-  const icoCls = (isErr || isConfirm) ? 'info' : 'ok';
-  const ico = (isErr || isConfirm) ? infoIcon : okIcon;
+  const heading = state === 'ok' ? 'Thank you' : (state === 'paid' ? 'Already paid' : 'Link not available');
+  const icoCls = isErr ? 'info' : 'ok';
+  const ico = isErr ? infoIcon : okIcon;
   const refLine = ref ? `<p style="margin-top:12px" class="muted-ref">Ref: ${String(ref).replace(/[<>&"]/g, '')}</p>` : '';
   return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
@@ -79,7 +78,6 @@ a.link{color:var(--gold);text-decoration:none}
     <h2>${heading}</h2>
     <p>${message}</p>
     ${refLine}
-    ${isConfirm ? `<form method="POST" style="margin-top:20px"><button type="submit" style="width:100%;padding:14px;background:var(--navy);color:#fff;border:none;border-radius:6px;font-family:var(--sans);font-size:13px;font-weight:500;letter-spacing:2px;text-transform:uppercase;cursor:pointer">Confirm — Pay on the Day</button></form>` : ''}
     <p style="margin-top:16px;font-size:13px">Questions? Call us on <a class="link" href="tel:+447930342593">07930&nbsp;342593</a>.</p>
   </div></div>
 </div></body></html>`;
@@ -490,14 +488,48 @@ router.post('/pay/:ref/intent', async (req, res) => {
   }
 });
 
-// ── Pay on the day: customer opts to settle with the driver ──────────────
-// The "Pay on the day" button in the confirmation email points here. Gated by
-// the same per-booking pay_token. Marks the booking payment = 'cash', notifies
-// the owner over SSE, and returns a friendly thank-you page. Idempotent — a
-// repeat click just re-marks it. The pay_token is intentionally left intact so
-// the customer can still change their mind and pay online later.
-// GET shows a confirmation page — does NOT mark as cash. This prevents email
-// clients from auto-triggering cash payment when they pre-fetch links.
+// ── Pay on the day: confirmation page ────────────────────────────────────
+// Email pre-fetchers trigger GET links, which would silently mark every booking
+// as "cash" before the customer opened the email. The GET now shows a confirm
+// page; the actual DB write happens in the POST /cash-confirm handler below.
+function cashConfirmPage(ref, token) {
+  const safeRef   = String(ref).replace(/[<>&"]/g, '');
+  const safeToken = String(token).replace(/[<>&"]/g, '');
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#111D2C"><meta name="robots" content="noindex,nofollow">
+<title>Your journey | Westmere Executive Private Hire</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--navy:#111D2C;--gold:#B8985A;--text:#1C2A3E;--muted:#6B7280;--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif}
+html{font-size:16px}
+body{font-family:var(--sans);font-weight:300;color:var(--text);background:var(--navy);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.card{width:100%;max-width:440px;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.head{background:var(--navy);color:#fff;padding:30px 32px 26px;text-align:center;border-bottom:3px solid var(--gold)}
+.brand{font-family:var(--sans);font-size:10px;letter-spacing:3.5px;text-transform:uppercase;color:var(--gold);font-weight:500}
+.brand-name{font-family:var(--serif);font-size:26px;font-weight:400;letter-spacing:.5px;margin-top:6px}
+.body{padding:34px 32px 36px;text-align:center}
+h2{font-family:var(--serif);font-size:24px;font-weight:400;color:var(--navy);margin-bottom:10px}
+p{font-size:14px;color:var(--muted);line-height:1.6}
+.btn{display:block;width:100%;margin-top:22px;padding:13px 24px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:var(--sans);font-size:14px;font-weight:500;letter-spacing:.04em;cursor:pointer}
+a.link{color:var(--gold);text-decoration:none}
+</style></head>
+<body><div class="card">
+  <div class="head"><div class="brand">Executive Private Hire</div><div class="brand-name">Westmere</div></div>
+  <div class="body">
+    <h2>Pay on the day</h2>
+    <p>You&rsquo;ve chosen to pay your driver on the day. Confirm?</p>
+    <form method="POST" action="/api/public/pay/${safeRef}/cash-confirm">
+      <input type="hidden" name="t" value="${safeToken}">
+      <button type="submit" class="btn">Yes, I&rsquo;ll pay on the day</button>
+    </form>
+    <p style="margin-top:16px;font-size:13px">Questions? Call us on <a class="link" href="tel:+447930342593">07930&nbsp;342593</a>.</p>
+  </div>
+</div></body></html>`;
+}
+
 router.get('/pay/:ref/cash', (req, res) => {
   try {
     const db = getDb();
@@ -517,35 +549,34 @@ router.get('/pay/:ref/cash', (req, res) => {
     if (b.paid_at || b.payment === 'card') {
       return res.send(cashPage('paid', 'This journey has already been paid online — there is nothing further to do.', b.ref));
     }
-    if (b.payment === 'cash') {
-      return res.send(cashPage('ok', "You're all set — please settle the fare with your driver on the day, by cash or card. We look forward to welcoming you.", b.ref));
-    }
 
-    // Show confirmation page — the customer must click the button to confirm
-    const fareStr = b.fare ? '£' + Number(b.fare).toFixed(2) : '';
-    res.send(cashPage('confirm', 'You have chosen to settle the fare' + (fareStr ? ' of ' + fareStr : '') + ' with your driver on the day, by cash or card. Please confirm below.', b.ref));
+    // Show confirmation page — the actual DB write happens in POST /cash-confirm.
+    res.send(cashConfirmPage(b.ref, token));
   } catch (err) {
-    console.error('[PAY] cash page error:', err.message);
+    console.error('[PAY] cash error:', err.message);
     res.status(500).send(cashPage('error', 'Something went wrong. Please call us on 07930 342593 and we will sort it out.'));
   }
 });
 
-// POST actually marks the booking as cash — only triggered by the confirm button
-router.post('/pay/:ref/cash', (req, res) => {
+// ── Pay on the day: commit the choice (POST — not pre-fetched by email clients)
+router.post('/pay/:ref/cash-confirm', (req, res) => {
   try {
     const db = getDb();
     const ref = String(req.params.ref || '').trim().toUpperCase();
-    const token = String(req.query.t || req.query.token || '').trim();
+    const token = String((req.body && (req.body.t || req.body.token)) || req.query.t || req.query.token || '').trim();
     if (!ref || !token) {
-      return res.status(400).send(cashPage('error', 'This link is incomplete.'));
+      return res.status(400).send(cashPage('error', 'This link is incomplete. Please use the link from your confirmation email.'));
     }
 
     const b = db.prepare(`SELECT id, ref, fare, status, payment, pay_token, paid_at FROM bookings WHERE ref = ?`).get(ref);
     if (!b || !b.pay_token || b.pay_token !== token) {
-      return res.status(404).send(cashPage('error', "We couldn't find this booking."));
+      return res.status(404).send(cashPage('error', "We couldn't find this booking. The link may have expired or already been settled."));
+    }
+    if (b.status === 'cancelled') {
+      return res.status(409).send(cashPage('error', 'This booking has been cancelled. Please call us if you need to rebook.'));
     }
     if (b.paid_at || b.payment === 'card') {
-      return res.send(cashPage('paid', 'This journey has already been paid online.', b.ref));
+      return res.send(cashPage('paid', 'This journey has already been paid online — there is nothing further to do.', b.ref));
     }
 
     db.prepare(`UPDATE bookings SET payment = 'cash', updated_at = datetime('now') WHERE id = ?`).run(b.id);
@@ -558,10 +589,10 @@ router.post('/pay/:ref/cash', (req, res) => {
       events.broadcast('booking:payment', { id: b.id, ref: b.ref, mode: 'cash', fare: b.fare || null });
     } catch (_) {}
 
-    console.log('[PAY] Cash on the day chosen for', b.ref);
+    console.log('[PAY] Cash on the day confirmed for', b.ref);
     res.send(cashPage('ok', "You're all set — please settle the fare with your driver on the day, by cash or card. We look forward to welcoming you.", b.ref));
   } catch (err) {
-    console.error('[PAY] cash error:', err.message);
+    console.error('[PAY] cash-confirm error:', err.message);
     res.status(500).send(cashPage('error', 'Something went wrong. Please call us on 07930 342593 and we will sort it out.'));
   }
 });
