@@ -2013,16 +2013,6 @@ function buildEarnings(){
     }
   }).catch(function(){});
 
-  // Feature 1: Calendar backfill trigger
-  async function ownerCalBackfill(){
-    try{
-      var r=await fetch('/api/mileage/calendar-backfill',{method:'POST',credentials:'include'});
-      var d=await r.json();
-      if(r.ok&&d.ok){showToast('Calendar sync: '+d.processed+' trips added, '+d.skipped+' skipped');}
-      else showToast(d.error||'Calendar sync failed');
-    }catch(e){showToast('Network error');}
-  }
-
   var avg=thisWeek.jobs?(thisWeek.total/thisWeek.jobs):0;
 
   // This-week detail card
@@ -2061,6 +2051,16 @@ function buildEarnings(){
 
   // Load Stripe balance (earnings page is admin-only now)
   loadStripeBalance();
+}
+
+// Global: called by the "Sync Calendar" button on the Earnings tab.
+async function ownerCalBackfill(){
+  try{
+    var r=await fetch('/api/mileage/calendar-backfill',{method:'POST',credentials:'include'});
+    var d=await r.json();
+    if(r.ok&&d.ok){showToast('Calendar sync: '+d.processed+' trips added, '+d.skipped+' skipped');}
+    else showToast(d.error||'Calendar sync failed');
+  }catch(e){showToast('Network error');}
 }
 
 function fmtPence(p){return '£'+(p/100).toFixed(2);}
@@ -2785,12 +2785,15 @@ function jobCardHtml(j){
   if(j.apiStatus==='pending'){
     // Feature 5: single Send Quote button with inline fare input
     var _preFill=j.suggestedFare!=null?Number(j.suggestedFare).toFixed(2):(j.fare&&Number(j.fare)>0?Number(j.fare).toFixed(2):'');
-    html+='<div style="display:flex;gap:.4rem;align-items:center;width:100%;flex-wrap:nowrap">'
+    html+='<div style="display:flex;flex-direction:column;gap:.4rem;width:100%">'
+      +'<div style="display:flex;gap:.4rem;align-items:center">'
       +'<div style="position:relative;flex:0 0 auto">'
       +'<span style="position:absolute;left:.6rem;top:50%;transform:translateY(-50%);font-size:.8rem;color:rgba(17,29,44,.45);pointer-events:none">£</span>'
       +'<input type="number" id="sq-fare-'+j.id+'" value="'+_preFill+'" min="0" step="0.5" placeholder="Fare" style="width:88px;padding:.6rem .5rem .6rem 1.4rem;border:1.5px solid rgba(184,152,90,.45);border-radius:7px;font-size:.85rem;color:var(--navy);background:#fff;font-family:var(--sans)" onclick="event.stopPropagation()">'
       +'</div>'
       +'<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:var(--navy);color:#fff;border:none;border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerSendQuote('+j.id+')">Send Quote</button>'
+      +'</div>'
+      +'<textarea id="sq-note-'+j.id+'" rows="2" placeholder="Optional note for customer\u2026" onclick="event.stopPropagation()" style="width:100%;padding:.5rem .7rem;border:1.5px solid rgba(184,152,90,.3);border-radius:7px;font-size:.8rem;color:var(--navy);font-family:var(--sans);resize:none;background:#fff"></textarea>'
       +'</div>';
   }
   if(j.apiStatus==='confirmed'||j.apiStatus==='active'){
@@ -2935,10 +2938,14 @@ async function upcomingConfirm(bookingId){
 // Replaces the old "Send Estimate" + "Confirm" two-button flow.
 async function ownerSendQuote(bookingId){
   var inputEl=document.getElementById('sq-fare-'+bookingId);
+  var noteEl=document.getElementById('sq-note-'+bookingId);
   var fare=parseFloat(inputEl?inputEl.value:'');
   if(!fare||fare<=0){showToast('Enter a fare amount first');return;}
+  var note=noteEl?noteEl.value.trim():'';
+  var payload={status:'confirmed',fare:fare};
+  if(note)payload.notes=note;
   try{
-    var r=await fetch('/api/bookings/'+bookingId,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'confirmed',fare:fare})});
+    var r=await fetch('/api/bookings/'+bookingId,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     var d=await r.json();
     if(r.ok&&d.ok){showToast('Quote sent — customer emailed · £'+fare.toFixed(0));loadOwnerBookings();}
     else showToast(d.error||('Failed ('+r.status+')'));
