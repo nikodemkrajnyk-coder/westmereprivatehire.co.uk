@@ -200,7 +200,7 @@ async function sendCustomerConfirmation(booking) {
 
 // ── Customer booking CONFIRMED (sent after Claude or operator approves) ──
 async function sendCustomerConfirmed(booking) {
-  const { ref, name, email, pickup, destination, date, time, fare, payment, flight, passengers, pay_token, paid } = booking;
+  const { ref, name, email, pickup, destination, date, time, fare, payment, flight, passengers, notes, pay_token, paid } = booking;
   if (!email) return;
 
   const dateStr = formatDate(date, time);
@@ -221,6 +221,7 @@ async function sendCustomerConfirmed(booking) {
   rows += rowDivider();
   if (fareStr) rows += detailRow('Fare', fareStr, { gold: true, large: true });
   rows += detailRow('Payment', alreadyPaid ? 'Paid online' : 'Choose below');
+  if (notes) { rows += rowDivider(); rows += detailRow('Note', escHtml(notes)); }
 
   // Single payment button \u2014 only when we have a fare, a pay token, and the
   // booking hasn't already been paid online. The button links to the pay page
