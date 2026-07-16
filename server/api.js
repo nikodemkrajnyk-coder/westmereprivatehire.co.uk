@@ -1880,18 +1880,117 @@ router.get('/mileage', (req, res) => {
   const mTaxYear = db.prepare(`${base} AND date >= ?`).get(taxYearStart);
   const mAll     = db.prepare(base).get();
 
-  const fmt = r => ({ trip_miles: Math.round(r.trip * 10) / 10, dead_miles: Math.round(r.dead * 10) / 10, total_miles: Math.round((r.trip + r.dead) * 10) / 10, jobs: r.jobs });
+  // Calendar trip miles (extra mileage from calendar events not in bookings).
+  // Gracefully returns zero if the table doesn't exist yet.
+  let calToday = 0, calWeek = 0, calMonth = 0, calTaxYear = 0, calAll = 0;
+  try {
+    calToday   = db.prepare("SELECT COALESCE(SUM(miles),0) as m FROM calendar_trip_miles WHERE trip_date = ?").get(today)?.m || 0;
+    calWeek    = db.prepare("SELECT COALESCE(SUM(miles),0) as m FROM calendar_trip_miles WHERE trip_date >= ? AND trip_date <= ?").get(weekStartStr, today)?.m || 0;
+    calMonth   = db.prepare("SELECT COALESCE(SUM(miles),0) as m FROM calendar_trip_miles WHERE trip_date >= ?").get(monthStart)?.m || 0;
+    calTaxYear = db.prepare("SELECT COALESCE(SUM(miles),0) as m FROM calendar_trip_miles WHERE trip_date >= ?").get(taxYearStart)?.m || 0;
+    calAll     = db.prepare("SELECT COALESCE(SUM(miles),0) as m FROM calendar_trip_miles").get()?.m || 0;
+  } catch (_) {}
+
+  const fmt = (r, calMiles) => ({
+    booking_miles:  Math.round(r.trip * 10) / 10,
+    calendar_miles: Math.round(calMiles * 10) / 10,
+    dead_miles:     Math.round(r.dead * 10) / 10,
+    total_miles:    Math.round((r.trip + calMiles) * 10) / 10,
+    jobs: r.jobs
+  });
 
   res.json({
     ok: true,
     mileage: {
-      today: fmt(mToday),
-      week: fmt(mWeek),
-      month: fmt(mMonth),
-      tax_year: { ...fmt(mTaxYear), start: taxYearStart },
-      all_time: fmt(mAll)
+      today:    fmt(mToday,   calToday),
+      week:     fmt(mWeek,    calWeek),
+      month:    fmt(mMonth,   calMonth),
+      tax_year: { ...fmt(mTaxYear, calTaxYear), start: taxYearStart },
+      all_time: fmt(mAll,     calAll)
     }
   });
+});
+
+// ── Backfill mileage from Google Calendar events ─────────────────────────
+// Fetches calendar events for the current tax year, identifies trip-like events
+// (title contains → or ->, or has a location field), geocodes pickup/destination,
+// and stores road distance in calendar_trip_miles (skips already-processed events).
+router.post('/mileage/calendar-backfill', async (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const { _fareGeocode, _fareRoute } = require('./fare-engine');
+  const { dateStr: today, year: yr, month: mo, day: dy } = ukNow();
+  const taxYearStart = (mo > 4 || (mo === 4 && dy >= 6))
+    ? `${yr}-04-06`
+    : `${yr - 1}-04-06`;
+
+  // Ensure the table exists (idempotent).
+  try {
+    db.prepare(`CREATE TABLE IF NOT EXISTS calendar_trip_miles (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_id    TEXT    UNIQUE NOT NULL,
+      trip_date   TEXT    NOT NULL,
+      miles       REAL    NOT NULL,
+      pickup      TEXT,
+      destination TEXT,
+      created_at  TEXT    DEFAULT (datetime('now'))
+    )`).run();
+  } catch (e) {
+    console.error('[CAL-BACKFILL] Table create failed:', e.message);
+    return res.status(500).json({ error: 'Database error' });
+  }
+
+  let calEvents;
+  try {
+    calEvents = await gcal.listExternalEvents({ from: taxYearStart, to: today });
+  } catch (e) {
+    console.error('[CAL-BACKFILL] listExternalEvents failed:', e.message);
+    return res.status(502).json({ error: 'Could not fetch calendar events' });
+  }
+
+  let processed = 0, skipped = 0;
+  for (const ev of (calEvents || [])) {
+    if (!ev.id) { skipped++; continue; }
+    const existing = db.prepare('SELECT id FROM calendar_trip_miles WHERE event_id = ?').get(ev.id);
+    if (existing) { skipped++; continue; }
+
+    const title = String(ev.title || ev.summary || '');
+    const isTripLike = /→|->/.test(title) || !!ev.location;
+    if (!isTripLike) { skipped++; continue; }
+
+    let pickup = null, destination = null;
+    const arrowMatch = title.match(/^(.+?)\s*(?:→|->)\s*(.+)$/);
+    if (arrowMatch) {
+      pickup = arrowMatch[1].trim();
+      destination = arrowMatch[2].trim();
+    } else if (ev.location) {
+      destination = ev.location;
+    }
+
+    if (!pickup || !destination) { skipped++; continue; }
+
+    try {
+      const [gc1, gc2] = await Promise.all([_fareGeocode(pickup), _fareGeocode(destination)]);
+      if (gc1 && gc2) {
+        const rt = await _fareRoute(gc1.lat, gc1.lon, gc2.lat, gc2.lon);
+        if (rt) {
+          const miles = Math.round(rt.distance / 1609.34 * 10) / 10;
+          const tripDate = ev.start ? String(ev.start).slice(0, 10) : today;
+          db.prepare('INSERT OR IGNORE INTO calendar_trip_miles (event_id, trip_date, miles, pickup, destination) VALUES (?,?,?,?,?)')
+            .run(ev.id, tripDate, miles, pickup, destination);
+          processed++;
+          continue;
+        }
+      }
+    } catch (e) {
+      console.error('[CAL-BACKFILL] Route failed for event', ev.id, ':', e.message);
+    }
+    skipped++;
+  }
+
+  res.json({ ok: true, processed, skipped });
 });
 
 // ── Backfill trip_miles for bookings that don't have it ──────────────────
