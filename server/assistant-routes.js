@@ -210,7 +210,7 @@ const CALENDAR_TOOLS = [
     input_schema: {
       type: 'object',
       properties: {
-        title:        { type: 'string', description: 'Event title' },
+        title:        { type: 'string', description: 'Event title. Use format "From → To" (e.g. "Horsham → Gatwick"). Never prefix with "Pickup:" or "Pickup".' },
         date:         { type: 'string', description: 'Date in YYYY-MM-DD' },
         time:         { type: 'string', description: 'Start time in HH:MM (omit for all-day event)' },
         duration_min: { type: 'number', description: 'Duration in minutes (default 60)' },
