@@ -200,7 +200,7 @@ async function sendCustomerConfirmation(booking) {
 
 // ── Customer booking CONFIRMED (sent after Claude or operator approves) ──
 async function sendCustomerConfirmed(booking) {
-  const { ref, name, email, pickup, destination, date, time, fare, payment, flight, passengers, notes, pay_token, paid } = booking;
+  const { ref, name, email, pickup, destination, date, time, fare, payment, flight, passengers, pay_token, paid } = booking;
   if (!email) return;
 
   const dateStr = formatDate(date, time);
@@ -221,7 +221,6 @@ async function sendCustomerConfirmed(booking) {
   rows += rowDivider();
   if (fareStr) rows += detailRow('Fare', fareStr, { gold: true, large: true });
   rows += detailRow('Payment', alreadyPaid ? 'Paid online' : 'Choose below');
-  if (notes) { rows += rowDivider(); rows += detailRow('Note', escHtml(notes)); }
 
   // Single payment button \u2014 only when we have a fare, a pay token, and the
   // booking hasn't already been paid online. The button links to the pay page
@@ -977,10 +976,32 @@ async function sendPartnershipOutreach(recipientEmail, companyName) {
   return ok;
 }
 
+// ── Review request (sent once per customer after their first completed job) ──
+async function sendReviewRequest(email, firstName, ref) {
+  if (!email) return;
+  firstName = firstName || 'there';
+  const body = `
+  <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
+  <p style="margin:0 0 18px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Thank you for travelling with us today${ref ? ' (booking ' + escHtml(ref) + ')' : ''}. We truly hope your journey was comfortable and that we met your expectations.</p>
+  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">If you have a spare moment, we would be deeply grateful if you could share a few words about your experience. Reviews help other travellers find us and allow us to keep doing what we love.</p>
+  <div style="text-align:center;margin:28px 0 24px">
+    <a href="https://g.page/r/WESTMERE_REVIEW_LINK" style="display:inline-block;padding:14px 36px;background:${GOLD};color:${INK};text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:600;letter-spacing:.04em">Leave a Google Review</a>
+  </div>
+  <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">It takes less than a minute and means a great deal to a small, independent business like ours.</p>
+  <p style="margin:20px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">With warm thanks,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
+
+  const html = emailShell(body);
+  const subject = 'Thank you for travelling with us \u2014 ' + (ref || 'Westmere Private Hire');
+  const preheader = 'We hope your journey was just right \u2014 would you share a quick review?';
+  const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
+  if (ok) console.log('[EMAIL] Review request sent to', email);
+  return ok;
+}
+
 module.exports = {
   sendCustomerConfirmation, sendCustomerConfirmed, sendCustomerEstimate, sendAdminAlert,
   sendCustomerWelcome, sendCustomerInvoice, sendBespokeInvoice, sendInvoiceReminder,
   sendCustomerCancellation, sendDriverStatement, sendDriverWelcome,
   sendVerificationEmail, sendPasswordResetEmail, sendAdminPasswordResetEmail,
-  sendRecommendation, sendPartnershipOutreach, sendEmail, isConfigured
+  sendRecommendation, sendPartnershipOutreach, sendReviewRequest, sendEmail, isConfigured
 };
