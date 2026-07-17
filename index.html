@@ -315,6 +315,16 @@ input[type="time"].fi,input[type="date"].fi{-webkit-appearance:auto;appearance:a
 .acct-status.s-offered{background:rgba(184,152,90,.14);color:#8B7230}
 .acct-ba-btn{background:none;border:1px solid rgba(184,152,90,.4);color:#8B7230;font-family:var(--sans);font-size:.54rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.22rem .6rem;border-radius:3px;cursor:pointer;transition:border-color .2s,color .2s;margin-top:.3rem;display:inline-block}
 .acct-ba-btn:hover{border-color:var(--gold);color:#B8985A}
+.acct-rt-picker{margin-top:.5rem;display:none;background:rgba(17,29,44,.04);border:1px solid rgba(17,29,44,.07);border-radius:4px;padding:.55rem .65rem}
+.acct-rt-picker.open{display:block}
+.acct-rt-row{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;margin-bottom:.4rem}
+.acct-rt-input{border:1px solid rgba(17,29,44,.18);border-radius:3px;padding:.28rem .4rem;font-family:var(--sans);font-size:.7rem;color:#111D2C;background:#fff;outline:none}
+.acct-rt-input:focus{border-color:var(--gold)}
+.acct-rt-confirm{background:var(--navy);color:#fff;border:none;font-family:var(--sans);font-size:.54rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.3rem .7rem;border-radius:3px;cursor:pointer;transition:background .15s}
+.acct-rt-confirm:hover{background:#1C2A3E}
+.acct-rt-confirm:disabled{opacity:.55;cursor:not-allowed}
+.acct-rt-msg{font-size:.62rem;margin-top:.35rem;line-height:1.4}
+.acct-rt-ok{color:#2D6E47}.acct-rt-err{color:#8B2222}
 
 /* Invoice rows */
 .acct-inv-card{border-bottom:1px solid rgba(17,29,44,.06);padding:.85rem 0;display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem}
@@ -1974,6 +1984,8 @@ if ('serviceWorker' in navigator) {
     return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
+  var _acctCustomer = null;
+
   // Toggle between auth views or the dashboard
   function acctShow(viewId) {
     var wrap = document.getElementById('acct-auth-wrap');
@@ -2133,8 +2145,18 @@ if ('serviceWorker' in navigator) {
     var mon = d ? d.toLocaleString('en-GB', { month: 'short' }) : '';
     var sc  = 's-' + (b.status || 'pending');
     var fare = b.fare ? '&pound;' + Number(b.fare).toFixed(2) : '';
+    var bId = String(b.id || b.ref || Date.now()).replace(/[^a-zA-Z0-9]/g,'');
+    var _today = new Date(); var _todayStr = _today.getFullYear() + '-' + String(_today.getMonth()+1).padStart(2,'0') + '-' + String(_today.getDate()).padStart(2,'0');
     var bookAgain = (b.status === 'completed')
-      ? '<br><button class="acct-ba-btn" onclick="acctBookAgain(' + JSON.stringify(b.pickup) + ',' + JSON.stringify(b.destination) + ')">Book Again</button>'
+      ? '<br><button class="acct-ba-btn" onclick="acctRepeatTrip(\'' + bId + '\')">Repeat Trip</button>' +
+        '<div class="acct-rt-picker" id="rt-' + bId + '">' +
+          '<div class="acct-rt-row">' +
+            '<input type="date" class="acct-rt-input" id="rt-date-' + bId + '" min="' + _todayStr + '">' +
+            '<input type="time" class="acct-rt-input" id="rt-time-' + bId + '">' +
+          '</div>' +
+          '<button class="acct-rt-confirm" id="rt-btn-' + bId + '" onclick="acctConfirmRepeat(\'' + bId + '\',' + JSON.stringify(b.pickup) + ',' + JSON.stringify(b.destination) + ',' + (b.passengers || 1) + ')">Confirm Booking</button>' +
+          '<div class="acct-rt-msg" id="rt-msg-' + bId + '"></div>' +
+        '</div>'
       : '';
     // Payment info
     var payInfo = '';
@@ -2162,6 +2184,7 @@ if ('serviceWorker' in navigator) {
   }
 
   function acctLoadDashboard(customer) {
+    _acctCustomer = customer;
     // Profile fields
     var el;
     el = document.getElementById('pf-name');  if (el) el.textContent = customer.full_name || '';
@@ -2225,16 +2248,47 @@ if ('serviceWorker' in navigator) {
   }
   window.acctLoadDashboard = acctLoadDashboard;
 
-  function acctBookAgain(pickup, destination) {
-    closeAcctPortal();
-    var fromEl = document.getElementById('b-from');
-    var toEl   = document.getElementById('b-to');
-    if (fromEl) { fromEl.value = pickup;      fromEl.dispatchEvent(new Event('input')); }
-    if (toEl)   { toEl.value   = destination; toEl.dispatchEvent(new Event('input')); toEl.dispatchEvent(new Event('change')); }
-    var bk = document.getElementById('booking');
-    if (bk) bk.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  function acctRepeatTrip(bId) {
+    var el = document.getElementById('rt-' + bId);
+    if (!el) return;
+    el.classList.toggle('open');
   }
-  window.acctBookAgain = acctBookAgain;
+  window.acctRepeatTrip = acctRepeatTrip;
+
+  function acctConfirmRepeat(bId, pickup, destination, passengers) {
+    var dateEl = document.getElementById('rt-date-' + bId);
+    var timeEl = document.getElementById('rt-time-' + bId);
+    var msgEl  = document.getElementById('rt-msg-' + bId);
+    var btnEl  = document.getElementById('rt-btn-' + bId);
+    var date   = dateEl ? dateEl.value : '';
+    var time   = timeEl ? timeEl.value : '';
+    if (msgEl) { msgEl.textContent = ''; msgEl.className = 'acct-rt-msg'; }
+    if (!date) { if (msgEl) { msgEl.textContent = 'Please select a date.'; msgEl.className = 'acct-rt-msg acct-rt-err'; } return; }
+    if (!time) { if (msgEl) { msgEl.textContent = 'Please select a time.'; msgEl.className = 'acct-rt-msg acct-rt-err'; } return; }
+    if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Booking\u2026'; }
+    var name  = _acctCustomer ? (_acctCustomer.full_name || '') : '';
+    var email = _acctCustomer ? (_acctCustomer.email || '') : '';
+    var phone = _acctCustomer ? (_acctCustomer.phone || '') : '';
+    fetch('/api/public/book', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pickup: pickup, destination: destination, date: date, time: time,
+        passengers: passengers || 1, name: name, email: email, phone: phone, payment: 'pending' })
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Confirm Booking'; }
+      if (d.ok) {
+        if (msgEl) { msgEl.innerHTML = '<span class="acct-rt-ok">Booked! Check your email for confirmation.</span>'; }
+        if (btnEl) btnEl.style.display = 'none';
+      } else {
+        if (msgEl) { msgEl.textContent = d.error || 'Could not create booking. Please try again.'; msgEl.className = 'acct-rt-msg acct-rt-err'; }
+      }
+    }).catch(function () {
+      if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Confirm Booking'; }
+      if (msgEl) { msgEl.textContent = 'Network error. Please try again.'; msgEl.className = 'acct-rt-msg acct-rt-err'; }
+    });
+  }
+  window.acctConfirmRepeat = acctConfirmRepeat;
 
   // Enter key support
   ['al-email', 'al-pass'].forEach(function (id) {
