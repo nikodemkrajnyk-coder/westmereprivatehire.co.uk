@@ -2069,4 +2069,17 @@ router.get('/stripe/payouts', ownerOnly, async (req, res) => {
   }
 });
 
+// One-time admin helper: clear the review_emails_sent record so the review
+// email can be re-sent on the next status→completed transition.
+router.delete('/review-reset/:email', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const db = getDb();
+  const email = (req.params.email || '').toLowerCase();
+  if (!email) return res.status(400).json({ error: 'email required' });
+  const result = db.prepare('DELETE FROM review_emails_sent WHERE email = ?').run(email);
+  res.json({ ok: true, deleted: result.changes });
+});
+
 module.exports = router;
