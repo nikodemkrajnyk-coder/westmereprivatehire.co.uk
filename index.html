@@ -2154,7 +2154,7 @@ if ('serviceWorker' in navigator) {
             '<input type="date" class="acct-rt-input" id="rt-date-' + bId + '" min="' + _todayStr + '">' +
             '<input type="time" class="acct-rt-input" id="rt-time-' + bId + '">' +
           '</div>' +
-          '<button class="acct-rt-confirm" id="rt-btn-' + bId + '" onclick="acctConfirmRepeat(\'' + bId + '\',' + JSON.stringify(b.pickup) + ',' + JSON.stringify(b.destination) + ',' + (b.passengers || 1) + ')">Confirm Booking</button>' +
+          '<button class="acct-rt-confirm" id="rt-btn-' + bId + '" onclick="acctConfirmRepeat(\'' + bId + '\',\'' + _esc(b.pickup).replace(/'/g,"\\'") + '\',\'' + _esc(b.destination).replace(/'/g,"\\'") + '\',' + (b.passengers || 1) + ')">Confirm Booking</button>' +
           '<div class="acct-rt-msg" id="rt-msg-' + bId + '"></div>' +
         '</div>'
       : '';
