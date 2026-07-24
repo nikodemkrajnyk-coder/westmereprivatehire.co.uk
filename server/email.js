@@ -929,6 +929,43 @@ async function sendRecommendation(recipientEmail) {
   return ok;
 }
 
+// ── Payment reminder email ───────────────────────────────────────────────
+// Sent when a completed booking hasn't been paid. Card-only (no cash option).
+async function sendPaymentReminder(booking) {
+  const { email, name, ref, fare, pickup, destination, date, time, pay_token } = booking;
+  if (!email) return false;
+  const firstName = (name || '').split(' ')[0] || 'there';
+  const fareStr = fare ? '\u00a3' + Number(fare).toFixed(2) : '';
+  const dateStr = formatDate(date, time);
+
+  // Only card payment link — no cash option
+  let payBlock = '';
+  if (pay_token && fareStr) {
+    const payUrl = `https://westmereprivatehire.co.uk/westmere-pay.html?ref=${encodeURIComponent(ref)}&t=${encodeURIComponent(pay_token)}`;
+    payBlock = `
+  <div style="text-align:center;margin:26px 0 8px">
+    <a href="${payUrl}" style="display:inline-block;padding:13px 32px;background:${GOLD};color:${INK};text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:600;letter-spacing:.03em">Pay Now \u2014 Apple Pay, Google Pay, or Card</a>
+  </div>`;
+  }
+
+  const body = `
+  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Payment reminder</p>
+  <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Thank you for travelling with us. We noticed that payment for your recent journey has not yet been completed.</p>
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Your trip from <strong>${escHtml(pickup || '')}</strong> to <strong>${escHtml(destination || '')}</strong> on ${dateStr}${fareStr ? ' for <strong style="color:' + GOLD + '">' + fareStr + '</strong>' : ''} is still outstanding.</p>
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">If you&rsquo;ve already made payment, please disregard this message. Otherwise, you can pay securely using the link below.</p>
+  ${payBlock}
+  <p style="margin:20px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">If you have any questions, please don&rsquo;t hesitate to get in touch.</p>
+  <p style="margin:16px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
+
+  const html = emailShell(body);
+  const subject = 'Payment reminder \u2014 ' + (ref || 'your journey') + ' \u00b7 Westmere Private Hire';
+  const preheader = fareStr ? fareStr + ' outstanding for your recent journey' : 'Payment outstanding for your recent journey';
+  const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
+  if (ok) console.log('[EMAIL] Payment reminder sent to', email, 'for', ref);
+  return ok;
+}
+
 // ── Partnership outreach email ───────────────────────────────────────────
 // Professional introduction to other private hire operators, offering
 // subcontracting support during busy periods.
@@ -1003,5 +1040,5 @@ module.exports = {
   sendCustomerWelcome, sendCustomerInvoice, sendBespokeInvoice, sendInvoiceReminder,
   sendCustomerCancellation, sendDriverStatement, sendDriverWelcome,
   sendVerificationEmail, sendPasswordResetEmail, sendAdminPasswordResetEmail,
-  sendRecommendation, sendPartnershipOutreach, sendReviewRequest, sendEmail, isConfigured
+  sendRecommendation, sendPartnershipOutreach, sendReviewRequest, sendPaymentReminder, sendEmail, isConfigured
 };
