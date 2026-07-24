@@ -1234,6 +1234,54 @@ router.patch('/invoices/:id/mark-unpaid', (req, res) => {
 });
 
 // Send a payment reminder email for an outstanding (unpaid) invoice.
+// ── Payment reminder for unpaid bookings ─────────────────────────────────
+// Sends a branded email asking the customer to pay, with card-only options
+// (no cash). Used when a completed booking hasn't been paid.
+router.post('/bookings/:id/payment-reminder', async (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+
+  const b = db.prepare(`
+    SELECT b.*, COALESCE(c.email, b.passenger_email) as contact_email,
+           COALESCE(c.full_name, b.passenger_name) as contact_name
+    FROM bookings b LEFT JOIN customers c ON b.customer_id = c.id
+    WHERE b.id = ?
+  `).get(id);
+  if (!b) return res.status(404).json({ error: 'Booking not found' });
+  if (!b.contact_email) return res.status(400).json({ error: 'No email address on this booking' });
+  if (b.paid_at) return res.status(409).json({ error: 'This booking is already paid' });
+
+  try {
+    const { sendPaymentReminder } = require('./email');
+    const ok = await sendPaymentReminder({
+      email: b.contact_email,
+      name: b.contact_name || '',
+      ref: b.ref,
+      fare: b.fare,
+      pickup: b.pickup,
+      destination: b.destination,
+      date: b.date,
+      time: b.time,
+      pay_token: b.pay_token
+    });
+    if (!ok) return res.status(502).json({ error: 'Email delivery failed' });
+
+    try {
+      db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+        .run(req.auth.type || 'user', req.auth.id, 'payment_reminder_sent', b.ref + ' to ' + b.contact_email, req.ip);
+    } catch (_) {}
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[API] payment reminder failed:', e.message);
+    res.status(500).json({ error: 'Failed to send reminder' });
+  }
+});
+
 router.post('/invoices/:id/remind', async (req, res) => {
   if (!['admin', 'owner'].includes(req.auth.role)) {
     return res.status(403).json({ error: 'Access denied' });
