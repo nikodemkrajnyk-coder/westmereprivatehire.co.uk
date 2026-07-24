@@ -630,14 +630,6 @@ h1,h2,h3,h4{font-family:var(--serif);color:var(--navy)}
       </div>
 
 
-      <!-- Feature 4: Push Notifications -->
-      <div style="background:rgba(17,29,44,.03);border-radius:12px;padding:1.1rem 1rem;margin-top:1rem">
-        <div style="font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.5rem">Booking Notifications</div>
-        <div style="font-size:.73rem;color:rgba(17,29,44,.5);line-height:1.5;margin-bottom:.8rem">Get a browser push notification whenever a new booking request comes in.</div>
-        <button id="push-sub-btn" onclick="ownerTogglePushSub()" style="width:100%;padding:.75rem;background:var(--gold);color:#fff;border:none;border-radius:8px;font-family:var(--sans);font-size:.72rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Enable Notifications</button>
-        <div id="push-sub-status" style="font-size:.68rem;color:rgba(17,29,44,.4);text-align:center;margin-top:.45rem"></div>
-      </div>
-
       <div style="background:rgba(17,29,44,.03);border-radius:12px;padding:1.1rem 1rem;margin-top:1rem">
         <div style="font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.6rem">Download All Data</div>
         <div style="font-size:.73rem;color:rgba(17,29,44,.5);line-height:1.5;margin-bottom:.8rem">Exports all bookings, customers, invoices, driver profiles, documents and earnings as a ZIP archive. Save to iCloud Drive for automatic backup to all your Apple devices.</div>
@@ -743,25 +735,19 @@ h1,h2,h3,h4{font-family:var(--serif);color:var(--navy)}
 
       <!-- Mileage stats -->
       <div style="margin-bottom:1rem">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
-          <div style="font-family:var(--serif);font-size:.95rem;color:#F5F2ED;font-weight:300">Mileage</div>
-          <button onclick="ownerCalBackfill()" style="font-size:.54rem;letter-spacing:.12em;text-transform:uppercase;background:rgba(184,152,90,.12);color:var(--gold);border:1px solid rgba(184,152,90,.3);border-radius:5px;padding:.25rem .55rem;cursor:pointer;font-family:var(--sans)">Sync Calendar</button>
-        </div>
+        <div style="font-family:var(--serif);font-size:.95rem;color:#F5F2ED;margin-bottom:.5rem;font-weight:300">Mileage</div>
         <div id="mileage-trio" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:.5rem">
           <div class="earn-stat-card" id="mile-stat-today">
             <div class="esk-label">Today</div>
             <div class="esk-amount" style="font-size:1.1rem">— mi</div>
-            <div id="mile-stat-today-detail" style="font-size:.56rem;color:rgba(245,242,237,.35);margin-top:.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
           </div>
           <div class="earn-stat-card esk-accent" id="mile-stat-week">
             <div class="esk-label">This Week</div>
             <div class="esk-amount" style="font-size:1.1rem">— mi</div>
-            <div id="mile-stat-week-detail" style="font-size:.56rem;color:rgba(245,242,237,.35);margin-top:.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
           </div>
           <div class="earn-stat-card" id="mile-stat-month">
             <div class="esk-label">This Month</div>
             <div class="esk-amount" style="font-size:1.1rem">— mi</div>
-            <div id="mile-stat-month-detail" style="font-size:.56rem;color:rgba(245,242,237,.35);margin-top:.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
           </div>
         </div>
         <div id="mile-tax-year" style="display:flex;justify-content:space-between;align-items:center;padding:.6rem .8rem;background:var(--navy2);border:1px solid rgba(184,152,90,.2);border-radius:8px">
@@ -1168,7 +1154,6 @@ function openSettings(){
   checkGoogleCalendarStatus();
   loadOwnerProfile();
   loadOwnerDocs();
-  if(!_pushInited){_pushInited=true;ownerInitPush();}
 }
 
 async function loadOwnerProfile(){
@@ -1236,88 +1221,6 @@ function closeSettings(){
 }
 
 // ── EXPORT ZIP ────────────────────────────────────────────────────────────────
-// ── Feature 4: Web Push Notifications ────────────────────────────────────────
-var _pushReg = null;
-var _pushSub = null;
-
-async function ownerInitPush(){
-  var btn=document.getElementById('push-sub-btn');
-  var status=document.getElementById('push-sub-status');
-  if(!('serviceWorker' in navigator)||!('PushManager' in window)){
-    if(status)status.textContent='Push notifications not supported on this browser.';
-    if(btn)btn.style.display='none';
-    return;
-  }
-  // Check if VAPID key is configured
-  try{
-    var kr=await fetch('/api/push/vapid-key',{credentials:'include'});
-    if(!kr.ok){
-      if(status)status.textContent='Notifications not configured on server (VAPID keys missing).';
-      if(btn)btn.style.display='none';
-      return;
-    }
-  }catch(_){
-    if(status)status.textContent='Could not reach server.';
-    return;
-  }
-  // Register push service worker
-  try{
-    _pushReg=await navigator.serviceWorker.register('/push-sw.js');
-    await navigator.serviceWorker.ready;
-    _pushSub=await _pushReg.pushManager.getSubscription();
-    _pushUpdateBtn();
-  }catch(e){
-    if(status)status.textContent='Service worker error: '+e.message;
-  }
-}
-
-function _pushUpdateBtn(){
-  var btn=document.getElementById('push-sub-btn');
-  var status=document.getElementById('push-sub-status');
-  if(_pushSub){
-    if(btn){btn.textContent='Disable Notifications';btn.style.background='rgba(139,34,34,.8)';}
-    if(status)status.textContent='Notifications enabled on this device.';
-  } else {
-    if(btn){btn.textContent='Enable Notifications';btn.style.background='';}
-    if(status)status.textContent='Notifications not active on this device.';
-  }
-}
-
-async function ownerTogglePushSub(){
-  if(!_pushReg){await ownerInitPush();if(!_pushReg)return;}
-  if(_pushSub){
-    // Unsubscribe
-    try{
-      await fetch('/api/push/subscribe',{method:'DELETE',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({endpoint:_pushSub.endpoint})});
-      await _pushSub.unsubscribe();
-      _pushSub=null;
-      _pushUpdateBtn();
-      showToast('Notifications disabled');
-    }catch(e){showToast('Failed to unsubscribe: '+e.message);}
-    return;
-  }
-  // Request permission
-  var perm=await Notification.requestPermission();
-  if(perm!=='granted'){showToast('Permission denied — enable notifications in browser settings');return;}
-  try{
-    var kr=await fetch('/api/push/vapid-key',{credentials:'include'});
-    var kd=await kr.json();
-    if(!kd.ok||!kd.publicKey){showToast('Push not configured on server');return;}
-    // Convert base64 key to Uint8Array
-    var raw=atob(kd.publicKey.replace(/-/g,'+').replace(/_/g,'/'));
-    var key=new Uint8Array(raw.split('').map(function(c){return c.charCodeAt(0);}));
-    _pushSub=await _pushReg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
-    var subJson=_pushSub.toJSON();
-    await fetch('/api/push/subscribe',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({endpoint:subJson.endpoint,keys:subJson.keys})});
-    _pushUpdateBtn();
-    showToast('Notifications enabled');
-  }catch(e){showToast('Subscription failed: '+e.message);console.error('[PUSH]',e);}
-}
-
-// Auto-init push state when settings panel is opened
-var _pushInited=false;
-var _origOpenSettings=typeof openSettings==='function'?openSettings:null;
-
 async function ownerExportZip(){
   var btn=document.getElementById('owner-export-btn');
   if(btn){btn.textContent='Preparing…';btn.disabled=true;}
@@ -1980,7 +1883,7 @@ function buildEarnings(){
   setStatCard('earn-stat-week',thisWeek.total,thisWeek.jobs);
   setStatCard('earn-stat-month',monthTotal,monthBookings.length);
 
-  // Load mileage stats (Feature 1: includes calendar miles)
+  // Load mileage stats
   fetch('/api/mileage',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
     if(!d.ok||!d.mileage)return;
     var m=d.mileage;
@@ -1988,14 +1891,6 @@ function buildEarnings(){
       var el=document.getElementById(id);
       if(!el)return;
       el.querySelector('.esk-amount').textContent=data.total_miles.toFixed(1)+' mi';
-      var det=document.getElementById(id+'-detail');
-      if(det){
-        if((data.calendar_miles||0)>0){
-          det.textContent='Bk '+data.booking_miles.toFixed(1)+' + Cal '+(data.calendar_miles||0).toFixed(1);
-        } else {
-          det.textContent='';
-        }
-      }
     }
     setMile('mile-stat-today',m.today);
     setMile('mile-stat-week',m.week);
@@ -2004,12 +1899,8 @@ function buildEarnings(){
     if(tyEl){
       var tyStart=m.tax_year.start||'';
       var tyLabel='Tax Year'+(tyStart?' (from '+tyStart+')':'');
-      var calMi=(m.tax_year.calendar_miles||0);
-      var breakdown=calMi>0
-        ?'<div style="font-size:.6rem;color:rgba(245,242,237,.4);margin-top:.1rem">Bookings: '+m.tax_year.booking_miles.toFixed(1)+' mi · Calendar: '+calMi.toFixed(1)+' mi</div>'
-        :'';
       tyEl.innerHTML='<span style="font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(245,242,237,.4);font-family:var(--sans)">'+tyLabel+'</span>'
-        +'<div style="text-align:right"><span style="font-family:var(--serif);font-size:1.1rem;color:var(--gold)">'+m.tax_year.total_miles.toFixed(1)+' miles</span>'+breakdown+'</div>';
+        +'<span style="font-family:var(--serif);font-size:1.1rem;color:var(--gold)">'+m.tax_year.total_miles.toFixed(1)+' miles</span>';
     }
   }).catch(function(){});
 
@@ -2051,16 +1942,6 @@ function buildEarnings(){
 
   // Load Stripe balance (earnings page is admin-only now)
   loadStripeBalance();
-}
-
-// Global: called by the "Sync Calendar" button on the Earnings tab.
-async function ownerCalBackfill(){
-  try{
-    var r=await fetch('/api/mileage/calendar-backfill',{method:'POST',credentials:'include'});
-    var d=await r.json();
-    if(r.ok&&d.ok){showToast('Calendar sync: '+d.processed+' trips added, '+d.skipped+' skipped');}
-    else showToast(d.error||'Calendar sync failed');
-  }catch(e){showToast('Network error');}
 }
 
 function fmtPence(p){return '£'+(p/100).toFixed(2);}
@@ -2489,10 +2370,10 @@ setInterval(loadExternalCalEvents,5*60*1000);
 // Account (monthly invoice), or Awaiting payment (estimate confirmed, not yet
 // settled). Drives the small badge shown on every booking.
 function wmPayStatus(j){
-  if(j&&(j.paid_at||j.payment==='card'))return{key:'prepaid',label:'Paid (card)',short:'Paid ✓',color:'#2D6E47',bg:'rgba(45,110,71,.12)'};
-  if(j&&j.payment==='cash')return{key:'cash',label:'Pay on the Day',short:'Pay on Day',color:'#8B7230',bg:'rgba(184,152,90,.16)'};
+  if(j&&(j.paid_at||j.payment==='card'))return{key:'prepaid',label:'Prepaid',short:'Prepaid ✓',color:'#2D6E47',bg:'rgba(45,110,71,.12)'};
+  if(j&&j.payment==='cash')return{key:'cash',label:'Cash',short:'Cash',color:'#8B7230',bg:'rgba(184,152,90,.16)'};
   if(j&&j.payment==='account')return{key:'account',label:'Account',short:'Account',color:'#3A5A8C',bg:'rgba(58,90,140,.12)'};
-  return{key:'await',label:'Awaiting payment',short:'Awaiting payment',color:'rgba(17,29,44,.5)',bg:'rgba(17,29,44,.07)'};
+  return{key:'await',label:'Awaiting payment',short:'Awaiting',color:'rgba(17,29,44,.5)',bg:'rgba(17,29,44,.07)'};
 }
 function wmPayBadge(j){var p=wmPayStatus(j);return'<span style="display:inline-block;padding:.12rem .45rem;font-size:.58rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:'+p.color+';background:'+p.bg+';border-radius:4px;white-space:nowrap">'+p.short+'</span>';}
 
@@ -2763,7 +2644,7 @@ function jobCardHtml(j){
       +  '<span style="display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .5rem;font-size:.52rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:'+stColor+';background:'+stBg+';border-radius:4px;white-space:nowrap">'+stLabel+'<span style="font-size:.7rem;opacity:.6">▼</span></span>'
       +'</div>'
       +'<div style="font-size:.8rem;color:rgba(17,29,44,.6);margin-bottom:.15rem">'+escH(_shortAddr(j.pickup||''))+' → '+escH(_shortAddr(j.dest||''))+'</div>'
-      +'<div style="font-size:.72rem;color:rgba(17,29,44,.4)">'+(j.time||'ASAP')+(j.estArrival?' → '+j.estArrival:'')+(j.fare?' · £'+Number(j.fare).toFixed(0):'')+(j.pax>1?' · '+j.pax+' pax':'')+'</div>'
+      +'<div style="font-size:.72rem;color:rgba(17,29,44,.4)">'+(j.time||'ASAP')+(j.fare?' · £'+Number(j.fare).toFixed(0):'')+(j.pax>1?' · '+j.pax+' pax':'')+'</div>'
       +(j.apiStatus==='pending'&&j.suggestedFare!=null?'<div style="margin-top:.3rem"><span style="display:inline-block;font-size:.72rem;font-weight:600;letter-spacing:.03em;color:#8B7230;background:rgba(184,152,90,.16);border:1px solid rgba(184,152,90,.4);border-radius:5px;padding:.2rem .6rem">Suggested: £'+Number(j.suggestedFare).toFixed(2)+'</span></div>':'')
       +'<div style="margin-top:.3rem">'+wmPayBadge(j)+'</div>'
     +'</div>'
@@ -2771,9 +2652,7 @@ function jobCardHtml(j){
       +'<table style="width:100%;font-size:.78rem;color:rgba(17,29,44,.7);border-collapse:collapse;margin-bottom:.7rem">'
         +'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4);width:80px">From</td><td>'+escH(j.pickup||'—')+'</td></tr>'
         +'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">To</td><td>'+escH(j.dest||'—')+'</td></tr>'
-        +'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Pickup</td><td>'+escH(j.date||'—')+' '+(j.time?'at '+j.time:'')+'</td></tr>'
-        +(j.estArrival?'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Est. drop-off</td><td style="color:rgba(17,29,44,.75)">'+escH(j.estArrival)+'</td></tr>':'')
-        +(j.createdAt?'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Booked at</td><td style="font-size:.72rem;color:rgba(17,29,44,.45)">'+escH((j.createdAt||'').replace('T',' ').slice(0,16))+'</td></tr>':'')
+        +'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Date</td><td>'+escH(j.date||'—')+' '+(j.time?'at '+j.time:'')+'</td></tr>'
         +(j.phone?'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Phone</td><td><a href="tel:'+escH(j.phone)+'" style="color:var(--navy)">'+escH(j.phone)+'</a></td></tr>':'')
         +(j.fare?'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Fare</td><td style="font-weight:600;color:var(--navy)">£'+Number(j.fare).toFixed(2)+'</td></tr>':'')
         +(j.apiStatus==='pending'&&j.suggestedFare!=null?'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Suggested</td><td style="font-weight:600;color:#8B7230">£'+Number(j.suggestedFare).toFixed(2)+'</td></tr>':'')
@@ -2783,18 +2662,8 @@ function jobCardHtml(j){
       +'</table>'
       +'<div style="display:flex;gap:.4rem;flex-wrap:wrap">';
   if(j.apiStatus==='pending'){
-    // Feature 5: single Send Quote button with inline fare input
-    var _preFill=j.suggestedFare!=null?Number(j.suggestedFare).toFixed(2):(j.fare&&Number(j.fare)>0?Number(j.fare).toFixed(2):'');
-    html+='<div style="display:flex;flex-direction:column;gap:.4rem;width:100%">'
-      +'<div style="display:flex;gap:.4rem;align-items:center">'
-      +'<div style="position:relative;flex:0 0 auto">'
-      +'<span style="position:absolute;left:.6rem;top:50%;transform:translateY(-50%);font-size:.8rem;color:rgba(17,29,44,.45);pointer-events:none">£</span>'
-      +'<input type="number" id="sq-fare-'+j.id+'" value="'+_preFill+'" min="0" step="0.5" placeholder="Fare" style="width:88px;padding:.6rem .5rem .6rem 1.4rem;border:1.5px solid rgba(184,152,90,.45);border-radius:7px;font-size:.85rem;color:var(--navy);background:#fff;font-family:var(--sans)" onclick="event.stopPropagation()">'
-      +'</div>'
-      +'<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:var(--navy);color:#fff;border:none;border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerSendQuote('+j.id+')">Send Quote</button>'
-      +'</div>'
-      +'<textarea id="sq-note-'+j.id+'" rows="2" placeholder="Optional note for customer\u2026" onclick="event.stopPropagation()" style="width:100%;padding:.5rem .7rem;border:1.5px solid rgba(184,152,90,.3);border-radius:7px;font-size:.8rem;color:var(--navy);font-family:var(--sans);resize:none;background:#fff"></textarea>'
-      +'</div>';
+    html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(184,152,90,.14);color:#8B7230;border:1.5px solid rgba(184,152,90,.35);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerSendEstimate('+j.id+')">Send Estimate</button>';
+    html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(45,110,71,.12);color:#2D6E47;border:1.5px solid rgba(45,110,71,.3);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingConfirm('+j.id+')">Confirm</button>';
   }
   if(j.apiStatus==='confirmed'||j.apiStatus==='active'){
     html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(45,110,71,.12);color:#2D6E47;border:1.5px solid rgba(45,110,71,.3);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerMarkCompleted('+j.id+')">Mark Completed</button>';
@@ -2805,6 +2674,10 @@ function jobCardHtml(j){
       +(_isPaid?'background:rgba(45,110,71,.12);color:#2D6E47;border:1.5px solid rgba(45,110,71,.3)':'background:rgba(184,152,90,.12);color:#8B7230;border:1.5px solid rgba(184,152,90,.35)')
       +'" onclick="ownerTogglePaid('+j.id+','+(_isPaid?'true':'false')+')">'
       +(_isPaid?'Paid ✓':'Mark Paid')+'</button>';
+  }
+  // Send Payment Reminder — shown on completed unpaid bookings with an email
+  if(!_isPaid&&j.email&&(j.apiStatus==='completed'||j.apiStatus==='confirmed')&&j.fare){
+    html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(139,34,34,.06);color:#8B2222;border:1.5px solid rgba(139,34,34,.2);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerSendPayReminder('+j.id+')">Send Reminder</button>';
   }
   // Create Invoice button — available on all confirmed/completed jobs with a fare
   if((j.apiStatus==='confirmed'||j.apiStatus==='active'||j.apiStatus==='completed')&&j.fare){
@@ -2934,25 +2807,10 @@ async function upcomingConfirm(bookingId){
   }catch(e){showToast('Network error');console.error('[upcomingConfirm]',e);}
 }
 
-// Feature 5: Send Quote — sets fare + confirms + emails customer in one step.
-// Replaces the old "Send Estimate" + "Confirm" two-button flow.
-async function ownerSendQuote(bookingId){
-  var inputEl=document.getElementById('sq-fare-'+bookingId);
-  var noteEl=document.getElementById('sq-note-'+bookingId);
-  var fare=parseFloat(inputEl?inputEl.value:'');
-  if(!fare||fare<=0){showToast('Enter a fare amount first');return;}
-  var note=noteEl?noteEl.value.trim():'';
-  var payload={status:'confirmed',fare:fare};
-  if(note)payload.notes=note;
-  try{
-    var r=await fetch('/api/bookings/'+bookingId,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-    var d=await r.json();
-    if(r.ok&&d.ok){showToast('Quote sent — customer emailed · £'+fare.toFixed(0));loadOwnerBookings();}
-    else showToast(d.error||('Failed ('+r.status+')'));
-  }catch(e){showToast('Network error');console.error('[ownerSendQuote]',e);}
-}
-
-// Legacy: kept for any older paths that might still call ownerSendEstimate.
+// Set the price and confirm in one step. This does exactly what Confirm does —
+// sets the fare, marks the booking confirmed, mints a pay_token, and sends the
+// customer the confirmation email with journey details + payment link (pay now
+// or pay on the day). Same backend flow as upcomingConfirm.
 async function ownerSendEstimate(bookingId){
   var j=OFFERED_JOBS.find(function(x){return String(x.id)===String(bookingId);});
   var cur=j&&j.fare?Number(j.fare):'';
@@ -3176,6 +3034,17 @@ async function ownerTogglePaid(bookingId,currentlyPaid){
     if(r.ok&&d.ok){showToast(currentlyPaid?'Marked as not paid':'Marked as paid');loadOwnerBookings();}
     else showToast(d.error||('Failed ('+r.status+')'));
   }catch(e){showToast('Network error');console.error('[ownerTogglePaid]',e);}
+}
+
+// ── SEND PAYMENT REMINDER ────────────────────────────────────────────────────
+async function ownerSendPayReminder(bookingId){
+  if(!confirm('Send payment reminder email to the customer?'))return;
+  try{
+    var r=await fetch('/api/bookings/'+bookingId+'/payment-reminder',{method:'POST',credentials:'include'});
+    var d=await r.json();
+    if(r.ok&&d.ok){showToast('Payment reminder sent');}
+    else showToast(d.error||'Failed to send reminder');
+  }catch(e){showToast('Network error');console.error('[payReminder]',e);}
 }
 
 // ── STATUS ────────────────────────────────────────────────────────────────────
@@ -4275,9 +4144,7 @@ async function loadOwnerBookings(){
         paid_at:b.paid_at||null,
         apiStatus:b.status||'',
         status:b.status==='completed'?'done':b.status==='active'?'enroute':b.status==='cancelled'?'done':'upcoming',
-        note:b.notes||'',
-        estArrival:b.est_arrival||null,
-        createdAt:b.created_at||null
+        note:b.notes||''
       };
     }
 
@@ -4794,7 +4661,7 @@ function invLoadList(){
         html+='<div onclick="invViewDetail('+inv.id+')" style="display:flex;align-items:center;gap:.6rem;padding:.7rem 1rem .7rem 3.2rem;cursor:pointer;border-top:1px solid rgba(17,29,44,.04)">'
           +'<div style="flex:1;min-width:0">'
           +'<div style="font-family:Menlo,Consolas,monospace;font-size:.72rem;color:var(--navy)">'+owEsc(inv.invoice_no||'')+'</div>'
-          +'<div style="font-size:.65rem;color:rgba(17,29,44,.45);margin-top:.12rem">'+(inv.issued_date||'')+(inv.created_at&&inv.created_at.slice(0,10)!==(inv.issued_date||'')?' · created '+(inv.created_at||'').replace('T',' ').slice(0,16):'')+'</div>'
+          +'<div style="font-size:.65rem;color:rgba(17,29,44,.45);margin-top:.12rem">'+(inv.issued_date||'')+'</div>'
           +'</div>'
           +'<div style="display:flex;align-items:center;gap:.35rem;flex-shrink:0">'
           +'<span style="font-family:var(--serif);font-size:.95rem;color:var(--navy)">'+total+'</span>'
