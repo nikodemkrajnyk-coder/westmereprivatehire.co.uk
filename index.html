@@ -575,6 +575,13 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
       <div class="bkf"><label>Full name</label><input type="text" id="bk-name" placeholder="Your full name" autocomplete="name" inputmode="text"></div>
       <div class="bkf"><label>Email address</label><input type="email" id="bk-email" placeholder="your@email.com" autocomplete="email" inputmode="email"></div>
       <div class="bkf"><label>Mobile number</label><input type="tel" id="bk-phone" placeholder="+44 7xxx xxxxxx" autocomplete="tel" inputmode="tel"></div>
+      <div class="bkf" style="display:flex;align-items:center;gap:.5rem">
+        <input type="checkbox" id="bk-stop" style="width:18px;height:18px;accent-color:#B8985A;cursor:pointer">
+        <label for="bk-stop" style="font-size:.82rem;color:rgba(17,29,44,.65);cursor:pointer;font-family:var(--sans)">I need a stop on the way</label>
+      </div>
+      <div id="bk-stop-wrap" style="display:none">
+        <div class="bkf"><label>Stop address</label><input type="text" id="bk-stop-addr" placeholder="Where would you like to stop?" autocomplete="off"></div>
+      </div>
       <div class="bkf"><label>Notes <span style="opacity:.6;font-weight:400">(optional)</span></label><textarea id="bk-notes" rows="3" style="width:100%;font-family:var(--sans);font-size:.94rem;font-weight:400;color:#111D2C;background:#fff;border:1px solid rgba(17,29,44,.18);border-radius:5px;padding:.7rem .85rem;resize:vertical;min-height:3.2rem;outline:none;box-sizing:border-box;-webkit-appearance:none"></textarea></div>
       <div style="display:flex;align-items:center;gap:.5rem;margin:.6rem 0 .3rem">
         <input type="checkbox" id="bk-remember" checked style="width:16px;height:16px;accent-color:#B8985A;cursor:pointer">
@@ -1428,6 +1435,10 @@ document.addEventListener("DOMContentLoaded", function(){
   if (ov) ov.addEventListener("click", function(e){ if(e.target===this) closeBkModal(); });
   var timeEl = document.getElementById("b-time");
   if (timeEl) timeEl.addEventListener("change", function(){ bkSmartDay(this.value); });
+  var stopEl = document.getElementById('bk-stop');
+  if (stopEl) stopEl.addEventListener('change', function() {
+    document.getElementById('bk-stop-wrap').style.display = this.checked ? '' : 'none';
+  });
 });
 
 // ── STEP NAVIGATION ───────────────────────────────────
@@ -1644,6 +1655,13 @@ function bkConfirm(type) {
   var dn = document.getElementById("bk-driver-note");
   if (dn) dn.style.display = "block";
 
+  // Build notes, appending any requested stop on the way
+  var notes = document.getElementById("bk-notes") ? document.getElementById("bk-notes").value : "";
+  var stopAddr = document.getElementById('bk-stop') && document.getElementById('bk-stop').checked
+    ? (document.getElementById('bk-stop-addr') || {}).value
+    : '';
+  if (stopAddr) notes = (notes ? notes + ' | ' : '') + 'Stop on the way: ' + stopAddr;
+
   // ── Submit to backend (email + WhatsApp notifications sent server-side) ──
   bkSubmitBooking({
     ref:        ref,
@@ -1660,7 +1678,7 @@ function bkConfirm(type) {
     fare:       null,
     passengers: parseInt(document.getElementById("b-pax").value) || 1,
     bags:       document.getElementById("b-bags").value || "",
-    notes:      document.getElementById("bk-notes") ? document.getElementById("bk-notes").value : "",
+    notes:      notes,
     payment:    "pending",
     source:     "website",
     returnTrip: returnTrip || undefined
