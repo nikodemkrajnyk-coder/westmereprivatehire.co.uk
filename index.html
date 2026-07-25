@@ -493,6 +493,13 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
       <label class="fl">Journey ends</label>
       <input class="fi" type="text" id="b-to" placeholder="Destination — airport, town or postcode" oninput="addrSearch(this,'sug-to')" onchange="doEstimate()" autocomplete="off">
       <div class="sug-drop" id="sug-to"></div>
+      <div style="display:flex;align-items:center;gap:.4rem;margin-top:.35rem">
+        <input type="checkbox" id="bk-stop" style="width:16px;height:16px;accent-color:#B8985A;cursor:pointer">
+        <label for="bk-stop" style="font-size:.75rem;color:rgba(255,255,255,.5);cursor:pointer;font-family:var(--sans)">Add a stop</label>
+      </div>
+      <div id="bk-stop-wrap" style="display:none;margin-top:.4rem">
+        <div class="field"><label class="fl">Stop address</label><input class="fi" type="text" id="bk-stop-addr" placeholder="Where would you like to stop?" autocomplete="off"></div>
+      </div>
     </div>
     <div id="flight-wrap" style="display:none">
       <div class="field">
@@ -575,13 +582,6 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
       <div class="bkf"><label>Full name</label><input type="text" id="bk-name" placeholder="Your full name" autocomplete="name" inputmode="text"></div>
       <div class="bkf"><label>Email address</label><input type="email" id="bk-email" placeholder="your@email.com" autocomplete="email" inputmode="email"></div>
       <div class="bkf"><label>Mobile number</label><input type="tel" id="bk-phone" placeholder="+44 7xxx xxxxxx" autocomplete="tel" inputmode="tel"></div>
-      <div class="bkf" style="display:flex;align-items:center;gap:.5rem">
-        <input type="checkbox" id="bk-stop" style="width:18px;height:18px;accent-color:#B8985A;cursor:pointer">
-        <label for="bk-stop" style="font-size:.82rem;color:rgba(17,29,44,.65);cursor:pointer;font-family:var(--sans)">I need a stop on the way</label>
-      </div>
-      <div id="bk-stop-wrap" style="display:none">
-        <div class="bkf"><label>Stop address</label><input type="text" id="bk-stop-addr" placeholder="Where would you like to stop?" autocomplete="off"></div>
-      </div>
       <div class="bkf"><label>Notes <span style="opacity:.6;font-weight:400">(optional)</span></label><textarea id="bk-notes" rows="3" style="width:100%;font-family:var(--sans);font-size:.94rem;font-weight:400;color:#111D2C;background:#fff;border:1px solid rgba(17,29,44,.18);border-radius:5px;padding:.7rem .85rem;resize:vertical;min-height:3.2rem;outline:none;box-sizing:border-box;-webkit-appearance:none"></textarea></div>
       <div style="display:flex;align-items:center;gap:.5rem;margin:.6rem 0 .3rem">
         <input type="checkbox" id="bk-remember" checked style="width:16px;height:16px;accent-color:#B8985A;cursor:pointer">
