@@ -1068,7 +1068,6 @@ if ('serviceWorker' in navigator) {
                   <th>Contact</th>
                   <th>Pickup Address</th>
                   <th>Destination</th>
-                  <th>Type</th>
                   <th>Fare</th>
                   <th>Payment</th>
                   <th>Flight No.</th>
@@ -1129,6 +1128,14 @@ if ('serviceWorker' in navigator) {
         <div class="stat s-green"><div class="sv" id="an-rev-week">£0</div><div class="sl">This Week</div><div class="ss" id="an-rev-week-sub">Mon – Sun</div></div>
         <div class="stat s-blue"><div class="sv" id="an-rev-month">£0</div><div class="sl">This Month</div><div class="ss" id="an-rev-month-sub">—</div></div>
         <div class="stat s-purple"><div class="sv" id="an-rev-alltime">£0</div><div class="sl">All Time</div><div class="ss">Total revenue</div></div>
+      </div>
+
+      <!-- Mileage overview cards -->
+      <div class="stats" id="an-mileage-cards">
+        <div class="stat s-navy"><div class="sv" id="an-mile-today">— mi</div><div class="sl">Today</div><div class="ss">Miles driven</div></div>
+        <div class="stat s-blue"><div class="sv" id="an-mile-week">— mi</div><div class="sl">This Week</div><div class="ss">Mon – Sun</div></div>
+        <div class="stat s-green"><div class="sv" id="an-mile-month">— mi</div><div class="sl">This Month</div><div class="ss" id="an-mile-month-sub">—</div></div>
+        <div class="stat s-gold"><div class="sv" id="an-mile-taxyear">— mi</div><div class="sl">Tax Year</div><div class="ss" id="an-mile-taxyear-sub">Total mileage</div></div>
       </div>
 
       <div class="g2">
@@ -2928,11 +2935,15 @@ function admPayTag(b){
   return{cls:'tag-await',label:'Pending'};
 }
 // Flag same-day bookings whose pickup times fall within ~2h of each other.
+// Only bookings sharing the same date are compared — two jobs at a similar
+// time of day but on different days are NOT a conflict.
 function admFindOverlaps(jobs){
   function mins(t){if(!t||t==='ASAP')return null;var p=String(t).split(':');return parseInt(p[0],10)*60+parseInt(p[1]||'0',10);}
-  var WIN=120,flagged={},a,b2,wm=jobs.map(function(j){return{id:j.id,m:mins(j.time)};});
-  for(a=0;a<wm.length;a++){if(wm[a].m==null)continue;
-    for(b2=a+1;b2<wm.length;b2++){if(wm[b2].m==null)continue;
+  function day(d){return d?String(d).slice(0,10):null;}
+  var WIN=120,flagged={},a,b2,wm=jobs.map(function(j){return{id:j.id,m:mins(j.time),d:day(j.date),cancelled:j.status==='cancelled'};});
+  for(a=0;a<wm.length;a++){if(wm[a].m==null||wm[a].d==null||wm[a].cancelled)continue;
+    for(b2=a+1;b2<wm.length;b2++){if(wm[b2].m==null||wm[b2].d==null||wm[b2].cancelled)continue;
+      if(wm[a].d!==wm[b2].d)continue;
       if(Math.abs(wm[a].m-wm[b2].m)<WIN){flagged[wm[a].id]=1;flagged[wm[b2].id]=1;}}}
   return flagged;
 }
@@ -4427,7 +4438,7 @@ function buildRecordBook(){
   var tbody=document.getElementById('rb-tbody');
   if(!view.all.length){
     var emptyMsg=view.mode==='year'?'No journeys recorded this year':'No journeys recorded this month';
-    tbody.innerHTML='<tr><td colspan="14" style="text-align:center;padding:2rem;color:rgba(17,29,44,.62)">'+emptyMsg+'</td></tr>';
+    tbody.innerHTML='<tr><td colspan="13" style="text-align:center;padding:2rem;color:rgba(17,29,44,.62)">'+emptyMsg+'</td></tr>';
     document.getElementById('rb-count').textContent='0';
     document.getElementById('rb-total').textContent='£0.00';
     return;
@@ -4439,7 +4450,7 @@ function buildRecordBook(){
     // In yearly view, separate each month with a labelled divider row.
     if(view.mode==='year'){
       var secTotal=sec.bookings.reduce(function(s,b){return s+(b.fare||0);},0);
-      html+='<tr style="background:rgba(17,29,44,.04)"><td colspan="14" style="padding:.5rem .7rem;font-weight:600;color:var(--navy);font-size:.78rem;letter-spacing:.04em">'
+      html+='<tr style="background:rgba(17,29,44,.04)"><td colspan="13" style="padding:.5rem .7rem;font-weight:600;color:var(--navy);font-size:.78rem;letter-spacing:.04em">'
         +escTo(sec.label)+' <span style="font-weight:400;color:var(--text-light)">· '+sec.bookings.length+' journeys · £'+secTotal.toFixed(2)+'</span></td></tr>';
     }
     sec.bookings.forEach(function(b){
@@ -4457,7 +4468,6 @@ function buildRecordBook(){
         +'<td style="font-size:.72rem;white-space:nowrap">'+escTo(pPhone)+'</td>'
         +'<td style="font-size:.75rem">'+b.pickup+'</td>'
         +'<td style="font-size:.75rem">'+b.destination+'</td>'
-        +'<td><span class="tag tag-upcoming" style="font-size:.5rem">'+(b.flight?'Airport':'Local')+'</span></td>'
         +'<td style="font-family:var(--serif);font-size:1rem;color:var(--gold)">'+(b.fare?'£'+Number(b.fare).toFixed(0):'TBC')+'</td>'
         +'<td>'+(b.payment||'cash')+'</td>'
         +'<td style="font-size:.75rem;color:var(--text-mid)">'+(b.flight||'—')+'</td>'
@@ -4487,12 +4497,12 @@ function downloadRecordBook(){
       var pH=b.passenger_phone||b.customer_phone||'';
       var nt=b.notes||'';
       var bAt=b.created_at?b.created_at.replace('T',' ').slice(0,16):'';
-      lines.push(n+',"'+(b.ref||'')+'",' +rbDateStr(b)+','+(b.time||'')+',"'+pN+'","'+pH+'","'+b.pickup+'","'+b.destination+'","'+(b.flight?'Airport':'Local')+'",£'+(b.fare||0)+','+(b.payment||'cash')+','+(b.flight||'—')+',"'+nt.replace(/"/g,'""')+'",'+bAt);
+      lines.push(n+',"'+(b.ref||'')+'",' +rbDateStr(b)+','+(b.time||'')+',"'+pN+'","'+pH+'","'+b.pickup+'","'+b.destination+'",£'+(b.fare||0)+','+(b.payment||'cash')+','+(b.flight||'—')+',"'+nt.replace(/"/g,'""')+'",'+bAt);
     });
   });
 
   var csv='Westmere Private Hire — Operator Journey Record\nLicensed by Lewes District Council\nPeriod: '+view.periodLabel+'\nGenerated: '+new Date().toLocaleDateString('en-GB')+'\n\n'
-    +'#,Ref,Date,Time,Passenger,Contact,Pickup Address,Destination,Type,Fare,Payment,Flight No.,Notes,Booked At\n'
+    +'#,Ref,Date,Time,Passenger,Contact,Pickup Address,Destination,Fare,Payment,Flight No.,Notes,Booked At\n'
     +lines.join('\n')
     +'\n\nTotal journeys:,'+view.all.length+'\nTotal revenue:,£'+total.toFixed(2);
 
@@ -4514,14 +4524,14 @@ function printRecordBook(){
     +view.periodLabel
     +' &nbsp;·&nbsp; Generated: '+new Date().toLocaleDateString('en-GB')+'</p>');
   w.document.write('<table><thead><tr>'
-    +'<th>#</th><th>Ref</th><th>Date</th><th>Time</th><th>Passenger</th><th>Contact</th><th>Pickup Address</th><th>Destination</th><th>Type</th><th>Fare</th><th>Payment</th><th>Flight No.</th><th>Notes</th><th>Booked At</th>'
+    +'<th>#</th><th>Ref</th><th>Date</th><th>Time</th><th>Passenger</th><th>Contact</th><th>Pickup Address</th><th>Destination</th><th>Fare</th><th>Payment</th><th>Flight No.</th><th>Notes</th><th>Booked At</th>'
     +'</tr></thead><tbody>');
   var n=0;
   view.sections.forEach(function(sec){
     if(!sec.bookings.length)return;
     if(view.mode==='year'){
       var secTotal=sec.bookings.reduce(function(s,b){return s+(b.fare||0);},0);
-      w.document.write('<tr class="msep"><td colspan="14">'+sec.label+' · '+sec.bookings.length+' journeys · £'+secTotal.toFixed(2)+'</td></tr>');
+      w.document.write('<tr class="msep"><td colspan="13">'+sec.label+' · '+sec.bookings.length+' journeys · £'+secTotal.toFixed(2)+'</td></tr>');
     }
     sec.bookings.forEach(function(b){
       n++;
@@ -4538,7 +4548,6 @@ function printRecordBook(){
         +'<td style="font-size:.78rem">'+pH+'</td>'
         +'<td>'+b.pickup+'</td>'
         +'<td>'+b.destination+'</td>'
-        +'<td>'+(b.flight?'Airport':'Local')+'</td>'
         +'<td class="gold">'+(b.fare?'£'+Number(b.fare).toFixed(0):'TBC')+'</td>'
         +'<td>'+(b.payment||'cash')+'</td>'
         +'<td>'+(b.flight||'—')+'</td>'
@@ -5065,14 +5074,36 @@ setInterval(function(){
 // ── ANALYTICS ────────────────────────────────────────────────────────────────
 let _anData = null;
 async function loadAnalytics() {
-  if (_anData) { renderAnalytics(_anData); return; }
+  if (_anData) { renderAnalytics(_anData); }
+  else {
+    try {
+      const r = await fetch('/api/analytics', {credentials:'include'});
+      const d = await r.json();
+      if (d.ok) { _anData = d; renderAnalytics(d); }
+    } catch(e) { console.error('[analytics]', e); }
+  }
+  loadMileageStats();
+}
+
+// Mileage stats (today / week / month / tax year) — GET /api/mileage.
+function _mileFmt(o){ return (o&&o.total_miles!=null?Number(o.total_miles).toFixed(1):'—')+' mi'; }
+async function loadMileageStats() {
   try {
-    const r = await fetch('/api/analytics', {credentials:'include'});
+    const r = await fetch('/api/mileage', {credentials:'include'});
     const d = await r.json();
-    if (!d.ok) return;
-    _anData = d;
-    renderAnalytics(d);
-  } catch(e) { console.error('[analytics]', e); }
+    if (!d.ok || !d.mileage) return;
+    const m = d.mileage;
+    const set = (id,txt) => { const el=document.getElementById(id); if(el)el.textContent=txt; };
+    set('an-mile-today', _mileFmt(m.today));
+    set('an-mile-week', _mileFmt(m.week));
+    set('an-mile-month', _mileFmt(m.month));
+    if (m.tax_year) {
+      set('an-mile-taxyear', (m.tax_year.total_miles!=null?Number(m.tax_year.total_miles).toFixed(1):'—')+' mi');
+      if (m.tax_year.start) set('an-mile-taxyear-sub', 'From ' + m.tax_year.start);
+    }
+    const now = new Date();
+    set('an-mile-month-sub', now.toLocaleString('en-GB',{month:'long'}) + ' ' + now.getFullYear());
+  } catch(e) { console.error('[mileage]', e); }
 }
 
 function _anFmt(n) { return '£' + Number(n||0).toLocaleString('en-GB',{minimumFractionDigits:0,maximumFractionDigits:0}); }
