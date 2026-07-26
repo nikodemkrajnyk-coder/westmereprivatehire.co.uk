@@ -493,10 +493,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
       <label class="fl">Journey ends</label>
       <input class="fi" type="text" id="b-to" placeholder="Destination — airport, town or postcode" oninput="addrSearch(this,'sug-to')" onchange="doEstimate()" autocomplete="off">
       <div class="sug-drop" id="sug-to"></div>
-      <div style="display:flex;align-items:center;gap:.4rem;margin-top:.35rem">
-        <input type="checkbox" id="bk-stop" style="width:16px;height:16px;accent-color:#B8985A;cursor:pointer">
-        <label for="bk-stop" style="font-size:.75rem;color:rgba(255,255,255,.5);cursor:pointer;font-family:var(--sans)">Add a stop <span style="font-size:.65rem;color:rgba(255,255,255,.3)">— need to stop somewhere on the way?</span></label>
-      </div>
+      <div style="display:inline-flex;align-items:center;gap:.3rem;margin-top:.2rem"><input type="checkbox" id="bk-stop" style="width:14px;height:14px;accent-color:#B8985A;cursor:pointer"><label for="bk-stop" style="font-size:.7rem;color:rgba(255,255,255,.45);cursor:pointer;font-family:var(--sans)">Add a stop on the way</label></div>
       <div id="bk-stop-wrap" style="display:none;margin-top:.4rem">
         <div class="field"><label class="fl">Stop address</label><input class="fi" type="text" id="bk-stop-addr" placeholder="Where would you like to stop?" autocomplete="off"></div>
       </div>
