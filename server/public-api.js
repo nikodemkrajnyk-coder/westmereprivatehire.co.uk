@@ -90,6 +90,7 @@ router.post('/book', async (req, res) => {
   try {
     const { name, email, phone, pickup, destination, date, time,
             passengers, bags, flight, fare, payment, notes, source,
+            stop_address,
             pickup_lat: clientPickupLat, pickup_lng: clientPickupLng,
             returnTrip } = req.body;
 
@@ -219,8 +220,8 @@ router.post('/book', async (req, res) => {
     const result = db.prepare(`
       INSERT INTO bookings (ref, customer_id, driver_id, pickup, destination, date, time,
                             passengers, bags, trip_type, flight, fare, payment, notes, status,
-                            passenger_name, passenger_phone, passenger_email, suggested_fare)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            passenger_name, passenger_phone, passenger_email, suggested_fare, stop_address)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       ref, customerId, finalDriverId,
       pickup, destination, bookingDate, storedTime,
@@ -231,7 +232,8 @@ router.post('/book', async (req, res) => {
       (name || '').trim() || null,
       (phone || '').trim() || null,
       (email || '').trim().toLowerCase() || null,
-      suggestedFare
+      suggestedFare,
+      (stop_address || '').trim() || null
     );
 
     // Verify stored time matches input
@@ -323,7 +325,7 @@ router.post('/book', async (req, res) => {
     // Build notification payload
     const booking = {
       ref, name, email, phone, pickup, destination, date: bookingDate, time,
-      passengers, bags, flight, fare: finalFare, payment, notes
+      passengers, bags, flight, fare: finalFare, payment, notes, stop_address
     };
 
     // Send admin notifications in background (don't block the response).
@@ -342,7 +344,7 @@ router.post('/book', async (req, res) => {
     gcal.createEvent({
       id: result.lastInsertRowid, ref, pickup, destination,
       date: bookingDate, time: time || 'ASAP',
-      passengers, bags, flight, fare, payment, notes,
+      passengers, bags, flight, fare, payment, notes, stop_address,
       customer_name: name, customer_phone: phone,
       status: 'pending'
     }).then(eventId => {
