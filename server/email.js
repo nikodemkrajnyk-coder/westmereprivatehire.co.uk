@@ -309,7 +309,7 @@ async function sendAdminAlert(booking) {
   const adminEmail = process.env.ADMIN_EMAIL || process.env.GMAIL_USER;
   if (!adminEmail) return;
 
-  const { ref, name, phone, email, pickup, destination, date, time, fare, payment, flight, passengers, bags, notes } = booking;
+  const { ref, name, phone, email, pickup, destination, date, time, fare, payment, flight, passengers, bags, notes, stop_address } = booking;
   const dateStr = formatDate(date, time);
   const fareStr = fare ? ('\u00a3' + (typeof fare === 'number' ? fare.toFixed(2) : fare)) : 'TBC';
 
@@ -328,6 +328,11 @@ async function sendAdminAlert(booking) {
   const navLink = (url) =>
     ' <a href="' + url + '" style="color:' + GOLD + ';font-family:Helvetica Neue,Arial,sans-serif;font-size:10px;letter-spacing:.5px;text-decoration:none;margin-left:8px">Waze</a>';
   rows += detailRow('Pickup', escHtml(pickup) + navLink(puWaze));
+  if (stop_address) {
+    const stopQ = encodeURIComponent(stop_address);
+    const stopWaze = 'https://waze.com/ul?q=' + stopQ + '&navigate=yes';
+    rows += detailRow('Stop', escHtml(stop_address) + navLink(stopWaze));
+  }
   rows += detailRow('Drop-off', escHtml(destination) + navLink(routeWaze));
   rows += rowDivider();
   rows += detailRow('Date', dateStr);
