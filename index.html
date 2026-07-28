@@ -491,7 +491,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
     </div>
     <div style="display:flex;align-items:center;gap:.4rem;padding:.2rem 0 .2rem .2rem"><input type="checkbox" id="bk-stop" style="width:16px;height:16px;accent-color:#B8985A;cursor:pointer"><label for="bk-stop" style="font-size:.78rem;color:rgba(17,29,44,.55);cursor:pointer;font-family:var(--sans);font-weight:400">Add a stop on the way</label></div>
     <div id="bk-stop-wrap" style="display:none">
-      <div class="field"><label class="fl">Stop address</label><input class="fi" type="text" id="bk-stop-addr" placeholder="Where do you need to stop?" autocomplete="off"></div>
+      <div class="field"><label class="fl">Stop address</label><input class="fi" type="text" id="bk-stop-addr" placeholder="Where do you need to stop?" oninput="addrSearch(this,'sug-stop')" autocomplete="off"><div class="sug-drop" id="sug-stop"></div></div>
     </div>
     <div class="field">
       <label class="fl">Journey ends</label>
@@ -1008,7 +1008,7 @@ function _renderSuggestions(inp,s,apItems,stItems,items){
 }
 
 document.addEventListener('click',function(e){document.querySelectorAll('.sug-drop').forEach(function(s){if(!s.contains(e.target))s.classList.remove('open');});});
-['b-from','b-to'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('focus',function(){this.select();});});
+['b-from','b-to','bk-stop-addr'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('focus',function(){this.select();});});
 function _revGeo(lat,lng){
   if(window._MB){
     return fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+lng+','+lat+'.json?access_token='+_MB+'&language=en&limit=1')
