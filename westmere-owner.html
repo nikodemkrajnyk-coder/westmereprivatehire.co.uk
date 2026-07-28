@@ -1558,7 +1558,7 @@ function renderDecisionsPending(list){
     var priceVal=(sug!=null&&!isNaN(sug))?sug.toFixed(2):'';
     var phone=b.customer_phone||b.passenger_phone||'';
     return '<div style="padding:.95rem 1rem;border-top:1px solid var(--rule)">'
-      +'<div style="font-size:.82rem;color:var(--navy);font-weight:500">'+decEsc(_shortAddr(b.pickup||''))+' \u2192 '+decEsc(_shortAddr(b.destination||''))+'</div>'
+      +'<div style="font-size:.82rem;color:var(--navy);font-weight:500">'+decEsc(_shortAddr(b.pickup||''))+(b.stop_address?' \u2192 '+decEsc(_shortAddr(b.stop_address)):'')+' \u2192 '+decEsc(_shortAddr(b.destination||''))+'</div>'
       +'<div style="font-size:.72rem;color:rgba(17,29,44,.55);margin-top:.25rem">'+decEsc(b.date||'')+' at '+decEsc(b.time||'')+'</div>'
       +'<div style="font-size:.78rem;color:var(--navy);margin-top:.3rem">'+decEsc(b.customer_name||'Guest')+(phone?' \u00b7 <a href="tel:'+decEsc(phone)+'" style="color:var(--navy);text-decoration:none">'+decEsc(phone)+'</a>':'')+'</div>'
       +'<div style="display:flex;align-items:center;gap:.5rem;margin-top:.65rem">'
@@ -2416,8 +2416,10 @@ function buildCard(j,isOffered){
   // Route
   var puEnc=encodeURIComponent(j.pickup||'');
   var deEnc=encodeURIComponent(j.dest||'');
+  var stEnc=encodeURIComponent(j.stop_address||'');
   var route='<div class="jc2-route">'
     +'<div class="jc2-loc"><div class="jc2-pin pu"></div><div class="jc2-addr" onclick="navChoice(\''+puEnc+'\')">'+escH(_shortAddr(j.pickup)||'')+'</div></div>'
+    +(j.stop_address?'<div class="jc2-loc" style="margin-top:.18rem"><div class="jc2-pin de"></div><div class="jc2-addr" onclick="navChoice(\''+stEnc+'\')">↳ '+escH(_shortAddr(j.stop_address)||'')+'</div></div>':'')
     +'<div class="jc2-loc" style="margin-top:.18rem"><div class="jc2-pin de"></div><div class="jc2-addr" onclick="navChoice(\''+deEnc+'\')">'+escH(_shortAddr(j.dest)||'')+'</div></div>'
     +(j.flight?'<div style="margin-top:.4rem;font-size:.72rem;color:rgba(17,29,44,.5)">✈ '+escH(j.flight)+'</div>':'')
     +'</div>';
@@ -2643,7 +2645,7 @@ function jobCardHtml(j){
       +  '<div style="font-weight:500;color:var(--navy);font-size:.92rem;font-family:var(--serif)">'+escH(j.name)+'</div>'
       +  '<span style="display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .5rem;font-size:.52rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:'+stColor+';background:'+stBg+';border-radius:4px;white-space:nowrap">'+stLabel+'<span style="font-size:.7rem;opacity:.6">▼</span></span>'
       +'</div>'
-      +'<div style="font-size:.8rem;color:rgba(17,29,44,.6);margin-bottom:.15rem">'+escH(_shortAddr(j.pickup||''))+' → '+escH(_shortAddr(j.dest||''))+'</div>'
+      +'<div style="font-size:.8rem;color:rgba(17,29,44,.6);margin-bottom:.15rem">'+escH(_shortAddr(j.pickup||''))+(j.stop_address?' → '+escH(_shortAddr(j.stop_address)):'')+' → '+escH(_shortAddr(j.dest||''))+'</div>'
       +'<div style="font-size:.72rem;color:rgba(17,29,44,.4)">'+(j.time||'ASAP')+(j.fare?' · £'+Number(j.fare).toFixed(0):'')+(j.pax>1?' · '+j.pax+' pax':'')+'</div>'
       +(j.apiStatus==='pending'&&j.suggestedFare!=null?'<div style="margin-top:.3rem"><span style="display:inline-block;font-size:.72rem;font-weight:600;letter-spacing:.03em;color:#8B7230;background:rgba(184,152,90,.16);border:1px solid rgba(184,152,90,.4);border-radius:5px;padding:.2rem .6rem">Suggested: £'+Number(j.suggestedFare).toFixed(2)+'</span></div>':'')
       +'<div style="margin-top:.3rem">'+wmPayBadge(j)+'</div>'
@@ -2651,6 +2653,7 @@ function jobCardHtml(j){
     +'<div id="'+detailId+'" style="display:none;padding:0 1rem .9rem;border-top:1px solid rgba(17,29,44,.06);background:rgba(17,29,44,.02)">'
       +'<table style="width:100%;font-size:.78rem;color:rgba(17,29,44,.7);border-collapse:collapse;margin-bottom:.7rem">'
         +'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4);width:80px">From</td><td>'+escH(j.pickup||'—')+'</td></tr>'
+        +(j.stop_address?'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Stop</td><td>'+escH(j.stop_address)+'</td></tr>':'')
         +'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">To</td><td>'+escH(j.dest||'—')+'</td></tr>'
         +'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Date</td><td>'+escH(j.date||'—')+' '+(j.time?'at '+j.time:'')+'</td></tr>'
         +(j.phone?'<tr><td style="padding:.3rem 0;color:rgba(17,29,44,.4)">Phone</td><td><a href="tel:'+escH(j.phone)+'" style="color:var(--navy)">'+escH(j.phone)+'</a></td></tr>':'')
@@ -3839,6 +3842,14 @@ function jobDetailCard(j){
   h+='<div style="font-size:.95rem;color:var(--navy);line-height:1.4">'+escH(_shortAddr(j.pickup))+'</div>';
   h+='</div>';
 
+  // Stop on the way
+  if(j.stop_address){
+    h+='<div style="margin-bottom:.5rem">';
+    h+='<div style="font-size:.58rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-bottom:.15rem">Stop</div>';
+    h+='<div style="font-size:.95rem;color:var(--navy);line-height:1.4">'+escH(_shortAddr(j.stop_address))+'</div>';
+    h+='</div>';
+  }
+
   // Destination
   h+='<div style="margin-bottom:.65rem">';
   h+='<div style="font-size:.58rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.35);margin-bottom:.15rem">Drop-off</div>';
@@ -3876,8 +3887,9 @@ function jobDetailCard(j){
     h+='<a href="https://wa.me/'+j.phone.replace(/\D/g,'')+'?text='+wm+'" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:.5rem .9rem;background:#25D366;color:#fff;text-decoration:none;border-radius:8px;font-size:.68rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-family:var(--sans)">WhatsApp</a>';
   }
 
-  // Waze — pickup then destination
+  // Waze — pickup, stop (if any), then destination
   if(j.pickup) h+=wazeBtn(j.pickup,'Pickup');
+  if(j.stop_address) h+=wazeBtn(j.stop_address,'Stop');
   if(j.dest)   h+=wazeBtn(j.dest,'Drop-off');
 
   // Flight tracker
@@ -4144,7 +4156,8 @@ async function loadOwnerBookings(){
         paid_at:b.paid_at||null,
         apiStatus:b.status||'',
         status:b.status==='completed'?'done':b.status==='active'?'enroute':b.status==='cancelled'?'done':'upcoming',
-        note:b.notes||''
+        note:b.notes||'',
+        stop_address:b.stop_address||''
       };
     }
 
@@ -4176,7 +4189,7 @@ async function loadOwnerBookings(){
       var key=b.date;
       if(!key)return;
       if(!CAL_JOBS[key])CAL_JOBS[key]=[];
-      CAL_JOBS[key].push({id:b.id,time:b.time||'ASAP',name:b.customer_name||b.passenger_name||'',phone:b.customer_phone||b.passenger_phone||'',pickup:b.pickup,dest:b.destination,fare:b.fare||0,payment:b.payment||'pending',paid_at:b.paid_at||null,flight:b.flight||'',pax:b.passengers||1,bags:b.bags||'',notes:b.notes||'',status:b.status});
+      CAL_JOBS[key].push({id:b.id,time:b.time||'ASAP',name:b.customer_name||b.passenger_name||'',phone:b.customer_phone||b.passenger_phone||'',pickup:b.pickup,dest:b.destination,stop_address:b.stop_address||'',fare:b.fare||0,payment:b.payment||'pending',paid_at:b.paid_at||null,flight:b.flight||'',pax:b.passengers||1,bags:b.bags||'',notes:b.notes||'',status:b.status});
     });
 
     // Update the To Confirm dot — badge the count of pending (unconfirmed) jobs
