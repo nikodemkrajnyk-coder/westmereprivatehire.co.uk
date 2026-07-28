@@ -489,14 +489,14 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
       <div class="sug-drop" id="sug-from"></div>
       <button type="button" class="loc-btn" onclick="useLocation()">Use my current location</button>
     </div>
+    <div style="display:flex;align-items:center;gap:.4rem;padding:.2rem 0 .2rem .2rem"><input type="checkbox" id="bk-stop" style="width:16px;height:16px;accent-color:#B8985A;cursor:pointer"><label for="bk-stop" style="font-size:.78rem;color:rgba(17,29,44,.55);cursor:pointer;font-family:var(--sans);font-weight:400">Add a stop on the way</label></div>
+    <div id="bk-stop-wrap" style="display:none">
+      <div class="field"><label class="fl">Stop address</label><input class="fi" type="text" id="bk-stop-addr" placeholder="Where do you need to stop?" autocomplete="off"></div>
+    </div>
     <div class="field">
       <label class="fl">Journey ends</label>
       <input class="fi" type="text" id="b-to" placeholder="Destination — airport, town or postcode" oninput="addrSearch(this,'sug-to')" onchange="doEstimate()" autocomplete="off">
       <div class="sug-drop" id="sug-to"></div>
-      <div style="display:inline-flex;align-items:center;gap:.3rem;margin-top:.3rem"><input type="checkbox" id="bk-stop" style="width:15px;height:15px;accent-color:#B8985A;cursor:pointer"><label for="bk-stop" style="font-size:.72rem;color:rgba(17,29,44,.5);cursor:pointer;font-family:var(--sans)">Add a stop on the way</label></div>
-      <div id="bk-stop-wrap" style="display:none;margin-top:.5rem">
-        <div class="field"><label class="fl">Stop address</label><input class="fi" type="text" id="bk-stop-addr" placeholder="Enter the address where you need to stop" autocomplete="off"><div style="font-size:.68rem;color:rgba(17,29,44,.35);margin-top:.2rem">Tell us where you need to stop on the way to your destination</div></div>
-      </div>
     </div>
     <div id="flight-wrap" style="display:none">
       <div class="field">
