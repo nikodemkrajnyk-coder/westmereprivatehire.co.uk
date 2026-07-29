@@ -2862,6 +2862,12 @@ function upcomingEdit(bookingId){
       +'<div style="font-family:var(--serif);font-size:1.3rem;color:var(--navy);font-style:italic">Edit Booking</div>'
       +'<button onclick="document.getElementById(\'edit-booking-overlay\').remove()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:rgba(17,29,44,.45)">&times;</button>'
       +'</div>'
+      +'<div style="margin-bottom:.7rem"><label style="font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);display:block;margin-bottom:.3rem">Pickup</label>'
+      +'<input id="eb-pickup" type="text" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(17,29,44,.15);border-radius:8px;font-family:inherit;font-size:.9rem;color:var(--navy)" autocomplete="off"></div>'
+      +'<div style="margin-bottom:.7rem"><label style="font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);display:block;margin-bottom:.3rem">Stop on the way</label>'
+      +'<input id="eb-stop" type="text" placeholder="Optional" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(17,29,44,.15);border-radius:8px;font-family:inherit;font-size:.9rem;color:var(--navy)" autocomplete="off"></div>'
+      +'<div style="margin-bottom:.7rem"><label style="font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);display:block;margin-bottom:.3rem">Destination</label>'
+      +'<input id="eb-dest" type="text" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(17,29,44,.15);border-radius:8px;font-family:inherit;font-size:.9rem;color:var(--navy)" autocomplete="off"></div>'
       +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.7rem">'
       +'<div><label style="font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);display:block;margin-bottom:.3rem">Date</label>'
       +'<input id="eb-date" type="date" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(17,29,44,.15);border-radius:8px;font-family:inherit;font-size:.9rem;color:var(--navy)"></div>'
@@ -2881,15 +2887,21 @@ function upcomingEdit(bookingId){
     el.addEventListener('click',function(ev){if(ev.target===el)el.remove();});
   }
   document.getElementById('eb-id').value=bookingId;
+  document.getElementById('eb-pickup').value=j.pickup||'';
+  document.getElementById('eb-stop').value=j.stop_address||'';
+  document.getElementById('eb-dest').value=j.dest||j.destination||'';
   document.getElementById('eb-date').value=j.date||'';
   document.getElementById('eb-time').value=j.time||'';
   document.getElementById('eb-fare').value=j.fare||'';
-  document.getElementById('eb-notes').value=j.note||'';
+  document.getElementById('eb-notes').value=j.note||j.notes||'';
   el.style.display='flex';
 }
 
 async function upcomingSave(){
   var id=document.getElementById('eb-id').value;
+  var pickup=document.getElementById('eb-pickup').value.trim();
+  var stop=document.getElementById('eb-stop').value.trim();
+  var dest=document.getElementById('eb-dest').value.trim();
   var date=document.getElementById('eb-date').value;
   var time=document.getElementById('eb-time').value;
   var fare=parseFloat(document.getElementById('eb-fare').value)||null;
@@ -2897,6 +2909,9 @@ async function upcomingSave(){
   if(!id)return;
   try{
     var body={};
+    if(pickup)body.pickup=pickup;
+    body.stop_address=stop||null;
+    if(dest)body.destination=dest;
     if(date)body.date=date;
     if(time)body.time=time;
     if(fare)body.fare=fare;
