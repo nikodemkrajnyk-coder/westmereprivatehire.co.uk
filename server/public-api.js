@@ -421,7 +421,7 @@ router.get('/pay/:ref', (req, res) => {
     if (!ref || !token) return res.status(400).json({ error: 'Booking reference and token required' });
 
     const b = db.prepare(`
-      SELECT ref, pickup, destination, date, time, fare, status, payment, pay_token, paid_at
+      SELECT ref, pickup, destination, stop_address, date, time, fare, status, payment, pay_token, paid_at, notes
         FROM bookings WHERE ref = ?
     `).get(ref);
     if (!b || !b.pay_token || b.pay_token !== token) {
@@ -436,9 +436,11 @@ router.get('/pay/:ref', (req, res) => {
         ref: b.ref,
         pickup: b.pickup,
         destination: b.destination,
+        stop_address: b.stop_address || null,
         date: b.date,
         time: b.time,
         fare: b.fare,
+        notes: b.notes || null,
         status: b.status,
         paid,
         cancelled: b.status === 'cancelled',
