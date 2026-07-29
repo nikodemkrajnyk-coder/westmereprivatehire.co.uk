@@ -200,7 +200,7 @@ async function sendCustomerConfirmation(booking) {
 
 // ── Customer booking CONFIRMED (sent after Claude or operator approves) ──
 async function sendCustomerConfirmed(booking) {
-  const { ref, name, email, pickup, destination, date, time, fare, payment, flight, passengers, pay_token, paid } = booking;
+  const { ref, name, email, pickup, destination, date, time, fare, payment, flight, passengers, pay_token, paid, stop_address, notes } = booking;
   if (!email) return;
 
   const dateStr = formatDate(date, time);
@@ -212,12 +212,14 @@ async function sendCustomerConfirmed(booking) {
   let rows = '';
   rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:'+INK+'">' + ref + '</span>');
   rows += rowDivider();
-  rows += detailRow('Pickup', pickup);
-  rows += detailRow('Drop-off', destination);
+  rows += detailRow('Pickup', escHtml(pickup));
+  if (stop_address) rows += detailRow('Stop', escHtml(stop_address));
+  rows += detailRow('Drop-off', escHtml(destination));
   rows += rowDivider();
   rows += detailRow('Date', dateStr);
-  if (flight) rows += detailRow('Flight', flight);
+  if (flight) rows += detailRow('Flight', escHtml(flight));
   if (passengers && passengers > 1) rows += detailRow('Travellers', passengers + ' passengers');
+  if (notes) { rows += rowDivider(); rows += detailRow('Notes', escHtml(notes)); }
   rows += rowDivider();
   if (fareStr) rows += detailRow('Fare', fareStr, { gold: true, large: true });
   rows += detailRow('Payment', alreadyPaid ? 'Paid online' : 'Choose below');
@@ -266,7 +268,7 @@ async function sendCustomerEstimate(booking) {
   const email       = booking.email || booking.passenger_email;
   const pickup      = booking.pickup;
   const destination = booking.destination;
-  const { date, time, flight, passengers, fare } = booking;
+  const { date, time, flight, passengers, fare, stop_address, notes } = booking;
   if (!email) return false;
 
   const fareNum = typeof fare === 'number' ? fare : parseFloat(fare);
@@ -280,11 +282,13 @@ async function sendCustomerEstimate(booking) {
   rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:'+INK+'">' + escHtml(ref) + '</span>');
   rows += rowDivider();
   rows += detailRow('Pickup', escHtml(pickup));
+  if (stop_address) rows += detailRow('Stop', escHtml(stop_address));
   rows += detailRow('Drop-off', escHtml(destination));
   rows += rowDivider();
   rows += detailRow('Date', dateStr);
   if (flight) rows += detailRow('Flight', escHtml(flight));
   if (passengers && passengers > 1) rows += detailRow('Travellers', passengers + ' passengers');
+  if (notes) { rows += rowDivider(); rows += detailRow('Notes', escHtml(notes)); }
   rows += rowDivider();
   rows += detailRow('Estimated fare', fareStr, { gold: true, large: true });
 
