@@ -96,6 +96,7 @@ a.link{color:var(--gold);text-decoration:none}
       <div class="detail">
         <div class="row"><span class="k">Reference</span><span class="v muted-ref" id="d-ref"></span></div>
         <div class="row"><span class="k">Pickup</span><span class="v" id="d-from"></span></div>
+        <div class="row hidden" id="d-stop-row"><span class="k">Stop</span><span class="v" id="d-stop"></span></div>
         <div class="row"><span class="k">Drop-off</span><span class="v" id="d-to"></span></div>
         <div class="row"><span class="k">Date</span><span class="v" id="d-when"></span></div>
         <div class="row fare"><span class="k">Fare</span><span class="v" id="d-fare"></span></div>
@@ -193,6 +194,7 @@ a.link{color:var(--gold);text-decoration:none}
       // Populate details
       document.getElementById("d-ref").textContent = booking.ref;
       document.getElementById("d-from").textContent = booking.pickup || "—";
+      if (booking.stop_address) { document.getElementById("d-stop").textContent = booking.stop_address; document.getElementById("d-stop-row").classList.remove("hidden"); }
       document.getElementById("d-to").textContent = booking.destination || "—";
       document.getElementById("d-when").textContent = fmtWhen(booking.date, booking.time);
       document.getElementById("d-fare").textContent = fmtMoney(booking.fare);
