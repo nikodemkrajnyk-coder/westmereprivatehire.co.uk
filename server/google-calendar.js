@@ -284,7 +284,6 @@ function buildDescription(b) {
   ].filter(Boolean).join('  \u00b7  ');
   const lines = [
     `${b.customer_name || 'Guest'}${b.customer_phone ? '  \u00b7  ' + b.customer_phone : ''}`,
-    `${_shortAddr(b.pickup) || '?'} \u2192 ${_shortAddr(b.destination) || '?'}`,
     b.stop_address ? `Stop: ${_shortAddr(b.stop_address) || b.stop_address}` : null,
     money || null,
     extras || null,
