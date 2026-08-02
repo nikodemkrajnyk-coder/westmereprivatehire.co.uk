@@ -1235,6 +1235,54 @@ router.patch('/invoices/:id/mark-unpaid', (req, res) => {
 
 // Send a payment reminder email for an outstanding (unpaid) invoice.
 // ── Payment reminder for unpaid bookings ─────────────────────────────────
+// ── Resend confirmation email ────────────────────────────────────────────
+router.post('/bookings/:id/send-confirmation', async (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  try {
+    const intake = require('./intake');
+    await intake.notifyCustomerConfirmed(parseInt(req.params.id, 10));
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[API] send-confirmation failed:', e.message);
+    res.status(500).json({ error: 'Failed to send confirmation' });
+  }
+});
+
+// ── Send estimate email ──────────────────────────────────────────────────
+router.post('/bookings/:id/send-estimate', async (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+  const b = db.prepare(`
+    SELECT b.*, COALESCE(c.email, b.passenger_email) as contact_email,
+           COALESCE(c.full_name, b.passenger_name) as contact_name
+    FROM bookings b LEFT JOIN customers c ON b.customer_id = c.id
+    WHERE b.id = ?
+  `).get(id);
+  if (!b) return res.status(404).json({ error: 'Booking not found' });
+  if (!b.contact_email) return res.status(400).json({ error: 'No email address on this booking' });
+  if (!b.fare || Number(b.fare) <= 0) return res.status(400).json({ error: 'Set a fare before sending an estimate' });
+  try {
+    const { sendCustomerEstimate } = require('./email');
+    const ok = await sendCustomerEstimate({
+      ref: b.ref, name: b.contact_name, email: b.contact_email,
+      pickup: b.pickup, destination: b.destination, stop_address: b.stop_address,
+      date: b.date, time: b.time, flight: b.flight, passengers: b.passengers,
+      fare: b.fare, notes: b.notes
+    });
+    if (ok) res.json({ ok: true });
+    else res.status(500).json({ error: 'Email send failed' });
+  } catch (e) {
+    console.error('[API] send-estimate failed:', e.message);
+    res.status(500).json({ error: 'Failed to send estimate' });
+  }
+});
+
 // Sends a branded email asking the customer to pay, with card-only options
 // (no cash). Used when a completed booking hasn't been paid.
 router.post('/bookings/:id/payment-reminder', async (req, res) => {
