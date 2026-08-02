@@ -2862,6 +2862,14 @@ function upcomingEdit(bookingId){
       +'<div style="font-family:var(--serif);font-size:1.3rem;color:var(--navy);font-style:italic">Edit Booking</div>'
       +'<button onclick="document.getElementById(\'edit-booking-overlay\').remove()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:rgba(17,29,44,.45)">&times;</button>'
       +'</div>'
+      +'<div style="margin-bottom:.7rem"><label style="font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);display:block;margin-bottom:.3rem">Passenger name</label>'
+      +'<input id="eb-name" type="text" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(17,29,44,.15);border-radius:8px;font-family:inherit;font-size:.9rem;color:var(--navy)" autocomplete="off"></div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.7rem">'
+      +'<div><label style="font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);display:block;margin-bottom:.3rem">Phone</label>'
+      +'<input id="eb-phone" type="tel" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(17,29,44,.15);border-radius:8px;font-family:inherit;font-size:.9rem;color:var(--navy)" autocomplete="off"></div>'
+      +'<div><label style="font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);display:block;margin-bottom:.3rem">Email</label>'
+      +'<input id="eb-email" type="email" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(17,29,44,.15);border-radius:8px;font-family:inherit;font-size:.9rem;color:var(--navy)" autocomplete="off"></div>'
+      +'</div>'
       +'<div style="margin-bottom:.7rem"><label style="font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);display:block;margin-bottom:.3rem">Pickup</label>'
       +'<input id="eb-pickup" type="text" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(17,29,44,.15);border-radius:8px;font-family:inherit;font-size:.9rem;color:var(--navy)" autocomplete="off"></div>'
       +'<div style="margin-bottom:.7rem"><label style="font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);display:block;margin-bottom:.3rem">Stop on the way</label>'
@@ -2879,14 +2887,21 @@ function upcomingEdit(bookingId){
       +'<div style="margin-bottom:1.2rem"><label style="font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.5);display:block;margin-bottom:.3rem">Notes</label>'
       +'<textarea id="eb-notes" rows="3" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(17,29,44,.15);border-radius:8px;font-family:inherit;font-size:.9rem;color:var(--navy);resize:vertical"></textarea></div>'
       +'<input type="hidden" id="eb-id">'
-      +'<div style="display:flex;gap:.6rem">'
+      +'<div style="display:flex;gap:.6rem;margin-bottom:.7rem">'
       +'<button onclick="document.getElementById(\'edit-booking-overlay\').remove()" style="flex:1;padding:.75rem;background:transparent;border:1px solid rgba(17,29,44,.15);border-radius:10px;font-family:inherit;font-size:.82rem;font-weight:500;color:rgba(17,29,44,.5);cursor:pointer">Cancel</button>'
       +'<button onclick="upcomingSave()" style="flex:2;padding:.75rem;background:var(--navy);border:none;border-radius:10px;font-family:inherit;font-size:.82rem;font-weight:500;color:#fff;cursor:pointer;letter-spacing:.04em">Save Changes</button>'
+      +'</div>'
+      +'<div style="display:flex;gap:.6rem">'
+      +'<button onclick="ebSendConfirmation()" style="flex:1;padding:.65rem;background:transparent;border:1px solid var(--gold);border-radius:10px;font-family:inherit;font-size:.72rem;font-weight:500;color:var(--gold);cursor:pointer;letter-spacing:.06em;text-transform:uppercase">Send Confirmation</button>'
+      +'<button onclick="ebSendEstimate()" style="flex:1;padding:.65rem;background:transparent;border:1px solid var(--gold);border-radius:10px;font-family:inherit;font-size:.72rem;font-weight:500;color:var(--gold);cursor:pointer;letter-spacing:.06em;text-transform:uppercase">Send Estimate</button>'
       +'</div></div>';
     document.body.appendChild(el);
     el.addEventListener('click',function(ev){if(ev.target===el)el.remove();});
   }
   document.getElementById('eb-id').value=bookingId;
+  document.getElementById('eb-name').value=j.name||j.customer_name||j.passenger_name||'';
+  document.getElementById('eb-phone').value=j.phone||j.customer_phone||j.passenger_phone||'';
+  document.getElementById('eb-email').value=j.email||j.customer_email||j.passenger_email||'';
   document.getElementById('eb-pickup').value=j.pickup||'';
   document.getElementById('eb-stop').value=j.stop_address||'';
   document.getElementById('eb-dest').value=j.dest||j.destination||'';
@@ -2899,6 +2914,9 @@ function upcomingEdit(bookingId){
 
 async function upcomingSave(){
   var id=document.getElementById('eb-id').value;
+  var name=document.getElementById('eb-name').value.trim();
+  var phone=document.getElementById('eb-phone').value.trim();
+  var email=document.getElementById('eb-email').value.trim();
   var pickup=document.getElementById('eb-pickup').value.trim();
   var stop=document.getElementById('eb-stop').value.trim();
   var dest=document.getElementById('eb-dest').value.trim();
@@ -2909,6 +2927,9 @@ async function upcomingSave(){
   if(!id)return;
   try{
     var body={};
+    if(name)body.passenger_name=name;
+    body.passenger_phone=phone||null;
+    body.passenger_email=email||null;
     if(pickup)body.pickup=pickup;
     body.stop_address=stop||null;
     if(dest)body.destination=dest;
@@ -2920,6 +2941,27 @@ async function upcomingSave(){
     var d=await r.json();
     if(r.ok&&d.ok){showToast('Booking updated');document.getElementById('edit-booking-overlay').remove();loadOwnerBookings();}
     else showToast(d.error||('Failed ('+r.status+')'));
+  }catch(e){showToast('Network error');}
+}
+
+async function ebSendConfirmation(){
+  var id=document.getElementById('eb-id').value;
+  if(!id)return;
+  try{
+    var r=await fetch('/api/bookings/'+id+'/send-confirmation',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}});
+    var d=await r.json();
+    if(r.ok&&d.ok) showToast('Confirmation email sent');
+    else showToast(d.error||'Failed to send');
+  }catch(e){showToast('Network error');}
+}
+async function ebSendEstimate(){
+  var id=document.getElementById('eb-id').value;
+  if(!id)return;
+  try{
+    var r=await fetch('/api/bookings/'+id+'/send-estimate',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}});
+    var d=await r.json();
+    if(r.ok&&d.ok) showToast('Estimate email sent');
+    else showToast(d.error||'Failed to send');
   }catch(e){showToast('Network error');}
 }
 
