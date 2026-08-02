@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const { getDb, DATA_DIR } = require('./db');
-const { sendAdminAlert, sendCustomerCancellation } = require('./email');
+const { sendAdminAlert, sendCustomerCancellation, sendCorporateIntro } = require('./email');
 const { sendAdminBookingWhatsApp } = require('./whatsapp');
 const gcal = require('./google-calendar');
 const events = require('./events');
@@ -1285,6 +1285,23 @@ router.post('/bookings/:id/send-estimate', async (req, res) => {
 
 // Sends a branded email asking the customer to pay, with card-only options
 // (no cash). Used when a completed booking hasn't been paid.
+// ── Corporate introduction email ─────────────────────────────────────────
+router.post('/send-corporate-intro', async (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const { email, company } = req.body || {};
+  if (!email) return res.status(400).json({ error: 'Email is required' });
+  try {
+    const ok = await sendCorporateIntro(email, company || '');
+    if (ok) res.json({ ok: true });
+    else res.status(500).json({ error: 'Email send failed' });
+  } catch (e) {
+    console.error('[API] corporate intro failed:', e.message);
+    res.status(500).json({ error: 'Failed to send' });
+  }
+});
+
 router.post('/bookings/:id/payment-reminder', async (req, res) => {
   if (!['admin', 'owner'].includes(req.auth.role)) {
     return res.status(403).json({ error: 'Access denied' });
