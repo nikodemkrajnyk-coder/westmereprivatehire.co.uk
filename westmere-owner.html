@@ -3016,7 +3016,7 @@ async function ownerNewBookingSubmit(){
       fare:fare,
       passengers:parseInt(document.getElementById('nb-pax').value)||1,
       notes:(document.getElementById('nb-notes').value||'').trim()||null,
-      payment:'cash'
+      payment:'pending'
     };
     var r=await fetch('/api/bookings',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     var d=await r.json();
@@ -3680,7 +3680,7 @@ async function createBookingFromAssist(bk){
       passengers:bk.passengers||1,
       flight:bk.flight||null,
       fare:bk.fare||null,
-      payment:bk.payment||'cash',
+      payment:bk.payment||'pending',
       notes:((bk.name||'')+(bk.phone?' | '+bk.phone:'')+(bk.email?' | '+bk.email:'')+(bk.notes?' | '+bk.notes:'')).trim()
     };
     var resp=await fetch('/api/bookings',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(body)});
