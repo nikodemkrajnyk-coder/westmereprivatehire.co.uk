@@ -50,7 +50,7 @@ function cashPage(state, message, ref) {
   return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
 <meta name="theme-color" content="#111D2C"><meta name="robots" content="noindex,nofollow">
-<title>Your journey | Westmere Executive Private Hire</title>
+<title>Your journey | Westmere Private Hire</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -73,7 +73,7 @@ body{font-family:var(--sans);font-weight:300;color:var(--text);background:var(--
 a.link{color:var(--gold);text-decoration:none}
 </style></head>
 <body><div class="card">
-  <div class="head"><div class="brand">Executive Private Hire</div><div class="brand-name">Westmere</div></div>
+  <div class="head"><div class="brand">Private Hire</div><div class="brand-name">Westmere</div></div>
   <div class="body"><div class="state">
     <div class="ico ${icoCls}">${ico}</div>
     <h2>${heading}</h2>
