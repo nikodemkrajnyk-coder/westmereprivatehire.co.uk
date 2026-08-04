@@ -298,7 +298,7 @@ async function sendCustomerEstimate(booking) {
   <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Thank you for your enquiry. Here is the estimate for your journey below.</p>
   ${buildDetailsTable(rows)}
   <p style="margin:24px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.65">To confirm this booking, simply reply to this email or call us on <a href="tel:+447930342593" style="color:${INK};text-decoration:none">07930 342593</a>. There is nothing to pay now — once your journey is confirmed we'll email you a secure link to pay online, or to let us know you'll settle on the day.</p>
-  <p style="margin:22px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Executive Private Hire</span></p>`;
+  <p style="margin:22px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
 
   const html = emailShell(body);
   const subject = 'Your estimate — ' + ref;
@@ -922,7 +922,7 @@ async function sendRecommendation(recipientEmail) {
   const body = `
   <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">You've been recommended</p>
   <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Hello,</p>
-  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Someone you know thought you&rsquo;d appreciate our executive private hire service. We provide premium chauffeur-driven transfers across Sussex &mdash; airport runs to Gatwick and Heathrow, corporate travel, special occasions, and reliable local journeys.</p>
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Someone you know thought you&rsquo;d appreciate our private hire service. We provide premium chauffeur-driven transfers across Sussex &mdash; airport runs to Gatwick and Heathrow, corporate travel, special occasions, and reliable local journeys.</p>
   <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">Licensed by Lewes District Council. Professional, punctual, and always at your service.</p>
   <div style="text-align:center;margin:26px 0 8px">
     <a href="https://westmereprivatehire.co.uk" style="display:inline-block;padding:13px 32px;background:${GOLD};color:#0E2540;text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:.03em">Book Your Journey</a>
@@ -931,7 +931,7 @@ async function sendRecommendation(recipientEmail) {
   <p style="margin:16px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
 
   const html = emailShell(body);
-  const subject = 'You\u2019ve been recommended \u2014 Westmere Executive Private Hire';
+  const subject = 'You\u2019ve been recommended \u2014 Westmere Private Hire';
   const preheader = 'Premium chauffeur-driven transfers across Sussex';
   const ok = await sendEmail(recipientEmail, subject, html, 'Westmere Private Hire', preheader);
   if (ok) console.log('[EMAIL] Recommendation sent to', recipientEmail);
@@ -985,7 +985,7 @@ async function sendPartnershipOutreach(recipientEmail, companyName) {
   const body = `
   <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Introduction</p>
   <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(contactName)},</p>
-  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">I hope this message finds you well. My name is Nikodem Krajnyk and I am the owner and operator of <strong style="color:${INK}">Westmere Executive Private Hire</strong>, a licensed chauffeur service based in Sussex.</p>
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">I hope this message finds you well. My name is Nikodem Krajnyk and I am the owner and operator of <strong style="color:${INK}">Westmere Private Hire</strong>, a licensed chauffeur service based in Sussex.</p>
   <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">I&rsquo;m reaching out to introduce myself and to offer my services should you ever find yourself in need of additional driver support during busy periods, overflow work, or when covering a wider area. I understand the demands of running a private hire business and I&rsquo;m always happy to help fellow operators.</p>
 
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;border-top:1px solid ${HAIRLINE};border-bottom:1px solid ${HAIRLINE}">
@@ -1008,14 +1008,14 @@ async function sendPartnershipOutreach(recipientEmail, companyName) {
   <p style="margin:20px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">With warm regards,</p>
   <p style="margin:4px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65"><strong>Nikodem Krajnyk</strong><br>
   <span style="color:${INK_SOFT}">Owner &amp; Operator</span><br>
-  <span style="color:${INK_SOFT}">Westmere Executive Private Hire</span></p>
+  <span style="color:${INK_SOFT}">Westmere Private Hire</span></p>
   <p style="margin:8px 0 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:${INK_MUTED};line-height:1.6">
   <a href="tel:+447930342593" style="color:${GOLD};text-decoration:none">07930 342 593</a> &nbsp;&middot;&nbsp;
   <a href="mailto:westmereprivatehire@gmail.com" style="color:${GOLD};text-decoration:none">westmereprivatehire@gmail.com</a><br>
   66 High Street, Lewes, BN7 1XG &nbsp;&middot;&nbsp; Licensed by Lewes District Council</p>`;
 
   const html = emailShell(body);
-  const subject = 'Introduction — Westmere Executive Private Hire · Driver Support Available';
+  const subject = 'Introduction — Westmere Private Hire · Driver Support Available';
   const preheader = 'Licensed executive chauffeur available for subcontract work across Sussex';
   const ok = await sendEmail(recipientEmail, subject, html, 'Westmere Private Hire', preheader);
   if (ok) console.log('[EMAIL] Partnership outreach sent to', recipientEmail);
@@ -1030,7 +1030,7 @@ async function sendCorporateIntro(recipientEmail, companyName) {
   const body = `
   <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Introduction</p>
   <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">${greeting},</p>
-  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">My name is Nikodem Krajnyk and I am the owner of <strong style="color:${INK}">Westmere Executive Private Hire</strong>, a licensed chauffeur service based locally in Sussex.</p>
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">My name is Nikodem Krajnyk and I am the owner of <strong style="color:${INK}">Westmere Private Hire</strong>, a licensed chauffeur service based locally in Sussex.</p>
   <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">I&rsquo;m writing to introduce our services, which are ideally suited for businesses in the Horsham and Crawley area. Whether your team needs reliable airport transfers, client pickups, or comfortable transport for meetings and events, we provide a discreet, professional service at competitive corporate rates.</p>
 
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;border-top:1px solid ${HAIRLINE};border-bottom:1px solid ${HAIRLINE}">
@@ -1052,7 +1052,7 @@ async function sendCorporateIntro(recipientEmail, companyName) {
   <p style="margin:20px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">With kind regards,</p>
   <p style="margin:4px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65"><strong>Nikodem Krajnyk</strong><br>
   <span style="color:${INK_SOFT}">Owner &amp; Operator</span><br>
-  <span style="color:${INK_SOFT}">Westmere Executive Private Hire</span></p>
+  <span style="color:${INK_SOFT}">Westmere Private Hire</span></p>
   <p style="margin:8px 0 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:${INK_MUTED};line-height:1.6">
   <a href="tel:+447930342593" style="color:${GOLD};text-decoration:none">07930 342 593</a> &nbsp;&middot;&nbsp;
   <a href="mailto:westmereprivatehire@gmail.com" style="color:${GOLD};text-decoration:none">westmereprivatehire@gmail.com</a><br>
