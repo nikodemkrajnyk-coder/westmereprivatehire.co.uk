@@ -497,6 +497,46 @@ router.post('/pay/:ref/intent', async (req, res) => {
 // ── Pay on the day: customer opts to settle with the driver ──────────────
 // The "Pay on the day" button in the confirmation email points here. Gated by
 // the same per-booking pay_token. Marks the booking payment = 'cash', notifies
+// ── Accept estimate — customer clicks "Accept This Quote" in email ──────
+router.get('/accept-estimate/:ref', (req, res) => {
+  try {
+    const db = getDb();
+    const ref = String(req.params.ref || '').trim().toUpperCase();
+    const email = String(req.query.email || '').trim().toLowerCase();
+    if (!ref || !email) {
+      return res.status(400).send(cashPage('error', 'This link is incomplete.'));
+    }
+
+    const b = db.prepare(`SELECT id, ref, status, passenger_email FROM bookings WHERE ref = ?`).get(ref);
+    if (!b || (b.passenger_email || '').toLowerCase() !== email) {
+      return res.status(404).send(cashPage('error', "We couldn't find this booking."));
+    }
+
+    if (b.status === 'confirmed') {
+      return res.send(cashPage('ok', 'This booking is already confirmed. We look forward to welcoming you.', b.ref));
+    }
+
+    // Mark as offered (accepted by customer, awaiting owner confirmation)
+    db.prepare("UPDATE bookings SET status = 'offered', updated_at = datetime('now') WHERE id = ?").run(b.id);
+
+    // Notify owner via SSE
+    const events = require('./events');
+    events.broadcast('estimate:accepted', { id: b.id, ref: b.ref, message: 'Customer accepted the estimate' });
+
+    // Send admin alert
+    const { sendEmail } = require('./email');
+    const adminEmail = process.env.ADMIN_EMAIL || process.env.GMAIL_USER;
+    if (adminEmail) {
+      sendEmail(adminEmail, 'Estimate accepted — ' + ref, '<p>The customer has accepted the estimate for <strong>' + ref + '</strong>. Please confirm the booking in the owner app.</p>', 'Westmere Bookings').catch(() => {});
+    }
+
+    return res.send(cashPage('ok', 'Thank you — your quote has been accepted! We will confirm your booking shortly and send you a payment link.', b.ref));
+  } catch (err) {
+    console.error('[ACCEPT] error:', err.message);
+    res.status(500).send(cashPage('error', 'Something went wrong. Please call us on 07930 342593.'));
+  }
+});
+
 // the owner over SSE, and returns a friendly thank-you page. Idempotent — a
 // repeat click just re-marks it. The pay_token is intentionally left intact so
 // the customer can still change their mind and pay online later.
