@@ -297,7 +297,11 @@ async function sendCustomerEstimate(booking) {
   <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
   <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Thank you for your enquiry. Here is the estimate for your journey below.</p>
   ${buildDetailsTable(rows)}
-  <p style="margin:24px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.65">To confirm this booking, simply reply to this email or call us on <a href="tel:+447930342593" style="color:${INK};text-decoration:none">07930 342593</a>. There is nothing to pay now — once your journey is confirmed we'll email you a secure link to pay online, or to let us know you'll settle on the day.</p>
+  <div style="text-align:center;margin:26px 0 4px">
+    <a href="https://westmereprivatehire.co.uk/api/public/accept-estimate/${encodeURIComponent(ref)}?email=${encodeURIComponent(email)}" style="display:inline-block;padding:14px 36px;background:${GOLD};color:${INK};text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:.04em">Accept This Quote</a>
+  </div>
+  <p style="margin:14px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_MUTED};font-style:italic;line-height:1.55;text-align:center">Click above to accept, or reply to this email, or call us on <a href="tel:+447930342593" style="color:${INK};text-decoration:none">07930 342593</a>.</p>
+  <p style="margin:12px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_SOFT};line-height:1.55;text-align:center">There is nothing to pay now — once confirmed we'll send you a secure payment link.</p>
   <p style="margin:22px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
 
   const html = emailShell(body);
