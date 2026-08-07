@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Westmere Admin">
-<meta name="theme-color" content="#111D2C">
+<meta name="theme-color" content="#1b1b1a">
 <link rel="manifest" href="/manifest-owner.webmanifest">
 <title>Westmere · Admin Panel</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,13 +15,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-:root{--navy:#111D2C;--navy2:#1C2A3E;--cream:#F5F2ED;--gold:#B8985A;--gold2:#C9A96E;--text:#111D2C;--muted:rgba(17,29,44,.72);--border:rgba(17,29,44,.12);--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif;
---green:#2D6E47;--green-bg:rgba(45,110,71,.18);--red:#8B2222;--red-bg:rgba(139,34,34,.15);--amber:#B8985A;--amber-bg:rgba(184,152,90,.1);--purple:#9B7FD4;--purple-bg:rgba(155,127,212,.1);--text-light:rgba(17,29,44,.68);--text-mid:rgba(17,29,44,.8);--cream-dark:rgba(17,29,44,.04);--rule:rgba(17,29,44,.08);}
+:root{--navy:#1b1b1a;--navy2:#2b2a26;--cream:#f5f2ec;--gold:#b89045;--gold2:#c9a05a;--text:#1b1b1a;--muted:rgba(27,27,26,.72);--border:rgba(27,27,26,.12);--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif;
+--green:#2D6E47;--green-bg:rgba(45,110,71,.18);--red:#8B2222;--red-bg:rgba(139,34,34,.15);--amber:#b89045;--amber-bg:rgba(184,144,69,.1);--purple:#9B7FD4;--purple-bg:rgba(155,127,212,.1);--text-light:rgba(27,27,26,.68);--text-mid:rgba(27,27,26,.8);--cream-dark:rgba(27,27,26,.04);--rule:rgba(27,27,26,.08);}
 html{font-size:16px;scroll-behavior:smooth}
-body{font-family:var(--sans);font-weight:300;color:var(--navy);background:#F5F2ED;line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh;display:flex}
+body{font-family:var(--sans);font-weight:300;color:var(--navy);background:#f5f2ec;line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh;display:flex}
 body::before{display:none}
 h1,h2,h3,h4{font-family:var(--serif);font-weight:300;color:var(--navy);letter-spacing:.05em}
-p{color:rgba(17,29,44,.72);line-height:1.8}
+p{color:rgba(27,27,26,.72);line-height:1.8}
 a{color:var(--gold)}
 
 /* ── HIDE SITE NAV / FOOTER / WHATSAPP FAB ── */
@@ -30,51 +30,51 @@ a{color:var(--gold)}
 
 /* ── LOGIN FORM ── */
 .fg{display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem}
-.fl{font-family:var(--sans);font-size:.58rem;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:rgba(17,29,44,.7)}
-.fi{font-family:var(--sans);font-size:.92rem;font-weight:300;color:var(--navy);background:transparent;border:none;border-bottom:1px solid rgba(17,29,44,.15);padding:.78rem 0;outline:none;width:100%;transition:border-color .3s;min-height:48px;-webkit-appearance:none}
+.fl{font-family:var(--sans);font-size:.58rem;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:rgba(27,27,26,.7)}
+.fi{font-family:var(--sans);font-size:.92rem;font-weight:300;color:var(--navy);background:transparent;border:none;border-bottom:1px solid rgba(27,27,26,.15);padding:.78rem 0;outline:none;width:100%;transition:border-color .3s;min-height:48px;-webkit-appearance:none}
 .fi:focus{border-bottom-color:var(--gold)}
-.fi::placeholder{color:rgba(17,29,44,.62)}
+.fi::placeholder{color:rgba(27,27,26,.62)}
 .btn-main{width:100%;padding:1rem;background:var(--gold);color:var(--navy);border:none;font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;transition:all .25s;min-height:52px}
 .btn-main:hover{background:var(--gold2)}
 /* ── ADMIN APP ── */
-#admin-login{position:fixed;inset:0;background:rgba(245,242,237,.97);backdrop-filter:blur(20px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem}
-.al-box{width:100%;max-width:400px;background:#fff;border:1px solid rgba(17,29,44,.08);box-shadow:0 4px 24px rgba(17,29,44,.06);position:relative;z-index:1;animation:up .4s ease}
-.al-hd{background:rgba(17,29,44,.04);padding:2rem;text-align:center;border-bottom:1px solid rgba(184,152,90,.15)}
-.al-crest{width:52px;height:52px;border:1px solid rgba(184,152,90,.38);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.3rem;font-weight:500;color:var(--navy);margin:0 auto .8rem}
+#admin-login{position:fixed;inset:0;background:rgba(245,242,236,.97);backdrop-filter:blur(20px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem}
+.al-box{width:100%;max-width:400px;background:#fff;border:1px solid rgba(27,27,26,.08);box-shadow:0 4px 24px rgba(27,27,26,.06);position:relative;z-index:1;animation:up .4s ease}
+.al-hd{background:rgba(27,27,26,.04);padding:2rem;text-align:center;border-bottom:1px solid rgba(184,144,69,.15)}
+.al-crest{width:52px;height:52px;border:1px solid rgba(184,144,69,.38);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.3rem;font-weight:500;color:var(--navy);margin:0 auto .8rem}
 .al-name{font-family:var(--serif);font-size:1.4rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--navy);display:block}
 .al-sub{font-size:.54rem;font-weight:400;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);display:block;margin-top:.15rem}
 .al-body{padding:2rem}
 .al-title{font-family:var(--serif);font-size:1.3rem;font-weight:400;color:var(--navy);margin-bottom:.2rem}
-.al-desc{font-size:.78rem;color:rgba(17,29,44,.68);margin-bottom:1.5rem;font-weight:300}
+.al-desc{font-size:.78rem;color:rgba(27,27,26,.68);margin-bottom:1.5rem;font-weight:300}
 .al-err{display:none;background:var(--red-bg);border:1px solid rgba(139,34,34,.4);padding:.65rem .9rem;font-size:.78rem;color:var(--red);margin-bottom:.9rem}
 .al-err.show{display:block}
-.al-attempts{font-size:.7rem;color:rgba(17,29,44,.64);text-align:center;margin-top:.7rem}
+.al-attempts{font-size:.7rem;color:rgba(27,27,26,.64);text-align:center;margin-top:.7rem}
 /* SIDEBAR */
-.sidebar{width:220px;flex-shrink:0;background:rgba(255,255,255,.95);backdrop-filter:blur(20px);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50;overflow-y:auto;border-right:1px solid rgba(17,29,44,.06);transition:transform .3s}
-.sb-logo{padding:1.4rem 1.2rem 1.1rem;border-bottom:1px solid rgba(17,29,44,.06);flex-shrink:0}
-.sb-crest{width:36px;height:36px;border:1px solid rgba(184,152,90,.35);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1rem;font-weight:500;color:var(--navy);margin-bottom:.6rem}
+.sidebar{width:220px;flex-shrink:0;background:rgba(255,255,255,.95);backdrop-filter:blur(20px);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50;overflow-y:auto;border-right:1px solid rgba(27,27,26,.06);transition:transform .3s}
+.sb-logo{padding:1.4rem 1.2rem 1.1rem;border-bottom:1px solid rgba(27,27,26,.06);flex-shrink:0}
+.sb-crest{width:36px;height:36px;border:1px solid rgba(184,144,69,.35);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1rem;font-weight:500;color:var(--navy);margin-bottom:.6rem}
 .sb-name{font-family:var(--serif);font-size:1.1rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);display:block;line-height:1.1}
 .sb-sub{font-size:.52rem;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);display:block;margin-top:.15rem}
-.sb-section{padding:.6rem 0;border-bottom:1px solid rgba(17,29,44,.06)}
-.sb-label{font-size:.52rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:rgba(17,29,44,.62);padding:.4rem 1.2rem;display:block}
-.sb-item{display:flex;align-items:center;gap:.65rem;padding:.55rem 1.2rem;cursor:pointer;font-family:var(--sans);font-size:.75rem;font-weight:300;color:rgba(17,29,44,.68);transition:all .15s;border:none;background:transparent;width:100%;text-align:left;text-decoration:none;letter-spacing:.02em}
-.sb-item:hover{color:var(--navy);background:rgba(17,29,44,.04)}
-.sb-item.on{color:var(--gold);background:rgba(184,152,90,.08);font-weight:400}
+.sb-section{padding:.6rem 0;border-bottom:1px solid rgba(27,27,26,.06)}
+.sb-label{font-size:.52rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:rgba(27,27,26,.62);padding:.4rem 1.2rem;display:block}
+.sb-item{display:flex;align-items:center;gap:.65rem;padding:.55rem 1.2rem;cursor:pointer;font-family:var(--sans);font-size:.75rem;font-weight:300;color:rgba(27,27,26,.68);transition:all .15s;border:none;background:transparent;width:100%;text-align:left;text-decoration:none;letter-spacing:.02em}
+.sb-item:hover{color:var(--navy);background:rgba(27,27,26,.04)}
+.sb-item.on{color:var(--gold);background:rgba(184,144,69,.08);font-weight:400}
 .sb-icon{width:18px;height:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sb-icon svg{width:16px;height:16px;display:block}
 .sb-badge{margin-left:auto;background:var(--gold);color:var(--navy);font-size:.5rem;font-weight:700;padding:.12rem .4rem;border-radius:10px}
 .sb-badge.red{background:var(--red);color:white}
-.sb-bottom{margin-top:auto;padding:1rem 1.2rem;border-top:1px solid rgba(17,29,44,.06);flex-shrink:0}
-.sb-version{font-size:.55rem;color:rgba(17,29,44,.6);letter-spacing:.08em}
+.sb-bottom{margin-top:auto;padding:1rem 1.2rem;border-top:1px solid rgba(27,27,26,.06);flex-shrink:0}
+.sb-version{font-size:.55rem;color:rgba(27,27,26,.6);letter-spacing:.08em}
 /* MAIN */
 .main{margin-left:220px;flex:1;min-height:100vh;display:flex;flex-direction:column}
-.topbar{background:rgba(255,255,255,.92)!important;backdrop-filter:blur(16px)!important;border-bottom:1px solid rgba(17,29,44,.06)!important;box-shadow:0 1px 8px rgba(17,29,44,.04)!important;padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:64px;position:sticky;top:0;z-index:40;flex-shrink:0}
+.topbar{background:rgba(255,255,255,.92)!important;backdrop-filter:blur(16px)!important;border-bottom:1px solid rgba(27,27,26,.06)!important;box-shadow:0 1px 8px rgba(27,27,26,.04)!important;padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:64px;position:sticky;top:0;z-index:40;flex-shrink:0}
 .tb-left{display:flex;align-items:center;gap:1rem}
 .mob-menu-btn{display:none;background:none;border:none;cursor:pointer;flex-direction:column;gap:4px;padding:4px}
 .mob-menu-btn span{display:block;width:20px;height:1.5px;background:var(--navy)}
 .tb-title{font-family:var(--serif);font-size:1.2rem;font-weight:500;letter-spacing:.04em;color:var(--navy)}
 .tb-right{display:flex;align-items:center;gap:.8rem}
 .tb-clock{font-family:var(--serif);font-size:1.1rem;color:var(--gold)}
-.tb-live{display:flex;align-items:center;gap:.35rem;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.66)}
+.tb-live{display:flex;align-items:center;gap:.35rem;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.66)}
 .live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;flex-shrink:0}
 .btn-new{font-family:var(--sans);font-size:.65rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;background:var(--gold);color:var(--navy);padding:.6rem 1.2rem;border:none;cursor:pointer;transition:all .2s;white-space:nowrap}
 .btn-new:hover{background:var(--gold2);color:var(--navy)}
@@ -85,10 +85,10 @@ a{color:var(--gold)}
 .page-hd{margin-bottom:1.8rem}
 .page-title{font-family:var(--serif);font-size:2rem;font-weight:400;color:var(--navy);line-height:1}
 .page-title em{font-style:italic;color:var(--gold)}
-.page-sub{font-size:.82rem;color:rgba(17,29,44,.68);font-weight:300;margin-top:.3rem}
+.page-sub{font-size:.82rem;color:rgba(27,27,26,.68);font-weight:300;margin-top:.3rem}
 /* STATS */
 .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:1.8rem}
-.stat{background:#fff;border:1px solid rgba(17,29,44,.08);box-shadow:0 2px 8px rgba(17,29,44,.03);padding:1.1rem 1.2rem;cursor:pointer;transition:border-color .2s;position:relative;overflow:hidden}
+.stat{background:#fff;border:1px solid rgba(27,27,26,.08);box-shadow:0 2px 8px rgba(27,27,26,.03);padding:1.1rem 1.2rem;cursor:pointer;transition:border-color .2s;position:relative;overflow:hidden}
 .stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
 .stat.s-gold::before{background:var(--gold)}
 .stat.s-green::before{background:var(--green)}
@@ -96,11 +96,11 @@ a{color:var(--gold)}
 .stat.s-red::before{background:var(--red)}
 .stat.s-purple::before{background:var(--purple)}
 .sv{font-family:var(--serif);font-size:2rem;color:var(--navy);line-height:1}
-.sl{font-size:.56rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.66);margin-top:.25rem}
-.ss{font-size:.7rem;color:rgba(17,29,44,.62);margin-top:.12rem;font-weight:300}
+.sl{font-size:.56rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(27,27,26,.66);margin-top:.25rem}
+.ss{font-size:.7rem;color:rgba(27,27,26,.62);margin-top:.12rem;font-weight:300}
 /* CARD */
-.card{background:#fff;border:1px solid rgba(17,29,44,.08);box-shadow:0 2px 12px rgba(17,29,44,.04);margin-bottom:1.2rem}
-.ch{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.3rem;border-bottom:1px solid rgba(17,29,44,.06)}
+.card{background:#fff;border:1px solid rgba(27,27,26,.08);box-shadow:0 2px 12px rgba(27,27,26,.04);margin-bottom:1.2rem}
+.ch{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.3rem;border-bottom:1px solid rgba(27,27,26,.06)}
 .ct{font-size:.58rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
 .cb{padding:1.2rem 1.3rem}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem}
@@ -109,30 +109,30 @@ a{color:var(--gold)}
 .tl-item{display:flex;gap:.9rem;align-items:stretch}
 .tl-time-col{display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:40px}
 .tl-time{font-family:var(--serif);font-size:.9rem;color:var(--gold);line-height:1}
-.tl-line{flex:1;width:1px;background:rgba(17,29,44,.1);margin:.2rem 0}
-.tl-card{flex:1;background:#fff;border:1px solid rgba(17,29,44,.08);padding:.8rem 1rem;cursor:pointer;transition:border-color .2s;position:relative}
-.tl-card.active{border-left:3px solid var(--gold);background:rgba(184,152,90,.06)}
+.tl-line{flex:1;width:1px;background:rgba(27,27,26,.1);margin:.2rem 0}
+.tl-card{flex:1;background:#fff;border:1px solid rgba(27,27,26,.08);padding:.8rem 1rem;cursor:pointer;transition:border-color .2s;position:relative}
+.tl-card.active{border-left:3px solid var(--gold);background:rgba(184,144,69,.06)}
 .tl-card.done{border-left:3px solid var(--green);opacity:.65}
 .tl-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem}
 .tl-name{font-size:.85rem;font-weight:500;color:var(--navy)}
-.tl-route{font-size:.78rem;color:rgba(17,29,44,.7);margin-bottom:.4rem}
+.tl-route{font-size:.78rem;color:rgba(27,27,26,.7);margin-bottom:.4rem}
 .tl-actions{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.5rem}
 /* TAGS */
 .tag{display:inline-flex;align-items:center;font-size:.54rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.15rem .5rem}
-.tag-upcoming{background:rgba(184,152,90,.15);color:var(--gold)}
+.tag-upcoming{background:rgba(184,144,69,.15);color:var(--gold)}
 .tag-done{background:var(--green-bg);color:var(--green)}
 .tag-cancel{background:var(--red-bg);color:var(--red)}
 .tag-account{background:var(--purple-bg);color:var(--purple)}
-.tag-cash{background:rgba(184,152,90,.16);color:#8B7230}
+.tag-cash{background:rgba(184,144,69,.16);color:#8B7230}
 .tag-card{background:rgba(59,130,246,.08);color:#60A5FA}
 .tag-prepaid{background:var(--green-bg);color:var(--green)}
-.tag-await{background:rgba(17,29,44,.07);color:rgba(17,29,44,.7)}
+.tag-await{background:rgba(27,27,26,.07);color:rgba(27,27,26,.7)}
 /* BUTTONS */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;font-family:var(--sans);font-size:.62rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;padding:.6rem 1.2rem;cursor:pointer;border:none;transition:all .2s;text-decoration:none;white-space:nowrap}
 .btn:active{transform:scale(.97)}
 .btn-gold{background:var(--gold);color:var(--navy);border:1px solid var(--gold)}.btn-gold:hover{background:var(--gold2)}
-.btn-navy{background:rgba(17,29,44,.06);color:var(--navy);border:1px solid rgba(17,29,44,.15)}.btn-navy:hover{background:var(--gold);border-color:var(--gold);color:var(--navy)}
-.btn-ghost{background:transparent;color:rgba(17,29,44,.78);border:1px solid rgba(17,29,44,.18)}.btn-ghost:hover{color:var(--navy);border-color:rgba(17,29,44,.4);background:rgba(17,29,44,.03)}
+.btn-navy{background:rgba(27,27,26,.06);color:var(--navy);border:1px solid rgba(27,27,26,.15)}.btn-navy:hover{background:var(--gold);border-color:var(--gold);color:var(--navy)}
+.btn-ghost{background:transparent;color:rgba(27,27,26,.78);border:1px solid rgba(27,27,26,.18)}.btn-ghost:hover{color:var(--navy);border-color:rgba(27,27,26,.4);background:rgba(27,27,26,.03)}
 .btn-green{background:var(--green-bg);color:var(--green);border:1px solid rgba(45,110,71,.3)}.btn-green:hover{background:rgba(45,110,71,.25)}
 .btn-red{background:var(--red-bg);color:var(--red);border:1px solid rgba(139,34,34,.3)}.btn-red:hover{background:rgba(139,34,34,.25)}
 .btn-blue{background:rgba(59,130,246,.08);color:#60A5FA;border:1px solid rgba(59,130,246,.2)}.btn-blue:hover{background:rgba(59,130,246,.15)}
@@ -141,10 +141,10 @@ a{color:var(--gold)}
 .btn-lg{padding:.9rem 2rem;font-size:.72rem}
 /* FORMS */
 .fg{display:flex;flex-direction:column;gap:.38rem;margin-bottom:.9rem}
-.fl{font-size:.58rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:rgba(17,29,44,.7)}
-.fi{font-family:var(--sans);font-size:.92rem;font-weight:300;color:var(--navy);background:rgba(17,29,44,.03);border:none;border-bottom:1px solid rgba(17,29,44,.12);padding:.78rem 1rem;outline:none;width:100%;transition:border-color .2s;min-height:50px;-webkit-appearance:none}
-.fi:focus{border-bottom-color:var(--gold);background:rgba(17,29,44,.04)}
-.fi::placeholder{color:rgba(17,29,44,.62)}
+.fl{font-size:.58rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:rgba(27,27,26,.7)}
+.fi{font-family:var(--sans);font-size:.92rem;font-weight:300;color:var(--navy);background:rgba(27,27,26,.03);border:none;border-bottom:1px solid rgba(27,27,26,.12);padding:.78rem 1rem;outline:none;width:100%;transition:border-color .2s;min-height:50px;-webkit-appearance:none}
+.fi:focus{border-bottom-color:var(--gold);background:rgba(27,27,26,.04)}
+.fi::placeholder{color:rgba(27,27,26,.62)}
 select.fi{cursor:pointer}
 select.fi option{background:#fff;color:var(--navy)}
 textarea.fi{resize:vertical;min-height:80px}
@@ -155,121 +155,121 @@ textarea.fi{resize:vertical;min-height:80px}
 .avail{display:none;padding:.9rem 1rem;margin-top:.7rem;font-size:.82rem;line-height:1.75}
 .avail.show{display:block;animation:up .3s ease}
 .avail.free{background:var(--green-bg);border:1px solid rgba(45,110,71,.3)}
-.avail.tight{background:var(--amber-bg);border:1px solid rgba(184,152,90,.3)}
+.avail.tight{background:var(--amber-bg);border:1px solid rgba(184,144,69,.3)}
 .avail.no{background:var(--red-bg);border:1px solid rgba(139,34,34,.3)}
 .avail-title{font-family:var(--serif);font-size:1.1rem;font-weight:500;margin-bottom:.15rem}
 .avail.free .avail-title{color:var(--green)}
 .avail.tight .avail-title{color:var(--gold)}
 .avail.no .avail-title{color:var(--red)}
-.avail-detail{font-weight:300;color:rgba(17,29,44,.7);font-size:.8rem}
-.sub-offer{display:none;margin-top:.6rem;padding:.8rem;background:var(--purple-bg);border:1px solid rgba(155,127,212,.2);font-size:.82rem;font-weight:300;color:rgba(17,29,44,.74);line-height:1.7}
+.avail-detail{font-weight:300;color:rgba(27,27,26,.7);font-size:.8rem}
+.sub-offer{display:none;margin-top:.6rem;padding:.8rem;background:var(--purple-bg);border:1px solid rgba(155,127,212,.2);font-size:.82rem;font-weight:300;color:rgba(27,27,26,.74);line-height:1.7}
 .sub-offer.show{display:block}
 /* PRICE BOX */
-.price-box{display:none;background:rgba(255,255,255,.95);padding:1.4rem 1.6rem;margin-top:1rem;border:1px solid rgba(184,152,90,.15)}
+.price-box{display:none;background:rgba(255,255,255,.95);padding:1.4rem 1.6rem;margin-top:1rem;border:1px solid rgba(184,144,69,.15)}
 .price-box.show{display:block;animation:up .35s ease}
-.pb-label{font-size:.58rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(184,152,90,.6);margin-bottom:.3rem;display:flex;align-items:center;gap:.35rem}
+.pb-label{font-size:.58rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(184,144,69,.6);margin-bottom:.3rem;display:flex;align-items:center;gap:.35rem}
 .pb-dot{width:5px;height:5px;border-radius:50%;background:var(--gold);animation:pulse 1.8s infinite}
 .pb-amount{font-family:var(--serif);font-size:3.5rem;color:var(--gold);line-height:1;margin-bottom:.2rem}
-.pb-sub{font-size:.65rem;color:rgba(17,29,44,.62);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem;font-weight:300}
-.pb-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;padding-top:1rem;border-top:1px solid rgba(17,29,44,.06)}
-.pb-item .pbi-l{font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.62);margin-bottom:.12rem}
-.pb-item .pbi-v{font-size:.86rem;color:rgba(17,29,44,.78);font-weight:300}
+.pb-sub{font-size:.65rem;color:rgba(27,27,26,.62);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem;font-weight:300}
+.pb-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;padding-top:1rem;border-top:1px solid rgba(27,27,26,.06)}
+.pb-item .pbi-l{font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.62);margin-bottom:.12rem}
+.pb-item .pbi-v{font-size:.86rem;color:rgba(27,27,26,.78);font-weight:300}
 /* NOTIFICATION OPTIONS */
 .notify-list{display:flex;flex-direction:column;gap:.6rem;margin-top:.5rem}
-.notify-opt{display:flex;align-items:center;gap:.8rem;padding:.9rem 1rem;background:#fff;border:1px solid rgba(17,29,44,.08);cursor:pointer;transition:all .2s}
-.notify-opt.on{border-color:var(--gold);background:rgba(184,152,90,.08)}
+.notify-opt{display:flex;align-items:center;gap:.8rem;padding:.9rem 1rem;background:#fff;border:1px solid rgba(27,27,26,.08);cursor:pointer;transition:all .2s}
+.notify-opt.on{border-color:var(--gold);background:rgba(184,144,69,.08)}
 .notify-opt:hover{border-color:var(--gold)}
 .no-icon{font-size:1rem;flex-shrink:0}
 .no-name{font-size:.86rem;font-weight:400;color:var(--navy)}
-.no-sub{font-size:.72rem;color:rgba(17,29,44,.66);margin-top:.05rem}
-.no-chk{width:18px;height:18px;border-radius:50%;border:1px solid rgba(17,29,44,.15);background:rgba(17,29,44,.04);display:flex;align-items:center;justify-content:center;font-size:.58rem;margin-left:auto;flex-shrink:0;transition:all .2s;color:transparent}
+.no-sub{font-size:.72rem;color:rgba(27,27,26,.66);margin-top:.05rem}
+.no-chk{width:18px;height:18px;border-radius:50%;border:1px solid rgba(27,27,26,.15);background:rgba(27,27,26,.04);display:flex;align-items:center;justify-content:center;font-size:.58rem;margin-left:auto;flex-shrink:0;transition:all .2s;color:transparent}
 .notify-opt.on .no-chk{background:var(--gold);border-color:var(--gold);color:var(--navy);font-weight:700}
 /* JOBS TABLE */
 .jtable{width:100%;border-collapse:collapse}
-.jtable th{font-size:.56rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.66);padding:.6rem .8rem;border-bottom:1px solid rgba(17,29,44,.08);text-align:left;white-space:nowrap;background:rgba(17,29,44,.03)}
-.jtable td{font-size:.8rem;padding:.65rem .8rem;border-bottom:1px solid rgba(17,29,44,.05);color:rgba(17,29,44,.78);vertical-align:middle}
+.jtable th{font-size:.56rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:rgba(27,27,26,.66);padding:.6rem .8rem;border-bottom:1px solid rgba(27,27,26,.08);text-align:left;white-space:nowrap;background:rgba(27,27,26,.03)}
+.jtable td{font-size:.8rem;padding:.65rem .8rem;border-bottom:1px solid rgba(27,27,26,.05);color:rgba(27,27,26,.78);vertical-align:middle}
 .jtable tr:last-child td{border-bottom:none}
 .jtable tr:hover td{color:var(--navy)}
 .jtable .main-v{color:var(--navy);font-weight:400}
-.jtable .sub-v{font-size:.66rem;color:rgba(17,29,44,.64);margin-top:.08rem}
+.jtable .sub-v{font-size:.66rem;color:rgba(27,27,26,.64);margin-top:.08rem}
 /* FARE TABLE */
 .fare-table{width:100%;border-collapse:collapse}
-.fare-table th{font-size:.56rem;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);padding:.5rem .7rem;background:rgba(17,29,44,.04);text-align:center}
-.fare-table td{padding:.4rem .5rem;border:1px solid rgba(17,29,44,.06);text-align:center}
-.fare-table tr:first-child td{background:rgba(17,29,44,.03);font-size:.75rem;font-weight:500;color:var(--navy);text-align:left}
+.fare-table th{font-size:.56rem;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);padding:.5rem .7rem;background:rgba(27,27,26,.04);text-align:center}
+.fare-table td{padding:.4rem .5rem;border:1px solid rgba(27,27,26,.06);text-align:center}
+.fare-table tr:first-child td{background:rgba(27,27,26,.03);font-size:.75rem;font-weight:500;color:var(--navy);text-align:left}
 .fare-input{background:transparent;border:none;outline:none;font-family:var(--sans);font-size:.84rem;font-weight:500;color:var(--gold);text-align:center;width:100%;padding:.18rem}
-.fare-input:focus{background:rgba(184,152,90,.08)}
+.fare-input:focus{background:rgba(184,144,69,.08)}
 /* NOTIFICATIONS LIST */
-.notif{display:flex;align-items:flex-start;gap:.65rem;padding:.7rem 0;border-bottom:1px solid rgba(17,29,44,.06)}
+.notif{display:flex;align-items:flex-start;gap:.65rem;padding:.7rem 0;border-bottom:1px solid rgba(27,27,26,.06)}
 .notif:last-child{border-bottom:none}
 .notif-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:.35rem}
-.notif-text{font-size:.78rem;color:rgba(17,29,44,.74);line-height:1.55}
+.notif-text{font-size:.78rem;color:rgba(27,27,26,.74);line-height:1.55}
 .notif-text strong{color:var(--navy)}
-.notif-time{font-size:.62rem;color:rgba(17,29,44,.62);margin-top:.12rem}
+.notif-time{font-size:.62rem;color:rgba(27,27,26,.62);margin-top:.12rem}
 /* SETTING ROW */
-.setting-row{display:flex;align-items:center;justify-content:space-between;padding:.9rem 0;border-bottom:1px solid rgba(17,29,44,.06)}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:.9rem 0;border-bottom:1px solid rgba(27,27,26,.06)}
 .setting-row:last-child{border-bottom:none}
 .sr-title{font-size:.84rem;color:var(--navy);font-weight:400}
-.sr-sub{font-size:.7rem;color:rgba(17,29,44,.66);margin-top:.08rem;font-weight:300}
+.sr-sub{font-size:.7rem;color:rgba(27,27,26,.66);margin-top:.08rem;font-weight:300}
 /* MODAL */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:flex-start;justify-content:center;padding:1.5rem;overflow-y:auto}
 .overlay.on{display:flex;animation:fadeIn .2s ease}
-.modal{background:#fff;border:1px solid rgba(17,29,44,.1);width:100%;max-width:600px;margin:auto 0}
-.modal .btn-ghost{color:rgba(17,29,44,.7);border-color:rgba(17,29,44,.2)}
-.modal .btn-ghost:hover{color:var(--navy);border-color:rgba(17,29,44,.4)}
+.modal{background:#fff;border:1px solid rgba(27,27,26,.1);width:100%;max-width:600px;margin:auto 0}
+.modal .btn-ghost{color:rgba(27,27,26,.7);border-color:rgba(27,27,26,.2)}
+.modal .btn-ghost:hover{color:var(--navy);border-color:rgba(27,27,26,.4)}
 /* iOS Safari auto-zooms into inputs with font-size < 16px on focus.
    Force 16px on mobile so scrolling near inputs doesn't trigger zoom. */
 @media (max-width:900px){.fi{font-size:16px}}
-.modal-hd{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.5rem;border-bottom:1px solid rgba(17,29,44,.08);position:sticky;top:0;background:#fff;z-index:1}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.5rem;border-bottom:1px solid rgba(27,27,26,.08);position:sticky;top:0;background:#fff;z-index:1}
 .modal-title{font-family:var(--serif);font-size:1.3rem;font-weight:500;color:var(--navy)}
-.modal-x{background:none;border:none;color:rgba(17,29,44,.66);cursor:pointer;font-size:1.1rem;line-height:1}
+.modal-x{background:none;border:none;color:rgba(27,27,26,.66);cursor:pointer;font-size:1.1rem;line-height:1}
 .modal-x:hover{color:var(--navy)}
 .modal-body{padding:1.5rem}
-.modal-foot{padding:1rem 1.5rem;border-top:1px solid rgba(17,29,44,.08);display:flex;gap:.6rem;justify-content:flex-end}
+.modal-foot{padding:1rem 1.5rem;border-top:1px solid rgba(27,27,26,.08);display:flex;gap:.6rem;justify-content:flex-end}
 /* TOAST */
-.toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:300;background:rgba(17,29,44,.92);border:1px solid var(--gold);padding:.85rem 1.2rem;font-size:.78rem;color:#fff;display:none;max-width:340px;backdrop-filter:blur(10px)}
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:300;background:rgba(27,27,26,.92);border:1px solid var(--gold);padding:.85rem 1.2rem;font-size:.78rem;color:#fff;display:none;max-width:340px;backdrop-filter:blur(10px)}
 .toast.on{display:flex;align-items:center;gap:.5rem;animation:sl .3s ease}
 .toast .ti{color:var(--gold);flex-shrink:0}
 /* CUSTOMER CARDS */
 .cust-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
-.cust-card{background:#fff;border:1px solid rgba(17,29,44,.08);padding:1.1rem;cursor:pointer;transition:border-color .2s}
+.cust-card{background:#fff;border:1px solid rgba(27,27,26,.08);padding:1.1rem;cursor:pointer;transition:border-color .2s}
 .cust-card:hover{border-color:var(--gold)}
 .cc-name{font-size:.92rem;font-weight:500;color:var(--navy);margin-bottom:.2rem}
 .cc-type{display:inline-block;font-size:.54rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.12rem .45rem;margin-bottom:.4rem}
 .cc-business{background:var(--purple-bg);color:var(--purple)}
 .cc-personal{background:rgba(59,130,246,.08);color:#60A5FA}
-.cc-meta{font-size:.72rem;color:rgba(17,29,44,.66);font-weight:300}
-.cc-actions{margin-top:.75rem;padding-top:.65rem;border-top:1px solid rgba(17,29,44,.06);display:flex;gap:.4rem}
-.cc-btn{flex:1;padding:.5rem .6rem;background:transparent;color:var(--navy);border:1px solid rgba(17,29,44,.15);border-radius:6px;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .2s}
+.cc-meta{font-size:.72rem;color:rgba(27,27,26,.66);font-weight:300}
+.cc-actions{margin-top:.75rem;padding-top:.65rem;border-top:1px solid rgba(27,27,26,.06);display:flex;gap:.4rem}
+.cc-btn{flex:1;padding:.5rem .6rem;background:transparent;color:var(--navy);border:1px solid rgba(27,27,26,.15);border-radius:6px;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .2s}
 .cc-btn:hover{background:var(--gold);color:#fff;border-color:var(--gold)}
 .cc-btn-del{color:var(--red)!important;border-color:rgba(139,34,34,.2)!important}
 .cc-btn-del:hover{background:var(--red)!important;border-color:var(--red)!important;color:#fff!important}
 .cc-stats{display:flex;gap:.8rem;margin-top:.45rem}
-.cc-stat{font-size:.68rem;color:rgba(17,29,44,.68)}
+.cc-stat{font-size:.68rem;color:rgba(27,27,26,.68)}
 .cc-stat span{color:var(--gold);font-weight:500}
 /* INVOICE TABLE */
 .inv-table{width:100%;border-collapse:collapse}
-.inv-table th{font-size:.56rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.66);padding:.6rem .8rem;border-bottom:1px solid rgba(17,29,44,.08);text-align:left;background:rgba(17,29,44,.03)}
-.inv-table td{font-size:.82rem;padding:.7rem .8rem;border-bottom:1px solid rgba(17,29,44,.05);color:rgba(17,29,44,.78);vertical-align:middle}
+.inv-table th{font-size:.56rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:rgba(27,27,26,.66);padding:.6rem .8rem;border-bottom:1px solid rgba(27,27,26,.08);text-align:left;background:rgba(27,27,26,.03)}
+.inv-table td{font-size:.82rem;padding:.7rem .8rem;border-bottom:1px solid rgba(27,27,26,.05);color:rgba(27,27,26,.78);vertical-align:middle}
 .inv-table tr:last-child td{border-bottom:none}
 .inv-table tr:hover td{color:var(--navy)}
 /* DRIVER CARDS */
 .driver-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
-.driver-card{background:#fff;border:1px solid rgba(17,29,44,.08);padding:1.2rem;cursor:pointer;transition:border-color .2s;position:relative}
+.driver-card{background:#fff;border:1px solid rgba(27,27,26,.08);padding:1.2rem;cursor:pointer;transition:border-color .2s;position:relative}
 .driver-card:hover{border-color:var(--gold)}
-.driver-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:rgba(17,29,44,.08)}
+.driver-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:rgba(27,27,26,.08)}
 .driver-card.active::before{background:var(--green)}
-.driver-card.inactive::before{background:rgba(17,29,44,.15)}
-.dc-avatar{width:44px;height:44px;background:rgba(17,29,44,.06);border:1px solid rgba(184,152,90,.25);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.2rem;color:var(--navy);margin-bottom:.7rem}
+.driver-card.inactive::before{background:rgba(27,27,26,.15)}
+.dc-avatar{width:44px;height:44px;background:rgba(27,27,26,.06);border:1px solid rgba(184,144,69,.25);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.2rem;color:var(--navy);margin-bottom:.7rem}
 .dc-name{font-size:.92rem;font-weight:500;color:var(--navy);margin-bottom:.15rem}
-.dc-role{font-size:.6rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.66);margin-bottom:.5rem}
-.dc-meta{font-size:.72rem;color:rgba(17,29,44,.66);font-weight:300;line-height:1.6}
+.dc-role{font-size:.6rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.66);margin-bottom:.5rem}
+.dc-meta{font-size:.72rem;color:rgba(27,27,26,.66);font-weight:300;line-height:1.6}
 .dc-status{display:inline-flex;align-items:center;gap:.3rem;font-size:.58rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;margin-top:.5rem}
 .dc-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .dc-status.on .dc-dot{background:var(--green)}
-.dc-status.off .dc-dot{background:rgba(17,29,44,.3)}
+.dc-status.off .dc-dot{background:rgba(27,27,26,.3)}
 .dc-status.on{color:var(--green)}
-.dc-status.off{color:rgba(17,29,44,.62)}
+.dc-status.off{color:rgba(27,27,26,.62)}
 /* ── INVOICE & EMAIL PREVIEW MODALS ── */
 .modal-doc{max-width:700px}
 .inv-doc{background:var(--cream);color:var(--navy);padding:2.5rem 2.8rem;font-family:var(--sans);font-weight:300;line-height:1.7}
@@ -281,34 +281,34 @@ textarea.fi{resize:vertical;min-height:80px}
 .inv-brand-sub{font-size:.5rem;font-weight:400;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-top:.1rem;display:block}
 .inv-title-block{text-align:right}
 .inv-title{font-family:var(--serif);font-size:2rem;font-weight:400;letter-spacing:.18em;text-transform:uppercase;color:var(--navy);line-height:1}
-.inv-meta{margin-top:.4rem;font-size:.78rem;color:#556677;line-height:1.8}
+.inv-meta{margin-top:.4rem;font-size:.78rem;color:#706e69;line-height:1.8}
 .inv-meta strong{color:var(--navy);font-weight:500}
 .inv-status{display:inline-block;font-size:.58rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:.2rem .65rem;margin-top:.3rem}
 .inv-status.paid{background:rgba(45,110,71,.12);color:#2D6E47;border:1px solid rgba(45,110,71,.25)}
 .inv-status.overdue{background:rgba(139,34,34,.1);color:#8B2222;border:1px solid rgba(139,34,34,.2)}
-.inv-status.pending{background:rgba(184,152,90,.12);color:#8B7230;border:1px solid rgba(184,152,90,.25)}
+.inv-status.pending{background:rgba(184,144,69,.12);color:#8B7230;border:1px solid rgba(184,144,69,.25)}
 .inv-parties{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:1.8rem}
 .inv-party-label{font-size:.52rem;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:.3rem}
 .inv-party-name{font-size:.95rem;font-weight:500;color:var(--navy)}
-.inv-party-detail{font-size:.78rem;color:#556677;line-height:1.7}
+.inv-party-detail{font-size:.78rem;color:#706e69;line-height:1.7}
 .inv-table-doc{width:100%;border-collapse:collapse;margin-bottom:1.2rem}
 .inv-table-doc thead th{font-size:.52rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);padding:.6rem .5rem;border-bottom:2px solid var(--gold);text-align:left}
 .inv-table-doc thead th:last-child{text-align:right}
-.inv-table-doc tbody td{font-size:.82rem;padding:.65rem .5rem;border-bottom:1px solid rgba(17,29,44,.08);color:#334155}
+.inv-table-doc tbody td{font-size:.82rem;padding:.65rem .5rem;border-bottom:1px solid rgba(27,27,26,.08);color:#3a3833}
 .inv-table-doc tbody td:last-child{text-align:right;font-family:var(--serif);font-size:.95rem;color:var(--navy)}
 .inv-totals{display:flex;flex-direction:column;align-items:flex-end;margin-bottom:1.8rem}
-.inv-total-row{display:flex;justify-content:space-between;width:240px;padding:.35rem 0;font-size:.82rem;color:#556677}
+.inv-total-row{display:flex;justify-content:space-between;width:240px;padding:.35rem 0;font-size:.82rem;color:#706e69}
 .inv-total-row.grand{border-top:2px solid var(--gold);padding-top:.6rem;margin-top:.3rem}
 .inv-total-row.grand span:last-child{font-family:var(--serif);font-size:1.4rem;font-weight:500;color:var(--navy)}
-.inv-payment{background:rgba(17,29,44,.04);border:1px solid rgba(17,29,44,.08);padding:1rem 1.2rem;margin-bottom:1.5rem;font-size:.78rem;color:#556677;line-height:1.8}
+.inv-payment{background:rgba(27,27,26,.04);border:1px solid rgba(27,27,26,.08);padding:1rem 1.2rem;margin-bottom:1.5rem;font-size:.78rem;color:#706e69;line-height:1.8}
 .inv-payment strong{color:var(--navy);font-weight:500}
-.inv-footer{text-align:center;padding-top:1.2rem;border-top:1px solid rgba(17,29,44,.1);font-size:.68rem;color:#8899AA;letter-spacing:.04em}
+.inv-footer{text-align:center;padding-top:1.2rem;border-top:1px solid rgba(27,27,26,.1);font-size:.68rem;color:#a29b91;letter-spacing:.04em}
 /* EMAIL PREVIEW */
 .email-preview{background:#E8E5E0;padding:1.2rem}
-.email-bar{background:#fff;border:1px solid rgba(17,29,44,.1);padding:.8rem 1.2rem;margin-bottom:1px;font-size:.75rem;color:#556677;line-height:1.7}
+.email-bar{background:#fff;border:1px solid rgba(27,27,26,.1);padding:.8rem 1.2rem;margin-bottom:1px;font-size:.75rem;color:#706e69;line-height:1.7}
 .email-bar strong{color:var(--navy);font-weight:500}
 .email-bar-subject{font-size:.88rem;font-weight:500;color:var(--navy)}
-.email-body{background:#fff;border:1px solid rgba(17,29,44,.1);max-width:600px;margin:0 auto}
+.email-body{background:#fff;border:1px solid rgba(27,27,26,.1);max-width:600px;margin:0 auto}
 .email-brand{background:var(--navy);padding:1.5rem 2rem;text-align:center}
 .email-brand-crest{width:48px;height:48px;border:1.5px solid var(--gold);display:inline-flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.2rem;font-weight:500;color:rgba(255,255,255,.8);margin-bottom:.5rem}
 .email-brand-name{font-family:var(--serif);font-size:1.15rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#fff;display:block}
@@ -316,12 +316,12 @@ textarea.fi{resize:vertical;min-height:80px}
 .email-content{padding:2rem 2rem 1.5rem;color:var(--navy);font-family:var(--sans);font-weight:300}
 .email-content *{color:var(--navy)}
 .email-heading{font-family:var(--serif);font-size:1.5rem;font-weight:400;color:var(--navy);margin-bottom:.3rem;text-align:center}
-.email-subtext{font-size:.82rem;color:#556677;text-align:center;margin-bottom:1.5rem}
-.email-detail-card{background:#F9F7F4;border:1px solid rgba(17,29,44,.08);padding:1.2rem 1.4rem;margin-bottom:1.2rem}
+.email-subtext{font-size:.82rem;color:#706e69;text-align:center;margin-bottom:1.5rem}
+.email-detail-card{background:#F9F7F4;border:1px solid rgba(27,27,26,.08);padding:1.2rem 1.4rem;margin-bottom:1.2rem}
 .email-detail-title{font-size:.52rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:.6rem}
-.email-detail-row{display:flex;justify-content:space-between;padding:.3rem 0;font-size:.82rem;border-bottom:1px solid rgba(17,29,44,.05)}
+.email-detail-row{display:flex;justify-content:space-between;padding:.3rem 0;font-size:.82rem;border-bottom:1px solid rgba(27,27,26,.05)}
 .email-detail-row:last-child{border-bottom:none}
-.email-detail-row .edl{color:#778899;font-weight:400}
+.email-detail-row .edl{color:#938b81;font-weight:400}
 .email-detail-row .edv{color:var(--navy);font-weight:500;text-align:right}
 .email-fare-total{display:flex;justify-content:space-between;padding:.6rem 0;margin-top:.3rem;border-top:2px solid var(--gold);font-size:.95rem}
 .email-fare-total .edl{font-weight:500;color:var(--navy)}
@@ -329,18 +329,18 @@ textarea.fi{resize:vertical;min-height:80px}
 .email-btn{display:inline-block;font-family:var(--sans);font-size:.62rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;padding:.7rem 1.4rem;text-decoration:none;text-align:center;cursor:pointer;border:none;transition:opacity .2s}
 .email-btn-gold{background:var(--gold);color:var(--navy)!important}
 .email-btn-navy{background:var(--navy);color:#fff!important}
-.email-btn-outline{background:transparent;color:var(--navy)!important;border:1px solid rgba(17,29,44,.2)}
+.email-btn-outline{background:transparent;color:var(--navy)!important;border:1px solid rgba(27,27,26,.2)}
 .email-btn-green{background:#2D6E47;color:#fff!important}
 .email-buttons{display:flex;gap:.5rem;justify-content:center;margin:1.2rem 0;flex-wrap:wrap}
-.email-map-placeholder{background:#E8E5E0;border:1px solid rgba(17,29,44,.1);padding:2rem;text-align:center;margin:1rem 0;font-size:.78rem;color:#778899}
+.email-map-placeholder{background:#E8E5E0;border:1px solid rgba(27,27,26,.1);padding:2rem;text-align:center;margin:1rem 0;font-size:.78rem;color:#938b81}
 .email-map-placeholder svg{display:block;margin:0 auto .5rem;opacity:.3}
 .email-section{margin-bottom:1.2rem}
 .email-section-title{font-size:.52rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:.5rem}
-.email-driver-card{display:flex;gap:1rem;align-items:center;background:#F9F7F4;border:1px solid rgba(17,29,44,.08);padding:1rem 1.2rem}
+.email-driver-card{display:flex;gap:1rem;align-items:center;background:#F9F7F4;border:1px solid rgba(27,27,26,.08);padding:1rem 1.2rem}
 .email-driver-avatar{width:44px;height:44px;background:var(--navy);border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.1rem;color:rgba(255,255,255,.8);flex-shrink:0}
 .email-driver-info{font-size:.82rem;line-height:1.6}
 .email-driver-info strong{color:var(--navy);font-weight:500}
-.email-driver-info span{color:#556677}
+.email-driver-info span{color:#706e69}
 .email-footer{background:var(--navy);padding:1.2rem 2rem;text-align:center}
 .email-footer-text{font-size:.65rem;color:rgba(255,255,255,.45);letter-spacing:.06em;line-height:1.8}
 .email-footer-text a{color:var(--gold)!important;text-decoration:none}
@@ -348,18 +348,18 @@ textarea.fi{resize:vertical;min-height:80px}
 .email-flight{background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);padding:.8rem 1rem;margin-bottom:1rem;font-size:.78rem;display:flex;align-items:center;gap:.6rem}
 .email-flight svg{flex-shrink:0;color:#3B82F6}
 .email-flight strong{color:var(--navy)}
-.email-flight span{color:#556677}
+.email-flight span{color:#706e69}
 @keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes sl{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
 /* ── CALENDAR ── */
-.adm-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:rgba(17,29,44,.06);overflow:hidden;border:1px solid rgba(17,29,44,.06)}
-.adm-cal-hd{padding:.55rem .2rem;text-align:center;font-size:.65rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.7);background:rgba(245,242,237,.7)}
+.adm-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:rgba(27,27,26,.06);overflow:hidden;border:1px solid rgba(27,27,26,.06)}
+.adm-cal-hd{padding:.55rem .2rem;text-align:center;font-size:.65rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.7);background:rgba(245,242,236,.7)}
 .adm-cal-day{min-height:78px;padding:.4rem .45rem;background:#fff;cursor:pointer;transition:background .15s;position:relative;overflow:hidden}
-.adm-cal-day:hover{background:rgba(184,152,90,.06)}
-.adm-cal-day.today{background:rgba(184,152,90,.12);box-shadow:inset 0 0 0 2px var(--gold)}
-.adm-cal-day.selected{background:rgba(184,152,90,.18)}
+.adm-cal-day:hover{background:rgba(184,144,69,.06)}
+.adm-cal-day.today{background:rgba(184,144,69,.12);box-shadow:inset 0 0 0 2px var(--gold)}
+.adm-cal-day.selected{background:rgba(184,144,69,.18)}
 .adm-cal-day.other{opacity:.3;pointer-events:none;background:#fafafa}
 .adm-cal-day.blocked{background:repeating-linear-gradient(45deg,#fff,#fff 6px,rgba(176,42,42,.06) 6px,rgba(176,42,42,.06) 12px)}
 .adm-cal-day.flagged{box-shadow:inset 0 0 0 2px #F4B860}
@@ -367,7 +367,7 @@ textarea.fi{resize:vertical;min-height:80px}
 .adm-cal-pill{margin-top:.25rem;font-size:.62rem;color:#fff;background:var(--navy);padding:1px 5px;border-radius:3px;display:inline-block;line-height:1.4}
 .adm-cal-pill.warn{background:#9C5800}
 .adm-cal-pill.off{background:#a33}
-.adm-cal-job-mini{font-size:.62rem;color:rgba(17,29,44,.72);line-height:1.25;margin-top:.18rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.adm-cal-job-mini{font-size:.62rem;color:rgba(27,27,26,.72);line-height:1.25;margin-top:.18rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .adm-cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;gap:.5rem}
 .adm-cal-month{font-family:var(--serif);font-size:1.25rem;font-weight:400;color:var(--navy)}
 .adm-cal-detail{margin-top:1.1rem}
@@ -378,7 +378,7 @@ textarea.fi{resize:vertical;min-height:80px}
 .adm-cal-name{font-size:.85rem;font-weight:600;color:var(--navy)}
 .adm-cal-route{font-size:.74rem;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .adm-cal-fare{font-family:var(--serif);font-size:.95rem;color:var(--gold);flex-shrink:0}
-.adm-cal-status{font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;padding:2px 7px;border-radius:3px;background:rgba(17,29,44,.08);color:var(--text-light);flex-shrink:0}
+.adm-cal-status{font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;padding:2px 7px;border-radius:3px;background:rgba(27,27,26,.08);color:var(--text-light);flex-shrink:0}
 .adm-cal-status.confirmed{background:#E6F4EA;color:#1E6B33}
 .adm-cal-status.pending{background:#FFF3C4;color:#7C5300}
 .adm-cal-status.cancelled{background:#FCE4E4;color:#9C2828}
@@ -387,18 +387,18 @@ textarea.fi{resize:vertical;min-height:80px}
 .adm-cal-status.active{background:#DDEEFE;color:#13426B}
 .adm-cal-status.completed{background:#E6F4EA;color:#1E6B33}
 .offer-wait{display:inline-block;font-size:.62rem;font-weight:600;letter-spacing:.04em;color:#2A3A66;background:#E8EEFB;padding:2px 7px;border-radius:3px;margin-left:.4rem;vertical-align:middle}
-.offer-timer{font-variant-numeric:tabular-nums;margin-left:.35rem;color:#6b7b9a}
+.offer-timer{font-variant-numeric:tabular-nums;margin-left:.35rem;color:#837b71}
 @media(max-width:900px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main{margin-left:0}.mob-menu-btn{display:flex}.stats{grid-template-columns:1fr 1fr}.cust-grid{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}
 @media(max-width:600px){.content{padding:1.2rem 1rem}.stats{grid-template-columns:1fr 1fr}.cust-grid{grid-template-columns:1fr}.r2,.r3{grid-template-columns:1fr}.pb-row{grid-template-columns:1fr 1fr}.topbar{padding:0 1rem}}
-.sug-drop{display:none;position:absolute;left:0;right:0;top:100%;z-index:350;background:rgba(255,255,255,.97);backdrop-filter:blur(28px);border:1px solid rgba(184,152,90,.35);border-radius:0 0 10px 10px;max-height:360px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(184,152,90,.3) transparent}
+.sug-drop{display:none;position:absolute;left:0;right:0;top:100%;z-index:350;background:rgba(255,255,255,.97);backdrop-filter:blur(28px);border:1px solid rgba(184,144,69,.35);border-radius:0 0 10px 10px;max-height:360px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(184,144,69,.3) transparent}
 .sug-drop.open{display:block}
-.sug-item{padding:.7rem 1rem;cursor:pointer;border-bottom:1px solid rgba(17,29,44,.05);transition:background .15s}
-.sug-item:hover{background:rgba(184,152,90,.15)}
+.sug-item{padding:.7rem 1rem;cursor:pointer;border-bottom:1px solid rgba(27,27,26,.05);transition:background .15s}
+.sug-item:hover{background:rgba(184,144,69,.15)}
 .si-main{font-size:.85rem;color:var(--navy);font-weight:300}
-.si-sub{font-size:.68rem;color:rgba(17,29,44,.66);margin-top:.15rem}
-.sug-powered{padding:.4rem 1rem;text-align:right;font-size:.55rem;color:rgba(17,29,44,.6);letter-spacing:.04em}
+.si-sub{font-size:.68rem;color:rgba(27,27,26,.66);margin-top:.15rem}
+.sug-powered{padding:.4rem 1rem;text-align:right;font-size:.55rem;color:rgba(27,27,26,.6);letter-spacing:.04em}
 
-footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);font-size:.66rem;letter-spacing:.1em;color:rgba(17,29,44,.66);background:rgba(17,29,44,.03);border-top:1px solid rgba(17,29,44,.06);position:relative;z-index:1}.mini-legal{margin-left:.6rem}.mini-legal a{color:rgba(17,29,44,.62);text-decoration:none;margin-left:.5rem;transition:color .2s;letter-spacing:.08em}.mini-legal a:hover{color:rgba(184,152,90,.8)}
+footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);font-size:.66rem;letter-spacing:.1em;color:rgba(27,27,26,.66);background:rgba(27,27,26,.03);border-top:1px solid rgba(27,27,26,.06);position:relative;z-index:1}.mini-legal{margin-left:.6rem}.mini-legal a{color:rgba(27,27,26,.62);text-decoration:none;margin-left:.5rem;transition:color .2s;letter-spacing:.08em}.mini-legal a:hover{color:rgba(184,144,69,.8)}
 </style>
 <script src="/config.js"></script>
 <script>
@@ -429,7 +429,7 @@ if ('serviceWorker' in navigator) {
 <nav id="nav" style="display:none">
   <a href="index.html" class="brand" style="text-decoration:none;display:flex;flex-direction:column;gap:.18rem">
     <span style="font-family:var(--serif);font-size:1.15rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--navy);line-height:1">Westmere</span>
-    <span class="brand-sub" style="font-size:.52rem;font-weight:300;letter-spacing:.3em;text-transform:uppercase;color:rgba(17,29,44,.68)">Private Hire</span><span class="brand-sub brand-sub2" style="font-size:.8rem;color:var(--navy);letter-spacing:.38em;text-transform:uppercase;font-weight:300">Sussex</span>
+    <span class="brand-sub" style="font-size:.52rem;font-weight:300;letter-spacing:.3em;text-transform:uppercase;color:rgba(27,27,26,.68)">Private Hire</span><span class="brand-sub brand-sub2" style="font-size:.8rem;color:var(--navy);letter-spacing:.38em;text-transform:uppercase;font-weight:300">Sussex</span>
   </a>
   <div style="display:flex;align-items:center;gap:1.6rem">
     <a href="index.html">Home</a>
@@ -461,7 +461,7 @@ if ('serviceWorker' in navigator) {
         <div class="al-err" id="al-err"></div>
         <div class="fg"><label class="fl">Username</label><input class="fi" type="text" id="al-user" placeholder="Username" autocomplete="username" autocapitalize="none"></div>
         <div class="fg"><label class="fl">Password</label><input class="fi" type="password" id="al-pass" placeholder="Password" autocomplete="current-password"></div>
-        <label style="display:flex;align-items:center;gap:.5rem;margin-top:.8rem;cursor:pointer;font-size:.78rem;color:rgba(17,29,44,.7);font-weight:300"><input type="checkbox" id="al-remember" style="accent-color:var(--gold)"> Keep me logged in</label>
+        <label style="display:flex;align-items:center;gap:.5rem;margin-top:.8rem;cursor:pointer;font-size:.78rem;color:rgba(27,27,26,.7);font-weight:300"><input type="checkbox" id="al-remember" style="accent-color:var(--gold)"> Keep me logged in</label>
         <button class="btn-main" onclick="adminLogin()" style="margin-top:.8rem">Sign In</button>
         <div style="text-align:center;margin-top:.9rem"><a href="#" onclick="showForgotPassword();return false;" style="font-size:.78rem;color:var(--gold);text-decoration:none;font-weight:400">Forgot password?</a></div>
         <div class="al-attempts" id="al-attempts"></div>
@@ -475,7 +475,7 @@ if ('serviceWorker' in navigator) {
         <div class="al-ok" id="al-forgot-ok" style="display:none;background:rgba(34,139,34,.08);color:#1e7d1e;padding:.7rem .9rem;border-radius:8px;font-size:.82rem;margin-bottom:.8rem;line-height:1.5"></div>
         <div class="fg"><label class="fl">Email</label><input class="fi" type="email" id="al-forgot-email" placeholder="you@example.com" autocomplete="email" autocapitalize="none"></div>
         <button class="btn-main" onclick="submitForgotPassword()" style="margin-top:.8rem">Send reset link</button>
-        <div style="text-align:center;margin-top:.9rem"><a href="#" onclick="showSignIn();return false;" style="font-size:.78rem;color:rgba(17,29,44,.7);text-decoration:none;font-weight:400">← Back to sign in</a></div>
+        <div style="text-align:center;margin-top:.9rem"><a href="#" onclick="showSignIn();return false;" style="font-size:.78rem;color:rgba(27,27,26,.7);text-decoration:none;font-weight:400">← Back to sign in</a></div>
       </div>
 
       <!-- Set new password (from reset link) -->
@@ -487,7 +487,7 @@ if ('serviceWorker' in navigator) {
         <div class="fg"><label class="fl">New password</label><input class="fi" type="password" id="al-reset-pass" placeholder="At least 8 characters" autocomplete="new-password"></div>
         <div class="fg"><label class="fl">Confirm password</label><input class="fi" type="password" id="al-reset-pass2" placeholder="Re-enter password" autocomplete="new-password"></div>
         <button class="btn-main" onclick="submitResetPassword()" style="margin-top:.8rem">Update password</button>
-        <div style="text-align:center;margin-top:.9rem"><a href="#" onclick="showSignIn();return false;" style="font-size:.78rem;color:rgba(17,29,44,.7);text-decoration:none;font-weight:400">← Back to sign in</a></div>
+        <div style="text-align:center;margin-top:.9rem"><a href="#" onclick="showSignIn();return false;" style="font-size:.78rem;color:rgba(27,27,26,.7);text-decoration:none;font-weight:400">← Back to sign in</a></div>
       </div>
     </div>
   </div>
@@ -598,7 +598,7 @@ if ('serviceWorker' in navigator) {
           <div class="ch"><div class="ct">Today's Jobs</div><button class="btn btn-ghost btn-sm" onclick="nav('today',document.querySelector('[onclick*=today]'))">View All</button></div>
           <div class="cb">
             <div class="timeline" id="dash-timeline">
-              <div style="text-align:center;padding:1.5rem;color:rgba(17,29,44,.62);font-size:.82rem">No jobs today</div>
+              <div style="text-align:center;padding:1.5rem;color:rgba(27,27,26,.62);font-size:.82rem">No jobs today</div>
             </div>
           </div>
         </div>
@@ -606,13 +606,13 @@ if ('serviceWorker' in navigator) {
         <div class="card">
           <div class="ch"><div class="ct">Recent Activity</div></div>
           <div class="cb" id="dash-activity">
-            <div style="text-align:center;padding:1.5rem;color:rgba(17,29,44,.62);font-size:.82rem">No recent activity</div>
+            <div style="text-align:center;padding:1.5rem;color:rgba(27,27,26,.62);font-size:.82rem">No recent activity</div>
           </div>
         </div>
       </div>
 
       <div class="card" id="dash-personal-card" style="display:none">
-        <div class="ch"><div class="ct">Your Schedule <span style="font-size:.65rem;color:rgba(17,29,44,.66);font-weight:400;letter-spacing:.06em;margin-left:.4rem">NEXT 7 DAYS &middot; FROM CALENDAR</span></div></div>
+        <div class="ch"><div class="ct">Your Schedule <span style="font-size:.65rem;color:rgba(27,27,26,.66);font-weight:400;letter-spacing:.06em;margin-left:.4rem">NEXT 7 DAYS &middot; FROM CALENDAR</span></div></div>
         <div class="cb" id="dash-personal-list"></div>
       </div>
 
@@ -628,12 +628,12 @@ if ('serviceWorker' in navigator) {
         <div class="ch"><div class="ct">Schedule</div><button class="btn btn-navy btn-sm" onclick="openModal('modal-book')">+ Add Job</button></div>
         <div class="cb">
           <div class="timeline" id="today-timeline">
-            <div style="text-align:center;padding:2rem;color:rgba(17,29,44,.62);font-size:.85rem">No jobs scheduled for today</div>
+            <div style="text-align:center;padding:2rem;color:rgba(27,27,26,.62);font-size:.85rem">No jobs scheduled for today</div>
           </div>
         </div>
       </div>
       <div class="card" id="today-personal-card" style="display:none">
-        <div class="ch"><div class="ct">Other Commitments <span style="font-size:.65rem;color:rgba(17,29,44,.66);font-weight:400;letter-spacing:.06em;margin-left:.4rem">FROM YOUR CALENDAR</span></div></div>
+        <div class="ch"><div class="ct">Other Commitments <span style="font-size:.65rem;color:rgba(27,27,26,.66);font-weight:400;letter-spacing:.06em;margin-left:.4rem">FROM YOUR CALENDAR</span></div></div>
         <div class="cb">
           <div id="today-personal-list"></div>
         </div>
@@ -703,7 +703,7 @@ if ('serviceWorker' in navigator) {
         <button class="btn btn-navy" onclick="openNewCustomerModal()">+ New Customer</button>
       </div>
       <div class="cust-grid" id="cust-grid">
-        <div style="grid-column:1/-1;text-align:center;padding:2rem;color:rgba(17,29,44,.62);font-size:.85rem">Loading customers...</div>
+        <div style="grid-column:1/-1;text-align:center;padding:2rem;color:rgba(27,27,26,.62);font-size:.85rem">Loading customers...</div>
       </div>
     </div>
 
@@ -711,52 +711,52 @@ if ('serviceWorker' in navigator) {
     <div id="modal-new-customer" style="display:none;position:fixed;inset:0;background:rgba(10,14,20,.6);backdrop-filter:blur(6px);z-index:300;align-items:center;justify-content:center;padding:1rem" onclick="if(event.target===this)closeNewCustomerModal()">
       <div style="background:#fff;border-radius:14px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;padding:1.6rem 1.5rem;box-shadow:0 20px 60px rgba(0,0,0,.35)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem">
-          <div style="font-family:Georgia,serif;font-size:1.25rem;color:#111D2C">Open a Customer Account</div>
-          <button onclick="closeNewCustomerModal()" style="background:transparent;border:none;font-size:1.6rem;color:rgba(17,29,44,.66);cursor:pointer;line-height:1">&times;</button>
+          <div style="font-family:Georgia,serif;font-size:1.25rem;color:#1b1b1a">Open a Customer Account</div>
+          <button onclick="closeNewCustomerModal()" style="background:transparent;border:none;font-size:1.6rem;color:rgba(27,27,26,.66);cursor:pointer;line-height:1">&times;</button>
         </div>
         <div id="nc-form">
           <div style="margin-bottom:.8rem">
-            <label style="display:block;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.7);margin-bottom:.35rem">Full name</label>
-            <input id="nc-name" type="text" placeholder="Jane Smith" style="width:100%;padding:.7rem .85rem;border:1px solid rgba(17,29,44,.14);border-radius:8px;font-size:.9rem">
+            <label style="display:block;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.7);margin-bottom:.35rem">Full name</label>
+            <input id="nc-name" type="text" placeholder="Jane Smith" style="width:100%;padding:.7rem .85rem;border:1px solid rgba(27,27,26,.14);border-radius:8px;font-size:.9rem">
           </div>
           <div style="margin-bottom:.8rem">
-            <label style="display:block;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.7);margin-bottom:.35rem">Email</label>
-            <input id="nc-email" type="email" placeholder="jane@example.com" style="width:100%;padding:.7rem .85rem;border:1px solid rgba(17,29,44,.14);border-radius:8px;font-size:.9rem">
+            <label style="display:block;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.7);margin-bottom:.35rem">Email</label>
+            <input id="nc-email" type="email" placeholder="jane@example.com" style="width:100%;padding:.7rem .85rem;border:1px solid rgba(27,27,26,.14);border-radius:8px;font-size:.9rem">
           </div>
           <div style="margin-bottom:.8rem">
-            <label style="display:block;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.7);margin-bottom:.35rem">Mobile (optional)</label>
-            <input id="nc-phone" type="tel" placeholder="+44 7700 000 000" style="width:100%;padding:.7rem .85rem;border:1px solid rgba(17,29,44,.14);border-radius:8px;font-size:.9rem">
+            <label style="display:block;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.7);margin-bottom:.35rem">Mobile (optional)</label>
+            <input id="nc-phone" type="tel" placeholder="+44 7700 000 000" style="width:100%;padding:.7rem .85rem;border:1px solid rgba(27,27,26,.14);border-radius:8px;font-size:.9rem">
           </div>
           <div style="font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:1rem 0 .45rem">Billing Address</div>
-          <div style="margin-bottom:.6rem"><input id="nc-addr1" type="text" placeholder="Address line 1" style="width:100%;padding:.7rem .85rem;border:1px solid rgba(17,29,44,.14);border-radius:8px;font-size:.9rem"></div>
+          <div style="margin-bottom:.6rem"><input id="nc-addr1" type="text" placeholder="Address line 1" style="width:100%;padding:.7rem .85rem;border:1px solid rgba(27,27,26,.14);border-radius:8px;font-size:.9rem"></div>
           <div style="display:grid;grid-template-columns:1fr 120px;gap:.5rem;margin-bottom:.8rem">
-            <input id="nc-addr2" type="text" placeholder="Town / City" style="padding:.7rem .85rem;border:1px solid rgba(17,29,44,.14);border-radius:8px;font-size:.9rem">
-            <input id="nc-postcode" type="text" placeholder="Postcode" style="padding:.7rem .85rem;border:1px solid rgba(17,29,44,.14);border-radius:8px;font-size:.9rem">
+            <input id="nc-addr2" type="text" placeholder="Town / City" style="padding:.7rem .85rem;border:1px solid rgba(27,27,26,.14);border-radius:8px;font-size:.9rem">
+            <input id="nc-postcode" type="text" placeholder="Postcode" style="padding:.7rem .85rem;border:1px solid rgba(27,27,26,.14);border-radius:8px;font-size:.9rem">
           </div>
           <div style="font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:.8rem 0 .45rem">Bank (for invoice payments)</div>
-          <div style="margin-bottom:.6rem"><input id="nc-bank-name" type="text" placeholder="Bank name (e.g. Barclays)" style="width:100%;padding:.7rem .85rem;border:1px solid rgba(17,29,44,.14);border-radius:8px;font-size:.9rem"></div>
-          <div style="margin-bottom:.6rem"><input id="nc-bank-acc-name" type="text" placeholder="Account name" style="width:100%;padding:.7rem .85rem;border:1px solid rgba(17,29,44,.14);border-radius:8px;font-size:.9rem"></div>
+          <div style="margin-bottom:.6rem"><input id="nc-bank-name" type="text" placeholder="Bank name (e.g. Barclays)" style="width:100%;padding:.7rem .85rem;border:1px solid rgba(27,27,26,.14);border-radius:8px;font-size:.9rem"></div>
+          <div style="margin-bottom:.6rem"><input id="nc-bank-acc-name" type="text" placeholder="Account name" style="width:100%;padding:.7rem .85rem;border:1px solid rgba(27,27,26,.14);border-radius:8px;font-size:.9rem"></div>
           <div style="display:grid;grid-template-columns:130px 1fr;gap:.5rem;margin-bottom:.8rem">
-            <input id="nc-bank-sort" type="text" placeholder="Sort code" style="padding:.7rem .85rem;border:1px solid rgba(17,29,44,.14);border-radius:8px;font-size:.9rem;font-family:Menlo,Consolas,monospace">
-            <input id="nc-bank-acc" type="text" placeholder="Account number" style="padding:.7rem .85rem;border:1px solid rgba(17,29,44,.14);border-radius:8px;font-size:.9rem;font-family:Menlo,Consolas,monospace">
+            <input id="nc-bank-sort" type="text" placeholder="Sort code" style="padding:.7rem .85rem;border:1px solid rgba(27,27,26,.14);border-radius:8px;font-size:.9rem;font-family:Menlo,Consolas,monospace">
+            <input id="nc-bank-acc" type="text" placeholder="Account number" style="padding:.7rem .85rem;border:1px solid rgba(27,27,26,.14);border-radius:8px;font-size:.9rem;font-family:Menlo,Consolas,monospace">
           </div>
           <div id="nc-err" style="display:none;padding:.6rem .8rem;background:rgba(197,64,64,.08);color:#c54040;font-size:.8rem;border-radius:6px;margin-bottom:.8rem"></div>
-          <button onclick="submitNewCustomer()" id="nc-submit" style="width:100%;padding:.9rem;background:#111D2C;color:#fff;border:none;border-radius:8px;font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Create Account</button>
+          <button onclick="submitNewCustomer()" id="nc-submit" style="width:100%;padding:.9rem;background:#1b1b1a;color:#fff;border:none;border-radius:8px;font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Create Account</button>
         </div>
         <!-- Post-create actions -->
         <div id="nc-post-create" style="display:none">
           <div style="text-align:center;padding:1.2rem 0 .8rem">
             <div style="font-size:1.5rem;margin-bottom:.6rem">&#10003;</div>
-            <div style="font-family:Georgia,serif;font-size:1.1rem;color:#111D2C;margin-bottom:.3rem" id="nc-success-msg">Account created</div>
-            <div style="font-size:.78rem;color:rgba(17,29,44,.68)" id="nc-success-sub"></div>
+            <div style="font-family:Georgia,serif;font-size:1.1rem;color:#1b1b1a;margin-bottom:.3rem" id="nc-success-msg">Account created</div>
+            <div style="font-size:.78rem;color:rgba(27,27,26,.68)" id="nc-success-sub"></div>
           </div>
           <div style="display:flex;flex-direction:column;gap:.6rem;margin-top:.8rem">
-            <button id="nc-welcome-btn" onclick="sendWelcomeEmailNew()" style="width:100%;padding:.85rem;background:transparent;color:#111D2C;border:1px solid rgba(17,29,44,.18);border-radius:8px;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Send Welcome Email</button>
-            <button onclick="createInvoiceNew()" style="width:100%;padding:.85rem;background:var(--gold,#B8985A);color:#fff;border:none;border-radius:8px;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Create Invoice</button>
-            <button onclick="closeNewCustomerModal()" style="width:100%;padding:.85rem;background:transparent;color:rgba(17,29,44,.7);border:none;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Done</button>
+            <button id="nc-welcome-btn" onclick="sendWelcomeEmailNew()" style="width:100%;padding:.85rem;background:transparent;color:#1b1b1a;border:1px solid rgba(27,27,26,.18);border-radius:8px;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Send Welcome Email</button>
+            <button onclick="createInvoiceNew()" style="width:100%;padding:.85rem;background:var(--gold,#b89045);color:#fff;border:none;border-radius:8px;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Create Invoice</button>
+            <button onclick="closeNewCustomerModal()" style="width:100%;padding:.85rem;background:transparent;color:rgba(27,27,26,.7);border:none;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Done</button>
           </div>
         </div>
-        <div style="font-size:.72rem;color:rgba(17,29,44,.7);margin-top:.7rem;line-height:1.55">Accounts are managed by Westmere. No email is sent automatically — use the button above to notify the customer.</div>
+        <div style="font-size:.72rem;color:rgba(27,27,26,.7);margin-top:.7rem;line-height:1.55">Accounts are managed by Westmere. No email is sent automatically — use the button above to notify the customer.</div>
       </div>
     </div>
 
@@ -771,30 +771,30 @@ if ('serviceWorker' in navigator) {
           <!-- View state -->
           <div id="cd-view">
             <div id="cd-content"></div>
-            <div style="margin-top:1.4rem;padding-top:1rem;border-top:1px solid rgba(17,29,44,.07)">
-              <div style="font-size:.6rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.64);margin-bottom:.7rem">Recent Bookings</div>
-              <div id="cd-bookings" style="font-size:.8rem;color:rgba(17,29,44,.68)">Loading...</div>
+            <div style="margin-top:1.4rem;padding-top:1rem;border-top:1px solid rgba(27,27,26,.07)">
+              <div style="font-size:.6rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.64);margin-bottom:.7rem">Recent Bookings</div>
+              <div id="cd-bookings" style="font-size:.8rem;color:rgba(27,27,26,.68)">Loading...</div>
             </div>
           </div>
           <!-- Edit state -->
           <div id="cd-edit" style="display:none">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.7rem">
-              <div><label style="display:block;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.7);margin-bottom:.3rem">Full Name *</label><input id="ce-name" type="text" class="fi" style="border:1px solid rgba(17,29,44,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem"></div>
-              <div><label style="display:block;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.7);margin-bottom:.3rem">Email *</label><input id="ce-email" type="email" class="fi" style="border:1px solid rgba(17,29,44,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem"></div>
+              <div><label style="display:block;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.7);margin-bottom:.3rem">Full Name *</label><input id="ce-name" type="text" class="fi" style="border:1px solid rgba(27,27,26,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem"></div>
+              <div><label style="display:block;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.7);margin-bottom:.3rem">Email *</label><input id="ce-email" type="email" class="fi" style="border:1px solid rgba(27,27,26,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem"></div>
             </div>
-            <div style="margin-bottom:.7rem"><label style="display:block;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.7);margin-bottom:.3rem">Phone</label><input id="ce-phone" type="tel" class="fi" style="border:1px solid rgba(17,29,44,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;width:100%"></div>
+            <div style="margin-bottom:.7rem"><label style="display:block;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.7);margin-bottom:.3rem">Phone</label><input id="ce-phone" type="tel" class="fi" style="border:1px solid rgba(27,27,26,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;width:100%"></div>
             <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:.9rem 0 .4rem">Billing Address</div>
-            <div style="margin-bottom:.6rem"><input id="ce-addr1" type="text" placeholder="Address line 1" class="fi" style="border:1px solid rgba(17,29,44,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;width:100%"></div>
+            <div style="margin-bottom:.6rem"><input id="ce-addr1" type="text" placeholder="Address line 1" class="fi" style="border:1px solid rgba(27,27,26,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;width:100%"></div>
             <div style="display:grid;grid-template-columns:1fr 120px;gap:.5rem;margin-bottom:.7rem">
-              <input id="ce-addr2" type="text" placeholder="Town / City" class="fi" style="border:1px solid rgba(17,29,44,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem">
-              <input id="ce-postcode" type="text" placeholder="Postcode" class="fi" style="border:1px solid rgba(17,29,44,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem">
+              <input id="ce-addr2" type="text" placeholder="Town / City" class="fi" style="border:1px solid rgba(27,27,26,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem">
+              <input id="ce-postcode" type="text" placeholder="Postcode" class="fi" style="border:1px solid rgba(27,27,26,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem">
             </div>
             <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:.9rem 0 .4rem">Bank Details</div>
-            <div style="margin-bottom:.6rem"><input id="ce-bank-name" type="text" placeholder="Bank name" class="fi" style="border:1px solid rgba(17,29,44,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;width:100%"></div>
-            <div style="margin-bottom:.6rem"><input id="ce-bank-acc-name" type="text" placeholder="Account name" class="fi" style="border:1px solid rgba(17,29,44,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;width:100%"></div>
+            <div style="margin-bottom:.6rem"><input id="ce-bank-name" type="text" placeholder="Bank name" class="fi" style="border:1px solid rgba(27,27,26,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;width:100%"></div>
+            <div style="margin-bottom:.6rem"><input id="ce-bank-acc-name" type="text" placeholder="Account name" class="fi" style="border:1px solid rgba(27,27,26,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;width:100%"></div>
             <div style="display:grid;grid-template-columns:130px 1fr;gap:.5rem;margin-bottom:.7rem">
-              <input id="ce-bank-sort" type="text" placeholder="Sort code" class="fi" style="border:1px solid rgba(17,29,44,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;font-family:Menlo,Consolas,monospace">
-              <input id="ce-bank-acc" type="text" placeholder="Account number" class="fi" style="border:1px solid rgba(17,29,44,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;font-family:Menlo,Consolas,monospace">
+              <input id="ce-bank-sort" type="text" placeholder="Sort code" class="fi" style="border:1px solid rgba(27,27,26,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;font-family:Menlo,Consolas,monospace">
+              <input id="ce-bank-acc" type="text" placeholder="Account number" class="fi" style="border:1px solid rgba(27,27,26,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;font-family:Menlo,Consolas,monospace">
             </div>
             <div id="ce-err" style="display:none;padding:.55rem .75rem;background:rgba(197,64,64,.08);color:#c54040;font-size:.78rem;border-radius:6px;margin-bottom:.7rem"></div>
           </div>
@@ -817,14 +817,14 @@ if ('serviceWorker' in navigator) {
       <div class="page-hd"><div class="page-title">Invoices</div></div>
       <div class="card">
         <div class="ch"><div class="ct">History</div><button class="btn btn-navy btn-sm" onclick="openNewInvoice()">+ New Invoice</button></div>
-        <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:.6rem;padding:.8rem 1.3rem;border-bottom:1px solid rgba(17,29,44,.08)">
+        <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:.6rem;padding:.8rem 1.3rem;border-bottom:1px solid rgba(27,27,26,.08)">
           <div>
-            <div style="font-size:.56rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.55);margin-bottom:.25rem">From</div>
-            <input type="date" id="inv-filter-from" onchange="loadInvoiceHistory()" style="padding:.45rem .55rem;border:1px solid rgba(17,29,44,.15);border-radius:5px;background:#fff;color:var(--navy);font-family:var(--sans);font-size:.82rem">
+            <div style="font-size:.56rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(27,27,26,.55);margin-bottom:.25rem">From</div>
+            <input type="date" id="inv-filter-from" onchange="loadInvoiceHistory()" style="padding:.45rem .55rem;border:1px solid rgba(27,27,26,.15);border-radius:5px;background:#fff;color:var(--navy);font-family:var(--sans);font-size:.82rem">
           </div>
           <div>
-            <div style="font-size:.56rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.55);margin-bottom:.25rem">To</div>
-            <input type="date" id="inv-filter-to" onchange="loadInvoiceHistory()" style="padding:.45rem .55rem;border:1px solid rgba(17,29,44,.15);border-radius:5px;background:#fff;color:var(--navy);font-family:var(--sans);font-size:.82rem">
+            <div style="font-size:.56rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(27,27,26,.55);margin-bottom:.25rem">To</div>
+            <input type="date" id="inv-filter-to" onchange="loadInvoiceHistory()" style="padding:.45rem .55rem;border:1px solid rgba(27,27,26,.15);border-radius:5px;background:#fff;color:var(--navy);font-family:var(--sans);font-size:.82rem">
           </div>
           <button class="btn btn-ghost btn-sm" onclick="clearInvoiceFilter()">Clear</button>
         </div>
@@ -832,7 +832,7 @@ if ('serviceWorker' in navigator) {
           <table class="inv-table">
             <thead><tr><th>Recipient</th><th style="text-align:right">Total</th><th>Type</th><th>Issued</th><th>Status</th><th></th></tr></thead>
             <tbody id="invoice-history-body">
-              <tr><td colspan="3" style="text-align:center;padding:2rem;color:rgba(17,29,44,.62)">Loading...</td></tr>
+              <tr><td colspan="3" style="text-align:center;padding:2rem;color:rgba(27,27,26,.62)">Loading...</td></tr>
             </tbody>
           </table>
         </div>
@@ -866,7 +866,7 @@ if ('serviceWorker' in navigator) {
         <div class="card">
           <div class="ch"><div class="ct">Invoice / Business Details</div></div>
           <div class="cb">
-            <div style="font-size:.72rem;color:rgba(17,29,44,.68);margin-bottom:1rem;line-height:1.5">These details appear on every invoice you generate or email.</div>
+            <div style="font-size:.72rem;color:rgba(27,27,26,.68);margin-bottom:1rem;line-height:1.5">These details appear on every invoice you generate or email.</div>
             <div class="fg"><label class="fl">Business Name</label><input class="fi" id="is-business-name" value="Westmere Private Hire"></div>
             <div class="fg"><label class="fl">Owner Name</label><input class="fi" id="is-owner-name" placeholder="Your legal name"></div>
             <div class="fg"><label class="fl">Address Line 1</label><input class="fi" id="is-address1" placeholder="66 High Street"></div>
@@ -874,7 +874,7 @@ if ('serviceWorker' in navigator) {
             <div class="fg"><label class="fl">Postcode</label><input class="fi" id="is-postcode" placeholder="BN7 1XG"></div>
             <div class="fg"><label class="fl">Phone</label><input class="fi" id="is-phone" placeholder="07930 342593"></div>
             <div class="fg"><label class="fl">Email</label><input class="fi" id="is-email" placeholder="bookings@westmereprivatehire.co.uk"></div>
-            <div style="border-top:1px solid rgba(17,29,44,.08);margin:1.2rem 0;padding-top:1rem">
+            <div style="border-top:1px solid rgba(27,27,26,.08);margin:1.2rem 0;padding-top:1rem">
               <div style="font-size:.72rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:.8rem">Bank Details (shown on invoices)</div>
               <div class="fg"><label class="fl">Bank Name</label><input class="fi" id="is-bank-name" placeholder="e.g. Starling Bank"></div>
               <div class="fg"><label class="fl">Account Name</label><input class="fi" id="is-account-name" placeholder="e.g. N Krajnyk"></div>
@@ -919,12 +919,12 @@ if ('serviceWorker' in navigator) {
         </div>
         <div class="card" style="grid-column:1/-1">
           <div class="ch"><div class="ct">My Documents</div><button class="btn btn-ghost btn-sm" onclick="loadAdminDocs()">Refresh</button></div>
-          <div class="cb" id="admin-docs-list"><div style="color:rgba(17,29,44,.66);font-size:.85rem;padding:.5rem">Loading…</div></div>
+          <div class="cb" id="admin-docs-list"><div style="color:rgba(27,27,26,.66);font-size:.85rem;padding:.5rem">Loading…</div></div>
         </div>
         <div class="card" style="grid-column:1/-1">
           <div class="ch"><div class="ct">Download All Data</div></div>
           <div class="cb">
-            <p style="font-size:.78rem;color:rgba(17,29,44,.7);margin-bottom:1rem;line-height:1.5">Exports all bookings, customers, invoices, driver profiles, documents and earnings as a structured ZIP archive. Save to iCloud Drive for automatic sync to all Apple devices.</p>
+            <p style="font-size:.78rem;color:rgba(27,27,26,.7);margin-bottom:1rem;line-height:1.5">Exports all bookings, customers, invoices, driver profiles, documents and earnings as a structured ZIP archive. Save to iCloud Drive for automatic sync to all Apple devices.</p>
             <button id="admin-export-btn" class="btn btn-navy btn-full" onclick="adminExportZip()">Download ZIP</button>
           </div>
         </div>
@@ -943,7 +943,7 @@ if ('serviceWorker' in navigator) {
           </div>
         </div>
         <div class="cb" id="inbox-list" style="padding:0">
-          <div style="text-align:center;padding:3rem 1rem;color:rgba(17,29,44,.64);font-size:.85rem">Connect Google (Settings → Integrations) then refresh.</div>
+          <div style="text-align:center;padding:3rem 1rem;color:rgba(27,27,26,.64);font-size:.85rem">Connect Google (Settings → Integrations) then refresh.</div>
         </div>
       </div>
     </div>
@@ -953,9 +953,9 @@ if ('serviceWorker' in navigator) {
       <div class="modal" style="max-width:720px">
         <div class="mh"><div class="mt" id="iv-subject">Message</div><button class="mclose" onclick="closeModal('modal-inbox-view')">&times;</button></div>
         <div class="mb">
-          <div style="font-size:.78rem;color:rgba(17,29,44,.72);margin-bottom:.4rem">From: <span id="iv-from" style="color:var(--navy)"></span></div>
-          <div style="font-size:.72rem;color:rgba(17,29,44,.68);margin-bottom:1rem"><span id="iv-date"></span></div>
-          <div id="iv-body" style="background:#fff;padding:1rem;border-radius:8px;border:1px solid rgba(17,29,44,.06);max-height:420px;overflow-y:auto;font-size:.88rem;line-height:1.6"></div>
+          <div style="font-size:.78rem;color:rgba(27,27,26,.72);margin-bottom:.4rem">From: <span id="iv-from" style="color:var(--navy)"></span></div>
+          <div style="font-size:.72rem;color:rgba(27,27,26,.68);margin-bottom:1rem"><span id="iv-date"></span></div>
+          <div id="iv-body" style="background:#fff;padding:1rem;border-radius:8px;border:1px solid rgba(27,27,26,.06);max-height:420px;overflow-y:auto;font-size:.88rem;line-height:1.6"></div>
           <div style="margin-top:1rem;display:flex;gap:.5rem">
             <button class="btn btn-navy btn-sm" onclick="replyFromViewer()">Reply</button>
             <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-inbox-view')">Close</button>
@@ -983,7 +983,7 @@ if ('serviceWorker' in navigator) {
       <div class="card">
         <div class="ch"><div class="ct">All Activity</div></div>
         <div class="cb" id="notif-list">
-          <div style="text-align:center;padding:2rem;color:rgba(17,29,44,.62);font-size:.85rem">No notifications yet</div>
+          <div style="text-align:center;padding:2rem;color:rgba(27,27,26,.62);font-size:.85rem">No notifications yet</div>
         </div>
       </div>
     </div>
@@ -1016,7 +1016,7 @@ if ('serviceWorker' in navigator) {
       <div class="card">
         <div class="ch"><div class="ct">Current Blackouts</div></div>
         <div class="cb" id="to-list">
-          <div style="text-align:center;padding:2rem;color:rgba(17,29,44,.62);font-size:.85rem">Loading…</div>
+          <div style="text-align:center;padding:2rem;color:rgba(27,27,26,.62);font-size:.85rem">Loading…</div>
         </div>
       </div>
     </div>
@@ -1141,7 +1141,7 @@ if ('serviceWorker' in navigator) {
       <div class="g2">
         <!-- Weekly trend chart -->
         <div class="card" style="grid-column:1/-1">
-          <div class="ch"><div class="ct">Revenue Trend <span style="font-size:.65rem;color:rgba(17,29,44,.66);font-weight:400;letter-spacing:.06em;margin-left:.4rem">LAST 12 WEEKS</span></div></div>
+          <div class="ch"><div class="ct">Revenue Trend <span style="font-size:.65rem;color:rgba(27,27,26,.66);font-weight:400;letter-spacing:.06em;margin-left:.4rem">LAST 12 WEEKS</span></div></div>
           <div class="cb" style="padding:1.2rem 1.4rem 1rem">
             <svg id="an-chart" width="100%" height="160" style="display:block;overflow:visible"></svg>
             <div id="an-chart-labels" style="display:flex;justify-content:space-between;margin-top:.35rem;padding:0 2px"></div>
@@ -1155,11 +1155,11 @@ if ('serviceWorker' in navigator) {
           <div class="ch"><div class="ct">Booking Breakdown</div></div>
           <div class="cb">
             <div style="margin-bottom:.9rem">
-              <div style="font-size:.6rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.66);margin-bottom:.5rem">By Status</div>
+              <div style="font-size:.6rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(27,27,26,.66);margin-bottom:.5rem">By Status</div>
               <div id="an-by-status"></div>
             </div>
             <div>
-              <div style="font-size:.6rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,29,44,.66);margin-bottom:.5rem">By Payment Method (completed)</div>
+              <div style="font-size:.6rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(27,27,26,.66);margin-bottom:.5rem">By Payment Method (completed)</div>
               <div id="an-by-payment"></div>
             </div>
           </div>
@@ -1167,7 +1167,7 @@ if ('serviceWorker' in navigator) {
 
         <!-- Busiest times heatmap -->
         <div class="card">
-          <div class="ch"><div class="ct">Busiest Times <span style="font-size:.65rem;color:rgba(17,29,44,.66);font-weight:400;letter-spacing:.06em;margin-left:.4rem">BY DAY &amp; HOUR</span></div></div>
+          <div class="ch"><div class="ct">Busiest Times <span style="font-size:.65rem;color:rgba(27,27,26,.66);font-weight:400;letter-spacing:.06em;margin-left:.4rem">BY DAY &amp; HOUR</span></div></div>
           <div class="cb" style="padding:.8rem 1rem">
             <div id="an-heatmap" style="overflow-x:auto"></div>
           </div>
@@ -1297,14 +1297,14 @@ if ('serviceWorker' in navigator) {
 
       <div style="font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:.2rem 0 .6rem">Photo</div>
       <div style="display:flex;gap:1rem;align-items:center;margin-bottom:.9rem">
-        <div id="dm-photo-preview" style="width:72px;height:72px;border-radius:50%;background:rgba(17,29,44,.06);border:1px solid rgba(17,29,44,.12);display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:.68rem;color:rgba(17,29,44,.66);letter-spacing:.1em;text-transform:uppercase;flex-shrink:0">None</div>
+        <div id="dm-photo-preview" style="width:72px;height:72px;border-radius:50%;background:rgba(27,27,26,.06);border:1px solid rgba(27,27,26,.12);display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:.68rem;color:rgba(27,27,26,.66);letter-spacing:.1em;text-transform:uppercase;flex-shrink:0">None</div>
         <div style="flex:1">
           <label class="btn btn-ghost btn-sm" style="display:inline-block;cursor:pointer;font-size:.68rem;padding:.4rem .9rem">
             Upload Photo
             <input type="file" accept="image/*" id="dm-photo-file" onchange="dmPhotoPick(this)" style="display:none">
           </label>
           <button type="button" class="btn btn-ghost btn-sm" onclick="dmPhotoClear()" style="font-size:.68rem;padding:.4rem .9rem;margin-left:.4rem">Remove</button>
-          <div style="font-size:.66rem;color:rgba(17,29,44,.68);margin-top:.35rem">Square JPG/PNG, resized to 512px. Shown to riders during live tracking.</div>
+          <div style="font-size:.66rem;color:rgba(27,27,26,.68);margin-top:.35rem">Square JPG/PNG, resized to 512px. Shown to riders during live tracking.</div>
         </div>
       </div>
 
@@ -1347,36 +1347,36 @@ if ('serviceWorker' in navigator) {
 
       <div style="font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:1.2rem 0 .4rem;display:flex;justify-content:space-between;align-items:center">
         <span>Driver App Access</span>
-        <label style="font-size:.7rem;color:rgba(17,29,44,.74);text-transform:none;letter-spacing:normal;font-weight:400;cursor:pointer;display:flex;align-items:center;gap:.4rem">
+        <label style="font-size:.7rem;color:rgba(27,27,26,.74);text-transform:none;letter-spacing:normal;font-weight:400;cursor:pointer;display:flex;align-items:center;gap:.4rem">
           <input type="checkbox" id="dm-has-login" onchange="toggleDriverLoginSection()" style="accent-color:var(--gold)">Grant app login
         </label>
       </div>
-      <div id="dm-login-section" style="display:none;padding:.9rem 1rem;background:rgba(17,29,44,.03);border:1px dashed rgba(17,29,44,.12);border-radius:6px">
+      <div id="dm-login-section" style="display:none;padding:.9rem 1rem;background:rgba(27,27,26,.03);border:1px dashed rgba(27,27,26,.12);border-radius:6px">
         <div class="r2">
           <div class="fg"><label class="fl">Username</label><input class="fi" type="text" id="dm-username" placeholder="driver_username" autocomplete="off"></div>
           <div class="fg"><label class="fl">Password</label><input class="fi" type="password" id="dm-password" placeholder="Min 8 characters" autocomplete="new-password"></div>
         </div>
-        <div style="font-size:.68rem;color:rgba(17,29,44,.7);margin-top:.2rem">Driver uses these credentials in the Driver app. Leave blank to add them later.</div>
+        <div style="font-size:.68rem;color:rgba(27,27,26,.7);margin-top:.2rem">Driver uses these credentials in the Driver app. Leave blank to add them later.</div>
       </div>
 
       <!-- Earnings (populated on edit) -->
-      <div id="dm-earnings" style="display:none;margin-top:1.3rem;padding:1rem 1.1rem;background:rgba(184,152,90,.06);border:1px solid rgba(184,152,90,.2);border-radius:6px">
+      <div id="dm-earnings" style="display:none;margin-top:1.3rem;padding:1rem 1.1rem;background:rgba(184,144,69,.06);border:1px solid rgba(184,144,69,.2);border-radius:6px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">
           <div style="font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:600">This Week (Mon–Sun)</div>
-          <div style="font-size:.66rem;color:rgba(17,29,44,.7)" id="dm-earn-period">—</div>
+          <div style="font-size:.66rem;color:rgba(27,27,26,.7)" id="dm-earn-period">—</div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:.7rem">
-          <div style="text-align:center"><div style="font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(17,29,44,.7)">Jobs</div><div style="font-size:1.2rem;font-weight:500;color:var(--navy);margin-top:.15rem" id="dm-earn-jobs">0</div></div>
-          <div style="text-align:center"><div style="font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(17,29,44,.7)">Gross</div><div style="font-size:1.2rem;font-weight:500;color:var(--navy);margin-top:.15rem" id="dm-earn-gross">£0</div></div>
-          <div style="text-align:center"><div style="font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(17,29,44,.7)">Commission (10%)</div><div style="font-size:1.2rem;font-weight:500;color:#9C2828;margin-top:.15rem" id="dm-earn-comm">£0</div></div>
-          <div style="text-align:center"><div style="font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(17,29,44,.7)">Driver Net</div><div style="font-size:1.2rem;font-weight:500;color:var(--gold);margin-top:.15rem" id="dm-earn-net">£0</div></div>
+          <div style="text-align:center"><div style="font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(27,27,26,.7)">Jobs</div><div style="font-size:1.2rem;font-weight:500;color:var(--navy);margin-top:.15rem" id="dm-earn-jobs">0</div></div>
+          <div style="text-align:center"><div style="font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(27,27,26,.7)">Gross</div><div style="font-size:1.2rem;font-weight:500;color:var(--navy);margin-top:.15rem" id="dm-earn-gross">£0</div></div>
+          <div style="text-align:center"><div style="font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(27,27,26,.7)">Commission (10%)</div><div style="font-size:1.2rem;font-weight:500;color:#9C2828;margin-top:.15rem" id="dm-earn-comm">£0</div></div>
+          <div style="text-align:center"><div style="font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(27,27,26,.7)">Driver Net</div><div style="font-size:1.2rem;font-weight:500;color:var(--gold);margin-top:.15rem" id="dm-earn-net">£0</div></div>
         </div>
-        <div id="dm-earn-list" style="max-height:180px;overflow-y:auto;border-top:1px solid rgba(17,29,44,.08);padding-top:.6rem;font-size:.78rem"></div>
+        <div id="dm-earn-list" style="max-height:180px;overflow-y:auto;border-top:1px solid rgba(27,27,26,.08);padding-top:.6rem;font-size:.78rem"></div>
         <div style="display:flex;gap:.5rem;margin-top:.7rem;flex-wrap:wrap">
           <button type="button" class="btn btn-ghost btn-sm" onclick="dmLoadEarnings('week')" style="font-size:.64rem;padding:.4rem .8rem">This week</button>
           <button type="button" class="btn btn-ghost btn-sm" onclick="dmLoadEarnings('last-week')" style="font-size:.64rem;padding:.4rem .8rem">Last week</button>
           <button type="button" class="btn btn-ghost btn-sm" onclick="dmLoadEarnings('month')" style="font-size:.64rem;padding:.4rem .8rem">This month</button>
-          <button type="button" class="btn btn-ghost btn-sm" onclick="dmSendStatement()" style="font-size:.64rem;padding:.4rem .8rem;border-color:rgba(184,152,90,.4);color:#B8985A">Email statement to driver</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="dmSendStatement()" style="font-size:.64rem;padding:.4rem .8rem;border-color:rgba(184,144,69,.4);color:#b89045">Email statement to driver</button>
         </div>
       </div>
 
@@ -1385,7 +1385,7 @@ if ('serviceWorker' in navigator) {
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-add-driver')">Cancel</button>
       <button class="btn btn-sm" id="dm-revoke-btn" onclick="revokeDriverLogin()" style="background:rgba(139,34,34,.08);color:#8B2222;border:1px solid rgba(139,34,34,.2);display:none">Revoke Login</button>
-      <button class="btn btn-sm" id="dm-default-btn" onclick="dmSetDefault()" style="background:rgba(184,152,90,.1);color:#B8985A;border:1px solid rgba(184,152,90,.3);display:none;font-size:.68rem">Set as default driver</button>
+      <button class="btn btn-sm" id="dm-default-btn" onclick="dmSetDefault()" style="background:rgba(184,144,69,.1);color:#b89045;border:1px solid rgba(184,144,69,.3);display:none;font-size:.68rem">Set as default driver</button>
       <button class="btn btn-navy" id="dm-save-btn" onclick="saveDriver()">Save Driver</button>
     </div>
   </div>
@@ -1432,7 +1432,7 @@ if ('serviceWorker' in navigator) {
       <button class="modal-x" onclick="closeModal('modal-new-invoice')">&times;</button>
     </div>
     <div class="modal-body">
-      <div style="display:flex;gap:.4rem;margin-bottom:1.2rem;border-bottom:1px solid rgba(17,29,44,.08);padding-bottom:.8rem">
+      <div style="display:flex;gap:.4rem;margin-bottom:1.2rem;border-bottom:1px solid rgba(27,27,26,.08);padding-bottom:.8rem">
         <button class="btn btn-ghost btn-sm" id="ni-mode-account" onclick="setInvoiceMode('account')" style="flex:1;font-size:.7rem;padding:.6rem">Account Customer</button>
         <button class="btn btn-ghost btn-sm" id="ni-mode-bespoke" onclick="setInvoiceMode('bespoke')" style="flex:1;font-size:.7rem;padding:.6rem">One-off Invoice</button>
       </div>
@@ -1454,13 +1454,13 @@ if ('serviceWorker' in navigator) {
             <div><label class="fl">From</label><input class="fi" type="date" id="ni-from"></div>
             <div><label class="fl">To</label><input class="fi" type="date" id="ni-to"></div>
           </div>
-          <div style="font-size:.68rem;color:rgba(17,29,44,.68);margin-top:.35rem">Only confirmed/completed bookings in this date range will be included.</div>
+          <div style="font-size:.68rem;color:rgba(27,27,26,.68);margin-top:.35rem">Only confirmed/completed bookings in this date range will be included.</div>
         </div>
       </div>
 
       <!-- Bespoke / one-off mode -->
       <div id="ni-bespoke-fields" style="display:none">
-        <div style="font-size:.72rem;color:rgba(17,29,44,.7);margin-bottom:.9rem;line-height:1.5">Create a bespoke invoice with custom line items. You can prefill from a previous recipient or type a new one.</div>
+        <div style="font-size:.72rem;color:rgba(27,27,26,.7);margin-bottom:.9rem;line-height:1.5">Create a bespoke invoice with custom line items. You can prefill from a previous recipient or type a new one.</div>
         <div class="fg" style="position:relative">
           <label class="fl">Previous recipient</label>
           <input class="fi" id="ni-saved-recipient-input" placeholder="Type to search saved recipients…" autocomplete="off"
@@ -1468,7 +1468,7 @@ if ('serviceWorker' in navigator) {
             onfocus="filterSavedRecipients(this.value)"
             onkeydown="savedRecipientKeydown(event)"
             style="padding-right:2rem">
-          <div id="ni-saved-recipient-list" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid rgba(17,29,44,.18);border-top:none;border-radius:0 0 6px 6px;max-height:200px;overflow-y:auto;z-index:60;box-shadow:0 6px 18px rgba(17,29,44,.1)"></div>
+          <div id="ni-saved-recipient-list" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid rgba(27,27,26,.18);border-top:none;border-radius:0 0 6px 6px;max-height:200px;overflow-y:auto;z-index:60;box-shadow:0 6px 18px rgba(27,27,26,.1)"></div>
         </div>
         <div class="fg">
           <label class="fl">Prefill from account customer (optional)</label>
@@ -1483,15 +1483,15 @@ if ('serviceWorker' in navigator) {
         <div class="fg">
           <label class="fl">Line Items *</label>
           <div style="display:grid;grid-template-columns:110px 1fr 100px 28px;gap:.35rem;margin-bottom:.25rem">
-            <div style="font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.66)">Date</div>
-            <div style="font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.66)">Description</div>
-            <div style="font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.66);text-align:right">Amount £</div>
+            <div style="font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.66)">Date</div>
+            <div style="font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.66)">Description</div>
+            <div style="font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.66);text-align:right">Amount £</div>
             <div></div>
           </div>
           <div id="ni-items" style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:.5rem"></div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.2rem">
             <button class="btn btn-ghost btn-sm" onclick="addBespokeItem()" style="font-size:.68rem;padding:.4rem .8rem">+ Add Line Item</button>
-            <div style="font-size:.78rem;color:rgba(17,29,44,.7)">Total: <strong id="ni-running-total" style="color:var(--navy)">£0.00</strong></div>
+            <div style="font-size:.78rem;color:rgba(27,27,26,.7)">Total: <strong id="ni-running-total" style="color:var(--navy)">£0.00</strong></div>
           </div>
         </div>
 <div class="fg"><label class="fl">Notes (optional)</label><textarea class="fi" id="ni-notes" rows="2" placeholder="Additional notes shown on the invoice" style="resize:vertical;min-height:60px"></textarea></div>
@@ -1501,7 +1501,7 @@ if ('serviceWorker' in navigator) {
     </div>
     <div class="modal-foot" style="flex-wrap:wrap">
       <button class="btn btn-ghost" onclick="closeModal('modal-new-invoice')">Cancel</button>
-      <button class="btn btn-ghost" id="ni-preview-btn" onclick="previewInvoice()" style="border:1px solid rgba(17,29,44,.2)">Preview / Download</button>
+      <button class="btn btn-ghost" id="ni-preview-btn" onclick="previewInvoice()" style="border:1px solid rgba(27,27,26,.2)">Preview / Download</button>
       <button class="btn btn-navy" id="ni-send-btn" onclick="submitNewInvoice()">Send to Email</button>
     </div>
   </div>
@@ -1519,14 +1519,14 @@ if ('serviceWorker' in navigator) {
     </div>
     <div class="modal-body" style="padding-bottom:.5rem">
       <div style="margin-bottom:1.2rem">
-        <div style="font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.66);margin-bottom:.3rem">Issued</div>
+        <div style="font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.66);margin-bottom:.3rem">Issued</div>
         <div id="mid-issued" style="font-size:.9rem;color:var(--navy)"></div>
       </div>
       <div style="margin-bottom:1.2rem">
-        <div style="font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.66);margin-bottom:.4rem">Recipient</div>
+        <div style="font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.66);margin-bottom:.4rem">Recipient</div>
         <div id="mid-recipient" style="font-size:.88rem;color:var(--navy);line-height:1.6"></div>
       </div>
-      <div id="mid-period" style="font-size:.75rem;color:rgba(17,29,44,.7);margin-bottom:.8rem;font-style:italic"></div>
+      <div id="mid-period" style="font-size:.75rem;color:rgba(27,27,26,.7);margin-bottom:.8rem;font-style:italic"></div>
       <div style="overflow-x:auto;margin-bottom:1rem">
         <table class="inv-table" id="mid-items-table">
           <thead id="mid-items-head"></thead>
@@ -1534,15 +1534,15 @@ if ('serviceWorker' in navigator) {
         </table>
       </div>
       <div style="text-align:right;padding:.6rem 0;border-top:2px solid var(--navy)">
-        <span style="font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.7);margin-right:.8rem">Total</span>
+        <span style="font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.7);margin-right:.8rem">Total</span>
         <span id="mid-total" style="font-family:Georgia,serif;font-size:1.3rem;color:var(--navy);font-weight:700"></span>
       </div>
-      <div id="mid-notes" style="display:none;margin-top:.8rem;padding:.6rem .8rem;background:rgba(184,152,90,.07);border-left:3px solid var(--gold);font-size:.8rem;color:var(--navy);line-height:1.6;border-radius:0 4px 4px 0"></div>
+      <div id="mid-notes" style="display:none;margin-top:.8rem;padding:.6rem .8rem;background:rgba(184,144,69,.07);border-left:3px solid var(--gold);font-size:.8rem;color:var(--navy);line-height:1.6;border-radius:0 4px 4px 0"></div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-invoice-detail')">Close</button>
-      <button class="btn btn-ghost" id="mid-pdf-btn" onclick="midDownloadPdf()" style="border:1px solid rgba(17,29,44,.2)">Download PDF</button>
-      <button class="btn btn-ghost" id="mid-print-btn" onclick="midOpenPrint()" style="border:1px solid rgba(17,29,44,.2)">Print Preview</button>
+      <button class="btn btn-ghost" id="mid-pdf-btn" onclick="midDownloadPdf()" style="border:1px solid rgba(27,27,26,.2)">Download PDF</button>
+      <button class="btn btn-ghost" id="mid-print-btn" onclick="midOpenPrint()" style="border:1px solid rgba(27,27,26,.2)">Print Preview</button>
     </div>
   </div>
 </div>
@@ -1551,37 +1551,37 @@ if ('serviceWorker' in navigator) {
 
 <!-- ═══ AI ASSISTANT FAB + PANEL ═══ -->
 <style>
-.aa-fab{position:fixed;bottom:1.4rem;right:1.4rem;z-index:190;width:54px;height:54px;border-radius:50%;background:var(--navy);color:var(--gold);border:none;font-family:Georgia,serif;font-size:1.3rem;letter-spacing:.1em;cursor:pointer;box-shadow:0 8px 24px rgba(17,29,44,.3);display:flex;align-items:center;justify-content:center;font-weight:500;transition:transform .2s}
+.aa-fab{position:fixed;bottom:1.4rem;right:1.4rem;z-index:190;width:54px;height:54px;border-radius:50%;background:var(--navy);color:var(--gold);border:none;font-family:Georgia,serif;font-size:1.3rem;letter-spacing:.1em;cursor:pointer;box-shadow:0 8px 24px rgba(27,27,26,.3);display:flex;align-items:center;justify-content:center;font-weight:500;transition:transform .2s}
 .aa-fab:hover{transform:translateY(-2px)}
-.aa-panel{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:100vw;background:#fff;border-left:1px solid rgba(17,29,44,.08);box-shadow:-8px 0 30px rgba(0,0,0,.14);transform:translateX(110%);transition:transform .3s cubic-bezier(.4,0,.2,1);z-index:195;display:flex;flex-direction:column}
+.aa-panel{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:100vw;background:#fff;border-left:1px solid rgba(27,27,26,.08);box-shadow:-8px 0 30px rgba(0,0,0,.14);transform:translateX(110%);transition:transform .3s cubic-bezier(.4,0,.2,1);z-index:195;display:flex;flex-direction:column}
 .aa-panel.on{transform:translateX(0)}
-.aa-hd{padding:1.05rem 1.2rem;border-bottom:1px solid rgba(17,29,44,.08);display:flex;align-items:center;gap:.6rem;justify-content:space-between}
+.aa-hd{padding:1.05rem 1.2rem;border-bottom:1px solid rgba(27,27,26,.08);display:flex;align-items:center;gap:.6rem;justify-content:space-between}
 .aa-hd-t{font-family:Georgia,serif;font-size:1.05rem;color:var(--navy)}
 .aa-hd-s{font-size:.56rem;letter-spacing:.26em;text-transform:uppercase;color:var(--gold);margin-top:.15rem}
-.aa-close{background:transparent;border:none;color:rgba(17,29,44,.66);cursor:pointer;font-size:1.4rem;line-height:1}
-.aa-clear{background:transparent;border:none;font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(17,29,44,.7);cursor:pointer;padding:.2rem .4rem}
+.aa-close{background:transparent;border:none;color:rgba(27,27,26,.66);cursor:pointer;font-size:1.4rem;line-height:1}
+.aa-clear{background:transparent;border:none;font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(27,27,26,.7);cursor:pointer;padding:.2rem .4rem}
 .aa-clear:hover{color:var(--navy)}
 .aa-feed{flex:1;overflow-y:auto;padding:1rem 1.2rem;display:flex;flex-direction:column;gap:.7rem;background:#fafaf7}
 .aa-msg{max-width:88%;padding:.65rem .85rem;font-size:.85rem;line-height:1.45;border-radius:10px;word-wrap:break-word;white-space:pre-wrap}
 .aa-msg.user{align-self:flex-end;background:var(--navy);color:#fff;border-bottom-right-radius:3px}
-.aa-msg.bot{align-self:flex-start;background:#fff;color:var(--navy);border:1px solid rgba(17,29,44,.08);border-bottom-left-radius:3px}
-.aa-msg.bot.thinking{color:rgba(17,29,44,.7);font-style:italic}
-.aa-in{padding:.85rem 1rem;border-top:1px solid rgba(17,29,44,.08);display:flex;gap:.5rem;background:#fff}
-.aa-in textarea{flex:1;resize:none;font-family:inherit;font-size:.85rem;padding:.55rem .7rem;border:1px solid rgba(17,29,44,.15);border-radius:6px;outline:none;background:#fafafa;color:var(--navy);min-height:42px;max-height:110px;line-height:1.4}
+.aa-msg.bot{align-self:flex-start;background:#fff;color:var(--navy);border:1px solid rgba(27,27,26,.08);border-bottom-left-radius:3px}
+.aa-msg.bot.thinking{color:rgba(27,27,26,.7);font-style:italic}
+.aa-in{padding:.85rem 1rem;border-top:1px solid rgba(27,27,26,.08);display:flex;gap:.5rem;background:#fff}
+.aa-in textarea{flex:1;resize:none;font-family:inherit;font-size:.85rem;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);border-radius:6px;outline:none;background:#fafafa;color:var(--navy);min-height:42px;max-height:110px;line-height:1.4}
 .aa-in textarea:focus{border-color:var(--gold);background:#fff}
 .aa-send{background:var(--gold);color:var(--navy);border:none;padding:0 1rem;font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;font-weight:600;cursor:pointer;border-radius:4px}
 .aa-send:disabled{opacity:.5;cursor:not-allowed}
-.aa-hint{font-size:.66rem;color:rgba(17,29,44,.68);padding:.5rem 1.2rem .7rem;background:#fafaf7;border-top:1px solid rgba(17,29,44,.06)}
-.aa-img-btn{background:none;border:1px solid rgba(17,29,44,.15);color:rgba(17,29,44,.7);width:34px;height:34px;border-radius:6px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:border-color .15s,color .15s}
+.aa-hint{font-size:.66rem;color:rgba(27,27,26,.68);padding:.5rem 1.2rem .7rem;background:#fafaf7;border-top:1px solid rgba(27,27,26,.06)}
+.aa-img-btn{background:none;border:1px solid rgba(27,27,26,.15);color:rgba(27,27,26,.7);width:34px;height:34px;border-radius:6px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:border-color .15s,color .15s}
 .aa-img-btn:hover{border-color:var(--gold);color:var(--gold)}
 .aa-booking-card{background:#f4f8ff;border:1.5px solid var(--gold);border-radius:10px;padding:.9rem 1rem;margin:.4rem 0;font-size:.8rem;line-height:1.6;color:var(--navy);max-width:100%}
 .aa-booking-card .abc-title{font-weight:700;font-size:.82rem;margin-bottom:.5rem;color:var(--navy)}
 .aa-booking-card .abc-row{display:flex;gap:.4rem;margin:.1rem 0}
-.aa-booking-card .abc-lbl{color:rgba(17,29,44,.7);min-width:70px;flex-shrink:0}
+.aa-booking-card .abc-lbl{color:rgba(27,27,26,.7);min-width:70px;flex-shrink:0}
 .aa-booking-card .abc-val{color:var(--navy);font-weight:500}
 .aa-booking-card .abc-btn{margin-top:.75rem;width:100%;background:var(--gold);color:var(--navy);border:none;padding:.55rem;font-weight:700;font-size:.78rem;border-radius:6px;cursor:pointer;letter-spacing:.03em}
 .aa-booking-card .abc-btn:hover{opacity:.88}
-.aa-img-thumb{max-width:100%;max-height:140px;border-radius:6px;margin:.3rem 0;border:1px solid rgba(17,29,44,.1)}
+.aa-img-thumb{max-width:100%;max-height:140px;border-radius:6px;margin:.3rem 0;border:1px solid rgba(27,27,26,.1)}
 </style>
 <button class="aa-fab" onclick="aaToggle()" title="AI Assistant">W</button>
 <div class="aa-panel" id="aa-panel">
@@ -1756,7 +1756,7 @@ function aaShowBookingCard(b,idx,total){
     +row('Notes',b.notes)
     +'<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.75rem">'
     +'<button class="abc-btn" style="flex:1;min-width:120px" onclick="aaFillModal('+bJson+')">Create This Booking</button>'
-    +'<button class="abc-btn" style="flex:1;min-width:120px;background:rgba(184,152,90,.08);border:1px solid rgba(184,152,90,.3);color:var(--gold)" onclick="aaCalOnly('+bJson+')">Calendar Only</button>'
+    +'<button class="abc-btn" style="flex:1;min-width:120px;background:rgba(184,144,69,.08);border:1px solid rgba(184,144,69,.3);color:var(--gold)" onclick="aaCalOnly('+bJson+')">Calendar Only</button>'
     +'</div>';
 
   card.appendChild(inner);
@@ -1784,7 +1784,7 @@ function aaShowInvoiceCard(inv){
     +(r.email?'<div class="abc-row"><span class="abc-lbl">Email</span><span class="abc-val">'+escHtml(r.email)+'</span></div>':'')
     +(r.address?'<div class="abc-row"><span class="abc-lbl">Address</span><span class="abc-val">'+escHtml(r.address)+'</span></div>':'')
     +itemsHtml
-    +'<div class="abc-row" style="border-top:1px solid rgba(184,152,90,.2);margin-top:.3rem;padding-top:.4rem"><span class="abc-lbl" style="font-weight:600">Total</span><span class="abc-val" style="font-weight:600;color:var(--navy)">£'+total.toFixed(2)+'</span></div>'
+    +'<div class="abc-row" style="border-top:1px solid rgba(184,144,69,.2);margin-top:.3rem;padding-top:.4rem"><span class="abc-lbl" style="font-weight:600">Total</span><span class="abc-val" style="font-weight:600;color:var(--navy)">£'+total.toFixed(2)+'</span></div>'
     +(inv.notes?'<div class="abc-row"><span class="abc-lbl">Notes</span><span class="abc-val">'+escHtml(inv.notes)+'</span></div>':'')
     +'<div style="margin-top:.75rem">'
     +'<button class="abc-btn" style="width:100%" onclick="aaCreateInvoice('+iJson+')">Create Invoice</button>'
@@ -1810,7 +1810,7 @@ async function aaCreateInvoice(invJson){
       if(d.recipient&&d.recipient.name)iHtml+='<div class="abc-row"><span class="abc-lbl">Recipient</span><span class="abc-val">'+_esc(d.recipient.name)+'</span></div>';
       if(d.recipient&&d.recipient.email)iHtml+='<div class="abc-row"><span class="abc-lbl">Email</span><span class="abc-val">'+_esc(d.recipient.email)+'</span></div>';
       (d.items||[]).forEach(function(it){iHtml+='<div class="abc-row"><span class="abc-lbl">'+_esc(it.description)+'</span><span class="abc-val">£'+Number(it.amount).toFixed(2)+'</span></div>';});
-      iHtml+='<div class="abc-row" style="border-top:1px solid rgba(184,152,90,.2);margin-top:.3rem;padding-top:.4rem"><span class="abc-lbl" style="font-weight:600">Total</span><span class="abc-val" style="font-weight:600;color:var(--navy)">£'+Number(d.total||0).toFixed(2)+'</span></div>';
+      iHtml+='<div class="abc-row" style="border-top:1px solid rgba(184,144,69,.2);margin-top:.3rem;padding-top:.4rem"><span class="abc-lbl" style="font-weight:600">Total</span><span class="abc-val" style="font-weight:600;color:var(--navy)">£'+Number(d.total||0).toFixed(2)+'</span></div>';
       inner.innerHTML=iHtml;card.appendChild(inner);aaAddEl(card);
     }
     else{aaAddBot('Could not create invoice: '+(d.error||'Unknown error'));}
@@ -1996,9 +1996,9 @@ function renderTodayPersonal(events){
   if(!todayEvents.length){card.style.display='none';return;}
   card.style.display='';
   list.innerHTML=todayEvents.map(function(ev){
-    var loc=ev.location?'<div style="font-size:.72rem;color:rgba(17,29,44,.7);margin-top:.15rem">\ud83d\udccd '+_esc(ev.location)+'</div>':'';
-    var notes=ev.notes?'<div style="font-size:.72rem;color:rgba(17,29,44,.74);margin-top:.3rem;padding:.35rem .5rem;background:rgba(91,107,154,.06);border-left:2px solid #5b6b9a;white-space:pre-wrap;line-height:1.4">'+_esc(ev.notes)+'</div>':'';
-    return '<div style="display:flex;gap:.85rem;padding:.7rem 0;border-bottom:1px solid rgba(17,29,44,.06)">'
+    var loc=ev.location?'<div style="font-size:.72rem;color:rgba(27,27,26,.7);margin-top:.15rem">\ud83d\udccd '+_esc(ev.location)+'</div>':'';
+    var notes=ev.notes?'<div style="font-size:.72rem;color:rgba(27,27,26,.74);margin-top:.3rem;padding:.35rem .5rem;background:rgba(91,107,154,.06);border-left:2px solid #6f665c;white-space:pre-wrap;line-height:1.4">'+_esc(ev.notes)+'</div>':'';
+    return '<div style="display:flex;gap:.85rem;padding:.7rem 0;border-bottom:1px solid rgba(27,27,26,.06)">'
       +'<div style="min-width:88px;font-size:.78rem;color:var(--gold);font-weight:500;font-variant-numeric:tabular-nums">'+_evRange(ev)+'</div>'
       +'<div style="flex:1"><div style="font-size:.86rem;color:var(--navy);font-weight:500">'+_esc(ev.title)+'</div>'+loc+notes+'</div>'
       +'</div>';
@@ -2024,13 +2024,13 @@ function renderDashPersonal(events){
     var label=k===todayKey?'Today':d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
     var rows=byDate[k].map(function(ev){
       var loc=ev.location?' \u00b7 '+_esc(ev.location):'';
-      var notes=ev.notes?'<div style="margin-top:.25rem;padding:.3rem .45rem;background:rgba(91,107,154,.06);border-left:2px solid #5b6b9a;font-size:.72rem;color:rgba(17,29,44,.74);white-space:pre-wrap;line-height:1.4">'+_esc(ev.notes)+'</div>':'';
+      var notes=ev.notes?'<div style="margin-top:.25rem;padding:.3rem .45rem;background:rgba(91,107,154,.06);border-left:2px solid #6f665c;font-size:.72rem;color:rgba(27,27,26,.74);white-space:pre-wrap;line-height:1.4">'+_esc(ev.notes)+'</div>':'';
       return '<div style="display:flex;gap:.7rem;padding:.35rem 0;font-size:.8rem">'
         +'<div style="min-width:90px;color:var(--gold);font-variant-numeric:tabular-nums">'+_evRange(ev)+'</div>'
-        +'<div style="flex:1;color:var(--navy)">'+_esc(ev.title)+'<span style="color:rgba(17,29,44,.68);font-size:.75rem">'+loc+'</span>'+notes+'</div>'
+        +'<div style="flex:1;color:var(--navy)">'+_esc(ev.title)+'<span style="color:rgba(27,27,26,.68);font-size:.75rem">'+loc+'</span>'+notes+'</div>'
         +'</div>';
     }).join('');
-    return '<div style="margin-bottom:.85rem"><div style="font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.68);margin-bottom:.25rem">'+label+'</div>'+rows+'</div>';
+    return '<div style="margin-bottom:.85rem"><div style="font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.68);margin-bottom:.25rem">'+label+'</div>'+rows+'</div>';
   }).join('');
   list.innerHTML=html;
 }
@@ -2052,17 +2052,17 @@ function setInboxFolder(folder,btn){
 }
 function loadInbox(){
   var list=document.getElementById('inbox-list');
-  list.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.64);font-size:.85rem">Loading…</div>';
+  list.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(27,27,26,.64);font-size:.85rem">Loading…</div>';
   fetch('/api/gmail/messages?folder='+encodeURIComponent(INBOX_FOLDER)+'&limit=40').then(function(r){return r.json().then(function(d){return{status:r.status,d:d};});}).then(function(o){
     if(o.status===400&&o.d&&o.d.error==='gmail_scope_missing'){
-      list.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.72);font-size:.85rem">Gmail access not granted.<br><br><button class="btn btn-navy btn-sm" onclick="reconnectForGmail()">Reconnect Google to enable Inbox</button></div>';return;
+      list.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(27,27,26,.72);font-size:.85rem">Gmail access not granted.<br><br><button class="btn btn-navy btn-sm" onclick="reconnectForGmail()">Reconnect Google to enable Inbox</button></div>';return;
     }
     if(o.status===400&&o.d&&o.d.error==='not_connected'){
-      list.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.72);font-size:.85rem">Google not connected.<br><br><button class="btn btn-navy btn-sm" onclick="connectGoogleCalendar()">Connect Google</button></div>';return;
+      list.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(27,27,26,.72);font-size:.85rem">Google not connected.<br><br><button class="btn btn-navy btn-sm" onclick="connectGoogleCalendar()">Connect Google</button></div>';return;
     }
     if(!o.d||!o.d.ok){list.innerHTML='<div style="text-align:center;padding:2rem;color:#c54040;font-size:.85rem">'+escHtml((o.d&&o.d.error)||'Failed to load inbox')+'</div>';return;}
     var msgs=o.d.messages||[];
-    if(!msgs.length){list.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.64);font-size:.85rem">No messages.</div>';return;}
+    if(!msgs.length){list.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(27,27,26,.64);font-size:.85rem">No messages.</div>';return;}
     var badge=document.getElementById('sb-inbox-badge');
     var unread=msgs.filter(function(m){return m.unread;}).length;
     if(badge){if(unread>0){badge.textContent=unread;badge.style.display='';}else{badge.style.display='none';}}
@@ -2070,10 +2070,10 @@ function loadInbox(){
       var date=m.date?new Date(m.date).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
       var weight=m.unread?'600':'400';
       var dot=m.unread?'<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gold);margin-right:.5rem;vertical-align:middle"></span>':'<span style="display:inline-block;width:6px;margin-right:.5rem"></span>';
-      return '<div class="inbox-row" onclick="openInboxMessage(\''+escHtml(m.id)+'\')" style="padding:.8rem 1rem;border-bottom:1px solid rgba(17,29,44,.05);cursor:pointer;font-size:.85rem" onmouseover="this.style.background=\'rgba(17,29,44,.03)\'" onmouseout="this.style.background=\'\'">'+
-        '<div style="display:flex;justify-content:space-between;gap:1rem"><div style="font-weight:'+weight+';color:var(--navy);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+dot+escHtml(m.from)+'</div><div style="color:rgba(17,29,44,.66);font-size:.75rem;flex-shrink:0">'+escHtml(date)+'</div></div>'+
+      return '<div class="inbox-row" onclick="openInboxMessage(\''+escHtml(m.id)+'\')" style="padding:.8rem 1rem;border-bottom:1px solid rgba(27,27,26,.05);cursor:pointer;font-size:.85rem" onmouseover="this.style.background=\'rgba(27,27,26,.03)\'" onmouseout="this.style.background=\'\'">'+
+        '<div style="display:flex;justify-content:space-between;gap:1rem"><div style="font-weight:'+weight+';color:var(--navy);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+dot+escHtml(m.from)+'</div><div style="color:rgba(27,27,26,.66);font-size:.75rem;flex-shrink:0">'+escHtml(date)+'</div></div>'+
         '<div style="color:var(--navy);font-weight:'+weight+';margin-top:.2rem;font-size:.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(m.subject)+'</div>'+
-        '<div style="color:rgba(17,29,44,.7);margin-top:.15rem;font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(m.snippet)+'</div>'+
+        '<div style="color:rgba(27,27,26,.7);margin-top:.15rem;font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(m.snippet)+'</div>'+
         '</div>';
     }).join('');
   }).catch(function(){list.innerHTML='<div style="text-align:center;padding:2rem;color:#c54040;font-size:.85rem">Network error</div>';});
@@ -2226,7 +2226,7 @@ function loadLiveBookings(){
             +' '+admPayTag(b).label+'</div></div></div>';
         }).join('');
       } else {
-        tl.innerHTML='<div style="text-align:center;padding:1.5rem;color:rgba(17,29,44,.62);font-size:.82rem">No jobs today</div>';
+        tl.innerHTML='<div style="text-align:center;padding:1.5rem;color:rgba(27,27,26,.62);font-size:.82rem">No jobs today</div>';
       }
     }
 
@@ -2252,7 +2252,7 @@ function loadLiveBookings(){
             +'</div></div></div>';
         }).join('');
       } else {
-        todayTl.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.62);font-size:.85rem">No jobs scheduled for today</div>';
+        todayTl.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(27,27,26,.62);font-size:.85rem">No jobs scheduled for today</div>';
       }
     }
 
@@ -2260,7 +2260,7 @@ function loadLiveBookings(){
     var tbody=el('jobs-tbody');
     if(tbody){
       if(!bookings.length){
-        tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:2rem;color:rgba(17,29,44,.62)">No bookings yet</td></tr>';
+        tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:2rem;color:rgba(27,27,26,.62)">No bookings yet</td></tr>';
       } else {
         var _conflicts=admFindOverlaps(bookings);
         tbody.innerHTML=bookings.map(function(b){
@@ -2292,10 +2292,10 @@ function loadLiveBookings(){
           if(b.status==='pending'){
             var _sug=(b.suggested_fare!=null&&b.suggested_fare!=='')?Number(b.suggested_fare):(b.fare!=null?Number(b.fare):null);
             var _pv=(_sug!=null&&!isNaN(_sug))?_sug.toFixed(2):'';
-            fareCellHtml='<input id="adm-fare-'+b.id+'" type="number" step="0.50" inputmode="decimal" value="'+_pv+'" style="width:74px;padding:.3rem .4rem;border:1px solid rgba(17,29,44,.25);border-radius:5px;font-size:.9rem;color:var(--navy)">'
-              +((_sug!=null&&!isNaN(_sug))?'<div style="font-size:.55rem;color:rgba(17,29,44,.68);margin-top:.15rem">Suggested \u00a3'+_sug.toFixed(0)+'</div>':'<div style="font-size:.55rem;color:rgba(17,29,44,.66);margin-top:.15rem">No suggestion</div>');
+            fareCellHtml='<input id="adm-fare-'+b.id+'" type="number" step="0.50" inputmode="decimal" value="'+_pv+'" style="width:74px;padding:.3rem .4rem;border:1px solid rgba(27,27,26,.25);border-radius:5px;font-size:.9rem;color:var(--navy)">'
+              +((_sug!=null&&!isNaN(_sug))?'<div style="font-size:.55rem;color:rgba(27,27,26,.68);margin-top:.15rem">Suggested \u00a3'+_sug.toFixed(0)+'</div>':'<div style="font-size:.55rem;color:rgba(27,27,26,.66);margin-top:.15rem">No suggestion</div>');
           } else {
-            fareCellHtml='<span style="color:var(--gold);font-family:var(--serif);font-size:1.1rem">'+(b.fare?'\u00a3'+Number(b.fare).toFixed(0):'TBC')+'</span>'+(b.dead_miles_fee?'<div style="font-size:.55rem;color:rgba(17,29,44,.66);margin-top:.1rem">incl. \u00a3'+Number(b.dead_miles_fee).toFixed(0)+' dead mi</div>':'');
+            fareCellHtml='<span style="color:var(--gold);font-family:var(--serif);font-size:1.1rem">'+(b.fare?'\u00a3'+Number(b.fare).toFixed(0):'TBC')+'</span>'+(b.dead_miles_fee?'<div style="font-size:.55rem;color:rgba(27,27,26,.66);margin-top:.1rem">incl. \u00a3'+Number(b.dead_miles_fee).toFixed(0)+' dead mi</div>':'');
           }
           return '<tr data-bid="'+b.id+'" style="'+rowStyle+'">'
             +'<td><div class="main-v">'+b.ref+'</div>'+conflictMark+reasonRow+'</td>'
@@ -2359,12 +2359,12 @@ function loadLiveBookings(){
       if(dc)dc.textContent=d.customers.length;
       if(!cg)return;
       if(!d.customers.length){
-        cg.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:2rem;color:rgba(17,29,44,.62);font-size:.85rem">No customers yet. Click \u201c+ New Customer\u201d to open one.</div>';
+        cg.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:2rem;color:rgba(27,27,26,.62);font-size:.85rem">No customers yet. Click \u201c+ New Customer\u201d to open one.</div>';
         return;
       }
       cg.innerHTML=d.customers.map(function(c){
         var safeName=(c.full_name||'Unknown').replace(/"/g,'&quot;').replace(/'/g,"\\'");
-        var unvBadge=c.verified===0?'<span style="margin-left:.5rem;padding:.15rem .45rem;font-size:.6rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:rgba(184,152,90,.15);color:#B8985A;border-radius:2px">Unverified</span>':'';
+        var unvBadge=c.verified===0?'<span style="margin-left:.5rem;padding:.15rem .45rem;font-size:.6rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:rgba(184,144,69,.15);color:#b89045;border-radius:2px">Unverified</span>':'';
         var typeBadge=c.account_type==='business'?'<span class="cc-type cc-business">Business</span>':'<span class="cc-type cc-personal">Personal</span>';
         return '<div class="cust-card"><div class="cc-name">'+(c.full_name||'Unknown')+unvBadge+'</div>'
           +typeBadge
@@ -2692,10 +2692,10 @@ async function dmLoadEarnings(which){
     document.getElementById('dm-earn-comm').textContent='£'+d.totals.commission.toFixed(2);
     document.getElementById('dm-earn-net').textContent='£'+d.totals.net.toFixed(2);
     var list=document.getElementById('dm-earn-list');
-    if(!d.items.length){list.innerHTML='<div style="color:rgba(17,29,44,.68);padding:.4rem 0">No jobs in this period.</div>';return;}
+    if(!d.items.length){list.innerHTML='<div style="color:rgba(27,27,26,.68);padding:.4rem 0">No jobs in this period.</div>';return;}
     list.innerHTML=d.items.map(function(it){
-      return '<div style="display:grid;grid-template-columns:76px 1fr auto;gap:.5rem;padding:.45rem 0;border-bottom:1px solid rgba(17,29,44,.05)">'
-        +'<div style="color:rgba(17,29,44,.72);font-size:.72rem">'+escTo(it.date)+'</div>'
+      return '<div style="display:grid;grid-template-columns:76px 1fr auto;gap:.5rem;padding:.45rem 0;border-bottom:1px solid rgba(27,27,26,.05)">'
+        +'<div style="color:rgba(27,27,26,.72);font-size:.72rem">'+escTo(it.date)+'</div>'
         +'<div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escTo(it.pickup)+' → '+escTo(it.destination)+'">'+escTo(it.ref)+' · '+escTo(it.pickup)+' → '+escTo(it.destination)+'</div>'
         +'<div style="text-align:right;white-space:nowrap;font-family:Menlo,Consolas,monospace;font-size:.72rem">£'+it.fare.toFixed(2)+' <span style="color:#9C2828">−£'+it.commission.toFixed(2)+'</span> = <span style="color:var(--gold);font-weight:500">£'+it.net.toFixed(2)+'</span></div>'
       +'</div>';
@@ -2834,14 +2834,14 @@ function buildDrivers(){
     return;
   }
   grid.innerHTML=DRIVERS.map(function(d){
-    var vehicleLine=d.vehicle?d.vehicle:'<span style="color:rgba(17,29,44,.62)">No vehicle set</span>';
+    var vehicleLine=d.vehicle?d.vehicle:'<span style="color:rgba(27,27,26,.62)">No vehicle set</span>';
     var regLine=d.reg?d.reg:'';
     var phvLine=d.phv?('PHV: '+d.phv):'';
     var loginBadge=d.has_login
       ? '<span style="font-size:.6rem;color:var(--green);background:var(--green-bg);padding:.15rem .4rem;border-radius:3px;letter-spacing:.08em;text-transform:uppercase">App access</span>'
-      : '<span style="font-size:.6rem;color:rgba(17,29,44,.7);background:rgba(17,29,44,.06);padding:.15rem .4rem;border-radius:3px;letter-spacing:.08em;text-transform:uppercase">No login</span>';
+      : '<span style="font-size:.6rem;color:rgba(27,27,26,.7);background:rgba(27,27,26,.06);padding:.15rem .4rem;border-radius:3px;letter-spacing:.08em;text-transform:uppercase">No login</span>';
     var defaultBadge=d.is_default
-      ? '<span style="font-size:.6rem;color:#B8985A;background:rgba(184,152,90,.12);padding:.15rem .4rem;border-radius:3px;letter-spacing:.08em;text-transform:uppercase;margin-left:.3rem">★ Default</span>'
+      ? '<span style="font-size:.6rem;color:#b89045;background:rgba(184,144,69,.12);padding:.15rem .4rem;border-radius:3px;letter-spacing:.08em;text-transform:uppercase;margin-left:.3rem">★ Default</span>'
       : '';
     var avatarInner=d.photo
       ? '<img src="'+d.photo+'" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" alt="">'
@@ -3024,7 +3024,7 @@ window._CD_NAME='';
 function viewCustomer(id){
   window._CD_ID=id;
   document.getElementById('cd-title').textContent='Customer';
-  document.getElementById('cd-content').innerHTML='<div style="color:rgba(17,29,44,.66);font-size:.82rem">Loading...</div>';
+  document.getElementById('cd-content').innerHTML='<div style="color:rgba(27,27,26,.66);font-size:.82rem">Loading...</div>';
   document.getElementById('cd-bookings').innerHTML='Loading...';
   switchCustDetail('view');
   openModal('modal-cust-detail');
@@ -3037,29 +3037,29 @@ function viewCustomer(id){
     var typeCls=c.account_type==='business'?'cc-business':'cc-personal';
     html+='<div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.9rem">'
       +'<span class="cc-type '+typeCls+'" style="font-size:.6rem">'+escTo(c.account_type||'personal')+'</span>'
-      +(c.verified?'':'<span style="padding:.12rem .45rem;font-size:.6rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:rgba(184,152,90,.15);color:#B8985A;border-radius:2px">Unverified</span>')
+      +(c.verified?'':'<span style="padding:.12rem .45rem;font-size:.6rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:rgba(184,144,69,.15);color:#b89045;border-radius:2px">Unverified</span>')
       +'</div>';
     var rows=[['Email',c.email],['Phone',c.phone],['Address',[c.address_line1,c.address_line2,c.postcode].filter(Boolean).join(', ')],['Bank',[c.bank_name,c.bank_account_name].filter(Boolean).join(' / ')],['Sort / Acc',[c.bank_sort_code,c.bank_account_no].filter(Boolean).join(' / ')],['Member since',c.created_at?c.created_at.slice(0,10):'']];
     rows.forEach(function(row){
       if(!row[1])return;
       html+='<div style="display:flex;gap:.8rem;margin-bottom:.45rem;font-size:.82rem">'
-        +'<span style="min-width:90px;color:rgba(17,29,44,.66);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;padding-top:.1rem">'+row[0]+'</span>'
+        +'<span style="min-width:90px;color:rgba(27,27,26,.66);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;padding-top:.1rem">'+row[0]+'</span>'
         +'<span style="color:var(--navy)">'+escTo(String(row[1]))+'</span></div>';
     });
     document.getElementById('cd-content').innerHTML=html;
     // Bookings
     if(!d.bookings||!d.bookings.length){
-      document.getElementById('cd-bookings').innerHTML='<div style="color:rgba(17,29,44,.64);font-size:.8rem">No bookings yet.</div>';
+      document.getElementById('cd-bookings').innerHTML='<div style="color:rgba(27,27,26,.64);font-size:.8rem">No bookings yet.</div>';
       return;
     }
     var bhtml='<table style="width:100%;border-collapse:collapse;font-size:.76rem">'
-      +'<tr style="color:rgba(17,29,44,.66);font-size:.65rem;letter-spacing:.08em;text-transform:uppercase"><th style="text-align:left;padding:.35rem 0;font-weight:500">Ref</th><th style="text-align:left;padding:.35rem .4rem;font-weight:500">Date</th><th style="text-align:left;padding:.35rem .4rem;font-weight:500">Route</th><th style="text-align:right;padding:.35rem 0;font-weight:500">Fare</th></tr>';
+      +'<tr style="color:rgba(27,27,26,.66);font-size:.65rem;letter-spacing:.08em;text-transform:uppercase"><th style="text-align:left;padding:.35rem 0;font-weight:500">Ref</th><th style="text-align:left;padding:.35rem .4rem;font-weight:500">Date</th><th style="text-align:left;padding:.35rem .4rem;font-weight:500">Route</th><th style="text-align:right;padding:.35rem 0;font-weight:500">Fare</th></tr>';
     d.bookings.slice(0,10).forEach(function(b){
       var statusCol=b.status==='completed'?'var(--green)':b.status==='cancelled'?'var(--red)':'var(--gold)';
-      bhtml+='<tr style="border-top:1px solid rgba(17,29,44,.05)">'
+      bhtml+='<tr style="border-top:1px solid rgba(27,27,26,.05)">'
         +'<td style="padding:.35rem 0;color:var(--navy);font-weight:400">'+escTo(b.ref)+'</td>'
-        +'<td style="padding:.35rem .4rem;color:rgba(17,29,44,.72)">'+escTo(b.date)+'</td>'
-        +'<td style="padding:.35rem .4rem;color:rgba(17,29,44,.72);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escTo(b.pickup)+' &rarr; '+escTo(b.destination)+'</td>'
+        +'<td style="padding:.35rem .4rem;color:rgba(27,27,26,.72)">'+escTo(b.date)+'</td>'
+        +'<td style="padding:.35rem .4rem;color:rgba(27,27,26,.72);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escTo(b.pickup)+' &rarr; '+escTo(b.destination)+'</td>'
         +'<td style="padding:.35rem 0;text-align:right;color:'+statusCol+'">'+(b.fare?'£'+Number(b.fare).toFixed(0):'—')+'</td>'
         +'</tr>';
     });
@@ -3068,7 +3068,7 @@ function viewCustomer(id){
     // stash customer for edit prefill
     window._CD_CUST=c;
   }).catch(function(){
-    document.getElementById('cd-content').innerHTML='<div style="color:rgba(17,29,44,.66)">Failed to load customer.</div>';
+    document.getElementById('cd-content').innerHTML='<div style="color:rgba(27,27,26,.66)">Failed to load customer.</div>';
   });
 }
 
@@ -3295,10 +3295,10 @@ function filterSavedRecipients(q){
   list.innerHTML=matches.map(function(r,i){
     return '<div class="sr-opt" data-idx="'+_SAVED_RECIPIENTS.indexOf(r)+'"'
       +' onmousedown="selectSavedRecipient('+_SAVED_RECIPIENTS.indexOf(r)+')"'
-      +' style="padding:.55rem .8rem;cursor:pointer;font-size:.83rem;color:var(--navy);border-bottom:1px solid rgba(17,29,44,.06)">'
+      +' style="padding:.55rem .8rem;cursor:pointer;font-size:.83rem;color:var(--navy);border-bottom:1px solid rgba(27,27,26,.06)">'
       +'<span style="font-weight:500">'+escTo(r.name||'')+'</span>'
-      +(r.email?'<span style="color:rgba(17,29,44,.68);font-size:.75rem;margin-left:.4rem">'+escTo(r.email)+'</span>':'')
-      +(r.phone?'<span style="color:rgba(17,29,44,.64);font-size:.72rem;margin-left:.35rem">'+escTo(r.phone)+'</span>':'')
+      +(r.email?'<span style="color:rgba(27,27,26,.68);font-size:.75rem;margin-left:.4rem">'+escTo(r.email)+'</span>':'')
+      +(r.phone?'<span style="color:rgba(27,27,26,.64);font-size:.72rem;margin-left:.35rem">'+escTo(r.phone)+'</span>':'')
       +'</div>';
   }).join('');
   list.style.display='';
@@ -3334,11 +3334,11 @@ function savedRecipientKeydown(e){
   if(e.key==='ArrowDown'){
     e.preventDefault();
     _SR_ACTIVE_IDX=Math.min(_SR_ACTIVE_IDX+1,opts.length-1);
-    opts.forEach(function(o,i){o.style.background=i===_SR_ACTIVE_IDX?'rgba(17,29,44,.06)':'';});
+    opts.forEach(function(o,i){o.style.background=i===_SR_ACTIVE_IDX?'rgba(27,27,26,.06)':'';});
   } else if(e.key==='ArrowUp'){
     e.preventDefault();
     _SR_ACTIVE_IDX=Math.max(_SR_ACTIVE_IDX-1,0);
-    opts.forEach(function(o,i){o.style.background=i===_SR_ACTIVE_IDX?'rgba(17,29,44,.06)':'';});
+    opts.forEach(function(o,i){o.style.background=i===_SR_ACTIVE_IDX?'rgba(27,27,26,.06)':'';});
   } else if(e.key==='Enter'&&_SR_ACTIVE_IDX>=0){
     e.preventDefault();
     var idx=+opts[_SR_ACTIVE_IDX].dataset.idx;
@@ -3463,20 +3463,20 @@ function openInvoicePreview(data){
         try{var d=new Date(it.date+'T00:00:00');datePrefix=d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' \u2014 ';}catch(_){}
       }
       return '<tr>'
-        +'<td style="padding:12px 8px;border-bottom:1px solid rgba(17,29,44,.08);font-size:13px;color:#111D2C;line-height:1.5;vertical-align:top">'+(datePrefix?'<span style="color:#9AA3B2;font-size:11px;font-family:Helvetica Neue,Arial,sans-serif">'+esc(datePrefix)+'</span>':'')+''+esc(it.description||'')+'</td>'
-        +'<td style="padding:12px 8px;border-bottom:1px solid rgba(17,29,44,.08);font-size:14px;color:#111D2C;text-align:right;vertical-align:top;white-space:nowrap;font-family:Georgia,serif">&pound;'+amt+'</td>'
+        +'<td style="padding:12px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:13px;color:#1b1b1a;line-height:1.5;vertical-align:top">'+(datePrefix?'<span style="color:#a49e94;font-size:11px;font-family:Helvetica Neue,Arial,sans-serif">'+esc(datePrefix)+'</span>':'')+''+esc(it.description||'')+'</td>'
+        +'<td style="padding:12px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:14px;color:#1b1b1a;text-align:right;vertical-align:top;white-space:nowrap;font-family:Georgia,serif">&pound;'+amt+'</td>'
         +'</tr>';
     }).join('');
     tableHtml='<table style="width:100%;border-collapse:collapse;margin-bottom:24px">'
       +'<thead><tr>'
-      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#B8985A;padding:8px;border-bottom:2px solid #B8985A;text-align:left;font-weight:600">Description</th>'
-      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#B8985A;padding:8px;border-bottom:2px solid #B8985A;text-align:right;font-weight:600">Amount</th>'
+      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#b89045;padding:8px;border-bottom:2px solid #b89045;text-align:left;font-weight:600">Description</th>'
+      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#b89045;padding:8px;border-bottom:2px solid #b89045;text-align:right;font-weight:600">Amount</th>'
       +'</tr></thead>'
       +'<tbody>'+itemRows+'</tbody>'
       +'</table>';
     var r=data.recipient||{};
     toAddr=[esc(r.name||''),r.address?esc(r.address).replace(/\n/g,'<br>'):'',r.phone?esc(r.phone):'',r.email?esc(r.email):''].filter(Boolean).join('<br>');
-    if(p.notes)periodLine='<div style="margin-bottom:18px;padding:12px 14px;background:rgba(184,152,90,.08);border-left:3px solid #B8985A;font-size:13px;color:#111D2C;line-height:1.6">'+esc(p.notes).replace(/\n/g,'<br>')+'</div>';
+    if(p.notes)periodLine='<div style="margin-bottom:18px;padding:12px 14px;background:rgba(184,144,69,.08);border-left:3px solid #b89045;font-size:13px;color:#1b1b1a;line-height:1.6">'+esc(p.notes).replace(/\n/g,'<br>')+'</div>';
   } else {
     var c=data.customer||{};
     var bks=data.bookings||[];
@@ -3485,41 +3485,41 @@ function openInvoicePreview(data){
       var d=b.date||'';
       var t=b.time||'';
       return '<tr>'
-        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(17,29,44,.08);font-size:13px;color:#111D2C;vertical-align:top">'+esc(d)+(t&&t!=='ASAP'?' '+esc(t):t==='ASAP'?' ASAP':'')+'<br><span style="font-family:Menlo,Consolas,monospace;font-size:10px;color:#9AA3B2">'+esc(b.ref||'')+'</span></td>'
-        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(17,29,44,.08);font-size:13px;color:#111D2C;line-height:1.5;vertical-align:top">'+esc(b.pickup||'')+' &rarr; '+esc(b.destination||'')+(b.flight?'<br><span style="font-size:11px;color:#9AA3B2">Flight '+esc(b.flight)+'</span>':'')+'</td>'
-        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(17,29,44,.08);font-size:14px;color:#111D2C;text-align:right;vertical-align:top;white-space:nowrap;font-family:Georgia,serif">&pound;'+fare+'</td>'
+        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:13px;color:#1b1b1a;vertical-align:top">'+esc(d)+(t&&t!=='ASAP'?' '+esc(t):t==='ASAP'?' ASAP':'')+'<br><span style="font-family:Menlo,Consolas,monospace;font-size:10px;color:#a49e94">'+esc(b.ref||'')+'</span></td>'
+        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:13px;color:#1b1b1a;line-height:1.5;vertical-align:top">'+esc(b.pickup||'')+' &rarr; '+esc(b.destination||'')+(b.flight?'<br><span style="font-size:11px;color:#a49e94">Flight '+esc(b.flight)+'</span>':'')+'</td>'
+        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:14px;color:#1b1b1a;text-align:right;vertical-align:top;white-space:nowrap;font-family:Georgia,serif">&pound;'+fare+'</td>'
         +'</tr>';
     }).join('');
     if(!bookingRows){
-      bookingRows='<tr><td colspan="3" style="padding:24px;text-align:center;font-size:13px;color:#9AA3B2;font-style:italic">No journeys in this period.</td></tr>';
+      bookingRows='<tr><td colspan="3" style="padding:24px;text-align:center;font-size:13px;color:#a49e94;font-style:italic">No journeys in this period.</td></tr>';
     }
     tableHtml='<table style="width:100%;border-collapse:collapse;margin-bottom:24px">'
       +'<thead><tr>'
-      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#B8985A;padding:8px;border-bottom:2px solid #B8985A;text-align:left;font-weight:600">Date / Ref</th>'
-      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#B8985A;padding:8px;border-bottom:2px solid #B8985A;text-align:left;font-weight:600">Journey</th>'
-      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#B8985A;padding:8px;border-bottom:2px solid #B8985A;text-align:right;font-weight:600">Fare</th>'
+      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#b89045;padding:8px;border-bottom:2px solid #b89045;text-align:left;font-weight:600">Date / Ref</th>'
+      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#b89045;padding:8px;border-bottom:2px solid #b89045;text-align:left;font-weight:600">Journey</th>'
+      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#b89045;padding:8px;border-bottom:2px solid #b89045;text-align:right;font-weight:600">Fare</th>'
       +'</tr></thead>'
       +'<tbody>'+bookingRows+'</tbody>'
       +'</table>';
     toAddr=[esc(c.full_name||''),c.phone?esc(c.phone):'',c.email?esc(c.email):''].filter(Boolean).join('<br>');
-    if(p.label)periodLine='<div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#9AA3B2;margin-bottom:6px;font-weight:500">Period: '+esc(p.label)+'</div>';
+    if(p.label)periodLine='<div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#a49e94;margin-bottom:6px;font-weight:500">Period: '+esc(p.label)+'</div>';
   }
 
   var fromAddr=[s.business_name||'Westmere Private Hire',s.owner_name||'',s.address_line1||'',(s.address_line2||'')+(s.postcode?' '+s.postcode:''),s.phone||'',s.email||''].filter(Boolean).map(esc).join('<br>');
 
   var bankHtml='';
   if(s.sort_code&&s.account_no){
-    bankHtml='<div style="background:rgba(17,29,44,.04);border:1px solid rgba(17,29,44,.08);padding:20px 24px;margin-bottom:32px">'
-      +'<div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#B8985A;font-weight:600;margin-bottom:10px">Payment Details</div>'
-      +'<table style="font-size:13px;color:#111D2C;line-height:1.8">'
-      +(s.bank_name?'<tr><td style="color:#9AA3B2;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Bank</td><td>'+esc(s.bank_name)+'</td></tr>':'')
-      +(s.account_name?'<tr><td style="color:#9AA3B2;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Name</td><td>'+esc(s.account_name)+'</td></tr>':'')
-      +'<tr><td style="color:#9AA3B2;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Sort code</td><td style="font-family:Menlo,Consolas,monospace">'+esc(s.sort_code)+'</td></tr>'
-      +'<tr><td style="color:#9AA3B2;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Account no.</td><td style="font-family:Menlo,Consolas,monospace">'+esc(s.account_no)+'</td></tr>'
-      +'<tr><td style="color:#9AA3B2;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Reference</td><td style="font-family:Menlo,Consolas,monospace">'+esc(data.invoiceNo||'')+'</td></tr>'
+    bankHtml='<div style="background:rgba(27,27,26,.04);border:1px solid rgba(27,27,26,.08);padding:20px 24px;margin-bottom:32px">'
+      +'<div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#b89045;font-weight:600;margin-bottom:10px">Payment Details</div>'
+      +'<table style="font-size:13px;color:#1b1b1a;line-height:1.8">'
+      +(s.bank_name?'<tr><td style="color:#a49e94;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Bank</td><td>'+esc(s.bank_name)+'</td></tr>':'')
+      +(s.account_name?'<tr><td style="color:#a49e94;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Name</td><td>'+esc(s.account_name)+'</td></tr>':'')
+      +'<tr><td style="color:#a49e94;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Sort code</td><td style="font-family:Menlo,Consolas,monospace">'+esc(s.sort_code)+'</td></tr>'
+      +'<tr><td style="color:#a49e94;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Account no.</td><td style="font-family:Menlo,Consolas,monospace">'+esc(s.account_no)+'</td></tr>'
+      +'<tr><td style="color:#a49e94;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Reference</td><td style="font-family:Menlo,Consolas,monospace">'+esc(data.invoiceNo||'')+'</td></tr>'
       +'</table></div>';
   } else {
-    bankHtml='<div style="font-size:13px;color:#5A6B7F;margin-bottom:32px">Payment is appreciated within 14 days by bank transfer. Please contact us for account details.</div>';
+    bankHtml='<div style="font-size:13px;color:#726a60;margin-bottom:32px">Payment is appreciated within 14 days by bank transfer. Please contact us for account details.</div>';
   }
 
   var issuedStr=p.issuedDate||new Date().toISOString().slice(0,10);
@@ -3530,26 +3530,26 @@ function openInvoicePreview(data){
     +'@page{size:A4;margin:0}'
     +'@media print{.no-print{display:none!important}body{background:#fff!important}.wrap{box-shadow:none!important;margin:0!important;max-width:none!important}}'
     +'*{box-sizing:border-box;margin:0;padding:0}'
-    +'body{font-family:Georgia,"Times New Roman",serif;color:#111D2C;background:#f5f2ed;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+    +'body{font-family:Georgia,"Times New Roman",serif;color:#1b1b1a;background:#f5f2ec;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
     +'.wrap{max-width:800px;margin:0 auto;background:#fff;position:relative;overflow:hidden;box-shadow:0 2px 20px rgba(0,0,0,.08)}'
-    +'.wrap::before{content:"";position:absolute;top:0;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,#B8985A 18%,#B8985A 82%,transparent 100%);z-index:2}'
-    +'.wrap::after{content:"";position:absolute;bottom:0;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,#B8985A 18%,#B8985A 82%,transparent 100%);z-index:2}'
+    +'.wrap::before{content:"";position:absolute;top:0;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,#b89045 18%,#b89045 82%,transparent 100%);z-index:2}'
+    +'.wrap::after{content:"";position:absolute;bottom:0;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,#b89045 18%,#b89045 82%,transparent 100%);z-index:2}'
     +'/* watermark removed */'
-    +'.corner-mark{position:absolute;top:28px;right:32px;font-family:Helvetica Neue,Arial,sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:rgba(17,29,44,.6);z-index:1}'
-    +'.toolbar{background:#111D2C;padding:12px 24px;display:flex;gap:12px;align-items:center;position:relative;z-index:3}'
+    +'.corner-mark{position:absolute;top:28px;right:32px;font-family:Helvetica Neue,Arial,sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:rgba(27,27,26,.6);z-index:1}'
+    +'.toolbar{background:#1b1b1a;padding:12px 24px;display:flex;gap:12px;align-items:center;position:relative;z-index:3}'
     +'.toolbar button{font-family:Helvetica Neue,Arial,sans-serif;font-size:12px;padding:8px 18px;border:none;cursor:pointer;letter-spacing:.5px}'
-    +'.toolbar .btn-dl{background:#B8985A;color:#111D2C}'
+    +'.toolbar .btn-dl{background:#b89045;color:#1b1b1a}'
     +'.toolbar .btn-cl{background:transparent;color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.2)}'
     +'.page{position:relative;z-index:1;padding:64px 56px 56px}'
     +'.brand-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}'
-    +'.brand-mark{display:inline-block;padding-bottom:14px;border-bottom:1px solid rgba(17,29,44,.12);min-width:220px}'
-    +'.brand-name{font-family:Georgia,serif;font-size:26px;letter-spacing:10px;font-weight:400;color:#111D2C;line-height:1}'
-    +'.brand-sub{font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:4px;text-transform:uppercase;color:#B8985A;margin-top:8px;font-weight:500}'
+    +'.brand-mark{display:inline-block;padding-bottom:14px;border-bottom:1px solid rgba(27,27,26,.12);min-width:220px}'
+    +'.brand-name{font-family:Georgia,serif;font-size:26px;letter-spacing:10px;font-weight:400;color:#1b1b1a;line-height:1}'
+    +'.brand-sub{font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:4px;text-transform:uppercase;color:#b89045;margin-top:8px;font-weight:500}'
     +'.inv-badge{text-align:right}'
-    +'.inv-label{font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#B8985A;font-weight:600;margin-bottom:8px}'
-    +'.inv-no{font-family:Menlo,Consolas,monospace;font-size:14px;color:#111D2C;margin-bottom:6px;letter-spacing:.5px}'
-    +'.inv-meta{font-size:12px;color:#5A6B7F;line-height:1.6}'
-    +'.gold-rule{width:36px;height:1px;background:#B8985A;margin:18px 0 32px}'
+    +'.inv-label{font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#b89045;font-weight:600;margin-bottom:8px}'
+    +'.inv-no{font-family:Menlo,Consolas,monospace;font-size:14px;color:#1b1b1a;margin-bottom:6px;letter-spacing:.5px}'
+    +'.inv-meta{font-size:12px;color:#726a60;line-height:1.6}'
+    +'.gold-rule{width:36px;height:1px;background:#b89045;margin:18px 0 32px}'
     +'</style></head><body>'
     +'<div class="wrap">'
     +'<div class="toolbar no-print"><button class="btn-dl" onclick="window.print()">Print / Save as PDF</button><button class="btn-cl" onclick="window.close()">Close</button></div>'
@@ -3564,16 +3564,16 @@ function openInvoicePreview(data){
       +'</div></div>'
     +'<div class="gold-rule"></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-bottom:36px">'
-      +'<div><div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#B8985A;margin-bottom:8px;font-weight:600">From</div><div style="font-size:13px;color:#111D2C;line-height:1.7">'+fromAddr+'</div></div>'
-      +'<div><div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#B8985A;margin-bottom:8px;font-weight:600">Bill To</div><div style="font-size:13px;color:#111D2C;line-height:1.7">'+toAddr+'</div></div>'
+      +'<div><div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#b89045;margin-bottom:8px;font-weight:600">From</div><div style="font-size:13px;color:#1b1b1a;line-height:1.7">'+fromAddr+'</div></div>'
+      +'<div><div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#b89045;margin-bottom:8px;font-weight:600">Bill To</div><div style="font-size:13px;color:#1b1b1a;line-height:1.7">'+toAddr+'</div></div>'
     +'</div>'
     +periodLine
     +tableHtml
     +'<div style="display:flex;flex-direction:column;align-items:flex-end;margin-bottom:32px">'
-      +'<div style="display:flex;justify-content:space-between;width:260px;padding:14px 0 8px;border-top:2px solid #B8985A;margin-top:4px"><span style="font-family:Helvetica Neue,Arial,sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:600;color:#111D2C;align-self:center">Total</span><span style="font-size:26px;font-weight:500;color:#B8985A;font-family:Georgia,serif">&pound;'+total+'</span></div>'
+      +'<div style="display:flex;justify-content:space-between;width:260px;padding:14px 0 8px;border-top:2px solid #b89045;margin-top:4px"><span style="font-family:Helvetica Neue,Arial,sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:600;color:#1b1b1a;align-self:center">Total</span><span style="font-size:26px;font-weight:500;color:#b89045;font-family:Georgia,serif">&pound;'+total+'</span></div>'
     +'</div>'
     +bankHtml
-    +'<div style="text-align:center;padding-top:24px;margin-top:20px;border-top:1px solid rgba(17,29,44,.1);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#9AA3B2;font-family:Helvetica Neue,Arial,sans-serif;font-weight:500">'
+    +'<div style="text-align:center;padding-top:24px;margin-top:20px;border-top:1px solid rgba(27,27,26,.1);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#a49e94;font-family:Helvetica Neue,Arial,sans-serif;font-weight:500">'
       +'Westmere Private Hire &middot; Licensed by Lewes District Council &middot; westmereprivatehire.co.uk'
     +'</div>'
     +'</div></div></body></html>';
@@ -3595,7 +3595,7 @@ function clearInvoiceFilter(){
 function loadInvoiceHistory(){
   var tbody=document.getElementById('invoice-history-body');if(!tbody)return;
   fetch('/api/invoices',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
-    if(!d.ok){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:rgba(17,29,44,.62)">Unable to load history</td></tr>';return;}
+    if(!d.ok){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:rgba(27,27,26,.62)">Unable to load history</td></tr>';return;}
     var invoices=d.invoices||[];
     // Optional date-range filter (by invoice issued date, falling back to created_at).
     var fromV=(document.getElementById('inv-filter-from')||{}).value||'';
@@ -3611,7 +3611,7 @@ function loadInvoiceHistory(){
       });
     }
     if(!invoices.length){
-      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:rgba(17,29,44,.62)">'+(filtered?'No invoices in this date range':'No invoices yet')+'</td></tr>';return;
+      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:rgba(27,27,26,.62)">'+(filtered?'No invoices in this date range':'No invoices yet')+'</td></tr>';return;
     }
     // Keep every invoice (stored + legacy) accessible for the View buttons.
     window._INV_HISTORY={};
@@ -3628,20 +3628,20 @@ function loadInvoiceHistory(){
       if(isLegacy){
         var legacyNoJs=escTo(inv.invoice_no).replace(/'/g,"\\'");
         return '<tr style="cursor:pointer" onclick="viewLegacyInvoice(\''+legacyNoJs+'\')">'
-          +'<td style="white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;word-break:break-word;max-width:none"><span style="font-weight:600;font-size:.9rem;color:var(--navy)">'+escTo(inv.recipient_name||inv.recipient_email||'—')+'</span>'+(inv.recipient_name&&inv.recipient_email?'<br><span style="font-size:.72rem;color:rgba(17,29,44,.68)">'+escTo(inv.recipient_email)+'</span>':'')+'</td>'
+          +'<td style="white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;word-break:break-word;max-width:none"><span style="font-weight:600;font-size:.9rem;color:var(--navy)">'+escTo(inv.recipient_name||inv.recipient_email||'—')+'</span>'+(inv.recipient_name&&inv.recipient_email?'<br><span style="font-size:.72rem;color:rgba(27,27,26,.68)">'+escTo(inv.recipient_email)+'</span>':'')+'</td>'
           +'<td style="text-align:right;font-family:Georgia,serif;color:var(--navy)">'+total+'</td>'
           +'<td><span style="font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)">'+kind+'</span></td>'
           +'<td style="white-space:nowrap">'+escTo(inv.issued_date||'')+'</td>'
-          +'<td><span style="font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(17,29,44,.4)">—</span></td>'
+          +'<td><span style="font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(27,27,26,.4)">—</span></td>'
           +'<td style="white-space:nowrap">'
-            +'<span style="font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(17,29,44,.66);margin-right:.5rem">archived</span>'
+            +'<span style="font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(27,27,26,.66);margin-right:.5rem">archived</span>'
             +'<button class="btn btn-ghost btn-sm" style="font-size:.65rem;padding:.3rem .7rem" onclick="event.stopPropagation();viewLegacyInvoice(\''+legacyNoJs+'\')">View</button>'
             +' <button class="btn btn-ghost btn-sm" style="font-size:.65rem;padding:.3rem .7rem;color:#a33;border-color:rgba(163,51,51,.25)" onclick="event.stopPropagation();deleteInvoice(\''+legacyNoJs+'\',\''+legacyNoJs+'\')">Delete</button>'
           +'</td>'
           +'</tr>';
       }
       return '<tr style="cursor:pointer" onclick="viewInvoice('+inv.id+')">'
-        +'<td style="white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;word-break:break-word;max-width:none"><span style="font-weight:600;font-size:.9rem;color:var(--navy)">'+escTo(inv.recipient_name||'')+'</span>'+(inv.recipient_email?'<br><span style="font-size:.72rem;color:rgba(17,29,44,.68)">'+escTo(inv.recipient_email)+'</span>':'')+'</td>'
+        +'<td style="white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;word-break:break-word;max-width:none"><span style="font-weight:600;font-size:.9rem;color:var(--navy)">'+escTo(inv.recipient_name||'')+'</span>'+(inv.recipient_email?'<br><span style="font-size:.72rem;color:rgba(27,27,26,.68)">'+escTo(inv.recipient_email)+'</span>':'')+'</td>'
         +'<td style="text-align:right;font-family:Georgia,serif;color:var(--navy)">'+total+'</td>'
         +'<td><span style="font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)">'+kind+'</span></td>'
         +'<td style="white-space:nowrap">'+escTo(inv.issued_date||'')+'</td>'
@@ -3649,12 +3649,12 @@ function loadInvoiceHistory(){
         +'<td style="white-space:nowrap">'
           +'<button class="btn btn-ghost btn-sm" style="font-size:.65rem;padding:.3rem .7rem" onclick="event.stopPropagation();viewInvoice('+inv.id+')">View</button>'
           +' <button class="btn btn-ghost btn-sm" style="font-size:.65rem;padding:.3rem .7rem" onclick="event.stopPropagation();downloadInvoice('+inv.id+',\''+escTo(inv.invoice_no)+'\')">Download</button>'
-          +((!paid&&inv.recipient_email)?' <button class="btn btn-sm" style="font-size:.65rem;padding:.3rem .7rem;color:#8B7230;background:rgba(184,152,90,.12);border:1px solid rgba(184,152,90,.45)" onclick="event.stopPropagation();remindInvoice('+inv.id+',this)">Remind</button>':'')
+          +((!paid&&inv.recipient_email)?' <button class="btn btn-sm" style="font-size:.65rem;padding:.3rem .7rem;color:#8B7230;background:rgba(184,144,69,.12);border:1px solid rgba(184,144,69,.45)" onclick="event.stopPropagation();remindInvoice('+inv.id+',this)">Remind</button>':'')
           +' <button class="btn btn-ghost btn-sm" style="font-size:.65rem;padding:.3rem .7rem;color:#a33;border-color:rgba(163,51,51,.25)" onclick="event.stopPropagation();deleteInvoice('+inv.id+',\''+escTo(inv.invoice_no)+'\')">Delete</button>'
         +'</td>'
         +'</tr>';
     }).join('');
-  }).catch(function(){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:rgba(17,29,44,.62)">Unable to load history</td></tr>';});
+  }).catch(function(){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:rgba(27,27,26,.62)">Unable to load history</td></tr>';});
 }
 
 async function deleteInvoice(id, invoiceNo){
@@ -3823,19 +3823,19 @@ function openInvoiceDetailModal(data){
           return '<tr><td>'+escTo(it.description||'')+'</td>'
             +'<td style="text-align:right;font-family:Georgia,serif">£'+(+it.amount||0).toFixed(2)+'</td></tr>';
         }).join('')
-      : '<tr><td colspan="2" style="text-align:center;padding:1.2rem;color:rgba(17,29,44,.64)">No items</td></tr>';
+      : '<tr><td colspan="2" style="text-align:center;padding:1.2rem;color:rgba(27,27,26,.64)">No items</td></tr>';
   } else {
     head.innerHTML='<tr><th>Date / Ref</th><th>Journey</th><th style="text-align:right">Fare</th></tr>';
     var bks=data.bookings||[];
     body.innerHTML=bks.length
       ? bks.map(function(b){
-          var ref=b.ref?'<br><span style="font-family:Menlo,Consolas,monospace;font-size:.7rem;color:rgba(17,29,44,.66)">'+escTo(b.ref)+'</span>':'';
+          var ref=b.ref?'<br><span style="font-family:Menlo,Consolas,monospace;font-size:.7rem;color:rgba(27,27,26,.66)">'+escTo(b.ref)+'</span>':'';
           var route=escTo(b.pickup||'')+(b.destination?' → '+escTo(b.destination):'');
           return '<tr><td>'+escTo(b.date||'')+(b.time&&b.time!=='ASAP'?' '+escTo(b.time):'')+ref+'</td>'
             +'<td>'+route+'</td>'
             +'<td style="text-align:right;font-family:Georgia,serif;white-space:nowrap">£'+(+b.fare||0).toFixed(2)+'</td></tr>';
         }).join('')
-      : '<tr><td colspan="3" style="text-align:center;padding:1.2rem;color:rgba(17,29,44,.64)">No journeys in period</td></tr>';
+      : '<tr><td colspan="3" style="text-align:center;padding:1.2rem;color:rgba(27,27,26,.64)">No journeys in period</td></tr>';
   }
   openModal('modal-invoice-detail');
 }
@@ -3892,7 +3892,7 @@ async function loadAdminDocs(){
     list.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:.75rem">'+ADMIN_DOC_DEFS.map(function(dt){
       var doc=docsMap[dt.type]||null;
       var expiry=doc?doc.expiry_date:null;
-      var statusClass='color:rgba(17,29,44,.68)';var statusText='Not uploaded';
+      var statusClass='color:rgba(27,27,26,.68)';var statusText='Not uploaded';
       if(doc){
         if(expiry){
           var expDate=new Date(expiry);expDate.setHours(0,0,0,0);
@@ -3902,16 +3902,16 @@ async function loadAdminDocs(){
           else{statusClass='color:#2D6E47';statusText='Valid';}
         }else{statusClass='color:#2D6E47';statusText='Uploaded';}
       }
-      var info=doc?'<div style="font-size:.72rem;color:rgba(17,29,44,.66);margin:.2rem 0 .4rem">'+doc.uploaded_at.slice(0,10)+'</div>':'';
+      var info=doc?'<div style="font-size:.72rem;color:rgba(27,27,26,.66);margin:.2rem 0 .4rem">'+doc.uploaded_at.slice(0,10)+'</div>':'';
       var viewBtn=doc?'<button class="btn btn-ghost btn-sm" onclick="adminViewDoc('+doc.id+')">View</button>':'<button class="btn btn-ghost btn-sm" disabled style="opacity:.4">View</button>';
       var saveBtn=doc?'<button class="btn btn-ghost btn-sm" onclick="adminDocSaveExpiry('+doc.id+',\''+dt.type+'\')">Save</button>':'';
-      return '<div style="border:1px solid rgba(17,29,44,.08);border-radius:8px;padding:.8rem">'
+      return '<div style="border:1px solid rgba(27,27,26,.08);border-radius:8px;padding:.8rem">'
         +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">'
         +'<div style="font-size:.82rem;color:var(--navy);font-weight:500">'+dt.label+'</div>'
         +'<span style="font-size:.72rem;'+statusClass+'">'+statusText+'</span>'
         +'</div>'+info
         +'<div style="display:flex;gap:.4rem;align-items:center">'
-        +'<input type="date" id="adexp-'+dt.type+'" value="'+(expiry||'')+'" style="flex:1;min-width:0;font-size:.78rem;padding:.3rem .5rem;border:1px solid rgba(17,29,44,.15);border-radius:6px">'
+        +'<input type="date" id="adexp-'+dt.type+'" value="'+(expiry||'')+'" style="flex:1;min-width:0;font-size:.78rem;padding:.3rem .5rem;border:1px solid rgba(27,27,26,.15);border-radius:6px">'
         +saveBtn
         +'<button class="btn btn-navy btn-sm" onclick="adminDocUpload(\''+dt.type+'\')">'+(doc?'Replace':'Upload')+'</button>'
         +viewBtn
@@ -4438,7 +4438,7 @@ function buildRecordBook(){
   var tbody=document.getElementById('rb-tbody');
   if(!view.all.length){
     var emptyMsg=view.mode==='year'?'No journeys recorded this year':'No journeys recorded this month';
-    tbody.innerHTML='<tr><td colspan="13" style="text-align:center;padding:2rem;color:rgba(17,29,44,.62)">'+emptyMsg+'</td></tr>';
+    tbody.innerHTML='<tr><td colspan="13" style="text-align:center;padding:2rem;color:rgba(27,27,26,.62)">'+emptyMsg+'</td></tr>';
     document.getElementById('rb-count').textContent='0';
     document.getElementById('rb-total').textContent='£0.00';
     return;
@@ -4450,7 +4450,7 @@ function buildRecordBook(){
     // In yearly view, separate each month with a labelled divider row.
     if(view.mode==='year'){
       var secTotal=sec.bookings.reduce(function(s,b){return s+(b.fare||0);},0);
-      html+='<tr style="background:rgba(17,29,44,.04)"><td colspan="13" style="padding:.5rem .7rem;font-weight:600;color:var(--navy);font-size:.78rem;letter-spacing:.04em">'
+      html+='<tr style="background:rgba(27,27,26,.04)"><td colspan="13" style="padding:.5rem .7rem;font-weight:600;color:var(--navy);font-size:.78rem;letter-spacing:.04em">'
         +escTo(sec.label)+' <span style="font-weight:400;color:var(--text-light)">· '+sec.bookings.length+' journeys · £'+secTotal.toFixed(2)+'</span></td></tr>';
     }
     sec.bookings.forEach(function(b){
@@ -4517,7 +4517,7 @@ function downloadRecordBook(){
 function printRecordBook(){
   var view=currentRecordData();
   var w=window.open('','_blank');
-  var printCSS='*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:Jost,Helvetica Neue,Arial,sans-serif;font-weight:300;color:#222;background:#fff;line-height:1.7;padding:2rem}h2{font-family:Cormorant Garamond,Georgia,serif;font-weight:400;margin-bottom:.3rem}p{color:#666;margin-bottom:1.5rem;font-size:.9rem}table{width:100%;border-collapse:collapse;margin-bottom:1.5rem}th{font-size:.65rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#888;padding:.5rem .6rem;border-bottom:2px solid #ddd;text-align:left}td{font-size:.82rem;padding:.5rem .6rem;border-bottom:1px solid #eee;color:#444}.navy{color:#111D2C;font-weight:400}.gold{color:#B8985A;font-family:Cormorant Garamond,Georgia,serif;font-size:1rem}.msep td{background:#f3f4f6;font-weight:600;color:#111D2C;letter-spacing:.04em}.footer{display:flex;justify-content:space-between;padding-top:1rem;border-top:2px solid #ddd;font-size:.78rem;color:#888}@media print{body{padding:1rem}}';
+  var printCSS='*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:Jost,Helvetica Neue,Arial,sans-serif;font-weight:300;color:#222;background:#fff;line-height:1.7;padding:2rem}h2{font-family:Cormorant Garamond,Georgia,serif;font-weight:400;margin-bottom:.3rem}p{color:#666;margin-bottom:1.5rem;font-size:.9rem}table{width:100%;border-collapse:collapse;margin-bottom:1.5rem}th{font-size:.65rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#888;padding:.5rem .6rem;border-bottom:2px solid #ddd;text-align:left}td{font-size:.82rem;padding:.5rem .6rem;border-bottom:1px solid #eee;color:#444}.navy{color:#1b1b1a;font-weight:400}.gold{color:#b89045;font-family:Cormorant Garamond,Georgia,serif;font-size:1rem}.msep td{background:#f3f4f6;font-weight:600;color:#1b1b1a;letter-spacing:.04em}.footer{display:flex;justify-content:space-between;padding-top:1rem;border-top:2px solid #ddd;font-size:.78rem;color:#888}@media print{body{padding:1rem}}';
   w.document.write('<html><head><title>Westmere Record Book</title><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"><style>'+printCSS+'</style></head><body>');
   w.document.write('<h2>Westmere Private Hire — Operator Record Book</h2>');
   w.document.write('<p>Licensed by Lewes District Council &nbsp;·&nbsp; Period: '
@@ -4540,8 +4540,8 @@ function printRecordBook(){
       var nt=b.notes||'';
       var bAt=b.created_at?b.created_at.replace('T',' ').slice(0,16):'—';
       w.document.write('<tr>'
-        +'<td style="color:#718096">'+n+'</td>'
-        +'<td style="font-family:monospace;font-size:.7rem;color:#718096">'+(b.ref||'—')+'</td>'
+        +'<td style="color:#8a8177">'+n+'</td>'
+        +'<td style="font-family:monospace;font-size:.7rem;color:#8a8177">'+(b.ref||'—')+'</td>'
         +'<td class="navy">'+rbDateStr(b)+'</td>'
         +'<td>'+(b.time||'—')+'</td>'
         +'<td class="navy">'+pN+'</td>'
@@ -4552,13 +4552,13 @@ function printRecordBook(){
         +'<td>'+(b.payment||'cash')+'</td>'
         +'<td>'+(b.flight||'—')+'</td>'
         +'<td style="font-size:.72rem;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+nt+'</td>'
-        +'<td style="font-size:.68rem;color:#718096;white-space:nowrap">'+bAt+'</td>'
+        +'<td style="font-size:.68rem;color:#8a8177;white-space:nowrap">'+bAt+'</td>'
         +'</tr>');
     });
   });
   var total=view.all.reduce(function(s,b){return s+(b.fare||0);},0);
   w.document.write('</tbody></table>');
-  w.document.write('<div class="footer"><span>Total journeys: <strong>'+view.all.length+'</strong></span><span>Total revenue: <strong style="color:#B8985A">£'+total.toFixed(2)+'</strong></span><span>Westmere Private Hire · Lewes District Council Licence</span></div>');
+  w.document.write('<div class="footer"><span>Total journeys: <strong>'+view.all.length+'</strong></span><span>Total revenue: <strong style="color:#b89045">£'+total.toFixed(2)+'</strong></span><span>Westmere Private Hire · Lewes District Council Licence</span></div>');
   w.document.write('</body><\/html>');
   w.document.close();
   w.focus();
@@ -4590,17 +4590,17 @@ function admEnrichNotes(text){
   var toks=[];
   function tok(html){var id='\x01'+toks.length+'\x01';toks.push(html);return id;}
   s=s.replace(/\b([A-Z]{1,2}\d{1,2}[A-Z]?\s+\d[A-Z]{2})\b/gi,function(m,pc){
-    return tok('<a href="https://maps.google.com/?q='+encodeURIComponent(pc)+'" target="_blank" style="color:#111D2C;text-decoration:none;border-bottom:1px solid #B8989A">'+m+'</a>');
+    return tok('<a href="https://maps.google.com/?q='+encodeURIComponent(pc)+'" target="_blank" style="color:#1b1b1a;text-decoration:none;border-bottom:1px solid #B8989A">'+m+'</a>');
   });
   s=s.replace(/(\d+\s+(?:[A-Z][a-z]+\s+)?(?:Road|Street|Lane|Drive|Avenue|Ave|Close|Way|Place|Terrace|Court|Rd|St|Ln|Dr|Cl|Cres|Crescent|Hill|Grove|Park|Gardens|Gdns|Row|Square|Sq|Mews|Rise|Walk|Gate|Fields|View|Mount|Lodge|House|Manor)(?:\s*,\s*[A-Za-z\s]+)?)/gi,function(m){
-    return tok('<a href="https://maps.google.com/?q='+encodeURIComponent(m)+'" target="_blank" style="color:#111D2C;text-decoration:none;border-bottom:1px solid #B8989A">'+m+'</a>');
+    return tok('<a href="https://maps.google.com/?q='+encodeURIComponent(m)+'" target="_blank" style="color:#1b1b1a;text-decoration:none;border-bottom:1px solid #B8989A">'+m+'</a>');
   });
   s=s.replace(/\b([A-Z]{2,3}\d{1,5})\b/gi,function(m,f){
     return tok('<a href="https://www.flightradar24.com/data/flights/'+f.toLowerCase()+'" target="_blank" style="color:#60A5FA;text-decoration:none;border-bottom:1px solid rgba(96,165,250,.4);font-weight:500">'+m+'</a>');
   });
   s=s.replace(/((?:\+44|0)[\s\-]?\d[\s\-]?\d{3,4}[\s\-]?\d{3,6})/g,function(m,p){
     var clean=p.replace(/[\s\-]/g,'');
-    return tok('<a href="tel:'+clean+'" style="color:#111D2C;text-decoration:none;border-bottom:1px solid #B8989A">'+m+'</a>');
+    return tok('<a href="tel:'+clean+'" style="color:#1b1b1a;text-decoration:none;border-bottom:1px solid #B8989A">'+m+'</a>');
   });
   for(var i=0;i<toks.length;i++)s=s.replace('\x01'+i+'\x01',toks[i]);
   return s;
@@ -4608,12 +4608,12 @@ function admEnrichNotes(text){
 async function loadTimeOff(){
   var list=document.getElementById('to-list');
   if(!list)return;
-  list.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.62);font-size:.85rem">Loading…</div>';
+  list.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(27,27,26,.62);font-size:.85rem">Loading…</div>';
   try{
     var r=await fetch('/api/intake/time-off',{credentials:'include'});
     var d=await r.json();
     if(!d.ok){list.innerHTML='<div style="padding:1.4rem;color:#a33">'+escTo(d.error||'Error')+'</div>';return;}
-    if(!d.timeOff.length){list.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(17,29,44,.62);font-size:.85rem">No blackouts set. The smart intake will treat every day as available.</div>';return;}
+    if(!d.timeOff.length){list.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(27,27,26,.62);font-size:.85rem">No blackouts set. The smart intake will treat every day as available.</div>';return;}
     list.innerHTML=d.timeOff.map(function(t){
       var range=t.end_date&&t.end_date!==t.date?(t.date+' → '+t.end_date):t.date;
       var hrs=(t.start_time||t.end_time)?((t.start_time||'00:00')+'–'+(t.end_time||'23:59')):'All day';
@@ -4926,9 +4926,9 @@ function buildAdminCalendar(){
       var maxShow=jobs.length?1:2;
       ext.slice(0,maxShow).forEach(function(ev){
         var t=ev.allDay?'':_evRange(ev).split(' ')[0];
-        inner+='<div class="adm-cal-job-mini" style="color:#5b6b9a;border-left:2px solid #5b6b9a;padding-left:.3rem">'+escTo((t?t+' ':'')+ev.title)+'</div>';
+        inner+='<div class="adm-cal-job-mini" style="color:#6f665c;border-left:2px solid #6f665c;padding-left:.3rem">'+escTo((t?t+' ':'')+ev.title)+'</div>';
       });
-      if(ext.length>maxShow)inner+='<div class="adm-cal-job-mini" style="color:#5b6b9a">+'+(ext.length-maxShow)+' personal</div>';
+      if(ext.length>maxShow)inner+='<div class="adm-cal-job-mini" style="color:#6f665c">+'+(ext.length-maxShow)+' personal</div>';
     }
     html+='<div class="'+cls+'" onclick="admSelectDay(\''+key+'\')">'+inner+'</div>';
   }
@@ -4981,16 +4981,16 @@ function admShowDay(key){
   }
   if(ext.length){
     html+='<div style="background:#EEF1F8;padding:.7rem 1rem;border-bottom:1px solid var(--rule);font-size:.78rem;color:#2A3A66">';
-    html+='<div style="font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:#5b6b9a;margin-bottom:.35rem">From your calendar</div>';
+    html+='<div style="font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:#6f665c;margin-bottom:.35rem">From your calendar</div>';
     html+=ext.map(function(ev){
       var when=ev.allDay?'All day':_evRange(ev);
       var loc=ev.location?' &middot; '+escTo(ev.location):'';
-      var notes=ev.notes?'<div style="margin-top:.2rem;margin-left:0;padding:.35rem .5rem;background:#fff;border-left:2px solid #5b6b9a;font-size:.72rem;color:rgba(17,29,44,.75);white-space:pre-wrap;line-height:1.4">'+escTo(ev.notes)+'</div>':'';
-      return '<div style="padding:.25rem 0"><strong style="color:#2A3A66">'+when+'</strong> &middot; '+escTo(ev.title)+'<span style="color:rgba(17,29,44,.7)">'+loc+'</span>'+notes+'</div>';
+      var notes=ev.notes?'<div style="margin-top:.2rem;margin-left:0;padding:.35rem .5rem;background:#fff;border-left:2px solid #6f665c;font-size:.72rem;color:rgba(27,27,26,.75);white-space:pre-wrap;line-height:1.4">'+escTo(ev.notes)+'</div>':'';
+      return '<div style="padding:.25rem 0"><strong style="color:#2A3A66">'+when+'</strong> &middot; '+escTo(ev.title)+'<span style="color:rgba(27,27,26,.7)">'+loc+'</span>'+notes+'</div>';
     }).join('')+'</div>';
   }
   if(!jobs.length){
-    html+='<div style="padding:1.5rem;text-align:center;color:rgba(17,29,44,.66);font-size:.85rem">No jobs scheduled</div>';
+    html+='<div style="padding:1.5rem;text-align:center;color:rgba(27,27,26,.66);font-size:.85rem">No jobs scheduled</div>';
   } else {
     var _ov=admFindOverlaps(jobs);
     if(Object.keys(_ov).length){
@@ -5008,7 +5008,7 @@ function admShowDay(key){
       if(j.needs_reassignment){
         actions='<button class="btn btn-navy btn-sm" onclick="event.stopPropagation();openReassign('+j.id+')">Resolve</button>';
       } else if(st==='pending'){
-        actions='<button class="btn btn-sm" style="background:rgba(184,152,90,.14);color:#8B7230;border:1px solid rgba(184,152,90,.4)" onclick="event.stopPropagation();admSendEstimate('+j.id+')">Send Estimate</button>'
+        actions='<button class="btn btn-sm" style="background:rgba(184,144,69,.14);color:#8B7230;border:1px solid rgba(184,144,69,.4)" onclick="event.stopPropagation();admSendEstimate('+j.id+')">Send Estimate</button>'
           +'<button class="btn btn-navy btn-sm" onclick="event.stopPropagation();openReassign('+j.id+')">Offer</button>';
       } else if(st==='offered'){
         actions='<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();reclaimOffer('+j.id+')">Reclaim</button>';
@@ -5022,7 +5022,7 @@ function admShowDay(key){
         }
         waiting='<span class="offer-wait">Awaiting '+escTo(j.offered_driver_name)+exp+'</span>';
       }
-      var notesHtml=j.notes?'<div style="margin-top:.3rem;padding:.3rem .5rem;background:rgba(17,29,44,.03);border-left:2px solid #B8989A;font-size:.72rem;color:rgba(17,29,44,.74);line-height:1.35">'+admEnrichNotes(j.notes)+'</div>':'';
+      var notesHtml=j.notes?'<div style="margin-top:.3rem;padding:.3rem .5rem;background:rgba(27,27,26,.03);border-left:2px solid #B8989A;font-size:.72rem;color:rgba(27,27,26,.74);line-height:1.35">'+admEnrichNotes(j.notes)+'</div>':'';
       return '<div class="adm-cal-detail-job">'
         +'<div class="adm-cal-time">'+escTo(j.time||'ASAP')+'</div>'
         +'<div class="adm-cal-info">'
@@ -5067,7 +5067,7 @@ setInterval(function(){
     if(ms<=0){el.textContent='\u2014 expired';el.style.color='#9C2828';return;}
     var mm=Math.floor(ms/60000),ss=Math.floor((ms%60000)/1000);
     el.textContent='\u00b7 '+mm+':'+String(ss).padStart(2,'0');
-    el.style.color=ms<60000?'#9C2828':ms<180000?'#9C5800':'#6b7b9a';
+    el.style.color=ms<60000?'#9C2828':ms<180000?'#9C5800':'#837b71';
   });
 },1000);
 
@@ -5152,12 +5152,12 @@ function _renderChart(weeks) {
     const x = i * W + PAD / 2;
     const bw = W - PAD;
     const y = H - bh;
-    const gold = '#B8985A';
-    const light = 'rgba(184,152,90,.18)';
+    const gold = '#b89045';
+    const light = 'rgba(184,144,69,.18)';
     bars += `<rect x="${x}%" y="${y}" width="${bw}%" height="${bh}" fill="${w.total > 0 ? gold : light}" rx="2"/>`;
     if (w.total > 0) {
       const label = w.total >= 1000 ? '£' + (w.total/1000).toFixed(1) + 'k' : '£' + Math.round(w.total);
-      bars += `<text x="${(x + bw/2)}%" y="${y - 4}" text-anchor="middle" font-size="9" fill="rgba(17,29,44,.55)" font-family="inherit">${label}</text>`;
+      bars += `<text x="${(x + bw/2)}%" y="${y - 4}" text-anchor="middle" font-size="9" fill="rgba(27,27,26,.55)" font-family="inherit">${label}</text>`;
     }
   });
   svg.setAttribute('height', H + 16);
@@ -5167,26 +5167,26 @@ function _renderChart(weeks) {
   labels.innerHTML = weeks.map((w, i) => {
     const d = new Date(w.weekStart);
     const lbl = i % 3 === 0 ? d.toLocaleDateString('en-GB', {day:'numeric',month:'short'}) : '';
-    return `<span style="font-size:.62rem;color:rgba(17,29,44,.66);flex:1;text-align:center">${lbl}</span>`;
+    return `<span style="font-size:.62rem;color:rgba(27,27,26,.66);flex:1;text-align:center">${lbl}</span>`;
   }).join('');
 }
 
 function _renderBreakdown(byStatus, byPayment) {
-  const statusColors = {pending:'#f59e0b',offered:'#2A3A66',confirmed:'#3b82f6',active:'#10b981',completed:'#059669',cancelled:'rgba(17,29,44,.3)'};
+  const statusColors = {pending:'#f59e0b',offered:'#2A3A66',confirmed:'#3b82f6',active:'#10b981',completed:'#059669',cancelled:'rgba(27,27,26,.3)'};
   const total = byStatus.reduce((s,r) => s + r.count, 0) || 1;
 
   let sh = '';
   byStatus.sort((a,b) => b.count - a.count).forEach(r => {
     const pct = Math.round(r.count / total * 100);
-    const col = statusColors[r.status] || 'rgba(17,29,44,.4)';
+    const col = statusColors[r.status] || 'rgba(27,27,26,.4)';
     sh += `<div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.35rem">
       <div style="width:10px;height:10px;border-radius:2px;background:${col};flex-shrink:0"></div>
       <div style="flex:1;font-size:.78rem;color:var(--navy);text-transform:capitalize">${_anEsc(r.status)}</div>
       <div style="font-size:.78rem;font-weight:500;color:var(--navy);font-variant-numeric:tabular-nums">${r.count}</div>
-      <div style="font-size:.7rem;color:rgba(17,29,44,.68);width:32px;text-align:right">${pct}%</div>
+      <div style="font-size:.7rem;color:rgba(27,27,26,.68);width:32px;text-align:right">${pct}%</div>
     </div>`;
   });
-  document.getElementById('an-by-status').innerHTML = sh || '<div style="color:rgba(17,29,44,.64);font-size:.78rem">No data</div>';
+  document.getElementById('an-by-status').innerHTML = sh || '<div style="color:rgba(27,27,26,.64);font-size:.78rem">No data</div>';
 
   let ph = '';
   byPayment.sort((a,b) => b.count - a.count).forEach(r => {
@@ -5196,7 +5196,7 @@ function _renderBreakdown(byStatus, byPayment) {
       <div style="font-size:.78rem;color:var(--gold);font-variant-numeric:tabular-nums;min-width:70px;text-align:right">${_anFmt(r.total)}</div>
     </div>`;
   });
-  document.getElementById('an-by-payment').innerHTML = ph || '<div style="color:rgba(17,29,44,.64);font-size:.78rem">No completed bookings</div>';
+  document.getElementById('an-by-payment').innerHTML = ph || '<div style="color:rgba(27,27,26,.64);font-size:.78rem">No completed bookings</div>';
 }
 
 function _renderHeatmap(heatmap) {
@@ -5207,17 +5207,17 @@ function _renderHeatmap(heatmap) {
   const max = Math.max(...heatmap.flat(), 1);
 
   let html = '<table style="border-collapse:collapse;font-size:.62rem;width:100%"><thead><tr>';
-  html += '<th style="padding:.2rem .4rem;text-align:left;color:rgba(17,29,44,.66);font-weight:400;white-space:nowrap"></th>';
+  html += '<th style="padding:.2rem .4rem;text-align:left;color:rgba(27,27,26,.66);font-weight:400;white-space:nowrap"></th>';
   hours.forEach(h => {
-    html += `<th style="padding:.15rem .25rem;text-align:center;color:rgba(17,29,44,.66);font-weight:400;min-width:22px">${h}:00</th>`;
+    html += `<th style="padding:.15rem .25rem;text-align:center;color:rgba(27,27,26,.66);font-weight:400;min-width:22px">${h}:00</th>`;
   });
   html += '</tr></thead><tbody>';
   heatmap.forEach((row, di) => {
-    html += `<tr><td style="padding:.25rem .4rem;color:rgba(17,29,44,.74);font-weight:500;white-space:nowrap">${days[di]}</td>`;
+    html += `<tr><td style="padding:.25rem .4rem;color:rgba(27,27,26,.74);font-weight:500;white-space:nowrap">${days[di]}</td>`;
     hours.forEach(h => {
       const v = row[h] || 0;
       const alpha = v === 0 ? 0 : Math.max(0.08, v / max);
-      const bg = v === 0 ? 'transparent' : `rgba(184,152,90,${alpha.toFixed(2)})`;
+      const bg = v === 0 ? 'transparent' : `rgba(184,144,69,${alpha.toFixed(2)})`;
       const txt = v === 0 ? '' : String(v);
       html += `<td style="padding:.2rem;text-align:center;background:${bg};border-radius:3px;color:${v>0?'var(--navy)':'transparent'};font-variant-numeric:tabular-nums">${txt}</td>`;
     });
@@ -5230,7 +5230,7 @@ function _renderHeatmap(heatmap) {
 function _renderDriverTable(drivers) {
   const tbody = document.querySelector('#an-driver-tbl tbody');
   if (!tbody) return;
-  if (!drivers || !drivers.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:rgba(17,29,44,.64);font-size:.82rem">No driver data</td></tr>'; return; }
+  if (!drivers || !drivers.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:rgba(27,27,26,.64);font-size:.82rem">No driver data</td></tr>'; return; }
   tbody.innerHTML = drivers.map(d => {
     const rate = d.jobs_offered > 0 ? Math.round(d.jobs_accepted / d.jobs_offered * 100) : '—';
     return `<tr>
@@ -5246,9 +5246,9 @@ function _renderDriverTable(drivers) {
 function _renderCustomerTable(customers) {
   const tbody = document.querySelector('#an-cust-tbl tbody');
   if (!tbody) return;
-  if (!customers || !customers.length) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:1.5rem;color:rgba(17,29,44,.64);font-size:.82rem">No customer data</td></tr>'; return; }
+  if (!customers || !customers.length) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:1.5rem;color:rgba(27,27,26,.64);font-size:.82rem">No customer data</td></tr>'; return; }
   tbody.innerHTML = customers.map((c, i) => `<tr>
-    <td><span style="font-size:.65rem;font-weight:500;color:rgba(17,29,44,.64);margin-right:.5rem">#${i+1}</span>${_anEsc(c.full_name)}</td>
+    <td><span style="font-size:.65rem;font-weight:500;color:rgba(27,27,26,.64);margin-right:.5rem">#${i+1}</span>${_anEsc(c.full_name)}</td>
     <td style="font-variant-numeric:tabular-nums">${c.total_bookings}</td>
     <td style="font-variant-numeric:tabular-nums;color:var(--gold)">${_anFmt(c.total_spend)}</td>
   </tr>`).join('');
