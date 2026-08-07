@@ -200,7 +200,7 @@ async function sendCustomerConfirmation(booking) {
 
 // ── Customer booking CONFIRMED (sent after Claude or operator approves) ──
 async function sendCustomerConfirmed(booking) {
-  const { ref, name, email, pickup, destination, date, time, fare, payment, flight, passengers, pay_token, paid } = booking;
+  const { ref, name, email, pickup, destination, date, time, fare, payment, flight, passengers, pay_token, paid, stop_address, notes } = booking;
   if (!email) return;
 
   const dateStr = formatDate(date, time);
@@ -212,12 +212,14 @@ async function sendCustomerConfirmed(booking) {
   let rows = '';
   rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:'+INK+'">' + ref + '</span>');
   rows += rowDivider();
-  rows += detailRow('Pickup', pickup);
-  rows += detailRow('Drop-off', destination);
+  rows += detailRow('Pickup', escHtml(pickup));
+  if (stop_address) rows += detailRow('Stop', escHtml(stop_address));
+  rows += detailRow('Drop-off', escHtml(destination));
   rows += rowDivider();
   rows += detailRow('Date', dateStr);
-  if (flight) rows += detailRow('Flight', flight);
+  if (flight) rows += detailRow('Flight', escHtml(flight));
   if (passengers && passengers > 1) rows += detailRow('Travellers', passengers + ' passengers');
+  if (notes) { rows += rowDivider(); rows += detailRow('Notes', escHtml(notes)); }
   rows += rowDivider();
   if (fareStr) rows += detailRow('Fare', fareStr, { gold: true, large: true });
   rows += detailRow('Payment', alreadyPaid ? 'Paid online' : 'Choose below');
@@ -228,13 +230,17 @@ async function sendCustomerConfirmed(booking) {
   let payBlock = '';
   if (!alreadyPaid && pay_token && fareStr) {
     const payUrl  = `https://westmereprivatehire.co.uk/westmere-pay.html?ref=${encodeURIComponent(ref)}&t=${encodeURIComponent(pay_token)}`;
+    const cashUrl = `https://westmereprivatehire.co.uk/api/public/pay/${encodeURIComponent(ref)}/cash?t=${encodeURIComponent(pay_token)}`;
     payBlock = `
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:26px 0 4px">
+    <tr><td align="center" style="padding-bottom:10px">
+      <a href="${payUrl}" style="display:block;padding:13px 24px;background:transparent;color:${INK};text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:600;letter-spacing:.03em;text-align:center;border:1.5px solid ${INK}">Pay Now &mdash; Apple Pay, Google Pay, or Card</a>
+    </td></tr>
     <tr><td align="center">
-      <a href="${payUrl}" style="display:block;padding:13px 24px;background:${GOLD};color:#ffffff;text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:.03em;text-align:center">Pay with Apple Pay, Google Pay, or card</a>
+      <a href="${cashUrl}" style="display:block;padding:13px 24px;background:transparent;color:${INK};text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:600;letter-spacing:.03em;text-align:center;border:1.5px solid ${INK}">Cash</a>
     </td></tr>
   </table>
-  <p style="margin:12px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_MUTED};font-style:italic;line-height:1.55;text-align:center">Tap above to pay ${fareStr} securely now with Apple Pay, Google Pay, or card — or choose to settle the fare with your driver on the day.</p>`;
+  <p style="margin:12px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_MUTED};font-style:italic;line-height:1.55;text-align:center">Pay ${fareStr} securely now, or settle with your driver on the day.</p>`;
   }
 
   const body = `
@@ -262,7 +268,7 @@ async function sendCustomerEstimate(booking) {
   const email       = booking.email || booking.passenger_email;
   const pickup      = booking.pickup;
   const destination = booking.destination;
-  const { date, time, flight, passengers, fare } = booking;
+  const { date, time, flight, passengers, fare, stop_address, notes } = booking;
   if (!email) return false;
 
   const fareNum = typeof fare === 'number' ? fare : parseFloat(fare);
@@ -276,11 +282,13 @@ async function sendCustomerEstimate(booking) {
   rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:'+INK+'">' + escHtml(ref) + '</span>');
   rows += rowDivider();
   rows += detailRow('Pickup', escHtml(pickup));
+  if (stop_address) rows += detailRow('Stop', escHtml(stop_address));
   rows += detailRow('Drop-off', escHtml(destination));
   rows += rowDivider();
   rows += detailRow('Date', dateStr);
   if (flight) rows += detailRow('Flight', escHtml(flight));
   if (passengers && passengers > 1) rows += detailRow('Travellers', passengers + ' passengers');
+  if (notes) { rows += rowDivider(); rows += detailRow('Notes', escHtml(notes)); }
   rows += rowDivider();
   rows += detailRow('Estimated fare', fareStr, { gold: true, large: true });
 
@@ -289,8 +297,12 @@ async function sendCustomerEstimate(booking) {
   <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
   <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Thank you for your enquiry. Here is the estimate for your journey below.</p>
   ${buildDetailsTable(rows)}
-  <p style="margin:24px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.65">To confirm this booking, simply reply to this email or call us on <a href="tel:+447930342593" style="color:${INK};text-decoration:none">07930 342593</a>. There is nothing to pay now — once your journey is confirmed we'll email you a secure link to pay online, or to let us know you'll settle on the day.</p>
-  <p style="margin:22px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Executive Private Hire</span></p>`;
+  <div style="text-align:center;margin:26px 0 4px">
+    <a href="https://westmereprivatehire.co.uk/api/public/accept-estimate/${encodeURIComponent(ref)}?email=${encodeURIComponent(email)}" style="display:inline-block;padding:14px 36px;background:${GOLD};color:${INK};text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:.04em">Accept This Quote</a>
+  </div>
+  <p style="margin:14px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_MUTED};font-style:italic;line-height:1.55;text-align:center">Click above to accept, or reply to this email, or call us on <a href="tel:+447930342593" style="color:${INK};text-decoration:none">07930 342593</a>.</p>
+  <p style="margin:12px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_SOFT};line-height:1.55;text-align:center">There is nothing to pay now — once confirmed we'll send you a secure payment link.</p>
+  <p style="margin:22px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
 
   const html = emailShell(body);
   const subject = 'Your estimate — ' + ref;
@@ -305,7 +317,7 @@ async function sendAdminAlert(booking) {
   const adminEmail = process.env.ADMIN_EMAIL || process.env.GMAIL_USER;
   if (!adminEmail) return;
 
-  const { ref, name, phone, email, pickup, destination, date, time, fare, payment, flight, passengers, bags, notes } = booking;
+  const { ref, name, phone, email, pickup, destination, date, time, fare, payment, flight, passengers, bags, notes, stop_address } = booking;
   const dateStr = formatDate(date, time);
   const fareStr = fare ? ('\u00a3' + (typeof fare === 'number' ? fare.toFixed(2) : fare)) : 'TBC';
 
@@ -324,6 +336,11 @@ async function sendAdminAlert(booking) {
   const navLink = (url) =>
     ' <a href="' + url + '" style="color:' + GOLD + ';font-family:Helvetica Neue,Arial,sans-serif;font-size:10px;letter-spacing:.5px;text-decoration:none;margin-left:8px">Waze</a>';
   rows += detailRow('Pickup', escHtml(pickup) + navLink(puWaze));
+  if (stop_address) {
+    const stopQ = encodeURIComponent(stop_address);
+    const stopWaze = 'https://waze.com/ul?q=' + stopQ + '&navigate=yes';
+    rows += detailRow('Stop', escHtml(stop_address) + navLink(stopWaze));
+  }
   rows += detailRow('Drop-off', escHtml(destination) + navLink(routeWaze));
   rows += rowDivider();
   rows += detailRow('Date', dateStr);
@@ -909,7 +926,7 @@ async function sendRecommendation(recipientEmail) {
   const body = `
   <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">You've been recommended</p>
   <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Hello,</p>
-  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Someone you know thought you&rsquo;d appreciate our executive private hire service. We provide premium chauffeur-driven transfers across Sussex &mdash; airport runs to Gatwick and Heathrow, corporate travel, special occasions, and reliable local journeys.</p>
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Someone you know thought you&rsquo;d appreciate our private hire service. We provide premium chauffeur-driven transfers across Sussex &mdash; airport runs to Gatwick and Heathrow, corporate travel, special occasions, and reliable local journeys.</p>
   <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">Licensed by Lewes District Council. Professional, punctual, and always at your service.</p>
   <div style="text-align:center;margin:26px 0 8px">
     <a href="https://westmereprivatehire.co.uk" style="display:inline-block;padding:13px 32px;background:${GOLD};color:#0E2540;text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:.03em">Book Your Journey</a>
@@ -918,10 +935,160 @@ async function sendRecommendation(recipientEmail) {
   <p style="margin:16px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
 
   const html = emailShell(body);
-  const subject = 'You\u2019ve been recommended \u2014 Westmere Executive Private Hire';
+  const subject = 'You\u2019ve been recommended \u2014 Westmere Private Hire';
   const preheader = 'Premium chauffeur-driven transfers across Sussex';
   const ok = await sendEmail(recipientEmail, subject, html, 'Westmere Private Hire', preheader);
   if (ok) console.log('[EMAIL] Recommendation sent to', recipientEmail);
+  return ok;
+}
+
+// ── Payment reminder email ───────────────────────────────────────────────
+// Sent when a completed booking hasn't been paid. Card-only (no cash option).
+async function sendPaymentReminder(booking) {
+  const { email, name, ref, fare, pickup, destination, date, time, pay_token } = booking;
+  if (!email) return false;
+  const firstName = (name || '').split(' ')[0] || 'there';
+  const fareStr = fare ? '\u00a3' + Number(fare).toFixed(2) : '';
+  const dateStr = formatDate(date, time);
+
+  // Only card payment link — no cash option
+  let payBlock = '';
+  if (pay_token && fareStr) {
+    const payUrl = `https://westmereprivatehire.co.uk/westmere-pay.html?ref=${encodeURIComponent(ref)}&t=${encodeURIComponent(pay_token)}`;
+    payBlock = `
+  <div style="text-align:center;margin:26px 0 8px">
+    <a href="${payUrl}" style="display:inline-block;padding:13px 32px;background:${GOLD};color:${INK};text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:600;letter-spacing:.03em">Pay Now \u2014 Apple Pay, Google Pay, or Card</a>
+  </div>`;
+  }
+
+  const body = `
+  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Payment reminder</p>
+  <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Thank you for travelling with us. We noticed that payment for your recent journey has not yet been completed.</p>
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Your trip from <strong>${escHtml(pickup || '')}</strong> to <strong>${escHtml(destination || '')}</strong> on ${dateStr}${fareStr ? ' for <strong style="color:' + GOLD + '">' + fareStr + '</strong>' : ''} is still outstanding.</p>
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">If you&rsquo;ve already made payment, please disregard this message. Otherwise, you can pay securely using the link below.</p>
+  ${payBlock}
+  <p style="margin:20px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">If you have any questions, please don&rsquo;t hesitate to get in touch.</p>
+  <p style="margin:16px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
+
+  const html = emailShell(body);
+  const subject = 'Payment reminder \u2014 ' + (ref || 'your journey') + ' \u00b7 Westmere Private Hire';
+  const preheader = fareStr ? fareStr + ' outstanding for your recent journey' : 'Payment outstanding for your recent journey';
+  const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
+  if (ok) console.log('[EMAIL] Payment reminder sent to', email, 'for', ref);
+  return ok;
+}
+
+// ── Partnership outreach email ───────────────────────────────────────────
+// Professional introduction to other private hire operators, offering
+// subcontracting support during busy periods.
+async function sendPartnershipOutreach(recipientEmail, companyName) {
+  if (!recipientEmail) return false;
+  const contactName = companyName || 'there';
+
+  const body = `
+  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Introduction</p>
+  <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(contactName)},</p>
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">I hope this message finds you well. My name is Nikodem Krajnyk and I am the owner and operator of <strong style="color:${INK}">Westmere Private Hire</strong>, a licensed chauffeur service based in Sussex.</p>
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">I&rsquo;m reaching out to introduce myself and to offer my services should you ever find yourself in need of additional driver support during busy periods, overflow work, or when covering a wider area. I understand the demands of running a private hire business and I&rsquo;m always happy to help fellow operators.</p>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;border-top:1px solid ${HAIRLINE};border-bottom:1px solid ${HAIRLINE}">
+    <tr><td style="padding:14px 0 4px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">What I offer</td></tr>
+    <tr><td style="padding:4px 0;font-family:Georgia,serif;font-size:13px;color:${INK};line-height:1.7">&bull; Executive saloon vehicle (Tesla Model S)</td></tr>
+    <tr><td style="padding:4px 0;font-family:Georgia,serif;font-size:13px;color:${INK};line-height:1.7">&bull; Fully licensed by Lewes District Council</td></tr>
+    <tr><td style="padding:4px 0;font-family:Georgia,serif;font-size:13px;color:${INK};line-height:1.7">&bull; Professional, reliable, well-presented</td></tr>
+    <tr><td style="padding:4px 0;font-family:Georgia,serif;font-size:13px;color:${INK};line-height:1.7">&bull; Airport transfers (Gatwick, Heathrow, Stansted, Luton, Southampton, London City)</td></tr>
+    <tr><td style="padding:4px 0;font-family:Georgia,serif;font-size:13px;color:${INK};line-height:1.7">&bull; Corporate &amp; long-distance journeys across Sussex, Surrey &amp; London</td></tr>
+    <tr><td style="padding:4px 0 14px;font-family:Georgia,serif;font-size:13px;color:${INK};line-height:1.7">&bull; Available for subcontract work at competitive rates</td></tr>
+  </table>
+
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">I&rsquo;d welcome the opportunity to discuss how we might work together. Whether it&rsquo;s a one-off job or ongoing support, I&rsquo;m flexible and dependable.</p>
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Please feel free to get in touch at any time &mdash; I&rsquo;d be delighted to hear from you.</p>
+
+  <div style="text-align:center;margin:22px 0 8px">
+    <a href="https://westmereprivatehire.co.uk" style="display:inline-block;padding:13px 32px;background:${GOLD};color:${INK};text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:600;letter-spacing:.03em">Visit Our Website</a>
+  </div>
+
+  <p style="margin:20px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">With warm regards,</p>
+  <p style="margin:4px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65"><strong>Nikodem Krajnyk</strong><br>
+  <span style="color:${INK_SOFT}">Owner &amp; Operator</span><br>
+  <span style="color:${INK_SOFT}">Westmere Private Hire</span></p>
+  <p style="margin:8px 0 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:${INK_MUTED};line-height:1.6">
+  <a href="tel:+447930342593" style="color:${GOLD};text-decoration:none">07930 342 593</a> &nbsp;&middot;&nbsp;
+  <a href="mailto:westmereprivatehire@gmail.com" style="color:${GOLD};text-decoration:none">westmereprivatehire@gmail.com</a><br>
+  66 High Street, Lewes, BN7 1XG &nbsp;&middot;&nbsp; Licensed by Lewes District Council</p>`;
+
+  const html = emailShell(body);
+  const subject = 'Introduction — Westmere Private Hire · Driver Support Available';
+  const preheader = 'Licensed executive chauffeur available for subcontract work across Sussex';
+  const ok = await sendEmail(recipientEmail, subject, html, 'Westmere Private Hire', preheader);
+  if (ok) console.log('[EMAIL] Partnership outreach sent to', recipientEmail);
+  return ok;
+}
+
+// ── Corporate introduction email ────────────────────────────────────────
+async function sendCorporateIntro(recipientEmail, companyName) {
+  if (!recipientEmail) return false;
+  const greeting = companyName ? `Dear ${escHtml(companyName)} Team` : 'Good afternoon';
+
+  const body = `
+  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Introduction</p>
+  <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">${greeting},</p>
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">My name is Nikodem Krajnyk and I am the owner of <strong style="color:${INK}">Westmere Private Hire</strong>, a licensed chauffeur service based locally in Sussex.</p>
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">I&rsquo;m writing to introduce our services, which are ideally suited for businesses in the Horsham and Crawley area. Whether your team needs reliable airport transfers, client pickups, or comfortable transport for meetings and events, we provide a discreet, professional service at competitive corporate rates.</p>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;border-top:1px solid ${HAIRLINE};border-bottom:1px solid ${HAIRLINE}">
+    <tr><td style="padding:14px 0 4px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Our services</td></tr>
+    <tr><td style="padding:4px 0;font-family:Georgia,serif;font-size:13px;color:${INK};line-height:1.7">&bull; Airport transfers &mdash; Gatwick, Heathrow, Stansted, Luton, Southampton &amp; London City</td></tr>
+    <tr><td style="padding:4px 0;font-family:Georgia,serif;font-size:13px;color:${INK};line-height:1.7">&bull; Executive saloon vehicle (Tesla Model S) &mdash; comfortable, quiet, zero-emission</td></tr>
+    <tr><td style="padding:4px 0;font-family:Georgia,serif;font-size:13px;color:${INK};line-height:1.7">&bull; Corporate account with monthly invoicing &mdash; no upfront payments needed</td></tr>
+    <tr><td style="padding:4px 0;font-family:Georgia,serif;font-size:13px;color:${INK};line-height:1.7">&bull; Client pickups, meetings &amp; events across Sussex, Surrey &amp; London</td></tr>
+    <tr><td style="padding:4px 0 14px;font-family:Georgia,serif;font-size:13px;color:${INK};line-height:1.7">&bull; Fully licensed by Lewes District Council &mdash; professional, reliable, well-presented</td></tr>
+  </table>
+
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Many local businesses trust us for their regular travel needs. We offer a simple booking system, flight tracking for airport pickups, and the flexibility to handle last-minute requests.</p>
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">I&rsquo;d welcome the opportunity to discuss how we could support your team. Please don&rsquo;t hesitate to get in touch.</p>
+
+  <div style="text-align:center;margin:22px 0 8px">
+    <a href="https://westmereprivatehire.co.uk" style="display:inline-block;padding:13px 32px;background:${GOLD};color:${INK};text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:600;letter-spacing:.03em">Visit Our Website</a>
+  </div>
+
+  <p style="margin:20px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">With kind regards,</p>
+  <p style="margin:4px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65"><strong>Nikodem Krajnyk</strong><br>
+  <span style="color:${INK_SOFT}">Owner &amp; Operator</span><br>
+  <span style="color:${INK_SOFT}">Westmere Private Hire</span></p>
+  <p style="margin:8px 0 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:${INK_MUTED};line-height:1.6">
+  <a href="tel:+447930342593" style="color:${GOLD};text-decoration:none">07930 342 593</a> &nbsp;&middot;&nbsp;
+  <a href="mailto:westmereprivatehire@gmail.com" style="color:${GOLD};text-decoration:none">westmereprivatehire@gmail.com</a><br>
+  66 High Street, Lewes, BN7 1XG &nbsp;&middot;&nbsp; Licensed by Lewes District Council</p>`;
+
+  const html = emailShell(body);
+  const subject = 'Executive Chauffeur Services for ' + (companyName || 'Your Business') + ' — Westmere Private Hire';
+  const preheader = 'Local licensed chauffeur service offering corporate accounts, airport transfers and executive travel';
+  const ok = await sendEmail(recipientEmail, subject, html, 'Westmere Private Hire', preheader);
+  if (ok) console.log('[EMAIL] Corporate intro sent to', recipientEmail, companyName || '');
+  return ok;
+}
+
+// ── Review request (sent once per customer after their first completed job) ──
+async function sendReviewRequest(email, firstName, ref) {
+  if (!email) return;
+  firstName = firstName || 'there';
+  const body = `
+  <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
+  <p style="margin:0 0 18px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Thank you for travelling with us today${ref ? ' (booking ' + escHtml(ref) + ')' : ''}. We truly hope your journey was comfortable and that we met your expectations.</p>
+  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">If you have a spare moment, we would be deeply grateful if you could share a few words about your experience. Reviews help other travellers find us and allow us to keep doing what we love.</p>
+  <div style="text-align:center;margin:28px 0 24px">
+    <a href="https://g.page/r/Ce764VxFTR4VEAE/review" style="display:inline-block;padding:14px 36px;background:${GOLD};color:${INK};text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:600;letter-spacing:.04em">Leave a Google Review</a>
+  </div>
+  <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">It takes less than a minute and means a great deal to a small, independent business like ours.</p>
+  <p style="margin:20px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">With warm thanks,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
+
+  const html = emailShell(body);
+  const subject = 'Thank you for travelling with us \u2014 ' + (ref || 'Westmere Private Hire');
+  const preheader = 'We hope your journey was just right \u2014 would you share a quick review?';
+  const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
+  if (ok) console.log('[EMAIL] Review request sent to', email);
   return ok;
 }
 
@@ -930,5 +1097,5 @@ module.exports = {
   sendCustomerWelcome, sendCustomerInvoice, sendBespokeInvoice, sendInvoiceReminder,
   sendCustomerCancellation, sendDriverStatement, sendDriverWelcome,
   sendVerificationEmail, sendPasswordResetEmail, sendAdminPasswordResetEmail,
-  sendRecommendation, sendEmail, isConfigured
+  sendRecommendation, sendPartnershipOutreach, sendCorporateIntro, sendReviewRequest, sendPaymentReminder, sendEmail, isConfigured
 };

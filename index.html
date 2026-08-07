@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-title" content="Rider">
 <meta name="theme-color" content="#111D2C">
 <link rel="manifest" href="/manifest-rider.webmanifest">
-<title>Westmere Executive Private Hire | Sussex Airport Transfers</title>
-<meta name="description" content="Premium executive private hire across Sussex. Professional chauffeurs and luxury vehicles. Licensed by Lewes District Council.">
+<title>Westmere Private Hire | Sussex Airport Transfers</title>
+<meta name="description" content="Premium private hire across Sussex. Professional chauffeurs and luxury vehicles. Licensed by Lewes District Council.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
 <style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--navy:#111D2C;--navy2:#1C2A3E;--cream:#F5F2ED;--gold:#B8985A;--gold2:#C9A96E;--text:#1C2A3E;--muted:#6B7280;--border:#E5E0D8;--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif;}
@@ -235,65 +235,137 @@ input[type="time"].fi,input[type="date"].fi{-webkit-appearance:auto;appearance:a
 /* ===== ACCOUNT PORTAL ===== */
 .nav-acct{background:none;border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.82);padding:.28rem .7rem;border-radius:3px;font-size:.72rem;font-weight:300;font-style:italic;letter-spacing:.06em;font-family:var(--serif);cursor:pointer;transition:border-color .2s,color .2s;margin-right:.35rem;flex-shrink:0;text-transform:none}
 .nav-acct:hover{border-color:var(--gold);color:var(--gold)}
-#acct-overlay{position:fixed;inset:0;z-index:300;background:rgba(10,7,4,.65);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;pointer-events:none;transition:opacity .25s}
-#acct-overlay.open{opacity:1;pointer-events:all}
-#acct-panel{background:#F5F2ED;border-radius:10px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:1.4rem 1.5rem;position:relative}
-.acct-logo{font-family:var(--serif);font-size:1.05rem;font-weight:300;letter-spacing:.18em;color:rgba(17,29,44,.3);text-transform:uppercase}
+
+/* Full-screen overlay */
+#acct-overlay{position:fixed;inset:0;z-index:300;background:#111D2C;display:none;flex-direction:column}
+#acct-overlay.open{display:flex}
+#acct-panel{width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden}
+
+/* Topbar */
+.ap-topbar{background:#111D2C;padding:calc(env(safe-area-inset-top,0px) + .35rem) 1.1rem .35rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid rgba(184,152,90,.2);box-shadow:0 1px 8px rgba(0,0,0,.3);min-height:50px}
+.ap-brand{display:flex;align-items:center;gap:.65rem}
+.ap-crest{width:34px;height:34px;border:1px solid rgba(184,152,90,.35);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:.95rem;color:var(--gold);flex-shrink:0}
+.ap-brand-name{font-family:var(--serif);font-size:.95rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#F5F2ED}
+.ap-back-btn{background:none;border:1px solid rgba(245,242,237,.15);color:rgba(245,242,237,.45);font-family:var(--sans);font-size:.56rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;padding:.38rem .8rem;cursor:pointer;transition:all .25s;display:flex;align-items:center;gap:.3rem}
+.ap-back-btn:hover{border-color:rgba(245,242,237,.35);color:#F5F2ED}
+
+/* Auth wrapper (centers the auth card in remaining space) */
+#acct-auth-wrap{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;align-items:center;justify-content:center;padding:1.2rem 1rem calc(1.5rem + env(safe-area-inset-bottom,0px))}
+.ap-auth-card{background:#FCFAF6;border:1px solid rgba(17,29,44,.08);box-shadow:0 4px 28px rgba(0,0,0,.4);width:100%;max-width:400px}
+.ap-auth-head{padding:1.8rem 1.8rem 1.4rem;text-align:center;border-bottom:1px solid rgba(184,152,90,.1)}
+.ap-auth-crest{width:48px;height:48px;border:1px solid rgba(184,152,90,.3);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.25rem;font-weight:500;color:#111D2C;margin:0 auto .75rem;position:relative}
+.ap-auth-crest::before{content:'';position:absolute;inset:-6px;border:1px solid rgba(184,152,90,.1)}
+.ap-brand-label{font-family:var(--serif);font-size:1.25rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:#111D2C;display:block}
+.ap-tagline{font-size:.52rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-top:.15rem;display:block}
+.ap-auth-body{padding:1.6rem 1.8rem 1.4rem}
+.ap-auth-foot{text-align:center;padding:.9rem 1.8rem;border-top:1px solid rgba(17,29,44,.05);font-size:.72rem;color:rgba(17,29,44,.3)}
+.ap-auth-foot a{color:rgba(17,29,44,.35);text-decoration:none}
+.ap-auth-foot a:hover{color:var(--gold)}
+
+/* Auth form elements */
 .acct-view{display:none}
 .acct-view.active{display:block}
-.acct-title{font-family:var(--serif);font-size:1.65rem;font-weight:300;color:#111D2C;margin:0 0 .18rem;letter-spacing:.04em}
-.acct-sub{font-size:.76rem;color:rgba(17,29,44,.5);margin-bottom:1.25rem;font-style:italic}
+.acct-title{font-family:var(--serif);font-size:1.45rem;font-weight:300;color:#111D2C;margin:0 0 .15rem;letter-spacing:.04em}
+.acct-sub{font-size:.76rem;color:rgba(17,29,44,.42);margin-bottom:1.3rem;line-height:1.6}
 .acct-f{margin-bottom:.85rem}
-.acct-f label{display:block;font-size:.7rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.55);margin-bottom:.26rem}
-.acct-f input{font-family:var(--sans);font-size:.94rem;font-weight:400;color:#111D2C;background:#fff;border:1px solid rgba(17,29,44,.18);border-radius:5px;padding:.6rem .75rem;outline:none;width:100%;min-height:44px;box-sizing:border-box;transition:border-color .2s;-webkit-appearance:none}
-.acct-f input:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(184,152,90,.15)}
-.acct-f input.err{border-color:#e05252}
-.acct-btn{width:100%;padding:.92rem;background:#111D2C;color:#fff;border:none;border-radius:6px;font-family:var(--sans);font-size:.64rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;transition:background .2s;min-height:52px;margin-top:.5rem;display:flex;align-items:center;justify-content:center}
-.acct-btn:hover{background:#1C2F44}
+.acct-f label{display:block;font-size:.58rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:rgba(17,29,44,.5);margin-bottom:.28rem}
+.acct-f input{font-family:var(--sans);font-size:.9rem;font-weight:300;color:#111D2C;background:transparent;border:none;border-bottom:1px solid rgba(17,29,44,.15);padding:.68rem 0;outline:none;width:100%;min-height:44px;box-sizing:border-box;transition:border-color .2s;-webkit-appearance:none}
+.acct-f input:focus{border-bottom-color:var(--gold)}
+.acct-f input::placeholder{color:rgba(17,29,44,.28)}
+.acct-btn{width:100%;padding:.9rem;background:var(--gold);color:#111D2C;border:none;font-family:var(--sans);font-size:.64rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;transition:background .2s;min-height:50px;margin-top:.5rem;display:flex;align-items:center;justify-content:center}
+.acct-btn:hover{background:#C9A96E}
 .acct-btn:disabled{opacity:.45;cursor:not-allowed}
-.acct-link-btn{background:none;border:none;color:var(--gold);font-family:var(--sans);font-size:.76rem;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px;transition:color .15s}
-.acct-link-btn:hover{color:#7A6230}
-.acct-links-row{display:flex;justify-content:space-between;align-items:center;margin-top:.9rem;font-size:.76rem;color:rgba(17,29,44,.5)}
+.acct-link-btn{background:none;border:none;color:var(--gold);font-family:var(--sans);font-size:.76rem;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px}
+.acct-links-row{display:flex;justify-content:space-between;align-items:center;margin-top:.9rem;font-size:.76rem;color:rgba(17,29,44,.45)}
 .acct-err{color:#c0392b;font-size:.74rem;margin-top:.3rem;min-height:1rem}
-.acct-ok-msg{color:#2e7d4f;font-size:.78rem;margin-top:.5rem;background:rgba(46,125,79,.07);border-left:3px solid #2e7d4f;padding:.6rem .8rem;border-radius:0 4px 4px 0;line-height:1.65}
-.acct-welcome{margin-bottom:1.2rem}
-.acct-welcome-name{font-family:var(--serif);font-size:2rem;font-weight:300;color:#111D2C;letter-spacing:.04em}
-.acct-welcome-sub{font-size:.76rem;color:rgba(17,29,44,.5);font-style:italic}
-.acct-section-ttl{font-size:.6rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(17,29,44,.38);margin:1.4rem 0 .65rem;padding-bottom:.38rem;border-bottom:1px solid rgba(17,29,44,.1)}
-.acct-bk-card{background:#fff;border:1px solid rgba(17,29,44,.1);border-radius:6px;padding:.85rem 1rem;margin-bottom:.6rem}
-.acct-bk-route{font-size:.88rem;color:#111D2C;margin-bottom:.28rem}
-.acct-bk-meta{font-size:.7rem;color:rgba(17,29,44,.48);display:flex;flex-wrap:wrap;gap:.3rem .85rem;margin-bottom:.38rem}
-.acct-status{display:inline-block;font-size:.56rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.18rem .5rem;border-radius:3px}
-.acct-status.s-completed{background:rgba(46,125,79,.1);color:#2e7d4f}
-.acct-status.s-confirmed{background:rgba(184,152,90,.12);color:#7A6230}
-.acct-status.s-pending{background:rgba(17,29,44,.07);color:rgba(17,29,44,.5)}
-.acct-status.s-cancelled{background:rgba(224,82,82,.1);color:#c0392b}
+.acct-ok-msg{color:#2D6E47;font-size:.78rem;margin-top:.5rem;background:rgba(45,110,71,.1);border-left:3px solid #2D6E47;padding:.6rem .8rem;line-height:1.65}
+
+/* Dashboard shell */
+#av-dashboard{flex:1;display:none;flex-direction:column;overflow:hidden}
+#av-dashboard.active{display:flex}
+.ap-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:none}
+.ap-pg{display:none;padding:1.1rem .9rem 2rem;max-width:560px;margin:0 auto}
+.ap-pg.on{display:block}
+.ap-pg-title{font-family:var(--serif);font-size:1.8rem;font-weight:400;color:#F5F2ED;line-height:1.05;margin-bottom:.2rem}
+.ap-pg-title em{font-style:italic;color:var(--gold)}
+.ap-pg-sub{font-size:.6rem;color:#C9A96E;font-weight:500;letter-spacing:.18em;text-transform:uppercase;margin-bottom:.9rem}
+
+/* Content cards (cream on navy) */
+.ap-card{background:#FCFAF6;border:1px solid rgba(184,152,90,.2);box-shadow:0 3px 16px rgba(0,0,0,.22);margin-bottom:.75rem;border-radius:12px;overflow:hidden}
+.ap-card-head{padding:.7rem 1.1rem;border-bottom:1px solid rgba(184,152,90,.1);font-size:.58rem;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--gold)}
+.ap-card-body{padding:0 .95rem}
+
+/* Booking rows */
+.acct-bk-card{border-bottom:1px solid rgba(17,29,44,.06);padding:.85rem 0;display:flex;align-items:flex-start;gap:.8rem}
+.acct-bk-card:last-child{border-bottom:none}
+.acct-bk-date{flex-shrink:0;min-width:34px;text-align:center}
+.acct-bk-day{font-family:var(--serif);font-size:1.2rem;color:var(--gold);line-height:1;display:block;font-weight:300}
+.acct-bk-mon{font-size:.45rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(17,29,44,.4);display:block;margin-top:.05rem}
+.acct-bk-body{flex:1;min-width:0}
+.acct-bk-route{font-size:.84rem;font-weight:500;color:#111D2C;margin-bottom:.14rem;line-height:1.3}
+.acct-bk-meta{font-size:.68rem;color:rgba(17,29,44,.45);display:flex;flex-wrap:wrap;gap:.2rem .7rem;margin-bottom:.2rem}
+.acct-bk-right{text-align:right;flex-shrink:0}
+.acct-bk-fare{font-family:var(--serif);font-size:1.05rem;font-weight:300;color:#111D2C;display:block}
+.acct-status{display:inline-block;font-size:.48rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.13rem .46rem;border-radius:20px;margin-top:.16rem}
+.acct-status.s-completed{background:rgba(45,110,71,.12);color:#2D6E47}
+.acct-status.s-confirmed{background:rgba(184,152,90,.14);color:#8B7230}
+.acct-status.s-pending{background:rgba(17,29,44,.06);color:rgba(17,29,44,.45)}
+.acct-status.s-cancelled{background:rgba(139,34,34,.08);color:#8B2222}
 .acct-status.s-active{background:rgba(59,130,246,.1);color:#1d4ed8}
-.acct-ba-btn{background:none;border:1px solid rgba(184,152,90,.45);color:#7A6230;font-family:var(--sans);font-size:.56rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:.26rem .65rem;border-radius:3px;cursor:pointer;transition:border-color .2s,color .2s;margin-top:.38rem}
+.acct-status.s-offered{background:rgba(184,152,90,.14);color:#8B7230}
+.acct-ba-btn{background:none;border:1px solid rgba(184,152,90,.4);color:#8B7230;font-family:var(--sans);font-size:.54rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.22rem .6rem;border-radius:3px;cursor:pointer;transition:border-color .2s,color .2s;margin-top:.3rem;display:inline-block}
 .acct-ba-btn:hover{border-color:var(--gold);color:#B8985A}
-.acct-inv-card{background:#fff;border:1px solid rgba(17,29,44,.1);border-radius:6px;padding:.85rem 1rem;margin-bottom:.6rem;display:flex;justify-content:space-between;align-items:flex-start;gap:1rem}
-.acct-inv-no{font-size:.65rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.4);margin-bottom:.15rem}
-.acct-inv-amt{font-family:var(--serif);font-size:1.4rem;font-weight:300;color:#111D2C}
-.acct-inv-date{font-size:.68rem;color:rgba(17,29,44,.42);margin-top:.1rem}
-.acct-inv-dl{display:block;font-size:.58rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);text-decoration:none;margin-top:.38rem;transition:color .15s}
-.acct-inv-dl:hover{color:#7A6230}
-.acct-paid-badge{font-size:.56rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.18rem .5rem;border-radius:3px;white-space:nowrap;flex-shrink:0}
-.acct-paid-badge.paid{background:rgba(46,125,79,.1);color:#2e7d4f}
-.acct-paid-badge.unpaid{background:rgba(224,82,82,.1);color:#c0392b}
-.acct-empty{text-align:center;padding:1.6rem 0;color:rgba(17,29,44,.38);font-size:.8rem;font-style:italic}
-.acct-signout{background:none;border:1px solid rgba(17,29,44,.18);color:rgba(17,29,44,.5);font-family:var(--sans);font-size:.56rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;padding:.4rem .9rem;border-radius:3px;cursor:pointer;transition:border-color .2s,color .2s;margin-top:1.4rem;margin-bottom:.4rem}
-.acct-signout:hover{border-color:rgba(17,29,44,.45);color:#111D2C}
+.acct-rt-picker{margin-top:.6rem;display:none;background:#fff;border:1.5px solid rgba(184,152,90,.3);border-radius:8px;padding:.7rem .8rem}
+.acct-rt-picker.open{display:block}
+.acct-rt-row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.5rem}
+.acct-rt-input{border:1.5px solid rgba(17,29,44,.2);border-radius:6px;padding:.5rem .6rem;font-family:var(--sans);font-size:.82rem;color:#111D2C;background:#fff;outline:none;min-height:42px;-webkit-appearance:auto;appearance:auto}
+.acct-rt-input:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(184,152,90,.15)}
+.acct-rt-confirm{background:var(--gold);color:var(--navy);border:none;font-family:var(--sans);font-size:.62rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.55rem 1rem;border-radius:6px;cursor:pointer;transition:background .15s;width:100%;min-height:42px}
+.acct-rt-confirm:hover{background:#C9A96E}
+.acct-rt-confirm:disabled{opacity:.55;cursor:not-allowed}
+.acct-rt-msg{font-size:.68rem;margin-top:.4rem;line-height:1.4;text-align:center}
+.acct-rt-ok{color:#2D6E47}.acct-rt-err{color:#8B2222}
+
+/* Invoice rows */
+.acct-inv-card{border-bottom:1px solid rgba(17,29,44,.06);padding:.85rem 0;display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem}
+.acct-inv-card:last-child{border-bottom:none}
+.acct-inv-no{font-size:.62rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.38);margin-bottom:.12rem}
+.acct-inv-amt{font-family:var(--serif);font-size:1.25rem;font-weight:300;color:#111D2C}
+.acct-inv-date{font-size:.64rem;color:rgba(17,29,44,.38);margin-top:.08rem}
+.acct-inv-dl{display:inline-block;font-size:.54rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);text-decoration:none;margin-top:.3rem;border:1px solid rgba(184,152,90,.35);padding:.16rem .52rem;border-radius:3px;transition:all .2s}
+.acct-inv-dl:hover{background:rgba(184,152,90,.1)}
+.acct-paid-badge{font-size:.48rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.13rem .46rem;border-radius:20px;white-space:nowrap;flex-shrink:0;display:inline-block}
+.acct-paid-badge.paid{background:rgba(45,110,71,.12);color:#2D6E47}
+.acct-paid-badge.unpaid{background:rgba(139,34,34,.08);color:#8B2222}
+.acct-paid-badge.overdue{background:rgba(139,34,34,.15);color:#8B2222}
+
+/* Profile rows */
+.ap-pf-row{display:flex;align-items:center;justify-content:space-between;padding:.78rem 0;border-bottom:1px solid rgba(17,29,44,.05)}
+.ap-pf-row:last-child{border-bottom:none}
+.ap-pf-label{font-size:.52rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.4);flex-shrink:0;min-width:85px}
+.ap-pf-val{font-size:.82rem;color:rgba(17,29,44,.78);font-weight:300;flex:1;word-break:break-all}
+
+/* Sign out */
+.acct-signout{width:100%;padding:.82rem;background:transparent;color:rgba(17,29,44,.42);border:1px solid rgba(17,29,44,.1);font-family:var(--sans);font-size:.62rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;transition:all .2s;display:block;margin-top:.3rem}
+.acct-signout:hover{border-color:#8B2222;color:#8B2222}
+
+/* Empty states */
+.acct-empty{text-align:center;padding:1.8rem .5rem;color:rgba(17,29,44,.32);font-size:.78rem}
+
+/* Bottom nav */
+.ap-bottom-nav{background:#111D2C;border-top:1px solid rgba(184,152,90,.2);box-shadow:0 -1px 8px rgba(0,0,0,.3);display:flex;padding-bottom:env(safe-area-inset-bottom,0px);flex-shrink:0}
+.ap-bn{flex:1;display:flex;flex-direction:column;align-items:center;gap:.18rem;padding:.75rem .3rem;background:none;border:none;cursor:pointer;transition:color .2s;color:rgba(245,242,237,.38);font-family:var(--sans);min-height:56px;position:relative}
+.ap-bn.on{color:var(--gold)}
+.ap-bn-bar{width:16px;height:1px;background:currentColor;opacity:0;transition:opacity .2s;margin-bottom:.04rem}
+.ap-bn.on .ap-bn-bar{opacity:1}
+.ap-bn-icon{width:20px;height:20px;display:flex;align-items:center;justify-content:center}
+.ap-bn-icon svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.ap-bn-label{font-size:.52rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase}
+
 @media(max-width:540px){
-  #acct-overlay{padding:0;align-items:flex-end}
-  #acct-panel{border-radius:14px 14px 0 0;max-height:92vh;padding:1.2rem 1rem;width:100%}
-  .acct-title{font-size:1.35rem}
-  .acct-welcome-name{font-size:1.5rem}
-  .acct-bk-card,.acct-inv-card{padding:.7rem .8rem}
-  .acct-bk-route{font-size:.82rem}
-  .acct-inv-amt{font-size:1.15rem}
-  .acct-f input{font-size:.88rem;padding:.55rem .65rem;min-height:42px}
-  .acct-btn{min-height:46px;font-size:.6rem}
   .nav-acct{padding:.22rem .55rem;font-size:.65rem}
+  .ap-auth-body{padding:1.4rem 1.4rem 1.2rem}
+  .ap-auth-head{padding:1.5rem 1.4rem 1.2rem}
 }
 
 /* ===== CUSTOM DATE PICKER ===== */
@@ -382,14 +454,14 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 <script src="/config.js"></script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23111D2C'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='38' font-weight='500' text-anchor='middle' fill='%23B8985A'%3EW%3C/text%3E%3C/svg%3E">
 <meta name="robots" content="index,follow">
-<meta property="og:title" content="Westmere Executive Private Hire | Sussex Airport Transfers">
-<meta property="og:description" content="Premium executive private hire across Sussex. Professional chauffeurs and luxury vehicles, 24/7 executive airport transfers to Gatwick, Heathrow, Stansted, Luton and beyond.">
+<meta property="og:title" content="Westmere Private Hire | Sussex Airport Transfers">
+<meta property="og:description" content="Premium private hire across Sussex. Professional chauffeurs and luxury vehicles, 24/7 airport transfers to Gatwick, Heathrow, Stansted, Luton and beyond.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://westmereprivatehire.co.uk/">
 <meta property="og:site_name" content="Westmere Private Hire">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Westmere Executive Private Hire | Sussex Airport Transfers">
-<meta name="twitter:description" content="Premium executive private hire across Sussex. Professional chauffeurs and luxury vehicles, 24/7 executive airport transfers to Gatwick, Heathrow, Stansted, Luton and beyond.">
+<meta name="twitter:title" content="Westmere Private Hire | Sussex Airport Transfers">
+<meta name="twitter:description" content="Premium private hire across Sussex. Professional chauffeurs and luxury vehicles, 24/7 airport transfers to Gatwick, Heathrow, Stansted, Luton and beyond.">
 </head>
 <body>
 
@@ -397,7 +469,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 <div id="intro">
   <span class="intro-w">Westmere</span>
   <div class="intro-line"></div>
-  <span class="intro-exec">Executive</span>
+  <span class="intro-exec"></span>
   <span class="intro-ph">Private Hire</span>
   <span class="intro-ss">Sussex</span>
 </div>
@@ -406,16 +478,148 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 <nav id="nav"><a href="index.html" class="brand"><span class="brand-name">Westmere</span></a><div class="nav-r"><div class="nav-links"><a href="index.html" class="on">Home</a><a href="westmere-fares.html">Airport Fares</a><a href="westmere-coverage.html">Coverage</a><a href="westmere-fleet.html">Fleet</a><a href="westmere-about.html">About</a></div><button class="nav-acct" onclick="openAcctPortal()" id="nav-acct-btn">My Account</button><a href="index.html?skip=1" class="nav-book">Book Now</a><div class="nav-socials"><a href="tel:+447930342593" title="Phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.38 2 2 0 0 1 3.6 1.21h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.77a16 16 0 0 0 6.29 6.29l1.63-1.63a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></a><a href="https://wa.me/447930342593" target="_blank" title="WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg></a><a href="mailto:hello@westmere.co.uk" title="Email"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></a><a href="https://instagram.com/westmereprivatehire" target="_blank" title="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".5" fill="currentColor"/></svg></a><a href="https://www.tripadvisor.co.uk/" target="_blank" rel="noopener" title="TripAdvisor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><ellipse cx="12" cy="12" rx="10.5" ry="6.5"/><circle cx="8.5" cy="12" r="2.6"/><circle cx="15.5" cy="12" r="2.6"/><circle cx="8.5" cy="12" r=".7" fill="currentColor"/><circle cx="15.5" cy="12" r=".7" fill="currentColor"/></svg></a></div></div><div class="nav-end"><a class="nav-wa-mobile" href="https://wa.me/447930342593" target="_blank" rel="noopener" aria-label="WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg></a><button class="burger" onclick="toggleMenu()" aria-label="Menu"><span></span><span></span><span></span></button></div></nav><div class="mmenu" id="mmenu"><a href="index.html" onclick="closeMenu()">Home</a><a href="westmere-fares.html" onclick="closeMenu()">Airport Fares</a><a href="westmere-coverage.html" onclick="closeMenu()">Coverage</a><a href="westmere-fleet.html" onclick="closeMenu()">Fleet</a><a href="westmere-about.html" onclick="closeMenu()">About</a><a href="https://wa.me/447930342593" target="_blank" rel="noopener" onclick="closeMenu()" style="display:inline-flex;align-items:center;gap:.6rem"><svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor" style="flex:0 0 auto"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>WhatsApp</a><a href="#" onclick="closeMenu();openAcctPortal()">My Account</a></div>
 
 <div id="main-content">
+
+    <!-- ===== LANDING SHOWCASE (added: home of the airport transfers) ===== -->
+    <style>
+    .lp-wrap{max-width:1180px;margin:0 auto;padding:0 1.5rem}
+    .lp-hero{text-align:center;padding:clamp(3rem,8vw,6rem) 1.5rem clamp(1.5rem,4vw,3rem)}
+    .lp-eyebrow{font-family:var(--sans);font-size:.7rem;font-weight:400;letter-spacing:.32em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:1.1rem}
+    .lp-h1{font-family:var(--serif);font-weight:300;color:#fff;font-size:clamp(2.4rem,6vw,4.6rem);line-height:1.02;letter-spacing:.02em;margin:0}
+    .lp-h1 em{font-style:italic;color:var(--gold)}
+    .lp-sub{font-family:var(--sans);font-weight:300;color:rgba(255,255,255,.72);font-size:clamp(1rem,2vw,1.2rem);max-width:640px;margin:1.4rem auto 0;line-height:1.6}
+    .lp-cta-row{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-top:2rem}
+    .lp-btn{font-family:var(--sans);font-size:.78rem;letter-spacing:.16em;text-transform:uppercase;padding:.95rem 2.1rem;border-radius:3px;text-decoration:none;transition:.25s;cursor:pointer;border:1px solid var(--gold);display:inline-block}
+    .lp-btn-primary{background:var(--gold);color:var(--navy);font-weight:600}
+    .lp-btn-primary:hover{background:var(--gold2);border-color:var(--gold2)}
+    .lp-btn-ghost{background:transparent;color:#fff}
+    .lp-btn-ghost:hover{background:rgba(255,255,255,.08)}
+    .lp-trust{display:flex;gap:1.4rem 2.4rem;justify-content:center;flex-wrap:wrap;margin-top:2.4rem;font-family:var(--sans);font-size:.78rem;letter-spacing:.04em;color:rgba(255,255,255,.6)}
+    .lp-trust span{display:inline-flex;align-items:center;gap:.5rem}
+    .lp-trust b{color:var(--gold);font-weight:600}
+    .lp-sec{padding:clamp(2.5rem,6vw,4.5rem) 0}
+    .lp-sec-head{text-align:center;margin-bottom:2.6rem}
+    .lp-tag{font-family:var(--sans);font-size:.65rem;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:.6rem}
+    .lp-title{font-family:var(--serif);font-weight:300;color:#fff;font-size:clamp(1.9rem,3.6vw,2.8rem);line-height:1.1;margin:0}
+    .lp-title em{font-style:italic;color:var(--gold)}
+    .lp-lead{font-family:var(--sans);font-weight:300;color:rgba(255,255,255,.66);max-width:560px;margin:.9rem auto 0;line-height:1.6;font-size:.98rem}
+    .lp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1rem}
+    .lp-card{background:rgba(17,29,44,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid rgba(184,152,90,.28);border-radius:12px;padding:1.6rem 1.5rem;transition:.28s;display:flex;flex-direction:column}
+    .lp-card:hover{transform:translateY(-4px);border-color:var(--gold);box-shadow:0 24px 50px rgba(0,0,0,.4)}
+    .lp-card-ap{font-family:var(--serif);font-size:1.5rem;font-weight:400;color:#fff;letter-spacing:.02em}
+    .lp-card-code{font-family:var(--sans);font-size:.66rem;letter-spacing:.2em;color:var(--gold);text-transform:uppercase;margin-top:.15rem;display:block}
+    .lp-card-meta{font-family:var(--sans);font-size:.82rem;color:rgba(255,255,255,.55);margin-top:.9rem;line-height:1.5;flex:1}
+    .lp-card-price{margin-top:1.1rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,.1)}
+    .lp-card-price small{font-family:var(--sans);font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.5);display:block}
+    .lp-card-price b{font-family:var(--serif);font-size:1.9rem;font-weight:400;color:var(--gold);display:block;line-height:1.1;margin-top:.2rem}
+    .lp-fares-note{text-align:center;margin-top:2rem;font-family:var(--sans);font-size:.85rem;color:rgba(255,255,255,.55)}
+    .lp-fares-note a{color:var(--gold);text-decoration:none;border-bottom:1px solid rgba(184,152,90,.4);padding-bottom:1px}
+    .lp-feat{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1.6rem}
+    .lp-feat-item{text-align:center;padding:.5rem}
+    .lp-feat-ic{width:40px;height:40px;margin:0 auto 1rem;color:var(--gold)}
+    .lp-feat-item h4{font-family:var(--serif);font-weight:400;color:#fff;font-size:1.25rem;margin:0 0 .5rem}
+    .lp-feat-item p{font-family:var(--sans);font-weight:300;color:rgba(255,255,255,.6);font-size:.88rem;line-height:1.55;margin:0}
+    .lp-rev-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.2rem}
+    .lp-rev{background:rgba(245,242,237,.04);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:1.8rem}
+    .lp-stars{color:var(--gold);letter-spacing:.15em;font-size:1rem;margin-bottom:.9rem}
+    .lp-rev q{font-family:var(--serif);font-style:italic;font-size:1.12rem;font-weight:300;color:rgba(255,255,255,.85);line-height:1.5;display:block;margin:0 0 1.2rem}
+    .lp-rev q:before,.lp-rev q:after{content:''}
+    .lp-rev-by{font-family:var(--sans);font-size:.78rem;letter-spacing:.06em;color:rgba(255,255,255,.55)}
+    .lp-rev-by b{color:#fff;font-weight:500;display:block;letter-spacing:.03em;margin-bottom:.15rem}
+    .lp-ph{font-family:var(--sans);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);background:rgba(184,152,90,.12);border:1px solid rgba(184,152,90,.3);padding:.3rem .7rem;border-radius:3px;display:inline-block;margin-bottom:1.4rem}
+    </style>
+
+    <section class="lp-hero">
+      <span class="lp-eyebrow">Sussex &middot; 24/7 Airport Transfers</span>
+      <h1 class="lp-h1">Home of the<br><em>Airport Transfers</em></h1>
+      <p class="lp-sub">Professional chauffeurs and immaculate vehicles for every journey to Gatwick, Heathrow, Stansted, Luton and beyond &mdash; fixed prices, flight tracking, and a meet &amp; greet as standard.</p>
+      <div class="lp-cta-row">
+        <a href="#booking" class="lp-btn lp-btn-primary">Get an instant estimate</a>
+        <a href="https://wa.me/447930342593" target="_blank" rel="noopener" class="lp-btn lp-btn-ghost">Message us on WhatsApp</a>
+      </div>
+      <div class="lp-trust">
+        <span><b>24/7</b> Every flight, every hour</span>
+        <span><b>Fixed</b> No surge pricing</span>
+        <span><b>Licensed</b> Lewes District Council</span>
+      </div>
+    </section>
+
+    <section class="lp-sec">
+      <div class="lp-wrap">
+        <div class="lp-sec-head">
+          <span class="lp-tag">Airport Transfer Showcase</span>
+          <h2 class="lp-title">Every major airport, <em>door to door</em></h2>
+          <p class="lp-lead">Sample fares below start from our closest Sussex pickups. Enter your exact route for a live, fixed quote in seconds.</p>
+        </div>
+        <div class="lp-grid">
+          <div class="lp-card"><span class="lp-card-ap">Gatwick</span><span class="lp-card-code">LGW</span><p class="lp-card-meta">Our nearest hub &mdash; fastest transfers in the county, day or night.</p><div class="lp-card-price"><small>Fixed fares from</small><b>&pound;54</b></div></div>
+          <div class="lp-card"><span class="lp-card-ap">Heathrow</span><span class="lp-card-code">LHR</span><p class="lp-card-meta">Direct to all terminals with live flight tracking and free waiting time.</p><div class="lp-card-price"><small>Fixed fares from</small><b>&pound;94</b></div></div>
+          <div class="lp-card"><span class="lp-card-ap">Stansted</span><span class="lp-card-code">STN</span><p class="lp-card-meta">Early departures covered &mdash; we track your flight so you never rush.</p><div class="lp-card-price"><small>Fixed fares from</small><b>&pound;141</b></div></div>
+          <div class="lp-card"><span class="lp-card-ap">Luton</span><span class="lp-card-code">LTN</span><p class="lp-card-meta">Comfortable long-haul runs with generous luggage capacity.</p><div class="lp-card-price"><small>Fixed fares from</small><b>&pound;120</b></div></div>
+          <div class="lp-card"><span class="lp-card-ap">Southampton</span><span class="lp-card-code">SOU</span><p class="lp-card-meta">Cruise terminals and regional flights, handled end to end.</p><div class="lp-card-price"><small>Fixed fares from</small><b>&pound;104</b></div></div>
+          <div class="lp-card"><span class="lp-card-ap">London City</span><span class="lp-card-code">LCY</span><p class="lp-card-meta">Business travel made simple, straight into the capital.</p><div class="lp-card-price"><small>Fixed fares from</small><b>&pound;124</b></div></div>
+        </div>
+        <p class="lp-fares-note">Prices shown are drop-off fares from Horsham and vary by pickup town. <a href="westmere-fares.html">See the full fare table &rarr;</a></p>
+      </div>
+    </section>
+
+    <section class="lp-sec" style="border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08)">
+      <div class="lp-wrap">
+        <div class="lp-feat">
+          <div class="lp-feat-item">
+            <svg class="lp-feat-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3.5s-2.5 0-4 1.5L13.5 8.5 5.3 6.7c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 4.8c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
+            <h4>Meet &amp; Greet</h4>
+            <p>Your driver waits in arrivals with a name board &mdash; no hunting for the car.</p>
+          </div>
+          <div class="lp-feat-item">
+            <svg class="lp-feat-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <h4>Flight Tracking</h4>
+            <p>We monitor your flight and adjust for delays automatically at no extra cost.</p>
+          </div>
+          <div class="lp-feat-item">
+            <svg class="lp-feat-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.5 8 8 10 4.5-2 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/></svg>
+            <h4>Fixed Fares</h4>
+            <p>The price you see is the price you pay &mdash; no meters, no surge charges.</p>
+          </div>
+          <div class="lp-feat-item">
+            <svg class="lp-feat-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z"/><circle cx="12" cy="12" r="9"/></svg>
+            <h4>Across Sussex</h4>
+            <p>Brighton, Lewes, Horsham, Worthing and every town in between, 24/7.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="lp-sec">
+      <div class="lp-wrap">
+        <div class="lp-sec-head">
+          <span class="lp-tag">What Our Passengers Say</span>
+          <h2 class="lp-title">Trusted for the <em>journeys that matter</em></h2>
+        </div>
+        <div style="text-align:center"><span class="lp-ph">Sample layout &mdash; replace with your real Google / TripAdvisor reviews</span></div>
+        <div class="lp-rev-grid">
+          <div class="lp-rev"><div class="lp-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><q>[Placeholder review &mdash; paste a real customer quote here about a smooth early-morning airport run.]</q><div class="lp-rev-by"><b>Customer name</b>Gatwick transfer</div></div>
+          <div class="lp-rev"><div class="lp-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><q>[Placeholder review &mdash; paste a real customer quote here about the driver, punctuality or comfort.]</q><div class="lp-rev-by"><b>Customer name</b>Heathrow transfer</div></div>
+          <div class="lp-rev"><div class="lp-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div><q>[Placeholder review &mdash; paste a real customer quote here about a return pickup or flight-delay handling.]</q><div class="lp-rev-by"><b>Customer name</b>Return pickup</div></div>
+        </div>
+        <div class="lp-cta-row"><a href="#booking" class="lp-btn lp-btn-primary">Book your transfer</a></div>
+      </div>
+    </section>
+    <!-- ===== END LANDING SHOWCASE ===== -->
+
     <!-- Booking form -->
     <div id="booking">
   <div class="bk-wrap">
-    <h2 class="bk-title">Plan your <em>journey</em></h2>
+    <h2 class="bk-title">Request an <em>estimate</em></h2>
 
     <div class="field">
       <label class="fl">Journey begins</label>
       <input class="fi" type="text" id="b-from" placeholder="Your address, town or postcode" oninput="addrSearch(this,'sug-from')" autocomplete="off">
       <div class="sug-drop" id="sug-from"></div>
       <button type="button" class="loc-btn" onclick="useLocation()">Use my current location</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:.4rem;padding:.2rem 0 .2rem .2rem"><input type="checkbox" id="bk-stop" style="width:16px;height:16px;accent-color:#B8985A;cursor:pointer"><label for="bk-stop" style="font-size:.78rem;color:rgba(17,29,44,.55);cursor:pointer;font-family:var(--sans);font-weight:400">Add a stop on the way</label></div>
+    <div id="bk-stop-wrap" style="display:none">
+      <div class="field"><label class="fl">Stop address</label><input class="fi" type="text" id="bk-stop-addr" placeholder="Where do you need to stop?" oninput="addrSearch(this,'sug-stop')" autocomplete="off"><div class="sug-drop" id="sug-stop"></div></div>
     </div>
     <div class="field">
       <label class="fl">Journey ends</label>
@@ -524,7 +728,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
         <div class="bk-welcome-ref" id="bk-cr"></div>
       </div>
       <div class="bk-confirm-dl" id="bk-cd"></div>
-      <div class="bk-driver-note" id="bk-driver-note">We&rsquo;re working on your estimate and will be in touch shortly.</div>
+      <div class="bk-driver-note" id="bk-driver-note">We&rsquo;re working on your estimate and will be in touch shortly. Please check your email or text messages for your booking confirmation and payment options.</div>
       <!-- Recommend to a friend -->
       <div id="bk-recommend" style="margin-top:1.2rem;padding:1rem;background:rgba(17,29,44,.03);border:1px solid rgba(184,152,90,.2);border-radius:8px;text-align:center">
         <div style="font-family:var(--serif);font-size:.95rem;color:#111D2C;margin-bottom:.5rem">Recommend us to a friend</div>
@@ -559,92 +763,161 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 </div>
 
 <!-- ===== ACCOUNT PORTAL ===== -->
-<div id="acct-overlay" role="dialog" aria-modal="true" aria-label="My Account" style="display:none">
+<div id="acct-overlay" role="dialog" aria-modal="true" aria-label="My Account">
   <div id="acct-panel">
-    <div class="bk-header">
-      <span class="acct-logo">Westmere</span>
-      <button class="bk-close" onclick="closeAcctPortal()" aria-label="Close">&times;</button>
+
+    <!-- Topbar (always visible) -->
+    <div class="ap-topbar">
+      <div class="ap-brand">
+        <div class="ap-crest">W</div>
+        <span class="ap-brand-name">Westmere</span>
+      </div>
+      <button class="ap-back-btn" onclick="closeAcctPortal()" aria-label="Back to booking">&larr; Back</button>
     </div>
 
-    <!-- Login -->
-    <div class="acct-view active" id="av-login">
-      <h3 class="acct-title">Sign in</h3>
-      <p class="acct-sub">Welcome back</p>
-      <div class="acct-f"><label>Email</label><input type="email" id="al-email" placeholder="your@email.com" autocomplete="email" inputmode="email"></div>
-      <div class="acct-f"><label>Password</label><input type="password" id="al-pass" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password"></div>
-      <div id="al-err" class="acct-err"></div>
-      <button class="acct-btn" onclick="acctLogin()">Sign In</button>
-      <div class="acct-links-row">
-        <button class="acct-link-btn" onclick="acctShow('av-forgot')">Forgot password?</button>
-        <button class="acct-link-btn" onclick="acctShow('av-register')">Create account</button>
-      </div>
-    </div>
+    <!-- Auth card (centred in remaining space) -->
+    <div id="acct-auth-wrap">
+      <div class="ap-auth-card">
+        <div class="ap-auth-head">
+          <div class="ap-auth-crest">W</div>
+          <span class="ap-brand-label">Westmere</span>
+          <span class="ap-tagline">Private Hire</span>
+        </div>
 
-    <!-- Register -->
-    <div class="acct-view" id="av-register">
-      <h3 class="acct-title">Create account</h3>
-      <p class="acct-sub">Manage your bookings and invoices online</p>
-      <div class="acct-f"><label>Full name</label><input type="text" id="ar-name" placeholder="Your full name" autocomplete="name"></div>
-      <div class="acct-f"><label>Email</label><input type="email" id="ar-email" placeholder="your@email.com" autocomplete="email" inputmode="email"></div>
-      <div class="acct-f"><label>Mobile <span style="opacity:.6;font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label><input type="tel" id="ar-phone" placeholder="+44 7xxx xxxxxx" autocomplete="tel" inputmode="tel"></div>
-      <div class="acct-f"><label>Password</label><input type="password" id="ar-pass" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="new-password"></div>
-      <div id="ar-err" class="acct-err"></div>
-      <button class="acct-btn" onclick="acctRegister()">Create Account</button>
-      <div class="acct-links-row" style="justify-content:center">
-        <button class="acct-link-btn" onclick="acctShow('av-login')">Already have an account? Sign in</button>
-      </div>
-    </div>
+        <!-- Login -->
+        <div class="acct-view active" id="av-login">
+          <div class="ap-auth-body">
+            <h3 class="acct-title">Sign in</h3>
+            <p class="acct-sub">Welcome back</p>
+            <div class="acct-f"><label>Email</label><input type="email" id="al-email" placeholder="your@email.com" autocomplete="email" inputmode="email"></div>
+            <div class="acct-f"><label>Password</label><input type="password" id="al-pass" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password"></div>
+            <div id="al-err" class="acct-err"></div>
+            <button class="acct-btn" onclick="acctLogin()">Sign In</button>
+            <div class="acct-links-row">
+              <button class="acct-link-btn" onclick="acctShow('av-forgot')">Forgot password?</button>
+              <button class="acct-link-btn" onclick="acctShow('av-register')">Create account</button>
+            </div>
+          </div>
+        </div>
 
-    <!-- Forgot password -->
-    <div class="acct-view" id="av-forgot">
-      <h3 class="acct-title">Reset password</h3>
-      <p class="acct-sub">We'll send a reset link to your email</p>
-      <div class="acct-f"><label>Email</label><input type="email" id="af-email" placeholder="your@email.com" autocomplete="email" inputmode="email"></div>
-      <div id="af-msg"></div>
-      <button class="acct-btn" onclick="acctForgot()">Send Reset Link</button>
-      <div class="acct-links-row" style="justify-content:center">
-        <button class="acct-link-btn" onclick="acctShow('av-login')">Back to sign in</button>
-      </div>
-    </div>
+        <!-- Register -->
+        <div class="acct-view" id="av-register">
+          <div class="ap-auth-body">
+            <h3 class="acct-title">Create account</h3>
+            <p class="acct-sub">Manage your bookings and invoices online</p>
+            <div class="acct-f"><label>Full name</label><input type="text" id="ar-name" placeholder="Your full name" autocomplete="name"></div>
+            <div class="acct-f"><label>Email</label><input type="email" id="ar-email" placeholder="your@email.com" autocomplete="email" inputmode="email"></div>
+            <div class="acct-f"><label>Mobile <span style="opacity:.6;font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label><input type="tel" id="ar-phone" placeholder="+44 7xxx xxxxxx" autocomplete="tel" inputmode="tel"></div>
+            <div class="acct-f"><label>Password</label><input type="password" id="ar-pass" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="new-password"></div>
+            <div id="ar-err" class="acct-err"></div>
+            <button class="acct-btn" onclick="acctRegister()">Create Account</button>
+            <div class="acct-links-row" style="justify-content:center">
+              <button class="acct-link-btn" onclick="acctShow('av-login')">Already have an account? Sign in</button>
+            </div>
+          </div>
+        </div>
 
-    <!-- Reset password (from email link) -->
-    <div class="acct-view" id="av-reset">
-      <h3 class="acct-title">New password</h3>
-      <p class="acct-sub">Enter your email and new password below</p>
-      <div class="acct-f"><label>Email</label><input type="email" id="ar-email" placeholder="your@email.com" autocomplete="email"></div>
-      <div class="acct-f"><label>New password</label><input type="password" id="ar-pass" placeholder="New password (min 8 characters)" autocomplete="new-password"></div>
-      <div class="acct-f"><label>Confirm password</label><input type="password" id="ar-pass2" placeholder="Confirm new password" autocomplete="new-password"></div>
-      <div class="acct-err" id="ar-err"></div>
-      <div id="ar-msg"></div>
-      <button class="acct-btn" onclick="acctResetPassword()">Set New Password</button>
-      <div class="acct-links-row" style="justify-content:center">
-        <button class="acct-link-btn" onclick="acctShow('av-login')">Back to sign in</button>
-      </div>
-    </div>
+        <!-- Forgot password -->
+        <div class="acct-view" id="av-forgot">
+          <div class="ap-auth-body">
+            <h3 class="acct-title">Reset password</h3>
+            <p class="acct-sub">We&rsquo;ll send a reset link to your email</p>
+            <div class="acct-f"><label>Email</label><input type="email" id="af-email" placeholder="your@email.com" autocomplete="email" inputmode="email"></div>
+            <div id="af-msg"></div>
+            <button class="acct-btn" onclick="acctForgot()">Send Reset Link</button>
+            <div class="acct-links-row" style="justify-content:center">
+              <button class="acct-link-btn" onclick="acctShow('av-login')">Back to sign in</button>
+            </div>
+          </div>
+        </div>
 
-    <!-- Email verification notice -->
-    <div class="acct-view" id="av-verify">
-      <h3 class="acct-title">Check your email</h3>
-      <div class="acct-ok-msg" id="av-verify-msg">We've sent a verification link to your email address. Please check your inbox and click the link to activate your account, then sign in.</div>
-      <div style="margin-top:1.2rem;text-align:center">
-        <button class="acct-link-btn" onclick="acctShow('av-login')">Back to sign in</button>
-      </div>
-    </div>
+        <!-- Reset password (from email link) -->
+        <div class="acct-view" id="av-reset">
+          <div class="ap-auth-body">
+            <h3 class="acct-title">New password</h3>
+            <p class="acct-sub">Enter your email and new password below</p>
+            <div class="acct-f"><label>Email</label><input type="email" id="rst-email" placeholder="your@email.com" autocomplete="email"></div>
+            <div class="acct-f"><label>New password</label><input type="password" id="rst-pass" placeholder="New password (min 8 characters)" autocomplete="new-password"></div>
+            <div class="acct-f"><label>Confirm password</label><input type="password" id="rst-pass2" placeholder="Confirm new password" autocomplete="new-password"></div>
+            <div class="acct-err" id="rst-err"></div>
+            <div id="rst-msg"></div>
+            <button class="acct-btn" onclick="acctResetPassword()">Set New Password</button>
+            <div class="acct-links-row" style="justify-content:center">
+              <button class="acct-link-btn" onclick="acctShow('av-login')">Back to sign in</button>
+            </div>
+          </div>
+        </div>
 
-    <!-- Dashboard -->
-    <div class="acct-view" id="av-dashboard">
-      <div class="acct-welcome">
-        <div class="acct-welcome-name" id="acct-dash-name"></div>
-        <div class="acct-welcome-sub">Your Westmere account</div>
+        <!-- Email verification notice -->
+        <div class="acct-view" id="av-verify">
+          <div class="ap-auth-body">
+            <h3 class="acct-title">Check your email</h3>
+            <div class="acct-ok-msg" id="av-verify-msg">We&rsquo;ve sent a verification link to your email address. Please check your inbox and click the link to activate your account, then sign in.</div>
+            <div style="margin-top:1.2rem;text-align:center">
+              <button class="acct-link-btn" onclick="acctShow('av-login')">Back to sign in</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /.ap-auth-card -->
+    </div><!-- /#acct-auth-wrap -->
+
+    <!-- Dashboard (full-screen app shell) -->
+    <div id="av-dashboard">
+      <div class="ap-scroll">
+
+        <!-- Bookings page -->
+        <div class="ap-pg on" id="ap-pg-bookings">
+          <div class="ap-pg-title">My Bookings</div>
+          <div class="ap-pg-sub" style="margin-top:.3rem;margin-bottom:.9rem">Upcoming</div>
+          <div class="ap-card"><div class="ap-card-body" id="acct-bookings-upcoming"></div></div>
+          <div class="ap-pg-sub" id="ap-pg-past-lbl" style="display:none;margin-top:1.2rem">Past</div>
+          <div class="ap-card" id="ap-past-card" style="display:none"><div class="ap-card-body" id="acct-bookings-past"></div></div>
+        </div>
+
+        <!-- Invoices page -->
+        <div class="ap-pg" id="ap-pg-invoices">
+          <div class="ap-pg-title">Invoices</div>
+          <div class="ap-card" style="margin-top:.9rem"><div class="ap-card-body" id="acct-invoices-list"></div></div>
+        </div>
+
+        <!-- Profile page -->
+        <div class="ap-pg" id="ap-pg-profile">
+          <div class="ap-pg-title">Profile</div>
+          <div class="ap-card" style="margin-top:.9rem">
+            <div class="ap-card-body">
+              <div class="ap-pf-row"><span class="ap-pf-label">Name</span><span class="ap-pf-val" id="pf-name"></span></div>
+              <div class="ap-pf-row"><span class="ap-pf-label">Email</span><span class="ap-pf-val" id="pf-email"></span></div>
+              <div class="ap-pf-row"><span class="ap-pf-label">Phone</span><span class="ap-pf-val" id="pf-phone"></span></div>
+            </div>
+          </div>
+          <button class="acct-signout" style="margin-top:1.5rem" onclick="acctSignOut()">Sign Out</button>
+        </div>
+
+      </div><!-- /.ap-scroll -->
+
+      <!-- Bottom nav -->
+      <div class="ap-bottom-nav">
+        <button class="ap-bn on" id="apbn-bookings" onclick="apShowPage('bookings')" aria-label="Bookings">
+          <div class="ap-bn-bar"></div>
+          <div class="ap-bn-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+          <span class="ap-bn-label">Bookings</span>
+        </button>
+        <button class="ap-bn" id="apbn-invoices" onclick="apShowPage('invoices')" aria-label="Invoices">
+          <div class="ap-bn-bar"></div>
+          <div class="ap-bn-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+          <span class="ap-bn-label">Invoices</span>
+        </button>
+        <button class="ap-bn" id="apbn-profile" onclick="apShowPage('profile')" aria-label="Profile">
+          <div class="ap-bn-bar"></div>
+          <div class="ap-bn-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+          <span class="ap-bn-label">Profile</span>
+        </button>
       </div>
-      <div class="acct-section-ttl">My Bookings</div>
-      <div id="acct-bookings-list"></div>
-      <div class="acct-section-ttl">My Invoices</div>
-      <div id="acct-invoices-list"></div>
-      <button class="acct-signout" onclick="acctSignOut()">Sign Out</button>
-    </div>
-  </div>
-</div>
+    </div><!-- /#av-dashboard -->
+
+  </div><!-- /#acct-panel -->
+</div><!-- /#acct-overlay -->
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>window.addEventListener('scroll',function(){var n=document.getElementById('nav');if(n)n.classList.toggle('solid',window.scrollY>50);},{passive:true});
 function toggleMenu(){var m=document.getElementById('mmenu');m.classList.toggle('open');document.body.style.overflow=m.classList.contains('open')?'hidden':'';}
@@ -662,17 +935,17 @@ uckfield_gatwick:{m:22,t:32,d:52},uckfield_heathrow:{m:55,t:72,d:115}
 };
 /* Fixed fare tables — out = town→airport (drop-off), ret = airport→town (pickup) */
 var CF={
-  brighton:{ga:{out:99,ret:96},he:{out:137,ret:141},st:{out:209,ret:213},lu:{out:196,ret:201},so:{out:153,ret:150},ci:{out:168,ret:171}},
-  lewes:{ga:{out:101,ret:98},he:{out:143,ret:148},st:{out:214,ret:219},lu:{out:201,ret:205},so:{out:156,ret:153},ci:{out:172,ret:175}},
-  horsham:{ga:{out:60,ret:58},he:{out:105,ret:110},st:{out:157,ret:161},lu:{out:133,ret:136},so:{out:116,ret:112},ci:{out:138,ret:142}},
-  crawley:{ga:{out:50,ret:48},he:{out:91,ret:95}},
-  worthing:{ga:{out:94,ret:91},he:{out:134,ret:137}},
-  haywards:{ga:{out:70,ret:69}},
-  burgess:{ga:{out:70,ret:68}},
-  eastbourne:{ga:{out:132,ret:130},he:{out:176,ret:181}},
-  seaford:{ga:{out:120,ret:117}},
-  uckfield:{ga:{out:81,ret:78}},
-  eastgrinstead:{ga:{out:69,ret:65}}
+  brighton:{ga:{out:89,ret:86},he:{out:123,ret:127},st:{out:188,ret:192},lu:{out:176,ret:181},so:{out:138,ret:135},ci:{out:151,ret:154}},
+  lewes:{ga:{out:91,ret:88},he:{out:129,ret:133},st:{out:193,ret:197},lu:{out:181,ret:184},so:{out:140,ret:138},ci:{out:155,ret:158}},
+  horsham:{ga:{out:54,ret:52},he:{out:94,ret:99},st:{out:141,ret:145},lu:{out:120,ret:122},so:{out:104,ret:101},ci:{out:124,ret:128}},
+  crawley:{ga:{out:45,ret:43},he:{out:82,ret:86}},
+  worthing:{ga:{out:85,ret:82},he:{out:121,ret:123}},
+  haywards:{ga:{out:63,ret:62}},
+  burgess:{ga:{out:63,ret:61}},
+  eastbourne:{ga:{out:119,ret:117},he:{out:158,ret:163}},
+  seaford:{ga:{out:108,ret:105}},
+  uckfield:{ga:{out:73,ret:70}},
+  eastgrinstead:{ga:{out:62,ret:58}}
 };
 var APC={ga:[10,10],he:[7,10],st:[10,10],lu:[7,7],so:[5,5],ci:[8,8],lo:[0,0]};
 var APNAMES={ga:'gatwick',he:'heathrow',st:'stansted',lu:'luton',so:'southampton',ci:'cityairport',lo:'london'};
@@ -863,7 +1136,7 @@ function _renderSuggestions(inp,s,apItems,stItems,items){
 }
 
 document.addEventListener('click',function(e){document.querySelectorAll('.sug-drop').forEach(function(s){if(!s.contains(e.target))s.classList.remove('open');});});
-['b-from','b-to'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('focus',function(){this.select();});});
+['b-from','b-to','bk-stop-addr'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('focus',function(){this.select();});});
 function _revGeo(lat,lng){
   if(window._MB){
     return fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+lng+','+lat+'.json?access_token='+_MB+'&language=en&limit=1')
@@ -1287,6 +1560,10 @@ document.addEventListener("DOMContentLoaded", function(){
   if (ov) ov.addEventListener("click", function(e){ if(e.target===this) closeBkModal(); });
   var timeEl = document.getElementById("b-time");
   if (timeEl) timeEl.addEventListener("change", function(){ bkSmartDay(this.value); });
+  var stopEl = document.getElementById('bk-stop');
+  if (stopEl) stopEl.addEventListener('change', function() {
+    document.getElementById('bk-stop-wrap').style.display = this.checked ? '' : 'none';
+  });
 });
 
 // ── STEP NAVIGATION ───────────────────────────────────
@@ -1503,6 +1780,12 @@ function bkConfirm(type) {
   var dn = document.getElementById("bk-driver-note");
   if (dn) dn.style.display = "block";
 
+  // Build notes; stop-on-the-way is sent as its own field (stop_address)
+  var notes = document.getElementById("bk-notes") ? document.getElementById("bk-notes").value : "";
+  var stopAddr = document.getElementById('bk-stop') && document.getElementById('bk-stop').checked
+    ? (document.getElementById('bk-stop-addr') || {}).value
+    : '';
+
   // ── Submit to backend (email + WhatsApp notifications sent server-side) ──
   bkSubmitBooking({
     ref:        ref,
@@ -1519,7 +1802,8 @@ function bkConfirm(type) {
     fare:       null,
     passengers: parseInt(document.getElementById("b-pax").value) || 1,
     bags:       document.getElementById("b-bags").value || "",
-    notes:      document.getElementById("bk-notes") ? document.getElementById("bk-notes").value : "",
+    notes:      notes,
+    stop_address: stopAddr || null,
     payment:    "pending",
     source:     "website",
     returnTrip: returnTrip || undefined
@@ -1843,7 +2127,19 @@ if ('serviceWorker' in navigator) {
     return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
+  var _acctCustomer = null;
+
+  // Toggle between auth views or the dashboard
   function acctShow(viewId) {
+    var wrap = document.getElementById('acct-auth-wrap');
+    var dash = document.getElementById('av-dashboard');
+    if (viewId === 'av-dashboard') {
+      wrap.style.display = 'none';
+      dash.style.display = 'flex';
+      return;
+    }
+    dash.style.display = 'none';
+    wrap.style.display = 'flex';
     document.querySelectorAll('.acct-view').forEach(function (v) { v.classList.remove('active'); });
     var v = document.getElementById(viewId);
     if (v) v.classList.add('active');
@@ -1851,11 +2147,8 @@ if ('serviceWorker' in navigator) {
   window.acctShow = acctShow;
 
   function openAcctPortal(forceView) {
-    var ov = document.getElementById('acct-overlay');
-    ov.style.display = 'flex';
-    requestAnimationFrame(function () { ov.classList.add('open'); });
+    document.getElementById('acct-overlay').classList.add('open');
     document.body.style.overflow = 'hidden';
-    // If a specific view is requested (e.g. password reset), show it directly
     if (forceView) { acctShow(forceView); return; }
     fetch('/api/auth/me', { credentials: 'include' })
       .then(function (r) { return r.json(); })
@@ -1872,16 +2165,10 @@ if ('serviceWorker' in navigator) {
   window.openAcctPortal = openAcctPortal;
 
   function closeAcctPortal() {
-    var ov = document.getElementById('acct-overlay');
-    ov.classList.remove('open');
-    setTimeout(function () { ov.style.display = 'none'; }, 260);
+    document.getElementById('acct-overlay').classList.remove('open');
     document.body.style.overflow = '';
   }
   window.closeAcctPortal = closeAcctPortal;
-
-  document.getElementById('acct-overlay').addEventListener('click', function (e) {
-    if (e.target === this) closeAcctPortal();
-  });
 
   function _setErr(id, msg) {
     var el = document.getElementById(id);
@@ -1967,7 +2254,7 @@ if ('serviceWorker' in navigator) {
       btn.disabled = false; btn.textContent = 'Send Reset Link';
       msgEl.className = 'acct-ok-msg';
       msgEl.textContent = 'If an account exists for ' + email + ', a reset link has been sent. Please check your inbox.';
-      _resetEmail = email; // Save for auto-login after reset
+      _resetEmail = email;
     })
     .catch(function () {
       btn.disabled = false; btn.textContent = 'Send Reset Link';
@@ -1987,38 +2274,96 @@ if ('serviceWorker' in navigator) {
   }
   window.acctSignOut = acctSignOut;
 
-  function acctLoadDashboard(customer) {
-    var nameEl = document.getElementById('acct-dash-name');
-    if (nameEl) nameEl.textContent = customer.full_name || customer.email;
+  function apShowPage(name) {
+    ['bookings','invoices','profile'].forEach(function (n) {
+      document.getElementById('ap-pg-' + n).classList.toggle('on', n === name);
+      document.getElementById('apbn-' + n).classList.toggle('on', n === name);
+    });
+  }
+  window.apShowPage = apShowPage;
 
-    var bList = document.getElementById('acct-bookings-list');
-    bList.innerHTML = '<div class="acct-empty">Loading\u2026</div>';
+  function _renderBkCard(b) {
+    var d   = b.date ? new Date(b.date) : null;
+    var day = d ? d.getDate() : '';
+    var mon = d ? d.toLocaleString('en-GB', { month: 'short' }) : '';
+    var sc  = 's-' + (b.status || 'pending');
+    var fare = b.fare ? '&pound;' + Number(b.fare).toFixed(2) : '';
+    var bId = String(b.id || b.ref || Date.now()).replace(/[^a-zA-Z0-9]/g,'');
+    var _today = new Date(); var _todayStr = _today.getFullYear() + '-' + String(_today.getMonth()+1).padStart(2,'0') + '-' + String(_today.getDate()).padStart(2,'0');
+    var bookAgain = (b.status === 'completed')
+      ? '<br><button class="acct-ba-btn" onclick="acctRepeatTrip(\'' + bId + '\')">Repeat Trip</button>' +
+        '<div class="acct-rt-picker" id="rt-' + bId + '">' +
+          '<div class="acct-rt-row">' +
+            '<input type="date" class="acct-rt-input" id="rt-date-' + bId + '" min="' + _todayStr + '">' +
+            '<input type="time" class="acct-rt-input" id="rt-time-' + bId + '">' +
+          '</div>' +
+          '<button class="acct-rt-confirm" id="rt-btn-' + bId + '" onclick="acctConfirmRepeat(\'' + bId + '\',\'' + _esc(b.pickup).replace(/'/g,"\\'") + '\',\'' + _esc(b.destination).replace(/'/g,"\\'") + '\',' + (b.passengers || 1) + ')">Confirm Booking</button>' +
+          '<div class="acct-rt-msg" id="rt-msg-' + bId + '"></div>' +
+        '</div>'
+      : '';
+    // Payment info
+    var payInfo = '';
+    if (b.paid_at) {
+      var paidDate = b.paid_at.replace('T',' ').slice(0,16);
+      var payMethod = b.payment === 'card' ? 'Card' : b.payment === 'cash' ? 'Cash' : (b.payment || '');
+      payInfo = '<div style="font-size:.6rem;color:#2D6E47;margin-top:.2rem">Paid ' + fare + ' · ' + _esc(payMethod) + ' · ' + _esc(paidDate) + '</div>';
+    } else if (b.fare && b.status !== 'cancelled') {
+      payInfo = '<div style="font-size:.6rem;color:rgba(17,29,44,.4);margin-top:.2rem">Awaiting payment · ' + fare + '</div>';
+    }
+    return '<div class="acct-bk-card">' +
+      '<div class="acct-bk-date"><span class="acct-bk-day">' + day + '</span><span class="acct-bk-mon">' + _esc(mon) + '</span></div>' +
+      '<div class="acct-bk-body">' +
+        '<div class="acct-bk-route">' + _esc(b.pickup) + ' &rarr; ' + _esc(b.destination) + '</div>' +
+        '<div class="acct-bk-meta">' +
+          (b.time ? '<span>' + _esc(b.time) + '</span>' : '') +
+          (b.ref  ? '<span>' + _esc(b.ref)  + '</span>' : '') +
+        '</div>' +
+        '<span class="acct-status ' + sc + '">' + _esc(b.status || 'pending') + '</span>' +
+        payInfo +
+        bookAgain +
+      '</div>' +
+      (fare ? '<div class="acct-bk-right"><span class="acct-bk-fare">' + fare + '</span></div>' : '') +
+    '</div>';
+  }
+
+  function acctLoadDashboard(customer) {
+    _acctCustomer = customer;
+    // Profile fields
+    var el;
+    el = document.getElementById('pf-name');  if (el) el.textContent = customer.full_name || '';
+    el = document.getElementById('pf-email'); if (el) el.textContent = customer.email || '';
+    el = document.getElementById('pf-phone'); if (el) el.textContent = customer.phone || '\u2014';
+
+    // Bookings — split into upcoming / past
+    var upEl   = document.getElementById('acct-bookings-upcoming');
+    var pastEl = document.getElementById('acct-bookings-past');
+    var pastLbl  = document.getElementById('ap-pg-past-lbl');
+    var pastCard = document.getElementById('ap-past-card');
+    upEl.innerHTML = '<div class="acct-empty">Loading\u2026</div>';
     fetch('/api/bookings', { credentials: 'include' })
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (!d.ok || !d.bookings || !d.bookings.length) {
-          bList.innerHTML = '<div class="acct-empty">No bookings yet.</div>';
+          upEl.innerHTML = '<div class="acct-empty">No bookings yet.</div>';
           return;
         }
-        bList.innerHTML = d.bookings.map(function (b) {
-          var sc = 's-' + (b.status || 'pending');
-          var bookAgain = b.status === 'completed'
-            ? '<br><button class="acct-ba-btn" onclick="acctBookAgain(' + JSON.stringify(b.pickup) + ',' + JSON.stringify(b.destination) + ')">Book Again</button>'
-            : '';
-          return '<div class="acct-bk-card">' +
-            '<div class="acct-bk-route">' + _esc(b.pickup) + ' &rarr; ' + _esc(b.destination) + '</div>' +
-            '<div class="acct-bk-meta">' +
-              '<span>' + _esc(b.date || '') + (b.time ? ' &middot; ' + _esc(b.time) : '') + '</span>' +
-              (b.fare ? '<span>&pound;' + Number(b.fare).toFixed(2) + '</span>' : '') +
-              (b.ref  ? '<span>' + _esc(b.ref) + '</span>' : '') +
-            '</div>' +
-            '<span class="acct-status ' + sc + '">' + _esc(b.status || 'pending') + '</span>' +
-            bookAgain +
-          '</div>';
-        }).join('');
+        var now = new Date(); now.setHours(0, 0, 0, 0);
+        var upcoming = [], past = [];
+        d.bookings.forEach(function (b) {
+          var bd = b.date ? new Date(b.date) : null;
+          if (bd && bd < now && b.status !== 'confirmed' && b.status !== 'active') past.push(b);
+          else upcoming.push(b);
+        });
+        upEl.innerHTML = upcoming.length ? upcoming.map(_renderBkCard).join('') : '<div class="acct-empty">No upcoming bookings.</div>';
+        if (past.length) {
+          pastEl.innerHTML = past.map(_renderBkCard).join('');
+          if (pastLbl)  pastLbl.style.display  = '';
+          if (pastCard) pastCard.style.display  = '';
+        }
       })
-      .catch(function () { bList.innerHTML = '<div class="acct-empty">Could not load bookings.</div>'; });
+      .catch(function () { upEl.innerHTML = '<div class="acct-empty">Could not load bookings.</div>'; });
 
+    // Invoices
     var iList = document.getElementById('acct-invoices-list');
     iList.innerHTML = '<div class="acct-empty">Loading\u2026</div>';
     fetch('/api/customer/invoices', { credentials: 'include' })
@@ -2033,7 +2378,7 @@ if ('serviceWorker' in navigator) {
           var paidLbl = inv.paid ? 'Paid' : 'Unpaid';
           return '<div class="acct-inv-card">' +
             '<div>' +
-              '<div class="acct-inv-no">' + _esc(inv.invoice_no || '') + '</div>' +
+              '<div class="acct-inv-no">'  + _esc(inv.invoice_no || '') + '</div>' +
               '<div class="acct-inv-amt">&pound;' + (inv.total ? Number(inv.total).toFixed(2) : '0.00') + '</div>' +
               '<div class="acct-inv-date">' + _esc(inv.issued_date || inv.created_at || '') + '</div>' +
               '<a class="acct-inv-dl" href="/api/public/invoice/' + encodeURIComponent(inv.invoice_no || '') + '/pdf" target="_blank" rel="noopener">Download PDF</a>' +
@@ -2046,16 +2391,47 @@ if ('serviceWorker' in navigator) {
   }
   window.acctLoadDashboard = acctLoadDashboard;
 
-  function acctBookAgain(pickup, destination) {
-    closeAcctPortal();
-    var fromEl = document.getElementById('b-from');
-    var toEl   = document.getElementById('b-to');
-    if (fromEl) { fromEl.value = pickup;      fromEl.dispatchEvent(new Event('input')); }
-    if (toEl)   { toEl.value   = destination; toEl.dispatchEvent(new Event('input')); toEl.dispatchEvent(new Event('change')); }
-    var bk = document.getElementById('booking');
-    if (bk) bk.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  function acctRepeatTrip(bId) {
+    var el = document.getElementById('rt-' + bId);
+    if (!el) return;
+    el.classList.toggle('open');
   }
-  window.acctBookAgain = acctBookAgain;
+  window.acctRepeatTrip = acctRepeatTrip;
+
+  function acctConfirmRepeat(bId, pickup, destination, passengers) {
+    var dateEl = document.getElementById('rt-date-' + bId);
+    var timeEl = document.getElementById('rt-time-' + bId);
+    var msgEl  = document.getElementById('rt-msg-' + bId);
+    var btnEl  = document.getElementById('rt-btn-' + bId);
+    var date   = dateEl ? dateEl.value : '';
+    var time   = timeEl ? timeEl.value : '';
+    if (msgEl) { msgEl.textContent = ''; msgEl.className = 'acct-rt-msg'; }
+    if (!date) { if (msgEl) { msgEl.textContent = 'Please select a date.'; msgEl.className = 'acct-rt-msg acct-rt-err'; } return; }
+    if (!time) { if (msgEl) { msgEl.textContent = 'Please select a time.'; msgEl.className = 'acct-rt-msg acct-rt-err'; } return; }
+    if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Booking\u2026'; }
+    var name  = _acctCustomer ? (_acctCustomer.full_name || '') : '';
+    var email = _acctCustomer ? (_acctCustomer.email || '') : '';
+    var phone = _acctCustomer ? (_acctCustomer.phone || '') : '';
+    fetch('/api/public/book', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pickup: pickup, destination: destination, date: date, time: time,
+        passengers: passengers || 1, name: name, email: email, phone: phone, payment: 'pending' })
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Confirm Booking'; }
+      if (d.ok) {
+        if (msgEl) { msgEl.innerHTML = '<span class="acct-rt-ok">Booked! Check your email for confirmation.</span>'; }
+        if (btnEl) btnEl.style.display = 'none';
+      } else {
+        if (msgEl) { msgEl.textContent = d.error || 'Could not create booking. Please try again.'; msgEl.className = 'acct-rt-msg acct-rt-err'; }
+      }
+    }).catch(function () {
+      if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Confirm Booking'; }
+      if (msgEl) { msgEl.textContent = 'Network error. Please try again.'; msgEl.className = 'acct-rt-msg acct-rt-err'; }
+    });
+  }
+  window.acctConfirmRepeat = acctConfirmRepeat;
 
   // Enter key support
   ['al-email', 'al-pass'].forEach(function (id) {
@@ -2069,17 +2445,17 @@ if ('serviceWorker' in navigator) {
   var _resetToken = null;
   var _resetEmail = '';
   function acctResetPassword() {
-    var pass = (document.getElementById('ar-pass') || {}).value || '';
-    var pass2 = (document.getElementById('ar-pass2') || {}).value || '';
-    var errEl = document.getElementById('ar-err');
-    var msgEl = document.getElementById('ar-msg');
+    var pass  = (document.getElementById('rst-pass')  || {}).value || '';
+    var pass2 = (document.getElementById('rst-pass2') || {}).value || '';
+    var errEl = document.getElementById('rst-err');
+    var msgEl = document.getElementById('rst-msg');
     if (errEl) errEl.textContent = '';
     if (msgEl) msgEl.innerHTML = '';
     if (pass.length < 8) { if (errEl) errEl.textContent = 'Password must be at least 8 characters'; return; }
-    if (pass !== pass2) { if (errEl) errEl.textContent = 'Passwords do not match'; return; }
-    if (!_resetToken) { if (errEl) errEl.textContent = 'Reset link is invalid or expired'; return; }
+    if (pass !== pass2)  { if (errEl) errEl.textContent = 'Passwords do not match'; return; }
+    if (!_resetToken)    { if (errEl) errEl.textContent = 'Reset link is invalid or expired. Please request a new one.'; return; }
     var btn = document.querySelector('#av-reset .acct-btn');
-    if (btn) { btn.disabled = true; btn.textContent = 'Updating…'; }
+    if (btn) { btn.disabled = true; btn.textContent = 'Updating\u2026'; }
     fetch('/api/auth/customer/reset-password', {
       method: 'POST', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -2087,23 +2463,18 @@ if ('serviceWorker' in navigator) {
     }).then(function (r) { return r.json(); }).then(function (d) {
       if (btn) { btn.disabled = false; btn.textContent = 'Set New Password'; }
       if (d.ok) {
-        if (msgEl) msgEl.innerHTML = '<div class="acct-ok-msg">Password updated! Signing you in&hellip;</div>';
-        var resetEmail = (document.getElementById('ar-email') || {}).value || _resetEmail || '';
+        if (msgEl) msgEl.innerHTML = '<div class="acct-ok-msg">Password updated! Signing you in\u2026</div>';
+        var resetEmail = (document.getElementById('rst-email') || {}).value || _resetEmail || '';
         _resetToken = null;
         if (window.history.replaceState) window.history.replaceState({}, '', window.location.pathname);
-        // Auto sign-in with the new password
         if (resetEmail) {
           fetch('/api/auth/customer/login', {
             method: 'POST', credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: resetEmail, password: pass })
           }).then(function (r) { return r.json(); }).then(function (ld) {
-            if (ld.ok) {
-              acctShow('av-dashboard');
-              acctLoadDashboard(ld.customer);
-            } else {
-              acctShow('av-login');
-            }
+            if (ld.ok) { acctShow('av-dashboard'); acctLoadDashboard(ld.customer); }
+            else { acctShow('av-login'); }
           }).catch(function () { acctShow('av-login'); });
         } else {
           setTimeout(function () { acctShow('av-login'); }, 1500);
@@ -2113,22 +2484,19 @@ if ('serviceWorker' in navigator) {
       }
     }).catch(function () {
       if (btn) { btn.disabled = false; btn.textContent = 'Set New Password'; }
-      if (errEl) errEl.textContent = 'Network error — please try again';
+      if (errEl) errEl.textContent = 'Network error \u2014 please try again';
     });
   }
   window.acctResetPassword = acctResetPassword;
 
   // Auto-open account panel if reset_token is in the URL
-  var urlParams = new URLSearchParams(window.location.search);
+  var urlParams  = new URLSearchParams(window.location.search);
   var resetParam = urlParams.get('reset_token');
   if (resetParam) {
     _resetToken = resetParam;
-    // Skip intro animation and open reset form directly
     var intro = document.getElementById('intro');
     if (intro) { intro.style.display = 'none'; }
-    setTimeout(function () {
-      openAcctPortal('av-reset');
-    }, 300);
+    setTimeout(function () { openAcctPortal('av-reset'); }, 300);
   }
 })();
 </script>

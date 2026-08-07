@@ -248,7 +248,7 @@ function bookingToEvent(booking) {
   } else {
     // All-day if no time
     return {
-      summary: `Pickup: ${_tinyAddr(booking.pickup) || '?'} → ${_tinyAddr(booking.destination) || '?'}`,
+      summary: booking.customer_name && !booking.pickup ? booking.customer_name : `${_tinyAddr(booking.pickup) || '?'} → ${_tinyAddr(booking.destination) || '?'}`,
       description: buildDescription(booking),
       start: { date: booking.date },
       end: { date: booking.date }
@@ -256,7 +256,7 @@ function bookingToEvent(booking) {
   }
 
   return {
-    summary: `Pickup: ${_tinyAddr(booking.pickup) || '?'} → ${_tinyAddr(booking.destination) || '?'}`,
+    summary: booking.customer_name && !booking.pickup ? booking.customer_name : `${_tinyAddr(booking.pickup) || '?'} → ${_tinyAddr(booking.destination) || '?'}`,
     description: buildDescription(booking),
     location: _shortAddr(booking.pickup) || booking.pickup || '',
     start: { dateTime: startIso, timeZone: tz },
@@ -284,7 +284,7 @@ function buildDescription(b) {
   ].filter(Boolean).join('  \u00b7  ');
   const lines = [
     `${b.customer_name || 'Guest'}${b.customer_phone ? '  \u00b7  ' + b.customer_phone : ''}`,
-    `${_shortAddr(b.pickup) || '?'} \u2192 ${_shortAddr(b.destination) || '?'}`,
+    b.stop_address ? `Stop: ${_shortAddr(b.stop_address) || b.stop_address}` : null,
     money || null,
     extras || null,
     b.notes ? `Notes: ${b.notes}` : null,
@@ -383,12 +383,18 @@ async function pullChanges() {
         continue;
       }
 
-      // Pull time changes
+      // Pull time changes — use Europe/London timezone so BST/GMT is correct.
+      // FIX: getHours() returns UTC on Railway servers, causing 07:00 BST to
+      // be stored as 06:00. Using Intl.DateTimeFormat with Europe/London instead.
       if (ev.start && ev.start.dateTime) {
         const d = new Date(ev.start.dateTime);
-        const pad = n => String(n).padStart(2, '0');
-        const newDate = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-        const newTime = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        const ukParts = new Intl.DateTimeFormat('en-GB', {
+          timeZone: 'Europe/London',
+          year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', hour12: false
+        }).formatToParts(d).reduce((o, p) => { o[p.type] = p.value; return o; }, {});
+        const newDate = `${ukParts.year}-${ukParts.month}-${ukParts.day}`;
+        const newTime = `${ukParts.hour}:${ukParts.minute}`;
         if (newDate !== booking.date || newTime !== booking.time) {
           db.prepare("UPDATE bookings SET date = ?, time = ?, updated_at = datetime('now') WHERE id = ?").run(newDate, newTime, bookingId);
           changed++;

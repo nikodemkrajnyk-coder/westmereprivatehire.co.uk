@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const { getDb, DATA_DIR } = require('./db');
-const { sendAdminAlert, sendCustomerCancellation } = require('./email');
+const { sendAdminAlert, sendCustomerCancellation, sendCorporateIntro } = require('./email');
 const { sendAdminBookingWhatsApp } = require('./whatsapp');
 const gcal = require('./google-calendar');
 const events = require('./events');
@@ -12,6 +12,23 @@ let autoFile;
 try { autoFile = require('./auto-file'); } catch(e) { autoFile = { fileBooking(){}, fileCustomer(){}, fileInvoice(){}, removeBooking(){}, removeInvoice(){}, updateEarnings(){}, fileDriverProfile(){}, fileDriverDoc(){} }; console.error('[AUTOFILE] Module failed:', e.message); }
 
 const router = express.Router();
+
+// ── UK timezone helper ───────────────────────────────────────────────────
+// Server runs in UTC on Railway; all business logic must use Europe/London.
+function ukNow() {
+  const p = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/London',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+  }).formatToParts(new Date()).reduce((o, p) => { o[p.type] = p.value; return o; }, {});
+  return {
+    year: parseInt(p.year), month: parseInt(p.month), day: parseInt(p.day),
+    hour: parseInt(p.hour), minute: parseInt(p.minute), second: parseInt(p.second),
+    dateStr: `${p.year}-${p.month}-${p.day}`,
+    timeStr: `${p.hour}:${p.minute}`,
+    dayOfWeek: new Date(new Date().toLocaleString('en-US', {timeZone:'Europe/London'})).getDay()
+  };
+}
 
 // ── Bookings ────────────────────────────────────────────────────────────
 
@@ -186,7 +203,7 @@ router.patch('/bookings/:id', (req, res) => {
     return res.status(403).json({ error: 'You can only update your own bookings' });
   }
 
-  const allowed = ['status', 'driver_id', 'fare', 'notes', 'payment', 'passenger_name', 'passenger_phone', 'passenger_email', 'pickup', 'destination', 'date', 'time', 'passengers', 'customer_id', 'paid_at', 'trip_miles'];
+  const allowed = ['status', 'driver_id', 'fare', 'notes', 'payment', 'passenger_name', 'passenger_phone', 'passenger_email', 'pickup', 'destination', 'stop_address', 'date', 'time', 'passengers', 'customer_id', 'paid_at', 'trip_miles'];
   const updates = [];
   const values = [];
   for (const key of allowed) {
@@ -253,6 +270,26 @@ router.patch('/bookings/:id', (req, res) => {
     // Auto-file updated booking (non-blocking)
     autoFile.fileBooking(updated);
     if (updated.status === 'completed') autoFile.updateEarnings(updated.date ? updated.date.slice(0, 7) : null, getDb);
+
+    // Send a one-time review request email on first completed booking per email
+    if (updated.status === 'completed') {
+      const { sendReviewRequest } = require('./email');
+      const reviewEmail = updated.passenger_email ||
+        (updated.customer_id ? (db.prepare('SELECT email FROM customers WHERE id = ?').get(updated.customer_id) || {}).email : null);
+      if (reviewEmail) {
+        const already = db.prepare('SELECT id FROM review_emails_sent WHERE email = ?').get(reviewEmail.toLowerCase());
+        if (!already) {
+          const firstName = (updated.customer_name || updated.passenger_name || '').split(' ')[0] || 'there';
+          sendReviewRequest(reviewEmail, firstName, updated.ref)
+            .then(ok => {
+              if (ok) {
+                try { db.prepare('INSERT OR IGNORE INTO review_emails_sent (email) VALUES (?)').run(reviewEmail.toLowerCase()); } catch (_) {}
+              }
+            })
+            .catch(e => console.error('[API] sendReviewRequest failed:', e.message));
+        }
+      }
+    }
 
     // ── Operator's shared calendar ───────────────────────────────────────
     if (updated.status === 'cancelled' && updated.calendar_event_id) {
@@ -704,10 +741,10 @@ router.post('/customers/:id/invoice', async (req, res) => {
 
   const invoiceNo = nextInvoiceNo(db, invoicePrefix);
 
-  const due = new Date();
-  due.setDate(due.getDate() + 14);
-  const dueDate = due.toISOString().slice(0, 10);
-  const issuedDate = new Date().toISOString().slice(0, 10);
+  const issuedDate = ukNow().dateStr;
+  const _due = new Date(issuedDate + 'T00:00:00');
+  _due.setDate(_due.getDate() + 14);
+  const dueDate = _due.toISOString().slice(0, 10);
 
   let settings = {};
   try {
@@ -808,14 +845,14 @@ router.post('/invoices/bespoke', async (req, res) => {
   }
 
   const db = getDb();
-  const now = new Date();
-  const invoicePrefix = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0');
+  const _ukn = ukNow();
+  const invoicePrefix = String(_ukn.year) + String(_ukn.month).padStart(2, '0');
   const invoiceNo = nextInvoiceNo(db, invoicePrefix);
 
-  const due = new Date();
-  due.setDate(due.getDate() + (parseInt(due_days, 10) || 14));
-  const dueDate = due.toISOString().slice(0, 10);
-  const issuedDate = now.toISOString().slice(0, 10);
+  const issuedDate = _ukn.dateStr;
+  const _due = new Date(issuedDate + 'T00:00:00');
+  _due.setDate(_due.getDate() + (parseInt(due_days, 10) || 14));
+  const dueDate = _due.toISOString().slice(0, 10);
 
   let settings = {};
   try {
@@ -1197,6 +1234,119 @@ router.patch('/invoices/:id/mark-unpaid', (req, res) => {
 });
 
 // Send a payment reminder email for an outstanding (unpaid) invoice.
+// ── Payment reminder for unpaid bookings ─────────────────────────────────
+// ── Resend confirmation email ────────────────────────────────────────────
+router.post('/bookings/:id/send-confirmation', async (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  try {
+    const intake = require('./intake');
+    await intake.notifyCustomerConfirmed(parseInt(req.params.id, 10));
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[API] send-confirmation failed:', e.message);
+    res.status(500).json({ error: 'Failed to send confirmation' });
+  }
+});
+
+// ── Send estimate email ──────────────────────────────────────────────────
+router.post('/bookings/:id/send-estimate', async (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+  const b = db.prepare(`
+    SELECT b.*, COALESCE(c.email, b.passenger_email) as contact_email,
+           COALESCE(c.full_name, b.passenger_name) as contact_name
+    FROM bookings b LEFT JOIN customers c ON b.customer_id = c.id
+    WHERE b.id = ?
+  `).get(id);
+  if (!b) return res.status(404).json({ error: 'Booking not found' });
+  if (!b.contact_email) return res.status(400).json({ error: 'No email address on this booking' });
+  if (!b.fare || Number(b.fare) <= 0) return res.status(400).json({ error: 'Set a fare before sending an estimate' });
+  try {
+    const { sendCustomerEstimate } = require('./email');
+    const ok = await sendCustomerEstimate({
+      ref: b.ref, name: b.contact_name, email: b.contact_email,
+      pickup: b.pickup, destination: b.destination, stop_address: b.stop_address,
+      date: b.date, time: b.time, flight: b.flight, passengers: b.passengers,
+      fare: b.fare, notes: b.notes
+    });
+    if (ok) res.json({ ok: true });
+    else res.status(500).json({ error: 'Email send failed' });
+  } catch (e) {
+    console.error('[API] send-estimate failed:', e.message);
+    res.status(500).json({ error: 'Failed to send estimate' });
+  }
+});
+
+// Sends a branded email asking the customer to pay, with card-only options
+// (no cash). Used when a completed booking hasn't been paid.
+// ── Corporate introduction email ─────────────────────────────────────────
+router.post('/send-corporate-intro', async (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const { email, company } = req.body || {};
+  if (!email) return res.status(400).json({ error: 'Email is required' });
+  try {
+    const ok = await sendCorporateIntro(email, company || '');
+    if (ok) res.json({ ok: true });
+    else res.status(500).json({ error: 'Email send failed' });
+  } catch (e) {
+    console.error('[API] corporate intro failed:', e.message);
+    res.status(500).json({ error: 'Failed to send' });
+  }
+});
+
+router.post('/bookings/:id/payment-reminder', async (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+
+  const b = db.prepare(`
+    SELECT b.*, COALESCE(c.email, b.passenger_email) as contact_email,
+           COALESCE(c.full_name, b.passenger_name) as contact_name
+    FROM bookings b LEFT JOIN customers c ON b.customer_id = c.id
+    WHERE b.id = ?
+  `).get(id);
+  if (!b) return res.status(404).json({ error: 'Booking not found' });
+  if (!b.contact_email) return res.status(400).json({ error: 'No email address on this booking' });
+  if (b.paid_at) return res.status(409).json({ error: 'This booking is already paid' });
+
+  try {
+    const { sendPaymentReminder } = require('./email');
+    const ok = await sendPaymentReminder({
+      email: b.contact_email,
+      name: b.contact_name || '',
+      ref: b.ref,
+      fare: b.fare,
+      pickup: b.pickup,
+      destination: b.destination,
+      date: b.date,
+      time: b.time,
+      pay_token: b.pay_token
+    });
+    if (!ok) return res.status(502).json({ error: 'Email delivery failed' });
+
+    try {
+      db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+        .run(req.auth.type || 'user', req.auth.id, 'payment_reminder_sent', b.ref + ' to ' + b.contact_email, req.ip);
+    } catch (_) {}
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[API] payment reminder failed:', e.message);
+    res.status(500).json({ error: 'Failed to send reminder' });
+  }
+});
+
 router.post('/invoices/:id/remind', async (req, res) => {
   if (!['admin', 'owner'].includes(req.auth.role)) {
     return res.status(403).json({ error: 'Access denied' });
@@ -1627,10 +1777,9 @@ router.get('/drivers/:id/earnings', (req, res) => {
   // Default range: current week (Mon–Sun) if nothing provided.
   let from = req.query.from, to = req.query.to;
   if (!from || !to) {
-    const now = new Date();
-    const day = now.getDay(); // 0=Sun
-    const diffToMon = (day + 6) % 7;
-    const mon = new Date(now); mon.setDate(now.getDate() - diffToMon); mon.setHours(0,0,0,0);
+    const { dateStr: _today, dayOfWeek: _dow } = ukNow();
+    const _diffToMon = (_dow + 6) % 7; // Mon=0
+    const mon = new Date(_today + 'T00:00:00'); mon.setDate(mon.getDate() - _diffToMon);
     const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
     from = mon.toISOString().slice(0, 10);
     to   = sun.toISOString().slice(0, 10);
@@ -1692,9 +1841,9 @@ router.get('/me/earnings', (req, res) => {
   const db = getDb();
   let from = req.query.from, to = req.query.to;
   if (!from || !to) {
-    const now = new Date();
-    const day = now.getDay(); const diffToMon = (day + 6) % 7;
-    const mon = new Date(now); mon.setDate(now.getDate() - diffToMon); mon.setHours(0,0,0,0);
+    const { dateStr: _today2, dayOfWeek: _dow2 } = ukNow();
+    const _diffToMon2 = (_dow2 + 6) % 7; // Mon=0
+    const mon = new Date(_today2 + 'T00:00:00'); mon.setDate(mon.getDate() - _diffToMon2);
     const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
     from = mon.toISOString().slice(0, 10); to = sun.toISOString().slice(0, 10);
   }
@@ -1815,7 +1964,7 @@ router.get('/stats', (req, res) => {
   }
 
   const db = getDb();
-  const today = new Date().toISOString().split('T')[0];
+  const today = ukNow().dateStr;
 
   const totalBookings = db.prepare('SELECT COUNT(*) as c FROM bookings').get().c;
   const todayBookings = db.prepare('SELECT COUNT(*) as c FROM bookings WHERE date = ?').get(today).c;
@@ -1846,21 +1995,12 @@ router.get('/mileage', (req, res) => {
   const db = getDb();
 
   // UK timezone dates
-  const ukParts = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit'
-  }).formatToParts(new Date()).reduce((o, p) => { o[p.type] = p.value; return o; }, {});
-  const today = `${ukParts.year}-${ukParts.month}-${ukParts.day}`;
-  const now = new Date();
-  const dayOfWeek = (now.getDay() + 6) % 7; // Mon=0
-  const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - dayOfWeek);
-  const weekStartStr = weekStart.toISOString().split('T')[0];
+  const { dateStr: today, dayOfWeek: _milDow, year: yr, month: mo, day: dy } = ukNow();
+  const _milDiffToMon = (_milDow + 6) % 7; // Mon=0
+  const weekStart = new Date(today + 'T00:00:00');
+  weekStart.setDate(weekStart.getDate() - _milDiffToMon);
+  const weekStartStr = weekStart.toISOString().slice(0, 10);
   const monthStart = today.slice(0, 7) + '-01';
-
-  // Tax year: 6 Apr to 5 Apr
-  const yr = parseInt(ukParts.year, 10);
-  const mo = parseInt(ukParts.month, 10);
-  const dy = parseInt(ukParts.day, 10);
   const taxYearStart = (mo > 4 || (mo === 4 && dy >= 6))
     ? `${yr}-04-06`
     : `${yr - 1}-04-06`;
@@ -1927,12 +2067,11 @@ router.post('/mileage/backfill', async (req, res) => {
 router.get('/analytics', (req, res) => {
   if (!['admin', 'owner'].includes(req.auth.role)) return res.status(403).json({ error: 'Access denied' });
   const db = getDb();
-  const now = new Date();
-  const today = now.toISOString().split('T')[0];
-  const dayOfWeek = (now.getDay() + 6) % 7; // Mon=0
-  const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - dayOfWeek);
-  const weekStartStr = weekStart.toISOString().split('T')[0];
+  const { dateStr: today, dayOfWeek: _anDow } = ukNow();
+  const _anDiffToMon = (_anDow + 6) % 7; // Mon=0
+  const weekStart = new Date(today + 'T00:00:00');
+  weekStart.setDate(weekStart.getDate() - _anDiffToMon);
+  const weekStartStr = weekStart.toISOString().slice(0, 10);
   const monthStart = today.slice(0, 7) + '-01';
 
   // Revenue = money actually received only: cash collected on a completed job,
@@ -2041,6 +2180,19 @@ router.get('/stripe/payouts', ownerOnly, async (req, res) => {
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
+});
+
+// One-time admin helper: clear the review_emails_sent record so the review
+// email can be re-sent on the next status→completed transition.
+router.delete('/review-reset/:email', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const db = getDb();
+  const email = (req.params.email || '').toLowerCase();
+  if (!email) return res.status(400).json({ error: 'email required' });
+  const result = db.prepare('DELETE FROM review_emails_sent WHERE email = ?').run(email);
+  res.json({ ok: true, deleted: result.changes });
 });
 
 module.exports = router;

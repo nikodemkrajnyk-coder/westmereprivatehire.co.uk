@@ -17,6 +17,22 @@ const events = require('./events');
 let autoFile;
 try { autoFile = require('./auto-file'); } catch(e) { autoFile = { fileBooking(){} }; console.error('[AUTOFILE] Module failed:', e.message); }
 
+// ── UK timezone helper ───────────────────────────────────────────────────
+function ukNow() {
+  const p = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/London',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+  }).formatToParts(new Date()).reduce((o, p) => { o[p.type] = p.value; return o; }, {});
+  return {
+    year: parseInt(p.year), month: parseInt(p.month), day: parseInt(p.day),
+    hour: parseInt(p.hour), minute: parseInt(p.minute), second: parseInt(p.second),
+    dateStr: `${p.year}-${p.month}-${p.day}`,
+    timeStr: `${p.hour}:${p.minute}`,
+    dayOfWeek: new Date(new Date().toLocaleString('en-US', {timeZone:'Europe/London'})).getDay()
+  };
+}
+
 const router = express.Router();
 
 // ── Branded standalone page for the "Pay on the day" link ────────────────
@@ -25,15 +41,16 @@ const router = express.Router();
 function cashPage(state, message, ref) {
   const okIcon   = '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 6L9 17l-5-5"/></svg>';
   const infoIcon = '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>';
+  const isConfirm = state === 'confirm';
   const isErr = state === 'error';
-  const heading = state === 'ok' ? 'Thank you' : (state === 'paid' ? 'Already paid' : 'Link not available');
-  const icoCls = isErr ? 'info' : 'ok';
-  const ico = isErr ? infoIcon : okIcon;
+  const heading = state === 'ok' ? 'Thank you' : (state === 'paid' ? 'Already paid' : (isConfirm ? 'Pay on the day' : 'Link not available'));
+  const icoCls = (isErr || isConfirm) ? 'info' : 'ok';
+  const ico = (isErr || isConfirm) ? infoIcon : okIcon;
   const refLine = ref ? `<p style="margin-top:12px" class="muted-ref">Ref: ${String(ref).replace(/[<>&"]/g, '')}</p>` : '';
   return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
 <meta name="theme-color" content="#111D2C"><meta name="robots" content="noindex,nofollow">
-<title>Your journey | Westmere Executive Private Hire</title>
+<title>Your journey | Westmere Private Hire</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -56,12 +73,13 @@ body{font-family:var(--sans);font-weight:300;color:var(--text);background:var(--
 a.link{color:var(--gold);text-decoration:none}
 </style></head>
 <body><div class="card">
-  <div class="head"><div class="brand">Executive Private Hire</div><div class="brand-name">Westmere</div></div>
+  <div class="head"><div class="brand">Private Hire</div><div class="brand-name">Westmere</div></div>
   <div class="body"><div class="state">
     <div class="ico ${icoCls}">${ico}</div>
     <h2>${heading}</h2>
     <p>${message}</p>
     ${refLine}
+    ${isConfirm ? `<form method="POST" style="margin-top:20px"><button type="submit" style="width:100%;padding:14px;background:var(--navy);color:#fff;border:none;border-radius:6px;font-family:var(--sans);font-size:13px;font-weight:500;letter-spacing:2px;text-transform:uppercase;cursor:pointer">Confirm — Pay on the Day</button></form>` : ''}
     <p style="margin-top:16px;font-size:13px">Questions? Call us on <a class="link" href="tel:+447930342593">07930&nbsp;342593</a>.</p>
   </div></div>
 </div></body></html>`;
@@ -72,16 +90,17 @@ router.post('/book', async (req, res) => {
   try {
     const { name, email, phone, pickup, destination, date, time,
             passengers, bags, flight, fare, payment, notes, source,
+            stop_address,
             pickup_lat: clientPickupLat, pickup_lng: clientPickupLng,
             returnTrip } = req.body;
 
     // Validate required fields
-    if (!name || !phone || !pickup || !destination) {
-      return res.status(400).json({ error: 'Name, phone, pickup, and destination are required' });
+    if (!name || !pickup || !destination) {
+      return res.status(400).json({ error: 'Name, pickup, and destination are required' });
     }
 
     // Default date to today if not provided
-    const bookingDate = date || new Date().toISOString().split('T')[0];
+    const bookingDate = date || ukNow().dateStr;
 
     // Reject bookings in the past — if a customer picks a date that has
     // already passed, or today with a time that has already gone by, bail
@@ -194,13 +213,15 @@ router.post('/book', async (req, res) => {
     }
 
     // Insert booking
-    const storedTime = time || 'ASAP';
-    console.log(`[BOOK] ${ref} inserting with time="${storedTime}" (raw input: "${time}")`);
+    // IMPORTANT: The customer sends their LOCAL time (Europe/London).
+    // Store it exactly as received — no timezone conversion.
+    const storedTime = String(time || 'ASAP').trim();
+    console.log(`[BOOK] ${ref} time="${storedTime}" raw="${time}" type=${typeof time} body.time="${req.body.time}"`);
     const result = db.prepare(`
       INSERT INTO bookings (ref, customer_id, driver_id, pickup, destination, date, time,
                             passengers, bags, trip_type, flight, fare, payment, notes, status,
-                            passenger_name, passenger_phone, passenger_email, suggested_fare)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            passenger_name, passenger_phone, passenger_email, suggested_fare, stop_address)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       ref, customerId, finalDriverId,
       pickup, destination, bookingDate, storedTime,
@@ -211,7 +232,8 @@ router.post('/book', async (req, res) => {
       (name || '').trim() || null,
       (phone || '').trim() || null,
       (email || '').trim().toLowerCase() || null,
-      suggestedFare
+      suggestedFare,
+      (stop_address || '').trim() || null
     );
 
     // Verify stored time matches input
@@ -303,7 +325,7 @@ router.post('/book', async (req, res) => {
     // Build notification payload
     const booking = {
       ref, name, email, phone, pickup, destination, date: bookingDate, time,
-      passengers, bags, flight, fare: finalFare, payment, notes
+      passengers, bags, flight, fare: finalFare, payment, notes, stop_address
     };
 
     // Send admin notifications in background (don't block the response).
@@ -322,7 +344,7 @@ router.post('/book', async (req, res) => {
     gcal.createEvent({
       id: result.lastInsertRowid, ref, pickup, destination,
       date: bookingDate, time: time || 'ASAP',
-      passengers, bags, flight, fare, payment, notes,
+      passengers, bags, flight, fare, payment, notes, stop_address,
       customer_name: name, customer_phone: phone,
       status: 'pending'
     }).then(eventId => {
@@ -399,7 +421,7 @@ router.get('/pay/:ref', (req, res) => {
     if (!ref || !token) return res.status(400).json({ error: 'Booking reference and token required' });
 
     const b = db.prepare(`
-      SELECT ref, pickup, destination, date, time, fare, status, payment, pay_token, paid_at
+      SELECT ref, pickup, destination, stop_address, date, time, fare, status, payment, pay_token, paid_at, notes
         FROM bookings WHERE ref = ?
     `).get(ref);
     if (!b || !b.pay_token || b.pay_token !== token) {
@@ -414,9 +436,11 @@ router.get('/pay/:ref', (req, res) => {
         ref: b.ref,
         pickup: b.pickup,
         destination: b.destination,
+        stop_address: b.stop_address || null,
         date: b.date,
         time: b.time,
         fare: b.fare,
+        notes: b.notes || null,
         status: b.status,
         paid,
         cancelled: b.status === 'cancelled',
@@ -473,9 +497,51 @@ router.post('/pay/:ref/intent', async (req, res) => {
 // ── Pay on the day: customer opts to settle with the driver ──────────────
 // The "Pay on the day" button in the confirmation email points here. Gated by
 // the same per-booking pay_token. Marks the booking payment = 'cash', notifies
+// ── Accept estimate — customer clicks "Accept This Quote" in email ──────
+router.get('/accept-estimate/:ref', (req, res) => {
+  try {
+    const db = getDb();
+    const ref = String(req.params.ref || '').trim().toUpperCase();
+    const email = String(req.query.email || '').trim().toLowerCase();
+    if (!ref || !email) {
+      return res.status(400).send(cashPage('error', 'This link is incomplete.'));
+    }
+
+    const b = db.prepare(`SELECT id, ref, status, passenger_email FROM bookings WHERE ref = ?`).get(ref);
+    if (!b || (b.passenger_email || '').toLowerCase() !== email) {
+      return res.status(404).send(cashPage('error', "We couldn't find this booking."));
+    }
+
+    if (b.status === 'confirmed') {
+      return res.send(cashPage('ok', 'This booking is already confirmed. We look forward to welcoming you.', b.ref));
+    }
+
+    // Mark as offered (accepted by customer, awaiting owner confirmation)
+    db.prepare("UPDATE bookings SET status = 'offered', updated_at = datetime('now') WHERE id = ?").run(b.id);
+
+    // Notify owner via SSE
+    const events = require('./events');
+    events.broadcast('estimate:accepted', { id: b.id, ref: b.ref, message: 'Customer accepted the estimate' });
+
+    // Send admin alert
+    const { sendEmail } = require('./email');
+    const adminEmail = process.env.ADMIN_EMAIL || process.env.GMAIL_USER;
+    if (adminEmail) {
+      sendEmail(adminEmail, 'Estimate accepted — ' + ref, '<p>The customer has accepted the estimate for <strong>' + ref + '</strong>. Please confirm the booking in the owner app.</p>', 'Westmere Bookings').catch(() => {});
+    }
+
+    return res.send(cashPage('ok', 'Thank you — your quote has been accepted! We will confirm your booking shortly and send you a payment link.', b.ref));
+  } catch (err) {
+    console.error('[ACCEPT] error:', err.message);
+    res.status(500).send(cashPage('error', 'Something went wrong. Please call us on 07930 342593.'));
+  }
+});
+
 // the owner over SSE, and returns a friendly thank-you page. Idempotent — a
 // repeat click just re-marks it. The pay_token is intentionally left intact so
 // the customer can still change their mind and pay online later.
+// GET shows a confirmation page — does NOT mark as cash. This prevents email
+// clients from auto-triggering cash payment when they pre-fetch links.
 router.get('/pay/:ref/cash', (req, res) => {
   try {
     const db = getDb();
@@ -494,6 +560,36 @@ router.get('/pay/:ref/cash', (req, res) => {
     }
     if (b.paid_at || b.payment === 'card') {
       return res.send(cashPage('paid', 'This journey has already been paid online — there is nothing further to do.', b.ref));
+    }
+    if (b.payment === 'cash') {
+      return res.send(cashPage('ok', "You're all set — please settle the fare with your driver on the day, by cash or card. We look forward to welcoming you.", b.ref));
+    }
+
+    // Show confirmation page — the customer must click the button to confirm
+    const fareStr = b.fare ? '£' + Number(b.fare).toFixed(2) : '';
+    res.send(cashPage('confirm', 'You have chosen to settle the fare' + (fareStr ? ' of ' + fareStr : '') + ' with your driver on the day, by cash or card. Please confirm below.', b.ref));
+  } catch (err) {
+    console.error('[PAY] cash page error:', err.message);
+    res.status(500).send(cashPage('error', 'Something went wrong. Please call us on 07930 342593 and we will sort it out.'));
+  }
+});
+
+// POST actually marks the booking as cash — only triggered by the confirm button
+router.post('/pay/:ref/cash', (req, res) => {
+  try {
+    const db = getDb();
+    const ref = String(req.params.ref || '').trim().toUpperCase();
+    const token = String(req.query.t || req.query.token || '').trim();
+    if (!ref || !token) {
+      return res.status(400).send(cashPage('error', 'This link is incomplete.'));
+    }
+
+    const b = db.prepare(`SELECT id, ref, fare, status, payment, pay_token, paid_at FROM bookings WHERE ref = ?`).get(ref);
+    if (!b || !b.pay_token || b.pay_token !== token) {
+      return res.status(404).send(cashPage('error', "We couldn't find this booking."));
+    }
+    if (b.paid_at || b.payment === 'card') {
+      return res.send(cashPage('paid', 'This journey has already been paid online.', b.ref));
     }
 
     db.prepare(`UPDATE bookings SET payment = 'cash', updated_at = datetime('now') WHERE id = ?`).run(b.id);

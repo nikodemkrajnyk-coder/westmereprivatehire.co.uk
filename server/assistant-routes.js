@@ -5,6 +5,22 @@ const { deadMilesFee } = require('./dead-miles');
 
 const router = express.Router();
 
+// ── UK timezone helper ───────────────────────────────────────────────────
+function ukNow() {
+  const p = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/London',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+  }).formatToParts(new Date()).reduce((o, p) => { o[p.type] = p.value; return o; }, {});
+  return {
+    year: parseInt(p.year), month: parseInt(p.month), day: parseInt(p.day),
+    hour: parseInt(p.hour), minute: parseInt(p.minute), second: parseInt(p.second),
+    dateStr: `${p.year}-${p.month}-${p.day}`,
+    timeStr: `${p.hour}:${p.minute}`,
+    dayOfWeek: new Date(new Date().toLocaleString('en-US', {timeZone:'Europe/London'})).getDay()
+  };
+}
+
 const API_KEY = process.env.ANTHROPIC_API_KEY || '';
 // Two tiers to keep token costs down: Haiku handles simple lookups (fares,
 // calendar checks, vehicle status), Sonnet handles complex work (reading
@@ -194,7 +210,7 @@ const CALENDAR_TOOLS = [
     input_schema: {
       type: 'object',
       properties: {
-        title:        { type: 'string', description: 'Event title' },
+        title:        { type: 'string', description: 'Event title. Use format "From → To" (e.g. "Horsham → Gatwick"). Never prefix with "Pickup:" or "Pickup".' },
         date:         { type: 'string', description: 'Date in YYYY-MM-DD' },
         time:         { type: 'string', description: 'Start time in HH:MM (omit for all-day event)' },
         duration_min: { type: 'number', description: 'Duration in minutes (default 60)' },
@@ -528,9 +544,9 @@ async function executeCalendarTool(name, input, req) {
       // Resolve ASAP / missing time → next half-hour in UK time
       let time = (input.time || '').trim();
       if (!time || /^asap$/i.test(time)) {
-        const ukNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/London' }));
-        let h = ukNow.getHours();
-        let m = ukNow.getMinutes();
+        const { hour: _asapH, minute: _asapM } = ukNow();
+        let h = _asapH;
+        let m = _asapM;
         // Round UP to next 30-min slot
         if (m === 0) { /* already on the hour — keep */ }
         else if (m <= 30) { m = 30; }
@@ -625,7 +641,7 @@ async function executeCalendarTool(name, input, req) {
         quantity: Number(it.quantity) || 1
       }));
       const total = items.reduce((s, it) => s + it.amount * it.quantity, 0);
-      const today2 = new Date().toISOString().split('T')[0];
+      const today2 = ukNow().dateStr;
       const invoiceNo = 'INV-' + Date.now().toString(36).toUpperCase();
       try {
         db.prepare(`INSERT INTO invoices (invoice_no, kind, recipient_name, recipient_email, recipient_addr, line_items_json, total, notes, issued_date)
@@ -728,7 +744,7 @@ router.post('/chat', async (req, res) => {
   }
 
   const db = getDb();
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = ukNow().dateStr;
   const todayJobs = db.prepare(`
     SELECT b.time, b.pickup, b.destination, b.fare, b.payment, b.flight,
            c.full_name as customer_name
@@ -846,7 +862,7 @@ For EACH booking extract:
 - email
 - pickup (full address or location)
 - destination (full address or location)
-- date (convert to YYYY-MM-DD — e.g. "22nd April" → "${new Date().getFullYear()}-04-22")
+- date (convert to YYYY-MM-DD — e.g. "22nd April" → "${ukNow().year}-04-22")
 - time (HH:MM 24h — e.g. "3pm" → "15:00")
 - passengers (number, default 1)
 - flight (flight number if airport job, e.g. BA2490)

@@ -681,6 +681,9 @@ function migrate() {
     }
   } catch(e) { console.error('[DB] trip_miles migration failed:', e.message); }
 
+  // Stop-on-the-way address — a proper field so owner sees it in email/app (was stuffed into notes)
+  try { db.exec(`ALTER TABLE bookings ADD COLUMN stop_address TEXT`); } catch(_){}
+
   // Owner/driver documents: add expiry_date column
   try {
     const ddInfo = db.prepare("PRAGMA table_info(driver_documents)").all();
@@ -703,6 +706,17 @@ function migrate() {
       }
     }
   } catch(e) { console.error('[DB] pre-payment column migration failed:', e.message); }
+
+  // Review request tracking — sent once per email address, never resent
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS review_emails_sent (
+        id      INTEGER PRIMARY KEY AUTOINCREMENT,
+        email   TEXT NOT NULL UNIQUE,
+        sent_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    `);
+  } catch (e) { console.error('[DB] review_emails_sent table failed:', e.message); }
 }
 
 function seedDefaults() {
