@@ -492,19 +492,61 @@ h1,h2,h3,h4{font-family:var(--serif);color:var(--navy)}
 <meta name="twitter:title" content="Westmere Owner">
 <meta name="twitter:description" content="Westmere owner dashboard — fleet and operations overview.">
 <style id="wm-white-theme">
-/* Clean pure-white theme (restyle only; real emails are server-side & unchanged) */
-:root{--card:#ffffff !important;--paper:#ffffff !important;--cream:#ffffff !important;
- --gold:#1a1a1a;--gold2:#333333;--gold-rule:rgba(0,0,0,.14);--amber:#6a6a6a;--amber-bg:rgba(0,0,0,.05);--rule:rgba(0,0,0,.1)}
-html,body{background:#ffffff !important;color:#1a1a1a !important}
-.topbar,.bottom-nav,.topbar *,.bottom-nav *{color:#1a1a1a !important}
-.bn{color:rgba(0,0,0,.45) !important}.bn.active{color:#1a1a1a !important}
-/* charcoal primary buttons (were gold) need white text */
-.sbt-enroute,.btn-accept,.ma-accept,.mba-confirm,.btn-send,.ibtn-primary,.ls-btn,.nav-popup-btns a:first-child,.notif-badge-num,.jc2-ab.ab-enroute,.jc2-ab.ab-onboard,.ws-day.ws-today,.btn-main,.btn-new,.btn-gold,.sb-badge,.email-btn-gold{color:#ffffff !important;letter-spacing:.14em}
-/* Contrast fix: any element given the charcoal (was-gold #1a1a1a) background inline or via JS —
-   e.g. the "+ New Booking" button, the assistant fab, and any selected/active pill — must have
-   light text so it is never black-on-black in the pure-white theme. */
-[style*="background:var(--gold)"],[style*="background: var(--gold)"]{color:#ffffff !important}
-[style*="background:var(--gold)"] svg,[style*="background: var(--gold)"] svg{stroke:#ffffff !important}
+/* ============================================================
+   OWNER APP — ALL-WHITE SURFACES, ALL-BLACK TEXT (restyle only)
+   Removes every dark/charcoal/black background and every grey/muted
+   font; dark-filled buttons become white with a black outline.
+   ============================================================ */
+:root{
+  /* surfaces -> white */
+  --card:#ffffff !important;--paper:#ffffff !important;--cream:#ffffff !important;--amber-bg:#ffffff !important;
+  /* accent vars that were used as DARK BACKGROUNDS -> white (text forced black below) */
+  --gold:#ffffff !important;--gold2:#ffffff !important;--navy:#ffffff !important;--navy2:#ffffff !important;--white:#ffffff !important;
+  /* text/rule vars -> black / light hairline */
+  --text:#000000 !important;--amber:#000000 !important;--muted:#000000 !important;
+  --gold-rule:rgba(0,0,0,.18) !important;--rule:rgba(0,0,0,.15) !important;
+}
+/* 1) Core surfaces white; kill the dark login texture */
+html,body{background:#ffffff !important;background-image:none !important}
+.app,#scr-app,#login-screen,.ls-inner,.ls-body,.ls-hd,.ls-foot,.topbar,.bottom-nav,.card,.scorecard,#toast,.nav-popup,.sug-drop{background:#ffffff !important;background-image:none !important}
+/* 2) ALL text solid black */
+#scr-app,#scr-app *,#login-screen,#login-screen *{color:#000000 !important;-webkit-text-fill-color:#000000 !important}
+.bn,.bn.active{color:#000000 !important}
+/* 3) Any element given a dark background inline / via JS -> white surface, black text, outline */
+[style*="background:var(--gold)"],[style*="background: var(--gold)"],[style*="background:var(--gold2)"],
+[style*="background:var(--navy)"],[style*="background: var(--navy)"],[style*="background:var(--navy2)"],
+[style*="background:var(--red)"],[style*="background:var(--green)"],
+[style*="background:#1a1a1a"],[style*="background:#1b1b1a"],[style*="background:#0a1420"],[style*="background:#0a"],
+[style*="background:#111"],[style*="background:#000"],[style*="background:#222"],[style*="background:#333"],
+[style*="background:#444"],[style*="background:#555"],[style*="background:#666"],[style*="background:#6a6a6a"],
+[style*="background:#3B82F6"],[style*="background:#3b82f6"]{
+  background:#ffffff !important;border:1px solid #1a1a1a !important}
+[style*="background:var(--gold)"] svg,[style*="background:#1a1a1a"] svg{stroke:#000000 !important}
+/* 4) Class-based charcoal buttons / pills / active / badges -> white + (buttons) outline */
+.sbt-enroute,.sbt-onboard,.ts-enroute,.jc2-bd-enroute,.jc2-bd-atpickup,.jc2-ab.ab-enroute,.jc2-ab.ab-atpickup,
+.jc2-ab.ab-onboard,.jc2-ab.ab-dropoff,.jc2-pin.pu,.jc2-prog-dot.pd-active,.notif-badge-num,
+.nav-popup-btns a:first-child,.nav-popup-btns a:last-child,.btn-accept,.ma-accept,.mba-confirm,.btn-send,.btn-cam,
+.ibtn-primary,.ibtn-sm,.ls-btn,.btn-main,.btn-new,.btn-gold,.sb-badge,.email-btn-gold,.pill-flag,.msg-conflict,
+.msg-user div,.msg-w div,.cal-day.today,.cal-day.selected,.ws-day.ws-today,.ws-dot-job,.ws-alt-type-job,
+.job-card.active-job .jc-bar,.earn-stat-card.esk-accent,.assist-input,.fp-delayed{
+  background:#ffffff !important;color:#000000 !important}
+.sbt-enroute,.btn-accept,.ma-accept,.mba-confirm,.btn-send,.btn-cam,.ibtn-primary,.ls-btn,.btn-main,.btn-new,
+.btn-gold,.email-btn-gold,.nav-popup-btns a:first-child,.nav-popup-btns a:last-child,.notif-badge-num,.sb-badge{
+  border:1px solid #1a1a1a !important}
+/* 5) Hover / selected / active -> light grey tint, never dark */
+.sbt-enroute:hover,.btn-accept:hover,.ma-accept:hover,.mba-confirm:hover,.btn-send:hover,.btn-cam:hover,
+.btn-cam:active,.ibtn-primary:hover,.ibtn-sm:hover,.ls-btn:hover,.jcc:hover,.jcc:active,.jc2-cc:active,
+.sug-drop div:hover,.sug-drop div:active,.cal-day.selected,.ws-day.ws-selected{
+  background:#f1f1f1 !important;color:#000000 !important;border-color:#1a1a1a !important}
+/* 6) hairline rules light */
+.gold-rule,hr{background:rgba(0,0,0,.15) !important;border-color:rgba(0,0,0,.15) !important}
+/* 7) modal backdrops: light frosted veil instead of a dark scrim */
+[style*="rgba(10,14,20"],[style*="rgba(10, 14, 20"]{background:rgba(255,255,255,.6) !important}
+/* 8) shared realtime notification pill/toast (wm-realtime.js) as rendered on THIS page only:
+   force it light — dark bg serializes to rgb(26,26,26); target its high z-index instead. */
+[style*="z-index:99998"],[style*="z-index: 99998"],[style*="z-index:99999"],[style*="z-index: 99999"],
+[style*="rgb(26, 26, 26)"],[style*="rgb(13, 37, 69)"]{background:#ffffff !important;border:1px solid #1a1a1a !important}
+[style*="z-index:99998"] *,[style*="z-index: 99998"] *,[style*="z-index:99999"] *,[style*="z-index: 99999"] *{color:#000000 !important}
 </style></head>
 <body>
 
