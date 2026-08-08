@@ -690,4 +690,100 @@ router.post('/recommend', async (req, res) => {
   }
 });
 
+// ── GET /reviews — live Google Places rating + reviews ──────────────────────
+// Server-side proxy so the API key is NEVER exposed to the browser. Reads the
+// key from GOOGLE_PLACES_API_KEY (preferred) or GOOGLE_API_KEY (fallback).
+// Resolves the Place ID from the business Google profile CID (Ce764VxFTR4VEAE)
+// or, if that fails, via Find Place From Text on the business name. A fixed
+// Place ID can be pinned with GOOGLE_PLACE_ID. On any failure it returns an
+// empty reviews array (+ the Google status) so the homepage keeps its static
+// review — it never fabricates data.
+const GPLACE_CID = 'Ce764VxFTR4VEAE';          // g.page/r/Ce764VxFTR4VEAE
+const REVIEWS_TTL_OK = 30 * 60 * 1000;         // cache good results 30 min
+const REVIEWS_TTL_FAIL = 5 * 60 * 1000;        // cache failures 5 min (avoid hammering billing)
+let REVIEWS_CACHE = { at: 0, ttl: 0, data: null };
+let RESOLVED_PLACE_ID = process.env.GOOGLE_PLACE_ID || null;
+
+function reviewsKey() {
+  return process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_API_KEY || null;
+}
+
+// Resolve a Places place_id. Prefers a pinned GOOGLE_PLACE_ID, then the CID
+// (Place Details accepts ?cid=), then Find Place From Text on the name.
+async function resolvePlaceId(key) {
+  if (RESOLVED_PLACE_ID) return RESOLVED_PLACE_ID;
+  // (1) CID lookup — Place Details supports cid= and returns place_id.
+  try {
+    const u = `https://maps.googleapis.com/maps/api/place/details/json?cid=${encodeURIComponent(GPLACE_CID)}&fields=place_id&key=${key}`;
+    const j = await (await fetch(u)).json();
+    if (j.status === 'OK' && j.result && j.result.place_id) {
+      RESOLVED_PLACE_ID = j.result.place_id;
+      return RESOLVED_PLACE_ID;
+    }
+    // REQUEST_DENIED here means Places isn't enabled on the key — surface it.
+    if (j.status === 'REQUEST_DENIED') { const e = new Error(j.error_message || 'REQUEST_DENIED'); e.googleStatus = j.status; e.googleMessage = j.error_message; throw e; }
+  } catch (e) { if (e.googleStatus === 'REQUEST_DENIED') throw e; /* else fall through to find-place */ }
+  // (2) Find Place From Text on the business name + locality.
+  const q = encodeURIComponent('Westmere Private Hire, Lewes, UK');
+  const u2 = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${q}&inputtype=textquery&fields=place_id&key=${key}`;
+  const j2 = await (await fetch(u2)).json();
+  if (j2.status === 'OK' && j2.candidates && j2.candidates.length) {
+    RESOLVED_PLACE_ID = j2.candidates[0].place_id;
+    return RESOLVED_PLACE_ID;
+  }
+  const err = new Error(j2.error_message || j2.status || 'PLACE_LOOKUP_FAILED');
+  err.googleStatus = j2.status; err.googleMessage = j2.error_message;
+  throw err;
+}
+
+router.get('/reviews', async (req, res) => {
+  const key = reviewsKey();
+  if (!key) return res.json({ configured: false, live: false, reason: 'no_key', reviews: [] });
+
+  const refresh = req.query.refresh === '1';
+  if (!refresh && REVIEWS_CACHE.data && (Date.now() - REVIEWS_CACHE.at) < REVIEWS_CACHE.ttl) {
+    return res.json(REVIEWS_CACHE.data);
+  }
+
+  function cacheFail(payload) { REVIEWS_CACHE = { at: Date.now(), ttl: REVIEWS_TTL_FAIL, data: payload }; return res.json(payload); }
+
+  try {
+    let placeId;
+    try {
+      placeId = await resolvePlaceId(key);
+    } catch (e) {
+      return cacheFail({ configured: true, live: false, reason: e.googleStatus || 'PLACE_LOOKUP_FAILED', message: e.googleMessage || e.message, reviews: [] });
+    }
+
+    const fields = 'rating,user_ratings_total,reviews,name,url';
+    const u = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=${fields}&reviews_sort=newest&key=${key}`;
+    const j = await (await fetch(u)).json();
+    if (j.status !== 'OK') {
+      return cacheFail({ configured: true, live: false, place_id: placeId, reason: j.status, message: j.error_message || null, reviews: [] });
+    }
+    const d = j.result || {};
+    const reviews = (d.reviews || []).slice(0, 5).map(rv => ({
+      author_name: rv.author_name,
+      rating: rv.rating,
+      text: rv.text,
+      relative_time: rv.relative_time_description,
+      time: rv.time,
+      profile_photo_url: rv.profile_photo_url
+    }));
+    const payload = {
+      configured: true, live: true, place_id: placeId,
+      name: d.name || null,
+      rating: d.rating || null,
+      total: d.user_ratings_total || 0,
+      url: d.url || null,
+      reviews
+    };
+    REVIEWS_CACHE = { at: Date.now(), ttl: REVIEWS_TTL_OK, data: payload };
+    res.json(payload);
+  } catch (e) {
+    console.error('[REVIEWS] error:', e.message);
+    return cacheFail({ configured: true, live: false, reason: 'server_error', message: e.message, reviews: [] });
+  }
+});
+
 module.exports = router;

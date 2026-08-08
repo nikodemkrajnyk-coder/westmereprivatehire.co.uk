@@ -10,4 +10,12 @@
 <script>/* Live Google reviews scaffold — auto-activates when a /api/public/reviews proxy endpoint is added
    (needs a Google Places API key + Place ID server-side; browser cannot call Places API directly due to CORS/key exposure).
    Until then the supplied static review is shown. No fake data is injected. */
-(function(){var host=document.querySelector("[data-google-reviews]");if(!host)return;fetch("/api/public/reviews").then(function(r){return r.ok?r.json():null;}).then(function(d){if(!d||!d.reviews||!d.reviews.length)return;var top=host.querySelector(".review-top");if(top&&d.rating){top.querySelector(".stars").textContent="★★★★★".slice(0,Math.round(d.rating));}var r=d.reviews[0];var q=host.querySelector(".review-quote");if(q)q.textContent="“"+r.text+"”";var note=host.querySelector(".review-note");if(note)note.textContent=r.author_name+" · Google review · "+(d.total||d.reviews.length)+" reviews";host.setAttribute("data-google-reviews","live");}).catch(function(){});})();</script><script src="frontend.js"></script></body></html>
+(function(){var host=document.querySelector("[data-google-reviews]");if(!host)return;
+var starsEl=host.querySelector(".stars"),q=host.querySelector(".review-quote"),note=host.querySelector(".review-note"),rot=null;
+function render(d){if(!d||!d.reviews||!d.reviews.length)return;
+  if(starsEl&&d.rating)starsEl.textContent="★★★★★".slice(0,Math.round(d.rating));
+  var i=0;function show(){var r=d.reviews[i%d.reviews.length];if(q)q.textContent="“"+r.text+"”";if(note)note.textContent=r.author_name+" · Google review"+(r.relative_time?" · "+r.relative_time:"")+" · "+(d.total||d.reviews.length)+" reviews";i++;}
+  show();if(rot)clearInterval(rot);if(d.reviews.length>1)rot=setInterval(show,9000);
+  host.setAttribute("data-google-reviews","live");}
+function load(){fetch("/api/public/reviews").then(function(r){return r.ok?r.json():null;}).then(render).catch(function(){});}
+load();setInterval(load,1800000);})();</script><script src="frontend.js"></script></body></html>
