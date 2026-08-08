@@ -13,35 +13,46 @@
 .ac-list{position:absolute;left:0;right:0;top:100%;z-index:30;background:#fff;border:1px solid var(--line);border-top:none;max-height:230px;overflow:auto;box-shadow:0 12px 30px rgba(27,27,26,.12)}
 .ac-item{padding:10px 13px;font-size:.82rem;cursor:pointer;border-bottom:1px solid #f0ece4;line-height:1.35}
 .ac-item:last-child{border-bottom:none}.ac-item:hover{background:#f5f2ec}
-.fare-estimate{display:none;margin-top:20px;border:1px solid var(--line);background:rgba(184,144,69,.06);padding:18px 20px}
+.quick-box{border:1px solid var(--line);background:#fff;padding:26px clamp(20px,3vw,30px)}
+.fare-estimate{display:none;margin-top:18px;border:1px solid var(--line);background:rgba(184,144,69,.06);padding:18px 20px}
+.fare-estimate.msg{background:#f5f2ec}
 .fare-estimate .fe-label{display:block;font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
-.fare-estimate .fe-amount{display:block;font-family:var(--serif);font-size:2rem;font-weight:400;color:var(--ink);margin:.15rem 0}
-.fare-estimate .fe-note{display:block;font-size:.7rem;color:var(--muted);line-height:1.5}
+.fare-estimate .fe-amount{display:block;font-family:var(--serif);font-size:2.2rem;font-weight:400;color:var(--ink);margin:.15rem 0}
+.fare-estimate .fe-note{display:block;font-size:.72rem;color:var(--muted);line-height:1.5}
 .fare-estimate .fe-calc{font-size:.82rem;color:var(--muted)}
+.form-divider{margin:34px 0 22px;padding-top:2px;border-top:1px solid var(--line)}
+.form-divider .eyebrow{display:block;margin-top:22px;color:var(--muted)}
 @media(max-width:850px){.book-layout{grid-template-columns:1fr!important}.book-hero{min-height:300px}.book-hero .inner{position:static;padding:60px 8% 40px}}
 </style></head>
 <body><nav><a class="brand" href="index.html"><b>WESTMERE</b><span>PRIVATE HIRE</span></a><div class="navlinks"><a href="index.html">Home</a><a href="airport-transfers.html">Airport Transfers</a><a href="services.html">Services</a><a href="about.html">About</a><a href="contact.html">Contact</a><a class="acct-nav" href="westmere-account.html">My Account</a><a class="book-btn active" href="book.html">Book Now</a></div><button class="burger" onclick="toggleMenu()" aria-label="Menu">☰</button></nav><div class="mobile-menu" id="mobileMenu"><a href="index.html">Home</a><a href="airport-transfers.html">Airport Transfers</a><a href="services.html">Services</a><a href="about.html">About</a><a href="contact.html">Contact</a><a href="westmere-account.html">My Account</a><a href="book.html">Book Now</a></div>
 
 <section class="section" style="padding-top:0"><div class="book-layout">
-  <div class="book-hero"><div class="inner"><h1 class="serif" style="font-size:4.5rem;font-weight:300;line-height:.95;margin:0">Request<br>a quote</h1><div style="height:1px;width:80px;background:#fff;margin:30px 0"></div><div class="eyebrow">Professional. Reliable. Redefined.</div><p>Private hire across Sussex and beyond — with an instant estimate from our fare engine.</p></div></div>
-  <div class="book-form-col"><span class="eyebrow">Request an estimate</span><h2 class="section-title">Journey details</h2><p class="muted">Enter your journey for an instant estimate, then send your request — we’ll confirm your driver and the final price.</p>
-    <form data-booking-form novalidate><div class="form-grid">
-      <div class="field full"><label>Pickup location</label><input name="pickup" placeholder="Home address, hotel or airport" required><div class="field-help"><span class="muted" style="font-size:.7rem">Start typing for suggestions</span><button type="button" class="link-btn" data-use-location>Use my current location</button></div></div>
-      <div class="field full" data-stop-field style="display:none"><label>Stop on the way</label><input name="stop_address" placeholder="Optional stop address"></div>
-      <div class="field full" style="margin-top:-6px"><button type="button" class="link-btn" data-add-stop>+ Add a stop on the way</button></div>
-      <div class="field full"><label>Destination</label><input name="destination" placeholder="Airport, town or postcode" required></div>
-      <div class="field"><label>Date</label><input type="date" name="date" required></div>
-      <div class="field"><label>Time</label><input type="time" name="time" required></div>
-      <div class="field"><label>Passengers</label><select name="passengers"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></div>
-      <div class="field"><label>Luggage</label><select name="luggage"><option value="0">No large luggage</option><option value="1">1 suitcase</option><option value="2">2 suitcases</option><option value="3">3 suitcases</option><option value="4+">4+ / extra luggage</option></select></div>
-      <div class="field full"><label>Flight number (if applicable)</label><input name="flightNumber" placeholder="e.g. BA1234"></div>
-      <div class="field"><label>Your name</label><input name="name" required></div>
-      <div class="field"><label>Phone</label><input name="phone" required></div>
-      <div class="field full"><label>Email</label><input type="email" name="email" required></div>
-      <div class="field full"><label>Notes</label><textarea name="notes" placeholder="Child seats, meet &amp; greet, anything we should know"></textarea></div>
-    </div>
-    <div class="fare-estimate" data-fare-estimate></div>
-    <div class="form-actions"><button class="btn dark" type="submit">Request booking</button><div class="status"></div></div></form>
+  <div class="book-hero"><div class="inner"><h1 class="serif" style="font-size:4.5rem;font-weight:300;line-height:.95;margin:0">Request<br>a quote</h1><div style="height:1px;width:80px;background:#fff;margin:30px 0"></div><div class="eyebrow">Professional. Reliable. Redefined.</div><p>Private hire across Sussex and beyond — with an instant airport estimate from our fare engine.</p></div></div>
+  <div class="book-form-col"><span class="eyebrow">Request a quote</span><h2 class="section-title">Where are you going?</h2><p class="muted">Enter your pickup and drop-off for an instant airport estimate — then add your details below and request the booking. We confirm your driver and the final price.</p>
+    <form data-booking-form novalidate>
+      <!-- QUICK: pickup + drop-off → instant airport estimate -->
+      <div class="quick-box"><div class="form-grid">
+        <div class="field full"><label>Pickup location</label><input name="pickup" placeholder="Home address, hotel or airport" required><div class="field-help"><span class="muted" style="font-size:.7rem">Start typing for suggestions</span><button type="button" class="link-btn" data-use-location>Use my current location</button></div></div>
+        <div class="field full"><label>Drop-off</label><input name="destination" placeholder="Airport, town or postcode" required></div>
+      </div>
+      <div class="fare-estimate" data-fare-estimate></div></div>
+
+      <!-- DETAILS: everything else, ending in Request Booking -->
+      <div class="form-divider"><span class="eyebrow">Your journey &amp; details</span></div>
+      <div class="form-grid">
+        <div class="field full" data-stop-field style="display:none"><label>Stop on the way</label><input name="stop_address" placeholder="Optional stop address"></div>
+        <div class="field full" style="margin-top:-6px"><button type="button" class="link-btn" data-add-stop>+ Add a stop on the way</button></div>
+        <div class="field"><label>Date</label><input type="date" name="date" required></div>
+        <div class="field"><label>Time</label><input type="time" name="time" required></div>
+        <div class="field"><label>Passengers</label><select name="passengers"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></div>
+        <div class="field"><label>Luggage</label><select name="luggage"><option value="0">No large luggage</option><option value="1">1 suitcase</option><option value="2">2 suitcases</option><option value="3">3 suitcases</option><option value="4+">4+ / extra luggage</option></select></div>
+        <div class="field full"><label>Flight number (if applicable)</label><input name="flightNumber" placeholder="e.g. BA1234"></div>
+        <div class="field"><label>Your name</label><input name="name" required></div>
+        <div class="field"><label>Phone</label><input name="phone" required></div>
+        <div class="field full"><label>Email</label><input type="email" name="email" required></div>
+        <div class="field full"><label>Notes</label><textarea name="notes" placeholder="Child seats, meet &amp; greet, anything we should know"></textarea></div>
+      </div>
+      <div class="form-actions"><button class="btn dark" type="submit">Request booking</button><div class="status"></div></div></form>
   </div>
 </div></section>
 

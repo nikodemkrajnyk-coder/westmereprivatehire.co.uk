@@ -15,8 +15,8 @@
     horsham:       { ga:{out:54,ret:52},  he:{out:94,ret:99}, st:{out:141,ret:145}, lu:{out:120,ret:122}, so:{out:104,ret:101}, ci:{out:124,ret:128} },
     crawley:       { ga:{out:45,ret:43},  he:{out:82,ret:86} },
     worthing:      { ga:{out:85,ret:82}, he:{out:121,ret:123} },
-    haywards:      { ga:{out:63,ret:62} },
-    burgess:       { ga:{out:63,ret:61} },
+    haywards:      { ga:{out:63,ret:62}, he:{out:105,ret:109}, lu:{out:142,ret:145}, st:{out:139,ret:143}, so:{out:112,ret:109}, ci:{out:120,ret:123} },
+    burgess:       { ga:{out:63,ret:61}, he:{out:114,ret:118}, lu:{out:159,ret:162}, st:{out:165,ret:169}, so:{out:114,ret:111}, ci:{out:135,ret:138} },
     eastbourne:    { ga:{out:119,ret:117}, he:{out:158,ret:163} },
     seaford:       { ga:{out:108,ret:105} },
     uckfield:      { ga:{out:73,ret:70} },
@@ -189,22 +189,37 @@
       if (shown && stop) stop.value = '';
     });
 
-    // Live fare estimate
+    // Quick estimate — only for AIRPORT journeys (pickup OR drop-off is a served airport).
+    // Non-airport trips get a "request a booking" message and no price.
+    function isAirportJourney(p, d) { return !!(normAirport(p) || normAirport(d)); }
     var ft = null;
     function updateFare() {
       if (!fareBox) return;
       var p = pickup && pickup.value.trim(), d = dest && dest.value.trim();
-      if (!p || !d) { fareBox.style.display = 'none'; return; }
+      if (!p || !d) { fareBox.style.display = 'none'; fareBox.className = 'fare-estimate'; return; }
+      // Not an airport pickup/drop-off → no instant price, show request message.
+      if (!isAirportJourney(p, d)) {
+        if (ft) clearTimeout(ft);
+        fareBox.style.display = 'block';
+        fareBox.className = 'fare-estimate msg';
+        fareBox.innerHTML = '<span class="fe-label">Your journey</span>'
+          + '<span class="fe-note" style="margin-top:3px">For this journey, please request a booking below and we’ll confirm your fare.</span>';
+        return;
+      }
       if (ft) clearTimeout(ft);
       ft = setTimeout(function () {
-        fareBox.style.display = '';
+        fareBox.style.display = 'block';
+        fareBox.className = 'fare-estimate';
         fareBox.innerHTML = '<span class="fe-calc">Calculating estimate…</span>';
         Promise.resolve(calculateFare(p, d, timeEl && timeEl.value)).then(function (r) {
           if (r && r.fare) {
-            var extra = r.distance_miles ? (' · ~' + r.distance_miles + ' mi') : '';
-            fareBox.innerHTML = '<span class="fe-label">Estimated fare</span><span class="fe-amount">from £' + r.fare + '</span>'
-              + '<span class="fe-note">' + (r.label || r.rate_type) + extra + ' · we confirm the exact price with your request</span>';
-          } else { fareBox.innerHTML = '<span class="fe-note">Enter a full pickup &amp; destination for an estimate — or submit and we\'ll price it by hand.</span>'; }
+            fareBox.className = 'fare-estimate';
+            fareBox.innerHTML = '<span class="fe-label">Estimated fare</span><span class="fe-amount">approx £' + r.fare + '</span>'
+              + '<span class="fe-note">' + (r.label || 'Airport transfer') + ' · approximate — we confirm the exact price with your request</span>';
+          } else {
+            fareBox.className = 'fare-estimate msg';
+            fareBox.innerHTML = '<span class="fe-note">Please request a booking below and we’ll confirm your fare.</span>';
+          }
         });
       }, 500);
     }

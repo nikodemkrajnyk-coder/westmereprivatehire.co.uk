@@ -500,6 +500,11 @@ html,body{background:#ffffff !important;color:#1a1a1a !important}
 .bn{color:rgba(0,0,0,.45) !important}.bn.active{color:#1a1a1a !important}
 /* charcoal primary buttons (were gold) need white text */
 .sbt-enroute,.btn-accept,.ma-accept,.mba-confirm,.btn-send,.ibtn-primary,.ls-btn,.nav-popup-btns a:first-child,.notif-badge-num,.jc2-ab.ab-enroute,.jc2-ab.ab-onboard,.ws-day.ws-today,.btn-main,.btn-new,.btn-gold,.sb-badge,.email-btn-gold{color:#ffffff !important;letter-spacing:.14em}
+/* Contrast fix: any element given the charcoal (was-gold #1a1a1a) background inline or via JS —
+   e.g. the "+ New Booking" button, the assistant fab, and any selected/active pill — must have
+   light text so it is never black-on-black in the pure-white theme. */
+[style*="background:var(--gold)"],[style*="background: var(--gold)"]{color:#ffffff !important}
+[style*="background:var(--gold)"] svg,[style*="background: var(--gold)"] svg{stroke:#ffffff !important}
 </style></head>
 <body>
 
