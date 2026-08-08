@@ -851,6 +851,9 @@ async function doLogin(){
     localStorage.removeItem('wph_rider_lockout');
     _currentUser={name:data.customer.full_name,email:data.customer.email,phone:'',loggedIn:true};
     bootApp();
+    updateProfile();
+    // login response omits phone — pull the full profile so the booking form + profile view fill completely
+    fetch('/api/customer/profile',{credentials:'include'}).then(function(r){return r.ok?r.json():null;}).then(function(d){if(d&&d.profile){_currentUser.name=d.profile.full_name||_currentUser.name;_currentUser.email=d.profile.email||_currentUser.email;_currentUser.phone=d.profile.phone||'';updateProfile();}}).catch(function(){});
   }catch(e){
     errEl.textContent='Connection error. Please try again.';
     errEl.classList.add('show');

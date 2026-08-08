@@ -181,6 +181,65 @@
     var fareBox = document.querySelector('[data-fare-estimate]');
     var status = form.querySelector('.status');
 
+    // ── Remember me + logged-in account prefill ──────────────────────────
+    var nameEl = form.querySelector('[name="name"]');
+    var phoneEl = form.querySelector('[name="phone"]');
+    var emailEl = form.querySelector('[name="email"]');
+    var rememberEl = form.querySelector('[data-remember]');
+    var REMEMBER_KEY = 'wm_remember_contact';
+
+    // Track fields the user edits so async prefill never overwrites typing.
+    function markEdited(el){ if (el) el.dataset.userEdited = '1'; }
+    function clearEdited(){ [nameEl, phoneEl, emailEl, pickup].forEach(function (el) { if (el) delete el.dataset.userEdited; }); }
+    [nameEl, phoneEl, emailEl, pickup].forEach(function (el) { if (el) el.addEventListener('input', function () { markEdited(el); }); });
+    function setIfFree(el, val){ if (el && val && !el.dataset.userEdited) el.value = val; }
+
+    // 1) Prefill from "remember me" device memory (no passwords/payment stored).
+    function applyRemembered(){
+      try {
+        var saved = JSON.parse(localStorage.getItem(REMEMBER_KEY) || 'null');
+        if (saved) {
+          if (rememberEl) rememberEl.checked = true;
+          setIfFree(nameEl, saved.name); setIfFree(phoneEl, saved.phone);
+          setIfFree(emailEl, saved.email); setIfFree(pickup, saved.pickup);
+          return true;
+        }
+      } catch (e) {}
+      return false;
+    }
+    applyRemembered();
+
+    // 2) Logged-in account data takes PRIORITY over remember-me: if a customer
+    //    session cookie is present, override contact details from their profile.
+    fetch('/api/customer/profile', { credentials: 'include' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (d && d.profile) {
+          var p = d.profile;
+          if (nameEl && p.full_name && !nameEl.dataset.userEdited) nameEl.value = p.full_name;
+          if (phoneEl && p.phone && !phoneEl.dataset.userEdited) phoneEl.value = p.phone;
+          if (emailEl && p.email && !emailEl.dataset.userEdited) emailEl.value = p.email;
+        }
+      }).catch(function () {});
+
+    // Persist when box is checked; clear when unchecked.
+    function saveRemember(){
+      try {
+        if (rememberEl && rememberEl.checked) {
+          localStorage.setItem(REMEMBER_KEY, JSON.stringify({
+            name: nameEl ? nameEl.value.trim() : '',
+            phone: phoneEl ? phoneEl.value.trim() : '',
+            email: emailEl ? emailEl.value.trim() : '',
+            pickup: pickup ? pickup.value.trim() : ''
+          }));
+        } else {
+          localStorage.removeItem(REMEMBER_KEY);
+        }
+      } catch (e) {}
+    }
+    if (rememberEl) rememberEl.addEventListener('change', saveRemember);
+    [nameEl, phoneEl, emailEl].forEach(function (el) { if (el) el.addEventListener('change', function () { if (rememberEl && rememberEl.checked) saveRemember(); }); });
+
     [pickup, dest, stop].forEach(function (el) { if (el) attachAutocomplete(el); });
 
     // Use my current location
@@ -263,6 +322,7 @@
       if (!raw.pickup || !raw.pickup.trim()) miss.push('a pickup location');
       if (!raw.destination || !raw.destination.trim()) miss.push('a destination');
       if (miss.length) { if (status) { status.style.color = '#9a2b2b'; status.textContent = 'Please enter ' + miss.join(', ') + '.'; } return; }
+      saveRemember(); // persist contact details on submit when "remember me" is ticked
       var payload = {
         name: raw.name, email: raw.email, phone: raw.phone,
         pickup: raw.pickup, destination: raw.destination,
@@ -282,6 +342,7 @@
           if (res.ok && res.d.ok) {
             if (status) { status.style.color = '#2f6b34'; status.textContent = 'Request received — we\'ll confirm your driver and fare shortly. Reference ' + (res.d.ref || '') + '.'; }
             form.reset(); if (fareBox) fareBox.style.display = 'none';
+            clearEdited(); applyRemembered(); // restore saved details (+ ticked box) for a follow-up booking
           } else { throw new Error((res.d && res.d.error) || 'Could not submit'); }
         })
         .catch(function(err){
