@@ -90,12 +90,12 @@
     var pill = document.createElement('div');
     pill.style.cssText = [
       'position:fixed','bottom:1rem','right:1rem','z-index:99998',
-      'background:#0D2545','color:#fff','padding:.7rem .9rem','border-radius:.6rem',
+      'background:#1a1a1a','color:#fff','padding:.7rem .9rem','border-radius:.6rem',
       'box-shadow:0 8px 24px rgba(0,0,0,.25)','display:flex','gap:.7rem','align-items:center',
       'font:500 .8rem/1.3 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif'
     ].join(';');
     pill.innerHTML = '<span>Get desktop alerts for new bookings?</span>'
-      + '<button style="background:#B8985A;color:#0D2545;border:none;padding:.4rem .7rem;border-radius:.4rem;font:600 .78rem/1 inherit;cursor:pointer">Enable</button>'
+      + '<button style="background:#ffffff;color:#1a1a1a;border:none;padding:.4rem .7rem;border-radius:.4rem;font:600 .78rem/1 inherit;cursor:pointer">Enable</button>'
       + '<button style="background:transparent;color:rgba(255,255,255,.6);border:none;padding:.3rem .4rem;cursor:pointer;font-size:1rem">×</button>';
     document.body.appendChild(pill);
     var btns = pill.querySelectorAll('button');

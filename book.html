@@ -449,6 +449,17 @@ input[type="time"].fi,input[type="date"].fi{-webkit-appearance:auto;appearance:a
 .si-sub{font-size:.75rem;color:rgba(255,255,255,.45);margin-top:2px}
 .sug-powered{padding:.4rem 1rem;text-align:right;font-size:.55rem;color:rgba(255,255,255,.25);letter-spacing:.04em}
 footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);font-size:.66rem;letter-spacing:.1em;color:rgba(255,255,255,.38);background:rgba(13,10,6,.55);border-top:1px solid rgba(184,144,69,.12);position:relative;z-index:1}.mini-legal{margin-left:.6rem}.mini-legal a{color:rgba(255,255,255,.28);text-decoration:none;margin-left:.5rem;transition:color .2s;letter-spacing:.08em}.mini-legal a:hover{color:rgba(184,144,69,.7)}
+
+/* TASK2: template-style booking page */
+body{background:var(--paper)!important}
+.bk-hero .eyebrow{letter-spacing:.24em}
+#main-content{max-width:660px;margin:0 auto;padding:0 20px 70px}
+.bk-wrap{background:var(--paper)!important;border:1px solid var(--line)!important;border-radius:6px;padding:38px clamp(22px,5vw,46px)!important;box-shadow:0 20px 50px rgba(27,27,26,.08);margin-top:34px;backdrop-filter:none!important}
+#booking .bk-title{color:var(--ink)!important;font-size:clamp(1.7rem,3.2vw,2.3rem)}
+#booking .bk-sub,#booking .bk-trust{color:var(--muted)!important}
+#booking label,#booking .fl{color:var(--ink)!important}
+#booking input.fi,#booking .fi input,#booking input[type=text],#booking input[type=email],#booking input[type=tel]{background:#fff!important;border:1px solid var(--line)!important;border-radius:4px!important;padding:13px 14px!important;color:var(--ink)!important}
+#booking input::placeholder{color:var(--muted)!important}
 </style>
 <!-- Stripe removed: no online payment; the fare is settled on the day. -->
 <script src="/config.js"></script>
@@ -494,6 +505,7 @@ nav .brand b{color:var(--ink)!important}nav .brand span{color:var(--ink)!importa
 <div id="page-wrap">
 <nav><a class="brand" href="index.html"><b>WESTMERE</b><span>PRIVATE HIRE</span></a><div class="navlinks"><a href="index.html" class="">Home</a><a href="airport-transfers.html" class="">Airport Transfers</a><a href="services.html" class="">Services</a><a href="fleet.html" class="">Fleet</a><a href="about.html" class="">About</a><a href="contact.html" class="">Contact</a><a href="#" onclick="try{openAcctPortal()}catch(e){};return false" class="acct-link">My Account</a><a class="book-btn active" href="book.html">Book Now</a></div><button class="burger" onclick="toggleMenu()" aria-label="Menu">☰</button></nav><div class="mobile-menu" id="mobileMenu"><a href="index.html">Home</a><a href="airport-transfers.html">Airport Transfers</a><a href="services.html">Services</a><a href="fleet.html">Fleet</a><a href="about.html">About</a><a href="contact.html">Contact</a><a href="book.html">Book Now</a></div>
 
+<section class="bk-hero" style="min-height:300px;display:grid;place-items:center;text-align:center;color:#fff;background:linear-gradient(rgba(15,18,21,.45),rgba(15,18,21,.4)),url(assets/airport-twilight.webp) center/cover;padding:70px 20px"><div><div class="eyebrow" style="color:#fff">Book your journey</div><h1 class="serif" style="font-family:var(--serif);font-weight:300;font-size:clamp(2.6rem,6vw,4rem);margin:.35rem 0;letter-spacing:.06em">Request a car</h1><p style="max-width:520px;margin:.4rem auto 0;color:rgba(255,255,255,.85);font-size:.9rem">Enter your journey for an instant estimate from our fare engine, then confirm your booking.</p></div></section>
 <div id="main-content">
     <!-- Booking form -->
     <div id="booking">
