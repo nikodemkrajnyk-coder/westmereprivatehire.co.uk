@@ -15,7 +15,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-:root{--navy:#1b1b1a;--navy2:#2b2a26;--navy-deep:#121210;--gold:#b89045;--gold2:#c9a05a;--rule:rgba(27,27,26,.1);--gold-rule:rgba(184,144,69,.22);--text:#2b2a26;--text-mid:rgba(27,27,26,.65);--text-light:rgba(27,27,26,.4);--white:rgba(27,27,26,.85);--cream:#f5f2ec;--card:#fbfaf7;--paper:#fbfaf7;--cream-dark:rgba(27,27,26,.04);--green:#2D6E47;--green-bg:rgba(45,110,71,.18);--red:#8B2222;--red-bg:rgba(139,34,34,.15);--amber:#b89045;--amber-bg:rgba(184,144,69,.1);--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',sans-serif;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);}
+:root{--navy:#1b1b1a;--navy2:#2b2a26;--navy-deep:#121210;--gold:#706e69;--gold2:#8a8177;--rule:rgba(27,27,26,.1);--gold-rule:rgba(112,110,105,.22);--text:#2b2a26;--text-mid:rgba(27,27,26,.65);--text-light:rgba(27,27,26,.4);--white:rgba(27,27,26,.85);--cream:#f5f2ec;--card:#fbfaf7;--paper:#fbfaf7;--cream-dark:rgba(27,27,26,.04);--green:#2D6E47;--green-bg:rgba(45,110,71,.18);--red:#8B2222;--red-bg:rgba(139,34,34,.15);--amber:#706e69;--amber-bg:rgba(112,110,105,.1);--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',sans-serif;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);}
 html{height:100%;font-size:18px;overflow:hidden}
 body{font-family:var(--sans);font-weight:300;color:var(--navy);background:#1b1b1a;line-height:1.7;-webkit-font-smoothing:antialiased;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:pan-y;max-width:100vw}
 body::before{display:none}
@@ -34,9 +34,9 @@ nav#nav{display:none}
 
 /* ── APP SHELL ── */
 .app{display:flex;flex-direction:column;height:100vh;height:100dvh;position:relative;z-index:1;overflow:hidden;max-width:100vw}
-.topbar{background:#1b1b1a;padding:calc(var(--safe-top) + .35rem) 1.2rem .35rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid rgba(184,144,69,.2);box-shadow:0 1px 8px rgba(0,0,0,.25);z-index:60;min-height:50px}
+.topbar{background:#1b1b1a;padding:calc(var(--safe-top) + .35rem) 1.2rem .35rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid rgba(112,110,105,.2);box-shadow:0 1px 8px rgba(0,0,0,.25);z-index:60;min-height:50px}
 .tb-left{display:flex;align-items:center;gap:.8rem}
-.tb-crest{width:36px;height:36px;border:1px solid rgba(184,144,69,.35);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1rem;color:var(--gold);flex-shrink:0}
+.tb-crest{width:36px;height:36px;border:1px solid rgba(112,110,105,.35);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1rem;color:var(--gold);flex-shrink:0}
 .tb-name{font-family:var(--serif);font-size:1rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#f5f2ec}
 .tb-mode-label{font-size:.48rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
 .status-dot{width:8px;height:8px;border-radius:50%;background:rgba(27,27,26,.2);flex-shrink:0;transition:background .4s}
@@ -45,7 +45,7 @@ nav#nav{display:none}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
 /* ── BOTTOM NAV ── */
-.bottom-nav{background:#1b1b1a;border-top:1px solid rgba(184,144,69,.2);box-shadow:0 -1px 8px rgba(0,0,0,.25);display:flex;flex-direction:column;padding-bottom:var(--safe-bottom);flex-shrink:0;z-index:60}
+.bottom-nav{background:#1b1b1a;border-top:1px solid rgba(112,110,105,.2);box-shadow:0 -1px 8px rgba(0,0,0,.25);display:flex;flex-direction:column;padding-bottom:var(--safe-bottom);flex-shrink:0;z-index:60}
 .bn-row{display:flex;width:100%}
 .bn{flex:1;display:flex;flex-direction:column;align-items:center;gap:.22rem;padding:.85rem .3rem;background:none;border:none;cursor:pointer;transition:color .2s;color:rgba(245,242,236,.5);font-family:var(--sans);min-height:60px;position:relative}
 .bn.on{color:var(--gold)}
@@ -64,7 +64,7 @@ nav#nav{display:none}
 
 /* ── CARDS ── */
 .card{background:var(--card);border:1px solid var(--gold-rule);box-shadow:0 4px 20px rgba(0,0,0,.2);margin-bottom:.85rem;border-radius:14px;overflow:hidden}
-.ch{padding:.9rem 1.4rem;border-bottom:1px solid rgba(184,144,69,.12);font-size:.7rem;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;justify-content:space-between}
+.ch{padding:.9rem 1.4rem;border-bottom:1px solid rgba(112,110,105,.12);font-size:.7rem;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;justify-content:space-between}
 .cb{padding:0 1.1rem}
 .row{display:flex;justify-content:space-between;align-items:baseline;padding:.88rem 0;border-bottom:1px solid rgba(27,27,26,.06)}
 .row:last-child{border-bottom:none}
@@ -74,12 +74,12 @@ nav#nav{display:none}
 
 /* ── JOB CARDS ── */
 .job-card{background:var(--card);border:1px solid rgba(27,27,26,.12);box-shadow:0 2px 14px rgba(27,27,26,.07);margin-bottom:.85rem;overflow:hidden;border-radius:12px}
-.job-card.active-job{border-color:var(--gold);border-width:2px;box-shadow:0 4px 18px rgba(184,144,69,.18)}
+.job-card.active-job{border-color:var(--gold);border-width:2px;box-shadow:0 4px 18px rgba(112,110,105,.18)}
 .job-card.done-job{opacity:.6}
 .jc-bar{height:4px;background:var(--navy)}
 .job-card.active-job .jc-bar{background:var(--gold)}
 .job-card.done-job .jc-bar{background:var(--green)}
-.jc-header{display:flex;align-items:center;justify-content:space-between;padding:.95rem 1.1rem .8rem;border-bottom:1px solid rgba(184,144,69,.12)}
+.jc-header{display:flex;align-items:center;justify-content:space-between;padding:.95rem 1.1rem .8rem;border-bottom:1px solid rgba(112,110,105,.12)}
 .jc-time{font-family:var(--serif);font-size:2rem;font-weight:300;color:var(--gold);line-height:1}
 .jc-name{font-size:1.15rem;font-weight:500;color:var(--navy);font-family:var(--serif);text-align:right}
 .jc-pax{font-size:.78rem;color:rgba(27,27,26,.5);font-weight:300;margin-top:.1rem;text-align:right}
@@ -91,15 +91,15 @@ nav#nav{display:none}
 .fp{display:inline-block;font-size:.68rem;font-weight:500;letter-spacing:.08em;padding:.18rem .6rem;border:1px solid}
 .fp-ontime{color:var(--green);border-color:rgba(45,110,71,.4);background:var(--green-bg)}
 .fp-landed{color:#60A5FA;border-color:rgba(96,165,250,.25);background:rgba(96,165,250,.06)}
-.fp-delayed{color:var(--gold);border-color:rgba(184,144,69,.3);background:var(--amber-bg)}
+.fp-delayed{color:var(--gold);border-color:rgba(112,110,105,.3);background:var(--amber-bg)}
 .jc-contact{display:flex;gap:1px;border-bottom:1px solid rgba(27,27,26,.06);background:rgba(27,27,26,.04)}
 .jcc{flex:1;padding:.85rem;background:rgba(27,27,26,.05);border:none;font-family:var(--sans);font-size:.78rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.55);cursor:pointer;transition:all .25s;text-decoration:none;display:flex;align-items:center;justify-content:center}
-.jcc:hover,.jcc:active{background:rgba(184,144,69,.15);color:var(--navy)}
+.jcc:hover,.jcc:active{background:rgba(112,110,105,.15);color:var(--navy)}
 .jc-actions{padding:.8rem 1rem;display:flex;flex-wrap:wrap;gap:.5rem}
 .sbt{font-family:var(--sans);font-size:.78rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.75rem 1rem;cursor:pointer;border:none;transition:all .2s;flex:1;min-width:100px;min-height:50px}
 .sbt-enroute{background:var(--gold);color:var(--navy)}.sbt-enroute:hover{background:var(--gold2);color:var(--navy)}
 .sbt-atpickup{background:rgba(96,165,250,.1);color:#60A5FA;border:1px solid rgba(96,165,250,.2)}
-.sbt-onboard{background:var(--amber-bg);color:var(--gold);border:1px solid rgba(184,144,69,.3)}
+.sbt-onboard{background:var(--amber-bg);color:var(--gold);border:1px solid rgba(112,110,105,.3)}
 .sbt-dropoff{background:var(--green-bg);color:var(--green);border:1px solid rgba(45,110,71,.3)}
 .sbt-cancel{background:transparent;color:rgba(27,27,26,.4);border:1px solid rgba(27,27,26,.12)}
 .jc-links{padding:.6rem 1rem;border-top:1px solid rgba(27,27,26,.06);display:flex;gap:.5rem;flex-wrap:wrap}
@@ -129,7 +129,7 @@ nav#nav{display:none}
 .jc2{background:var(--card);border-radius:14px;box-shadow:0 2px 18px rgba(27,27,26,.07),0 1px 4px rgba(27,27,26,.04);margin-bottom:1rem;overflow:hidden;border:1.5px solid rgba(27,27,26,.07);transition:box-shadow .2s}
 .jc2.st-upcoming,.jc2.st-confirmed{border-left:4px solid var(--gold)}
 .jc2.st-enroute{border-left:4px solid #60A5FA}
-.jc2.st-atpickup{border-left:4px solid #F59E0B}
+.jc2.st-atpickup{border-left:4px solid #706e69}
 .jc2.st-onboard{border-left:4px solid var(--green)}
 .jc2.st-done{border-left:4px solid rgba(27,27,26,.12);opacity:.7}
 
@@ -140,9 +140,9 @@ nav#nav{display:none}
 .jc2-pax{font-size:.7rem;color:rgba(27,27,26,.42);margin-top:.12rem}
 
 .jc2-badge{display:inline-flex;align-items:center;font-size:.58rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;padding:.2rem .7rem;border-radius:20px;margin:.15rem 1.15rem .35rem}
-.jc2-bd-upcoming,.jc2-bd-confirmed{background:rgba(184,144,69,.13);color:#9a7a3a}
+.jc2-bd-upcoming,.jc2-bd-confirmed{background:rgba(112,110,105,.13);color:#6a6860}
 .jc2-bd-enroute{background:rgba(96,165,250,.1);color:#2563EB}
-.jc2-bd-atpickup{background:rgba(245,158,11,.1);color:#B45309}
+.jc2-bd-atpickup{background:rgba(245,158,11,.1);color:#5c5a54}
 .jc2-bd-onboard{background:rgba(45,110,71,.1);color:var(--green)}
 .jc2-bd-done{background:rgba(27,27,26,.05);color:rgba(27,27,26,.38)}
 
@@ -150,7 +150,7 @@ nav#nav{display:none}
 .jc2-prog{display:flex;align-items:center;padding:0 1.15rem .7rem}
 .jc2-prog-dot{width:8px;height:8px;border-radius:50%;border:1.5px solid rgba(27,27,26,.18);background:var(--card);flex-shrink:0}
 .jc2-prog-dot.pd-done{background:var(--green);border-color:var(--green)}
-.jc2-prog-dot.pd-active{background:var(--gold);border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,144,69,.22)}
+.jc2-prog-dot.pd-active{background:var(--gold);border-color:var(--gold);box-shadow:0 0 0 3px rgba(112,110,105,.22)}
 .jc2-prog-line{flex:1;height:1.5px;background:rgba(27,27,26,.1);margin:0 2px}
 .jc2-prog-line.pl-done{background:rgba(45,110,71,.4)}
 
@@ -160,7 +160,7 @@ nav#nav{display:none}
 .jc2-pin{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:.3rem}
 .jc2-pin.pu{background:var(--gold)}
 .jc2-pin.de{background:rgba(27,27,26,.35)}
-.jc2-addr{font-size:.92rem;font-weight:300;color:var(--navy);cursor:pointer;line-height:1.35;border-bottom:1px dashed rgba(184,144,69,.35)}
+.jc2-addr{font-size:.92rem;font-weight:300;color:var(--navy);cursor:pointer;line-height:1.35;border-bottom:1px dashed rgba(112,110,105,.35)}
 .jc2-addr:active{opacity:.6}
 
 /* Fare row */
@@ -171,11 +171,11 @@ nav#nav{display:none}
 /* Footer */
 .jc2-foot{display:flex;border-top:1px solid rgba(27,27,26,.06)}
 .jc2-cc{flex:1;padding:.82rem .5rem;background:rgba(27,27,26,.025);border:none;font-family:var(--sans);font-size:.68rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5);cursor:pointer;text-decoration:none;display:flex;align-items:center;justify-content:center;border-right:1px solid rgba(27,27,26,.05)}
-.jc2-cc:active{background:rgba(184,144,69,.12);color:var(--navy)}
+.jc2-cc:active{background:rgba(112,110,105,.12);color:var(--navy)}
 .jc2-ab{flex:2;padding:.82rem .6rem;font-family:var(--sans);font-size:.74rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border:none;transition:all .2s}
 .jc2-ab.ab-enroute{background:var(--gold);color:var(--navy)}
 .jc2-ab.ab-atpickup{background:#3B82F6;color:#fff}
-.jc2-ab.ab-onboard{background:#F59E0B;color:#fff}
+.jc2-ab.ab-onboard{background:#706e69;color:#fff}
 .jc2-ab.ab-dropoff{background:var(--green);color:#fff}
 .jc2-ab.ab-cancel{background:transparent;color:rgba(27,27,26,.35);font-weight:400;border-left:1px solid rgba(27,27,26,.08)}
 
@@ -190,7 +190,7 @@ nav#nav{display:none}
 .notif-feed{overflow-y:auto;flex:1}
 .notif-empty{padding:2rem;text-align:center;font-size:.82rem;color:rgba(27,27,26,.35)}
 .notif-item{display:flex;gap:.85rem;align-items:flex-start;padding:.75rem 1.2rem;border-bottom:1px solid rgba(27,27,26,.04)}
-.notif-icon{width:30px;height:30px;border-radius:50%;background:rgba(184,144,69,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.85rem}
+.notif-icon{width:30px;height:30px;border-radius:50%;background:rgba(112,110,105,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.85rem}
 .notif-body{flex:1}
 .notif-msg{font-size:.83rem;color:var(--navy);line-height:1.4}
 .notif-ts{font-size:.66rem;color:rgba(27,27,26,.38);margin-top:.2rem}
@@ -224,11 +224,11 @@ nav#nav{display:none}
 .msg-time{font-size:.78rem;color:rgba(27,27,26,.45)}
 .msg-pill{font-size:.65rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.25rem .7rem;border:1px solid}
 .pill-ok{color:var(--green);border-color:rgba(45,110,71,.4);background:var(--green-bg)}
-.pill-flag{color:var(--gold);border-color:rgba(184,144,69,.3);background:var(--amber-bg)}
+.pill-flag{color:var(--gold);border-color:rgba(112,110,105,.3);background:var(--amber-bg)}
 .pill-enquiry{color:rgba(27,27,26,.4);border-color:rgba(27,27,26,.1);background:rgba(27,27,26,.04)}
 .msg-text{font-size:.95rem;color:rgba(27,27,26,.65);font-weight:300;line-height:1.6;font-style:italic;border-left:2px solid rgba(27,27,26,.15);padding-left:.75rem;margin:.5rem 0}
 .msg-extract{font-size:.9rem;color:rgba(27,27,26,.65);font-weight:300;background:rgba(27,27,26,.04);padding:.7rem .9rem;margin:.5rem 0;line-height:1.75}
-.msg-conflict{font-size:.88rem;color:var(--gold);font-weight:300;background:var(--amber-bg);border:1px solid rgba(184,144,69,.25);padding:.6rem .9rem;margin:.5rem 0}
+.msg-conflict{font-size:.88rem;color:var(--gold);font-weight:300;background:var(--amber-bg);border:1px solid rgba(112,110,105,.25);padding:.6rem .9rem;margin:.5rem 0}
 .msg-actions{display:flex;gap:.5rem;margin-top:.7rem;flex-wrap:wrap}
 .ma-btn{font-family:var(--sans);font-size:.78rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.65rem 1rem;cursor:pointer;border:none;min-height:46px;transition:all .2s}
 .ma-accept{background:var(--gold);color:var(--navy)}.ma-accept:hover{background:var(--gold2);color:var(--navy)}
@@ -247,11 +247,11 @@ nav#nav{display:none}
 .assist-status-dot.rec{background:var(--gold);animation:pulse 1s infinite}
 .assist-feed{flex:1;overflow-y:auto;padding:.9rem 1rem;display:flex;flex-direction:column;gap:.3rem;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
 .msg-user{display:flex;justify-content:flex-end;margin-bottom:.5rem}
-.msg-user div{background:rgba(184,144,69,.1);color:var(--navy);padding:.7rem .9rem;font-size:.95rem;font-weight:300;max-width:82%;line-height:1.6;border:1px solid rgba(184,144,69,.15)}
+.msg-user div{background:rgba(112,110,105,.1);color:var(--navy);padding:.7rem .9rem;font-size:.95rem;font-weight:300;max-width:82%;line-height:1.6;border:1px solid rgba(112,110,105,.15)}
 .msg-w{display:flex;gap:.5rem;align-items:flex-start;margin-bottom:.5rem}
-.msg-w-crest{width:20px;height:20px;border:1px solid rgba(184,144,69,.3);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:.62rem;color:var(--gold);flex-shrink:0;margin-top:.15rem}
+.msg-w-crest{width:20px;height:20px;border:1px solid rgba(112,110,105,.3);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:.62rem;color:var(--gold);flex-shrink:0;margin-top:.15rem}
 .msg-w div{background:rgba(27,27,26,.04);border:1px solid rgba(27,27,26,.08);padding:.7rem .9rem;font-size:.95rem;color:var(--navy);font-weight:300;max-width:85%;line-height:1.6}
-.msg-booking{background:rgba(184,144,69,.08)!important;border:1px solid rgba(184,144,69,.25)!important;padding:.9rem 1rem!important}
+.msg-booking{background:rgba(112,110,105,.08)!important;border:1px solid rgba(112,110,105,.25)!important;padding:.9rem 1rem!important}
 .msg-booking-title{font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem;font-weight:500}
 .msg-booking-row{font-size:.88rem;color:var(--navy);line-height:1.6;font-weight:300}
 .msg-booking-row strong{font-weight:500}
@@ -268,9 +268,9 @@ nav#nav{display:none}
 .assist-input::placeholder{color:rgba(27,27,26,.3)}
 .btn-send{font-family:var(--sans);font-size:.58rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;background:var(--gold);border:none;color:var(--navy);padding:.55rem 1rem;cursor:pointer;min-height:42px;transition:all .25s;white-space:nowrap}
 .btn-send:hover{background:var(--gold2)}
-.btn-cam{background:rgba(184,144,69,.12);border:1.5px solid rgba(184,144,69,.5);color:var(--navy);width:44px;height:44px;min-width:44px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;-webkit-tap-highlight-color:transparent;font-size:1.2rem}
-.btn-cam:hover,.btn-cam:active{background:rgba(184,144,69,.22);border-color:var(--gold)}
-.assist-img-preview{max-width:100%;max-height:120px;border:1px solid rgba(184,144,69,.3);margin-bottom:.4rem;display:block;border-radius:2px}
+.btn-cam{background:rgba(112,110,105,.12);border:1.5px solid rgba(112,110,105,.5);color:var(--navy);width:44px;height:44px;min-width:44px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;-webkit-tap-highlight-color:transparent;font-size:1.2rem}
+.btn-cam:hover,.btn-cam:active{background:rgba(112,110,105,.22);border-color:var(--gold)}
+.assist-img-preview{max-width:100%;max-height:120px;border:1px solid rgba(112,110,105,.3);margin-bottom:.4rem;display:block;border-radius:2px}
 
 /* ── SMART DAY ── */
 .verdict-row{display:flex;align-items:flex-start;justify-content:space-between;padding:.9rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.06);gap:.8rem}
@@ -303,7 +303,7 @@ nav#nav{display:none}
 .nb-close:hover{color:var(--navy);border-color:rgba(27,27,26,.25)}
 
 /* ── TOAST ── */
-#toast{position:fixed;bottom:calc(4.5rem + var(--safe-bottom));left:1rem;right:1rem;background:rgba(27,27,26,.92);backdrop-filter:blur(16px);border:1px solid rgba(184,144,69,.25);padding:.95rem 1.3rem;font-size:.92rem;color:#fff;display:none;font-family:var(--sans);font-weight:300;z-index:300;max-width:360px;margin:0 auto}
+#toast{position:fixed;bottom:calc(4.5rem + var(--safe-bottom));left:1rem;right:1rem;background:rgba(27,27,26,.92);backdrop-filter:blur(16px);border:1px solid rgba(112,110,105,.25);padding:.95rem 1.3rem;font-size:.92rem;color:#fff;display:none;font-family:var(--sans);font-weight:300;z-index:300;max-width:360px;margin:0 auto}
 #toast.on{display:flex;align-items:center;gap:.6rem;animation:tIn .25s ease}
 @keyframes tIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
@@ -316,7 +316,7 @@ input[type=date]::placeholder,input[type=text]::placeholder{color:rgba(27,27,26,
 
 /* ── QUICK CMD BUTTONS ── */
 .qcmd{text-align:left;background:rgba(27,27,26,.03);border:1px solid rgba(27,27,26,.08);padding:.75rem 1rem;cursor:pointer;font-family:var(--sans);font-size:.92rem;font-weight:300;color:rgba(27,27,26,.65);width:100%;transition:all .25s}
-.qcmd:hover{border-color:rgba(184,144,69,.3);color:var(--navy)}
+.qcmd:hover{border-color:rgba(112,110,105,.3);color:var(--navy)}
 
 /* ── INLINE BTN OVERRIDES ── */
 .ibtn-primary{font-family:var(--sans);font-size:.78rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;background:var(--gold);color:var(--navy);border:none;padding:.75rem 1.3rem;cursor:pointer;min-height:50px;transition:all .25s}
@@ -324,7 +324,7 @@ input[type=date]::placeholder,input[type=text]::placeholder{color:rgba(27,27,26,
 .ibtn-ghost{font-family:var(--sans);font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;background:transparent;color:rgba(27,27,26,.55);border:1px solid rgba(27,27,26,.15);padding:.75rem 1.3rem;cursor:pointer;min-height:50px;transition:all .25s}
 .ibtn-ghost:hover{border-color:rgba(27,27,26,.3);color:var(--navy)}
 .ibtn-sm{font-family:var(--sans);font-size:.56rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;background:rgba(27,27,26,.06);color:rgba(27,27,26,.5);border:none;padding:.3rem .75rem;cursor:pointer;transition:all .2s}
-.ibtn-sm:hover{background:rgba(184,144,69,.15);color:var(--navy)}
+.ibtn-sm:hover{background:rgba(112,110,105,.15);color:var(--navy)}
 .ibtn-sm-outline{font-family:var(--sans);font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;background:none;border:1px solid rgba(27,27,26,.1);color:rgba(27,27,26,.4);padding:.28rem .65rem;cursor:pointer;transition:all .2s}
 .ibtn-sm-outline:hover{border-color:var(--gold);color:var(--navy)}
 
@@ -358,9 +358,9 @@ input[type=date]::placeholder,input[type=text]::placeholder{color:rgba(27,27,26,
 }
 
 /* ── EARNINGS STAT CARDS ── */
-.earn-stat-card{background:var(--navy2);border:1px solid rgba(184,144,69,.25);border-radius:10px;padding:.75rem .6rem;text-align:center;position:relative;overflow:hidden}
-.earn-stat-card::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(-45deg,transparent,transparent 12px,rgba(184,144,69,.04) 12px,rgba(184,144,69,.04) 13px);pointer-events:none}
-.earn-stat-card.esk-accent{background:linear-gradient(135deg,#1a2d42 0%,var(--navy) 100%);border:1px solid rgba(184,144,69,.35)}
+.earn-stat-card{background:var(--navy2);border:1px solid rgba(112,110,105,.25);border-radius:10px;padding:.75rem .6rem;text-align:center;position:relative;overflow:hidden}
+.earn-stat-card::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(-45deg,transparent,transparent 12px,rgba(112,110,105,.04) 12px,rgba(112,110,105,.04) 13px);pointer-events:none}
+.earn-stat-card.esk-accent{background:linear-gradient(135deg,#1a2d42 0%,var(--navy) 100%);border:1px solid rgba(112,110,105,.35)}
 .esk-label{font-size:.45rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:.3rem;position:relative}
 .esk-amount{font-family:var(--serif);font-size:1.55rem;color:var(--gold);line-height:1;position:relative;font-weight:300}
 .earn-stat-card.esk-accent .esk-amount{font-size:1.75rem}
@@ -369,8 +369,8 @@ input[type=date]::placeholder,input[type=text]::placeholder{color:rgba(27,27,26,
 /* ── LOGIN SCREEN ── */
 #login-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1rem;position:relative;z-index:1;padding-top:6rem}
 .ls-inner{width:100%;max-width:420px;background:var(--card);border:1px solid rgba(27,27,26,.08);box-shadow:0 4px 24px rgba(27,27,26,.06)}
-.ls-crest{width:56px;height:56px;border:1px solid rgba(184,144,69,.3);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.4rem;font-weight:500;color:var(--navy);margin:0 auto 1.1rem;position:relative}
-.ls-crest::before{content:'';position:absolute;inset:-8px;border:1px solid rgba(184,144,69,.1)}
+.ls-crest{width:56px;height:56px;border:1px solid rgba(112,110,105,.3);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.4rem;font-weight:500;color:var(--navy);margin:0 auto 1.1rem;position:relative}
+.ls-crest::before{content:'';position:absolute;inset:-8px;border:1px solid rgba(112,110,105,.1)}
 .ls-title{font-family:var(--serif);font-size:1.6rem;font-weight:300;color:var(--navy);text-align:center;margin-bottom:.2rem}
 .ls-sub{font-size:.58rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);text-align:center;margin-bottom:2rem}
 .ls-fg{display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem}
@@ -382,15 +382,15 @@ input[type=date]::placeholder,input[type=text]::placeholder{color:rgba(27,27,26,
 .ls-btn:hover{background:var(--gold2)}
 .ls-err{display:none;font-size:.78rem;color:var(--red);text-align:center;margin-top:.5rem;padding:.5rem;background:var(--red-bg);border:1px solid rgba(139,34,34,.3)}
 .ls-err.show{display:block}
-.ls-hd{padding:2.5rem 2.2rem 2rem;text-align:center;border-bottom:1px solid rgba(184,144,69,.12)}
+.ls-hd{padding:2.5rem 2.2rem 2rem;text-align:center;border-bottom:1px solid rgba(112,110,105,.12)}
 .ls-body{padding:2.2rem 2.2rem 1.8rem}
 .ls-foot{text-align:center;padding:1.4rem 2.2rem;border-top:1px solid rgba(27,27,26,.06);font-size:.78rem;color:rgba(27,27,26,.35)}
 /* ── CALENDAR ── */
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:0;border:1px solid rgba(27,27,26,.1);overflow:hidden;width:100%}
 .cal-hd{padding:.55rem .2rem;text-align:center;font-size:.65rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5);background:rgba(245,242,236,.8)}
 .cal-day{min-height:70px;padding:.3rem .25rem;background:var(--card);cursor:pointer;transition:background .2s;position:relative;overflow:hidden;border-right:1px solid rgba(27,27,26,.07);border-bottom:1px solid rgba(27,27,26,.07);box-sizing:border-box}
-.cal-day:active{background:rgba(184,144,69,.15)}
-.cal-day.today{background:rgba(184,144,69,.2);border:2px solid var(--gold);box-shadow:inset 0 0 0 1px rgba(184,144,69,.25)}
+.cal-day:active{background:rgba(112,110,105,.15)}
+.cal-day.today{background:rgba(112,110,105,.2);border:2px solid var(--gold);box-shadow:inset 0 0 0 1px rgba(112,110,105,.25)}
 .cal-day.selected{background:rgba(27,27,26,.07);border:2px solid var(--navy)}
 .cal-day.other{opacity:.25;pointer-events:none}
 .cal-num{font-size:.88rem;font-weight:400;color:var(--navy);line-height:1}
@@ -435,13 +435,13 @@ input[type=date]::placeholder,input[type=text]::placeholder{color:rgba(27,27,26,
 .ws-alt-name{font-size:.88rem;font-weight:500;color:var(--navy)}
 .ws-alt-route{font-size:.78rem;color:rgba(27,27,26,.5);margin-top:.1rem}
 .ws-alt-type{font-size:.62rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.15rem .45rem;border-radius:4px;display:inline-block;margin-top:.25rem}
-.ws-alt-type-job{color:var(--gold);background:var(--amber-bg);border:1px solid rgba(184,144,69,.2)}
+.ws-alt-type-job{color:var(--gold);background:var(--amber-bg);border:1px solid rgba(112,110,105,.2)}
 .ws-alt-type-event{color:rgba(27,27,26,.5);background:rgba(27,27,26,.04);border:1px solid rgba(27,27,26,.1)}
 
 /* ── FEASIBILITY BANNER ── */
 .feas-banner{padding:1.1rem 1.2rem;margin-bottom:.6rem;border:2px solid}
 .feas-banner.no-go{background:rgba(139,34,34,.2);border-color:rgba(200,60,60,.5)}
-.feas-banner.tight{background:rgba(184,144,69,.12);border-color:rgba(184,144,69,.4)}
+.feas-banner.tight{background:rgba(112,110,105,.12);border-color:rgba(112,110,105,.4)}
 .feas-verdict{font-family:var(--serif);font-size:1.5rem;font-weight:500;margin-bottom:.3rem;line-height:1.2}
 .feas-banner.no-go .feas-verdict{color:#E85555}
 .feas-banner.tight .feas-verdict{color:var(--gold)}
@@ -456,12 +456,12 @@ input[type=date]::placeholder,input[type=text]::placeholder{color:rgba(27,27,26,
 .msg-source.email{color:#60A5FA;border-color:rgba(96,165,250,.25)}
 
 /* ── SUGGESTION DROPDOWN ── */
-.sug-drop{position:absolute;left:0;right:0;top:100%;background:rgba(255,255,255,.97);backdrop-filter:blur(18px);border:1px solid rgba(184,144,69,.25);z-index:300;max-height:360px;overflow-y:auto;display:none}
+.sug-drop{position:absolute;left:0;right:0;top:100%;background:rgba(255,255,255,.97);backdrop-filter:blur(18px);border:1px solid rgba(112,110,105,.25);z-index:300;max-height:360px;overflow-y:auto;display:none}
 .sug-drop.on{display:block}
 .sug-drop div{padding:.72rem 1rem;font-size:.82rem;color:rgba(27,27,26,.7);cursor:pointer;border-bottom:1px solid rgba(27,27,26,.05);transition:background .15s}
-.sug-drop div:hover,.sug-drop div:active{background:rgba(184,144,69,.12);color:var(--navy)}
+.sug-drop div:hover,.sug-drop div:active{background:rgba(112,110,105,.12);color:var(--navy)}
 
-footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-size:.68rem;letter-spacing:.1em;color:rgba(27,27,26,.4);background:rgba(27,27,26,.03);border-top:1px solid rgba(27,27,26,.06);position:relative;z-index:1}.mini-legal{margin-left:.6rem}.mini-legal a{color:rgba(27,27,26,.35);text-decoration:none;margin-left:.5rem;transition:color .2s;letter-spacing:.08em}.mini-legal a:hover{color:rgba(184,144,69,.8)}
+footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-size:.68rem;letter-spacing:.1em;color:rgba(27,27,26,.4);background:rgba(27,27,26,.03);border-top:1px solid rgba(27,27,26,.06);position:relative;z-index:1}.mini-legal{margin-left:.6rem}.mini-legal a{color:rgba(27,27,26,.35);text-decoration:none;margin-left:.5rem;transition:color .2s;letter-spacing:.08em}.mini-legal a:hover{color:rgba(112,110,105,.8)}
 .fi{font-family:var(--sans);color:var(--navy);background:var(--card);border:1px solid rgba(27,27,26,.15);border-radius:5px;padding:.42rem .5rem;outline:none;width:100%;box-sizing:border-box;-webkit-appearance:none}
 .fi:focus{border-color:var(--gold)}
 
@@ -532,7 +532,7 @@ h1,h2,h3,h4{font-family:var(--serif);color:var(--navy)}
         <div class="tb-mode-label" id="tb-mode-label">Westmere</div>
       </div>
     </div>
-    <button id="assist-fab" onclick="openAssistant()" title="Assistant" style="display:none;background:var(--gold);border:none;color:var(--navy);cursor:pointer;width:38px;height:38px;border-radius:50%;font-family:var(--serif);font-size:1.1rem;font-weight:400;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(184,144,69,.35);flex-shrink:0">W</button>
+    <button id="assist-fab" onclick="openAssistant()" title="Assistant" style="display:none;background:var(--gold);border:none;color:var(--navy);cursor:pointer;width:38px;height:38px;border-radius:50%;font-family:var(--serif);font-size:1.1rem;font-weight:400;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(112,110,105,.35);flex-shrink:0">W</button>
     <div style="display:flex;align-items:center;gap:.4rem">
       <button onclick="openSettings()" title="Settings" style="background:transparent;border:1px solid rgba(245,242,236,.2);width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(245,242,236,.7)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -546,7 +546,7 @@ h1,h2,h3,h4{font-family:var(--serif);color:var(--navy)}
   </div>
 
   <!-- DOCUMENT EXPIRY WARNING BAR -->
-  <div id="doc-expiry-warn" style="display:none;background:#9C5800;color:#fff;font-size:.7rem;text-align:center;padding:.3rem 1rem;letter-spacing:.05em;cursor:pointer;flex-shrink:0" onclick="openSettings()">
+  <div id="doc-expiry-warn" style="display:none;background:#5c5a54;color:#fff;font-size:.7rem;text-align:center;padding:.3rem 1rem;letter-spacing:.05em;cursor:pointer;flex-shrink:0" onclick="openSettings()">
     &#9888; Documents expiring soon — tap to review
   </div>
 
@@ -672,9 +672,9 @@ h1,h2,h3,h4{font-family:var(--serif);color:var(--navy)}
         <button onclick="ownerNewBookingOpen()" style="padding:.55rem 1rem;font-family:var(--sans);font-size:.68rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;background:var(--gold);color:var(--navy);border:none;border-radius:7px;cursor:pointer;min-height:40px;white-space:nowrap">+ New Booking</button>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin:.5rem 0 .85rem">
-        <button onclick="confirmedWeekNav(-1)" style="background:rgba(245,242,236,.06);border:1px solid rgba(184,144,69,.3);color:#f5f2ec;font-family:var(--sans);font-size:.85rem;padding:.5rem 1rem;cursor:pointer;border-radius:6px;min-height:44px">&larr; Prev</button>
+        <button onclick="confirmedWeekNav(-1)" style="background:rgba(245,242,236,.06);border:1px solid rgba(112,110,105,.3);color:#f5f2ec;font-family:var(--sans);font-size:.85rem;padding:.5rem 1rem;cursor:pointer;border-radius:6px;min-height:44px">&larr; Prev</button>
         <div id="confirmed-week-range" style="flex:1;text-align:center;font-weight:600;color:#f5f2ec;font-size:.85rem"></div>
-        <button onclick="confirmedWeekNav(1)" style="background:rgba(245,242,236,.06);border:1px solid rgba(184,144,69,.3);color:#f5f2ec;font-family:var(--sans);font-size:.85rem;padding:.5rem 1rem;cursor:pointer;border-radius:6px;min-height:44px">Next &rarr;</button>
+        <button onclick="confirmedWeekNav(1)" style="background:rgba(245,242,236,.06);border:1px solid rgba(112,110,105,.3);color:#f5f2ec;font-family:var(--sans);font-size:.85rem;padding:.5rem 1rem;cursor:pointer;border-radius:6px;min-height:44px">Next &rarr;</button>
       </div>
       <div id="confirmed-list"></div>
     </div>
@@ -750,7 +750,7 @@ h1,h2,h3,h4{font-family:var(--serif);color:var(--navy)}
             <div class="esk-amount" style="font-size:1.1rem">— mi</div>
           </div>
         </div>
-        <div id="mile-tax-year" style="display:flex;justify-content:space-between;align-items:center;padding:.6rem .8rem;background:var(--navy2);border:1px solid rgba(184,144,69,.2);border-radius:8px">
+        <div id="mile-tax-year" style="display:flex;justify-content:space-between;align-items:center;padding:.6rem .8rem;background:var(--navy2);border:1px solid rgba(112,110,105,.2);border-radius:8px">
           <span style="font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(245,242,236,.4);font-family:var(--sans)">Tax Year Total</span>
           <span style="font-family:var(--serif);font-size:1.1rem;color:var(--gold)">— miles</span>
         </div>
@@ -970,7 +970,7 @@ h1,h2,h3,h4{font-family:var(--serif);color:var(--navy)}
             <div id="inv-det-recipient" style="font-size:.88rem;color:var(--navy);line-height:1.6"></div>
           </div>
           <div id="inv-det-period" style="font-size:.75rem;color:rgba(27,27,26,.5);margin-bottom:.8rem;font-style:italic"></div>
-          <div id="inv-det-notes" style="display:none;margin-bottom:.8rem;padding:.55rem .7rem;background:rgba(184,144,69,.07);border-left:3px solid var(--gold);font-size:.8rem;color:var(--navy);line-height:1.6;border-radius:0 4px 4px 0"></div>
+          <div id="inv-det-notes" style="display:none;margin-bottom:.8rem;padding:.55rem .7rem;background:rgba(112,110,105,.07);border-left:3px solid var(--gold);font-size:.8rem;color:var(--navy);line-height:1.6;border-radius:0 4px 4px 0"></div>
           <div style="overflow-x:auto;margin-bottom:1rem">
             <table style="width:100%;border-collapse:collapse" id="inv-det-table">
               <thead id="inv-det-head"></thead>
@@ -1182,7 +1182,7 @@ async function loadOwnerProfile(){
       if(doc.expVal){
         var expDate=new Date(doc.expVal);expDate.setHours(0,0,0,0);
         var daysLeft=Math.round((expDate-today)/(1000*60*60*24));
-        var warnColor=daysLeft<30?'#c0392b':daysLeft<90?'#9C5800':'#2D6E47';
+        var warnColor=daysLeft<30?'#c0392b':daysLeft<90?'#5c5a54':'#2D6E47';
         var warnText=daysLeft<0?'EXPIRED':'Expires in '+daysLeft+' days';
         warn='<div style="font-size:.58rem;color:'+warnColor+';font-weight:600;margin-top:.15rem">'+warnText+'</div>';
       }
@@ -1270,7 +1270,7 @@ async function loadOwnerDocs(){
           var expDate=new Date(expiry);expDate.setHours(0,0,0,0);
           var daysLeft=Math.round((expDate-today)/(1000*60*60*24));
           if(daysLeft<0){statusHtml='<span style="font-size:.58rem;padding:.15rem .5rem;border-radius:10px;background:#fde8e8;color:#c0392b;font-weight:600">Expired</span>';hasExpiring=true;}
-          else if(daysLeft<=30){statusHtml='<span style="font-size:.58rem;padding:.15rem .5rem;border-radius:10px;background:#fff3cd;color:#9C5800;font-weight:600">'+daysLeft+'d left</span>';hasExpiring=true;}
+          else if(daysLeft<=30){statusHtml='<span style="font-size:.58rem;padding:.15rem .5rem;border-radius:10px;background:#f0ece3;color:#5c5a54;font-weight:600">'+daysLeft+'d left</span>';hasExpiring=true;}
           else{statusHtml='<span style="font-size:.58rem;padding:.15rem .5rem;border-radius:10px;background:#e8f5e9;color:#2D6E47">Valid</span>';}
         }else{
           statusHtml='<span style="font-size:.58rem;padding:.15rem .5rem;border-radius:10px;background:#e8f5e9;color:#2D6E47">Uploaded</span>';
@@ -1609,7 +1609,7 @@ setInterval(function(){
     if(ms<=0){el.textContent='\u2014 expired';el.style.color='#9C2828';return;}
     var mm=Math.floor(ms/60000),ss=Math.floor((ms%60000)/1000);
     el.textContent='\u00b7 '+mm+':'+String(ss).padStart(2,'0');
-    el.style.color=ms<60000?'#9C2828':ms<180000?'#9C5800':'#837b71';
+    el.style.color=ms<60000?'#9C2828':ms<180000?'#5c5a54':'#837b71';
   });
 },1000);
 
@@ -1683,7 +1683,7 @@ function _obadge(status){
 function _docBadge(status){
   if(status==='approved')return '<span style="font-size:.55rem;padding:.12rem .4rem;background:var(--green-bg);color:var(--green);border-radius:3px;font-weight:500">Approved</span>';
   if(status==='rejected')return '<span style="font-size:.55rem;padding:.12rem .4rem;background:var(--red-bg);color:var(--red);border-radius:3px;font-weight:500">Rejected</span>';
-  if(status==='pending')return '<span style="font-size:.55rem;padding:.12rem .4rem;background:rgba(184,144,69,.12);color:var(--gold);border-radius:3px;font-weight:500">Review</span>';
+  if(status==='pending')return '<span style="font-size:.55rem;padding:.12rem .4rem;background:rgba(112,110,105,.12);color:var(--gold);border-radius:3px;font-weight:500">Review</span>';
   return '<span style="font-size:.55rem;padding:.12rem .4rem;background:rgba(27,27,26,.06);color:rgba(27,27,26,.35);border-radius:3px;font-weight:500">Missing</span>';
 }
 
@@ -1909,11 +1909,11 @@ function buildEarnings(){
   // This-week detail card
   document.getElementById('earn-this-week').innerHTML=
     '<div style="background:var(--card);border:1px solid rgba(27,27,26,.08);padding:1.5rem;margin-bottom:.85rem;position:relative;overflow:hidden">'
-    +'<div style="position:absolute;inset:0;background-image:repeating-linear-gradient(-45deg,transparent,transparent 60px,rgba(184,144,69,.02) 60px,rgba(184,144,69,.02) 61px);pointer-events:none"></div>'
+    +'<div style="position:absolute;inset:0;background-image:repeating-linear-gradient(-45deg,transparent,transparent 60px,rgba(112,110,105,.02) 60px,rgba(112,110,105,.02) 61px);pointer-events:none"></div>'
     +'<span style="font-size:.52rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(27,27,26,.35);margin-bottom:.2rem;display:block;position:relative">This Week · '+fmtRange(thisWeek.start)+'</span>'
     +'<span style="font-family:var(--serif);font-size:3rem;color:var(--gold);line-height:1;display:block;position:relative">'+fmtMoney(thisWeek.total)+'</span>'
     +'<div style="font-size:.72rem;color:rgba(27,27,26,.45);font-weight:300;margin-top:.3rem;position:relative">Next payment '+nextPayLabel+'</div>'
-    +'<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:rgba(184,144,69,.1);margin-top:1.2rem;border:1px solid rgba(184,144,69,.1);position:relative">'
+    +'<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:rgba(112,110,105,.1);margin-top:1.2rem;border:1px solid rgba(112,110,105,.1);position:relative">'
       +'<div style="padding:.7rem;background:rgba(27,27,26,.04);text-align:center"><div style="font-family:var(--serif);font-size:1.3rem;color:var(--navy);font-weight:300">'+thisWeek.jobs+'</div><div style="font-size:.48rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.35);margin-top:.15rem">Jobs</div></div>'
       +'<div style="padding:.7rem;background:rgba(27,27,26,.04);text-align:center"><div style="font-family:var(--serif);font-size:1.3rem;color:var(--navy);font-weight:300">'+fmtMoney(avg)+'</div><div style="font-size:.48rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.35);margin-top:.15rem">Avg</div></div>'
     +'</div>'
@@ -1973,7 +1973,7 @@ async function loadStripeBalance(){
             +'<button onclick="setFullPayout()" style="padding:.6rem .85rem;background:rgba(27,27,26,.05);border:1px solid rgba(27,27,26,.12);border-radius:6px;font-size:.68rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5);cursor:pointer;white-space:nowrap;font-family:var(--sans)">Full</button>'
           +'</div>'
           +'<button id="payout-btn" onclick="initiatePayoutConfirm()" style="width:100%;padding:.9rem;background:var(--gold);color:#fff;border:none;border-radius:8px;font-size:.8rem;font-weight:600;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;font-family:var(--sans);transition:opacity .2s">Pay Out to Bank</button>'
-          +'<div id="payout-confirm-row" style="display:none;margin-top:.6rem;background:rgba(184,144,69,.08);border:1px solid rgba(184,144,69,.35);border-radius:8px;padding:.85rem">'
+          +'<div id="payout-confirm-row" style="display:none;margin-top:.6rem;background:rgba(112,110,105,.08);border:1px solid rgba(112,110,105,.35);border-radius:8px;padding:.85rem">'
             +'<div id="payout-confirm-msg" style="font-size:.85rem;color:var(--navy);margin-bottom:.7rem;font-weight:500;text-align:center"></div>'
             +'<div style="display:flex;gap:.5rem">'
               +'<button onclick="cancelPayout()" style="flex:1;padding:.65rem;background:rgba(27,27,26,.06);border:1px solid rgba(27,27,26,.12);border-radius:6px;font-size:.72rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.55);cursor:pointer;font-family:var(--sans)">Cancel</button>'
@@ -2050,7 +2050,7 @@ async function loadPayoutHistory(){
     el.innerHTML=d.payouts.map(function(p){
       var date=new Date(p.created*1000).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
       var arrival=p.arrival_date?new Date(p.arrival_date*1000).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';
-      var stColor=p.status==='paid'?'#2A9D5C':p.status==='pending'?'#b89045':p.status==='failed'?'#a33':'rgba(27,27,26,.5)';
+      var stColor=p.status==='paid'?'#2A9D5C':p.status==='pending'?'#706e69':p.status==='failed'?'#a33':'rgba(27,27,26,.5)';
       return '<div class="row"><span class="row-k">'+date+(arrival?' → '+arrival:'')+'</span><span class="row-v"><span style="color:'+stColor+';font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;margin-right:.5rem">'+escH(p.status)+'</span>'+fmtPence(p.amount)+'</span></div>';
     }).join('');
   }catch(e){
@@ -2371,7 +2371,7 @@ setInterval(loadExternalCalEvents,5*60*1000);
 // settled). Drives the small badge shown on every booking.
 function wmPayStatus(j){
   if(j&&(j.paid_at||j.payment==='card'))return{key:'prepaid',label:'Prepaid',short:'Prepaid ✓',color:'#2D6E47',bg:'rgba(45,110,71,.12)'};
-  if(j&&j.payment==='cash')return{key:'cash',label:'Cash',short:'Cash',color:'#8B7230',bg:'rgba(184,144,69,.16)'};
+  if(j&&j.payment==='cash')return{key:'cash',label:'Cash',short:'Cash',color:'#5c5a54',bg:'rgba(112,110,105,.16)'};
   if(j&&j.payment==='account')return{key:'account',label:'Account',short:'Account',color:'#3A5A8C',bg:'rgba(58,90,140,.12)'};
   return{key:'await',label:'Awaiting payment',short:'Awaiting',color:'rgba(27,27,26,.5)',bg:'rgba(27,27,26,.07)'};
 }
@@ -2632,7 +2632,7 @@ function jobCardHtml(j){
   }
 
   var stLabel,stColor,stBg;
-  if(j.apiStatus==='pending'){stLabel='Quote requested';stColor='#9C5800';stBg='rgba(156,88,0,.08)';}
+  if(j.apiStatus==='pending'){stLabel='Quote requested';stColor='#5c5a54';stBg='rgba(156,88,0,.08)';}
   else if(j.apiStatus==='offered'){stLabel='Awaiting driver';stColor='#2A3A66';stBg='rgba(42,58,102,.07)';}
   else if(j.apiStatus==='active'){stLabel='Active';stColor='#2D6E47';stBg='rgba(45,110,71,.1)';}
   else if(j.apiStatus==='completed'){stLabel='Completed';stColor='#2D6E47';stBg='rgba(45,110,71,.12)';}
@@ -2647,7 +2647,7 @@ function jobCardHtml(j){
       +'</div>'
       +'<div style="font-size:.8rem;color:rgba(27,27,26,.6);margin-bottom:.15rem">'+escH(_shortAddr(j.pickup||''))+(j.stop_address?' → '+escH(_shortAddr(j.stop_address)):'')+' → '+escH(_shortAddr(j.dest||''))+'</div>'
       +'<div style="font-size:.72rem;color:rgba(27,27,26,.4)">'+(j.time||'ASAP')+(j.fare?' · £'+Number(j.fare).toFixed(0):'')+(j.pax>1?' · '+j.pax+' pax':'')+'</div>'
-      +(j.apiStatus==='pending'&&j.suggestedFare!=null?'<div style="margin-top:.3rem"><span style="display:inline-block;font-size:.72rem;font-weight:600;letter-spacing:.03em;color:#8B7230;background:rgba(184,144,69,.16);border:1px solid rgba(184,144,69,.4);border-radius:5px;padding:.2rem .6rem">Suggested: £'+Number(j.suggestedFare).toFixed(2)+'</span></div>':'')
+      +(j.apiStatus==='pending'&&j.suggestedFare!=null?'<div style="margin-top:.3rem"><span style="display:inline-block;font-size:.72rem;font-weight:600;letter-spacing:.03em;color:#5c5a54;background:rgba(112,110,105,.16);border:1px solid rgba(112,110,105,.4);border-radius:5px;padding:.2rem .6rem">Suggested: £'+Number(j.suggestedFare).toFixed(2)+'</span></div>':'')
       +'<div style="margin-top:.3rem">'+wmPayBadge(j)+'</div>'
     +'</div>'
     +'<div id="'+detailId+'" style="display:none;padding:0 1rem .9rem;border-top:1px solid rgba(27,27,26,.06);background:rgba(27,27,26,.02)">'
@@ -2658,14 +2658,14 @@ function jobCardHtml(j){
         +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Date</td><td>'+escH(j.date||'—')+' '+(j.time?'at '+j.time:'')+'</td></tr>'
         +(j.phone?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Phone</td><td><a href="tel:'+escH(j.phone)+'" style="color:var(--navy)">'+escH(j.phone)+'</a></td></tr>':'')
         +(j.fare?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Fare</td><td style="font-weight:600;color:var(--navy)">£'+Number(j.fare).toFixed(2)+'</td></tr>':'')
-        +(j.apiStatus==='pending'&&j.suggestedFare!=null?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Suggested</td><td style="font-weight:600;color:#8B7230">£'+Number(j.suggestedFare).toFixed(2)+'</td></tr>':'')
+        +(j.apiStatus==='pending'&&j.suggestedFare!=null?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Suggested</td><td style="font-weight:600;color:#5c5a54">£'+Number(j.suggestedFare).toFixed(2)+'</td></tr>':'')
         +(j.pax>1?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Pax</td><td>'+j.pax+'</td></tr>':'')
         +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Payment</td><td>'+wmPayBadge(j)+'</td></tr>'
         +(j.notes?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4);vertical-align:top">Notes</td><td>'+escH(j.notes)+'</td></tr>':'')
       +'</table>'
       +'<div style="display:flex;gap:.4rem;flex-wrap:wrap">';
   if(j.apiStatus==='pending'){
-    html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(184,144,69,.14);color:#8B7230;border:1.5px solid rgba(184,144,69,.35);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerSendEstimate('+j.id+')">Send Estimate</button>';
+    html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(112,110,105,.14);color:#5c5a54;border:1.5px solid rgba(112,110,105,.35);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerSendEstimate('+j.id+')">Send Estimate</button>';
     html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(45,110,71,.12);color:#2D6E47;border:1.5px solid rgba(45,110,71,.3);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingConfirm('+j.id+')">Confirm</button>';
   }
   if(j.apiStatus==='confirmed'||j.apiStatus==='active'){
@@ -2674,7 +2674,7 @@ function jobCardHtml(j){
   var _isPaid=!!(j.paid_at);
   if(j.apiStatus==='confirmed'||j.apiStatus==='active'||j.apiStatus==='completed'){
     html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;'
-      +(_isPaid?'background:rgba(45,110,71,.12);color:#2D6E47;border:1.5px solid rgba(45,110,71,.3)':'background:rgba(184,144,69,.12);color:#8B7230;border:1.5px solid rgba(184,144,69,.35)')
+      +(_isPaid?'background:rgba(45,110,71,.12);color:#2D6E47;border:1.5px solid rgba(45,110,71,.3)':'background:rgba(112,110,105,.12);color:#5c5a54;border:1.5px solid rgba(112,110,105,.35)')
       +'" onclick="ownerTogglePaid('+j.id+','+(_isPaid?'true':'false')+')">'
       +(_isPaid?'Paid ✓':'Mark Paid')+'</button>';
   }
@@ -3536,11 +3536,11 @@ function showScannedBookingCard(bk,idx,total){
     +'<div class="msg-booking-row">'+rows.join('<br>')+'</div>'
     +'<div style="margin-top:.6rem;display:flex;align-items:center;gap:.5rem">'
     +'<label style="font-size:.72rem;color:rgba(27,27,26,.5);white-space:nowrap">Fare £</label>'
-    +'<input type="number" id="'+cardId+'-fare" min="0" step="0.5" placeholder="'+(bk.fare||'')+'" value="'+(bk.fare||'')+'" style="width:80px;border:1px solid rgba(184,144,69,.4);border-radius:4px;padding:.35rem .5rem;font-size:.9rem;font-family:inherit;color:var(--navy);background:var(--card)">'
+    +'<input type="number" id="'+cardId+'-fare" min="0" step="0.5" placeholder="'+(bk.fare||'')+'" value="'+(bk.fare||'')+'" style="width:80px;border:1px solid rgba(112,110,105,.4);border-radius:4px;padding:.35rem .5rem;font-size:.9rem;font-family:inherit;color:var(--navy);background:var(--card)">'
     +'</div>'
     +'<div class="msg-booking-actions">'
     +'<button class="mba-confirm" onclick="(function(btn){var bk=JSON.parse(btn.dataset.bk);var fi=document.getElementById(btn.dataset.cid+\'-fare\');if(fi&&fi.value)bk.fare=parseFloat(fi.value);createBookingFromAssist(bk);})(this)" data-bk="'+bkJson+'" data-cid="'+cardId+'">Create Booking</button>'
-    +'<button class="mba-cal" onclick="calOnlyFromData(JSON.parse(this.dataset.bk))" data-bk="'+bkJson+'" style="padding:.6rem 1rem;background:rgba(184,144,69,.1);border:1px solid rgba(184,144,69,.35);color:var(--gold);font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:6px">Calendar Only</button>'
+    +'<button class="mba-cal" onclick="calOnlyFromData(JSON.parse(this.dataset.bk))" data-bk="'+bkJson+'" style="padding:.6rem 1rem;background:rgba(112,110,105,.1);border:1px solid rgba(112,110,105,.35);color:var(--gold);font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:6px">Calendar Only</button>'
     +'</div></div></div>';
   appendHTML(html);
 }
@@ -3625,11 +3625,11 @@ function showBookingCard(bk){
     +'<div class="msg-booking-row">'+rows.join('<br>')+'</div>'
     +'<div style="margin-top:.6rem;display:flex;align-items:center;gap:.5rem">'
     +'<label style="font-size:.72rem;color:rgba(27,27,26,.5);white-space:nowrap">Fare £</label>'
-    +'<input type="number" id="voice-fare-override" min="0" step="0.5" placeholder="'+(bk.fare||'')+'" value="'+(bk.fare||'')+'" style="width:80px;border:1px solid rgba(184,144,69,.4);border-radius:4px;padding:.35rem .5rem;font-size:.9rem;font-family:inherit;color:var(--navy);background:var(--card)">'
+    +'<input type="number" id="voice-fare-override" min="0" step="0.5" placeholder="'+(bk.fare||'')+'" value="'+(bk.fare||'')+'" style="width:80px;border:1px solid rgba(112,110,105,.4);border-radius:4px;padding:.35rem .5rem;font-size:.9rem;font-family:inherit;color:var(--navy);background:var(--card)">'
     +'</div>'
     +'<div class="msg-booking-actions">'
     +'<button class="mba-confirm" onclick="confirmAssistBooking()">Confirm &amp; Book</button>'
-    +'<button class="mba-cal" onclick="calOnlyAssistBooking()" style="padding:.6rem 1rem;background:rgba(184,144,69,.1);border:1px solid rgba(184,144,69,.35);color:var(--gold);font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:6px">Add to Calendar Only</button>'
+    +'<button class="mba-cal" onclick="calOnlyAssistBooking()" style="padding:.6rem 1rem;background:rgba(112,110,105,.1);border:1px solid rgba(112,110,105,.35);color:var(--gold);font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:6px">Add to Calendar Only</button>'
     +'<button class="mba-cancel" onclick="cancelAssistBooking()">Cancel</button>'
     +'</div></div></div>';
   appendHTML(html);
@@ -3807,7 +3807,7 @@ function buildCalendar(){
     var jobs=CAL_JOBS[key];var n=jobs?jobs.length:0;
     var ext=CAL_EXTERNAL[key];var nExt=ext?ext.length:0;
     var hasEvents=n>0||nExt>0;
-    var bgStyle=hasEvents&&!isToday&&!isSel?'background:rgba(184,144,69,.07);':'';
+    var bgStyle=hasEvents&&!isToday&&!isSel?'background:rgba(112,110,105,.07);':'';
     var cls='cal-day'+(isToday?' today':'')+(isSel?' selected':'');
     var pills='';
     if(jobs){
@@ -3819,7 +3819,7 @@ function buildCalendar(){
         var de=_tinyAddr(j.dest||'');
         var fare=(j.fare!=null&&j.fare!=='')?' £'+j.fare:'';
         var label=t+(pu&&de?' '+pu+'→'+de:'')+fare;
-        return '<div style="margin-top:2px;padding:1px 3px;background:rgba(184,144,69,.22);border-radius:2px;font-size:10px;line-height:1.45;color:#1b1b1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(label)+'</div>';
+        return '<div style="margin-top:2px;padding:1px 3px;background:rgba(112,110,105,.22);border-radius:2px;font-size:10px;line-height:1.45;color:#1b1b1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(label)+'</div>';
       }).join('');
       var remaining=(n-shown.length)+(nExt>0?nExt:0);
       if(remaining>0)pills+='<div style="font-size:9px;color:rgba(27,27,26,.45);margin-top:2px">+'+remaining+' more</div>';
@@ -3878,7 +3878,7 @@ function jobDetailCard(j){
   var wazeBtn=function(addr,label){
     return '<a href="https://waze.com/ul?q='+encodeURIComponent(addr)+'&navigate=yes" target="_blank" '
       +'style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:.5rem .9rem;'
-      +'background:rgba(184,144,69,.1);border:1px solid rgba(184,144,69,.3);color:var(--gold);'
+      +'background:rgba(112,110,105,.1);border:1px solid rgba(112,110,105,.3);color:var(--gold);'
       +'text-decoration:none;border-radius:8px;font-size:.68rem;font-weight:500;letter-spacing:.1em;'
       +'text-transform:uppercase;font-family:var(--sans);white-space:nowrap">&#9660; '+escH(label)+'</a>';
   };
@@ -3997,7 +3997,7 @@ function showCalDay(key){
         var wazeUrl='https://waze.com/ul?q='+encodeURIComponent(ev.location)+'&navigate=yes';
         locHtml='<div style="display:flex;align-items:center;gap:.5rem;margin-top:.35rem;flex-wrap:wrap">'
           +'<span style="font-size:.82rem;color:rgba(27,27,26,.6)">'+escH(ev.location)+'</span>'
-          +'<a href="'+wazeUrl+'" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:.3rem .65rem;background:rgba(184,144,69,.1);border:1px solid rgba(184,144,69,.25);color:var(--gold);text-decoration:none;border-radius:6px;font-size:.62rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-family:var(--sans);white-space:nowrap">&#9660; Navigate</a>'
+          +'<a href="'+wazeUrl+'" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:.3rem .65rem;background:rgba(112,110,105,.1);border:1px solid rgba(112,110,105,.25);color:var(--gold);text-decoration:none;border-radius:6px;font-size:.62rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-family:var(--sans);white-space:nowrap">&#9660; Navigate</a>'
           +'</div>';
       }
       var notes=ev.notes?'<div style="margin-top:.4rem;padding:.4rem .6rem;background:rgba(27,27,26,.03);border-left:2px solid rgba(96,108,145,.3);font-size:.8rem;color:rgba(27,27,26,.6);white-space:pre-wrap;line-height:1.5">'+enrichNotes(ev.notes)+'</div>':'';
@@ -4592,14 +4592,14 @@ function openInvoicePreview(data){
     }).join('');
     tableHtml='<table style="width:100%;border-collapse:collapse;margin-bottom:24px">'
       +'<thead><tr>'
-      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#b89045;padding:8px;border-bottom:2px solid #b89045;text-align:left;font-weight:600">Description</th>'
-      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#b89045;padding:8px;border-bottom:2px solid #b89045;text-align:right;font-weight:600">Amount</th>'
+      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#706e69;padding:8px;border-bottom:2px solid #706e69;text-align:left;font-weight:600">Description</th>'
+      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#706e69;padding:8px;border-bottom:2px solid #706e69;text-align:right;font-weight:600">Amount</th>'
       +'</tr></thead>'
       +'<tbody>'+itemRows+'</tbody>'
       +'</table>';
     var r=data.recipient||{};
     toAddr=[_e(r.name||''),r.address?_e(r.address).replace(/\n/g,'<br>'):'',r.phone?_e(r.phone):'',r.email?_e(r.email):''].filter(Boolean).join('<br>');
-    if(p.notes)periodLine='<div style="margin-bottom:18px;padding:12px 14px;background:rgba(184,144,69,.08);border-left:3px solid #b89045;font-size:13px;color:#1b1b1a;line-height:1.6">'+_e(p.notes).replace(/\n/g,'<br>')+'</div>';
+    if(p.notes)periodLine='<div style="margin-bottom:18px;padding:12px 14px;background:rgba(112,110,105,.08);border-left:3px solid #706e69;font-size:13px;color:#1b1b1a;line-height:1.6">'+_e(p.notes).replace(/\n/g,'<br>')+'</div>';
   } else {
     var c=data.customer||{};
     var bks=data.bookings||[];
@@ -4614,9 +4614,9 @@ function openInvoicePreview(data){
     if(!bookingRows){bookingRows='<tr><td colspan="3" style="padding:24px;text-align:center;font-size:13px;color:#a49e94;font-style:italic">No journeys in this period.</td></tr>';}
     tableHtml='<table style="width:100%;border-collapse:collapse;margin-bottom:24px">'
       +'<thead><tr>'
-      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#b89045;padding:8px;border-bottom:2px solid #b89045;text-align:left;font-weight:600">Date / Ref</th>'
-      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#b89045;padding:8px;border-bottom:2px solid #b89045;text-align:left;font-weight:600">Journey</th>'
-      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#b89045;padding:8px;border-bottom:2px solid #b89045;text-align:right;font-weight:600">Fare</th>'
+      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#706e69;padding:8px;border-bottom:2px solid #706e69;text-align:left;font-weight:600">Date / Ref</th>'
+      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#706e69;padding:8px;border-bottom:2px solid #706e69;text-align:left;font-weight:600">Journey</th>'
+      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#706e69;padding:8px;border-bottom:2px solid #706e69;text-align:right;font-weight:600">Fare</th>'
       +'</tr></thead>'
       +'<tbody>'+bookingRows+'</tbody>'
       +'</table>';
@@ -4627,7 +4627,7 @@ function openInvoicePreview(data){
   var bankHtml='';
   if(s.sort_code&&s.account_no){
     bankHtml='<div style="background:rgba(27,27,26,.04);border:1px solid rgba(27,27,26,.08);padding:20px 24px;margin-bottom:32px">'
-      +'<div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#b89045;font-weight:600;margin-bottom:10px">Payment Details</div>'
+      +'<div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#706e69;font-weight:600;margin-bottom:10px">Payment Details</div>'
       +'<table style="font-size:13px;color:#1b1b1a;line-height:1.8">'
       +(s.bank_name?'<tr><td style="color:#a49e94;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Bank</td><td>'+_e(s.bank_name)+'</td></tr>':'')
       +(s.account_name?'<tr><td style="color:#a49e94;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Name</td><td>'+_e(s.account_name)+'</td></tr>':'')
@@ -4640,7 +4640,7 @@ function openInvoicePreview(data){
   }
   var issuedStr=p.issuedDate||new Date().toISOString().slice(0,10);
   var html='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Invoice '+_e(data.invoiceNo||'')+'</title>'
-    +'<style>@page{size:A4;margin:0}@media print{.no-print{display:none!important}body{background:#fbfaf7!important}.wrap{box-shadow:none!important;margin:0!important;max-width:none!important}}*{box-sizing:border-box;margin:0;padding:0}body{font-family:Georgia,"Times New Roman",serif;color:#1b1b1a;background:#f5f2ec;-webkit-print-color-adjust:exact;print-color-adjust:exact}.wrap{max-width:800px;margin:0 auto;background:#fbfaf7;position:relative;overflow:hidden;box-shadow:0 2px 20px rgba(0,0,0,.08)}.wrap::before{content:"";position:absolute;top:0;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,#b89045 18%,#b89045 82%,transparent 100%);z-index:2}.wrap::after{content:"";position:absolute;bottom:0;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,#b89045 18%,#b89045 82%,transparent 100%);z-index:2}.corner-mark{position:absolute;top:28px;right:32px;font-family:Helvetica Neue,Arial,sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:rgba(27,27,26,.28);z-index:1}.toolbar{background:#1b1b1a;padding:12px 24px;display:flex;gap:12px;align-items:center;position:relative;z-index:3}.toolbar button{font-family:Helvetica Neue,Arial,sans-serif;font-size:12px;padding:8px 18px;border:none;cursor:pointer;letter-spacing:.5px}.toolbar .btn-dl{background:#b89045;color:#1b1b1a}.toolbar .btn-cl{background:transparent;color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.2)}.page{position:relative;z-index:1;padding:64px 56px 56px}.brand-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}.brand-mark{display:inline-block;padding-bottom:14px;border-bottom:1px solid rgba(27,27,26,.12);min-width:220px}.brand-name{font-family:Georgia,serif;font-size:26px;letter-spacing:10px;font-weight:400;color:#1b1b1a;line-height:1}.brand-sub{font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:4px;text-transform:uppercase;color:#b89045;margin-top:8px;font-weight:500}.inv-badge{text-align:right}.inv-label{font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#b89045;font-weight:600;margin-bottom:8px}.inv-no{font-family:Menlo,Consolas,monospace;font-size:14px;color:#1b1b1a;margin-bottom:6px;letter-spacing:.5px}.inv-meta{font-size:12px;color:#726a60;line-height:1.6}.gold-rule{width:36px;height:1px;background:#b89045;margin:18px 0 32px}</style></head><body>'
+    +'<style>@page{size:A4;margin:0}@media print{.no-print{display:none!important}body{background:#fbfaf7!important}.wrap{box-shadow:none!important;margin:0!important;max-width:none!important}}*{box-sizing:border-box;margin:0;padding:0}body{font-family:Georgia,"Times New Roman",serif;color:#1b1b1a;background:#f5f2ec;-webkit-print-color-adjust:exact;print-color-adjust:exact}.wrap{max-width:800px;margin:0 auto;background:#fbfaf7;position:relative;overflow:hidden;box-shadow:0 2px 20px rgba(0,0,0,.08)}.wrap::before{content:"";position:absolute;top:0;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,#706e69 18%,#706e69 82%,transparent 100%);z-index:2}.wrap::after{content:"";position:absolute;bottom:0;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,#706e69 18%,#706e69 82%,transparent 100%);z-index:2}.corner-mark{position:absolute;top:28px;right:32px;font-family:Helvetica Neue,Arial,sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:rgba(27,27,26,.28);z-index:1}.toolbar{background:#1b1b1a;padding:12px 24px;display:flex;gap:12px;align-items:center;position:relative;z-index:3}.toolbar button{font-family:Helvetica Neue,Arial,sans-serif;font-size:12px;padding:8px 18px;border:none;cursor:pointer;letter-spacing:.5px}.toolbar .btn-dl{background:#706e69;color:#1b1b1a}.toolbar .btn-cl{background:transparent;color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.2)}.page{position:relative;z-index:1;padding:64px 56px 56px}.brand-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}.brand-mark{display:inline-block;padding-bottom:14px;border-bottom:1px solid rgba(27,27,26,.12);min-width:220px}.brand-name{font-family:Georgia,serif;font-size:26px;letter-spacing:10px;font-weight:400;color:#1b1b1a;line-height:1}.brand-sub{font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:4px;text-transform:uppercase;color:#706e69;margin-top:8px;font-weight:500}.inv-badge{text-align:right}.inv-label{font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#706e69;font-weight:600;margin-bottom:8px}.inv-no{font-family:Menlo,Consolas,monospace;font-size:14px;color:#1b1b1a;margin-bottom:6px;letter-spacing:.5px}.inv-meta{font-size:12px;color:#726a60;line-height:1.6}.gold-rule{width:36px;height:1px;background:#706e69;margin:18px 0 32px}</style></head><body>'
     +'<div class="wrap">'
     +'<div class="toolbar no-print"><button class="btn-dl" onclick="window.print()">Print / Save as PDF</button><button class="btn-cl" onclick="window.close()">Close</button></div>'
     +'<div class="corner-mark">Est. Sussex</div>'
@@ -4649,11 +4649,11 @@ function openInvoicePreview(data){
     +'<div class="inv-badge"><div class="inv-label">Invoice</div><div class="inv-no">'+_e(data.invoiceNo||'')+'</div><div class="inv-meta">Issued '+_e(issuedStr)+'</div></div></div>'
     +'<div class="gold-rule"></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-bottom:36px">'
-    +'<div><div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#b89045;margin-bottom:8px;font-weight:600">From</div><div style="font-size:13px;color:#1b1b1a;line-height:1.7">'+fromAddr+'</div></div>'
-    +'<div><div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#b89045;margin-bottom:8px;font-weight:600">Bill To</div><div style="font-size:13px;color:#1b1b1a;line-height:1.7">'+toAddr+'</div></div>'
+    +'<div><div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#706e69;margin-bottom:8px;font-weight:600">From</div><div style="font-size:13px;color:#1b1b1a;line-height:1.7">'+fromAddr+'</div></div>'
+    +'<div><div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#706e69;margin-bottom:8px;font-weight:600">Bill To</div><div style="font-size:13px;color:#1b1b1a;line-height:1.7">'+toAddr+'</div></div>'
     +'</div>'+periodLine+tableHtml
     +'<div style="display:flex;flex-direction:column;align-items:flex-end;margin-bottom:32px">'
-    +'<div style="display:flex;justify-content:space-between;width:260px;padding:14px 0 8px;border-top:2px solid #b89045;margin-top:4px"><span style="font-family:Helvetica Neue,Arial,sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:600;color:#1b1b1a;align-self:center">Total</span><span style="font-size:26px;font-weight:500;color:#b89045;font-family:Georgia,serif">&pound;'+total+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between;width:260px;padding:14px 0 8px;border-top:2px solid #706e69;margin-top:4px"><span style="font-family:Helvetica Neue,Arial,sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:600;color:#1b1b1a;align-self:center">Total</span><span style="font-size:26px;font-weight:500;color:#706e69;font-family:Georgia,serif">&pound;'+total+'</span></div>'
     +'</div>'+bankHtml
     +'<div style="text-align:center;padding-top:24px;margin-top:20px;border-top:1px solid rgba(27,27,26,.1);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#a49e94;font-family:Helvetica Neue,Arial,sans-serif;font-weight:500">Westmere Private Hire &middot; Licensed by Lewes District Council &middot; westmereprivatehire.co.uk</div>'
     +'</div></div></body></html>';
@@ -4711,7 +4711,7 @@ function invLoadList(){
       // Folder header
       html+='<div style="border-bottom:1px solid rgba(27,27,26,.08)">'
         +'<div onclick="invToggleGroup('+gi+')" style="display:flex;align-items:center;gap:.7rem;padding:.85rem 1rem;cursor:pointer">'
-        +'<div style="width:36px;height:36px;border-radius:50%;background:rgba(184,144,69,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+        +'<div style="width:36px;height:36px;border-radius:50%;background:rgba(112,110,105,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">'
         +'<span style="font-family:var(--serif);font-size:.95rem;font-weight:500;color:var(--gold)">'+owEsc(name.charAt(0).toUpperCase())+'</span></div>'
         +'<div style="flex:1;min-width:0">'
         +'<div style="font-size:.92rem;font-weight:500;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+owEsc(name)+'</div>'
