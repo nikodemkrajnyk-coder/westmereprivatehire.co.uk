@@ -709,8 +709,10 @@ let RESOLVED_PLACE_ID = process.env.GOOGLE_PLACE_ID || null;
 // key is picked up without renaming. (Deliberately excludes GOOGLE_CLIENT_ID/SECRET,
 // which are Calendar OAuth creds, and MAPBOX_TOKEN.)
 const REVIEWS_KEY_NAMES = [
-  'GOOGLE_PLACES_API_KEY', 'GOOGLE_API_KEY', 'GOOGLE_MAPS_API_KEY',
-  'GOOGLE_PLACES_KEY', 'PLACES_API_KEY', 'GOOGLE_KEY', 'GMAPS_API_KEY'
+  // A single Maps key works for Places too, once the Places API is enabled on it.
+  'GOOGLE_PLACES_API_KEY', 'GOOGLE_API_KEY', 'GOOGLE_MAPS_API_KEY', 'MAPS_API_KEY', 'GOOGLE_KEY',
+  // extra aliases (kept for robustness)
+  'GOOGLE_PLACES_KEY', 'PLACES_API_KEY', 'GMAPS_API_KEY'
 ];
 function reviewsKey() {
   for (const n of REVIEWS_KEY_NAMES) {
