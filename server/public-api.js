@@ -704,8 +704,19 @@ const REVIEWS_TTL_FAIL = 5 * 60 * 1000;        // cache failures 5 min (avoid ha
 let REVIEWS_CACHE = { at: 0, ttl: 0, data: null };
 let RESOLVED_PLACE_ID = process.env.GOOGLE_PLACE_ID || null;
 
+// Env var names checked for the Places key, in priority order. GOOGLE_PLACES_API_KEY
+// is the documented/preferred name; the rest are common aliases so an already-set
+// key is picked up without renaming. (Deliberately excludes GOOGLE_CLIENT_ID/SECRET,
+// which are Calendar OAuth creds, and MAPBOX_TOKEN.)
+const REVIEWS_KEY_NAMES = [
+  'GOOGLE_PLACES_API_KEY', 'GOOGLE_API_KEY', 'GOOGLE_MAPS_API_KEY',
+  'GOOGLE_PLACES_KEY', 'PLACES_API_KEY', 'GOOGLE_KEY', 'GMAPS_API_KEY'
+];
 function reviewsKey() {
-  return process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_API_KEY || null;
+  for (const n of REVIEWS_KEY_NAMES) {
+    if (process.env[n]) return { key: process.env[n], name: n };
+  }
+  return null;
 }
 
 // Resolve a Places place_id. Prefers a pinned GOOGLE_PLACE_ID, then the CID
@@ -737,8 +748,13 @@ async function resolvePlaceId(key) {
 }
 
 router.get('/reviews', async (req, res) => {
-  const key = reviewsKey();
-  if (!key) return res.json({ configured: false, live: false, reason: 'no_key', reviews: [] });
+  const found = reviewsKey();
+  if (!found) {
+    // Report (name only, never a value) which env names were checked so the
+    // user can fix the Railway variable name.
+    return res.json({ configured: false, live: false, reason: 'no_key', checked: REVIEWS_KEY_NAMES, reviews: [] });
+  }
+  const apiKey = found.key;
 
   const refresh = req.query.refresh === '1';
   if (!refresh && REVIEWS_CACHE.data && (Date.now() - REVIEWS_CACHE.at) < REVIEWS_CACHE.ttl) {
@@ -750,16 +766,16 @@ router.get('/reviews', async (req, res) => {
   try {
     let placeId;
     try {
-      placeId = await resolvePlaceId(key);
+      placeId = await resolvePlaceId(apiKey);
     } catch (e) {
-      return cacheFail({ configured: true, live: false, reason: e.googleStatus || 'PLACE_LOOKUP_FAILED', message: e.googleMessage || e.message, reviews: [] });
+      return cacheFail({ configured: true, live: false, key_source: found.name, reason: e.googleStatus || 'PLACE_LOOKUP_FAILED', message: e.googleMessage || e.message, reviews: [] });
     }
 
     const fields = 'rating,user_ratings_total,reviews,name,url';
-    const u = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=${fields}&reviews_sort=newest&key=${key}`;
+    const u = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=${fields}&reviews_sort=newest&key=${apiKey}`;
     const j = await (await fetch(u)).json();
     if (j.status !== 'OK') {
-      return cacheFail({ configured: true, live: false, place_id: placeId, reason: j.status, message: j.error_message || null, reviews: [] });
+      return cacheFail({ configured: true, live: false, key_source: found.name, place_id: placeId, reason: j.status, message: j.error_message || null, reviews: [] });
     }
     const d = j.result || {};
     const reviews = (d.reviews || []).slice(0, 5).map(rv => ({
@@ -771,7 +787,7 @@ router.get('/reviews', async (req, res) => {
       profile_photo_url: rv.profile_photo_url
     }));
     const payload = {
-      configured: true, live: true, place_id: placeId,
+      configured: true, live: true, key_source: found.name, place_id: placeId,
       name: d.name || null,
       rating: d.rating || null,
       total: d.user_ratings_total || 0,
