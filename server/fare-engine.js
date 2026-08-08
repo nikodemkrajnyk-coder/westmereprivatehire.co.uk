@@ -52,7 +52,7 @@ const AIRPORT_FEES = {
   lu: { dropoff: 7,  pickup: 7  }, // Luton: drop-off £7/10min; Terminal CP1 £7/30min
   st: { dropoff: 10, pickup: 13 }, // Stansted: drop-off £10/15min (19 Mar 2026); Short Stay £13/30min
   so: { dropoff: 7,  pickup: 7  }, // Southampton: Pick up & Drop Off £7/20min (both ways)
-  ci: { dropoff: 8,  pickup: 17 }  // London City: drop-off £8/5min (6 Jan 2026); Pick Up zone ~£16.90/30min → £17
+  ci: { dropoff: 8,  pickup: 10 }  // London City: drop-off £8/5min (6 Jan 2026); pickup £10 (owner-confirmed)
 };
 // Road tolls (car). Added per airport route only where NOT already embedded in base.
 const DARTFORD_TOLL  = 3.50; // Dart Charge car PAYG, from 1 Sep 2025 — Stansted routes

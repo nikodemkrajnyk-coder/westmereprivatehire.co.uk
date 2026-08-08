@@ -32,7 +32,7 @@
   // top of the displayed base fare. dropoff→out, pickup(short-stay)→ret.
   var AIRPORT_FEES = {
     ga:{dropoff:10,pickup:8}, he:{dropoff:7,pickup:8}, lu:{dropoff:7,pickup:7},
-    st:{dropoff:10,pickup:13}, so:{dropoff:7,pickup:7}, ci:{dropoff:8,pickup:17}
+    st:{dropoff:10,pickup:13}, so:{dropoff:7,pickup:7}, ci:{dropoff:8,pickup:10}
   };
   var DARTFORD_TOLL = 3.50, BLACKWALL_TOLL = 4.20;
   // Stansted fixed fares already embed the Dartford premium (not re-added); London
