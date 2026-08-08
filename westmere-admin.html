@@ -425,32 +425,32 @@ if ('serviceWorker' in navigator) {
 <meta name="twitter:description" content="Westmere operations dashboard.">
 <style id="wm-white-theme">
 /* ============================================================
-   ADMIN APP — ALL-WHITE SURFACES, READABLE BLUE TEXT (restyle only)
+   ADMIN APP — ALL-WHITE SURFACES, ALL-BLACK TEXT (restyle only)
    Erases every dark/charcoal/grey background (toast, modal scrim,
    filled buttons, badges, calendar pills), converts dark-filled
    buttons to a white outline style, and sets body/label text to a
-   legible medium blue (#2f6bb0, ~5.5:1 on white). Functionality is
+   solid black. Functionality is
    untouched. Server-side emails are unaffected (only the in-app
    preview is restyled). ============================================ */
 /* 0) Palette: neutralise the dark/grey accent vars */
 :root{
   --card:#ffffff !important;--paper:#ffffff !important;--cream:#ffffff !important;
-  --gold:#2f6bb0 !important;--gold2:#255a95 !important;--gold-rule:rgba(0,0,0,.12) !important;
-  --amber:#2f6bb0 !important;--amber-bg:rgba(47,107,176,.08) !important;--rule:rgba(0,0,0,.1) !important;
+  --gold:#000000 !important;--gold2:#000000 !important;--gold-rule:rgba(0,0,0,.12) !important;
+  --amber:#000000 !important;--amber-bg:rgba(0,0,0,.05) !important;--rule:rgba(0,0,0,.1) !important;
 }
 /* 1) Core surfaces white */
 html,body{background:#ffffff !important}
 .sidebar,.topbar,.main,.content,.card,.stat,.modal,.modal-hd,.al-box,.al-hd{background:#ffffff !important}
-/* 2) ALL text readable medium blue (semantic status chips restored in step 5) */
-body *{color:#2f6bb0 !important;-webkit-text-fill-color:#2f6bb0 !important}
+/* 2) ALL text solid black (semantic status chips restored in step 5) */
+body *{color:#000000 !important;-webkit-text-fill-color:#000000 !important}
 /* 3) Dark/charcoal-filled buttons -> white with a blue outline */
-.btn-main,.btn-new,.btn-gold,.btn-navy,.aa-send,.abc-btn{background:#ffffff !important;color:#2f6bb0 !important;-webkit-text-fill-color:#2f6bb0 !important;border:1px solid #2f6bb0 !important;letter-spacing:.14em}
-.btn-main:hover,.btn-new:hover,.btn-gold:hover,.btn-navy:hover,.aa-send:hover,.abc-btn:hover{background:#eef4fb !important;color:#255a95 !important;-webkit-text-fill-color:#255a95 !important;border-color:#255a95 !important}
-.sb-badge{background:#ffffff !important;color:#2f6bb0 !important;-webkit-text-fill-color:#2f6bb0 !important;border:1px solid rgba(47,107,176,.5) !important}
-.notify-opt.on .no-chk{background:#2f6bb0 !important;color:#ffffff !important;-webkit-text-fill-color:#ffffff !important;border-color:#2f6bb0 !important}
+.btn-main,.btn-new,.btn-gold,.btn-navy,.aa-send,.abc-btn{background:#ffffff !important;color:#000000 !important;-webkit-text-fill-color:#000000 !important;border:1px solid #000000 !important;letter-spacing:.14em}
+.btn-main:hover,.btn-new:hover,.btn-gold:hover,.btn-navy:hover,.aa-send:hover,.abc-btn:hover{background:#f1f1f1 !important;color:#000000 !important;-webkit-text-fill-color:#000000 !important;border-color:#000000 !important}
+.sb-badge{background:#ffffff !important;color:#000000 !important;-webkit-text-fill-color:#000000 !important;border:1px solid rgba(0,0,0,.35) !important}
+.notify-opt.on .no-chk{background:#000000 !important;color:#ffffff !important;-webkit-text-fill-color:#ffffff !important;border-color:#000000 !important}
 /* 4) Dark surfaces that aren't buttons -> light */
-.toast{background:#ffffff !important;color:#2f6bb0 !important;-webkit-text-fill-color:#2f6bb0 !important;border:1px solid #2f6bb0 !important}
-.toast .ti{color:#2f6bb0 !important}
+.toast{background:#ffffff !important;color:#000000 !important;-webkit-text-fill-color:#000000 !important;border:1px solid #000000 !important}
+.toast .ti{color:#000000 !important}
 .overlay{background:rgba(255,255,255,.62) !important;backdrop-filter:blur(3px) !important}
 .adm-cal-pill.warn{background:#eef1f6 !important}
 .adm-cal-pill.off{background:#FCE4E4 !important;color:#9C2828 !important;-webkit-text-fill-color:#9C2828 !important}
@@ -462,9 +462,9 @@ body *{color:#2f6bb0 !important;-webkit-text-fill-color:#2f6bb0 !important}
    force it light — dark inline bg serializes to rgb(26,26,26); target its high z-index. */
 [style*="z-index:99998"],[style*="z-index: 99998"],[style*="z-index:99999"],[style*="z-index: 99999"],
 [style*="rgb(26, 26, 26)"],[style*="#1a1a1a"],[style*="rgb(13, 37, 69)"],[style*="#0D2545"]{
-  background:#ffffff !important;border:1px solid #2f6bb0 !important}
+  background:#ffffff !important;border:1px solid #000000 !important}
 [style*="z-index:99998"] *,[style*="z-index: 99998"] *,[style*="z-index:99999"] *,[style*="z-index: 99999"] *{
-  color:#2f6bb0 !important;-webkit-text-fill-color:#2f6bb0 !important}
+  color:#000000 !important;-webkit-text-fill-color:#000000 !important}
 </style></head>
 <body>
 
