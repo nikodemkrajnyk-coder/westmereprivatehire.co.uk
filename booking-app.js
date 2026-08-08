@@ -215,6 +215,15 @@
       e.preventDefault();
       var fd = new FormData(form), raw = {};
       fd.forEach(function (v, k) { raw[k] = v; });
+      // Client-side validation — instant feedback, no server round-trip
+      var miss = [];
+      if (!raw.name || !raw.name.trim()) miss.push('your name');
+      if (!raw.phone || !raw.phone.trim()) miss.push('a phone number');
+      if (!raw.email || !raw.email.trim()) miss.push('an email');
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw.email)) miss.push('a valid email');
+      if (!raw.pickup || !raw.pickup.trim()) miss.push('a pickup location');
+      if (!raw.destination || !raw.destination.trim()) miss.push('a destination');
+      if (miss.length) { if (status) { status.style.color = '#9a2b2b'; status.textContent = 'Please enter ' + miss.join(', ') + '.'; } return; }
       var payload = {
         name: raw.name, email: raw.email, phone: raw.phone,
         pickup: raw.pickup, destination: raw.destination,
