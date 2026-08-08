@@ -40,6 +40,42 @@ const FARE_AP_COORDS = {
   so:{lat:50.9503,lon:-1.3568}, ci:{lat:51.5048,lon:0.0495}
 };
 
+// ── Airport terminal fees + road tolls (added ON TOP of the all-in base fare) ──
+// Researched Aug 2026 from official airport pages / current published rates.
+// dropoff = town→airport (out) forecourt set-down charge.
+// pickup  = airport→town (ret) short-stay / pick-up car park (~30 min).
+// Kept as explicit, readable per-airport constants (not baked into FARE_CF, which
+// stays as the displayed headline price).
+const AIRPORT_FEES = {
+  ga: { dropoff: 10, pickup: 8  }, // Gatwick: drop-off £10/10min (6 Jan 2026); Short Stay ~£8/30min
+  he: { dropoff: 7,  pickup: 8  }, // Heathrow: drop-off £7 all terminals (2026); Short Stay ~£7.50/30min → £8
+  lu: { dropoff: 7,  pickup: 7  }, // Luton: drop-off £7/10min; Terminal CP1 £7/30min
+  st: { dropoff: 10, pickup: 13 }, // Stansted: drop-off £10/15min (19 Mar 2026); Short Stay £13/30min
+  so: { dropoff: 7,  pickup: 7  }, // Southampton: Pick up & Drop Off £7/20min (both ways)
+  ci: { dropoff: 8,  pickup: 17 }  // London City: drop-off £8/5min (6 Jan 2026); Pick Up zone ~£16.90/30min → £17
+};
+// Road tolls (car). Added per airport route only where NOT already embedded in base.
+const DARTFORD_TOLL  = 3.50; // Dart Charge car PAYG, from 1 Sep 2025 — Stansted routes
+const BLACKWALL_TOLL = 4.20; // Silvertown/Blackwall tunnel, peak Auto Pay from 21 Sep 2026 — London City routes
+// Stansted FIXED fares already embed a ~£12 Dartford/M25 premium, so the Dartford
+// toll is NOT re-added to fixed Stansted fares (would double-count) — it IS added
+// to the per-mile fallback (which has no toll baked in). London City base has no
+// tunnel charge, so the Blackwall/Silvertown toll is added to ALL London City routes.
+function _airportToll(ap, isFixed) {
+  if (ap === 'st') return isFixed ? 0 : DARTFORD_TOLL;
+  if (ap === 'ci') return BLACKWALL_TOLL;
+  return 0;
+}
+// Build a human breakdown string for an airport journey.
+function _airportBreakdown(base, fee, toll, ap, dir, isFixed, extra) {
+  const parts = ['£' + base + (isFixed ? ' fixed fare' : ' ' + extra)];
+  if (fee)  parts.push('£' + fee + ' ' + FARE_APFULL[ap] + ' ' + dir + ' fee');
+  if (toll) parts.push('£' + toll + ' toll');
+  let s = parts.join(' + ') + ' = £' + (base + fee + toll);
+  if (ap === 'st' && isFixed) s += ' (fare already includes Dartford Crossing)';
+  return s;
+}
+
 function _fareNormTown(s) {
   if (!s) return null;
   const l = s.toLowerCase();
@@ -156,48 +192,58 @@ async function calculateFare(pickup, destination, timeStr) {
   if (deAP && !puAP) {
     const townKey = puT;
     if (townKey && FARE_CF[townKey] && FARE_CF[townKey][deAP]) {
-      // Fixed all-in fare — no surcharge to add
-      const fare = FARE_CF[townKey][deAP].out;
+      // Fixed base (displayed headline price) + explicit drop-off fee (+ toll where applicable)
+      const base = FARE_CF[townKey][deAP].out;
+      const fee  = AIRPORT_FEES[deAP] ? AIRPORT_FEES[deAP].dropoff : 0;
+      const toll = _airportToll(deAP, true);
+      const fare = base + fee + toll;
       const rdKey = townKey + '_' + deAP;
       const RD = { horsham_ga:{m:12,t:22}, horsham_he:{m:38,t:55}, lewes_ga:{m:28,t:38}, lewes_he:{m:62,t:80}, brighton_ga:{m:27,t:40}, brighton_he:{m:58,t:75}, worthing_ga:{m:28,t:42}, worthing_he:{m:55,t:70}, burgess_ga:{m:10,t:18}, haywards_ga:{m:18,t:28}, crawley_ga:{m:4,t:12}, crawley_he:{m:32,t:48}, eastbourne_ga:{m:42,t:55}, eastbourne_he:{m:72,t:92}, seaford_ga:{m:35,t:45}, uckfield_ga:{m:22,t:32}, eastgrinstead_ga:{m:14,t:22} };
       const rd = RD[rdKey] || {};
-      return { fare, distance_miles: rd.m || null, duration_min: rd.t || null, rate_type: 'fixed', breakdown: `Fixed all-in fare: £${fare} (${FARE_APFULL[deAP]} drop-off)` };
+      return { fare, base_fare: base, airport_fee: fee, toll_fee: toll, distance_miles: rd.m || null, duration_min: rd.t || null, rate_type: 'fixed', breakdown: _airportBreakdown(base, fee, toll, deAP, 'drop-off', true) };
     }
-    // Unknown town — geocode + OSRM (per-mile fallback only)
+    // Unknown town — geocode + OSRM (per-mile fallback) + drop-off fee (+ toll)
+    const fee = AIRPORT_FEES[deAP] ? AIRPORT_FEES[deAP].dropoff : 0;
+    const toll = _airportToll(deAP, false);
     const [gc, apCoords] = await Promise.all([_fareGeocode(pickup), Promise.resolve(FARE_AP_COORDS[deAP])]);
     if (gc && apCoords) {
       const rt = await _fareRoute(gc.lat, gc.lon, apCoords.lat, apCoords.lon);
       if (rt) {
         const mi = Math.round(rt.distance / 1609.34 * 10) / 10;
         const ti = Math.round(rt.duration / 60);
-        const f = _fareCalcMile(mi, night);
-        return { fare: Math.ceil(f/0.5)*0.5, distance_miles: mi, duration_min: ti, rate_type: rateLabel, breakdown: `${mi} miles × tapered ${rateLabel} (no fixed fare for this area)` };
+        const base = _fareCalcMile(mi, night);
+        return { fare: base + fee + toll, base_fare: base, airport_fee: fee, toll_fee: toll, distance_miles: mi, duration_min: ti, rate_type: rateLabel, breakdown: _airportBreakdown(base, fee, toll, deAP, 'drop-off', false, `${mi} mi × tapered ${rateLabel}`) };
       }
     }
-    const fallback = _fareCalcMile(15, night);
-    return { fare: fallback, distance_miles: null, duration_min: null, rate_type: rateLabel + ' (estimated)', breakdown: 'Estimated ~15 miles (no fixed fare for this area)' };
+    const base = _fareCalcMile(15, night);
+    return { fare: base + fee + toll, base_fare: base, airport_fee: fee, toll_fee: toll, distance_miles: null, duration_min: null, rate_type: rateLabel + ' (estimated)', breakdown: _airportBreakdown(base, fee, toll, deAP, 'drop-off', false, `est ~15 mi × tapered ${rateLabel}`) };
   }
 
   // ── Pickup is airport ───────────────────────────────────────────────────
   if (puAP && !deAP) {
     const townKey = deT;
     if (townKey && FARE_CF[townKey] && FARE_CF[townKey][puAP]) {
-      // Fixed all-in fare — no surcharge to add
-      const fare = FARE_CF[townKey][puAP].ret;
-      return { fare, distance_miles: null, duration_min: null, rate_type: 'fixed', breakdown: `Fixed all-in fare: £${fare} (${FARE_APFULL[puAP]} pickup)` };
+      // Fixed base (displayed headline price) + explicit pickup fee (+ toll where applicable)
+      const base = FARE_CF[townKey][puAP].ret;
+      const fee  = AIRPORT_FEES[puAP] ? AIRPORT_FEES[puAP].pickup : 0;
+      const toll = _airportToll(puAP, true);
+      const fare = base + fee + toll;
+      return { fare, base_fare: base, airport_fee: fee, toll_fee: toll, distance_miles: null, duration_min: null, rate_type: 'fixed', breakdown: _airportBreakdown(base, fee, toll, puAP, 'pickup', true) };
     }
+    const fee = AIRPORT_FEES[puAP] ? AIRPORT_FEES[puAP].pickup : 0;
+    const toll = _airportToll(puAP, false);
     const [apCoords, gc] = [FARE_AP_COORDS[puAP], await _fareGeocode(destination)];
     if (gc && apCoords) {
       const rt = await _fareRoute(apCoords.lat, apCoords.lon, gc.lat, gc.lon);
       if (rt) {
         const mi = Math.round(rt.distance / 1609.34 * 10) / 10;
         const ti = Math.round(rt.duration / 60);
-        const f = _fareCalcMile(mi, night);
-        return { fare: Math.ceil(f/0.5)*0.5, distance_miles: mi, duration_min: ti, rate_type: rateLabel, breakdown: `${mi} miles × tapered ${rateLabel} (no fixed fare for this area)` };
+        const base = _fareCalcMile(mi, night);
+        return { fare: base + fee + toll, base_fare: base, airport_fee: fee, toll_fee: toll, distance_miles: mi, duration_min: ti, rate_type: rateLabel, breakdown: _airportBreakdown(base, fee, toll, puAP, 'pickup', false, `${mi} mi × tapered ${rateLabel}`) };
       }
     }
-    const fallback = _fareCalcMile(15, night);
-    return { fare: fallback, distance_miles: null, duration_min: null, rate_type: rateLabel + ' (estimated)', breakdown: 'Estimated ~15 miles (no fixed fare for this area)' };
+    const base = _fareCalcMile(15, night);
+    return { fare: base + fee + toll, base_fare: base, airport_fee: fee, toll_fee: toll, distance_miles: null, duration_min: null, rate_type: rateLabel + ' (estimated)', breakdown: _airportBreakdown(base, fee, toll, puAP, 'pickup', false, `est ~15 mi × tapered ${rateLabel}`) };
   }
 
   // ── Town-to-town: live routing ──────────────────────────────────────────
@@ -253,7 +299,9 @@ async function computeSuggestedFare(pickup, destination, timeStr) {
     fare = Math.ceil(fare / 0.5) * 0.5; // round up to nearest 50p
     return {
       fare,
-      base_fare: Number(result.fare) || 0,
+      base_fare: (result.base_fare != null ? result.base_fare : Number(result.fare)) || 0,
+      airport_fee: result.airport_fee || 0,
+      toll_fee: result.toll_fee || 0,
       dead_miles_fee: deadFee,
       dead_miles: deadMi,
       rate_type: result.rate_type,
@@ -274,4 +322,7 @@ module.exports = {
   FARE_CF,
   FARE_APFULL,
   FARE_AP_COORDS,
+  AIRPORT_FEES,
+  DARTFORD_TOLL,
+  BLACKWALL_TOLL,
 };

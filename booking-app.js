@@ -28,6 +28,20 @@
     st:{lat:51.885,lon:0.235},    lu:{lat:51.8747,lon:-0.3684},
     so:{lat:50.9503,lon:-1.3568}, ci:{lat:51.5048,lon:0.0495}
   };
+  // Airport terminal fees + road tolls (mirror of server/fare-engine.js). Added on
+  // top of the displayed base fare. dropoff→out, pickup(short-stay)→ret.
+  var AIRPORT_FEES = {
+    ga:{dropoff:10,pickup:8}, he:{dropoff:7,pickup:8}, lu:{dropoff:7,pickup:7},
+    st:{dropoff:10,pickup:13}, so:{dropoff:7,pickup:7}, ci:{dropoff:8,pickup:17}
+  };
+  var DARTFORD_TOLL = 3.50, BLACKWALL_TOLL = 4.20;
+  // Stansted fixed fares already embed the Dartford premium (not re-added); London
+  // City base has no tunnel charge so the Blackwall/Silvertown toll is always added.
+  function airportToll(ap, isFixed) {
+    if (ap === 'st') return isFixed ? 0 : DARTFORD_TOLL;
+    if (ap === 'ci') return BLACKWALL_TOLL;
+    return 0;
+  }
   function normTown(s) {
     if (!s) return null;
     var l = s.toLowerCase();
@@ -86,32 +100,36 @@
     var rateLabel = night ? 'night rate' : 'day rate';
     var puAP = normAirport(pickup), deAP = normAirport(destination);
     var puT = normTown(pickup), deT = normTown(destination);
-    // Destination is airport
+    // Destination is airport → add drop-off fee (+ toll)
     if (deAP && !puAP) {
+      var feeD = (AIRPORT_FEES[deAP]||{}).dropoff||0;
       if (puT && FARE_CF[puT] && FARE_CF[puT][deAP]) {
-        return Promise.resolve({ fare:FARE_CF[puT][deAP].out, rate_type:'fixed', label:FARE_APFULL[deAP]+' drop-off' });
+        var bD = FARE_CF[puT][deAP].out, tD = airportToll(deAP,true);
+        return Promise.resolve({ fare:bD+feeD+tD, base_fare:bD, airport_fee:feeD, toll_fee:tD, rate_type:'fixed', label:FARE_APFULL[deAP]+' drop-off' });
       }
-      var ap = FARE_AP_COORDS[deAP];
+      var ap = FARE_AP_COORDS[deAP], tDm = airportToll(deAP,false);
       return geocode(pickup).then(function(gc){
         if (gc && ap) return route(gc.lat,gc.lon,ap.lat,ap.lon).then(function(rt){
-          if (rt) { var mi=Math.round(rt.distance/1609.34*10)/10; return { fare:calcMile(mi,night), distance_miles:mi, duration_min:Math.round(rt.duration/60), rate_type:rateLabel }; }
-          return { fare:calcMile(15,night), rate_type:rateLabel+' (estimated)' };
+          if (rt) { var mi=Math.round(rt.distance/1609.34*10)/10; var b=calcMile(mi,night); return { fare:b+feeD+tDm, base_fare:b, airport_fee:feeD, toll_fee:tDm, distance_miles:mi, duration_min:Math.round(rt.duration/60), rate_type:rateLabel, label:FARE_APFULL[deAP]+' drop-off' }; }
+          var be=calcMile(15,night); return { fare:be+feeD+tDm, base_fare:be, airport_fee:feeD, toll_fee:tDm, rate_type:rateLabel+' (estimated)', label:FARE_APFULL[deAP]+' drop-off' };
         });
-        return { fare:calcMile(15,night), rate_type:rateLabel+' (estimated)' };
+        var be2=calcMile(15,night); return { fare:be2+feeD+tDm, base_fare:be2, airport_fee:feeD, toll_fee:tDm, rate_type:rateLabel+' (estimated)', label:FARE_APFULL[deAP]+' drop-off' };
       });
     }
-    // Pickup is airport
+    // Pickup is airport → add pickup (short-stay) fee (+ toll)
     if (puAP && !deAP) {
+      var feeP = (AIRPORT_FEES[puAP]||{}).pickup||0;
       if (deT && FARE_CF[deT] && FARE_CF[deT][puAP]) {
-        return Promise.resolve({ fare:FARE_CF[deT][puAP].ret, rate_type:'fixed', label:FARE_APFULL[puAP]+' pickup' });
+        var bP = FARE_CF[deT][puAP].ret, tP = airportToll(puAP,true);
+        return Promise.resolve({ fare:bP+feeP+tP, base_fare:bP, airport_fee:feeP, toll_fee:tP, rate_type:'fixed', label:FARE_APFULL[puAP]+' pickup' });
       }
-      var ap2 = FARE_AP_COORDS[puAP];
+      var ap2 = FARE_AP_COORDS[puAP], tPm = airportToll(puAP,false);
       return geocode(destination).then(function(gc){
         if (gc && ap2) return route(ap2.lat,ap2.lon,gc.lat,gc.lon).then(function(rt){
-          if (rt) { var mi=Math.round(rt.distance/1609.34*10)/10; return { fare:calcMile(mi,night), distance_miles:mi, duration_min:Math.round(rt.duration/60), rate_type:rateLabel }; }
-          return { fare:calcMile(15,night), rate_type:rateLabel+' (estimated)' };
+          if (rt) { var mi=Math.round(rt.distance/1609.34*10)/10; var b=calcMile(mi,night); return { fare:b+feeP+tPm, base_fare:b, airport_fee:feeP, toll_fee:tPm, distance_miles:mi, duration_min:Math.round(rt.duration/60), rate_type:rateLabel, label:FARE_APFULL[puAP]+' pickup' }; }
+          var be=calcMile(15,night); return { fare:be+feeP+tPm, base_fare:be, airport_fee:feeP, toll_fee:tPm, rate_type:rateLabel+' (estimated)', label:FARE_APFULL[puAP]+' pickup' };
         });
-        return { fare:calcMile(15,night), rate_type:rateLabel+' (estimated)' };
+        var be2=calcMile(15,night); return { fare:be2+feeP+tPm, base_fare:be2, airport_fee:feeP, toll_fee:tPm, rate_type:rateLabel+' (estimated)', label:FARE_APFULL[puAP]+' pickup' };
       });
     }
     // Town to town
@@ -213,9 +231,15 @@
         fareBox.innerHTML = '<span class="fe-calc">Calculating estimate…</span>';
         Promise.resolve(calculateFare(p, d, timeEl && timeEl.value)).then(function (r) {
           if (r && r.fare) {
+            var total = Math.ceil(r.fare / 0.5) * 0.5;
+            var money = function (n) { return (n % 1 === 0) ? n : n.toFixed(2); };
+            var extras = [];
+            if (r.airport_fee) extras.push('£' + money(r.airport_fee) + ' airport ' + (/pickup/i.test(r.label || '') ? 'pickup' : 'drop-off') + ' fee');
+            if (r.toll_fee) extras.push('£' + money(r.toll_fee) + ' toll');
+            var extraNote = extras.length ? ' · incl. ' + extras.join(' + ') : '';
             fareBox.className = 'fare-estimate';
-            fareBox.innerHTML = '<span class="fe-label">Estimated fare</span><span class="fe-amount">approx £' + r.fare + '</span>'
-              + '<span class="fe-note">' + (r.label || 'Airport transfer') + ' · approximate — we confirm the exact price with your request</span>';
+            fareBox.innerHTML = '<span class="fe-label">Estimated fare</span><span class="fe-amount">approx £' + money(total) + '</span>'
+              + '<span class="fe-note">' + (r.label || 'Airport transfer') + extraNote + ' · approximate — we confirm the exact price with your request</span>';
           } else {
             fareBox.className = 'fare-estimate msg';
             fareBox.innerHTML = '<span class="fe-note">Please request a booking below and we’ll confirm your fare.</span>';

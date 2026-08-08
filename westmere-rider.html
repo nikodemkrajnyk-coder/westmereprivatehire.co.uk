@@ -418,6 +418,28 @@ body.mode-day #stripe-card-el.StripeElement--focus{border-bottom-color:#8a6d34}
 .iib-share{display:inline-flex;vertical-align:middle;margin:0 .15rem}
 .iib-close{background:none;border:none;color:rgba(255,255,255,.4);font-size:1.1rem;line-height:1;cursor:pointer;padding:.25rem .3rem;flex-shrink:0;transition:color .15s}
 .iib-close:hover{color:#fff}
+
+/* ════════════════════════════════════════════
+   DESKTOP WEB-PAGE LAYOUT (≥720px) — present the account as a proper centred,
+   wider web page instead of a narrow phone column. Placed after the base rules
+   so these overrides win. Mobile (<720px) keeps the native app layout intact.
+   ════════════════════════════════════════════ */
+@media(min-width:720px){
+  .screen{
+    max-width:1000px;margin:1.25rem auto;
+    height:calc(100dvh - 2.5rem);height:calc(100vh - 2.5rem);
+    border:1px solid rgba(27,27,26,.08);border-radius:16px;overflow:hidden;
+    box-shadow:0 20px 60px rgba(27,27,26,.12);background:#fff;
+  }
+  .topbar{padding-left:2rem;padding-right:2rem;height:64px}
+  .bottom-nav{padding-left:1.5rem;padding-right:1.5rem;justify-content:center}
+  .bn-item{max-width:190px}
+  .page-content{max-width:880px;padding:1.6rem 2.2rem 2rem}
+}
+@media(min-width:1180px){
+  .screen{max-width:1120px}
+  .page-content{max-width:1000px}
+}
 </style>
 <script src="/config.js"></script>
 <script src="https://js.stripe.com/v3/" async></script>
