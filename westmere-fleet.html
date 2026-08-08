@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--navy:#111D2C;--navy2:#1C2A3E;--cream:#F5F2ED;--gold:#B8985A;--gold2:#C9A96E;--text:#fff;--muted:rgba(255,255,255,.55);--border:rgba(255,255,255,.15);--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif;}
+:root{--navy:#1b1b1a;--navy2:#2b2a26;--cream:#f5f2ec;--gold:#b89045;--gold2:#c9a05a;--text:#fff;--muted:rgba(255,255,255,.55);--border:rgba(255,255,255,.15);--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif;}
 html{font-size:16px;scroll-behavior:smooth}
-body{font-family:var(--sans);font-weight:300;color:#fff;background:#0d1520;background-attachment:fixed;background-size:cover;background-repeat:no-repeat;background-position:center 55%;line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden;height:100vh;overflow:hidden}
+body{font-family:var(--sans);font-weight:300;color:#fff;background:#141412;background-attachment:fixed;background-size:cover;background-repeat:no-repeat;background-position:center 55%;line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden;height:100vh;overflow:hidden}
 body::before{display:none}
 nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:.9rem 6%;display:flex;align-items:center;justify-content:space-between;transition:background .3s}
 nav.solid{background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;padding-left:0;padding-right:0}
@@ -32,7 +32,7 @@ nav.solid .burger{display:flex;position:fixed;top:1rem;right:6%;z-index:101}
 .nav-socials svg{width:16px;height:16px}
 .nav-wa-mobile{display:none;color:#fff;align-items:center;text-decoration:none;transition:color .2s;margin-left:auto}.nav-wa-mobile:hover{color:var(--gold)}.nav-wa-mobile svg{width:26px;height:26px}.burger{display:none;flex-direction:column;gap:5px;cursor:pointer;border:none;background:none;padding:4px;min-width:40px;min-height:40px;justify-content:center;align-items:center}
 .burger span{display:block;width:20px;height:1.5px;background:#fff}
-.mmenu{display:none;position:fixed;inset:0;background:rgba(17,29,44,.5);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);z-index:99;flex-direction:column;align-items:center;justify-content:center;gap:2.4rem}
+.mmenu{display:none;position:fixed;inset:0;background:rgba(27,27,26,.5);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);z-index:99;flex-direction:column;align-items:center;justify-content:center;gap:2.4rem}
 .mmenu.open{display:flex}
 .mmenu a{font-family:var(--serif);font-size:2rem;font-weight:300;color:rgba(255,255,255,.65);text-decoration:none;transition:color .2s}
 .mmenu a:hover{color:var(--gold)}
@@ -79,13 +79,13 @@ tr:hover td{color:#fff}
 .carousel-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3);cursor:pointer;border:none;padding:0;transition:background .3s}
 .carousel-dot.active{background:var(--gold)}
 .right-panel{position:fixed;right:0;top:0;bottom:0;width:50%;z-index:1;display:flex;flex-direction:column;justify-content:flex-start;padding:7rem 4% 2rem;box-sizing:border-box;overflow-y:auto;overflow-x:hidden;background:rgba(13,10,6,.88)}
-#specs{border-bottom:1px solid rgba(184,152,90,.15);padding-bottom:1rem;margin-bottom:1rem}
+#specs{border-bottom:1px solid rgba(184,144,69,.15);padding-bottom:1rem;margin-bottom:1rem}
 .specs-inner{max-width:100%;margin:0;padding:0;display:flex;flex-wrap:wrap}
 .spec{flex:0 0 33.33%;min-width:0;padding:.3rem .6rem;border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;gap:0;box-sizing:border-box}
 .spec:first-child{padding-left:0}
 .spec:last-child{border-right:none}
 .sv{font-family:var(--serif);font-size:1.4rem;font-weight:300;color:#fff;line-height:1}
-.sl{font-size:.46rem;font-weight:500;letter-spacing:.17em;text-transform:uppercase;color:rgba(184,152,90,.5)}
+.sl{font-size:.46rem;font-weight:500;letter-spacing:.17em;text-transform:uppercase;color:rgba(184,144,69,.5)}
 #features{position:relative;z-index:1;padding:1rem 0 0;margin:0}
 .feat-wrap{max-width:100%;margin:0}
 .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem;margin-top:1.8rem}
@@ -96,7 +96,7 @@ tr:hover td{color:#fff}
 .fleet-cta h3{font-family:var(--serif);font-size:1.55rem;font-weight:300;color:#fff;margin-bottom:.35rem}
 .fleet-cta h3 em{font-style:italic;color:var(--gold)}
 .fleet-cta p{font-size:.72rem;color:rgba(255,255,255,.35);margin-bottom:1.2rem}
-.fleet-cta a{display:inline-block;background:none;color:#fff;text-decoration:none;font-family:var(--serif);font-size:1.8rem;font-weight:300;font-style:italic;letter-spacing:.04em;text-transform:none;padding:.4rem 0;border:none;border-top:1.5px solid rgba(184,152,90,.5);width:100%;text-align:left;transition:color .2s,border-color .2s}
+.fleet-cta a{display:inline-block;background:none;color:#fff;text-decoration:none;font-family:var(--serif);font-size:1.8rem;font-weight:300;font-style:italic;letter-spacing:.04em;text-transform:none;padding:.4rem 0;border:none;border-top:1.5px solid rgba(184,144,69,.5);width:100%;text-align:left;transition:color .2s,border-color .2s}
 .fleet-cta a:hover{color:var(--gold)}
 .fleet-cta,footer,#features{display:block}
 .stitle{font-family:var(--serif);font-size:clamp(1.8rem,3.5vw,2.6rem);font-weight:300;color:#fff;line-height:1.1}
@@ -125,7 +125,7 @@ tr:hover td{color:#fff}
   .feat-grid{grid-template-columns:1fr}
 }
 
-footer.mini-foot{padding:.7rem 6%;text-align:center;font-family:var(--sans);font-size:.58rem;letter-spacing:.1em;color:rgba(255,255,255,.32);background:rgba(10,8,4,.7);border-top:1px solid rgba(184,152,90,.08);position:fixed;bottom:0;left:0;right:0;z-index:3}.mini-legal{margin-left:.6rem}.mini-legal a{color:rgba(255,255,255,.22);text-decoration:none;margin-left:.5rem;transition:color .2s;letter-spacing:.08em}.mini-legal a:hover{color:rgba(184,152,90,.7)}
+footer.mini-foot{padding:.7rem 6%;text-align:center;font-family:var(--sans);font-size:.58rem;letter-spacing:.1em;color:rgba(255,255,255,.32);background:rgba(10,8,4,.7);border-top:1px solid rgba(184,144,69,.08);position:fixed;bottom:0;left:0;right:0;z-index:3}.mini-legal{margin-left:.6rem}.mini-legal a{color:rgba(255,255,255,.22);text-decoration:none;margin-left:.5rem;transition:color .2s;letter-spacing:.08em}.mini-legal a:hover{color:rgba(184,144,69,.7)}
 </style>
 <meta name="description" content="Discover the Westmere executive fleet — premium saloons, luxury estates and MPVs. Professionally maintained, chauffeur-driven, and ready for your Sussex journey.">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23111D2C'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='38' font-weight='500' text-anchor='middle' fill='%23B8985A'%3EW%3C/text%3E%3C/svg%3E">

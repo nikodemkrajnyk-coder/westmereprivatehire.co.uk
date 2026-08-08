@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
-<meta name="theme-color" content="#111D2C">
+<meta name="theme-color" content="#1b1b1a">
 <title>Pay for your journey | Westmere Private Hire</title>
 <meta name="robots" content="noindex,nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,7 +11,7 @@
 <script src="https://js.stripe.com/v3/"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--navy:#111D2C;--navy2:#1C2A3E;--cream:#F5F2ED;--gold:#B8985A;--gold2:#C9A96E;--text:#1C2A3E;--muted:#6B7280;--border:#E5E0D8;--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif}
+:root{--navy:#1b1b1a;--navy2:#2b2a26;--cream:#f5f2ec;--gold:#b89045;--gold2:#c9a05a;--text:#2b2a26;--muted:#706e69;--border:#d9d4cc;--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif}
 html{font-size:16px}
 body{font-family:var(--sans);font-weight:300;color:var(--text);background:var(--navy);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
 .card{width:100%;max-width:440px;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.35)}
@@ -31,7 +31,7 @@ body{font-family:var(--sans);font-weight:300;color:var(--text);background:var(--
 .field label{display:block;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted);font-weight:500;margin-bottom:8px}
 #card-el{background:#fff;border:1px solid var(--border);border-radius:8px;padding:13px 14px;min-height:50px;transition:border-color .2s}
 #payment-request-button{min-height:50px}
-#card-el.StripeElement--focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(184,152,90,.16)}
+#card-el.StripeElement--focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(184,144,69,.16)}
 .err{color:#c0392b;font-size:12.5px;min-height:18px;margin:8px 2px 0;line-height:1.4}
 .btn{width:100%;border:none;border-radius:8px;background:var(--navy);color:#fff;font-family:var(--sans);font-size:15px;font-weight:400;letter-spacing:.4px;padding:16px;cursor:pointer;transition:background .2s,opacity .2s;margin-top:6px}
 .btn:hover{background:var(--navy2)}
@@ -42,12 +42,12 @@ body{font-family:var(--sans);font-weight:300;color:var(--text);background:var(--
 .or-divider::before,.or-divider::after{content:"";flex:1;height:1px;background:var(--border)}
 .or-divider span{padding:0 12px}
 .note{font-size:12px;color:var(--muted);font-style:italic;text-align:center;line-height:1.5;margin-top:16px}
-.secure{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:18px;font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;color:#9aa3b2}
+.secure{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:18px;font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;color:#a49e94}
 .secure svg{width:13px;height:13px;opacity:.7}
 .state{text-align:center;padding:8px 0}
 .state .ico{width:60px;height:60px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px}
-.state .ico.ok{background:rgba(184,152,90,.14);color:var(--gold)}
-.state .ico.info{background:rgba(28,42,62,.08);color:var(--navy)}
+.state .ico.ok{background:rgba(184,144,69,.14);color:var(--gold)}
+.state .ico.info{background:rgba(43,42,38,.08);color:var(--navy)}
 .state h2{font-family:var(--serif);font-size:23px;font-weight:400;color:var(--navy);margin-bottom:8px}
 .state p{font-size:13.5px;color:var(--muted);line-height:1.6}
 .muted-ref{font-family:'Menlo','Consolas',monospace;font-size:12px;letter-spacing:.5px;color:var(--navy)}
@@ -212,8 +212,8 @@ a.link{color:var(--gold);text-decoration:none}
     }
     stripe = Stripe(key);
     cardEl = stripe.elements().create("card", {
-      style:{ base:{ fontFamily:'"Jost","Helvetica Neue",Arial,sans-serif', fontSize:"15px", fontWeight:"300", color:"#1C2A3E",
-        "::placeholder":{ color:"rgba(28,42,62,0.4)" } }, invalid:{ color:"#c0392b", iconColor:"#c0392b" } }
+      style:{ base:{ fontFamily:'"Jost","Helvetica Neue",Arial,sans-serif', fontSize:"15px", fontWeight:"300", color:"#2b2a26",
+        "::placeholder":{ color:"rgba(43,42,38,0.4)" } }, invalid:{ color:"#c0392b", iconColor:"#c0392b" } }
     });
     cardEl.mount("#card-el");
     cardEl.on("change", function(ev){ document.getElementById("card-err").textContent = ev.error ? ev.error.message : ""; });

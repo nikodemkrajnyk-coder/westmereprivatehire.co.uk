@@ -10,11 +10,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --navy: #111D2C;
-    --navy-light: #1a2d45;
-    --cream: #F5F2ED;
-    --gold: #B8985A;
-    --gold-light: #d4b57a;
+    --navy: #1b1b1a;
+    --navy-light: #201f1b;
+    --cream: #f5f2ec;
+    --gold: #b89045;
+    --gold-light: #cdb06a;
     --serif: 'Cormorant Garamond', Georgia, serif;
     --sans: 'Jost', 'Helvetica Neue', Arial, sans-serif;
   }
@@ -23,7 +23,7 @@
 
   html, body {
     min-height: 100%;
-    background: #0d1720;
+    background: #141412;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -41,15 +41,15 @@
     background: var(--navy);
     border-radius: 20px;
     overflow: hidden;
-    box-shadow: 0 30px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(184,152,90,.18);
+    box-shadow: 0 30px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(184,144,69,.18);
   }
 
   /* ── Header band ── */
   .card-header {
-    background: linear-gradient(145deg, #1a2d45 0%, #111D2C 60%, #0d1720 100%);
+    background: linear-gradient(145deg, #201f1b 0%, #1b1b1a 60%, #141412 100%);
     padding: 2.2rem 2rem 1.6rem;
     text-align: center;
-    border-bottom: 1px solid rgba(184,152,90,.2);
+    border-bottom: 1px solid rgba(184,144,69,.2);
     position: relative;
     overflow: hidden;
   }
@@ -58,7 +58,7 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(184,152,90,.08) 0%, transparent 70%);
+    background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(184,144,69,.08) 0%, transparent 70%);
     pointer-events: none;
   }
 
@@ -71,7 +71,7 @@
     align-items: center;
     justify-content: center;
     margin: 0 auto 1rem;
-    background: rgba(184,152,90,.06);
+    background: rgba(184,144,69,.06);
   }
 
   .logo-mark span {
@@ -121,7 +121,7 @@
     font-family: var(--sans);
     font-size: .62rem;
     font-weight: 400;
-    color: rgba(245,242,237,.45);
+    color: rgba(245,242,236,.45);
     letter-spacing: .22em;
     text-transform: uppercase;
     margin-top: .3rem;
@@ -139,11 +139,11 @@
     content: '';
     flex: 1;
     height: 1px;
-    background: linear-gradient(to right, transparent, rgba(184,152,90,.35));
+    background: linear-gradient(to right, transparent, rgba(184,144,69,.35));
   }
 
   .divider::after {
-    background: linear-gradient(to left, transparent, rgba(184,152,90,.35));
+    background: linear-gradient(to left, transparent, rgba(184,144,69,.35));
   }
 
   .divider-gem {
@@ -177,8 +177,8 @@
   }
 
   .contact-link:hover, .contact-link:active {
-    background: rgba(184,152,90,.1);
-    border-color: rgba(184,152,90,.3);
+    background: rgba(184,144,69,.1);
+    border-color: rgba(184,144,69,.3);
     transform: translateY(-1px);
   }
 
@@ -197,9 +197,9 @@
     height: 18px;
   }
 
-  .icon-phone  { background: rgba(184,152,90,.15); }
+  .icon-phone  { background: rgba(184,144,69,.15); }
   .icon-wa     { background: rgba(37,211,102,.12); }
-  .icon-email  { background: rgba(184,152,90,.12); }
+  .icon-email  { background: rgba(184,144,69,.12); }
   .icon-web    { background: rgba(255,255,255,.07); }
   .icon-insta  { background: rgba(225,48,108,.12); }
 
@@ -214,7 +214,7 @@
     font-weight: 500;
     letter-spacing: .18em;
     text-transform: uppercase;
-    color: rgba(245,242,237,.38);
+    color: rgba(245,242,236,.38);
     line-height: 1;
     margin-bottom: .25rem;
   }
@@ -243,8 +243,8 @@
     font-weight: 400;
     letter-spacing: .14em;
     text-transform: uppercase;
-    color: rgba(184,152,90,.8);
-    border: 1px solid rgba(184,152,90,.25);
+    color: rgba(184,144,69,.8);
+    border: 1px solid rgba(184,144,69,.25);
     border-radius: 20px;
     padding: .28rem .75rem;
   }
@@ -286,7 +286,7 @@
     font-weight: 300;
     letter-spacing: .16em;
     text-transform: uppercase;
-    color: rgba(245,242,237,.28);
+    color: rgba(245,242,236,.28);
   }
 </style>
 </head>
@@ -314,7 +314,7 @@
 
     <a class="contact-link" href="tel:+447930342593">
       <div class="contact-icon icon-phone">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#B8985A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#b89045" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
           <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.38 2 2 0 0 1 3.6 1.21h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.77a16 16 0 0 0 6.29 6.29l1.63-1.63a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
         </svg>
       </div>
@@ -338,7 +338,7 @@
 
     <a class="contact-link" href="mailto:hello@westmere.co.uk">
       <div class="contact-icon icon-email">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#B8985A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#b89045" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
           <rect x="2" y="4" width="20" height="16" rx="2"/>
           <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
         </svg>
@@ -351,7 +351,7 @@
 
     <a class="contact-link" href="https://westmereprivatehire.co.uk" target="_blank" rel="noopener">
       <div class="contact-icon icon-web">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#F5F2ED" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#f5f2ec" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10"/>
           <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
         </svg>

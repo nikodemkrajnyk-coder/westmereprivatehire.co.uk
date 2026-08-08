@@ -10,7 +10,7 @@ const { getDb } = require('./db');
 const { sendAdminAlert } = require('./email');
 const { sendAdminBookingWhatsApp } = require('./whatsapp');
 const { createPaymentIntent, isConfigured: stripeConfigured } = require('./stripe');
-const { computeSuggestedFare, calculateFare, FARE_CF, FARE_APFULL } = require('./fare-engine');
+const { computeSuggestedFare } = require('./fare-engine');
 const gcal = require('./google-calendar');
 const intake = require('./intake');
 const events = require('./events');
@@ -376,56 +376,6 @@ router.post('/book', async (req, res) => {
   } catch (err) {
     console.error('[BOOK] Error creating booking:', err && err.stack || err);
     res.status(500).json({ error: 'Failed to create booking' });
-  }
-});
-
-
-// ── Public airport fares ─────────────────────────────────────────────────
-// Read-only view of the fare engine's fixed airport fares (FARE_CF). Lets the
-// public airport-transfers page render its price tables straight from the
-// engine so published prices can never drift from what the engine charges.
-// Route distance/time labels are descriptive metadata (not fares).
-const FARE_ROUTE_META = {
-  brighton: { ga:'~27 mi · ~40 min', he:'~58 mi · ~75 min', st:'~88 mi · ~100 min', lu:'~80 mi · ~95 min', so:'~48 mi · ~58 min', ci:'~58 mi · ~80 min' },
-  lewes:    { ga:'~28 mi · ~38 min', he:'~62 mi · ~80 min', st:'~92 mi · ~105 min', lu:'~85 mi · ~100 min', so:'~65 mi · ~72 min', ci:'~68 mi · ~92 min' },
-  horsham:  { ga:'~12 mi · ~22 min', he:'~38 mi · ~55 min', st:'~72 mi · ~90 min', lu:'~65 mi · ~82 min', so:'~48 mi · ~58 min', ci:'~52 mi · ~78 min' },
-};
-router.get('/fares', (req, res) => {
-  const towns = {};
-  for (const town of ['brighton', 'lewes', 'horsham']) {
-    const cf = FARE_CF[town] || {};
-    towns[town] = {};
-    for (const ap of ['ga', 'he', 'st', 'lu', 'so', 'ci']) {
-      if (cf[ap]) towns[town][ap] = { out: cf[ap].out, ret: cf[ap].ret };
-    }
-  }
-  res.set('Cache-Control', 'public, max-age=600');
-  res.json({ ok: true, airports: FARE_APFULL, routes: FARE_ROUTE_META, towns });
-});
-
-
-// ── Public fare estimate ─────────────────────────────────────────────────
-// Read-only live estimate from the real fare engine. Used by the Book page to
-// show an indicative price before the customer submits. Never writes anything
-// and never trusted as the final fare — the owner still confirms every job.
-router.post('/quote', async (req, res) => {
-  try {
-    const { pickup, destination, time } = req.body || {};
-    if (!pickup || !destination) {
-      return res.status(400).json({ error: 'Pickup and destination are required' });
-    }
-    const r = await calculateFare(String(pickup), String(destination), time ? String(time) : null);
-    if (!r || !r.fare) return res.json({ ok: false, error: 'Could not price this route' });
-    res.json({
-      ok: true,
-      fare: r.fare,
-      distance_miles: r.distance_miles || null,
-      duration_min: r.duration_min || null,
-      rate_type: r.rate_type,
-    });
-  } catch (err) {
-    console.error('[QUOTE] estimate failed:', err && err.message);
-    res.status(500).json({ ok: false, error: 'Estimate unavailable' });
   }
 });
 
