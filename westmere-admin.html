@@ -424,14 +424,47 @@ if ('serviceWorker' in navigator) {
 <meta name="twitter:title" content="Westmere Admin">
 <meta name="twitter:description" content="Westmere operations dashboard.">
 <style id="wm-white-theme">
-/* Clean pure-white theme (restyle only; real emails are server-side & unchanged) */
-:root{--card:#ffffff !important;--paper:#ffffff !important;--cream:#ffffff !important;
- --gold:#1a1a1a;--gold2:#333333;--gold-rule:rgba(0,0,0,.14);--amber:#6a6a6a;--amber-bg:rgba(0,0,0,.05);--rule:rgba(0,0,0,.1)}
-html,body{background:#ffffff !important;color:#1a1a1a !important}
-.topbar,.bottom-nav,.topbar *,.bottom-nav *{color:#1a1a1a !important}
-.bn{color:rgba(0,0,0,.45) !important}.bn.active{color:#1a1a1a !important}
-/* charcoal primary buttons (were gold) need white text */
-.sbt-enroute,.btn-accept,.ma-accept,.mba-confirm,.btn-send,.ibtn-primary,.ls-btn,.nav-popup-btns a:first-child,.notif-badge-num,.jc2-ab.ab-enroute,.jc2-ab.ab-onboard,.ws-day.ws-today,.btn-main,.btn-new,.btn-gold,.sb-badge,.email-btn-gold{color:#ffffff !important;letter-spacing:.14em}
+/* ============================================================
+   ADMIN APP — ALL-WHITE SURFACES, READABLE BLUE TEXT (restyle only)
+   Erases every dark/charcoal/grey background (toast, modal scrim,
+   filled buttons, badges, calendar pills), converts dark-filled
+   buttons to a white outline style, and sets body/label text to a
+   legible medium blue (#2f6bb0, ~5.5:1 on white). Functionality is
+   untouched. Server-side emails are unaffected (only the in-app
+   preview is restyled). ============================================ */
+/* 0) Palette: neutralise the dark/grey accent vars */
+:root{
+  --card:#ffffff !important;--paper:#ffffff !important;--cream:#ffffff !important;
+  --gold:#2f6bb0 !important;--gold2:#255a95 !important;--gold-rule:rgba(0,0,0,.12) !important;
+  --amber:#2f6bb0 !important;--amber-bg:rgba(47,107,176,.08) !important;--rule:rgba(0,0,0,.1) !important;
+}
+/* 1) Core surfaces white */
+html,body{background:#ffffff !important}
+.sidebar,.topbar,.main,.content,.card,.stat,.modal,.modal-hd,.al-box,.al-hd{background:#ffffff !important}
+/* 2) ALL text readable medium blue (semantic status chips restored in step 5) */
+body *{color:#2f6bb0 !important;-webkit-text-fill-color:#2f6bb0 !important}
+/* 3) Dark/charcoal-filled buttons -> white with a blue outline */
+.btn-main,.btn-new,.btn-gold,.btn-navy,.aa-send,.abc-btn{background:#ffffff !important;color:#2f6bb0 !important;-webkit-text-fill-color:#2f6bb0 !important;border:1px solid #2f6bb0 !important;letter-spacing:.14em}
+.btn-main:hover,.btn-new:hover,.btn-gold:hover,.btn-navy:hover,.aa-send:hover,.abc-btn:hover{background:#eef4fb !important;color:#255a95 !important;-webkit-text-fill-color:#255a95 !important;border-color:#255a95 !important}
+.sb-badge{background:#ffffff !important;color:#2f6bb0 !important;-webkit-text-fill-color:#2f6bb0 !important;border:1px solid rgba(47,107,176,.5) !important}
+.notify-opt.on .no-chk{background:#2f6bb0 !important;color:#ffffff !important;-webkit-text-fill-color:#ffffff !important;border-color:#2f6bb0 !important}
+/* 4) Dark surfaces that aren't buttons -> light */
+.toast{background:#ffffff !important;color:#2f6bb0 !important;-webkit-text-fill-color:#2f6bb0 !important;border:1px solid #2f6bb0 !important}
+.toast .ti{color:#2f6bb0 !important}
+.overlay{background:rgba(255,255,255,.62) !important;backdrop-filter:blur(3px) !important}
+.adm-cal-pill.warn{background:#eef1f6 !important}
+.adm-cal-pill.off{background:#FCE4E4 !important;color:#9C2828 !important;-webkit-text-fill-color:#9C2828 !important}
+/* 5) Preserve semantic status colours (chips keep their light tint + coloured text) */
+.tag-done,.tag-prepaid,.inv-status.paid,.adm-cal-status.confirmed,.adm-cal-status.completed,.dc-status.on{color:#1E6B33 !important;-webkit-text-fill-color:#1E6B33 !important}
+.tag-cancel,.inv-status.overdue,.adm-cal-status.cancelled,.sb-badge.red{color:#9C2828 !important;-webkit-text-fill-color:#9C2828 !important}
+.sb-badge.red{background:#FCE4E4 !important;border:1px solid rgba(139,34,34,.35) !important}
+/* 6) Shared realtime notification pill/toast (wm-realtime.js) as rendered on THIS page only:
+   force it light — dark inline bg serializes to rgb(26,26,26); target its high z-index. */
+[style*="z-index:99998"],[style*="z-index: 99998"],[style*="z-index:99999"],[style*="z-index: 99999"],
+[style*="rgb(26, 26, 26)"],[style*="#1a1a1a"],[style*="rgb(13, 37, 69)"],[style*="#0D2545"]{
+  background:#ffffff !important;border:1px solid #2f6bb0 !important}
+[style*="z-index:99998"] *,[style*="z-index: 99998"] *,[style*="z-index:99999"] *,[style*="z-index: 99999"] *{
+  color:#2f6bb0 !important;-webkit-text-fill-color:#2f6bb0 !important}
 </style></head>
 <body>
 

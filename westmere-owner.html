@@ -493,9 +493,10 @@ h1,h2,h3,h4{font-family:var(--serif);color:var(--navy)}
 <meta name="twitter:description" content="Westmere owner dashboard — fleet and operations overview.">
 <style id="wm-white-theme">
 /* ============================================================
-   OWNER APP — ALL-WHITE SURFACES, ALL-BLACK TEXT (restyle only)
+   OWNER APP — ALL-WHITE SURFACES, READABLE BLUE TEXT (restyle only)
    Removes every dark/charcoal/black background and every grey/muted
-   font; dark-filled buttons become white with a black outline.
+   font; body/label text is a legible medium blue (#2f6bb0, ~5.5:1 on
+   white); dark-filled buttons become white with a dark outline.
    ============================================================ */
 :root{
   /* surfaces -> white */
@@ -503,15 +504,15 @@ h1,h2,h3,h4{font-family:var(--serif);color:var(--navy)}
   /* accent vars that were used as DARK BACKGROUNDS -> white (text forced black below) */
   --gold:#ffffff !important;--gold2:#ffffff !important;--navy:#ffffff !important;--navy2:#ffffff !important;--white:#ffffff !important;
   /* text/rule vars -> black / light hairline */
-  --text:#000000 !important;--amber:#000000 !important;--muted:#000000 !important;
+  --text:#2f6bb0 !important;--amber:#2f6bb0 !important;--muted:#2f6bb0 !important;
   --gold-rule:rgba(0,0,0,.18) !important;--rule:rgba(0,0,0,.15) !important;
 }
 /* 1) Core surfaces white; kill the dark login texture */
 html,body{background:#ffffff !important;background-image:none !important}
 .app,#scr-app,#login-screen,.ls-inner,.ls-body,.ls-hd,.ls-foot,.topbar,.bottom-nav,.card,.scorecard,#toast,.nav-popup,.sug-drop{background:#ffffff !important;background-image:none !important}
-/* 2) ALL text solid black */
-#scr-app,#scr-app *,#login-screen,#login-screen *{color:#000000 !important;-webkit-text-fill-color:#000000 !important}
-.bn,.bn.active{color:#000000 !important}
+/* 2) ALL text readable medium blue */
+#scr-app,#scr-app *,#login-screen,#login-screen *{color:#2f6bb0 !important;-webkit-text-fill-color:#2f6bb0 !important}
+.bn,.bn.active{color:#2f6bb0 !important}
 /* 3) Any element given a dark background inline / via JS -> white surface, black text, outline */
 [style*="background:var(--gold)"],[style*="background: var(--gold)"],[style*="background:var(--gold2)"],
 [style*="background:var(--navy)"],[style*="background: var(--navy)"],[style*="background:var(--navy2)"],
@@ -529,7 +530,7 @@ html,body{background:#ffffff !important;background-image:none !important}
 .ibtn-primary,.ibtn-sm,.ls-btn,.btn-main,.btn-new,.btn-gold,.sb-badge,.email-btn-gold,.pill-flag,.msg-conflict,
 .msg-user div,.msg-w div,.cal-day.today,.cal-day.selected,.ws-day.ws-today,.ws-dot-job,.ws-alt-type-job,
 .job-card.active-job .jc-bar,.earn-stat-card.esk-accent,.assist-input,.fp-delayed{
-  background:#ffffff !important;color:#000000 !important}
+  background:#ffffff !important;color:#2f6bb0 !important}
 .sbt-enroute,.btn-accept,.ma-accept,.mba-confirm,.btn-send,.btn-cam,.ibtn-primary,.ls-btn,.btn-main,.btn-new,
 .btn-gold,.email-btn-gold,.nav-popup-btns a:first-child,.nav-popup-btns a:last-child,.notif-badge-num,.sb-badge{
   border:1px solid #1a1a1a !important}
@@ -537,7 +538,7 @@ html,body{background:#ffffff !important;background-image:none !important}
 .sbt-enroute:hover,.btn-accept:hover,.ma-accept:hover,.mba-confirm:hover,.btn-send:hover,.btn-cam:hover,
 .btn-cam:active,.ibtn-primary:hover,.ibtn-sm:hover,.ls-btn:hover,.jcc:hover,.jcc:active,.jc2-cc:active,
 .sug-drop div:hover,.sug-drop div:active,.cal-day.selected,.ws-day.ws-selected{
-  background:#f1f1f1 !important;color:#000000 !important;border-color:#1a1a1a !important}
+  background:#f1f1f1 !important;color:#2f6bb0 !important;border-color:#1a1a1a !important}
 /* 6) hairline rules light */
 .gold-rule,hr{background:rgba(0,0,0,.15) !important;border-color:rgba(0,0,0,.15) !important}
 /* 7) modal backdrops: light frosted veil instead of a dark scrim */
@@ -546,7 +547,7 @@ html,body{background:#ffffff !important;background-image:none !important}
    force it light — dark bg serializes to rgb(26,26,26); target its high z-index instead. */
 [style*="z-index:99998"],[style*="z-index: 99998"],[style*="z-index:99999"],[style*="z-index: 99999"],
 [style*="rgb(26, 26, 26)"],[style*="rgb(13, 37, 69)"]{background:#ffffff !important;border:1px solid #1a1a1a !important}
-[style*="z-index:99998"] *,[style*="z-index: 99998"] *,[style*="z-index:99999"] *,[style*="z-index: 99999"] *{color:#000000 !important}
+[style*="z-index:99998"] *,[style*="z-index: 99998"] *,[style*="z-index:99999"] *,[style*="z-index: 99999"] *{color:#2f6bb0 !important}
 </style></head>
 <body>
 
