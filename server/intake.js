@@ -89,7 +89,7 @@ function loadDayContext(dateStr, excludeBookingId) {
 
 function buildSystemPrompt() {
   return [
-    'You are the intake controller for Westmere Private Hire, a luxury chauffeur service in Sussex, UK.',
+    'You are the intake controller for Westmere Private Hire, a luxury driver service in Sussex, UK.',
     'Your job: decide whether the operator (a single driver fleet) can realistically take a newly requested booking,',
     'given their other confirmed jobs that day and any blocked time-off windows.',
     '',
@@ -326,7 +326,7 @@ async function draftApology(bookingId) {
   const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(bookingId);
   if (!booking) return { ok: false, reason: 'booking_not_found' };
 
-  const sys = 'You are the customer service voice of Westmere Private Hire — a polished, discreet luxury chauffeur firm in Sussex. Write a brief, sincere apology email declining a booking we cannot fulfil. Tone: warm but professional. No filler. Sign as "Westmere Private Hire". Respond with STRICT JSON: { "subject": "...", "body": "..." } — body in plain text with line breaks.';
+  const sys = 'You are the customer service voice of Westmere Private Hire — a polished, discreet luxury driver firm in Sussex. Write a brief, sincere apology email declining a booking we cannot fulfil. Tone: warm but professional. No filler. Sign as "Westmere Private Hire". Respond with STRICT JSON: { "subject": "...", "body": "..." } — body in plain text with line breaks.';
   const usr = JSON.stringify({
     customer_name: booking.notes || 'Guest',
     pickup: booking.pickup, destination: booking.destination,

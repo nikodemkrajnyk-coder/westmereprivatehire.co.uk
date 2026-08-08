@@ -718,7 +718,7 @@ function buildSystemPrompt(todayJobs) {
     ? todayJobs.map(j => `${j.time} ${j.customer_name || 'Guest'} ${j.pickup}→${j.destination} £${j.fare || '?'} ${j.payment || ''}`).join('\n')
     : 'No bookings today.';
 
-  return `You are Westmere, the hands-free voice assistant for Westmere Private Hire (luxury chauffeur service, Sussex UK). The operator is driving.
+  return `You are Westmere, the hands-free voice assistant for Westmere Private Hire (luxury driver service, Sussex UK). The operator is driving.
 
 RULES:
 - Be extremely concise: one or two short sentences. Today is ${today}.

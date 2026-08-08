@@ -421,18 +421,39 @@ body.mode-day #stripe-card-el.StripeElement--focus{border-bottom-color:#8a6d34}
 </style>
 <script src="/config.js"></script>
 <script src="https://js.stripe.com/v3/" async></script>
-<meta name="description" content="Westmere Rider — book private hire journeys across Sussex with real-time tracking, fixed quotes and premium chauffeurs.">
+<meta name="description" content="Westmere Rider — book private hire journeys across Sussex with real-time tracking, fixed quotes and premium drivers.">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23111D2C'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='38' font-weight='500' text-anchor='middle' fill='%23B8985A'%3EW%3C/text%3E%3C/svg%3E">
 <meta name="robots" content="noindex,nofollow">
 <meta property="og:title" content="Westmere Rider">
-<meta property="og:description" content="Westmere Rider — book private hire journeys across Sussex with real-time tracking, fixed quotes and premium chauffeurs.">
+<meta property="og:description" content="Westmere Rider — book private hire journeys across Sussex with real-time tracking, fixed quotes and premium drivers.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://westmereprivatehire.co.uk/westmere-rider.html">
 <meta property="og:site_name" content="Westmere Private Hire">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Westmere Rider">
-<meta name="twitter:description" content="Westmere Rider — book private hire journeys across Sussex with real-time tracking, fixed quotes and premium chauffeurs.">
-</head>
+<meta name="twitter:description" content="Westmere Rider — book private hire journeys across Sussex with real-time tracking, fixed quotes and premium drivers.">
+<style id="wm-rider-template">
+/* Rider "My Account" — align to the template's clean editorial look */
+/* Section labels -> muted charcoal eyebrows (was gold) */
+.ch,.tb-sub{color:var(--muted)!important;letter-spacing:.2em!important;font-weight:500!important;text-transform:uppercase}
+body.mode-day .ch,body.mode-day .tb-sub{color:var(--muted)!important}
+/* Cards -> clean template cards */
+.card,.sec,.aj-card,.tc-card,.prof-card{background:var(--paper)!important;border:1px solid var(--line)!important;border-radius:8px!important}
+/* Primary buttons -> clean charcoal (was gold), template tracking */
+.btn-main,.ls-btn,.aj-send-btn,.modal-btn-primary{background:#1b1b1a!important;color:#f5f2ec!important;border:none!important;border-radius:0!important;letter-spacing:.2em!important;font-weight:400!important;text-transform:uppercase}
+.btn-main:hover,.ls-btn:hover{background:#2b2a26!important}
+body.mode-day .btn-main{background:#1b1b1a!important;color:#f5f2ec!important}
+/* Ghost/secondary + locate + call -> charcoal outline */
+.loc-btn,.aj-call-btn,.filter-btn,.pick-btn{color:#1b1b1a!important;border-color:var(--line)!important}
+.filter-btn.on{background:#1b1b1a!important;color:#f5f2ec!important;border-color:#1b1b1a!important}
+/* Bottom nav active -> charcoal (template) */
+.bn-item.on,body.mode-day .bn-item.on{color:#1b1b1a!important}
+.bn-item.on .bn-bar,.bn-item.on::after{background:#1b1b1a!important}
+/* keep a restrained gold ONLY for the serif italic heading accents (.sec-title em / h1 em) */
+.sec-title em,h1 em,body.mode-day .sec-title em{color:#b89045!important}
+/* inputs a touch cleaner */
+.fi,.ls-input{font-family:var(--sans)}
+</style></head>
 <body>
 
 <!-- iOS PWA install banner -->
@@ -552,7 +573,7 @@ body.mode-day #stripe-card-el.StripeElement--focus{border-bottom-color:#8a6d34}
     <div class="page-content on" id="pg-book">
 
       <div class="sec-title">Book a <em>Journey</em></div>
-      <div class="sec-sub">Executive airport transfers &middot; No surprises</div>
+      <div class="sec-sub">Airport transfers &middot; No surprises</div>
 
       <div class="card">
         <div class="ch"><span>Journey Details</span></div>
