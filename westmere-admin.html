@@ -15,10 +15,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-:root{--navy:#1b1b1a;--navy2:#2b2a26;--cream:#f5f2ec;--gold:#706e69;--gold2:#8a8177;--text:#1b1b1a;--muted:rgba(27,27,26,.72);--border:rgba(27,27,26,.12);--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif;
---green:#2D6E47;--green-bg:rgba(45,110,71,.18);--red:#8B2222;--red-bg:rgba(139,34,34,.15);--amber:#706e69;--amber-bg:rgba(112,110,105,.1);--purple:#9B7FD4;--purple-bg:rgba(155,127,212,.1);--text-light:rgba(27,27,26,.68);--text-mid:rgba(27,27,26,.8);--cream-dark:rgba(27,27,26,.04);--rule:rgba(27,27,26,.08);}
+:root{--navy:#1b1b1a;--navy2:#2b2a26;--cream:#f5f2ec;--gold:#6a6a6a;--gold2:#8a8a8a;--text:#1b1b1a;--muted:rgba(27,27,26,.72);--border:rgba(27,27,26,.12);--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif;
+--green:#2D6E47;--green-bg:rgba(45,110,71,.18);--red:#8B2222;--red-bg:rgba(139,34,34,.15);--amber:#6a6a6a;--amber-bg:rgba(106,106,106,.1);--purple:#9B7FD4;--purple-bg:rgba(155,127,212,.1);--text-light:rgba(27,27,26,.68);--text-mid:rgba(27,27,26,.8);--cream-dark:rgba(27,27,26,.04);--rule:rgba(27,27,26,.08);}
 html{font-size:16px;scroll-behavior:smooth}
-body{font-family:var(--sans);font-weight:300;color:var(--navy);background:#f5f2ec;line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh;display:flex}
+body{font-family:var(--sans);font-weight:300;color:var(--navy);background:#ffffff;line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh;display:flex}
 body::before{display:none}
 h1,h2,h3,h4{font-family:var(--serif);font-weight:300;color:var(--navy);letter-spacing:.05em}
 p{color:rgba(27,27,26,.72);line-height:1.8}
@@ -39,8 +39,8 @@ a{color:var(--gold)}
 /* ── ADMIN APP ── */
 #admin-login{position:fixed;inset:0;background:rgba(245,242,236,.97);backdrop-filter:blur(20px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem}
 .al-box{width:100%;max-width:400px;background:#fff;border:1px solid rgba(27,27,26,.08);box-shadow:0 4px 24px rgba(27,27,26,.06);position:relative;z-index:1;animation:up .4s ease}
-.al-hd{background:rgba(27,27,26,.04);padding:2rem;text-align:center;border-bottom:1px solid rgba(112,110,105,.15)}
-.al-crest{width:52px;height:52px;border:1px solid rgba(112,110,105,.38);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.3rem;font-weight:500;color:var(--navy);margin:0 auto .8rem}
+.al-hd{background:rgba(27,27,26,.04);padding:2rem;text-align:center;border-bottom:1px solid rgba(106,106,106,.15)}
+.al-crest{width:52px;height:52px;border:1px solid rgba(106,106,106,.38);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.3rem;font-weight:500;color:var(--navy);margin:0 auto .8rem}
 .al-name{font-family:var(--serif);font-size:1.4rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--navy);display:block}
 .al-sub{font-size:.54rem;font-weight:400;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);display:block;margin-top:.15rem}
 .al-body{padding:2rem}
@@ -52,17 +52,17 @@ a{color:var(--gold)}
 /* SIDEBAR */
 .sidebar{width:220px;flex-shrink:0;background:rgba(255,255,255,.95);backdrop-filter:blur(20px);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50;overflow-y:auto;border-right:1px solid rgba(27,27,26,.06);transition:transform .3s}
 .sb-logo{padding:1.4rem 1.2rem 1.1rem;border-bottom:1px solid rgba(27,27,26,.06);flex-shrink:0}
-.sb-crest{width:36px;height:36px;border:1px solid rgba(112,110,105,.35);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1rem;font-weight:500;color:var(--navy);margin-bottom:.6rem}
+.sb-crest{width:36px;height:36px;border:1px solid rgba(106,106,106,.35);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1rem;font-weight:500;color:var(--navy);margin-bottom:.6rem}
 .sb-name{font-family:var(--serif);font-size:1.1rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);display:block;line-height:1.1}
 .sb-sub{font-size:.52rem;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);display:block;margin-top:.15rem}
 .sb-section{padding:.6rem 0;border-bottom:1px solid rgba(27,27,26,.06)}
 .sb-label{font-size:.52rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:rgba(27,27,26,.62);padding:.4rem 1.2rem;display:block}
 .sb-item{display:flex;align-items:center;gap:.65rem;padding:.55rem 1.2rem;cursor:pointer;font-family:var(--sans);font-size:.75rem;font-weight:300;color:rgba(27,27,26,.68);transition:all .15s;border:none;background:transparent;width:100%;text-align:left;text-decoration:none;letter-spacing:.02em}
 .sb-item:hover{color:var(--navy);background:rgba(27,27,26,.04)}
-.sb-item.on{color:var(--gold);background:rgba(112,110,105,.08);font-weight:400}
+.sb-item.on{color:var(--gold);background:rgba(106,106,106,.08);font-weight:400}
 .sb-icon{width:18px;height:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sb-icon svg{width:16px;height:16px;display:block}
 .sb-badge{margin-left:auto;background:var(--gold);color:var(--navy);font-size:.5rem;font-weight:700;padding:.12rem .4rem;border-radius:10px}
-.sb-badge.red{background:var(--red);color:white}
+.sb-badge.red{background:var(--red);color:#1a1a1a}
 .sb-bottom{margin-top:auto;padding:1rem 1.2rem;border-top:1px solid rgba(27,27,26,.06);flex-shrink:0}
 .sb-version{font-size:.55rem;color:rgba(27,27,26,.6);letter-spacing:.08em}
 /* MAIN */
@@ -70,7 +70,7 @@ a{color:var(--gold)}
 .topbar{background:rgba(255,255,255,.92)!important;backdrop-filter:blur(16px)!important;border-bottom:1px solid rgba(27,27,26,.06)!important;box-shadow:0 1px 8px rgba(27,27,26,.04)!important;padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:64px;position:sticky;top:0;z-index:40;flex-shrink:0}
 .tb-left{display:flex;align-items:center;gap:1rem}
 .mob-menu-btn{display:none;background:none;border:none;cursor:pointer;flex-direction:column;gap:4px;padding:4px}
-.mob-menu-btn span{display:block;width:20px;height:1.5px;background:var(--navy)}
+.mob-menu-btn span{display:block;width:20px;height:1.5px;background:#ffffff}
 .tb-title{font-family:var(--serif);font-size:1.2rem;font-weight:500;letter-spacing:.04em;color:var(--navy)}
 .tb-right{display:flex;align-items:center;gap:.8rem}
 .tb-clock{font-family:var(--serif);font-size:1.1rem;color:var(--gold)}
@@ -111,7 +111,7 @@ a{color:var(--gold)}
 .tl-time{font-family:var(--serif);font-size:.9rem;color:var(--gold);line-height:1}
 .tl-line{flex:1;width:1px;background:rgba(27,27,26,.1);margin:.2rem 0}
 .tl-card{flex:1;background:#fff;border:1px solid rgba(27,27,26,.08);padding:.8rem 1rem;cursor:pointer;transition:border-color .2s;position:relative}
-.tl-card.active{border-left:3px solid var(--gold);background:rgba(112,110,105,.06)}
+.tl-card.active{border-left:3px solid var(--gold);background:rgba(106,106,106,.06)}
 .tl-card.done{border-left:3px solid var(--green);opacity:.65}
 .tl-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem}
 .tl-name{font-size:.85rem;font-weight:500;color:var(--navy)}
@@ -119,11 +119,11 @@ a{color:var(--gold)}
 .tl-actions{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.5rem}
 /* TAGS */
 .tag{display:inline-flex;align-items:center;font-size:.54rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.15rem .5rem}
-.tag-upcoming{background:rgba(112,110,105,.15);color:var(--gold)}
+.tag-upcoming{background:rgba(106,106,106,.15);color:var(--gold)}
 .tag-done{background:var(--green-bg);color:var(--green)}
 .tag-cancel{background:var(--red-bg);color:var(--red)}
 .tag-account{background:var(--purple-bg);color:var(--purple)}
-.tag-cash{background:rgba(112,110,105,.16);color:#5c5a54}
+.tag-cash{background:rgba(106,106,106,.16);color:#555555}
 .tag-card{background:rgba(59,130,246,.08);color:#60A5FA}
 .tag-prepaid{background:var(--green-bg);color:var(--green)}
 .tag-await{background:rgba(27,27,26,.07);color:rgba(27,27,26,.7)}
@@ -155,7 +155,7 @@ textarea.fi{resize:vertical;min-height:80px}
 .avail{display:none;padding:.9rem 1rem;margin-top:.7rem;font-size:.82rem;line-height:1.75}
 .avail.show{display:block;animation:up .3s ease}
 .avail.free{background:var(--green-bg);border:1px solid rgba(45,110,71,.3)}
-.avail.tight{background:var(--amber-bg);border:1px solid rgba(112,110,105,.3)}
+.avail.tight{background:var(--amber-bg);border:1px solid rgba(106,106,106,.3)}
 .avail.no{background:var(--red-bg);border:1px solid rgba(139,34,34,.3)}
 .avail-title{font-family:var(--serif);font-size:1.1rem;font-weight:500;margin-bottom:.15rem}
 .avail.free .avail-title{color:var(--green)}
@@ -165,9 +165,9 @@ textarea.fi{resize:vertical;min-height:80px}
 .sub-offer{display:none;margin-top:.6rem;padding:.8rem;background:var(--purple-bg);border:1px solid rgba(155,127,212,.2);font-size:.82rem;font-weight:300;color:rgba(27,27,26,.74);line-height:1.7}
 .sub-offer.show{display:block}
 /* PRICE BOX */
-.price-box{display:none;background:rgba(255,255,255,.95);padding:1.4rem 1.6rem;margin-top:1rem;border:1px solid rgba(112,110,105,.15)}
+.price-box{display:none;background:rgba(255,255,255,.95);padding:1.4rem 1.6rem;margin-top:1rem;border:1px solid rgba(106,106,106,.15)}
 .price-box.show{display:block;animation:up .35s ease}
-.pb-label{font-size:.58rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(112,110,105,.6);margin-bottom:.3rem;display:flex;align-items:center;gap:.35rem}
+.pb-label{font-size:.58rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(106,106,106,.6);margin-bottom:.3rem;display:flex;align-items:center;gap:.35rem}
 .pb-dot{width:5px;height:5px;border-radius:50%;background:var(--gold);animation:pulse 1.8s infinite}
 .pb-amount{font-family:var(--serif);font-size:3.5rem;color:var(--gold);line-height:1;margin-bottom:.2rem}
 .pb-sub{font-size:.65rem;color:rgba(27,27,26,.62);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem;font-weight:300}
@@ -177,7 +177,7 @@ textarea.fi{resize:vertical;min-height:80px}
 /* NOTIFICATION OPTIONS */
 .notify-list{display:flex;flex-direction:column;gap:.6rem;margin-top:.5rem}
 .notify-opt{display:flex;align-items:center;gap:.8rem;padding:.9rem 1rem;background:#fff;border:1px solid rgba(27,27,26,.08);cursor:pointer;transition:all .2s}
-.notify-opt.on{border-color:var(--gold);background:rgba(112,110,105,.08)}
+.notify-opt.on{border-color:var(--gold);background:rgba(106,106,106,.08)}
 .notify-opt:hover{border-color:var(--gold)}
 .no-icon{font-size:1rem;flex-shrink:0}
 .no-name{font-size:.86rem;font-weight:400;color:var(--navy)}
@@ -198,7 +198,7 @@ textarea.fi{resize:vertical;min-height:80px}
 .fare-table td{padding:.4rem .5rem;border:1px solid rgba(27,27,26,.06);text-align:center}
 .fare-table tr:first-child td{background:rgba(27,27,26,.03);font-size:.75rem;font-weight:500;color:var(--navy);text-align:left}
 .fare-input{background:transparent;border:none;outline:none;font-family:var(--sans);font-size:.84rem;font-weight:500;color:var(--gold);text-align:center;width:100%;padding:.18rem}
-.fare-input:focus{background:rgba(112,110,105,.08)}
+.fare-input:focus{background:rgba(106,106,106,.08)}
 /* NOTIFICATIONS LIST */
 .notif{display:flex;align-items:flex-start;gap:.65rem;padding:.7rem 0;border-bottom:1px solid rgba(27,27,26,.06)}
 .notif:last-child{border-bottom:none}
@@ -227,7 +227,7 @@ textarea.fi{resize:vertical;min-height:80px}
 .modal-body{padding:1.5rem}
 .modal-foot{padding:1rem 1.5rem;border-top:1px solid rgba(27,27,26,.08);display:flex;gap:.6rem;justify-content:flex-end}
 /* TOAST */
-.toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:300;background:rgba(27,27,26,.92);border:1px solid var(--gold);padding:.85rem 1.2rem;font-size:.78rem;color:#fff;display:none;max-width:340px;backdrop-filter:blur(10px)}
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:300;background:rgba(27,27,26,.92);border:1px solid var(--gold);padding:.85rem 1.2rem;font-size:.78rem;color:#1a1a1a;display:none;max-width:340px;backdrop-filter:blur(10px)}
 .toast.on{display:flex;align-items:center;gap:.5rem;animation:sl .3s ease}
 .toast .ti{color:var(--gold);flex-shrink:0}
 /* CUSTOMER CARDS */
@@ -241,9 +241,9 @@ textarea.fi{resize:vertical;min-height:80px}
 .cc-meta{font-size:.72rem;color:rgba(27,27,26,.66);font-weight:300}
 .cc-actions{margin-top:.75rem;padding-top:.65rem;border-top:1px solid rgba(27,27,26,.06);display:flex;gap:.4rem}
 .cc-btn{flex:1;padding:.5rem .6rem;background:transparent;color:var(--navy);border:1px solid rgba(27,27,26,.15);border-radius:6px;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .2s}
-.cc-btn:hover{background:var(--gold);color:#fff;border-color:var(--gold)}
+.cc-btn:hover{background:var(--gold);color:#1a1a1a;border-color:var(--gold)}
 .cc-btn-del{color:var(--red)!important;border-color:rgba(139,34,34,.2)!important}
-.cc-btn-del:hover{background:var(--red)!important;border-color:var(--red)!important;color:#fff!important}
+.cc-btn-del:hover{background:var(--red)!important;border-color:var(--red)!important;color:#1a1a1a!important}
 .cc-stats{display:flex;gap:.8rem;margin-top:.45rem}
 .cc-stat{font-size:.68rem;color:rgba(27,27,26,.68)}
 .cc-stat span{color:var(--gold);font-weight:500}
@@ -260,7 +260,7 @@ textarea.fi{resize:vertical;min-height:80px}
 .driver-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:rgba(27,27,26,.08)}
 .driver-card.active::before{background:var(--green)}
 .driver-card.inactive::before{background:rgba(27,27,26,.15)}
-.dc-avatar{width:44px;height:44px;background:rgba(27,27,26,.06);border:1px solid rgba(112,110,105,.25);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.2rem;color:var(--navy);margin-bottom:.7rem}
+.dc-avatar{width:44px;height:44px;background:rgba(27,27,26,.06);border:1px solid rgba(106,106,106,.25);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.2rem;color:var(--navy);margin-bottom:.7rem}
 .dc-name{font-size:.92rem;font-weight:500;color:var(--navy);margin-bottom:.15rem}
 .dc-role{font-size:.6rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.66);margin-bottom:.5rem}
 .dc-meta{font-size:.72rem;color:rgba(27,27,26,.66);font-weight:300;line-height:1.6}
@@ -272,7 +272,7 @@ textarea.fi{resize:vertical;min-height:80px}
 .dc-status.off{color:rgba(27,27,26,.62)}
 /* ── INVOICE & EMAIL PREVIEW MODALS ── */
 .modal-doc{max-width:700px}
-.inv-doc{background:var(--cream);color:var(--navy);padding:2.5rem 2.8rem;font-family:var(--sans);font-weight:300;line-height:1.7}
+.inv-doc{background:#ffffff;color:var(--navy);padding:2.5rem 2.8rem;font-family:var(--sans);font-weight:300;line-height:1.7}
 .inv-doc *{color:var(--navy)}
 .inv-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:2px solid var(--gold)}
 .inv-crest{width:62px;height:62px;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.6rem;font-weight:500;color:var(--navy);flex-shrink:0}
@@ -281,42 +281,42 @@ textarea.fi{resize:vertical;min-height:80px}
 .inv-brand-sub{font-size:.5rem;font-weight:400;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-top:.1rem;display:block}
 .inv-title-block{text-align:right}
 .inv-title{font-family:var(--serif);font-size:2rem;font-weight:400;letter-spacing:.18em;text-transform:uppercase;color:var(--navy);line-height:1}
-.inv-meta{margin-top:.4rem;font-size:.78rem;color:#706e69;line-height:1.8}
+.inv-meta{margin-top:.4rem;font-size:.78rem;color:#6a6a6a;line-height:1.8}
 .inv-meta strong{color:var(--navy);font-weight:500}
 .inv-status{display:inline-block;font-size:.58rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:.2rem .65rem;margin-top:.3rem}
 .inv-status.paid{background:rgba(45,110,71,.12);color:#2D6E47;border:1px solid rgba(45,110,71,.25)}
 .inv-status.overdue{background:rgba(139,34,34,.1);color:#8B2222;border:1px solid rgba(139,34,34,.2)}
-.inv-status.pending{background:rgba(112,110,105,.12);color:#5c5a54;border:1px solid rgba(112,110,105,.25)}
+.inv-status.pending{background:rgba(106,106,106,.12);color:#555555;border:1px solid rgba(106,106,106,.25)}
 .inv-parties{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:1.8rem}
 .inv-party-label{font-size:.52rem;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:.3rem}
 .inv-party-name{font-size:.95rem;font-weight:500;color:var(--navy)}
-.inv-party-detail{font-size:.78rem;color:#706e69;line-height:1.7}
+.inv-party-detail{font-size:.78rem;color:#6a6a6a;line-height:1.7}
 .inv-table-doc{width:100%;border-collapse:collapse;margin-bottom:1.2rem}
 .inv-table-doc thead th{font-size:.52rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);padding:.6rem .5rem;border-bottom:2px solid var(--gold);text-align:left}
 .inv-table-doc thead th:last-child{text-align:right}
 .inv-table-doc tbody td{font-size:.82rem;padding:.65rem .5rem;border-bottom:1px solid rgba(27,27,26,.08);color:#3a3833}
 .inv-table-doc tbody td:last-child{text-align:right;font-family:var(--serif);font-size:.95rem;color:var(--navy)}
 .inv-totals{display:flex;flex-direction:column;align-items:flex-end;margin-bottom:1.8rem}
-.inv-total-row{display:flex;justify-content:space-between;width:240px;padding:.35rem 0;font-size:.82rem;color:#706e69}
+.inv-total-row{display:flex;justify-content:space-between;width:240px;padding:.35rem 0;font-size:.82rem;color:#6a6a6a}
 .inv-total-row.grand{border-top:2px solid var(--gold);padding-top:.6rem;margin-top:.3rem}
 .inv-total-row.grand span:last-child{font-family:var(--serif);font-size:1.4rem;font-weight:500;color:var(--navy)}
-.inv-payment{background:rgba(27,27,26,.04);border:1px solid rgba(27,27,26,.08);padding:1rem 1.2rem;margin-bottom:1.5rem;font-size:.78rem;color:#706e69;line-height:1.8}
+.inv-payment{background:rgba(27,27,26,.04);border:1px solid rgba(27,27,26,.08);padding:1rem 1.2rem;margin-bottom:1.5rem;font-size:.78rem;color:#6a6a6a;line-height:1.8}
 .inv-payment strong{color:var(--navy);font-weight:500}
 .inv-footer{text-align:center;padding-top:1.2rem;border-top:1px solid rgba(27,27,26,.1);font-size:.68rem;color:#a29b91;letter-spacing:.04em}
 /* EMAIL PREVIEW */
 .email-preview{background:#E8E5E0;padding:1.2rem}
-.email-bar{background:#fff;border:1px solid rgba(27,27,26,.1);padding:.8rem 1.2rem;margin-bottom:1px;font-size:.75rem;color:#706e69;line-height:1.7}
+.email-bar{background:#fff;border:1px solid rgba(27,27,26,.1);padding:.8rem 1.2rem;margin-bottom:1px;font-size:.75rem;color:#6a6a6a;line-height:1.7}
 .email-bar strong{color:var(--navy);font-weight:500}
 .email-bar-subject{font-size:.88rem;font-weight:500;color:var(--navy)}
 .email-body{background:#fff;border:1px solid rgba(27,27,26,.1);max-width:600px;margin:0 auto}
-.email-brand{background:var(--navy);padding:1.5rem 2rem;text-align:center}
-.email-brand-crest{width:48px;height:48px;border:1.5px solid var(--gold);display:inline-flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.2rem;font-weight:500;color:rgba(255,255,255,.8);margin-bottom:.5rem}
-.email-brand-name{font-family:var(--serif);font-size:1.15rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#fff;display:block}
+.email-brand{background:#ffffff;padding:1.5rem 2rem;text-align:center}
+.email-brand-crest{width:48px;height:48px;border:1.5px solid var(--gold);display:inline-flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.2rem;font-weight:500;color:#1a1a1a;margin-bottom:.5rem}
+.email-brand-name{font-family:var(--serif);font-size:1.15rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#1a1a1a;display:block}
 .email-brand-sub{font-size:.48rem;font-weight:400;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);display:block;margin-top:.1rem}
 .email-content{padding:2rem 2rem 1.5rem;color:var(--navy);font-family:var(--sans);font-weight:300}
 .email-content *{color:var(--navy)}
 .email-heading{font-family:var(--serif);font-size:1.5rem;font-weight:400;color:var(--navy);margin-bottom:.3rem;text-align:center}
-.email-subtext{font-size:.82rem;color:#706e69;text-align:center;margin-bottom:1.5rem}
+.email-subtext{font-size:.82rem;color:#6a6a6a;text-align:center;margin-bottom:1.5rem}
 .email-detail-card{background:#F9F7F4;border:1px solid rgba(27,27,26,.08);padding:1.2rem 1.4rem;margin-bottom:1.2rem}
 .email-detail-title{font-size:.52rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:.6rem}
 .email-detail-row{display:flex;justify-content:space-between;padding:.3rem 0;font-size:.82rem;border-bottom:1px solid rgba(27,27,26,.05)}
@@ -328,27 +328,27 @@ textarea.fi{resize:vertical;min-height:80px}
 .email-fare-total .edv{font-family:var(--serif);font-size:1.2rem;color:var(--navy);font-weight:500}
 .email-btn{display:inline-block;font-family:var(--sans);font-size:.62rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;padding:.7rem 1.4rem;text-decoration:none;text-align:center;cursor:pointer;border:none;transition:opacity .2s}
 .email-btn-gold{background:var(--gold);color:var(--navy)!important}
-.email-btn-navy{background:var(--navy);color:#fff!important}
+.email-btn-navy{background:#ffffff;color:#1a1a1a!important}
 .email-btn-outline{background:transparent;color:var(--navy)!important;border:1px solid rgba(27,27,26,.2)}
-.email-btn-green{background:#2D6E47;color:#fff!important}
+.email-btn-green{background:#2D6E47;color:#1a1a1a!important}
 .email-buttons{display:flex;gap:.5rem;justify-content:center;margin:1.2rem 0;flex-wrap:wrap}
 .email-map-placeholder{background:#E8E5E0;border:1px solid rgba(27,27,26,.1);padding:2rem;text-align:center;margin:1rem 0;font-size:.78rem;color:#938b81}
 .email-map-placeholder svg{display:block;margin:0 auto .5rem;opacity:.3}
 .email-section{margin-bottom:1.2rem}
 .email-section-title{font-size:.52rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:.5rem}
 .email-driver-card{display:flex;gap:1rem;align-items:center;background:#F9F7F4;border:1px solid rgba(27,27,26,.08);padding:1rem 1.2rem}
-.email-driver-avatar{width:44px;height:44px;background:var(--navy);border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.1rem;color:rgba(255,255,255,.8);flex-shrink:0}
+.email-driver-avatar{width:44px;height:44px;background:#ffffff;border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.1rem;color:#1a1a1a;flex-shrink:0}
 .email-driver-info{font-size:.82rem;line-height:1.6}
 .email-driver-info strong{color:var(--navy);font-weight:500}
-.email-driver-info span{color:#706e69}
-.email-footer{background:var(--navy);padding:1.2rem 2rem;text-align:center}
-.email-footer-text{font-size:.65rem;color:rgba(255,255,255,.45);letter-spacing:.06em;line-height:1.8}
+.email-driver-info span{color:#6a6a6a}
+.email-footer{background:#ffffff;padding:1.2rem 2rem;text-align:center}
+.email-footer-text{font-size:.65rem;color:#1a1a1a;letter-spacing:.06em;line-height:1.8}
 .email-footer-text a{color:var(--gold)!important;text-decoration:none}
-.email-footer-brand{font-family:var(--serif);font-size:.82rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:.2rem}
+.email-footer-brand{font-family:var(--serif);font-size:.82rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:#1a1a1a;margin-bottom:.2rem}
 .email-flight{background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);padding:.8rem 1rem;margin-bottom:1rem;font-size:.78rem;display:flex;align-items:center;gap:.6rem}
 .email-flight svg{flex-shrink:0;color:#3B82F6}
 .email-flight strong{color:var(--navy)}
-.email-flight span{color:#706e69}
+.email-flight span{color:#6a6a6a}
 @keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes sl{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}
@@ -357,15 +357,15 @@ textarea.fi{resize:vertical;min-height:80px}
 .adm-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:rgba(27,27,26,.06);overflow:hidden;border:1px solid rgba(27,27,26,.06)}
 .adm-cal-hd{padding:.55rem .2rem;text-align:center;font-size:.65rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.7);background:rgba(245,242,236,.7)}
 .adm-cal-day{min-height:78px;padding:.4rem .45rem;background:#fff;cursor:pointer;transition:background .15s;position:relative;overflow:hidden}
-.adm-cal-day:hover{background:rgba(112,110,105,.06)}
-.adm-cal-day.today{background:rgba(112,110,105,.12);box-shadow:inset 0 0 0 2px var(--gold)}
-.adm-cal-day.selected{background:rgba(112,110,105,.18)}
+.adm-cal-day:hover{background:rgba(106,106,106,.06)}
+.adm-cal-day.today{background:rgba(106,106,106,.12);box-shadow:inset 0 0 0 2px var(--gold)}
+.adm-cal-day.selected{background:rgba(106,106,106,.18)}
 .adm-cal-day.other{opacity:.3;pointer-events:none;background:#fafafa}
 .adm-cal-day.blocked{background:repeating-linear-gradient(45deg,#fff,#fff 6px,rgba(176,42,42,.06) 6px,rgba(176,42,42,.06) 12px)}
 .adm-cal-day.flagged{box-shadow:inset 0 0 0 2px #b8b0a4}
 .adm-cal-num{font-size:.82rem;font-weight:500;color:var(--navy);line-height:1}
-.adm-cal-pill{margin-top:.25rem;font-size:.62rem;color:#fff;background:var(--navy);padding:1px 5px;border-radius:3px;display:inline-block;line-height:1.4}
-.adm-cal-pill.warn{background:#5c5a54}
+.adm-cal-pill{margin-top:.25rem;font-size:.62rem;color:#1a1a1a;background:#ffffff;padding:1px 5px;border-radius:3px;display:inline-block;line-height:1.4}
+.adm-cal-pill.warn{background:#555555}
 .adm-cal-pill.off{background:#a33}
 .adm-cal-job-mini{font-size:.62rem;color:rgba(27,27,26,.72);line-height:1.25;margin-top:.18rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .adm-cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;gap:.5rem}
@@ -380,9 +380,9 @@ textarea.fi{resize:vertical;min-height:80px}
 .adm-cal-fare{font-family:var(--serif);font-size:.95rem;color:var(--gold);flex-shrink:0}
 .adm-cal-status{font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;padding:2px 7px;border-radius:3px;background:rgba(27,27,26,.08);color:var(--text-light);flex-shrink:0}
 .adm-cal-status.confirmed{background:#E6F4EA;color:#1E6B33}
-.adm-cal-status.pending{background:#f0ece3;color:#5c5a54}
+.adm-cal-status.pending{background:#f0ece3;color:#555555}
 .adm-cal-status.cancelled{background:#FCE4E4;color:#9C2828}
-.adm-cal-status.flagged{background:#f0ece3;color:#5c5a54}
+.adm-cal-status.flagged{background:#f0ece3;color:#555555}
 .adm-cal-status.offered{background:#E8EEFB;color:#2A3A66}
 .adm-cal-status.active{background:#DDEEFE;color:#13426B}
 .adm-cal-status.completed{background:#E6F4EA;color:#1E6B33}
@@ -390,15 +390,15 @@ textarea.fi{resize:vertical;min-height:80px}
 .offer-timer{font-variant-numeric:tabular-nums;margin-left:.35rem;color:#837b71}
 @media(max-width:900px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main{margin-left:0}.mob-menu-btn{display:flex}.stats{grid-template-columns:1fr 1fr}.cust-grid{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}
 @media(max-width:600px){.content{padding:1.2rem 1rem}.stats{grid-template-columns:1fr 1fr}.cust-grid{grid-template-columns:1fr}.r2,.r3{grid-template-columns:1fr}.pb-row{grid-template-columns:1fr 1fr}.topbar{padding:0 1rem}}
-.sug-drop{display:none;position:absolute;left:0;right:0;top:100%;z-index:350;background:rgba(255,255,255,.97);backdrop-filter:blur(28px);border:1px solid rgba(112,110,105,.35);border-radius:0 0 10px 10px;max-height:360px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(112,110,105,.3) transparent}
+.sug-drop{display:none;position:absolute;left:0;right:0;top:100%;z-index:350;background:rgba(255,255,255,.97);backdrop-filter:blur(28px);border:1px solid rgba(106,106,106,.35);border-radius:0 0 10px 10px;max-height:360px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(106,106,106,.3) transparent}
 .sug-drop.open{display:block}
 .sug-item{padding:.7rem 1rem;cursor:pointer;border-bottom:1px solid rgba(27,27,26,.05);transition:background .15s}
-.sug-item:hover{background:rgba(112,110,105,.15)}
+.sug-item:hover{background:rgba(106,106,106,.15)}
 .si-main{font-size:.85rem;color:var(--navy);font-weight:300}
 .si-sub{font-size:.68rem;color:rgba(27,27,26,.66);margin-top:.15rem}
 .sug-powered{padding:.4rem 1rem;text-align:right;font-size:.55rem;color:rgba(27,27,26,.6);letter-spacing:.04em}
 
-footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);font-size:.66rem;letter-spacing:.1em;color:rgba(27,27,26,.66);background:rgba(27,27,26,.03);border-top:1px solid rgba(27,27,26,.06);position:relative;z-index:1}.mini-legal{margin-left:.6rem}.mini-legal a{color:rgba(27,27,26,.62);text-decoration:none;margin-left:.5rem;transition:color .2s;letter-spacing:.08em}.mini-legal a:hover{color:rgba(112,110,105,.8)}
+footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);font-size:.66rem;letter-spacing:.1em;color:rgba(27,27,26,.66);background:rgba(27,27,26,.03);border-top:1px solid rgba(27,27,26,.06);position:relative;z-index:1}.mini-legal{margin-left:.6rem}.mini-legal a{color:rgba(27,27,26,.62);text-decoration:none;margin-left:.5rem;transition:color .2s;letter-spacing:.08em}.mini-legal a:hover{color:rgba(106,106,106,.8)}
 </style>
 <script src="/config.js"></script>
 <script>
@@ -423,7 +423,16 @@ if ('serviceWorker' in navigator) {
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Westmere Admin">
 <meta name="twitter:description" content="Westmere operations dashboard.">
-</head>
+<style id="wm-white-theme">
+/* Clean pure-white theme (restyle only; real emails are server-side & unchanged) */
+:root{--card:#ffffff !important;--paper:#ffffff !important;--cream:#ffffff !important;
+ --gold:#1a1a1a;--gold2:#333333;--gold-rule:rgba(0,0,0,.14);--amber:#6a6a6a;--amber-bg:rgba(0,0,0,.05);--rule:rgba(0,0,0,.1)}
+html,body{background:#ffffff !important;color:#1a1a1a !important}
+.topbar,.bottom-nav,.topbar *,.bottom-nav *{color:#1a1a1a !important}
+.bn{color:rgba(0,0,0,.45) !important}.bn.active{color:#1a1a1a !important}
+/* charcoal primary buttons (were gold) need white text */
+.sbt-enroute,.btn-accept,.ma-accept,.mba-confirm,.btn-send,.ibtn-primary,.ls-btn,.nav-popup-btns a:first-child,.notif-badge-num,.jc2-ab.ab-enroute,.jc2-ab.ab-onboard,.ws-day.ws-today,.btn-main,.btn-new,.btn-gold,.sb-badge,.email-btn-gold{color:#ffffff !important;letter-spacing:.14em}
+</style></head>
 <body>
 
 <nav id="nav" style="display:none">
@@ -681,8 +690,8 @@ if ('serviceWorker' in navigator) {
           </div>
           <div class="adm-cal-grid" id="adm-cal-grid"></div>
           <div style="display:flex;gap:1rem;margin-top:.8rem;font-size:.7rem;color:var(--text-light);flex-wrap:wrap">
-            <span><span style="display:inline-block;width:10px;height:10px;background:var(--navy);border-radius:2px;vertical-align:middle"></span> Confirmed/pending</span>
-            <span><span style="display:inline-block;width:10px;height:10px;background:#5c5a54;border-radius:2px;vertical-align:middle"></span> Needs reassignment</span>
+            <span><span style="display:inline-block;width:10px;height:10px;background:#ffffff;border-radius:2px;vertical-align:middle"></span> Confirmed/pending</span>
+            <span><span style="display:inline-block;width:10px;height:10px;background:#555555;border-radius:2px;vertical-align:middle"></span> Needs reassignment</span>
             <span><span style="display:inline-block;width:10px;height:10px;background:repeating-linear-gradient(45deg,#fff,#fff 3px,rgba(176,42,42,.4) 3px,rgba(176,42,42,.4) 6px);border:1px solid rgba(0,0,0,.1);vertical-align:middle"></span> Time off</span>
           </div>
         </div>
@@ -741,7 +750,7 @@ if ('serviceWorker' in navigator) {
             <input id="nc-bank-acc" type="text" placeholder="Account number" style="padding:.7rem .85rem;border:1px solid rgba(27,27,26,.14);border-radius:8px;font-size:.9rem;font-family:Menlo,Consolas,monospace">
           </div>
           <div id="nc-err" style="display:none;padding:.6rem .8rem;background:rgba(197,64,64,.08);color:#c54040;font-size:.8rem;border-radius:6px;margin-bottom:.8rem"></div>
-          <button onclick="submitNewCustomer()" id="nc-submit" style="width:100%;padding:.9rem;background:#1b1b1a;color:#fff;border:none;border-radius:8px;font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Create Account</button>
+          <button onclick="submitNewCustomer()" id="nc-submit" style="width:100%;padding:.9rem;background:#ffffff;color:#1a1a1a;border:none;border-radius:8px;font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Create Account</button>
         </div>
         <!-- Post-create actions -->
         <div id="nc-post-create" style="display:none">
@@ -752,7 +761,7 @@ if ('serviceWorker' in navigator) {
           </div>
           <div style="display:flex;flex-direction:column;gap:.6rem;margin-top:.8rem">
             <button id="nc-welcome-btn" onclick="sendWelcomeEmailNew()" style="width:100%;padding:.85rem;background:transparent;color:#1b1b1a;border:1px solid rgba(27,27,26,.18);border-radius:8px;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Send Welcome Email</button>
-            <button onclick="createInvoiceNew()" style="width:100%;padding:.85rem;background:var(--gold,#706e69);color:#fff;border:none;border-radius:8px;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Create Invoice</button>
+            <button onclick="createInvoiceNew()" style="width:100%;padding:.85rem;background:var(--gold,#6a6a6a);color:#1a1a1a;border:none;border-radius:8px;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Create Invoice</button>
             <button onclick="closeNewCustomerModal()" style="width:100%;padding:.85rem;background:transparent;color:rgba(27,27,26,.7);border:none;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Done</button>
           </div>
         </div>
@@ -1360,7 +1369,7 @@ if ('serviceWorker' in navigator) {
       </div>
 
       <!-- Earnings (populated on edit) -->
-      <div id="dm-earnings" style="display:none;margin-top:1.3rem;padding:1rem 1.1rem;background:rgba(112,110,105,.06);border:1px solid rgba(112,110,105,.2);border-radius:6px">
+      <div id="dm-earnings" style="display:none;margin-top:1.3rem;padding:1rem 1.1rem;background:rgba(106,106,106,.06);border:1px solid rgba(106,106,106,.2);border-radius:6px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">
           <div style="font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:600">This Week (Mon–Sun)</div>
           <div style="font-size:.66rem;color:rgba(27,27,26,.7)" id="dm-earn-period">—</div>
@@ -1376,7 +1385,7 @@ if ('serviceWorker' in navigator) {
           <button type="button" class="btn btn-ghost btn-sm" onclick="dmLoadEarnings('week')" style="font-size:.64rem;padding:.4rem .8rem">This week</button>
           <button type="button" class="btn btn-ghost btn-sm" onclick="dmLoadEarnings('last-week')" style="font-size:.64rem;padding:.4rem .8rem">Last week</button>
           <button type="button" class="btn btn-ghost btn-sm" onclick="dmLoadEarnings('month')" style="font-size:.64rem;padding:.4rem .8rem">This month</button>
-          <button type="button" class="btn btn-ghost btn-sm" onclick="dmSendStatement()" style="font-size:.64rem;padding:.4rem .8rem;border-color:rgba(112,110,105,.4);color:#706e69">Email statement to driver</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="dmSendStatement()" style="font-size:.64rem;padding:.4rem .8rem;border-color:rgba(106,106,106,.4);color:#6a6a6a">Email statement to driver</button>
         </div>
       </div>
 
@@ -1385,7 +1394,7 @@ if ('serviceWorker' in navigator) {
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-add-driver')">Cancel</button>
       <button class="btn btn-sm" id="dm-revoke-btn" onclick="revokeDriverLogin()" style="background:rgba(139,34,34,.08);color:#8B2222;border:1px solid rgba(139,34,34,.2);display:none">Revoke Login</button>
-      <button class="btn btn-sm" id="dm-default-btn" onclick="dmSetDefault()" style="background:rgba(112,110,105,.1);color:#706e69;border:1px solid rgba(112,110,105,.3);display:none;font-size:.68rem">Set as default driver</button>
+      <button class="btn btn-sm" id="dm-default-btn" onclick="dmSetDefault()" style="background:rgba(106,106,106,.1);color:#6a6a6a;border:1px solid rgba(106,106,106,.3);display:none;font-size:.68rem">Set as default driver</button>
       <button class="btn btn-navy" id="dm-save-btn" onclick="saveDriver()">Save Driver</button>
     </div>
   </div>
@@ -1537,7 +1546,7 @@ if ('serviceWorker' in navigator) {
         <span style="font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.7);margin-right:.8rem">Total</span>
         <span id="mid-total" style="font-family:Georgia,serif;font-size:1.3rem;color:var(--navy);font-weight:700"></span>
       </div>
-      <div id="mid-notes" style="display:none;margin-top:.8rem;padding:.6rem .8rem;background:rgba(112,110,105,.07);border-left:3px solid var(--gold);font-size:.8rem;color:var(--navy);line-height:1.6;border-radius:0 4px 4px 0"></div>
+      <div id="mid-notes" style="display:none;margin-top:.8rem;padding:.6rem .8rem;background:rgba(106,106,106,.07);border-left:3px solid var(--gold);font-size:.8rem;color:var(--navy);line-height:1.6;border-radius:0 4px 4px 0"></div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-invoice-detail')">Close</button>
@@ -1551,7 +1560,7 @@ if ('serviceWorker' in navigator) {
 
 <!-- ═══ AI ASSISTANT FAB + PANEL ═══ -->
 <style>
-.aa-fab{position:fixed;bottom:1.4rem;right:1.4rem;z-index:190;width:54px;height:54px;border-radius:50%;background:var(--navy);color:var(--gold);border:none;font-family:Georgia,serif;font-size:1.3rem;letter-spacing:.1em;cursor:pointer;box-shadow:0 8px 24px rgba(27,27,26,.3);display:flex;align-items:center;justify-content:center;font-weight:500;transition:transform .2s}
+.aa-fab{position:fixed;bottom:1.4rem;right:1.4rem;z-index:190;width:54px;height:54px;border-radius:50%;background:#ffffff;color:var(--gold);border:none;font-family:Georgia,serif;font-size:1.3rem;letter-spacing:.1em;cursor:pointer;box-shadow:0 8px 24px rgba(27,27,26,.3);display:flex;align-items:center;justify-content:center;font-weight:500;transition:transform .2s}
 .aa-fab:hover{transform:translateY(-2px)}
 .aa-panel{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:100vw;background:#fff;border-left:1px solid rgba(27,27,26,.08);box-shadow:-8px 0 30px rgba(0,0,0,.14);transform:translateX(110%);transition:transform .3s cubic-bezier(.4,0,.2,1);z-index:195;display:flex;flex-direction:column}
 .aa-panel.on{transform:translateX(0)}
@@ -1563,7 +1572,7 @@ if ('serviceWorker' in navigator) {
 .aa-clear:hover{color:var(--navy)}
 .aa-feed{flex:1;overflow-y:auto;padding:1rem 1.2rem;display:flex;flex-direction:column;gap:.7rem;background:#fafaf7}
 .aa-msg{max-width:88%;padding:.65rem .85rem;font-size:.85rem;line-height:1.45;border-radius:10px;word-wrap:break-word;white-space:pre-wrap}
-.aa-msg.user{align-self:flex-end;background:var(--navy);color:#fff;border-bottom-right-radius:3px}
+.aa-msg.user{align-self:flex-end;background:#ffffff;color:#1a1a1a;border-bottom-right-radius:3px}
 .aa-msg.bot{align-self:flex-start;background:#fff;color:var(--navy);border:1px solid rgba(27,27,26,.08);border-bottom-left-radius:3px}
 .aa-msg.bot.thinking{color:rgba(27,27,26,.7);font-style:italic}
 .aa-in{padding:.85rem 1rem;border-top:1px solid rgba(27,27,26,.08);display:flex;gap:.5rem;background:#fff}
@@ -1756,7 +1765,7 @@ function aaShowBookingCard(b,idx,total){
     +row('Notes',b.notes)
     +'<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.75rem">'
     +'<button class="abc-btn" style="flex:1;min-width:120px" onclick="aaFillModal('+bJson+')">Create This Booking</button>'
-    +'<button class="abc-btn" style="flex:1;min-width:120px;background:rgba(112,110,105,.08);border:1px solid rgba(112,110,105,.3);color:var(--gold)" onclick="aaCalOnly('+bJson+')">Calendar Only</button>'
+    +'<button class="abc-btn" style="flex:1;min-width:120px;background:rgba(106,106,106,.08);border:1px solid rgba(106,106,106,.3);color:var(--gold)" onclick="aaCalOnly('+bJson+')">Calendar Only</button>'
     +'</div>';
 
   card.appendChild(inner);
@@ -1784,7 +1793,7 @@ function aaShowInvoiceCard(inv){
     +(r.email?'<div class="abc-row"><span class="abc-lbl">Email</span><span class="abc-val">'+escHtml(r.email)+'</span></div>':'')
     +(r.address?'<div class="abc-row"><span class="abc-lbl">Address</span><span class="abc-val">'+escHtml(r.address)+'</span></div>':'')
     +itemsHtml
-    +'<div class="abc-row" style="border-top:1px solid rgba(112,110,105,.2);margin-top:.3rem;padding-top:.4rem"><span class="abc-lbl" style="font-weight:600">Total</span><span class="abc-val" style="font-weight:600;color:var(--navy)">£'+total.toFixed(2)+'</span></div>'
+    +'<div class="abc-row" style="border-top:1px solid rgba(106,106,106,.2);margin-top:.3rem;padding-top:.4rem"><span class="abc-lbl" style="font-weight:600">Total</span><span class="abc-val" style="font-weight:600;color:var(--navy)">£'+total.toFixed(2)+'</span></div>'
     +(inv.notes?'<div class="abc-row"><span class="abc-lbl">Notes</span><span class="abc-val">'+escHtml(inv.notes)+'</span></div>':'')
     +'<div style="margin-top:.75rem">'
     +'<button class="abc-btn" style="width:100%" onclick="aaCreateInvoice('+iJson+')">Create Invoice</button>'
@@ -1810,7 +1819,7 @@ async function aaCreateInvoice(invJson){
       if(d.recipient&&d.recipient.name)iHtml+='<div class="abc-row"><span class="abc-lbl">Recipient</span><span class="abc-val">'+_esc(d.recipient.name)+'</span></div>';
       if(d.recipient&&d.recipient.email)iHtml+='<div class="abc-row"><span class="abc-lbl">Email</span><span class="abc-val">'+_esc(d.recipient.email)+'</span></div>';
       (d.items||[]).forEach(function(it){iHtml+='<div class="abc-row"><span class="abc-lbl">'+_esc(it.description)+'</span><span class="abc-val">£'+Number(it.amount).toFixed(2)+'</span></div>';});
-      iHtml+='<div class="abc-row" style="border-top:1px solid rgba(112,110,105,.2);margin-top:.3rem;padding-top:.4rem"><span class="abc-lbl" style="font-weight:600">Total</span><span class="abc-val" style="font-weight:600;color:var(--navy)">£'+Number(d.total||0).toFixed(2)+'</span></div>';
+      iHtml+='<div class="abc-row" style="border-top:1px solid rgba(106,106,106,.2);margin-top:.3rem;padding-top:.4rem"><span class="abc-lbl" style="font-weight:600">Total</span><span class="abc-val" style="font-weight:600;color:var(--navy)">£'+Number(d.total||0).toFixed(2)+'</span></div>';
       inner.innerHTML=iHtml;card.appendChild(inner);aaAddEl(card);
     }
     else{aaAddBot('Could not create invoice: '+(d.error||'Unknown error'));}
@@ -2281,7 +2290,7 @@ function loadLiveBookings(){
           if(isCancelled){
             actionBtns+='<button class="btn btn-red btn-sm" onclick="deleteJob('+b.id+',this)">Delete</button>';
           }
-          var reasonRow=b.intake_reason?'<div class="sub-v" style="color:#5c5a54;font-style:italic;margin-top:.2rem">'+escTo(b.intake_reason)+'</div>':'';
+          var reasonRow=b.intake_reason?'<div class="sub-v" style="color:#555555;font-style:italic;margin-top:.2rem">'+escTo(b.intake_reason)+'</div>':'';
           var rowStyle=isCancelled?'opacity:.45;text-decoration:line-through':'';
           var conflictMark=_conflicts[b.id]
             ?'<div title="Calendar conflict" style="color:#c0392b;font-weight:700;font-size:.9rem;margin-top:.15rem">\u2717</div>'
@@ -2364,7 +2373,7 @@ function loadLiveBookings(){
       }
       cg.innerHTML=d.customers.map(function(c){
         var safeName=(c.full_name||'Unknown').replace(/"/g,'&quot;').replace(/'/g,"\\'");
-        var unvBadge=c.verified===0?'<span style="margin-left:.5rem;padding:.15rem .45rem;font-size:.6rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:rgba(112,110,105,.15);color:#706e69;border-radius:2px">Unverified</span>':'';
+        var unvBadge=c.verified===0?'<span style="margin-left:.5rem;padding:.15rem .45rem;font-size:.6rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:rgba(106,106,106,.15);color:#6a6a6a;border-radius:2px">Unverified</span>':'';
         var typeBadge=c.account_type==='business'?'<span class="cc-type cc-business">Business</span>':'<span class="cc-type cc-personal">Personal</span>';
         return '<div class="cust-card"><div class="cc-name">'+(c.full_name||'Unknown')+unvBadge+'</div>'
           +typeBadge
@@ -2841,7 +2850,7 @@ function buildDrivers(){
       ? '<span style="font-size:.6rem;color:var(--green);background:var(--green-bg);padding:.15rem .4rem;border-radius:3px;letter-spacing:.08em;text-transform:uppercase">App access</span>'
       : '<span style="font-size:.6rem;color:rgba(27,27,26,.7);background:rgba(27,27,26,.06);padding:.15rem .4rem;border-radius:3px;letter-spacing:.08em;text-transform:uppercase">No login</span>';
     var defaultBadge=d.is_default
-      ? '<span style="font-size:.6rem;color:#706e69;background:rgba(112,110,105,.12);padding:.15rem .4rem;border-radius:3px;letter-spacing:.08em;text-transform:uppercase;margin-left:.3rem">★ Default</span>'
+      ? '<span style="font-size:.6rem;color:#6a6a6a;background:rgba(106,106,106,.12);padding:.15rem .4rem;border-radius:3px;letter-spacing:.08em;text-transform:uppercase;margin-left:.3rem">★ Default</span>'
       : '';
     var avatarInner=d.photo
       ? '<img src="'+d.photo+'" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" alt="">'
@@ -3037,7 +3046,7 @@ function viewCustomer(id){
     var typeCls=c.account_type==='business'?'cc-business':'cc-personal';
     html+='<div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.9rem">'
       +'<span class="cc-type '+typeCls+'" style="font-size:.6rem">'+escTo(c.account_type||'personal')+'</span>'
-      +(c.verified?'':'<span style="padding:.12rem .45rem;font-size:.6rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:rgba(112,110,105,.15);color:#706e69;border-radius:2px">Unverified</span>')
+      +(c.verified?'':'<span style="padding:.12rem .45rem;font-size:.6rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:rgba(106,106,106,.15);color:#6a6a6a;border-radius:2px">Unverified</span>')
       +'</div>';
     var rows=[['Email',c.email],['Phone',c.phone],['Address',[c.address_line1,c.address_line2,c.postcode].filter(Boolean).join(', ')],['Bank',[c.bank_name,c.bank_account_name].filter(Boolean).join(' / ')],['Sort / Acc',[c.bank_sort_code,c.bank_account_no].filter(Boolean).join(' / ')],['Member since',c.created_at?c.created_at.slice(0,10):'']];
     rows.forEach(function(row){
@@ -3463,20 +3472,20 @@ function openInvoicePreview(data){
         try{var d=new Date(it.date+'T00:00:00');datePrefix=d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' \u2014 ';}catch(_){}
       }
       return '<tr>'
-        +'<td style="padding:12px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:13px;color:#1b1b1a;line-height:1.5;vertical-align:top">'+(datePrefix?'<span style="color:#a49e94;font-size:11px;font-family:Helvetica Neue,Arial,sans-serif">'+esc(datePrefix)+'</span>':'')+''+esc(it.description||'')+'</td>'
+        +'<td style="padding:12px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:13px;color:#1b1b1a;line-height:1.5;vertical-align:top">'+(datePrefix?'<span style="color:#9a9a9a;font-size:11px;font-family:Helvetica Neue,Arial,sans-serif">'+esc(datePrefix)+'</span>':'')+''+esc(it.description||'')+'</td>'
         +'<td style="padding:12px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:14px;color:#1b1b1a;text-align:right;vertical-align:top;white-space:nowrap;font-family:Georgia,serif">&pound;'+amt+'</td>'
         +'</tr>';
     }).join('');
     tableHtml='<table style="width:100%;border-collapse:collapse;margin-bottom:24px">'
       +'<thead><tr>'
-      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#706e69;padding:8px;border-bottom:2px solid #706e69;text-align:left;font-weight:600">Description</th>'
-      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#706e69;padding:8px;border-bottom:2px solid #706e69;text-align:right;font-weight:600">Amount</th>'
+      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:left;font-weight:600">Description</th>'
+      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:right;font-weight:600">Amount</th>'
       +'</tr></thead>'
       +'<tbody>'+itemRows+'</tbody>'
       +'</table>';
     var r=data.recipient||{};
     toAddr=[esc(r.name||''),r.address?esc(r.address).replace(/\n/g,'<br>'):'',r.phone?esc(r.phone):'',r.email?esc(r.email):''].filter(Boolean).join('<br>');
-    if(p.notes)periodLine='<div style="margin-bottom:18px;padding:12px 14px;background:rgba(112,110,105,.08);border-left:3px solid #706e69;font-size:13px;color:#1b1b1a;line-height:1.6">'+esc(p.notes).replace(/\n/g,'<br>')+'</div>';
+    if(p.notes)periodLine='<div style="margin-bottom:18px;padding:12px 14px;background:rgba(106,106,106,.08);border-left:3px solid #6a6a6a;font-size:13px;color:#1b1b1a;line-height:1.6">'+esc(p.notes).replace(/\n/g,'<br>')+'</div>';
   } else {
     var c=data.customer||{};
     var bks=data.bookings||[];
@@ -3485,24 +3494,24 @@ function openInvoicePreview(data){
       var d=b.date||'';
       var t=b.time||'';
       return '<tr>'
-        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:13px;color:#1b1b1a;vertical-align:top">'+esc(d)+(t&&t!=='ASAP'?' '+esc(t):t==='ASAP'?' ASAP':'')+'<br><span style="font-family:Menlo,Consolas,monospace;font-size:10px;color:#a49e94">'+esc(b.ref||'')+'</span></td>'
-        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:13px;color:#1b1b1a;line-height:1.5;vertical-align:top">'+esc(b.pickup||'')+' &rarr; '+esc(b.destination||'')+(b.flight?'<br><span style="font-size:11px;color:#a49e94">Flight '+esc(b.flight)+'</span>':'')+'</td>'
+        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:13px;color:#1b1b1a;vertical-align:top">'+esc(d)+(t&&t!=='ASAP'?' '+esc(t):t==='ASAP'?' ASAP':'')+'<br><span style="font-family:Menlo,Consolas,monospace;font-size:10px;color:#9a9a9a">'+esc(b.ref||'')+'</span></td>'
+        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:13px;color:#1b1b1a;line-height:1.5;vertical-align:top">'+esc(b.pickup||'')+' &rarr; '+esc(b.destination||'')+(b.flight?'<br><span style="font-size:11px;color:#9a9a9a">Flight '+esc(b.flight)+'</span>':'')+'</td>'
         +'<td style="padding:10px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:14px;color:#1b1b1a;text-align:right;vertical-align:top;white-space:nowrap;font-family:Georgia,serif">&pound;'+fare+'</td>'
         +'</tr>';
     }).join('');
     if(!bookingRows){
-      bookingRows='<tr><td colspan="3" style="padding:24px;text-align:center;font-size:13px;color:#a49e94;font-style:italic">No journeys in this period.</td></tr>';
+      bookingRows='<tr><td colspan="3" style="padding:24px;text-align:center;font-size:13px;color:#9a9a9a;font-style:italic">No journeys in this period.</td></tr>';
     }
     tableHtml='<table style="width:100%;border-collapse:collapse;margin-bottom:24px">'
       +'<thead><tr>'
-      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#706e69;padding:8px;border-bottom:2px solid #706e69;text-align:left;font-weight:600">Date / Ref</th>'
-      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#706e69;padding:8px;border-bottom:2px solid #706e69;text-align:left;font-weight:600">Journey</th>'
-      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#706e69;padding:8px;border-bottom:2px solid #706e69;text-align:right;font-weight:600">Fare</th>'
+      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:left;font-weight:600">Date / Ref</th>'
+      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:left;font-weight:600">Journey</th>'
+      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:right;font-weight:600">Fare</th>'
       +'</tr></thead>'
       +'<tbody>'+bookingRows+'</tbody>'
       +'</table>';
     toAddr=[esc(c.full_name||''),c.phone?esc(c.phone):'',c.email?esc(c.email):''].filter(Boolean).join('<br>');
-    if(p.label)periodLine='<div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#a49e94;margin-bottom:6px;font-weight:500">Period: '+esc(p.label)+'</div>';
+    if(p.label)periodLine='<div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#9a9a9a;margin-bottom:6px;font-weight:500">Period: '+esc(p.label)+'</div>';
   }
 
   var fromAddr=[s.business_name||'Westmere Private Hire',s.owner_name||'',s.address_line1||'',(s.address_line2||'')+(s.postcode?' '+s.postcode:''),s.phone||'',s.email||''].filter(Boolean).map(esc).join('<br>');
@@ -3510,13 +3519,13 @@ function openInvoicePreview(data){
   var bankHtml='';
   if(s.sort_code&&s.account_no){
     bankHtml='<div style="background:rgba(27,27,26,.04);border:1px solid rgba(27,27,26,.08);padding:20px 24px;margin-bottom:32px">'
-      +'<div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#706e69;font-weight:600;margin-bottom:10px">Payment Details</div>'
+      +'<div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;font-weight:600;margin-bottom:10px">Payment Details</div>'
       +'<table style="font-size:13px;color:#1b1b1a;line-height:1.8">'
-      +(s.bank_name?'<tr><td style="color:#a49e94;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Bank</td><td>'+esc(s.bank_name)+'</td></tr>':'')
-      +(s.account_name?'<tr><td style="color:#a49e94;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Name</td><td>'+esc(s.account_name)+'</td></tr>':'')
-      +'<tr><td style="color:#a49e94;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Sort code</td><td style="font-family:Menlo,Consolas,monospace">'+esc(s.sort_code)+'</td></tr>'
-      +'<tr><td style="color:#a49e94;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Account no.</td><td style="font-family:Menlo,Consolas,monospace">'+esc(s.account_no)+'</td></tr>'
-      +'<tr><td style="color:#a49e94;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Reference</td><td style="font-family:Menlo,Consolas,monospace">'+esc(data.invoiceNo||'')+'</td></tr>'
+      +(s.bank_name?'<tr><td style="color:#9a9a9a;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Bank</td><td>'+esc(s.bank_name)+'</td></tr>':'')
+      +(s.account_name?'<tr><td style="color:#9a9a9a;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Name</td><td>'+esc(s.account_name)+'</td></tr>':'')
+      +'<tr><td style="color:#9a9a9a;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Sort code</td><td style="font-family:Menlo,Consolas,monospace">'+esc(s.sort_code)+'</td></tr>'
+      +'<tr><td style="color:#9a9a9a;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Account no.</td><td style="font-family:Menlo,Consolas,monospace">'+esc(s.account_no)+'</td></tr>'
+      +'<tr><td style="color:#9a9a9a;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Reference</td><td style="font-family:Menlo,Consolas,monospace">'+esc(data.invoiceNo||'')+'</td></tr>'
       +'</table></div>';
   } else {
     bankHtml='<div style="font-size:13px;color:#726a60;margin-bottom:32px">Payment is appreciated within 14 days by bank transfer. Please contact us for account details.</div>';
@@ -3530,26 +3539,26 @@ function openInvoicePreview(data){
     +'@page{size:A4;margin:0}'
     +'@media print{.no-print{display:none!important}body{background:#fff!important}.wrap{box-shadow:none!important;margin:0!important;max-width:none!important}}'
     +'*{box-sizing:border-box;margin:0;padding:0}'
-    +'body{font-family:Georgia,"Times New Roman",serif;color:#1b1b1a;background:#f5f2ec;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+    +'body{font-family:Georgia,"Times New Roman",serif;color:#1b1b1a;background:#ffffff;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
     +'.wrap{max-width:800px;margin:0 auto;background:#fff;position:relative;overflow:hidden;box-shadow:0 2px 20px rgba(0,0,0,.08)}'
-    +'.wrap::before{content:"";position:absolute;top:0;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,#706e69 18%,#706e69 82%,transparent 100%);z-index:2}'
-    +'.wrap::after{content:"";position:absolute;bottom:0;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,#706e69 18%,#706e69 82%,transparent 100%);z-index:2}'
+    +'.wrap::before{content:"";position:absolute;top:0;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,#6a6a6a 18%,#6a6a6a 82%,transparent 100%);z-index:2}'
+    +'.wrap::after{content:"";position:absolute;bottom:0;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,#6a6a6a 18%,#6a6a6a 82%,transparent 100%);z-index:2}'
     +'/* watermark removed */'
     +'.corner-mark{position:absolute;top:28px;right:32px;font-family:Helvetica Neue,Arial,sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:rgba(27,27,26,.6);z-index:1}'
-    +'.toolbar{background:#1b1b1a;padding:12px 24px;display:flex;gap:12px;align-items:center;position:relative;z-index:3}'
+    +'.toolbar{background:#ffffff;padding:12px 24px;display:flex;gap:12px;align-items:center;position:relative;z-index:3}'
     +'.toolbar button{font-family:Helvetica Neue,Arial,sans-serif;font-size:12px;padding:8px 18px;border:none;cursor:pointer;letter-spacing:.5px}'
-    +'.toolbar .btn-dl{background:#706e69;color:#1b1b1a}'
-    +'.toolbar .btn-cl{background:transparent;color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.2)}'
+    +'.toolbar .btn-dl{background:#6a6a6a;color:#1b1b1a}'
+    +'.toolbar .btn-cl{background:transparent;color:#1a1a1a;border:1px solid rgba(255,255,255,.2)}'
     +'.page{position:relative;z-index:1;padding:64px 56px 56px}'
     +'.brand-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}'
     +'.brand-mark{display:inline-block;padding-bottom:14px;border-bottom:1px solid rgba(27,27,26,.12);min-width:220px}'
     +'.brand-name{font-family:Georgia,serif;font-size:26px;letter-spacing:10px;font-weight:400;color:#1b1b1a;line-height:1}'
-    +'.brand-sub{font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:4px;text-transform:uppercase;color:#706e69;margin-top:8px;font-weight:500}'
+    +'.brand-sub{font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:4px;text-transform:uppercase;color:#6a6a6a;margin-top:8px;font-weight:500}'
     +'.inv-badge{text-align:right}'
-    +'.inv-label{font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#706e69;font-weight:600;margin-bottom:8px}'
+    +'.inv-label{font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#6a6a6a;font-weight:600;margin-bottom:8px}'
     +'.inv-no{font-family:Menlo,Consolas,monospace;font-size:14px;color:#1b1b1a;margin-bottom:6px;letter-spacing:.5px}'
     +'.inv-meta{font-size:12px;color:#726a60;line-height:1.6}'
-    +'.gold-rule{width:36px;height:1px;background:#706e69;margin:18px 0 32px}'
+    +'.gold-rule{width:36px;height:1px;background:#6a6a6a;margin:18px 0 32px}'
     +'</style></head><body>'
     +'<div class="wrap">'
     +'<div class="toolbar no-print"><button class="btn-dl" onclick="window.print()">Print / Save as PDF</button><button class="btn-cl" onclick="window.close()">Close</button></div>'
@@ -3564,16 +3573,16 @@ function openInvoicePreview(data){
       +'</div></div>'
     +'<div class="gold-rule"></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-bottom:36px">'
-      +'<div><div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#706e69;margin-bottom:8px;font-weight:600">From</div><div style="font-size:13px;color:#1b1b1a;line-height:1.7">'+fromAddr+'</div></div>'
-      +'<div><div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#706e69;margin-bottom:8px;font-weight:600">Bill To</div><div style="font-size:13px;color:#1b1b1a;line-height:1.7">'+toAddr+'</div></div>'
+      +'<div><div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;margin-bottom:8px;font-weight:600">From</div><div style="font-size:13px;color:#1b1b1a;line-height:1.7">'+fromAddr+'</div></div>'
+      +'<div><div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;margin-bottom:8px;font-weight:600">Bill To</div><div style="font-size:13px;color:#1b1b1a;line-height:1.7">'+toAddr+'</div></div>'
     +'</div>'
     +periodLine
     +tableHtml
     +'<div style="display:flex;flex-direction:column;align-items:flex-end;margin-bottom:32px">'
-      +'<div style="display:flex;justify-content:space-between;width:260px;padding:14px 0 8px;border-top:2px solid #706e69;margin-top:4px"><span style="font-family:Helvetica Neue,Arial,sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:600;color:#1b1b1a;align-self:center">Total</span><span style="font-size:26px;font-weight:500;color:#706e69;font-family:Georgia,serif">&pound;'+total+'</span></div>'
+      +'<div style="display:flex;justify-content:space-between;width:260px;padding:14px 0 8px;border-top:2px solid #6a6a6a;margin-top:4px"><span style="font-family:Helvetica Neue,Arial,sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:600;color:#1b1b1a;align-self:center">Total</span><span style="font-size:26px;font-weight:500;color:#6a6a6a;font-family:Georgia,serif">&pound;'+total+'</span></div>'
     +'</div>'
     +bankHtml
-    +'<div style="text-align:center;padding-top:24px;margin-top:20px;border-top:1px solid rgba(27,27,26,.1);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#a49e94;font-family:Helvetica Neue,Arial,sans-serif;font-weight:500">'
+    +'<div style="text-align:center;padding-top:24px;margin-top:20px;border-top:1px solid rgba(27,27,26,.1);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#9a9a9a;font-family:Helvetica Neue,Arial,sans-serif;font-weight:500">'
       +'Westmere Private Hire &middot; Licensed by Lewes District Council &middot; westmereprivatehire.co.uk'
     +'</div>'
     +'</div></div></body></html>';
@@ -3649,7 +3658,7 @@ function loadInvoiceHistory(){
         +'<td style="white-space:nowrap">'
           +'<button class="btn btn-ghost btn-sm" style="font-size:.65rem;padding:.3rem .7rem" onclick="event.stopPropagation();viewInvoice('+inv.id+')">View</button>'
           +' <button class="btn btn-ghost btn-sm" style="font-size:.65rem;padding:.3rem .7rem" onclick="event.stopPropagation();downloadInvoice('+inv.id+',\''+escTo(inv.invoice_no)+'\')">Download</button>'
-          +((!paid&&inv.recipient_email)?' <button class="btn btn-sm" style="font-size:.65rem;padding:.3rem .7rem;color:#5c5a54;background:rgba(112,110,105,.12);border:1px solid rgba(112,110,105,.45)" onclick="event.stopPropagation();remindInvoice('+inv.id+',this)">Remind</button>':'')
+          +((!paid&&inv.recipient_email)?' <button class="btn btn-sm" style="font-size:.65rem;padding:.3rem .7rem;color:#555555;background:rgba(106,106,106,.12);border:1px solid rgba(106,106,106,.45)" onclick="event.stopPropagation();remindInvoice('+inv.id+',this)">Remind</button>':'')
           +' <button class="btn btn-ghost btn-sm" style="font-size:.65rem;padding:.3rem .7rem;color:#a33;border-color:rgba(163,51,51,.25)" onclick="event.stopPropagation();deleteInvoice('+inv.id+',\''+escTo(inv.invoice_no)+'\')">Delete</button>'
         +'</td>'
         +'</tr>';
@@ -3898,7 +3907,7 @@ async function loadAdminDocs(){
           var expDate=new Date(expiry);expDate.setHours(0,0,0,0);
           var daysLeft=Math.round((expDate-today)/(1000*60*60*24));
           if(daysLeft<0){statusClass='color:#c0392b;font-weight:600';statusText='Expired';}
-          else if(daysLeft<=30){statusClass='color:#5c5a54;font-weight:600';statusText='Expires in '+daysLeft+'d';}
+          else if(daysLeft<=30){statusClass='color:#555555;font-weight:600';statusText='Expires in '+daysLeft+'d';}
           else{statusClass='color:#2D6E47';statusText='Valid';}
         }else{statusClass='color:#2D6E47';statusText='Uploaded';}
       }
@@ -4312,10 +4321,10 @@ function buildFares(){
   if(!tb)return;
   for(const[town,fares]of Object.entries(FARES)){
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td style="text-align:left;font-size:.78rem;font-weight:500;color:#fff;background:var(--cream-dark);padding:.5rem .8rem">${town}</td>`;
+    tr.innerHTML=`<td style="text-align:left;font-size:.78rem;font-weight:500;color:#1a1a1a;background:var(--cream-dark);padding:.5rem .8rem">${town}</td>`;
     APS.forEach(ap=>{
       const v=fares[ap]||'—';
-      tr.innerHTML+=`<td><input class="fare-input" value="${v==='—'?'—':'£'+v}" onchange="showToast('Fare updated — remember to save')" style="${v==='—'?'color:rgba(255,255,255,.2)':''}"></td>`;
+      tr.innerHTML+=`<td><input class="fare-input" value="${v==='—'?'—':'£'+v}" onchange="showToast('Fare updated — remember to save')" style="${v==='—'?'color:#1a1a1a':''}"></td>`;
     });
     tb.appendChild(tr);
   }
@@ -4517,7 +4526,7 @@ function downloadRecordBook(){
 function printRecordBook(){
   var view=currentRecordData();
   var w=window.open('','_blank');
-  var printCSS='*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:Jost,Helvetica Neue,Arial,sans-serif;font-weight:300;color:#222;background:#fff;line-height:1.7;padding:2rem}h2{font-family:Cormorant Garamond,Georgia,serif;font-weight:400;margin-bottom:.3rem}p{color:#666;margin-bottom:1.5rem;font-size:.9rem}table{width:100%;border-collapse:collapse;margin-bottom:1.5rem}th{font-size:.65rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#888;padding:.5rem .6rem;border-bottom:2px solid #ddd;text-align:left}td{font-size:.82rem;padding:.5rem .6rem;border-bottom:1px solid #eee;color:#444}.navy{color:#1b1b1a;font-weight:400}.gold{color:#706e69;font-family:Cormorant Garamond,Georgia,serif;font-size:1rem}.msep td{background:#f3f4f6;font-weight:600;color:#1b1b1a;letter-spacing:.04em}.footer{display:flex;justify-content:space-between;padding-top:1rem;border-top:2px solid #ddd;font-size:.78rem;color:#888}@media print{body{padding:1rem}}';
+  var printCSS='*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:Jost,Helvetica Neue,Arial,sans-serif;font-weight:300;color:#222;background:#fff;line-height:1.7;padding:2rem}h2{font-family:Cormorant Garamond,Georgia,serif;font-weight:400;margin-bottom:.3rem}p{color:#666;margin-bottom:1.5rem;font-size:.9rem}table{width:100%;border-collapse:collapse;margin-bottom:1.5rem}th{font-size:.65rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#888;padding:.5rem .6rem;border-bottom:2px solid #ddd;text-align:left}td{font-size:.82rem;padding:.5rem .6rem;border-bottom:1px solid #eee;color:#444}.navy{color:#1b1b1a;font-weight:400}.gold{color:#6a6a6a;font-family:Cormorant Garamond,Georgia,serif;font-size:1rem}.msep td{background:#f3f4f6;font-weight:600;color:#1b1b1a;letter-spacing:.04em}.footer{display:flex;justify-content:space-between;padding-top:1rem;border-top:2px solid #ddd;font-size:.78rem;color:#888}@media print{body{padding:1rem}}';
   w.document.write('<html><head><title>Westmere Record Book</title><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"><style>'+printCSS+'</style></head><body>');
   w.document.write('<h2>Westmere Private Hire — Operator Record Book</h2>');
   w.document.write('<p>Licensed by Lewes District Council &nbsp;·&nbsp; Period: '
@@ -4540,8 +4549,8 @@ function printRecordBook(){
       var nt=b.notes||'';
       var bAt=b.created_at?b.created_at.replace('T',' ').slice(0,16):'—';
       w.document.write('<tr>'
-        +'<td style="color:#8a8177">'+n+'</td>'
-        +'<td style="font-family:monospace;font-size:.7rem;color:#8a8177">'+(b.ref||'—')+'</td>'
+        +'<td style="color:#8a8a8a">'+n+'</td>'
+        +'<td style="font-family:monospace;font-size:.7rem;color:#8a8a8a">'+(b.ref||'—')+'</td>'
         +'<td class="navy">'+rbDateStr(b)+'</td>'
         +'<td>'+(b.time||'—')+'</td>'
         +'<td class="navy">'+pN+'</td>'
@@ -4552,13 +4561,13 @@ function printRecordBook(){
         +'<td>'+(b.payment||'cash')+'</td>'
         +'<td>'+(b.flight||'—')+'</td>'
         +'<td style="font-size:.72rem;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+nt+'</td>'
-        +'<td style="font-size:.68rem;color:#8a8177;white-space:nowrap">'+bAt+'</td>'
+        +'<td style="font-size:.68rem;color:#8a8a8a;white-space:nowrap">'+bAt+'</td>'
         +'</tr>');
     });
   });
   var total=view.all.reduce(function(s,b){return s+(b.fare||0);},0);
   w.document.write('</tbody></table>');
-  w.document.write('<div class="footer"><span>Total journeys: <strong>'+view.all.length+'</strong></span><span>Total revenue: <strong style="color:#706e69">£'+total.toFixed(2)+'</strong></span><span>Westmere Private Hire · Lewes District Council Licence</span></div>');
+  w.document.write('<div class="footer"><span>Total journeys: <strong>'+view.all.length+'</strong></span><span>Total revenue: <strong style="color:#6a6a6a">£'+total.toFixed(2)+'</strong></span><span>Westmere Private Hire · Lewes District Council Licence</span></div>');
   w.document.write('</body><\/html>');
   w.document.close();
   w.focus();
@@ -4683,12 +4692,12 @@ function renderFlaggedBanner(list){
     var div=document.createElement('div');
     div.className='flagged-banner card';
     div.style.cssText='background:#f0ece3;border:1px solid #b8b0a4;margin-bottom:1.2rem';
-    div.innerHTML='<div class="ch"><div class="ct" style="color:#5c5a54">⚠️ '+list.length+' booking'+(list.length>1?'s':'')+' need'+(list.length>1?'':'s')+' your attention</div></div>'
+    div.innerHTML='<div class="ch"><div class="ct" style="color:#555555">⚠️ '+list.length+' booking'+(list.length>1?'s':'')+' need'+(list.length>1?'':'s')+' your attention</div></div>'
       +'<div class="cb" style="padding:0">'+list.map(function(b){
         return '<div style="display:flex;justify-content:space-between;align-items:center;padding:.7rem 1rem;border-top:1px solid rgba(244,184,96,.4)">'
           +'<div><div style="font-weight:600;color:var(--navy);font-size:.85rem">'+escTo(b.ref)+' · '+escTo(b.customer_name||'')+'</div>'
           +'<div style="font-size:.72rem;color:var(--text-light);margin-top:.2rem">'+escTo(b.pickup)+' → '+escTo(b.destination)+' · '+escTo(b.date)+' '+escTo(b.time)+'</div>'
-          +'<div style="font-size:.72rem;color:#5c5a54;margin-top:.2rem"><em>'+escTo(b.intake_reason||'No driver available')+'</em></div></div>'
+          +'<div style="font-size:.72rem;color:#555555;margin-top:.2rem"><em>'+escTo(b.intake_reason||'No driver available')+'</em></div></div>'
           +'<button class="btn btn-navy btn-sm" onclick="openReassign('+b.id+')">Resolve</button>'
           +'</div>';
       }).join('')+'</div>';
@@ -5008,7 +5017,7 @@ function admShowDay(key){
       if(j.needs_reassignment){
         actions='<button class="btn btn-navy btn-sm" onclick="event.stopPropagation();openReassign('+j.id+')">Resolve</button>';
       } else if(st==='pending'){
-        actions='<button class="btn btn-sm" style="background:rgba(112,110,105,.14);color:#5c5a54;border:1px solid rgba(112,110,105,.4)" onclick="event.stopPropagation();admSendEstimate('+j.id+')">Send Estimate</button>'
+        actions='<button class="btn btn-sm" style="background:rgba(106,106,106,.14);color:#555555;border:1px solid rgba(106,106,106,.4)" onclick="event.stopPropagation();admSendEstimate('+j.id+')">Send Estimate</button>'
           +'<button class="btn btn-navy btn-sm" onclick="event.stopPropagation();openReassign('+j.id+')">Offer</button>';
       } else if(st==='offered'){
         actions='<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();reclaimOffer('+j.id+')">Reclaim</button>';
@@ -5067,7 +5076,7 @@ setInterval(function(){
     if(ms<=0){el.textContent='\u2014 expired';el.style.color='#9C2828';return;}
     var mm=Math.floor(ms/60000),ss=Math.floor((ms%60000)/1000);
     el.textContent='\u00b7 '+mm+':'+String(ss).padStart(2,'0');
-    el.style.color=ms<60000?'#9C2828':ms<180000?'#5c5a54':'#837b71';
+    el.style.color=ms<60000?'#9C2828':ms<180000?'#555555':'#837b71';
   });
 },1000);
 
@@ -5152,8 +5161,8 @@ function _renderChart(weeks) {
     const x = i * W + PAD / 2;
     const bw = W - PAD;
     const y = H - bh;
-    const gold = '#706e69';
-    const light = 'rgba(112,110,105,.18)';
+    const gold = '#6a6a6a';
+    const light = 'rgba(106,106,106,.18)';
     bars += `<rect x="${x}%" y="${y}" width="${bw}%" height="${bh}" fill="${w.total > 0 ? gold : light}" rx="2"/>`;
     if (w.total > 0) {
       const label = w.total >= 1000 ? '£' + (w.total/1000).toFixed(1) + 'k' : '£' + Math.round(w.total);
@@ -5172,7 +5181,7 @@ function _renderChart(weeks) {
 }
 
 function _renderBreakdown(byStatus, byPayment) {
-  const statusColors = {pending:'#706e69',offered:'#2A3A66',confirmed:'#3b82f6',active:'#10b981',completed:'#059669',cancelled:'rgba(27,27,26,.3)'};
+  const statusColors = {pending:'#6a6a6a',offered:'#2A3A66',confirmed:'#3b82f6',active:'#10b981',completed:'#059669',cancelled:'rgba(27,27,26,.3)'};
   const total = byStatus.reduce((s,r) => s + r.count, 0) || 1;
 
   let sh = '';
@@ -5217,7 +5226,7 @@ function _renderHeatmap(heatmap) {
     hours.forEach(h => {
       const v = row[h] || 0;
       const alpha = v === 0 ? 0 : Math.max(0.08, v / max);
-      const bg = v === 0 ? 'transparent' : `rgba(112,110,105,${alpha.toFixed(2)})`;
+      const bg = v === 0 ? 'transparent' : `rgba(106,106,106,${alpha.toFixed(2)})`;
       const txt = v === 0 ? '' : String(v);
       html += `<td style="padding:.2rem;text-align:center;background:${bg};border-radius:3px;color:${v>0?'var(--navy)':'transparent'};font-variant-numeric:tabular-nums">${txt}</td>`;
     });

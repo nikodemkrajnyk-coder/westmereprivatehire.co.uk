@@ -467,7 +467,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 <style id="wm-template-override">
 /* Book page: template chrome + old wizard, outline buttons */
 #intro{display:none!important}
-body{overflow:auto!important;height:auto!important}
+body{overflow:auto!important;height:auto!important;background:#e9e5df!important}.bk-wrap,.bk-pc,#booking>div,#main-content>#booking{box-shadow:0 24px 60px rgba(27,27,26,.10)}
 nav{position:sticky!important;top:0!important;height:78px!important;padding:0 4vw!important;background:rgba(251,250,247,.96)!important;backdrop-filter:blur(12px)!important;border-bottom:1px solid #eee9e2!important}
 nav .brand b{color:var(--ink)!important}nav .brand span{color:var(--ink)!important}
 .acct-link{font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;color:var(--ink);padding:8px 0;margin-left:8px}
@@ -2390,5 +2390,5 @@ if ('serviceWorker' in navigator) {
 })();
 </script>
 
-<script src="frontend.js"></script></body>
+<script src="frontend.js"></script><script id="wm-acct-autoopen">if(location.hash==='#account'){var _t=setInterval(function(){if(typeof openAcctPortal==='function'){clearInterval(_t);try{openAcctPortal()}catch(e){}}},200);setTimeout(function(){clearInterval(_t)},4000);}</script></body>
 </html>
