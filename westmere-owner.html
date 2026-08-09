@@ -3025,32 +3025,40 @@ function ownFmtSent(s){
   }catch(e){return String(s);}
 }
 
+// Collect the FULL edited booking from the modal — the single source of truth
+// for what gets persisted. Used by both "Save Changes" and "Send Confirmation"
+// so a send always saves exactly what a save would.
+function ebCollectBody(){
+  var g=function(id){var el=document.getElementById(id);return el?el.value:'';};
+  var name=g('eb-name').trim();
+  var phone=g('eb-phone').trim();
+  var email=g('eb-email').trim();
+  var pickup=g('eb-pickup').trim();
+  var stop=g('eb-stop').trim();
+  var dest=g('eb-dest').trim();
+  var date=g('eb-date');
+  var time=g('eb-time');
+  var fare=parseFloat(g('eb-fare'))||null;
+  var notes=g('eb-notes').trim();
+  var body={};
+  if(name)body.passenger_name=name;
+  body.passenger_phone=phone||null;
+  body.passenger_email=email||null;
+  if(pickup)body.pickup=pickup;
+  body.stop_address=stop||null;
+  if(dest)body.destination=dest;
+  if(date)body.date=date;
+  if(time)body.time=time;
+  if(fare)body.fare=fare;
+  body.notes=notes;
+  return body;
+}
+
 async function upcomingSave(){
   var id=document.getElementById('eb-id').value;
-  var name=document.getElementById('eb-name').value.trim();
-  var phone=document.getElementById('eb-phone').value.trim();
-  var email=document.getElementById('eb-email').value.trim();
-  var pickup=document.getElementById('eb-pickup').value.trim();
-  var stop=document.getElementById('eb-stop').value.trim();
-  var dest=document.getElementById('eb-dest').value.trim();
-  var date=document.getElementById('eb-date').value;
-  var time=document.getElementById('eb-time').value;
-  var fare=parseFloat(document.getElementById('eb-fare').value)||null;
-  var notes=document.getElementById('eb-notes').value.trim();
   if(!id)return;
   try{
-    var body={};
-    if(name)body.passenger_name=name;
-    body.passenger_phone=phone||null;
-    body.passenger_email=email||null;
-    if(pickup)body.pickup=pickup;
-    body.stop_address=stop||null;
-    if(dest)body.destination=dest;
-    if(date)body.date=date;
-    if(time)body.time=time;
-    if(fare)body.fare=fare;
-    if(notes!==undefined)body.notes=notes;
-    var r=await fetch('/api/bookings/'+id,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var r=await fetch('/api/bookings/'+id,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(ebCollectBody())});
     var d=await r.json();
     if(r.ok&&d.ok){showToast('Booking updated');document.getElementById('edit-booking-overlay').remove();loadOwnerBookings();}
     else showToast(d.error||('Failed ('+r.status+')'));
@@ -3071,13 +3079,15 @@ async function ebSend(kind,btn){
   if(btn){btn.disabled=true;btn.dataset.orig=orig;btn.textContent='Sending…';btn.style.opacity='.55';btn.style.cursor='default';}
   var restore=function(){ if(btn){btn.disabled=false;btn.textContent=btn.dataset.orig||orig;btn.style.opacity='';btn.style.cursor='';} };
   try{
-    // Persist the "Notes to include in confirmation" first (existing update
-    // flow) so the email always carries the note the operator just typed —
-    // no separate Save click required.
-    var notesEl=document.getElementById('eb-notes');
-    if(notesEl){
-      var notesVal=notesEl.value.trim();
-      await fetch('/api/bookings/'+id,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({notes:notesVal||null})});
+    // Save the ENTIRE edited booking first (identical to "Save Changes") so the
+    // email goes out off the UPDATED record — the new stop, times, fare, etc.
+    // If the save fails, do NOT send: the customer must never get stale details.
+    var sr=await fetch('/api/bookings/'+id,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(ebCollectBody())});
+    var sd={}; try{ sd=await sr.json(); }catch(_){}
+    if(!(sr.ok&&sd.ok)){
+      showToast((sd&&sd.error)||('Couldn’t save changes — '+noun+' not sent'));
+      restore();
+      return;
     }
     var r=await fetch('/api/bookings/'+id+'/'+path,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}});
     var d={}; try{ d=await r.json(); }catch(_){}
