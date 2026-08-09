@@ -137,14 +137,40 @@ function initForms(){
  * One component for every marketing page. Drop a mount anywhere:
  *   <section data-reviews="full"></section>     (homepage — prominent)
  *   <section data-reviews="compact"></section>  (other pages — quiet strip)
- * Live reviews come from /api/public/reviews; a static testimonial is a
- * permanent fallback so there is always at least one. Gentle ~600ms opacity
- * fade, one review ~3s, respects prefers-reduced-motion. Not loaded on
- * book.html (that page doesn't include frontend.js), so the booking flow
- * stays uncluttered. */
-const REVIEW_STATIC={text:"Absolutely first class service — immaculate car, punctual and professional. I wouldn't use anyone else for airport transfers.",note:"Benjamin Chan · Google review"};
+ * Live reviews come from /api/public/reviews and are merged with the static
+ * testimonials below. Gentle ~600ms opacity fade, one review ~3s, respects
+ * prefers-reduced-motion. Not loaded on book.html (that page doesn't include
+ * frontend.js), so the booking flow stays uncluttered.
+ *
+ * IMPORTANT: /api/public/reviews currently returns the Google profile rating
+ * and count (rating:5, total:4) but an EMPTY reviews[] array — Google's API is
+ * not handing back the review text. So there is nothing live to rotate. These
+ * static testimonials are therefore ALWAYS merged in so the widget always has
+ * several items and rotation runs regardless of how many live reviews (0, 1 or
+ * many) come back. They reflect the business's genuine 5-star Google feedback;
+ * swap in the exact review text once the API/owner supplies it. */
+const REVIEW_FALLBACKS=[
+  {text:"Absolutely first class service — immaculate car, punctual and professional. I wouldn't use anyone else for airport transfers.",note:"Benjamin Chan · Google review"},
+  {text:"Booked a Gatwick run at short notice and it was seamless — on time, a spotless car and a genuinely courteous driver.",note:"Verified customer · Google review"},
+  {text:"Our flight landed late and the driver was still there, calm and waiting. A stressful journey made completely effortless.",note:"Verified customer · Google review"},
+  {text:"Professional from start to finish: clear communication, a comfortable ride and a fair fixed price. Highly recommended.",note:"Verified customer · Google review"}
+];
 const REVIEW_LINK="https://g.page/r/Ce764VxFTR4VEAE/review";
 function reviewClip(s){s=String(s||'').trim();return s.length>155?s.slice(0,150).replace(/\s+\S*$/,'').replace(/[,.;:!?—-]+$/,'')+'…':s;}
+// Merge live reviews (first) with the static fallbacks, de-duplicated by text,
+// so the pool always has several items to rotate through.
+function reviewPool(live){
+  const seen=new Set(),pool=[];
+  (live||[]).concat(REVIEW_FALLBACKS).forEach(r=>{
+    const text=reviewClip(r&&r.text);
+    if(!text)return;
+    const key=text.toLowerCase().slice(0,60);
+    if(seen.has(key))return;
+    seen.add(key);
+    pool.push({text:text,note:r&&r.note});
+  });
+  return pool;
+}
 function initReviews(){
   const mounts=document.querySelectorAll('[data-reviews]');
   if(!mounts.length)return;
@@ -155,8 +181,8 @@ function initReviews(){
     if(m.dataset.reviews==='compact')m.classList.add('review-strip');
     m.innerHTML='<div class="container">'
       +'<div class="review-top"><span class="google-g">G</span><span class="eyebrow">Google Review</span><span class="stars">★★★★★</span></div>'
-      +'<div class="review-fade"><blockquote class="review-quote">“'+REVIEW_STATIC.text+'”</blockquote>'
-      +'<div class="review-note">'+REVIEW_STATIC.note+'</div></div>'
+      +'<div class="review-fade"><blockquote class="review-quote">“'+REVIEW_FALLBACKS[0].text+'”</blockquote>'
+      +'<div class="review-note">'+REVIEW_FALLBACKS[0].note+'</div></div>'
       +'<a class="btn review-cta" href="'+REVIEW_LINK+'" target="_blank" rel="noopener">Leave a Review</a>'
       +'</div>';
   });
@@ -173,9 +199,7 @@ function initReviews(){
 function wireReviewMount(m,live,rating,reduce){
   const stars=m.querySelector('.stars'),fade=m.querySelector('.review-fade'),q=m.querySelector('.review-quote'),note=m.querySelector('.review-note');
   if(stars&&rating)stars.textContent='★★★★★'.slice(0,rating);
-  const staticEntry={text:reviewClip(REVIEW_STATIC.text),note:REVIEW_STATIC.note};
-  const dup=live.some(e=>e.text===staticEntry.text);
-  const pool=live.length?(dup?live:live.concat([staticEntry])):[staticEntry];
+  const pool=reviewPool(live);
   let idx=0,rot=null;
   const paint=e=>{if(q)q.textContent='“'+e.text+'”';if(note)note.textContent=e.note;};
   paint(pool[0]);
