@@ -219,8 +219,14 @@ function _tinyAddr(a) {
   const parts = String(a).split(',').map(p => p.trim()).filter(Boolean)
     .filter(p => !_SKIP_ADDR.test(p) && !_POSTCODE.test(p));
   if (!parts.length) return String(a).split(',')[0].trim().slice(0, 24);
-  // Town is usually the last remaining part before the stripped county/postcode.
-  return parts[parts.length - 1].slice(0, 24);
+  // Use the FIRST meaningful part — the town/place the customer actually
+  // entered. Autocomplete (Nominatim display_name) and Google-formatted
+  // addresses order fields most-specific-first, appending the administrative
+  // DISTRICT (e.g. "Tandridge", "Mid Sussex") AFTER the town — so the last
+  // part is the council area, not the place. Skip a leading bare house
+  // number so a street line reads as the street/town, never a district.
+  const idx = (parts.length > 1 && /^\d+[a-z]?$/i.test(parts[0])) ? 1 : 0;
+  return parts[idx].slice(0, 24);
 }
 
 // Up to three meaningful parts for description/location fields.
@@ -545,5 +551,8 @@ module.exports = {
   listExternalEvents,
   getStatus,
   loadTokens,
-  getAccessToken
+  getAccessToken,
+  bookingToEvent,
+  _tinyAddr,
+  _shortAddr
 };

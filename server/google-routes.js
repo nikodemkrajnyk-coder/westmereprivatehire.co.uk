@@ -35,7 +35,11 @@ function _tinyAddr(a) {
   const parts = String(a).split(',').map(p => p.trim()).filter(Boolean)
     .filter(p => !_SKIP_ADDR.test(p) && !_POSTCODE.test(p));
   if (!parts.length) return String(a).split(',')[0].trim().slice(0, 24);
-  return parts[parts.length - 1].slice(0, 24);
+  // First meaningful part = the town/place the customer entered; the
+  // administrative district (e.g. "Tandridge", "Mid Sussex") is appended
+  // AFTER the town, so never use the last part. Skip a leading house number.
+  const idx = (parts.length > 1 && /^\d+[a-z]?$/i.test(parts[0])) ? 1 : 0;
+  return parts[idx].slice(0, 24);
 }
 
 function requireStaff(req, res, next) {
