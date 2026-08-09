@@ -259,64 +259,6 @@ app.use(express.static(path.join(__dirname, '..'), {
   extensions: ['html'],
 }));
 
-// ── TEMPORARY Google Calendar audit/cleanup endpoint — REMOVE after use ──
-// Token-guarded, top-level (clean 404 after removal). Uses the app's own Google
-// tokens (in this environment) to (a) LIST events across the connected
-// calendars for a date window incl. our own wph_ref/wph_booking_id + timezone,
-// and (b) DELETE one event by id (used to remove an orphaned TEST event).
-app.get('/_caltest', async (req, res) => {
-  const SECRET = '494f59a4bea5aef530c31caa1504adf89377946fbc08c621a65b714ced3adbbb';
-  if (req.query.token !== SECRET) return res.status(403).json({ error: 'forbidden' });
-  const gcal = require('./google-calendar');
-  const API_BASE = 'https://www.googleapis.com/calendar/v3';
-  try {
-    const token = await gcal.getAccessToken();
-    if (!token) return res.status(503).json({ error: 'Google Calendar not connected' });
-    const t = gcal.loadTokens() || {};
-    const appCal = (t && t.calendar_id) || process.env.GOOGLE_CALENDAR_ID || 'primary';
-
-    if (req.query.action === 'delete') {
-      const id = String(req.query.id || '').trim();
-      const cal = String(req.query.cal || appCal).trim();
-      if (!id) return res.status(400).json({ error: 'id required' });
-      const r = await fetch(`${API_BASE}/calendars/${encodeURIComponent(cal)}/events/${encodeURIComponent(id)}`,
-        { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } });
-      return res.json({ ok: r.ok || r.status === 410 || r.status === 404, status: r.status, deletedId: id, calendar: cal });
-    }
-
-    // default: list
-    const from = (req.query.from || '2026-08-10') + 'T00:00:00Z';
-    const to   = (req.query.to   || '2026-08-15') + 'T00:00:00Z';
-    const clr = await fetch(`${API_BASE}/users/me/calendarList?minAccessRole=reader`, { headers: { Authorization: 'Bearer ' + token } });
-    const cld = await clr.json();
-    const calendars = (cld.items || []).map(c => ({ id: c.id, summary: c.summary, timeZone: c.timeZone, primary: !!c.primary, selected: c.selected !== false, hidden: !!c.hidden, isAppCalendar: c.id === appCal }));
-    const scan = (cld.items || []).filter(c => !c.hidden && c.selected !== false);
-    const buckets = await Promise.all(scan.map(async c => {
-      const url = `${API_BASE}/calendars/${encodeURIComponent(c.id)}/events?timeMin=${encodeURIComponent(from)}&timeMax=${encodeURIComponent(to)}&singleEvents=true&orderBy=startTime&maxResults=250`;
-      try {
-        const rr = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
-        const dd = await rr.json();
-        if (!rr.ok) return [];
-        return (dd.items || []).map(ev => {
-          const priv = (ev.extendedProperties && ev.extendedProperties.private) || {};
-          return {
-            calendar: c.summary, calendarId: c.id, calendarTZ: c.timeZone,
-            id: ev.id, status: ev.status, summary: ev.summary || '(no title)',
-            location: ev.location || '', description: (ev.description || '').slice(0, 200),
-            start: ev.start, end: ev.end,
-            wph_ref: priv.wph_ref || null, wph_booking_id: priv.wph_booking_id || null,
-            htmlLink: ev.htmlLink || null
-          };
-        });
-      } catch (e) { return []; }
-    }));
-    const events = [].concat(...buckets).sort((a, b) => String((a.start && (a.start.dateTime || a.start.date)) || '').localeCompare(String((b.start && (b.start.dateTime || b.start.date)) || '')));
-    return res.json({ ok: true, appCalendar: appCal, calendars, window: { from, to }, count: events.length, events });
-  } catch (e) {
-    return res.status(500).json({ error: e.message });
-  }
-});
-
 // ── 404 ─────────────────────────────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).sendFile(path.join(__dirname, '..', 'index.html'));
