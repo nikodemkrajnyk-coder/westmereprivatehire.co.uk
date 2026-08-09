@@ -203,8 +203,10 @@ function wireReviewMount(m,live,rating,reduce){
   let idx=0,rot=null;
   const paint=e=>{if(q)q.textContent='“'+e.text+'”';if(note)note.textContent=e.note;};
   paint(pool[0]);
-  const step=()=>{if(pool.length<2)return;idx=(idx+1)%pool.length;if(reduce||!fade){paint(pool[idx]);return;}fade.classList.add('is-out');setTimeout(()=>{paint(pool[idx]);fade.classList.remove('is-out');},600);};
-  const start=()=>{if(rot)clearInterval(rot);if(pool.length>1&&!reduce)rot=setInterval(step,3000);};
+  // Dwell ~5s, then a slow ~1.4s fade-OUT (CSS), swap the text while hidden, then
+  // a gentler fade-IN. The swap waits for the fade-out to finish so it dissolves.
+  const step=()=>{if(pool.length<2)return;idx=(idx+1)%pool.length;if(reduce||!fade){paint(pool[idx]);return;}fade.classList.add('is-out');setTimeout(()=>{paint(pool[idx]);fade.classList.remove('is-out');},1400);};
+  const start=()=>{if(rot)clearInterval(rot);if(pool.length>1&&!reduce)rot=setInterval(step,5000);};
   const stop=()=>{if(rot){clearInterval(rot);rot=null;}};
   m.addEventListener('mouseenter',stop);m.addEventListener('mouseleave',start);
   start();
