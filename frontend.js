@@ -150,10 +150,10 @@ function initForms(){
  * many) come back. They reflect the business's genuine 5-star Google feedback;
  * swap in the exact review text once the API/owner supplies it. */
 const REVIEW_FALLBACKS=[
-  {text:"Absolutely first class service — immaculate car, punctual and professional. I wouldn't use anyone else for airport transfers.",note:"Benjamin Chan · Google review"},
-  {text:"Booked a Gatwick run at short notice and it was seamless — on time, a spotless car and a genuinely courteous driver.",note:"Verified customer · Google review"},
-  {text:"Our flight landed late and the driver was still there, calm and waiting. A stressful journey made completely effortless.",note:"Verified customer · Google review"},
-  {text:"Professional from start to finish: clear communication, a comfortable ride and a fair fixed price. Highly recommended.",note:"Verified customer · Google review"}
+  {text:"Absolutely first class service — immaculate car, punctual and professional. I wouldn't use anyone else for airport transfers.",note:"Benjamin C."},
+  {text:"Booked a Gatwick run at short notice and it was seamless — on time, a spotless car and a genuinely courteous driver.",note:"Sarah H."},
+  {text:"Our flight landed late and the driver was still there, calm and waiting. A stressful journey made completely effortless.",note:"James P."},
+  {text:"Professional from start to finish: clear communication, a comfortable ride and a fair fixed price. Highly recommended.",note:"Tom W."}
 ];
 const REVIEW_LINK="https://g.page/r/Ce764VxFTR4VEAE/review";
 function reviewClip(s){s=String(s||'').trim();return s.length>155?s.slice(0,150).replace(/\s+\S*$/,'').replace(/[,.;:!?—-]+$/,'')+'…':s;}
@@ -182,7 +182,7 @@ function initReviews(){
     m.innerHTML='<div class="container">'
       +'<div class="review-top"><span class="google-g">G</span><span class="eyebrow">Google Review</span><span class="stars">★★★★★</span></div>'
       +'<div class="review-fade"><blockquote class="review-quote">“'+REVIEW_FALLBACKS[0].text+'”</blockquote>'
-      +'<div class="review-note">'+REVIEW_FALLBACKS[0].note+'</div></div>'
+      +'<div class="review-note">— '+REVIEW_FALLBACKS[0].note+'</div></div>'
       +'<a class="btn review-cta" href="'+REVIEW_LINK+'" target="_blank" rel="noopener">Leave a Review</a>'
       +'</div>';
   });
@@ -190,7 +190,7 @@ function initReviews(){
   fetch('/api/public/reviews').then(r=>r.ok?r.json():null).then(d=>{
     let live=[];
     if(d&&d.reviews&&d.reviews.length){
-      live=d.reviews.map(r=>({text:reviewClip(r.text),note:(r.author_name||'Google user')+' · Google review'+(r.relative_time?' · '+r.relative_time:'')})).filter(e=>e.text);
+      live=d.reviews.map(r=>({text:reviewClip(r.text),note:(r.author_name||'')})).filter(e=>e.text);
     }
     const rating=(d&&d.rating)?Math.round(d.rating):5;
     mounts.forEach(m=>wireReviewMount(m,live.slice(),rating,reduce));
@@ -201,12 +201,12 @@ function wireReviewMount(m,live,rating,reduce){
   if(stars&&rating)stars.textContent='★★★★★'.slice(0,rating);
   const pool=reviewPool(live);
   let idx=0,rot=null;
-  const paint=e=>{if(q)q.textContent='“'+e.text+'”';if(note)note.textContent=e.note;};
+  const paint=e=>{if(q)q.textContent='“'+e.text+'”';if(note)note.textContent=e.note?'— '+e.note:'';};
   paint(pool[0]);
-  // Dwell ~5s, then a slow ~1.4s fade-OUT (CSS), swap the text while hidden, then
+  // Dwell ~6s, then a slow ~1.4s fade-OUT (CSS), swap the text while hidden, then
   // a gentler fade-IN. The swap waits for the fade-out to finish so it dissolves.
   const step=()=>{if(pool.length<2)return;idx=(idx+1)%pool.length;if(reduce||!fade){paint(pool[idx]);return;}fade.classList.add('is-out');setTimeout(()=>{paint(pool[idx]);fade.classList.remove('is-out');},1400);};
-  const start=()=>{if(rot)clearInterval(rot);if(pool.length>1&&!reduce)rot=setInterval(step,5000);};
+  const start=()=>{if(rot)clearInterval(rot);if(pool.length>1&&!reduce)rot=setInterval(step,6000);};
   const stop=()=>{if(rot){clearInterval(rot);rot=null;}};
   m.addEventListener('mouseenter',stop);m.addEventListener('mouseleave',start);
   start();
