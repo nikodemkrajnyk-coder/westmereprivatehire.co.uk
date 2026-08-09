@@ -1241,9 +1241,22 @@ router.post('/bookings/:id/send-confirmation', async (req, res) => {
     return res.status(403).json({ error: 'Access denied' });
   }
   try {
+    const id = parseInt(req.params.id, 10);
     const intake = require('./intake');
-    await intake.notifyCustomerConfirmed(parseInt(req.params.id, 10));
-    res.json({ ok: true });
+    await intake.notifyCustomerConfirmed(id);
+    // Record that a confirmation went out so the operator can always see
+    // whether/when one was sent. Best-effort: the email already sent, so a
+    // logging failure must never fail the request.
+    let sentAt = null;
+    try {
+      const db = getDb();
+      db.prepare("UPDATE bookings SET confirmation_sent_at = datetime('now') WHERE id = ?").run(id);
+      const row = db.prepare("SELECT confirmation_sent_at FROM bookings WHERE id = ?").get(id);
+      sentAt = (row && row.confirmation_sent_at) || null;
+    } catch (e2) {
+      console.error('[API] confirmation_sent_at record failed:', e2.message);
+    }
+    res.json({ ok: true, confirmation_sent_at: sentAt });
   } catch (e) {
     console.error('[API] send-confirmation failed:', e.message);
     res.status(500).json({ error: 'Failed to send confirmation' });

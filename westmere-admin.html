@@ -2307,6 +2307,7 @@ function bookingDetailHtml(b){
     +_jdField('Suggested fare',money(b.suggested_fare))
     +_jdField('Payment',escTo(b.payment||''))
     +_jdField('Paid at',escTo(b.paid_at))
+    +_jdField('Confirmation sent',escTo(b.confirmation_sent_at)||'—')
     +_jdField('Dead-miles fee',money(b.dead_miles_fee))
     +_jdField('Driver',escTo(b.driver_name||b.offered_driver_name))
     +_jdField('Notes',escTo(b.notes))

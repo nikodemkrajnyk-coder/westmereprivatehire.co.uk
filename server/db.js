@@ -684,6 +684,11 @@ function migrate() {
   // Stop-on-the-way address — a proper field so owner sees it in email/app (was stuffed into notes)
   try { db.exec(`ALTER TABLE bookings ADD COLUMN stop_address TEXT`); } catch(_){}
 
+  // Timestamp (UTC) of the last operator-sent booking confirmation, so the app
+  // can always show whether/when a confirmation went out. Additive only; the
+  // email/fare engine is unchanged.
+  try { db.exec(`ALTER TABLE bookings ADD COLUMN confirmation_sent_at TEXT`); } catch(_){}
+
   // Owner/driver documents: add expiry_date column
   try {
     const ddInfo = db.prepare("PRAGMA table_info(driver_documents)").all();
