@@ -177,9 +177,18 @@
     var pickup = form.querySelector('[name="pickup"]');
     var dest   = form.querySelector('[name="destination"]');
     var stop   = form.querySelector('[name="stop_address"]');
+    var dateEl = form.querySelector('[name="date"]');
     var timeEl = form.querySelector('[name="time"]');
     var fareBox = document.querySelector('[data-fare-estimate]');
     var status = form.querySelector('.status');
+
+    // Set today as the MINIMUM selectable date (not a locked value) — uses the
+    // visitor's LOCAL date so it never rolls to "tomorrow"/"yesterday" via UTC.
+    if (dateEl && !dateEl.getAttribute('min')) {
+      var now = new Date();
+      var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+      dateEl.setAttribute('min', now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()));
+    }
 
     // ── Remember me + logged-in account prefill ──────────────────────────
     var nameEl = form.querySelector('[name="name"]');
