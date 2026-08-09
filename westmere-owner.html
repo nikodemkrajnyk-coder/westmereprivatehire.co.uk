@@ -1102,17 +1102,20 @@ input[type=checkbox],input[type=radio]{accent-color:#111111 !important}
           <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.22rem;font-family:var(--sans)">Email</div>
           <input id="nb-email" type="email" placeholder="Email address" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
         </div>
-        <div style="margin-bottom:.7rem">
+        <div style="margin-bottom:.7rem;position:relative">
           <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.22rem;font-family:var(--sans)">Pickup Address *</div>
-          <input id="nb-pickup" type="text" placeholder="Pickup location" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
+          <input id="nb-pickup" type="text" placeholder="Pickup location" autocomplete="off" oninput="addrSearch('nb-pickup','nb-sug-pickup')" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
+          <div class="sug-drop" id="nb-sug-pickup"></div>
         </div>
-        <div style="margin-bottom:.7rem">
+        <div style="margin-bottom:.7rem;position:relative">
           <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.22rem;font-family:var(--sans)">Stop / via (optional)</div>
-          <input id="nb-stop" type="text" placeholder="Intermediate stop, if any" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
+          <input id="nb-stop" type="text" placeholder="Intermediate stop, if any" autocomplete="off" oninput="addrSearch('nb-stop','nb-sug-stop')" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
+          <div class="sug-drop" id="nb-sug-stop"></div>
         </div>
-        <div style="margin-bottom:.7rem">
+        <div style="margin-bottom:.7rem;position:relative">
           <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.22rem;font-family:var(--sans)">Destination *</div>
-          <input id="nb-dest" type="text" placeholder="Destination" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
+          <input id="nb-dest" type="text" placeholder="Destination" autocomplete="off" oninput="addrSearch('nb-dest','nb-sug-dest')" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
+          <div class="sug-drop" id="nb-sug-dest"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.7rem">
           <div>
