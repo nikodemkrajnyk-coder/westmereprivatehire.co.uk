@@ -259,6 +259,37 @@ app.use(express.static(path.join(__dirname, '..'), {
   extensions: ['html'],
 }));
 
+// ── TEMPORARY owner test-send endpoint — REMOVE after use ────────────────
+// Mounted at top level (not under /api) so that once removed it falls through
+// to the 404 handler below. Token-guarded and hard-coded to the owner's own
+// address, so it can only ever email the owner. Runs inside Railway where
+// RESEND_API_KEY exists. Sends the NEW confirmation template via Resend.
+app.get('/_devtest/send-confirmation', async (req, res) => {
+  const SECRET = '63b7d72cd4d5d3212210bc7828d95d25443aaf8fd6841534cb7bf1f466b8a208';
+  if (req.query.token !== SECRET) return res.status(403).json({ error: 'forbidden' });
+  const { sendCustomerConfirmed } = require('./email');
+  const booking = {
+    ref: 'WPH-TEST',
+    name: 'Niko',
+    email: 'nikodem.krajnyk@gmail.com', // hard-coded owner address — never from the request
+    pickup: '307 Bishopsford Road, Morden, SM4 6BW',
+    stop_address: '49 Greenhill Ave, Caterham CR3 6PR',
+    destination: 'Bolney Place, Cowfold Road, Bolney RH17 5QT',
+    date: '2026-08-14',
+    time: '14:30',
+    fare: 125.00,
+    payment: 'pending',
+    paid: false,
+    pay_token: require('crypto').randomBytes(16).toString('hex')
+  };
+  try {
+    const id = await sendCustomerConfirmed(booking);
+    return res.json({ ok: !!id, resend_id: id, to: booking.email });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+});
+
 // ── 404 ─────────────────────────────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).sendFile(path.join(__dirname, '..', 'index.html'));
