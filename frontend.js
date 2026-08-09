@@ -137,76 +137,56 @@ function initForms(){
  * One component for every marketing page. Drop a mount anywhere:
  *   <section data-reviews="full"></section>     (homepage — prominent)
  *   <section data-reviews="compact"></section>  (other pages — quiet strip)
- * Live reviews come from /api/public/reviews and are merged with the static
- * testimonials below. Gentle ~600ms opacity fade, one review ~3s, respects
- * prefers-reduced-motion. Not loaded on book.html (that page doesn't include
- * frontend.js), so the booking flow stays uncluttered.
- *
- * IMPORTANT: /api/public/reviews currently returns the Google profile rating
- * and count (rating:5, total:4) but an EMPTY reviews[] array — Google's API is
- * not handing back the review text. So there is nothing live to rotate. These
- * static testimonials are therefore ALWAYS merged in so the widget always has
- * several items and rotation runs regardless of how many live reviews (0, 1 or
- * many) come back. They reflect the business's genuine 5-star Google feedback;
- * swap in the exact review text once the API/owner supplies it. */
-const REVIEW_FALLBACKS=[
-  {text:"Absolutely first class service — immaculate car, punctual and professional. I wouldn't use anyone else for airport transfers.",note:"Benjamin C."},
-  {text:"Booked a Gatwick run at short notice and it was seamless — on time, a spotless car and a genuinely courteous driver.",note:"Sarah H."},
-  {text:"Our flight landed late and the driver was still there, calm and waiting. A stressful journey made completely effortless.",note:"James P."},
-  {text:"Professional from start to finish: clear communication, a comfortable ride and a fair fixed price. Highly recommended.",note:"Tom W."}
-];
+ * Reviews come ONLY from /api/public/reviews (server-side Google Places proxy)
+ * — real Google reviews, no static/placeholder testimonials, ever. Real author
+ * name shown beneath each. Gentle ~1.4s fade-out, one review ~6s. Respects
+ * prefers-reduced-motion. Not loaded on book.html so the booking flow stays
+ * uncluttered.
+ *   2+ real reviews -> rotate through them
+ *   1 real review   -> show it, no rotation
+ *   0 reviews w/text -> show the genuine rating + count only (no invented text) */
 const REVIEW_LINK="https://g.page/r/Ce764VxFTR4VEAE/review";
 function reviewClip(s){s=String(s||'').trim();return s.length>155?s.slice(0,150).replace(/\s+\S*$/,'').replace(/[,.;:!?—-]+$/,'')+'…':s;}
-// Merge live reviews (first) with the static fallbacks, de-duplicated by text,
-// so the pool always has several items to rotate through.
-function reviewPool(live){
-  const seen=new Set(),pool=[];
-  (live||[]).concat(REVIEW_FALLBACKS).forEach(r=>{
-    const text=reviewClip(r&&r.text);
-    if(!text)return;
-    const key=text.toLowerCase().slice(0,60);
-    if(seen.has(key))return;
-    seen.add(key);
-    pool.push({text:text,note:r&&r.note});
-  });
-  return pool;
-}
 function initReviews(){
   const mounts=document.querySelectorAll('[data-reviews]');
   if(!mounts.length)return;
   const reduce=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  // Inject the widget markup (with the static testimonial as no-JS-safe content).
+  // Widget shell — real reviews (or a rating-only line) fill in after the fetch.
   mounts.forEach(m=>{
     m.classList.add('review-wrap');
     if(m.dataset.reviews==='compact')m.classList.add('review-strip');
     m.innerHTML='<div class="container">'
       +'<div class="review-top"><span class="google-g">G</span><span class="eyebrow">Google Review</span><span class="stars">★★★★★</span></div>'
-      +'<div class="review-fade"><blockquote class="review-quote">“'+REVIEW_FALLBACKS[0].text+'”</blockquote>'
-      +'<div class="review-note">— '+REVIEW_FALLBACKS[0].note+'</div></div>'
+      +'<div class="review-fade"><blockquote class="review-quote"></blockquote><div class="review-note"></div></div>'
       +'<a class="btn review-cta" href="'+REVIEW_LINK+'" target="_blank" rel="noopener">Leave a Review</a>'
       +'</div>';
   });
-  // Fetch once, wire every mount to rotate its own copy of the pool.
   fetch('/api/public/reviews').then(r=>r.ok?r.json():null).then(d=>{
-    let live=[];
+    let reviews=[];
     if(d&&d.reviews&&d.reviews.length){
-      live=d.reviews.map(r=>({text:reviewClip(r.text),note:(r.author_name||'')})).filter(e=>e.text);
+      reviews=d.reviews.map(r=>({text:reviewClip(r.text),note:String(r.author_name||'').trim()})).filter(e=>e.text);
     }
-    const rating=(d&&d.rating)?Math.round(d.rating):5;
-    mounts.forEach(m=>wireReviewMount(m,live.slice(),rating,reduce));
-  }).catch(()=>{/* keep the static fallback already rendered */});
+    const rating=(d&&d.rating)?d.rating:null;
+    const total=(d&&d.total)?d.total:0;
+    mounts.forEach(m=>wireReviewMount(m,reviews,rating,total,reduce));
+  }).catch(()=>{mounts.forEach(m=>wireReviewMount(m,[],null,0,reduce));});
 }
-function wireReviewMount(m,live,rating,reduce){
+function wireReviewMount(m,reviews,rating,total,reduce){
   const stars=m.querySelector('.stars'),fade=m.querySelector('.review-fade'),q=m.querySelector('.review-quote'),note=m.querySelector('.review-note');
-  if(stars&&rating)stars.textContent='★★★★★'.slice(0,rating);
-  const pool=reviewPool(live);
-  let idx=0,rot=null;
+  if(stars&&rating)stars.textContent='★★★★★'.slice(0,Math.round(rating));
+  // No real reviews with text -> show the genuine rating + count only. Never
+  // invent a testimonial.
+  if(!reviews.length){
+    if(q)q.textContent='';
+    if(note)note.textContent=(rating&&total)?(Number(rating).toFixed(1)+' — based on '+total+' Google review'+(total===1?'':'s')):'';
+    return;
+  }
   const paint=e=>{if(q)q.textContent='“'+e.text+'”';if(note)note.textContent=e.note?'— '+e.note:'';};
-  paint(pool[0]);
-  // Dwell ~6s, then a slow ~1.4s fade-OUT (CSS), swap the text while hidden, then
-  // a gentler fade-IN. The swap waits for the fade-out to finish so it dissolves.
-  const step=()=>{if(pool.length<2)return;idx=(idx+1)%pool.length;if(reduce||!fade){paint(pool[idx]);return;}fade.classList.add('is-out');setTimeout(()=>{paint(pool[idx]);fade.classList.remove('is-out');},1400);};
-  const start=()=>{if(rot)clearInterval(rot);if(pool.length>1&&!reduce)rot=setInterval(step,6000);};
+  let idx=0,rot=null;
+  paint(reviews[0]);
+  // Dwell ~6s, slow ~1.4s fade-OUT (CSS), swap while hidden, gentle fade-IN.
+  const step=()=>{if(reviews.length<2)return;idx=(idx+1)%reviews.length;if(reduce||!fade){paint(reviews[idx]);return;}fade.classList.add('is-out');setTimeout(()=>{paint(reviews[idx]);fade.classList.remove('is-out');},1400);};
+  const start=()=>{if(rot)clearInterval(rot);if(reviews.length>1&&!reduce)rot=setInterval(step,6000);};
   const stop=()=>{if(rot){clearInterval(rot);rot=null;}};
   m.addEventListener('mouseenter',stop);m.addEventListener('mouseleave',start);
   start();
