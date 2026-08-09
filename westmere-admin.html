@@ -2413,7 +2413,7 @@ function loadLiveBookings(){
         var _conflicts=admFindOverlaps(bookings);
         tbody.innerHTML=bookings.map(function(b){
           var dateStr='';
-          try{var dd=new Date(b.date);dateStr=dd.toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'2-digit'});}catch(e){dateStr=b.date||'';}
+          try{var dd=new Date((b.date||'')+'T00:00:00');dateStr=dd.toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'2-digit'});}catch(e){dateStr=b.date||'';}
           var statusClass=b.status==='completed'?'tag-done':b.status==='cancelled'?'tag-cancel':'tag-upcoming';
           var statusLabel=b.status?b.status.charAt(0).toUpperCase()+b.status.slice(1):'Pending';
           var _pp=admPayTag(b);var payClass=_pp.cls,payLabel=_pp.label;
@@ -4622,7 +4622,7 @@ function currentRecordData(){
 }
 
 function rbDateStr(b){
-  try{return new Date(b.date).toLocaleDateString('en-GB');}catch(e){return b.date||'';}
+  try{return new Date((b.date||'')+'T00:00:00').toLocaleDateString('en-GB');}catch(e){return b.date||'';}
 }
 
 // Render the record-book table for the month currently selected in the
