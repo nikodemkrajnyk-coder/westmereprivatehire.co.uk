@@ -81,6 +81,32 @@ a{color:var(--gold)}
 .content{padding:1.8rem 2rem;flex:1}
 /* VIEWS */
 .view{display:none}.view.on{display:block;animation:up .3s ease}
+/* ── FULL-PAGE SECTION MODE ──────────────────────────────────────────────
+   Opening any section (other than the Dashboard hub) collapses the sidebar
+   and lets the content span the full viewport width, with a Back button in
+   the topbar that returns to the Dashboard. Works desktop + mobile. */
+.tb-back{display:none;align-items:center;gap:.4rem;background:none;border:1px solid rgba(27,27,26,.2);border-radius:8px;color:var(--navy);font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;padding:.5rem .9rem;cursor:pointer;transition:all .2s}
+.tb-back:hover{background:rgba(27,27,26,.05);border-color:rgba(27,27,26,.4)}
+body.full-view .tb-back{display:inline-flex}
+body.full-view .sidebar{transform:translateX(-100%)}
+body.full-view .main{margin-left:0}
+body.full-view .mob-menu-btn{display:none}
+body.full-view .content{padding:1.4rem 1.9rem;max-width:100%}
+@media(max-width:600px){body.full-view .content{padding:1rem .8rem}}
+/* Expandable full booking detail row inside journey tables */
+.jdetail-row{display:none}
+.jdetail-row.open{display:table-row}
+.jdetail-row>td{background:rgba(27,27,26,.025);padding:1rem 1.2rem!important;border-bottom:1px solid rgba(27,27,26,.08)!important}
+.jdetail{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.55rem 1.4rem}
+.jd-field{display:flex;flex-direction:column;gap:.1rem;min-width:0}
+.jd-k{font-size:.56rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.55)}
+.jd-v{font-size:.82rem;color:var(--navy);word-break:break-word}
+/* On phones the detail row sits inside a horizontally-scrollable table; pin the
+   grid to the viewport so every field (incl. email) reads without scrolling. */
+@media(max-width:600px){
+  .jdetail-row>td{padding:.8rem!important}
+  .jdetail{position:sticky;left:0;width:calc(100vw - 1.6rem);grid-template-columns:1fr}
+}
 /* PAGE HEADER */
 .page-hd{margin-bottom:1.8rem}
 .page-title{font-family:var(--serif);font-size:2rem;font-weight:400;color:var(--navy);line-height:1}
@@ -627,6 +653,7 @@ input[type=checkbox],input[type=radio]{accent-color:#111111 !important}
       <button class="mob-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')" aria-label="Menu">
         <span></span><span></span><span></span>
       </button>
+      <button class="tb-back" id="tb-back" onclick="navHome()" aria-label="Back to dashboard">&larr; Back</button>
       <div class="tb-title" id="page-title">Dashboard</div>
     </div>
     <div class="tb-right">
@@ -1136,6 +1163,7 @@ input[type=checkbox],input[type=radio]{accent-color:#111111 !important}
                   <th>Time</th>
                   <th>Passenger Name</th>
                   <th>Contact</th>
+                  <th>Email</th>
                   <th>Pickup Address</th>
                   <th>Destination</th>
                   <th>Fare</th>
@@ -2251,6 +2279,47 @@ document.addEventListener('keydown',function(e){
 });
 
 // ── LIVE BOOKINGS FROM API ───────────────────────────────────────────────
+// Build a full-detail panel (every stored field, incl. email) for a booking,
+// shown in an expandable row beneath its journey row so nothing is hidden.
+function _jdField(label,val){
+  if(val===undefined||val===null||val==='')return '';
+  return '<div class="jd-field"><span class="jd-k">'+label+'</span><span class="jd-v">'+val+'</span></div>';
+}
+function bookingDetailHtml(b){
+  var money=function(v){return (v!=null&&v!=='')?'£'+Number(v).toFixed(2):'';};
+  var tripType=b.trip_type?(/return/i.test(b.trip_type)?'Return trip':b.trip_type):'';
+  return '<div class="jdetail">'
+    +_jdField('Reference',escTo(b.ref))
+    +_jdField('Status',escTo(b.status||'pending'))
+    +_jdField('Name',escTo(b.customer_name||b.passenger_name||''))
+    +_jdField('Phone',escTo(b.customer_phone||b.passenger_phone||''))
+    +_jdField('Email',escTo(b.customer_email||b.passenger_email||''))
+    +_jdField('Pickup',escTo(b.pickup))
+    +_jdField('Stop on the way',escTo(b.stop_address))
+    +_jdField('Destination',escTo(b.destination))
+    +_jdField('Date',escTo(b.date))
+    +_jdField('Time',escTo(b.time||'ASAP'))
+    +_jdField('Passengers',escTo(b.passengers))
+    +_jdField('Luggage / bags',escTo(b.bags))
+    +_jdField('Flight',escTo(b.flight))
+    +_jdField('Trip type',escTo(tripType))
+    +_jdField('Fare',money(b.fare))
+    +_jdField('Suggested fare',money(b.suggested_fare))
+    +_jdField('Payment',escTo(b.payment||''))
+    +_jdField('Paid at',escTo(b.paid_at))
+    +_jdField('Dead-miles fee',money(b.dead_miles_fee))
+    +_jdField('Driver',escTo(b.driver_name||b.offered_driver_name))
+    +_jdField('Notes',escTo(b.notes))
+    +_jdField('Booked at',escTo(b.created_at))
+    +'</div>';
+}
+function toggleJDetail(id,btn){
+  var row=document.getElementById('jdetail-'+id);
+  if(!row)return;
+  var open=row.classList.toggle('open');
+  if(btn)btn.textContent=open?'Hide':'Details';
+}
+
 function loadLiveBookings(){
   fetch('/api/bookings').then(function(r){return r.json();}).then(function(d){
     if(!d.ok||!d.bookings)return;
@@ -2371,14 +2440,15 @@ function loadLiveBookings(){
             +'<td><div class="main-v">'+b.ref+'</div>'+conflictMark+reasonRow+'</td>'
             +'<td>'+dateStr+'</td>'
             +'<td>'+(b.time||'ASAP')+'</td>'
-            +'<td><div class="main-v">'+(b.customer_name||'')+'</div>'+(b.customer_phone?'<div class="sub-v">'+b.customer_phone+'</div>':'')+'</td>'
+            +'<td><div class="main-v">'+(b.customer_name||'')+'</div>'+(b.customer_phone?'<div class="sub-v">'+escTo(b.customer_phone)+'</div>':'')+(b.customer_email?'<div class="sub-v">'+escTo(b.customer_email)+'</div>':'')+'</td>'
             +'<td><div class="main-v">'+b.pickup+'</div>'+(b.flight?'<div class="sub-v">'+b.flight+'</div>':'')+'</td>'
             +'<td><div class="main-v">'+b.destination+'</div></td>'
             +'<td>'+fareCellHtml+'</td>'
             +'<td><span class="tag '+payClass+'">'+payLabel+'</span></td>'
             +'<td><span class="tag '+statusClass+'">'+statusLabel+'</span></td>'
-            +'<td>'+actionBtns+'</td>'
-            +'</tr>';
+            +'<td><button class="btn btn-ghost btn-sm" onclick="toggleJDetail('+b.id+',this)">Details</button> '+actionBtns+'</td>'
+            +'</tr>'
+            +'<tr class="jdetail-row" id="jdetail-'+b.id+'"><td colspan="10">'+bookingDetailHtml(b)+'</td></tr>';
         }).join('');
       }
     }
@@ -2959,6 +3029,9 @@ function nav(id,btn){
   if(btn)btn.classList.add('on');
   document.getElementById('page-title').textContent=TITLES[id]||id;
   document.getElementById('sidebar').classList.remove('open');
+  // Full-page section takeover: every section except the Dashboard hub
+  // collapses the sidebar and spans the full viewport (Back button shown).
+  document.body.classList.toggle('full-view', id!=='dashboard');
   window.scrollTo(0,0);
   if(id==='drivers')buildDrivers();
   if(id==='inbox'&&typeof loadInbox==='function')loadInbox();
@@ -2969,6 +3042,12 @@ function nav(id,btn){
   if(id==='today'&&typeof loadFlaggedBookings==='function')loadFlaggedBookings();
   if(id==='calendar'&&typeof loadAdminCalendar==='function')loadAdminCalendar();
   if(id==='analytics'&&typeof loadAnalytics==='function')loadAnalytics();
+}
+
+// Back button → return to the Dashboard hub (restores the sidebar).
+function navHome(){
+  var db=document.querySelector('.sb-item[onclick*="dashboard"]')||document.querySelector('[onclick*="nav(\'dashboard\'"]');
+  nav('dashboard',db);
 }
 
 // ── MODALS ──
@@ -4508,7 +4587,7 @@ function buildRecordBook(){
   var tbody=document.getElementById('rb-tbody');
   if(!view.all.length){
     var emptyMsg=view.mode==='year'?'No journeys recorded this year':'No journeys recorded this month';
-    tbody.innerHTML='<tr><td colspan="13" style="text-align:center;padding:2rem;color:rgba(27,27,26,.62)">'+emptyMsg+'</td></tr>';
+    tbody.innerHTML='<tr><td colspan="14" style="text-align:center;padding:2rem;color:rgba(27,27,26,.62)">'+emptyMsg+'</td></tr>';
     document.getElementById('rb-count').textContent='0';
     document.getElementById('rb-total').textContent='£0.00';
     return;
@@ -4520,13 +4599,14 @@ function buildRecordBook(){
     // In yearly view, separate each month with a labelled divider row.
     if(view.mode==='year'){
       var secTotal=sec.bookings.reduce(function(s,b){return s+(b.fare||0);},0);
-      html+='<tr style="background:rgba(27,27,26,.04)"><td colspan="13" style="padding:.5rem .7rem;font-weight:600;color:var(--navy);font-size:.78rem;letter-spacing:.04em">'
+      html+='<tr style="background:rgba(27,27,26,.04)"><td colspan="14" style="padding:.5rem .7rem;font-weight:600;color:var(--navy);font-size:.78rem;letter-spacing:.04em">'
         +escTo(sec.label)+' <span style="font-weight:400;color:var(--text-light)">· '+sec.bookings.length+' journeys · £'+secTotal.toFixed(2)+'</span></td></tr>';
     }
     sec.bookings.forEach(function(b){
       n++;
       var pName=b.passenger_name||b.customer_name||'';
       var pPhone=b.passenger_phone||b.customer_phone||'';
+      var pEmail=b.customer_email||b.passenger_email||'';
       var notes=b.notes||'';
       var bookedAt=b.created_at?b.created_at.replace('T',' ').slice(0,16):'—';
       html+='<tr>'
@@ -4536,6 +4616,7 @@ function buildRecordBook(){
         +'<td>'+(b.time||'—')+'</td>'
         +'<td style="font-weight:400;color:var(--navy)">'+escTo(pName)+'</td>'
         +'<td style="font-size:.72rem;white-space:nowrap">'+escTo(pPhone)+'</td>'
+        +'<td style="font-size:.72rem">'+escTo(pEmail||'—')+'</td>'
         +'<td style="font-size:.75rem">'+b.pickup+'</td>'
         +'<td style="font-size:.75rem">'+b.destination+'</td>'
         +'<td style="font-family:var(--serif);font-size:1rem;color:var(--gold)">'+(b.fare?'£'+Number(b.fare).toFixed(0):'TBC')+'</td>'
@@ -4565,14 +4646,15 @@ function downloadRecordBook(){
       n++;
       var pN=b.passenger_name||b.customer_name||'';
       var pH=b.passenger_phone||b.customer_phone||'';
+      var pE=b.customer_email||b.passenger_email||'';
       var nt=b.notes||'';
       var bAt=b.created_at?b.created_at.replace('T',' ').slice(0,16):'';
-      lines.push(n+',"'+(b.ref||'')+'",' +rbDateStr(b)+','+(b.time||'')+',"'+pN+'","'+pH+'","'+b.pickup+'","'+b.destination+'",£'+(b.fare||0)+','+(b.payment||'cash')+','+(b.flight||'—')+',"'+nt.replace(/"/g,'""')+'",'+bAt);
+      lines.push(n+',"'+(b.ref||'')+'",' +rbDateStr(b)+','+(b.time||'')+',"'+pN+'","'+pH+'","'+pE+'","'+b.pickup+'","'+b.destination+'",£'+(b.fare||0)+','+(b.payment||'cash')+','+(b.flight||'—')+',"'+nt.replace(/"/g,'""')+'",'+bAt);
     });
   });
 
   var csv='Westmere Private Hire — Operator Journey Record\nLicensed by Lewes District Council\nPeriod: '+view.periodLabel+'\nGenerated: '+new Date().toLocaleDateString('en-GB')+'\n\n'
-    +'#,Ref,Date,Time,Passenger,Contact,Pickup Address,Destination,Fare,Payment,Flight No.,Notes,Booked At\n'
+    +'#,Ref,Date,Time,Passenger,Contact,Email,Pickup Address,Destination,Fare,Payment,Flight No.,Notes,Booked At\n'
     +lines.join('\n')
     +'\n\nTotal journeys:,'+view.all.length+'\nTotal revenue:,£'+total.toFixed(2);
 
@@ -4594,19 +4676,20 @@ function printRecordBook(){
     +view.periodLabel
     +' &nbsp;·&nbsp; Generated: '+new Date().toLocaleDateString('en-GB')+'</p>');
   w.document.write('<table><thead><tr>'
-    +'<th>#</th><th>Ref</th><th>Date</th><th>Time</th><th>Passenger</th><th>Contact</th><th>Pickup Address</th><th>Destination</th><th>Fare</th><th>Payment</th><th>Flight No.</th><th>Notes</th><th>Booked At</th>'
+    +'<th>#</th><th>Ref</th><th>Date</th><th>Time</th><th>Passenger</th><th>Contact</th><th>Email</th><th>Pickup Address</th><th>Destination</th><th>Fare</th><th>Payment</th><th>Flight No.</th><th>Notes</th><th>Booked At</th>'
     +'</tr></thead><tbody>');
   var n=0;
   view.sections.forEach(function(sec){
     if(!sec.bookings.length)return;
     if(view.mode==='year'){
       var secTotal=sec.bookings.reduce(function(s,b){return s+(b.fare||0);},0);
-      w.document.write('<tr class="msep"><td colspan="13">'+sec.label+' · '+sec.bookings.length+' journeys · £'+secTotal.toFixed(2)+'</td></tr>');
+      w.document.write('<tr class="msep"><td colspan="14">'+sec.label+' · '+sec.bookings.length+' journeys · £'+secTotal.toFixed(2)+'</td></tr>');
     }
     sec.bookings.forEach(function(b){
       n++;
       var pN=b.passenger_name||b.customer_name||'';
       var pH=b.passenger_phone||b.customer_phone||'';
+      var pE=b.customer_email||b.passenger_email||'';
       var nt=b.notes||'';
       var bAt=b.created_at?b.created_at.replace('T',' ').slice(0,16):'—';
       w.document.write('<tr>'
@@ -4616,6 +4699,7 @@ function printRecordBook(){
         +'<td>'+(b.time||'—')+'</td>'
         +'<td class="navy">'+pN+'</td>'
         +'<td style="font-size:.78rem">'+pH+'</td>'
+        +'<td style="font-size:.72rem">'+(pE||'—')+'</td>'
         +'<td>'+b.pickup+'</td>'
         +'<td>'+b.destination+'</td>'
         +'<td class="gold">'+(b.fare?'£'+Number(b.fare).toFixed(0):'TBC')+'</td>'
