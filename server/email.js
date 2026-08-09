@@ -219,7 +219,6 @@ async function sendCustomerConfirmed(booking) {
   rows += detailRow('Date', dateStr);
   if (flight) rows += detailRow('Flight', escHtml(flight));
   if (passengers && passengers > 1) rows += detailRow('Travellers', passengers + ' passengers');
-  if (notes) { rows += rowDivider(); rows += detailRow('Notes', escHtml(notes)); }
   rows += rowDivider();
   if (fareStr) rows += detailRow('Fare', fareStr, { gold: true, large: true });
   rows += detailRow('Payment', alreadyPaid ? 'Paid online' : 'Choose below');
@@ -243,11 +242,22 @@ async function sendCustomerConfirmed(booking) {
   <p style="margin:12px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_MUTED};font-style:italic;line-height:1.55;text-align:center">Pay ${fareStr} securely now, or settle with your driver on the day.</p>`;
   }
 
+  // Operator's note to the customer — a distinct message section, shown only
+  // when notes are present. Additive; mirrors the invoice notes styling.
+  const notesBlock = notes ? `
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:22px 0 2px">
+    <tr><td style="padding:14px 16px;background:rgba(184,152,90,.06);border-left:2px solid ${GOLD}">
+      <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">A message from Westmere</p>
+      <p style="margin:0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.6">${escHtml(notes).replace(/\n/g, '<br>')}</p>
+    </td></tr>
+  </table>` : '';
+
   const body = `
   <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Confirmed</p>
   <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
   <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Your journey is confirmed. A driver has been assigned and we look forward to welcoming you on the day.</p>
   ${buildDetailsTable(rows)}
+  ${notesBlock}
   ${payBlock}
   <p style="margin:26px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
 

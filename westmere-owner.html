@@ -2976,13 +2976,14 @@ function upcomingEdit(bookingId){
       +'</div>'
       +'<div style="margin-bottom:.7rem"><label style="font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.5);display:block;margin-bottom:.3rem">Fare £</label>'
       +'<input id="eb-fare" type="number" min="0" step="0.5" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(27,27,26,.15);border-radius:8px;font-family:inherit;font-size:.9rem;color:var(--navy)"></div>'
-      +'<div style="margin-bottom:1.2rem"><label style="font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.5);display:block;margin-bottom:.3rem">Notes</label>'
-      +'<textarea id="eb-notes" rows="3" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(27,27,26,.15);border-radius:8px;font-family:inherit;font-size:.9rem;color:var(--navy);resize:vertical"></textarea></div>'
       +'<input type="hidden" id="eb-id">'
       +'<div style="display:flex;gap:.6rem;margin-bottom:.7rem">'
       +'<button onclick="document.getElementById(\'edit-booking-overlay\').remove()" style="flex:1;padding:.75rem;background:transparent;border:1px solid rgba(27,27,26,.15);border-radius:10px;font-family:inherit;font-size:.82rem;font-weight:500;color:rgba(27,27,26,.5);cursor:pointer">Cancel</button>'
       +'<button onclick="upcomingSave()" style="flex:2;padding:.75rem;background:#ffffff;border:none;border-radius:10px;font-family:inherit;font-size:.82rem;font-weight:500;color:#1a1a1a;cursor:pointer;letter-spacing:.04em">Save Changes</button>'
       +'</div>'
+      +'<div style="margin:.2rem 0 .85rem"><label style="font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.5);display:block;margin-bottom:.3rem">Notes to include in confirmation</label>'
+      +'<textarea id="eb-notes" rows="3" placeholder="A short message the customer will see in their confirmation email (optional)" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(27,27,26,.15);border-radius:8px;font-family:inherit;font-size:.9rem;color:var(--navy);resize:vertical"></textarea>'
+      +'<div style="font-size:.6rem;color:rgba(27,27,26,.42);margin-top:.28rem;letter-spacing:.01em">Shown to the customer in their confirmation email.</div></div>'
       +'<div id="eb-sent-status" style="display:none;font-size:.68rem;color:#2D6E47;margin-bottom:.55rem;letter-spacing:.02em"></div>'
       +'<div style="display:flex;gap:.6rem">'
       +'<button onclick="ebSendConfirmation(this)" style="flex:1;padding:.65rem;background:transparent;border:1px solid var(--gold);border-radius:10px;font-family:inherit;font-size:.72rem;font-weight:500;color:var(--gold);cursor:pointer;letter-spacing:.06em;text-transform:uppercase">Send Confirmation</button>'
@@ -3070,6 +3071,14 @@ async function ebSend(kind,btn){
   if(btn){btn.disabled=true;btn.dataset.orig=orig;btn.textContent='Sending…';btn.style.opacity='.55';btn.style.cursor='default';}
   var restore=function(){ if(btn){btn.disabled=false;btn.textContent=btn.dataset.orig||orig;btn.style.opacity='';btn.style.cursor='';} };
   try{
+    // Persist the "Notes to include in confirmation" first (existing update
+    // flow) so the email always carries the note the operator just typed —
+    // no separate Save click required.
+    var notesEl=document.getElementById('eb-notes');
+    if(notesEl){
+      var notesVal=notesEl.value.trim();
+      await fetch('/api/bookings/'+id,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({notes:notesVal||null})});
+    }
     var r=await fetch('/api/bookings/'+id+'/'+path,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}});
     var d={}; try{ d=await r.json(); }catch(_){}
     if(r.ok&&d.ok){
