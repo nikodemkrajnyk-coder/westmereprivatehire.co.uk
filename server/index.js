@@ -259,51 +259,6 @@ app.use(express.static(path.join(__dirname, '..'), {
   extensions: ['html'],
 }));
 
-// ── TEMPORARY pay-flow test endpoint — REMOVE after use ──────────────────
-// Mounted at top level (not under /api) so once removed it falls through to
-// the 404 handler below. Token-guarded. Lets us prove the real Pay Now flow
-// end-to-end on production: ?action=create makes a real confirmed booking
-// with a fare + pay_token (the same secret the confirmation email would use)
-// and returns { ref, pay_token }; ?action=delete removes it again. No emails,
-// no WhatsApp, no calendar — a pure DB row so nothing notifies a customer.
-app.get('/_paytest', (req, res) => {
-  const SECRET = '2c36d1361bdb0de30e63453b17aa277850b2acee9afe577196725842defc4331';
-  if (req.query.token !== SECRET) return res.status(403).json({ error: 'forbidden' });
-  const crypto = require('crypto');
-  const db = getDb();
-  const action = String(req.query.action || '');
-  try {
-    if (action === 'create') {
-      const ref = 'PAYTEST-' + crypto.randomBytes(3).toString('hex').toUpperCase();
-      const payToken = crypto.randomBytes(16).toString('hex');
-      db.prepare(`
-        INSERT INTO bookings (ref, pickup, destination, date, time, passengers, bags,
-                              fare, payment, status, passenger_name, passenger_email, pay_token)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        ref,
-        '307 Bishopsford Road, Morden, SM4 6BW',
-        'Bolney Place, Cowfold Road, Bolney RH17 5QT',
-        '2026-08-14', '14:30', 1, '0',
-        125.00, 'pending', 'confirmed',
-        'PAYTEST — delete me', 'nikodem.krajnyk@gmail.com', payToken
-      );
-      return res.json({ ok: true, ref, pay_token: payToken });
-    }
-    if (action === 'delete') {
-      const ref = String(req.query.ref || '').trim().toUpperCase();
-      const b = db.prepare('SELECT id, paid_at FROM bookings WHERE ref = ?').get(ref);
-      if (!b) return res.json({ ok: true, deleted: 0, note: 'not found' });
-      if (b.paid_at) return res.status(409).json({ error: 'refusing to delete a paid booking' });
-      const r = db.prepare('DELETE FROM bookings WHERE ref = ? AND paid_at IS NULL').run(ref);
-      return res.json({ ok: true, deleted: r.changes });
-    }
-    return res.status(400).json({ error: 'unknown action (use create|delete)' });
-  } catch (e) {
-    return res.status(500).json({ error: e.message });
-  }
-});
-
 // ── 404 ─────────────────────────────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).sendFile(path.join(__dirname, '..', 'index.html'));
