@@ -308,10 +308,10 @@ nav#nav{display:none}
 @keyframes tIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
 /* ── INLINE FORM OVERRIDES ── */
-input[type=date],input[type=text]{background:transparent!important;border:none!important;border-bottom:1px solid rgba(27,27,26,.15)!important;color:var(--navy)!important;padding:.78rem 0!important;-webkit-appearance:none;transition:border-color .3s}
-input[type=date]:focus,input[type=text]:focus{border-bottom-color:var(--gold)!important}
+input[type=date],input[type=text]{background:#ffffff!important;border:1px solid #c9c9c9!important;border-radius:8px!important;color:#111111!important;-webkit-text-fill-color:#111111!important;padding:.6rem .7rem!important;-webkit-appearance:none;transition:border-color .3s}
+input[type=date]:focus,input[type=text]:focus{border-color:#111111!important}
 input[type=date]::-webkit-calendar-picker-indicator{filter:none}
-input[type=date]::placeholder,input[type=text]::placeholder{color:rgba(27,27,26,.3)}
+input[type=date]::placeholder,input[type=text]::placeholder{color:#8a8a8a!important;-webkit-text-fill-color:#8a8a8a!important}
 
 
 /* ── QUICK CMD BUTTONS ── */
@@ -548,6 +548,41 @@ html,body{background:#ffffff !important;background-image:none !important}
 [style*="z-index:99998"],[style*="z-index: 99998"],[style*="z-index:99999"],[style*="z-index: 99999"],
 [style*="rgb(26, 26, 26)"],[style*="rgb(13, 37, 69)"]{background:#ffffff !important;border:1px solid #1a1a1a !important}
 [style*="z-index:99998"] *,[style*="z-index: 99998"] *,[style*="z-index:99999"] *,[style*="z-index: 99999"] *{color:#000000 !important}
+/* ============================================================
+   9) FIELD-VISIBILITY FIX (appended last so it wins)
+   Every input/textarea/select/contenteditable — including modals
+   mounted on document.body OUTSIDE #scr-app (e.g. #edit-booking-overlay)
+   where var(--navy)/var(--gold) resolve to WHITE and text was invisible.
+   Force dark #111 text on white, a visible border and a legible
+   placeholder. Restyle only — no markup/logic change.
+   ============================================================ */
+input,textarea,select,[contenteditable="true"],[contenteditable=""]{
+  color:#111111 !important;-webkit-text-fill-color:#111111 !important;caret-color:#111111 !important;
+  background-color:#ffffff !important;background-image:none !important;opacity:1 !important;
+  border:1px solid #c9c9c9 !important;border-radius:8px;font-family:var(--sans);
+}
+input:focus,textarea:focus,select:focus,[contenteditable]:focus{border-color:#111111 !important;outline:none}
+input::placeholder,textarea::placeholder{color:#8a8a8a !important;-webkit-text-fill-color:#8a8a8a !important;opacity:1 !important}
+select,select option{color:#111111 !important;-webkit-text-fill-color:#111111 !important;background-color:#ffffff !important}
+/* Native controls keep their own look (don't box checkboxes/sliders/etc.) */
+input[type=checkbox],input[type=radio],input[type=range],input[type=file],input[type=color]{
+  -webkit-text-fill-color:initial !important;background:transparent !important;border:none !important;border-radius:0 !important;
+}
+input[type=checkbox],input[type=radio]{accent-color:#111111 !important}
+/* Inline gold/navy text (remapped to white by the theme) -> readable dark,
+   incl. body-level modal titles, accent buttons and their borders. */
+[style*="color:var(--navy)"],[style*="color: var(--navy)"],
+[style*="color:var(--gold)"],[style*="color: var(--gold)"]{color:#111111 !important;-webkit-text-fill-color:#111111 !important}
+[style*="border:1px solid var(--gold)"],[style*="border: 1px solid var(--gold)"],
+[style*="border-color:var(--gold)"],[style*="border-color: var(--gold)"]{border-color:#111111 !important}
+/* Primary action in the body-level edit modal lost its fill under the white
+   theme and read as plain text — give it a clear outlined-primary affordance. */
+#edit-booking-overlay button[onclick*="upcomingSave"]{border:1px solid #111111 !important;border-radius:10px;font-weight:600}
+/* No beige — neutralise leftover cream/beige surfaces to white / light grey. */
+.assist-panel,.nb-overlay{background:rgba(255,255,255,.97) !important}
+.cal-hd{background:#f4f4f4 !important}
+.notif-badge-num{border-color:#ffffff !important}
+[style*="#f0ece3"],[style*="#F0ECE3"]{background:#f1f1f1 !important;border-color:#d9d9d9 !important}
 </style></head>
 <body>
 
