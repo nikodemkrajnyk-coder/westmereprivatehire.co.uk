@@ -205,67 +205,140 @@ async function sendCustomerConfirmed(booking) {
 
   const dateStr = formatDate(date, time);
   const fareNum = typeof fare === 'number' ? fare : parseFloat(fare);
-  const fareStr = (fareNum && !isNaN(fareNum)) ? ('\u00a3' + fareNum.toFixed(2)) : null;
+  const fareStr = (fareNum && !isNaN(fareNum)) ? ('£' + fareNum.toFixed(2)) : null;
   const firstName = (name || '').split(' ')[0] || 'there';
   const alreadyPaid = paid || payment === 'card';
 
-  let rows = '';
-  rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:'+INK+'">' + ref + '</span>');
-  rows += rowDivider();
-  rows += detailRow('Pickup', escHtml(pickup));
-  if (stop_address) rows += detailRow('Stop', escHtml(stop_address));
-  rows += detailRow('Drop-off', escHtml(destination));
-  rows += rowDivider();
-  rows += detailRow('Date', dateStr);
-  if (flight) rows += detailRow('Flight', escHtml(flight));
-  if (passengers && passengers > 1) rows += detailRow('Travellers', passengers + ' passengers');
-  rows += rowDivider();
-  if (fareStr) rows += detailRow('Fare', fareStr, { gold: true, large: true });
-  rows += detailRow('Payment', alreadyPaid ? 'Paid online' : 'Choose below');
-
-  // Single payment button \u2014 only when we have a fare, a pay token, and the
-  // booking hasn't already been paid online. The button links to the pay page
-  // where the customer chooses between paying by card now or on the day.
-  let payBlock = '';
-  if (!alreadyPaid && pay_token && fareStr) {
-    const payUrl  = `https://westmereprivatehire.co.uk/westmere-pay.html?ref=${encodeURIComponent(ref)}&t=${encodeURIComponent(pay_token)}`;
-    const cashUrl = `https://westmereprivatehire.co.uk/api/public/pay/${encodeURIComponent(ref)}/cash?t=${encodeURIComponent(pay_token)}`;
-    payBlock = `
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:26px 0 4px">
-    <tr><td align="center" style="padding-bottom:10px">
-      <a href="${payUrl}" style="display:block;padding:13px 24px;background:transparent;color:${INK};text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:600;letter-spacing:.03em;text-align:center;border:1.5px solid ${INK}">Pay Now &mdash; Apple Pay, Google Pay, or Card</a>
-    </td></tr>
-    <tr><td align="center">
-      <a href="${cashUrl}" style="display:block;padding:13px 24px;background:transparent;color:${INK};text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:600;letter-spacing:.03em;text-align:center;border:1.5px solid ${INK}">Cash</a>
-    </td></tr>
-  </table>
-  <p style="margin:12px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_MUTED};font-style:italic;line-height:1.55;text-align:center">Pay ${fareStr} securely now, or settle with your driver on the day.</p>`;
-  }
-
-  // Operator's note to the customer — a distinct message section, shown only
-  // when notes are present. Additive; mirrors the invoice notes styling.
-  const notesBlock = notes ? `
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:22px 0 2px">
-    <tr><td style="padding:14px 16px;background:rgba(184,152,90,.06);border-left:2px solid ${GOLD}">
-      <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">A message from Westmere</p>
-      <p style="margin:0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.6">${escHtml(notes).replace(/\n/g, '<br>')}</p>
-    </td></tr>
-  </table>` : '';
-
-  const body = `
-  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Confirmed</p>
-  <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
-  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Your journey is confirmed. A driver has been assigned and we look forward to welcoming you on the day.</p>
-  ${buildDetailsTable(rows)}
-  ${notesBlock}
-  ${payBlock}
-  <p style="margin:26px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
-
-  const html = emailShell(body);
-  const subject = 'Booking confirmed \u2014 ' + ref;
+  const html = confirmationEmailHtml({
+    ref, firstName, pickup, stop_address, destination, dateStr, flight, passengers,
+    fareStr, alreadyPaid, pay_token, notes
+  });
+  const subject = 'Booking confirmed — ' + ref;
   const preheader = 'Your driver has been assigned. We look forward to seeing you.';
   const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
   if (ok) console.log('[EMAIL] Customer confirmed sent (' + ref + ')');
+}
+
+// New Westmere confirmation template (approved design). Mail-safe (tables +
+// inline styles, hosted PNG icons) so it renders in Gmail / Apple Mail /
+// Outlook. Cream card, gold-hairline brand header, coastal banner, gold
+// outline row icons, dark footer. Intended shared shell for system emails.
+const HOST = 'https://westmereprivatehire.co.uk';
+function confRow(icon, label, valueHtml, opts) {
+  opts = opts || {};
+  const valStyle = opts.fare
+    ? "font-family:Georgia,'Times New Roman',serif;font-size:22px;line-height:1.2;color:#b78635"
+    : "font-family:Georgia,'Times New Roman',serif;font-size:14px;line-height:1.5;color:#1d1d1d";
+  return `<tr>
+    <td width="26" valign="top" style="padding:15px 0 0;border-bottom:1px solid #efe9dd"><img src="${HOST}/assets/${icon}.png" width="20" height="20" alt="" style="display:block;border:0;outline:none;line-height:100%"></td>
+    <td width="98" valign="top" style="padding:17px 10px 15px 8px;border-bottom:1px solid #efe9dd;font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:#8a857c;font-weight:700">${label}</td>
+    <td valign="top" style="padding:15px 0;border-bottom:1px solid #efe9dd;${valStyle}">${valueHtml}</td>
+  </tr>`;
+}
+function confBtn(href, icon, text) {
+  return `<tr><td style="padding-bottom:12px">
+    <a href="${href}" style="display:block;text-decoration:none;border:1px solid #1b1b1a;border-radius:10px;padding:14px 16px;text-align:center;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:1.3px;text-transform:uppercase;color:#1b1b1a;background:#fbfaf7">
+      <img src="${HOST}/assets/${icon}.png" width="17" height="17" alt="" style="vertical-align:-3px;border:0;margin-right:9px">${text}</a>
+  </td></tr>`;
+}
+function confirmationEmailHtml(d) {
+  let rows = '';
+  rows += confRow('ic-reference', 'Reference', `<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:#1b1b1a">${escHtml(d.ref)}</span>`);
+  rows += confRow('ic-pickup', 'Pickup', escHtml(d.pickup));
+  if (d.stop_address) rows += confRow('ic-stop', 'Stop', escHtml(d.stop_address));
+  rows += confRow('ic-dropoff', 'Drop-off', escHtml(d.destination));
+  rows += confRow('ic-datetime', 'Date &amp; Time', escHtml(d.dateStr));
+  if (d.flight) rows += confRow('ic-flight', 'Flight', escHtml(d.flight));
+  if (d.passengers && d.passengers > 1) rows += confRow('ic-travellers', 'Travellers', d.passengers + ' passengers');
+  if (d.fareStr) rows += confRow('ic-fare', 'Fare', escHtml(d.fareStr), { fare: true });
+  rows += confRow('ic-payment', 'Payment', d.alreadyPaid ? 'Paid online' : 'Choose below');
+
+  let payBlock = '';
+  if (!d.alreadyPaid && d.pay_token && d.fareStr) {
+    const payUrl  = `${HOST}/westmere-pay.html?ref=${encodeURIComponent(d.ref)}&t=${encodeURIComponent(d.pay_token)}`;
+    const cashUrl = `${HOST}/api/public/pay/${encodeURIComponent(d.ref)}/cash?t=${encodeURIComponent(d.pay_token)}`;
+    payBlock = `<tr><td style="padding:22px 40px 6px;background:#fbfaf7">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        ${confBtn(payUrl, 'ic-paynow', 'Pay Now &mdash; Apple Pay, Google Pay, or Card')}
+        ${confBtn(cashUrl, 'ic-cash', 'Cash')}
+      </table>
+      <p style="margin:14px 0 4px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#6f6b64;line-height:1.6;text-align:center">Pay <strong style="color:#b78635">${escHtml(d.fareStr)}</strong> securely now, or settle with your driver on the day.</p>
+    </td></tr>`;
+  }
+
+  const notesBlock = d.notes ? `<tr><td style="padding:4px 40px 8px;background:#fbfaf7">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:14px 16px;background:#f6efe1;border-left:2px solid #b78635">
+        <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#b78635;font-weight:700">A message from Westmere</p>
+        <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:14px;color:#1b1b1a;line-height:1.6">${escHtml(d.notes).replace(/\n/g, '<br>')}</p>
+      </td></tr></table>
+    </td></tr>` : '';
+
+  return `<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light only">
+<title>Westmere &mdash; Booking Confirmation</title>
+<!--[if mso]><style>table,td,a{font-family:Georgia,serif}</style><![endif]-->
+<style>:root{color-scheme:light only;supported-color-schemes:light only}
+@media(max-width:600px){.wm-pad{padding-left:22px!important;padding-right:22px!important}.wm-badge{display:block!important;width:100%!important;text-align:left!important;padding:14px 0 0 0!important}}</style>
+</head>
+<body style="margin:0;padding:0;background:#e7e4df;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#e7e4df" style="background:#e7e4df">
+<tr><td align="center" style="padding:26px 14px">
+
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#fbfaf7" style="width:600px;max-width:600px;background:#fbfaf7;border:1px solid #e2ddd3;border-radius:16px;overflow:hidden">
+
+<tr><td align="center" style="padding:28px 20px 18px;background:#fbfaf7">
+  <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#b78635;letter-spacing:1px;line-height:1">W</div>
+  <div style="font-family:Georgia,'Times New Roman',serif;font-size:29px;letter-spacing:11px;color:#1b1b1a;font-weight:400;margin-top:6px">WESTMERE</div>
+  <div style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;letter-spacing:5px;color:#b78635;text-transform:uppercase;margin-top:9px">Private Hire &middot; Sussex</div>
+  <div style="width:60px;height:1px;background:#d9c8a8;line-height:1px;font-size:0;margin:14px auto 0">&nbsp;</div>
+</td></tr>
+
+<tr><td style="font-size:0;line-height:0;background:#fbfaf7"><img src="${HOST}/assets/westmere-email-hero.jpg" width="600" alt="Westmere car on the Sussex coast" style="display:block;width:100%;max-width:600px;height:auto;border:0;outline:none"></td></tr>
+
+<tr><td class="wm-pad" style="padding:30px 40px 6px;background:#fbfaf7">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+    <td valign="top">
+      <p style="margin:0 0 12px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:#b78635;font-weight:700">Confirmed</p>
+      <h1 style="margin:0 0 12px;font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:400;color:#1b1b1a;line-height:1.15">Dear ${escHtml(d.firstName)},</h1>
+      <p style="margin:0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:15px;line-height:1.65;color:#57544e">Your journey is confirmed. A driver has been assigned and we look forward to welcoming you on the day.</p>
+    </td>
+    <td class="wm-badge" valign="top" width="118" align="center" style="width:118px;padding-left:10px">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td width="58" height="58" align="center" valign="middle" style="width:58px;height:58px;border:1px solid #cdb884;border-radius:50%;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#b78635;text-align:center">W</td></tr></table>
+      <p style="margin:8px 0 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:#a99a7d;line-height:1.5">Thank you for travelling with us</p>
+    </td>
+  </tr></table>
+</td></tr>
+
+<tr><td class="wm-pad" style="padding:14px 40px 6px;background:#fbfaf7">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #e4dccb">
+    ${rows}
+  </table>
+</td></tr>
+
+${payBlock}
+${notesBlock}
+
+<tr><td style="padding:22px 40px;background:#f4f1ea;border-top:1px solid #ece5d8">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+    <td width="60" valign="middle"><img src="${HOST}/assets/westmere-email-thumb.jpg" width="60" height="60" alt="Westmere Private Hire" style="display:block;width:60px;height:60px;border-radius:50%;border:1px solid #dfd2bd"></td>
+    <td valign="middle" style="padding-left:16px;font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.55;color:#3a382f">With kind regards,<br><strong style="font-size:18px;color:#1b1b1a">Westmere Private Hire</strong></td>
+  </tr></table>
+</td></tr>
+
+<tr><td style="padding:24px 30px;background:#191919;text-align:center">
+  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;line-height:1.7;color:#e8e8e8"><a href="tel:+447930342593" style="color:#e7c27f;text-decoration:none">07930 342593</a> &middot; <a href="mailto:bookings@westmereprivatehire.co.uk" style="color:#e7c27f;text-decoration:none">bookings@westmereprivatehire.co.uk</a> &middot; <a href="${HOST}" style="color:#e7c27f;text-decoration:none">westmereprivatehire.co.uk</a></p>
+  <p style="margin:0 0 4px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;line-height:1.7;color:#cfcfcf">Reply to this email or call us if anything needs adjusting.</p>
+  <p style="margin:0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;line-height:1.7;color:#cfcfcf">Westmere Private Hire &middot; Licensed Private Hire Operator</p>
+</td></tr>
+
+</table>
+</td></tr>
+</table>
+</body></html>`;
 }
 
 // ── Customer ESTIMATE (operator sends a manual quote for a request) ──────
