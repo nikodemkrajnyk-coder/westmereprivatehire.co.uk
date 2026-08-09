@@ -1326,6 +1326,7 @@ input[type=checkbox],input[type=radio]{accent-color:#111111 !important}
         <div class="fg"><label class="fl">Pickup Time</label><input class="fi" type="time" id="nb-time" onchange="nbCheck()"></div>
       </div>
       <div class="fg" style="position:relative"><label class="fl">Pickup Address</label><input class="fi" type="text" id="nb-pu" placeholder="Full address or postcode" oninput="addrSearch(this,'nb-sug-pu');nbCheck()" autocomplete="off"><div class="sug-drop" id="nb-sug-pu"></div></div>
+      <div class="fg" style="position:relative"><label class="fl">Stop / via (optional)</label><input class="fi" type="text" id="nb-stop" placeholder="Intermediate stop, if any" oninput="addrSearch(this,'nb-sug-stop')" autocomplete="off"><div class="sug-drop" id="nb-sug-stop"></div></div>
       <div class="fg" style="position:relative"><label class="fl">Destination</label><input class="fi" type="text" id="nb-de" placeholder="Airport, address or town" oninput="addrSearch(this,'nb-sug-de');nbCheck()" autocomplete="off"><div class="sug-drop" id="nb-sug-de"></div></div>
       <div class="r2">
         <div class="fg"><label class="fl">Passengers</label>
@@ -2626,6 +2627,7 @@ async function submitBooking(){
   var date=document.getElementById('nb-date').value;
   var time=document.getElementById('nb-time').value;
   var pickup=document.getElementById('nb-pu').value.trim();
+  var stop=document.getElementById('nb-stop').value.trim();
   var dest=document.getElementById('nb-de').value.trim();
   var name=document.getElementById('nb-name').value.trim();
   var phone=document.getElementById('nb-phone').value.trim();
@@ -2644,7 +2646,7 @@ async function submitBooking(){
   var notes=name+' / '+phone+(email?' / '+email:'');
   try{
     var r=await fetch('/api/bookings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-      pickup:pickup,destination:dest,date:date,time:time||'ASAP',
+      pickup:pickup,stop_address:stop||null,destination:dest,date:date,time:time||'ASAP',
       passengers:parseInt(pax,10)||1,fare:fare,payment:payment,notes:notes,
       passenger_name:name,passenger_phone:phone,passenger_email:email||null
     })});

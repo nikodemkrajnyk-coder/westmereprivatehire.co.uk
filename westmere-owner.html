@@ -1107,6 +1107,10 @@ input[type=checkbox],input[type=radio]{accent-color:#111111 !important}
           <input id="nb-pickup" type="text" placeholder="Pickup location" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
         </div>
         <div style="margin-bottom:.7rem">
+          <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.22rem;font-family:var(--sans)">Stop / via (optional)</div>
+          <input id="nb-stop" type="text" placeholder="Intermediate stop, if any" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
+        </div>
+        <div style="margin-bottom:.7rem">
           <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.22rem;font-family:var(--sans)">Destination *</div>
           <input id="nb-dest" type="text" placeholder="Destination" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
         </div>
@@ -3124,6 +3128,7 @@ function ownerNewBookingOpen(){
   document.getElementById('nb-phone').value='';
   document.getElementById('nb-email').value='';
   document.getElementById('nb-pickup').value='';
+  document.getElementById('nb-stop').value='';
   document.getElementById('nb-dest').value='';
   document.getElementById('nb-time').value='';
   document.getElementById('nb-fare').value='';
@@ -3138,6 +3143,7 @@ function ownerNewBookingClose(){
 async function ownerNewBookingSubmit(){
   var err=document.getElementById('nb-err');
   var pickup=(document.getElementById('nb-pickup').value||'').trim();
+  var stop=(document.getElementById('nb-stop').value||'').trim();
   var dest=(document.getElementById('nb-dest').value||'').trim();
   var date=(document.getElementById('nb-date').value||'').trim();
   var time=(document.getElementById('nb-time').value||'').trim();
@@ -3152,7 +3158,7 @@ async function ownerNewBookingSubmit(){
     var status=document.getElementById('nb-status').value||'confirmed';
     var fare=parseFloat(document.getElementById('nb-fare').value)||null;
     var body={
-      pickup:pickup,destination:dest,date:date,time:time,
+      pickup:pickup,stop_address:stop||null,destination:dest,date:date,time:time,
       passenger_name:name||null,
       passenger_phone:(document.getElementById('nb-phone').value||'').trim()||null,
       passenger_email:(document.getElementById('nb-email').value||'').trim()||null,

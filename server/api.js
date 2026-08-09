@@ -82,7 +82,7 @@ router.get('/bookings', (req, res) => {
 
 // Create booking
 router.post('/bookings', (req, res) => {
-  const { pickup, destination, date, time, passengers, bags, trip_type, flight, fare, payment, notes,
+  const { pickup, destination, stop_address, date, time, passengers, bags, trip_type, flight, fare, payment, notes,
           passenger_name, passenger_phone, passenger_email, customer_id: bodyCustomerId } = req.body;
 
   if (!pickup || !destination || !date || !time) {
@@ -120,9 +120,9 @@ router.post('/bookings', (req, res) => {
   let result;
   try {
     result = db.prepare(`
-      INSERT INTO bookings (ref, customer_id, pickup, destination, date, time, passengers, bags, trip_type, flight, fare, payment, notes, passenger_name, passenger_phone, passenger_email)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(ref, customerId, pickup, destination, date, time, passengers || 1, bags || 0, trip_type || null, flight || null, fare || null, payment || 'pending', notes || null,
+      INSERT INTO bookings (ref, customer_id, pickup, destination, stop_address, date, time, passengers, bags, trip_type, flight, fare, payment, notes, passenger_name, passenger_phone, passenger_email)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(ref, customerId, pickup, destination, (stop_address || '').trim() || null, date, time, passengers || 1, bags || 0, trip_type || null, flight || null, fare || null, payment || 'pending', notes || null,
            passenger_name || null, passenger_phone || null, passenger_email || null);
   } catch (e) {
     console.error('[API] booking insert failed:', e.message);
@@ -155,7 +155,7 @@ router.post('/bookings', (req, res) => {
     : {};
   const notifData = {
     ref, name: customerName.full_name || 'Guest', email: customerName.email || '',
-    phone: customerName.phone || '', pickup, destination, date, time,
+    phone: customerName.phone || '', pickup, destination, stop_address, date, time,
     passengers, bags, flight, fare, payment, notes
   };
   Promise.allSettled([
@@ -164,7 +164,7 @@ router.post('/bookings', (req, res) => {
 
   // Push to Google Calendar in background
   const bookingForCal = {
-    id: result.lastInsertRowid, ref, pickup, destination, date, time,
+    id: result.lastInsertRowid, ref, pickup, destination, stop_address, date, time,
     passengers, bags, flight, fare, payment, notes,
     customer_name: customerName.full_name || 'Guest',
     customer_phone: customerName.phone || '',
