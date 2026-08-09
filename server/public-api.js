@@ -7,7 +7,7 @@
 
 const express = require('express');
 const { getDb } = require('./db');
-const { sendAdminAlert, sendCustomerConfirmed } = require('./email');
+const { sendAdminAlert } = require('./email');
 const { sendAdminBookingWhatsApp } = require('./whatsapp');
 const { createPaymentIntent, isConfigured: stripeConfigured } = require('./stripe');
 const { computeSuggestedFare } = require('./fare-engine');
@@ -34,35 +34,6 @@ function ukNow() {
 }
 
 const router = express.Router();
-
-// ── TEMPORARY test-send endpoint — REMOVE after use ───────────────────────
-// Token-guarded, hard-coded to the owner's own address so it cannot be abused
-// to send anywhere else. Sends the NEW confirmation template via Resend.
-const DEVTEST_TOKEN = '50947b8bb01ded47769abfb3d5e84ab53fea858e79e7da1899f2566fe83ecd96';
-router.get('/_devtest/send-confirmation', async (req, res) => {
-  if (req.query.token !== DEVTEST_TOKEN) return res.status(403).json({ error: 'forbidden' });
-  const booking = {
-    ref: 'WPH-TEST',
-    name: 'Niko',
-    email: 'nikodem.krajnyk@gmail.com', // hard-coded owner address — not from the request
-    pickup: '307 Bishopsford Road, Morden, SM4 6BW',
-    stop_address: '49 Greenhill Ave, Caterham CR3 6PR',
-    destination: 'Bolney Place, Cowfold Road, Bolney RH17 5QT',
-    date: '2026-08-14',
-    time: '14:30',
-    fare: 125.00,
-    payment: 'pending',
-    paid: false,
-    pay_token: 'TESTTOKEN123456'
-  };
-  try {
-    const id = await sendCustomerConfirmed(booking);
-    return res.json({ ok: !!id, resend_id: id, to: booking.email });
-  } catch (e) {
-    return res.status(500).json({ error: e.message });
-  }
-});
-// ──────────────────────────────────────────────────────────────────────────
 
 // ── Branded standalone page for the "Pay on the day" link ────────────────
 // Self-contained HTML (no build step) matching the westmere-pay.html styling.

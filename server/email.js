@@ -54,7 +54,7 @@ async function sendEmail(to, subject, html, fromLabel, preheader, opts) {
       return false;
     }
     console.log('[EMAIL] Sent to', to, '— id:', data.id);
-    return data.id || true;
+    return true;
   } catch (err) {
     console.error('[EMAIL] Failed:', err.message);
     return false;
@@ -217,7 +217,6 @@ async function sendCustomerConfirmed(booking) {
   const preheader = 'Your driver has been assigned. We look forward to seeing you.';
   const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
   if (ok) console.log('[EMAIL] Customer confirmed sent (' + ref + ')');
-  return ok;
 }
 
 // New Westmere confirmation template (approved design). Mail-safe (tables +
