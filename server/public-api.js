@@ -647,10 +647,11 @@ router.post('/stripe-webhook', express.raw({ type: 'application/json' }), (req, 
       db.prepare(`UPDATE bookings
                      SET payment = 'card',
                          paid_at = COALESCE(paid_at, datetime('now')),
+                         payment_intent_id = COALESCE(payment_intent_id, ?),
                          pay_token = NULL,
                          status = CASE WHEN status = 'cancelled' THEN status ELSE 'confirmed' END,
                          updated_at = datetime('now')
-                   WHERE ref = ?`).run(ref);
+                   WHERE ref = ?`).run(intent.id, ref);
       console.log('[STRIPE] Payment confirmed for', ref);
       // Tell the owner the customer paid online (amount in pounds for the toast).
       events.broadcast('booking:payment', {

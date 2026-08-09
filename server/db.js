@@ -689,6 +689,21 @@ function migrate() {
   // email/fare engine is unchanged.
   try { db.exec(`ALTER TABLE bookings ADD COLUMN confirmation_sent_at TEXT`); } catch(_){}
 
+  // Cancel / refund workflow. When a PAID booking is cancelled it stays in the
+  // system flagged "refund due"; the owner then refunds (real Stripe refund if
+  // the card charge is on file, else a recorded manual refund). Additive only.
+  //   payment_intent_id — Stripe PaymentIntent for the charge (enables refunds)
+  //   refund_status      — NULL | 'due' | 'refunded'
+  //   refund_amount      — £ owed / refunded (defaults to the fare paid)
+  //   refunded_at        — UTC timestamp the refund was issued/recorded
+  //   refund_method      — 'stripe' (auto) | 'manual' (owner returns by hand)
+  try {
+    const bi = db.prepare("PRAGMA table_info(bookings)").all();
+    for (const [n, t] of [['payment_intent_id','TEXT'],['refund_status','TEXT'],['refund_amount','REAL'],['refunded_at','TEXT'],['refund_method','TEXT']]) {
+      if (!bi.find(c => c.name === n)) { db.exec(`ALTER TABLE bookings ADD COLUMN ${n} ${t}`); console.log('[DB] Added ' + n + ' column to bookings'); }
+    }
+  } catch(e) { console.error('[DB] refund column migration failed:', e.message); }
+
   // Owner/driver documents: add expiry_date column
   try {
     const ddInfo = db.prepare("PRAGMA table_info(driver_documents)").all();

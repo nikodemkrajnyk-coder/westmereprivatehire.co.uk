@@ -60,6 +60,35 @@ async function createPaymentIntent({ amount, currency = 'gbp', booking, customer
   return intent;
 }
 
+// ── Refunds ──────────────────────────────────────────────────────────────
+// Find the succeeded PaymentIntent for a booking ref (we stamp booking_ref
+// into every PaymentIntent's metadata). Lets us refund even for bookings paid
+// before we started storing the intent id on the row.
+async function findPaymentIntentByRef(ref) {
+  const s = getStripe();
+  if (!s || !ref) return null;
+  try {
+    const r = await s.paymentIntents.search({
+      query: `metadata['booking_ref']:'${String(ref).replace(/'/g, '')}' AND status:'succeeded'`,
+      limit: 1
+    });
+    return (r.data && r.data[0]) ? r.data[0].id : null;
+  } catch (e) {
+    console.error('[STRIPE] findPaymentIntentByRef failed:', e.message);
+    return null;
+  }
+}
+
+// Issue a refund against a PaymentIntent. amount in pence; omit for a full refund.
+async function createRefund({ paymentIntentId, amount }) {
+  const s = getStripe();
+  if (!s) throw new Error('Stripe not configured');
+  if (!paymentIntentId) throw new Error('No payment intent to refund');
+  const params = { payment_intent: paymentIntentId };
+  if (amount) params.amount = Math.round(amount);
+  return s.refunds.create(params);
+}
+
 // ── Verify webhook signature ─────────────────────────────────────────────
 function verifyWebhook(payload, signature) {
   const s = getStripe();
@@ -108,4 +137,4 @@ async function listRecentPayouts() {
   }));
 }
 
-module.exports = { getStripe, isConfigured, createPaymentIntent, verifyWebhook, getBalance, createPayout, listRecentPayouts };
+module.exports = { getStripe, isConfigured, createPaymentIntent, verifyWebhook, getBalance, createPayout, listRecentPayouts, findPaymentIntentByRef, createRefund };

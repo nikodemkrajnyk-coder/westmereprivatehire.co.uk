@@ -161,6 +161,12 @@ body.full-view .content{padding:1.4rem 1.9rem;max-width:100%}
 .btn-ghost{background:transparent;color:rgba(27,27,26,.78);border:1px solid rgba(27,27,26,.18)}.btn-ghost:hover{color:var(--navy);border-color:rgba(27,27,26,.4);background:rgba(27,27,26,.03)}
 .btn-green{background:var(--green-bg);color:var(--green);border:1px solid rgba(45,110,71,.3)}.btn-green:hover{background:rgba(45,110,71,.25)}
 .btn-red{background:var(--red-bg);color:var(--red);border:1px solid rgba(139,34,34,.3)}.btn-red:hover{background:rgba(139,34,34,.25)}
+/* Cancel / Refund action buttons — high-contrast, override the all-black white theme so they never render black-on-black */
+.btn-cancel-trip{background:#ffffff!important;color:#9C2828!important;-webkit-text-fill-color:#9C2828!important;border:1.5px solid #9C2828!important}
+.btn-cancel-trip:hover{background:#FCE4E4!important;color:#9C2828!important;-webkit-text-fill-color:#9C2828!important}
+.btn-refund{background:#1b1b1a!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important;border:1.5px solid #1b1b1a!important}
+.btn-refund:hover{background:#000000!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important}
+.tag-refunded{display:inline-block;padding:.28rem .6rem;font-size:.58rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border-radius:4px;background:#E6F4EA!important;color:#1E6B33!important;-webkit-text-fill-color:#1E6B33!important;border:1px solid rgba(30,107,51,.35)!important}
 .btn-blue{background:rgba(59,130,246,.08);color:#60A5FA;border:1px solid rgba(59,130,246,.2)}.btn-blue:hover{background:rgba(59,130,246,.15)}
 .btn-full{width:100%;padding:.85rem}
 .btn-sm{padding:.38rem .8rem;font-size:.58rem}
@@ -2308,6 +2314,7 @@ function bookingDetailHtml(b){
     +_jdField('Payment',escTo(b.payment||''))
     +_jdField('Paid at',escTo(b.paid_at))
     +_jdField('Confirmation sent',escTo(b.confirmation_sent_at)||'—')
+    +(b.refund_status?_jdField('Refund',(b.refund_status==='due'?'Due £'+Number(b.refund_amount!=null?b.refund_amount:(b.fare||0)).toFixed(2):('Refunded £'+Number(b.refund_amount!=null?b.refund_amount:(b.fare||0)).toFixed(2)+(b.refund_method?' ('+b.refund_method+')':'')+(b.refunded_at?' · '+escTo(b.refunded_at):'')))):'')
     +_jdField('Dead-miles fee',money(b.dead_miles_fee))
     +_jdField('Driver',escTo(b.driver_name||b.offered_driver_name))
     +_jdField('Notes',escTo(b.notes))
@@ -2409,20 +2416,28 @@ function loadLiveBookings(){
           var statusClass=b.status==='completed'?'tag-done':b.status==='cancelled'?'tag-cancel':'tag-upcoming';
           var statusLabel=b.status?b.status.charAt(0).toUpperCase()+b.status.slice(1):'Pending';
           var _pp=admPayTag(b);var payClass=_pp.cls,payLabel=_pp.label;
-          var isCancellable=['pending','offered','confirmed'].includes(b.status);
           var isCancelled=b.status==='cancelled';
+          var refundSt=b.refund_status||'';
+          var refundAmt=Number(b.refund_amount!=null?b.refund_amount:(b.fare||0));
           var actionBtns='';
           if(b.status==='pending'){
             actionBtns+='<button class="btn btn-navy btn-sm" onclick="confirmJob('+b.id+',this)">Confirm</button> ';
           }
-          if(isCancellable){
-            actionBtns+='<button class="btn btn-red btn-sm" onclick="cancelJob('+b.id+',this)">Cancel</button>';
-          }
-          if(isCancelled){
+          if(!isCancelled){
+            // Cancel: unpaid -> deleted; paid -> cancelled + Refund button appears.
+            actionBtns+='<button class="btn btn-cancel-trip btn-sm" onclick="cancelTrip('+b.id+',this)">Cancel Trip</button>';
+          }else if(refundSt==='due'){
+            actionBtns+='<button class="btn btn-refund btn-sm" onclick="refundTrip('+b.id+',this)">Refund £'+refundAmt.toFixed(0)+'</button>';
+          }else if(refundSt==='refunded'){
+            actionBtns+='<span class="tag tag-refunded">Refunded ✓</span>';
+          }else{
+            // Legacy cancelled with no refund flow (unpaid) -> allow cleanup delete.
             actionBtns+='<button class="btn btn-red btn-sm" onclick="deleteJob('+b.id+',this)">Delete</button>';
           }
           var reasonRow=b.intake_reason?'<div class="sub-v" style="color:#555555;font-style:italic;margin-top:.2rem">'+escTo(b.intake_reason)+'</div>':'';
-          var rowStyle=isCancelled?'opacity:.45;text-decoration:line-through':'';
+          // Dim resolved cancellations, but NOT ones awaiting a refund — those
+          // need the owner's attention, so keep them full-strength.
+          var rowStyle=(isCancelled&&refundSt!=='due')?'opacity:.5;text-decoration:line-through':'';
           var conflictMark=_conflicts[b.id]
             ?'<div title="Calendar conflict" style="color:#c0392b;font-weight:700;font-size:.9rem;margin-top:.15rem">\u2717</div>'
             :'<div title="No conflict" style="color:#1a8a4a;font-weight:700;font-size:.9rem;margin-top:.15rem">\u2713</div>';
@@ -2446,8 +2461,11 @@ function loadLiveBookings(){
             +'<td><div class="main-v">'+b.destination+'</div></td>'
             +'<td>'+fareCellHtml+'</td>'
             +'<td><span class="tag '+payClass+'">'+payLabel+'</span></td>'
-            +'<td><span class="tag '+statusClass+'">'+statusLabel+'</span></td>'
-            +'<td><button class="btn btn-ghost btn-sm" onclick="toggleJDetail('+b.id+',this)">Details</button> '+actionBtns+'</td>'
+            +'<td><span class="tag '+statusClass+'">'+statusLabel+'</span>'
+              +(isCancelled&&refundSt==='due'?'<div class="sub-v" style="color:#9C2828;margin-top:.2rem;font-weight:600">Refund due £'+refundAmt.toFixed(0)+'</div>':'')
+              +(isCancelled&&refundSt==='refunded'?'<div class="sub-v" style="color:#1E6B33;margin-top:.2rem;font-weight:600">Refunded £'+refundAmt.toFixed(0)+(b.refund_method==='stripe'?' · Stripe':' · manual')+'</div>':'')
+            +'</td>'
+            +'<td style="text-decoration:none"><button class="btn btn-ghost btn-sm" onclick="toggleJDetail('+b.id+',this)">Details</button> '+actionBtns+'</td>'
             +'</tr>'
             +'<tr class="jdetail-row" id="jdetail-'+b.id+'"><td colspan="10">'+bookingDetailHtml(b)+'</td></tr>';
         }).join('');
@@ -2571,6 +2589,37 @@ function deleteJob(id,btn){
     .then(function(r){return r.json();})
     .then(function(d){if(d.ok){showToast('Booking deleted');loadLiveBookings();}else{showToast(d.error||'Error deleting');}})
     .catch(function(){showToast('Error deleting booking');});
+}
+// Cancel Trip: unpaid booking is removed entirely; a paid booking is marked
+// cancelled and flagged "refund due £X" (the button then becomes Refund).
+function cancelTrip(id,btn){
+  if(!confirm('Cancel this trip?\n\n• If it is UNPAID it will be removed from the system.\n• If it was PAID it will be marked cancelled and you can then refund the customer.'))return;
+  if(btn){btn.disabled=true;btn.textContent='…';}
+  fetch('/api/bookings/'+id+'/cancel',{method:'POST',headers:{'Content-Type':'application/json'}})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.ok){
+        if(d.outcome==='deleted'){showToast('Unpaid trip cancelled & removed');}
+        else{showToast('Trip cancelled — refund due £'+Number(d.refund_amount||0).toFixed(0));}
+        loadLiveBookings();
+      }else{showToast(d.error||'Error cancelling');if(btn){btn.disabled=false;btn.textContent='Cancel Trip';}}
+    })
+    .catch(function(){showToast('Error cancelling trip');if(btn){btn.disabled=false;btn.textContent='Cancel Trip';}});
+}
+// Refund: real Stripe refund if a card charge is on file, otherwise recorded as
+// a manual refund (owner returns the money by hand). Marks the booking Refunded.
+function refundTrip(id,btn){
+  if(!confirm('Refund this customer?\n\n• Paid by card → issues a REAL Stripe refund now.\n• Cash / marked-paid → records it as refunded; you must return the money by hand.'))return;
+  if(btn){btn.disabled=true;btn.textContent='…';}
+  fetch('/api/bookings/'+id+'/refund',{method:'POST',headers:{'Content-Type':'application/json'}})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.ok){
+        showToast(d.message||('Refunded £'+Number(d.amount||0).toFixed(2)));
+        loadLiveBookings();
+      }else{showToast(d.error||'Refund failed');if(btn){btn.disabled=false;btn.textContent='Refund';}}
+    })
+    .catch(function(){showToast('Refund failed');if(btn){btn.disabled=false;btn.textContent='Refund';}});
 }
 
 async function submitBooking(){

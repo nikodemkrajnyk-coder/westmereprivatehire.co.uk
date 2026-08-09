@@ -432,6 +432,152 @@ router.delete('/bookings/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Cancel a trip (admin/owner) ──────────────────────────────────────────
+// UNPAID  -> the booking is deleted entirely (owner doesn't keep unpaid cancels).
+// PAID    -> marked cancelled and flagged "refund due £fare" so it stays in the
+//            system with a Refund action. "Paid" = money actually received
+//            (paid_at is stamped for Stripe card, cash-marked-paid, or a manual
+//            mark-paid). The fare/email engines are untouched.
+router.post('/bookings/:id/cancel', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+  const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+  if (!booking) return res.status(404).json({ error: 'Booking not found' });
+
+  // Remove it from the calendar either way — the trip is not happening.
+  if (booking.calendar_event_id) gcal.deleteEvent(booking.calendar_event_id).catch(() => {});
+
+  const paid = !!booking.paid_at;
+
+  if (!paid) {
+    // ── Unpaid → delete entirely ──
+    try {
+      db.prepare('DELETE FROM bookings WHERE id = ?').run(id);
+      try { autoFile.removeBooking(booking.ref, booking.date); } catch (_) {}
+    } catch (e) {
+      console.error('[API] cancel(delete) failed:', e.message);
+      return res.status(500).json({ error: 'Failed to cancel booking. Please try again.' });
+    }
+    try {
+      db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+        .run(req.auth.type, req.auth.id, 'booking_cancelled_deleted', booking.ref + ' (unpaid)', req.ip);
+    } catch (_) {}
+    events.broadcast('booking:deleted', { id, ref: booking.ref });
+    // Let the customer know if we have their email (only on the live→cancelled edge).
+    if (booking.status !== 'cancelled' && booking.passenger_email) {
+      sendCustomerCancellation({
+        ref: booking.ref, name: booking.passenger_name, email: booking.passenger_email,
+        pickup: booking.pickup, destination: booking.destination,
+        date: booking.date, time: booking.time, fare: booking.fare, flight: booking.flight
+      }).catch(e => console.error('[API] sendCustomerCancellation failed:', e.message));
+    }
+    return res.json({ ok: true, outcome: 'deleted' });
+  }
+
+  // ── Paid → mark cancelled + refund due ──
+  const wasCancelled = booking.status === 'cancelled';
+  const refundAmount = booking.fare != null ? booking.fare : 0;
+  try {
+    db.prepare(`UPDATE bookings
+                   SET status = 'cancelled',
+                       refund_status = CASE WHEN refund_status = 'refunded' THEN refund_status ELSE 'due' END,
+                       refund_amount = COALESCE(refund_amount, ?),
+                       updated_at = datetime('now')
+                 WHERE id = ?`).run(refundAmount, id);
+  } catch (e) {
+    console.error('[API] cancel(paid) failed:', e.message);
+    return res.status(500).json({ error: 'Failed to cancel booking. Please try again.' });
+  }
+  if (!wasCancelled && booking.passenger_email) {
+    sendCustomerCancellation({
+      ref: booking.ref, name: booking.passenger_name, email: booking.passenger_email,
+      pickup: booking.pickup, destination: booking.destination,
+      date: booking.date, time: booking.time, fare: booking.fare, flight: booking.flight
+    }).catch(e => console.error('[API] sendCustomerCancellation failed:', e.message));
+  }
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run(req.auth.type, req.auth.id, 'booking_cancelled_refund_due', booking.ref + ' £' + Number(refundAmount).toFixed(2), req.ip);
+  } catch (_) {}
+  events.broadcast('booking:updated', { id, ref: booking.ref, status: 'cancelled', reason: 'Cancelled — refund due' });
+  return res.json({ ok: true, outcome: 'cancelled_refund_due', refund_amount: refundAmount });
+});
+
+// ── Refund a cancelled/paid booking (admin/owner) ────────────────────────
+// If a Stripe charge is on file (payment_intent_id, or found via booking_ref)
+// this issues a REAL Stripe refund. Otherwise (cash / manually marked paid)
+// it records the refund as manual — the owner must return £X by hand.
+router.post('/bookings/:id/refund', async (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const stripe = require('./stripe');
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+  const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+  if (!booking) return res.status(404).json({ error: 'Booking not found' });
+  if (booking.refund_status === 'refunded') {
+    return res.json({ ok: true, outcome: 'already_refunded', method: booking.refund_method || 'manual', amount: booking.refund_amount || booking.fare || 0 });
+  }
+  if (!booking.paid_at) {
+    return res.status(400).json({ error: 'This booking was never paid — nothing to refund. Cancel it instead.' });
+  }
+
+  const amount = booking.refund_amount != null ? booking.refund_amount : (booking.fare || 0);
+  const amountPence = Math.round(amount * 100);
+
+  // Locate a Stripe charge to refund against.
+  let intentId = booking.payment_intent_id || null;
+  if (!intentId && booking.payment === 'card' && stripe.isConfigured()) {
+    try { intentId = await stripe.findPaymentIntentByRef(booking.ref); } catch (_) {}
+  }
+
+  let method = 'manual', refundId = null;
+  if (intentId && stripe.isConfigured()) {
+    try {
+      const refund = await stripe.createRefund({ paymentIntentId: intentId, amount: amountPence });
+      method = 'stripe';
+      refundId = refund.id;
+    } catch (e) {
+      console.error('[REFUND] Stripe refund failed for', booking.ref, ':', e.message);
+      return res.status(502).json({ error: 'Stripe refund failed: ' + e.message });
+    }
+  }
+
+  try {
+    db.prepare(`UPDATE bookings
+                   SET status = 'cancelled',
+                       refund_status = 'refunded',
+                       refund_method = ?,
+                       refunded_at = datetime('now'),
+                       refund_amount = COALESCE(refund_amount, ?),
+                       updated_at = datetime('now')
+                 WHERE id = ?`).run(method, amount, id);
+  } catch (e) {
+    console.error('[API] refund record failed:', e.message);
+    return res.status(500).json({ error: 'Refund issued but recording failed — check the booking.' });
+  }
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run(req.auth.type, req.auth.id, 'booking_refunded',
+           booking.ref + ' £' + Number(amount).toFixed(2) + ' [' + method + (refundId ? ' ' + refundId : '') + ']', req.ip);
+  } catch (_) {}
+  events.broadcast('booking:updated', { id, ref: booking.ref, status: 'cancelled', reason: 'Refunded' });
+  return res.json({
+    ok: true,
+    outcome: method === 'stripe' ? 'refunded_stripe' : 'refunded_manual',
+    method, amount, refund_id: refundId,
+    message: method === 'stripe'
+      ? ('Refunded £' + amount.toFixed(2) + ' to the customer via Stripe.')
+      : ('Recorded as refunded — return £' + amount.toFixed(2) + ' to the customer (no card charge on file).')
+  });
+});
+
 // ── Customers (admin only) ──────────────────────────────────────────────
 
 router.get('/customers', (req, res) => {
