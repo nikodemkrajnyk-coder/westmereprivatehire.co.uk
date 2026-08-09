@@ -133,4 +133,57 @@ function initForms(){
   });
 }
 
-document.addEventListener('DOMContentLoaded',()=>{initFareTabs();hydrateAirportFares();initForms();});
+/* ── Rotating Google reviews (shared / DRY) ──────────────────────────────
+ * One component for every marketing page. Drop a mount anywhere:
+ *   <section data-reviews="full"></section>     (homepage — prominent)
+ *   <section data-reviews="compact"></section>  (other pages — quiet strip)
+ * Live reviews come from /api/public/reviews; a static testimonial is a
+ * permanent fallback so there is always at least one. Gentle ~600ms opacity
+ * fade, one review ~3s, respects prefers-reduced-motion. Not loaded on
+ * book.html (that page doesn't include frontend.js), so the booking flow
+ * stays uncluttered. */
+const REVIEW_STATIC={text:"Absolutely first class service — immaculate car, punctual and professional. I wouldn't use anyone else for airport transfers.",note:"Benjamin Chan · Google review"};
+const REVIEW_LINK="https://g.page/r/Ce764VxFTR4VEAE/review";
+function reviewClip(s){s=String(s||'').trim();return s.length>155?s.slice(0,150).replace(/\s+\S*$/,'').replace(/[,.;:!?—-]+$/,'')+'…':s;}
+function initReviews(){
+  const mounts=document.querySelectorAll('[data-reviews]');
+  if(!mounts.length)return;
+  const reduce=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  // Inject the widget markup (with the static testimonial as no-JS-safe content).
+  mounts.forEach(m=>{
+    m.classList.add('review-wrap');
+    if(m.dataset.reviews==='compact')m.classList.add('review-strip');
+    m.innerHTML='<div class="container">'
+      +'<div class="review-top"><span class="google-g">G</span><span class="eyebrow">Google Review</span><span class="stars">★★★★★</span></div>'
+      +'<div class="review-fade"><blockquote class="review-quote">“'+REVIEW_STATIC.text+'”</blockquote>'
+      +'<div class="review-note">'+REVIEW_STATIC.note+'</div></div>'
+      +'<a class="btn review-cta" href="'+REVIEW_LINK+'" target="_blank" rel="noopener">Leave a Review</a>'
+      +'</div>';
+  });
+  // Fetch once, wire every mount to rotate its own copy of the pool.
+  fetch('/api/public/reviews').then(r=>r.ok?r.json():null).then(d=>{
+    let live=[];
+    if(d&&d.reviews&&d.reviews.length){
+      live=d.reviews.map(r=>({text:reviewClip(r.text),note:(r.author_name||'Google user')+' · Google review'+(r.relative_time?' · '+r.relative_time:'')})).filter(e=>e.text);
+    }
+    const rating=(d&&d.rating)?Math.round(d.rating):5;
+    mounts.forEach(m=>wireReviewMount(m,live.slice(),rating,reduce));
+  }).catch(()=>{/* keep the static fallback already rendered */});
+}
+function wireReviewMount(m,live,rating,reduce){
+  const stars=m.querySelector('.stars'),fade=m.querySelector('.review-fade'),q=m.querySelector('.review-quote'),note=m.querySelector('.review-note');
+  if(stars&&rating)stars.textContent='★★★★★'.slice(0,rating);
+  const staticEntry={text:reviewClip(REVIEW_STATIC.text),note:REVIEW_STATIC.note};
+  const dup=live.some(e=>e.text===staticEntry.text);
+  const pool=live.length?(dup?live:live.concat([staticEntry])):[staticEntry];
+  let idx=0,rot=null;
+  const paint=e=>{if(q)q.textContent='“'+e.text+'”';if(note)note.textContent=e.note;};
+  paint(pool[0]);
+  const step=()=>{if(pool.length<2)return;idx=(idx+1)%pool.length;if(reduce||!fade){paint(pool[idx]);return;}fade.classList.add('is-out');setTimeout(()=>{paint(pool[idx]);fade.classList.remove('is-out');},600);};
+  const start=()=>{if(rot)clearInterval(rot);if(pool.length>1&&!reduce)rot=setInterval(step,3000);};
+  const stop=()=>{if(rot){clearInterval(rot);rot=null;}};
+  m.addEventListener('mouseenter',stop);m.addEventListener('mouseleave',start);
+  start();
+}
+
+document.addEventListener('DOMContentLoaded',()=>{initFareTabs();hydrateAirportFares();initForms();initReviews();});
