@@ -783,6 +783,13 @@ input[type=checkbox],input[type=radio]{accent-color:#111111 !important}
       <div class="sec-title"><em>Completed</em> Jobs</div>
       <div class="sec-sub">Finished jobs, for your records</div>
       <div id="completed-list"></div>
+
+      <!-- Cancelled bookings (status: cancelled) — kept on file, deleted by hand -->
+      <div id="cancelled-section" style="display:none;margin-top:1.6rem">
+        <div class="sec-title" style="font-size:1.15rem"><em>Cancelled</em></div>
+        <div class="sec-sub">Cancelled by the customer — delete once you're done with them</div>
+        <div id="cancelled-list"></div>
+      </div>
     </div>
 
 
@@ -1590,9 +1597,10 @@ document.addEventListener('keydown',function(e){
 // ── DATA ─────────────────────────────────────────────────────────────────────
 var TODAY_JOBS = [];
 var OFFERED_JOBS = [];       // union of all non-cancelled jobs — used by action handlers to look up a job by id
-var CONFIRMED_JOBS = [];     // status: confirmed / active
+var CONFIRMED_JOBS = [];     // status: confirmed / active / awaiting_payment
 var TOCONFIRM_JOBS = [];     // status: pending (quote requests awaiting decision)
 var COMPLETED_JOBS = [];     // status: completed
+var CANCELLED_JOBS = [];     // status: cancelled (kept on file; owner deletes by hand)
 var INBOX_MSGS = [];
 var SD_JOBS = [];
 var ASSIST_HISTORY = [];
@@ -2684,6 +2692,7 @@ function jobCardHtml(j){
   }
   else if(j.apiStatus==='offered'){stLabel='Awaiting driver';stColor='#2A3A66';stBg='rgba(42,58,102,.07)';}
   else if(j.apiStatus==='awaiting_payment'){stLabel='Awaiting payment';stColor='#9C5800';stBg='rgba(156,88,0,.12)';}
+  else if(j.apiStatus==='cancelled'){stLabel='Cancelled';stColor='#8B2222';stBg='rgba(139,34,34,.10)';}
   else if(j.apiStatus==='active'){stLabel='Active';stColor='#2D6E47';stBg='rgba(45,110,71,.1)';}
   else if(j.apiStatus==='completed'){stLabel='Completed';stColor='#2D6E47';stBg='rgba(45,110,71,.12)';}
   else{stLabel='Confirmed';stColor='#2D6E47';stBg='rgba(45,110,71,.08)';}
@@ -2743,15 +2752,19 @@ function jobCardHtml(j){
   if((j.apiStatus==='confirmed'||j.apiStatus==='active'||j.apiStatus==='completed')&&j.fare){
     html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(27,27,26,.06);color:var(--navy);border:1.5px solid rgba(27,27,26,.15);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerQuickInvoice('+j.id+',\''+escH(j.name||'')+'\',\''+escH(j.email||'')+'\','+Number(j.fare||0)+',\''+escH(j.pickup||'')+'\',\''+escH(j.dest||'')+'\',\''+escH(j.date||'')+'\')">Create Invoice</button>';
   }
-  if(j.email){
+  // A cancelled booking is a record only: no message/edit (it's out of the live
+  // job lists) — just the hard Delete the owner performs by hand.
+  if(j.email&&j.apiStatus!=='cancelled'){
     html+='<button style="padding:.6rem .85rem;font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:#ffffff;color:#1a1a1a;border:1px solid rgba(27,27,26,.28);border-radius:7px;cursor:pointer;min-height:40px" onclick="wmMessageOpen('+j.id+')">Send Message</button>';
   }
-  html+='<button style="padding:.6rem .85rem;font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(27,27,26,.06);color:rgba(27,27,26,.6);border:1px solid rgba(27,27,26,.12);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingEdit('+j.id+')">Edit</button>'
-    +'<button style="padding:.6rem .85rem;font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(139,34,34,.08);color:#8B2222;border:1.5px solid rgba(139,34,34,.2);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingDelete('+j.id+')">Delete</button>';
+  if(j.apiStatus!=='cancelled'){
+    html+='<button style="padding:.6rem .85rem;font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(27,27,26,.06);color:rgba(27,27,26,.6);border:1px solid rgba(27,27,26,.12);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingEdit('+j.id+')">Edit</button>';
+  }
+  html+='<button style="padding:.6rem .85rem;font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(139,34,34,.08);color:#8B2222;border:1.5px solid rgba(139,34,34,.2);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingDelete('+j.id+')">Delete</button>';
   // Email sent indicator
   if(j.email&&(j.apiStatus==='confirmed'||j.apiStatus==='active'||j.apiStatus==='completed')){
     html+='<div style="width:100%;text-align:center;margin-top:.35rem;font-size:.62rem;color:rgba(45,110,71,.7);letter-spacing:.04em">✓ Confirmation sent to '+escH(j.email)+'</div>';
-  } else if(!j.email&&j.apiStatus!=='pending'){
+  } else if(!j.email&&j.apiStatus!=='pending'&&j.apiStatus!=='cancelled'){
     html+='<div style="width:100%;text-align:center;margin-top:.35rem;font-size:.62rem;color:rgba(156,88,0,.6);letter-spacing:.04em">No email — confirmation not sent</div>';
   }
   html+='</div></div></div>';
@@ -2891,6 +2904,28 @@ function buildCompleted(){
     html+=g.items.map(jobCardHtml).join('');
   });
   list.innerHTML=html;
+
+  buildCancelled();
+}
+
+// Cancelled bookings — kept on file (a customer cancel sets status='cancelled'
+// but never hard-deletes the row). Listed newest first so the owner can review
+// and DELETE each one himself (the only hard-delete). Hidden entirely when
+// there are none, so it never clutters the Completed page.
+function buildCancelled(){
+  var sec=document.getElementById('cancelled-section');
+  var list=document.getElementById('cancelled-list');
+  if(!sec||!list)return;
+  if(!(CANCELLED_JOBS&&CANCELLED_JOBS.length)){
+    sec.style.display='none';
+    list.innerHTML='';
+    return;
+  }
+  sec.style.display='';
+  return renderJobList(list, CANCELLED_JOBS, {
+    includePersonal:false, order:'desc',
+    emptyTitle:'No cancelled bookings', emptySub:''
+  });
 }
 
 function upcomingToggle(detailId){
@@ -4383,6 +4418,14 @@ async function loadOwnerBookings(){
     CONFIRMED_JOBS=OFFERED_JOBS.filter(function(j){return (j.apiStatus==='confirmed'||j.apiStatus==='active'||j.apiStatus==='awaiting_payment')&&j.date>=today;});
     TOCONFIRM_JOBS=OFFERED_JOBS.filter(function(j){return j.apiStatus==='pending';});
     COMPLETED_JOBS=OFFERED_JOBS.filter(function(j){return j.apiStatus==='completed';});
+    // Cancelled bookings are excluded from OFFERED_JOBS (so they never touch the
+    // schedule); collect them separately, newest first, for the Cancelled view
+    // where the owner deletes them by hand.
+    CANCELLED_JOBS=bookings.filter(function(b){return b.status==='cancelled';})
+      .sort(function(a,b){
+        if(a.date!==b.date)return a.date<b.date?1:-1;
+        return(b.time||'').localeCompare(a.time||'');
+      }).map(toJob);
 
     // Calendar jobs — group all bookings by date
     CAL_JOBS={};

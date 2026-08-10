@@ -242,6 +242,53 @@ test('buildCompleted groups jobs by ISO week rather than a flat list', () => {
   assert.ok(!/renderJobList/.test(fn[0]), 'buildCompleted must no longer defer to the flat renderJobList');
 });
 
+// ── 8. Cancelled bookings view (owner deletes by hand) ───────────────────
+// Owner spec: a customer cancel sets status='cancelled' (never a hard-delete),
+// and the owner deletes it himself. So cancelled bookings must be VISIBLE in a
+// dedicated view with a Delete action — and Delete must hard-remove the row.
+console.log('\nCancelled bookings view (owner spec)');
+test('owner app collects cancelled bookings into a Cancelled view', () => {
+  const src = read('westmere-owner.html');
+  const flat = src.replace(/\s+/g, ' ');
+  assert.ok(/CANCELLED_JOBS=bookings\.filter\(function\(b\)\{return b\.status==='cancelled';\}\)/.test(flat),
+    'CANCELLED_JOBS must be filled from status==="cancelled" bookings');
+  assert.ok(/id="cancelled-section"/.test(src) && /id="cancelled-list"/.test(src),
+    'the Cancelled section + list markup must exist');
+  const fn = src.match(/function buildCancelled[\s\S]*?\n\}/);
+  assert.ok(fn, 'buildCancelled not found');
+  assert.ok(/CANCELLED_JOBS/.test(fn[0]) && /cancelled-list/.test(fn[0]),
+    'buildCancelled must render CANCELLED_JOBS into #cancelled-list');
+});
+test('a cancelled card shows a Cancelled label and a Delete action (no Edit)', () => {
+  const src = read('westmere-owner.html');
+  const fn = src.match(/function jobCardHtml[\s\S]*?\n\}/);
+  assert.ok(fn, 'jobCardHtml not found');
+  const jc = fn[0];
+  assert.ok(/apiStatus==='cancelled'\)\{stLabel='Cancelled'/.test(jc), 'cancelled jobs must render a "Cancelled" status label');
+  assert.ok(/apiStatus!=='cancelled'\)\{[\s\S]*?upcomingEdit/.test(jc), 'Edit must be suppressed on cancelled cards');
+  // Delete is rendered unconditionally (after the cancelled-guarded Edit block).
+  assert.ok(/upcomingDelete\('\+j\.id\+'\)">Delete/.test(jc), 'every card (incl. cancelled) must offer Delete');
+});
+test('owner Delete hard-removes a cancelled booking (DELETE /bookings/:id)', () => {
+  const api = read('server/api.js');
+  const m = api.match(/router\.delete\('\/bookings\/:id'[\s\S]*?\n\}\);/);
+  assert.ok(m, 'DELETE /bookings/:id route not found');
+  assert.ok(/DELETE FROM bookings WHERE id = \?/.test(m[0]), 'owner delete must hard-remove the booking row');
+  // Functional proof: a cancelled row is actually gone after the delete.
+  const Database = require('better-sqlite3');
+  const os = require('os');
+  const tmp = path.join(os.tmpdir(), 'wm-cancel-delete-' + process.pid + '.db');
+  try { fs.unlinkSync(tmp); } catch (_) {}
+  const d = new Database(tmp);
+  d.exec("CREATE TABLE bookings(id INTEGER PRIMARY KEY AUTOINCREMENT, ref TEXT, status TEXT)");
+  const id = d.prepare("INSERT INTO bookings(ref,status) VALUES('WM-CANCEL','cancelled')").run().lastInsertRowid;
+  assert.ok(d.prepare("SELECT 1 c FROM bookings WHERE id=? AND status='cancelled'").get(id), 'seed cancelled booking failed');
+  d.prepare('DELETE FROM bookings WHERE id = ?').run(id);   // the owner's hard-delete
+  assert.ok(!d.prepare('SELECT 1 FROM bookings WHERE id=?').get(id), 'cancelled booking must be gone after Delete');
+  d.close();
+  try { fs.unlinkSync(tmp); } catch (_) {}
+});
+
 // ── summary ──────────────────────────────────────────────────────────────
 (async () => {
   await run();
