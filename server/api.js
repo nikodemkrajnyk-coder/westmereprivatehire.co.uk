@@ -239,7 +239,7 @@ router.patch('/bookings/:id', (req, res) => {
   // If THIS update transitioned the booking from pending → confirmed, fire
   // the customer "Booking confirmed" email + WhatsApp. We only fire on the
   // edge so a second confirm doesn't spam the customer.
-  const becameConfirmed = req.body.status === 'confirmed' && booking.status === 'pending';
+  const becameConfirmed = req.body.status === 'confirmed' && ['pending', 'awaiting_payment', 'offered'].includes(booking.status);
   if (becameConfirmed) {
     const intake = require('./intake');
     intake.notifyCustomerConfirmed(parseInt(req.params.id, 10))
@@ -1518,6 +1518,55 @@ router.post('/bookings/:id/send-message', async (req, res) => {
     console.error('[API] send-message failed:', e.message);
     res.status(500).json({ error: 'Failed to send message' });
   }
+});
+
+// ── Mark a booking's payment as received → CONFIRMED ─────────────────────
+// The owner/driver "Mark as paid" action, used mainly for cash-on-the-day jobs
+// sitting at AWAITING_PAYMENT. Settling the fare is what turns an awaiting job
+// into a CONFIRMED (paid) booking — cash is NEVER auto-confirmed at the moment
+// the customer chooses it (see CLAUDE.md invariant #3). Idempotent: stamps
+// paid_at once and fires the customer "confirmed" email only on the edge into
+// confirmed. Drivers may only mark their own assigned jobs.
+router.post('/bookings/:id/mark-paid', (req, res) => {
+  if (!['admin', 'owner', 'driver'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+
+  const b = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+  if (!b) return res.status(404).json({ error: 'Booking not found' });
+  if (req.auth.role === 'driver' && b.driver_id !== req.auth.id) {
+    return res.status(403).json({ error: 'You can only settle your own jobs' });
+  }
+  if (b.status === 'cancelled') return res.status(409).json({ error: 'This booking has been cancelled' });
+
+  // Settle: stamp paid_at (once) and promote an unsettled booking to confirmed.
+  // Completed jobs stay completed but still get paid_at stamped.
+  const wasUnsettled = ['pending', 'offered', 'awaiting_payment'].includes(b.status);
+  db.prepare(`UPDATE bookings
+                 SET paid_at = COALESCE(paid_at, datetime('now')),
+                     status = CASE WHEN status IN ('pending','offered','awaiting_payment') THEN 'confirmed' ELSE status END,
+                     updated_at = datetime('now')
+               WHERE id = ?`).run(id);
+
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run(req.auth.type || 'user', req.auth.id, 'payment_marked_received', b.ref, req.ip);
+  } catch (_) {}
+
+  // Fire the customer "Booking confirmed" email + WhatsApp only on the edge
+  // into confirmed, so re-marking a settled booking stays quiet.
+  if (wasUnsettled) {
+    require('./intake').notifyCustomerConfirmed(id)
+      .catch(e => console.error('[API] notifyCustomerConfirmed (mark-paid) failed:', e.message));
+    events.broadcast('booking:confirmed', { id, ref: b.ref, reason: 'Payment received' });
+  } else {
+    events.broadcast('booking:updated', { id, ref: b.ref, reason: 'Marked paid' });
+  }
+
+  res.json({ ok: true, status: wasUnsettled ? 'confirmed' : b.status, paid: true });
 });
 
 // Sends a branded email asking the customer to pay, with card-only options

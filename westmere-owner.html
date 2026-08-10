@@ -2677,8 +2677,13 @@ function jobCardHtml(j){
   }
 
   var stLabel,stColor,stBg;
-  if(j.apiStatus==='pending'){stLabel='Quote requested';stColor='#555555';stBg='rgba(156,88,0,.08)';}
+  if(j.apiStatus==='pending'){
+    // Estimate sent → PENDING (amber); brand-new request → "New request".
+    if(j.estimate_sent_at){stLabel='Pending · estimate sent';stColor='#9C5800';stBg='rgba(156,88,0,.10)';}
+    else{stLabel='New request';stColor='#555555';stBg='rgba(106,106,106,.12)';}
+  }
   else if(j.apiStatus==='offered'){stLabel='Awaiting driver';stColor='#2A3A66';stBg='rgba(42,58,102,.07)';}
+  else if(j.apiStatus==='awaiting_payment'){stLabel='Awaiting payment';stColor='#9C5800';stBg='rgba(156,88,0,.12)';}
   else if(j.apiStatus==='active'){stLabel='Active';stColor='#2D6E47';stBg='rgba(45,110,71,.1)';}
   else if(j.apiStatus==='completed'){stLabel='Completed';stColor='#2D6E47';stBg='rgba(45,110,71,.12)';}
   else{stLabel='Confirmed';stColor='#2D6E47';stBg='rgba(45,110,71,.08)';}
@@ -2713,6 +2718,12 @@ function jobCardHtml(j){
   if(j.apiStatus==='pending'){
     html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:var(--gold);color:#1a1a1a;border:1.5px solid var(--gold);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerSendEstimate('+j.id+')">Send Estimate</button>';
   }
+  // Awaiting payment (cash-on-the-day chosen, or card started): settling the
+  // fare is what CONFIRMS the booking. This is the only "Mark as paid" that
+  // also confirms — a deliberate, explicit owner/driver action.
+  if(j.apiStatus==='awaiting_payment'){
+    html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:var(--gold);color:#1a1a1a;border:1.5px solid var(--gold);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerMarkPaid('+j.id+')">Mark as Paid</button>';
+  }
   if(j.apiStatus==='confirmed'||j.apiStatus==='active'){
     html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(45,110,71,.12);color:#2D6E47;border:1.5px solid rgba(45,110,71,.3);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerMarkCompleted('+j.id+')">Mark Completed</button>';
   }
@@ -2723,8 +2734,9 @@ function jobCardHtml(j){
       +'" onclick="ownerTogglePaid('+j.id+','+(_isPaid?'true':'false')+')">'
       +(_isPaid?'Paid ✓':'Mark Paid')+'</button>';
   }
-  // Send Payment Reminder — shown on completed unpaid bookings with an email
-  if(!_isPaid&&j.email&&(j.apiStatus==='completed'||j.apiStatus==='confirmed')&&j.fare){
+  // Send Payment Reminder — shown on unpaid bookings with an email (completed,
+  // confirmed, or awaiting payment — e.g. a card customer who didn't finish).
+  if(!_isPaid&&j.email&&(j.apiStatus==='completed'||j.apiStatus==='confirmed'||j.apiStatus==='awaiting_payment')&&j.fare){
     html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(139,34,34,.06);color:#8B2222;border:1.5px solid rgba(139,34,34,.2);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerSendPayReminder('+j.id+')">Send Reminder</button>';
   }
   // Create Invoice button — available on all confirmed/completed jobs with a fare
@@ -2789,7 +2801,7 @@ async function buildConfirmed(){
   // Confirmed/active bookings falling within this week (any week — past weeks
   // still show their historical confirmed jobs).
   var weekJobs=(OFFERED_JOBS||[]).filter(function(j){
-    return (j.apiStatus==='confirmed'||j.apiStatus==='active')&&j.date>=startKey&&j.date<=endKey;
+    return (j.apiStatus==='confirmed'||j.apiStatus==='active'||j.apiStatus==='awaiting_payment')&&j.date>=startKey&&j.date<=endKey;
   }).map(function(j){return Object.assign({type:'booking'},j);});
 
   // ALL personal Google Calendar events for the selected week (every day
@@ -2835,12 +2847,50 @@ function buildToConfirm(){
   });
 }
 
-// Completed Jobs — finished jobs for your records (status completed), newest first.
+// Completed Jobs — finished jobs for your records (status completed), grouped
+// WEEK BY WEEK (Mon–Sun), newest week first, newest job first within a week.
+// Each week gets a header with its date range, job count and takings so the
+// list reads as discrete weeks rather than one endless flat scroll.
 function buildCompleted(){
-  return renderJobList(document.getElementById('completed-list'), COMPLETED_JOBS, {
-    includePersonal:false, order:'desc',
-    emptyTitle:'No completed jobs', emptySub:'Finished jobs appear here for your records'
+  var list=document.getElementById('completed-list');
+  if(!list)return;
+  var jobs=(COMPLETED_JOBS||[]).slice();
+  if(!jobs.length){
+    list.innerHTML='<div class="empty"><div class="empty-title">No completed jobs</div><div class="empty-sub">Finished jobs appear here for your records</div></div>';
+    return;
+  }
+
+  // Bucket each job into its ISO week (Monday) key; undated jobs go last.
+  var groups={};                       // weekKey -> { start:Date|null, items:[] }
+  jobs.forEach(function(j){
+    var key='0000-00-00', start=null;
+    if(j.date){
+      var p=j.date.split('-');
+      var d=new Date(+p[0],(+p[1])-1,+p[2]);
+      if(!isNaN(d.getTime())){ start=isoWeekStart(d); key=dk(start.getFullYear(),start.getMonth(),start.getDate()); }
+    }
+    if(!groups[key])groups[key]={start:start,items:[]};
+    groups[key].items.push(j);
   });
+
+  var keys=Object.keys(groups).sort().reverse();   // newest week first
+  var html='';
+  keys.forEach(function(key){
+    var g=groups[key];
+    g.items.sort(function(a,b){
+      var dc=(a.date||'').localeCompare(b.date||'');
+      if(dc!==0)return -dc;                          // later date first
+      return (b.time||'').localeCompare(a.time||''); // later time first
+    });
+    var takings=g.items.reduce(function(s,j){return s+(Number(j.fare)||0);},0);
+    var label=g.start?_fmtWeekRange(g.start):'Undated';
+    html+='<div style="display:flex;justify-content:space-between;align-items:baseline;gap:.6rem;padding:.7rem 1rem .5rem;background:#ffffff;border-bottom:1px solid var(--gold-rule)">'
+      +'<span style="font-family:var(--serif);font-size:1.02rem;font-weight:500;letter-spacing:.05em;color:var(--navy)">'+escH(label)+'</span>'
+      +'<span style="font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(27,27,26,.45);white-space:nowrap">'+g.items.length+(g.items.length===1?' job':' jobs')+' · £'+takings.toFixed(0)+'</span>'
+      +'</div>';
+    html+=g.items.map(jobCardHtml).join('');
+  });
+  list.innerHTML=html;
 }
 
 function upcomingToggle(detailId){
@@ -2864,7 +2914,7 @@ async function ownerSendEstimate(bookingId){
   try{
     var r=await fetch('/api/bookings/'+bookingId+'/send-estimate',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({fare:fare})});
     var d=await r.json();
-    if(r.ok&&d.ok){showToast('Estimate sent (£'+fare.toFixed(0)+') — booking stays pending');loadOwnerBookings();}
+    if(r.ok&&d.ok){showToast('✓ Estimate sent (£'+fare.toFixed(0)+') — booking is now Pending');loadOwnerBookings();}
     else showToast(d.error||('Failed ('+r.status+')'));
   }catch(e){showToast('Network error');console.error('[ownerSendEstimate]',e);}
 }
@@ -2925,19 +2975,15 @@ function upcomingEdit(bookingId){
       +'<div style="margin-bottom:.7rem"><label style="font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.5);display:block;margin-bottom:.3rem">Fare £</label>'
       +'<input id="eb-fare" type="number" min="0" step="0.5" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(27,27,26,.15);border-radius:8px;font-family:inherit;font-size:.9rem;color:var(--navy)"></div>'
       +'<input type="hidden" id="eb-id">'
-      +'<div style="display:flex;gap:.6rem;margin-bottom:.7rem">'
-      +'<button onclick="document.getElementById(\'edit-booking-overlay\').remove()" style="flex:1;padding:.75rem;background:transparent;border:1px solid rgba(27,27,26,.15);border-radius:10px;font-family:inherit;font-size:.82rem;font-weight:500;color:rgba(27,27,26,.5);cursor:pointer">Cancel</button>'
-      +'<button onclick="upcomingSave()" style="flex:2;padding:.75rem;background:#ffffff;border:none;border-radius:10px;font-family:inherit;font-size:.82rem;font-weight:500;color:#1a1a1a;cursor:pointer;letter-spacing:.04em">Save Changes</button>'
-      +'</div>'
-      +'<div style="margin:.2rem 0 .85rem"><label style="font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.5);display:block;margin-bottom:.3rem">Notes to include in confirmation</label>'
-      +'<textarea id="eb-notes" rows="3" placeholder="A short message the customer will see in their confirmation email (optional)" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(27,27,26,.15);border-radius:8px;font-family:inherit;font-size:.9rem;color:var(--navy);resize:vertical"></textarea>'
-      +'<div style="font-size:.6rem;color:rgba(27,27,26,.42);margin-top:.28rem;letter-spacing:.01em">Shown to the customer in their confirmation email.</div></div>'
-      +'<div id="eb-sent-status" style="display:none;font-size:.68rem;color:#2D6E47;margin-bottom:.55rem;letter-spacing:.02em"></div>'
+      +'<div style="margin:.2rem 0 1rem"><label style="font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.5);display:block;margin-bottom:.3rem">Notes</label>'
+      +'<textarea id="eb-notes" rows="3" placeholder="Private notes about this trip (optional)" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(27,27,26,.15);border-radius:8px;font-family:inherit;font-size:.9rem;color:var(--navy);resize:vertical"></textarea></div>'
+      // Edit is trip-details only — no sending happens here. The estimate and
+      // message actions live on the booking card, so an edit can never confirm
+      // or email by accident. This modal has exactly two actions: Cancel + Save.
       +'<div style="display:flex;gap:.6rem">'
-      +'<button onclick="ebSendEstimate(this)" style="flex:1;padding:.7rem;background:var(--gold);border:1px solid var(--gold);border-radius:10px;font-family:inherit;font-size:.74rem;font-weight:600;color:#1a1a1a;cursor:pointer;letter-spacing:.06em;text-transform:uppercase">Send Estimate</button>'
-      +'<button onclick="ebSendMessage(this)" style="flex:1;padding:.7rem;background:#ffffff;border:1px solid rgba(27,27,26,.3);border-radius:10px;font-family:inherit;font-size:.74rem;font-weight:600;color:#1a1a1a;cursor:pointer;letter-spacing:.06em;text-transform:uppercase">Message Customer</button>'
-      +'</div>'
-      +'<div style="font-size:.6rem;color:rgba(27,27,26,.42);margin-top:.4rem;letter-spacing:.01em;text-align:center">Send Estimate emails the confirmation with payment, cancel &amp; note options. Message sends a free-text email.</div></div>';
+      +'<button onclick="document.getElementById(\'edit-booking-overlay\').remove()" style="flex:1;padding:.75rem;background:transparent;border:1px solid rgba(27,27,26,.15);border-radius:10px;font-family:inherit;font-size:.82rem;font-weight:500;color:rgba(27,27,26,.5);cursor:pointer">Cancel</button>'
+      +'<button onclick="upcomingSave()" style="flex:2;padding:.75rem;background:var(--gold);border:none;border-radius:10px;font-family:inherit;font-size:.82rem;font-weight:600;color:#1a1a1a;cursor:pointer;letter-spacing:.04em">Save Changes</button>'
+      +'</div></div>';
     document.body.appendChild(el);
     el.addEventListener('click',function(ev){if(ev.target===el)el.remove();});
   }
@@ -2952,31 +2998,12 @@ function upcomingEdit(bookingId){
   document.getElementById('eb-time').value=j.time||'';
   document.getElementById('eb-fare').value=j.fare||'';
   document.getElementById('eb-notes').value=j.note||j.notes||'';
-  // Show whether/when a confirmation was last sent (persisted server-side).
-  var ss=document.getElementById('eb-sent-status');
-  var sentAt=j.confirmation_sent_at||j.confirmationSentAt||'';
-  if(ss){
-    if(sentAt){ ss.textContent='✓ Confirmation last sent '+ownFmtSent(sentAt); ss.style.display='block'; }
-    else { ss.textContent=''; ss.style.display='none'; }
-  }
   el.style.display='flex';
 }
 
-// Format an SQLite datetime('now') string (UTC "YYYY-MM-DD HH:MM:SS") for display.
-function ownFmtSent(s){
-  if(!s)return '';
-  try{
-    var iso=String(s).replace(' ','T');
-    if(!/[zZ]|[+-]\d\d:?\d\d$/.test(iso))iso+='Z';
-    var d=new Date(iso);
-    if(isNaN(d.getTime()))return String(s);
-    return d.toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
-  }catch(e){return String(s);}
-}
-
 // Collect the FULL edited booking from the modal — the single source of truth
-// for what gets persisted. Used by both "Save Changes" and "Send Confirmation"
-// so a send always saves exactly what a save would.
+// for what gets persisted by "Save Changes". Carries NO status, so saving an
+// edit can never confirm the booking.
 function ebCollectBody(){
   var g=function(id){var el=document.getElementById(id);return el?el.value:'';};
   var name=g('eb-name').trim();
@@ -3014,55 +3041,12 @@ async function upcomingSave(){
   }catch(e){showToast('Network error');}
 }
 
-// Shared sender for the edit-modal "Send Confirmation" / "Send Estimate"
-// buttons. Guarantees unambiguous feedback every time: a "Sending…" state
-// while in flight, a success toast + modal close on 2xx, and an error toast
-// (modal kept open, button restored) on any failure or network error.
-async function ebSend(kind,btn){
-  var id=document.getElementById('eb-id').value;
-  if(!id)return;
-  var email=(document.getElementById('eb-email')||{}).value||'';
-  // Estimate-first: "Send Estimate" hits /send-estimate (booking stays PENDING,
-  // estimate email with Pay / Cash / Cancel actions). "Send Confirmation" hits
-  // /send-confirmation (resends the confirmed-booking email). They are NOT the
-  // same — an estimate must never auto-confirm. ebCollectBody() carries no
-  // status, so the pre-send save never changes the booking's status.
-  var noun=kind==='estimate'?'estimate':'confirmation';
-  var path=kind==='estimate'?'send-estimate':'send-confirmation';
-  var orig=btn?btn.textContent:'';
-  if(btn){btn.disabled=true;btn.dataset.orig=orig;btn.textContent='Sending…';btn.style.opacity='.55';btn.style.cursor='default';}
-  var restore=function(){ if(btn){btn.disabled=false;btn.textContent=btn.dataset.orig||orig;btn.style.opacity='';btn.style.cursor='';} };
-  try{
-    // Save the ENTIRE edited booking first (identical to "Save Changes") so the
-    // email goes out off the UPDATED record — the new stop, times, fare, etc.
-    // If the save fails, do NOT send: the customer must never get stale details.
-    var sr=await fetch('/api/bookings/'+id,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(ebCollectBody())});
-    var sd={}; try{ sd=await sr.json(); }catch(_){}
-    if(!(sr.ok&&sd.ok)){
-      showToast((sd&&sd.error)||('Couldn’t save changes — '+noun+' not sent'));
-      restore();
-      return;
-    }
-    var r=await fetch('/api/bookings/'+id+'/'+path,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}});
-    var d={}; try{ d=await r.json(); }catch(_){}
-    if(r.ok&&d.ok){
-      showToast(email?(noun.charAt(0).toUpperCase()+noun.slice(1)+' email sent to '+email):(noun.charAt(0).toUpperCase()+noun.slice(1)+' email sent'));
-      var ov=document.getElementById('edit-booking-overlay');
-      if(ov)ov.remove();                                   // close the modal → clear success signal
-      if(typeof loadOwnerBookings==='function')loadOwnerBookings(); // refresh so the sent record shows
-    } else {
-      showToast((d&&d.error)||('Couldn’t send '+noun+' — try again'));
-      restore();                                            // keep modal open so they can retry
-    }
-  }catch(e){
-    showToast('Couldn’t send '+noun+' — try again'); // network error: never silently do nothing
-    restore();
-  }
-}
-function ebSendConfirmation(btn){ return ebSend('confirmation',btn); }
-function ebSendEstimate(btn){ return ebSend('estimate',btn); }
-// From the edit modal, open the message composer for the booking being edited.
-function ebSendMessage(){ var id=document.getElementById('eb-id').value; if(id)wmMessageOpen(id); }
+// NOTE: the edit modal deliberately has NO sending actions — the old
+// ebSend / ebSendEstimate / ebSendConfirmation / ebSendMessage helpers were
+// removed. Editing a booking only saves trip details (upcomingSave). Sending an
+// estimate or a message is done from the booking card (ownerSendEstimate /
+// wmMessageOpen), so an edit can never confirm or email the customer by
+// accident. See the owner spec: "Inside the edit tab leave ONLY Save Changes."
 
 // ── Send Message to Customer ─────────────────────────────────────────────
 // A free-text email to the customer (e.g. to ask a question). Emailed from
@@ -3229,6 +3213,20 @@ async function ownerMarkCompleted(bookingId){
     if(r.ok&&d.ok){showToast('Job marked as completed');loadOwnerBookings();}
     else showToast(d.error||('Failed ('+r.status+')'));
   }catch(e){showToast('Network error');console.error('[ownerMarkCompleted]',e);}
+}
+
+// Settle an AWAITING-PAYMENT booking: records the payment as received and
+// CONFIRMS the ride (server: POST /bookings/:id/mark-paid). This is the only
+// owner/driver action that moves a booking into confirmed — cash is never
+// auto-confirmed when the customer merely chooses it.
+async function ownerMarkPaid(bookingId){
+  if(!confirm('Mark this booking as paid? This confirms the ride.'))return;
+  try{
+    var r=await fetch('/api/bookings/'+bookingId+'/mark-paid',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}});
+    var d=await r.json();
+    if(r.ok&&d.ok){showToast('Payment received — booking confirmed');loadOwnerBookings();}
+    else showToast(d.error||('Failed ('+r.status+')'));
+  }catch(e){showToast('Network error');console.error('[ownerMarkPaid]',e);}
 }
 
 async function ownerTogglePaid(bookingId,currentlyPaid){
@@ -4356,6 +4354,7 @@ async function loadOwnerBookings(){
         deadMilesFee:b.dead_miles_fee||0,
         payment:b.payment||'pending',
         paid_at:b.paid_at||null,
+        estimate_sent_at:b.estimate_sent_at||null,
         apiStatus:b.status||'',
         status:b.status==='completed'?'done':b.status==='active'?'enroute':b.status==='cancelled'?'done':'upcoming',
         note:b.notes||'',
@@ -4381,7 +4380,7 @@ async function loadOwnerBookings(){
     // Tab-specific filtered lists.
     // Confirmed = confirmed/active jobs with a FUTURE (today or later) date only.
     // Completed jobs and past dates belong in the Completed tab.
-    CONFIRMED_JOBS=OFFERED_JOBS.filter(function(j){return (j.apiStatus==='confirmed'||j.apiStatus==='active')&&j.date>=today;});
+    CONFIRMED_JOBS=OFFERED_JOBS.filter(function(j){return (j.apiStatus==='confirmed'||j.apiStatus==='active'||j.apiStatus==='awaiting_payment')&&j.date>=today;});
     TOCONFIRM_JOBS=OFFERED_JOBS.filter(function(j){return j.apiStatus==='pending';});
     COMPLETED_JOBS=OFFERED_JOBS.filter(function(j){return j.apiStatus==='completed';});
 

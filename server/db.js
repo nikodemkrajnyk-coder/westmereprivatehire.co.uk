@@ -100,7 +100,7 @@ function initSchema() {
       flight      TEXT,
       fare        REAL,
       payment     TEXT    DEFAULT 'pending',
-      status      TEXT    NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','offered','confirmed','active','completed','cancelled')),
+      status      TEXT    NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','offered','awaiting_payment','confirmed','active','completed','cancelled')),
       notes       TEXT,
       created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
       updated_at  TEXT    NOT NULL DEFAULT (datetime('now'))
@@ -394,6 +394,37 @@ function migrate() {
     }
   } catch (e) {
     console.error('[DB] offered-status migration failed:', e.message);
+  }
+
+  // ── awaiting_payment status ────────────────────────────────────────────
+  // A booking whose customer has CHOSEN a payment method (card started, or
+  // cash "pay driver on the day") but which is not yet settled. The ride is
+  // going ahead, so it shows in the schedule/driver view, but it only becomes
+  // 'confirmed' when the payment lands (Stripe webhook) or the owner/driver
+  // marks the cash received. Add it to the CHECK constraint without dropping
+  // any columns: derive the new schema from the live one, injecting the value
+  // into the status IN(...) list, then copy every existing column across.
+  try {
+    const masterRow = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='bookings'").get();
+    if (masterRow && masterRow.sql && !masterRow.sql.includes("'awaiting_payment'")) {
+      console.log('[DB] Migrating bookings CHECK constraint to include awaiting_payment status…');
+      const cols = db.prepare("PRAGMA table_info(bookings)").all().map(c => c.name).join(', ');
+      const newSql = masterRow.sql.replace(
+        /CHECK\s*\(\s*status\s+IN\s*\(([^)]*)\)\s*\)/i,
+        (m, list) => list.includes("'awaiting_payment'") ? m : `CHECK(status IN (${list}, 'awaiting_payment'))`
+      );
+      if (newSql === masterRow.sql) {
+        console.error('[DB] awaiting_payment migration: could not locate status CHECK — leaving table untouched.');
+      } else {
+        db.prepare('ALTER TABLE bookings RENAME TO bookings_pre_awaiting').run();
+        db.exec(newSql);   // recreates 'bookings' with all original columns + widened CHECK
+        db.prepare(`INSERT INTO bookings (${cols}) SELECT ${cols} FROM bookings_pre_awaiting`).run();
+        db.prepare('DROP TABLE bookings_pre_awaiting').run();
+        console.log('[DB] bookings table rebuilt with awaiting_payment status support');
+      }
+    }
+  } catch (e) {
+    console.error('[DB] awaiting_payment-status migration failed:', e.message);
   }
 
   // Customer billing details — for invoicing (address + bank).

@@ -750,7 +750,7 @@ router.post('/chat', async (req, res) => {
            c.full_name as customer_name
     FROM bookings b
     LEFT JOIN customers c ON b.customer_id = c.id
-    WHERE b.date = ? AND b.status IN ('confirmed','active')
+    WHERE b.date = ? AND b.status IN ('confirmed','awaiting_payment','active')
     ORDER BY b.time ASC
   `).all(todayStr);
 

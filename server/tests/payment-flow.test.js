@@ -92,16 +92,62 @@ test('owner + admin "Send Estimate" call /send-estimate, never PATCH status:conf
     assert.ok(!/status['"]?\s*:\s*['"]confirmed['"]/.test(fn[0]), f + ': must NOT PATCH status:confirmed');
   }
 });
-test('cash route confirms pending + records cash from a genuine customer action', () => {
+// SPEC CHANGE (owner estimate/message actions): choosing cash no longer
+// auto-confirms. Picking "pay driver on the day" moves pending → AWAITING
+// PAYMENT (the ride is going ahead) and it only becomes confirmed when the cash
+// is marked received. The old pending→confirmed jump is explicitly forbidden.
+function cashPostBlock() {
   const pub = read('server/public-api.js');
   const start = pub.indexOf("router.post('/pay/:ref/cash'");
   assert.ok(start !== -1, 'cash POST route not found');
-  // Slice to the next route declaration so we only inspect this handler.
+  const rest = pub.slice(start + 10);
+  const next = rest.search(/router\.(post|get)\(/);
+  return pub.slice(start, start + 10 + (next === -1 ? rest.length : next));
+}
+test('cash route records cash + moves pending → awaiting_payment (never confirmed)', () => {
+  const block = cashPostBlock();
+  assert.ok(/assertPaymentMethod\('cash'/.test(block), 'cash route must validate the cash write');
+  assert.ok(/THEN 'awaiting_payment'/.test(block), "cash route must move an unsettled booking to 'awaiting_payment'");
+  assert.ok(!/THEN 'confirmed'/.test(block), 'cash route must NOT auto-confirm (spec: awaiting payment first)');
+});
+test('cash route does NOT fire the customer "confirmed" email (not yet paid)', () => {
+  const block = cashPostBlock();
+  assert.ok(!/notifyCustomerConfirmed/.test(block), 'cash choice must not send a confirmation — it is not confirmed until paid');
+});
+
+// Card: choosing card / opening the card form moves pending → awaiting_payment;
+// the Stripe webhook is what promotes awaiting_payment → confirmed on success.
+test('card intent route moves pending → awaiting_payment', () => {
+  const pub = read('server/public-api.js');
+  const start = pub.indexOf("router.post('/pay/:ref/intent'");
+  assert.ok(start !== -1, 'card intent route not found');
   const rest = pub.slice(start + 10);
   const next = rest.search(/router\.(post|get)\(/);
   const block = pub.slice(start, start + 10 + (next === -1 ? rest.length : next));
-  assert.ok(/assertPaymentMethod\('cash'/.test(block), 'cash route must validate the cash write');
-  assert.ok(/WHEN status = 'pending' THEN 'confirmed'/.test(block), 'cash route must confirm a pending booking');
+  assert.ok(/THEN 'awaiting_payment'/.test(block), 'intent route must move a pending booking to awaiting_payment');
+});
+test('stripe webhook confirms from awaiting_payment (and pending), not only pending', () => {
+  const pub = read('server/public-api.js');
+  const start = pub.indexOf("'/stripe-webhook'");
+  assert.ok(start !== -1, 'stripe webhook route not found');
+  const block = pub.slice(start, start + 3000);
+  // Confirms unless cancelled — so awaiting_payment → confirmed is covered.
+  assert.ok(/WHEN status = 'cancelled' THEN status ELSE 'confirmed'/.test(block), 'webhook must confirm non-cancelled bookings on payment');
+  assert.ok(/row\.status === 'awaiting_payment'/.test(block), 'webhook must fire the confirmed email off the awaiting_payment edge too');
+});
+
+// Mark-as-paid: the ONLY owner/driver action that promotes a booking to
+// confirmed. This is how a cash-on-the-day job is settled.
+test('mark-paid route settles awaiting_payment → confirmed + stamps paid_at', () => {
+  const api = read('server/api.js');
+  const m = api.match(/router\.post\('\/bookings\/:id\/mark-paid'[\s\S]*?\n\}\);/);
+  assert.ok(m, 'mark-paid route not found');
+  const block = m[0];
+  assert.ok(/paid_at = COALESCE\(paid_at, datetime\('now'\)\)/.test(block), 'mark-paid must stamp paid_at once');
+  assert.ok(/THEN 'confirmed'/.test(block), 'mark-paid must confirm an unsettled booking');
+  assert.ok(/awaiting_payment/.test(block), 'mark-paid must handle awaiting_payment bookings');
+  assert.ok(/notifyCustomerConfirmed/.test(block), 'mark-paid must notify the customer on the confirm edge');
+  assert.ok(/status === 'cancelled'/.test(block), 'mark-paid must refuse a cancelled booking');
 });
 
 // ── 4. Send Message must not confirm; no duplicate owner Confirm path ─────
@@ -133,6 +179,67 @@ test('owner app has no one-click Confirm path for incoming requests', () => {
   assert.ok(!/function\s+renderDecisionsPending\b/.test(src), 'dead renderDecisionsPending() must not return');
   assert.ok(!/function\s+upcomingConfirm\b/.test(src), 'legacy upcomingConfirm() confirm shim must stay removed');
   assert.ok(!/function\s+acceptJob\b/.test(src), 'legacy acceptJob() confirm shim must stay removed');
+});
+
+// ── 5. Status lifecycle in the owner app (awaiting_payment) ──────────────
+// Owner spec: awaiting_payment is a distinct state (method chosen, not settled).
+// The ride is going ahead, so it must show in the weekly schedule, and the card
+// must offer a "Mark as Paid" that confirms it.
+console.log('\nStatus lifecycle — owner app (owner spec)');
+test("bookings CHECK constraint allows 'awaiting_payment'", () => {
+  const db = read('server/db.js');
+  assert.ok(/CHECK\(status IN \([^)]*'awaiting_payment'[^)]*\)\)/.test(db), 'fresh-DB CHECK must allow awaiting_payment');
+  assert.ok(/awaiting_payment migration|include awaiting_payment/.test(db), 'a migration must widen the CHECK on existing DBs');
+});
+test('owner weekly schedule includes awaiting_payment jobs (ride is going ahead)', () => {
+  const src = read('westmere-owner.html');
+  assert.ok(/CONFIRMED_JOBS=OFFERED_JOBS\.filter[\s\S]*?awaiting_payment/.test(src), 'CONFIRMED_JOBS must include awaiting_payment');
+  const wj = src.match(/var weekJobs=\(OFFERED_JOBS[\s\S]*?\}\)\.map/);
+  assert.ok(wj && /awaiting_payment/.test(wj[0]), 'weekly Confirmed schedule must include awaiting_payment');
+});
+test('owner "Mark as Paid" posts /mark-paid and confirms (only owner confirm path)', () => {
+  const src = read('westmere-owner.html');
+  const fn = src.match(/async function ownerMarkPaid[\s\S]*?\n\}/);
+  assert.ok(fn, 'ownerMarkPaid not found');
+  assert.ok(/\/mark-paid/.test(fn[0]), 'ownerMarkPaid must POST to /mark-paid');
+  assert.ok(!/status['"]?\s*:\s*['"]confirmed['"]/.test(fn[0]), 'ownerMarkPaid must NOT PATCH status:confirmed directly — the route confirms');
+});
+test('owner Send Estimate shows a confirmation and keeps the booking pending', () => {
+  const src = read('westmere-owner.html');
+  const fn = src.match(/async function ownerSendEstimate[\s\S]*?\n\}/);
+  assert.ok(fn, 'ownerSendEstimate not found');
+  assert.ok(/showToast\([^)]*[Ee]stimate sent/.test(fn[0]), 'must show an "estimate sent" confirmation');
+  assert.ok(/[Pp]ending/.test(fn[0]), 'confirmation must tell the owner the booking is now Pending');
+  assert.ok(!/status['"]?\s*:\s*['"]confirmed['"]/.test(fn[0]), 'Send Estimate must never confirm');
+});
+
+// ── 6. Edit modal: trip details only, NO sending actions ─────────────────
+console.log('\nEdit modal has no send buttons (owner spec)');
+test('the edit modal (upcomingEdit) contains only Save Changes — no Send Estimate / Message buttons', () => {
+  const src = read('westmere-owner.html');
+  const fn = src.match(/function upcomingEdit[\s\S]*?\n\}/);
+  assert.ok(fn, 'upcomingEdit not found');
+  const modal = fn[0];
+  assert.ok(/Save Changes/.test(modal), 'edit modal must keep Save Changes');
+  assert.ok(!/ebSendEstimate|ebSendMessage|ebSendConfirmation/.test(modal), 'edit modal must not wire any eb* send action');
+  assert.ok(!/Send Estimate/.test(modal), 'edit modal must not contain a Send Estimate button');
+  assert.ok(!/Message Customer/.test(modal), 'edit modal must not contain a Message Customer button');
+});
+test('dead edit-modal send helpers (ebSend/ebSendEstimate) are gone', () => {
+  const src = read('westmere-owner.html');
+  assert.ok(!/function ebSend\b/.test(src), 'ebSend() must be removed');
+  assert.ok(!/function ebSendEstimate\b/.test(src), 'ebSendEstimate() must be removed');
+});
+
+// ── 7. Completed tab grouped week by week ────────────────────────────────
+console.log('\nCompleted tab grouped by week (owner spec)');
+test('buildCompleted groups jobs by ISO week rather than a flat list', () => {
+  const src = read('westmere-owner.html');
+  const fn = src.match(/function buildCompleted[\s\S]*?\n\}/);
+  assert.ok(fn, 'buildCompleted not found');
+  assert.ok(/isoWeekStart/.test(fn[0]), 'buildCompleted must bucket jobs by ISO week');
+  assert.ok(/_fmtWeekRange/.test(fn[0]), 'buildCompleted must render a per-week header');
+  assert.ok(!/renderJobList/.test(fn[0]), 'buildCompleted must no longer defer to the flat renderJobList');
 });
 
 // ── summary ──────────────────────────────────────────────────────────────

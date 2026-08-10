@@ -73,7 +73,7 @@ function loadDayContext(dateStr, excludeBookingId) {
       LEFT JOIN customers c ON b.customer_id = c.id
      WHERE b.date = ?
        AND b.id != ?
-       AND b.status IN ('pending','confirmed','active')
+       AND b.status IN ('pending','awaiting_payment','confirmed','active')
      ORDER BY b.time ASC
   `).all(dateStr, excludeBookingId || 0);
 

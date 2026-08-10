@@ -170,7 +170,7 @@ router.get('/cal/:tokenfile', (req, res) => {
     return res.status(404).send('Not found');
   }
 
-  // Fetch upcoming assigned bookings (confirmed, offered, active)
+  // Fetch upcoming assigned bookings (confirmed, offered, awaiting payment, active)
   const bookings = db.prepare(`
     SELECT b.*,
            COALESCE(c.full_name, b.passenger_name) AS customer_name,
@@ -178,7 +178,7 @@ router.get('/cal/:tokenfile', (req, res) => {
     FROM bookings b
     LEFT JOIN customers c ON b.customer_id = c.id
     WHERE b.driver_id = ?
-      AND b.status IN ('confirmed', 'offered', 'active', 'pending')
+      AND b.status IN ('confirmed', 'offered', 'awaiting_payment', 'active', 'pending')
       AND b.date >= date('now', '-1 day')
     ORDER BY b.date, b.time
     LIMIT 200

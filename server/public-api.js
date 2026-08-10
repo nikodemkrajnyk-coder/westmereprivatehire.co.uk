@@ -487,6 +487,20 @@ router.post('/pay/:ref/intent', async (req, res) => {
       customer: { name: b.passenger_name, email: b.passenger_email, phone: b.passenger_phone }
     });
 
+    // The customer has CHOSEN card and is now entering their details: move a
+    // pending/offered estimate to AWAITING_PAYMENT so the owner sees the ride is
+    // going ahead. It only becomes 'confirmed' when Stripe confirms the charge
+    // (payment_intent.succeeded webhook). Never touch a cancelled/settled row.
+    try {
+      db.prepare(`UPDATE bookings
+                     SET status = CASE WHEN status IN ('pending','offered') THEN 'awaiting_payment' ELSE status END,
+                         updated_at = datetime('now')
+                   WHERE ref = ?`).run(ref);
+      if (b.status === 'pending' || b.status === 'offered') {
+        events.broadcast('booking:updated', { ref, status: 'awaiting_payment', reason: 'Customer chose to pay by card' });
+      }
+    } catch (e) { console.error('[PAY] intent awaiting_payment transition failed:', e.message); }
+
     res.json({ ok: true, clientSecret: intent.client_secret, amount });
   } catch (err) {
     console.error('[PAY] intent error:', err.message);
@@ -595,38 +609,36 @@ router.post('/pay/:ref/cash', (req, res) => {
       return res.send(cashPage('paid', 'This journey has already been paid online.', b.ref));
     }
 
-    // Choosing "pay your driver" is the customer's explicit method choice AND
-    // their confirmation. Record 'cash' (validated — never a silent default) and
-    // transition pending → confirmed on the edge so an estimate becomes a real
-    // booking. 'cash' is written from a genuine customer action only.
+    // Choosing "pay your driver" is the customer's explicit method choice.
+    // Record 'cash' (validated — never a silent default) and transition
+    // pending/offered → AWAITING_PAYMENT on the edge: the ride is going ahead
+    // (so it shows in the schedule/driver view) but it is NOT yet settled. It
+    // becomes 'confirmed' only when the cash is received and the owner/driver
+    // marks it paid (POST /bookings/:id/mark-paid). We deliberately do NOT
+    // auto-confirm cash here — see CLAUDE.md invariant #3. 'cash' is written
+    // from a genuine customer action only.
     const { assertPaymentMethod } = require('./payment-methods');
     const method = assertPaymentMethod('cash', 'public-api cash route');
-    const wasPending = b.status === 'pending';
+    const wasChosen = b.status === 'pending' || b.status === 'offered';
     db.prepare(`UPDATE bookings
                    SET payment = ?,
-                       status = CASE WHEN status = 'pending' THEN 'confirmed' ELSE status END,
+                       status = CASE WHEN status IN ('pending','offered') THEN 'awaiting_payment' ELSE status END,
                        updated_at = datetime('now')
                  WHERE id = ?`).run(method, b.id);
 
     db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
       .run('public', 0, 'payment_cash_chosen', b.ref, req.ip);
 
-    // Notify the owner in real time.
+    // Notify the owner in real time so the job drops into the schedule as
+    // "awaiting payment" and connected staff apps refresh.
     try {
       events.broadcast('booking:payment', { id: b.id, ref: b.ref, mode: 'cash', fare: b.fare || null });
     } catch (_) {}
-
-    // If this confirmed the booking, fire the "Booking confirmed" email and let
-    // connected staff apps refresh.
-    if (wasPending) {
-      try {
-        require('./intake').notifyCustomerConfirmed(b.id)
-          .catch(e => console.error('[PAY] notifyCustomerConfirmed (cash) failed:', e.message));
-      } catch (e) { console.error('[PAY] notifyCustomerConfirmed (cash) threw:', e.message); }
-      try { events.broadcast('booking:confirmed', { id: b.id, ref: b.ref, reason: 'Customer chose to pay driver on the day' }); } catch (_) {}
+    if (wasChosen) {
+      try { events.broadcast('booking:updated', { id: b.id, ref: b.ref, status: 'awaiting_payment', reason: 'Customer chose to pay driver on the day' }); } catch (_) {}
     }
 
-    console.log('[PAY] Cash on the day chosen for', b.ref, wasPending ? '(confirmed pending→confirmed)' : '');
+    console.log('[PAY] Cash on the day chosen for', b.ref, wasChosen ? '(pending→awaiting_payment)' : '');
     res.send(cashPage('ok', "You're all set — please settle the fare with your driver on the day, by cash or card. We look forward to welcoming you.", b.ref));
   } catch (err) {
     console.error('[PAY] cash error:', err.message);
@@ -853,8 +865,11 @@ router.post('/stripe-webhook', express.raw({ type: 'application/json' }), (req, 
         id: row?.id, ref, mode: 'online',
         fare: row && row.fare != null ? row.fare : (intent.amount ? intent.amount / 100 : null)
       });
-      // Fire customer "Booking confirmed" on the pending → confirmed edge
-      if (row && row.status === 'pending') {
+      // Fire customer "Booking confirmed" on the (pending | awaiting_payment) →
+      // confirmed edge. A card payment may have already moved the booking to
+      // awaiting_payment when the customer opened the card form, so we confirm
+      // from either unsettled state.
+      if (row && (row.status === 'pending' || row.status === 'awaiting_payment')) {
         intake.notifyCustomerConfirmed(row.id)
           .catch(e => console.error('[STRIPE] notifyCustomerConfirmed failed:', e.message));
         events.broadcast('booking:confirmed', { id: row.id, ref, reason: 'Paid online' });
