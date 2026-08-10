@@ -1831,6 +1831,14 @@ function doLogout(){
   fetch('/api/auth/logout',{method:'POST',credentials:'include'}).catch(function(){});
   _currentUser={name:'',email:'',phone:'',loggedIn:false};
   localStorage.removeItem('wph_rider_bookings');
+  // Clear the booking form so the NEXT logged-in customer never inherits the
+  // previous customer's identity or journey. updateProfile() only fills EMPTY
+  // fields, so without this the old details would stick across account switches.
+  ['bk-name','bk-phone','bk-email','bk-from','bk-dest','bk-stop','bk-flight'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.value='';
+  });
+  var _sw=document.getElementById('bk-stop-wrap');
+  if(_sw&&_sw.style.display!=='none'&&typeof toggleStop==='function')toggleStop();
   showLogin();
 }
 function updateProfileUI(){
