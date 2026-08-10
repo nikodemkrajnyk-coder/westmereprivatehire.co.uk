@@ -425,7 +425,7 @@ async function executeCalendarTool(name, input, req) {
       }
 
       return results.map(r =>
-        `Ref:${r.ref} | ${r.date} ${r.time || ''} | ${r.customer_name || 'Unknown'} | ${r.pickup} → ${r.destination} | £${r.fare || '?'} | ${r.payment || 'cash'} | Status:${r.status}` +
+        `Ref:${r.ref} | ${r.date} ${r.time || ''} | ${r.customer_name || 'Unknown'} | ${r.pickup} → ${r.destination} | £${r.fare || '?'} | ${r.payment || 'pending'} | Status:${r.status}` +
         (r.customer_email ? ` | Email:${r.customer_email}` : '') +
         (r.customer_phone ? ` | Phone:${r.customer_phone}` : '') +
         (r.notes ? ` | Notes:${r.notes}` : '')

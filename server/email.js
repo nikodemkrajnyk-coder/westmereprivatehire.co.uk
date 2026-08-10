@@ -266,6 +266,24 @@ function confirmationEmailHtml(d) {
     </td></tr>`;
   }
 
+  // Secure actions available whenever we have the per-booking token: the
+  // customer can add a special-requirement note, or cancel the request if the
+  // price/timing doesn't suit. Both use the tokenised /api/public links (no
+  // login) and mirror how the Pay/Cash links are secured.
+  let actionsBlock = '';
+  if (d.pay_token) {
+    const noteUrl   = `${HOST}/api/public/note/${encodeURIComponent(d.ref)}?t=${encodeURIComponent(d.pay_token)}`;
+    const cancelUrl = `${HOST}/api/public/cancel/${encodeURIComponent(d.ref)}?t=${encodeURIComponent(d.pay_token)}`;
+    actionsBlock = `<tr><td style="padding:6px 40px 8px;background:#fbfaf7">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr><td style="padding-bottom:12px">
+          <a href="${cancelUrl}" style="display:block;text-decoration:none;border:1px solid #c9a3a3;border-radius:10px;padding:14px 16px;text-align:center;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:1.3px;text-transform:uppercase;color:#9a4a4a;background:#fbf6f5">Cancel Request</a>
+        </td></tr>
+      </table>
+      <p style="margin:2px 0 4px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#6f6b64;line-height:1.6;text-align:center">Any special requirements (child seat, extra luggage, meet &amp; greet)? <a href="${noteUrl}" style="color:#b78635;font-weight:600;text-decoration:underline">Add a note</a> for your driver.</p>
+    </td></tr>`;
+  }
+
   const notesBlock = d.notes ? `<tr><td style="padding:4px 40px 8px;background:#fbfaf7">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:14px 16px;background:#f6efe1;border-left:2px solid #b78635">
         <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#b78635;font-weight:700">A message from Westmere</p>
@@ -321,6 +339,7 @@ function confirmationEmailHtml(d) {
 
 ${payBlock}
 ${notesBlock}
+${actionsBlock}
 
 <tr><td style="padding:22px 40px;background:#f4f1ea;border-top:1px solid #ece5d8">
   <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
@@ -351,7 +370,7 @@ async function sendCustomerEstimate(booking) {
   const email       = booking.email || booking.passenger_email;
   const pickup      = booking.pickup;
   const destination = booking.destination;
-  const { date, time, flight, passengers, fare, stop_address, notes } = booking;
+  const { date, time, flight, passengers, fare, stop_address, notes, pay_token } = booking;
   if (!email) return false;
 
   const fareNum = typeof fare === 'number' ? fare : parseFloat(fare);
@@ -375,21 +394,43 @@ async function sendCustomerEstimate(booking) {
   rows += rowDivider();
   rows += detailRow('Estimated fare', fareStr, { gold: true, large: true });
 
+  // How the customer turns this ESTIMATE into a confirmed booking. Three
+  // tokenised actions, all secured by the per-booking pay_token (same scheme as
+  // the confirmation email). The booking stays PENDING until the customer acts:
+  //   • Pay Now (card) → Stripe → webhook confirms + records 'card'
+  //   • Pay driver on the day → /cash → confirms + records 'cash'
+  //   • Cancel → /cancel → cancels
+  // Without a token we cannot offer secure actions, so fall back to reply/call.
+  let actionBlock;
+  if (pay_token) {
+    const payUrl    = `${HOST}/westmere-pay.html?ref=${encodeURIComponent(ref)}&t=${encodeURIComponent(pay_token)}`;
+    const cashUrl   = `${HOST}/api/public/pay/${encodeURIComponent(ref)}/cash?t=${encodeURIComponent(pay_token)}`;
+    const cancelUrl = `${HOST}/api/public/cancel/${encodeURIComponent(ref)}?t=${encodeURIComponent(pay_token)}`;
+    const estBtn = (href, bg, color, brd, text) =>
+      `<tr><td style="padding-bottom:11px"><a href="${href}" style="display:block;text-decoration:none;background:${bg};color:${color};border:1px solid ${brd};border-radius:10px;padding:14px 16px;text-align:center;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:1.3px;text-transform:uppercase">${text}</a></td></tr>`;
+    actionBlock = `
+  <p style="margin:22px 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.6;text-align:center">To confirm your journey, choose how you'd like to pay:</p>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+    ${estBtn(payUrl, INK, '#ffffff', INK, 'Pay Now &mdash; Card, Apple Pay or Google Pay')}
+    ${estBtn(cashUrl, '#fbfaf7', INK, '#d8cfbe', 'Pay Your Driver On The Day')}
+  </table>
+  <p style="margin:6px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_SOFT};line-height:1.55;text-align:center">Nothing is confirmed until you choose. Changed your mind? <a href="${cancelUrl}" style="color:#9a4a4a;text-decoration:underline">Cancel this request</a>, reply to this email, or call <a href="tel:+447930342593" style="color:${INK};text-decoration:none">07930&nbsp;342593</a>.</p>`;
+  } else {
+    actionBlock = `
+  <p style="margin:22px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.55;text-align:center">To confirm, simply reply to this email or call us on <a href="tel:+447930342593" style="color:${INK};text-decoration:none">07930 342593</a>. Nothing is confirmed until you're ready.</p>`;
+  }
+
   const body = `
   <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Your estimate</p>
   <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
-  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Thank you for your enquiry. Here is the estimate for your journey below.</p>
+  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Thank you for your enquiry. Below is the estimated fare for your journey — this is a quote, not yet a confirmed booking.</p>
   ${buildDetailsTable(rows)}
-  <div style="text-align:center;margin:26px 0 4px">
-    <a href="https://westmereprivatehire.co.uk/api/public/accept-estimate/${encodeURIComponent(ref)}?email=${encodeURIComponent(email)}" style="display:inline-block;padding:14px 36px;background:${GOLD};color:${INK};text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:.04em">Accept This Quote</a>
-  </div>
-  <p style="margin:14px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_MUTED};font-style:italic;line-height:1.55;text-align:center">Click above to accept, or reply to this email, or call us on <a href="tel:+447930342593" style="color:${INK};text-decoration:none">07930 342593</a>.</p>
-  <p style="margin:12px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_SOFT};line-height:1.55;text-align:center">There is nothing to pay now — once confirmed we'll send you a secure payment link.</p>
+  ${actionBlock}
   <p style="margin:22px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
 
   const html = emailShell(body);
   const subject = 'Your estimate — ' + ref;
-  const preheader = 'Estimated fare ' + fareStr + ' — reply to confirm your journey.';
+  const preheader = 'Estimated fare ' + fareStr + ' — pay by card, pay your driver, or reply to confirm.';
   const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
   if (ok) console.log('[EMAIL] Customer estimate sent (' + ref + ')');
   return ok;
@@ -1175,10 +1216,103 @@ async function sendReviewRequest(email, firstName, ref) {
   return ok;
 }
 
+// ── Owner alert: customer cancelled their request from the email ─────────
+// Fired when the customer clicks "Cancel Request" in their confirmation email.
+async function sendOwnerCancelledRequest(booking) {
+  const adminEmail = process.env.ADMIN_EMAIL || process.env.GMAIL_USER;
+  if (!adminEmail) return false;
+  const { ref, name, email, pickup, destination, date, time, fare } = booking;
+  const dateStr = formatDate(date, time);
+  const fareStr = (fare && !isNaN(Number(fare))) ? ('£' + Number(fare).toFixed(2)) : null;
+
+  let rows = '';
+  rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:'+INK+'">' + escHtml(ref) + '</span>');
+  if (name)  rows += detailRow('Customer', escHtml(name));
+  if (email) rows += detailRow('Email', escHtml(email));
+  rows += rowDivider();
+  rows += detailRow('Pickup', escHtml(pickup));
+  rows += detailRow('Drop-off', escHtml(destination));
+  rows += detailRow('Date', dateStr);
+  if (fareStr) { rows += rowDivider(); rows += detailRow('Quoted fare', fareStr); }
+
+  const body = `
+  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Request cancelled</p>
+  <p style="margin:0 0 18px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">The customer has cancelled the request.</p>
+  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">They clicked <strong>Cancel Request</strong> in their email — the booking has been marked cancelled. No further action is needed unless you wish to follow up.</p>
+  ${buildDetailsTable(rows)}
+  <p style="margin:26px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">Westmere Private Hire</p>`;
+
+  const html = emailShell(body);
+  const subject = 'Customer cancelled the request — ' + ref;
+  const preheader = (name || 'The customer') + ' cancelled ' + ref + ' — ' + (pickup || '') + ' to ' + (destination || '');
+  const ok = await sendEmail(adminEmail, subject, html, 'Westmere Bookings', preheader);
+  if (ok) console.log('[EMAIL] Owner cancel-request alert sent (' + ref + ')');
+  return ok;
+}
+
+// ── Owner alert: customer left a special-requirement note ────────────────
+async function sendOwnerCustomerNote(booking, note) {
+  const adminEmail = process.env.ADMIN_EMAIL || process.env.GMAIL_USER;
+  if (!adminEmail) return false;
+  const { ref, name, email, pickup, destination, date, time } = booking;
+  const dateStr = formatDate(date, time);
+
+  let rows = '';
+  rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:'+INK+'">' + escHtml(ref) + '</span>');
+  if (name)  rows += detailRow('Customer', escHtml(name));
+  if (email) rows += detailRow('Email', escHtml(email));
+  rows += rowDivider();
+  rows += detailRow('Pickup', escHtml(pickup));
+  rows += detailRow('Drop-off', escHtml(destination));
+  rows += detailRow('Date', dateStr);
+
+  const body = `
+  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Special requirement</p>
+  <p style="margin:0 0 18px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">The customer has left a note for their journey.</p>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 22px"><tr><td style="padding:14px 16px;background:#f6efe1;border-left:2px solid ${GOLD}">
+    <p style="margin:0;font-family:Georgia,serif;font-size:15px;color:${INK};line-height:1.6">${escHtml(note).replace(/\n/g, '<br>')}</p>
+  </td></tr></table>
+  ${buildDetailsTable(rows)}
+  <p style="margin:26px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">Westmere Private Hire</p>`;
+
+  const html = emailShell(body);
+  const subject = 'Customer note — ' + ref;
+  const preheader = (name || 'The customer') + ' left a special requirement for ' + ref;
+  const ok = await sendEmail(adminEmail, subject, html, 'Westmere Bookings', preheader);
+  if (ok) console.log('[EMAIL] Owner customer-note alert sent (' + ref + ')');
+  return ok;
+}
+
+// ── Free-text message from operator to customer ──────────────────────────
+// A lighter version of the brand template — the owner types a message (e.g. a
+// question) and it is delivered to the customer from Westmere.
+async function sendCustomerMessage(booking, message) {
+  const { ref, name, email } = booking;
+  if (!email || !message) return false;
+  const firstName = (name || '').split(' ')[0] || 'there';
+
+  const body = `
+  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">A message from Westmere${ref ? ' · ' + escHtml(ref) : ''}</p>
+  <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
+  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.7">${escHtml(message).replace(/\n/g, '<br>')}</p>
+  <p style="margin:0 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">You can simply reply to this email or call us on <a href="tel:+447930342593" style="color:${INK};text-decoration:none">07930 342593</a>.</p>
+  <p style="margin:22px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
+
+  const html = emailShell(body);
+  const subject = ref ? ('Regarding your booking — ' + ref) : 'A message from Westmere Private Hire';
+  const preheader = String(message).replace(/\s+/g, ' ').slice(0, 90);
+  const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
+  if (ok) console.log('[EMAIL] Customer message sent (' + (ref || email) + ')');
+  return ok;
+}
+
 module.exports = {
   sendCustomerConfirmation, sendCustomerConfirmed, sendCustomerEstimate, sendAdminAlert,
+  sendOwnerCancelledRequest, sendOwnerCustomerNote, sendCustomerMessage,
   sendCustomerWelcome, sendCustomerInvoice, sendBespokeInvoice, sendInvoiceReminder,
   sendCustomerCancellation, sendDriverStatement, sendDriverWelcome,
   sendVerificationEmail, sendPasswordResetEmail, sendAdminPasswordResetEmail,
-  sendRecommendation, sendPartnershipOutreach, sendCorporateIntro, sendReviewRequest, sendPaymentReminder, sendEmail, isConfigured
+  sendRecommendation, sendPartnershipOutreach, sendCorporateIntro, sendReviewRequest, sendPaymentReminder, sendEmail, isConfigured,
+  // Exposed for local template previews / potential reuse.
+  confirmationEmailHtml
 };

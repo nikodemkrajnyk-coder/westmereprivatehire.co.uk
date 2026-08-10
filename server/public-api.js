@@ -588,11 +588,25 @@ router.post('/pay/:ref/cash', (req, res) => {
     if (!b || !b.pay_token || b.pay_token !== token) {
       return res.status(404).send(cashPage('error', "We couldn't find this booking."));
     }
+    if (b.status === 'cancelled') {
+      return res.status(409).send(cashPage('error', 'This booking has been cancelled. Please call us if you need to rebook.'));
+    }
     if (b.paid_at || b.payment === 'card') {
       return res.send(cashPage('paid', 'This journey has already been paid online.', b.ref));
     }
 
-    db.prepare(`UPDATE bookings SET payment = 'cash', updated_at = datetime('now') WHERE id = ?`).run(b.id);
+    // Choosing "pay your driver" is the customer's explicit method choice AND
+    // their confirmation. Record 'cash' (validated — never a silent default) and
+    // transition pending → confirmed on the edge so an estimate becomes a real
+    // booking. 'cash' is written from a genuine customer action only.
+    const { assertPaymentMethod } = require('./payment-methods');
+    const method = assertPaymentMethod('cash', 'public-api cash route');
+    const wasPending = b.status === 'pending';
+    db.prepare(`UPDATE bookings
+                   SET payment = ?,
+                       status = CASE WHEN status = 'pending' THEN 'confirmed' ELSE status END,
+                       updated_at = datetime('now')
+                 WHERE id = ?`).run(method, b.id);
 
     db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
       .run('public', 0, 'payment_cash_chosen', b.ref, req.ip);
@@ -602,11 +616,192 @@ router.post('/pay/:ref/cash', (req, res) => {
       events.broadcast('booking:payment', { id: b.id, ref: b.ref, mode: 'cash', fare: b.fare || null });
     } catch (_) {}
 
-    console.log('[PAY] Cash on the day chosen for', b.ref);
+    // If this confirmed the booking, fire the "Booking confirmed" email and let
+    // connected staff apps refresh.
+    if (wasPending) {
+      try {
+        require('./intake').notifyCustomerConfirmed(b.id)
+          .catch(e => console.error('[PAY] notifyCustomerConfirmed (cash) failed:', e.message));
+      } catch (e) { console.error('[PAY] notifyCustomerConfirmed (cash) threw:', e.message); }
+      try { events.broadcast('booking:confirmed', { id: b.id, ref: b.ref, reason: 'Customer chose to pay driver on the day' }); } catch (_) {}
+    }
+
+    console.log('[PAY] Cash on the day chosen for', b.ref, wasPending ? '(confirmed pending→confirmed)' : '');
     res.send(cashPage('ok', "You're all set — please settle the fare with your driver on the day, by cash or card. We look forward to welcoming you.", b.ref));
   } catch (err) {
     console.error('[PAY] cash error:', err.message);
     res.status(500).send(cashPage('error', 'Something went wrong. Please call us on 07930 342593 and we will sort it out.'));
+  }
+});
+
+// ── Generic branded action page (cancel confirm / note form / thank-you) ──
+// Same visual shell as cashPage. `bodyHtml` is injected into the card body so
+// each route can supply its own confirm button or form.
+function actionPage(heading, message, ref, bodyHtml, state) {
+  const isErr = state === 'error';
+  const okIcon   = '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 6L9 17l-5-5"/></svg>';
+  const infoIcon = '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>';
+  const icoCls = (isErr || state === 'form' || state === 'confirm') ? 'info' : 'ok';
+  const ico = (isErr || state === 'form' || state === 'confirm') ? infoIcon : okIcon;
+  const refLine = ref ? `<p style="margin-top:12px" class="muted-ref">Ref: ${String(ref).replace(/[<>&"]/g, '')}</p>` : '';
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#111D2C"><meta name="robots" content="noindex,nofollow">
+<title>Your journey | Westmere Private Hire</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--navy:#111D2C;--gold:#B8985A;--text:#1C2A3E;--muted:#6B7280;--border:#E5E0D8;--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif}
+html{font-size:16px}
+body{font-family:var(--sans);font-weight:300;color:var(--text);background:var(--navy);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.card{width:100%;max-width:440px;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.head{background:var(--navy);color:#fff;padding:30px 32px 26px;text-align:center;border-bottom:3px solid var(--gold)}
+.brand{font-family:var(--sans);font-size:10px;letter-spacing:3.5px;text-transform:uppercase;color:var(--gold);font-weight:500}
+.brand-name{font-family:var(--serif);font-size:26px;font-weight:400;letter-spacing:.5px;margin-top:6px}
+.body{padding:34px 32px 36px}
+.state{text-align:center}
+.ico{width:60px;height:60px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:18px}
+.ico.ok{background:rgba(184,152,90,.14);color:var(--gold)}
+.ico.info{background:rgba(28,42,62,.08);color:var(--navy)}
+.state h2{font-family:var(--serif);font-size:24px;font-weight:400;color:var(--navy);margin-bottom:10px}
+.state p{font-size:14px;color:var(--muted);line-height:1.6}
+.muted-ref{font-family:'Menlo','Consolas',monospace;font-size:12px;letter-spacing:.5px;color:var(--navy)}
+a.link{color:var(--gold);text-decoration:none}
+textarea{width:100%;margin-top:18px;padding:12px 14px;border:1px solid var(--border);border-radius:8px;font-family:var(--sans);font-size:14px;color:var(--text);resize:vertical;min-height:120px}
+button.act{width:100%;margin-top:16px;padding:14px;border:none;border-radius:6px;font-family:var(--sans);font-size:13px;font-weight:500;letter-spacing:2px;text-transform:uppercase;cursor:pointer}
+button.navy{background:var(--navy);color:#fff}
+button.danger{background:#8B2222;color:#fff}
+</style></head>
+<body><div class="card">
+  <div class="head"><div class="brand">Private Hire</div><div class="brand-name">Westmere</div></div>
+  <div class="body"><div class="state">
+    <div class="ico ${icoCls}">${ico}</div>
+    <h2>${heading}</h2>
+    <p>${message}</p>
+    ${refLine}
+    ${bodyHtml || ''}
+    <p style="margin-top:16px;font-size:13px">Questions? Call us on <a class="link" href="tel:+447930342593">07930&nbsp;342593</a>.</p>
+  </div></div>
+</div></body></html>`;
+}
+
+// ── Cancel request — customer clicks "Cancel Request" in their email ──────
+// GET shows a confirmation page (never cancels on prefetch); POST performs the
+// cancel, alerts the owner, and broadcasts. Secured by the per-booking token.
+router.get('/cancel/:ref', (req, res) => {
+  try {
+    const db = getDb();
+    const ref = String(req.params.ref || '').trim().toUpperCase();
+    const token = String(req.query.t || req.query.token || '').trim();
+    if (!ref || !token) return res.status(400).send(actionPage('Link not available', 'This link is incomplete. Please use the link from your email.', null, '', 'error'));
+    const b = db.prepare(`SELECT id, ref, status, pay_token FROM bookings WHERE ref = ?`).get(ref);
+    if (!b || !b.pay_token || b.pay_token !== token) {
+      return res.status(404).send(actionPage('Link not available', "We couldn't find this booking. The link may have expired.", null, '', 'error'));
+    }
+    if (b.status === 'cancelled') {
+      return res.send(actionPage('Already cancelled', 'This request has already been cancelled. If this was a mistake, please call us and we will be glad to help.', b.ref, '', 'ok'));
+    }
+    const formHtml = `<form method="POST"><button type="submit" class="act danger">Confirm — Cancel Request</button></form>`;
+    res.send(actionPage('Cancel your request?', "If the price or timing doesn't suit, you can cancel this request below. We'll be notified straight away — no charge applies.", b.ref, formHtml, 'confirm'));
+  } catch (err) {
+    console.error('[CANCEL] page error:', err.message);
+    res.status(500).send(actionPage('Something went wrong', 'Please call us on 07930 342593 and we will sort it out.', null, '', 'error'));
+  }
+});
+
+router.post('/cancel/:ref', (req, res) => {
+  try {
+    const db = getDb();
+    const ref = String(req.params.ref || '').trim().toUpperCase();
+    const token = String(req.query.t || req.query.token || '').trim();
+    if (!ref || !token) return res.status(400).send(actionPage('Link not available', 'This link is incomplete.', null, '', 'error'));
+    const b = db.prepare(`SELECT * FROM bookings WHERE ref = ?`).get(ref);
+    if (!b || !b.pay_token || b.pay_token !== token) {
+      return res.status(404).send(actionPage('Link not available', "We couldn't find this booking.", null, '', 'error'));
+    }
+    if (b.status !== 'cancelled') {
+      db.prepare(`UPDATE bookings SET status = 'cancelled', cancellation_reason = CASE WHEN cancellation_reason IS NULL OR cancellation_reason = '' THEN 'Cancelled by customer from email' ELSE cancellation_reason END, updated_at = datetime('now') WHERE id = ?`).run(b.id);
+      try {
+        db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+          .run('public', 0, 'request_cancelled_by_customer', b.ref, req.ip);
+      } catch (_) {}
+      try { events.broadcast('booking:updated', { id: b.id, ref: b.ref, status: 'cancelled', prev_status: b.status, reason: 'Cancelled by customer' }); } catch (_) {}
+      // Remove from the operator's shared calendar if it was synced.
+      if (b.calendar_event_id) {
+        try {
+          require('./google-calendar').deleteEvent(b.calendar_event_id).then(ok => {
+            if (ok) { try { db.prepare('UPDATE bookings SET calendar_event_id = NULL WHERE id = ?').run(b.id); } catch (_) {} }
+          }).catch(() => {});
+        } catch (_) {}
+      }
+      // Alert the owner.
+      const { sendOwnerCancelledRequest } = require('./email');
+      sendOwnerCancelledRequest({
+        ref: b.ref, name: b.passenger_name, email: b.passenger_email,
+        pickup: b.pickup, destination: b.destination, date: b.date, time: b.time, fare: b.fare
+      }).catch(e => console.error('[CANCEL] owner alert failed:', e.message));
+    }
+    res.send(actionPage('Request cancelled', "Your request has been cancelled and we've let the team know. If you'd like to rebook or change anything, just reply to your email or call us — we'd be glad to help.", b.ref, '', 'ok'));
+  } catch (err) {
+    console.error('[CANCEL] error:', err.message);
+    res.status(500).send(actionPage('Something went wrong', 'Please call us on 07930 342593 and we will sort it out.', null, '', 'error'));
+  }
+});
+
+// ── Add a note / special requirement — customer link from their email ─────
+// GET shows a note form; POST saves it to customer_note and alerts the owner.
+router.get('/note/:ref', (req, res) => {
+  try {
+    const db = getDb();
+    const ref = String(req.params.ref || '').trim().toUpperCase();
+    const token = String(req.query.t || req.query.token || '').trim();
+    if (!ref || !token) return res.status(400).send(actionPage('Link not available', 'This link is incomplete. Please use the link from your email.', null, '', 'error'));
+    const b = db.prepare(`SELECT id, ref, status, pay_token, customer_note FROM bookings WHERE ref = ?`).get(ref);
+    if (!b || !b.pay_token || b.pay_token !== token) {
+      return res.status(404).send(actionPage('Link not available', "We couldn't find this booking. The link may have expired.", null, '', 'error'));
+    }
+    const existing = b.customer_note ? String(b.customer_note).replace(/[<>&"]/g, '') : '';
+    const formHtml = `<form method="POST">
+      <textarea name="note" maxlength="1000" placeholder="e.g. child seat needed, extra luggage, meet &amp; greet at arrivals…">${existing}</textarea>
+      <button type="submit" class="act navy">Send Note to Westmere</button>
+    </form>`;
+    res.send(actionPage('Add a note', 'Let us know about any special requirements for your journey — a child seat, extra luggage, a meet &amp; greet, or anything else. This is not a cancellation.', b.ref, formHtml, 'form'));
+  } catch (err) {
+    console.error('[NOTE] page error:', err.message);
+    res.status(500).send(actionPage('Something went wrong', 'Please call us on 07930 342593 and we will sort it out.', null, '', 'error'));
+  }
+});
+
+router.post('/note/:ref', express.urlencoded({ extended: false }), (req, res) => {
+  try {
+    const db = getDb();
+    const ref = String(req.params.ref || '').trim().toUpperCase();
+    const token = String(req.query.t || req.query.token || '').trim();
+    const note = String((req.body && req.body.note) || '').trim().slice(0, 1000);
+    if (!ref || !token) return res.status(400).send(actionPage('Link not available', 'This link is incomplete.', null, '', 'error'));
+    const b = db.prepare(`SELECT * FROM bookings WHERE ref = ?`).get(ref);
+    if (!b || !b.pay_token || b.pay_token !== token) {
+      return res.status(404).send(actionPage('Link not available', "We couldn't find this booking.", null, '', 'error'));
+    }
+    if (!note) {
+      return res.send(actionPage('Nothing to send', 'The note was empty, so we haven’t recorded anything. You can go back and add your requirements any time.', b.ref, '', 'ok'));
+    }
+    db.prepare(`UPDATE bookings SET customer_note = ?, updated_at = datetime('now') WHERE id = ?`).run(note, b.id);
+    try {
+      db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+        .run('public', 0, 'customer_note_added', b.ref, req.ip);
+    } catch (_) {}
+    try { events.broadcast('booking:updated', { id: b.id, ref: b.ref, status: b.status, prev_status: b.status, reason: 'Customer note added' }); } catch (_) {}
+    const { sendOwnerCustomerNote } = require('./email');
+    sendOwnerCustomerNote({
+      ref: b.ref, name: b.passenger_name, email: b.passenger_email,
+      pickup: b.pickup, destination: b.destination, date: b.date, time: b.time
+    }, note).catch(e => console.error('[NOTE] owner alert failed:', e.message));
+    res.send(actionPage('Thank you', "Your note has been sent to your driver and saved to your booking. We'll make sure it's taken care of.", b.ref, '', 'ok'));
+  } catch (err) {
+    console.error('[NOTE] error:', err.message);
+    res.status(500).send(actionPage('Something went wrong', 'Please call us on 07930 342593 and we will sort it out.', null, '', 'error'));
   }
 });
 

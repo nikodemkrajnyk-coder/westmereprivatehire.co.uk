@@ -258,6 +258,28 @@ async function evaluate(bookingId) {
   }
 }
 
+// ── Per-booking secure token ─────────────────────────────────────────────
+// Mint (once) the secret token embedded in every secure email link — Pay Now,
+// Cash, Cancel Request and Add-a-note all use it so booking refs can't be
+// enumerated. Idempotent: returns the existing token if one is already set, so
+// a token in an already-sent email is NEVER invalidated by re-minting. Shared
+// by the confirmation path AND the "Send Estimate" path so an estimate email's
+// Pay/Cash/Cancel links are secured identically. Independent of fare/paid state.
+function ensurePayToken(bookingId) {
+  const db = getDb();
+  const row = db.prepare('SELECT pay_token FROM bookings WHERE id = ?').get(bookingId);
+  if (!row) return null;
+  if (row.pay_token) return row.pay_token;
+  try {
+    const token = require('crypto').randomBytes(16).toString('hex');
+    db.prepare('UPDATE bookings SET pay_token = ? WHERE id = ?').run(token, bookingId);
+    return token;
+  } catch (e) {
+    console.error('[INTAKE] pay_token generation failed:', e.message);
+    return null;
+  }
+}
+
 // ── Notify the customer that their booking has been confirmed ────────────
 // Pulls booking + linked customer (or falls back to notes/phone) and fires
 // email + WhatsApp confirmation. Idempotent at the call-site level — callers
@@ -272,21 +294,7 @@ async function notifyCustomerConfirmed(bookingId) {
   `).get(bookingId);
   if (!row) return;
 
-  // Pre-payment: if this confirmed booking has a fare and hasn't been paid
-  // yet, mint a pay_token (once) so the confirmation email can carry a secure
-  // "Pay Now" link. Paying online is always optional — cash on the day is fine.
-  let payToken = row.pay_token || null;
-  if (!row.paid_at && row.fare && Number(row.fare) > 0) {
-    if (!payToken) {
-      try {
-        payToken = require('crypto').randomBytes(16).toString('hex');
-        db.prepare("UPDATE bookings SET pay_token = ? WHERE id = ?").run(payToken, bookingId);
-      } catch (e) {
-        console.error('[INTAKE] pay_token generation failed:', e.message);
-        payToken = null;
-      }
-    }
-  }
+  const payToken = ensurePayToken(bookingId) || row.pay_token || null;
 
   const payload = {
     ref: row.ref,
@@ -303,7 +311,9 @@ async function notifyCustomerConfirmed(bookingId) {
     passengers: row.passengers,
     stop_address: row.stop_address || null,
     notes: row.notes || null,
-    pay_token: row.paid_at ? null : payToken,
+    // Always pass the token so the Cancel Request + Add-a-note links work even
+    // once paid; the "Pay Now / Cash" block is separately hidden when paid.
+    pay_token: payToken,
     paid: !!row.paid_at
   };
 
@@ -343,4 +353,4 @@ async function draftApology(bookingId) {
   }
 }
 
-module.exports = { isConfigured, evaluate, draftApology, notifyCustomerConfirmed };
+module.exports = { isConfigured, evaluate, draftApology, notifyCustomerConfirmed, ensurePayToken };

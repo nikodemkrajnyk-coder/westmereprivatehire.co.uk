@@ -134,11 +134,15 @@ const BOOKING_CSV_HEADER = [
 ];
 
 function bookingRow(b) {
+  const { normalizePaymentMethod } = require('./payment-methods');
   return [
     b.ref, b.date, b.time, b.pickup, b.destination, b.fare, b.status,
     b.passenger_name || b.customer_name || '',
     b.driver_name || driverNameById(b.driver_id),
-    b.payment || 'cash'
+    // Never default a missing method to 'cash' — a blank/unknown method is
+    // 'pending' (awaiting the customer's choice). Silently filing it as cash
+    // was how a card choice could surface as cash.
+    normalizePaymentMethod(b.payment, 'auto-file bookingRow')
   ];
 }
 

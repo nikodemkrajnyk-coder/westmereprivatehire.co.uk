@@ -4944,21 +4944,60 @@ async function reclaimOffer(bookingId){
   else showToast(d.error||'Failed');
 }
 
-// Set the price and confirm in one step. This does exactly what Confirm does —
-// sets the fare, marks the booking confirmed, mints a pay_token, and sends the
-// customer the confirmation email with journey details + payment link (pay now
-// or pay on the day).
+// ESTIMATE-FIRST: set the price and email the customer an ESTIMATE with secure
+// Pay Now / Pay-driver / Cancel actions. The booking stays PENDING — confirmed
+// only when the customer pays, accepts cash-on-the-day, or is cancelled. Must
+// NOT auto-confirm (see server send-estimate route + CLAUDE.md invariant).
 async function admSendEstimate(bookingId){
   var j=FLAGGED_CACHE[bookingId]||{};
   var cur=j&&j.fare?Number(j.fare):'';
-  var v=prompt('Fare to confirm and email the customer (£):',cur);
+  var v=prompt('Estimated fare to email the customer (£). The booking stays pending until they pay or accept:',cur);
   if(v===null)return;
   var fare=parseFloat(String(v).replace(/[^0-9.]/g,''));
   if(!fare||fare<=0){showToast('Enter a valid fare amount');return;}
-  var r=await fetch('/api/bookings/'+bookingId,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'confirmed',fare:fare})});
+  var r=await fetch('/api/bookings/'+bookingId+'/send-estimate',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({fare:fare})});
   var d=await r.json();
-  if(r.ok&&d.ok){showToast('Booking confirmed — payment link sent (£'+fare.toFixed(0)+')');if(typeof loadAdminCalendar==='function')loadAdminCalendar();loadFlaggedBookings();}
+  if(r.ok&&d.ok){showToast('Estimate sent (£'+fare.toFixed(0)+') — booking stays pending');if(typeof loadAdminCalendar==='function')loadAdminCalendar();loadFlaggedBookings();}
   else showToast(d.error||'Failed');
+}
+
+// ── Send Message to Customer (free-text email from Westmere) ──────────────
+function wmMessageOpen(bookingId){
+  var j=FLAGGED_CACHE[bookingId]||{};
+  var email=j.passenger_email||j.customer_email||j.email||'';
+  var name=j.customer_name||j.passenger_name||j.name||'';
+  var el=document.getElementById('wm-msg-overlay');
+  if(el)el.remove();
+  el=document.createElement('div');
+  el.id='wm-msg-overlay';
+  el.style.cssText='position:fixed;inset:0;background:rgba(10,14,20,.6);z-index:5000;display:flex;align-items:center;justify-content:center;padding:1rem';
+  el.innerHTML='<div style="background:#fff;border-radius:14px;max-width:480px;width:100%;padding:1.5rem 1.4rem;box-shadow:0 24px 60px rgba(0,0,0,.35)">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">'
+    +'<div style="font-family:Georgia,serif;font-size:1.2rem;color:#111D2C">Message Customer</div>'
+    +'<button onclick="document.getElementById(\'wm-msg-overlay\').remove()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:#999">&times;</button>'
+    +'</div>'
+    +'<div style="font-size:.74rem;color:#6B7280;margin-bottom:.8rem">'+(email?('To '+escTo(name?name+' · ':'')+escTo(email)):'<span style="color:#9C5800">No email on this booking</span>')+'</div>'
+    +'<textarea id="wm-msg-text" rows="6" placeholder="Type your message to the customer — e.g. a question about their journey…" style="width:100%;padding:.7rem .8rem;border:1px solid #E5E0D8;border-radius:8px;font-family:inherit;font-size:.9rem;color:#1C2A3E;resize:vertical"></textarea>'
+    +'<div style="display:flex;gap:.6rem;margin-top:.9rem">'
+    +'<button onclick="document.getElementById(\'wm-msg-overlay\').remove()" style="flex:1;padding:.7rem;background:#fff;border:1px solid #E5E0D8;border-radius:9px;font-family:inherit;font-size:.82rem;font-weight:500;color:#6B7280;cursor:pointer">Cancel</button>'
+    +'<button id="wm-msg-send" onclick="wmMessageSend('+bookingId+',this)" '+(email?'':'disabled ')+'style="flex:2;padding:.7rem;background:#B8985A;border:none;border-radius:9px;font-family:inherit;font-size:.82rem;font-weight:600;color:#1a1a1a;cursor:pointer'+(email?'':';opacity:.5;cursor:default')+'">Send Message</button>'
+    +'</div></div>';
+  document.body.appendChild(el);
+  el.addEventListener('click',function(ev){if(ev.target===el)el.remove();});
+  var ta=document.getElementById('wm-msg-text');if(ta)ta.focus();
+}
+async function wmMessageSend(bookingId,btn){
+  var ta=document.getElementById('wm-msg-text');
+  var msg=ta?ta.value.trim():'';
+  if(!msg){showToast('Type a message first');return;}
+  var orig=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='Sending…';btn.style.opacity='.6';}
+  try{
+    var r=await fetch('/api/bookings/'+bookingId+'/send-message',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
+    var d={};try{d=await r.json();}catch(_){}
+    if(r.ok&&d.ok){showToast('Message sent to customer');var ov=document.getElementById('wm-msg-overlay');if(ov)ov.remove();}
+    else{showToast((d&&d.error)||('Failed ('+r.status+')'));if(btn){btn.disabled=false;btn.textContent=orig;btn.style.opacity='';}}
+  }catch(e){showToast('Network error');if(btn){btn.disabled=false;btn.textContent=orig;btn.style.opacity='';}}
 }
 async function rsApology(){
   if(!REASSIGN_CURRENT)return;
@@ -5211,13 +5250,17 @@ function admShowDay(key){
       var stCls=j.needs_reassignment?'flagged':st;
       var stTxt=j.needs_reassignment?'Needs reassign':(st==='pending'?'Quote requested':st);
       var actions='';
+      var _hasEmail=!!(j.passenger_email||j.customer_email||j.email);
+      var _msgBtn=_hasEmail?'<button class="btn btn-sm" style="background:#fff;color:#1a1a1a;border:1px solid rgba(27,27,26,.28)" onclick="event.stopPropagation();wmMessageOpen('+j.id+')">Message</button>':'';
       if(j.needs_reassignment){
-        actions='<button class="btn btn-navy btn-sm" onclick="event.stopPropagation();openReassign('+j.id+')">Resolve</button>';
+        actions='<button class="btn btn-navy btn-sm" onclick="event.stopPropagation();openReassign('+j.id+')">Resolve</button>'+_msgBtn;
       } else if(st==='pending'){
-        actions='<button class="btn btn-sm" style="background:rgba(106,106,106,.14);color:#555555;border:1px solid rgba(106,106,106,.4)" onclick="event.stopPropagation();admSendEstimate('+j.id+')">Send Estimate</button>'
-          +'<button class="btn btn-navy btn-sm" onclick="event.stopPropagation();openReassign('+j.id+')">Offer</button>';
+        actions='<button class="btn btn-sm" style="background:var(--gold,#B8985A);color:#1a1a1a;border:1px solid var(--gold,#B8985A);font-weight:600" onclick="event.stopPropagation();admSendEstimate('+j.id+')">Send Estimate</button>'
+          +'<button class="btn btn-navy btn-sm" onclick="event.stopPropagation();openReassign('+j.id+')">Offer</button>'+_msgBtn;
       } else if(st==='offered'){
-        actions='<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();reclaimOffer('+j.id+')">Reclaim</button>';
+        actions='<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();reclaimOffer('+j.id+')">Reclaim</button>'+_msgBtn;
+      } else {
+        actions=_msgBtn;
       }
       var waiting='';
       if(st==='offered'&&j.offered_driver_name){
@@ -5229,6 +5272,7 @@ function admShowDay(key){
         waiting='<span class="offer-wait">Awaiting '+escTo(j.offered_driver_name)+exp+'</span>';
       }
       var notesHtml=j.notes?'<div style="margin-top:.3rem;padding:.3rem .5rem;background:rgba(27,27,26,.03);border-left:2px solid #B8989A;font-size:.72rem;color:rgba(27,27,26,.74);line-height:1.35">'+admEnrichNotes(j.notes)+'</div>':'';
+      if(j.customer_note){notesHtml+='<div style="margin-top:.3rem;padding:.3rem .5rem;background:rgba(184,152,90,.12);border-left:2px solid #B8985A;font-size:.72rem;color:#8a5a1a;line-height:1.35"><strong style="color:#b78635">Special req:</strong> '+escTo(j.customer_note)+'</div>';}
       return '<div class="adm-cal-detail-job">'
         +'<div class="adm-cal-time">'+escTo(j.time||'ASAP')+'</div>'
         +'<div class="adm-cal-info">'

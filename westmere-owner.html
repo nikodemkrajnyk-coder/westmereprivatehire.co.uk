@@ -2761,11 +2761,11 @@ function jobCardHtml(j){
         +(j.pax>1?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Pax</td><td>'+j.pax+'</td></tr>':'')
         +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Payment</td><td>'+wmPayBadge(j)+'</td></tr>'
         +(j.notes?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4);vertical-align:top">Notes</td><td>'+escH(j.notes)+'</td></tr>':'')
+        +(j.customer_note?'<tr><td style="padding:.3rem 0;color:#b78635;vertical-align:top;font-weight:600">Special req.</td><td style="color:#8a5a1a;background:rgba(184,152,90,.1);border-left:2px solid #b78635;padding:.3rem .5rem">'+escH(j.customer_note)+'</td></tr>':'')
       +'</table>'
       +'<div style="display:flex;gap:.4rem;flex-wrap:wrap">';
   if(j.apiStatus==='pending'){
-    html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(106,106,106,.14);color:#555555;border:1.5px solid rgba(106,106,106,.35);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerSendEstimate('+j.id+')">Send Estimate</button>';
-    html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(45,110,71,.12);color:#2D6E47;border:1.5px solid rgba(45,110,71,.3);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingConfirm('+j.id+')">Confirm</button>';
+    html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:var(--gold);color:#1a1a1a;border:1.5px solid var(--gold);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerSendEstimate('+j.id+')">Send Estimate</button>';
   }
   if(j.apiStatus==='confirmed'||j.apiStatus==='active'){
     html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(45,110,71,.12);color:#2D6E47;border:1.5px solid rgba(45,110,71,.3);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerMarkCompleted('+j.id+')">Mark Completed</button>';
@@ -2784,6 +2784,9 @@ function jobCardHtml(j){
   // Create Invoice button — available on all confirmed/completed jobs with a fare
   if((j.apiStatus==='confirmed'||j.apiStatus==='active'||j.apiStatus==='completed')&&j.fare){
     html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(27,27,26,.06);color:var(--navy);border:1.5px solid rgba(27,27,26,.15);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerQuickInvoice('+j.id+',\''+escH(j.name||'')+'\',\''+escH(j.email||'')+'\','+Number(j.fare||0)+',\''+escH(j.pickup||'')+'\',\''+escH(j.dest||'')+'\',\''+escH(j.date||'')+'\')">Create Invoice</button>';
+  }
+  if(j.email){
+    html+='<button style="padding:.6rem .85rem;font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:#ffffff;color:#1a1a1a;border:1px solid rgba(27,27,26,.28);border-radius:7px;cursor:pointer;min-height:40px" onclick="wmMessageOpen('+j.id+')">Message</button>';
   }
   html+='<button style="padding:.6rem .85rem;font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(27,27,26,.06);color:rgba(27,27,26,.6);border:1px solid rgba(27,27,26,.12);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingEdit('+j.id+')">Edit</button>'
     +'<button style="padding:.6rem .85rem;font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(139,34,34,.08);color:#8B2222;border:1.5px solid rgba(139,34,34,.2);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingDelete('+j.id+')">Delete</button>';
@@ -2909,21 +2912,22 @@ async function upcomingConfirm(bookingId){
   }catch(e){showToast('Network error');console.error('[upcomingConfirm]',e);}
 }
 
-// Set the price and confirm in one step. This does exactly what Confirm does —
-// sets the fare, marks the booking confirmed, mints a pay_token, and sends the
-// customer the confirmation email with journey details + payment link (pay now
-// or pay on the day). Same backend flow as upcomingConfirm.
+// ESTIMATE-FIRST: set the price and email the customer an ESTIMATE with secure
+// Pay Now / Pay-driver / Cancel actions. The booking stays PENDING — it is
+// confirmed only when the customer pays (card), chooses to pay their driver on
+// the day, or is cancelled. This must NOT auto-confirm (see server send-estimate
+// route + CLAUDE.md "Estimate-first" invariant).
 async function ownerSendEstimate(bookingId){
   var j=OFFERED_JOBS.find(function(x){return String(x.id)===String(bookingId);});
   var cur=j&&j.fare?Number(j.fare):'';
-  var v=prompt('Fare to confirm and email the customer (£):',cur);
+  var v=prompt('Estimated fare to email the customer (£). The booking stays pending until they pay or accept:',cur);
   if(v===null)return;
   var fare=parseFloat(String(v).replace(/[^0-9.]/g,''));
   if(!fare||fare<=0){showToast('Enter a valid fare amount');return;}
   try{
-    var r=await fetch('/api/bookings/'+bookingId,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'confirmed',fare:fare})});
+    var r=await fetch('/api/bookings/'+bookingId+'/send-estimate',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({fare:fare})});
     var d=await r.json();
-    if(r.ok&&d.ok){showToast('Booking confirmed — payment link sent (£'+fare.toFixed(0)+')');loadOwnerBookings();}
+    if(r.ok&&d.ok){showToast('Estimate sent (£'+fare.toFixed(0)+') — booking stays pending');loadOwnerBookings();}
     else showToast(d.error||('Failed ('+r.status+')'));
   }catch(e){showToast('Network error');console.error('[ownerSendEstimate]',e);}
 }
@@ -2993,9 +2997,10 @@ function upcomingEdit(bookingId){
       +'<div style="font-size:.6rem;color:rgba(27,27,26,.42);margin-top:.28rem;letter-spacing:.01em">Shown to the customer in their confirmation email.</div></div>'
       +'<div id="eb-sent-status" style="display:none;font-size:.68rem;color:#2D6E47;margin-bottom:.55rem;letter-spacing:.02em"></div>'
       +'<div style="display:flex;gap:.6rem">'
-      +'<button onclick="ebSendConfirmation(this)" style="flex:1;padding:.65rem;background:transparent;border:1px solid var(--gold);border-radius:10px;font-family:inherit;font-size:.72rem;font-weight:500;color:var(--gold);cursor:pointer;letter-spacing:.06em;text-transform:uppercase">Send Confirmation</button>'
-      +'<button onclick="ebSendEstimate(this)" style="flex:1;padding:.65rem;background:transparent;border:1px solid var(--gold);border-radius:10px;font-family:inherit;font-size:.72rem;font-weight:500;color:var(--gold);cursor:pointer;letter-spacing:.06em;text-transform:uppercase">Send Estimate</button>'
-      +'</div></div>';
+      +'<button onclick="ebSendEstimate(this)" style="flex:1;padding:.7rem;background:var(--gold);border:1px solid var(--gold);border-radius:10px;font-family:inherit;font-size:.74rem;font-weight:600;color:#1a1a1a;cursor:pointer;letter-spacing:.06em;text-transform:uppercase">Send Estimate</button>'
+      +'<button onclick="ebSendMessage(this)" style="flex:1;padding:.7rem;background:#ffffff;border:1px solid rgba(27,27,26,.3);border-radius:10px;font-family:inherit;font-size:.74rem;font-weight:600;color:#1a1a1a;cursor:pointer;letter-spacing:.06em;text-transform:uppercase">Message Customer</button>'
+      +'</div>'
+      +'<div style="font-size:.6rem;color:rgba(27,27,26,.42);margin-top:.4rem;letter-spacing:.01em;text-align:center">Send Estimate emails the confirmation with payment, cancel &amp; note options. Message sends a free-text email.</div></div>';
     document.body.appendChild(el);
     el.addEventListener('click',function(ev){if(ev.target===el)el.remove();});
   }
@@ -3080,6 +3085,11 @@ async function ebSend(kind,btn){
   var id=document.getElementById('eb-id').value;
   if(!id)return;
   var email=(document.getElementById('eb-email')||{}).value||'';
+  // Estimate-first: "Send Estimate" hits /send-estimate (booking stays PENDING,
+  // estimate email with Pay / Cash / Cancel actions). "Send Confirmation" hits
+  // /send-confirmation (resends the confirmed-booking email). They are NOT the
+  // same — an estimate must never auto-confirm. ebCollectBody() carries no
+  // status, so the pre-send save never changes the booking's status.
   var noun=kind==='estimate'?'estimate':'confirmation';
   var path=kind==='estimate'?'send-estimate':'send-confirmation';
   var orig=btn?btn.textContent:'';
@@ -3114,6 +3124,51 @@ async function ebSend(kind,btn){
 }
 function ebSendConfirmation(btn){ return ebSend('confirmation',btn); }
 function ebSendEstimate(btn){ return ebSend('estimate',btn); }
+// From the edit modal, open the message composer for the booking being edited.
+function ebSendMessage(){ var id=document.getElementById('eb-id').value; if(id)wmMessageOpen(id); }
+
+// ── Send Message to Customer ─────────────────────────────────────────────
+// A free-text email to the customer (e.g. to ask a question). Emailed from
+// Westmere, styled to match the brand. Works from any booking with an email.
+function wmMessageOpen(bookingId){
+  var j=(typeof OFFERED_JOBS!=='undefined'&&OFFERED_JOBS.find(function(x){return String(x.id)===String(bookingId);}))
+      ||(typeof CONFIRMED_JOBS!=='undefined'&&CONFIRMED_JOBS.find(function(x){return String(x.id)===String(bookingId);}))
+      ||(typeof COMPLETED_JOBS!=='undefined'&&COMPLETED_JOBS.find(function(x){return String(x.id)===String(bookingId);}))||{};
+  var email=j.email||j.customer_email||j.passenger_email||'';
+  var name=j.name||j.customer_name||j.passenger_name||'';
+  var el=document.getElementById('wm-msg-overlay');
+  if(el)el.remove();
+  el=document.createElement('div');
+  el.id='wm-msg-overlay';
+  el.style.cssText='position:fixed;inset:0;background:rgba(10,14,20,.65);backdrop-filter:blur(6px);z-index:400;display:flex;align-items:flex-end;justify-content:center;padding:1rem';
+  el.innerHTML='<div style="background:#ffffff;border-radius:18px 18px 0 0;max-width:520px;width:100%;padding:1.6rem 1.4rem">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem">'
+    +'<div style="font-family:var(--serif);font-size:1.3rem;color:var(--navy);font-style:italic">Message Customer</div>'
+    +'<button onclick="document.getElementById(\'wm-msg-overlay\').remove()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:rgba(27,27,26,.45)">&times;</button>'
+    +'</div>'
+    +'<div style="font-size:.72rem;color:rgba(27,27,26,.55);margin-bottom:.9rem">'+(email?('To '+escH(name?name+' · ':'')+escH(email)):'<span style="color:#9C5800">No email on this booking</span>')+'</div>'
+    +'<textarea id="wm-msg-text" rows="6" placeholder="Type your message to the customer — e.g. a question about their journey…" style="width:100%;padding:.7rem .8rem;border:1px solid rgba(27,27,26,.15);border-radius:8px;font-family:inherit;font-size:.9rem;color:var(--navy);resize:vertical"></textarea>'
+    +'<div style="display:flex;gap:.6rem;margin-top:.9rem">'
+    +'<button onclick="document.getElementById(\'wm-msg-overlay\').remove()" style="flex:1;padding:.75rem;background:transparent;border:1px solid rgba(27,27,26,.15);border-radius:10px;font-family:inherit;font-size:.82rem;font-weight:500;color:rgba(27,27,26,.5);cursor:pointer">Cancel</button>'
+    +'<button id="wm-msg-send" onclick="wmMessageSend('+bookingId+',this)" '+(email?'':'disabled ')+'style="flex:2;padding:.75rem;background:var(--gold);border:none;border-radius:10px;font-family:inherit;font-size:.82rem;font-weight:600;color:#1a1a1a;cursor:pointer;letter-spacing:.04em'+(email?'':';opacity:.5;cursor:default')+'">Send Message</button>'
+    +'</div></div>';
+  document.body.appendChild(el);
+  el.addEventListener('click',function(ev){if(ev.target===el)el.remove();});
+  var ta=document.getElementById('wm-msg-text'); if(ta)ta.focus();
+}
+async function wmMessageSend(bookingId,btn){
+  var ta=document.getElementById('wm-msg-text');
+  var msg=ta?ta.value.trim():'';
+  if(!msg){showToast('Type a message first');return;}
+  var orig=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='Sending…';btn.style.opacity='.6';}
+  try{
+    var r=await fetch('/api/bookings/'+bookingId+'/send-message',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
+    var d={};try{d=await r.json();}catch(_){}
+    if(r.ok&&d.ok){showToast('Message sent to customer');var ov=document.getElementById('wm-msg-overlay');if(ov)ov.remove();}
+    else{showToast((d&&d.error)||('Failed ('+r.status+')'));if(btn){btn.disabled=false;btn.textContent=orig;btn.style.opacity='';}}
+  }catch(e){showToast('Network error');if(btn){btn.disabled=false;btn.textContent=orig;btn.style.opacity='';}}
+}
 
 // Legacy: kept so old SSE-path calls don't throw
 function acceptJob(id){upcomingConfirm(id);}
@@ -4366,6 +4421,7 @@ async function loadOwnerBookings(){
         apiStatus:b.status||'',
         status:b.status==='completed'?'done':b.status==='active'?'enroute':b.status==='cancelled'?'done':'upcoming',
         note:b.notes||'',
+        customer_note:b.customer_note||'',
         stop_address:b.stop_address||''
       };
     }

@@ -727,6 +727,16 @@ function migrate() {
     }
   } catch(e) { console.error('[DB] pre-payment column migration failed:', e.message); }
 
+  // Customer-submitted special requirement note. DISTINCT from `notes` (which is
+  // the operator's message shown to the customer in the confirmation email).
+  // customer_note is what the CUSTOMER writes back via the "Add a note" link in
+  // their email — child seat, extra luggage, meet-and-greet, etc. Additive only.
+  try { db.exec(`ALTER TABLE bookings ADD COLUMN customer_note TEXT`); } catch(_){}
+
+  // When an estimate email was last sent (estimate-first flow). Distinct from
+  // confirmation_sent_at so the owner app can show "Estimate sent" separately.
+  try { db.exec(`ALTER TABLE bookings ADD COLUMN estimate_sent_at TEXT`); } catch(_){}
+
   // Review request tracking — sent once per email address, never resent
   try {
     db.exec(`

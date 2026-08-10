@@ -203,6 +203,17 @@ router.patch('/bookings/:id', (req, res) => {
     return res.status(403).json({ error: 'You can only update your own bookings' });
   }
 
+  // Guardrail: a payment method written via the API must be a known method.
+  // Rejecting an unknown value loudly here prevents a silent wrong-method from
+  // ever being persisted (see CLAUDE.md "Payment method" invariant).
+  if (req.body.payment !== undefined && req.body.payment !== null) {
+    const { isValidPaymentMethod } = require('./payment-methods');
+    if (!isValidPaymentMethod(req.body.payment)) {
+      return res.status(400).json({ error: 'Invalid payment method' });
+    }
+    req.body.payment = String(req.body.payment).toLowerCase();
+  }
+
   const allowed = ['status', 'driver_id', 'fare', 'notes', 'payment', 'passenger_name', 'passenger_phone', 'passenger_email', 'pickup', 'destination', 'stop_address', 'date', 'time', 'passengers', 'customer_id', 'paid_at', 'trip_miles'];
   const updates = [];
   const values = [];
@@ -1410,6 +1421,12 @@ router.post('/bookings/:id/send-confirmation', async (req, res) => {
 });
 
 // ── Send estimate email ──────────────────────────────────────────────────
+// ESTIMATE-FIRST: this sets the fare (if supplied) and emails the customer an
+// estimate carrying secure Pay Now / Pay-driver / Cancel actions — but it does
+// NOT change status. The booking stays PENDING until the customer pays (card →
+// webhook confirms), chooses cash-on-the-day (/cash confirms), or cancels. See
+// CLAUDE.md "Estimate-first" invariant: pressing Send Estimate must never
+// auto-confirm.
 router.post('/bookings/:id/send-estimate', async (req, res) => {
   if (!['admin', 'owner'].includes(req.auth.role)) {
     return res.status(403).json({ error: 'Access denied' });
@@ -1417,6 +1434,14 @@ router.post('/bookings/:id/send-estimate', async (req, res) => {
   const db = getDb();
   const id = parseInt(req.params.id, 10);
   if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+
+  // Optionally set the fare in the same action (the owner types it when sending).
+  if (req.body && req.body.fare !== undefined && req.body.fare !== null && req.body.fare !== '') {
+    const fareNum = Number(req.body.fare);
+    if (!isFinite(fareNum) || fareNum <= 0) return res.status(400).json({ error: 'Enter a valid fare amount' });
+    db.prepare("UPDATE bookings SET fare = ?, updated_at = datetime('now') WHERE id = ?").run(fareNum, id);
+  }
+
   const b = db.prepare(`
     SELECT b.*, COALESCE(c.email, b.passenger_email) as contact_email,
            COALESCE(c.full_name, b.passenger_name) as contact_name
@@ -1426,19 +1451,72 @@ router.post('/bookings/:id/send-estimate', async (req, res) => {
   if (!b) return res.status(404).json({ error: 'Booking not found' });
   if (!b.contact_email) return res.status(400).json({ error: 'No email address on this booking' });
   if (!b.fare || Number(b.fare) <= 0) return res.status(400).json({ error: 'Set a fare before sending an estimate' });
+
+  // Mint the per-booking token so the estimate's Pay/Cash/Cancel links work.
+  // Does NOT touch status — the booking remains pending.
+  const payToken = require('./intake').ensurePayToken(id) || b.pay_token || null;
+
   try {
     const { sendCustomerEstimate } = require('./email');
     const ok = await sendCustomerEstimate({
       ref: b.ref, name: b.contact_name, email: b.contact_email,
       pickup: b.pickup, destination: b.destination, stop_address: b.stop_address,
       date: b.date, time: b.time, flight: b.flight, passengers: b.passengers,
-      fare: b.fare, notes: b.notes
+      fare: b.fare, notes: b.notes, pay_token: payToken
     });
-    if (ok) res.json({ ok: true });
-    else res.status(500).json({ error: 'Email send failed' });
+    if (!ok) return res.status(500).json({ error: 'Email send failed' });
+    let sentAt = null;
+    try {
+      db.prepare("UPDATE bookings SET estimate_sent_at = datetime('now') WHERE id = ?").run(id);
+      const row = db.prepare('SELECT estimate_sent_at FROM bookings WHERE id = ?').get(id);
+      sentAt = (row && row.estimate_sent_at) || null;
+    } catch (e2) { console.error('[API] estimate_sent_at record failed:', e2.message); }
+    try {
+      db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+        .run(req.auth.type || 'user', req.auth.id, 'estimate_sent', b.ref + ' to ' + b.contact_email, req.ip);
+    } catch (_) {}
+    res.json({ ok: true, estimate_sent_at: sentAt });
   } catch (e) {
     console.error('[API] send-estimate failed:', e.message);
     res.status(500).json({ error: 'Failed to send estimate' });
+  }
+});
+
+// ── Send a free-text message to the customer ─────────────────────────────
+// The operator types a message (e.g. a question) and it is emailed to the
+// customer from Westmere, styled to match the brand.
+router.post('/bookings/:id/send-message', async (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+  const message = String((req.body && req.body.message) || '').trim();
+  if (!message) return res.status(400).json({ error: 'Message is empty' });
+  if (message.length > 4000) return res.status(400).json({ error: 'Message is too long' });
+
+  const b = db.prepare(`
+    SELECT b.*, COALESCE(c.email, b.passenger_email) as contact_email,
+           COALESCE(c.full_name, b.passenger_name) as contact_name
+    FROM bookings b LEFT JOIN customers c ON b.customer_id = c.id
+    WHERE b.id = ?
+  `).get(id);
+  if (!b) return res.status(404).json({ error: 'Booking not found' });
+  if (!b.contact_email) return res.status(400).json({ error: 'No email address on this booking' });
+
+  try {
+    const { sendCustomerMessage } = require('./email');
+    const ok = await sendCustomerMessage({ ref: b.ref, name: b.contact_name, email: b.contact_email }, message);
+    if (!ok) return res.status(502).json({ error: 'Email delivery failed' });
+    try {
+      db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+        .run(req.auth.type || 'user', req.auth.id, 'customer_message_sent', b.ref + ' to ' + b.contact_email, req.ip);
+    } catch (_) {}
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[API] send-message failed:', e.message);
+    res.status(500).json({ error: 'Failed to send message' });
   }
 });
 
