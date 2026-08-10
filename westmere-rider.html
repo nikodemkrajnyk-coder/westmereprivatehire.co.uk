@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<meta name="color-scheme" content="light"/>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -89,7 +90,7 @@ nav#nav{display:none}
 /* ── FORM FIELDS ── */
 .fg{display:flex;flex-direction:column;gap:.2rem;margin-bottom:.55rem}
 .fl{font-family:var(--sans);font-size:.72rem;font-weight:300;letter-spacing:.16em;text-transform:uppercase;color:rgba(27,27,26,.55)}
-.fi{font-family:var(--sans);font-size:1.02rem;font-weight:300;color:var(--navy);background:transparent;border:none;border-bottom:1px solid rgba(27,27,26,.12);padding:.45rem 0;outline:none;width:100%;transition:border-color .3s;min-height:42px;-webkit-appearance:none}
+.fi{color-scheme:light;font-family:var(--sans);font-size:1.02rem;font-weight:300;color:var(--navy);background:transparent;border:none;border-bottom:1px solid rgba(27,27,26,.12);padding:.45rem 0;outline:none;width:100%;transition:border-color .3s;min-height:42px;-webkit-appearance:none}
 .fi:focus{border-bottom-color:var(--gold)}
 .fi::placeholder{color:rgba(27,27,26,.3)}
 select.fi{cursor:pointer;background:transparent;padding:.78rem 0}
@@ -199,7 +200,11 @@ body.mode-day .aj-meta-grid{border-top:1px solid rgba(26,38,56,.12);border-botto
 
 /* ── CUSTOM DATE & TIME PICKERS ── */
 .custom-date-trigger,.custom-time-trigger{cursor:pointer;position:relative}
-.cal-drop{display:none;position:absolute;top:calc(100% + 8px);left:0;z-index:400;background:rgba(18,12,6,.96);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid rgba(184,144,69,.35);border-radius:12px;padding:1.1rem;width:290px;min-height:310px;box-shadow:0 20px 60px rgba(0,0,0,.7)}
+/* Cards clip their rounded corners with overflow:hidden — while a picker popup
+   is open, let it escape the card so the calendar grid / time list is never cut
+   off or hidden behind the card below (was a silent booking blocker). */
+.card:has(.cal-drop.open),.card:has(.time-drop.open),.card:has(.pick-drop.open){overflow:visible}
+.cal-drop{color-scheme:light;display:none;position:absolute;top:calc(100% + 8px);left:0;z-index:400;background:#fffdf9;border:1px solid rgba(184,144,69,.5);border-radius:12px;padding:1.1rem;width:290px;min-height:310px;box-shadow:0 20px 60px rgba(27,27,26,.28)}
 .cal-drop.open{display:block}
 .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem}
 .cal-month-label{font-family:var(--serif);font-size:1.15rem;font-weight:300;color:var(--navy);letter-spacing:.06em}
@@ -213,7 +218,7 @@ body.mode-day .aj-meta-grid{border-top:1px solid rgba(26,38,56,.12);border-botto
 .cal-day.cal-sel{background:var(--gold);color:#111;font-weight:500}
 .cal-day.cal-past{color:rgba(27,27,26,.22);cursor:not-allowed}
 .cal-day.cal-empty{cursor:default}
-.time-drop{display:none;position:absolute;top:calc(100% + 8px);right:0;left:auto;z-index:400;background:rgba(18,12,6,.96);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid rgba(184,144,69,.35);border-radius:12px;padding:1.1rem;width:290px;height:310px;box-shadow:0 20px 60px rgba(0,0,0,.7)}
+.time-drop{color-scheme:light;display:none;position:absolute;top:calc(100% + 8px);right:0;left:auto;z-index:400;background:#fffdf9;border:1px solid rgba(184,144,69,.5);border-radius:12px;padding:1.1rem;width:290px;height:310px;box-shadow:0 20px 60px rgba(27,27,26,.28)}
 .time-drop.open{display:block}
 .time-cols{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.8rem}
 .time-col{display:flex;flex-direction:column;gap:2px;overflow-y:auto;max-height:218px;scrollbar-width:thin;scrollbar-color:rgba(184,144,69,.3) transparent}
@@ -223,17 +228,17 @@ body.mode-day .aj-meta-grid{border-top:1px solid rgba(26,38,56,.12);border-botto
 .time-opt.t-sel{background:var(--gold);color:#111;font-weight:500}
 /* ── CUSTOM PAX / LUGGAGE PICKER ── */
 .pax-trigger,.bags-trigger{cursor:pointer;position:relative}
-.pick-drop{display:none;position:absolute;top:calc(100% + 8px);left:0;z-index:400;background:rgba(18,12,6,.96);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid rgba(184,144,69,.35);border-radius:12px;padding:1.1rem;width:200px;box-shadow:0 20px 60px rgba(0,0,0,.7)}
+.pick-drop{color-scheme:light;display:none;position:absolute;top:calc(100% + 8px);left:0;z-index:400;background:#fffdf9;border:1px solid rgba(184,144,69,.5);border-radius:12px;padding:1.1rem;width:200px;box-shadow:0 20px 60px rgba(27,27,26,.28)}
 .pick-drop.open{display:block}
 .pick-col{display:flex;flex-direction:column;gap:2px;overflow-y:auto;max-height:240px;scrollbar-width:thin;scrollbar-color:rgba(184,144,69,.3) transparent}
-.pick-col-label{font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.5);text-align:center;padding:.3rem 0;position:sticky;top:0;background:rgba(18,12,6,.96)}
-.pick-opt{font-family:var(--sans);font-size:.95rem;font-weight:300;color:rgba(255,255,255,.75);padding:.5rem .6rem;border-radius:5px;cursor:pointer;text-align:center;transition:background .12s,color .12s;display:flex;align-items:center;justify-content:center;gap:.5rem}
-.pick-opt:hover{background:rgba(184,144,69,.25);color:#fff}
+.pick-col-label{font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.5);text-align:center;padding:.3rem 0;position:sticky;top:0;background:#fffdf9}
+.pick-opt{font-family:var(--sans);font-size:.95rem;font-weight:300;color:rgba(27,27,26,.78);padding:.5rem .6rem;border-radius:5px;cursor:pointer;text-align:center;transition:background .12s,color .12s;display:flex;align-items:center;justify-content:center;gap:.5rem}
+.pick-opt:hover{background:rgba(184,144,69,.25);color:var(--navy)}
 .pick-opt.p-sel{background:var(--gold);color:#111;font-weight:500}
 .pick-counter{display:flex;align-items:center;justify-content:center;gap:1rem;padding:.4rem 0}
-.pick-btn{width:36px;height:36px;border-radius:50%;border:1px solid rgba(184,144,69,.4);background:rgba(184,144,69,.12);color:var(--gold);font-size:1.2rem;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.pick-btn{width:36px;height:36px;border-radius:50%;border:1px solid rgba(184,144,69,.4);background:rgba(184,144,69,.12);color:#8a6d34;font-size:1.2rem;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
 .pick-btn:hover{background:rgba(184,144,69,.3)}
-.pick-count{font-family:var(--serif);font-size:1.3rem;color:#fff;min-width:1.5rem;text-align:center}
+.pick-count{font-family:var(--serif);font-size:1.3rem;color:var(--navy);min-width:1.5rem;text-align:center}
 
 /* ── FILTER TABS ── */
 .filter-row{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap}
@@ -624,6 +629,14 @@ body.mode-day .btn-main{background:#1b1b1a!important;color:#f5f2ec!important}
             <label class="fl">Destination</label>
             <input class="fi" type="text" id="bk-dest" placeholder="e.g. Gatwick Airport" oninput="addrSearch('bk-dest','bk-sug-dest');bkCalcFare()" autocomplete="off">
             <div class="sug-drop" id="bk-sug-dest"></div>
+          </div>
+          <div id="bk-stop-toggle-wrap" style="margin:-.35rem 0 .2rem">
+            <button type="button" id="bk-stop-toggle" onclick="toggleStop()" style="background:none;border:none;color:var(--gold);font-family:var(--sans);font-size:.72rem;font-weight:400;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;padding:.4rem 0;min-height:36px">+ Add a stop on the way</button>
+          </div>
+          <div class="fg" id="bk-stop-wrap" style="position:relative;display:none">
+            <label class="fl">Stop on the way (optional)</label>
+            <input class="fi" type="text" id="bk-stop" placeholder="e.g. Brighton, BN1 1AL" oninput="addrSearch('bk-stop','bk-sug-stop')" autocomplete="off">
+            <div class="sug-drop" id="bk-sug-stop"></div>
           </div>
           <div class="r2">
             <div class="fg">
@@ -1528,9 +1541,28 @@ function initBagsPicker(){
 /* ═══════════════════════════════════════════════════════════════════════════
    BOOKING CONFIRMATION
    ═══════════════════════════════════════════════════════════════════════════ */
+/* Toggle the optional intermediate-stop field (matches the public book.html
+   "Add a stop" affordance so the account flow supports a via point too). */
+function toggleStop(){
+  var wrap=document.getElementById('bk-stop-wrap');
+  var btn=document.getElementById('bk-stop-toggle');
+  if(!wrap||!btn)return;
+  var shown=wrap.style.display!=='none';
+  if(shown){
+    wrap.style.display='none';
+    btn.textContent='+ Add a stop on the way';
+    var s=document.getElementById('bk-stop');if(s)s.value='';
+    var sd=document.getElementById('bk-sug-stop');if(sd){sd.classList.remove('open');sd.innerHTML='';}
+  } else {
+    wrap.style.display='';
+    btn.textContent='− Remove stop';
+    var si=document.getElementById('bk-stop');if(si)si.focus();
+  }
+}
 function openConfirmModal(){
   var from=(document.getElementById('bk-from')||{}).value||'';
   var dest=(document.getElementById('bk-dest')||{}).value||'';
+  var stop=(document.getElementById('bk-stop')||{}).value||'';
   var date=(document.getElementById('bk-cdt-display')||{}).value||'';
   var time=(document.getElementById('bk-ctt-display')||{}).value||'';
   var flight=(document.getElementById('bk-flight')||{}).value||'';
@@ -1546,6 +1578,7 @@ function openConfirmModal(){
   var html='';
   html+='<div class="modal-row"><span class="modal-rk">Pickup</span><span class="modal-rv">'+esc(from)+'</span></div>';
   html+='<div class="modal-row"><span class="modal-rk">Destination</span><span class="modal-rv">'+esc(dest)+'</span></div>';
+  if(stop)html+='<div class="modal-row"><span class="modal-rk">Stop</span><span class="modal-rv">'+esc(stop)+'</span></div>';
   html+='<div class="modal-row"><span class="modal-rk">Date</span><span class="modal-rv">'+esc(date)+'</span></div>';
   html+='<div class="modal-row"><span class="modal-rk">Time</span><span class="modal-rv">'+esc(time)+'</span></div>';
   if(flight)html+='<div class="modal-row"><span class="modal-rk">Flight</span><span class="modal-rv">'+esc(flight)+'</span></div>';
@@ -1566,6 +1599,7 @@ function closeModal(){
 async function confirmBooking(){
   var from=(document.getElementById('bk-from')||{}).value||'';
   var dest=(document.getElementById('bk-dest')||{}).value||'';
+  var stop=(document.getElementById('bk-stop')||{}).value||'';
   var date=(document.getElementById('bk-date')||{}).value||'';
   var dateDisp=(document.getElementById('bk-cdt-display')||{}).value||'';
   var time=(document.getElementById('bk-ctt-display')||{}).value||'';
@@ -1589,7 +1623,7 @@ async function confirmBooking(){
     var r=await fetch('/api/public/book',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name:name,phone:phone,email:email||null,pickup:from,destination:dest,date:date,time:time||'ASAP',passengers:parseInt(pax)||1,bags:bags,flight:flight||null,fare:null,payment:paymentType,notes:_selectedVehName?'Vehicle: '+_selectedVehName:'',source:'rider-app'})
+      body:JSON.stringify({name:name,phone:phone,email:email||null,pickup:from,destination:dest,stop_address:stop||null,date:date,time:time||'ASAP',passengers:parseInt(pax)||1,bags:bags,flight:flight||null,fare:null,payment:paymentType,notes:_selectedVehName?'Vehicle: '+_selectedVehName:'',source:'rider-app'})
     });
     var data=await r.json();
     if(!r.ok){
@@ -1621,6 +1655,8 @@ async function confirmBooking(){
     document.getElementById('bk-from').value='';
     document.getElementById('bk-dest').value='';
     document.getElementById('bk-flight').value='';
+    var _sw=document.getElementById('bk-stop-wrap');
+    if(_sw&&_sw.style.display!=='none')toggleStop();
     document.getElementById('fare-reveal').classList.remove('show');
     document.getElementById('bk-calc-btn').style.display='block';
     _baseFare=null;
