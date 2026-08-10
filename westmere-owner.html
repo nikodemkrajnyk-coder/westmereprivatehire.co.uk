@@ -467,7 +467,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
 
 /* ── Booking-page luxe pass — warm ivory surfaces, gold accents, serif heads ── */
 /* Job/invoice list surfaces render as cream cards with a soft gold edge */
-#confirmed-list,#toconfirm-list,#completed-list,#offered-list,#dec-pending-list,#inv-list-body,#drivers-list{
+#confirmed-list,#toconfirm-list,#completed-list,#offered-list,#inv-list-body,#drivers-list{
   background:#ffffff;border:1px solid var(--gold-rule);border-radius:14px;
   box-shadow:0 3px 16px rgba(0,0,0,.18);overflow:hidden;
 }
@@ -1617,19 +1617,7 @@ function goPage(id,btn){
   if(id==='smart'){var d=new Date();document.getElementById('sd-date').value=d.toISOString().split('T')[0];}
 }
 
-// ── JOB REQUESTS (native — confirm/cancel new booking requests) ─────────
-async function loadDecisions(){
-  try{
-    var res=await fetch('/api/bookings',{credentials:'include'}).then(function(r){return r.json();}).catch(function(){return{ok:false,bookings:[]};});
-    var bookings=(res&&res.ok)?res.bookings:[];
-    var pending=bookings.filter(function(b){return b.status==='pending';});
-    renderDecisionsPending(pending);
-    var dot=document.getElementById('decisions-dot');
-    if(dot){var n=pending.length;dot.textContent=n||'';dot.style.display=n?'flex':'none';}
-  }catch(e){console.error('[OWNER] loadDecisions failed:',e);}
-}
-
-function decEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+// ── Address shorteners (used by the job cards) ─────────────────────────
 var _WM_AIRPORTS=[[/gatwick/i,'Gatwick'],[/heathrow/i,'Heathrow'],[/stansted/i,'Stansted'],[/luton/i,'Luton'],[/\bcity airport\b|london city/i,'London City'],[/southampton airport/i,'Southampton'],[/\bbristol airport\b/i,'Bristol'],[/\bgatwick\b/i,'Gatwick'],[/st pancras|kings cross|king's cross/i,'St Pancras'],[/\beuston\b/i,'Euston'],[/\bvictoria station\b/i,'Victoria']];
 var _WM_SKIP=/^(england|scotland|wales|united kingdom|uk|gb|great britain|west sussex|east sussex|surrey|kent|hampshire|essex|sussex|berkshire|london|greater london)$/i;
 var _WM_PC=/^[A-Z]{1,2}\d[A-Z\d]?(\s*\d[A-Z]{2})?$/i;
@@ -1649,53 +1637,11 @@ function _tinyAddr(a){
   return parts[parts.length-1].slice(0,12);
 }
 
-function renderDecisionsPending(list){
-  var el=document.getElementById('dec-pending-list');if(!el)return;
-  if(!list.length){el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.78rem;color:rgba(27,27,26,.4)">No new requests</div>';return;}
-  el.innerHTML=list.map(function(b){
-    var sug=(b.suggested_fare!=null&&b.suggested_fare!=='')?Number(b.suggested_fare):(b.fare!=null?Number(b.fare):null);
-    var priceVal=(sug!=null&&!isNaN(sug))?sug.toFixed(2):'';
-    var phone=b.customer_phone||b.passenger_phone||'';
-    return '<div style="padding:.95rem 1rem;border-top:1px solid var(--rule)">'
-      +'<div style="font-size:.82rem;color:var(--navy);font-weight:500">'+decEsc(_shortAddr(b.pickup||''))+(b.stop_address?' \u2192 '+decEsc(_shortAddr(b.stop_address)):'')+' \u2192 '+decEsc(_shortAddr(b.destination||''))+'</div>'
-      +'<div style="font-size:.72rem;color:rgba(27,27,26,.55);margin-top:.25rem">'+decEsc(b.date||'')+' at '+decEsc(b.time||'')+'</div>'
-      +'<div style="font-size:.78rem;color:var(--navy);margin-top:.3rem">'+decEsc(b.customer_name||'Guest')+(phone?' \u00b7 <a href="tel:'+decEsc(phone)+'" style="color:var(--navy);text-decoration:none">'+decEsc(phone)+'</a>':'')+'</div>'
-      +'<div style="display:flex;align-items:center;gap:.5rem;margin-top:.65rem">'
-      +  '<span style="font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.45)">Price \u00a3</span>'
-      +  '<input id="dec-price-'+b.id+'" type="number" inputmode="decimal" step="0.50" value="'+priceVal+'" style="width:92px;padding:.45rem .55rem;border:1px solid rgba(27,27,26,.2);border-radius:6px;font-size:.95rem;color:var(--navy)">'
-      +  (sug!=null&&!isNaN(sug)?'<span style="font-size:.66rem;color:rgba(27,27,26,.45)">Suggested \u00a3'+sug.toFixed(0)+'</span>':'<span style="font-size:.66rem;color:rgba(27,27,26,.4)">No suggestion</span>')
-      +'</div>'
-      +'<div style="display:flex;gap:.5rem;margin-top:.75rem">'
-      +  '<button style="flex:1;padding:.75rem;font-size:.88rem;font-weight:500;background:#e8f5e9;color:#2d6e47;border:1.5px solid rgba(45,110,71,.35);border-radius:8px;cursor:pointer;letter-spacing:.04em" onclick="decConfirm('+b.id+')">Confirm</button>'
-      +  '<button style="flex:1;padding:.75rem;font-size:.88rem;font-weight:500;background:rgba(139,34,34,.1);color:#8B2222;border:1.5px solid rgba(139,34,34,.25);border-radius:8px;cursor:pointer;letter-spacing:.04em" onclick="decCancel('+b.id+')">Cancel</button>'
-      +'</div>'
-      +'</div>';
-  }).join('');
-}
-
-async function decConfirm(bookingId){
-  var inp=document.getElementById('dec-price-'+bookingId);
-  var price=inp?parseFloat(inp.value):NaN;
-  if(!price||isNaN(price)||price<=0){showToast('Enter a price first');return;}
-  try{
-    var body={status:'confirmed',fare:price};
-    if(CURRENT_USER&&CURRENT_USER.id)body.driver_id=CURRENT_USER.id;
-    var r=await fetch('/api/bookings/'+bookingId,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    var d=await r.json();
-    if(r.ok&&d.ok){showToast('Confirmed \u2014 customer emailed');loadDecisions();if(typeof loadOwnerBookings==='function')loadOwnerBookings();}
-    else showToast(d.error||('Failed ('+r.status+')'));
-  }catch(e){showToast('Network error');console.error('[decConfirm]',e);}
-}
-
-async function decCancel(bookingId){
-  if(!confirm('Cancel this booking? The customer will be emailed.'))return;
-  try{
-    var r=await fetch('/api/bookings/'+bookingId,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'cancelled'})});
-    var d=await r.json();
-    if(r.ok&&d.ok){showToast('Cancelled \u2014 customer emailed');loadDecisions();if(typeof loadOwnerBookings==='function')loadOwnerBookings();}
-    else showToast(d.error||('Failed ('+r.status+')'));
-  }catch(e){showToast('Network error');console.error('[decCancel]',e);}
-}
+// NOTE: the old native "decisions" list (renderDecisionsPending / decConfirm /
+// decCancel) was removed. It rendered a green "Confirm" button that PATCHed
+// status:'confirmed' \u2014 a duplicate confirm path that violated estimate-first.
+// Incoming requests are now handled ONLY by the "To Confirm" page, whose cards
+// (jobCardHtml) offer exactly two actions: "Send Estimate" and "Message".
 
 // Live countdown for offered timer pills on decisions page
 setInterval(function(){
@@ -2786,7 +2732,7 @@ function jobCardHtml(j){
     html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(27,27,26,.06);color:var(--navy);border:1.5px solid rgba(27,27,26,.15);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerQuickInvoice('+j.id+',\''+escH(j.name||'')+'\',\''+escH(j.email||'')+'\','+Number(j.fare||0)+',\''+escH(j.pickup||'')+'\',\''+escH(j.dest||'')+'\',\''+escH(j.date||'')+'\')">Create Invoice</button>';
   }
   if(j.email){
-    html+='<button style="padding:.6rem .85rem;font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:#ffffff;color:#1a1a1a;border:1px solid rgba(27,27,26,.28);border-radius:7px;cursor:pointer;min-height:40px" onclick="wmMessageOpen('+j.id+')">Message</button>';
+    html+='<button style="padding:.6rem .85rem;font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:#ffffff;color:#1a1a1a;border:1px solid rgba(27,27,26,.28);border-radius:7px;cursor:pointer;min-height:40px" onclick="wmMessageOpen('+j.id+')">Send Message</button>';
   }
   html+='<button style="padding:.6rem .85rem;font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(27,27,26,.06);color:rgba(27,27,26,.6);border:1px solid rgba(27,27,26,.12);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingEdit('+j.id+')">Edit</button>'
     +'<button style="padding:.6rem .85rem;font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(139,34,34,.08);color:#8B2222;border:1.5px solid rgba(139,34,34,.2);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingDelete('+j.id+')">Delete</button>';
@@ -2901,15 +2847,6 @@ function upcomingToggle(detailId){
   var el=document.getElementById(detailId);if(!el)return;
   var open=el.style.display!=='none';
   el.style.display=open?'none':'block';
-}
-
-async function upcomingConfirm(bookingId){
-  try{
-    var r=await fetch('/api/bookings/'+bookingId,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'confirmed'})});
-    var d=await r.json();
-    if(r.ok&&d.ok){showToast('Booking confirmed');loadOwnerBookings();}
-    else showToast(d.error||('Failed ('+r.status+')'));
-  }catch(e){showToast('Network error');console.error('[upcomingConfirm]',e);}
 }
 
 // ESTIMATE-FIRST: set the price and email the customer an ESTIMATE with secure
@@ -3170,8 +3107,9 @@ async function wmMessageSend(bookingId,btn){
   }catch(e){showToast('Network error');if(btn){btn.disabled=false;btn.textContent=orig;btn.style.opacity='';}}
 }
 
-// Legacy: kept so old SSE-path calls don't throw
-function acceptJob(id){upcomingConfirm(id);}
+// Legacy SSE-path shim: only decline (delete) remains. There is deliberately
+// no accept/confirm shortcut — incoming bookings are confirmed only by the
+// customer paying/accepting, never by a one-click owner "Confirm".
 function declineJob(id){upcomingDelete(id);}
 
 // ── NEW BOOKING FORM ─────────────────────────────────────────────────────────

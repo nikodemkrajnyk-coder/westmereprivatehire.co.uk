@@ -104,6 +104,37 @@ test('cash route confirms pending + records cash from a genuine customer action'
   assert.ok(/WHEN status = 'pending' THEN 'confirmed'/.test(block), 'cash route must confirm a pending booking');
 });
 
+// ── 4. Send Message must not confirm; no duplicate owner Confirm path ─────
+// Owner spec: an incoming booking has exactly two owner actions — "Send
+// Estimate" and "Send Message". Send Message emails free text and touches
+// NOTHING else; there is no one-click "Confirm" anywhere in the owner app.
+console.log('\nSend Message + no rogue Confirm (owner spec)');
+test('server send-message route never changes booking status', () => {
+  const api = read('server/api.js');
+  const m = api.match(/router\.post\('\/bookings\/:id\/send-message'[\s\S]*?\n\}\);/);
+  assert.ok(m, 'send-message route not found');
+  assert.ok(!/status\s*=\s*'[a-z]+'|status:\s*'[a-z]+'/.test(m[0]), 'send-message must not write a status');
+  assert.ok(!/UPDATE\s+bookings\s+SET[\s\S]*?status/i.test(m[0]), 'send-message must not UPDATE booking status');
+});
+test('owner "Send Message" posts to /send-message and never PATCHes status', () => {
+  const src = read('westmere-owner.html');
+  const fn = src.match(/async function wmMessageSend[\s\S]*?\n\}/);
+  assert.ok(fn, 'wmMessageSend not found');
+  assert.ok(/\/send-message/.test(fn[0]), 'wmMessageSend must POST to /send-message');
+  assert.ok(!/method:\s*['"]PATCH['"]/.test(fn[0]), 'wmMessageSend must NOT PATCH the booking');
+  assert.ok(!/status['"]?\s*:\s*['"]confirmed['"]/.test(fn[0]), 'wmMessageSend must NOT set status:confirmed');
+});
+test('owner app has no one-click Confirm path for incoming requests', () => {
+  const src = read('westmere-owner.html');
+  // The removed native "decisions" Confirm button and the legacy accept shim
+  // (each PATCHed status:'confirmed') must stay gone — otherwise Send Estimate
+  // is no longer the only route out of pending.
+  assert.ok(!/function\s+decConfirm\b/.test(src), 'dead decConfirm() must not return');
+  assert.ok(!/function\s+renderDecisionsPending\b/.test(src), 'dead renderDecisionsPending() must not return');
+  assert.ok(!/function\s+upcomingConfirm\b/.test(src), 'legacy upcomingConfirm() confirm shim must stay removed');
+  assert.ok(!/function\s+acceptJob\b/.test(src), 'legacy acceptJob() confirm shim must stay removed');
+});
+
 // ── summary ──────────────────────────────────────────────────────────────
 (async () => {
   await run();
