@@ -28,3 +28,39 @@ nav{height:78px;display:flex;align-items:center;justify-content:space-between;pa
 @media(max-width:620px){nav{height:68px}.brand b{font-size:1.1rem}.book-btn{display:none}.hero{min-height:360px}.hero h1{font-size:3.2rem}.hero .rule{width:200px}.split .copy{padding:48px 7vw}.section{padding:54px 0}.grid3,.grid4{grid-template-columns:1fr}.feature-strip{grid-template-columns:1fr}.feature{border-right:0;border-bottom:1px solid var(--line)}.feature:last-child{border-bottom:0}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.footer-inner{flex-direction:column;align-items:flex-start}.vehicle-hero .copy{padding:45px 7vw}.specs{grid-template-columns:repeat(2,1fr)}.image-row{grid-template-columns:1fr}.fares{font-size:.75rem}.fares .hide-mobile{display:none}}
 
 @media(max-width:850px){.book-layout{grid-template-columns:1fr!important}}
+
+/* ── Westmere custom date/time picker (wm-picker.js) ──────────────────────
+   Native <input type=date|time> popups render dark-on-dark on some mobile /
+   in-app browsers in dark mode (the "can't see the calendar" bug). This widget
+   replaces those native popups with self-contained, ALWAYS-LIGHT markup we fully
+   control, so the calendar & time list stay readable on every device regardless
+   of OS/browser dark mode. Colours are hard-coded (not theme vars) so it is
+   bulletproof even where the page is force-darkened. */
+.wm-native-hidden{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;opacity:0;pointer-events:none}
+.wm-field{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;font-family:var(--sans),Arial,sans-serif;font-size:.9rem;line-height:1.2;padding:14px;background:#ffffff;color:#1b1b1a;border:1px solid #cbc5bc;cursor:pointer;text-align:left;-webkit-appearance:none;appearance:none;color-scheme:light}
+.wm-field:focus-visible{outline:2px solid #b89045;outline-offset:1px}
+.wm-field .wm-field-val{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wm-field.is-empty .wm-field-val{color:#8a877f}
+.wm-field .wm-field-ic{flex-shrink:0;color:#b89045;display:flex}
+.wm-field .wm-field-ic svg{width:18px;height:18px;display:block}
+.wm-pop-backdrop{position:fixed;inset:0;z-index:2000;background:rgba(15,18,21,.5);display:flex;align-items:center;justify-content:center;padding:20px;color-scheme:light}
+.wm-pop{background:#ffffff;color:#1b1b1a;color-scheme:light;width:min(348px,100%);max-height:calc(100vh - 40px);overflow:auto;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.35);font-family:var(--sans),Arial,sans-serif;-webkit-font-smoothing:antialiased}
+.wm-pop-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:16px 16px 10px}
+.wm-pop-title{font-family:var(--serif),Georgia,serif;font-size:1.35rem;font-weight:500;color:#1b1b1a}
+.wm-nav{background:#f3efe8;border:none;width:38px;height:38px;border-radius:50%;cursor:pointer;font-size:1.2rem;color:#1b1b1a;display:flex;align-items:center;justify-content:center;line-height:1;flex-shrink:0}
+.wm-nav:hover:not(:disabled){background:#e7e0d4}
+.wm-nav:disabled{opacity:.3;cursor:default}
+.wm-dow{display:grid;grid-template-columns:repeat(7,1fr);padding:0 12px}
+.wm-dow span{text-align:center;font-size:.58rem;letter-spacing:.06em;text-transform:uppercase;color:#8a877f;padding:6px 0}
+.wm-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;padding:2px 12px 14px}
+.wm-day{aspect-ratio:1;border:none;background:transparent;color:#1b1b1a;font-family:var(--sans),Arial,sans-serif;font-size:.9rem;cursor:pointer;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0}
+.wm-day:hover:not(:disabled):not(.is-empty){background:#f3efe8}
+.wm-day.is-selected{background:#b89045;color:#ffffff}
+.wm-day.is-today:not(.is-selected){box-shadow:inset 0 0 0 1px #b89045}
+.wm-day:disabled{color:#cfcbc2;cursor:default}
+.wm-day.is-empty{visibility:hidden}
+.wm-sub{padding:0 16px 6px;font-size:.72rem;color:#8a877f}
+.wm-times{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:2px 16px 16px}
+.wm-time{padding:11px 4px;border:1px solid #e2ddd2;background:#ffffff;color:#1b1b1a;border-radius:8px;font-family:var(--sans),Arial,sans-serif;font-size:.82rem;cursor:pointer}
+.wm-time:hover{border-color:#b89045}
+.wm-time.is-selected{background:#b89045;color:#ffffff;border-color:#b89045}
