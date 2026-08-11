@@ -10,7 +10,10 @@
 
   // ── Fare engine (mirror of server/fare-engine.js) ──────────────────────
   var FARE_CF = {
-    brighton:      { ga:{out:89,ret:86}, he:{out:123,ret:127}, st:{out:188,ret:192}, lu:{out:176,ret:181}, so:{out:138,ret:135}, ci:{out:151,ret:154} },
+    // Brighton→Gatwick/Heathrow are owner-set FLAT ALL-IN fares (mirror of
+    // server/fare-engine.js) — marked in FARE_CF_ALLIN so the airport fee/toll is
+    // NOT added on top (£70/£125 already includes it). Both directions.
+    brighton:      { ga:{out:70,ret:70}, he:{out:125,ret:125}, st:{out:188,ret:192}, lu:{out:176,ret:181}, so:{out:138,ret:135}, ci:{out:151,ret:154} },
     lewes:         { ga:{out:91,ret:88}, he:{out:129,ret:133}, st:{out:193,ret:197}, lu:{out:181,ret:184}, so:{out:140,ret:138}, ci:{out:155,ret:158} },
     horsham:       { ga:{out:54,ret:52},  he:{out:94,ret:99}, st:{out:141,ret:145}, lu:{out:120,ret:122}, so:{out:104,ret:101}, ci:{out:124,ret:128} },
     crawley:       { ga:{out:45,ret:43},  he:{out:82,ret:86} },
@@ -23,6 +26,10 @@
     eastgrinstead: { ga:{out:62,ret:58} }
   };
   var FARE_APFULL = { ga:'Gatwick', he:'Heathrow', st:'Stansted', lu:'Luton', so:'Southampton', ci:'London City' };
+  // Town→airport fixed fares that are ALL-IN (fee/toll already baked into the
+  // FARE_CF value) — mirror of server/fare-engine.js FARE_CF_ALLIN.
+  var FARE_CF_ALLIN = { brighton:{ ga:true, he:true } };
+  function isAllIn(town, ap) { return !!(FARE_CF_ALLIN[town] && FARE_CF_ALLIN[town][ap]); }
   var FARE_AP_COORDS = {
     ga:{lat:51.1537,lon:-0.1821}, he:{lat:51.47,lon:-0.4543},
     st:{lat:51.885,lon:0.235},    lu:{lat:51.8747,lon:-0.3684},
@@ -104,8 +111,9 @@
     if (deAP && !puAP) {
       var feeD = (AIRPORT_FEES[deAP]||{}).dropoff||0;
       if (puT && FARE_CF[puT] && FARE_CF[puT][deAP]) {
-        var bD = FARE_CF[puT][deAP].out, tD = airportToll(deAP,true);
-        return Promise.resolve({ fare:bD+feeD+tD, base_fare:bD, airport_fee:feeD, toll_fee:tD, rate_type:'fixed', label:FARE_APFULL[deAP]+' drop-off' });
+        var aiD = isAllIn(puT, deAP); // owner flat fare: fee/toll already included
+        var bD = FARE_CF[puT][deAP].out, tD = aiD ? 0 : airportToll(deAP,true), feeDd = aiD ? 0 : feeD;
+        return Promise.resolve({ fare:bD+feeDd+tD, base_fare:bD, airport_fee:feeDd, toll_fee:tD, rate_type:'fixed', label:FARE_APFULL[deAP]+' drop-off' });
       }
       var ap = FARE_AP_COORDS[deAP], tDm = airportToll(deAP,false);
       return geocode(pickup).then(function(gc){
@@ -120,8 +128,9 @@
     if (puAP && !deAP) {
       var feeP = (AIRPORT_FEES[puAP]||{}).pickup||0;
       if (deT && FARE_CF[deT] && FARE_CF[deT][puAP]) {
-        var bP = FARE_CF[deT][puAP].ret, tP = airportToll(puAP,true);
-        return Promise.resolve({ fare:bP+feeP+tP, base_fare:bP, airport_fee:feeP, toll_fee:tP, rate_type:'fixed', label:FARE_APFULL[puAP]+' pickup' });
+        var aiP = isAllIn(deT, puAP); // owner flat fare: fee/toll already included
+        var bP = FARE_CF[deT][puAP].ret, tP = aiP ? 0 : airportToll(puAP,true), feePp = aiP ? 0 : feeP;
+        return Promise.resolve({ fare:bP+feePp+tP, base_fare:bP, airport_fee:feePp, toll_fee:tP, rate_type:'fixed', label:FARE_APFULL[puAP]+' pickup' });
       }
       var ap2 = FARE_AP_COORDS[puAP], tPm = airportToll(puAP,false);
       return geocode(destination).then(function(gc){

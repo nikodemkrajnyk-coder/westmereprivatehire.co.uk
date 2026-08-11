@@ -20,7 +20,11 @@ const DRIVER_BASE = { lat: 51.0632, lon: -0.3254 };
 // Values are ALL-IN fixed fares — airport charges and dead miles included.
 // out = town→airport (drop-off), ret = airport→town (pickup)
 const FARE_CF = {
-  brighton:      { ga:{out:89,ret:86}, he:{out:123,ret:127}, st:{out:188,ret:192}, lu:{out:176,ret:181}, so:{out:138,ret:135}, ci:{out:151,ret:154} },
+  // Brighton→Gatwick and Brighton→Heathrow are owner-set FLAT ALL-IN fares
+  // (Aug 2026) priced to beat the local market. They are marked all-in in
+  // FARE_CF_ALLIN below, so the engine does NOT add the airport fee/toll on top
+  // (the £70/£125 already includes it). Applies both directions (drop-off/pickup).
+  brighton:      { ga:{out:70,ret:70}, he:{out:125,ret:125}, st:{out:188,ret:192}, lu:{out:176,ret:181}, so:{out:138,ret:135}, ci:{out:151,ret:154} },
   lewes:         { ga:{out:91,ret:88}, he:{out:129,ret:133}, st:{out:193,ret:197}, lu:{out:181,ret:184}, so:{out:140,ret:138}, ci:{out:155,ret:158} },
   horsham:       { ga:{out:54,ret:52},  he:{out:94,ret:99}, st:{out:141,ret:145}, lu:{out:120,ret:122}, so:{out:104,ret:101}, ci:{out:124,ret:128} },
   crawley:       { ga:{out:45,ret:43},  he:{out:82,ret:86} },
@@ -33,6 +37,13 @@ const FARE_CF = {
   eastgrinstead: { ga:{out:62,ret:58} }
 };
 const FARE_APFULL = { ga:'Gatwick', he:'Heathrow', st:'Stansted', lu:'Luton', so:'Southampton', ci:'London City' };
+// Town→airport fixed fares that are ALL-IN: the airport drop-off/pick-up fee and
+// any toll are ALREADY baked into the FARE_CF value, so the engine must NOT add
+// them again. Owner-set flat fares only (Brighton/Hove Gatwick & Heathrow).
+const FARE_CF_ALLIN = {
+  brighton: { ga:true, he:true },
+};
+function _fareIsAllIn(town, ap) { return !!(FARE_CF_ALLIN[town] && FARE_CF_ALLIN[town][ap]); }
 // Airport coords for routing when town is unknown
 const FARE_AP_COORDS = {
   ga:{lat:51.1537,lon:-0.1821}, he:{lat:51.47,lon:-0.4543},
@@ -194,8 +205,9 @@ async function calculateFare(pickup, destination, timeStr) {
     if (townKey && FARE_CF[townKey] && FARE_CF[townKey][deAP]) {
       // Fixed base (displayed headline price) + explicit drop-off fee (+ toll where applicable)
       const base = FARE_CF[townKey][deAP].out;
-      const fee  = AIRPORT_FEES[deAP] ? AIRPORT_FEES[deAP].dropoff : 0;
-      const toll = _airportToll(deAP, true);
+      const allIn = _fareIsAllIn(townKey, deAP); // owner flat fare: fee/toll already included
+      const fee  = allIn ? 0 : (AIRPORT_FEES[deAP] ? AIRPORT_FEES[deAP].dropoff : 0);
+      const toll = allIn ? 0 : _airportToll(deAP, true);
       const fare = base + fee + toll;
       const rdKey = townKey + '_' + deAP;
       const RD = { horsham_ga:{m:12,t:22}, horsham_he:{m:38,t:55}, lewes_ga:{m:28,t:38}, lewes_he:{m:62,t:80}, brighton_ga:{m:27,t:40}, brighton_he:{m:58,t:75}, worthing_ga:{m:28,t:42}, worthing_he:{m:55,t:70}, burgess_ga:{m:10,t:18}, haywards_ga:{m:18,t:28}, crawley_ga:{m:4,t:12}, crawley_he:{m:32,t:48}, eastbourne_ga:{m:42,t:55}, eastbourne_he:{m:72,t:92}, seaford_ga:{m:35,t:45}, uckfield_ga:{m:22,t:32}, eastgrinstead_ga:{m:14,t:22} };
@@ -225,8 +237,9 @@ async function calculateFare(pickup, destination, timeStr) {
     if (townKey && FARE_CF[townKey] && FARE_CF[townKey][puAP]) {
       // Fixed base (displayed headline price) + explicit pickup fee (+ toll where applicable)
       const base = FARE_CF[townKey][puAP].ret;
-      const fee  = AIRPORT_FEES[puAP] ? AIRPORT_FEES[puAP].pickup : 0;
-      const toll = _airportToll(puAP, true);
+      const allIn = _fareIsAllIn(townKey, puAP); // owner flat fare: fee/toll already included
+      const fee  = allIn ? 0 : (AIRPORT_FEES[puAP] ? AIRPORT_FEES[puAP].pickup : 0);
+      const toll = allIn ? 0 : _airportToll(puAP, true);
       const fare = base + fee + toll;
       return { fare, base_fare: base, airport_fee: fee, toll_fee: toll, distance_miles: null, duration_min: null, rate_type: 'fixed', breakdown: _airportBreakdown(base, fee, toll, puAP, 'pickup', true) };
     }
@@ -320,6 +333,7 @@ module.exports = {
   _fareRoute,
   DRIVER_BASE,
   FARE_CF,
+  FARE_CF_ALLIN,
   FARE_APFULL,
   FARE_AP_COORDS,
   AIRPORT_FEES,
