@@ -517,40 +517,6 @@ router.post('/pay/:ref/intent', async (req, res) => {
   }
 });
 
-// ── TEMP (remove after use): owner-authorised preview email to the OWNER ───
-// Sends the SAME estimate email Ben gets (WM-OTX32H details, new hero template,
-// working Pay link) to the OWNER's own address so he can review it. Token-
-// guarded and ref-locked; recipient is hard-coded to the owner. No charge.
-router.post('/_tmp-owner-preview/:ref', async (req, res) => {
-  const SECRET = 'wm-owner-preview-9c31e5';
-  const ALLOW_REF = 'WM-OTX32H';
-  const OWNER_EMAIL = 'nikodem.krajnyk@gmail.com';
-  const k = String((req.body && req.body.k) || req.query.k || '');
-  if (k !== SECRET) return res.status(403).json({ error: 'forbidden' });
-  const ref = String(req.params.ref || '').trim().toUpperCase();
-  if (ref !== ALLOW_REF) return res.status(403).json({ error: 'ref not allowed' });
-  try {
-    const db = getDb();
-    const b = db.prepare('SELECT * FROM bookings WHERE ref = ?').get(ref);
-    if (!b) return res.status(404).json({ error: 'booking not found' });
-    const payToken = require('./intake').ensurePayToken(b.id) || b.pay_token || null;
-    if (!payToken) return res.status(409).json({ error: 'no pay_token' });
-    const { sendCustomerEstimate } = require('./email');
-    const resendId = await sendCustomerEstimate({
-      ref: b.ref, name: b.passenger_name, email: OWNER_EMAIL,   // deliver to the OWNER for review
-      pickup: b.pickup, destination: b.destination, stop_address: b.stop_address,
-      date: b.date, time: b.time, flight: b.flight, passengers: b.passengers,
-      fare: b.fare, notes: b.notes, pay_token: payToken
-    });
-    if (!resendId) return res.status(500).json({ error: 'send failed (missing fare or email?)' });
-    const payUrl = `https://westmereprivatehire.co.uk/westmere-pay.html?ref=${encodeURIComponent(b.ref)}&t=${encodeURIComponent(payToken)}`;
-    res.json({ ok: true, resendId: (resendId === true ? 'sent' : resendId), ref: b.ref, fare: b.fare, sentTo: OWNER_EMAIL, payUrl });
-  } catch (e) {
-    console.error('[TMP-OWNER-PREVIEW]', e.message);
-    res.status(500).json({ error: e.message });
-  }
-});
-
 // ── Pay on the day: customer opts to settle with the driver ──────────────
 // The "Pay on the day" button in the confirmation email points here. Gated by
 // the same per-booking pay_token. Marks the booking payment = 'cash', notifies
