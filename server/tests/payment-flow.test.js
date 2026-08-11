@@ -129,7 +129,7 @@ test('airport-transfers copy no longer says "fixed base fares"', () => {
   assert.ok(!/fixed base fares/i.test(html), 'airport-transfers.html still says "fixed base fares"');
   assert.ok(/Indicative starting fares shown/.test(html), 'airport-transfers.html missing honest subtext');
   // Spot-check a few fare figures survive the copy change.
-  for (const p of ['from £45', '£65', 'from £188']) {
+  for (const p of ['£45', '£65', 'from £188']) {
     assert.ok(html.includes(p), 'airport-transfers.html fare "' + p + '" changed/removed');
   }
 });

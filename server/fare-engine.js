@@ -32,8 +32,8 @@ const FARE_CF = {
   // does NOT add the airport fee/toll on top. Both directions. Other airports for
   // these towns keep the normal base + fee-on-top behaviour.
   lewes:         { ga:{out:80,ret:80}, he:{out:150,ret:150}, st:{out:193,ret:197}, lu:{out:181,ret:184}, so:{out:140,ret:138}, ci:{out:155,ret:158} },
-  // Horsham → Gatwick is a normal (NOT all-in) chart fare: base £45 + airport fee
-  // on top. Heathrow and all other Horsham airports unchanged.
+  // Horsham → Gatwick is FLAT ALL-IN (£45, marked in FARE_CF_ALLIN — no fee/toll
+  // on top). Heathrow and all other Horsham airports stay normal base + fee.
   horsham:       { ga:{out:45,ret:45},  he:{out:94,ret:99}, st:{out:141,ret:145}, lu:{out:120,ret:122}, so:{out:104,ret:101}, ci:{out:124,ret:128} },
   crawley:       { ga:{out:45,ret:43},  he:{out:82,ret:86} },
   worthing:      { ga:{out:85,ret:82}, he:{out:121,ret:123} },
@@ -53,8 +53,7 @@ const FARE_CF_ALLIN = {
   lewes:    { ga:true, he:true },
   haywards: { ga:true, he:true },
   burgess:  { ga:true, he:true },
-  // NB: horsham is deliberately NOT all-in — its Gatwick fare keeps the airport
-  // fee on top (normal chart fare), per owner.
+  horsham:  { ga:true },  // Gatwick all-in (£45 flat); Heathrow stays base + fee.
 };
 function _fareIsAllIn(town, ap) { return !!(FARE_CF_ALLIN[town] && FARE_CF_ALLIN[town][ap]); }
 // Airport coords for routing when town is unknown

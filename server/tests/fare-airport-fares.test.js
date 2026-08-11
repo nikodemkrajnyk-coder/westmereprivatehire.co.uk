@@ -12,8 +12,8 @@
  *   • Haywards Heath  → Gatwick £60,  Heathrow £126
  *   • Lewes           → Gatwick £80,  Heathrow £150
  *
- * Horsham is DIFFERENT — Gatwick is a NORMAL chart fare: base £45 + the airport
- * drop-off fee ON TOP (not all-in). Horsham → Heathrow is unchanged.
+ * Horsham → Gatwick is ALSO all-in (£45 flat). Horsham → Heathrow is the one
+ * remaining normal chart fare: base £94 + the airport fee ON TOP (£101).
  *
  * Crawley and every other town/airport are unchanged (still base + fee on top).
  *
@@ -65,18 +65,23 @@ for (const t of ALLIN) {
   });
 }
 
-// ── Horsham → Gatwick: NOT all-in. base £45 + £10 Gatwick drop-off fee = £55 ──
-test('Horsham → Gatwick = £45 base + £10 fee = £55 (NOT all-in)', async () => {
+// ── Horsham → Gatwick: now FLAT ALL-IN £45 (fee + toll suppressed), both ways ──
+test('Horsham → Gatwick = £45 all-in (no fee/toll on top)', async () => {
   const r = await calculateFare('Horsham', 'Gatwick Airport', '10:00');
   assert.strictEqual(r.rate_type, 'fixed');
-  assert.strictEqual(r.base_fare, 45, `Horsham→Gatwick base expected £45, got £${r.base_fare}`);
-  assert.strictEqual(r.airport_fee, 10, 'Horsham must keep the airport drop-off fee on top');
-  assert.strictEqual(r.fare, 55, `Horsham→Gatwick total expected £55, got £${r.fare}`);
+  assert.strictEqual(r.fare, 45, `Horsham→Gatwick expected £45, got £${r.fare}`);
+  assert.strictEqual(r.airport_fee, 0, 'Horsham→Gatwick fee must be suppressed (all-in)');
+  assert.strictEqual(r.toll_fee || 0, 0, 'Horsham→Gatwick toll must be suppressed (all-in)');
 });
-test('RH12 (Horsham) → Gatwick resolves and is £55 (base £45 + fee)', async () => {
+test('RH12 (Horsham) → Gatwick resolves and is £45 all-in', async () => {
   const r = await calculateFare('Horsham, RH12 1AA', 'Gatwick Airport', '10:00');
-  assert.strictEqual(r.base_fare, 45);
-  assert.strictEqual(r.fare, 55);
+  assert.strictEqual(r.fare, 45, `RH12→Gatwick expected £45, got £${r.fare}`);
+  assert.strictEqual(r.airport_fee, 0);
+});
+test('Gatwick → Horsham (pickup) = £45 all-in', async () => {
+  const r = await calculateFare('Gatwick Airport', 'Horsham', '10:00');
+  assert.strictEqual(r.fare, 45, `Gatwick→Horsham expected £45, got £${r.fare}`);
+  assert.strictEqual(r.airport_fee, 0);
 });
 // Horsham → Heathrow must be UNCHANGED: base £94 + £7 Heathrow fee = £101.
 test('Horsham → Heathrow unchanged = £94 base + £7 fee = £101', async () => {
