@@ -645,9 +645,17 @@ router.post('/pay/:ref/cash', (req, res) => {
     } catch (_) {}
     if (wasChosen) {
       try { events.broadcast('booking:updated', { id: b.id, ref: b.ref, status: 'awaiting_payment', reason: 'Customer chose to pay driver on the day' }); } catch (_) {}
+      // The customer has just CHOSEN cash → send the booking-confirmed email now
+      // (payment='cash', not paid). notifyCustomerConfirmed renders the CASH
+      // variant: "booking confirmed, pay your driver in cash on the day" —
+      // deliberately NOT a "paid" receipt (nothing has been collected yet).
+      try {
+        require('./intake').notifyCustomerConfirmed(b.id)
+          .catch(e => console.error('[PAY] notifyCustomerConfirmed (cash choice) failed:', e.message));
+      } catch (e) { console.error('[PAY] notifyCustomerConfirmed (cash) threw:', e.message); }
     }
 
-    console.log('[PAY] Cash on the day chosen for', b.ref, wasChosen ? '(pending→awaiting_payment)' : '');
+    console.log('[PAY] Cash on the day chosen for', b.ref, wasChosen ? '(pending→awaiting_payment, cash confirmation sent)' : '');
     res.send(cashPage('ok', "You're all set — please settle the fare with your driver on the day, by cash or card. We look forward to welcoming you.", b.ref));
   } catch (err) {
     console.error('[PAY] cash error:', err.message);

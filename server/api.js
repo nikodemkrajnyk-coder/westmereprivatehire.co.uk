@@ -1591,12 +1591,12 @@ router.post('/bookings/:id/mark-paid', (req, res) => {
       .run(req.auth.type || 'user', req.auth.id, 'payment_marked_received', b.ref, req.ip);
   } catch (_) {}
 
-  // Fire the customer "Booking confirmed" email + WhatsApp only on the edge
-  // into confirmed, so re-marking a settled booking stays quiet.
+  // "Mark as paid" is an INTERNAL settlement of a cash booking — the customer
+  // already got their "booking confirmed, pay your driver on the day" email when
+  // they chose cash. Do NOT send another customer email here (no "paid" spam);
+  // just refresh the connected staff apps.
   if (wasUnsettled) {
-    require('./intake').notifyCustomerConfirmed(id)
-      .catch(e => console.error('[API] notifyCustomerConfirmed (mark-paid) failed:', e.message));
-    events.broadcast('booking:confirmed', { id, ref: b.ref, reason: 'Payment received' });
+    events.broadcast('booking:confirmed', { id, ref: b.ref, reason: 'Cash received (marked paid by owner)' });
   } else {
     events.broadcast('booking:updated', { id, ref: b.ref, reason: 'Marked paid' });
   }

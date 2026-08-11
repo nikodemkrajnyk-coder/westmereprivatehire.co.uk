@@ -110,9 +110,11 @@ test('cash route records cash + moves pending → awaiting_payment (never confir
   assert.ok(/THEN 'awaiting_payment'/.test(block), "cash route must move an unsettled booking to 'awaiting_payment'");
   assert.ok(!/THEN 'confirmed'/.test(block), 'cash route must NOT auto-confirm (spec: awaiting payment first)');
 });
-test('cash route does NOT fire the customer "confirmed" email (not yet paid)', () => {
+test('cash route sends the booking-confirmed email when the customer chooses cash', () => {
   const block = cashPostBlock();
-  assert.ok(!/notifyCustomerConfirmed/.test(block), 'cash choice must not send a confirmation — it is not confirmed until paid');
+  // Choosing cash confirms the JOURNEY (payment pending) → the customer gets the
+  // CASH confirmation ("pay your driver on the day"), never a "paid" receipt.
+  assert.ok(/notifyCustomerConfirmed/.test(block), 'cash choice must send the (cash) booking-confirmed email');
 });
 
 // Card: choosing card / opening the card form moves pending → awaiting_payment;
@@ -136,9 +138,10 @@ test('stripe webhook confirms from awaiting_payment (and pending), not only pend
   assert.ok(/row\.status === 'awaiting_payment'/.test(block), 'webhook must fire the confirmed email off the awaiting_payment edge too');
 });
 
-// Mark-as-paid: the ONLY owner/driver action that promotes a booking to
-// confirmed. This is how a cash-on-the-day job is settled.
-test('mark-paid route settles awaiting_payment → confirmed + stamps paid_at', () => {
+// Mark-as-paid: the owner/driver settlement of a cash job. It promotes the
+// booking to confirmed internally but must NOT email the customer again — they
+// already got the "pay your driver on the day" confirmation when they chose cash.
+test('mark-paid route settles awaiting_payment → confirmed + stamps paid_at, without emailing the customer', () => {
   const api = read('server/api.js');
   const m = api.match(/router\.post\('\/bookings\/:id\/mark-paid'[\s\S]*?\n\}\);/);
   assert.ok(m, 'mark-paid route not found');
@@ -146,7 +149,7 @@ test('mark-paid route settles awaiting_payment → confirmed + stamps paid_at', 
   assert.ok(/paid_at = COALESCE\(paid_at, datetime\('now'\)\)/.test(block), 'mark-paid must stamp paid_at once');
   assert.ok(/THEN 'confirmed'/.test(block), 'mark-paid must confirm an unsettled booking');
   assert.ok(/awaiting_payment/.test(block), 'mark-paid must handle awaiting_payment bookings');
-  assert.ok(/notifyCustomerConfirmed/.test(block), 'mark-paid must notify the customer on the confirm edge');
+  assert.ok(!/notifyCustomerConfirmed/.test(block), 'mark-paid must NOT send the customer another email (no "paid" spam)');
   assert.ok(/status === 'cancelled'/.test(block), 'mark-paid must refuse a cancelled booking');
 });
 
@@ -805,41 +808,50 @@ test('manual create-booking form captures luggage (nb-bags) and sends it', () =>
 
 // ── Paid confirmation + review-on-completion emails ──────────────────────
 console.log('\nPaid confirmation + review-request emails (owner spec)');
-test('paid confirmation email: hero template, thanks-for-booking, trip details, no pay buttons', async () => {
+test('confirmation email: CASH is confirmed-but-pending (never "Paid"); CARD is paid', async () => {
   process.env.RESEND_API_KEY = 'test_fake_key';
   let cap = {};
   global.fetch = async (u, o) => { cap = JSON.parse(o.body); return { ok: true, status: 200, json: async () => ({ id: 'id' }) }; };
   delete require.cache[require.resolve('../email')];
   const email = require('../email');
-  // Cash-marked-paid booking (paid, method cash, token still present).
+
+  // CASH: customer chose "pay your driver on the day" — booking confirmed,
+  // payment PENDING. The email must NEVER say "Paid" (subject or body).
   await email.sendCustomerConfirmed({
-    ref: 'WPH-CONF', name: 'Martin Shuttle', email: 'm@e.com',
+    ref: 'WPH-CASH', name: 'Martin Shuttle', email: 'm@e.com',
     pickup: 'Greenhill Avenue, Caterham, CR3 6PQ', destination: 'Bolney, West Sussex, England',
-    date: '2026-12-01', time: '09:00', fare: 75, payment: 'cash', paid: true,
+    date: '2026-12-01', time: '09:00', fare: 75, payment: 'cash', paid: false,
     passengers: 2, bags: '3', pay_token: 'deadbeefdeadbeefdeadbeefdeadbeef'
   });
-  const h = cap.html;
-  assert.ok(/WESTMERE/.test(h) && /wm-pad/.test(h), 'must use the hero-image template');
-  assert.ok(/Thank you for booking/i.test(h), 'must thank the customer for booking');
-  assert.ok(/WPH-CONF/.test(h), 'must include the booking reference');
-  assert.ok(/2 passenger/.test(h), 'must include the passenger count');
-  assert.ok(/3 bag/.test(h), 'must include the luggage count');
-  assert.ok(/Paid — cash/.test(h), 'must show the actual payment method (cash), not "Paid online"');
-  assert.ok(/Bolney/.test(h) && !/West Sussex, England/.test(h), 'addresses must be shortened');
-  assert.ok(!/Pay Now/.test(h) && !/Pay Your Driver On The Day/.test(h), 'a PAID confirmation must carry NO pay buttons');
-  // Card-paid variant renders the card method.
+  const cash = cap.html, cashSubj = cap.subject;
+  assert.ok(/WESTMERE/.test(cash) && /wm-pad/.test(cash), 'hero template');
+  assert.ok(/WPH-CASH/.test(cash) && /2 passenger/.test(cash) && /3 bag/.test(cash), 'trip details incl. passengers + luggage');
+  assert.ok(!/Paid/.test(cash), 'a CASH booking must NEVER say "Paid" anywhere in the body');
+  assert.ok(!/paid/i.test(cashSubj), 'a CASH booking subject must not say "paid"');
+  assert.ok(/Pay your driver in cash on the day/.test(cash), 'payment row must read "pay your driver in cash on the day"');
+  assert.ok(/pay your driver in cash on the day/i.test(cash), 'body must frame it as pay-driver-on-the-day, not a receipt');
+  assert.ok(/booking is confirmed/i.test(cash), 'must read as a confirmed booking');
+  assert.ok(!/Pay Now/.test(cash), 'no Pay Now button (method already chosen)');
+
+  // CARD: Stripe charge succeeded → genuinely paid.
   cap = {};
-  await email.sendCustomerConfirmed({ ref: 'WPH-CONF2', name: 'Jane', email: 'j@e.com', pickup: 'A', destination: 'B', date: '2026-12-02', time: '10:00', fare: 90, payment: 'card', paid: true, passengers: 1, pay_token: null });
+  await email.sendCustomerConfirmed({ ref: 'WPH-CARD', name: 'Jane', email: 'j@e.com', pickup: 'A', destination: 'B', date: '2026-12-02', time: '10:00', fare: 90, payment: 'card', paid: true, passengers: 1, pay_token: null });
   assert.ok(/Paid by card/.test(cap.html), 'card-paid confirmation must show "Paid by card"');
+  assert.ok(/payment has been received/i.test(cap.html), 'card confirmation must say the payment was received');
+  assert.ok(/paid/i.test(cap.subject), 'card confirmation subject may say paid');
   assert.ok(!/Pay Now/.test(cap.html), 'card-paid confirmation must carry no pay buttons');
 });
-test('paid confirmation fires on BOTH the card-webhook and cash-mark-paid edges (with luggage)', () => {
+test('confirmation fires on card-webhook and cash-CHOICE; NOT on cash mark-paid', () => {
   const pub = read('server/public-api.js');
+  // Card: the Stripe webhook fires the (card, paid) confirmation.
   const wh = pub.indexOf("'/stripe-webhook'");
-  assert.ok(wh !== -1 && /notifyCustomerConfirmed/.test(pub.slice(wh, wh + 3000)), 'stripe webhook must fire the confirmed email');
+  assert.ok(wh !== -1 && /notifyCustomerConfirmed/.test(pub.slice(wh, wh + 3000)), 'stripe webhook must fire the confirmation');
+  // Cash: choosing cash (pay/:ref/cash) fires the (cash, pending) confirmation.
+  assert.ok(/notifyCustomerConfirmed/.test(cashPostBlock()), 'cash choice must fire the confirmation');
+  // Mark-as-paid is internal only — it must NOT email the customer again.
   const api = read('server/api.js');
   const mp = api.match(/router\.post\('\/bookings\/:id\/mark-paid'[\s\S]*?\n\}\);/);
-  assert.ok(mp && /notifyCustomerConfirmed/.test(mp[0]), 'cash mark-paid must fire the confirmed email');
+  assert.ok(mp && !/notifyCustomerConfirmed/.test(mp[0]), 'cash mark-paid must NOT fire another customer email');
   assert.ok(/bags:\s*row\.bags/.test(read('server/intake.js')), 'notifyCustomerConfirmed must pass luggage (bags) to the email');
 });
 test('review-request email: hero template + the same Google review link as the site', async () => {
