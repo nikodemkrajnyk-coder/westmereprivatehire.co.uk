@@ -29,9 +29,9 @@ function test(name, fn) { queue.push({ name, fn }); }
 
 // ── All-in towns: exact fare, fee + toll both suppressed, both directions ──
 const ALLIN = [
-  { town: 'Brighton',       inputs: ['Brighton', 'Hove', 'Brighton, BN1 1AA', 'Hove, BN3 2AA'], ga: 65, he: 125 },
-  { town: 'Burgess Hill',   inputs: ['Burgess Hill', 'Burgess Hill, RH15 8AA'],                  ga: 56, he: 126 },
-  { town: 'Haywards Heath', inputs: ['Haywards Heath', 'Haywards Heath, RH16 1AA', 'RH17 5AA'],  ga: 60, he: 126 },
+  { town: 'Brighton',       inputs: ['Brighton', 'Hove', 'Brighton, BN1 1AA', 'Hove, BN3 2AA'], ga: 75, he: 125 },
+  { town: 'Burgess Hill',   inputs: ['Burgess Hill', 'Burgess Hill, RH15 8AA'],                  ga: 60, he: 126 },
+  { town: 'Haywards Heath', inputs: ['Haywards Heath', 'Haywards Heath, RH16 1AA', 'RH17 5AA'],  ga: 65, he: 126 },
   { town: 'Lewes',          inputs: ['Lewes', 'Lewes, BN7 1AA'],                                 ga: 80, he: 150 },
   { town: 'Horsham',        inputs: ['Horsham', 'Horsham, RH12 1AA'],                            ga: 50, he: 90  },
 ];

@@ -43,9 +43,9 @@ const TOWN_INPUT = {
 };
 // The owner's published all-in figures (must equal the engine).
 const EXPECTED = [
-  ['brighton', 'ga', 65], ['brighton', 'he', 125],
-  ['haywards', 'ga', 60], ['haywards', 'he', 126],
-  ['burgess',  'ga', 56], ['burgess',  'he', 126],
+  ['brighton', 'ga', 75], ['brighton', 'he', 125],
+  ['haywards', 'ga', 65], ['haywards', 'he', 126],
+  ['burgess',  'ga', 60], ['burgess',  'he', 126],
   ['horsham',  'ga', 50], ['horsham',  'he', 90],
   ['lewes',    'ga', 80], ['lewes',    'he', 150],
 ];
@@ -83,7 +83,7 @@ test('westmere-fares.html Horsham/Lewes/Brighton figures match the engine', () =
   const src = read('westmere-fares.html');
   // These appear as [name, dist, drop, pickup] tuples in the AREAS data.
   for (const [needle, why] of [
-    ['name:"Brighton", fares:[["Gatwick Airport","~27 mi · ~40 min",65,65],["Heathrow Airport","~58 mi · ~75 min",125,125]', 'Brighton'],
+    ['name:"Brighton", fares:[["Gatwick Airport","~27 mi · ~40 min",75,75],["Heathrow Airport","~58 mi · ~75 min",125,125]', 'Brighton'],
     ['name:"Lewes", fares:[["Gatwick Airport","~28 mi · ~38 min",80,80],["Heathrow Airport","~62 mi · ~80 min",150,150]', 'Lewes'],
     ['name:"Horsham", fares:[["Gatwick Airport","~12 mi · ~22 min",50,50],["Heathrow Airport","~38 mi · ~55 min",90,90]', 'Horsham'],
   ]) {

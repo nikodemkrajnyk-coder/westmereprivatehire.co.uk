@@ -20,13 +20,11 @@ const DRIVER_BASE = { lat: 51.0632, lon: -0.3254 };
 // Values are ALL-IN fixed fares — airport charges and dead miles included.
 // out = town→airport (drop-off), ret = airport→town (pickup)
 const FARE_CF = {
-  // Brighton→Gatwick and Brighton→Heathrow are owner-set FLAT ALL-IN fares
-  // (Aug 2026): top normal private-hire competitor price (excluding chauffeur/
-  // limo/executive) minus £5 — Gatwick £70 (Hove Airport Cars) − £5 = £65;
-  // Heathrow £130 (Streamline) − £5 = £125. Marked all-in in FARE_CF_ALLIN below,
-  // so the engine does NOT add the airport fee/toll on top (the £65/£125 already
-  // includes it). Applies both directions (drop-off/pickup).
-  brighton:      { ga:{out:65,ret:65}, he:{out:125,ret:125}, st:{out:188,ret:192}, lu:{out:176,ret:181}, so:{out:138,ret:135}, ci:{out:151,ret:154} },
+  // Brighton→Gatwick £75 and Brighton→Heathrow £125 are owner-set FLAT ALL-IN
+  // fares (authoritative table, Aug 2026). Marked all-in in FARE_CF_ALLIN below,
+  // so the engine does NOT add the airport fee/toll on top (the figure already
+  // includes them). Symmetric — the same price both directions (drop-off/pickup).
+  brighton:      { ga:{out:75,ret:75}, he:{out:125,ret:125}, st:{out:188,ret:192}, lu:{out:176,ret:181}, so:{out:138,ret:135}, ci:{out:151,ret:154} },
   // Lewes/Haywards Heath/Burgess Hill Gatwick+Heathrow are owner-set FLAT ALL-IN
   // fares (top normal private-hire − £5), marked in FARE_CF_ALLIN so the engine
   // does NOT add the airport fee/toll on top. Both directions. Other airports for
@@ -38,8 +36,8 @@ const FARE_CF = {
   // crawley: intentionally NO fixed fare — priced MANUALLY (quote on request).
   // Its normalizer keys stay so FARE_ON_REQUEST below can catch Crawley journeys.
   worthing:      { ga:{out:85,ret:82}, he:{out:121,ret:123} },
-  haywards:      { ga:{out:60,ret:60}, he:{out:126,ret:126}, lu:{out:142,ret:145}, st:{out:135,ret:139}, so:{out:112,ret:109}, ci:{out:120,ret:123} },
-  burgess:       { ga:{out:56,ret:56}, he:{out:126,ret:126}, lu:{out:159,ret:162}, st:{out:161,ret:165}, so:{out:114,ret:111}, ci:{out:135,ret:138} },
+  haywards:      { ga:{out:65,ret:65}, he:{out:126,ret:126}, lu:{out:142,ret:145}, st:{out:135,ret:139}, so:{out:112,ret:109}, ci:{out:120,ret:123} },
+  burgess:       { ga:{out:60,ret:60}, he:{out:126,ret:126}, lu:{out:159,ret:162}, st:{out:161,ret:165}, so:{out:114,ret:111}, ci:{out:135,ret:138} },
   eastbourne:    { ga:{out:119,ret:117}, he:{out:158,ret:163} },
   seaford:       { ga:{out:108,ret:105} },
   uckfield:      { ga:{out:73,ret:70} },
