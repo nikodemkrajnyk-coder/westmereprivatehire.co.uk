@@ -1149,14 +1149,9 @@ input[type=checkbox],input[type=radio]{accent-color:#111111 !important}
           <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.22rem;font-family:var(--sans)">Notes</div>
           <textarea id="nb-notes" rows="2" placeholder="Flight number, luggage, special requests…" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.85rem;color:var(--navy);border-radius:6px;box-sizing:border-box;resize:vertical"></textarea>
         </div>
-        <div style="margin-bottom:.7rem">
-          <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.22rem;font-family:var(--sans)">Status</div>
-          <select id="nb-status" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px">
-            <option value="confirmed">Confirmed</option>
-            <option value="pending">Pending (To Be Confirmed)</option>
-            <option value="completed">Completed (record past trip)</option>
-          </select>
-        </div>
+        <!-- No status picker: an owner-created booking follows the SAME lifecycle
+             as a customer web booking — it lands as a new PENDING job, ready for
+             Send Estimate → awaiting payment → confirmed. Never auto-confirmed. -->
         <div id="nb-err" style="display:none;margin-bottom:.7rem;padding:.5rem .7rem;background:rgba(163,51,51,.08);border:1px solid rgba(163,51,51,.25);border-radius:6px;font-size:.78rem;color:#8B2222"></div>
         <button id="nb-submit-btn" onclick="ownerNewBookingSubmit()" style="width:100%;padding:.75rem;font-family:var(--sans);font-size:.82rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;background:var(--gold);color:var(--navy);border:none;border-radius:8px;cursor:pointer;min-height:48px">Create Booking</button>
       </div>
@@ -3141,7 +3136,6 @@ function ownerNewBookingOpen(){
   document.getElementById('nb-fare').value='';
   document.getElementById('nb-pax').value='1';
   document.getElementById('nb-notes').value='';
-  document.getElementById('nb-status').value='confirmed';
 }
 function ownerNewBookingClose(){
   document.getElementById('new-booking-sheet').style.display='none';
@@ -3162,7 +3156,6 @@ async function ownerNewBookingSubmit(){
   var btn=document.getElementById('nb-submit-btn');
   btn.disabled=true;btn.textContent='Creating…';
   try{
-    var status=document.getElementById('nb-status').value||'confirmed';
     var fare=parseFloat(document.getElementById('nb-fare').value)||null;
     var body={
       pickup:pickup,stop_address:stop||null,destination:dest,date:date,time:time,
@@ -3174,17 +3167,15 @@ async function ownerNewBookingSubmit(){
       notes:(document.getElementById('nb-notes').value||'').trim()||null,
       payment:'pending'
     };
+    // Create ONLY — no status is sent, so the server applies its default 'pending'
+    // exactly like a customer web booking. There is deliberately no follow-up
+    // PATCH to 'confirmed': the booking follows the normal lifecycle (Send
+    // Estimate → awaiting_payment on card/cash → confirmed when paid / cancelled).
     var r=await fetch('/api/bookings',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     var d=await r.json();
-    if(r.ok&&(d.ok||d.id||d.ref)){
-      var bookingId=d.id;
-      // If status is not pending, update it (triggers confirmation email for 'confirmed')
-      if(status!=='pending'&&bookingId){
-        var updates={status:status};
-        if(fare)updates.fare=fare;
-        await fetch('/api/bookings/'+bookingId,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(updates)});
-      }
-      showToast('Booking created'+(d.ref?' — '+d.ref:''));
+    if(r.ok&&(d.ok||(d.booking&&d.booking.id))){
+      var ref=(d.booking&&d.booking.ref)||d.ref||'';
+      showToast('Booking created'+(ref?' — '+ref:'')+' — now Pending');
       ownerNewBookingClose();
       loadOwnerBookings();
     } else {

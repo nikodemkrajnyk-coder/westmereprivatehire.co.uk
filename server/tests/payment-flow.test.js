@@ -517,6 +517,47 @@ test('(g) Apple Pay domain-association FILE exists and is valid (route can serve
     'association file must be the raw Stripe content, not an HTML error page');
 });
 
+// ── Owner-created bookings follow the web-booking lifecycle ──────────────
+// Owner spec: when the owner creates a booking in the app there is NO status
+// prompt. It starts in the SAME initial state a customer web booking gets
+// (pending/new), then follows the normal lifecycle (Send Estimate →
+// awaiting_payment → confirmed / cancelled). It must never be auto-confirmed
+// on creation.
+console.log('\nOwner create-booking: no status prompt, starts pending (owner spec)');
+test('owner create-booking form has no status selector and never auto-confirms', () => {
+  const src = read('westmere-owner.html');
+  assert.ok(!/id="nb-status"/.test(src), 'the nb-status selector must be removed (no status prompt)');
+  const fn = src.match(/async function ownerNewBookingSubmit[\s\S]*?\n\}/);
+  assert.ok(fn, 'ownerNewBookingSubmit not found');
+  assert.ok(!/nb-status/.test(fn[0]), 'submit must not read a status value');
+  assert.ok(!/status['"]?\s*:\s*['"]confirmed['"]/.test(fn[0]), 'owner create must never set status:confirmed');
+  assert.ok(!/method:\s*['"]PATCH['"]/.test(fn[0]), 'owner create must not PATCH a status after creating');
+});
+test('owner POST /bookings sets no status → DB default pending (same as web /book)', () => {
+  const api = read('server/api.js');
+  const m = api.match(/router\.post\('\/bookings'[\s\S]*?res\.status\(201\)/);
+  assert.ok(m, 'owner POST /bookings route not found');
+  const ins = m[0].match(/INSERT INTO bookings \(([^)]*)\)/);
+  assert.ok(ins, 'owner create INSERT not found');
+  assert.ok(!/\bstatus\b/.test(ins[1]), 'owner create INSERT must not set status — rely on the pending default');
+});
+test('a status-less insert lands as pending, not confirmed (owner == web initial state)', () => {
+  const dbSrc = read('server/db.js');
+  assert.ok(/status\s+TEXT\s+NOT NULL DEFAULT 'pending'/.test(dbSrc), "bookings.status must default to 'pending'");
+  // Functional proof against a real SQLite table with the live CHECK constraint.
+  const Database = require('better-sqlite3');
+  const os = require('os');
+  const tmp = path.join(os.tmpdir(), 'wm-ownercreate-' + process.pid + '.db');
+  try { fs.unlinkSync(tmp); } catch (_) {}
+  const d = new Database(tmp);
+  d.exec("CREATE TABLE bookings(id INTEGER PRIMARY KEY AUTOINCREMENT, ref TEXT, pickup TEXT, destination TEXT, status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','offered','awaiting_payment','confirmed','active','completed','cancelled')))");
+  d.prepare("INSERT INTO bookings(ref,pickup,destination) VALUES('WM-OWN','A','B')").run();
+  const row = d.prepare("SELECT status FROM bookings WHERE ref='WM-OWN'").get();
+  assert.strictEqual(row.status, 'pending', 'owner-created booking (no status) must start pending, not confirmed');
+  d.close();
+  try { fs.unlinkSync(tmp); } catch (_) {}
+});
+
 // ── summary ──────────────────────────────────────────────────────────────
 (async () => {
   await run();
