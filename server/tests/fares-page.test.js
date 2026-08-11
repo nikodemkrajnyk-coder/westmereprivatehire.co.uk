@@ -46,7 +46,7 @@ const EXPECTED = [
   ['brighton', 'ga', 65], ['brighton', 'he', 125],
   ['haywards', 'ga', 60], ['haywards', 'he', 126],
   ['burgess',  'ga', 56], ['burgess',  'he', 126],
-  ['horsham',  'ga', 45], ['horsham',  'he', 90],
+  ['horsham',  'ga', 50], ['horsham',  'he', 90],
   ['lewes',    'ga', 80], ['lewes',    'he', 150],
 ];
 
@@ -85,7 +85,7 @@ test('westmere-fares.html Horsham/Lewes/Brighton figures match the engine', () =
   for (const [needle, why] of [
     ['name:"Brighton", fares:[["Gatwick Airport","~27 mi · ~40 min",65,65],["Heathrow Airport","~58 mi · ~75 min",125,125]', 'Brighton'],
     ['name:"Lewes", fares:[["Gatwick Airport","~28 mi · ~38 min",80,80],["Heathrow Airport","~62 mi · ~80 min",150,150]', 'Lewes'],
-    ['name:"Horsham", fares:[["Gatwick Airport","~12 mi · ~22 min",45,45],["Heathrow Airport","~38 mi · ~55 min",90,90]', 'Horsham'],
+    ['name:"Horsham", fares:[["Gatwick Airport","~12 mi · ~22 min",50,50],["Heathrow Airport","~38 mi · ~55 min",90,90]', 'Horsham'],
   ]) {
     assert.ok(src.includes(needle), 'westmere-fares.html ' + why + ' figures are out of sync with the engine');
   }

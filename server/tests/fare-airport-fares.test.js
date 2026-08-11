@@ -33,7 +33,7 @@ const ALLIN = [
   { town: 'Burgess Hill',   inputs: ['Burgess Hill', 'Burgess Hill, RH15 8AA'],                  ga: 56, he: 126 },
   { town: 'Haywards Heath', inputs: ['Haywards Heath', 'Haywards Heath, RH16 1AA', 'RH17 5AA'],  ga: 60, he: 126 },
   { town: 'Lewes',          inputs: ['Lewes', 'Lewes, BN7 1AA'],                                 ga: 80, he: 150 },
-  { town: 'Horsham',        inputs: ['Horsham', 'Horsham, RH12 1AA'],                            ga: 45, he: 90  },
+  { town: 'Horsham',        inputs: ['Horsham', 'Horsham, RH12 1AA'],                            ga: 50, he: 90  },
 ];
 
 for (const t of ALLIN) {
@@ -66,7 +66,22 @@ for (const t of ALLIN) {
   });
 }
 
-// (Horsham → Gatwick £45 and → Heathrow £90 are covered by the ALLIN table above.)
+// ── Symmetry: drop-off (town→airport) MUST equal pick-up (airport→town) ──────
+// The owner wants one price per town/airport pair regardless of direction.
+for (const t of ALLIN) {
+  for (const [ap, apName] of [['ga', 'Gatwick Airport'], ['he', 'Heathrow Airport']]) {
+    test(`${t.town} ↔ ${apName}: drop-off price == pick-up price (symmetric)`, async () => {
+      const drop = await calculateFare(t.town, apName, '10:00'); // town → airport
+      const pick = await calculateFare(apName, t.town, '10:00'); // airport → town
+      assert.strictEqual(drop.fare, pick.fare, `${t.town}↔${apName} asymmetric: drop £${drop.fare} vs pick £${pick.fare}`);
+      assert.strictEqual(drop.fare, t[ap], `${t.town}↔${apName} expected £${t[ap]} both ways, got £${drop.fare}`);
+      assert.strictEqual(drop.airport_fee, 0);
+      assert.strictEqual(pick.airport_fee, 0);
+    });
+  }
+}
+
+// (Horsham → Gatwick £50 and → Heathrow £90 are covered by the ALLIN table above.)
 
 // ── Crawley: quote-on-request — NO auto fare (owner prices it manually) ──────
 for (const [pu, de, label] of [

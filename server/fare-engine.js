@@ -32,9 +32,9 @@ const FARE_CF = {
   // does NOT add the airport fee/toll on top. Both directions. Other airports for
   // these towns keep the normal base + fee-on-top behaviour.
   lewes:         { ga:{out:80,ret:80}, he:{out:150,ret:150}, st:{out:193,ret:197}, lu:{out:181,ret:184}, so:{out:140,ret:138}, ci:{out:155,ret:158} },
-  // Horsham → Gatwick AND Heathrow are FLAT ALL-IN (£45 / £90, marked in
+  // Horsham → Gatwick AND Heathrow are FLAT ALL-IN (£50 / £90, marked in
   // FARE_CF_ALLIN — no fee/toll on top). Other Horsham airports stay base + fee.
-  horsham:       { ga:{out:45,ret:45},  he:{out:90,ret:90}, st:{out:141,ret:145}, lu:{out:120,ret:122}, so:{out:104,ret:101}, ci:{out:124,ret:128} },
+  horsham:       { ga:{out:50,ret:50},  he:{out:90,ret:90}, st:{out:141,ret:145}, lu:{out:120,ret:122}, so:{out:104,ret:101}, ci:{out:124,ret:128} },
   // crawley: intentionally NO fixed fare — priced MANUALLY (quote on request).
   // Its normalizer keys stay so FARE_ON_REQUEST below can catch Crawley journeys.
   worthing:      { ga:{out:85,ret:82}, he:{out:121,ret:123} },

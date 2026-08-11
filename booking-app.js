@@ -17,8 +17,8 @@
     // Lewes/Haywards/Burgess ga+he are FLAT ALL-IN (mirror of fare-engine.js);
     // marked in FARE_CF_ALLIN so the fee/toll is NOT added on top. Both directions.
     lewes:         { ga:{out:80,ret:80}, he:{out:150,ret:150}, st:{out:193,ret:197}, lu:{out:181,ret:184}, so:{out:140,ret:138}, ci:{out:155,ret:158} },
-    // Horsham → Gatwick AND Heathrow are FLAT ALL-IN (£45 / £90, no fee/toll on top).
-    horsham:       { ga:{out:45,ret:45},  he:{out:90,ret:90}, st:{out:141,ret:145}, lu:{out:120,ret:122}, so:{out:104,ret:101}, ci:{out:124,ret:128} },
+    // Horsham → Gatwick AND Heathrow are FLAT ALL-IN (£50 / £90, no fee/toll on top).
+    horsham:       { ga:{out:50,ret:50},  he:{out:90,ret:90}, st:{out:141,ret:145}, lu:{out:120,ret:122}, so:{out:104,ret:101}, ci:{out:124,ret:128} },
     // crawley: no fixed fare — quote on request (see FARE_ON_REQUEST below).
     worthing:      { ga:{out:85,ret:82}, he:{out:121,ret:123} },
     haywards:      { ga:{out:60,ret:60}, he:{out:126,ret:126}, lu:{out:142,ret:145}, st:{out:135,ret:139}, so:{out:112,ret:109}, ci:{out:120,ret:123} },
