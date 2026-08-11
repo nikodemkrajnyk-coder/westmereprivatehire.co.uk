@@ -77,8 +77,13 @@ for (const p of ['index.html', 'contact.html']) {
     assert.ok(data.address && data.address.postalCode === 'BN7 1XG', `${p} JSON-LD missing correct address`);
     assert.ok(Array.isArray(data.areaServed) && data.areaServed.length >= 5, `${p} JSON-LD areaServed too small`);
     assert.ok(Array.isArray(data.openingHoursSpecification), `${p} JSON-LD missing opening hours`);
-    // We do NOT publish an invented aggregateRating (avoids a review-spam penalty).
-    assert.ok(!('aggregateRating' in data), `${p} JSON-LD must not carry an unverified aggregateRating`);
+    // Real aggregateRating from the 5 genuine 5-star Google reviews shown on-site.
+    const ar = data.aggregateRating;
+    assert.ok(ar && ar['@type'] === 'AggregateRating', `${p} JSON-LD missing AggregateRating`);
+    assert.strictEqual(String(ar.ratingValue), '5.0', `${p} ratingValue must be the real 5.0`);
+    assert.strictEqual(Number(ar.reviewCount), 5, `${p} reviewCount must match the real 5 reviews`);
+    assert.strictEqual(Number(ar.bestRating), 5, `${p} bestRating must be 5`);
+    assert.ok(Number(ar.ratingValue) <= Number(ar.bestRating), `${p} ratingValue cannot exceed bestRating`);
   });
 }
 test('airport-transfers.html JSON-LD is valid', () => {
