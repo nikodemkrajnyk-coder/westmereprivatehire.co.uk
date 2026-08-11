@@ -321,6 +321,60 @@ test('airport-transfers copy no longer says "fixed base fares"', () => {
   }
 });
 
+// ── 9. Pay page: card field must mount typeable (the "can't enter card" bug) ─
+// Root cause of Mr Ben not being able to type: the Stripe Card Element was
+// mounted while #view-pay was still display:none, so it measured a 0-width
+// container and rendered a 1px-wide (invisible, untypeable) field. The form MUST
+// be revealed BEFORE Stripe mounts so the field gets a real width.
+console.log('\nPay page card field mounts typeable (Problem: card entry)');
+test('westmere-pay.html reveals the form BEFORE mounting Stripe (no collapsed field)', () => {
+  const src = read('westmere-pay.html');
+  // The successful-load path must call show("pay") before initStripe().
+  assert.ok(/show\("pay"\);\s*initStripe\(\);/.test(src),
+    'must call show("pay") immediately BEFORE initStripe() so the card field mounts at full width');
+  // The old order (mount into a hidden container → 1px field) must stay gone.
+  assert.ok(!/initStripe\(\);\s*show\("pay"\);/.test(src),
+    'must NOT mount Stripe before revealing the form — that renders a 1px, untypeable card field');
+});
+test('westmere-pay.html guards Stripe init and warns if the field never loads', () => {
+  const src = read('westmere-pay.html');
+  const fn = src.match(/function initStripe\(\)\{[\s\S]*?\n  \}/);
+  assert.ok(fn, 'initStripe() not found');
+  const block = fn[0];
+  assert.ok(/try\s*\{/.test(block) && /catch\s*\(/.test(block),
+    'initStripe must wrap Stripe()/mount() in try/catch so a failure surfaces a message, not a dead box');
+  assert.ok(/cardEl\.on\("ready"/.test(block) && /setTimeout\(/.test(block),
+    'initStripe must watchdog the Element "ready" event so an unloaded/collapsed field is reported');
+});
+test('pay button will not confirm without a server client_secret', () => {
+  const src = read('westmere-pay.html');
+  // Guards against confirming against a missing/blank clientSecret (silent fail).
+  assert.ok(/if\(!res\.ok \|\| !res\.j \|\| !res\.j\.clientSecret\)\{ throw/.test(src),
+    'pay flow must throw if the server did not return a clientSecret before confirmCardPayment');
+  assert.ok(/confirmCardPayment\(res\.j\.clientSecret/.test(src),
+    'pay flow must confirm against the server-provided clientSecret');
+});
+test('/config.js publishes the Stripe publishable key from the environment', () => {
+  const idx = read('server/index.js');
+  const m = idx.match(/app\.get\('\/config\.js'[\s\S]*?\}\);/);
+  assert.ok(m, '/config.js route not found');
+  assert.ok(/window\._SK='\$\{process\.env\.STRIPE_PUBLISHABLE_KEY \|\| ''\}'/.test(m[0]),
+    '/config.js must emit window._SK from STRIPE_PUBLISHABLE_KEY (empty key => dead card field)');
+});
+test('/pay/:ref/intent returns a clientSecret for the mounted field to confirm', () => {
+  const pub = read('server/public-api.js');
+  const start = pub.indexOf("router.post('/pay/:ref/intent'");
+  assert.ok(start !== -1, 'intent route not found');
+  const block = pub.slice(start, start + 3500);
+  assert.ok(/clientSecret: intent\.client_secret/.test(block),
+    'intent route must return { clientSecret } so the card field can confirm the payment');
+});
+test('Apple Pay domain-association is served by an explicit route (static ignores dotfiles)', () => {
+  const idx = read('server/index.js');
+  assert.ok(/app\.get\('\/\.well-known\/apple-developer-merchantid-domain-association'/.test(idx),
+    'must serve the Apple Pay association file via an explicit route — express.static ignores .well-known');
+});
+
 // ── summary ──────────────────────────────────────────────────────────────
 (async () => {
   await run();

@@ -200,8 +200,12 @@ a.link{color:var(--gold);text-decoration:none}
       document.getElementById("d-fare").textContent = fmtMoney(booking.fare);
       document.getElementById("pay-amt").textContent = fmtMoney(booking.fare);
 
-      initStripe();
+      // Reveal the form FIRST, then mount Stripe. The Card Element measures its
+      // host's width at mount time; if #view-pay were still display:none the
+      // field would render 1px wide — a visible-but-untypeable box (the "Mr Ben
+      // can't enter his card" bug). See guardrail in payment-flow.test.js.
       show("pay");
+      initStripe();
     })
     .catch(function(){ showError("We couldn't load your booking. Please check your connection and try again."); });
 
@@ -210,13 +214,30 @@ a.link{color:var(--gold);text-decoration:none}
     if(typeof Stripe === "undefined" || !key){
       showError("Online payment is temporarily unavailable. You can settle with your driver on the day."); return;
     }
-    stripe = Stripe(key);
-    cardEl = stripe.elements().create("card", {
-      style:{ base:{ fontFamily:'"Jost","Helvetica Neue",Arial,sans-serif', fontSize:"15px", fontWeight:"300", color:"#2b2a26",
-        "::placeholder":{ color:"rgba(43,42,38,0.4)" } }, invalid:{ color:"#c0392b", iconColor:"#c0392b" } }
-    });
-    cardEl.mount("#card-el");
-    cardEl.on("change", function(ev){ document.getElementById("card-err").textContent = ev.error ? ev.error.message : ""; });
+    try {
+      stripe = Stripe(key);
+      cardEl = stripe.elements().create("card", {
+        style:{ base:{ fontFamily:'"Jost","Helvetica Neue",Arial,sans-serif', fontSize:"15px", fontWeight:"300", color:"#2b2a26",
+          "::placeholder":{ color:"rgba(43,42,38,0.4)" } }, invalid:{ color:"#c0392b", iconColor:"#c0392b" } }
+      });
+      // #view-pay is already visible here (see caller) so the field mounts at
+      // full width and is typeable.
+      cardEl.mount("#card-el");
+      cardEl.on("change", function(ev){ document.getElementById("card-err").textContent = ev.error ? ev.error.message : ""; });
+
+      // Watchdog: if the secure field never becomes ready (invalid/blocked/
+      // revoked key, Elements failed to load, or it mounted collapsed), tell the
+      // customer instead of leaving a dead box — they can always pay the driver.
+      var elementReady = false;
+      cardEl.on("ready", function(){ elementReady = true; });
+      setTimeout(function(){
+        if(elementReady) return;
+        document.getElementById("card-err").textContent =
+          "The secure card field couldn't load. Please refresh, or use “Pay on the Day” to settle with your driver.";
+      }, 6000);
+    } catch(e){
+      showError("Online payment is temporarily unavailable. You can settle with your driver on the day."); return;
+    }
 
     initWallet();
   }

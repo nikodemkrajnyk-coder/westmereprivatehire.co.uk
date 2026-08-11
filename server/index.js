@@ -253,6 +253,25 @@ app.get('/westmere-account.html', (req, res) => {
   res.redirect(301, '/westmere-rider.html' + qs);
 });
 
+// ── Apple Pay domain verification ────────────────────────────────────────
+// Stripe (and Apple) verify a site can offer Apple Pay by fetching this exact
+// path and matching the association file against the domain registered in the
+// Stripe Dashboard. express.static ignores dotfiles (the `.well-known` dir), so
+// it MUST be served by an explicit route or Apple Pay never appears on iPhones.
+// To enable: in Stripe Dashboard → Settings → Payments → Payment methods →
+// Apple Pay, add `westmereprivatehire.co.uk`, download the association file, and
+// commit it to the repo root as `apple-developer-merchantid-domain-association`.
+app.get('/.well-known/apple-developer-merchantid-domain-association', (req, res) => {
+  const fs = require('fs');
+  const file = path.join(__dirname, '..', 'apple-developer-merchantid-domain-association');
+  if (!fs.existsSync(file)) {
+    return res.status(404).type('text/plain').send('Apple Pay domain association not configured');
+  }
+  res.type('text/plain');
+  res.set('Cache-Control', 'public, max-age=3600');
+  res.sendFile(file);
+});
+
 // ── Static files (public pages, CSS, JS, images) ────────────────────────
 app.use(express.static(path.join(__dirname, '..'), {
   index: 'index.html',
