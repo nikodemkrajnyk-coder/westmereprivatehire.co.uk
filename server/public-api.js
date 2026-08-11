@@ -517,6 +517,40 @@ router.post('/pay/:ref/intent', async (req, res) => {
   }
 });
 
+// ── TEMP (remove after use): owner-preview of BOTH confirmation variants ───
+// Token-guarded; recipient HARD-CODED to the owner (never a real customer).
+// Sends (a) the CASH confirmation (booking confirmed, pay driver on the day —
+// not paid) and (b) the CARD confirmation (paid by card). Returns both Resend
+// ids. Reverted immediately after the owner has them.
+router.post('/_tmp-owner-preview-conf', async (req, res) => {
+  const SECRET = 'wm-conf-preview-5b1e9d4a';
+  const OWNER_EMAIL = 'nikodem.krajnyk@gmail.com';
+  const k = String((req.body && req.body.k) || req.query.k || '');
+  if (k !== SECRET) return res.status(403).json({ error: 'forbidden' });
+  try {
+    const { sendCustomerConfirmed } = require('./email');
+    const base = {
+      name: 'Martin Shuttle', email: OWNER_EMAIL,
+      pickup: 'Greenhill Avenue, Caterham, CR3 6PQ', stop_address: null,
+      destination: 'Bolney, West Sussex, England',
+      date: '2026-12-18', time: '09:30', flight: null, passengers: 2, bags: '3',
+      fare: 75, pay_token: null, notes: null
+    };
+    // CASH — chosen pay-driver-on-the-day, NOT paid.
+    const cashId = await sendCustomerConfirmed(Object.assign({}, base, { ref: 'WPH-CASHDEMO', payment: 'cash', paid: false }));
+    // CARD — Stripe charge succeeded, genuinely paid.
+    const cardId = await sendCustomerConfirmed(Object.assign({}, base, { ref: 'WPH-CARDDEMO', payment: 'card', paid: true }));
+    res.json({
+      ok: true, sentTo: OWNER_EMAIL,
+      cashConfirmationId: (cashId === true ? 'sent(no-id)' : (cashId || 'FAILED')),
+      cardConfirmationId: (cardId === true ? 'sent(no-id)' : (cardId || 'FAILED'))
+    });
+  } catch (e) {
+    console.error('[TMP-OWNER-PREVIEW-CONF]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── Pay on the day: customer opts to settle with the driver ──────────────
 // The "Pay on the day" button in the confirmation email points here. Gated by
 // the same per-booking pay_token. Marks the booking payment = 'cash', notifies
