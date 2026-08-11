@@ -48,6 +48,16 @@ for (const p of PAGES) {
   });
 }
 
+// ── Google Search Console verification meta (domain ownership) ──────────────
+test('every public page carries the Google Search Console verification tag', () => {
+  const TOKEN = '2lhUFnx99GtVU9ZpfAOBa3AyQltn3JsWkiraLlaDhXs';
+  for (const p of PAGES) {
+    const html = read(p);
+    const content = grab(html, /<meta name="google-site-verification" content="([^"]*)"/);
+    assert.strictEqual(content, TOKEN, `${p} missing/incorrect google-site-verification tag`);
+  }
+});
+
 // ── Titles/descriptions should carry local keywords (towns + airports) ──────
 test('key pages mention core towns + airports in title or description', () => {
   for (const p of ['index.html', 'airport-transfers.html']) {
