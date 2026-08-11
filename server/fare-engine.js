@@ -32,10 +32,11 @@ const FARE_CF = {
   // does NOT add the airport fee/toll on top. Both directions. Other airports for
   // these towns keep the normal base + fee-on-top behaviour.
   lewes:         { ga:{out:80,ret:80}, he:{out:150,ret:150}, st:{out:193,ret:197}, lu:{out:181,ret:184}, so:{out:140,ret:138}, ci:{out:155,ret:158} },
-  // Horsham → Gatwick is FLAT ALL-IN (£45, marked in FARE_CF_ALLIN — no fee/toll
-  // on top). Heathrow and all other Horsham airports stay normal base + fee.
-  horsham:       { ga:{out:45,ret:45},  he:{out:94,ret:99}, st:{out:141,ret:145}, lu:{out:120,ret:122}, so:{out:104,ret:101}, ci:{out:124,ret:128} },
-  crawley:       { ga:{out:45,ret:43},  he:{out:82,ret:86} },
+  // Horsham → Gatwick AND Heathrow are FLAT ALL-IN (£45 / £90, marked in
+  // FARE_CF_ALLIN — no fee/toll on top). Other Horsham airports stay base + fee.
+  horsham:       { ga:{out:45,ret:45},  he:{out:90,ret:90}, st:{out:141,ret:145}, lu:{out:120,ret:122}, so:{out:104,ret:101}, ci:{out:124,ret:128} },
+  // crawley: intentionally NO fixed fare — priced MANUALLY (quote on request).
+  // Its normalizer keys stay so FARE_ON_REQUEST below can catch Crawley journeys.
   worthing:      { ga:{out:85,ret:82}, he:{out:121,ret:123} },
   haywards:      { ga:{out:60,ret:60}, he:{out:126,ret:126}, lu:{out:142,ret:145}, st:{out:135,ret:139}, so:{out:112,ret:109}, ci:{out:120,ret:123} },
   burgess:       { ga:{out:56,ret:56}, he:{out:126,ret:126}, lu:{out:159,ret:162}, st:{out:161,ret:165}, so:{out:114,ret:111}, ci:{out:135,ret:138} },
@@ -53,9 +54,14 @@ const FARE_CF_ALLIN = {
   lewes:    { ga:true, he:true },
   haywards: { ga:true, he:true },
   burgess:  { ga:true, he:true },
-  horsham:  { ga:true },  // Gatwick all-in (£45 flat); Heathrow stays base + fee.
+  horsham:  { ga:true, he:true },  // both all-in (£45 / £90 flat).
 };
 function _fareIsAllIn(town, ap) { return !!(FARE_CF_ALLIN[town] && FARE_CF_ALLIN[town][ap]); }
+// Towns the owner prices MANUALLY — no auto fare. An airport journey to/from one
+// of these returns "quote on request" (fare:null) so the customer is guided to
+// request a booking and the owner quotes it by hand (same as unpriced routes).
+const FARE_ON_REQUEST = { crawley: true };
+function _fareOnRequest(town) { return !!(town && FARE_ON_REQUEST[town]); }
 // Airport coords for routing when town is unknown
 const FARE_AP_COORDS = {
   ga:{lat:51.1537,lon:-0.1821}, he:{lat:51.47,lon:-0.4543},
@@ -214,6 +220,10 @@ async function calculateFare(pickup, destination, timeStr) {
   // ── Destination is airport ──────────────────────────────────────────────
   if (deAP && !puAP) {
     const townKey = puT;
+    // Quote-on-request towns (e.g. Crawley) never auto-price — no number.
+    if (_fareOnRequest(townKey)) {
+      return { fare: null, base_fare: null, airport_fee: 0, toll_fee: 0, rate_type: 'on_request', on_request: true, breakdown: 'Fare quoted on request' };
+    }
     if (townKey && FARE_CF[townKey] && FARE_CF[townKey][deAP]) {
       // Fixed base (displayed headline price) + explicit drop-off fee (+ toll where applicable)
       const base = FARE_CF[townKey][deAP].out;
@@ -246,6 +256,10 @@ async function calculateFare(pickup, destination, timeStr) {
   // ── Pickup is airport ───────────────────────────────────────────────────
   if (puAP && !deAP) {
     const townKey = deT;
+    // Quote-on-request towns (e.g. Crawley) never auto-price — no number.
+    if (_fareOnRequest(townKey)) {
+      return { fare: null, base_fare: null, airport_fee: 0, toll_fee: 0, rate_type: 'on_request', on_request: true, breakdown: 'Fare quoted on request' };
+    }
     if (townKey && FARE_CF[townKey] && FARE_CF[townKey][puAP]) {
       // Fixed base (displayed headline price) + explicit pickup fee (+ toll where applicable)
       const base = FARE_CF[townKey][puAP].ret;
@@ -346,6 +360,7 @@ module.exports = {
   DRIVER_BASE,
   FARE_CF,
   FARE_CF_ALLIN,
+  FARE_ON_REQUEST,
   FARE_APFULL,
   FARE_AP_COORDS,
   AIRPORT_FEES,

@@ -17,9 +17,9 @@
     // Lewes/Haywards/Burgess ga+he are FLAT ALL-IN (mirror of fare-engine.js);
     // marked in FARE_CF_ALLIN so the fee/toll is NOT added on top. Both directions.
     lewes:         { ga:{out:80,ret:80}, he:{out:150,ret:150}, st:{out:193,ret:197}, lu:{out:181,ret:184}, so:{out:140,ret:138}, ci:{out:155,ret:158} },
-    // Horsham → Gatwick is FLAT ALL-IN (£45, no fee/toll on top). He unchanged.
-    horsham:       { ga:{out:45,ret:45},  he:{out:94,ret:99}, st:{out:141,ret:145}, lu:{out:120,ret:122}, so:{out:104,ret:101}, ci:{out:124,ret:128} },
-    crawley:       { ga:{out:45,ret:43},  he:{out:82,ret:86} },
+    // Horsham → Gatwick AND Heathrow are FLAT ALL-IN (£45 / £90, no fee/toll on top).
+    horsham:       { ga:{out:45,ret:45},  he:{out:90,ret:90}, st:{out:141,ret:145}, lu:{out:120,ret:122}, so:{out:104,ret:101}, ci:{out:124,ret:128} },
+    // crawley: no fixed fare — quote on request (see FARE_ON_REQUEST below).
     worthing:      { ga:{out:85,ret:82}, he:{out:121,ret:123} },
     haywards:      { ga:{out:60,ret:60}, he:{out:126,ret:126}, lu:{out:142,ret:145}, st:{out:135,ret:139}, so:{out:112,ret:109}, ci:{out:120,ret:123} },
     burgess:       { ga:{out:56,ret:56}, he:{out:126,ret:126}, lu:{out:159,ret:162}, st:{out:161,ret:165}, so:{out:114,ret:111}, ci:{out:135,ret:138} },
@@ -31,8 +31,12 @@
   var FARE_APFULL = { ga:'Gatwick', he:'Heathrow', st:'Stansted', lu:'Luton', so:'Southampton', ci:'London City' };
   // Town→airport fixed fares that are ALL-IN (fee/toll already baked into the
   // FARE_CF value) — mirror of server/fare-engine.js FARE_CF_ALLIN.
-  var FARE_CF_ALLIN = { brighton:{ ga:true, he:true }, lewes:{ ga:true, he:true }, haywards:{ ga:true, he:true }, burgess:{ ga:true, he:true }, horsham:{ ga:true } };
+  var FARE_CF_ALLIN = { brighton:{ ga:true, he:true }, lewes:{ ga:true, he:true }, haywards:{ ga:true, he:true }, burgess:{ ga:true, he:true }, horsham:{ ga:true, he:true } };
   function isAllIn(town, ap) { return !!(FARE_CF_ALLIN[town] && FARE_CF_ALLIN[town][ap]); }
+  // Towns priced MANUALLY — an airport journey to/from one returns no number, so
+  // the estimate widget shows the "request a booking" message (mirror of engine).
+  var FARE_ON_REQUEST = { crawley: true };
+  function onRequest(town) { return !!(town && FARE_ON_REQUEST[town]); }
   var FARE_AP_COORDS = {
     ga:{lat:51.1537,lon:-0.1821}, he:{lat:51.47,lon:-0.4543},
     st:{lat:51.885,lon:0.235},    lu:{lat:51.8747,lon:-0.3684},
@@ -112,6 +116,8 @@
     var puT = normTown(pickup), deT = normTown(destination);
     // Destination is airport → add drop-off fee (+ toll)
     if (deAP && !puAP) {
+      // Quote-on-request town (e.g. Crawley) → no number; widget shows the request message.
+      if (onRequest(puT)) return Promise.resolve({ fare:null, on_request:true, rate_type:'on_request' });
       var feeD = (AIRPORT_FEES[deAP]||{}).dropoff||0;
       if (puT && FARE_CF[puT] && FARE_CF[puT][deAP]) {
         var aiD = isAllIn(puT, deAP); // owner flat fare: fee/toll already included
@@ -129,6 +135,8 @@
     }
     // Pickup is airport → add pickup (short-stay) fee (+ toll)
     if (puAP && !deAP) {
+      // Quote-on-request town (e.g. Crawley) → no number; widget shows the request message.
+      if (onRequest(deT)) return Promise.resolve({ fare:null, on_request:true, rate_type:'on_request' });
       var feeP = (AIRPORT_FEES[puAP]||{}).pickup||0;
       if (deT && FARE_CF[deT] && FARE_CF[deT][puAP]) {
         var aiP = isAllIn(deT, puAP); // owner flat fare: fee/toll already included

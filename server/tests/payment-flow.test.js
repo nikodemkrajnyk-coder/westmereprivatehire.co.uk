@@ -127,7 +127,9 @@ test('homepage headline fare figures are unchanged', () => {
 test('airport-transfers copy no longer says "fixed base fares"', () => {
   const html = read('airport-transfers.html');
   assert.ok(!/fixed base fares/i.test(html), 'airport-transfers.html still says "fixed base fares"');
-  assert.ok(/Indicative starting fares shown/.test(html), 'airport-transfers.html missing honest subtext');
+  // Honest subtext: Gatwick/Heathrow are all-inclusive; other airports add fees.
+  assert.ok(/all-inclusive/i.test(html), 'airport-transfers.html missing all-inclusive framing');
+  assert.ok(/indicative starting fares/i.test(html), 'airport-transfers.html missing indicative framing for other airports');
   // Spot-check a few fare figures survive the copy change.
   for (const p of ['£45', '£65', 'from £188']) {
     assert.ok(html.includes(p), 'airport-transfers.html fare "' + p + '" changed/removed');
