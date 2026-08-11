@@ -1021,6 +1021,19 @@ test('every send includes a text/plain alternative + a List-Unsubscribe header',
     'must set a List-Unsubscribe header (mailto, from-domain aligned)');
   // Links survive into text as "label (url)".
   assert.ok(/westmereprivatehire\.co\.uk/.test(payload.text), 'links must be preserved in the text part');
+  // Reply-To must be ON the sending domain — a freemail Reply-To trips
+  // SpamAssassin FREEMAIL_FORGED_REPLYTO (~+2.5 spam points).
+  assert.ok(/@westmereprivatehire\.co\.uk$/.test(payload.reply_to || ''),
+    'Reply-To must be an on-domain address, never a freemail (gmail/…) address');
+  assert.ok(!/@(gmail|googlemail|yahoo|hotmail|outlook|icloud|aol)\./i.test(payload.reply_to || ''),
+    'Reply-To must not be a freemail address (FREEMAIL_FORGED_REPLYTO)');
+});
+test('sendEmail Reply-To defaults to the on-domain address, not GMAIL_USER (freemail)', () => {
+  const src = read('server/email.js');
+  const m = src.match(/const replyTo = [^;]+;/);
+  assert.ok(m, 'replyTo assignment not found');
+  assert.ok(/westmereprivatehire\.co\.uk/.test(m[0]), 'replyTo must default to an on-domain address');
+  assert.ok(!/GMAIL_USER/.test(m[0]), 'replyTo must NOT use the freemail GMAIL_USER (FREEMAIL_FORGED_REPLYTO)');
 });
 test('sendEmail wires text + List-Unsubscribe into the Resend payload', () => {
   const src = read('server/email.js');

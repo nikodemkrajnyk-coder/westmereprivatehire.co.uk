@@ -59,7 +59,13 @@ async function sendEmail(to, subject, html, fromLabel, preheader, opts) {
     return false;
   }
 
-  const replyTo = process.env.GMAIL_USER || process.env.ADMIN_EMAIL || '';
+  // Reply-To MUST live on the sending domain. A freemail (e.g. Gmail) Reply-To
+  // that differs from the From domain trips SpamAssassin FREEMAIL_FORGED_REPLYTO
+  // (~+2.5 spam points — the single biggest hit in the mail-tester run). Default
+  // to bookings@westmereprivatehire.co.uk, which is BOTH the From address and the
+  // contact advertised in every email footer (a real, monitored inbox). Override
+  // with REPLY_TO only if it is another on-domain address.
+  const replyTo = process.env.REPLY_TO || 'bookings@westmereprivatehire.co.uk';
 
   let finalHtml = html;
   if (preheader) {
