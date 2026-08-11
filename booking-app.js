@@ -14,12 +14,15 @@
     // server/fare-engine.js) — marked in FARE_CF_ALLIN so the airport fee/toll is
     // NOT added on top (£65/£125 already includes it). Both directions.
     brighton:      { ga:{out:65,ret:65}, he:{out:125,ret:125}, st:{out:188,ret:192}, lu:{out:176,ret:181}, so:{out:138,ret:135}, ci:{out:151,ret:154} },
-    lewes:         { ga:{out:91,ret:88}, he:{out:129,ret:133}, st:{out:193,ret:197}, lu:{out:181,ret:184}, so:{out:140,ret:138}, ci:{out:155,ret:158} },
-    horsham:       { ga:{out:54,ret:52},  he:{out:94,ret:99}, st:{out:141,ret:145}, lu:{out:120,ret:122}, so:{out:104,ret:101}, ci:{out:124,ret:128} },
+    // Lewes/Haywards/Burgess ga+he are FLAT ALL-IN (mirror of fare-engine.js);
+    // marked in FARE_CF_ALLIN so the fee/toll is NOT added on top. Both directions.
+    lewes:         { ga:{out:80,ret:80}, he:{out:150,ret:150}, st:{out:193,ret:197}, lu:{out:181,ret:184}, so:{out:140,ret:138}, ci:{out:155,ret:158} },
+    // Horsham → Gatwick is NOT all-in: base £45 + airport fee on top. He unchanged.
+    horsham:       { ga:{out:45,ret:45},  he:{out:94,ret:99}, st:{out:141,ret:145}, lu:{out:120,ret:122}, so:{out:104,ret:101}, ci:{out:124,ret:128} },
     crawley:       { ga:{out:45,ret:43},  he:{out:82,ret:86} },
     worthing:      { ga:{out:85,ret:82}, he:{out:121,ret:123} },
-    haywards:      { ga:{out:63,ret:62}, he:{out:105,ret:109}, lu:{out:142,ret:145}, st:{out:135,ret:139}, so:{out:112,ret:109}, ci:{out:120,ret:123} },
-    burgess:       { ga:{out:63,ret:61}, he:{out:114,ret:118}, lu:{out:159,ret:162}, st:{out:161,ret:165}, so:{out:114,ret:111}, ci:{out:135,ret:138} },
+    haywards:      { ga:{out:60,ret:60}, he:{out:126,ret:126}, lu:{out:142,ret:145}, st:{out:135,ret:139}, so:{out:112,ret:109}, ci:{out:120,ret:123} },
+    burgess:       { ga:{out:56,ret:56}, he:{out:126,ret:126}, lu:{out:159,ret:162}, st:{out:161,ret:165}, so:{out:114,ret:111}, ci:{out:135,ret:138} },
     eastbourne:    { ga:{out:119,ret:117}, he:{out:158,ret:163} },
     seaford:       { ga:{out:108,ret:105} },
     uckfield:      { ga:{out:73,ret:70} },
@@ -28,7 +31,7 @@
   var FARE_APFULL = { ga:'Gatwick', he:'Heathrow', st:'Stansted', lu:'Luton', so:'Southampton', ci:'London City' };
   // Town→airport fixed fares that are ALL-IN (fee/toll already baked into the
   // FARE_CF value) — mirror of server/fare-engine.js FARE_CF_ALLIN.
-  var FARE_CF_ALLIN = { brighton:{ ga:true, he:true } };
+  var FARE_CF_ALLIN = { brighton:{ ga:true, he:true }, lewes:{ ga:true, he:true }, haywards:{ ga:true, he:true }, burgess:{ ga:true, he:true } };
   function isAllIn(town, ap) { return !!(FARE_CF_ALLIN[town] && FARE_CF_ALLIN[town][ap]); }
   var FARE_AP_COORDS = {
     ga:{lat:51.1537,lon:-0.1821}, he:{lat:51.47,lon:-0.4543},
