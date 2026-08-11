@@ -191,34 +191,22 @@ async function sendCustomerAcknowledgement(booking) {
   const dateStr = formatDate(date, time);
   const firstName = (name || '').split(' ')[0] || 'there';
 
-  let rows = '';
-  rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:'+INK+'">' + escHtml(ref) + '</span>');
-  rows += rowDivider();
-  rows += detailRow('Pickup', dispAddr(pickup));
-  if (stop_address) rows += detailRow('Stop', dispAddr(stop_address));
-  rows += detailRow('Drop-off', dispAddr(destination));
-  rows += rowDivider();
-  rows += detailRow('Date', dateStr);
-  if (flight) rows += detailRow('Flight', escHtml(flight));
-  if (passengers && passengers > 1) rows += detailRow('Travellers', passengers + ' passengers');
-  if (notes) { rows += rowDivider(); rows += detailRow('Notes', escHtml(notes)); }
-  rows += rowDivider();
-  if (estStr) rows += detailRow('Estimated fare', estStr, { gold: true, large: true });
-
-  // The estimate caveat \u2014 make it unmistakable this is not the final price.
+  // Acknowledgement now uses the SAME branded hero-image template
+  // (variant:'ack'). No fare is locked in and there is no pay_token yet, so it
+  // shows the estimate as a caption with no pay buttons.
   const estCaption = estStr
-    ? `<p style="margin:14px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_SOFT};line-height:1.6;text-align:center">Estimated fare: <span style="color:${INK}">${estStr}</span> \u2014 we'll confirm your exact price shortly.</p>`
-    : `<p style="margin:14px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_SOFT};line-height:1.6;text-align:center">We'll confirm your exact fare shortly.</p>`;
-
-  const body = `
-  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Booking received</p>
-  <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
-  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Thank you for booking with us \u2014 we will be in touch shortly.</p>
-  ${buildDetailsTable(rows)}
-  ${estCaption}
-  <p style="margin:24px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
-
-  const html = emailShell(body);
+    ? `Estimated fare: <span style="color:#1b1b1a">${estStr}</span> \u2014 we'll confirm your exact price shortly.`
+    : "We'll confirm your exact fare shortly.";
+  const html = confirmationEmailHtml({
+    variant: 'ack',
+    eyebrow: 'Booking received',
+    intro: 'Thank you for booking with us \u2014 we will be in touch shortly to confirm your exact fare.',
+    fareLabel: 'Estimated fare',
+    showPaymentRow: false,
+    caption: estCaption,
+    ref, firstName, pickup, stop_address, destination, dateStr, flight, passengers,
+    fareStr: estStr, alreadyPaid: false, pay_token: null, notes
+  });
   const subject = 'Thank you for booking \u2014 ' + ref;
   const preheader = (estStr ? ('Estimated fare ' + estStr + ' \u2014 ') : '') + 'we\'ve received your booking and will be in touch shortly.';
   const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
@@ -270,6 +258,14 @@ function confBtn(href, icon, text) {
   </td></tr>`;
 }
 function confirmationEmailHtml(d) {
+  // Shared branded hero template for ALL customer booking emails. `variant`
+  // selects the copy/actions: 'confirmed' (default), 'estimate', or 'ack'
+  // (acknowledgement). There is intentionally NO imageless fallback — every
+  // one of these emails renders the hosted hero image (guardrail in
+  // payment-flow.test.js / booking-ack.test.js).
+  const variant = d.variant || 'confirmed';
+  const fareLabel = d.fareLabel || 'Fare';
+
   let rows = '';
   rows += confRow('ic-reference', 'Reference', `<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:#1b1b1a">${escHtml(d.ref)}</span>`);
   rows += confRow('ic-pickup', 'Pickup', dispAddr(d.pickup));
@@ -278,28 +274,47 @@ function confirmationEmailHtml(d) {
   rows += confRow('ic-datetime', 'Date &amp; Time', escHtml(d.dateStr));
   if (d.flight) rows += confRow('ic-flight', 'Flight', escHtml(d.flight));
   if (d.passengers && d.passengers > 1) rows += confRow('ic-travellers', 'Travellers', d.passengers + ' passengers');
-  if (d.fareStr) rows += confRow('ic-fare', 'Fare', escHtml(d.fareStr), { fare: true });
-  rows += confRow('ic-payment', 'Payment', d.alreadyPaid ? 'Paid online' : 'Choose below');
+  if (d.fareStr) rows += confRow('ic-fare', fareLabel, escHtml(d.fareStr), { fare: true });
+  if (d.showPaymentRow !== false) rows += confRow('ic-payment', 'Payment', d.alreadyPaid ? 'Paid online' : 'Choose below');
 
-  let payBlock = '';
-  if (!d.alreadyPaid && d.pay_token && d.fareStr) {
-    const payUrl  = `${HOST}/westmere-pay.html?ref=${encodeURIComponent(d.ref)}&t=${encodeURIComponent(d.pay_token)}`;
-    const cashUrl = `${HOST}/api/public/pay/${encodeURIComponent(d.ref)}/cash?t=${encodeURIComponent(d.pay_token)}`;
-    payBlock = `<tr><td style="padding:22px 40px 6px;background:#fbfaf7">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-        ${confBtn(payUrl, 'ic-paynow', 'Pay Now &mdash; Apple Pay, Google Pay, or Card')}
-        ${confBtn(cashUrl, 'ic-cash', 'Cash')}
-      </table>
-      <p style="margin:14px 0 4px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#6f6b64;line-height:1.6;text-align:center">Pay <strong style="color:#b78635">${escHtml(d.fareStr)}</strong> securely now, or settle with your driver on the day.</p>
+  // For the ACKNOWLEDGEMENT (no fare/token yet) show a reassurance caption
+  // instead of pay buttons.
+  let captionBlock = '';
+  if (variant === 'ack' && d.caption) {
+    captionBlock = `<tr><td class="wm-pad" style="padding:10px 40px 2px;background:#fbfaf7">
+      <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:13px;color:#6f6b64;line-height:1.65;text-align:center">${d.caption}</p>
     </td></tr>`;
   }
 
-  // Secure actions available whenever we have the per-booking token: the
-  // customer can add a special-requirement note, or cancel the request if the
-  // price/timing doesn't suit. Both use the tokenised /api/public links (no
-  // login) and mirror how the Pay/Cash links are secured.
+  // Tokenised action buttons — the ESTIMATE and CONFIRMATION emails carry the
+  // SAME secure links (Pay Now / Pay-driver / Cancel), all gated by pay_token
+  // (see payment invariants in CLAUDE.md). The estimate folds Cancel into the
+  // caption; the confirmation keeps a standalone Cancel + Add-a-note block below.
+  let payBlock = '';
+  if (!d.alreadyPaid && d.pay_token && d.fareStr) {
+    const payUrl    = `${HOST}/westmere-pay.html?ref=${encodeURIComponent(d.ref)}&t=${encodeURIComponent(d.pay_token)}`;
+    const cashUrl   = `${HOST}/api/public/pay/${encodeURIComponent(d.ref)}/cash?t=${encodeURIComponent(d.pay_token)}`;
+    const cancelUrl = `${HOST}/api/public/cancel/${encodeURIComponent(d.ref)}?t=${encodeURIComponent(d.pay_token)}`;
+    const leadIn = variant === 'estimate'
+      ? `<p style="margin:0 0 14px;font-family:Georgia,'Times New Roman',serif;font-size:14px;color:#1b1b1a;line-height:1.6;text-align:center">To confirm your journey, choose how you'd like to pay:</p>`
+      : '';
+    const caption = variant === 'estimate'
+      ? `Nothing is confirmed until you choose. Changed your mind? <a href="${cancelUrl}" style="color:#9a4a4a;text-decoration:underline">Cancel this request</a>, or call <a href="tel:+447930342593" style="color:#1b1b1a;text-decoration:none">07930&nbsp;342593</a>.`
+      : `Pay <strong style="color:#b78635">${escHtml(d.fareStr)}</strong> securely now, or settle with your driver on the day.`;
+    payBlock = `<tr><td style="padding:22px 40px 6px;background:#fbfaf7">
+      ${leadIn}
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        ${confBtn(payUrl, 'ic-paynow', 'Pay Now &mdash; Apple Pay, Google Pay, or Card')}
+        ${confBtn(cashUrl, 'ic-cash', variant === 'estimate' ? 'Pay Your Driver On The Day' : 'Cash')}
+      </table>
+      <p style="margin:14px 0 4px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#6f6b64;line-height:1.6;text-align:center">${caption}</p>
+    </td></tr>`;
+  }
+
+  // The CONFIRMATION keeps a standalone Cancel + Add-a-note block (the estimate
+  // already offers Cancel in its caption above, so it is skipped there).
   let actionsBlock = '';
-  if (d.pay_token) {
+  if (variant === 'confirmed' && d.pay_token) {
     const noteUrl   = `${HOST}/api/public/note/${encodeURIComponent(d.ref)}?t=${encodeURIComponent(d.pay_token)}`;
     const cancelUrl = `${HOST}/api/public/cancel/${encodeURIComponent(d.ref)}?t=${encodeURIComponent(d.pay_token)}`;
     actionsBlock = `<tr><td style="padding:6px 40px 8px;background:#fbfaf7">
@@ -348,9 +363,9 @@ function confirmationEmailHtml(d) {
 <tr><td class="wm-pad" style="padding:30px 40px 6px;background:#fbfaf7">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
     <td valign="top">
-      <p style="margin:0 0 12px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:#b78635;font-weight:700">Confirmed</p>
+      <p style="margin:0 0 12px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:#b78635;font-weight:700">${d.eyebrow || 'Confirmed'}</p>
       <h1 style="margin:0 0 12px;font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:400;color:#1b1b1a;line-height:1.15">Dear ${escHtml(d.firstName)},</h1>
-      <p style="margin:0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:15px;line-height:1.65;color:#57544e">Your journey is confirmed. A driver has been assigned and we look forward to welcoming you on the day.</p>
+      <p style="margin:0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:15px;line-height:1.65;color:#57544e">${d.intro || 'Your journey is confirmed. A driver has been assigned and we look forward to welcoming you on the day.'}</p>
     </td>
     <td class="wm-badge" valign="top" width="118" align="center" style="width:118px;padding-left:10px">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td width="58" height="58" align="center" valign="middle" style="width:58px;height:58px;border:1px solid #cdb884;border-radius:50%;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#b78635;text-align:center">W</td></tr></table>
@@ -365,6 +380,7 @@ function confirmationEmailHtml(d) {
   </table>
 </td></tr>
 
+${captionBlock}
 ${payBlock}
 ${notesBlock}
 ${actionsBlock}
@@ -408,55 +424,19 @@ async function sendCustomerEstimate(booking) {
   const dateStr = formatDate(date, time);
   const firstName = (name || '').split(' ')[0] || 'there';
 
-  let rows = '';
-  rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:'+INK+'">' + escHtml(ref) + '</span>');
-  rows += rowDivider();
-  rows += detailRow('Pickup', dispAddr(pickup));
-  if (stop_address) rows += detailRow('Stop', dispAddr(stop_address));
-  rows += detailRow('Drop-off', dispAddr(destination));
-  rows += rowDivider();
-  rows += detailRow('Date', dateStr);
-  if (flight) rows += detailRow('Flight', escHtml(flight));
-  if (passengers && passengers > 1) rows += detailRow('Travellers', passengers + ' passengers');
-  if (notes) { rows += rowDivider(); rows += detailRow('Notes', escHtml(notes)); }
-  rows += rowDivider();
-  rows += detailRow('Estimated fare', fareStr, { gold: true, large: true });
-
-  // How the customer turns this ESTIMATE into a confirmed booking. Three
-  // tokenised actions, all secured by the per-booking pay_token (same scheme as
-  // the confirmation email). The booking stays PENDING until the customer acts:
-  //   • Pay Now (card) → Stripe → webhook confirms + records 'card'
-  //   • Pay driver on the day → /cash → confirms + records 'cash'
-  //   • Cancel → /cancel → cancels
-  // Without a token we cannot offer secure actions, so fall back to reply/call.
-  let actionBlock;
-  if (pay_token) {
-    const payUrl    = `${HOST}/westmere-pay.html?ref=${encodeURIComponent(ref)}&t=${encodeURIComponent(pay_token)}`;
-    const cashUrl   = `${HOST}/api/public/pay/${encodeURIComponent(ref)}/cash?t=${encodeURIComponent(pay_token)}`;
-    const cancelUrl = `${HOST}/api/public/cancel/${encodeURIComponent(ref)}?t=${encodeURIComponent(pay_token)}`;
-    const estBtn = (href, bg, color, brd, text) =>
-      `<tr><td style="padding-bottom:11px"><a href="${href}" style="display:block;text-decoration:none;background:${bg};color:${color};border:1px solid ${brd};border-radius:10px;padding:14px 16px;text-align:center;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:1.3px;text-transform:uppercase">${text}</a></td></tr>`;
-    actionBlock = `
-  <p style="margin:22px 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.6;text-align:center">To confirm your journey, choose how you'd like to pay:</p>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-    ${estBtn(payUrl, INK, '#ffffff', INK, 'Pay Now &mdash; Card, Apple Pay or Google Pay')}
-    ${estBtn(cashUrl, '#fbfaf7', INK, '#d8cfbe', 'Pay Your Driver On The Day')}
-  </table>
-  <p style="margin:6px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_SOFT};line-height:1.55;text-align:center">Nothing is confirmed until you choose. Changed your mind? <a href="${cancelUrl}" style="color:#9a4a4a;text-decoration:underline">Cancel this request</a>, reply to this email, or call <a href="tel:+447930342593" style="color:${INK};text-decoration:none">07930&nbsp;342593</a>.</p>`;
-  } else {
-    actionBlock = `
-  <p style="margin:22px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.55;text-align:center">To confirm, simply reply to this email or call us on <a href="tel:+447930342593" style="color:${INK};text-decoration:none">07930 342593</a>. Nothing is confirmed until you're ready.</p>`;
-  }
-
-  const body = `
-  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Your estimate</p>
-  <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
-  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Thank you for your enquiry. Below is the estimated fare for your journey — this is a quote, not yet a confirmed booking.</p>
-  ${buildDetailsTable(rows)}
-  ${actionBlock}
-  <p style="margin:22px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
-
-  const html = emailShell(body);
+  // Estimate now renders with the SAME branded hero-image template as the
+  // confirmation (variant:'estimate'). The tokenised Pay Now / Pay-driver /
+  // Cancel actions are built inside the template from pay_token — the booking
+  // stays PENDING until the customer acts (estimate-first invariant).
+  const html = confirmationEmailHtml({
+    variant: 'estimate',
+    eyebrow: 'Your estimate',
+    intro: 'Thank you for your enquiry. Below is the estimated fare for your journey — this is a quote, not yet a confirmed booking.',
+    fareLabel: 'Estimated fare',
+    showPaymentRow: false,
+    ref, firstName, pickup, stop_address, destination, dateStr, flight, passengers,
+    fareStr, alreadyPaid: false, pay_token, notes
+  });
   const subject = 'Your estimate — ' + ref;
   const preheader = 'Estimated fare ' + fareStr + ' — pay by card, pay your driver, or reply to confirm.';
   const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);

@@ -276,6 +276,17 @@ app.get('/.well-known/apple-developer-merchantid-domain-association', (req, res)
 app.use(express.static(path.join(__dirname, '..'), {
   index: 'index.html',
   extensions: ['html'],
+  setHeaders: (res, filePath) => {
+    // Brand images are embedded CROSS-ORIGIN — email clients (Gmail's image
+    // proxy, Apple Mail) and link-preview crawlers load them from a different
+    // origin. Helmet's default `Cross-Origin-Resource-Policy: same-origin`
+    // makes those clients refuse to render the image, which is exactly why the
+    // estimate/confirmation hero image showed up blank. Mark images loadable
+    // cross-origin so they display in every mail client.
+    if (/\.(?:png|jpe?g|webp|gif|svg|ico)$/i.test(filePath)) {
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    }
+  },
 }));
 
 // ── 404 ─────────────────────────────────────────────────────────────────

@@ -375,6 +375,64 @@ test('Apple Pay domain-association is served by an explicit route (static ignore
     'must serve the Apple Pay association file via an explicit route — express.static ignores .well-known');
 });
 
+// ── 10. Branded hero-image email template (the missing-image bug) ────────
+// Two root causes made the hero image vanish from customer emails:
+//   (a) the ESTIMATE + ACKNOWLEDGEMENT used the old imageless `emailShell`;
+//       only the CONFIRMATION used the hero template.
+//   (b) the hosted hero JPEG was served Cross-Origin-Resource-Policy:
+//       same-origin, so mail clients (Gmail proxy, Apple Mail) refused it.
+// Guardrails: all three customer booking emails MUST render the hosted hero
+// image and MUST NOT fall back to emailShell; image assets MUST be cross-origin.
+console.log('\nBranded hero-image email (missing image bug)');
+async function renderEmail(fn, booking) {
+  process.env.RESEND_API_KEY = 'test_fake_key';
+  let html = '';
+  global.fetch = async (url, opts) => { html = JSON.parse(opts.body).html || ''; return { ok: true, status: 200, json: async () => ({ id: 'stub' }) }; };
+  delete require.cache[require.resolve('../email')];
+  const email = require('../email');
+  await email[fn](booking);
+  return html;
+}
+const HERO_IMG = '/assets/westmere-email-hero.jpg';
+const OLD_SHELL_SIG = 'letter-spacing:8px';   // the imageless emailShell wordmark header
+const emailFixture = {
+  ref: 'WM-HEROTEST', name: 'Ben', email: 'ben@example.com',
+  passenger_name: 'Ben', passenger_email: 'ben@example.com',
+  pickup: 'A Road, Brighton', destination: 'Gatwick Airport',
+  date: '2026-08-20', time: '09:30', fare: 96, estimated_fare: 96,
+  pay_token: 'deadbeefdeadbeefdeadbeef', passengers: 2
+};
+test('estimate email renders the hosted hero image (not the imageless shell)', async () => {
+  const html = await renderEmail('sendCustomerEstimate', { ...emailFixture });
+  assert.ok(html.includes(HERO_IMG), 'estimate email must embed the hero image');
+  assert.ok(!html.includes(OLD_SHELL_SIG), 'estimate email must NOT use the old imageless emailShell header');
+});
+test('confirmation email renders the hosted hero image', async () => {
+  const html = await renderEmail('sendCustomerConfirmed', { ...emailFixture, paid: false, payment: 'pending' });
+  assert.ok(html.includes(HERO_IMG), 'confirmation email must embed the hero image');
+  assert.ok(!html.includes(OLD_SHELL_SIG), 'confirmation email must NOT use the old imageless emailShell header');
+});
+test('acknowledgement email renders the hosted hero image', async () => {
+  const html = await renderEmail('sendCustomerAcknowledgement', { ...emailFixture, pay_token: null });
+  assert.ok(html.includes(HERO_IMG), 'acknowledgement email must embed the hero image');
+  assert.ok(!html.includes(OLD_SHELL_SIG), 'acknowledgement email must NOT use the old imageless emailShell header');
+});
+test('the three customer booking emails never call the imageless emailShell()', () => {
+  const src = read('server/email.js');
+  for (const fn of ['sendCustomerEstimate', 'sendCustomerConfirmed', 'sendCustomerAcknowledgement']) {
+    const m = src.match(new RegExp('async function ' + fn + '[\\s\\S]*?\\n\\}'));
+    assert.ok(m, fn + ' not found');
+    assert.ok(!/emailShell\(/.test(m[0]), fn + ' must use the hero template, not emailShell()');
+    assert.ok(/confirmationEmailHtml\(/.test(m[0]), fn + ' must render via the hero confirmationEmailHtml()');
+  }
+});
+test('image assets are served Cross-Origin-Resource-Policy: cross-origin (so mail clients load them)', () => {
+  const idx = read('server/index.js');
+  assert.ok(/Cross-Origin-Resource-Policy['"]?\s*,\s*['"]cross-origin['"]/.test(idx),
+    'index.js must set Cross-Origin-Resource-Policy: cross-origin for images');
+  assert.ok(/png\|jpe\?g\|webp\|gif\|svg/.test(idx), 'the CORP override must target image extensions');
+});
+
 // ── summary ──────────────────────────────────────────────────────────────
 (async () => {
   await run();
