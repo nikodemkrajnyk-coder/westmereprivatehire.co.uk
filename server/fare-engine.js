@@ -215,6 +215,17 @@ async function calculateFare(pickup, destination, timeStr) {
   const puT  = _fareNormTown(pickup);
   const deT  = _fareNormTown(destination);
 
+  // ── Airport-only instant estimate ────────────────────────────────────────
+  // We ONLY auto-price journeys with a recognised airport (Gatwick, Heathrow,
+  // Luton, Stansted, London City, Southampton) at the pickup OR the drop-off.
+  // A journey with NO airport at either end (e.g. Lewes→Brighton town-to-town)
+  // has no instant number — it is quoted by the owner on request, so return
+  // fare:null and let the caller show the "request a booking" message. This is
+  // the single source of truth mirrored by booking-app.js.
+  if (!puAP && !deAP) {
+    return { fare: null, base_fare: null, airport_fee: 0, toll_fee: 0, rate_type: 'on_request', on_request: true, breakdown: 'Fare quoted on request' };
+  }
+
   // ── Destination is airport ──────────────────────────────────────────────
   if (deAP && !puAP) {
     const townKey = puT;
@@ -283,7 +294,9 @@ async function calculateFare(pickup, destination, timeStr) {
     return { fare: base + fee + toll, base_fare: base, airport_fee: fee, toll_fee: toll, distance_miles: null, duration_min: null, rate_type: rateLabel + ' (estimated)', breakdown: _airportBreakdown(base, fee, toll, puAP, 'pickup', false, `est ~15 mi × tapered ${rateLabel}`) };
   }
 
-  // ── Town-to-town: live routing ──────────────────────────────────────────
+  // ── Airport-to-airport (both ends are airports): live routing ────────────
+  // Only reached when BOTH pickup and drop-off are airports (the no-airport case
+  // returned on_request above). Price it per-mile between the two airports.
   const [gc1, gc2] = await Promise.all([_fareGeocode(pickup), _fareGeocode(destination)]);
   if (gc1 && gc2) {
     const rt = await _fareRoute(gc1.lat, gc1.lon, gc2.lat, gc2.lon);

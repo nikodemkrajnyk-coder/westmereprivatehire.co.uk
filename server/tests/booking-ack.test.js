@@ -51,7 +51,7 @@ console.log('\nCustomer acknowledgement email');
 
 test('sends and captures a branded HTML email to the customer', async () => {
   const r = await renderAck(BOOKING);
-  assert.strictEqual(r.ok, true, 'sendCustomerAcknowledgement did not report success');
+  assert.ok(r.ok, 'sendCustomerAcknowledgement did not report success');   // truthy: returns the Resend id (or true)
   assert.strictEqual(r.to, 'jane@example.com', 'not addressed to the customer');
   assert.ok(r.html.length > 500, 'no/short html captured');
   assert.ok(/WESTMERE/.test(r.html), 'missing Westmere branding/wordmark');
@@ -89,7 +89,7 @@ test('uses the SHORT address format (no raw region/country fragment)', async () 
 
 test('gracefully omits the number when no estimate is available', async () => {
   const r = await renderAck({ ...BOOKING, estimated_fare: null, suggested_fare: null, fare: null });
-  assert.strictEqual(r.ok, true);
+  assert.ok(r.ok);
   assert.ok(!/~£/.test(r.html), 'should not print a fake ~£ figure when unpriced');
   assert.ok(/confirm your exact fare shortly/i.test(r.html), 'missing graceful no-estimate caveat');
 });

@@ -67,7 +67,7 @@ test('sendCustomerEstimate includes tokenised Pay/Cash/Cancel links + estimate w
     pickup: 'A', destination: 'B', date: '2026-08-20', time: '09:00',
     fare: 85, pay_token: 'deadbeefdeadbeefdeadbeefdeadbeef'
   });
-  assert.strictEqual(ok, true, 'estimate did not send');
+  assert.ok(ok, 'estimate did not send');   // truthy: sendEmail now returns the Resend id (or true)
   assert.ok(/westmere-pay\.html\?ref=WM-TESTX&t=deadbeef/.test(html), 'missing Pay Now link');
   assert.ok(/\/api\/public\/pay\/WM-TESTX\/cash\?t=deadbeef/.test(html), 'missing Cash link');
   assert.ok(/\/api\/public\/cancel\/WM-TESTX\?t=deadbeef/.test(html), 'missing Cancel link');

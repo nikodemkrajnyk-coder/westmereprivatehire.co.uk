@@ -114,6 +114,12 @@
     var rateLabel = night ? 'night rate' : 'day rate';
     var puAP = normAirport(pickup), deAP = normAirport(destination);
     var puT = normTown(pickup), deT = normTown(destination);
+    // Airport-only instant estimate (mirror of server/fare-engine.js): only a
+    // journey with a recognised airport at the pickup OR drop-off is auto-priced.
+    // No airport at either end (town-to-town) → no number; the widget shows the
+    // "request a booking" message. makeEstimator gates too, but keep the engine
+    // itself airport-only so the mirror can never price a town-to-town journey.
+    if (!puAP && !deAP) return Promise.resolve({ fare:null, on_request:true, rate_type:'on_request' });
     // Destination is airport → add drop-off fee (+ toll)
     if (deAP && !puAP) {
       // Quote-on-request town (e.g. Crawley) → no number; widget shows the request message.
@@ -152,7 +158,8 @@
         var be2=calcMile(15,night); return { fare:be2+feeP+tPm, base_fare:be2, airport_fee:feeP, toll_fee:tPm, rate_type:rateLabel+' (estimated)', label:FARE_APFULL[puAP]+' pickup' };
       });
     }
-    // Town to town
+    // Airport-to-airport (both ends airports) → per-mile routing. Town-to-town
+    // never reaches here (it returned on_request above).
     return Promise.all([geocode(pickup), geocode(destination)]).then(function(g){
       if (g[0] && g[1]) return route(g[0].lat,g[0].lon,g[1].lat,g[1].lon).then(function(rt){
         if (rt) { var mi=Math.round(rt.distance/1609.34*10)/10; return { fare:calcMile(mi,night), distance_miles:mi, duration_min:Math.round(rt.duration/60), rate_type:rateLabel }; }

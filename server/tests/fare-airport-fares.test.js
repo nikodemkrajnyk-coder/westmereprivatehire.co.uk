@@ -21,7 +21,9 @@
  * any failure so it gates a deploy.
  */
 const assert = require('assert');
-const { calculateFare } = require('../fare-engine');
+const fs = require('fs');
+const path = require('path');
+const { calculateFare, computeSuggestedFare } = require('../fare-engine');
 
 let passed = 0, failed = 0;
 const queue = [];
@@ -113,6 +115,49 @@ test('Burgess Hill → Luton unaffected = £159 base + £7 fee = £166', async (
   const r = await calculateFare('Burgess Hill', 'Luton Airport', '10:00');
   assert.strictEqual(r.airport_fee, 7, 'Burgess→Luton must still add the drop-off fee');
   assert.strictEqual(r.fare, 166, `Burgess→Luton expected £166, got £${r.fare}`);
+});
+
+// ── Airport-only instant estimate ────────────────────────────────────────
+// The instant estimate is AIRPORT-ONLY: a journey with a recognised airport at
+// the pickup OR drop-off gets a number; a town-to-town journey with NO airport
+// at either end returns on_request/no-number (owner quotes it by hand).
+for (const [pu, de, label] of [
+  ['Lewes', 'Brighton', 'Lewes → Brighton'],
+  ['Brighton', 'Worthing', 'Brighton → Worthing'],
+  ['Haywards Heath', 'Lewes', 'Haywards Heath → Lewes'],
+  ['BN7 1AA', 'BN1 1AA', 'Lewes postcode → Brighton postcode'],
+  ['Horsham', 'Crawley', 'Horsham → Crawley (both non-airport)'],
+]) {
+  test(`${label} (no airport either end) returns NO instant number`, async () => {
+    const r = await calculateFare(pu, de, '10:00');
+    assert.strictEqual(r.fare, null, `${label} must NOT return an instant fare, got £${r.fare}`);
+    assert.ok(r.on_request === true || r.rate_type === 'on_request', `${label} must be flagged on_request`);
+  });
+}
+// Airport journeys still return a real number (both fixed-chart and per-mile).
+for (const [pu, de, label] of [
+  ['Brighton', 'Gatwick Airport', 'Brighton → Gatwick (fixed chart)'],
+  ['Gatwick Airport', 'Lewes', 'Gatwick → Lewes (fixed chart, pickup)'],
+  ['Worthing', 'Gatwick Airport', 'Worthing → Gatwick (base + fee)'],
+]) {
+  test(`${label} still returns an instant fare`, async () => {
+    const r = await calculateFare(pu, de, '10:00');
+    assert.ok(typeof r.fare === 'number' && r.fare > 0, `${label} must return a number, got ${r.fare}`);
+  });
+}
+// The customer-facing suggested/estimated fare (ack email + owner suggestion)
+// must also be null for a town-to-town journey — no number leaks through.
+test('computeSuggestedFare is null for a town-to-town journey (no airport)', async () => {
+  const sf = await computeSuggestedFare('Lewes', 'Brighton', '10:00');
+  assert.strictEqual(sf, null, 'town-to-town must yield no suggested fare');
+});
+// The client mirror (booking-app.js) must carry the SAME airport-only guard.
+test('booking-app.js calculateFare is airport-only (mirror of the engine)', () => {
+  const src = fs.readFileSync(path.join(__dirname, '..', '..', 'booking-app.js'), 'utf8');
+  const m = src.match(/function calculateFare\(pickup, destination, timeStr\)[\s\S]*?\n  \}/);
+  assert.ok(m, 'client calculateFare not found');
+  assert.ok(/if \(!puAP && !deAP\) return Promise\.resolve\(\{ fare:null/.test(m[0]),
+    'client calculateFare must return on_request when neither end is an airport');
 });
 
 (async () => {
