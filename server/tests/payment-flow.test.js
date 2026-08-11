@@ -433,6 +433,49 @@ test('image assets are served Cross-Origin-Resource-Policy: cross-origin (so mai
   assert.ok(/png\|jpe\?g\|webp\|gif\|svg/.test(idx), 'the CORP override must target image extensions');
 });
 
+// ── 11. Email refinements: bigger fonts, three equal buttons, clean notes ──
+console.log('\nEmail refinements (fonts / three buttons / notes)');
+const UNIFORM_BTN = /width:100%;text-decoration:none;border-radius:10px;padding:17px 16px/g;
+test('estimate email has THREE equal-size stacked buttons (Pay Now / Pay Driver / Cancel)', async () => {
+  const html = await renderEmail('sendCustomerEstimate', { ...emailFixture });
+  assert.ok(/Pay Now &mdash; Card, Apple Pay or Google Pay/.test(html), 'missing Pay Now button');
+  assert.ok(/Pay Your Driver On The Day/.test(html), 'missing Pay Your Driver button');
+  assert.ok(/Cancel Request/.test(html), 'missing Cancel Request button');
+  const btns = html.match(UNIFORM_BTN);
+  assert.ok(btns && btns.length === 3, 'expected exactly 3 identically-styled buttons, got ' + (btns ? btns.length : 0));
+});
+test('confirmation email has the same three equal-size buttons', async () => {
+  const html = await renderEmail('sendCustomerConfirmed', { ...emailFixture, paid: false, payment: 'pending' });
+  const btns = html.match(UNIFORM_BTN);
+  assert.ok(btns && btns.length === 3, 'confirmation must show 3 uniform buttons, got ' + (btns ? btns.length : 0));
+  assert.ok(/Cancel Request/.test(html), 'confirmation must include a Cancel Request button');
+});
+test('Notes row is OMITTED for a vehicle-only "note" (rider-app vehicle dump)', async () => {
+  const html = await renderEmail('sendCustomerEstimate', { ...emailFixture, notes: 'Vehicle: Standard Saloon' });
+  assert.ok(!/A message from Westmere/.test(html), 'a vehicle-only note must NOT render a Notes row');
+  assert.ok(!/Standard Saloon/.test(html), 'vehicle type must never appear in the customer email');
+});
+test('Notes row IS shown for a real owner note', async () => {
+  const html = await renderEmail('sendCustomerEstimate', { ...emailFixture, notes: 'Please bring a child seat' });
+  assert.ok(/A message from Westmere/.test(html), 'a real owner note must render the Notes row');
+  assert.ok(/Please bring a child seat/.test(html), 'the owner note text must appear');
+});
+test('Notes row is OMITTED when there is no note at all', async () => {
+  const html = await renderEmail('sendCustomerEstimate', { ...emailFixture, notes: '' });
+  assert.ok(!/A message from Westmere/.test(html), 'no note => no Notes row');
+});
+test('email uses larger, phone-legible detail fonts', () => {
+  const src = read('server/email.js');
+  // confRow value + fare bumped for readability (was 14px / 22px).
+  assert.ok(/font-size:17px;line-height:1.5;color:#1d1d1d/.test(src), 'detail value font must be bumped to 17px');
+  assert.ok(/font-size:28px;line-height:1.2;color:#b78635/.test(src), 'fare font must be bumped to 28px');
+});
+test('rider app no longer dumps the vehicle type into notes', () => {
+  const src = read('westmere-rider.html');
+  assert.ok(!/notes:_selectedVehName\?'Vehicle: '\+_selectedVehName/.test(src),
+    'rider app must NOT put "Vehicle: <type>" into the booking notes field');
+});
+
 // ── summary ──────────────────────────────────────────────────────────────
 (async () => {
   await run();

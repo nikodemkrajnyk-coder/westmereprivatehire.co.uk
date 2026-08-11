@@ -1628,7 +1628,7 @@ async function confirmBooking(){
     var r=await fetch('/api/public/book',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name:name,phone:phone,email:email||null,pickup:from,destination:dest,stop_address:stop||null,date:date,time:time||'ASAP',passengers:parseInt(pax)||1,bags:bags,flight:flight||null,fare:null,payment:paymentType,notes:_selectedVehName?'Vehicle: '+_selectedVehName:'',source:'rider-app'})
+      body:JSON.stringify({name:name,phone:phone,email:email||null,pickup:from,destination:dest,stop_address:stop||null,date:date,time:time||'ASAP',passengers:parseInt(pax)||1,bags:bags,flight:flight||null,fare:null,payment:paymentType,notes:'',source:'rider-app'})
     });
     var data=await r.json();
     if(!r.ok){

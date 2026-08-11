@@ -244,20 +244,38 @@ async function sendCustomerConfirmed(booking) {
 const HOST = 'https://westmereprivatehire.co.uk';
 function confRow(icon, label, valueHtml, opts) {
   opts = opts || {};
+  // Larger type throughout for phone readability (owner request).
   const valStyle = opts.fare
-    ? "font-family:Georgia,'Times New Roman',serif;font-size:22px;line-height:1.2;color:#b78635"
-    : "font-family:Georgia,'Times New Roman',serif;font-size:14px;line-height:1.5;color:#1d1d1d";
+    ? "font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.2;color:#b78635"
+    : "font-family:Georgia,'Times New Roman',serif;font-size:17px;line-height:1.5;color:#1d1d1d";
   return `<tr>
-    <td width="26" valign="top" style="padding:15px 0 0;border-bottom:1px solid #efe9dd"><img src="${HOST}/assets/${icon}.png" width="20" height="20" alt="" style="display:block;border:0;outline:none;line-height:100%"></td>
-    <td width="98" valign="top" style="padding:17px 10px 15px 8px;border-bottom:1px solid #efe9dd;font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:#8a857c;font-weight:700">${label}</td>
-    <td valign="top" style="padding:15px 0;border-bottom:1px solid #efe9dd;${valStyle}">${valueHtml}</td>
+    <td width="26" valign="top" style="padding:16px 0 0;border-bottom:1px solid #efe9dd"><img src="${HOST}/assets/${icon}.png" width="20" height="20" alt="" style="display:block;border:0;outline:none;line-height:100%"></td>
+    <td width="104" valign="top" style="padding:18px 10px 16px 8px;border-bottom:1px solid #efe9dd;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:#8a857c;font-weight:700">${label}</td>
+    <td valign="top" style="padding:16px 0;border-bottom:1px solid #efe9dd;${valStyle}">${valueHtml}</td>
   </tr>`;
 }
-function confBtn(href, icon, text) {
+// One uniform action button — IDENTICAL size/shape for all three (full-width,
+// same padding/radius/font). Only `kind` changes the colour emphasis so the
+// buttons read as a consistent set (owner request: three equal buttons).
+function actionBtn(href, text, kind) {
+  const palette = {
+    primary:   'color:#ffffff;background:#1b1b1a;border:1px solid #1b1b1a',
+    secondary: 'color:#1b1b1a;background:#fbfaf7;border:1px solid #1b1b1a',
+    danger:    'color:#9a4a4a;background:#fbf6f5;border:1px solid #c9a3a3'
+  };
+  const c = palette[kind] || palette.secondary;
   return `<tr><td style="padding-bottom:12px">
-    <a href="${href}" style="display:block;text-decoration:none;border:1px solid #1b1b1a;border-radius:10px;padding:14px 16px;text-align:center;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:1.3px;text-transform:uppercase;color:#1b1b1a;background:#fbfaf7">
-      <img src="${HOST}/assets/${icon}.png" width="17" height="17" alt="" style="vertical-align:-3px;border:0;margin-right:9px">${text}</a>
+    <a href="${href}" style="display:block;box-sizing:border-box;width:100%;text-decoration:none;border-radius:10px;padding:17px 16px;text-align:center;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;${c}">${text}</a>
   </td></tr>`;
+}
+// Returns a REAL owner note or '' — the Notes row is for the owner's own
+// message only. Blank notes, and the rider app's auto "Vehicle: <type>" dump,
+// are treated as no-note so no spurious/placeholder Notes row is shown.
+function cleanOwnerNote(notes) {
+  const s = String(notes == null ? '' : notes).trim();
+  if (!s) return '';
+  if (/^vehicle\s*:/i.test(s)) return '';
+  return s;
 }
 function confirmationEmailHtml(d) {
   // Shared branded hero template for ALL customer booking emails. `variant`
@@ -267,9 +285,13 @@ function confirmationEmailHtml(d) {
   // payment-flow.test.js / booking-ack.test.js).
   const variant = d.variant || 'confirmed';
   const fareLabel = d.fareLabel || 'Fare';
+  // Owner note ONLY — the rider app used to stuff the chosen vehicle into
+  // `notes` (e.g. "Vehicle: Standard Saloon"); that is NOT an owner note, so it
+  // (and any blank) is dropped and the Notes row is omitted entirely.
+  const ownerNote = cleanOwnerNote(d.notes);
 
   let rows = '';
-  rows += confRow('ic-reference', 'Reference', `<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:#1b1b1a">${escHtml(d.ref)}</span>`);
+  rows += confRow('ic-reference', 'Reference', `<span style="font-family:Menlo,Consolas,monospace;font-size:15px;letter-spacing:.5px;color:#1b1b1a">${escHtml(d.ref)}</span>`);
   rows += confRow('ic-pickup', 'Pickup', dispAddr(d.pickup));
   if (d.stop_address) rows += confRow('ic-stop', 'Stop', dispAddr(d.stop_address));
   rows += confRow('ic-dropoff', 'Drop-off', dispAddr(d.destination));
@@ -284,55 +306,53 @@ function confirmationEmailHtml(d) {
   let captionBlock = '';
   if (variant === 'ack' && d.caption) {
     captionBlock = `<tr><td class="wm-pad" style="padding:10px 40px 2px;background:#fbfaf7">
-      <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:13px;color:#6f6b64;line-height:1.65;text-align:center">${d.caption}</p>
+      <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#6f6b64;line-height:1.65;text-align:center">${d.caption}</p>
     </td></tr>`;
   }
 
-  // Tokenised action buttons — the ESTIMATE and CONFIRMATION emails carry the
-  // SAME secure links (Pay Now / Pay-driver / Cancel), all gated by pay_token
-  // (see payment invariants in CLAUDE.md). The estimate folds Cancel into the
-  // caption; the confirmation keeps a standalone Cancel + Add-a-note block below.
+  // THREE uniform, full-width, stacked action buttons (owner request), all
+  // gated by the per-booking pay_token (payment invariants in CLAUDE.md):
+  //   a) Pay Now  b) Pay Your Driver On The Day  c) Cancel Request
+  // Same size/shape via actionBtn(); only the colour emphasis differs. Shown
+  // whenever there's an unpaid fare + token (estimate AND confirmation). A
+  // settled/paid confirmation keeps just the Cancel button.
   let payBlock = '';
-  if (!d.alreadyPaid && d.pay_token && d.fareStr) {
+  if (d.pay_token) {
     const payUrl    = `${HOST}/westmere-pay.html?ref=${encodeURIComponent(d.ref)}&t=${encodeURIComponent(d.pay_token)}`;
     const cashUrl   = `${HOST}/api/public/pay/${encodeURIComponent(d.ref)}/cash?t=${encodeURIComponent(d.pay_token)}`;
     const cancelUrl = `${HOST}/api/public/cancel/${encodeURIComponent(d.ref)}?t=${encodeURIComponent(d.pay_token)}`;
-    const leadIn = variant === 'estimate'
-      ? `<p style="margin:0 0 14px;font-family:Georgia,'Times New Roman',serif;font-size:14px;color:#1b1b1a;line-height:1.6;text-align:center">To confirm your journey, choose how you'd like to pay:</p>`
-      : '';
-    const caption = variant === 'estimate'
-      ? `Nothing is confirmed until you choose. Changed your mind? <a href="${cancelUrl}" style="color:#9a4a4a;text-decoration:underline">Cancel this request</a>, or call <a href="tel:+447930342593" style="color:#1b1b1a;text-decoration:none">07930&nbsp;342593</a>.`
-      : `Pay <strong style="color:#b78635">${escHtml(d.fareStr)}</strong> securely now, or settle with your driver on the day.`;
-    payBlock = `<tr><td style="padding:22px 40px 6px;background:#fbfaf7">
-      ${leadIn}
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-        ${confBtn(payUrl, 'ic-paynow', 'Pay Now &mdash; Apple Pay, Google Pay, or Card')}
-        ${confBtn(cashUrl, 'ic-cash', variant === 'estimate' ? 'Pay Your Driver On The Day' : 'Cash')}
-      </table>
-      <p style="margin:14px 0 4px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#6f6b64;line-height:1.6;text-align:center">${caption}</p>
-    </td></tr>`;
+    const payable = !d.alreadyPaid && d.fareStr;
+    if (payable) {
+      const leadIn = variant === 'estimate'
+        ? `<p style="margin:0 0 16px;font-family:Georgia,'Times New Roman',serif;font-size:16px;color:#1b1b1a;line-height:1.6;text-align:center">To confirm your journey, choose how you'd like to pay:</p>`
+        : '';
+      const caption = variant === 'estimate'
+        ? `Nothing is confirmed until you choose &mdash; or call <a href="tel:+447930342593" style="color:#1b1b1a;text-decoration:none">07930&nbsp;342593</a>.`
+        : `Pay <strong style="color:#b78635">${escHtml(d.fareStr)}</strong> securely now, or settle with your driver on the day.`;
+      payBlock = `<tr><td class="wm-pad" style="padding:24px 40px 6px;background:#fbfaf7">
+        ${leadIn}
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          ${actionBtn(payUrl, 'Pay Now &mdash; Card, Apple Pay or Google Pay', 'primary')}
+          ${actionBtn(cashUrl, 'Pay Your Driver On The Day', 'secondary')}
+          ${actionBtn(cancelUrl, 'Cancel Request', 'danger')}
+        </table>
+        <p style="margin:14px 0 4px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:15px;color:#6f6b64;line-height:1.6;text-align:center">${caption}</p>
+      </td></tr>`;
+    } else {
+      // Already paid (confirmation) — no payment needed, keep a Cancel option.
+      payBlock = `<tr><td class="wm-pad" style="padding:24px 40px 6px;background:#fbfaf7">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          ${actionBtn(cancelUrl, 'Cancel Request', 'danger')}
+        </table>
+      </td></tr>`;
+    }
   }
+  const actionsBlock = '';
 
-  // The CONFIRMATION keeps a standalone Cancel + Add-a-note block (the estimate
-  // already offers Cancel in its caption above, so it is skipped there).
-  let actionsBlock = '';
-  if (variant === 'confirmed' && d.pay_token) {
-    const noteUrl   = `${HOST}/api/public/note/${encodeURIComponent(d.ref)}?t=${encodeURIComponent(d.pay_token)}`;
-    const cancelUrl = `${HOST}/api/public/cancel/${encodeURIComponent(d.ref)}?t=${encodeURIComponent(d.pay_token)}`;
-    actionsBlock = `<tr><td style="padding:6px 40px 8px;background:#fbfaf7">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-        <tr><td style="padding-bottom:12px">
-          <a href="${cancelUrl}" style="display:block;text-decoration:none;border:1px solid #c9a3a3;border-radius:10px;padding:14px 16px;text-align:center;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:1.3px;text-transform:uppercase;color:#9a4a4a;background:#fbf6f5">Cancel Request</a>
-        </td></tr>
-      </table>
-      <p style="margin:2px 0 4px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#6f6b64;line-height:1.6;text-align:center">Any special requirements (child seat, extra luggage, meet &amp; greet)? <a href="${noteUrl}" style="color:#b78635;font-weight:600;text-decoration:underline">Add a note</a> for your driver.</p>
-    </td></tr>`;
-  }
-
-  const notesBlock = d.notes ? `<tr><td style="padding:4px 40px 8px;background:#fbfaf7">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:14px 16px;background:#f6efe1;border-left:2px solid #b78635">
-        <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#b78635;font-weight:700">A message from Westmere</p>
-        <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:14px;color:#1b1b1a;line-height:1.6">${escHtml(d.notes).replace(/\n/g, '<br>')}</p>
+  const notesBlock = ownerNote ? `<tr><td class="wm-pad" style="padding:4px 40px 8px;background:#fbfaf7">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:16px 18px;background:#f6efe1;border-left:2px solid #b78635">
+        <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#b78635;font-weight:700">A message from Westmere</p>
+        <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:16px;color:#1b1b1a;line-height:1.6">${escHtml(ownerNote).replace(/\n/g, '<br>')}</p>
       </td></tr></table>
     </td></tr>` : '';
 
@@ -365,9 +385,9 @@ function confirmationEmailHtml(d) {
 <tr><td class="wm-pad" style="padding:30px 40px 6px;background:#fbfaf7">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
     <td valign="top">
-      <p style="margin:0 0 12px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:#b78635;font-weight:700">${d.eyebrow || 'Confirmed'}</p>
-      <h1 style="margin:0 0 12px;font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:400;color:#1b1b1a;line-height:1.15">Dear ${escHtml(d.firstName)},</h1>
-      <p style="margin:0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:15px;line-height:1.65;color:#57544e">${d.intro || 'Your journey is confirmed. A driver has been assigned and we look forward to welcoming you on the day.'}</p>
+      <p style="margin:0 0 12px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;letter-spacing:2.4px;text-transform:uppercase;color:#b78635;font-weight:700">${d.eyebrow || 'Confirmed'}</p>
+      <h1 style="margin:0 0 12px;font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:400;color:#1b1b1a;line-height:1.15">Dear ${escHtml(d.firstName)},</h1>
+      <p style="margin:0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:17px;line-height:1.65;color:#57544e">${d.intro || 'Your journey is confirmed. A driver has been assigned and we look forward to welcoming you on the day.'}</p>
     </td>
     <td class="wm-badge" valign="top" width="118" align="center" style="width:118px;padding-left:10px">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td width="58" height="58" align="center" valign="middle" style="width:58px;height:58px;border:1px solid #cdb884;border-radius:50%;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#b78635;text-align:center">W</td></tr></table>
