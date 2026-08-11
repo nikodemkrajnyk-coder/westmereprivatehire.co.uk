@@ -433,6 +433,56 @@ test('image assets are served Cross-Origin-Resource-Policy: cross-origin (so mai
   assert.ok(/png\|jpe\?g\|webp\|gif\|svg/.test(idx), 'the CORP override must target image extensions');
 });
 
+// ── ONE email design system-wide: NO email uses the old imageless shell ──
+// Every outgoing email (customer, invoice, admin, password/reset, outreach,
+// driver…) must render through the single hero template. The old imageless
+// emailShell is retired; nothing may build email html any other way.
+async function renderEmailArgs(fn, args) {
+  process.env.RESEND_API_KEY = 'test_fake_key';
+  process.env.ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
+  let html = '';
+  global.fetch = async (url, opts) => { html = JSON.parse(opts.body).html || ''; return { ok: true, status: 200, json: async () => ({ id: 'stub' }) }; };
+  delete require.cache[require.resolve('../email')];
+  const email = require('../email');
+  await email[fn](...args);
+  return html;
+}
+test('the imageless emailShell is removed and every email html uses the hero template', () => {
+  const src = read('server/email.js');
+  assert.ok(!/function emailShell/.test(src), 'the imageless emailShell function must be removed');
+  assert.ok(!/letter-spacing:8px/.test(src), 'the old imageless wordmark header (letter-spacing:8px) must be gone');
+  const assigns = src.match(/const html = \w+\(/g) || [];
+  assert.ok(assigns.length >= 15, 'expected many html assignments, got ' + assigns.length);
+  for (const a of assigns) {
+    assert.ok(/heroEmail\(|confirmationEmailHtml\(/.test(a),
+      'every email html must be built by heroEmail()/confirmationEmailHtml(), found: ' + a);
+  }
+  const shell = src.match(/function heroShell[\s\S]*?\n\}/);
+  assert.ok(shell, 'heroShell (the one shared design) not found');
+  assert.ok(/westmere-email-hero\.jpg/.test(shell[0]), 'heroShell must embed the hero image');
+  assert.ok(/Westmere Private Hire/.test(shell[0]), 'heroShell must carry the "Westmere Private Hire" sign-off');
+});
+test('a representative sample across all email categories renders the hero image', async () => {
+  const period = { from: '2026-08-01', to: '2026-08-07', issuedDate: '2026-08-08', dueDate: '2026-08-22', label: 'wk1' };
+  const cases = [
+    ['sendCustomerWelcome',       [{ email: 'x@e.com', full_name: 'Ben Carter' }]],
+    ['sendPasswordResetEmail',    [{ email: 'x@e.com', full_name: 'Ben' }, 'tok']],
+    ['sendAdminPasswordResetEmail',[{ email: 'a@e.com', username: 'admin' }, 'tok']],
+    ['sendCustomerInvoice',       [{ email: 'x@e.com', full_name: 'Ben' }, [emailFixture], period, 'INV-1', {}, Buffer.from('%PDF')]],
+    ['sendInvoiceReminder',       [{ name: 'Ben', email: 'x@e.com' }, 'INV-1', 96, 'https://x']],
+    ['sendDriverStatement',       [{ name: 'Dan', email: 'd@e.com' }, period, { jobs: 1, gross: 100, commission: 10, net: 90 }, []]],
+    ['sendPartnershipOutreach',   ['a@e.com', 'Acme Ltd']],
+    ['sendReviewRequest',         ['x@e.com', 'Ben', 'WM-1']],
+    ['sendAdminAlert',            [{ ...emailFixture, phone: '07000000000' }]],
+  ];
+  for (const [fn, args] of cases) {
+    const html = await renderEmailArgs(fn, args);
+    assert.ok(html.includes('/assets/westmere-email-hero.jpg'), fn + ' must embed the hero image');
+    assert.ok(!html.includes('letter-spacing:8px'), fn + ' must not use the old imageless shell');
+    assert.ok(/Westmere Private Hire/.test(html), fn + ' must keep the Westmere sign-off');
+  }
+});
+
 // ── 11. Email refinements: bigger fonts, three equal buttons, clean notes ──
 console.log('\nEmail refinements (fonts / three buttons / notes)');
 const UNIFORM_BTN = /width:100%;text-decoration:none;border-radius:10px;padding:17px 16px/g;

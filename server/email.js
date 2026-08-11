@@ -78,74 +78,9 @@ const INK_MUTED   = '#9AA3B2';   // labels & footer
 const GOLD        = '#B8985A';   // single accent
 const HAIRLINE    = 'rgba(14,37,64,0.10)';
 
-// ── Master shell ─────────────────────────────────────────────────────────
-function emailShell(bodyHtml) {
-  return `<!DOCTYPE html>
-<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<meta name="color-scheme" content="light only">
-<meta name="supported-color-schemes" content="light only">
-<title>Westmere Private Hire</title>
-<!--[if mso]><style>table,td{font-family:Georgia,serif!important}h1,h2,h3{font-family:Georgia,serif!important}</style><![endif]-->
-<style>
-  :root { color-scheme: light only; supported-color-schemes: light only; }
-  /* Apple Mail dark mode: keep ivory canvas + navy ink instead of auto-invert. */
-  @media (prefers-color-scheme: dark) {
-    html, body, table, td { background-color: ${BG_OUTER} !important; color: ${INK} !important; }
-    .wm-card { background-color: ${BG_CARD} !important; }
-    .wm-ink { color: ${INK} !important; }
-    .wm-soft { color: ${INK_SOFT} !important; }
-    .wm-muted { color: ${INK_MUTED} !important; }
-    .wm-gold { color: ${GOLD} !important; }
-    .wm-hairline { border-color: ${HAIRLINE} !important; }
-  }
-  /* Gmail iOS dark mode (uses [data-ogsc] / [data-ogsb] attributes). */
-  [data-ogsc] body, [data-ogsb] body { background-color: ${BG_OUTER} !important; }
-  [data-ogsc] .wm-card, [data-ogsb] .wm-card { background-color: ${BG_CARD} !important; }
-  [data-ogsc] .wm-ink, [data-ogsb] .wm-ink { color: ${INK} !important; }
-  [data-ogsc] .wm-soft, [data-ogsb] .wm-soft { color: ${INK_SOFT} !important; }
-  [data-ogsc] .wm-muted, [data-ogsb] .wm-muted { color: ${INK_MUTED} !important; }
-  [data-ogsc] .wm-gold, [data-ogsb] .wm-gold { color: ${GOLD} !important; }
-</style>
-</head>
-<body class="wm-ink" style="margin:0;padding:0;background:${BG_OUTER};color:${INK};-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%">
-
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${BG_OUTER}" bgcolor="${BG_OUTER}">
-<tr><td align="center" style="padding:32px 16px" bgcolor="${BG_OUTER}">
-
-<table role="presentation" class="wm-card" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${BG_CARD}" style="max-width:560px;background:${BG_CARD};border:1px solid ${HAIRLINE};border-collapse:separate">
-
-<!-- Header: wordmark only, no crest -->
-<tr><td bgcolor="${BG_CARD}" style="padding:36px 44px 6px;text-align:center;background:${BG_CARD}">
-  <p class="wm-ink" style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:400;color:${INK};letter-spacing:8px;line-height:1">WESTMERE</p>
-  <p class="wm-muted" style="margin:8px 0 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:3.5px;text-transform:uppercase;color:${INK_MUTED};font-weight:400">Private Hire &middot; Sussex</p>
-</td></tr>
-
-<!-- Hairline gold rule -->
-<tr><td bgcolor="${BG_CARD}" style="padding:22px 44px 0;background:${BG_CARD}">
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr>
-    <td style="width:32px;height:1px;background:${GOLD};font-size:0;line-height:0" bgcolor="${GOLD}">&nbsp;</td>
-  </tr></table>
-</td></tr>
-
-<!-- Body content -->
-<tr><td bgcolor="${BG_CARD}" style="padding:24px 44px 36px;background:${BG_CARD}">
-${bodyHtml}
-</td></tr>
-
-<!-- Footer -->
-<tr><td bgcolor="${BG_CARD}" style="padding:18px 44px 28px;border-top:1px solid ${HAIRLINE};background:${BG_CARD}">
-  <p class="wm-muted" style="margin:0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;color:${INK_MUTED};letter-spacing:.5px;line-height:1.6">Reply to this email or call us if anything needs adjusting.</p>
-  <p class="wm-muted" style="margin:8px 0 0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;color:${INK_MUTED};letter-spacing:.5px">Westmere Private Hire &middot; Licensed by Lewes District Council &middot; westmereprivatehire.co.uk</p>
-</td></tr>
-
-</table>
-</td></tr>
-</table>
-</body></html>`;
-}
+// The old imageless emailShell has been RETIRED — every email now renders
+// through heroShell()/heroEmail() (defined below) so there is exactly ONE
+// branded, hero-image email design system-wide. (Guardrail: payment-flow.test.js)
 
 // ── Detail row: clean two-column, no boxes ───────────────────────────────
 function detailRow(label, value, opts) {
@@ -277,6 +212,70 @@ function cleanOwnerNote(notes) {
   if (/^vehicle\s*:/i.test(s)) return '';
   return s;
 }
+
+// ── THE single branded shell used by EVERY Westmere email ────────────────
+// Hero header (wordmark + coastal image) + "Westmere Private Hire" sign-off
+// footer. `innerHtml` is the sequence of <tr> rows dropped between the hero
+// image and the footer. There is exactly ONE email design system-wide — the
+// old imageless emailShell has been retired (guardrail: payment-flow.test.js).
+function heroShell(innerHtml, opts) {
+  opts = opts || {};
+  const title = opts.title || 'Westmere Private Hire';
+  return `<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light only">
+<title>${escHtml(title)}</title>
+<!--[if mso]><style>table,td,a{font-family:Georgia,serif}</style><![endif]-->
+<style>:root{color-scheme:light only;supported-color-schemes:light only}
+@media(max-width:600px){.wm-pad{padding-left:22px!important;padding-right:22px!important}.wm-badge{display:block!important;width:100%!important;text-align:left!important;padding:14px 0 0 0!important}}</style>
+</head>
+<body style="margin:0;padding:0;background:#e7e4df;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#e7e4df" style="background:#e7e4df">
+<tr><td align="center" style="padding:26px 14px">
+
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#fbfaf7" style="width:600px;max-width:600px;background:#fbfaf7;border:1px solid #e2ddd3;border-radius:16px;overflow:hidden">
+
+<tr><td align="center" style="padding:28px 20px 18px;background:#fbfaf7">
+  <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#b78635;letter-spacing:1px;line-height:1">W</div>
+  <div style="font-family:Georgia,'Times New Roman',serif;font-size:29px;letter-spacing:11px;color:#1b1b1a;font-weight:400;margin-top:6px">WESTMERE</div>
+  <div style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;letter-spacing:5px;color:#b78635;text-transform:uppercase;margin-top:9px">Private Hire &middot; Sussex</div>
+  <div style="width:60px;height:1px;background:#d9c8a8;line-height:1px;font-size:0;margin:14px auto 0">&nbsp;</div>
+</td></tr>
+
+<tr><td style="font-size:0;line-height:0;background:#fbfaf7"><img src="${HOST}/assets/westmere-email-hero.jpg" width="600" alt="Westmere car on the Sussex coast" style="display:block;width:100%;max-width:600px;height:auto;border:0;outline:none"></td></tr>
+
+${innerHtml}
+
+<tr><td style="padding:22px 40px;background:#f4f1ea;border-top:1px solid #ece5d8">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+    <td width="60" valign="middle"><img src="${HOST}/assets/westmere-email-thumb.jpg" width="60" height="60" alt="Westmere Private Hire" style="display:block;width:60px;height:60px;border-radius:50%;border:1px solid #dfd2bd"></td>
+    <td valign="middle" style="padding-left:16px;font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.55;color:#3a382f">With kind regards,<br><strong style="font-size:18px;color:#1b1b1a">Westmere Private Hire</strong></td>
+  </tr></table>
+</td></tr>
+
+<tr><td style="padding:24px 30px;background:#191919;text-align:center">
+  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;line-height:1.7;color:#e8e8e8"><a href="tel:+447930342593" style="color:#e7c27f;text-decoration:none">07930 342593</a> &middot; <a href="mailto:bookings@westmereprivatehire.co.uk" style="color:#e7c27f;text-decoration:none">bookings@westmereprivatehire.co.uk</a> &middot; <a href="${HOST}" style="color:#e7c27f;text-decoration:none">westmereprivatehire.co.uk</a></p>
+  <p style="margin:0 0 4px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;line-height:1.7;color:#cfcfcf">Reply to this email or call us if anything needs adjusting.</p>
+  <p style="margin:0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;line-height:1.7;color:#cfcfcf">Westmere Private Hire &middot; Licensed Private Hire Operator</p>
+</td></tr>
+
+</table>
+</td></tr>
+</table>
+</body></html>`;
+}
+
+// Generic branded email — arbitrary body content wrapped in the ONE hero shell.
+// Used by every non-booking email (invoices, admin, password, outreach, driver…)
+// so they all share the exact hero header/footer design, just without the
+// booking pay-buttons.
+function heroEmail(bodyHtml, opts) {
+  return heroShell(`<tr><td class="wm-pad" style="padding:30px 40px 14px;background:#fbfaf7">${bodyHtml}</td></tr>`, opts);
+}
+
 function confirmationEmailHtml(d) {
   // Shared branded hero template for ALL customer booking emails. `variant`
   // selects the copy/actions: 'confirmed' (default), 'estimate', or 'ack'
@@ -356,31 +355,7 @@ function confirmationEmailHtml(d) {
       </td></tr></table>
     </td></tr>` : '';
 
-  return `<!DOCTYPE html>
-<html lang="en" xmlns="http://www.w3.org/1999/xhtml"><head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<meta name="color-scheme" content="light only">
-<meta name="supported-color-schemes" content="light only">
-<title>Westmere &mdash; Booking Confirmation</title>
-<!--[if mso]><style>table,td,a{font-family:Georgia,serif}</style><![endif]-->
-<style>:root{color-scheme:light only;supported-color-schemes:light only}
-@media(max-width:600px){.wm-pad{padding-left:22px!important;padding-right:22px!important}.wm-badge{display:block!important;width:100%!important;text-align:left!important;padding:14px 0 0 0!important}}</style>
-</head>
-<body style="margin:0;padding:0;background:#e7e4df;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#e7e4df" style="background:#e7e4df">
-<tr><td align="center" style="padding:26px 14px">
-
-<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#fbfaf7" style="width:600px;max-width:600px;background:#fbfaf7;border:1px solid #e2ddd3;border-radius:16px;overflow:hidden">
-
-<tr><td align="center" style="padding:28px 20px 18px;background:#fbfaf7">
-  <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#b78635;letter-spacing:1px;line-height:1">W</div>
-  <div style="font-family:Georgia,'Times New Roman',serif;font-size:29px;letter-spacing:11px;color:#1b1b1a;font-weight:400;margin-top:6px">WESTMERE</div>
-  <div style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;letter-spacing:5px;color:#b78635;text-transform:uppercase;margin-top:9px">Private Hire &middot; Sussex</div>
-  <div style="width:60px;height:1px;background:#d9c8a8;line-height:1px;font-size:0;margin:14px auto 0">&nbsp;</div>
-</td></tr>
-
-<tr><td style="font-size:0;line-height:0;background:#fbfaf7"><img src="${HOST}/assets/westmere-email-hero.jpg" width="600" alt="Westmere car on the Sussex coast" style="display:block;width:100%;max-width:600px;height:auto;border:0;outline:none"></td></tr>
+  const inner = `
 
 <tr><td class="wm-pad" style="padding:30px 40px 6px;background:#fbfaf7">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
@@ -405,25 +380,8 @@ function confirmationEmailHtml(d) {
 ${captionBlock}
 ${payBlock}
 ${notesBlock}
-${actionsBlock}
-
-<tr><td style="padding:22px 40px;background:#f4f1ea;border-top:1px solid #ece5d8">
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-    <td width="60" valign="middle"><img src="${HOST}/assets/westmere-email-thumb.jpg" width="60" height="60" alt="Westmere Private Hire" style="display:block;width:60px;height:60px;border-radius:50%;border:1px solid #dfd2bd"></td>
-    <td valign="middle" style="padding-left:16px;font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.55;color:#3a382f">With kind regards,<br><strong style="font-size:18px;color:#1b1b1a">Westmere Private Hire</strong></td>
-  </tr></table>
-</td></tr>
-
-<tr><td style="padding:24px 30px;background:#191919;text-align:center">
-  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;line-height:1.7;color:#e8e8e8"><a href="tel:+447930342593" style="color:#e7c27f;text-decoration:none">07930 342593</a> &middot; <a href="mailto:bookings@westmereprivatehire.co.uk" style="color:#e7c27f;text-decoration:none">bookings@westmereprivatehire.co.uk</a> &middot; <a href="${HOST}" style="color:#e7c27f;text-decoration:none">westmereprivatehire.co.uk</a></p>
-  <p style="margin:0 0 4px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;line-height:1.7;color:#cfcfcf">Reply to this email or call us if anything needs adjusting.</p>
-  <p style="margin:0;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;line-height:1.7;color:#cfcfcf">Westmere Private Hire &middot; Licensed Private Hire Operator</p>
-</td></tr>
-
-</table>
-</td></tr>
-</table>
-</body></html>`;
+${actionsBlock}`;
+  return heroShell(inner, { title: 'Westmere — Booking' });
 }
 
 // ── Customer ESTIMATE (operator sends a manual quote for a request) ──────
@@ -512,7 +470,7 @@ async function sendAdminAlert(booking) {
   <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">A new booking has just landed. Full details below.</p>
   ${buildDetailsTable(rows)}`;
 
-  const html = emailShell(body);
+  const html = heroEmail(body);
   const subject = ref + ' \u00b7 ' + (name || 'Guest') + ' \u00b7 ' + shortDisplay(pickup) + ' \u2192 ' + shortDisplay(destination);
   const preheader = (name || 'Guest') + ' \u2014 ' + dateStr;
   const ok = await sendEmail(adminEmail, subject, html, 'Westmere Bookings', preheader);
@@ -565,10 +523,9 @@ async function sendCustomerWelcome(customer) {
     <li>You'll receive a confirmation for every booking, with driver details</li>
     <li>We will send you an itemised invoice for your journeys &mdash; pay by bank transfer at your convenience</li>
   </ul>
+`;
 
-  <p style="margin:22px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
-
-  const html = emailShell(body);
+  const html = heroEmail(body);
   const subject = 'Your Westmere account is ready';
   const preheader = 'Your account has been opened. Book any journey by phone, email, or WhatsApp.';
   const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
@@ -680,10 +637,9 @@ async function sendCustomerInvoice(customer, bookings, period, invoiceNo, settin
   </div>
 
   <p style="margin:18px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">We hope this is all in order. If you have any questions or would like to discuss anything, please don't hesitate to get in touch &mdash; we&rsquo;re always happy to help.</p>
-  <p style="margin:12px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">Thank you as always for choosing Westmere Private Hire. We look forward to welcoming you on your next journey.</p>
-  <p style="margin:16px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
+  <p style="margin:12px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">Thank you as always for choosing Westmere Private Hire. We look forward to welcoming you on your next journey.</p>`;
 
-  const html = emailShell(body);
+  const html = heroEmail(body);
   const subject = 'Invoice ' + (invoiceNo || '') + ' \u2014 ' + (period.label || '');
   const preheader = summaryCount + ' journey' + (summaryCount === 1 ? '' : 's') + ' \u00b7 \u00a3' + total.toFixed(2) + ' total';
   let attachments;
@@ -811,10 +767,9 @@ async function sendBespokeInvoice(recipient, items, period, invoiceNo, settings,
   </div>
 
   <p style="margin:18px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">If you have any questions about this invoice, please don&rsquo;t hesitate to get in touch &mdash; we&rsquo;re always happy to help.</p>
-  <p style="margin:12px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">Thank you for choosing Westmere Private Hire.</p>
-  <p style="margin:16px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
+  <p style="margin:12px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">Thank you for choosing Westmere Private Hire.</p>`;
 
-  const html = emailShell(body);
+  const html = heroEmail(body);
   const subject = 'Invoice ' + (invoiceNo || '') + ' \u2014 Westmere Private Hire';
   const preheader = 'Invoice \u00b7 \u00a3' + total.toFixed(2);
   let attachments;
@@ -852,10 +807,9 @@ async function sendInvoiceReminder(recipient, invoiceNo, total, payUrl) {
   <div style="text-align:center;margin:${payUrl ? '14px' : '26px'} 0 8px">
     <a href="${pdfUrl}" style="display:inline-block;padding:13px 32px;background:#0E2540;color:#ffffff;text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:.03em">View Invoice</a>
   </div>
-  <p style="margin:20px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">If you have any questions about this invoice, please don&rsquo;t hesitate to get in touch &mdash; we&rsquo;re always happy to help.</p>
-  <p style="margin:16px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
+  <p style="margin:20px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">If you have any questions about this invoice, please don&rsquo;t hesitate to get in touch &mdash; we&rsquo;re always happy to help.</p>`;
 
-  const html = emailShell(body);
+  const html = heroEmail(body);
   const subject = 'Payment reminder — Invoice ' + (invoiceNo || '') + ' · Westmere Private Hire';
   const preheader = 'Invoice ' + (invoiceNo || '') + ' — £' + totalStr + ' outstanding';
   const ok = await sendEmail(recipient.email, subject, html, 'Westmere Private Hire', preheader);
@@ -883,10 +837,9 @@ async function sendPasswordResetEmail(customer, token) {
     </tr>
   </table>
 
-  <p style="margin:0 0 8px;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">This link will expire in one hour. If you did not request a password reset, you can safely ignore this email &mdash; your password will not change.</p>
-  <p style="margin:22px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
+  <p style="margin:0 0 8px;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">This link will expire in one hour. If you did not request a password reset, you can safely ignore this email &mdash; your password will not change.</p>`;
 
-  const html = emailShell(body);
+  const html = heroEmail(body);
   const subject = 'Reset your Westmere password';
   const preheader = 'Click the link to set a new password. This link expires in one hour.';
   const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
@@ -916,10 +869,9 @@ async function sendAdminPasswordResetEmail(user, token) {
     </tr>
   </table>
 
-  <p style="margin:0 0 8px;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">This link will expire in one hour. If you did not request a password reset, you can safely ignore this email &mdash; your password will not change.</p>
-  <p style="margin:22px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
+  <p style="margin:0 0 8px;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">This link will expire in one hour. If you did not request a password reset, you can safely ignore this email &mdash; your password will not change.</p>`;
 
-  const html = emailShell(body);
+  const html = heroEmail(body);
   const subject = 'Reset your Westmere admin password';
   const preheader = 'Click the link to set a new admin password. This link expires in one hour.';
   const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
@@ -958,7 +910,7 @@ async function sendCustomerCancellation(booking) {
   ${buildDetailsTable(rows)}
   <p style="margin:26px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With our sincere apologies,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
 
-  const html = emailShell(body);
+  const html = heroEmail(body);
   const subject = 'Booking cancelled \u2014 our apologies \u2014 ' + ref;
   const preheader = 'We are sorry \u2014 your journey can no longer go ahead. A refund will follow if you paid online.';
   const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
@@ -979,30 +931,27 @@ async function sendDriverStatement(driver, period, totals, items) {
       <td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:12px;color:#9C2828;text-align:right;font-family:Menlo,Consolas,monospace">−£${(+it.commission||0).toFixed(2)}</td>
       <td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:12px;color:#B8985A;text-align:right;font-family:Menlo,Consolas,monospace;font-weight:600">£${(+it.net||0).toFixed(2)}</td>
     </tr>`).join('');
-  const html = `<!DOCTYPE html><html><body style="font-family:Helvetica,Arial,sans-serif;background:#f5f2ed;padding:20px">
-  <div style="max-width:640px;margin:0 auto;background:#fff;padding:26px 30px;border-top:4px solid #B8985A">
-    <div style="font-family:Georgia,serif;font-size:22px;letter-spacing:.2em;color:#111D2C">WESTMERE</div>
-    <div style="font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:#B8985A;margin-top:2px">Driver Statement</div>
-    <h2 style="font-family:Georgia,serif;font-size:16px;color:#111D2C;margin:22px 0 6px">Hi ${driver.name || 'driver'},</h2>
-    <p style="font-size:13px;color:#333;line-height:1.6">Here is your earnings summary for <strong>${period.from}</strong> to <strong>${period.to}</strong>.</p>
-    <div style="display:flex;gap:12px;margin:16px 0 10px;flex-wrap:wrap">
-      <div style="flex:1;min-width:110px;padding:10px 12px;background:#fafafa;border:1px solid #eee"><div style="font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#888">Jobs</div><div style="font-size:18px;color:#111D2C;margin-top:2px">${totals.jobs}</div></div>
-      <div style="flex:1;min-width:110px;padding:10px 12px;background:#fafafa;border:1px solid #eee"><div style="font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#888">Gross</div><div style="font-size:18px;color:#111D2C;margin-top:2px">£${(+totals.gross||0).toFixed(2)}</div></div>
-      <div style="flex:1;min-width:110px;padding:10px 12px;background:#fafafa;border:1px solid #eee"><div style="font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#888">Commission (10%)</div><div style="font-size:18px;color:#9C2828;margin-top:2px">£${(+totals.commission||0).toFixed(2)}</div></div>
-      <div style="flex:1;min-width:110px;padding:10px 12px;background:rgba(184,152,90,.08);border:1px solid rgba(184,152,90,.25)"><div style="font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#8B7035">Net due to you</div><div style="font-size:18px;color:#B8985A;margin-top:2px;font-weight:600">£${(+totals.net||0).toFixed(2)}</div></div>
-    </div>
-    <table style="width:100%;border-collapse:collapse;margin-top:12px">
-      <thead><tr>
-        <th style="padding:6px 8px;text-align:left;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#B8985A;border-bottom:2px solid #B8985A">Date</th>
-        <th style="padding:6px 8px;text-align:left;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#B8985A;border-bottom:2px solid #B8985A">Journey</th>
-        <th style="padding:6px 8px;text-align:right;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#B8985A;border-bottom:2px solid #B8985A">Fare</th>
-        <th style="padding:6px 8px;text-align:right;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#B8985A;border-bottom:2px solid #B8985A">Fee</th>
-        <th style="padding:6px 8px;text-align:right;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#B8985A;border-bottom:2px solid #B8985A">Net</th>
-      </tr></thead>
-      <tbody>${rows || '<tr><td colspan="5" style="padding:16px;text-align:center;color:#999;font-size:12px">No jobs this period.</td></tr>'}</tbody>
-    </table>
-    <div style="font-size:11px;color:#888;border-top:1px solid #eee;margin-top:24px;padding-top:14px;text-align:center">Westmere Private Hire · Licensed by Lewes District Council</div>
-  </div></body></html>`;
+  const body = `
+  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#b78635;font-weight:700">Driver Statement</p>
+  <h2 style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:400;color:#1b1b1a;margin:0 0 8px">Hi ${escHtml(driver.name || 'driver')},</h2>
+  <p style="font-size:15px;color:#57544e;line-height:1.6;margin:0 0 16px">Here is your earnings summary for <strong>${period.from}</strong> to <strong>${period.to}</strong>.</p>
+  <div style="display:flex;gap:12px;margin:16px 0 10px;flex-wrap:wrap">
+    <div style="flex:1;min-width:110px;padding:10px 12px;background:#fafafa;border:1px solid #eee"><div style="font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#888">Jobs</div><div style="font-size:18px;color:#111D2C;margin-top:2px">${totals.jobs}</div></div>
+    <div style="flex:1;min-width:110px;padding:10px 12px;background:#fafafa;border:1px solid #eee"><div style="font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#888">Gross</div><div style="font-size:18px;color:#111D2C;margin-top:2px">£${(+totals.gross||0).toFixed(2)}</div></div>
+    <div style="flex:1;min-width:110px;padding:10px 12px;background:#fafafa;border:1px solid #eee"><div style="font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#888">Commission (10%)</div><div style="font-size:18px;color:#9C2828;margin-top:2px">£${(+totals.commission||0).toFixed(2)}</div></div>
+    <div style="flex:1;min-width:110px;padding:10px 12px;background:rgba(184,152,90,.08);border:1px solid rgba(184,152,90,.25)"><div style="font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#8B7035">Net due to you</div><div style="font-size:18px;color:#B8985A;margin-top:2px;font-weight:600">£${(+totals.net||0).toFixed(2)}</div></div>
+  </div>
+  <table style="width:100%;border-collapse:collapse;margin-top:12px">
+    <thead><tr>
+      <th style="padding:6px 8px;text-align:left;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#B8985A;border-bottom:2px solid #B8985A">Date</th>
+      <th style="padding:6px 8px;text-align:left;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#B8985A;border-bottom:2px solid #B8985A">Journey</th>
+      <th style="padding:6px 8px;text-align:right;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#B8985A;border-bottom:2px solid #B8985A">Fare</th>
+      <th style="padding:6px 8px;text-align:right;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#B8985A;border-bottom:2px solid #B8985A">Fee</th>
+      <th style="padding:6px 8px;text-align:right;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#B8985A;border-bottom:2px solid #B8985A">Net</th>
+    </tr></thead>
+    <tbody>${rows || '<tr><td colspan="5" style="padding:16px;text-align:center;color:#999;font-size:12px">No jobs this period.</td></tr>'}</tbody>
+  </table>`;
+  const html = heroEmail(body, { title: 'Westmere — Driver Statement' });
   return sendEmail(driver.email, `Westmere — Weekly statement (${period.from} to ${period.to})`, html, 'Westmere Payroll', `Your earnings summary: £${(+totals.net||0).toFixed(2)} net`);
 }
 
@@ -1028,10 +977,9 @@ async function sendDriverWelcome(driver) {
   <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.7">1. Open the driver app on your phone and log in with the credentials above.</p>
   <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.7">2. Go to <em>Profile</em> and complete your personal details.</p>
   <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.7">3. Upload your required documents — DBS, licence, PHV badge, insurance, and MOT — so they can be reviewed and approved before you start accepting jobs.</p>
-  <p style="margin:0 0 22px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;color:${INK_MUTED};line-height:1.6">For security, please change your password once you have logged in. If you have any questions, reply to this email or contact us directly.</p>
-  <p style="margin:22px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
+  <p style="margin:0 0 22px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;color:${INK_MUTED};line-height:1.6">For security, please change your password once you have logged in. If you have any questions, reply to this email or contact us directly.</p>`;
 
-  const html = emailShell(body);
+  const html = heroEmail(body);
   const subject = 'Welcome to Westmere — Your driver account is ready';
   const preheader = `Your driver login: ${username}. Open the driver app to get started.`;
   const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
@@ -1062,10 +1010,9 @@ async function sendVerificationEmail(customer, token) {
   <p style="margin:0 0 8px;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">If the button above does not work, copy and paste this link into your browser:</p>
   <p style="margin:0 0 22px;font-family:Menlo,Consolas,monospace;font-size:11px;color:${GOLD};word-break:break-all;line-height:1.6">${escHtml(verifyUrl)}</p>
 
-  <p style="margin:0 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_MUTED};line-height:1.6">This link will remain valid until your account is verified. If you did not create a Westmere account, you can safely ignore this email.</p>
-  <p style="margin:22px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
+  <p style="margin:0 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_MUTED};line-height:1.6">This link will remain valid until your account is verified. If you did not create a Westmere account, you can safely ignore this email.</p>`;
 
-  const html = emailShell(body);
+  const html = heroEmail(body);
   const subject = 'Verify your Westmere account';
   const preheader = 'One click to activate your account — then you can book and manage journeys online.';
   const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
@@ -1074,7 +1021,7 @@ async function sendVerificationEmail(customer, token) {
 }
 
 // ── Recommendation email ─────────────────────────────────────────────────
-// Branded invitation using the same emailShell as all other Westmere emails.
+// Branded invitation using the same hero template as all other Westmere emails.
 async function sendRecommendation(recipientEmail) {
   if (!recipientEmail) return false;
 
@@ -1086,10 +1033,9 @@ async function sendRecommendation(recipientEmail) {
   <div style="text-align:center;margin:26px 0 8px">
     <a href="https://westmereprivatehire.co.uk" style="display:inline-block;padding:13px 32px;background:${GOLD};color:#0E2540;text-decoration:none;border-radius:6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:.03em">Book Your Journey</a>
   </div>
-  <p style="margin:20px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">We look forward to welcoming you.</p>
-  <p style="margin:16px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
+  <p style="margin:20px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">We look forward to welcoming you.</p>`;
 
-  const html = emailShell(body);
+  const html = heroEmail(body);
   const subject = 'You\u2019ve been recommended \u2014 Westmere Private Hire';
   const preheader = 'Premium private-hire transfers across Sussex';
   const ok = await sendEmail(recipientEmail, subject, html, 'Westmere Private Hire', preheader);
@@ -1123,10 +1069,9 @@ async function sendPaymentReminder(booking) {
   <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Your trip from <strong>${dispAddr(pickup)}</strong> to <strong>${dispAddr(destination)}</strong> on ${dateStr}${fareStr ? ' for <strong style="color:' + GOLD + '">' + fareStr + '</strong>' : ''} is still outstanding.</p>
   <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">If you&rsquo;ve already made payment, please disregard this message. Otherwise, you can pay securely using the link below.</p>
   ${payBlock}
-  <p style="margin:20px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">If you have any questions, please don&rsquo;t hesitate to get in touch.</p>
-  <p style="margin:16px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
+  <p style="margin:20px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">If you have any questions, please don&rsquo;t hesitate to get in touch.</p>`;
 
-  const html = emailShell(body);
+  const html = heroEmail(body);
   const subject = 'Payment reminder \u2014 ' + (ref || 'your journey') + ' \u00b7 Westmere Private Hire';
   const preheader = fareStr ? fareStr + ' outstanding for your recent journey' : 'Payment outstanding for your recent journey';
   const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
@@ -1173,7 +1118,7 @@ async function sendPartnershipOutreach(recipientEmail, companyName) {
   <a href="mailto:westmereprivatehire@gmail.com" style="color:${GOLD};text-decoration:none">westmereprivatehire@gmail.com</a><br>
   66 High Street, Lewes, BN7 1XG &nbsp;&middot;&nbsp; Licensed by Lewes District Council</p>`;
 
-  const html = emailShell(body);
+  const html = heroEmail(body);
   const subject = 'Introduction — Westmere Private Hire · Driver Support Available';
   const preheader = 'Licensed premium driver available for subcontract work across Sussex';
   const ok = await sendEmail(recipientEmail, subject, html, 'Westmere Private Hire', preheader);
@@ -1217,7 +1162,7 @@ async function sendCorporateIntro(recipientEmail, companyName) {
   <a href="mailto:westmereprivatehire@gmail.com" style="color:${GOLD};text-decoration:none">westmereprivatehire@gmail.com</a><br>
   66 High Street, Lewes, BN7 1XG &nbsp;&middot;&nbsp; Licensed by Lewes District Council</p>`;
 
-  const html = emailShell(body);
+  const html = heroEmail(body);
   const subject = 'Premium Driver Services for ' + (companyName || 'Your Business') + ' — Westmere Private Hire';
   const preheader = 'Local licensed driver service offering corporate accounts, airport transfers and premium travel';
   const ok = await sendEmail(recipientEmail, subject, html, 'Westmere Private Hire', preheader);
@@ -1239,7 +1184,7 @@ async function sendReviewRequest(email, firstName, ref) {
   <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">It takes less than a minute and means a great deal to a small, independent business like ours.</p>
   <p style="margin:20px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">With warm thanks,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
 
-  const html = emailShell(body);
+  const html = heroEmail(body);
   const subject = 'Thank you for travelling with us \u2014 ' + (ref || 'Westmere Private Hire');
   const preheader = 'We hope your journey was just right \u2014 would you share a quick review?';
   const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
@@ -1273,7 +1218,7 @@ async function sendOwnerCancelledRequest(booking) {
   ${buildDetailsTable(rows)}
   <p style="margin:26px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">Westmere Private Hire</p>`;
 
-  const html = emailShell(body);
+  const html = heroEmail(body);
   const subject = 'Customer cancelled the request — ' + ref;
   const preheader = (name || 'The customer') + ' cancelled ' + ref + ' — ' + shortDisplay(pickup) + ' to ' + shortDisplay(destination);
   const ok = await sendEmail(adminEmail, subject, html, 'Westmere Bookings', preheader);
@@ -1306,7 +1251,7 @@ async function sendOwnerCustomerNote(booking, note) {
   ${buildDetailsTable(rows)}
   <p style="margin:26px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">Westmere Private Hire</p>`;
 
-  const html = emailShell(body);
+  const html = heroEmail(body);
   const subject = 'Customer note — ' + ref;
   const preheader = (name || 'The customer') + ' left a special requirement for ' + ref;
   const ok = await sendEmail(adminEmail, subject, html, 'Westmere Bookings', preheader);
@@ -1326,10 +1271,9 @@ async function sendCustomerMessage(booking, message) {
   <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">A message from Westmere${ref ? ' · ' + escHtml(ref) : ''}</p>
   <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
   <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.7">${escHtml(message).replace(/\n/g, '<br>')}</p>
-  <p style="margin:0 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">You can simply reply to this email or call us on <a href="tel:+447930342593" style="color:${INK};text-decoration:none">07930 342593</a>.</p>
-  <p style="margin:22px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
+  <p style="margin:0 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">You can simply reply to this email or call us on <a href="tel:+447930342593" style="color:${INK};text-decoration:none">07930 342593</a>.</p>`;
 
-  const html = emailShell(body);
+  const html = heroEmail(body);
   const subject = ref ? ('Regarding your booking — ' + ref) : 'A message from Westmere Private Hire';
   const preheader = String(message).replace(/\s+/g, ' ').slice(0, 90);
   const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
