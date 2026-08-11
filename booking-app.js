@@ -12,8 +12,8 @@
   var FARE_CF = {
     // Brighton→Gatwick/Heathrow are owner-set FLAT ALL-IN fares (mirror of
     // server/fare-engine.js) — marked in FARE_CF_ALLIN so the airport fee/toll is
-    // NOT added on top (£70/£125 already includes it). Both directions.
-    brighton:      { ga:{out:70,ret:70}, he:{out:125,ret:125}, st:{out:188,ret:192}, lu:{out:176,ret:181}, so:{out:138,ret:135}, ci:{out:151,ret:154} },
+    // NOT added on top (£65/£125 already includes it). Both directions.
+    brighton:      { ga:{out:65,ret:65}, he:{out:125,ret:125}, st:{out:188,ret:192}, lu:{out:176,ret:181}, so:{out:138,ret:135}, ci:{out:151,ret:154} },
     lewes:         { ga:{out:91,ret:88}, he:{out:129,ret:133}, st:{out:193,ret:197}, lu:{out:181,ret:184}, so:{out:140,ret:138}, ci:{out:155,ret:158} },
     horsham:       { ga:{out:54,ret:52},  he:{out:94,ret:99}, st:{out:141,ret:145}, lu:{out:120,ret:122}, so:{out:104,ret:101}, ci:{out:124,ret:128} },
     crawley:       { ga:{out:45,ret:43},  he:{out:82,ret:86} },

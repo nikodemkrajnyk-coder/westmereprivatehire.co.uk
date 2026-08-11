@@ -21,10 +21,12 @@ const DRIVER_BASE = { lat: 51.0632, lon: -0.3254 };
 // out = town→airport (drop-off), ret = airport→town (pickup)
 const FARE_CF = {
   // Brighton→Gatwick and Brighton→Heathrow are owner-set FLAT ALL-IN fares
-  // (Aug 2026) priced to beat the local market. They are marked all-in in
-  // FARE_CF_ALLIN below, so the engine does NOT add the airport fee/toll on top
-  // (the £70/£125 already includes it). Applies both directions (drop-off/pickup).
-  brighton:      { ga:{out:70,ret:70}, he:{out:125,ret:125}, st:{out:188,ret:192}, lu:{out:176,ret:181}, so:{out:138,ret:135}, ci:{out:151,ret:154} },
+  // (Aug 2026): top normal private-hire competitor price (excluding chauffeur/
+  // limo/executive) minus £5 — Gatwick £70 (Hove Airport Cars) − £5 = £65;
+  // Heathrow £130 (Streamline) − £5 = £125. Marked all-in in FARE_CF_ALLIN below,
+  // so the engine does NOT add the airport fee/toll on top (the £65/£125 already
+  // includes it). Applies both directions (drop-off/pickup).
+  brighton:      { ga:{out:65,ret:65}, he:{out:125,ret:125}, st:{out:188,ret:192}, lu:{out:176,ret:181}, so:{out:138,ret:135}, ci:{out:151,ret:154} },
   lewes:         { ga:{out:91,ret:88}, he:{out:129,ret:133}, st:{out:193,ret:197}, lu:{out:181,ret:184}, so:{out:140,ret:138}, ci:{out:155,ret:158} },
   horsham:       { ga:{out:54,ret:52},  he:{out:94,ret:99}, st:{out:141,ret:145}, lu:{out:120,ret:122}, so:{out:104,ret:101}, ci:{out:124,ret:128} },
   crawley:       { ga:{out:45,ret:43},  he:{out:82,ret:86} },

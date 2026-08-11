@@ -1,9 +1,10 @@
 /**
  * Brighton flat-fare guardrail — run with:  node server/tests/fare-brighton.test.js
  *
- * The owner set FLAT ALL-IN fares (Aug 2026) to beat the local market:
- *   • Brighton/Hove → Gatwick  = £70 exactly
- *   • Brighton/Hove → Heathrow = £125 exactly
+ * The owner set FLAT ALL-IN fares (Aug 2026): top normal private-hire
+ * competitor price (excluding chauffeur/limo/executive) minus £5 —
+ *   • Brighton/Hove → Gatwick  = £65 exactly  (£70 top − £5)
+ *   • Brighton/Hove → Heathrow = £125 exactly (£130 top − £5)
  *
  * These are marked all-in (FARE_CF_ALLIN), so the engine must NOT add the airport
  * drop-off / pick-up fee or any toll on top — the customer quote is exactly the
@@ -24,10 +25,10 @@ function test(name, fn) { queue.push({ name, fn }); }
 const BRIGHTON_INPUTS = ['Brighton', 'Hove', 'Brighton, BN1 1AA', 'Hove, BN3 2AA'];
 
 for (const town of BRIGHTON_INPUTS) {
-  test(`${town} → Gatwick is exactly £70 (all-in, no fee on top)`, async () => {
+  test(`${town} → Gatwick is exactly £65 (all-in, no fee on top)`, async () => {
     const r = await calculateFare(town, 'Gatwick Airport', '10:00');
     assert.strictEqual(r.rate_type, 'fixed', 'expected a fixed fare, got: ' + r.rate_type);
-    assert.strictEqual(r.fare, 70, `${town}→Gatwick expected £70, got £${r.fare}`);
+    assert.strictEqual(r.fare, 65, `${town}→Gatwick expected £65, got £${r.fare}`);
     assert.strictEqual(r.airport_fee, 0, 'airport fee must NOT be added to the all-in fare');
     assert.strictEqual(r.toll_fee || 0, 0, 'toll must NOT be added to the all-in fare');
   });
@@ -41,9 +42,9 @@ for (const town of BRIGHTON_INPUTS) {
 }
 
 // Symmetric: the return leg (airport → Brighton pickup) is the same flat fare.
-test('Gatwick → Brighton (pickup) is exactly £70', async () => {
+test('Gatwick → Brighton (pickup) is exactly £65', async () => {
   const r = await calculateFare('Gatwick Airport', 'Brighton', '10:00');
-  assert.strictEqual(r.fare, 70, `Gatwick→Brighton expected £70, got £${r.fare}`);
+  assert.strictEqual(r.fare, 65, `Gatwick→Brighton expected £65, got £${r.fare}`);
   assert.strictEqual(r.airport_fee, 0);
 });
 test('Heathrow → Brighton (pickup) is exactly £125', async () => {
