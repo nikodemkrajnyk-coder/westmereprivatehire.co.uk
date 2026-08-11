@@ -309,6 +309,7 @@ async function notifyCustomerConfirmed(bookingId) {
     payment: row.payment,
     flight: row.flight,
     passengers: row.passengers,
+    bags: row.bags,
     stop_address: row.stop_address || null,
     notes: row.notes || null,
     // Always pass the token so the Cancel Request + Add-a-note links work even

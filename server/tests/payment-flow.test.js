@@ -803,6 +803,70 @@ test('manual create-booking form captures luggage (nb-bags) and sends it', () =>
   assert.ok(/INSERT INTO bookings \([^)]*\bbags\b/.test(m[0]), 'owner POST /bookings must persist bags');
 });
 
+// ── Paid confirmation + review-on-completion emails ──────────────────────
+console.log('\nPaid confirmation + review-request emails (owner spec)');
+test('paid confirmation email: hero template, thanks-for-booking, trip details, no pay buttons', async () => {
+  process.env.RESEND_API_KEY = 'test_fake_key';
+  let cap = {};
+  global.fetch = async (u, o) => { cap = JSON.parse(o.body); return { ok: true, status: 200, json: async () => ({ id: 'id' }) }; };
+  delete require.cache[require.resolve('../email')];
+  const email = require('../email');
+  // Cash-marked-paid booking (paid, method cash, token still present).
+  await email.sendCustomerConfirmed({
+    ref: 'WPH-CONF', name: 'Martin Shuttle', email: 'm@e.com',
+    pickup: 'Greenhill Avenue, Caterham, CR3 6PQ', destination: 'Bolney, West Sussex, England',
+    date: '2026-12-01', time: '09:00', fare: 75, payment: 'cash', paid: true,
+    passengers: 2, bags: '3', pay_token: 'deadbeefdeadbeefdeadbeefdeadbeef'
+  });
+  const h = cap.html;
+  assert.ok(/WESTMERE/.test(h) && /wm-pad/.test(h), 'must use the hero-image template');
+  assert.ok(/Thank you for booking/i.test(h), 'must thank the customer for booking');
+  assert.ok(/WPH-CONF/.test(h), 'must include the booking reference');
+  assert.ok(/2 passenger/.test(h), 'must include the passenger count');
+  assert.ok(/3 bag/.test(h), 'must include the luggage count');
+  assert.ok(/Paid — cash/.test(h), 'must show the actual payment method (cash), not "Paid online"');
+  assert.ok(/Bolney/.test(h) && !/West Sussex, England/.test(h), 'addresses must be shortened');
+  assert.ok(!/Pay Now/.test(h) && !/Pay Your Driver On The Day/.test(h), 'a PAID confirmation must carry NO pay buttons');
+  // Card-paid variant renders the card method.
+  cap = {};
+  await email.sendCustomerConfirmed({ ref: 'WPH-CONF2', name: 'Jane', email: 'j@e.com', pickup: 'A', destination: 'B', date: '2026-12-02', time: '10:00', fare: 90, payment: 'card', paid: true, passengers: 1, pay_token: null });
+  assert.ok(/Paid by card/.test(cap.html), 'card-paid confirmation must show "Paid by card"');
+  assert.ok(!/Pay Now/.test(cap.html), 'card-paid confirmation must carry no pay buttons');
+});
+test('paid confirmation fires on BOTH the card-webhook and cash-mark-paid edges (with luggage)', () => {
+  const pub = read('server/public-api.js');
+  const wh = pub.indexOf("'/stripe-webhook'");
+  assert.ok(wh !== -1 && /notifyCustomerConfirmed/.test(pub.slice(wh, wh + 3000)), 'stripe webhook must fire the confirmed email');
+  const api = read('server/api.js');
+  const mp = api.match(/router\.post\('\/bookings\/:id\/mark-paid'[\s\S]*?\n\}\);/);
+  assert.ok(mp && /notifyCustomerConfirmed/.test(mp[0]), 'cash mark-paid must fire the confirmed email');
+  assert.ok(/bags:\s*row\.bags/.test(read('server/intake.js')), 'notifyCustomerConfirmed must pass luggage (bags) to the email');
+});
+test('review-request email: hero template + the same Google review link as the site', async () => {
+  process.env.RESEND_API_KEY = 'test_fake_key';
+  let cap = {};
+  global.fetch = async (u, o) => { cap = JSON.parse(o.body); return { ok: true, status: 200, json: async () => ({ id: 'id' }) }; };
+  delete require.cache[require.resolve('../email')];
+  const email = require('../email');
+  await email.sendReviewRequest('m@e.com', 'Martin', 'WPH-REV');
+  const h = cap.html;
+  assert.ok(/WESTMERE/.test(h) && /wm-pad/.test(h), 'review email must use the hero template');
+  assert.ok(/g\.page\/r\/Ce764VxFTR4VEAE\/review/.test(h), 'must use the canonical Google review link');
+  assert.ok(read('reviews.js').includes('g.page/r/Ce764VxFTR4VEAE/review'), 'the email link must match the site review button');
+  assert.ok(/travelling with us/i.test(h), 'must thank the customer for travelling');
+});
+test('marking a booking completed sends the review email once per booking (edge + guard)', () => {
+  const api = read('server/api.js');
+  assert.ok(/const becameCompleted = req\.body\.status === 'completed' && booking\.status !== 'completed'/.test(api),
+    'the review must fire on the completion EDGE (not every save of a completed booking)');
+  assert.ok(/becameCompleted && !updated\.review_request_sent_at/.test(api),
+    'the review must be guarded once-per-booking by review_request_sent_at');
+  assert.ok(/UPDATE bookings SET review_request_sent_at = datetime\('now'\)/.test(api),
+    'must stamp the per-booking sent marker only on a successful send');
+  assert.ok(/ALTER TABLE bookings ADD COLUMN review_request_sent_at/.test(read('server/db.js')),
+    'the per-booking review_request_sent_at column migration must exist');
+});
+
 // ── summary ──────────────────────────────────────────────────────────────
 (async () => {
   await run();

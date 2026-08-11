@@ -153,7 +153,7 @@ async function sendCustomerAcknowledgement(booking) {
 
 // ── Customer booking CONFIRMED (sent after Claude or operator approves) ──
 async function sendCustomerConfirmed(booking) {
-  const { ref, name, email, pickup, destination, date, time, fare, payment, flight, passengers, pay_token, paid, stop_address, notes } = booking;
+  const { ref, name, email, pickup, destination, date, time, fare, payment, flight, passengers, bags, pay_token, paid, stop_address, notes } = booking;
   if (!email) return;
 
   const dateStr = formatDate(date, time);
@@ -162,12 +162,22 @@ async function sendCustomerConfirmed(booking) {
   const firstName = (name || '').split(' ')[0] || 'there';
   const alreadyPaid = paid || payment === 'card';
 
+  // When the booking is settled (card paid / cash marked received), lead with a
+  // clear "thank you for booking" + payment-received line. The trip details
+  // (incl. passengers + luggage) and payment method render below, and the
+  // Pay Now / Cash buttons are hidden because it's already paid.
   const html = confirmationEmailHtml({
-    ref, firstName, pickup, stop_address, destination, dateStr, flight, passengers,
-    fareStr, alreadyPaid, pay_token, notes
+    ref, firstName, pickup, stop_address, destination, dateStr, flight, passengers, bags,
+    fareStr, alreadyPaid, payment, pay_token, notes,
+    eyebrow: 'Booking confirmed',
+    intro: alreadyPaid
+      ? 'Thank you for booking with Westmere — your payment has been received and your journey is confirmed. Your full trip details are below, and we look forward to welcoming you on the day.'
+      : undefined
   });
-  const subject = 'Booking confirmed — ' + ref;
-  const preheader = 'Your driver has been assigned. We look forward to seeing you.';
+  const subject = (alreadyPaid ? 'Booking confirmed & paid — ' : 'Booking confirmed — ') + ref;
+  const preheader = alreadyPaid
+    ? 'Payment received — your journey is booked. Trip details inside.'
+    : 'Your driver has been assigned. We look forward to seeing you.';
   const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
   if (ok) console.log('[EMAIL] Customer confirmed sent (' + ref + ')');
 }
@@ -211,6 +221,24 @@ function cleanOwnerNote(notes) {
   if (!s) return '';
   if (/^vehicle\s*:/i.test(s)) return '';
   return s;
+}
+
+// Luggage label from the stored `bags` value ("0".."4+"). '0'/'' → no luggage
+// (returns '' so the row is omitted). Matches the owner-app wording ("3 bags").
+function bagsLabel(bags) {
+  const b = String(bags == null ? '' : bags).trim();
+  if (!b || b === '0' || b === '0s+0l') return '';
+  return b + ' bag' + (b === '1' ? '' : 's');
+}
+
+// Payment-row text for a booking email. Only a genuinely settled booking shows
+// the method it was paid by — card (Stripe) vs cash (owner marked paid) vs
+// account. An unpaid estimate/confirmation says "Choose below".
+function paymentText(d) {
+  if (!d.alreadyPaid) return 'Choose below';
+  if (d.payment === 'cash') return 'Paid — cash to your driver';
+  if (d.payment === 'account') return 'On account';
+  return 'Paid by card';
 }
 
 // ── THE single branded shell used by EVERY Westmere email ────────────────
@@ -296,9 +324,11 @@ function confirmationEmailHtml(d) {
   rows += confRow('ic-dropoff', 'Drop-off', dispAddr(d.destination));
   rows += confRow('ic-datetime', 'Date &amp; Time', escHtml(d.dateStr));
   if (d.flight) rows += confRow('ic-flight', 'Flight', escHtml(d.flight));
-  if (d.passengers && d.passengers > 1) rows += confRow('ic-travellers', 'Travellers', d.passengers + ' passengers');
+  if (d.passengers) rows += confRow('ic-travellers', 'Travellers', Number(d.passengers) + ' passenger' + (Number(d.passengers) === 1 ? '' : 's'));
+  const bagsTxt = bagsLabel(d.bags);
+  if (bagsTxt) rows += confRow('ic-travellers', 'Luggage', escHtml(bagsTxt));
   if (d.fareStr) rows += confRow('ic-fare', fareLabel, escHtml(d.fareStr), { fare: true });
-  if (d.showPaymentRow !== false) rows += confRow('ic-payment', 'Payment', d.alreadyPaid ? 'Paid online' : 'Choose below');
+  if (d.showPaymentRow !== false) rows += confRow('ic-payment', 'Payment', paymentText(d));
 
   // For the ACKNOWLEDGEMENT (no fare/token yet) show a reassurance caption
   // instead of pay buttons.

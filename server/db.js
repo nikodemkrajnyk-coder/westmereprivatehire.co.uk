@@ -768,6 +768,11 @@ function migrate() {
   // confirmation_sent_at so the owner app can show "Estimate sent" separately.
   try { db.exec(`ALTER TABLE bookings ADD COLUMN estimate_sent_at TEXT`); } catch(_){}
 
+  // When the review-request email was sent for THIS booking. Per-booking guard
+  // so completing a trip asks for a review exactly once (re-marking a completed
+  // booking never re-sends), while a repeat customer is still invited per trip.
+  try { db.exec(`ALTER TABLE bookings ADD COLUMN review_request_sent_at TEXT`); } catch(_){}
+
   // Review request tracking — sent once per email address, never resent
   try {
     db.exec(`

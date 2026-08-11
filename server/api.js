@@ -262,6 +262,11 @@ router.patch('/bookings/:id', (req, res) => {
     events.broadcast('booking:confirmed', { id: parseInt(req.params.id, 10), ref: booking.ref, reason: 'Confirmed by operator' });
   }
 
+  // Did THIS update mark the trip completed? Computed on the edge (was not
+  // already completed) so re-saving a completed booking never re-triggers the
+  // review-request email below.
+  const becameCompleted = req.body.status === 'completed' && booking.status !== 'completed';
+
   // If THIS update cancelled a live booking, email the customer our apology.
   // Only fire on the edge (was not already cancelled) so re-cancelling is quiet.
   const becameCancelled = req.body.status === 'cancelled' && booking.status !== 'cancelled';
@@ -297,23 +302,25 @@ router.patch('/bookings/:id', (req, res) => {
     autoFile.fileBooking(updated);
     if (updated.status === 'completed') autoFile.updateEarnings(updated.date ? updated.date.slice(0, 7) : null, getDb);
 
-    // Send a one-time review request email on first completed booking per email
-    if (updated.status === 'completed') {
+    // Marking a trip COMPLETED invites the customer to leave a Google review.
+    // Fire ONCE PER BOOKING, on the completion edge: guarded by
+    // review_request_sent_at so re-marking a completed booking never re-sends,
+    // while a repeat customer is still invited after each separate trip.
+    if (becameCompleted && !updated.review_request_sent_at) {
       const { sendReviewRequest } = require('./email');
       const reviewEmail = updated.passenger_email ||
         (updated.customer_id ? (db.prepare('SELECT email FROM customers WHERE id = ?').get(updated.customer_id) || {}).email : null);
       if (reviewEmail) {
-        const already = db.prepare('SELECT id FROM review_emails_sent WHERE email = ?').get(reviewEmail.toLowerCase());
-        if (!already) {
-          const firstName = (updated.customer_name || updated.passenger_name || '').split(' ')[0] || 'there';
-          sendReviewRequest(reviewEmail, firstName, updated.ref)
-            .then(ok => {
-              if (ok) {
-                try { db.prepare('INSERT OR IGNORE INTO review_emails_sent (email) VALUES (?)').run(reviewEmail.toLowerCase()); } catch (_) {}
-              }
-            })
-            .catch(e => console.error('[API] sendReviewRequest failed:', e.message));
-        }
+        const firstName = (updated.customer_name || updated.passenger_name || '').split(' ')[0] || 'there';
+        sendReviewRequest(reviewEmail, firstName, updated.ref)
+          .then(ok => {
+            if (ok) {
+              try { db.prepare("UPDATE bookings SET review_request_sent_at = datetime('now') WHERE id = ?").run(updated.id); } catch (_) {}
+              // Keep the legacy per-email record in sync (harmless, non-blocking).
+              try { db.prepare('INSERT OR IGNORE INTO review_emails_sent (email) VALUES (?)').run(reviewEmail.toLowerCase()); } catch (_) {}
+            }
+          })
+          .catch(e => console.error('[API] sendReviewRequest failed:', e.message));
       }
     }
 
