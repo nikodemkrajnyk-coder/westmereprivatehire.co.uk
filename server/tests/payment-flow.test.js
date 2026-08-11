@@ -648,6 +648,66 @@ test('owner card detail rows shorten From/Stop/To via _shortAddr', () => {
   assert.ok(/Stop<\/td><td>'\+escH\(_shortAddr\(j\.stop_address\)/.test(fn[0]), 'detail Stop row must use _shortAddr');
 });
 
+// ── Manual (owner-created) booking → Send Estimate must email reliably ────
+// Root cause of the owner's bug: the manual create-booking form left the
+// customer email OPTIONAL/unvalidated (the web form requires + validates it).
+// A manual booking created without an email had no recipient, so
+// sendCustomerEstimate returned false and the route reported "Email send
+// failed". Fix: manual creation now requires + validates an email like web,
+// so Send Estimate always has a deliverable address.
+console.log('\nManual booking → Send Estimate (owner spec)');
+test('Send Estimate on a manual booking (no linked customer) sends the email', async () => {
+  process.env.RESEND_API_KEY = 'test_fake_key';
+  let sentTo = null, sentHtml = '';
+  global.fetch = async (url, opts) => {
+    const b = JSON.parse(opts.body); sentTo = b.to; sentHtml = b.html || '';
+    return { ok: true, status: 200, json: async () => ({ id: 'resend-manual-id' }) };
+  };
+  delete require.cache[require.resolve('../email')];
+  const email = require('../email');
+  // Exactly what the send-estimate route passes for a MANUAL booking: no linked
+  // customer, so name/email come from passenger_*, and flight/stop/notes are null.
+  const result = await email.sendCustomerEstimate({
+    ref: 'WPH-MANUAL1', name: 'Martin Shuttle', email: 'martin@example.com',
+    pickup: 'Greenhill Avenue, Caterham, CR3 6PQ', destination: 'Bolney, West Sussex, England',
+    stop_address: null, date: '2026-12-01', time: '09:00', flight: null, passengers: 1,
+    fare: 75, notes: null, pay_token: 'deadbeefdeadbeefdeadbeefdeadbeef'
+  });
+  assert.ok(result, 'manual Send Estimate must return a truthy Resend id, not false/throw');
+  assert.strictEqual(sentTo, 'martin@example.com', 'estimate must be addressed to the manual booking email');
+  assert.ok(/westmere-pay\.html\?ref=WPH-MANUAL1&t=deadbeef/.test(sentHtml), 'the Pay link must build from the pay_token');
+  assert.ok(/\/api\/public\/pay\/WPH-MANUAL1\/cash\?t=deadbeef/.test(sentHtml), 'the cash link must build from the pay_token');
+});
+test('a blank email is exactly why manual Send Estimate used to fail (now blocked at creation)', async () => {
+  process.env.RESEND_API_KEY = 'test_fake_key';
+  global.fetch = async () => ({ ok: true, status: 200, json: async () => ({ id: 'x' }) });
+  delete require.cache[require.resolve('../email')];
+  const email = require('../email');
+  const r = await email.sendCustomerEstimate({
+    ref: 'WPH-NOEMAIL', name: 'Martin', email: null, passenger_email: null,
+    pickup: 'A', destination: 'B', date: '2026-12-01', time: '09:00', fare: 75, pay_token: 'x'
+  });
+  assert.strictEqual(r, false, 'no email → estimate cannot send: the root cause the fix prevents');
+});
+test('owner manual create-booking requires + validates a customer email (like web /book)', () => {
+  const src = read('westmere-owner.html');
+  const fn = src.match(/async function ownerNewBookingSubmit[\s\S]*?\n\}/);
+  assert.ok(fn, 'ownerNewBookingSubmit not found');
+  assert.ok(/email is required/i.test(fn[0]), 'manual create must require a customer email');
+  assert.ok(/valid email/i.test(fn[0]) && /@/.test(fn[0]), 'manual create must validate the email format');
+  // Server mirrors the web /book format check.
+  const api = read('server/api.js');
+  const m = api.match(/router\.post\('\/bookings'[\s\S]*?res\.status\(201\)/);
+  assert.ok(m, 'owner POST /bookings route not found');
+  assert.ok(/Invalid email format/.test(m[0]), 'owner POST /bookings must validate email format like web /book');
+});
+test('the Email field is marked required in the owner new-booking form', () => {
+  const src = read('westmere-owner.html');
+  const form = src.match(/id="new-booking-sheet"[\s\S]*?id="nb-submit-btn"/);
+  assert.ok(form, 'new-booking form not found');
+  assert.ok(/Email \*/.test(form[0]), 'the Email label must be marked required (*)');
+});
+
 // ── summary ──────────────────────────────────────────────────────────────
 (async () => {
   await run();

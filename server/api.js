@@ -89,6 +89,13 @@ router.post('/bookings', (req, res) => {
     return res.status(400).json({ error: 'Pickup, destination, date, and time required' });
   }
 
+  // Match the customer web-booking path (/api/public/book): validate the email
+  // format when one is supplied, so a manual booking never carries a malformed
+  // address that would later break Send Estimate.
+  if (passenger_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(passenger_email).trim())) {
+    return res.status(400).json({ error: 'Invalid email format' });
+  }
+
   // Reject bookings in the past (Europe/London timezone)
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return res.status(400).json({ error: 'Date must be YYYY-MM-DD' });

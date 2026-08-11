@@ -1103,11 +1103,11 @@ input[type=checkbox],input[type=radio]{accent-color:#111111 !important}
           <input id="nb-name" type="text" placeholder="Full name" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
         </div>
         <div style="margin-bottom:.7rem">
-          <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.22rem;font-family:var(--sans)">Phone</div>
+          <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.22rem;font-family:var(--sans)">Phone *</div>
           <input id="nb-phone" type="tel" placeholder="Phone number" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
         </div>
         <div style="margin-bottom:.7rem">
-          <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.22rem;font-family:var(--sans)">Email</div>
+          <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.22rem;font-family:var(--sans)">Email * <span style="text-transform:none;letter-spacing:0;color:rgba(27,27,26,.35)">— Send Estimate emails the customer</span></div>
           <input id="nb-email" type="email" placeholder="Email address" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
         </div>
         <div style="margin-bottom:.7rem;position:relative">
@@ -3176,9 +3176,18 @@ async function ownerNewBookingSubmit(){
   var date=(document.getElementById('nb-date').value||'').trim();
   var time=(document.getElementById('nb-time').value||'').trim();
   var name=(document.getElementById('nb-name').value||'').trim();
+  var phone=(document.getElementById('nb-phone').value||'').trim();
+  var email=(document.getElementById('nb-email').value||'').trim();
+  if(!name){err.textContent='Passenger name is required.';err.style.display='';return;}
   if(!pickup||!dest){err.textContent='Pickup and destination are required.';err.style.display='';return;}
   if(!date){err.textContent='Date is required.';err.style.display='';return;}
   if(!time){err.textContent='Time is required.';err.style.display='';return;}
+  // Match the customer web-booking form: a valid EMAIL is required so Send
+  // Estimate can always email the customer (a blank email is the reason manual
+  // bookings used to fail at "Send Estimate"). Phone is required too.
+  if(!phone){err.textContent='Phone number is required.';err.style.display='';return;}
+  if(!email){err.textContent='Customer email is required — Send Estimate emails the customer, so a booking needs an email.';err.style.display='';return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){err.textContent='Please enter a valid email address.';err.style.display='';return;}
   err.style.display='none';
   var btn=document.getElementById('nb-submit-btn');
   btn.disabled=true;btn.textContent='Creating…';
@@ -3186,9 +3195,9 @@ async function ownerNewBookingSubmit(){
     var fare=parseFloat(document.getElementById('nb-fare').value)||null;
     var body={
       pickup:pickup,stop_address:stop||null,destination:dest,date:date,time:time,
-      passenger_name:name||null,
-      passenger_phone:(document.getElementById('nb-phone').value||'').trim()||null,
-      passenger_email:(document.getElementById('nb-email').value||'').trim()||null,
+      passenger_name:name,
+      passenger_phone:phone,
+      passenger_email:email,
       fare:fare,
       passengers:parseInt(document.getElementById('nb-pax').value)||1,
       notes:(document.getElementById('nb-notes').value||'').trim()||null,
