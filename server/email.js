@@ -180,6 +180,7 @@ async function sendCustomerConfirmed(booking) {
     : 'Your driver has been assigned. We look forward to seeing you.';
   const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
   if (ok) console.log('[EMAIL] Customer confirmed sent (' + ref + ')');
+  return ok;   // Resend id (or true) so callers/previews can report the send.
 }
 
 // New Westmere confirmation template (approved design). Mail-safe (tables +

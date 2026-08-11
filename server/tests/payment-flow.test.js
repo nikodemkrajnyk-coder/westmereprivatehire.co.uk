@@ -868,25 +868,35 @@ test('review request is sent only ONCE PER CUSTOMER EMAIL, across multiple compl
   assert.ok(/INSERT OR IGNORE INTO review_emails_sent \(email\) VALUES \(\?\)/.test(api),
     'must record the email on a successful send so it is never re-asked');
 
-  // Functional: the exact dedup the route relies on is once-per-email (and
-  // case-insensitive), even across several completed bookings.
+  // Functional: TWO different completed bookings for the SAME customer email →
+  // exactly ONE review email total (the crux of the correction). Mirrors the
+  // route's dedup (skip if seen; record on send) and counts real sends.
   const Database = require('better-sqlite3');
   const os = require('os');
   const tmp = path.join(os.tmpdir(), 'wm-review-' + process.pid + '.db');
   try { fs.unlinkSync(tmp); } catch (_) {}
   const d = new Database(tmp);
   d.exec("CREATE TABLE review_emails_sent (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT UNIQUE, created_at TEXT DEFAULT (datetime('now')))");
-  // Mirrors the route: skip if seen, else send + record.
-  function completeTripAndMaybeSend(rawEmail) {
-    const key = rawEmail.trim().toLowerCase();
-    if (d.prepare('SELECT 1 FROM review_emails_sent WHERE email = ?').get(key)) return false; // already asked
+  d.exec("CREATE TABLE bookings (id INTEGER PRIMARY KEY AUTOINCREMENT, ref TEXT, passenger_email TEXT, status TEXT)");
+  // Same customer, two separate completed trips.
+  const b1 = d.prepare("INSERT INTO bookings(ref,passenger_email,status) VALUES('WPH-1','Martin@Example.com','completed')").run().lastInsertRowid;
+  const b2 = d.prepare("INSERT INTO bookings(ref,passenger_email,status) VALUES('WPH-2','martin@example.com','completed')").run().lastInsertRowid;
+  const b3 = d.prepare("INSERT INTO bookings(ref,passenger_email,status) VALUES('WPH-3','someone-else@example.com','completed')").run().lastInsertRowid;
+  let sends = 0;
+  // Exactly the route logic: lookup by lowercased email, skip if seen, else send + record.
+  function onCompleted(id) {
+    const bk = d.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+    const key = (bk.passenger_email || '').trim().toLowerCase();
+    if (!key) return;
+    if (d.prepare('SELECT 1 FROM review_emails_sent WHERE email = ?').get(key)) return; // already asked, ever
+    sends++;                                                       // ← the review email would send here
     d.prepare('INSERT OR IGNORE INTO review_emails_sent (email) VALUES (?)').run(key);
-    return true; // sent
   }
-  assert.strictEqual(completeTripAndMaybeSend('martin@example.com'), true, 'first completed trip → review sent');
-  assert.strictEqual(completeTripAndMaybeSend('martin@example.com'), false, 'second trip, same email → NOT re-sent');
-  assert.strictEqual(completeTripAndMaybeSend('MARTIN@Example.com'), false, 'same email (any case) → NOT re-sent');
-  assert.strictEqual(completeTripAndMaybeSend('someone-else@example.com'), true, 'a different customer → still gets asked');
+  onCompleted(b1);              // Martin's first trip → sends
+  onCompleted(b2);              // Martin's second trip, same email (diff case) → skipped
+  assert.strictEqual(sends, 1, 'two completed bookings for the SAME email must send only ONE review email');
+  onCompleted(b3);             // a different customer → sends
+  assert.strictEqual(sends, 2, 'a different customer still gets exactly one invite');
   d.close();
   try { fs.unlinkSync(tmp); } catch (_) {}
 });
