@@ -5,7 +5,7 @@
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
-    "test": "node server/tests/payment-flow.test.js"
+    "test": "node server/tests/payment-flow.test.js && node server/tests/rider-cache.test.js"
   },
   "engines": {
     "node": ">=18"
