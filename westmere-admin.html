@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
+<script src="/address-normalize.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -4777,19 +4778,10 @@ function escTo(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g
 var _ADM_AIRPORTS=[[/gatwick/i,'Gatwick'],[/heathrow/i,'Heathrow'],[/stansted/i,'Stansted'],[/luton/i,'Luton'],[/\bcity airport\b|london city/i,'London City'],[/southampton airport/i,'Southampton'],[/\bbristol airport\b/i,'Bristol'],[/st pancras|kings cross|king's cross/i,'St Pancras'],[/\beuston\b/i,'Euston'],[/\bvictoria station\b/i,'Victoria']];
 var _ADM_SKIP=/^(england|scotland|wales|united kingdom|uk|gb|great britain|west sussex|east sussex|surrey|kent|hampshire|essex|sussex|berkshire|london|greater london)$/i;
 var _ADM_PC=/^[A-Z]{1,2}\d[A-Z\d]?(\s*\d[A-Z]{2})?$/i;
-function _admShortAddr(a){
-  if(!a)return '';
-  for(var i=0;i<_ADM_AIRPORTS.length;i++){if(_ADM_AIRPORTS[i][0].test(a))return _ADM_AIRPORTS[i][1];}
-  var parts=String(a).split(',').map(function(p){return p.trim();}).filter(Boolean).filter(function(p){return !_ADM_SKIP.test(p);});
-  return (parts.length>3?parts.slice(0,3):parts).join(', ');
-}
-function _admTinyAddr(a){
-  if(!a)return '';
-  for(var i=0;i<_ADM_AIRPORTS.length;i++){if(_ADM_AIRPORTS[i][0].test(a))return _ADM_AIRPORTS[i][1];}
-  var parts=String(a).split(',').map(function(p){return p.trim();}).filter(Boolean).filter(function(p){return !_ADM_SKIP.test(p)&&!_ADM_PC.test(p);});
-  if(!parts.length)return String(a).split(',')[0].trim().slice(0,12);
-  return parts[parts.length-1].slice(0,12);
-}
+// Address display → delegated to the shared normalizer (address-normalize.js),
+// the single source of truth also used by the emails + owner app.
+function _admShortAddr(a){ return window.WMAddr ? WMAddr.shortDisplay(a) : (a||''); }
+function _admTinyAddr(a){ return window.WMAddr ? WMAddr.tinyLabel(a) : (a||''); }
 function admEnrichNotes(text){
   if(!text)return '';
   var s=escTo(text);

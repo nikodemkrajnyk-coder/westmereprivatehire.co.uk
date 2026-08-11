@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
+<script src="/address-normalize.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"/>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1633,21 +1634,12 @@ function decEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</
 var _WM_AIRPORTS=[[/gatwick/i,'Gatwick'],[/heathrow/i,'Heathrow'],[/stansted/i,'Stansted'],[/luton/i,'Luton'],[/\bcity airport\b|london city/i,'London City'],[/southampton airport/i,'Southampton'],[/\bbristol airport\b/i,'Bristol'],[/\bgatwick\b/i,'Gatwick'],[/st pancras|kings cross|king's cross/i,'St Pancras'],[/\beuston\b/i,'Euston'],[/\bvictoria station\b/i,'Victoria']];
 var _WM_SKIP=/^(england|scotland|wales|united kingdom|uk|gb|great britain|west sussex|east sussex|surrey|kent|hampshire|essex|sussex|berkshire|london|greater london)$/i;
 var _WM_PC=/^[A-Z]{1,2}\d[A-Z\d]?(\s*\d[A-Z]{2})?$/i;
-function _shortAddr(a){
-  if(!a)return '';
-  for(var i=0;i<_WM_AIRPORTS.length;i++){if(_WM_AIRPORTS[i][0].test(a))return _WM_AIRPORTS[i][1];}
-  var parts=String(a).split(',').map(function(p){return p.trim();}).filter(Boolean);
-  var out=parts.filter(function(p){return !_WM_SKIP.test(p);});
-  return (out.length>3?out.slice(0,3):out).join(', ');
-}
+// Address display → delegated to the shared normalizer (address-normalize.js),
+// the single source of truth also used by the emails + admin app. The FULL
+// address (j.pickup/j.dest) is still used for navChoice/Waze so routing works.
+function _shortAddr(a){ return window.WMAddr ? WMAddr.shortDisplay(a) : (a||''); }
 // Single distinctive token (airport or town) for tight spaces like calendar cells.
-function _tinyAddr(a){
-  if(!a)return '';
-  for(var i=0;i<_WM_AIRPORTS.length;i++){if(_WM_AIRPORTS[i][0].test(a))return _WM_AIRPORTS[i][1];}
-  var parts=String(a).split(',').map(function(p){return p.trim();}).filter(Boolean).filter(function(p){return !_WM_SKIP.test(p)&&!_WM_PC.test(p);});
-  if(!parts.length)return String(a).split(',')[0].trim().slice(0,12);
-  return parts[parts.length-1].slice(0,12);
-}
+function _tinyAddr(a){ return window.WMAddr ? WMAddr.tinyLabel(a) : (a||''); }
 
 function renderDecisionsPending(list){
   var el=document.getElementById('dec-pending-list');if(!el)return;

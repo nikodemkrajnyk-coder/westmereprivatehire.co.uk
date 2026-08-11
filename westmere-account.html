@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
+<script src="/address-normalize.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"/>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -554,14 +555,9 @@ function showPage(name){
 }
 
 /* ── Date helpers ── */
-function _shortAddr(s){
-  if(!s||s.length<3)return s||'—';
-  var ap=s.match(/\b([\w\s\-]+?(?:International\s+)?Airport)\b/i);
-  if(ap)return ap[1].trim();
-  var clean=s.replace(/,?\s*(England|Scotland|Wales|United Kingdom|UK|Great Britain)\b/gi,'');
-  var parts=clean.split(',').map(function(p){return p.trim();}).filter(function(p){return p&&p.length>1;});
-  return parts.length>=2?parts[0]+', '+parts[parts.length-2]:parts[0]||s.split(',')[0].trim();
-}
+// Address display → delegated to the shared normalizer (address-normalize.js),
+// the single source of truth also used by the emails + owner/admin apps.
+function _shortAddr(s){ return window.WMAddr ? (WMAddr.shortDisplay(s) || '—') : (s||'—'); }
 function _fmtDate(dateStr){
   if(!dateStr)return{day:'—',mon:'—',full:'—'};
   var d=new Date(dateStr+'T00:00');
