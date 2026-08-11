@@ -131,7 +131,7 @@ test('airport-transfers copy no longer says "fixed base fares"', () => {
   assert.ok(/all-inclusive/i.test(html), 'airport-transfers.html missing all-inclusive framing');
   assert.ok(/indicative starting fares/i.test(html), 'airport-transfers.html missing indicative framing for other airports');
   // Spot-check a few fare figures survive the copy change.
-  for (const p of ['£50', '£65', 'from £188']) {
+  for (const p of ['from approx. £50', 'from approx. £75', 'from approx. £188']) {
     assert.ok(html.includes(p), 'airport-transfers.html fare "' + p + '" changed/removed');
   }
 });

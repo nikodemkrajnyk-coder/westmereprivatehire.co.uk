@@ -26,13 +26,18 @@ let passed = 0, failed = 0;
 const queue = [];
 function test(name, fn) { queue.push({ name, fn }); }
 
-// Pull the £ figure shown in a given fare cell (town:ap:dir) of the page HTML.
-function cellAmount(html, cellKey) {
+// Pull a fare cell's raw label text (e.g. "from approx. £75") from the page HTML.
+function cellText(html, cellKey) {
   const re = new RegExp('data-fare-cell="' + cellKey + '">\\s*<span data-fare-amount>([^<]*)</span>');
   const m = html.match(re);
-  if (!m) return null;
-  const num = m[1].replace(/[^0-9.]/g, '');
-  return num ? Number(num) : null;
+  return m ? m[1] : null;
+}
+// Extract just the £ figure from that label (the number after the £ sign).
+function cellAmount(html, cellKey) {
+  const t = cellText(html, cellKey);
+  if (t == null) return null;
+  const m = t.match(/£\s*([0-9]+(?:\.[0-9]+)?)/);
+  return m ? Number(m[1]) : null;
 }
 
 const AP = { ga: 'Gatwick Airport', he: 'Heathrow Airport' };
@@ -59,6 +64,9 @@ for (const [town, ap, expected] of EXPECTED) {
     const ret = cellAmount(html, `${town}:${ap}:ret`);
     assert.strictEqual(out, expected, `${town}:${ap}:out shows £${out}, expected £${expected}`);
     assert.strictEqual(ret, expected, `${town}:${ap}:ret shows £${ret}, expected £${expected}`);
+    // Displayed as an indicative "from approx. £X" figure (wording, not exact).
+    assert.ok(/^from approx\. £/.test(cellText(html, `${town}:${ap}:out`)), `${town}:${ap}:out missing "from approx." wording`);
+    assert.ok(/^from approx\. £/.test(cellText(html, `${town}:${ap}:ret`)), `${town}:${ap}:ret missing "from approx." wording`);
     // Engine agrees AND treats it as all-in (no fee/toll on top).
     const r = await calculateFare(TOWN_INPUT[town], AP[ap], '10:00');
     assert.strictEqual(r.fare, expected, `engine ${town}→${ap} = £${r.fare}, page shows £${expected}`);

@@ -143,11 +143,11 @@ AREAS.forEach(function(area, i) {
   var rows = "";
   area.fares.forEach(function(f) {
     rows += '<tr><td><div class="dest">' + f[0] + '</div><div class="meta">' + f[1] + '</div></td>'
-          + '<td class="prices"><div class="prow"><span class="ptype">Drop-off</span><span class="price">from £' + f[2] + '</span><span class="ppark">+ parking</span></div>'
-          + '<div class="prow"><span class="ptype">Pickup</span><span class="price">from £' + f[3] + '</span><span class="ppark">+ parking</span></div></td></tr>';
+          + '<td class="prices"><div class="prow"><span class="ptype">Drop-off</span><span class="price">from approx. £' + f[2] + '</span><span class="ppark">+ parking</span></div>'
+          + '<div class="prow"><span class="ptype">Pickup</span><span class="price">from approx. £' + f[3] + '</span><span class="ppark">+ parking</span></div></td></tr>';
   });
   panel.innerHTML = subHtml + '<table class="ftable">' + rows + '</table>'
-    + '<p class="note" style="margin-top:1.2rem">Prices shown are the base fare &mdash; collection costs and road tolls are already included. Airport parking charges apply and will be added to your fare.</p>';
+    + '<p class="note" style="margin-top:1.2rem">Indicative starting fares, shown as &ldquo;from approx.&rdquo; figures &mdash; your exact fare is confirmed when you book. Collection costs and road tolls are included. Airport parking charges apply and will be added to your fare.</p>';
   panelsEl.appendChild(panel);
 });
 </script>
