@@ -1628,9 +1628,26 @@ var _WM_PC=/^[A-Z]{1,2}\d[A-Z\d]?(\s*\d[A-Z]{2})?$/i;
 // Address display → delegated to the shared normalizer (address-normalize.js),
 // the single source of truth also used by the emails + admin app. The FULL
 // address (j.pickup/j.dest) is still used for navChoice/Waze so routing works.
-function _shortAddr(a){ return window.WMAddr ? WMAddr.shortDisplay(a) : (a||''); }
+// If WMAddr hasn't loaded (network blip, cold PWA), fall back to a LOCAL
+// shortener — never the raw address — so the owner never sees "Town, County,
+// England" long-form (the previous fallback returned the string untouched).
+function _localShort(a){
+  if(!a)return '';
+  for(var i=0;i<_WM_AIRPORTS.length;i++){if(_WM_AIRPORTS[i][0].test(a))return _WM_AIRPORTS[i][1];}
+  var parts=String(a).split(',').map(function(p){return p.trim();}).filter(Boolean);
+  var out=parts.filter(function(p){return !_WM_SKIP.test(p);});
+  return (out.length>3?out.slice(0,3):out).join(', ');
+}
+function _localTiny(a){
+  if(!a)return '';
+  for(var i=0;i<_WM_AIRPORTS.length;i++){if(_WM_AIRPORTS[i][0].test(a))return _WM_AIRPORTS[i][1];}
+  var parts=String(a).split(',').map(function(p){return p.trim();}).filter(Boolean).filter(function(p){return !_WM_SKIP.test(p)&&!_WM_PC.test(p);});
+  if(!parts.length)return String(a).split(',')[0].trim().slice(0,12);
+  return parts[parts.length-1].slice(0,12);
+}
+function _shortAddr(a){ return window.WMAddr ? WMAddr.shortDisplay(a) : _localShort(a); }
 // Single distinctive token (airport or town) for tight spaces like calendar cells.
-function _tinyAddr(a){ return window.WMAddr ? WMAddr.tinyLabel(a) : (a||''); }
+function _tinyAddr(a){ return window.WMAddr ? WMAddr.tinyLabel(a) : _localTiny(a); }
 
 // NOTE: the old native "decisions" list (renderDecisionsPending / decConfirm /
 // decCancel) was removed. It rendered a green "Confirm" button that PATCHed
@@ -2413,7 +2430,17 @@ function wmPayStatus(j){
   if(j&&(j.paid_at||j.payment==='card'))return{key:'prepaid',label:'Prepaid',short:'Prepaid ✓',color:'#2D6E47',bg:'rgba(45,110,71,.12)'};
   if(j&&j.payment==='cash')return{key:'cash',label:'Cash',short:'Cash',color:'#555555',bg:'rgba(106,106,106,.16)'};
   if(j&&j.payment==='account')return{key:'account',label:'Account',short:'Account',color:'#3A5A8C',bg:'rgba(58,90,140,.12)'};
-  return{key:'await',label:'Awaiting payment',short:'Awaiting',color:'rgba(27,27,26,.5)',bg:'rgba(27,27,26,.07)'};
+  // No online payment recorded yet. Only call it "Awaiting payment" once the
+  // customer has ACTUALLY chosen a method (status → awaiting_payment) or the job
+  // has otherwise reached a settlement stage. A brand-new or estimate-sent
+  // (pending/offered) booking is NOT awaiting payment — showing "Awaiting" there
+  // is premature. Those read as a neutral "—" (the status label carries the
+  // real state: New request / Pending · estimate sent).
+  var st=(j&&j.apiStatus)||'';
+  if(st==='pending'||st==='offered'||st===''){
+    return{key:'none',label:'No payment chosen yet',short:'—',color:'rgba(27,27,26,.4)',bg:'rgba(27,27,26,.05)'};
+  }
+  return{key:'await',label:'Awaiting payment',short:'Awaiting',color:'#9C5800',bg:'rgba(156,88,0,.12)'};
 }
 function wmPayBadge(j){var p=wmPayStatus(j);return'<span style="display:inline-block;padding:.12rem .45rem;font-size:.58rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:'+p.color+';background:'+p.bg+';border-radius:4px;white-space:nowrap">'+p.short+'</span>';}
 
@@ -2698,9 +2725,9 @@ function jobCardHtml(j){
     +'</div>'
     +'<div id="'+detailId+'" style="display:none;padding:0 1rem .9rem;border-top:1px solid rgba(27,27,26,.06);background:rgba(27,27,26,.02)">'
       +'<table style="width:100%;font-size:.78rem;color:rgba(27,27,26,.7);border-collapse:collapse;margin-bottom:.7rem">'
-        +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4);width:80px">From</td><td>'+escH(j.pickup||'—')+'</td></tr>'
-        +(j.stop_address?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Stop</td><td>'+escH(j.stop_address)+'</td></tr>':'')
-        +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">To</td><td>'+escH(j.dest||'—')+'</td></tr>'
+        +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4);width:80px">From</td><td>'+escH(_shortAddr(j.pickup)||'—')+'</td></tr>'
+        +(j.stop_address?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Stop</td><td>'+escH(_shortAddr(j.stop_address))+'</td></tr>':'')
+        +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">To</td><td>'+escH(_shortAddr(j.dest)||'—')+'</td></tr>'
         +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Date</td><td>'+escH(j.date||'—')+' '+(j.time?'at '+j.time:'')+'</td></tr>'
         +(j.phone?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Phone</td><td><a href="tel:'+escH(j.phone)+'" style="color:var(--navy)">'+escH(j.phone)+'</a></td></tr>':'')
         +(j.fare?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Fare</td><td style="font-weight:600;color:var(--navy)">£'+Number(j.fare).toFixed(2)+'</td></tr>':'')

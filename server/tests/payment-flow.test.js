@@ -608,6 +608,46 @@ test('a status-less insert lands as pending, not confirmed (owner == web initial
   try { fs.unlinkSync(tmp); } catch (_) {}
 });
 
+// ── Owner card: payment badge + short addresses ──────────────────────────
+// Owner screenshots: a brand-new booking wrongly showed an "Awaiting" payment
+// badge before any estimate/method choice, and the drop-off rendered long-form
+// ("Bolney, West Sussex, England"). Fixes: "Awaiting" only once a method is
+// chosen; addresses always shortened (even if the WMAddr script hasn't loaded).
+console.log('\nOwner card: payment badge + short addresses (owner spec)');
+test('pay badge: new/pending shows no "Awaiting"; only method-chosen jobs do', () => {
+  const src = read('westmere-owner.html');
+  const m = src.match(/function wmPayStatus\(j\)\{[\s\S]*?\n\}/);
+  assert.ok(m, 'wmPayStatus not found');
+  // Pure function (uses only `j`) — safe to evaluate for a real behavioural check.
+  const wmPayStatus = new Function('return (' + m[0] + ')')();
+  assert.strictEqual(wmPayStatus({ apiStatus: 'pending', payment: 'pending' }).short, '—',
+    'a brand-new/pending booking must NOT show "Awaiting"');
+  assert.strictEqual(wmPayStatus({ apiStatus: 'offered', payment: 'pending' }).short, '—',
+    'an offered booking must NOT show "Awaiting"');
+  assert.strictEqual(wmPayStatus({ apiStatus: 'awaiting_payment', payment: 'pending' }).short, 'Awaiting',
+    'a card booking that reached awaiting_payment SHOULD show "Awaiting"');
+  assert.strictEqual(wmPayStatus({ apiStatus: 'awaiting_payment', payment: 'cash' }).short, 'Cash',
+    'a cash booking shows "Cash", not "Awaiting"');
+  assert.strictEqual(wmPayStatus({ apiStatus: 'confirmed', paid_at: '2026-01-01' }).short, 'Prepaid ✓',
+    'a paid booking shows "Prepaid"');
+});
+test('owner _shortAddr falls back to a LOCAL shortener, never the raw address', () => {
+  const src = read('westmere-owner.html');
+  assert.ok(/function _shortAddr\(a\)\{\s*return window\.WMAddr \? WMAddr\.shortDisplay\(a\) : _localShort\(a\);\s*\}/.test(src),
+    '_shortAddr must fall back to _localShort (not "(a||\'\')") so it never returns the long-form address');
+  assert.ok(/function _localShort\(/.test(src), '_localShort fallback helper must exist');
+  assert.ok(/function _tinyAddr\(a\)\{\s*return window\.WMAddr \? WMAddr\.tinyLabel\(a\) : _localTiny\(a\);\s*\}/.test(src),
+    '_tinyAddr must also fall back locally');
+});
+test('owner card detail rows shorten From/Stop/To via _shortAddr', () => {
+  const src = read('westmere-owner.html');
+  const fn = src.match(/function jobCardHtml[\s\S]*?\n\}/);
+  assert.ok(fn, 'jobCardHtml not found');
+  assert.ok(/From<\/td><td>'\+escH\(_shortAddr\(j\.pickup\)/.test(fn[0]), 'detail From row must use _shortAddr');
+  assert.ok(/To<\/td><td>'\+escH\(_shortAddr\(j\.dest\)/.test(fn[0]), 'detail To row must use _shortAddr');
+  assert.ok(/Stop<\/td><td>'\+escH\(_shortAddr\(j\.stop_address\)/.test(fn[0]), 'detail Stop row must use _shortAddr');
+});
+
 // ── summary ──────────────────────────────────────────────────────────────
 (async () => {
   await run();
