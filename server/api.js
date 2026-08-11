@@ -303,24 +303,30 @@ router.patch('/bookings/:id', (req, res) => {
     if (updated.status === 'completed') autoFile.updateEarnings(updated.date ? updated.date.slice(0, 7) : null, getDb);
 
     // Marking a trip COMPLETED invites the customer to leave a Google review.
-    // Fire ONCE PER BOOKING, on the completion edge: guarded by
-    // review_request_sent_at so re-marking a completed booking never re-sends,
-    // while a repeat customer is still invited after each separate trip.
-    if (becameCompleted && !updated.review_request_sent_at) {
+    // Fires on the completion edge, but ONCE PER CUSTOMER EMAIL for their
+    // lifetime: if a review request was ever sent to this email (on any past
+    // trip), we skip it — a repeat customer is never asked twice. Dedup key is
+    // the lowercased email in review_emails_sent.
+    if (becameCompleted) {
       const { sendReviewRequest } = require('./email');
       const reviewEmail = updated.passenger_email ||
         (updated.customer_id ? (db.prepare('SELECT email FROM customers WHERE id = ?').get(updated.customer_id) || {}).email : null);
       if (reviewEmail) {
-        const firstName = (updated.customer_name || updated.passenger_name || '').split(' ')[0] || 'there';
-        sendReviewRequest(reviewEmail, firstName, updated.ref)
-          .then(ok => {
-            if (ok) {
-              try { db.prepare("UPDATE bookings SET review_request_sent_at = datetime('now') WHERE id = ?").run(updated.id); } catch (_) {}
-              // Keep the legacy per-email record in sync (harmless, non-blocking).
-              try { db.prepare('INSERT OR IGNORE INTO review_emails_sent (email) VALUES (?)').run(reviewEmail.toLowerCase()); } catch (_) {}
-            }
-          })
-          .catch(e => console.error('[API] sendReviewRequest failed:', e.message));
+        const emailKey = reviewEmail.trim().toLowerCase();
+        const alreadyAsked = db.prepare('SELECT 1 FROM review_emails_sent WHERE email = ?').get(emailKey);
+        if (!alreadyAsked) {
+          const firstName = (updated.customer_name || updated.passenger_name || '').split(' ')[0] || 'there';
+          sendReviewRequest(reviewEmail, firstName, updated.ref)
+            .then(ok => {
+              if (ok) {
+                // Record per-email so this customer is never asked again, and
+                // stamp the booking for reference/UI.
+                try { db.prepare('INSERT OR IGNORE INTO review_emails_sent (email) VALUES (?)').run(emailKey); } catch (_) {}
+                try { db.prepare("UPDATE bookings SET review_request_sent_at = datetime('now') WHERE id = ?").run(updated.id); } catch (_) {}
+              }
+            })
+            .catch(e => console.error('[API] sendReviewRequest failed:', e.message));
+        }
       }
     }
 
@@ -594,6 +600,13 @@ router.post('/bookings/:id/refund', async (req, res) => {
   } catch (e) {
     console.error('[API] refund record failed:', e.message);
     return res.status(500).json({ error: 'Refund issued but recording failed — check the booking.' });
+  }
+  // A refund cancels the trip → remove it from the operator's Google Calendar
+  // too (same as the other cancel paths). No-op if there's no synced event.
+  if (booking.calendar_event_id) {
+    gcal.deleteEvent(booking.calendar_event_id).then(ok => {
+      if (ok) { try { db.prepare('UPDATE bookings SET calendar_event_id = NULL WHERE id = ?').run(id); } catch (_) {} }
+    }).catch(() => {});
   }
   try {
     db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')

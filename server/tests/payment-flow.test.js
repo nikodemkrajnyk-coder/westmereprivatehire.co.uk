@@ -855,16 +855,70 @@ test('review-request email: hero template + the same Google review link as the s
   assert.ok(read('reviews.js').includes('g.page/r/Ce764VxFTR4VEAE/review'), 'the email link must match the site review button');
   assert.ok(/travelling with us/i.test(h), 'must thank the customer for travelling');
 });
-test('marking a booking completed sends the review email once per booking (edge + guard)', () => {
+test('review request is sent only ONCE PER CUSTOMER EMAIL, across multiple completed trips', () => {
   const api = read('server/api.js');
+  // Fires on the completion edge…
   assert.ok(/const becameCompleted = req\.body\.status === 'completed' && booking\.status !== 'completed'/.test(api),
-    'the review must fire on the completion EDGE (not every save of a completed booking)');
-  assert.ok(/becameCompleted && !updated\.review_request_sent_at/.test(api),
-    'the review must be guarded once-per-booking by review_request_sent_at');
-  assert.ok(/UPDATE bookings SET review_request_sent_at = datetime\('now'\)/.test(api),
-    'must stamp the per-booking sent marker only on a successful send');
-  assert.ok(/ALTER TABLE bookings ADD COLUMN review_request_sent_at/.test(read('server/db.js')),
-    'the per-booking review_request_sent_at column migration must exist');
+    'the review must fire on the completion EDGE');
+  assert.ok(/if \(becameCompleted\)/.test(api), 'the review send is gated on becameCompleted');
+  // …but skipped if this email was ever asked before (lifetime, per-email dedup).
+  assert.ok(/SELECT 1 FROM review_emails_sent WHERE email = \?/.test(api),
+    'must look up a prior review request by email');
+  assert.ok(/if \(!alreadyAsked\)/.test(api), 'must skip the send when the email was already asked');
+  assert.ok(/INSERT OR IGNORE INTO review_emails_sent \(email\) VALUES \(\?\)/.test(api),
+    'must record the email on a successful send so it is never re-asked');
+
+  // Functional: the exact dedup the route relies on is once-per-email (and
+  // case-insensitive), even across several completed bookings.
+  const Database = require('better-sqlite3');
+  const os = require('os');
+  const tmp = path.join(os.tmpdir(), 'wm-review-' + process.pid + '.db');
+  try { fs.unlinkSync(tmp); } catch (_) {}
+  const d = new Database(tmp);
+  d.exec("CREATE TABLE review_emails_sent (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT UNIQUE, created_at TEXT DEFAULT (datetime('now')))");
+  // Mirrors the route: skip if seen, else send + record.
+  function completeTripAndMaybeSend(rawEmail) {
+    const key = rawEmail.trim().toLowerCase();
+    if (d.prepare('SELECT 1 FROM review_emails_sent WHERE email = ?').get(key)) return false; // already asked
+    d.prepare('INSERT OR IGNORE INTO review_emails_sent (email) VALUES (?)').run(key);
+    return true; // sent
+  }
+  assert.strictEqual(completeTripAndMaybeSend('martin@example.com'), true, 'first completed trip → review sent');
+  assert.strictEqual(completeTripAndMaybeSend('martin@example.com'), false, 'second trip, same email → NOT re-sent');
+  assert.strictEqual(completeTripAndMaybeSend('MARTIN@Example.com'), false, 'same email (any case) → NOT re-sent');
+  assert.strictEqual(completeTripAndMaybeSend('someone-else@example.com'), true, 'a different customer → still gets asked');
+  d.close();
+  try { fs.unlinkSync(tmp); } catch (_) {}
+});
+test('cancelling a booking deletes its Google Calendar event on both cancel paths', () => {
+  const pub = read('server/public-api.js');
+  const api = read('server/api.js');
+  const gcalSrc = read('server/google-calendar.js');
+
+  // 1) Customer cancel-request link (POST /api/public/cancel/:ref).
+  const custStart = pub.indexOf("router.post('/cancel/:ref'");
+  assert.ok(custStart !== -1, 'customer cancel route not found');
+  const custEnd = pub.indexOf('router.', custStart + 10);
+  const custBlock = pub.slice(custStart, custEnd === -1 ? custStart + 2500 : custEnd);
+  assert.ok(/deleteEvent\(b\.calendar_event_id\)/.test(custBlock),
+    'the customer cancel link must delete the calendar event');
+
+  // 2) Owner cancel — PATCH status:cancelled deletes on the cancelled edge…
+  assert.ok(/updated\.status === 'cancelled' && updated\.calendar_event_id\)[\s\S]{0,120}gcal\.deleteEvent\(updated\.calendar_event_id\)/.test(api),
+    'owner PATCH cancel must delete the calendar event');
+  // …the owner /bookings/:id/cancel route…
+  const ocStart = api.indexOf("router.post('/bookings/:id/cancel'");
+  const ocEnd = api.indexOf('\nrouter.', ocStart + 10);
+  assert.ok(ocStart !== -1 && /gcal\.deleteEvent\(booking\.calendar_event_id\)/.test(api.slice(ocStart, ocEnd === -1 ? ocStart + 1200 : ocEnd)),
+    'owner cancel route must delete the calendar event');
+  // …and a refund (paid → cancelled) — the path that was previously missing it.
+  const rfIdx = api.indexOf('booking_refunded');
+  assert.ok(rfIdx !== -1 && /gcal\.deleteEvent\(booking\.calendar_event_id\)/.test(api.slice(rfIdx - 900, rfIdx)),
+    'a refund/cancel must delete the calendar event too');
+
+  // Graceful when there's no synced event / calendar not connected.
+  assert.ok(/if \(!isConfigured\(\) \|\| !loadTokens\(\) \|\| !eventId\) return false/.test(gcalSrc),
+    'deleteEvent must no-op safely when there is no event id / no calendar connection');
 });
 
 // ── summary ──────────────────────────────────────────────────────────────
