@@ -761,6 +761,48 @@ test('owner POST /bookings feeds passenger_name into the alert/calendar (not jus
     'the old customerName.full_name || "Guest" mapping (ignoring passenger_name) must be gone');
 });
 
+// ── Owner app shows luggage + passenger count ────────────────────────────
+// Owner couldn't see how much luggage a customer selected. The value is stored
+// (bookings.bags, captured by both web + manual forms) but the owner list card
+// never rendered it, and passengers only showed when > 1. Fix: render pax
+// (always) + luggage in the card summary AND the detail view, and let the
+// manual create-booking form set luggage too.
+console.log('\nOwner app: luggage + passenger count (owner spec)');
+test('_bagsText renders the stored bags value as a luggage label', () => {
+  const src = read('westmere-owner.html');
+  const m = src.match(/function _bagsText\(bags\)\{[\s\S]*?\n\}/);
+  assert.ok(m, '_bagsText helper not found');
+  const _bagsText = new Function('return (' + m[0] + ')')();
+  assert.strictEqual(_bagsText('3'), '3 bags', 'a count renders as "N bags"');
+  assert.strictEqual(_bagsText('1'), '1 bag', 'one bag is singular');
+  assert.strictEqual(_bagsText('4+'), '4+ bags', 'the "4+" option renders');
+  assert.strictEqual(_bagsText('0'), '', 'no luggage renders empty (omitted from compact summary)');
+  assert.strictEqual(_bagsText(''), '', 'blank renders empty');
+});
+test('booking card renders passenger count + luggage in summary AND detail', () => {
+  const src = read('westmere-owner.html');
+  const fn = src.match(/function jobCardHtml[\s\S]*?\n\}/);
+  assert.ok(fn, 'jobCardHtml not found');
+  const jc = fn[0];
+  // Summary line: passengers shown (not gated on >1) + luggage via _bagsText.
+  assert.ok(/\(j\.pax\|\|1\)\+' pax'/.test(jc), 'summary must always show the passenger count');
+  assert.ok(/_bagsText\(j\.bags\)\?' · '\+_bagsText\(j\.bags\)/.test(jc), 'summary must append luggage when present');
+  // Detail rows: explicit Passengers + Luggage rows.
+  assert.ok(/>Passengers<\/td><td>'\+\(j\.pax\|\|1\)/.test(jc), 'detail must show a Passengers row');
+  assert.ok(/>Luggage<\/td><td>'\+escH\(_bagsText\(j\.bags\)\|\|'None'\)/.test(jc), 'detail must show a Luggage row (None when empty)');
+});
+test('manual create-booking form captures luggage (nb-bags) and sends it', () => {
+  const src = read('westmere-owner.html');
+  assert.ok(/id="nb-bags"/.test(src), 'the manual form must have a luggage selector');
+  const fn = src.match(/async function ownerNewBookingSubmit[\s\S]*?\n\}/);
+  assert.ok(fn, 'ownerNewBookingSubmit not found');
+  assert.ok(/bags:\s*\(document\.getElementById\('nb-bags'\)/.test(fn[0]), 'submit must send the luggage value');
+  // Server stores bags for owner-created bookings.
+  const api = read('server/api.js');
+  const m = api.match(/router\.post\('\/bookings'[\s\S]*?res\.status\(201\)/);
+  assert.ok(/INSERT INTO bookings \([^)]*\bbags\b/.test(m[0]), 'owner POST /bookings must persist bags');
+});
+
 // ── summary ──────────────────────────────────────────────────────────────
 (async () => {
   await run();

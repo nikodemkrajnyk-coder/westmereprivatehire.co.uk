@@ -1146,6 +1146,16 @@ input[type=checkbox],input[type=radio]{accent-color:#111111 !important}
           </div>
         </div>
         <div style="margin-bottom:.7rem">
+          <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.22rem;font-family:var(--sans)">Luggage</div>
+          <select id="nb-bags" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
+            <option value="0">No large luggage</option>
+            <option value="1">1 suitcase</option>
+            <option value="2">2 suitcases</option>
+            <option value="3">3 suitcases</option>
+            <option value="4+">4+ / extra luggage</option>
+          </select>
+        </div>
+        <div style="margin-bottom:.7rem">
           <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.22rem;font-family:var(--sans)">Notes</div>
           <textarea id="nb-notes" rows="2" placeholder="Flight number, luggage, special requests…" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.85rem;color:var(--navy);border-radius:6px;box-sizing:border-box;resize:vertical"></textarea>
         </div>
@@ -1648,6 +1658,15 @@ function _localTiny(a){
 function _shortAddr(a){ return window.WMAddr ? WMAddr.shortDisplay(a) : _localShort(a); }
 // Single distinctive token (airport or town) for tight spaces like calendar cells.
 function _tinyAddr(a){ return window.WMAddr ? WMAddr.tinyLabel(a) : _localTiny(a); }
+
+// Luggage label from the stored `bags` value. Web + manual forms store it as a
+// count string ("0","1".."4+"); '0'/'' means no large luggage. Returns '' when
+// there's nothing to show so the caller can omit it from a compact summary.
+function _bagsText(bags){
+  var b=(bags==null?'':String(bags)).trim();
+  if(!b||b==='0'||b==='0s+0l')return '';
+  return b+' bag'+(b==='1'?'':'s');
+}
 
 // NOTE: the old native "decisions" list (renderDecisionsPending / decConfirm /
 // decCancel) was removed. It rendered a green "Confirm" button that PATCHed
@@ -2719,7 +2738,7 @@ function jobCardHtml(j){
       +  '<span style="display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .5rem;font-size:.52rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:'+stColor+';background:'+stBg+';border-radius:4px;white-space:nowrap">'+stLabel+'<span style="font-size:.7rem;opacity:.6">▼</span></span>'
       +'</div>'
       +'<div style="font-size:.8rem;color:rgba(27,27,26,.6);margin-bottom:.15rem">'+escH(_shortAddr(j.pickup||''))+(j.stop_address?' → '+escH(_shortAddr(j.stop_address)):'')+' → '+escH(_shortAddr(j.dest||''))+'</div>'
-      +'<div style="font-size:.72rem;color:rgba(27,27,26,.4)">'+(j.time||'ASAP')+(j.fare?' · £'+Number(j.fare).toFixed(0):'')+(j.pax>1?' · '+j.pax+' pax':'')+'</div>'
+      +'<div style="font-size:.72rem;color:rgba(27,27,26,.4)">'+(j.time||'ASAP')+(j.fare?' · £'+Number(j.fare).toFixed(0):'')+' · '+(j.pax||1)+' pax'+(_bagsText(j.bags)?' · '+_bagsText(j.bags):'')+'</div>'
       +(j.apiStatus==='pending'&&j.suggestedFare!=null?'<div style="margin-top:.3rem"><span style="display:inline-block;font-size:.72rem;font-weight:600;letter-spacing:.03em;color:#555555;background:rgba(106,106,106,.16);border:1px solid rgba(106,106,106,.4);border-radius:5px;padding:.2rem .6rem">Suggested: £'+Number(j.suggestedFare).toFixed(2)+'</span></div>':'')
       +'<div style="margin-top:.3rem">'+wmPayBadge(j)+'</div>'
     +'</div>'
@@ -2732,7 +2751,8 @@ function jobCardHtml(j){
         +(j.phone?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Phone</td><td><a href="tel:'+escH(j.phone)+'" style="color:var(--navy)">'+escH(j.phone)+'</a></td></tr>':'')
         +(j.fare?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Fare</td><td style="font-weight:600;color:var(--navy)">£'+Number(j.fare).toFixed(2)+'</td></tr>':'')
         +(j.apiStatus==='pending'&&j.suggestedFare!=null?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Suggested</td><td style="font-weight:600;color:#555555">£'+Number(j.suggestedFare).toFixed(2)+'</td></tr>':'')
-        +(j.pax>1?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Pax</td><td>'+j.pax+'</td></tr>':'')
+        +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Passengers</td><td>'+(j.pax||1)+'</td></tr>'
+        +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Luggage</td><td>'+escH(_bagsText(j.bags)||'None')+'</td></tr>'
         +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Payment</td><td>'+wmPayBadge(j)+'</td></tr>'
         +(j.notes?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4);vertical-align:top">Notes</td><td>'+escH(j.notes)+'</td></tr>':'')
         +(j.customer_note?'<tr><td style="padding:.3rem 0;color:#b78635;vertical-align:top;font-weight:600">Special req.</td><td style="color:#8a5a1a;background:rgba(184,152,90,.1);border-left:2px solid #b78635;padding:.3rem .5rem">'+escH(j.customer_note)+'</td></tr>':'')
@@ -3162,6 +3182,7 @@ function ownerNewBookingOpen(){
   document.getElementById('nb-time').value='';
   document.getElementById('nb-fare').value='';
   document.getElementById('nb-pax').value='1';
+  document.getElementById('nb-bags').value='0';
   document.getElementById('nb-notes').value='';
 }
 function ownerNewBookingClose(){
@@ -3200,6 +3221,7 @@ async function ownerNewBookingSubmit(){
       passenger_email:email,
       fare:fare,
       passengers:parseInt(document.getElementById('nb-pax').value)||1,
+      bags:(document.getElementById('nb-bags').value||'0'),
       notes:(document.getElementById('nb-notes').value||'').trim()||null,
       payment:'pending'
     };
