@@ -35,6 +35,20 @@ test('rider-sw.js declares a versioned CACHE', () => {
     "rider-sw.js must declare  var CACHE = 'westmere-rider-v<N>';");
 });
 
+test('fetch handler has a same-origin guard (never proxies Stripe/fonts/cross-origin)', () => {
+  // The SW scope is the whole site. Without a cross-origin guard it proxies
+  // https://js.stripe.com through fetch(), Stripe returns 503 in a SW context,
+  // window.Stripe stays undefined and the pay page falls back to "payment
+  // temporarily unavailable". The guard must bail BEFORE respondWith/fetch.
+  assert.ok(/origin\s*!==\s*self\.location\.origin\s*\)\s*return;/.test(sw),
+    "rider-sw.js fetch handler must bail on cross-origin requests: `if (url.origin !== self.location.origin) return;`");
+  // And the guard must sit before the caching respondWith (so it can't be reached).
+  const guardIdx = sw.search(/origin\s*!==\s*self\.location\.origin/);
+  const respondIdx = sw.search(/respondWith/);
+  assert.ok(guardIdx !== -1 && respondIdx !== -1 && guardIdx < respondIdx,
+    'the cross-origin guard must come BEFORE respondWith(), or cross-origin requests still get proxied');
+});
+
 test('activate() deletes every cache except the current CACHE', () => {
   assert.ok(/keys\.filter\([^)]*\)[\s\S]*?k !== CACHE[\s\S]*?caches\.delete/.test(sw),
     'activate() must delete stale caches so returning users get fresh HTML');
