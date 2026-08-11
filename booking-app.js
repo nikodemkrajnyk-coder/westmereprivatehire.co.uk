@@ -134,9 +134,9 @@
       return geocode(pickup).then(function(gc){
         if (gc && ap) return route(gc.lat,gc.lon,ap.lat,ap.lon).then(function(rt){
           if (rt) { var mi=Math.round(rt.distance/1609.34*10)/10; var b=calcMile(mi,night); return { fare:b+feeD+tDm, base_fare:b, airport_fee:feeD, toll_fee:tDm, distance_miles:mi, duration_min:Math.round(rt.duration/60), rate_type:rateLabel, label:FARE_APFULL[deAP]+' drop-off' }; }
-          var be=calcMile(15,night); return { fare:be+feeD+tDm, base_fare:be, airport_fee:feeD, toll_fee:tDm, rate_type:rateLabel+' (estimated)', label:FARE_APFULL[deAP]+' drop-off' };
+          return { fare:null, on_request:true, rate_type:'on_request' }; // route failed → fail closed, never a ~15mi estimate
         });
-        var be2=calcMile(15,night); return { fare:be2+feeD+tDm, base_fare:be2, airport_fee:feeD, toll_fee:tDm, rate_type:rateLabel+' (estimated)', label:FARE_APFULL[deAP]+' drop-off' };
+        return { fare:null, on_request:true, rate_type:'on_request' }; // geocode failed → fail closed
       });
     }
     // Pickup is airport → add pickup (short-stay) fee (+ toll)
@@ -153,9 +153,9 @@
       return geocode(destination).then(function(gc){
         if (gc && ap2) return route(ap2.lat,ap2.lon,gc.lat,gc.lon).then(function(rt){
           if (rt) { var mi=Math.round(rt.distance/1609.34*10)/10; var b=calcMile(mi,night); return { fare:b+feeP+tPm, base_fare:b, airport_fee:feeP, toll_fee:tPm, distance_miles:mi, duration_min:Math.round(rt.duration/60), rate_type:rateLabel, label:FARE_APFULL[puAP]+' pickup' }; }
-          var be=calcMile(15,night); return { fare:be+feeP+tPm, base_fare:be, airport_fee:feeP, toll_fee:tPm, rate_type:rateLabel+' (estimated)', label:FARE_APFULL[puAP]+' pickup' };
+          return { fare:null, on_request:true, rate_type:'on_request' }; // route failed → fail closed, never a ~15mi estimate
         });
-        var be2=calcMile(15,night); return { fare:be2+feeP+tPm, base_fare:be2, airport_fee:feeP, toll_fee:tPm, rate_type:rateLabel+' (estimated)', label:FARE_APFULL[puAP]+' pickup' };
+        return { fare:null, on_request:true, rate_type:'on_request' }; // geocode failed → fail closed
       });
     }
     // Airport-to-airport (both ends airports) → per-mile routing. Town-to-town
@@ -163,9 +163,9 @@
     return Promise.all([geocode(pickup), geocode(destination)]).then(function(g){
       if (g[0] && g[1]) return route(g[0].lat,g[0].lon,g[1].lat,g[1].lon).then(function(rt){
         if (rt) { var mi=Math.round(rt.distance/1609.34*10)/10; return { fare:calcMile(mi,night), distance_miles:mi, duration_min:Math.round(rt.duration/60), rate_type:rateLabel }; }
-        return { fare:calcMile(8,night), rate_type:rateLabel+' (estimated)' };
+        return { fare:null, on_request:true, rate_type:'on_request' }; // route failed → fail closed
       });
-      return { fare:calcMile(8,night), rate_type:rateLabel+' (estimated)' };
+      return { fare:null, on_request:true, rate_type:'on_request' }; // geocode failed → fail closed
     });
   }
 

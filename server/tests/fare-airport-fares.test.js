@@ -160,6 +160,41 @@ test('booking-app.js calculateFare is airport-only (mirror of the engine)', () =
     'client calculateFare must return on_request when neither end is an airport');
 });
 
+// ── Item 23: NO 15-mile fallback — fail CLOSED to "quote on request" ──────
+// The old bug: an unknown town whose address wouldn't geocode fell back to a
+// fabricated ~15-mile (or 8-mile) estimate → absurd fares. Now a route that
+// can't be priced reliably must return on_request (fare:null), never a number.
+const feSrc = fs.readFileSync(path.join(__dirname, '..', '..', 'server', 'fare-engine.js'), 'utf8');
+const baSrc = fs.readFileSync(path.join(__dirname, '..', '..', 'booking-app.js'), 'utf8');
+test('fare-engine.js has NO fabricated mile fallback (15mi / 8mi)', () => {
+  assert.ok(!/_fareCalcMile\(15\b/.test(feSrc), 'the ~15-mile fallback must be gone');
+  assert.ok(!/_fareCalcMile\(8\b/.test(feSrc), 'the ~8-mile airport-to-airport fallback must be gone');
+  assert.ok(!/\(estimated\)/.test(feSrc), 'no "(estimated)" made-up rate_type may remain');
+});
+test('booking-app.js mirror has NO fabricated mile fallback either', () => {
+  assert.ok(!/calcMile\(15\b/.test(baSrc), 'client ~15-mile fallback must be gone');
+  assert.ok(!/calcMile\(8\b/.test(baSrc), 'client ~8-mile fallback must be gone');
+});
+test('an unpriceable route (geocode fails) fails CLOSED to on_request, not a number', async () => {
+  const savedFetch = global.fetch;
+  global.fetch = async () => { throw new Error('network blocked (test)'); };
+  try {
+    // Unknown town (not in FARE_CF) → airport, and the reverse.
+    const toAp   = await calculateFare('12 Random Lane, Nowheresville', 'Gatwick Airport', '10:00');
+    const fromAp = await calculateFare('Gatwick Airport', '9 Obscure Rd, Faraway', '10:00');
+    assert.strictEqual(toAp.fare, null, 'unknown→airport with no geocode must be fare:null');
+    assert.ok(toAp.on_request === true, 'unknown→airport must be on_request');
+    assert.strictEqual(fromAp.fare, null, 'airport→unknown with no geocode must be fare:null');
+    assert.ok(fromAp.on_request === true, 'airport→unknown must be on_request');
+    // And the customer-facing suggested fare must also be null (no leak).
+    const sf = await computeSuggestedFare('12 Random Lane, Nowheresville', 'Gatwick Airport', '10:00');
+    assert.strictEqual(sf, null, 'suggested fare must be null when a route cannot be priced');
+    // A FIXED-table town is unaffected (prices without any geocoding).
+    const fixed = await calculateFare('Worthing', 'Gatwick Airport', '10:00');
+    assert.ok(typeof fixed.fare === 'number' && fixed.fare > 0, 'fixed-table towns still price');
+  } finally { global.fetch = savedFetch; }
+});
+
 (async () => {
   console.log('\nAirport fixed-fare guardrail');
   for (const { name, fn } of queue) {

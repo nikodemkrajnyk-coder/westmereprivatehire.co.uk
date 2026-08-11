@@ -63,5 +63,22 @@ test('CACHE version matches the current westmere-rider.html (bump on every edit)
     'AND update the rider-html-sha256 comment to:\n        ' + actual);
 });
 
+// ── Items 1 & 2: My Account readability + desktop layout ─────────────────
+const riderHtml = read('westmere-rider.html');
+test('rider My Account pickers/inputs are light + readable (color-scheme light)', () => {
+  assert.ok(/<meta name="color-scheme" content="light"/.test(riderHtml), 'must declare a light color-scheme (readable date/time pickers)');
+  // The custom date/time/pick dropdowns + form inputs force a light scheme so
+  // native controls and text render dark-on-light (the dark/unreadable picker bug).
+  for (const cls of ['.cal-drop', '.time-drop', '.pick-drop', '.fi']) {
+    const m = riderHtml.match(new RegExp(cls.replace('.', '\\.') + '\\{[^}]*\\}'));
+    assert.ok(m && /color-scheme:\s*light/.test(m[0]), cls + ' must set color-scheme:light for readable pickers');
+  }
+});
+test('rider My Account has a DESKTOP layout (not mobile-width on a wide screen)', () => {
+  const m = riderHtml.match(/@media\(min-width:\s*720px\)\{[\s\S]*?max-width:\s*(\d+)px/);
+  assert.ok(m, 'must have a @media(min-width:720px) desktop layout so it is not a narrow mobile column');
+  assert.ok(parseInt(m[1], 10) >= 720, 'desktop layout must widen the container beyond mobile width');
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

@@ -933,14 +933,68 @@ test('cancelling a booking deletes its Google Calendar event on both cancel path
   const ocEnd = api.indexOf('\nrouter.', ocStart + 10);
   assert.ok(ocStart !== -1 && /gcal\.deleteEvent\(booking\.calendar_event_id\)/.test(api.slice(ocStart, ocEnd === -1 ? ocStart + 1200 : ocEnd)),
     'owner cancel route must delete the calendar event');
-  // …and a refund (paid → cancelled) — the path that was previously missing it.
+  // …a refund (paid → cancelled) — the path that was previously missing it…
   const rfIdx = api.indexOf('booking_refunded');
   assert.ok(rfIdx !== -1 && /gcal\.deleteEvent\(booking\.calendar_event_id\)/.test(api.slice(rfIdx - 900, rfIdx)),
     'a refund/cancel must delete the calendar event too');
+  // …and the owner DELETE /bookings/:id (hard-delete) removes the event as well.
+  const delStart = api.indexOf("router.delete('/bookings/:id'");
+  const delEnd = api.indexOf('\nrouter.', delStart + 10);
+  assert.ok(delStart !== -1 && /gcal\.deleteEvent\(booking\.calendar_event_id\)/.test(api.slice(delStart, delEnd === -1 ? delStart + 1500 : delEnd)),
+    'owner DELETE /bookings/:id must delete the calendar event');
+  // Customer self-cancel (My Account) also removes the event.
+  const csStart = api.indexOf("router.post('/customer/bookings/:id/cancel'");
+  const csEnd = api.indexOf('\nrouter.', csStart + 10);
+  assert.ok(csStart !== -1 && /deleteEvent\(booking\.calendar_event_id\)/.test(api.slice(csStart, csEnd === -1 ? csStart + 1800 : csEnd)),
+    'customer self-cancel must delete the calendar event');
 
   // Graceful when there's no synced event / calendar not connected.
   assert.ok(/if \(!isConfigured\(\) \|\| !loadTokens\(\) \|\| !eventId\) return false/.test(gcalSrc),
     'deleteEvent must no-op safely when there is no event id / no calendar connection');
+});
+
+// ── Manual vs Web booking PARITY (owner audit) ───────────────────────────
+// A manually-created (owner) booking must behave identically to a customer web
+// booking across field capture, customer-linking, pay_token, status lifecycle
+// and every downstream email.
+console.log('\nManual vs Web booking parity (owner audit)');
+test('both create routes capture the SAME core fields (name/phone/email/pax/bags/flight/stop)', () => {
+  const api = read('server/api.js');
+  const pub = read('server/public-api.js');
+  const ownerIns = (api.match(/INSERT INTO bookings \(([^)]*)\)[\s\S]*?res\.status\(201\)/) || [])[1] ||
+                   (api.match(/router\.post\('\/bookings'[\s\S]*?INSERT INTO bookings \(([^)]*)\)/) || [])[1] || '';
+  for (const col of ['pickup', 'destination', 'stop_address', 'date', 'time', 'passengers', 'bags', 'flight', 'fare', 'payment', 'notes', 'passenger_name', 'passenger_phone', 'passenger_email']) {
+    assert.ok(new RegExp('\\b' + col + '\\b').test(ownerIns), 'owner create must persist ' + col + ' (parity with web)');
+  }
+  // Web /book persists the same passenger_* + trip columns.
+  const webIns = (pub.match(/INSERT INTO bookings \(([^)]*)\)/) || [])[1] || '';
+  for (const col of ['passenger_name', 'passenger_phone', 'passenger_email', 'stop_address', 'flight', 'bags', 'passengers']) {
+    assert.ok(new RegExp('\\b' + col + '\\b').test(webIns), 'web /book must persist ' + col);
+  }
+});
+test('manual booking links to an existing customer by email, like web /book', () => {
+  const api = read('server/api.js');
+  const web = read('server/public-api.js');
+  // Web links by email…
+  assert.ok(/SELECT id FROM customers WHERE email = \? AND active = 1/.test(web), 'web /book links customer by email');
+  // …and the owner route now mirrors it.
+  const m = api.match(/router\.post\('\/bookings'[\s\S]*?res\.status\(201\)/);
+  assert.ok(m && /SELECT id FROM customers WHERE email = \? AND active = 1/.test(m[0]),
+    'owner create must link to an existing customer by email (parity)');
+});
+test('manual create-booking form captures a flight number (parity with the web form)', () => {
+  const src = read('westmere-owner.html');
+  assert.ok(/id="nb-flight"/.test(src), 'the manual form must have a flight field');
+  const fn = src.match(/async function ownerNewBookingSubmit[\s\S]*?\n\}/);
+  assert.ok(fn && /flight:\s*\(document\.getElementById\('nb-flight'\)/.test(fn[0]), 'submit must send the flight value');
+});
+test('both create routes default status to pending (identical initial lifecycle)', () => {
+  const api = read('server/api.js');
+  const web = read('server/public-api.js');
+  // Web forces finalStatus 'pending'; owner sets no status (DB default pending).
+  assert.ok(/finalStatus\s*=\s*'pending'/.test(web), 'web /book must start pending');
+  const ownerIns = (api.match(/router\.post\('\/bookings'[\s\S]*?INSERT INTO bookings \(([^)]*)\)/) || [])[1] || '';
+  assert.ok(!/\bstatus\b/.test(ownerIns), 'owner create must not set status (DB default pending) — same initial state as web');
 });
 
 // ── summary ──────────────────────────────────────────────────────────────

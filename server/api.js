@@ -122,7 +122,17 @@ router.post('/bookings', (req, res) => {
 
   const db = getDb();
   const ref = 'WPH-' + Date.now().toString(36).toUpperCase();
-  const customerId = req.auth.type === 'customer' ? req.auth.id : (bodyCustomerId ? parseInt(bodyCustomerId, 10) : null);
+  // Parity with the web /book path: link to an existing customer account by
+  // email so a manually-created booking shows up in that customer's My Account
+  // (link-if-exists only — never auto-create). Explicit customer_id / a customer
+  // caller still take precedence.
+  let customerId = req.auth.type === 'customer' ? req.auth.id : (bodyCustomerId ? parseInt(bodyCustomerId, 10) : null);
+  if (!customerId && passenger_email) {
+    try {
+      const existing = db.prepare('SELECT id FROM customers WHERE email = ? AND active = 1').get(String(passenger_email).trim().toLowerCase());
+      if (existing) customerId = existing.id;
+    } catch (_) {}
+  }
 
   let result;
   try {

@@ -1156,6 +1156,10 @@ input[type=checkbox],input[type=radio]{accent-color:#111111 !important}
           </select>
         </div>
         <div style="margin-bottom:.7rem">
+          <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.22rem;font-family:var(--sans)">Flight (optional)</div>
+          <input id="nb-flight" type="text" placeholder="e.g. BA2772" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
+        </div>
+        <div style="margin-bottom:.7rem">
           <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.22rem;font-family:var(--sans)">Notes</div>
           <textarea id="nb-notes" rows="2" placeholder="Flight number, luggage, special requests…" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.85rem;color:var(--navy);border-radius:6px;box-sizing:border-box;resize:vertical"></textarea>
         </div>
@@ -3183,6 +3187,7 @@ function ownerNewBookingOpen(){
   document.getElementById('nb-fare').value='';
   document.getElementById('nb-pax').value='1';
   document.getElementById('nb-bags').value='0';
+  document.getElementById('nb-flight').value='';
   document.getElementById('nb-notes').value='';
 }
 function ownerNewBookingClose(){
@@ -3222,6 +3227,7 @@ async function ownerNewBookingSubmit(){
       fare:fare,
       passengers:parseInt(document.getElementById('nb-pax').value)||1,
       bags:(document.getElementById('nb-bags').value||'0'),
+      flight:(document.getElementById('nb-flight').value||'').trim()||null,
       notes:(document.getElementById('nb-notes').value||'').trim()||null,
       payment:'pending'
     };

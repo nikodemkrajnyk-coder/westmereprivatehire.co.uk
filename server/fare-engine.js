@@ -258,8 +258,9 @@ async function calculateFare(pickup, destination, timeStr) {
         return { fare: base + fee + toll, base_fare: base, airport_fee: fee, toll_fee: toll, distance_miles: mi, duration_min: ti, rate_type: rateLabel, breakdown: _airportBreakdown(base, fee, toll, deAP, 'drop-off', false, `${mi} mi × tapered ${rateLabel}`) };
       }
     }
-    const base = _fareCalcMile(15, night);
-    return { fare: base + fee + toll, base_fare: base, airport_fee: fee, toll_fee: toll, distance_miles: null, duration_min: null, rate_type: rateLabel + ' (estimated)', breakdown: _airportBreakdown(base, fee, toll, deAP, 'drop-off', false, `est ~15 mi × tapered ${rateLabel}`) };
+    // Geocode/route failed → FAIL CLOSED. Never invent a ~15-mile estimate
+    // (that produced absurd fares for distant/unknown pickups). Quote on request.
+    return { fare: null, base_fare: null, airport_fee: 0, toll_fee: 0, rate_type: 'on_request', on_request: true, breakdown: 'Fare quoted on request' };
   }
 
   // ── Pickup is airport ───────────────────────────────────────────────────
@@ -290,8 +291,9 @@ async function calculateFare(pickup, destination, timeStr) {
         return { fare: base + fee + toll, base_fare: base, airport_fee: fee, toll_fee: toll, distance_miles: mi, duration_min: ti, rate_type: rateLabel, breakdown: _airportBreakdown(base, fee, toll, puAP, 'pickup', false, `${mi} mi × tapered ${rateLabel}`) };
       }
     }
-    const base = _fareCalcMile(15, night);
-    return { fare: base + fee + toll, base_fare: base, airport_fee: fee, toll_fee: toll, distance_miles: null, duration_min: null, rate_type: rateLabel + ' (estimated)', breakdown: _airportBreakdown(base, fee, toll, puAP, 'pickup', false, `est ~15 mi × tapered ${rateLabel}`) };
+    // Geocode/route failed → FAIL CLOSED. Never invent a ~15-mile estimate
+    // (that produced absurd fares for distant/unknown drop-offs). Quote on request.
+    return { fare: null, base_fare: null, airport_fee: 0, toll_fee: 0, rate_type: 'on_request', on_request: true, breakdown: 'Fare quoted on request' };
   }
 
   // ── Airport-to-airport (both ends are airports): live routing ────────────
@@ -308,9 +310,9 @@ async function calculateFare(pickup, destination, timeStr) {
       return { fare: f, distance_miles: mi, duration_min: ti, rate_type: rateLabel, breakdown: `${mi} miles × tapered ${rateLabel}${minNote}` };
     }
   }
-  // Fallback
-  const f = _fareCalcMile(8, night);
-  return { fare: f, distance_miles: null, duration_min: null, rate_type: rateLabel + ' (estimated)', breakdown: 'Could not geocode route — estimated short local journey' };
+  // Geocode/route failed → FAIL CLOSED (quote on request), never an invented
+  // short-journey estimate.
+  return { fare: null, base_fare: null, airport_fee: 0, toll_fee: 0, rate_type: 'on_request', on_request: true, breakdown: 'Fare quoted on request' };
 }
 
 /**
