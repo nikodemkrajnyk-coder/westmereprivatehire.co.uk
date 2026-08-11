@@ -128,8 +128,10 @@ test('email.js imports the shared normalizer and never renders a raw address', (
   }
 });
 
-test('owner + admin + account apps load the normalizer and delegate to it', () => {
-  for (const f of ['westmere-owner.html', 'westmere-admin.html', 'westmere-account.html']) {
+// westmere-rider.html is the LIVE customer "My Account" app (westmere-account.html
+// 301-redirects to it), so the guardrail protects the rider app, not the legacy one.
+test('owner + admin + rider apps load the normalizer and delegate to it', () => {
+  for (const f of ['westmere-owner.html', 'westmere-admin.html', 'westmere-rider.html']) {
     const src = read(f);
     assert.ok(/<script src="\/address-normalize\.js">/.test(src), f + ' must load /address-normalize.js');
     assert.ok(/WMAddr\.shortDisplay/.test(src), f + ' must delegate its short-address helper to WMAddr.shortDisplay');
