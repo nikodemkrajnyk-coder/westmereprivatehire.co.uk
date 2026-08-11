@@ -517,34 +517,6 @@ router.post('/pay/:ref/intent', async (req, res) => {
   }
 });
 
-// ── TEMP (remove after use): send the branded confirmation to mail-tester ──
-// Token-guarded AND recipient-restricted to *.mail-tester.com only (cannot email
-// a real person). Used once to measure the SpamAssassin/deliverability score of
-// the real Resend send path. Reverted immediately after.
-router.post('/_tmp-mailtester', async (req, res) => {
-  const SECRET = 'wm-mt-9f3c1b7e';
-  const k = String((req.body && req.body.k) || req.query.k || '');
-  if (k !== SECRET) return res.status(403).json({ error: 'forbidden' });
-  const to = String((req.body && req.body.to) || req.query.to || '').trim();
-  if (!/@[a-z0-9.-]*mail-tester\.com$/i.test(to)) {
-    return res.status(400).json({ error: 'to must be a mail-tester.com address' });
-  }
-  try {
-    const { sendCustomerConfirmed } = require('./email');
-    const id = await sendCustomerConfirmed({
-      ref: 'WPH-MTDEMO', name: 'Martin Shuttle', email: to,
-      pickup: 'Greenhill Avenue, Caterham, CR3 6PQ', stop_address: null,
-      destination: 'Bolney, West Sussex, England',
-      date: '2026-12-18', time: '09:30', flight: null, passengers: 2, bags: '3',
-      fare: 75, payment: 'card', paid: true, pay_token: null, notes: null
-    });
-    res.json({ ok: true, sentTo: to, resendId: (id === true ? 'sent(no-id)' : (id || 'FAILED')) });
-  } catch (e) {
-    console.error('[TMP-MAILTESTER]', e.message);
-    res.status(500).json({ error: e.message });
-  }
-});
-
 // ── Pay on the day: customer opts to settle with the driver ──────────────
 // The "Pay on the day" button in the confirmation email points here. Gated by
 // the same per-booking pay_token. Marks the booking payment = 'cash', notifies
