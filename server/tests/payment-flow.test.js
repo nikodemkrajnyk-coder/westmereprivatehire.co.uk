@@ -997,6 +997,39 @@ test('both create routes default status to pending (identical initial lifecycle)
   assert.ok(!/\bstatus\b/.test(ownerIns), 'owner create must not set status (DB default pending) — same initial state as web');
 });
 
+// ── Email deliverability: text/plain part + List-Unsubscribe ─────────────
+// HTML-only mail hurts inbox placement (SpamAssassin MIME_HTML_ONLY). Every
+// send must carry a text/plain alternative AND a List-Unsubscribe header.
+console.log('\nEmail deliverability (text part + List-Unsubscribe)');
+test('every send includes a text/plain alternative + a List-Unsubscribe header', async () => {
+  process.env.RESEND_API_KEY = 'test_fake';
+  process.env.GMAIL_USER = 'bookings@westmereprivatehire.co.uk';
+  let payload = null;
+  global.fetch = async (u, o) => { payload = JSON.parse(o.body); return { ok: true, status: 200, json: async () => ({ id: 'x' }) }; };
+  delete require.cache[require.resolve('../email')];
+  const email = require('../email');
+  await email.sendCustomerConfirmed({
+    ref: 'WPH-DELIV', name: 'Martin Shuttle', email: 'm@e.com',
+    pickup: 'Greenhill Avenue, Caterham, CR3 6PQ', destination: 'Bolney, West Sussex, England',
+    date: '2026-12-18', time: '09:30', fare: 75, payment: 'card', paid: true, passengers: 2, bags: '3', pay_token: null
+  });
+  assert.ok(typeof payload.text === 'string' && payload.text.length > 50, 'must send a text/plain part (not HTML-only)');
+  assert.ok(!/<[a-z][^>]*>/i.test(payload.text), 'the text part must be plain (no HTML tags)');
+  assert.ok(!/display:none|mso-hide/.test(payload.text), 'hidden preheader/mso-hide markup must not leak into the text part');
+  assert.ok(/WPH-DELIV/.test(payload.text) && /Bolney/.test(payload.text) && /Paid by card/.test(payload.text), 'the text part must carry the real content');
+  assert.ok(payload.headers && /^<mailto:[^>]*westmereprivatehire\.co\.uk[^>]*>$/.test(payload.headers['List-Unsubscribe'] || ''),
+    'must set a List-Unsubscribe header (mailto, from-domain aligned)');
+  // Links survive into text as "label (url)".
+  assert.ok(/westmereprivatehire\.co\.uk/.test(payload.text), 'links must be preserved in the text part');
+});
+test('sendEmail wires text + List-Unsubscribe into the Resend payload', () => {
+  const src = read('server/email.js');
+  const m = src.match(/const payload = \{[\s\S]*?\n  \};/);
+  assert.ok(m, 'Resend payload literal not found');
+  assert.ok(/\btext\b/.test(m[0]), 'payload must include a text (plain-text) part');
+  assert.ok(/List-Unsubscribe/.test(m[0]), 'payload headers must include List-Unsubscribe');
+});
+
 // ── summary ──────────────────────────────────────────────────────────────
 (async () => {
   await run();

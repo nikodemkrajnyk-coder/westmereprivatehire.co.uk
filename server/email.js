@@ -19,7 +19,38 @@ function isConfigured() {
   return !!process.env.RESEND_API_KEY;
 }
 
-// opts: { attachments: [{ filename, content }] }
+// Derive a readable text/plain alternative from the HTML. A multipart email
+// (HTML + text) is far better for deliverability than HTML-only (SpamAssassin
+// MIME_HTML_ONLY). Links are surfaced as "text (url)" so they survive in text.
+function htmlToText(html) {
+  if (!html) return '';
+  let s = String(html);
+  s = s.replace(/<head[\s\S]*?<\/head>/gi, '')
+       .replace(/<style[\s\S]*?<\/style>/gi, '')
+       .replace(/<script[\s\S]*?<\/script>/gi, '')
+       // Hidden preheader / mso-hide divs must not leak into the text body.
+       .replace(/<div[^>]*(?:display:none|mso-hide:all)[^>]*>[\s\S]*?<\/div>/gi, '');
+  // Links → "label (url)" (skip mailto:/tel: — the label already reads fine).
+  s = s.replace(/<a\b[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, (m, href, txt) => {
+    const t = txt.replace(/<[^>]+>/g, '').trim();
+    if (!href || /^(mailto:|tel:|#)/i.test(href)) return t;
+    return (t && t !== href) ? `${t} (${href})` : href;
+  });
+  s = s.replace(/<\/(p|div|tr|h1|h2|h3|h4|li|td|table)>/gi, '\n')
+       .replace(/<br\s*\/?>/gi, '\n')
+       .replace(/<[^>]+>/g, ' ')
+       .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&mdash;/g, '—')
+       .replace(/&ndash;/g, '–').replace(/&pound;/g, '£').replace(/&middot;/g, '·')
+       .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#0?39;/g, "'")
+       .replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  return s;
+}
+
+// A List-Unsubscribe header (mailto to our own monitored, from-domain-aligned
+// mailbox) improves inbox placement even for transactional mail.
+const UNSUB_MAILBOX = 'bookings@westmereprivatehire.co.uk';
+
+// opts: { attachments: [{ filename, content }], text }
 // content must be a base64 string for Resend's HTTP API.
 async function sendEmail(to, subject, html, fromLabel, preheader, opts) {
   const apiKey = process.env.RESEND_API_KEY;
@@ -36,12 +67,20 @@ async function sendEmail(to, subject, html, fromLabel, preheader, opts) {
     finalHtml = html.replace('<body', hidden + '<body').replace(/<body([^>]*)>/, '<body$1>' + hidden);
   }
 
+  // Plain-text alternative part (preheader first, then the body text).
+  const bodyText = (opts && opts.text) || htmlToText(html);
+  const text = (preheader ? preheader + '\n\n' : '') + bodyText;
+
   const payload = {
     from: (fromLabel || 'Westmere Private Hire') + ' <bookings@westmereprivatehire.co.uk>',
     to,
     reply_to: replyTo || undefined,
     subject,
-    html: finalHtml
+    html: finalHtml,
+    text,
+    headers: {
+      'List-Unsubscribe': '<mailto:' + UNSUB_MAILBOX + '?subject=Unsubscribe>'
+    }
   };
 
   if (opts && Array.isArray(opts.attachments) && opts.attachments.length) {
