@@ -476,6 +476,47 @@ test('rider app no longer dumps the vehicle type into notes', () => {
     'rider app must NOT put "Vehicle: <type>" into the booking notes field');
 });
 
+// ── 12. Payment-system hardening audit (locks the recurring regressions) ──
+console.log('\nPayment-system hardening audit');
+test('(c) pay-info route reports stripeReady and is token-gated', () => {
+  const pub = read('server/public-api.js');
+  const i = pub.indexOf("router.get('/pay/:ref',");
+  assert.ok(i !== -1, 'pay-info route not found');
+  const block = pub.slice(i, i + 1500);
+  assert.ok(/stripeReady: stripeConfigured\(\)/.test(block),
+    'pay-info must report stripeReady so the page knows online payment is available');
+  assert.ok(/b\.pay_token !== token/.test(block),
+    'pay-info must reject a wrong pay_token (token-gated)');
+});
+test('(h) every public pay/cash/cancel/note route rejects a wrong pay_token', () => {
+  const pub = read('server/public-api.js');
+  const routes = [
+    "router.get('/pay/:ref',",
+    "router.post('/pay/:ref/intent'",
+    "router.get('/pay/:ref/cash'",
+    "router.post('/pay/:ref/cash'",
+    "router.get('/cancel/:ref'",
+    "router.post('/cancel/:ref'",
+    "router.get('/note/:ref'",
+  ];
+  for (const decl of routes) {
+    const i = pub.indexOf(decl);
+    assert.ok(i !== -1, 'route not found: ' + decl);
+    const block = pub.slice(i, i + 1400);
+    assert.ok(/!b\.pay_token \|\| b\.pay_token !== token/.test(block),
+      decl + ' must be gated by the per-booking pay_token (reject wrong/blank token)');
+  }
+});
+test('(g) Apple Pay domain-association FILE exists and is valid (route can serve 200)', () => {
+  const p = path.join(ROOT, 'apple-developer-merchantid-domain-association');
+  assert.ok(fs.existsSync(p),
+    'apple-developer-merchantid-domain-association must exist at repo root — the route 404s (Apple Pay breaks) without it');
+  const content = fs.readFileSync(p, 'utf8');
+  assert.ok(content.length > 1000, 'association file is too small to be the real Stripe file');
+  assert.ok(!/<html|<!doctype|not found/i.test(content),
+    'association file must be the raw Stripe content, not an HTML error page');
+});
+
 // ── summary ──────────────────────────────────────────────────────────────
 (async () => {
   await run();
