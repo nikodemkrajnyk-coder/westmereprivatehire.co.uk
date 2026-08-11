@@ -60,7 +60,9 @@ async function sendEmail(to, subject, html, fromLabel, preheader, opts) {
       return false;
     }
     console.log('[EMAIL] Sent to', to, '— id:', data.id);
-    return true;
+    // Return the Resend message id on success (a non-empty string stays truthy,
+    // so existing `if (ok)` callers are unaffected) — lets callers surface it.
+    return data.id || true;
   } catch (err) {
     console.error('[EMAIL] Failed:', err.message);
     return false;
