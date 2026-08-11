@@ -517,6 +517,40 @@ router.post('/pay/:ref/intent', async (req, res) => {
   }
 });
 
+// ── TEMP (remove after use): owner-preview of the two new customer emails ──
+// Token-guarded; recipient HARD-CODED to the owner's own address (never a real
+// customer). Sends (a) the PAID confirmation and (b) the review-request email
+// off a realistic sample booking, and returns both Resend ids for the owner to
+// verify. No booking is touched. Reverted immediately after the owner has them.
+router.post('/_tmp-owner-preview-emails', async (req, res) => {
+  const SECRET = 'wm-preview-emails-7c3f9a2e';
+  const OWNER_EMAIL = 'nikodem.krajnyk@gmail.com';
+  const k = String((req.body && req.body.k) || req.query.k || '');
+  if (k !== SECRET) return res.status(403).json({ error: 'forbidden' });
+  try {
+    const { sendCustomerConfirmed, sendReviewRequest } = require('./email');
+    // Realistic sample; paid=true + payment='cash' + no pay_token → shows the
+    // "Paid — cash to your driver" state with NO pay buttons at all.
+    const sample = {
+      ref: 'WPH-SAMPLE1', name: 'Martin Shuttle', email: OWNER_EMAIL,
+      pickup: 'Greenhill Avenue, Caterham, CR3 6PQ', stop_address: null,
+      destination: 'Bolney, West Sussex, England',
+      date: '2026-12-18', time: '09:30', flight: null, passengers: 2, bags: '3',
+      fare: 75, payment: 'cash', paid: true, pay_token: null, notes: null
+    };
+    const confirmId = await sendCustomerConfirmed(sample);
+    const reviewId  = await sendReviewRequest(OWNER_EMAIL, 'Martin', 'WPH-SAMPLE1');
+    res.json({
+      ok: true, sentTo: OWNER_EMAIL,
+      paidConfirmationId: (confirmId === true ? 'sent(no-id)' : (confirmId || 'FAILED')),
+      reviewRequestId:    (reviewId  === true ? 'sent(no-id)' : (reviewId  || 'FAILED'))
+    });
+  } catch (e) {
+    console.error('[TMP-OWNER-PREVIEW-EMAILS]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── Pay on the day: customer opts to settle with the driver ──────────────
 // The "Pay on the day" button in the confirmation email points here. Gated by
 // the same per-booking pay_token. Marks the booking payment = 'cash', notifies
