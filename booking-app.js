@@ -170,6 +170,74 @@
     input.addEventListener('blur', function () { setTimeout(function(){ box.style.display = 'none'; }, 200); });
   }
 
+  // ── Quick estimate (shared) ─────────────────────────────────────────────
+  // Wires pickup + drop-off → instant airport fare into a [data-fare-estimate]
+  // box. Used by the full booking form (init) AND standalone on the homepage
+  // (initQuick), so both surfaces share ONE engine — no duplicate fare logic.
+  // Airport journeys get a price; anything else gets a "request a booking"
+  // message. Returns updateFare so callers (e.g. use-my-location) can refresh.
+  function makeEstimator(pickup, dest, timeEl, fareBox) {
+    function isAirportJourney(p, d) { return !!(normAirport(p) || normAirport(d)); }
+    var ft = null;
+    function updateFare() {
+      if (!fareBox) return;
+      var p = pickup && pickup.value.trim(), d = dest && dest.value.trim();
+      if (!p || !d) { fareBox.style.display = 'none'; fareBox.className = 'fare-estimate'; return; }
+      // Not an airport pickup/drop-off → no instant price, show request message.
+      if (!isAirportJourney(p, d)) {
+        if (ft) clearTimeout(ft);
+        fareBox.style.display = 'block';
+        fareBox.className = 'fare-estimate msg';
+        fareBox.innerHTML = '<span class="fe-label">Your journey</span>'
+          + '<span class="fe-note" style="margin-top:3px">For this journey, please request a booking below and we’ll confirm your fare.</span>';
+        return;
+      }
+      if (ft) clearTimeout(ft);
+      ft = setTimeout(function () {
+        fareBox.style.display = 'block';
+        fareBox.className = 'fare-estimate';
+        fareBox.innerHTML = '<span class="fe-calc">Calculating estimate…</span>';
+        Promise.resolve(calculateFare(p, d, timeEl && timeEl.value)).then(function (r) {
+          if (r && r.fare) {
+            var total = Math.ceil(r.fare / 0.5) * 0.5;
+            var money = function (n) { return (n % 1 === 0) ? n : n.toFixed(2); };
+            var extras = [];
+            if (r.airport_fee) extras.push('£' + money(r.airport_fee) + ' airport ' + (/pickup/i.test(r.label || '') ? 'pickup' : 'drop-off') + ' fee');
+            if (r.toll_fee) extras.push('£' + money(r.toll_fee) + ' toll');
+            var extraNote = extras.length ? ' · incl. ' + extras.join(' + ') : '';
+            fareBox.className = 'fare-estimate';
+            fareBox.innerHTML = '<span class="fe-label">Estimated fare</span><span class="fe-amount">approx £' + money(total) + '</span>'
+              + '<span class="fe-note">' + (r.label || 'Airport transfer') + extraNote + ' · approximate — we confirm the exact price with your request</span>';
+          } else {
+            fareBox.className = 'fare-estimate msg';
+            fareBox.innerHTML = '<span class="fe-note">Please request a booking below and we’ll confirm your fare.</span>';
+          }
+        });
+      }, 500);
+    }
+    [pickup, dest, timeEl].forEach(function (el) { if (el) { el.addEventListener('change', updateFare); el.addEventListener('blur', updateFare); } });
+    return updateFare;
+  }
+
+  // Standalone quick-estimate widget (e.g. homepage, below the fixed fares).
+  // Reuses makeEstimator + autocomplete without the full booking form/submit.
+  function initQuick() {
+    var scopes = document.querySelectorAll('[data-quick-estimate]');
+    for (var i = 0; i < scopes.length; i++) {
+      (function (scope) {
+        // If it lives inside the full booking form, init() already wired it.
+        if (scope.closest && scope.closest('form[data-booking-form]')) return;
+        var pickup = scope.querySelector('[name="pickup"]');
+        var dest   = scope.querySelector('[name="destination"]');
+        var timeEl = scope.querySelector('[name="time"]');
+        var fareBox = scope.querySelector('[data-fare-estimate]');
+        if (!pickup || !dest || !fareBox) return;
+        [pickup, dest].forEach(function (el) { attachAutocomplete(el); });
+        makeEstimator(pickup, dest, timeEl, fareBox);
+      })(scopes[i]);
+    }
+  }
+
   // ── Wiring ─────────────────────────────────────────────────────────────
   function init() {
     var form = document.querySelector('form[data-booking-form]');
@@ -275,47 +343,8 @@
       if (shown && stop) stop.value = '';
     });
 
-    // Quick estimate — only for AIRPORT journeys (pickup OR drop-off is a served airport).
-    // Non-airport trips get a "request a booking" message and no price.
-    function isAirportJourney(p, d) { return !!(normAirport(p) || normAirport(d)); }
-    var ft = null;
-    function updateFare() {
-      if (!fareBox) return;
-      var p = pickup && pickup.value.trim(), d = dest && dest.value.trim();
-      if (!p || !d) { fareBox.style.display = 'none'; fareBox.className = 'fare-estimate'; return; }
-      // Not an airport pickup/drop-off → no instant price, show request message.
-      if (!isAirportJourney(p, d)) {
-        if (ft) clearTimeout(ft);
-        fareBox.style.display = 'block';
-        fareBox.className = 'fare-estimate msg';
-        fareBox.innerHTML = '<span class="fe-label">Your journey</span>'
-          + '<span class="fe-note" style="margin-top:3px">For this journey, please request a booking below and we’ll confirm your fare.</span>';
-        return;
-      }
-      if (ft) clearTimeout(ft);
-      ft = setTimeout(function () {
-        fareBox.style.display = 'block';
-        fareBox.className = 'fare-estimate';
-        fareBox.innerHTML = '<span class="fe-calc">Calculating estimate…</span>';
-        Promise.resolve(calculateFare(p, d, timeEl && timeEl.value)).then(function (r) {
-          if (r && r.fare) {
-            var total = Math.ceil(r.fare / 0.5) * 0.5;
-            var money = function (n) { return (n % 1 === 0) ? n : n.toFixed(2); };
-            var extras = [];
-            if (r.airport_fee) extras.push('£' + money(r.airport_fee) + ' airport ' + (/pickup/i.test(r.label || '') ? 'pickup' : 'drop-off') + ' fee');
-            if (r.toll_fee) extras.push('£' + money(r.toll_fee) + ' toll');
-            var extraNote = extras.length ? ' · incl. ' + extras.join(' + ') : '';
-            fareBox.className = 'fare-estimate';
-            fareBox.innerHTML = '<span class="fe-label">Estimated fare</span><span class="fe-amount">approx £' + money(total) + '</span>'
-              + '<span class="fe-note">' + (r.label || 'Airport transfer') + extraNote + ' · approximate — we confirm the exact price with your request</span>';
-          } else {
-            fareBox.className = 'fare-estimate msg';
-            fareBox.innerHTML = '<span class="fe-note">Please request a booking below and we’ll confirm your fare.</span>';
-          }
-        });
-      }, 500);
-    }
-    [pickup, dest, timeEl].forEach(function (el) { if (el) { el.addEventListener('change', updateFare); el.addEventListener('blur', updateFare); } });
+    // Quick estimate — shared engine (same one the homepage widget uses).
+    var updateFare = makeEstimator(pickup, dest, timeEl, fareBox);
 
     // Submit → exact same endpoint + payload as the wizard
     form.addEventListener('submit', function (e) {
@@ -360,5 +389,6 @@
         .then(function(){ if (btn) btn.disabled = false; });
     });
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+  function boot() { init(); initQuick(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();
