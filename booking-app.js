@@ -10,19 +10,33 @@
 
   // ── Fare engine (mirror of server/fare-engine.js) ──────────────────────
   var FARE_CF = {
-    brighton:      { ga:{out:89,ret:86}, he:{out:123,ret:127}, st:{out:188,ret:192}, lu:{out:176,ret:181}, so:{out:138,ret:135}, ci:{out:151,ret:154} },
-    lewes:         { ga:{out:91,ret:88}, he:{out:129,ret:133}, st:{out:193,ret:197}, lu:{out:181,ret:184}, so:{out:140,ret:138}, ci:{out:155,ret:158} },
-    horsham:       { ga:{out:54,ret:52},  he:{out:94,ret:99}, st:{out:141,ret:145}, lu:{out:120,ret:122}, so:{out:104,ret:101}, ci:{out:124,ret:128} },
-    crawley:       { ga:{out:45,ret:43},  he:{out:82,ret:86} },
+    // Brighton→Gatwick/Heathrow are owner-set FLAT ALL-IN fares (mirror of
+    // server/fare-engine.js) — marked in FARE_CF_ALLIN so the airport fee/toll is
+    // NOT added on top (£65/£125 already includes it). Both directions.
+    brighton:      { ga:{out:75,ret:75}, he:{out:125,ret:125}, st:{out:188,ret:192}, lu:{out:176,ret:181}, so:{out:138,ret:135}, ci:{out:151,ret:154} },
+    // Lewes/Haywards/Burgess ga+he are FLAT ALL-IN (mirror of fare-engine.js);
+    // marked in FARE_CF_ALLIN so the fee/toll is NOT added on top. Both directions.
+    lewes:         { ga:{out:80,ret:80}, he:{out:150,ret:150}, st:{out:193,ret:197}, lu:{out:181,ret:184}, so:{out:140,ret:138}, ci:{out:155,ret:158} },
+    // Horsham → Gatwick AND Heathrow are FLAT ALL-IN (£50 / £90, no fee/toll on top).
+    horsham:       { ga:{out:50,ret:50},  he:{out:90,ret:90}, st:{out:141,ret:145}, lu:{out:120,ret:122}, so:{out:104,ret:101}, ci:{out:124,ret:128} },
+    // crawley: no fixed fare — quote on request (see FARE_ON_REQUEST below).
     worthing:      { ga:{out:85,ret:82}, he:{out:121,ret:123} },
-    haywards:      { ga:{out:63,ret:62}, he:{out:105,ret:109}, lu:{out:142,ret:145}, st:{out:135,ret:139}, so:{out:112,ret:109}, ci:{out:120,ret:123} },
-    burgess:       { ga:{out:63,ret:61}, he:{out:114,ret:118}, lu:{out:159,ret:162}, st:{out:161,ret:165}, so:{out:114,ret:111}, ci:{out:135,ret:138} },
+    haywards:      { ga:{out:65,ret:65}, he:{out:126,ret:126}, lu:{out:142,ret:145}, st:{out:135,ret:139}, so:{out:112,ret:109}, ci:{out:120,ret:123} },
+    burgess:       { ga:{out:60,ret:60}, he:{out:126,ret:126}, lu:{out:159,ret:162}, st:{out:161,ret:165}, so:{out:114,ret:111}, ci:{out:135,ret:138} },
     eastbourne:    { ga:{out:119,ret:117}, he:{out:158,ret:163} },
     seaford:       { ga:{out:108,ret:105} },
     uckfield:      { ga:{out:73,ret:70} },
     eastgrinstead: { ga:{out:62,ret:58} }
   };
   var FARE_APFULL = { ga:'Gatwick', he:'Heathrow', st:'Stansted', lu:'Luton', so:'Southampton', ci:'London City' };
+  // Town→airport fixed fares that are ALL-IN (fee/toll already baked into the
+  // FARE_CF value) — mirror of server/fare-engine.js FARE_CF_ALLIN.
+  var FARE_CF_ALLIN = { brighton:{ ga:true, he:true }, lewes:{ ga:true, he:true }, haywards:{ ga:true, he:true }, burgess:{ ga:true, he:true }, horsham:{ ga:true, he:true } };
+  function isAllIn(town, ap) { return !!(FARE_CF_ALLIN[town] && FARE_CF_ALLIN[town][ap]); }
+  // Towns priced MANUALLY — an airport journey to/from one returns no number, so
+  // the estimate widget shows the "request a booking" message (mirror of engine).
+  var FARE_ON_REQUEST = { crawley: true };
+  function onRequest(town) { return !!(town && FARE_ON_REQUEST[town]); }
   var FARE_AP_COORDS = {
     ga:{lat:51.1537,lon:-0.1821}, he:{lat:51.47,lon:-0.4543},
     st:{lat:51.885,lon:0.235},    lu:{lat:51.8747,lon:-0.3684},
@@ -102,10 +116,13 @@
     var puT = normTown(pickup), deT = normTown(destination);
     // Destination is airport → add drop-off fee (+ toll)
     if (deAP && !puAP) {
+      // Quote-on-request town (e.g. Crawley) → no number; widget shows the request message.
+      if (onRequest(puT)) return Promise.resolve({ fare:null, on_request:true, rate_type:'on_request' });
       var feeD = (AIRPORT_FEES[deAP]||{}).dropoff||0;
       if (puT && FARE_CF[puT] && FARE_CF[puT][deAP]) {
-        var bD = FARE_CF[puT][deAP].out, tD = airportToll(deAP,true);
-        return Promise.resolve({ fare:bD+feeD+tD, base_fare:bD, airport_fee:feeD, toll_fee:tD, rate_type:'fixed', label:FARE_APFULL[deAP]+' drop-off' });
+        var aiD = isAllIn(puT, deAP); // owner flat fare: fee/toll already included
+        var bD = FARE_CF[puT][deAP].out, tD = aiD ? 0 : airportToll(deAP,true), feeDd = aiD ? 0 : feeD;
+        return Promise.resolve({ fare:bD+feeDd+tD, base_fare:bD, airport_fee:feeDd, toll_fee:tD, rate_type:'fixed', label:FARE_APFULL[deAP]+' drop-off' });
       }
       var ap = FARE_AP_COORDS[deAP], tDm = airportToll(deAP,false);
       return geocode(pickup).then(function(gc){
@@ -118,10 +135,13 @@
     }
     // Pickup is airport → add pickup (short-stay) fee (+ toll)
     if (puAP && !deAP) {
+      // Quote-on-request town (e.g. Crawley) → no number; widget shows the request message.
+      if (onRequest(deT)) return Promise.resolve({ fare:null, on_request:true, rate_type:'on_request' });
       var feeP = (AIRPORT_FEES[puAP]||{}).pickup||0;
       if (deT && FARE_CF[deT] && FARE_CF[deT][puAP]) {
-        var bP = FARE_CF[deT][puAP].ret, tP = airportToll(puAP,true);
-        return Promise.resolve({ fare:bP+feeP+tP, base_fare:bP, airport_fee:feeP, toll_fee:tP, rate_type:'fixed', label:FARE_APFULL[puAP]+' pickup' });
+        var aiP = isAllIn(deT, puAP); // owner flat fare: fee/toll already included
+        var bP = FARE_CF[deT][puAP].ret, tP = aiP ? 0 : airportToll(puAP,true), feePp = aiP ? 0 : feeP;
+        return Promise.resolve({ fare:bP+feePp+tP, base_fare:bP, airport_fee:feePp, toll_fee:tP, rate_type:'fixed', label:FARE_APFULL[puAP]+' pickup' });
       }
       var ap2 = FARE_AP_COORDS[puAP], tPm = airportToll(puAP,false);
       return geocode(destination).then(function(gc){
@@ -168,6 +188,74 @@
       }, 350);
     });
     input.addEventListener('blur', function () { setTimeout(function(){ box.style.display = 'none'; }, 200); });
+  }
+
+  // ── Quick estimate (shared) ─────────────────────────────────────────────
+  // Wires pickup + drop-off → instant airport fare into a [data-fare-estimate]
+  // box. Used by the full booking form (init) AND standalone on the homepage
+  // (initQuick), so both surfaces share ONE engine — no duplicate fare logic.
+  // Airport journeys get a price; anything else gets a "request a booking"
+  // message. Returns updateFare so callers (e.g. use-my-location) can refresh.
+  function makeEstimator(pickup, dest, timeEl, fareBox) {
+    function isAirportJourney(p, d) { return !!(normAirport(p) || normAirport(d)); }
+    var ft = null;
+    function updateFare() {
+      if (!fareBox) return;
+      var p = pickup && pickup.value.trim(), d = dest && dest.value.trim();
+      if (!p || !d) { fareBox.style.display = 'none'; fareBox.className = 'fare-estimate'; return; }
+      // Not an airport pickup/drop-off → no instant price, show request message.
+      if (!isAirportJourney(p, d)) {
+        if (ft) clearTimeout(ft);
+        fareBox.style.display = 'block';
+        fareBox.className = 'fare-estimate msg';
+        fareBox.innerHTML = '<span class="fe-label">Your journey</span>'
+          + '<span class="fe-note" style="margin-top:3px">For this journey, please request a booking below and we’ll confirm your fare.</span>';
+        return;
+      }
+      if (ft) clearTimeout(ft);
+      ft = setTimeout(function () {
+        fareBox.style.display = 'block';
+        fareBox.className = 'fare-estimate';
+        fareBox.innerHTML = '<span class="fe-calc">Calculating estimate…</span>';
+        Promise.resolve(calculateFare(p, d, timeEl && timeEl.value)).then(function (r) {
+          if (r && r.fare) {
+            var total = Math.ceil(r.fare / 0.5) * 0.5;
+            var money = function (n) { return (n % 1 === 0) ? n : n.toFixed(2); };
+            var extras = [];
+            if (r.airport_fee) extras.push('£' + money(r.airport_fee) + ' airport ' + (/pickup/i.test(r.label || '') ? 'pickup' : 'drop-off') + ' fee');
+            if (r.toll_fee) extras.push('£' + money(r.toll_fee) + ' toll');
+            var extraNote = extras.length ? ' · incl. ' + extras.join(' + ') : '';
+            fareBox.className = 'fare-estimate';
+            fareBox.innerHTML = '<span class="fe-label">Estimated fare</span><span class="fe-amount">approx £' + money(total) + '</span>'
+              + '<span class="fe-note">' + (r.label || 'Airport transfer') + extraNote + ' · approximate — we confirm the exact price with your request</span>';
+          } else {
+            fareBox.className = 'fare-estimate msg';
+            fareBox.innerHTML = '<span class="fe-note">Please request a booking below and we’ll confirm your fare.</span>';
+          }
+        });
+      }, 500);
+    }
+    [pickup, dest, timeEl].forEach(function (el) { if (el) { el.addEventListener('change', updateFare); el.addEventListener('blur', updateFare); } });
+    return updateFare;
+  }
+
+  // Standalone quick-estimate widget (e.g. homepage, below the fixed fares).
+  // Reuses makeEstimator + autocomplete without the full booking form/submit.
+  function initQuick() {
+    var scopes = document.querySelectorAll('[data-quick-estimate]');
+    for (var i = 0; i < scopes.length; i++) {
+      (function (scope) {
+        // If it lives inside the full booking form, init() already wired it.
+        if (scope.closest && scope.closest('form[data-booking-form]')) return;
+        var pickup = scope.querySelector('[name="pickup"]');
+        var dest   = scope.querySelector('[name="destination"]');
+        var timeEl = scope.querySelector('[name="time"]');
+        var fareBox = scope.querySelector('[data-fare-estimate]');
+        if (!pickup || !dest || !fareBox) return;
+        [pickup, dest].forEach(function (el) { attachAutocomplete(el); });
+        makeEstimator(pickup, dest, timeEl, fareBox);
+      })(scopes[i]);
+    }
   }
 
   // ── Wiring ─────────────────────────────────────────────────────────────
@@ -275,47 +363,8 @@
       if (shown && stop) stop.value = '';
     });
 
-    // Quick estimate — only for AIRPORT journeys (pickup OR drop-off is a served airport).
-    // Non-airport trips get a "request a booking" message and no price.
-    function isAirportJourney(p, d) { return !!(normAirport(p) || normAirport(d)); }
-    var ft = null;
-    function updateFare() {
-      if (!fareBox) return;
-      var p = pickup && pickup.value.trim(), d = dest && dest.value.trim();
-      if (!p || !d) { fareBox.style.display = 'none'; fareBox.className = 'fare-estimate'; return; }
-      // Not an airport pickup/drop-off → no instant price, show request message.
-      if (!isAirportJourney(p, d)) {
-        if (ft) clearTimeout(ft);
-        fareBox.style.display = 'block';
-        fareBox.className = 'fare-estimate msg';
-        fareBox.innerHTML = '<span class="fe-label">Your journey</span>'
-          + '<span class="fe-note" style="margin-top:3px">For this journey, please request a booking below and we’ll confirm your fare.</span>';
-        return;
-      }
-      if (ft) clearTimeout(ft);
-      ft = setTimeout(function () {
-        fareBox.style.display = 'block';
-        fareBox.className = 'fare-estimate';
-        fareBox.innerHTML = '<span class="fe-calc">Calculating estimate…</span>';
-        Promise.resolve(calculateFare(p, d, timeEl && timeEl.value)).then(function (r) {
-          if (r && r.fare) {
-            var total = Math.ceil(r.fare / 0.5) * 0.5;
-            var money = function (n) { return (n % 1 === 0) ? n : n.toFixed(2); };
-            var extras = [];
-            if (r.airport_fee) extras.push('£' + money(r.airport_fee) + ' airport ' + (/pickup/i.test(r.label || '') ? 'pickup' : 'drop-off') + ' fee');
-            if (r.toll_fee) extras.push('£' + money(r.toll_fee) + ' toll');
-            var extraNote = extras.length ? ' · incl. ' + extras.join(' + ') : '';
-            fareBox.className = 'fare-estimate';
-            fareBox.innerHTML = '<span class="fe-label">Estimated fare</span><span class="fe-amount">approx £' + money(total) + '</span>'
-              + '<span class="fe-note">' + (r.label || 'Airport transfer') + extraNote + ' · approximate — we confirm the exact price with your request</span>';
-          } else {
-            fareBox.className = 'fare-estimate msg';
-            fareBox.innerHTML = '<span class="fe-note">Please request a booking below and we’ll confirm your fare.</span>';
-          }
-        });
-      }, 500);
-    }
-    [pickup, dest, timeEl].forEach(function (el) { if (el) { el.addEventListener('change', updateFare); el.addEventListener('blur', updateFare); } });
+    // Quick estimate — shared engine (same one the homepage widget uses).
+    var updateFare = makeEstimator(pickup, dest, timeEl, fareBox);
 
     // Submit → exact same endpoint + payload as the wizard
     form.addEventListener('submit', function (e) {
@@ -349,7 +398,7 @@
         .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
         .then(function(res){
           if (res.ok && res.d.ok) {
-            if (status) { status.style.color = '#2f6b34'; status.textContent = 'Request received — we\'ll confirm your driver and fare shortly. Reference ' + (res.d.ref || '') + '.'; }
+            if (status) { status.style.color = '#2f6b34'; status.textContent = 'Thank you for booking with us — we will be in touch shortly. Reference ' + (res.d.ref || '') + '.'; }
             form.reset(); if (fareBox) fareBox.style.display = 'none';
             clearEdited(); applyRemembered(); // restore saved details (+ ticked box) for a follow-up booking
           } else { throw new Error((res.d && res.d.error) || 'Could not submit'); }
@@ -360,5 +409,6 @@
         .then(function(){ if (btn) btn.disabled = false; });
     });
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+  function boot() { init(); initQuick(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

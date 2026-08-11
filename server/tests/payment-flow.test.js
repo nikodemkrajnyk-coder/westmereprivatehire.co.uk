@@ -289,6 +289,38 @@ test('owner Delete hard-removes a cancelled booking (DELETE /bookings/:id)', () 
   try { fs.unlinkSync(tmp); } catch (_) {}
 });
 
+// ── 4. Airport-fares copy is honest, prices unchanged ────────────────────
+console.log('\nAirport-fares homepage copy');
+test('homepage no longer implies a locked/fixed price', () => {
+  const html = read('index.html');
+  // Old misleading wording must be gone…
+  assert.ok(!/Fixed prices, from/.test(html), 'index.html still says "Fixed prices, from"');
+  assert.ok(!/Fixed airport fares/i.test(html), 'index.html still has "Fixed airport fares" eyebrow');
+  assert.ok(!/Fixed base fares/i.test(html), 'index.html still has "Fixed base fares" subtext');
+  // …replaced by the honest wording.
+  assert.ok(/>Airport fares<\/span>/.test(html), 'index.html missing "Airport fares" eyebrow');
+  assert.ok(/Airport fares from £54\./.test(html), 'index.html missing "Airport fares from £54." heading');
+  assert.ok(/Indicative starting fares/.test(html), 'index.html missing "Indicative starting fares" subtext');
+  assert.ok(/exact fare is confirmed when you book/.test(html), 'index.html missing "confirmed when you book" copy');
+});
+test('homepage headline fare figures are unchanged', () => {
+  const html = read('index.html');
+  for (const p of ['from £54', 'from £94', 'from £120', 'from £135', 'from £104']) {
+    assert.ok(html.includes(p), 'index.html headline fare "' + p + '" changed/removed');
+  }
+});
+test('airport-transfers copy no longer says "fixed base fares"', () => {
+  const html = read('airport-transfers.html');
+  assert.ok(!/fixed base fares/i.test(html), 'airport-transfers.html still says "fixed base fares"');
+  // Honest subtext: Gatwick/Heathrow are all-inclusive; other airports add fees.
+  assert.ok(/all-inclusive/i.test(html), 'airport-transfers.html missing all-inclusive framing');
+  assert.ok(/indicative starting fares/i.test(html), 'airport-transfers.html missing indicative framing for other airports');
+  // Spot-check a few fare figures survive the copy change.
+  for (const p of ['from approx. £50', 'from approx. £75', 'from approx. £188']) {
+    assert.ok(html.includes(p), 'airport-transfers.html fare "' + p + '" changed/removed');
+  }
+});
+
 // ── summary ──────────────────────────────────────────────────────────────
 (async () => {
   await run();

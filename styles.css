@@ -64,3 +64,18 @@ nav{height:78px;display:flex;align-items:center;justify-content:space-between;pa
 .wm-time{padding:11px 4px;border:1px solid #e2ddd2;background:#ffffff;color:#1b1b1a;border-radius:8px;font-family:var(--sans),Arial,sans-serif;font-size:.82rem;cursor:pointer}
 .wm-time:hover{border-color:#b89045}
 .wm-time.is-selected{background:#b89045;color:#ffffff;border-color:#b89045}
+/* Quick-estimate widget + address autocomplete — shared by book.html and the
+   homepage instant-estimate (below the fixed airport fares). Mirrors book.html. */
+.field{position:relative}
+.link-btn{background:none;border:none;padding:0;color:var(--gold);font-family:var(--sans);font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.link-btn:hover{color:var(--ink)}
+.ac-list{position:absolute;left:0;right:0;top:100%;z-index:30;background:#fff;border:1px solid var(--line);border-top:none;max-height:230px;overflow:auto;box-shadow:0 12px 30px rgba(27,27,26,.12)}
+.ac-item{padding:10px 13px;font-size:.82rem;cursor:pointer;border-bottom:1px solid #f0ece4;line-height:1.35}
+.ac-item:last-child{border-bottom:none}.ac-item:hover{background:#f5f2ec}
+.quick-box{border:1px solid var(--line);background:#fff;padding:26px clamp(20px,3vw,30px)}
+.fare-estimate{display:none;margin-top:18px;border:1px solid var(--line);background:rgba(184,144,69,.06);padding:18px 20px}
+.fare-estimate.msg{background:#f5f2ec}
+.fare-estimate .fe-label{display:block;font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.fare-estimate .fe-amount{display:block;font-family:var(--serif);font-size:2.2rem;font-weight:400;color:var(--ink);margin:.15rem 0}
+.fare-estimate .fe-note{display:block;font-size:.72rem;color:var(--muted);line-height:1.5}
+.fare-estimate .fe-calc{font-size:.82rem;color:var(--muted)}

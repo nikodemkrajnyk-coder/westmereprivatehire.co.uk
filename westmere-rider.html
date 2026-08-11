@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
+<script src="/address-normalize.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
 <meta name="color-scheme" content="light"/>
 <meta name="mobile-web-app-capable" content="yes">
@@ -780,6 +781,10 @@ body.mode-day .btn-main{background:#1b1b1a!important;color:#f5f2ec!important}
 
 /* ── XSS ESCAPE ── */
 function esc(s){if(!s)return '';var d=document.createElement('div');d.appendChild(document.createTextNode(String(s)));return d.innerHTML;}
+// Address DISPLAY → shared normalizer (address-normalize.js), the single source
+// of truth used by the emails + owner/admin apps. Trip history shows the short
+// form; the booking flow still stores/sends the full precise address.
+function _shortAddr(a){return window.WMAddr?WMAddr.shortDisplay(a):(a||'');}
 
 /* ── MY LOCATION ── */
 function useMyLocation(){
@@ -1576,8 +1581,8 @@ function openConfirmModal(){
     if(_diff<3600000){showToast('Bookings must be made at least 1 hour before departure. For urgent bookings please call us.','error');return;}
   }
   var html='';
-  html+='<div class="modal-row"><span class="modal-rk">Pickup</span><span class="modal-rv">'+esc(from)+'</span></div>';
-  html+='<div class="modal-row"><span class="modal-rk">Destination</span><span class="modal-rv">'+esc(dest)+'</span></div>';
+  html+='<div class="modal-row"><span class="modal-rk">Pickup</span><span class="modal-rv">'+esc(_shortAddr(from))+'</span></div>';
+  html+='<div class="modal-row"><span class="modal-rk">Destination</span><span class="modal-rv">'+esc(_shortAddr(dest))+'</span></div>';
   if(stop)html+='<div class="modal-row"><span class="modal-rk">Stop</span><span class="modal-rv">'+esc(stop)+'</span></div>';
   html+='<div class="modal-row"><span class="modal-rk">Date</span><span class="modal-rv">'+esc(date)+'</span></div>';
   html+='<div class="modal-row"><span class="modal-rk">Time</span><span class="modal-rv">'+esc(time)+'</span></div>';
@@ -1699,7 +1704,7 @@ function renderTrips(filter){
     var canCancel=(b.status==='confirmed'&&b.date>=now);
     html+='<div class="trip-card">';
     html+='<div class="tc-top"><span class="tc-date">'+esc(b.dateDisp||b.date)+'</span><span class="tc-fare">'+(b.fare?'\u00a3'+b.fare:'Estimate pending')+'</span></div>';
-    html+='<div class="tc-route">'+esc(b.from)+' \u2192 '+esc(b.dest)+'</div>';
+    html+='<div class="tc-route">'+esc(_shortAddr(b.from))+' \u2192 '+esc(_shortAddr(b.dest))+'</div>';
     html+='<div class="tc-meta">'+esc(b.time)+' \u00b7 '+esc(b.vehicle)+' \u00b7 '+esc(b.pax)+' pax'+(b.flight?' \u00b7 '+esc(b.flight):'')+'</div>';
     html+='<div class="tc-bottom"><span class="tc-badge '+badgeClass+'">'+esc(statusLabel)+'</span>';
     if(canCancel)html+='<button class="btn-sm danger" onclick="cancelTrip(\''+esc(b.ref)+'\')">Cancel</button>';
@@ -1746,9 +1751,9 @@ function renderActiveTrip(){
   h+='<div class="aj-step"><div class="aj-step-dot"></div><span>Arrived</span></div>';
   h+='</div>';
   h+='<div class="aj-route">';
-  h+='<div class="aj-from"><div class="aj-dot-sm" style="background:var(--gold)"></div><span>'+esc(active.from)+'</span></div>';
+  h+='<div class="aj-from"><div class="aj-dot-sm" style="background:var(--gold)"></div><span>'+esc(_shortAddr(active.from))+'</span></div>';
   h+='<div class="aj-line"></div>';
-  h+='<div class="aj-to"><div class="aj-dot-sm" style="background:var(--green)"></div><span>'+esc(active.dest)+'</span></div>';
+  h+='<div class="aj-to"><div class="aj-dot-sm" style="background:var(--green)"></div><span>'+esc(_shortAddr(active.dest))+'</span></div>';
   h+='</div>';
   h+='<div class="aj-meta-grid">';
   h+='<div class="aj-meta-cell"><div class="aj-meta-k">Date</div><div class="aj-meta-v">'+esc(active.date)+'</div></div>';

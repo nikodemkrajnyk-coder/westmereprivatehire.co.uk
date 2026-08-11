@@ -7,7 +7,7 @@
 
 const express = require('express');
 const { getDb } = require('./db');
-const { sendAdminAlert } = require('./email');
+const { sendAdminAlert, sendCustomerAcknowledgement } = require('./email');
 const { sendAdminBookingWhatsApp } = require('./whatsapp');
 const { createPaymentIntent, isConfigured: stripeConfigured } = require('./stripe');
 const { computeSuggestedFare } = require('./fare-engine');
@@ -322,20 +322,29 @@ router.post('/book', async (req, res) => {
     //      5 mi free, next 20 mi @ £1.50, remainder @ £1.00).
     const finalFare = fare || null;
 
-    // Build notification payload
+    // Build notification payload. estimated_fare carries the server-side quick
+    // estimate so the customer acknowledgement email can show it (framed as an
+    // estimate). It does NOT set the booking fare — the booking stays unpriced
+    // until the owner sends a manual estimate.
     const booking = {
       ref, name, email, phone, pickup, destination, date: bookingDate, time,
-      passengers, bags, flight, fare: finalFare, payment, notes, stop_address
+      passengers, bags, flight, fare: finalFare, payment, notes, stop_address,
+      estimated_fare: suggestedFare
     };
 
-    // Send admin notifications in background (don't block the response).
-    // Customer-facing email + WhatsApp fire later, once intake confirms.
+    // Fire the owner alert AND the instant customer acknowledgement together, in
+    // the background (don't block the response). allSettled → one failing does
+    // not stop the other; each rejection is logged. The acknowledgement is just a
+    // receipt — the owner's manual Send Estimate (with payment links) still
+    // follows separately.
     Promise.allSettled([
-      sendAdminAlert(booking)
+      sendAdminAlert(booking),
+      sendCustomerAcknowledgement(booking)
     ]).then(results => {
+      const labels = ['admin-alert', 'customer-acknowledgement'];
       results.forEach((r, i) => {
         if (r.status === 'rejected') {
-          console.error('[NOTIFY] Channel', i, 'failed:', r.reason?.message || r.reason);
+          console.error('[NOTIFY] ' + (labels[i] || i) + ' failed:', r.reason?.message || r.reason);
         }
       });
     });

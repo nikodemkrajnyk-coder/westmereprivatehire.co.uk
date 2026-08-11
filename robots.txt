@@ -5,3 +5,5 @@ Disallow: /westmere-driver.html
 Disallow: /westmere-driver-gps.html
 Disallow: /westmere-cookies.html
 Allow: /
+
+Sitemap: https://westmereprivatehire.co.uk/sitemap.xml

@@ -9,6 +9,12 @@
 
 const RESEND_URL = 'https://api.resend.com/emails';
 
+// Address DISPLAY normalizer — single source of truth (see address-normalize.js).
+// Every pickup/drop-off/stop shown to a human goes through dispAddr(); the FULL
+// address is still used for Waze/nav links so routing is never broken.
+const { shortDisplay } = require('../address-normalize');
+function dispAddr(a) { return escHtml(shortDisplay(a || '')); }
+
 function isConfigured() {
   return !!process.env.RESEND_API_KEY;
 }
@@ -163,39 +169,61 @@ ${rowsHtml}
 </table>`;
 }
 
-// ── Customer booking RECEIVED (sent immediately on booking) ──────────────
-async function sendCustomerConfirmation(booking) {
-  const { ref, name, email, pickup, destination, date, time, fare, payment, flight, passengers } = booking;
-  if (!email) return;
+// ── Customer ACKNOWLEDGEMENT (auto-sent the instant a booking is submitted) ──────────────
+// A branded "thank you, we'll be in touch" receipt that goes out immediately on
+// submission \u2014 separate from, and NOT a replacement for, the owner's manual Send
+// Estimate step (which follows with tokenised payment links). It shows the INSTANT
+// estimated fare (the same quick-estimate figure), clearly framed as an estimate,
+// plus the reference and journey details in the SHORT address format.
+async function sendCustomerAcknowledgement(booking) {
+  const { ref, name, email, pickup, destination, date, time, flight, passengers, stop_address, notes } = booking;
+  if (!email) return false;
+
+  // Estimated fare = the server-side quick-estimate for this route (may be absent
+  // for custom journeys the engine can't auto-price \u2014 then we skip the number).
+  const rawEst = booking.estimated_fare != null ? booking.estimated_fare
+               : (booking.suggested_fare != null ? booking.suggested_fare : booking.fare);
+  const estNum = typeof rawEst === 'number' ? rawEst : parseFloat(rawEst);
+  const hasEst = estNum && !isNaN(estNum);
+  const money  = (n) => (n % 1 === 0) ? String(n) : n.toFixed(2);
+  const estStr = hasEst ? ('~\u00a3' + money(estNum)) : null;
 
   const dateStr = formatDate(date, time);
-  const fareStr = fare ? ('\u00a3' + (typeof fare === 'number' ? fare.toFixed(2) : fare)) : null;
   const firstName = (name || '').split(' ')[0] || 'there';
 
   let rows = '';
-  rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:'+INK+'">' + ref + '</span>');
+  rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:'+INK+'">' + escHtml(ref) + '</span>');
   rows += rowDivider();
-  rows += detailRow('Pickup', pickup);
-  rows += detailRow('Drop-off', destination);
+  rows += detailRow('Pickup', dispAddr(pickup));
+  if (stop_address) rows += detailRow('Stop', dispAddr(stop_address));
+  rows += detailRow('Drop-off', dispAddr(destination));
   rows += rowDivider();
   rows += detailRow('Date', dateStr);
-  if (flight) rows += detailRow('Flight', flight);
+  if (flight) rows += detailRow('Flight', escHtml(flight));
   if (passengers && passengers > 1) rows += detailRow('Travellers', passengers + ' passengers');
+  if (notes) { rows += rowDivider(); rows += detailRow('Notes', escHtml(notes)); }
   rows += rowDivider();
-  if (fareStr) rows += detailRow('Fare', fareStr, { gold: true, large: true });
-  rows += detailRow('Payment', payment === 'card' ? 'Paid online' : 'Pay driver on arrival');
+  if (estStr) rows += detailRow('Estimated fare', estStr, { gold: true, large: true });
+
+  // The estimate caveat \u2014 make it unmistakable this is not the final price.
+  const estCaption = estStr
+    ? `<p style="margin:14px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_SOFT};line-height:1.6;text-align:center">Estimated fare: <span style="color:${INK}">${estStr}</span> \u2014 we'll confirm your exact price shortly.</p>`
+    : `<p style="margin:14px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_SOFT};line-height:1.6;text-align:center">We'll confirm your exact fare shortly.</p>`;
 
   const body = `
+  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Booking received</p>
   <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
-  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Thank you for your booking request. We have received the details below and will be in touch shortly to confirm your driver.</p>
+  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Thank you for booking with us \u2014 we will be in touch shortly.</p>
   ${buildDetailsTable(rows)}
-  <p style="margin:26px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
+  ${estCaption}
+  <p style="margin:24px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
 
   const html = emailShell(body);
-  const subject = 'Booking received \u2014 ' + ref;
-  const preheader = 'We have your request; a confirmation email will follow shortly.';
+  const subject = 'Thank you for booking \u2014 ' + ref;
+  const preheader = (estStr ? ('Estimated fare ' + estStr + ' \u2014 ') : '') + 'we\'ve received your booking and will be in touch shortly.';
   const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
-  if (ok) console.log('[EMAIL] Customer received-notice sent (' + ref + ')');
+  if (ok) console.log('[EMAIL] Customer acknowledgement sent (' + ref + ')');
+  return ok;
 }
 
 // ── Customer booking CONFIRMED (sent after Claude or operator approves) ──
@@ -244,9 +272,9 @@ function confBtn(href, icon, text) {
 function confirmationEmailHtml(d) {
   let rows = '';
   rows += confRow('ic-reference', 'Reference', `<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:#1b1b1a">${escHtml(d.ref)}</span>`);
-  rows += confRow('ic-pickup', 'Pickup', escHtml(d.pickup));
-  if (d.stop_address) rows += confRow('ic-stop', 'Stop', escHtml(d.stop_address));
-  rows += confRow('ic-dropoff', 'Drop-off', escHtml(d.destination));
+  rows += confRow('ic-pickup', 'Pickup', dispAddr(d.pickup));
+  if (d.stop_address) rows += confRow('ic-stop', 'Stop', dispAddr(d.stop_address));
+  rows += confRow('ic-dropoff', 'Drop-off', dispAddr(d.destination));
   rows += confRow('ic-datetime', 'Date &amp; Time', escHtml(d.dateStr));
   if (d.flight) rows += confRow('ic-flight', 'Flight', escHtml(d.flight));
   if (d.passengers && d.passengers > 1) rows += confRow('ic-travellers', 'Travellers', d.passengers + ' passengers');
@@ -383,9 +411,9 @@ async function sendCustomerEstimate(booking) {
   let rows = '';
   rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:'+INK+'">' + escHtml(ref) + '</span>');
   rows += rowDivider();
-  rows += detailRow('Pickup', escHtml(pickup));
-  if (stop_address) rows += detailRow('Stop', escHtml(stop_address));
-  rows += detailRow('Drop-off', escHtml(destination));
+  rows += detailRow('Pickup', dispAddr(pickup));
+  if (stop_address) rows += detailRow('Stop', dispAddr(stop_address));
+  rows += detailRow('Drop-off', dispAddr(destination));
   rows += rowDivider();
   rows += detailRow('Date', dateStr);
   if (flight) rows += detailRow('Flight', escHtml(flight));
@@ -459,13 +487,14 @@ async function sendAdminAlert(booking) {
   const routeWaze = 'https://waze.com/ul?q=' + deQ + '&navigate=yes';
   const navLink = (url) =>
     ' <a href="' + url + '" style="color:' + GOLD + ';font-family:Helvetica Neue,Arial,sans-serif;font-size:10px;letter-spacing:.5px;text-decoration:none;margin-left:8px">Waze</a>';
-  rows += detailRow('Pickup', escHtml(pickup) + navLink(puWaze));
+  // DISPLAY is shortened; the Waze q= above keeps the FULL address for routing.
+  rows += detailRow('Pickup', dispAddr(pickup) + navLink(puWaze));
   if (stop_address) {
     const stopQ = encodeURIComponent(stop_address);
     const stopWaze = 'https://waze.com/ul?q=' + stopQ + '&navigate=yes';
-    rows += detailRow('Stop', escHtml(stop_address) + navLink(stopWaze));
+    rows += detailRow('Stop', dispAddr(stop_address) + navLink(stopWaze));
   }
-  rows += detailRow('Drop-off', escHtml(destination) + navLink(routeWaze));
+  rows += detailRow('Drop-off', dispAddr(destination) + navLink(routeWaze));
   rows += rowDivider();
   rows += detailRow('Date', dateStr);
   if (flight) rows += detailRow('Flight', escHtml(flight));
@@ -482,7 +511,7 @@ async function sendAdminAlert(booking) {
   ${buildDetailsTable(rows)}`;
 
   const html = emailShell(body);
-  const subject = ref + ' \u00b7 ' + (name || 'Guest') + ' \u00b7 ' + pickup + ' \u2192 ' + destination;
+  const subject = ref + ' \u00b7 ' + (name || 'Guest') + ' \u00b7 ' + shortDisplay(pickup) + ' \u2192 ' + shortDisplay(destination);
   const preheader = (name || 'Guest') + ' \u2014 ' + dateStr;
   const ok = await sendEmail(adminEmail, subject, html, 'Westmere Bookings', preheader);
   if (ok) console.log('[EMAIL] Admin alert sent (' + ref + ')');
@@ -559,7 +588,7 @@ async function sendCustomerInvoice(customer, bookings, period, invoiceNo, settin
   const rows = (bookings || []).map(b => {
     const fare = +b.fare || 0;
     const dateStr = formatDate(b.date, b.time);
-    const routeStr = escHtml(b.pickup || '') + ' &rarr; ' + escHtml(b.destination || '');
+    const routeStr = dispAddr(b.pickup) + ' &rarr; ' + dispAddr(b.destination);
     const refStr = '<span style="font-family:Menlo,Consolas,monospace;font-size:11px;color:' + INK_MUTED + '">' + escHtml(b.ref || '') + '</span>';
     return `<tr>
       <td style="padding:10px 0;border-bottom:1px solid ${HAIRLINE};font-family:Georgia,serif;font-size:12px;color:${INK};vertical-align:top">
@@ -908,8 +937,8 @@ async function sendCustomerCancellation(booking) {
   let rows = '';
   rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:'+INK+'">' + ref + '</span>');
   rows += rowDivider();
-  rows += detailRow('Pickup', escHtml(pickup));
-  rows += detailRow('Drop-off', escHtml(destination));
+  rows += detailRow('Pickup', dispAddr(pickup));
+  rows += detailRow('Drop-off', dispAddr(destination));
   rows += detailRow('Date', dateStr);
   if (flight) rows += detailRow('Flight', escHtml(flight));
   if (fareStr) { rows += rowDivider(); rows += detailRow('Original fare', fareStr); }
@@ -943,7 +972,7 @@ async function sendDriverStatement(driver, period, totals, items) {
   const rows = (items || []).map(it => `
     <tr>
       <td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:12px;color:#555">${it.date}</td>
-      <td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:12px;color:#111">${it.ref} · ${it.pickup} → ${it.destination}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:12px;color:#111">${it.ref} · ${dispAddr(it.pickup)} → ${dispAddr(it.destination)}</td>
       <td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:12px;color:#111;text-align:right;font-family:Menlo,Consolas,monospace">£${(+it.fare||0).toFixed(2)}</td>
       <td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:12px;color:#9C2828;text-align:right;font-family:Menlo,Consolas,monospace">−£${(+it.commission||0).toFixed(2)}</td>
       <td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:12px;color:#B8985A;text-align:right;font-family:Menlo,Consolas,monospace;font-weight:600">£${(+it.net||0).toFixed(2)}</td>
@@ -1089,7 +1118,7 @@ async function sendPaymentReminder(booking) {
   <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Payment reminder</p>
   <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
   <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Thank you for travelling with us. We noticed that payment for your recent journey has not yet been completed.</p>
-  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Your trip from <strong>${escHtml(pickup || '')}</strong> to <strong>${escHtml(destination || '')}</strong> on ${dateStr}${fareStr ? ' for <strong style="color:' + GOLD + '">' + fareStr + '</strong>' : ''} is still outstanding.</p>
+  <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Your trip from <strong>${dispAddr(pickup)}</strong> to <strong>${dispAddr(destination)}</strong> on ${dateStr}${fareStr ? ' for <strong style="color:' + GOLD + '">' + fareStr + '</strong>' : ''} is still outstanding.</p>
   <p style="margin:0 0 12px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">If you&rsquo;ve already made payment, please disregard this message. Otherwise, you can pay securely using the link below.</p>
   ${payBlock}
   <p style="margin:20px 0 0;font-family:Georgia,serif;font-size:14px;color:${INK};line-height:1.65">If you have any questions, please don&rsquo;t hesitate to get in touch.</p>
@@ -1230,8 +1259,8 @@ async function sendOwnerCancelledRequest(booking) {
   if (name)  rows += detailRow('Customer', escHtml(name));
   if (email) rows += detailRow('Email', escHtml(email));
   rows += rowDivider();
-  rows += detailRow('Pickup', escHtml(pickup));
-  rows += detailRow('Drop-off', escHtml(destination));
+  rows += detailRow('Pickup', dispAddr(pickup));
+  rows += detailRow('Drop-off', dispAddr(destination));
   rows += detailRow('Date', dateStr);
   if (fareStr) { rows += rowDivider(); rows += detailRow('Quoted fare', fareStr); }
 
@@ -1244,7 +1273,7 @@ async function sendOwnerCancelledRequest(booking) {
 
   const html = emailShell(body);
   const subject = 'Customer cancelled the request — ' + ref;
-  const preheader = (name || 'The customer') + ' cancelled ' + ref + ' — ' + (pickup || '') + ' to ' + (destination || '');
+  const preheader = (name || 'The customer') + ' cancelled ' + ref + ' — ' + shortDisplay(pickup) + ' to ' + shortDisplay(destination);
   const ok = await sendEmail(adminEmail, subject, html, 'Westmere Bookings', preheader);
   if (ok) console.log('[EMAIL] Owner cancel-request alert sent (' + ref + ')');
   return ok;
@@ -1262,8 +1291,8 @@ async function sendOwnerCustomerNote(booking, note) {
   if (name)  rows += detailRow('Customer', escHtml(name));
   if (email) rows += detailRow('Email', escHtml(email));
   rows += rowDivider();
-  rows += detailRow('Pickup', escHtml(pickup));
-  rows += detailRow('Drop-off', escHtml(destination));
+  rows += detailRow('Pickup', dispAddr(pickup));
+  rows += detailRow('Drop-off', dispAddr(destination));
   rows += detailRow('Date', dateStr);
 
   const body = `
@@ -1307,7 +1336,7 @@ async function sendCustomerMessage(booking, message) {
 }
 
 module.exports = {
-  sendCustomerConfirmation, sendCustomerConfirmed, sendCustomerEstimate, sendAdminAlert,
+  sendCustomerAcknowledgement, sendCustomerConfirmed, sendCustomerEstimate, sendAdminAlert,
   sendOwnerCancelledRequest, sendOwnerCustomerNote, sendCustomerMessage,
   sendCustomerWelcome, sendCustomerInvoice, sendBespokeInvoice, sendInvoiceReminder,
   sendCustomerCancellation, sendDriverStatement, sendDriverWelcome,

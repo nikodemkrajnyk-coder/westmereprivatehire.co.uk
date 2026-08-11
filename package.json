@@ -5,7 +5,7 @@
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
-    "test": "node server/tests/payment-flow.test.js"
+    "test": "node server/tests/payment-flow.test.js && node server/tests/rider-cache.test.js && node server/tests/address-display.test.js && node server/tests/quick-estimate-placement.test.js && node server/tests/fare-airport-fares.test.js && node server/tests/booking-ack.test.js && node server/tests/reviews-booking.test.js && node server/tests/fares-page.test.js && node server/tests/seo.test.js"
   },
   "engines": {
     "node": ">=18"
