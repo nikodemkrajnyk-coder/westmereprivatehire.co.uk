@@ -708,6 +708,59 @@ test('the Email field is marked required in the owner new-booking form', () => {
   assert.ok(/Email \*/.test(form[0]), 'the Email label must be marked required (*)');
 });
 
+// ── Manual booking: the passenger NAME reaches every email ───────────────
+// Root cause of the "Guest" bug: the owner POST /bookings route built the
+// owner-alert (and calendar) name from the LINKED customer only
+// (customerName.full_name || 'Guest'). A manual booking has no linked customer,
+// so the name — stored in passenger_name — was ignored and the email said
+// "Guest". Fix: fall back to passenger_name/email/phone (like COALESCE(
+// c.full_name, b.passenger_name) elsewhere) before defaulting.
+console.log('\nManual booking: name flows to every email (owner spec)');
+test('owner-alert email renders the provided passenger name, not "Guest"', async () => {
+  process.env.RESEND_API_KEY = 'test_fake_key';
+  process.env.ADMIN_EMAIL = 'owner@westmere.co.uk';
+  let cap = {};
+  global.fetch = async (url, opts) => {
+    const b = JSON.parse(opts.body); cap = { subject: b.subject, html: b.html || '' };
+    return { ok: true, status: 200, json: async () => ({ id: 'id1' }) };
+  };
+  delete require.cache[require.resolve('../email')];
+  const email = require('../email');
+  await email.sendAdminAlert({
+    ref: 'WPH-MANUAL2', name: 'Martin Shuttle', email: 'martin@example.com',
+    phone: '07700900123', pickup: 'Greenhill Avenue, Caterham, CR3 6PQ',
+    destination: 'Bolney', date: '2026-12-01', time: '09:00', fare: 75, payment: 'pending', passengers: 1
+  });
+  assert.ok(/Martin Shuttle/.test(cap.html), 'owner-alert body must show the passenger name');
+  assert.ok(/Martin Shuttle/.test(cap.subject), 'owner-alert subject must show the passenger name');
+  assert.ok(!/Guest/.test(cap.html), 'owner-alert must NOT fall back to "Guest" when a name was given');
+});
+test('customer estimate email greets the passenger by name, not "Guest"', async () => {
+  process.env.RESEND_API_KEY = 'test_fake_key';
+  let html = '';
+  global.fetch = async (url, opts) => { html = JSON.parse(opts.body).html || ''; return { ok: true, status: 200, json: async () => ({ id: 'id2' }) }; };
+  delete require.cache[require.resolve('../email')];
+  const email = require('../email');
+  await email.sendCustomerEstimate({
+    ref: 'WPH-MANUAL2', name: 'Martin Shuttle', email: 'martin@example.com',
+    pickup: 'A', destination: 'B', date: '2026-12-01', time: '09:00', fare: 75, pay_token: 'deadbeefdeadbeefdeadbeefdeadbeef'
+  });
+  assert.ok(/Martin/.test(html), 'estimate email must greet the customer by name');
+  assert.ok(!/Guest/.test(html), 'estimate email must NOT say "Guest" when a name was given');
+});
+test('owner POST /bookings feeds passenger_name into the alert/calendar (not just the linked customer)', () => {
+  const api = read('server/api.js');
+  const m = api.match(/router\.post\('\/bookings'[\s\S]*?res\.status\(201\)/);
+  assert.ok(m, 'owner POST /bookings route not found');
+  const block = m[0];
+  // The name passed to sendAdminAlert / the calendar must fall back to
+  // passenger_name — otherwise a manual booking (no customer_id) shows "Guest".
+  assert.ok(/customerName\.full_name\s*\|\|\s*passenger_name/.test(block),
+    'contact name must fall back to passenger_name before "Guest"');
+  assert.ok(!/name:\s*customerName\.full_name\s*\|\|\s*'Guest'/.test(block),
+    'the old customerName.full_name || "Guest" mapping (ignoring passenger_name) must be gone');
+});
+
 // ── summary ──────────────────────────────────────────────────────────────
 (async () => {
   await run();

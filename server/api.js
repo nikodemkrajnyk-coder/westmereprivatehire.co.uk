@@ -156,13 +156,21 @@ router.post('/bookings', (req, res) => {
     } catch (e) { console.error('[API] trip_miles calc failed:', e.message); }
   })();
 
-  // Send admin notifications in background
+  // Send admin notifications in background.
+  // A MANUAL booking has no linked customer (customer_id null), so the name /
+  // email / phone live in the passenger_* fields the form supplied. Fall back to
+  // those before defaulting to 'Guest' — mirroring COALESCE(c.full_name,
+  // b.passenger_name) used by the estimate/confirmation paths. Without this the
+  // owner-alert email showed "Guest" for every manually-created booking.
   const customerName = customerId
     ? (db.prepare('SELECT full_name, email, phone FROM customers WHERE id = ?').get(customerId) || {})
     : {};
+  const contactName  = customerName.full_name || passenger_name  || 'Guest';
+  const contactEmail = customerName.email     || passenger_email || '';
+  const contactPhone = customerName.phone     || passenger_phone || '';
   const notifData = {
-    ref, name: customerName.full_name || 'Guest', email: customerName.email || '',
-    phone: customerName.phone || '', pickup, destination, stop_address, date, time,
+    ref, name: contactName, email: contactEmail,
+    phone: contactPhone, pickup, destination, stop_address, date, time,
     passengers, bags, flight, fare, payment, notes
   };
   Promise.allSettled([
@@ -173,8 +181,8 @@ router.post('/bookings', (req, res) => {
   const bookingForCal = {
     id: result.lastInsertRowid, ref, pickup, destination, stop_address, date, time,
     passengers, bags, flight, fare, payment, notes,
-    customer_name: customerName.full_name || 'Guest',
-    customer_phone: customerName.phone || '',
+    customer_name: contactName,
+    customer_phone: contactPhone,
     status: 'pending'
   };
   gcal.createEvent(bookingForCal).then(eventId => {
