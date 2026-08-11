@@ -169,39 +169,61 @@ ${rowsHtml}
 </table>`;
 }
 
-// ── Customer booking RECEIVED (sent immediately on booking) ──────────────
-async function sendCustomerConfirmation(booking) {
-  const { ref, name, email, pickup, destination, date, time, fare, payment, flight, passengers } = booking;
-  if (!email) return;
+// ── Customer ACKNOWLEDGEMENT (auto-sent the instant a booking is submitted) ──────────────
+// A branded "thank you, we'll be in touch" receipt that goes out immediately on
+// submission \u2014 separate from, and NOT a replacement for, the owner's manual Send
+// Estimate step (which follows with tokenised payment links). It shows the INSTANT
+// estimated fare (the same quick-estimate figure), clearly framed as an estimate,
+// plus the reference and journey details in the SHORT address format.
+async function sendCustomerAcknowledgement(booking) {
+  const { ref, name, email, pickup, destination, date, time, flight, passengers, stop_address, notes } = booking;
+  if (!email) return false;
+
+  // Estimated fare = the server-side quick-estimate for this route (may be absent
+  // for custom journeys the engine can't auto-price \u2014 then we skip the number).
+  const rawEst = booking.estimated_fare != null ? booking.estimated_fare
+               : (booking.suggested_fare != null ? booking.suggested_fare : booking.fare);
+  const estNum = typeof rawEst === 'number' ? rawEst : parseFloat(rawEst);
+  const hasEst = estNum && !isNaN(estNum);
+  const money  = (n) => (n % 1 === 0) ? String(n) : n.toFixed(2);
+  const estStr = hasEst ? ('~\u00a3' + money(estNum)) : null;
 
   const dateStr = formatDate(date, time);
-  const fareStr = fare ? ('\u00a3' + (typeof fare === 'number' ? fare.toFixed(2) : fare)) : null;
   const firstName = (name || '').split(' ')[0] || 'there';
 
   let rows = '';
-  rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:'+INK+'">' + ref + '</span>');
+  rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:'+INK+'">' + escHtml(ref) + '</span>');
   rows += rowDivider();
   rows += detailRow('Pickup', dispAddr(pickup));
+  if (stop_address) rows += detailRow('Stop', dispAddr(stop_address));
   rows += detailRow('Drop-off', dispAddr(destination));
   rows += rowDivider();
   rows += detailRow('Date', dateStr);
-  if (flight) rows += detailRow('Flight', flight);
+  if (flight) rows += detailRow('Flight', escHtml(flight));
   if (passengers && passengers > 1) rows += detailRow('Travellers', passengers + ' passengers');
+  if (notes) { rows += rowDivider(); rows += detailRow('Notes', escHtml(notes)); }
   rows += rowDivider();
-  if (fareStr) rows += detailRow('Fare', fareStr, { gold: true, large: true });
-  rows += detailRow('Payment', payment === 'card' ? 'Paid online' : 'Pay driver on arrival');
+  if (estStr) rows += detailRow('Estimated fare', estStr, { gold: true, large: true });
+
+  // The estimate caveat \u2014 make it unmistakable this is not the final price.
+  const estCaption = estStr
+    ? `<p style="margin:14px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_SOFT};line-height:1.6;text-align:center">Estimated fare: <span style="color:${INK}">${estStr}</span> \u2014 we'll confirm your exact price shortly.</p>`
+    : `<p style="margin:14px 0 0;font-family:Georgia,serif;font-size:12px;color:${INK_SOFT};line-height:1.6;text-align:center">We'll confirm your exact fare shortly.</p>`;
 
   const body = `
+  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Booking received</p>
   <p style="margin:0 0 14px;font-family:Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
-  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Thank you for your booking request. We have received the details below and will be in touch shortly to confirm your driver.</p>
+  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Thank you for booking with us \u2014 we will be in touch shortly.</p>
   ${buildDetailsTable(rows)}
-  <p style="margin:26px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
+  ${estCaption}
+  <p style="margin:24px 0 0;font-family:Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">With kind regards,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
 
   const html = emailShell(body);
-  const subject = 'Booking received \u2014 ' + ref;
-  const preheader = 'We have your request; a confirmation email will follow shortly.';
+  const subject = 'Thank you for booking \u2014 ' + ref;
+  const preheader = (estStr ? ('Estimated fare ' + estStr + ' \u2014 ') : '') + 'we\'ve received your booking and will be in touch shortly.';
   const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
-  if (ok) console.log('[EMAIL] Customer received-notice sent (' + ref + ')');
+  if (ok) console.log('[EMAIL] Customer acknowledgement sent (' + ref + ')');
+  return ok;
 }
 
 // ── Customer booking CONFIRMED (sent after Claude or operator approves) ──
@@ -1314,7 +1336,7 @@ async function sendCustomerMessage(booking, message) {
 }
 
 module.exports = {
-  sendCustomerConfirmation, sendCustomerConfirmed, sendCustomerEstimate, sendAdminAlert,
+  sendCustomerAcknowledgement, sendCustomerConfirmed, sendCustomerEstimate, sendAdminAlert,
   sendOwnerCancelledRequest, sendOwnerCustomerNote, sendCustomerMessage,
   sendCustomerWelcome, sendCustomerInvoice, sendBespokeInvoice, sendInvoiceReminder,
   sendCustomerCancellation, sendDriverStatement, sendDriverWelcome,

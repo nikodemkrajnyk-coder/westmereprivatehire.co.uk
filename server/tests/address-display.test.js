@@ -92,7 +92,7 @@ const BASE = {
   fare: 99, pay_token: 'deadbeefdeadbeefdeadbeefdeadbeef'
 };
 
-for (const fnName of ['sendAdminAlert', 'sendCustomerEstimate', 'sendCustomerConfirmed']) {
+for (const fnName of ['sendAdminAlert', 'sendCustomerEstimate', 'sendCustomerConfirmed', 'sendCustomerAcknowledgement']) {
   test(fnName + ': shows short address, never the long raw form', async () => {
     const { html, subject } = await renderEmail(fnName, BASE);
     assert.ok(html.length > 0, 'no html captured');

@@ -82,7 +82,7 @@ async function submitBookingForm(form){
     if(r.ok&&d.ok){
       const ref=d.ref?(' Your reference is '+d.ref+'.'):'';
       status.style.color='#2f6b34';
-      status.textContent='Request received — we’ll be in touch shortly with your fare.'+ref;
+      status.textContent='Thank you for booking with us — we will be in touch shortly.'+ref;
       form.reset();
     }else{
       throw new Error(d.error||'Could not submit your request');

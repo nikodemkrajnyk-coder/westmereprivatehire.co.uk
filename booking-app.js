@@ -390,7 +390,7 @@
         .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
         .then(function(res){
           if (res.ok && res.d.ok) {
-            if (status) { status.style.color = '#2f6b34'; status.textContent = 'Request received — we\'ll confirm your driver and fare shortly. Reference ' + (res.d.ref || '') + '.'; }
+            if (status) { status.style.color = '#2f6b34'; status.textContent = 'Thank you for booking with us — we will be in touch shortly. Reference ' + (res.d.ref || '') + '.'; }
             form.reset(); if (fareBox) fareBox.style.display = 'none';
             clearEdited(); applyRemembered(); // restore saved details (+ ticked box) for a follow-up booking
           } else { throw new Error((res.d && res.d.error) || 'Could not submit'); }
