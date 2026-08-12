@@ -426,13 +426,23 @@ body.mode-day #stripe-card-el.StripeElement--focus{border-bottom-color:#8a6d34}
 .iib-close:hover{color:#fff}
 
 /* ════════════════════════════════════════════
-   DESKTOP WEB-PAGE LAYOUT (≥720px) — present the account as a proper centred,
-   wider web page instead of a narrow phone column. Placed after the base rules
-   so these overrides win. Mobile (<720px) keeps the native app layout intact.
+   DESKTOP WEB-PAGE LAYOUT — present the account as a proper wide web page
+   instead of a narrow phone column. Placed after the base rules so these
+   overrides win. Phones (<600px) keep the native app layout intact.
+
+   Breakpoint is 600px, NOT 720px: a half-screen browser window (very common on
+   a 1280–1440 desktop) or a browser at 150–200% page zoom lands BELOW 720 CSS
+   px, and the account then rendered as a full-width phone column on a desktop
+   machine — one of the ways the "My Account looks mobile on desktop" report
+   keeps coming back. 600px is still safely above every phone in portrait.
+
+   The shell FILLS the window (width:calc(100vw - gutter)) rather than sitting
+   in a fixed 1000/1120px box, so on a 1280px+ screen it reads as a desktop app
+   rather than a narrow card marooned in the middle of the display.
    ════════════════════════════════════════════ */
-@media(min-width:720px){
+@media(min-width:600px){
   .screen{
-    max-width:1000px;margin:1.25rem auto;
+    width:calc(100vw - 2.5rem);max-width:1720px;margin:1.25rem auto;
     height:calc(100dvh - 2.5rem);height:calc(100vh - 2.5rem);
     border:1px solid rgba(27,27,26,.08);border-radius:16px;overflow:hidden;
     box-shadow:0 20px 60px rgba(27,27,26,.12);background:#fff;
@@ -440,11 +450,15 @@ body.mode-day #stripe-card-el.StripeElement--focus{border-bottom-color:#8a6d34}
   .topbar{padding-left:2rem;padding-right:2rem;height:64px}
   .bottom-nav{padding-left:1.5rem;padding-right:1.5rem;justify-content:center}
   .bn-item{max-width:190px}
-  .page-content{max-width:880px;padding:1.6rem 2.2rem 2rem}
+  .page-content{max-width:1080px;padding:1.6rem 2.2rem 2rem}
 }
 @media(min-width:1180px){
-  .screen{max-width:1120px}
-  .page-content{max-width:1000px}
+  .topbar{height:72px}
+  .page-content{max-width:1280px;padding:1.8rem 2.6rem 2.2rem}
+}
+@media(min-width:1600px){
+  .screen{width:calc(100vw - 4rem)}
+  .page-content{max-width:1420px}
 }
 </style>
 <script src="/config.js"></script>
@@ -568,13 +582,45 @@ body::after{
 .bottom-nav{background:rgba(255,255,255,.96);backdrop-filter:blur(24px)}
 
 /* ── DESKTOP: the app becomes a card floating on the Sussex coast ── */
-@media(min-width:720px){
+@media(min-width:600px){
   .screen{
     background:#fff;
     box-shadow:0 30px 80px rgba(12,12,11,.45);
     border-color:rgba(255,255,255,.16);
   }
   #login-screen{padding-top:3rem}
+  /* A taller topbar band gives the coast hero room to read as an image rather
+     than a sliver — at 1280px+ a 56px strip crops it to almost nothing. */
+  .topbar{background-position:center 45%}
+}
+
+/* ── DESKTOP LOGIN: two columns — Sussex hero beside the form ──
+   The 420px login card was the single most "phone-sized" thing on a desktop
+   screen. From 900px up the card widens and splits: the hero fills its own
+   full-height column (so the image is never squashed into a letterbox), the
+   form sits beside it. Only ONE .ls-body is ever visible (the others are
+   display:none and so are not grid items), so the grid is always exactly
+   hero + form + footer. */
+@media(min-width:900px){
+  .ls-inner{
+    max-width:940px!important;
+    display:grid;grid-template-columns:minmax(300px,44%) 1fr;
+    align-items:stretch;
+  }
+  .ls-hd{
+    grid-column:1;grid-row:1 / span 2;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    border-bottom:none!important;
+    border-right:1px solid rgba(184,144,69,.45);
+    padding:3.4rem 2.4rem!important;
+    /* Oversize + pull up: `cover` on this tall column would scale the (very
+       wide) hero by HEIGHT and so expose the white email strip along its
+       bottom edge. Overflowing the height crops the strip away. */
+    background-size:auto 140%;background-position:center 38%;
+  }
+  .ls-body{grid-column:2;grid-row:1;align-self:center;padding:2.8rem 3rem 2rem}
+  .ls-foot{grid-column:2;grid-row:2}
+  .ls-title{font-size:2rem}
 }
 
 /* Honour reduced-motion/data preferences: drop to flat brand colours. */

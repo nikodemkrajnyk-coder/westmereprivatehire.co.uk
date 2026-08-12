@@ -75,9 +75,39 @@ test('rider My Account pickers/inputs are light + readable (color-scheme light)'
   }
 });
 test('rider My Account has a DESKTOP layout (not mobile-width on a wide screen)', () => {
-  const m = riderHtml.match(/@media\(min-width:\s*720px\)\{[\s\S]*?max-width:\s*(\d+)px/);
-  assert.ok(m, 'must have a @media(min-width:720px) desktop layout so it is not a narrow mobile column');
-  assert.ok(parseInt(m[1], 10) >= 720, 'desktop layout must widen the container beyond mobile width');
+  // The breakpoint must fire at or below 720px CSS. A half-screen browser window
+  // on a 1280–1440 desktop, or a browser at 150–200% page zoom, lands BELOW
+  // 720px — and the account then renders as a full-width phone column on a
+  // desktop machine, which is exactly the "My Account looks mobile on desktop"
+  // report. Anything above 600px is comfortably wider than a phone in portrait.
+  const bp = riderHtml.match(/@media\(min-width:\s*(\d+)px\)\{\s*\.screen\{/);
+  assert.ok(bp, 'must have a @media(min-width:Npx) block that restyles .screen for desktop');
+  const px = parseInt(bp[1], 10);
+  assert.ok(px <= 720 && px >= 480,
+    'the desktop breakpoint must be <=720px (half-screen windows and zoomed browsers sit below 720) and >=480px (do not catch phones): got ' + px);
+
+  // …and it must actually FILL a desktop viewport rather than pin the app into a
+  // fixed narrow box marooned in the middle of a wide screen.
+  const block = riderHtml.match(/@media\(min-width:\s*\d+px\)\{\s*\.screen\{[\s\S]*?\}\s*\}/);
+  assert.ok(block, 'desktop .screen block not found');
+  assert.ok(/width:\s*calc\(100vw|width:\s*min\(/.test(block[0]),
+    'the desktop shell must size off the viewport (calc(100vw - gutter) / min()), not a fixed max-width box');
+  const cap = block[0].match(/max-width:\s*(\d+)px/);
+  assert.ok(!cap || parseInt(cap[1], 10) >= 1280,
+    'any desktop cap must be >=1280px so a normal desktop screen is filled, not cropped to a narrow column');
+});
+test('rider service worker revalidates HTML (stale desktop layout guard)', () => {
+  // express.static sends no Cache-Control for .html — only ETag/Last-Modified —
+  // so browsers apply heuristic freshness and can serve a stale rider HTML for
+  // days. A plain fetch() inside the SW reads that same HTTP cache, so bumping
+  // CACHE alone does NOT guarantee a returning desktop browser gets the new
+  // layout. The document fetch must opt out of the HTTP cache.
+  assert.ok(/cache:\s*'reload'/.test(sw),
+    "rider-sw.js must fetch the document with { cache: 'reload' } so a returning browser cannot keep a stale HTML (and thus the old mobile-width layout)");
+  const guard = sw.search(/cache:\s*'reload'/);
+  const respond = sw.search(/respondWith/);
+  assert.ok(guard !== -1 && respond !== -1 && guard < respond,
+    "the document's no-HTTP-cache fetch must be set up before respondWith()");
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

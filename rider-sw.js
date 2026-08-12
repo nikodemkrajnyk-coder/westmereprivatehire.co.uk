@@ -2,8 +2,8 @@
 // returning devices re-run install and drop the stale copy in activate().
 // GUARDRAIL: server/tests/rider-cache.test.js pins this to the rider-html hash
 // below — if you edit westmere-rider.html without bumping both, `npm test` fails.
-// rider-html-sha256: PENDING
-var CACHE = 'westmere-rider-v6';
+// rider-html-sha256: 9f5f271f78e6b8e53796bb378e6235ee3108a348984f529c81bfa492fdf12d57
+var CACHE = 'westmere-rider-v7';
 var PRECACHE = [
   '/westmere-rider.html',
   '/config.js',
@@ -45,8 +45,24 @@ self.addEventListener('fetch', function (e) {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
 
+  // HTML/navigation: bypass the BROWSER HTTP CACHE, not just our own cache.
+  // express.static sends no Cache-Control for .html — only ETag/Last-Modified —
+  // so Chrome/Safari apply *heuristic* freshness (~10% of the document's age)
+  // and can serve a stale westmere-rider.html for days WITHOUT revalidating.
+  // A plain fetch() here reads that same HTTP cache, so "network-first" still
+  // returned the old HTML: this is why the desktop layout fix kept appearing
+  // not to land on a returning desktop browser. `cache: 'reload'` forces a
+  // real revalidation for the document itself. GUARDRAIL: rider-cache.test.js.
+  // (Fetch by URL rather than re-wrapping the Request: a navigate-mode Request
+  // cannot be reconstructed with its mode intact, and an HTML GET needs nothing
+  // from the original but its URL and cookies.)
+  var isDoc = e.request.mode === 'navigate' || /\.html$/.test(url.pathname) || url.pathname === '/';
+  var hit = isDoc
+    ? fetch(e.request.url, { cache: 'reload', credentials: 'include', redirect: 'follow' })
+    : fetch(e.request);
+
   e.respondWith(
-    fetch(e.request).then(function (res) {
+    hit.then(function (res) {
       if (res.ok) {
         var clone = res.clone();
         caches.open(CACHE).then(function (cache) { cache.put(e.request, clone); });
