@@ -8,11 +8,11 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Westmere Rider">
+<meta name="apple-mobile-web-app-title" content="My Account">
 <meta name="theme-color" content="#1b1b1a">
 <link rel="manifest" href="/rider-manifest.json">
 <link rel="apple-touch-icon" href="/rider-icon-192.svg">
-<title>Westmere Rider</title>
+<title>Westmere · My Account</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
@@ -463,17 +463,17 @@ body.mode-day #stripe-card-el.StripeElement--focus{border-bottom-color:#8a6d34}
 </style>
 <script src="/config.js"></script>
 <script src="https://js.stripe.com/v3/" async></script>
-<meta name="description" content="Westmere Rider — book private hire journeys across Sussex with real-time tracking, fixed quotes and premium drivers.">
+<meta name="description" content="Westmere My Account — book private hire journeys across Sussex with real-time tracking, fixed quotes and premium drivers.">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23111D2C'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='38' font-weight='500' text-anchor='middle' fill='%23B8985A'%3EW%3C/text%3E%3C/svg%3E">
 <meta name="robots" content="noindex,nofollow">
-<meta property="og:title" content="Westmere Rider">
-<meta property="og:description" content="Westmere Rider — book private hire journeys across Sussex with real-time tracking, fixed quotes and premium drivers.">
+<meta property="og:title" content="Westmere · My Account">
+<meta property="og:description" content="Westmere My Account — book private hire journeys across Sussex with real-time tracking, fixed quotes and premium drivers.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://westmereprivatehire.co.uk/westmere-rider.html">
 <meta property="og:site_name" content="Westmere Private Hire">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Westmere Rider">
-<meta name="twitter:description" content="Westmere Rider — book private hire journeys across Sussex with real-time tracking, fixed quotes and premium drivers.">
+<meta name="twitter:title" content="Westmere · My Account">
+<meta name="twitter:description" content="Westmere My Account — book private hire journeys across Sussex with real-time tracking, fixed quotes and premium drivers.">
 <style id="wm-rider-template">
 /* Rider "My Account" — align to the template's clean editorial look */
 /* Section labels -> muted charcoal eyebrows (was gold) */
@@ -797,12 +797,14 @@ body::after{
 .tc-badge.badge-completed{color:rgba(27,27,26,.4)!important}
 .tc-badge.badge-cancelled{color:var(--red)!important}
 .drow-pending{font-family:var(--serif);font-style:italic;font-size:.9rem;color:rgba(27,27,26,.42)}
-.tc-cancel{
+.tc-cancel,.tc-again{
   display:block;margin-top:.35rem;background:none;border:none;padding:0;cursor:pointer;
   font-family:var(--sans);font-size:.56rem;letter-spacing:.16em;text-transform:uppercase;
   color:rgba(27,27,26,.35);text-decoration:underline;text-underline-offset:3px;transition:color .2s;
 }
 .tc-cancel:hover{color:var(--red)}
+.tc-again{color:rgba(27,27,26,.4)}
+.tc-again:hover{color:var(--gold)}
 
 /* Filters: quiet text tabs inside the panel, not boxed buttons. */
 .filter-row{display:flex;gap:1.6rem;margin:0;padding:.85rem 1.4rem;border-bottom:1px solid rgba(27,27,26,.06)}
@@ -1466,6 +1468,26 @@ async function doReset(){
   }catch(e){if(errEl){errEl.textContent='Connection error. Please try again.';errEl.classList.add('show');}}
 }
 (function(){var p=new URLSearchParams(window.location.search);var rt=p.get('reset_token');if(rt){_resetToken=rt;if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',function(){swFrm('reset');});}else{swFrm('reset');}}})();
+
+/* ── EMAIL VERIFICATION LANDING ──
+   server/auth.js finishes /auth/customer/verify by redirecting here with
+   ?verified=1 | already | error. Ported from the retired westmere-account.html:
+   without it the customer clicked the link in their email, landed on a plain
+   sign-in screen with no confirmation, and had no idea whether it had worked.
+   The URL is tidied afterwards so a refresh doesn't repeat the message. */
+(function(){
+  var v=new URLSearchParams(window.location.search).get('verified');
+  if(!v)return;
+  var msg=v==='1'?'Email verified — please sign in'
+        :v==='already'?'Email already verified — please sign in'
+        :'That verification link is invalid or has expired';
+  var run=function(){
+    setTimeout(function(){showToast(msg,v==='error'?'error':'');},350);
+    try{history.replaceState(null,'',location.pathname);}catch(e){}
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);
+  else run();
+})();
 document.addEventListener('keydown',function(e){
   if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none'){
     var reg=document.getElementById('frm-register');
@@ -2237,6 +2259,24 @@ function renderTrips(filter){
     list.innerHTML='<div class="dp-empty"><div class="dpe-title">No trips found</div><div class="dpe-sub">Your journeys will appear here</div></div>';
     return;
   }
+  // Friendly day label, built INSIDE this function on purpose: rider-trips.test.js
+  // runs renderTrips in a sandbox with only Date/String/JSON/Array/Object, so a
+  // helper defined outside would be undefined there. Rows that come from the
+  // server carry a raw ISO date (only locally-created rows have dateDisp), which
+  // is why real trips were showing "2026-08-15" instead of "Sat 15 Aug".
+  // Parsed as a LITERAL date — never through the UTC epoch — so a booking can
+  // never slide to the day before. See server/tests/timezone-dayofweek.test.js.
+  var _fmtDay=function(iso){
+    try{
+      var p=String(iso||'').slice(0,10).split('-');
+      if(p.length!==3)return '';
+      var dd=new Date(Date.UTC(+p[0],+p[1]-1,+p[2]));
+      if(dd.getTime()!==dd.getTime())return '';
+      var DAY=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return DAY[dd.getUTCDay()]+' '+dd.getUTCDate()+' '+MON[dd.getUTCMonth()];
+    }catch(e){return '';}
+  };
   var html='';
   filtered.forEach(function(b){
     // ONE BAD ROW MUST NEVER BLANK THE WHOLE HISTORY. Every field below is
@@ -2251,7 +2291,7 @@ function renderTrips(filter){
       // Same ledger shape as Payment History and Invoices (.drow-*): route on
       // top, one quiet detail line, fare and a small-caps status on the right.
       // .trip-card is kept as the row class \u2014 rider-trips.test.js counts it.
-      var meta=[b.dateDisp||b.date||'Date to confirm',b.time,b.vehicle,(b.pax?b.pax+' pax':''),b.flight].filter(Boolean).map(esc).join(' \u00b7 ');
+      var meta=[_fmtDay(b.date)||b.dateDisp||b.date||'Date to confirm',b.time,b.vehicle,(b.pax?b.pax+' pax':''),b.flight].filter(Boolean).map(esc).join(' \u00b7 ');
       var route=esc(_shortAddr(b.from))+' <span class="drow-arrow">\u2192</span> '+esc(_shortAddr(b.dest));
       html+='<div class="trip-card">';
       html+='<div class="drow-main">';
@@ -2261,7 +2301,8 @@ function renderTrips(filter){
       html+='<div class="drow-side">';
       html+='<div class="drow-amt">'+(b.fare?'\u00a3'+esc(b.fare):'<span class="drow-pending">Estimate pending</span>')+'</div>';
       html+='<div class="drow-tag tc-badge '+badgeClass+'">'+esc(statusLabel)+'</div>';
-      if(canCancel)html+='<button class="tc-cancel" onclick="cancelTrip(\''+esc(b.ref)+'\')">Cancel</button>';
+      if(canCancel)html+='<button class="tc-cancel" onclick="cancelTrip('+(b.id?parseInt(b.id,10):0)+',\''+esc(b.ref)+'\')">Cancel</button>';
+      if(!canCancel)html+='<button class="tc-again" onclick="rebookTrip(\''+esc(b.ref)+'\')">Book again</button>';
       html+='</div>';
       html+='</div>';
     }catch(e){
@@ -2277,13 +2318,62 @@ function filterTrips(filter,btn){
   renderTrips(filter);
 }
 
-function cancelTrip(ref){
-  if(!confirm('Cancel booking '+ref+'?'))return;
-  var bookings=JSON.parse(localStorage.getItem('wph_rider_bookings')||'[]');
-  bookings.forEach(function(b){if(b.ref===ref)b.status='cancelled';});
-  localStorage.setItem('wph_rider_bookings',JSON.stringify(bookings));
-  renderTrips('upcoming');
-  showToast('Booking '+ref+' cancelled');
+/* ── CANCEL A TRIP (real) ──
+   This used to flip the status in localStorage only: the customer saw
+   "cancelled", the office never heard, and the driver still turned up. It now
+   goes through POST /api/customer/bookings/:id/cancel, which checks ownership,
+   refuses trips that are already underway, notifies and clears the calendar —
+   and the local copy is only updated once the server has confirmed. */
+async function cancelTrip(id,ref){
+  if(!confirm('Cancel booking '+ref+'?\n\nWe will confirm by email.'))return;
+  if(!id){
+    // A row that has not yet come back from the server has no id to cancel by.
+    showToast('Please call us on 07930 342593 to cancel this booking.','error');
+    return;
+  }
+  try{
+    var r=await fetch('/api/customer/bookings/'+encodeURIComponent(id)+'/cancel',{
+      method:'POST',credentials:'include'
+    });
+    var data={};try{data=await r.json();}catch(e){}
+    if(!r.ok){
+      showToast(data.error||'We could not cancel that booking. Please call us.','error');
+      return;
+    }
+    var bookings=getBookings();
+    bookings.forEach(function(b){if(b&&(b.id===id||b.ref===ref))b.status='cancelled';});
+    try{localStorage.setItem('wph_rider_bookings',JSON.stringify(bookings));}catch(e){}
+    renderTrips(_tripFilter);
+    showToast('Booking '+ref+' cancelled');
+    loadServerTrips();
+  }catch(e){
+    showToast('No connection — please try again, or call 07930 342593.','error');
+  }
+}
+
+/* ── BOOK AGAIN — one tap from a past trip into a prefilled booking form ── */
+function rebookTrip(ref){
+  var b=getBookings().filter(function(x){return x&&x.ref===ref;})[0];
+  if(!b){showToast('We could not find that journey.','error');return;}
+  var set=function(id,v){var el=document.getElementById(id);if(el&&v)el.value=v;};
+  set('bk-from',b.from);
+  set('bk-dest',b.dest);
+  set('bk-time',b.time);
+  var td=document.getElementById('bk-ctt-display');if(td&&b.time)td.value=b.time;
+  if(b.pax){
+    set('bk-pax',b.pax);
+    var pd=document.getElementById('bk-pax-display');
+    if(pd)pd.value=b.pax+(b.pax==1?' passenger':' passengers');
+  }
+  if(b.flight){
+    set('bk-flight',b.flight);
+    var fw=document.getElementById('bk-flight-wrap');if(fw)fw.style.display='';
+  }
+  // Date is deliberately NOT copied — a repeat journey is a new date, and a
+  // past date would silently fail validation on submit.
+  goPage('book');
+  showToast('Journey copied — choose your date and time');
+  if(typeof bkCalcFare==='function'){try{bkCalcFare();}catch(e){}}
 }
 
 /* ── ACTIVE TRIP ── */
@@ -2411,7 +2501,10 @@ async function loadServerTrips(){
       // payment + paidAt carry the Payment History tab. They are part of the
       // booking row (there is no separate payments table), so they must survive
       // this mapping or that tab has nothing to read.
-      return{ref:b.ref,from:b.pickup,dest:b.destination,date:b.date,time:b.time,flight:b.flight||'',pax:b.passengers||1,vehicle:b.driver_vehicle||'',fare:b.fare||0,status:b.status,created:b.created_at,driverName:b.driver_name||'',driverReg:b.driver_reg||'',payment:b.payment||'pending',paidAt:b.paid_at||''};
+      // id is what POST /api/customer/bookings/:id/cancel needs — without it the
+      // Cancel button can only edit this device's copy, which is how a customer
+      // ends up believing a trip is cancelled while the office still has it.
+      return{id:b.id,ref:b.ref,from:b.pickup,dest:b.destination,date:b.date,time:b.time,flight:b.flight||'',pax:b.passengers||1,bags:b.bags||'',vehicle:b.driver_vehicle||'',fare:b.fare||0,status:b.status,created:b.created_at,driverName:b.driver_name||'',driverReg:b.driver_reg||'',payment:b.payment||'pending',paidAt:b.paid_at||''};
     });
     // The server is the source of truth, but never DROP a trip the customer can
     // already see: keep any local-only row (one just booked in this tab, before
@@ -2509,6 +2602,9 @@ async function loadInvoices(){
       html+='<div class="drow-side">';
       html+='<div class="drow-amt">'+(_money(i.total)||'—')+'</div>';
       html+='<div class="drow-tag '+(i.paid?'is-paid':'is-due')+'">'+(i.paid?'Paid':'Outstanding')+'</div>';
+      // GET /api/customer/invoices/:id/pdf — ownership-checked, serves the
+      // stored PDF (and says so plainly if one was never generated).
+      if(i.id)html+='<a class="tc-again" href="/api/customer/invoices/'+encodeURIComponent(i.id)+'/pdf">Download PDF</a>';
       html+='</div></div>';
     });
     list.innerHTML=html;
@@ -2550,12 +2646,18 @@ async function saveMyDetails(){
       body:JSON.stringify({full_name:name.trim(),email:email.trim(),phone:phone.trim()})
     });
     if(r.ok){
-      _currentUser.name=name.trim();_currentUser.email=email.trim();_currentUser.phone=phone.trim();
+      var d2={};try{d2=await r.json();}catch(e){}
+      var saved=(d2&&d2.profile)||{};
+      _currentUser.name=saved.full_name||name.trim();
+      _currentUser.email=saved.email||email.trim();
+      _currentUser.phone=saved.phone||phone.trim();
       updateProfile();
       paintIdentity();
-      show('Your details have been updated.','good');
+      show(d2.emailChanged
+        ? 'Saved. Your email is also your sign-in — use the new address next time you sign in.'
+        : 'Your details have been updated.','good');
     }else if(r.status===404||r.status===405){
-      show('Editing your details online is not switched on yet — call us on 07930 342593 and we will update it for you.','bad');
+      show('Editing your details online is not available on this version. Please call us on 07930 342593.','bad');
     }else{
       var d={};try{d=await r.json();}catch(e){}
       show(d.error||'We could not save that just now. Please try again.','bad');

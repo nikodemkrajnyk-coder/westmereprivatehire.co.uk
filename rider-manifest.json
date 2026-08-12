@@ -1,7 +1,7 @@
 {
-  "name": "Westmere Rider",
-  "short_name": "Westmere",
-  "description": "Book private hire journeys across Sussex",
+  "name": "Westmere Account",
+  "short_name": "My Account",
+  "description": "Your Westmere Private Hire account — trips, invoices and booking.",
   "start_url": "/westmere-rider.html",
   "display": "standalone",
   "orientation": "portrait",

@@ -2,8 +2,8 @@
 // returning devices re-run install and drop the stale copy in activate().
 // GUARDRAIL: server/tests/rider-cache.test.js pins this to the rider-html hash
 // below — if you edit westmere-rider.html without bumping both, `npm test` fails.
-// rider-html-sha256: 8b6fc30a5c78aeb71e28c52a20f920ac9de73b43d967275d73f9e1ef5dd49e54
-var CACHE = 'westmere-rider-v9';
+// rider-html-sha256: 601fee9e8ef184e6b3da178c3410f796e648b2fd51ee8a7a3a5007d335b405eb
+var CACHE = 'westmere-rider-v11';
 var PRECACHE = [
   '/westmere-rider.html',
   '/config.js',

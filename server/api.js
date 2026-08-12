@@ -400,8 +400,19 @@ router.post('/customer/bookings/:id/cancel', (req, res) => {
   const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
   if (!booking) return res.status(404).json({ error: 'Booking not found' });
 
-  // Ownership check — the booking must belong to this customer
-  if (booking.customer_id !== req.auth.id) {
+  // Ownership check — the booking must belong to this customer.
+  // customer_id ALONE is not enough: it is only set when a booking is created
+  // while an account with that email already exists, so it is NULL for every
+  // job the owner enters by hand and for anything booked before the customer
+  // registered. Those trips are listed in My Account (GET /bookings matches on
+  // the verified email too) — so without the same rule here, the customer sees
+  // a Cancel button on their own trip and gets a 403. Same rule, same place.
+  const me = db.prepare('SELECT email FROM customers WHERE id = ?').get(req.auth.id) || {};
+  const myEmail = String(me.email || '').trim().toLowerCase();
+  const ownsById = booking.customer_id === req.auth.id;
+  const ownsByEmail = !booking.customer_id && myEmail &&
+    String(booking.passenger_email || '').trim().toLowerCase() === myEmail;
+  if (!ownsById && !ownsByEmail) {
     return res.status(403).json({ error: 'You can only cancel your own bookings' });
   }
 
@@ -465,6 +476,99 @@ router.get('/customer/profile', (req, res) => {
   const row = db.prepare('SELECT id, email, full_name, phone, created_at FROM customers WHERE id = ?').get(req.auth.id);
   if (!row) return res.status(404).json({ error: 'Account not found' });
   res.json({ ok: true, profile: row });
+});
+
+// Customer: edit their own name / email / phone (My Account → My Details).
+//
+// EMAIL IS THE LOGIN. Two consequences this route must respect:
+//   1. it can never be blank or malformed, or the account becomes unreachable;
+//   2. it can never collide with another customer's email, or two accounts
+//      share one login and /customer/login resolves to whichever row comes
+//      first. The uniqueness check is case-insensitive and skips the caller's
+//      own row, and the DB's UNIQUE index is the backstop if two requests race.
+// Scope is deliberately narrow: a customer may edit these three fields on their
+// OWN record and nothing else — no id, no account_type, no active flag.
+router.patch('/customer/profile', (req, res) => {
+  if (req.auth.type !== 'customer') return res.status(403).json({ error: 'Customer access required' });
+  const db = getDb();
+
+  const current = db.prepare('SELECT id, email, full_name, phone FROM customers WHERE id = ? AND active = 1').get(req.auth.id);
+  if (!current) return res.status(404).json({ error: 'Account not found' });
+
+  const name = String(req.body.full_name == null ? current.full_name : req.body.full_name).trim();
+  const email = String(req.body.email == null ? current.email : req.body.email).trim();
+  const phoneRaw = req.body.phone == null ? current.phone : req.body.phone;
+  const phone = String(phoneRaw == null ? '' : phoneRaw).trim();
+
+  if (!name) return res.status(400).json({ error: 'Please enter your name.' });
+  if (name.length > 120) return res.status(400).json({ error: 'That name is too long.' });
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    return res.status(400).json({ error: 'Please enter a valid email address.' });
+  }
+  if (email.length > 200) return res.status(400).json({ error: 'That email address is too long.' });
+  // Phone is optional, but if given it must look like a phone number.
+  if (phone && !/^[+0-9][0-9\s()\-]{6,24}$/.test(phone)) {
+    return res.status(400).json({ error: 'Please enter a valid phone number, or leave it blank.' });
+  }
+
+  const clash = db.prepare('SELECT id FROM customers WHERE LOWER(TRIM(email)) = LOWER(TRIM(?)) AND id <> ?')
+    .get(email, current.id);
+  if (clash) {
+    return res.status(409).json({ error: 'That email address is already used by another account.' });
+  }
+
+  try {
+    db.prepare('UPDATE customers SET full_name = ?, email = ?, phone = ? WHERE id = ?')
+      .run(name, email, phone, current.id);
+  } catch (e) {
+    // UNIQUE(email) backstop for a race between two concurrent saves.
+    if (/UNIQUE/i.test(e.message)) {
+      return res.status(409).json({ error: 'That email address is already used by another account.' });
+    }
+    console.error('[API] customer profile update failed:', e.message);
+    return res.status(500).json({ error: 'Could not save your details. Please try again.' });
+  }
+
+  const emailChanged = String(current.email || '').trim().toLowerCase() !== email.toLowerCase();
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run('customer', current.id, 'profile_updated_by_customer',
+        emailChanged ? ('email ' + current.email + ' → ' + email) : 'name/phone', req.ip);
+  } catch (e) {}
+
+  const row = db.prepare('SELECT id, email, full_name, phone, created_at FROM customers WHERE id = ?').get(current.id);
+  res.json({ ok: true, profile: row, emailChanged });
+});
+
+// Customer: download one of their own invoices as a PDF.
+// Mirrors the owner route below, but scoped to the caller: the invoice must be
+// theirs by customer_id OR by the email on their account (invoices raised
+// before an account existed carry the email only — the same rule
+// GET /customer/invoices already lists by).
+router.get('/customer/invoices/:id/pdf', (req, res) => {
+  if (req.auth.type !== 'customer') return res.status(403).json({ error: 'Customer access required' });
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid invoice ID' });
+
+  const me = db.prepare('SELECT email FROM customers WHERE id = ?').get(req.auth.id) || {};
+  const myEmail = String(me.email || '').trim().toLowerCase();
+
+  const row = db.prepare('SELECT * FROM invoices WHERE id = ?').get(id);
+  if (!row) return res.status(404).json({ error: 'Invoice not found' });
+
+  const mine = row.customer_id === req.auth.id ||
+    (myEmail && String(row.recipient_email || '').trim().toLowerCase() === myEmail);
+  if (!mine) return res.status(403).json({ error: 'You can only download your own invoices' });
+
+  const safeNo = String(row.invoice_no || '').replace(/[^A-Za-z0-9\-_]/g, '');
+  const pdfPath = path.join(INVOICES_DIR, safeNo + '.pdf');
+  if (!fs.existsSync(pdfPath)) {
+    return res.status(404).json({ error: 'That invoice PDF is not available yet. Please contact the office.' });
+  }
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', 'attachment; filename="' + safeNo + '.pdf"');
+  return res.sendFile(pdfPath);
 });
 
 // Delete booking (admin/owner only — permanently removes the record)

@@ -185,16 +185,16 @@ router.post('/customer/register', async (req, res) => {
 router.get('/customer/verify', (req, res) => {
   const token = String(req.query.token || '').replace(/[^a-f0-9]/gi, '');
   if (!token || token.length < 16) {
-    return res.redirect('/westmere-account.html?verified=error&reason=invalid_token');
+    return res.redirect('/westmere-rider.html?verified=error&reason=invalid_token');
   }
 
   const db = getDb();
   const customer = db.prepare('SELECT * FROM customers WHERE verification_token = ?').get(token);
   if (!customer) {
-    return res.redirect('/westmere-account.html?verified=error&reason=invalid_token');
+    return res.redirect('/westmere-rider.html?verified=error&reason=invalid_token');
   }
   if (customer.verified === 1) {
-    return res.redirect('/westmere-account.html?verified=already');
+    return res.redirect('/westmere-rider.html?verified=already');
   }
 
   db.prepare("UPDATE customers SET verified = 1, verification_token = NULL, updated_at = datetime('now') WHERE id = ?").run(customer.id);
@@ -204,7 +204,7 @@ router.get('/customer/verify', (req, res) => {
       .run('customer', customer.id, 'email_verified', req.ip);
   } catch (_) {}
 
-  return res.redirect('/westmere-account.html?verified=1');
+  return res.redirect('/westmere-rider.html?verified=1');
 });
 
 // ── Verify session ──────────────────────────────────────────────────────
