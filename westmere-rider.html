@@ -493,6 +493,95 @@ body.mode-day .btn-main{background:#1b1b1a!important;color:#f5f2ec!important}
 .ls-btn:hover{background:var(--ink)!important;color:var(--paper)!important}
 .ls-switch button{color:var(--ink)!important;text-decoration:underline!important;text-underline-offset:3px}
 .ls-foot a:hover{color:var(--ink)!important}
+</style>
+
+<style id="wm-rider-scenery">
+/* ════════════════════════════════════════════════════════════════════════════
+   SUSSEX SCENERY — background treatment for the customer "My Account" app.
+   Uses the same imagery as the public site + the estimate emails:
+     · assets/sussex-coast.webp        (about.html hero)  -> page backdrop / wash
+     · assets/westmere-email-hero.jpg  (email hero)       -> header bands
+   READABILITY RULE: imagery only ever sits behind either (a) a heavy dark scrim
+   with cream/gold text on top, or (b) a near-opaque cream veil with the normal
+   dark-on-white cards floating above it. No body copy, input, picker or dropdown
+   ever sits directly on a photograph.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* The #wm-rider-template block above styles cards/buttons with --paper/--line/
+   --ink, but those custom properties were never declared — so `background:
+   var(--paper)` resolved to *transparent* and `border:1px solid var(--line)` fell
+   back to currentColor. That was survivable on a flat cream page; over imagery a
+   transparent card is unreadable. Declare them at their intended values. */
+:root{--paper:#fff;--line:rgba(27,27,26,.10);--ink:#1b1b1a}
+
+/* ── PAGE BACKDROP (behind the login screen; framing the app card on desktop) ── */
+body::before{
+  display:block;content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:#1b1b1a url('/assets/sussex-coast.webp') center center/cover no-repeat;
+}
+body::after{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:linear-gradient(160deg,rgba(20,20,19,.55) 0%,rgba(20,20,19,.42) 45%,rgba(27,27,26,.62) 100%);
+}
+
+/* ── LOGIN: hero band behind the crest, cream/gold on a dark scrim ── */
+#login-screen{padding-top:4.5rem;padding-bottom:3rem}
+.ls-inner{background:#fff;box-shadow:0 26px 70px rgba(12,12,11,.42)!important;border-color:rgba(255,255,255,.14)!important}
+/* NB: westmere-email-hero.jpg carries a white strip along its bottom edge (it is
+   built for an email shell). Oversize it and pull the focus up so the strip is
+   cropped away — otherwise it reads as a grey band under the crest. */
+.ls-hd{
+  background:linear-gradient(rgba(20,20,19,.58),rgba(20,20,19,.78)),
+             url('/assets/westmere-email-hero.jpg') center 28%/auto 132% no-repeat;
+  background-color:#1b1b1a;
+  border-bottom:1px solid rgba(184,144,69,.45)!important;
+  padding:2.3rem 2.2rem 1.9rem!important;
+}
+.ls-hd .ls-crest{color:#f5f2ec;border:1px solid rgba(201,160,90,.65)!important}
+.ls-hd .ls-crest::before{border-color:rgba(201,160,90,.28)!important}
+.ls-hd .ls-title{color:#f5f2ec}
+.ls-hd .ls-sub{color:#d3ac6b!important}
+
+/* ── APP SHELL: cream veil over the coast, so cards stay dark-on-white ── */
+.screen{background:#f5f2ec}
+.screen::before{
+  content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:linear-gradient(rgba(245,242,236,.90),rgba(245,242,236,.955)),
+             url('/assets/sussex-coast.webp') center center/cover no-repeat;
+}
+.page-scroll{position:relative;z-index:1}
+
+/* ── TOPBAR: the same Sussex-coast hero band as the emails ── */
+.topbar{
+  background:linear-gradient(rgba(20,20,19,.70),rgba(20,20,19,.82)),
+             url('/assets/westmere-email-hero.jpg') center 40%/cover no-repeat;
+  backdrop-filter:none;
+  border-bottom:1px solid rgba(184,144,69,.38);
+  box-shadow:0 2px 14px rgba(12,12,11,.18);
+}
+.topbar .tb-crest{color:#f5f2ec;border-color:rgba(201,160,90,.6)}
+.topbar .tb-name{color:#f5f2ec}
+.topbar .tb-sub{color:#d3ac6b!important}
+.topbar .tb-date{color:rgba(245,242,236,.72)}
+
+/* ── BOTTOM NAV: opaque cream so labels never sit on the photograph ── */
+.bottom-nav{background:rgba(255,255,255,.96);backdrop-filter:blur(24px)}
+
+/* ── DESKTOP: the app becomes a card floating on the Sussex coast ── */
+@media(min-width:720px){
+  .screen{
+    background:#fff;
+    box-shadow:0 30px 80px rgba(12,12,11,.45);
+    border-color:rgba(255,255,255,.16);
+  }
+  #login-screen{padding-top:3rem}
+}
+
+/* Honour reduced-motion/data preferences: drop to flat brand colours. */
+@media(prefers-reduced-transparency:reduce){
+  body::before{background:#1b1b1a}
+  .screen::before{background:#f5f2ec}
+}
 </style></head>
 <body>
 
@@ -548,7 +637,7 @@ body.mode-day .btn-main{background:#1b1b1a!important;color:#f5f2ec!important}
         <label class="ls-label">Password</label>
         <div style="position:relative">
           <input class="ls-input" type="password" id="r-pass" placeholder="Min 8 characters" autocomplete="new-password" style="padding-right:3.5rem">
-          <button type="button" onclick="toggleRPass()" id="r-pass-toggle" style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,.35);font-size:.72rem;font-family:inherit;letter-spacing:.05em;padding:0">Show</button>
+          <button type="button" onclick="toggleRPass()" id="r-pass-toggle" style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(27,27,26,.45);font-size:.72rem;font-family:inherit;letter-spacing:.05em;padding:0">Show</button>
         </div>
       </div>
       <button class="ls-btn" onclick="doRegister()">Create Account</button>
@@ -557,8 +646,8 @@ body.mode-day .btn-main{background:#1b1b1a!important;color:#f5f2ec!important}
     </div>
     <div id="frm-verify" class="ls-body" style="display:none">
       <div style="text-align:center;padding:1rem 0;font-size:2rem">&#9993;</div>
-      <p style="text-align:center;font-size:.9rem;color:rgba(255,255,255,.8);line-height:1.7;margin:0 0 1rem">We've sent a verification link to <strong id="verify-email-hint" style="color:#fff"></strong>.<br>Click the link in your email to activate your account.</p>
-      <p style="text-align:center;font-size:.72rem;color:rgba(255,255,255,.35);line-height:1.6">Didn't receive it? Check your spam folder.</p>
+      <p style="text-align:center;font-size:.9rem;color:rgba(27,27,26,.72);line-height:1.7;margin:0 0 1rem">We've sent a verification link to <strong id="verify-email-hint" style="color:#1b1b1a"></strong>.<br>Click the link in your email to activate your account.</p>
+      <p style="text-align:center;font-size:.72rem;color:rgba(27,27,26,.45);line-height:1.6">Didn't receive it? Check your spam folder.</p>
       <div class="ls-switch" style="margin-top:1rem">Already verified? <button onclick="swFrm('login')">Sign in</button></div>
     </div>
     <div id="frm-forgot" class="ls-body" style="display:none">
