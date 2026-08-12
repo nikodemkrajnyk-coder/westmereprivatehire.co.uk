@@ -628,6 +628,207 @@ body::after{
   body::before{background:#1b1b1a}
   .screen::before{background:#f5f2ec}
 }
+</style>
+
+<style id="wm-rider-dashboard">
+/* ════════════════════════════════════════════════════════════════════════════
+   MY ACCOUNT — DESKTOP DASHBOARD
+   Left sidebar navigation + content pane, under the Sussex/Tesla hero band.
+   Five sections: My Trips · Payment History · Invoices · My Details ·
+   Book New Journey. Below 980px the sidebar collapses and the bottom tab bar
+   carries the same five sections, so nothing is lost on a phone.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ════════════════════════════════════════════
+   HERO FRAMING
+   The Tesla badge sits at roughly x=40% of westmere-email-hero.jpg. Because the
+   hero is oversized to crop its white email strip, a centred (50%) position
+   showed the window just to the RIGHT of the badge and cut it off. Pulling the
+   position-x back to ~37% lands the badge and the car's nose in frame.
+   ════════════════════════════════════════════ */
+.ls-hd{background-position:34% 28%}
+@media(min-width:900px){
+  /* 34% is measured, not guessed: at 50% the badge is cropped off entirely, at
+     ~40% it lands directly behind the W crest, and below ~28% it drops out of
+     frame to the right. At 34% the Tesla badge sits just clear of the crest
+     with the headlight and grille framing it. */
+  .ls-hd{background-position:31% 53%;background-size:auto 128%}
+}
+/* Phone: swap in the 4:3 Sussex-lane shot for the login band. The email hero is
+   3.5:1, so filling a portrait band means zooming it ~2.1x and showing a 17%
+   sliver; country-car.webp fills the same band at 0.43x and stays sharp.
+   The topbar keeps the wide hero — a 56px strip is exactly what it suits. */
+@media(max-width:599px){
+  .ls-hd{
+    background:linear-gradient(rgba(20,20,19,.52),rgba(20,20,19,.74)),
+               url('/assets/country-car.webp') center 42%/cover no-repeat;
+    background-color:#1b1b1a;
+  }
+}
+
+/* ── SHELL ── */
+.dash{flex:1;display:flex;min-height:0;position:relative;z-index:1}
+.page-scroll{flex:1;min-width:0}
+.side{display:none}
+
+@media(min-width:980px){
+  .side{
+    display:flex;flex-direction:column;width:272px;flex-shrink:0;
+    background:rgba(255,255,255,.72);
+    border-right:1px solid rgba(27,27,26,.09);
+    padding:1.6rem 0 1.2rem;overflow-y:auto;
+  }
+  .bottom-nav{display:none}
+  .page-content{padding-left:2.6rem;padding-right:2.6rem}
+  /* Sign in / Sign out live in the sidebar on desktop — the full-width buttons
+     at the foot of My Details are the phone affordance, so hide them here. */
+  #prof-login-btn,#prof-logout-btn{display:none!important}
+}
+
+/* ── SIDEBAR: identity ── */
+.side-id{display:flex;align-items:center;gap:.85rem;padding:0 1.5rem 1.4rem;border-bottom:1px solid rgba(27,27,26,.08);margin-bottom:1.2rem}
+.side-crest{
+  width:46px;height:46px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  border:1px solid rgba(184,144,69,.5);font-family:var(--serif);font-size:1rem;letter-spacing:.06em;
+  color:var(--navy);background:rgba(184,144,69,.06);
+}
+.side-id-txt{min-width:0}
+.side-id-name{font-family:var(--serif);font-size:1.12rem;font-weight:400;color:var(--navy);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.side-id-sub{font-size:.66rem;letter-spacing:.06em;color:rgba(27,27,26,.42);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:.1rem}
+
+/* ── SIDEBAR: the vertical tab list ── */
+.side-list{display:flex;flex-direction:column;gap:.1rem;padding:0 .9rem;flex:1}
+.side-item{
+  display:flex;align-items:center;gap:.75rem;width:100%;
+  background:none;border:none;cursor:pointer;text-align:left;
+  padding:.78rem .7rem;font-family:var(--serif);font-size:1rem;font-weight:400;
+  color:rgba(27,27,26,.62);letter-spacing:.03em;transition:color .2s,background .2s;
+  min-height:46px;
+}
+.side-mark{width:2px;height:17px;background:transparent;flex-shrink:0;transition:background .2s}
+.side-item:hover{color:var(--navy);background:rgba(184,144,69,.06)}
+.side-item.on{color:var(--navy);background:rgba(184,144,69,.1)}
+.side-item.on .side-mark{background:var(--gold)}
+.side-item.on .side-lbl{letter-spacing:.045em}
+.side-sep{height:1px;background:rgba(27,27,26,.08);margin:.9rem .7rem}
+/* "Book New Journey" reads as the one action, not a fifth tab */
+.side-cta{
+  font-family:var(--sans);font-size:.7rem;font-weight:400;letter-spacing:.2em;text-transform:uppercase;
+  border:1px solid rgba(27,27,26,.16);justify-content:center;color:var(--navy);margin:0 .7rem;
+}
+.side-cta .side-mark{display:none}
+.side-cta:hover{background:#1b1b1a;color:#f5f2ec;border-color:#1b1b1a}
+.side-cta.on{background:#1b1b1a;color:#f5f2ec;border-color:#1b1b1a}
+
+/* ── SIDEBAR: footer ── */
+.side-foot{padding:1.2rem 1.6rem 0;margin-top:1rem;border-top:1px solid rgba(27,27,26,.08);display:flex;flex-direction:column;gap:.55rem;align-items:flex-start}
+.side-out{background:none;border:none;padding:0;cursor:pointer;font-family:var(--sans);font-size:.64rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(27,27,26,.45);transition:color .2s}
+.side-out:hover{color:var(--navy)}
+.side-back{font-size:.72rem;color:rgba(27,27,26,.35);text-decoration:none;transition:color .2s}
+.side-back:hover{color:var(--gold)}
+
+/* ── DASHBOARD PANELS (Payments / Invoices / Details) ── */
+.dpanel{background:#fff;border:1px solid rgba(27,27,26,.09);border-radius:8px;overflow:hidden;margin-bottom:1rem;box-shadow:0 2px 14px rgba(27,27,26,.05)}
+.dp-head{
+  display:flex;align-items:baseline;justify-content:space-between;gap:1rem;
+  padding:.9rem 1.4rem;border-bottom:1px solid rgba(184,144,69,.2);
+  font-size:.66rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:rgba(27,27,26,.5);
+}
+.dp-note{font-family:var(--serif);font-style:italic;font-size:.85rem;letter-spacing:.02em;text-transform:none;color:var(--gold);font-weight:400}
+.dp-body{padding:1.4rem}
+.dp-empty{padding:2.6rem 1.4rem;text-align:center}
+.dpe-title{font-family:var(--serif);font-size:1.25rem;color:var(--navy);font-weight:300;margin-bottom:.3rem}
+.dpe-sub{font-size:.82rem;color:rgba(27,27,26,.45);font-weight:300;line-height:1.6;max-width:34rem;margin:0 auto}
+
+/* ── A LEDGER ROW (payments, invoices) ── */
+.drow{display:flex;align-items:center;gap:1.2rem;padding:1rem 1.4rem;border-bottom:1px solid rgba(27,27,26,.06)}
+.drow:last-child{border-bottom:none}
+.drow-main{flex:1;min-width:0}
+.drow-t{font-family:var(--serif);font-size:1.05rem;color:var(--navy);font-weight:400;line-height:1.35;overflow:hidden;text-overflow:ellipsis}
+.drow-arrow{color:var(--gold);font-style:normal;padding:0 .15rem}
+.drow-s{font-size:.72rem;color:rgba(27,27,26,.42);margin-top:.22rem;letter-spacing:.02em}
+.drow-side{text-align:right;flex-shrink:0}
+.drow-amt{font-family:var(--serif);font-size:1.15rem;color:var(--navy);font-weight:400}
+.drow-tag{font-size:.56rem;letter-spacing:.16em;text-transform:uppercase;margin-top:.25rem}
+.drow-tag.is-paid{color:var(--green)}
+.drow-tag.is-due{color:rgba(27,27,26,.4)}
+
+/* ── MY DETAILS form ── */
+.md-grid{display:grid;grid-template-columns:1fr;gap:.4rem}
+@media(min-width:760px){.md-grid{grid-template-columns:1fr 1fr;gap:.5rem 2rem}
+  .md-grid .fg:first-child{grid-column:1 / -1}}
+.md-save{max-width:280px;margin-top:1.2rem}
+.md-msg{display:none;margin-top:1rem;font-size:.8rem;line-height:1.6;padding:.7rem .9rem;border-radius:4px}
+.md-msg.show{display:block}
+.md-msg.good{color:var(--green);background:var(--green-bg);border:1px solid rgba(45,110,71,.25)}
+.md-msg.bad{color:var(--red);background:var(--red-bg);border:1px solid rgba(139,34,34,.25)}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   MY TRIPS — restyled away from the generic "rider app" look.
+   Same markup and same data; editorial Westmere treatment instead of the
+   app-style status pills, coloured dots and pulsing badges.
+   ════════════════════════════════════════════════════════════════════════════ */
+.aj-card{border:1px solid rgba(27,27,26,.09)!important;border-radius:8px!important;box-shadow:0 2px 14px rgba(27,27,26,.05)!important}
+.aj-bar{height:2px;background:var(--gold)}
+.aj-body{padding:1.5rem 1.6rem}
+.aj-dot{animation:none;background:var(--gold)}
+.aj-label{color:rgba(27,27,26,.5)!important;letter-spacing:.22em!important}
+/* the BOOKED / EN ROUTE / ARRIVED rail: hairline + serif, not an app stepper */
+.aj-progress{margin:.4rem 0 1.2rem}
+.aj-step span{font-family:var(--serif);font-style:italic;font-size:.66rem;letter-spacing:.1em;text-transform:none}
+.aj-step-dot{width:6px;height:6px}
+.aj-step-line{background:rgba(184,144,69,.28)}
+.aj-meta-grid{border-top:1px solid rgba(27,27,26,.07);border-bottom:1px solid rgba(27,27,26,.07);padding:1rem 0;margin-bottom:1rem}
+.aj-meta-k{font-size:.58rem;letter-spacing:.2em;color:rgba(27,27,26,.42)}
+.aj-meta-v{font-size:1.15rem}
+.aj-driver-info{border-top:none!important;padding-top:.2rem;margin-top:.2rem}
+.aj-driver-avatar{color:var(--gold);border-color:rgba(184,144,69,.45)}
+
+/* Trip rows: date and fare in the serif, route on one line, status as a small
+   caps eyebrow rather than a coloured chip. */
+.trip-card{background:#fff;border:1px solid rgba(27,27,26,.09);border-radius:8px;padding:1.15rem 1.4rem;margin-bottom:.7rem;box-shadow:0 2px 14px rgba(27,27,26,.04)}
+.tc-top{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;margin-bottom:.5rem}
+.tc-date{font-family:var(--serif);font-size:1.02rem;color:var(--gold);font-weight:400;letter-spacing:.03em}
+.tc-fare{font-family:var(--serif);font-size:1.2rem;color:var(--navy);font-weight:400}
+.tc-route{font-size:.96rem;color:var(--navy);font-weight:300;line-height:1.5}
+.tc-meta{font-size:.72rem;color:rgba(27,27,26,.42);margin-top:.3rem;letter-spacing:.02em}
+.tc-bottom{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:.9rem;padding-top:.8rem;border-top:1px solid rgba(27,27,26,.06)}
+.tc-badge{
+  background:none!important;border:none!important;padding:0!important;border-radius:0!important;
+  font-family:var(--sans);font-size:.58rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;
+}
+.tc-badge.badge-confirmed{color:var(--green)!important}
+.tc-badge.badge-pending{color:var(--gold)!important}
+.tc-badge.badge-completed{color:rgba(27,27,26,.4)!important}
+.tc-badge.badge-cancelled{color:var(--red)!important}
+.filter-row{gap:.5rem;margin-bottom:1rem}
+.filter-btn{border-radius:0;font-size:.6rem;letter-spacing:.18em}
+
+/* ── MOBILE: five tabs across the bottom bar ── */
+@media(max-width:979px){
+  .bn5 .bn-item{padding:7px .15rem}
+  .bn5 .bn-label{font-size:10px;letter-spacing:.04em;font-style:normal;font-family:var(--sans);font-weight:400;text-transform:uppercase}
+  .bn5 .bn-cta .bn-label{color:var(--gold)}
+  .bn5 .bn-item.on .bn-label{font-weight:500}
+  .page-content{max-width:640px}
+  .drow{padding:.95rem 1.1rem;gap:.8rem}
+  .drow-t{font-size:.95rem}
+  .dp-body{padding:1.1rem}
+  .dp-head{padding:.85rem 1.1rem}
+  .dp-note{font-size:.78rem}
+}
+/* Phone: a ledger row stacks — route, then the detail line, then the amount on
+   its own baseline. Side-by-side at this width squeezed the route into a ragged
+   two-line block with the amount floating beside it. */
+@media(max-width:599px){
+  .drow{flex-direction:column;align-items:flex-start;gap:.4rem;padding:1.05rem 1.1rem}
+  .drow-side{text-align:left;display:flex;align-items:baseline;gap:.75rem}
+  .drow-tag{margin-top:0}
+  .drow-amt{font-size:1.1rem}
+}
+@media(max-width:420px){
+  .bn5 .bn-label{font-size:9px;letter-spacing:.02em}
+}
 </style></head>
 <body>
 
@@ -740,12 +941,53 @@ body::after{
     </div>
   </div>
 
+  <!-- ═══ DASHBOARD SHELL — left sidebar + content pane ═══
+       On desktop (>=980px) the sidebar is the primary navigation and the bottom
+       bar is hidden. Below that the sidebar collapses and the bottom tab bar
+       takes over, so the same five sections work on a phone. -->
+  <div class="dash">
+
+  <!-- LEFT SIDEBAR (desktop) -->
+  <aside class="side" id="side-nav" aria-label="Account sections">
+    <div class="side-id">
+      <div class="side-crest" id="side-initials">W</div>
+      <div class="side-id-txt">
+        <div class="side-id-name" id="side-name">My Account</div>
+        <div class="side-id-sub" id="side-email">Westmere Private Hire</div>
+      </div>
+    </div>
+
+    <nav class="side-list">
+      <button class="side-item on" id="sd-trips" onclick="goPage('trips')">
+        <span class="side-mark"></span><span class="side-lbl">My Trips</span>
+      </button>
+      <button class="side-item" id="sd-payments" onclick="goPage('payments')">
+        <span class="side-mark"></span><span class="side-lbl">Payment History</span>
+      </button>
+      <button class="side-item" id="sd-invoices" onclick="goPage('invoices')">
+        <span class="side-mark"></span><span class="side-lbl">Invoices</span>
+      </button>
+      <button class="side-item" id="sd-details" onclick="goPage('details')">
+        <span class="side-mark"></span><span class="side-lbl">My Details</span>
+      </button>
+      <div class="side-sep"></div>
+      <button class="side-item side-cta" id="sd-book" onclick="goPage('book')">
+        <span class="side-mark"></span><span class="side-lbl">Book New Journey</span>
+      </button>
+    </nav>
+
+    <div class="side-foot">
+      <button class="side-out" onclick="doLogout()">Sign Out</button>
+      <a class="side-back" href="index.html">Back to site</a>
+    </div>
+  </aside>
+
   <!-- PAGE CONTENT -->
   <div class="page-scroll" id="page-scroll">
 
     <!-- ─── HOME ─── -->
     <!-- ─── BOOK ─── -->
-    <div class="page-content on" id="pg-book">
+    <div class="page-content" id="pg-book">
 
       <div class="sec-title">Book a <em>Journey</em></div>
       <div class="sec-sub">Airport transfers &middot; No surprises</div>
@@ -839,7 +1081,7 @@ body::after{
     </div>
 
     <!-- ─── MY TRIPS ─── -->
-    <div class="page-content" id="pg-trips">
+    <div class="page-content on" id="pg-trips">
       <div class="sec-title">My <em>Trips</em></div>
       <div class="sec-sub">Your journey history</div>
 
@@ -857,17 +1099,53 @@ body::after{
       <div id="trips-list"></div>
     </div>
 
-    <!-- ─── PROFILE ─── -->
-    <div class="page-content" id="pg-profile">
-      <div class="sec-title">My <em>Profile</em></div>
-      <div class="sec-sub">Your Westmere account</div>
+    <!-- ─── PAYMENT HISTORY ───
+         Derived from the customer's own bookings (payment method + paid_at +
+         fare). There is no separate payments table in the schema, so this is a
+         VIEW of the booking rows, not a second source of truth. -->
+    <div class="page-content" id="pg-payments">
+      <div class="sec-title">Payment <em>History</em></div>
+      <div class="sec-sub">Settled journeys, and how they were paid</div>
+      <div class="dpanel">
+        <div class="dp-head"><span>Payments</span><span class="dp-note" id="pay-summary"></span></div>
+        <div id="payments-list"></div>
+      </div>
+    </div>
 
-      <div class="prof-card">
-        <div class="prof-ch">Account Details</div>
-        <div class="prof-cb">
-          <div class="prof-row"><span class="prof-label">Name</span><span class="prof-val" id="pv-name">--</span></div>
-          <div class="prof-row"><span class="prof-label">Email</span><span class="prof-val" id="pv-email">--</span></div>
-          <div class="prof-row"><span class="prof-label">Phone</span><span class="prof-val" id="pv-phone">--</span></div>
+    <!-- ─── INVOICES ─── (GET /api/customer/invoices) -->
+    <div class="page-content" id="pg-invoices">
+      <div class="sec-title">My <em>Invoices</em></div>
+      <div class="sec-sub">Account and bespoke invoices issued to you</div>
+      <div class="dpanel">
+        <div class="dp-head"><span>Invoices</span><span class="dp-note" id="inv-summary"></span></div>
+        <div id="invoices-list"></div>
+      </div>
+    </div>
+
+    <!-- ─── MY DETAILS ─── -->
+    <div class="page-content" id="pg-details">
+      <div class="sec-title">My <em>Details</em></div>
+      <div class="sec-sub">The details we hold for your account</div>
+
+      <div class="dpanel">
+        <div class="dp-head"><span>Account Holder</span></div>
+        <div class="dp-body">
+          <div class="md-grid">
+            <div class="fg">
+              <label class="fl" for="md-name">Full name</label>
+              <input class="fi" type="text" id="md-name" autocomplete="name" placeholder="Your full name">
+            </div>
+            <div class="fg">
+              <label class="fl" for="md-email">Email address</label>
+              <input class="fi" type="email" id="md-email" autocomplete="email" placeholder="your@email.com">
+            </div>
+            <div class="fg">
+              <label class="fl" for="md-phone">Mobile number</label>
+              <input class="fi" type="tel" id="md-phone" autocomplete="tel" placeholder="+44 7700 000 000">
+            </div>
+          </div>
+          <div class="md-msg" id="md-msg"></div>
+          <button class="btn-main md-save" id="md-save" onclick="saveMyDetails()">Save Changes</button>
         </div>
       </div>
 
@@ -876,20 +1154,29 @@ body::after{
     </div>
 
   </div>
+  </div><!-- /.dash -->
 
-  <!-- BOTTOM NAV -->
-  <div class="bottom-nav" id="bottom-nav">
-    <button class="bn-item on" id="bn-book" onclick="goPage('book')">
+  <!-- BOTTOM NAV (mobile — mirrors the desktop sidebar) -->
+  <div class="bottom-nav bn5" id="bottom-nav">
+    <button class="bn-item on" id="bn-trips" onclick="goPage('trips')">
+      <div class="bn-bar"></div>
+      <div class="bn-label">Trips</div>
+    </button>
+    <button class="bn-item" id="bn-payments" onclick="goPage('payments')">
+      <div class="bn-bar"></div>
+      <div class="bn-label">Payments</div>
+    </button>
+    <button class="bn-item" id="bn-invoices" onclick="goPage('invoices')">
+      <div class="bn-bar"></div>
+      <div class="bn-label">Invoices</div>
+    </button>
+    <button class="bn-item" id="bn-details" onclick="goPage('details')">
+      <div class="bn-bar"></div>
+      <div class="bn-label">Details</div>
+    </button>
+    <button class="bn-item bn-cta" id="bn-book" onclick="goPage('book')">
       <div class="bn-bar"></div>
       <div class="bn-label">Book</div>
-    </button>
-    <button class="bn-item" id="bn-trips" onclick="goPage('trips')">
-      <div class="bn-bar"></div>
-      <div class="bn-label">My Trips</div>
-    </button>
-    <button class="bn-item" id="bn-profile" onclick="goPage('profile')">
-      <div class="bn-bar"></div>
-      <div class="bn-label">My Profile</div>
     </button>
   </div>
 
@@ -1129,18 +1416,29 @@ function bootApp(){
 }
 
 /* ── PAGE NAVIGATION ── */
+// The five dashboard sections. 'profile' is kept as an alias of 'details' so
+// any older link/handler that still says goPage('profile') lands somewhere sane.
+var DASH_PAGES=['trips','payments','invoices','details','book'];
 function goPage(id){
-  var pages=['book','trips','profile'];
-  pages.forEach(function(p){
+  if(id==='profile')id='details';
+  DASH_PAGES.forEach(function(p){
     var el=document.getElementById('pg-'+p);
     if(el){el.classList.remove('on');el.style.display='none';}
     var bn=document.getElementById('bn-'+p);
     if(bn)bn.classList.remove('on');
+    var sd=document.getElementById('sd-'+p);
+    if(sd)sd.classList.remove('on');
   });
   var pg=document.getElementById('pg-'+id);
   if(pg){pg.style.display='block';setTimeout(function(){pg.classList.add('on');},10);}
   var bn=document.getElementById('bn-'+id);
   if(bn)bn.classList.add('on');
+  var sd=document.getElementById('sd-'+id);
+  if(sd)sd.classList.add('on');
+  // Populate on entry — cheap, and keeps a tab from showing a stale list.
+  if(id==='payments')renderPayments();
+  if(id==='invoices')loadInvoices();
+  if(id==='details')fillMyDetails();
   // Scroll to top
   var ps=document.getElementById('page-scroll');
   if(ps)ps.scrollTop=0;
@@ -1930,7 +2228,9 @@ function renderActiveTrip(){
   h+='<div class="aj-to"><div class="aj-dot-sm" style="background:var(--green)"></div><span>'+esc(_shortAddr(active.dest))+'</span></div>';
   h+='</div>';
   h+='<div class="aj-meta-grid">';
-  h+='<div class="aj-meta-cell"><div class="aj-meta-k">Date</div><div class="aj-meta-v">'+esc(active.date)+'</div></div>';
+  // Day + month only: this card is always the NEXT journey, so the year is
+  // noise — and on a phone the third of a row it gets cannot hold it anyway.
+  h+='<div class="aj-meta-cell"><div class="aj-meta-k">Date</div><div class="aj-meta-v">'+esc(_niceDate(active.date).replace(/\s+\d{4}$/,'')||active.date)+'</div></div>';
   h+='<div class="aj-meta-cell"><div class="aj-meta-k">Time</div><div class="aj-meta-v">'+esc(active.time)+'</div></div>';
   h+='<div class="aj-meta-cell"><div class="aj-meta-k">Fare</div><div class="aj-meta-v aj-fare">'+(active.fare?'\u00a3'+active.fare:'Pending')+'</div></div>';
   h+='</div>';
@@ -1984,6 +2284,12 @@ function updateProfile(){
   var n=document.getElementById('pv-name');if(n)n.textContent=_currentUser.name||'';
   var e=document.getElementById('pv-email');if(e)e.textContent=_currentUser.email||'--';
   var p=document.getElementById('pv-phone');if(p)p.textContent=_currentUser.phone||'--';
+  // Dashboard: the sidebar identity, the My Details form and the topbar all
+  // read from the same _currentUser, so they can never drift apart.
+  paintIdentity();
+  fillMyDetails();
+  var tb=document.getElementById('tb-name');
+  if(tb&&_currentUser.name)tb.textContent=(_currentUser.name.split(/\s+/)[0]||'Rider');
   if(_currentUser.loggedIn){
     var nameF=document.getElementById('bk-name');if(nameF&&!nameF.value)nameF.value=_currentUser.name;
     var phoneF=document.getElementById('bk-phone');if(phoneF&&!phoneF.value)phoneF.value=_currentUser.phone;
@@ -1999,7 +2305,10 @@ async function loadServerTrips(){
     var data=await r.json();
     if(!data||!Array.isArray(data.bookings))return;
     var mapped=data.bookings.map(function(b){
-      return{ref:b.ref,from:b.pickup,dest:b.destination,date:b.date,time:b.time,flight:b.flight||'',pax:b.passengers||1,vehicle:b.driver_vehicle||'',fare:b.fare||0,status:b.status,created:b.created_at,driverName:b.driver_name||'',driverReg:b.driver_reg||''};
+      // payment + paidAt carry the Payment History tab. They are part of the
+      // booking row (there is no separate payments table), so they must survive
+      // this mapping or that tab has nothing to read.
+      return{ref:b.ref,from:b.pickup,dest:b.destination,date:b.date,time:b.time,flight:b.flight||'',pax:b.passengers||1,vehicle:b.driver_vehicle||'',fare:b.fare||0,status:b.status,created:b.created_at,driverName:b.driver_name||'',driverReg:b.driver_reg||'',payment:b.payment||'pending',paidAt:b.paid_at||''};
     });
     // The server is the source of truth, but never DROP a trip the customer can
     // already see: keep any local-only row (one just booked in this tab, before
@@ -2013,6 +2322,157 @@ async function loadServerTrips(){
     console.error('[trips] could not refresh from the server',e);
   }
 }
+/* ═══════════════════════════════════════════════════════════════════════════
+   DASHBOARD TABS — Payment History · Invoices · My Details
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+var PAY_LABEL={card:'Card',cash:'Paid to driver',account:'On account',invoice:'Invoiced',pending:'Not yet chosen'};
+function _money(v){
+  var n=parseFloat(v);
+  if(!isFinite(n)||n<=0)return '';
+  return '£'+(n%1?n.toFixed(2):n.toFixed(0));
+}
+function _niceDate(iso){
+  if(!iso)return '';
+  // Parse as a LITERAL date, never through the UTC epoch — the same rule the
+  // rest of the app follows so a booking never slides to the day before.
+  var m=String(iso).slice(0,10).split('-');
+  if(m.length!==3)return String(iso);
+  var d=new Date(parseInt(m[0],10),parseInt(m[1],10)-1,parseInt(m[2],10));
+  if(isNaN(d.getTime()))return String(iso);
+  return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+}
+
+/* ── PAYMENT HISTORY ──
+   A view over the customer's own bookings: every trip that has actually been
+   settled (a real card payment, or cash handed to the driver), plus anything
+   still awaiting payment, newest first. */
+function renderPayments(){
+  var list=document.getElementById('payments-list');
+  var sum=document.getElementById('pay-summary');
+  if(!list)return;
+  var rows=getBookings().filter(function(b){return b&&(b.fare>0||b.paidAt);});
+  rows.sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''));});
+  if(!rows.length){
+    list.innerHTML='<div class="dp-empty"><div class="dpe-title">No payments yet</div><div class="dpe-sub">Once a journey is paid for, it will be listed here.</div></div>';
+    if(sum)sum.textContent='';
+    return;
+  }
+  var settled=rows.filter(function(b){return b.payment==='card'||b.payment==='cash'||b.paidAt;});
+  var total=settled.reduce(function(t,b){return t+(parseFloat(b.fare)||0);},0);
+  if(sum)sum.textContent=settled.length+' settled · '+_money(total)+' total';
+  var html='';
+  rows.forEach(function(b){
+    var paid=(b.payment==='card'||b.payment==='cash'||!!b.paidAt);
+    var method=PAY_LABEL[b.payment]||PAY_LABEL.pending;
+    html+='<div class="drow">';
+    html+='<div class="drow-main">';
+    html+='<div class="drow-t">'+esc(_shortAddr(b.from))+' <span class="drow-arrow">→</span> '+esc(_shortAddr(b.dest))+'</div>';
+    html+='<div class="drow-s">'+esc(_niceDate(b.date))+' · '+esc(b.ref||'')+' · '+esc(method)+'</div>';
+    html+='</div>';
+    html+='<div class="drow-side">';
+    html+='<div class="drow-amt">'+(_money(b.fare)||'—')+'</div>';
+    html+='<div class="drow-tag '+(paid?'is-paid':'is-due')+'">'+(paid?'Paid':'Due')+'</div>';
+    html+='</div></div>';
+  });
+  list.innerHTML=html;
+}
+
+/* ── INVOICES ── real data: GET /api/customer/invoices */
+async function loadInvoices(){
+  var list=document.getElementById('invoices-list');
+  var sum=document.getElementById('inv-summary');
+  if(!list)return;
+  list.innerHTML='<div class="dp-empty"><div class="dpe-sub">Loading your invoices…</div></div>';
+  try{
+    var r=await fetch('/api/customer/invoices',{credentials:'include'});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    var data=await r.json();
+    var invs=(data&&Array.isArray(data.invoices))?data.invoices:[];
+    if(!invs.length){
+      list.innerHTML='<div class="dp-empty"><div class="dpe-title">No invoices</div><div class="dpe-sub">Invoices are issued for account and corporate journeys. Yours will appear here.</div></div>';
+      if(sum)sum.textContent='';
+      return;
+    }
+    var outstanding=invs.filter(function(i){return !i.paid;}).length;
+    if(sum)sum.textContent=invs.length+' issued'+(outstanding?' · '+outstanding+' outstanding':'');
+    var html='';
+    invs.forEach(function(i){
+      html+='<div class="drow">';
+      html+='<div class="drow-main">';
+      html+='<div class="drow-t">'+esc(i.invoice_no||'Invoice')+'</div>';
+      html+='<div class="drow-s">Issued '+esc(_niceDate(i.issued_date))+(i.due_date?' · due '+esc(_niceDate(i.due_date)):'')+(i.kind?' · '+esc(i.kind==='account'?'Account':'Bespoke'):'')+'</div>';
+      html+='</div>';
+      html+='<div class="drow-side">';
+      html+='<div class="drow-amt">'+(_money(i.total)||'—')+'</div>';
+      html+='<div class="drow-tag '+(i.paid?'is-paid':'is-due')+'">'+(i.paid?'Paid':'Outstanding')+'</div>';
+      html+='</div></div>';
+    });
+    list.innerHTML=html;
+  }catch(e){
+    list.innerHTML='<div class="dp-empty"><div class="dpe-title">Invoices unavailable</div><div class="dpe-sub">We could not load your invoices just now. Please try again shortly.</div></div>';
+    if(sum)sum.textContent='';
+  }
+}
+
+/* ── MY DETAILS ──
+   The fields are editable now. Saving posts to PATCH /api/customer/profile,
+   which does NOT exist server-side yet (the customer API is read-only:
+   GET /api/customer/profile). Until that route lands the save is reported
+   honestly rather than pretending to have succeeded. */
+function fillMyDetails(){
+  var f=function(id,v){var el=document.getElementById(id);if(el&&document.activeElement!==el)el.value=v||'';};
+  f('md-name',_currentUser.name);
+  f('md-email',_currentUser.email);
+  f('md-phone',_currentUser.phone);
+}
+async function saveMyDetails(){
+  var msg=document.getElementById('md-msg');
+  var btn=document.getElementById('md-save');
+  var name=(document.getElementById('md-name')||{}).value||'';
+  var email=(document.getElementById('md-email')||{}).value||'';
+  var phone=(document.getElementById('md-phone')||{}).value||'';
+  var show=function(text,kind){
+    if(!msg)return;
+    msg.textContent=text;
+    msg.className='md-msg show '+(kind||'');
+  };
+  if(!name.trim()){show('Please enter your name.','bad');return;}
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())){show('Please enter a valid email address.','bad');return;}
+  btn.disabled=true;btn.textContent='Saving…';
+  try{
+    var r=await fetch('/api/customer/profile',{
+      method:'PATCH',credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({full_name:name.trim(),email:email.trim(),phone:phone.trim()})
+    });
+    if(r.ok){
+      _currentUser.name=name.trim();_currentUser.email=email.trim();_currentUser.phone=phone.trim();
+      updateProfile();
+      paintIdentity();
+      show('Your details have been updated.','good');
+    }else if(r.status===404||r.status===405){
+      show('Editing your details online is not switched on yet — call us on 07930 342593 and we will update it for you.','bad');
+    }else{
+      var d={};try{d=await r.json();}catch(e){}
+      show(d.error||'We could not save that just now. Please try again.','bad');
+    }
+  }catch(e){
+    show('No connection — please try again in a moment.','bad');
+  }
+  btn.disabled=false;btn.textContent='Save Changes';
+}
+
+/* ── SIDEBAR IDENTITY ── */
+function paintIdentity(){
+  var name=_currentUser.name||'My Account';
+  var initials=(name.trim().split(/\s+/).slice(0,2).map(function(w){return w[0]||'';}).join('')||'W').toUpperCase();
+  var set=function(id,v){var el=document.getElementById(id);if(el)el.textContent=v;};
+  set('side-initials',initials);
+  set('side-name',name);
+  set('side-email',_currentUser.email||'Westmere Private Hire');
+}
+
 function doLogout(){
   fetch('/api/auth/logout',{method:'POST',credentials:'include'}).catch(function(){});
   _currentUser={name:'',email:'',phone:'',loggedIn:false};
