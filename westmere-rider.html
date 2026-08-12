@@ -158,8 +158,6 @@ body.mode-day .aj-meta-grid{border-top:1px solid rgba(26,38,56,.12);border-botto
 .aj-driver-details{flex:1;min-width:0}
 .aj-driver-name{font-family:var(--serif);font-size:1.05rem;color:var(--navy)}
 .aj-driver-vehicle{font-size:.7rem;color:rgba(27,27,26,.5)}
-.aj-call-btn{padding:.5rem 1rem;border:1px solid var(--gold);color:var(--gold);background:transparent;text-decoration:none;font-family:var(--sans);font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;transition:all .2s}
-.aj-call-btn:hover{background:rgba(184,144,69,.12)}
 .aj-chat-toggle{display:block;width:100%;margin-top:.7rem;padding:.65rem;background:transparent;border:1px solid rgba(184,144,69,.3);color:var(--gold);font-family:var(--sans);font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;transition:all .2s}
 .aj-chat-toggle:hover{background:rgba(184,144,69,.08)}
 .aj-chat{margin-top:.7rem;border:1px solid rgba(255,255,255,.08);padding:.7rem;background:rgba(0,0,0,.18)}
@@ -366,8 +364,6 @@ body.mode-day .aj-from,body.mode-day .aj-to{color:rgba(26,38,56,.8)}
 body.mode-day .aj-driver-name{color:#1A2638}
 body.mode-day .aj-driver-vehicle{color:rgba(26,38,56,.6)}
 body.mode-day .aj-driver-avatar{color:#8a6d34;border-color:rgba(122,98,48,.4)}
-body.mode-day .aj-call-btn{color:#8a6d34;border-color:#8a6d34}
-body.mode-day .aj-call-btn:hover{background:rgba(122,98,48,.1)}
 body.mode-day .aj-chat-toggle{color:#8a6d34;border-color:rgba(122,98,48,.35)}
 body.mode-day .aj-chat{background:rgba(255,255,255,.55);border:1px solid rgba(122,98,48,.18)}
 body.mode-day .aj-chat-bubble.them{background:rgba(255,255,255,.7);color:#1A2638}
@@ -720,6 +716,75 @@ body::after{
 .side-cta:hover{background:#1b1b1a;color:#f5f2ec;border-color:#1b1b1a}
 .side-cta.on{background:#1b1b1a;color:#f5f2ec;border-color:#1b1b1a}
 
+/* ── SIDEBAR: Contact Us + Airport Rewards (below the rule) ── */
+.side-pill{
+  margin-left:auto;font-family:var(--sans);font-size:.5rem;font-weight:500;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--gold);border:1px solid rgba(184,144,69,.4);
+  padding:.16rem .4rem;white-space:nowrap;
+}
+.side-soon .side-lbl{color:inherit}
+
+/* ── MOBILE SECONDARY NAV ── */
+.subnav{display:none}
+@media(max-width:979px){
+  .subnav{
+    display:flex;align-items:center;justify-content:center;gap:1.1rem;
+    background:rgba(255,255,255,.96);border-top:1px solid rgba(27,27,26,.06);
+    padding:.55rem 1rem;flex-shrink:0;position:relative;z-index:50;
+  }
+  .sub-item{
+    background:none;border:none;padding:.15rem 0;cursor:pointer;
+    font-family:var(--sans);font-size:.6rem;font-weight:400;letter-spacing:.16em;
+    text-transform:uppercase;color:rgba(27,27,26,.45);transition:color .2s;
+    display:inline-flex;align-items:center;gap:.35rem;min-height:32px;
+  }
+  .sub-item:hover,.sub-item.on{color:var(--navy)}
+  .sub-item.on{font-weight:500}
+  .sub-div{width:1px;height:12px;background:rgba(27,27,26,.14)}
+  .sub-soon{
+    font-size:.46rem;letter-spacing:.12em;color:var(--gold);
+    border:1px solid rgba(184,144,69,.4);padding:.1rem .28rem;
+  }
+}
+
+/* ── CONTACT US ── */
+.ct-list{display:flex;flex-direction:column}
+.ct-row{
+  display:flex;align-items:baseline;gap:1rem;padding:1rem 1.4rem;text-decoration:none;
+  border-bottom:1px solid rgba(27,27,26,.06);transition:background .2s;
+}
+.ct-row:last-child{border-bottom:none}
+.ct-row:hover{background:rgba(184,144,69,.06)}
+.ct-k{font-size:.6rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:rgba(27,27,26,.42);width:9rem;flex-shrink:0}
+.ct-v{font-family:var(--serif);font-size:1.08rem;color:var(--navy);flex:1;min-width:0;word-break:break-word}
+.ct-go{font-size:.56rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);flex-shrink:0}
+.ct-note{font-size:.88rem;line-height:1.8;color:rgba(27,27,26,.6);margin:0}
+.ct-note em{color:var(--navy);font-style:italic}
+@media(max-width:599px){
+  .ct-row{flex-direction:column;gap:.25rem;padding:.95rem 1.1rem}
+  .ct-k{width:auto}
+  .ct-v{font-size:1rem}
+}
+
+/* ── AIRPORT REWARDS (teaser) ── */
+.rw-body{text-align:center;padding:2.2rem 1.6rem 2rem;max-width:44rem;margin:0 auto}
+.rw-mark{
+  width:54px;height:54px;margin:0 auto 1.2rem;display:flex;align-items:center;justify-content:center;
+  border:1px solid rgba(184,144,69,.45);font-family:var(--serif);font-size:1.2rem;color:var(--navy);
+  background:rgba(184,144,69,.06);
+}
+.rw-title{font-family:var(--serif);font-size:1.6rem;font-weight:300;color:var(--navy);line-height:1.25;margin-bottom:.7rem}
+.rw-copy{font-size:.92rem;line-height:1.85;color:rgba(27,27,26,.6);margin-bottom:1.8rem}
+.rw-steps{display:flex;flex-direction:column;gap:.7rem;text-align:left;margin-bottom:1.6rem}
+.rw-step{display:flex;align-items:center;gap:.9rem;padding:.85rem 1.1rem;border:1px solid rgba(27,27,26,.08);background:rgba(184,144,69,.04)}
+.rw-n{
+  width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  font-family:var(--serif);font-size:.85rem;color:var(--gold);border:1px solid rgba(184,144,69,.4);
+}
+.rw-step span:last-child{font-size:.86rem;color:rgba(27,27,26,.65);line-height:1.5}
+.rw-foot{font-family:var(--serif);font-style:italic;font-size:.95rem;color:var(--gold)}
+@media(min-width:760px){.rw-steps{flex-direction:row}.rw-step{flex:1;align-items:flex-start}}
+
 /* ── SIDEBAR: footer ── */
 .side-foot{padding:1.2rem 1.6rem 0;margin-top:1rem;border-top:1px solid rgba(27,27,26,.08);display:flex;flex-direction:column;gap:.55rem;align-items:flex-start}
 .side-out{background:none;border:none;padding:0;cursor:pointer;font-family:var(--sans);font-size:.64rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(27,27,26,.45);transition:color .2s}
@@ -853,7 +918,6 @@ body.mode-day .aj-from,body.mode-day .aj-to{color:rgba(27,27,26,.6)}
 body.mode-day .aj-driver-name{color:var(--navy)}
 body.mode-day .aj-driver-vehicle{color:rgba(27,27,26,.5)}
 body.mode-day .aj-driver-avatar{color:var(--gold);border-color:rgba(184,144,69,.45)}
-body.mode-day .aj-call-btn{color:var(--navy);border-color:rgba(27,27,26,.16)}
 body.mode-day .aj-step span{color:rgba(27,27,26,.45)}
 body.mode-day .aj-step.on span{color:var(--gold)}
 body.mode-day .aj-step-line{background:rgba(184,144,69,.28)}
@@ -1045,6 +1109,14 @@ body.mode-day .side-item.on{color:var(--navy);background:rgba(184,144,69,.1)}
       <button class="side-item side-cta" id="sd-book" onclick="goPage('book')">
         <span class="side-mark"></span><span class="side-lbl">Book New Journey</span>
       </button>
+      <div class="side-sep"></div>
+      <button class="side-item" id="sd-contact" onclick="goPage('contact')">
+        <span class="side-mark"></span><span class="side-lbl">Contact Us</span>
+      </button>
+      <button class="side-item side-soon" id="sd-rewards" onclick="goPage('rewards')">
+        <span class="side-mark"></span><span class="side-lbl">Airport Rewards</span>
+        <span class="side-pill">Coming soon</span>
+      </button>
     </nav>
 
     <div class="side-foot">
@@ -1234,8 +1306,84 @@ body.mode-day .side-item.on{color:var(--navy);background:rgba(184,144,69,.1)}
       <button class="btn-main" id="prof-logout-btn" onclick="doLogout()" style="margin-top:.5rem;background:transparent;border:1px solid rgba(27,27,26,.15);color:rgba(27,27,26,.5);display:none">Sign Out</button>
     </div>
 
+    <!-- ─── CONTACT US ─── (real details, not a placeholder) -->
+    <div class="page-content" id="pg-contact">
+      <div class="sec-title">Contact <em>Us</em></div>
+      <div class="sec-sub">However you prefer to reach us</div>
+
+      <div class="dpanel">
+        <div class="dp-head"><span>Westmere Private Hire</span><span class="dp-note">24/7</span></div>
+        <div class="ct-list">
+          <a class="ct-row" href="tel:+447930342593">
+            <span class="ct-k">Telephone</span>
+            <span class="ct-v">07930 342593</span>
+            <span class="ct-go">Call</span>
+          </a>
+          <a class="ct-row" href="mailto:bookings@westmereprivatehire.co.uk">
+            <span class="ct-k">Email</span>
+            <span class="ct-v">bookings@westmereprivatehire.co.uk</span>
+            <span class="ct-go">Email</span>
+          </a>
+          <a class="ct-row" href="https://wa.me/447930342593" target="_blank" rel="noopener">
+            <span class="ct-k">WhatsApp</span>
+            <span class="ct-v">Message us on WhatsApp</span>
+            <span class="ct-go">Open</span>
+          </a>
+          <a class="ct-row" href="contact.html">
+            <span class="ct-k">Contact page</span>
+            <span class="ct-v">Enquiry form &amp; opening hours</span>
+            <span class="ct-go">Visit</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="dpanel">
+        <div class="dp-head"><span>About your booking</span></div>
+        <div class="dp-body">
+          <p class="ct-note">For a change to a journey already booked, please quote your reference
+          (shown on each trip in <em>My Trips</em>). Cancellations can be made from My Trips up until
+          the driver is on the way — after that, please call so we can help.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── AIRPORT REWARDS ─── teaser only: no backend yet -->
+    <div class="page-content" id="pg-rewards">
+      <div class="sec-title">Airport <em>Rewards</em></div>
+      <div class="sec-sub">A thank you for your airport runs</div>
+
+      <div class="dpanel rw-panel">
+        <div class="dp-head"><span>Airport Rewards</span><span class="dp-note">Coming soon</span></div>
+        <div class="dp-body rw-body">
+          <div class="rw-mark">W</div>
+          <div class="rw-title">Earn a reward on your airport runs</div>
+          <div class="rw-copy">
+            We are putting together a simple thank-you for our regular airport travellers:
+            every so many airport journeys with Westmere earns you a reward on the next one.
+            Nothing to join and nothing to remember — once it opens, your qualifying trips
+            will simply start counting here.
+          </div>
+          <div class="rw-steps">
+            <div class="rw-step"><span class="rw-n">1</span><span>Travel with us to or from the airport, as you do now</span></div>
+            <div class="rw-step"><span class="rw-n">2</span><span>Your qualifying journeys count automatically</span></div>
+            <div class="rw-step"><span class="rw-n">3</span><span>Your reward is applied to a future airport run</span></div>
+          </div>
+          <div class="rw-foot">We will let you know the moment it goes live.</div>
+        </div>
+      </div>
+    </div>
+
   </div>
   </div><!-- /.dash -->
+
+  <!-- SECONDARY NAV (mobile) — the two items that sit below the rule in the
+       desktop sidebar. Seven tabs will not fit legibly across 375px, so they
+       get their own slim strip rather than being squeezed in or hidden. -->
+  <div class="subnav" id="sub-nav">
+    <button class="sub-item" id="sn-contact" onclick="goPage('contact')">Contact Us</button>
+    <span class="sub-div"></span>
+    <button class="sub-item" id="sn-rewards" onclick="goPage('rewards')">Airport Rewards<span class="sub-soon">soon</span></button>
+  </div>
 
   <!-- BOTTOM NAV (mobile — mirrors the desktop sidebar) -->
   <div class="bottom-nav bn5" id="bottom-nav">
@@ -1298,37 +1446,57 @@ function todayUK(){
 function _shortAddr(a){return window.WMAddr?WMAddr.shortDisplay(a):(a||'');}
 
 /* ── MY LOCATION ── */
+var LOC_ICON='<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>Locate';
+function _locBtnReset(){
+  var btn=document.querySelector('.loc-btn');
+  if(btn){btn.innerHTML=LOC_ICON;btn.disabled=false;}
+}
+/* Reverse geocode with OpenStreetMap — the same service the address search
+   already falls back to. Without this, every path where Mapbox is missing or
+   fails wrote a raw "50.87380, 0.00890" into the pickup field, and that
+   coordinate string is what the office received as the pickup address. */
+function _nominatimReverse(lat,lng){
+  return fetch('https://nominatim.openstreetmap.org/reverse?lat='+encodeURIComponent(lat)+'&lon='+encodeURIComponent(lng)+'&format=json&addressdetails=1&zoom=18',{headers:{'Accept':'application/json'}})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d&&d.display_name)return d.display_name;
+      throw new Error('no address');
+    });
+}
 function useMyLocation(){
   if(!navigator.geolocation){showToast('Location not supported on this device','error');return;}
   var btn=document.querySelector('.loc-btn');
   if(btn){btn.textContent='Locating...';btn.disabled=true;}
   navigator.geolocation.getCurrentPosition(function(pos){
     var lat=pos.coords.latitude,lng=pos.coords.longitude;
-    var _MB=window._MB;
-    if(_MB){
-      fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+lng+','+lat+'.json?access_token='+_MB+'&types=address,poi&limit=1')
-        .then(function(r){return r.json();})
+    var mb=window._MB;
+    var viaMapbox=function(){
+      if(!mb)return Promise.reject(new Error('no token'));
+      return fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+lng+','+lat+'.json?access_token='+mb+'&types=address,poi&limit=1')
+        .then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
         .then(function(d){
           var place=(d.features&&d.features[0])?d.features[0].place_name:'';
-          if(place){
-            document.getElementById('bk-from').value=place;
-            bkCalcFare();
-            showToast('Location found','success');
-          }else{
-            document.getElementById('bk-from').value=lat.toFixed(5)+', '+lng.toFixed(5);
-          }
-        }).catch(function(){
-          document.getElementById('bk-from').value=lat.toFixed(5)+', '+lng.toFixed(5);
-        }).finally(function(){
-          if(btn){btn.innerHTML='<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>Locate';btn.disabled=false;}
+          if(!place)throw new Error('empty');
+          return place;
         });
-    }else{
-      document.getElementById('bk-from').value=lat.toFixed(5)+', '+lng.toFixed(5);
-      if(btn){btn.innerHTML='<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>Locate';btn.disabled=false;}
-    }
+    };
+    viaMapbox()
+      .catch(function(){return _nominatimReverse(lat,lng);})
+      .then(function(place){
+        document.getElementById('bk-from').value=place;
+        bkCalcFare();
+        showToast('Location found','success');
+      })
+      .catch(function(){
+        // Both lookups failed. Do NOT put coordinates in an address field and
+        // let it travel to the office as the pickup — say so and let the
+        // customer type it.
+        showToast('We found you, but could not read the address — please type your pickup','error');
+      })
+      .then(_locBtnReset,_locBtnReset);
   },function(err){
     showToast('Could not get your location','error');
-    if(btn){btn.innerHTML='<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>Locate';btn.disabled=false;}
+    _locBtnReset();
   },{enableHighAccuracy:true,timeout:10000});
 }
 
@@ -1519,7 +1687,7 @@ function bootApp(){
 /* ── PAGE NAVIGATION ── */
 // The five dashboard sections. 'profile' is kept as an alias of 'details' so
 // any older link/handler that still says goPage('profile') lands somewhere sane.
-var DASH_PAGES=['trips','payments','invoices','details','book'];
+var DASH_PAGES=['trips','payments','invoices','details','book','contact','rewards'];
 function goPage(id){
   if(id==='profile')id='details';
   DASH_PAGES.forEach(function(p){
@@ -1529,6 +1697,8 @@ function goPage(id){
     if(bn)bn.classList.remove('on');
     var sd=document.getElementById('sd-'+p);
     if(sd)sd.classList.remove('on');
+    var sn=document.getElementById('sn-'+p);
+    if(sn)sn.classList.remove('on');
   });
   var pg=document.getElementById('pg-'+id);
   if(pg){pg.style.display='block';setTimeout(function(){pg.classList.add('on');},10);}
@@ -1536,6 +1706,8 @@ function goPage(id){
   if(bn)bn.classList.add('on');
   var sd=document.getElementById('sd-'+id);
   if(sd)sd.classList.add('on');
+  var sn=document.getElementById('sn-'+id);
+  if(sn)sn.classList.add('on');
   // Populate on entry — cheap, and keeps a tab from showing a stale list.
   if(id==='payments')renderPayments();
   if(id==='invoices')loadInvoices();
@@ -2167,8 +2339,15 @@ async function confirmBooking(){
   var btn=document.getElementById('bk-confirm-btn');
 
   try{
+    // SAME route, SAME payload shape and SAME lifecycle as the public booking
+    // form on the website (booking-app.js): /api/public/book creates the
+    // booking with status 'pending', links it to this customer by email, and
+    // the owner app picks it up exactly as it would a web booking. Only
+    // `source` differs, which is provenance, not behaviour.
+    // credentials are sent for parity with the web form.
     var r=await fetch('/api/public/book',{
       method:'POST',
+      credentials:'include',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({name:name,phone:phone,email:email||null,pickup:from,destination:dest,stop_address:stop||null,date:date,time:time||'ASAP',passengers:parseInt(pax)||1,bags:bags,flight:flight||null,fare:null,payment:paymentType,notes:'',source:'rider-app'})
     });
@@ -2208,6 +2387,10 @@ async function confirmBooking(){
     document.getElementById('bk-calc-btn').style.display='block';
     _baseFare=null;
     renderTrips('upcoming');
+    // Pull the row back from the server so the new trip carries its database
+    // id — without it the Cancel button on a just-made booking has nothing to
+    // cancel by and has to fall back to "please call us".
+    loadServerTrips();
     setTimeout(function(){goPage('trips');},600);
   }catch(e){
     btn.disabled=false;btn.textContent='Request an Estimate';
@@ -2432,16 +2615,16 @@ function renderActiveTrip(){
     var vehicleStr=active.vehicle||'';
     var regStr=active.driverReg?active.driverReg.toUpperCase():'';
     var vehicleDetail=[vehicleStr,regStr].filter(Boolean).join(' · ');
+    // No "Call driver" action: removed at the owner's request. The driver's
+    // name and vehicle are shown so the customer can recognise the car; anyone
+    // who needs to speak to us uses Contact Us, which reaches the office.
     h+='<div class="aj-driver-info">'
       +'<div class="aj-driver-avatar">'+esc(initials)+'</div>'
       +'<div class="aj-driver-details">'
         +'<div class="aj-driver-name">'+esc(active.driverName)+'</div>'
         +(vehicleDetail?'<div class="aj-driver-vehicle">'+esc(vehicleDetail)+'</div>':'')
       +'</div>'
-      +'<a href="tel:+447930342593" class="aj-call-btn">Call</a>'
     +'</div>';
-  } else {
-    h+='<div style="text-align:center;padding:.6rem 0"><a href="tel:+447930342593" class="aj-call-btn" style="display:inline-block;padding:.6rem 1.2rem">Call Driver</a></div>';
   }
   body.innerHTML=h;
 }
