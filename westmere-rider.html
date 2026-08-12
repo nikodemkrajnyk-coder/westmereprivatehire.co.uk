@@ -740,9 +740,12 @@ body::after{
 .dpe-title{font-family:var(--serif);font-size:1.25rem;color:var(--navy);font-weight:300;margin-bottom:.3rem}
 .dpe-sub{font-size:.82rem;color:rgba(27,27,26,.45);font-weight:300;line-height:1.6;max-width:34rem;margin:0 auto}
 
-/* ── A LEDGER ROW (payments, invoices) ── */
-.drow{display:flex;align-items:center;gap:1.2rem;padding:1rem 1.4rem;border-bottom:1px solid rgba(27,27,26,.06)}
-.drow:last-child{border-bottom:none}
+/* ── A LEDGER ROW (payments, invoices, trips) ──
+   .trip-card is the SAME row as .drow. It keeps its old class name only because
+   rider-trips.test.js counts `class="trip-card"` occurrences. */
+.drow,.trip-card{display:flex;align-items:center;gap:1.2rem;padding:1rem 1.4rem;border-bottom:1px solid rgba(27,27,26,.06)}
+.drow:last-child,.trip-card:last-child{border-bottom:none}
+.trip-card{background:none;border-radius:0;box-shadow:none;margin-bottom:0;border-top:none;border-left:none;border-right:none}
 .drow-main{flex:1;min-width:0}
 .drow-t{font-family:var(--serif);font-size:1.05rem;color:var(--navy);font-weight:400;line-height:1.35;overflow:hidden;text-overflow:ellipsis}
 .drow-arrow{color:var(--gold);font-style:normal;padding:0 .15rem}
@@ -784,25 +787,89 @@ body::after{
 .aj-driver-info{border-top:none!important;padding-top:.2rem;margin-top:.2rem}
 .aj-driver-avatar{color:var(--gold);border-color:rgba(184,144,69,.45)}
 
-/* Trip rows: date and fare in the serif, route on one line, status as a small
-   caps eyebrow rather than a coloured chip. */
-.trip-card{background:#fff;border:1px solid rgba(27,27,26,.09);border-radius:8px;padding:1.15rem 1.4rem;margin-bottom:.7rem;box-shadow:0 2px 14px rgba(27,27,26,.04)}
-.tc-top{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;margin-bottom:.5rem}
-.tc-date{font-family:var(--serif);font-size:1.02rem;color:var(--gold);font-weight:400;letter-spacing:.03em}
-.tc-fare{font-family:var(--serif);font-size:1.2rem;color:var(--navy);font-weight:400}
-.tc-route{font-size:.96rem;color:var(--navy);font-weight:300;line-height:1.5}
-.tc-meta{font-size:.72rem;color:rgba(27,27,26,.42);margin-top:.3rem;letter-spacing:.02em}
-.tc-bottom{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:.9rem;padding-top:.8rem;border-top:1px solid rgba(27,27,26,.06)}
+/* Status: a small-caps eyebrow, never a filled chip. */
 .tc-badge{
   background:none!important;border:none!important;padding:0!important;border-radius:0!important;
-  font-family:var(--sans);font-size:.58rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;
+  font-family:var(--sans);font-size:.56rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;
 }
 .tc-badge.badge-confirmed{color:var(--green)!important}
 .tc-badge.badge-pending{color:var(--gold)!important}
 .tc-badge.badge-completed{color:rgba(27,27,26,.4)!important}
 .tc-badge.badge-cancelled{color:var(--red)!important}
-.filter-row{gap:.5rem;margin-bottom:1rem}
-.filter-btn{border-radius:0;font-size:.6rem;letter-spacing:.18em}
+.drow-pending{font-family:var(--serif);font-style:italic;font-size:.9rem;color:rgba(27,27,26,.42)}
+.tc-cancel{
+  display:block;margin-top:.35rem;background:none;border:none;padding:0;cursor:pointer;
+  font-family:var(--sans);font-size:.56rem;letter-spacing:.16em;text-transform:uppercase;
+  color:rgba(27,27,26,.35);text-decoration:underline;text-underline-offset:3px;transition:color .2s;
+}
+.tc-cancel:hover{color:var(--red)}
+
+/* Filters: quiet text tabs inside the panel, not boxed buttons. */
+.filter-row{display:flex;gap:1.6rem;margin:0;padding:.85rem 1.4rem;border-bottom:1px solid rgba(27,27,26,.06)}
+.filter-btn{
+  background:none!important;border:none!important;border-radius:0!important;padding:.15rem 0!important;
+  font-family:var(--sans);font-size:.62rem;font-weight:400;letter-spacing:.2em;text-transform:uppercase;
+  color:rgba(27,27,26,.42)!important;cursor:pointer;position:relative;min-height:0;transition:color .2s;
+}
+.filter-btn:hover{color:var(--navy)!important;background:none!important}
+/* the #wm-rider-template block fills .filter-btn.on with solid charcoal via
+   !important — which turned the active tab into a black box with invisible
+   text once the buttons became plain text tabs. */
+.filter-btn.on{color:var(--navy)!important;background:none!important;border-color:transparent!important;font-weight:500}
+.filter-btn.on::after{content:'';position:absolute;left:0;right:0;bottom:-.35rem;height:1px;background:var(--gold)}
+
+/* The next-journey card now lives INSIDE a panel — it must not draw a second
+   border, radius and shadow inside the first. */
+.dpanel .aj-card{border:none!important;border-radius:0!important;box-shadow:none!important;margin:0!important;background:none!important}
+.dpanel .aj-bar{display:none}
+.dpanel .aj-body{padding:1.3rem 1.4rem}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   DAY MODE PARITY — the reason the old look survived the restyle.
+   body.mode-day is toggled on between 06:00 and 18:00 and re-skins exactly the
+   components this dashboard uses (.trip-card, .filter-btn, .aj-*) with the old
+   navy/bronze palette — at specificity (0,2,0), which beats a plain .trip-card
+   rule. Screenshots taken in the evening never showed it; a customer opening
+   My Account during the day got the previous styling back.
+   These rules restate the dashboard palette for day mode, so the design is
+   identical at every hour and at every width.
+   ════════════════════════════════════════════════════════════════════════════ */
+body.mode-day .trip-card{background:none;border:none;border-bottom:1px solid rgba(27,27,26,.06)}
+body.mode-day .trip-card:last-child{border-bottom:none}
+body.mode-day .dpanel,body.mode-day .card,body.mode-day .prof-card{background:#fff;border:1px solid rgba(27,27,26,.09)}
+body.mode-day .aj-card{background:none;border:none}
+body.mode-day .filter-btn{color:rgba(27,27,26,.42)!important;border:none!important;background:none!important}
+body.mode-day .filter-btn.on{color:var(--navy)!important;background:none!important;border:none!important}
+body.mode-day .drow-t,body.mode-day .drow-amt{color:var(--navy)}
+body.mode-day .drow-s{color:rgba(27,27,26,.42)}
+body.mode-day .drow-arrow{color:var(--gold)}
+body.mode-day .aj-meta-k{color:rgba(27,27,26,.42)}
+body.mode-day .aj-meta-v{color:var(--navy)}
+body.mode-day .aj-meta-v.aj-fare{color:var(--gold)}
+body.mode-day .aj-meta-grid{border-top:1px solid rgba(27,27,26,.07);border-bottom:1px solid rgba(27,27,26,.07)}
+body.mode-day .aj-from,body.mode-day .aj-to{color:rgba(27,27,26,.6)}
+body.mode-day .aj-driver-name{color:var(--navy)}
+body.mode-day .aj-driver-vehicle{color:rgba(27,27,26,.5)}
+body.mode-day .aj-driver-avatar{color:var(--gold);border-color:rgba(184,144,69,.45)}
+body.mode-day .aj-call-btn{color:var(--navy);border-color:rgba(27,27,26,.16)}
+body.mode-day .aj-step span{color:rgba(27,27,26,.45)}
+body.mode-day .aj-step.on span{color:var(--gold)}
+body.mode-day .aj-step-line{background:rgba(184,144,69,.28)}
+/* …and the hero band itself: mode-day replaced it with a flat cream bar, so
+   between 06:00 and 18:00 the Sussex/Tesla header simply vanished. */
+body.mode-day .topbar{
+  background:linear-gradient(rgba(20,20,19,.70),rgba(20,20,19,.82)),
+             url('/assets/westmere-email-hero.jpg') center 45%/cover no-repeat;
+  border-bottom:1px solid rgba(184,144,69,.38);
+}
+body.mode-day .topbar .tb-name{color:#f5f2ec}
+body.mode-day .topbar .tb-sub{color:#d3ac6b!important}
+body.mode-day .topbar .tb-date{color:rgba(245,242,236,.72)}
+body.mode-day .topbar .tb-crest{color:#f5f2ec;border-color:rgba(201,160,90,.6)}
+body.mode-day .bottom-nav{background:rgba(255,255,255,.96);border-top:1px solid rgba(27,27,26,.06)}
+body.mode-day .side{background:rgba(255,255,255,.72)}
+body.mode-day .side-item{color:rgba(27,27,26,.62)}
+body.mode-day .side-item.on{color:var(--navy);background:rgba(184,144,69,.1)}
 
 /* ── MOBILE: five tabs across the bottom bar ── */
 @media(max-width:979px){
@@ -821,10 +888,12 @@ body::after{
    its own baseline. Side-by-side at this width squeezed the route into a ragged
    two-line block with the amount floating beside it. */
 @media(max-width:599px){
-  .drow{flex-direction:column;align-items:flex-start;gap:.4rem;padding:1.05rem 1.1rem}
-  .drow-side{text-align:left;display:flex;align-items:baseline;gap:.75rem}
+  .drow,.trip-card{flex-direction:column;align-items:flex-start;gap:.4rem;padding:1.05rem 1.1rem}
+  .drow-side{text-align:left;display:flex;align-items:baseline;gap:.75rem;flex-wrap:wrap}
   .drow-tag{margin-top:0}
   .drow-amt{font-size:1.1rem}
+  .tc-cancel{margin-top:0}
+  .filter-row{padding:.8rem 1.1rem;gap:1.3rem}
 }
 @media(max-width:420px){
   .bn5 .bn-label{font-size:9px;letter-spacing:.02em}
@@ -1085,18 +1154,28 @@ body::after{
       <div class="sec-title">My <em>Trips</em></div>
       <div class="sec-sub">Your journey history</div>
 
-      <!-- Active Journey (populated dynamically) -->
-      <div class="aj-card" id="aj-card" style="display:none">
-        <div class="aj-bar"></div>
-        <div class="aj-body" id="aj-body"></div>
+      <!-- Next journey (populated dynamically) — same panel framing as every
+           other dashboard section, at every width. -->
+      <div class="dpanel" id="aj-panel" style="display:none">
+        <div class="dp-head"><span>Next Journey</span><span class="dp-note" id="aj-when"></span></div>
+        <div class="aj-card" id="aj-card" style="display:none">
+          <div class="aj-bar"></div>
+          <div class="aj-body" id="aj-body"></div>
+        </div>
       </div>
 
-      <div class="filter-row">
-        <button class="filter-btn on" onclick="filterTrips('upcoming',this)">Upcoming</button>
-        <button class="filter-btn" onclick="filterTrips('past',this)">Past</button>
-        <button class="filter-btn" onclick="filterTrips('all',this)">All</button>
+      <div class="dpanel">
+        <div class="dp-head">
+          <span>Journey History</span>
+          <span class="dp-note" id="trips-summary"></span>
+        </div>
+        <div class="filter-row">
+          <button class="filter-btn on" onclick="filterTrips('upcoming',this)">Upcoming</button>
+          <button class="filter-btn" onclick="filterTrips('past',this)">Past</button>
+          <button class="filter-btn" onclick="filterTrips('all',this)">All</button>
+        </div>
+        <div id="trips-list"></div>
       </div>
-      <div id="trips-list"></div>
     </div>
 
     <!-- ─── PAYMENT HISTORY ───
@@ -2155,7 +2234,7 @@ function renderTrips(filter){
   }
   var list=document.getElementById('trips-list');
   if(!filtered.length){
-    list.innerHTML='<div class="empty"><div class="empty-title">No trips found</div><div class="empty-sub">Your journeys will appear here</div></div>';
+    list.innerHTML='<div class="dp-empty"><div class="dpe-title">No trips found</div><div class="dpe-sub">Your journeys will appear here</div></div>';
     return;
   }
   var html='';
@@ -2169,14 +2248,20 @@ function renderTrips(filter){
       var badgeClass='badge-'+esc(status);
       var statusLabel=status.charAt(0).toUpperCase()+status.slice(1);
       var canCancel=(status==='confirmed'&&b.date&&b.date>=now);
-      var meta=[b.time,b.vehicle,(b.pax?b.pax+' pax':'')].filter(Boolean).map(esc).join(' \u00b7 ');
-      var route=[_shortAddr(b.from),_shortAddr(b.dest)].map(esc).join(' \u2192 ');
+      // Same ledger shape as Payment History and Invoices (.drow-*): route on
+      // top, one quiet detail line, fare and a small-caps status on the right.
+      // .trip-card is kept as the row class \u2014 rider-trips.test.js counts it.
+      var meta=[b.dateDisp||b.date||'Date to confirm',b.time,b.vehicle,(b.pax?b.pax+' pax':''),b.flight].filter(Boolean).map(esc).join(' \u00b7 ');
+      var route=esc(_shortAddr(b.from))+' <span class="drow-arrow">\u2192</span> '+esc(_shortAddr(b.dest));
       html+='<div class="trip-card">';
-      html+='<div class="tc-top"><span class="tc-date">'+esc(b.dateDisp||b.date||'Date to confirm')+'</span><span class="tc-fare">'+(b.fare?'\u00a3'+esc(b.fare):'Estimate pending')+'</span></div>';
-      html+='<div class="tc-route">'+route+'</div>';
-      html+='<div class="tc-meta">'+meta+(b.flight?' \u00b7 '+esc(b.flight):'')+'</div>';
-      html+='<div class="tc-bottom"><span class="tc-badge '+badgeClass+'">'+esc(statusLabel)+'</span>';
-      if(canCancel)html+='<button class="btn-sm danger" onclick="cancelTrip(\''+esc(b.ref)+'\')">Cancel</button>';
+      html+='<div class="drow-main">';
+      html+='<div class="drow-t">'+route+'</div>';
+      html+='<div class="drow-s">'+meta+'</div>';
+      html+='</div>';
+      html+='<div class="drow-side">';
+      html+='<div class="drow-amt">'+(b.fare?'\u00a3'+esc(b.fare):'<span class="drow-pending">Estimate pending</span>')+'</div>';
+      html+='<div class="drow-tag tc-badge '+badgeClass+'">'+esc(statusLabel)+'</div>';
+      if(canCancel)html+='<button class="tc-cancel" onclick="cancelTrip(\''+esc(b.ref)+'\')">Cancel</button>';
       html+='</div>';
       html+='</div>';
     }catch(e){
@@ -2210,8 +2295,26 @@ function renderActiveTrip(){
   });
   var card=document.getElementById('aj-card');
   var body=document.getElementById('aj-body');
-  if(!active||!card||!body){if(card)card.style.display='none';return;}
+  var panel=document.getElementById('aj-panel');
+  if(!active||!card||!body){
+    if(card)card.style.display='none';
+    if(panel)panel.style.display='none';
+    return;
+  }
   card.style.display='block';
+  if(panel)panel.style.display='block';
+  // Panel eyebrow: "in 3 days" / "tomorrow" / "today", from the literal UK date.
+  var when=document.getElementById('aj-when');
+  if(when){
+    var d=String(active.date||'').slice(0,10).split('-');
+    var days=null;
+    if(d.length===3){
+      var t=todayUK().split('-');
+      var a=Date.UTC(+d[0],+d[1]-1,+d[2]), n=Date.UTC(+t[0],+t[1]-1,+t[2]);
+      days=Math.round((a-n)/86400000);
+    }
+    when.textContent=days===null?'':(days<=0?'today':days===1?'tomorrow':'in '+days+' days');
+  }
   var statusLabel=active.status==='active'?'Driver en route':'Confirmed';
   var h='';
   h+='<div class="aj-status"><div class="aj-dot"></div><span class="aj-label">'+esc(statusLabel)+'</span></div>';
