@@ -341,6 +341,11 @@ app.listen(PORT, () => {
 
   // Background: auto-backup database on start + every 6h → iCloud + data/backups/
   backupRouter.startAutoBackup();
+
+  // Background: email the owner ~12h before each upcoming pickup (once per
+  // booking). Server-side via Resend — no Claude/assistant dependency.
+  try { require('./reminder').startBookingReminders(); }
+  catch (e) { console.error('[REMINDER] failed to start:', e.message); }
 });
 
 module.exports = app;

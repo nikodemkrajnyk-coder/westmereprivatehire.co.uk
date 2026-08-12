@@ -1522,13 +1522,25 @@ router.post('/bookings/:id/send-estimate', async (req, res) => {
 
   try {
     const { sendCustomerEstimate } = require('./email');
-    const ok = await sendCustomerEstimate({
+    // sendCustomerEstimate returns the Resend message id (truthy) on a genuine
+    // ACCEPTED send, or false if Resend rejected it. We only report success when
+    // it is truthy — never a false "approved".
+    const sendResult = await sendCustomerEstimate({
       ref: b.ref, name: b.contact_name, email: b.contact_email,
       pickup: b.pickup, destination: b.destination, stop_address: b.stop_address,
       date: b.date, time: b.time, flight: b.flight, passengers: b.passengers,
       fare: b.fare, notes: b.notes, pay_token: payToken
     });
-    if (!ok) return res.status(500).json({ error: 'Email send failed' });
+    if (!sendResult) {
+      // Surface a REAL failure naming the address, so the owner never sees a
+      // false "sent" (the Mr Ben incident: reported sent, never delivered).
+      console.error('[API] send-estimate: Resend rejected the send to', b.contact_email, 'for', b.ref);
+      return res.status(502).json({
+        error: 'The estimate could NOT be emailed to ' + b.contact_email + ' — please check the address and try again.',
+        sent_to: b.contact_email
+      });
+    }
+    const resendId = (sendResult === true) ? null : sendResult;
     let sentAt = null;
     try {
       db.prepare("UPDATE bookings SET estimate_sent_at = datetime('now') WHERE id = ?").run(id);
@@ -1537,12 +1549,15 @@ router.post('/bookings/:id/send-estimate', async (req, res) => {
     } catch (e2) { console.error('[API] estimate_sent_at record failed:', e2.message); }
     try {
       db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
-        .run(req.auth.type || 'user', req.auth.id, 'estimate_sent', b.ref + ' to ' + b.contact_email, req.ip);
+        .run(req.auth.type || 'user', req.auth.id, 'estimate_sent', b.ref + ' to ' + b.contact_email + (resendId ? ' [' + resendId + ']' : ''), req.ip);
     } catch (_) {}
-    res.json({ ok: true, estimate_sent_at: sentAt });
+    console.log('[API] Estimate emailed for', b.ref, 'to', b.contact_email, resendId ? '(resend ' + resendId + ')' : '');
+    // Return the recipient + id so the owner app can SHOW where it went — a
+    // wrong/typo address is then caught immediately instead of failing silently.
+    res.json({ ok: true, estimate_sent_at: sentAt, sent_to: b.contact_email, resend_id: resendId });
   } catch (e) {
     console.error('[API] send-estimate failed:', e.message);
-    res.status(500).json({ error: 'Failed to send estimate' });
+    res.status(500).json({ error: 'Failed to send estimate — ' + e.message });
   }
 });
 

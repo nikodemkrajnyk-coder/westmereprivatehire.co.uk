@@ -773,6 +773,10 @@ function migrate() {
   // booking never re-sends), while a repeat customer is still invited per trip.
   try { db.exec(`ALTER TABLE bookings ADD COLUMN review_request_sent_at TEXT`); } catch(_){}
 
+  // When the 12-hour owner pickup-reminder was sent for THIS booking. Per-booking
+  // guard so each upcoming booking reminds the owner exactly once.
+  try { db.exec(`ALTER TABLE bookings ADD COLUMN reminder_sent_at TEXT`); } catch(_){}
+
   // Review request tracking — sent once per email address, never resent
   try {
     db.exec(`

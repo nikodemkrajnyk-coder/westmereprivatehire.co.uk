@@ -196,7 +196,8 @@ async function sendCustomerAcknowledgement(booking) {
   return ok;
 }
 
-// ── Customer booking CONFIRMED (sent after Claude or operator approves) ──
+// ── Customer booking CONFIRMED (sent when the CUSTOMER acts: card paid, or
+// "pay driver" chosen — never by an assistant, never by "Send Estimate") ──
 async function sendCustomerConfirmed(booking) {
   const { ref, name, email, pickup, destination, date, time, fare, payment, flight, passengers, bags, pay_token, paid, stop_address, notes } = booking;
   if (!email) return;
@@ -570,6 +571,53 @@ async function sendAdminAlert(booking) {
   const preheader = (name || 'Guest') + ' \u2014 ' + dateStr;
   const ok = await sendEmail(adminEmail, subject, html, 'Westmere Bookings', preheader);
   if (ok) console.log('[EMAIL] Admin alert sent (' + ref + ')');
+}
+
+// ── 12-hour pickup reminder → the OWNER ──────────────────────────────────
+// Fired by the server-side reminder sweeper ~12h before pickup so the owner is
+// never late again. Goes to the owner's own inbox (never the customer).
+async function sendOwnerBookingReminder(booking, ownerEmail) {
+  const to = ownerEmail || process.env.ADMIN_EMAIL || process.env.GMAIL_USER;
+  if (!to) return false;
+  const { ref, date, time, pickup, destination, stop_address, fare, payment,
+          passengers, bags, flight, customer_name, customer_phone } = booking;
+  const name  = customer_name  || booking.passenger_name  || 'Guest';
+  const phone = customer_phone || booking.passenger_phone || '';
+  const dateStr = formatDate(date, time);
+  const fareStr = fare ? ('£' + (typeof fare === 'number' ? fare.toFixed(2) : fare)) : 'TBC';
+
+  let rows = '';
+  rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:' + INK + '">' + escHtml(ref) + '</span>');
+  rows += detailRow('Passenger', escHtml(name));
+  if (phone) rows += detailRow('Phone', '<a href="tel:' + escAttr(phone) + '" style="color:' + INK + ';text-decoration:none">' + escHtml(phone) + '</a>');
+  rows += rowDivider();
+  const puWaze = 'https://waze.com/ul?q=' + encodeURIComponent(pickup || '') + '&navigate=yes';
+  const deWaze = 'https://waze.com/ul?q=' + encodeURIComponent(destination || '') + '&navigate=yes';
+  const nav = (u) => ' <a href="' + u + '" style="color:' + GOLD + ';font-family:Helvetica Neue,Arial,sans-serif;font-size:10px;letter-spacing:.5px;text-decoration:none;margin-left:8px">Waze</a>';
+  rows += detailRow('Pickup', dispAddr(pickup) + nav(puWaze));
+  if (stop_address) rows += detailRow('Stop', dispAddr(stop_address));
+  rows += detailRow('Drop-off', dispAddr(destination) + nav(deWaze));
+  rows += rowDivider();
+  rows += detailRow('Date & Time', escHtml(dateStr), { gold: true });
+  if (flight) rows += detailRow('Flight', escHtml(flight));
+  if (passengers) rows += detailRow('Passengers', String(passengers));
+  if (bags && bags !== '0' && bags !== '0s+0l') rows += detailRow('Luggage', escHtml(String(bags)));
+  rows += rowDivider();
+  rows += detailRow('Fare', fareStr);
+  rows += detailRow('Payment', payment === 'card' ? 'Paid by card' : (payment === 'cash' ? 'Cash on the day' : 'To be decided'));
+
+  const body = `
+  <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Pickup reminder</p>
+  <p style="margin:0 0 8px;font-family:Georgia,serif;font-size:18px;color:${INK};font-weight:400;line-height:1.4">A booking is coming up in about 12 hours.</p>
+  <p style="margin:0 0 22px;font-family:Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Give yourself plenty of time — full details below.</p>
+  ${buildDetailsTable(rows)}`;
+
+  const html = heroEmail(body);
+  const subject = 'Reminder — ' + name + ' pickup ' + (time && time !== 'ASAP' ? 'at ' + time : '') + ' · ' + ref;
+  const preheader = 'Pickup in ~12 hours: ' + name + ' — ' + shortDisplay(pickup) + ' → ' + shortDisplay(destination);
+  const ok = await sendEmail(to, subject, html, 'Westmere Bookings', preheader);
+  if (ok) console.log('[EMAIL] Owner 12h reminder sent (' + ref + ') to', to);
+  return ok;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────
@@ -1410,6 +1458,7 @@ module.exports = {
   sendCustomerCancellation, sendDriverStatement, sendDriverWelcome,
   sendVerificationEmail, sendPasswordResetEmail, sendAdminPasswordResetEmail,
   sendRecommendation, sendPartnershipOutreach, sendCorporateIntro, sendReviewRequest, sendPaymentReminder, sendEmail, isConfigured,
+  sendOwnerBookingReminder,
   // Exposed for local template previews / potential reuse.
   confirmationEmailHtml,
   // Exposed for the timezone/day-of-week guardrail test.
