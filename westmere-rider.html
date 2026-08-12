@@ -1676,12 +1676,32 @@ async function confirmBooking(){
 /* ═══════════════════════════════════════════════════════════════════════════
    MY TRIPS
    ═══════════════════════════════════════════════════════════════════════════ */
+// The cached trip list must NEVER be able to throw. A corrupt/truncated value
+// (a half-written localStorage entry, a quota failure, anything not an array)
+// used to blow up renderTrips -> bootApp and leave My Account blank.
 function getBookings(){
-  return JSON.parse(localStorage.getItem('wph_rider_bookings')||'[]');
+  try{
+    var raw=localStorage.getItem('wph_rider_bookings');
+    if(!raw)return[];
+    var parsed=JSON.parse(raw);
+    return Array.isArray(parsed)?parsed.filter(function(b){return b&&typeof b==='object';}):[];
+  }catch(e){
+    console.warn('[trips] cached trip list unreadable — starting empty',e);
+    try{localStorage.removeItem('wph_rider_bookings');}catch(_){}
+    return[];
+  }
 }
 
+// Remember which tab the customer is on so a background sync re-renders THAT
+// view instead of silently yanking them back to "Upcoming".
+var _tripFilter='upcoming';
+
 function renderTrips(filter){
-  renderActiveTrip();
+  _tripFilter=filter||_tripFilter||'upcoming';
+  filter=_tripFilter;
+  // The active-journey card is decoration for the list below it — never let it
+  // take the trip history down with it.
+  try{renderActiveTrip();}catch(e){console.error('[trips] active journey card failed',e);}
   var bookings=getBookings();
   var now=new Date().toISOString().split('T')[0];
   var filtered;
@@ -1699,19 +1719,30 @@ function renderTrips(filter){
   }
   var html='';
   filtered.forEach(function(b){
-    var badgeClass='badge-'+b.status;
-    var statusLabel=b.status.charAt(0).toUpperCase()+b.status.slice(1);
-    var canCancel=(b.status==='confirmed'&&b.date>=now);
-    html+='<div class="trip-card">';
-    html+='<div class="tc-top"><span class="tc-date">'+esc(b.dateDisp||b.date)+'</span><span class="tc-fare">'+(b.fare?'\u00a3'+b.fare:'Estimate pending')+'</span></div>';
-    html+='<div class="tc-route">'+esc(_shortAddr(b.from))+' \u2192 '+esc(_shortAddr(b.dest))+'</div>';
-    html+='<div class="tc-meta">'+esc(b.time)+' \u00b7 '+esc(b.vehicle)+' \u00b7 '+esc(b.pax)+' pax'+(b.flight?' \u00b7 '+esc(b.flight):'')+'</div>';
-    html+='<div class="tc-bottom"><span class="tc-badge '+badgeClass+'">'+esc(statusLabel)+'</span>';
-    if(canCancel)html+='<button class="btn-sm danger" onclick="cancelTrip(\''+esc(b.ref)+'\')">Cancel</button>';
-    html+='</div>';
-    html+='</div>';
+    // ONE BAD ROW MUST NEVER BLANK THE WHOLE HISTORY. Every field below is
+    // optional in practice - a booking taken over the phone can reach the app
+    // with no vehicle, no time, a null status or a missing address - so build
+    // each card defensively and skip only the card that genuinely can't render.
+    try{
+      var status=String(b.status||'pending');
+      var badgeClass='badge-'+esc(status);
+      var statusLabel=status.charAt(0).toUpperCase()+status.slice(1);
+      var canCancel=(status==='confirmed'&&b.date&&b.date>=now);
+      var meta=[b.time,b.vehicle,(b.pax?b.pax+' pax':'')].filter(Boolean).map(esc).join(' \u00b7 ');
+      var route=[_shortAddr(b.from),_shortAddr(b.dest)].map(esc).join(' \u2192 ');
+      html+='<div class="trip-card">';
+      html+='<div class="tc-top"><span class="tc-date">'+esc(b.dateDisp||b.date||'Date to confirm')+'</span><span class="tc-fare">'+(b.fare?'\u00a3'+esc(b.fare):'Estimate pending')+'</span></div>';
+      html+='<div class="tc-route">'+route+'</div>';
+      html+='<div class="tc-meta">'+meta+(b.flight?' \u00b7 '+esc(b.flight):'')+'</div>';
+      html+='<div class="tc-bottom"><span class="tc-badge '+badgeClass+'">'+esc(statusLabel)+'</span>';
+      if(canCancel)html+='<button class="btn-sm danger" onclick="cancelTrip(\''+esc(b.ref)+'\')">Cancel</button>';
+      html+='</div>';
+      html+='</div>';
+    }catch(e){
+      console.error('[trips] skipped an unrenderable booking',b&&b.ref,e);
+    }
   });
-  list.innerHTML=html;
+  list.innerHTML=html||'<div class="empty"><div class="empty-title">No trips found</div><div class="empty-sub">Your journeys will appear here</div></div>';
 }
 
 function filterTrips(filter,btn){
@@ -1823,14 +1854,21 @@ async function loadServerTrips(){
     var r=await fetch('/api/bookings',{credentials:'include'});
     if(!r.ok)return;
     var data=await r.json();
-    if(data.bookings&&data.bookings.length){
-      var mapped=data.bookings.map(function(b){
-        return{ref:b.ref,from:b.pickup,dest:b.destination,date:b.date,time:b.time,flight:b.flight||'',pax:b.passengers||1,vehicle:b.driver_vehicle||'',fare:b.fare||0,status:b.status,created:b.created_at,driverName:b.driver_name||'',driverReg:b.driver_reg||''};
-      });
-      localStorage.setItem('wph_rider_bookings',JSON.stringify(mapped));
-      renderTrips('upcoming');
-    }
-  }catch(e){}
+    if(!data||!Array.isArray(data.bookings))return;
+    var mapped=data.bookings.map(function(b){
+      return{ref:b.ref,from:b.pickup,dest:b.destination,date:b.date,time:b.time,flight:b.flight||'',pax:b.passengers||1,vehicle:b.driver_vehicle||'',fare:b.fare||0,status:b.status,created:b.created_at,driverName:b.driver_name||'',driverReg:b.driver_reg||''};
+    });
+    // The server is the source of truth, but never DROP a trip the customer can
+    // already see: keep any local-only row (one just booked in this tab, before
+    // the server list has caught up) whose ref the server didn't return.
+    var serverRefs={};
+    mapped.forEach(function(b){if(b.ref)serverRefs[b.ref]=1;});
+    var localOnly=getBookings().filter(function(b){return b&&b.ref&&!serverRefs[b.ref];});
+    try{localStorage.setItem('wph_rider_bookings',JSON.stringify(mapped.concat(localOnly)));}catch(e){}
+    renderTrips(_tripFilter);
+  }catch(e){
+    console.error('[trips] could not refresh from the server',e);
+  }
 }
 function doLogout(){
   fetch('/api/auth/logout',{method:'POST',credentials:'include'}).catch(function(){});

@@ -65,14 +65,33 @@ router.get('/bookings', (req, res) => {
       LIMIT 100
     `).all(id);
   } else if (type === 'customer') {
+    // A customer's trip history must include EVERY booking that is theirs, not
+    // just the ones that happen to carry a customer_id foreign key.
+    //
+    // WHY (the "my trips have all disappeared" incident): customer_id is only
+    // ever set when a booking is created *while an account with that email
+    // already exists* (public-api `/book` does a link-if-exists lookup). So it
+    // is NULL for:
+    //   • bookings the owner enters manually in the owner/admin app (phone,
+    //     WhatsApp, repeat customers) — those carry passenger_email only;
+    //   • every booking a customer made BEFORE they registered an account.
+    // Those rows are the customer's own trips and they were invisible here, so
+    // My Account rendered "No trips found" while the data sat safely in the DB.
+    // The local copy in the rider app's localStorage masked it until anything
+    // cleared it (sign out, new device, cleared site data).
+    //
+    // Match on the account's verified email as well — the same OR-on-email rule
+    // the invoice list already uses below. Read-only: nothing is re-linked here.
+    const me = db.prepare('SELECT email FROM customers WHERE id = ?').get(id) || {};
     rows = db.prepare(`
       SELECT b.*, u.full_name as driver_name, u.vehicle as driver_vehicle, u.reg as driver_reg
       FROM bookings b
       LEFT JOIN users u ON b.driver_id = u.id
       WHERE b.customer_id = ?
+         OR (b.customer_id IS NULL AND ? <> '' AND LOWER(TRIM(b.passenger_email)) = LOWER(TRIM(?)))
       ORDER BY b.date DESC, b.time DESC
       LIMIT 100
-    `).all(id);
+    `).all(id, me.email || '', me.email || '');
   } else {
     return res.status(403).json({ error: 'Access denied' });
   }
