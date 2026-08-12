@@ -240,9 +240,22 @@ test('buildCompleted groups jobs by ISO week rather than a flat list', () => {
   const src = read('westmere-owner.html');
   const fn = src.match(/function buildCompleted[\s\S]*?\n\}/);
   assert.ok(fn, 'buildCompleted not found');
-  assert.ok(/isoWeekStart/.test(fn[0]), 'buildCompleted must bucket jobs by ISO week');
-  assert.ok(/_fmtWeekRange/.test(fn[0]), 'buildCompleted must render a per-week header');
+  // The ISO-week grouping + per-week takings live in the shared lifecycle
+  // module, so the admin app groups Completed identically.
+  assert.ok(/WMLifecycle\.groupByWeek\(jobs\)/.test(fn[0]), 'buildCompleted must bucket jobs by ISO week');
+  assert.ok(/g\.label/.test(fn[0]), 'buildCompleted must render a per-week header');
+  assert.ok(/g\.takings/.test(fn[0]), 'buildCompleted must show the week\'s takings');
   assert.ok(!/renderJobList/.test(fn[0]), 'buildCompleted must no longer defer to the flat renderJobList');
+  // Behavioural check on the shared grouping itself.
+  const LC = require('../../wm-lifecycle');
+  const weeks = LC.groupByWeek([
+    { date: '2026-08-10', fare: 50 },   // Mon
+    { date: '2026-08-12', fare: 25 },   // Wed, same week
+    { date: '2026-08-03', fare: 40 }    // previous week
+  ]);
+  assert.strictEqual(weeks.length, 2, 'two ISO weeks');
+  assert.strictEqual(weeks[0].items.length, 2, 'newest week first, holding both of its jobs');
+  assert.strictEqual(weeks[0].takings, 75, "a week's takings is the sum of its fares");
 });
 
 // ── 8. Cancelled bookings view (owner deletes by hand) ───────────────────
@@ -267,8 +280,14 @@ test('a cancelled card shows a Cancelled label and a Delete action (no Edit)', (
   const fn = src.match(/function jobCardHtml[\s\S]*?\n\}/);
   assert.ok(fn, 'jobCardHtml not found');
   const jc = fn[0];
-  assert.ok(/apiStatus==='cancelled'\)\{stLabel='Cancelled'/.test(jc), 'cancelled jobs must render a "Cancelled" status label');
-  assert.ok(/apiStatus!=='cancelled'\)\{[\s\S]*?upcomingEdit/.test(jc), 'Edit must be suppressed on cancelled cards');
+  const LC = require('../../wm-lifecycle');
+  // The label + the action gating now come from the shared lifecycle module,
+  // so assert the RULE there and that the card actually delegates to it.
+  assert.strictEqual(LC.statusLabel({ apiStatus: 'cancelled' }).label, 'Cancelled',
+    'cancelled jobs must render a "Cancelled" status label');
+  assert.ok(/WMLifecycle\.statusLabel\(j\)/.test(jc), 'the card must take its status label from the shared module');
+  assert.strictEqual(LC.actionsFor({ apiStatus: 'cancelled' }).edit, false, 'Edit must be suppressed on cancelled bookings');
+  assert.ok(/if\(ACT\.edit\)\{[\s\S]*?upcomingEdit/.test(jc), 'Edit must be gated on the shared actionsFor()');
   // Delete is rendered unconditionally (after the cancelled-guarded Edit block).
   assert.ok(/upcomingDelete\('\+j\.id\+'\)">Delete/.test(jc), 'every card (incl. cancelled) must offer Delete');
 });
@@ -618,11 +637,9 @@ test('a status-less insert lands as pending, not confirmed (owner == web initial
 // chosen; addresses always shortened (even if the WMAddr script hasn't loaded).
 console.log('\nOwner card: payment badge + short addresses (owner spec)');
 test('pay badge: new/pending shows no "Awaiting"; only method-chosen jobs do', () => {
-  const src = read('westmere-owner.html');
-  const m = src.match(/function wmPayStatus\(j\)\{[\s\S]*?\n\}/);
-  assert.ok(m, 'wmPayStatus not found');
-  // Pure function (uses only `j`) — safe to evaluate for a real behavioural check.
-  const wmPayStatus = new Function('return (' + m[0] + ')')();
+  // The rule now lives in the shared lifecycle module that BOTH staff apps
+  // delegate to, so test it directly — that covers owner and admin at once.
+  const wmPayStatus = require('../../wm-lifecycle').payStatus;
   assert.strictEqual(wmPayStatus({ apiStatus: 'pending', payment: 'pending' }).short, '—',
     'a brand-new/pending booking must NOT show "Awaiting"');
   assert.strictEqual(wmPayStatus({ apiStatus: 'offered', payment: 'pending' }).short, '—',
@@ -773,9 +790,10 @@ test('owner POST /bookings feeds passenger_name into the alert/calendar (not jus
 console.log('\nOwner app: luggage + passenger count (owner spec)');
 test('_bagsText renders the stored bags value as a luggage label', () => {
   const src = read('westmere-owner.html');
-  const m = src.match(/function _bagsText\(bags\)\{[\s\S]*?\n\}/);
-  assert.ok(m, '_bagsText helper not found');
-  const _bagsText = new Function('return (' + m[0] + ')')();
+  // Shared rule — the owner app delegates to it, so test the module itself.
+  assert.ok(/function _bagsText\(bags\)\{ return WMLifecycle\.bagsText\(bags\); \}/.test(src),
+    'owner _bagsText must delegate to the shared lifecycle module');
+  const _bagsText = require('../../wm-lifecycle').bagsText;
   assert.strictEqual(_bagsText('3'), '3 bags', 'a count renders as "N bags"');
   assert.strictEqual(_bagsText('1'), '1 bag', 'one bag is singular');
   assert.strictEqual(_bagsText('4+'), '4+ bags', 'the "4+" option renders');
@@ -1041,6 +1059,67 @@ test('sendEmail wires text + List-Unsubscribe into the Resend payload', () => {
   assert.ok(m, 'Resend payload literal not found');
   assert.ok(/\btext\b/.test(m[0]), 'payload must include a text (plain-text) part');
   assert.ok(/List-Unsubscribe/.test(m[0]), 'payload headers must include List-Unsubscribe');
+});
+
+// ── Send Estimate: real success/failure + recipient visibility (Mr Ben) ──
+// The Mr Ben incident: the app reported the estimate "sent" but it never
+// arrived. Root fix: the route must (a) run entirely server-side via Resend with
+// NO Claude dependency, (b) never report success on a rejected send, and (c)
+// return the RECIPIENT so the owner can spot a wrong/typo address.
+console.log('\nSend Estimate: honest result + recipient (Mr Ben)');
+test('send-estimate is server-side via Resend with NO Claude/assistant dependency', () => {
+  const api = read('server/api.js');
+  const m = api.match(/router\.post\('\/bookings\/:id\/send-estimate'[\s\S]*?\n\}\);/);
+  assert.ok(m, 'send-estimate route not found');
+  assert.ok(/sendCustomerEstimate/.test(m[0]), 'must send via sendCustomerEstimate (Resend)');
+  assert.ok(!/anthropic|claude|assistant/i.test(m[0]), 'the send-estimate route must not touch Claude/any assistant');
+  // A pointer to the CLAUDE.md engineering notes in a comment is fine; an actual
+  // runtime dependency on an assistant is not. Check for real wiring only.
+  const emailSrc = read('server/email.js').replace(/CLAUDE\.md/g, '');
+  assert.ok(!/require\([^)]*(anthropic|claude)[^)]*\)|api\.anthropic\.com/i.test(emailSrc),
+    'the email send path must not depend on Claude');
+});
+test('send-estimate never false-reports success and returns the recipient', () => {
+  const api = read('server/api.js');
+  const m = api.match(/router\.post\('\/bookings\/:id\/send-estimate'[\s\S]*?\n\}\);/);
+  const block = m[0];
+  // Only ok:true when the Resend send is truthy; a rejected send is surfaced.
+  assert.ok(/if \(!sendResult\)/.test(block), 'must branch on the real send result');
+  assert.ok(/could NOT be emailed/i.test(block) && /status\(50\d\)/.test(block), 'a failed send must return a real error naming the address');
+  assert.ok(/sent_to:\s*b\.contact_email/.test(block), 'a successful send must return sent_to (the recipient) so a wrong address is visible');
+  // A booking with no email still cannot reach the send (email required).
+  assert.ok(/No email address on this booking/.test(block), 'no-email bookings are rejected before send');
+});
+test('owner Send Estimate shows the recipient address in its confirmation', () => {
+  const src = read('westmere-owner.html');
+  const fn = src.match(/async function ownerSendEstimate[\s\S]*?\n\}/);
+  assert.ok(fn && /d\.sent_to/.test(fn[0]) && /emailed to/i.test(fn[0]),
+    'the toast must show the address the estimate was emailed to (catch a wrong email)');
+});
+
+// ── Feature 1: To Confirm badge = count of AWAITING-PAYMENT bookings ──────
+console.log('\nTo Confirm badge = awaiting-payment count (owner spec)');
+test('the To Confirm badge shows the COUNT of awaiting-payment bookings, hidden at zero', () => {
+  const src = read('westmere-owner.html');
+  const flat = src.replace(/\s+/g, ' ');
+  assert.ok(/awaitingCount\s*=\s*WMLifecycle\.toConfirmCount\(OFFERED_JOBS\|\|\[\]\)/.test(flat),
+    'the badge count must come from the shared toConfirmCount()');
+  // And the shared counter must actually count awaiting-payment bookings only.
+  const LC = require('../../wm-lifecycle');
+  assert.strictEqual(
+    LC.toConfirmCount([{ status: 'awaiting_payment' }, { status: 'pending' }, { status: 'confirmed' }, { status: 'awaiting_payment' }]), 2,
+    'toConfirmCount must count awaiting_payment bookings only (a new request is not "to confirm")');
+  assert.strictEqual(LC.toConfirmCount([{ status: 'pending' }]), 0, 'no awaiting-payment bookings → zero');
+  assert.ok(/dot\.textContent\s*=\s*awaitingCount\?String\(awaitingCount\):''/.test(flat), 'must render the number');
+  assert.ok(/dot\.style\.display\s*=\s*awaitingCount\?'flex':'none'/.test(flat), 'must hide the badge at zero');
+  // Viewing the To Confirm tab must NOT clear the badge any more.
+  const fn = src.match(/function buildToConfirm\(\)\{[\s\S]*?\n\}/);
+  assert.ok(fn && !/toconfirm-dot/.test(fn[0]), 'buildToConfirm must not clear the badge (it reflects awaiting-payment, not tab focus)');
+});
+test('the badge is live-updating — SSE events refresh the bookings', () => {
+  const src = read('westmere-owner.html');
+  const m = src.match(/addEventListener\('wm:event'[\s\S]{0,220}?\}\);/);
+  assert.ok(m && /loadOwnerBookings\(\)/.test(m[0]), 'a wm:event must refresh bookings so the badge stays live');
 });
 
 // ── summary ──────────────────────────────────────────────────────────────

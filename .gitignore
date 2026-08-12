@@ -6,3 +6,6 @@ data/*.db-wal
 data/*.db-shm
 data/backups/
 .env
+
+# Local Claude Code tooling (launch configs, session settings)
+.claude/

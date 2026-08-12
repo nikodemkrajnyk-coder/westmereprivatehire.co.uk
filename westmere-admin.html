@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <script src="/address-normalize.js"></script>
+<script src="/wm-lifecycle.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -153,7 +154,11 @@ body.full-view .content{padding:1.4rem 1.9rem;max-width:100%}
 .tag-cash{background:rgba(106,106,106,.16);color:#555555}
 .tag-card{background:rgba(59,130,246,.08);color:#60A5FA}
 .tag-prepaid{background:var(--green-bg);color:var(--green)}
-.tag-await{background:rgba(27,27,26,.07);color:rgba(27,27,26,.7)}
+.tag-await{background:rgba(156,88,0,.12);color:#9C5800}
+/* No payment method chosen yet ("—") and a brand-new request. Both are neutral
+   on purpose: nothing is "awaiting" until the customer has actually chosen. */
+.tag-none{background:rgba(27,27,26,.05);color:rgba(27,27,26,.4)}
+.tag-new{background:rgba(106,106,106,.12);color:#555555}
 /* BUTTONS */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;font-family:var(--sans);font-size:.62rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;padding:.6rem 1.2rem;cursor:pointer;border:none;transition:all .2s;text-decoration:none;white-space:nowrap}
 .btn:active{transform:scale(.97)}
@@ -619,7 +624,9 @@ input[type=checkbox],input[type=radio]{accent-color:#111111 !important}
   <div class="sb-section">
     <span class="sb-label">Bookings</span>
     <button class="sb-item" onclick="openModal('modal-book')"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>New Booking</button>
-    <button class="sb-item" onclick="nav('all-jobs',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span>All Journeys</button>
+    <button class="sb-item" onclick="nav('all-jobs',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span>All Journeys<span class="sb-badge" id="sb-toconfirm-badge" style="display:none"></span></button>
+    <button class="sb-item" onclick="nav('completed',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>Completed</button>
+    <button class="sb-item" onclick="nav('cancelled',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></span>Cancelled</button>
     <button class="sb-item" onclick="nav('calendar',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>Calendar</button>
   </div>
 
@@ -764,6 +771,28 @@ input[type=checkbox],input[type=radio]{accent-color:#111111 !important}
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+
+    <!-- ══ COMPLETED — grouped by week, with weekly takings (owner parity) ══ -->
+    <div class="view" id="view-completed">
+      <div class="page-hd">
+        <div class="page-title">Completed <em>Journeys</em></div>
+        <div class="page-sub">Finished jobs, grouped by week with the week's takings</div>
+      </div>
+      <div class="card">
+        <div id="adm-completed-list"></div>
+      </div>
+    </div>
+
+    <!-- ══ CANCELLED — record only, with a manual Delete (owner parity) ══ -->
+    <div class="view" id="view-cancelled">
+      <div class="page-hd">
+        <div class="page-title">Cancelled <em>Bookings</em></div>
+        <div class="page-sub">Kept as a record — remove one by hand with Delete</div>
+      </div>
+      <div class="card">
+        <div id="adm-cancelled-list"></div>
       </div>
     </div>
 
@@ -1340,9 +1369,18 @@ input[type=checkbox],input[type=radio]{accent-color:#111111 !important}
         <div class="fg"><label class="fl">Passenger Name</label><input class="fi" type="text" id="nb-name" placeholder="Full name"></div>
         <div class="fg"><label class="fl">Mobile</label><input class="fi" type="tel" id="nb-phone" placeholder="+44 7700..."></div>
       </div>
-      <div class="fg"><label class="fl">Email</label><input class="fi" type="email" id="nb-email" placeholder="customer@email.com"></div>
+      <div class="r2">
+        <div class="fg"><label class="fl">Email <span style="color:#9C2828">*</span></label><input class="fi" type="email" id="nb-email" placeholder="customer@email.com" required></div>
+        <div class="fg"><label class="fl">Flight number (optional)</label><input class="fi" type="text" id="nb-flight" placeholder="e.g. BA2678"></div>
+      </div>
       <div class="fg"><label class="fl">Payment Method</label>
-        <select class="fi" id="nb-pay"><option value="cash">Cash on the Day</option><option value="card">Card -- Pre-paid</option><option value="account">Account / Monthly Invoice</option></select></div>
+        <!-- The CUSTOMER chooses card or cash — staff never record that choice
+             for them (payment invariant #1: never silently default to cash).
+             A new booking starts as "not chosen yet" and the customer decides
+             from the estimate email. "Account" is a billing arrangement, not a
+             customer payment action, so it stays available to staff. -->
+        <select class="fi" id="nb-pay"><option value="pending" selected>Not chosen yet — customer decides</option><option value="account">Account / Monthly Invoice</option></select>
+        <div style="font-size:.68rem;color:rgba(27,27,26,.55);margin-top:.3rem">The customer picks Card or Cash from the estimate email — that choice is what moves the booking forward.</div></div>
       <div class="fg"><label class="fl">Fare Override (£) — leave blank to use calculated fare</label><input class="fi" type="number" id="nb-fare-override" min="0" step="0.50" placeholder="e.g. 55"></div>
 
       <!-- Availability check -->
@@ -1953,10 +1991,11 @@ function aaFillModal(bookingJson){
   if(b.payment){
     var pay=document.getElementById('nb-pay');
     if(pay){
-      var pv=b.payment.toLowerCase();
-      if(pv==='card')pay.value='card';
-      else if(pv==='account'||pv==='invoice')pay.value='account';
-      else pay.value='cash';
+      var pv=String(b.payment).toLowerCase();
+      // Only an ACCOUNT arrangement can be pre-set by staff. Card/cash are the
+      // customer's own choice, so anything else stays "not chosen yet" —
+      // never a silent fallback to cash (payment invariant #1).
+      pay.value=(pv==='account'||pv==='invoice')?'account':'pending';
     }
   }
   // Close the assistant panel and open the booking modal
@@ -2298,17 +2337,20 @@ function bookingDetailHtml(b){
   var tripType=b.trip_type?(/return/i.test(b.trip_type)?'Return trip':b.trip_type):'';
   return '<div class="jdetail">'
     +_jdField('Reference',escTo(b.ref))
-    +_jdField('Status',escTo(b.status||'pending'))
+    // Human lifecycle label ("New request" / "Awaiting payment"), not the raw
+    // DB value — shared with the owner app.
+    +_jdField('Status',escTo(admStatusTag(b).label))
     +_jdField('Name',escTo(b.customer_name||b.passenger_name||''))
     +_jdField('Phone',escTo(b.customer_phone||b.passenger_phone||''))
     +_jdField('Email',escTo(b.customer_email||b.passenger_email||''))
-    +_jdField('Pickup',escTo(b.pickup))
-    +_jdField('Stop on the way',escTo(b.stop_address))
-    +_jdField('Destination',escTo(b.destination))
+    // Short display form; the full address is kept for navigation.
+    +_jdField('Pickup',escTo(_admShortAddr(b.pickup)))
+    +_jdField('Stop on the way',escTo(_admShortAddr(b.stop_address)))
+    +_jdField('Destination',escTo(_admShortAddr(b.destination)))
     +_jdField('Date',escTo(b.date))
     +_jdField('Time',escTo(b.time||'ASAP'))
     +_jdField('Passengers',escTo(b.passengers))
-    +_jdField('Luggage / bags',escTo(b.bags))
+    +_jdField('Luggage / bags',escTo(_admBags(b.bags)||'None'))
     +_jdField('Flight',escTo(b.flight))
     +_jdField('Trip type',escTo(tripType))
     +_jdField('Fare',money(b.fare))
@@ -2330,11 +2372,95 @@ function toggleJDetail(id,btn){
   if(btn)btn.textContent=open?'Hide':'Details';
 }
 
+// Every booking from the last /api/bookings load — backs the Completed and
+// Cancelled views (and any other view that needs the full set).
+var ALL_BOOKINGS=[];
+
+// ── Compact booking row shared by the Completed + Cancelled views ───────────
+// Mirrors the owner app's job card: short addresses, pax + luggage, the shared
+// status/payment badges, and only the actions the lifecycle module allows.
+function admJobRow(b){
+  var s=admStatusTag(b), p=admPayTag(b), A=WMLifecycle.actionsFor(b);
+  var acts='';
+  if(A.markPaid)acts+='<button class="btn btn-navy btn-sm" onclick="admMarkPaid('+b.id+')">Mark as Paid</button> ';
+  if(A.sendReminder)acts+='<button class="btn btn-ghost btn-sm" onclick="admSendPayReminder('+b.id+')">Send Reminder</button> ';
+  if(A.message)acts+='<button class="btn btn-ghost btn-sm" onclick="wmMessageOpen('+b.id+')">Message</button> ';
+  // A cancelled booking is a record only — the operator removes it by hand.
+  if(A.del)acts+='<button class="btn btn-red btn-sm" onclick="admDeleteBooking('+b.id+')">Delete</button>';
+  return '<div style="padding:.75rem 1rem;border-top:1px solid rgba(27,27,26,.08)">'
+    +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.6rem;margin-bottom:.25rem">'
+      +'<div style="font-weight:600;color:var(--navy)">'+escTo(b.customer_name||b.passenger_name||'Guest')+'</div>'
+      +'<span class="tag '+s.cls+'">'+s.label+'</span>'
+    +'</div>'
+    +'<div style="font-size:.8rem;color:rgba(27,27,26,.6)">'+escTo(_admShortAddr(b.pickup))
+      +(b.stop_address?' → '+escTo(_admShortAddr(b.stop_address)):'')
+      +' → '+escTo(_admShortAddr(b.destination))+'</div>'
+    +'<div style="font-size:.72rem;color:rgba(27,27,26,.45);margin-top:.15rem">'+escTo(b.ref||'')+' · '+escTo(b.date||'')+' '+escTo(b.time||'ASAP')
+      +(b.fare?' · £'+Number(b.fare).toFixed(0):'')
+      +' · '+(b.passengers||1)+' pax'+(_admBags(b.bags)?' · '+escTo(_admBags(b.bags)):'')
+      +' · <span class="tag '+p.cls+'">'+p.label+'</span></div>'
+    +(acts?'<div style="margin-top:.5rem;display:flex;gap:.4rem;flex-wrap:wrap">'+acts+'</div>':'')
+    +'</div>';
+}
+
+// Completed — grouped by ISO week with that week's takings (owner parity).
+function buildAdmCompleted(){
+  var list=document.getElementById('adm-completed-list');
+  if(!list)return;
+  var jobs=(ALL_BOOKINGS||[]).filter(function(b){return WMLifecycle.statusOf(b)==='completed';});
+  if(!jobs.length){
+    list.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(27,27,26,.62);font-size:.85rem">No completed jobs yet</div>';
+    return;
+  }
+  var html='';
+  WMLifecycle.groupByWeek(jobs).forEach(function(g){
+    html+='<div style="display:flex;justify-content:space-between;align-items:baseline;gap:.6rem;padding:.7rem 1rem .5rem;background:rgba(27,27,26,.03);border-bottom:1px solid rgba(184,152,90,.3)">'
+      +'<span style="font-family:var(--serif);font-size:1.02rem;font-weight:500;color:var(--navy)">'+escTo(g.label)+'</span>'
+      +'<span style="font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(27,27,26,.45);white-space:nowrap">'+g.items.length+(g.items.length===1?' job':' jobs')+' · £'+g.takings.toFixed(0)+'</span>'
+      +'</div>';
+    html+=g.items.map(admJobRow).join('');
+  });
+  list.innerHTML=html;
+}
+
+// Cancelled — kept as a record, removed only by an explicit manual Delete.
+function buildAdmCancelled(){
+  var list=document.getElementById('adm-cancelled-list');
+  if(!list)return;
+  var jobs=(ALL_BOOKINGS||[]).filter(function(b){return WMLifecycle.statusOf(b)==='cancelled';})
+    .sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''));});
+  list.innerHTML=jobs.length
+    ? jobs.map(admJobRow).join('')
+    : '<div style="text-align:center;padding:2rem;color:rgba(27,27,26,.62);font-size:.85rem">No cancelled bookings</div>';
+}
+
+// Hard delete — the same shared route the owner app's Delete uses.
+async function admDeleteBooking(bookingId){
+  if(!confirm('Delete this booking permanently?'))return;
+  try{
+    var r=await fetch('/api/bookings/'+bookingId,{method:'DELETE',credentials:'include'});
+    var d=await r.json();
+    if(r.ok&&d.ok){showToast('Booking deleted');loadLiveBookings();}
+    else showToast(d.error||('Failed ('+r.status+')'));
+  }catch(e){showToast('Network error');console.error('[admDeleteBooking]',e);}
+}
+
 function loadLiveBookings(){
   fetch('/api/bookings').then(function(r){return r.json();}).then(function(d){
     if(!d.ok||!d.bookings)return;
     var bookings=d.bookings;
+    ALL_BOOKINGS=bookings;          // backs the Completed + Cancelled views
     var today=new Date().toISOString().split('T')[0];
+    // Keep the per-booking cache warm for the row actions (Send Estimate,
+    // Message) so they work from any view, not just after loadFlaggedBookings.
+    bookings.forEach(function(b){FLAGGED_CACHE[b.id]=b;});
+
+    // ── "To Confirm" badge — the COUNT of AWAITING-PAYMENT bookings ──
+    // Same shared counter the owner app uses. A brand-new request is NOT
+    // "to confirm" (it is "to price"), so it must not appear here.
+    var _tc=WMLifecycle.toConfirmCount(bookings);
+    var tcDot=document.getElementById('sb-toconfirm-badge');
+    if(tcDot){tcDot.textContent=_tc?String(_tc):'';tcDot.style.display=_tc?'':'none';}
 
     // ── Dashboard stats ──
     var todayJobs=bookings.filter(function(b){return b.date===today&&b.status!=='cancelled';});
@@ -2367,10 +2493,12 @@ function loadLiveBookings(){
       if(todayJobs.length){
         var sorted=todayJobs.slice().sort(function(a,b){return(a.time||'').localeCompare(b.time||'');});
         tl.innerHTML=sorted.map(function(b,i){
-          var statusTag=b.status==='completed'?'<span class="tag tag-done">Done</span>':b.status==='confirmed'?'<span class="tag tag-upcoming">Confirmed</span>':'<span class="tag tag-upcoming">Pending</span>';
+          var _s=admStatusTag(b);
+          var statusTag='<span class="tag '+_s.cls+'">'+_s.label+'</span>';
           return '<div class="tl-item"><div class="tl-time-col"><div class="tl-time">'+(b.time||'ASAP')+'</div>'+(i<sorted.length-1?'<div class="tl-line"></div>':'')+'</div>'
-            +'<div class="tl-card"><div class="tl-top"><div class="tl-name">'+(b.customer_name||'')+'</div>'+statusTag+'</div>'
-            +'<div class="tl-route">'+b.pickup+' \u2192 '+b.destination+(b.flight?' \u00b7 '+b.flight:'')
+            +'<div class="tl-card"><div class="tl-top"><div class="tl-name">'+escTo(b.customer_name||'')+'</div>'+statusTag+'</div>'
+            +'<div class="tl-route">'+escTo(_admShortAddr(b.pickup))+' \u2192 '+escTo(_admShortAddr(b.destination))+(b.flight?' \u00b7 '+escTo(b.flight):'')
+            +' \u00b7 '+(b.passengers||1)+' pax'+(_admBags(b.bags)?' \u00b7 '+escTo(_admBags(b.bags)):'')
             +(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')
             +' '+admPayTag(b).label+'</div></div></div>';
         }).join('');
@@ -2390,15 +2518,21 @@ function loadLiveBookings(){
       if(todayJobs.length){
         var sorted=todayJobs.slice().sort(function(a,b){return(a.time||'').localeCompare(b.time||'');});
         todayTl.innerHTML=sorted.map(function(b,i){
-          var statusTag=b.status==='completed'?'<span class="tag tag-done">Done</span>':b.status==='confirmed'?'<span class="tag tag-upcoming">Confirmed</span>':'<span class="tag tag-upcoming">Pending</span>';
+          var _s=admStatusTag(b);
+          var statusTag='<span class="tag '+_s.cls+'">'+_s.label+'</span>';
+          var A=WMLifecycle.actionsFor(b);
+          // Same lifecycle actions as the owner app's day view.
+          var acts='';
+          if(A.sendEstimate)acts+='<button class="btn btn-navy btn-sm" onclick="admSendEstimate('+b.id+')">Send Estimate</button>';
+          if(A.markPaid)acts+='<button class="btn btn-navy btn-sm" onclick="admMarkPaid('+b.id+')">Mark as Paid</button>';
+          if(A.markCompleted)acts+='<button class="btn btn-green btn-sm" onclick="markJobDone('+b.id+',this)">\u2713 Done</button>';
+          if(A.sendReminder)acts+='<button class="btn btn-ghost btn-sm" onclick="admSendPayReminder('+b.id+')">Send Reminder</button>';
+          if(A.edit)acts+='<button class="btn btn-red btn-sm" onclick="cancelJob('+b.id+',this)">\u2715 Cancel</button>';
           return '<div class="tl-item"><div class="tl-time-col"><div class="tl-time">'+(b.time||'ASAP')+'</div>'+(i<sorted.length-1?'<div class="tl-line"></div>':'')+'</div>'
-            +'<div class="tl-card active"><div class="tl-top"><div class="tl-name">'+(b.customer_name||'')+'</div>'+statusTag+'</div>'
-            +'<div class="tl-route">'+b.pickup+' \u2192 '+b.destination+'</div>'
-            +'<div class="tl-route" style="margin-top:.2rem">'+(b.flight?'Flight '+b.flight+' \u00b7 ':'')+b.passengers+' pax'+(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')+' '+admPayTag(b).label+'</div>'
-            +'<div class="tl-actions">'
-            +'<button class="btn btn-green btn-sm" onclick="markJobDone('+b.id+',this)">\u2713 Done</button>'
-            +'<button class="btn btn-red btn-sm" onclick="cancelJob('+b.id+',this)">\u2715 Cancel</button>'
-            +'</div></div></div>';
+            +'<div class="tl-card active"><div class="tl-top"><div class="tl-name">'+escTo(b.customer_name||'')+'</div>'+statusTag+'</div>'
+            +'<div class="tl-route">'+escTo(_admShortAddr(b.pickup))+' \u2192 '+escTo(_admShortAddr(b.destination))+'</div>'
+            +'<div class="tl-route" style="margin-top:.2rem">'+(b.flight?'Flight '+escTo(b.flight)+' \u00b7 ':'')+(b.passengers||1)+' pax'+(_admBags(b.bags)?' \u00b7 '+escTo(_admBags(b.bags)):'')+(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')+' '+admPayTag(b).label+'</div>'
+            +'<div class="tl-actions">'+acts+'</div></div></div>';
         }).join('');
       } else {
         todayTl.innerHTML='<div style="text-align:center;padding:2rem;color:rgba(27,27,26,.62);font-size:.85rem">No jobs scheduled for today</div>';
@@ -2415,15 +2549,32 @@ function loadLiveBookings(){
         tbody.innerHTML=bookings.map(function(b){
           var dateStr='';
           try{var dd=new Date((b.date||'')+'T00:00:00');dateStr=dd.toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'2-digit'});}catch(e){dateStr=b.date||'';}
-          var statusClass=b.status==='completed'?'tag-done':b.status==='cancelled'?'tag-cancel':'tag-upcoming';
-          var statusLabel=b.status?b.status.charAt(0).toUpperCase()+b.status.slice(1):'Pending';
+          var _ss=admStatusTag(b);var statusClass=_ss.cls,statusLabel=_ss.label;
           var _pp=admPayTag(b);var payClass=_pp.cls,payLabel=_pp.label;
+          // Which actions admin may offer — the SAME rules the owner app uses.
+          var ACT=WMLifecycle.actionsFor(b);
           var isCancelled=b.status==='cancelled';
           var refundSt=b.refund_status||'';
           var refundAmt=Number(b.refund_amount!=null?b.refund_amount:(b.fare||0));
+          // ESTIMATE-FIRST. There is deliberately NO one-click "Confirm" here:
+          // a booking leaves `pending` only when the CUSTOMER acts (pays by card
+          // / chooses to pay the driver), or when staff settle a real cash
+          // payment via Mark as Paid. Matches the owner app exactly.
           var actionBtns='';
-          if(b.status==='pending'){
-            actionBtns+='<button class="btn btn-navy btn-sm" onclick="confirmJob('+b.id+',this)">Confirm</button> ';
+          if(ACT.sendEstimate){
+            actionBtns+='<button class="btn btn-navy btn-sm" onclick="admSendEstimate('+b.id+')">Send Estimate</button> ';
+          }
+          if(ACT.markPaid){
+            actionBtns+='<button class="btn btn-navy btn-sm" onclick="admMarkPaid('+b.id+')">Mark as Paid</button> ';
+          }
+          if(ACT.markCompleted){
+            actionBtns+='<button class="btn btn-green btn-sm" onclick="markJobDone('+b.id+',this)">Mark Completed</button> ';
+          }
+          if(ACT.sendReminder){
+            actionBtns+='<button class="btn btn-ghost btn-sm" onclick="admSendPayReminder('+b.id+')">Send Reminder</button> ';
+          }
+          if(ACT.message){
+            actionBtns+='<button class="btn btn-ghost btn-sm" onclick="wmMessageOpen('+b.id+')">Message</button> ';
           }
           if(!isCancelled){
             // Cancel: unpaid -> deleted; paid -> cancelled + Refund button appears.
@@ -2459,8 +2610,13 @@ function loadLiveBookings(){
             +'<td>'+dateStr+'</td>'
             +'<td>'+(b.time||'ASAP')+'</td>'
             +'<td><div class="main-v">'+(b.customer_name||'')+'</div>'+(b.customer_phone?'<div class="sub-v">'+escTo(b.customer_phone)+'</div>':'')+(b.customer_email?'<div class="sub-v">'+escTo(b.customer_email)+'</div>':'')+'</td>'
-            +'<td><div class="main-v">'+b.pickup+'</div>'+(b.flight?'<div class="sub-v">'+b.flight+'</div>':'')+'</td>'
-            +'<td><div class="main-v">'+b.destination+'</div></td>'
+            // Short display addresses (shared WMAddr normalizer) — the full
+            // precise address stays in the DB and is what navigation uses.
+            +'<td><div class="main-v">'+escTo(_admShortAddr(b.pickup))+'</div>'
+              +(b.stop_address?'<div class="sub-v">via '+escTo(_admShortAddr(b.stop_address))+'</div>':'')
+              +(b.flight?'<div class="sub-v">'+escTo(b.flight)+'</div>':'')+'</td>'
+            +'<td><div class="main-v">'+escTo(_admShortAddr(b.destination))+'</div>'
+              +'<div class="sub-v">'+(b.passengers||1)+' pax'+(_admBags(b.bags)?' · '+escTo(_admBags(b.bags)):'')+'</div></td>'
             +'<td>'+fareCellHtml+'</td>'
             +'<td><span class="tag '+payClass+'">'+payLabel+'</span></td>'
             +'<td><span class="tag '+statusClass+'">'+statusLabel+'</span>'
@@ -2482,7 +2638,7 @@ function loadLiveBookings(){
       var html=recent.map(function(b){
         var ago='';
         try{var mins=Math.floor((Date.now()-new Date(b.created_at).getTime())/60000);ago=mins<60?mins+' min ago':mins<1440?Math.floor(mins/60)+' hours ago':Math.floor(mins/1440)+' days ago';}catch(e){ago='';}
-        return '<div class="notif"><div class="notif-dot" style="background:var(--gold)"></div><div><div class="notif-text"><strong>'+b.ref+'</strong> \u2014 '+(b.customer_name||'')+', '+b.pickup+' \u2192 '+b.destination+(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')+'</div><div class="notif-time">'+ago+'</div></div></div>';
+        return '<div class="notif"><div class="notif-dot" style="background:var(--gold)"></div><div><div class="notif-text"><strong>'+escTo(b.ref)+'</strong> \u2014 '+escTo(b.customer_name||'')+', '+escTo(_admShortAddr(b.pickup))+' \u2192 '+escTo(_admShortAddr(b.destination))+(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')+'</div><div class="notif-time">'+ago+'</div></div></div>';
       }).join('');
       if(actDiv)actDiv.innerHTML=html;
       if(notifDiv)notifDiv.innerHTML=html;
@@ -2508,6 +2664,10 @@ function loadLiveBookings(){
       RECORD_DATA[key].push(b);
     });
     populateRecordMonths();
+
+    // Keep the weekly Completed ledger and the Cancelled record in step.
+    if(typeof buildAdmCompleted==='function')buildAdmCompleted();
+    if(typeof buildAdmCancelled==='function')buildAdmCancelled();
 
   }).catch(function(e){console.warn('[BOOKINGS]',e);});
 
@@ -2562,21 +2722,36 @@ function markJobDone(id,btn){
   fetch('/api/bookings/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'completed'})})
     .then(function(){showToast('Journey completed');loadLiveBookings();}).catch(function(){showToast('Error updating');});
 }
-function confirmJob(id,btn){
-  // Confirm at the suggested (or operator-edited) price. Setting the fare here
-  // means the confirmation email carries the price + secure payment link.
-  var inp=document.getElementById('adm-fare-'+id);
-  var body={status:'confirmed'};
-  if(inp){
-    var price=parseFloat(inp.value);
-    if(!price||isNaN(price)||price<=0){showToast('Enter a price first');return;}
-    body.fare=price;
-  }
-  if(btn){btn.disabled=true;btn.textContent='…';}
-  fetch('/api/bookings/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
-    .then(function(r){return r.json();})
-    .then(function(d){if(d.ok){showToast('Confirmed — customer emailed');loadLiveBookings();}else{showToast(d.error||'Error confirming');if(btn){btn.disabled=false;btn.textContent='Confirm';}}})
-    .catch(function(){showToast('Error confirming booking');if(btn){btn.disabled=false;btn.textContent='Confirm';}});
+// NOTE: the old one-click confirmJob() is GONE (it PATCHed status:'confirmed'
+// straight from a new request). It broke the estimate-first lifecycle the owner
+// app enforces — "Send Estimate" must never confirm, and a booking becomes
+// confirmed only when the CUSTOMER pays / chooses to pay the driver, or when
+// staff settle a genuine cash payment via admMarkPaid(). Do not reintroduce it;
+// server/tests/admin-parity.test.js fails if any admin path auto-confirms.
+
+// Settle a cash booking: awaiting_payment → confirmed, via the SAME shared route
+// the owner app uses (POST /bookings/:id/mark-paid). The route stamps paid_at
+// and promotes the status; it deliberately sends no extra customer email.
+async function admMarkPaid(bookingId){
+  if(!confirm('Mark this booking as paid? This confirms the ride.'))return;
+  try{
+    var r=await fetch('/api/bookings/'+bookingId+'/mark-paid',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}});
+    var d=await r.json();
+    if(r.ok&&d.ok){showToast('Payment received — booking confirmed');loadLiveBookings();}
+    else showToast(d.error||('Failed ('+r.status+')'));
+  }catch(e){showToast('Network error');console.error('[admMarkPaid]',e);}
+}
+
+// Chase an unpaid booking (e.g. a card customer who abandoned checkout) — the
+// same shared route + branded email the owner app sends.
+async function admSendPayReminder(bookingId){
+  if(!confirm('Send payment reminder email to the customer?'))return;
+  try{
+    var r=await fetch('/api/bookings/'+bookingId+'/payment-reminder',{method:'POST',credentials:'include'});
+    var d=await r.json();
+    if(r.ok&&d.ok){showToast('Payment reminder sent');}
+    else showToast(d.error||'Failed to send reminder');
+  }catch(e){showToast('Network error');console.error('[admPayReminder]',e);}
 }
 function cancelJob(id,btn){
   if(!confirm('Are you sure you want to cancel this booking?'))return;
@@ -2643,18 +2818,31 @@ async function submitBooking(){
   if(!date){showToast('Pick a date');return;}
   if(!name){showToast('Enter passenger name');return;}
   if(!phone){showToast('Enter mobile number');return;}
+  // Match the customer web-booking form (and the owner app): a valid EMAIL is
+  // required, because Send Estimate emails the customer. A manual booking
+  // created without one has no recipient and dies at "Send Estimate".
+  if(!email){showToast('Customer email is required — Send Estimate emails the customer, so a booking needs an email.');return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showToast('Please enter a valid email address.');return;}
 
+  var flight=(document.getElementById('nb-flight')||{}).value||'';
+  var bags=(document.getElementById('nb-bags')||{}).value||'0';
   var notes=name+' / '+phone+(email?' / '+email:'');
   try{
-    var r=await fetch('/api/bookings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    // Create ONLY — no status is sent, so the server applies its default
+    // 'pending' exactly like a customer web booking, and there is deliberately
+    // no follow-up PATCH to 'confirmed'. The booking follows the normal
+    // lifecycle: Send Estimate → (customer picks card/cash) awaiting_payment →
+    // confirmed when paid, or cancelled.
+    var r=await fetch('/api/bookings',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({
       pickup:pickup,stop_address:stop||null,destination:dest,date:date,time:time||'ASAP',
-      passengers:parseInt(pax,10)||1,fare:fare,payment:payment,notes:notes,
-      passenger_name:name,passenger_phone:phone,passenger_email:email||null
+      passengers:parseInt(pax,10)||1,bags:bags,flight:flight.trim()||null,
+      fare:fare,payment:payment,notes:notes,
+      passenger_name:name,passenger_phone:phone,passenger_email:email
     })});
     var d=await r.json();
     if(d.ok){
       closeModal('modal-book');
-      showToast('Booking confirmed -- '+d.booking.ref);
+      showToast('Booking created — '+d.booking.ref+' — now Pending. Send an estimate to the customer.');
       loadLiveBookings();
     }else{
       showToast(d.error||'Failed to create booking');
@@ -3074,7 +3262,7 @@ function tick(){const n=new Date();document.getElementById('clock').textContent=
 setInterval(tick,10000);
 
 // ── NAV ──
-const TITLES={dashboard:'Dashboard',today:"Today's Jobs",notifications:'Notifications',inbox:'Inbox','all-jobs':'All Journeys',calendar:'Calendar',customers:'Customers',invoices:'Invoices','time-off':'Time Off',fares:'Fare Editor','record-book':'Record Book',drivers:'Drivers',settings:'Settings',analytics:'Reports & Analytics'};
+const TITLES={dashboard:'Dashboard',today:"Today's Jobs",notifications:'Notifications',inbox:'Inbox','all-jobs':'All Journeys',completed:'Completed Journeys',cancelled:'Cancelled Bookings',calendar:'Calendar',customers:'Customers',invoices:'Invoices','time-off':'Time Off',fares:'Fare Editor','record-book':'Record Book',drivers:'Drivers',settings:'Settings',analytics:'Reports & Analytics'};
 function nav(id,btn){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
   document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('on'));
@@ -3090,6 +3278,8 @@ function nav(id,btn){
   if(id==='inbox'&&typeof loadInbox==='function')loadInbox();
   if(id==='time-off'&&typeof loadTimeOff==='function')loadTimeOff();
   if(id==='all-jobs'&&typeof loadFlaggedBookings==='function')loadFlaggedBookings();
+  if(id==='completed'&&typeof buildAdmCompleted==='function')buildAdmCompleted();
+  if(id==='cancelled'&&typeof buildAdmCancelled==='function')buildAdmCancelled();
   if(id==='invoices'&&typeof loadInvoiceHistory==='function')loadInvoiceHistory();
   if(id==='settings'&&typeof loadInvoiceSettings==='function'){loadInvoiceSettings();loadAdminDocs();}
   if(id==='today'&&typeof loadFlaggedBookings==='function')loadFlaggedBookings();
@@ -3130,12 +3320,25 @@ function showToast(msg){
 }
 
 // ── Payment status tag (Prepaid ✓ / Cash / Account / Awaiting payment) ──────
+// ── Booking lifecycle badges — SHARED with the owner app ────────────────────
+// Payment badge and status badge both come from /wm-lifecycle.js so admin and
+// owner can never disagree about what a booking's state means. Do not
+// re-implement these rules here — change wm-lifecycle.js and both apps move.
+//
+// In particular: a brand-new request reads "—" (nothing is awaiting yet), NOT
+// "Pending", and there is no silent 'cash' fallback anywhere.
 function admPayTag(b){
-  if(b&&(b.paid_at||b.payment==='card'))return{cls:'tag-prepaid',label:'Prepaid ✓'};
-  if(b&&b.payment==='cash')return{cls:'tag-cash',label:'Cash'};
-  if(b&&b.payment==='account')return{cls:'tag-account',label:'Account'};
-  return{cls:'tag-await',label:'Pending'};
+  var p=WMLifecycle.payStatus(b);
+  return{cls:p.cls,label:p.short};
 }
+// Status badge: New request → Pending · estimate sent → Awaiting payment →
+// Confirmed, plus Cancelled / Active / Completed.
+function admStatusTag(b){
+  var s=WMLifecycle.statusLabel(b);
+  return{cls:s.cls,label:s.label};
+}
+// Luggage label ("3 bags"), shared rule.
+function _admBags(bags){ return WMLifecycle.bagsText(bags); }
 // Flag same-day bookings whose pickup times fall within ~2h of each other.
 // Only bookings sharing the same date are compared — two jobs at a similar
 // time of day but on different days are NOT a conflict.
@@ -4673,7 +4876,7 @@ function buildRecordBook(){
         +'<td style="font-size:.75rem">'+b.pickup+'</td>'
         +'<td style="font-size:.75rem">'+b.destination+'</td>'
         +'<td style="font-family:var(--serif);font-size:1rem;color:var(--gold)">'+(b.fare?'£'+Number(b.fare).toFixed(0):'TBC')+'</td>'
-        +'<td>'+(b.payment||'cash')+'</td>'
+        +'<td>'+escTo(admPayTag(b).label)+'</td>'
         +'<td style="font-size:.75rem;color:var(--text-mid)">'+(b.flight||'—')+'</td>'
         +'<td style="font-size:.7rem;color:var(--text-mid);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escTo(notes)+'">'+escTo(notes)+'</td>'
         +'<td style="font-size:.65rem;color:var(--text-light);white-space:nowrap">'+bookedAt+'</td>'
@@ -4702,7 +4905,7 @@ function downloadRecordBook(){
       var pE=b.customer_email||b.passenger_email||'';
       var nt=b.notes||'';
       var bAt=b.created_at?b.created_at.replace('T',' ').slice(0,16):'';
-      lines.push(n+',"'+(b.ref||'')+'",' +rbDateStr(b)+','+(b.time||'')+',"'+pN+'","'+pH+'","'+pE+'","'+b.pickup+'","'+b.destination+'",£'+(b.fare||0)+','+(b.payment||'cash')+','+(b.flight||'—')+',"'+nt.replace(/"/g,'""')+'",'+bAt);
+      lines.push(n+',"'+(b.ref||'')+'",' +rbDateStr(b)+','+(b.time||'')+',"'+pN+'","'+pH+'","'+pE+'","'+b.pickup+'","'+b.destination+'",£'+(b.fare||0)+','+admPayTag(b).label+','+(b.flight||'—')+',"'+nt.replace(/"/g,'""')+'",'+bAt);
     });
   });
 
@@ -4756,7 +4959,7 @@ function printRecordBook(){
         +'<td>'+b.pickup+'</td>'
         +'<td>'+b.destination+'</td>'
         +'<td class="gold">'+(b.fare?'£'+Number(b.fare).toFixed(0):'TBC')+'</td>'
-        +'<td>'+(b.payment||'cash')+'</td>'
+        +'<td>'+escTo(admPayTag(b).label)+'</td>'
         +'<td>'+(b.flight||'—')+'</td>'
         +'<td style="font-size:.72rem;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+nt+'</td>'
         +'<td style="font-size:.68rem;color:#8a8a8a;white-space:nowrap">'+bAt+'</td>'
@@ -4949,7 +5152,14 @@ async function admSendEstimate(bookingId){
   if(!fare||fare<=0){showToast('Enter a valid fare amount');return;}
   var r=await fetch('/api/bookings/'+bookingId+'/send-estimate',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({fare:fare})});
   var d=await r.json();
-  if(r.ok&&d.ok){showToast('Estimate sent (£'+fare.toFixed(0)+') — booking stays pending');if(typeof loadAdminCalendar==='function')loadAdminCalendar();loadFlaggedBookings();}
+  // Show WHERE it went (parity with the owner app) so a typo'd address is
+  // caught immediately rather than failing silently.
+  if(r.ok&&d.ok){
+    showToast('✓ Estimate sent (£'+fare.toFixed(0)+') — emailed to '+(d.sent_to||'the customer')+'. Booking is now Pending; check that address is correct.');
+    if(typeof loadAdminCalendar==='function')loadAdminCalendar();
+    loadFlaggedBookings();
+    if(typeof loadLiveBookings==='function')loadLiveBookings();
+  }
   else showToast(d.error||'Failed');
 }
 

@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <script src="/address-normalize.js"></script>
+<script src="/wm-lifecycle.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"/>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -53,7 +54,7 @@ nav#nav{display:none}
 .bn-bar{width:18px;height:1px;background:currentColor;opacity:0;transition:opacity .2s}
 .bn.on .bn-bar{opacity:1}
 .bn-label{font-size:.6rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;margin-top:.1rem}
-.bn-dot{position:absolute;top:.38rem;right:calc(50% - 16px);background:var(--red);color:#1a1a1a;font-size:.46rem;font-weight:700;min-width:13px;height:13px;border-radius:7px;padding:0 2px;display:none;align-items:center;justify-content:center}
+.bn-dot{position:absolute;top:.3rem;right:calc(50% - 18px);background:var(--red);color:#fff;font-size:.58rem;font-weight:700;min-width:16px;height:16px;border-radius:8px;padding:0 3px;display:none;align-items:center;justify-content:center;line-height:1}
 
 /* ── PAGES ── */
 .page-scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:none}
@@ -1666,11 +1667,8 @@ function _tinyAddr(a){ return window.WMAddr ? WMAddr.tinyLabel(a) : _localTiny(a
 // Luggage label from the stored `bags` value. Web + manual forms store it as a
 // count string ("0","1".."4+"); '0'/'' means no large luggage. Returns '' when
 // there's nothing to show so the caller can omit it from a compact summary.
-function _bagsText(bags){
-  var b=(bags==null?'':String(bags)).trim();
-  if(!b||b==='0'||b==='0s+0l')return '';
-  return b+' bag'+(b==='1'?'':'s');
-}
+// Luggage label — shared rule (see /wm-lifecycle.js).
+function _bagsText(bags){ return WMLifecycle.bagsText(bags); }
 
 // NOTE: the old native "decisions" list (renderDecisionsPending / decConfirm /
 // decCancel) was removed. It rendered a green "Confirm" button that PATCHed
@@ -1695,8 +1693,9 @@ setInterval(function(){
 
 // Refresh when SSE fires any booking/offer event
 window.addEventListener('wm:event',function(){
-  var pg=document.getElementById('pg-toconfirm');
-  if(pg&&pg.classList.contains('on'))buildToConfirm();
+  // Refresh bookings so the To Confirm (awaiting-payment) badge + the visible tab
+  // stay live as customers choose payment / the owner marks paid.
+  if(typeof loadOwnerBookings==='function')loadOwnerBookings();
 });
 
 // ── DRIVERS ONBOARDING ────────────────────────────────────────────────────────
@@ -2447,24 +2446,13 @@ setInterval(loadExternalCalEvents,5*60*1000);
 // ── JOB CARD ──────────────────────────────────────────────────────────────────
 // ── Payment status ──────────────────────────────────────────────────────────
 // Prepaid (paid online), Cash (customer chose to pay the driver on the day),
-// Account (monthly invoice), or Awaiting payment (estimate confirmed, not yet
+// Account (monthly invoice), or Awaiting payment (method chosen, not yet
 // settled). Drives the small badge shown on every booking.
-function wmPayStatus(j){
-  if(j&&(j.paid_at||j.payment==='card'))return{key:'prepaid',label:'Prepaid',short:'Prepaid ✓',color:'#2D6E47',bg:'rgba(45,110,71,.12)'};
-  if(j&&j.payment==='cash')return{key:'cash',label:'Cash',short:'Cash',color:'#555555',bg:'rgba(106,106,106,.16)'};
-  if(j&&j.payment==='account')return{key:'account',label:'Account',short:'Account',color:'#3A5A8C',bg:'rgba(58,90,140,.12)'};
-  // No online payment recorded yet. Only call it "Awaiting payment" once the
-  // customer has ACTUALLY chosen a method (status → awaiting_payment) or the job
-  // has otherwise reached a settlement stage. A brand-new or estimate-sent
-  // (pending/offered) booking is NOT awaiting payment — showing "Awaiting" there
-  // is premature. Those read as a neutral "—" (the status label carries the
-  // real state: New request / Pending · estimate sent).
-  var st=(j&&j.apiStatus)||'';
-  if(st==='pending'||st==='offered'||st===''){
-    return{key:'none',label:'No payment chosen yet',short:'—',color:'rgba(27,27,26,.4)',bg:'rgba(27,27,26,.05)'};
-  }
-  return{key:'await',label:'Awaiting payment',short:'Awaiting',color:'#9C5800',bg:'rgba(156,88,0,.12)'};
-}
+//
+// The RULE lives in the shared lifecycle module (/wm-lifecycle.js) so the owner
+// app and the admin app can never disagree about what a booking's state means.
+// Do not re-implement it here — change wm-lifecycle.js and both apps move.
+function wmPayStatus(j){ return WMLifecycle.payStatus(j); }
 function wmPayBadge(j){var p=wmPayStatus(j);return'<span style="display:inline-block;padding:.12rem .45rem;font-size:.58rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:'+p.color+';background:'+p.bg+';border-radius:4px;white-space:nowrap">'+p.short+'</span>';}
 
 // Flag bookings whose pickup time falls within ~2h of another booking on the
@@ -2723,18 +2711,10 @@ function jobCardHtml(j){
       +'</div>';
   }
 
-  var stLabel,stColor,stBg;
-  if(j.apiStatus==='pending'){
-    // Estimate sent → PENDING (amber); brand-new request → "New request".
-    if(j.estimate_sent_at){stLabel='Pending · estimate sent';stColor='#9C5800';stBg='rgba(156,88,0,.10)';}
-    else{stLabel='New request';stColor='#555555';stBg='rgba(106,106,106,.12)';}
-  }
-  else if(j.apiStatus==='offered'){stLabel='Awaiting driver';stColor='#2A3A66';stBg='rgba(42,58,102,.07)';}
-  else if(j.apiStatus==='awaiting_payment'){stLabel='Awaiting payment';stColor='#9C5800';stBg='rgba(156,88,0,.12)';}
-  else if(j.apiStatus==='cancelled'){stLabel='Cancelled';stColor='#8B2222';stBg='rgba(139,34,34,.10)';}
-  else if(j.apiStatus==='active'){stLabel='Active';stColor='#2D6E47';stBg='rgba(45,110,71,.1)';}
-  else if(j.apiStatus==='completed'){stLabel='Completed';stColor='#2D6E47';stBg='rgba(45,110,71,.12)';}
-  else{stLabel='Confirmed';stColor='#2D6E47';stBg='rgba(45,110,71,.08)';}
+  // Status badge — shared ladder (New request → Pending · estimate sent →
+  // Awaiting payment → Confirmed, plus Cancelled). See /wm-lifecycle.js.
+  var _st=WMLifecycle.statusLabel(j);
+  var stLabel=_st.label,stColor=_st.color,stBg=_st.bg;
 
   var detailId='uj-det-'+j.id;
   var html='<div style="border-top:1px solid var(--rule)">'
@@ -2764,20 +2744,23 @@ function jobCardHtml(j){
         +(j.customer_note?'<tr><td style="padding:.3rem 0;color:#b78635;vertical-align:top;font-weight:600">Special req.</td><td style="color:#8a5a1a;background:rgba(184,152,90,.1);border-left:2px solid #b78635;padding:.3rem .5rem">'+escH(j.customer_note)+'</td></tr>':'')
       +'</table>'
       +'<div style="display:flex;gap:.4rem;flex-wrap:wrap">';
-  if(j.apiStatus==='pending'){
+  // WHICH ACTIONS ARE ALLOWED is decided by the shared lifecycle module, so the
+  // admin app offers exactly the same set on the same states (/wm-lifecycle.js).
+  var ACT=WMLifecycle.actionsFor(j);
+  if(ACT.sendEstimate){
     html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:var(--gold);color:#1a1a1a;border:1.5px solid var(--gold);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerSendEstimate('+j.id+')">Send Estimate</button>';
   }
   // Awaiting payment (cash-on-the-day chosen, or card started): settling the
   // fare is what CONFIRMS the booking. This is the only "Mark as paid" that
   // also confirms — a deliberate, explicit owner/driver action.
-  if(j.apiStatus==='awaiting_payment'){
+  if(ACT.markPaid){
     html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:var(--gold);color:#1a1a1a;border:1.5px solid var(--gold);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerMarkPaid('+j.id+')">Mark as Paid</button>';
   }
-  if(j.apiStatus==='confirmed'||j.apiStatus==='active'){
+  if(ACT.markCompleted){
     html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(45,110,71,.12);color:#2D6E47;border:1.5px solid rgba(45,110,71,.3);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerMarkCompleted('+j.id+')">Mark Completed</button>';
   }
   var _isPaid=!!(j.paid_at);
-  if(j.apiStatus==='confirmed'||j.apiStatus==='active'||j.apiStatus==='completed'){
+  if(ACT.togglePaid){
     html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;'
       +(_isPaid?'background:rgba(45,110,71,.12);color:#2D6E47;border:1.5px solid rgba(45,110,71,.3)':'background:rgba(106,106,106,.12);color:#555555;border:1.5px solid rgba(106,106,106,.35)')
       +'" onclick="ownerTogglePaid('+j.id+','+(_isPaid?'true':'false')+')">'
@@ -2785,19 +2768,19 @@ function jobCardHtml(j){
   }
   // Send Payment Reminder — shown on unpaid bookings with an email (completed,
   // confirmed, or awaiting payment — e.g. a card customer who didn't finish).
-  if(!_isPaid&&j.email&&(j.apiStatus==='completed'||j.apiStatus==='confirmed'||j.apiStatus==='awaiting_payment')&&j.fare){
+  if(ACT.sendReminder){
     html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(139,34,34,.06);color:#8B2222;border:1.5px solid rgba(139,34,34,.2);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerSendPayReminder('+j.id+')">Send Reminder</button>';
   }
   // Create Invoice button — available on all confirmed/completed jobs with a fare
-  if((j.apiStatus==='confirmed'||j.apiStatus==='active'||j.apiStatus==='completed')&&j.fare){
+  if(ACT.invoice){
     html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(27,27,26,.06);color:var(--navy);border:1.5px solid rgba(27,27,26,.15);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerQuickInvoice('+j.id+',\''+escH(j.name||'')+'\',\''+escH(j.email||'')+'\','+Number(j.fare||0)+',\''+escH(j.pickup||'')+'\',\''+escH(j.dest||'')+'\',\''+escH(j.date||'')+'\')">Create Invoice</button>';
   }
   // A cancelled booking is a record only: no message/edit (it's out of the live
   // job lists) — just the hard Delete the owner performs by hand.
-  if(j.email&&j.apiStatus!=='cancelled'){
+  if(ACT.message){
     html+='<button style="padding:.6rem .85rem;font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:#ffffff;color:#1a1a1a;border:1px solid rgba(27,27,26,.28);border-radius:7px;cursor:pointer;min-height:40px" onclick="wmMessageOpen('+j.id+')">Send Message</button>';
   }
-  if(j.apiStatus!=='cancelled'){
+  if(ACT.edit){
     html+='<button style="padding:.6rem .85rem;font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(27,27,26,.06);color:rgba(27,27,26,.6);border:1px solid rgba(27,27,26,.12);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingEdit('+j.id+')">Edit</button>';
   }
   html+='<button style="padding:.6rem .85rem;font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(139,34,34,.08);color:#8B2222;border:1.5px solid rgba(139,34,34,.2);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingDelete('+j.id+')">Delete</button>';
@@ -2892,8 +2875,8 @@ async function buildConfirmed(){
 
 // To Be Confirmed — quote requests waiting for your decision (status pending).
 function buildToConfirm(){
-  var dot=document.getElementById('toconfirm-dot');
-  if(dot){dot.textContent='';dot.style.display='none';}   // viewing clears the badge
+  // The badge now reflects AWAITING-PAYMENT count (set in loadOwnerBookings), not
+  // "am I viewing this tab" — so viewing the tab must NOT clear it.
   return renderJobList(document.getElementById('toconfirm-list'), TOCONFIRM_JOBS, {
     includePersonal:false, order:'asc',
     emptyTitle:'Nothing to confirm', emptySub:'Quote requests waiting for your decision appear here'
@@ -2913,33 +2896,13 @@ function buildCompleted(){
     return;
   }
 
-  // Bucket each job into its ISO week (Monday) key; undated jobs go last.
-  var groups={};                       // weekKey -> { start:Date|null, items:[] }
-  jobs.forEach(function(j){
-    var key='0000-00-00', start=null;
-    if(j.date){
-      var p=j.date.split('-');
-      var d=new Date(+p[0],(+p[1])-1,+p[2]);
-      if(!isNaN(d.getTime())){ start=isoWeekStart(d); key=dk(start.getFullYear(),start.getMonth(),start.getDate()); }
-    }
-    if(!groups[key])groups[key]={start:start,items:[]};
-    groups[key].items.push(j);
-  });
-
-  var keys=Object.keys(groups).sort().reverse();   // newest week first
+  // Bucket into ISO weeks (Monday start) with per-week takings. The grouping
+  // rule is shared with the admin app — see /wm-lifecycle.js.
   var html='';
-  keys.forEach(function(key){
-    var g=groups[key];
-    g.items.sort(function(a,b){
-      var dc=(a.date||'').localeCompare(b.date||'');
-      if(dc!==0)return -dc;                          // later date first
-      return (b.time||'').localeCompare(a.time||''); // later time first
-    });
-    var takings=g.items.reduce(function(s,j){return s+(Number(j.fare)||0);},0);
-    var label=g.start?_fmtWeekRange(g.start):'Undated';
+  WMLifecycle.groupByWeek(jobs).forEach(function(g){
     html+='<div style="display:flex;justify-content:space-between;align-items:baseline;gap:.6rem;padding:.7rem 1rem .5rem;background:#ffffff;border-bottom:1px solid var(--gold-rule)">'
-      +'<span style="font-family:var(--serif);font-size:1.02rem;font-weight:500;letter-spacing:.05em;color:var(--navy)">'+escH(label)+'</span>'
-      +'<span style="font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(27,27,26,.45);white-space:nowrap">'+g.items.length+(g.items.length===1?' job':' jobs')+' · £'+takings.toFixed(0)+'</span>'
+      +'<span style="font-family:var(--serif);font-size:1.02rem;font-weight:500;letter-spacing:.05em;color:var(--navy)">'+escH(g.label)+'</span>'
+      +'<span style="font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(27,27,26,.45);white-space:nowrap">'+g.items.length+(g.items.length===1?' job':' jobs')+' · £'+g.takings.toFixed(0)+'</span>'
       +'</div>';
     html+=g.items.map(jobCardHtml).join('');
   });
@@ -2989,7 +2952,7 @@ async function ownerSendEstimate(bookingId){
   try{
     var r=await fetch('/api/bookings/'+bookingId+'/send-estimate',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({fare:fare})});
     var d=await r.json();
-    if(r.ok&&d.ok){showToast('✓ Estimate sent (£'+fare.toFixed(0)+') — booking is now Pending');loadOwnerBookings();}
+    if(r.ok&&d.ok){showToast('✓ Estimate sent (£'+fare.toFixed(0)+') — emailed to '+(d.sent_to||'the customer')+'. Booking is now Pending; check that address is correct.');loadOwnerBookings();}
     else showToast(d.error||('Failed ('+r.status+')'));
   }catch(e){showToast('Network error');console.error('[ownerSendEstimate]',e);}
 }
@@ -4486,13 +4449,14 @@ async function loadOwnerBookings(){
       CAL_JOBS[key].push({id:b.id,time:b.time||'ASAP',name:b.customer_name||b.passenger_name||'',phone:b.customer_phone||b.passenger_phone||'',pickup:b.pickup,dest:b.destination,stop_address:b.stop_address||'',fare:b.fare||0,payment:b.payment||'pending',paid_at:b.paid_at||null,flight:b.flight||'',pax:b.passengers||1,bags:b.bags||'',notes:b.notes||'',status:b.status});
     });
 
-    // Update the To Confirm dot — badge the count of pending (unconfirmed) jobs
+    // To Confirm badge — the COUNT of AWAITING-PAYMENT bookings (rides where the
+    // customer picked a method and payment is pending, awaiting the owner). Shows
+    // the number; hidden at zero. Live-updated on every load + SSE event.
     var dot=document.getElementById('toconfirm-dot');
     if(dot){
-      var pendingCount=TOCONFIRM_JOBS.length;
-      var onToConfirm=document.getElementById('pg-toconfirm')&&document.getElementById('pg-toconfirm').classList.contains('on');
-      dot.textContent=(pendingCount&&!onToConfirm)?pendingCount:'';
-      dot.style.display=(pendingCount&&!onToConfirm)?'flex':'none';
+      var awaitingCount=WMLifecycle.toConfirmCount(OFFERED_JOBS||[]);
+      dot.textContent=awaitingCount?String(awaitingCount):'';
+      dot.style.display=awaitingCount?'flex':'none';
     }
 
     // Keep Tesla range data fresh, then rebuild whichever tab is showing.
