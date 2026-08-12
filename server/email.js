@@ -573,12 +573,35 @@ async function sendAdminAlert(booking) {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────
+// Render a booking's date + time for a customer/owner-facing email.
+//
+// TIMEZONE INVARIANT \u2014 bookings.date ('YYYY-MM-DD') and bookings.time ('HH:MM')
+// are UK wall-clock strings, NOT instants. The correct rendering is therefore a
+// pure calendar-date rendering: no timezone conversion may happen at all.
+//
+// We build the date at UTC midnight and format it with timeZone:'UTC', so the
+// weekday is always the literal calendar date's weekday regardless of the host
+// timezone (Railway runs UTC, dev machines do not).
+//
+// DO NOT "fix" this by adding timeZone:'Europe/London' to the formatter while
+// parsing the string as a local instant \u2014 that combination genuinely shifts the
+// day. `new Date('2026-08-16T21:00')` formatted in Europe/London renders
+// "Monday 17 August 2026" on any host west of London. Guarded by
+// server/tests/timezone-dayofweek.test.js.
 function formatDate(date, time) {
   if (!date) return 'Not specified';
   try {
-    const d = new Date(date + 'T' + (time || '00:00'));
+    let str;
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(date));
     const opts = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-    let str = d.toLocaleDateString('en-GB', opts);
+    if (m) {
+      const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+      str = d.toLocaleDateString('en-GB', Object.assign({ timeZone: 'UTC' }, opts));
+    } else {
+      // Non ISO-date input (legacy/free-text) \u2014 fall back to a local parse, which
+      // is self-consistent because the formatter is local too.
+      str = new Date(date + 'T' + (time || '00:00')).toLocaleDateString('en-GB', opts);
+    }
     if (time && time !== 'ASAP') str += ' \u00b7 ' + time;
     else if (time === 'ASAP') str += ' \u00b7 ASAP';
     return str;
@@ -1384,5 +1407,7 @@ module.exports = {
   sendVerificationEmail, sendPasswordResetEmail, sendAdminPasswordResetEmail,
   sendRecommendation, sendPartnershipOutreach, sendCorporateIntro, sendReviewRequest, sendPaymentReminder, sendEmail, isConfigured,
   // Exposed for local template previews / potential reuse.
-  confirmationEmailHtml
+  confirmationEmailHtml,
+  // Exposed for the timezone/day-of-week guardrail test.
+  formatDate
 };

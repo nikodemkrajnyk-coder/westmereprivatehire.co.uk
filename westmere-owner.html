@@ -2641,8 +2641,10 @@ function checkFeasibility(offered){
 var _CAL_MONTHS_S=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function _fmtUpcomingDate(dateStr){
   if(!dateStr)return'';
-  var today=new Date().toISOString().split('T')[0];
-  var tomorrow=new Date(Date.now()+86400000).toISOString().split('T')[0];
+  // UK calendar dates, not the device's UTC date — between 00:00 and 01:00 BST
+  // the UTC date is still yesterday, which labels today's job "Tomorrow".
+  var today=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/London'});
+  var tomorrow=new Date(Date.now()+86400000).toLocaleDateString('sv-SE',{timeZone:'Europe/London'});
   if(dateStr===today)return'Today';
   if(dateStr===tomorrow)return'Tomorrow';
   var p=dateStr.split('-');

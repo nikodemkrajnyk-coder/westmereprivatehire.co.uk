@@ -2465,9 +2465,14 @@ router.get('/analytics', (req, res) => {
   // Busiest times heatmap — [dayOfWeek 0=Mon][hour 0-23]
   const heatmap = Array.from({length:7}, () => Array(24).fill(0));
   db.prepare(`SELECT date, time FROM bookings WHERE status != 'cancelled' AND date IS NOT NULL AND time IS NOT NULL`).all().forEach(b => {
-    const d = new Date(b.date);
+    // b.date is a UK wall-clock calendar date — derive its weekday from the
+    // literal components (via UTC) so the bucket never shifts with the host
+    // timezone. `new Date('2026-08-16').getDay()` is UTC-parsed but local-read.
+    const dm = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(b.date || ''));
+    if (!dm) return;
+    const d = new Date(Date.UTC(+dm[1], +dm[2] - 1, +dm[3]));
     if (isNaN(d.getTime())) return;
-    const dow = (d.getDay() + 6) % 7;
+    const dow = (d.getUTCDay() + 6) % 7;
     const hr = parseInt((b.time || '').split(':')[0], 10);
     if (isNaN(hr) || hr < 0 || hr > 23) return;
     heatmap[dow][hr]++;

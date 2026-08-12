@@ -1366,19 +1366,19 @@ async function loadDriverJobs(){
     ]);
     var offers=(results[0]&&results[0].ok)?results[0].offers:[];
     var jobs=(results[1]&&results[1].ok)?results[1].jobs:[];
-    var today=new Date().toISOString().split('T')[0];
+    var today=drvTodayUK();
 
     TODAY_JOBS=jobs.filter(function(b){return b.date===today&&b.status!=='cancelled';}).map(_toDriverJob);
 
     // Upcoming = all offered jobs + future confirmed/active jobs (date > today)
     var futureJobs=jobs.filter(function(b){return b.date>today&&b.status!=='cancelled'&&b.status!=='completed';}).map(function(b){
       var j=_toDriverJob(b);
-      try{j.dateKey=b.date;j.date=new Date(b.date).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}catch(e){j.dateKey=b.date;j.date=b.date;}
+      try{j.dateKey=b.date;j.date=drvDayLabel(b.date);}catch(e){j.dateKey=b.date;j.date=b.date;}
       return j;
     });
     var offeredMapped=offers.map(function(b){
       var j=_toDriverJob(b);
-      try{j.dateKey=b.date;j.date=new Date(b.date).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}catch(e){j.dateKey=b.date;j.date=b.date;}
+      try{j.dateKey=b.date;j.date=drvDayLabel(b.date);}catch(e){j.dateKey=b.date;j.date=b.date;}
       return j;
     });
     OFFERED_JOBS=offeredMapped.concat(futureJobs).sort(function(a,b){
@@ -1484,6 +1484,24 @@ var DRV_MONTHS=['January','February','March','April','May','June','July','August
 
 function drvDateKey(y,m,d){return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');}
 function drvEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// A booking's date is a UK wall-clock CALENDAR DATE ('YYYY-MM-DD'), not an
+// instant — so render it from its literal components and never let a timezone
+// conversion touch it. `new Date('2026-08-16')` parses as UTC midnight and then
+// formats in DEVICE-local time, which renders "Sat 15 Aug" on any device west
+// of UTC. Guarded by server/tests/timezone-dayofweek.test.js.
+function drvDayLabel(dateStr){
+  var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dateStr||''));
+  if(!m)return dateStr||'';
+  return new Date(Date.UTC(+m[1],+m[2]-1,+m[3]))
+    .toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',timeZone:'UTC'});
+}
+// "Today" as a UK calendar date. Not the device's UTC date, which between
+// 00:00 and 01:00 BST is still yesterday and pushes a job due today into
+// "Upcoming".
+function drvTodayUK(){
+  return new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/London'}); // YYYY-MM-DD
+}
 
 function _drvEvDateKey(ev){
   if(!ev.start)return '';

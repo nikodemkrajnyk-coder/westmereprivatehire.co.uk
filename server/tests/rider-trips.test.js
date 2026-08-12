@@ -152,6 +152,9 @@ function makeSandbox(stored) {
   vm.createContext(sandbox);
   vm.runInContext(
     extractFn(riderHtml, 'getBookings') + '\n' +
+    // the real Europe/London "today" helper the filters depend on — see
+    // server/tests/timezone-dayofweek.test.js
+    extractFn(riderHtml, 'todayUK') + '\n' +
     "var _tripFilter='upcoming';\n" +
     extractFn(riderHtml, 'renderTrips') + '\n', sandbox);
   return { sandbox, listEl, warnings };

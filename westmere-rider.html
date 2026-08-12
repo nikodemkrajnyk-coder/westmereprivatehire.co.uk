@@ -781,6 +781,14 @@ body.mode-day .btn-main{background:#1b1b1a!important;color:#f5f2ec!important}
 
 /* ── XSS ESCAPE ── */
 function esc(s){if(!s)return '';var d=document.createElement('div');d.appendChild(document.createTextNode(String(s)));return d.innerHTML;}
+
+// Today as a UK calendar date ('YYYY-MM-DD'), matching how bookings.date is
+// stored. NOT the device's UTC date: a customer abroad (or any UK device
+// between 00:00 and 01:00 BST) would otherwise see today's trip jump between
+// Upcoming and Past. Guarded by server/tests/timezone-dayofweek.test.js.
+function todayUK(){
+  return new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/London'});
+}
 // Address DISPLAY → shared normalizer (address-normalize.js), the single source
 // of truth used by the emails + owner/admin apps. Trip history shows the short
 // form; the booking flow still stores/sends the full precise address.
@@ -1703,7 +1711,7 @@ function renderTrips(filter){
   // take the trip history down with it.
   try{renderActiveTrip();}catch(e){console.error('[trips] active journey card failed',e);}
   var bookings=getBookings();
-  var now=new Date().toISOString().split('T')[0];
+  var now=todayUK();
   var filtered;
   if(filter==='upcoming'){
     filtered=bookings.filter(function(b){return b.date>=now&&b.status!=='cancelled'&&b.status!=='completed';});
@@ -1763,7 +1771,7 @@ function cancelTrip(ref){
 /* ── ACTIVE TRIP ── */
 function renderActiveTrip(){
   var bookings=getBookings();
-  var today=new Date().toISOString().split('T')[0];
+  var today=todayUK();
   var active=bookings.find(function(b){
     return(b.status==='confirmed'||b.status==='active')&&b.date>=today;
   });
