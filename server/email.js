@@ -940,7 +940,11 @@ async function sendPasswordResetEmail(customer, token) {
   if (!customer || !customer.email) return false;
   const { email, full_name } = customer;
   const firstName = (full_name || '').split(' ')[0] || 'there';
-  const resetUrl = `https://westmereprivatehire.co.uk/?skip=1&reset_token=${token}`;
+  // Must land on the customer account app — westmere-rider.html is the ONLY page
+  // that reads `reset_token` from the query and shows the reset form. The old
+  // `/?skip=1&reset_token=` pointed at index.html (the marketing homepage), which
+  // has no reset handling at all, so every reset link was dead on arrival.
+  const resetUrl = `https://westmereprivatehire.co.uk/westmere-rider.html?reset_token=${token}`;
 
   const body = `
   <p style="margin:0 0 6px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD};font-weight:600">Password reset</p>
