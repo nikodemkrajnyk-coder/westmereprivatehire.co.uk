@@ -1175,7 +1175,9 @@ router.get('/customer/invoices', (req, res) => {
 router.get('/customer/profile', (req, res) => {
   if (req.auth.type !== 'customer') return res.status(403).json({ error: 'Customer access required' });
   const db = getDb();
-  const row = db.prepare('SELECT id, email, full_name, phone, created_at FROM customers WHERE id = ?').get(req.auth.id);
+  // Address included so My Details can show the customer the home address we
+  // actually hold for them. Scoped to req.auth.id — never an id from the client.
+  const row = db.prepare('SELECT id, email, full_name, phone, address_line1, address_line2, postcode, created_at FROM customers WHERE id = ?').get(req.auth.id);
   if (!row) return res.status(404).json({ error: 'Account not found' });
   res.json({ ok: true, profile: row });
 });
@@ -1194,13 +1196,27 @@ router.patch('/customer/profile', (req, res) => {
   if (req.auth.type !== 'customer') return res.status(403).json({ error: 'Customer access required' });
   const db = getDb();
 
-  const current = db.prepare('SELECT id, email, full_name, phone FROM customers WHERE id = ? AND active = 1').get(req.auth.id);
+  const current = db.prepare('SELECT id, email, full_name, phone, address_line1, address_line2, postcode FROM customers WHERE id = ? AND active = 1').get(req.auth.id);
   if (!current) return res.status(404).json({ error: 'Account not found' });
 
   const name = String(req.body.full_name == null ? current.full_name : req.body.full_name).trim();
   const email = String(req.body.email == null ? current.email : req.body.email).trim();
   const phoneRaw = req.body.phone == null ? current.phone : req.body.phone;
   const phone = String(phoneRaw == null ? '' : phoneRaw).trim();
+
+  // ── THE EDITABLE SET IS THESE SIX FIELDS AND NOTHING ELSE ──
+  // Read field by field from req.body rather than looping over its keys: a loop
+  // is how a `bank_sort_code` or an `account_type` in the payload ends up in the
+  // UPDATE. Anything not named here cannot be written by a customer, whatever
+  // they post. In particular the bank_* columns and account_type stay owner-only.
+  // GUARDRAIL: server/tests/customer-account.test.js.
+  const addrPick = (key) => {
+    const raw = req.body[key] == null ? current[key] : req.body[key];
+    return String(raw == null ? '' : raw).trim();
+  };
+  const address_line1 = addrPick('address_line1');
+  const address_line2 = addrPick('address_line2');
+  const postcode = addrPick('postcode');
 
   if (!name) return res.status(400).json({ error: 'Please enter your name.' });
   if (name.length > 120) return res.status(400).json({ error: 'That name is too long.' });
@@ -1212,6 +1228,14 @@ router.patch('/customer/profile', (req, res) => {
   if (phone && !/^[+0-9][0-9\s()\-]{6,24}$/.test(phone)) {
     return res.status(400).json({ error: 'Please enter a valid phone number, or leave it blank.' });
   }
+  // The address is optional — plenty of accounts predate it — but a stored value
+  // must be a sane length, and a postcode must look like one.
+  if (address_line1.length > 160 || address_line2.length > 160) {
+    return res.status(400).json({ error: 'That address line is too long.' });
+  }
+  if (postcode && !/^[A-Za-z0-9][A-Za-z0-9\s-]{1,10}$/.test(postcode)) {
+    return res.status(400).json({ error: 'Please enter a valid postcode, or leave it blank.' });
+  }
 
   const clash = db.prepare('SELECT id FROM customers WHERE LOWER(TRIM(email)) = LOWER(TRIM(?)) AND id <> ?')
     .get(email, current.id);
@@ -1220,8 +1244,8 @@ router.patch('/customer/profile', (req, res) => {
   }
 
   try {
-    db.prepare('UPDATE customers SET full_name = ?, email = ?, phone = ? WHERE id = ?')
-      .run(name, email, phone, current.id);
+    db.prepare('UPDATE customers SET full_name = ?, email = ?, phone = ?, address_line1 = ?, address_line2 = ?, postcode = ? WHERE id = ?')
+      .run(name, email, phone, address_line1, address_line2, postcode.toUpperCase(), current.id);
   } catch (e) {
     // UNIQUE(email) backstop for a race between two concurrent saves.
     if (/UNIQUE/i.test(e.message)) {
@@ -1238,7 +1262,7 @@ router.patch('/customer/profile', (req, res) => {
         emailChanged ? ('email ' + current.email + ' → ' + email) : 'name/phone', req.ip);
   } catch (e) {}
 
-  const row = db.prepare('SELECT id, email, full_name, phone, created_at FROM customers WHERE id = ?').get(current.id);
+  const row = db.prepare('SELECT id, email, full_name, phone, address_line1, address_line2, postcode, created_at FROM customers WHERE id = ?').get(current.id);
   res.json({ ok: true, profile: row, emailChanged });
 });
 

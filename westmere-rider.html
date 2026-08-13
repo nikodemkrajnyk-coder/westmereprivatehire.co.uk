@@ -68,12 +68,6 @@ nav#nav{display:none}
 .tb-date{font-family:var(--serif);font-size:.85rem;color:rgba(27,27,26,.5);font-weight:300;letter-spacing:.04em;font-style:italic}
 
 /* ── BOTTOM NAV ── */
-.bottom-nav{background:rgba(255,255,255,.92);backdrop-filter:blur(24px);border-top:1px solid rgba(27,27,26,.06);box-shadow:0 -1px 8px rgba(27,27,26,.04);display:flex;padding-bottom:env(safe-area-inset-bottom,0px);flex-shrink:0;z-index:50;padding-top:0}
-.bn-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:.1rem;padding:6px .4rem;background:none;border:none;cursor:pointer;transition:color .2s;color:rgba(27,27,26,.4);font-family:var(--sans);min-height:0;position:relative}
-.bn-item.on{color:var(--navy)}
-.bn-label{font-family:var(--serif);font-size:11px;font-weight:400;letter-spacing:.12em;text-transform:uppercase;font-style:italic}
-.bn-bar{width:20px;height:1px;background:currentColor;opacity:0;transition:opacity .2s;margin-bottom:.1rem}
-.bn-item.on .bn-bar{opacity:1}
 .bn-badge{position:absolute;top:.42rem;right:calc(50% - 16px);background:var(--red);color:#fff;font-size:.48rem;font-weight:700;min-width:14px;height:14px;border-radius:7px;padding:0 3px;display:none;align-items:center;justify-content:center}
 
 /* ── PAGE SCROLL ── */
@@ -215,7 +209,7 @@ body.mode-day .aj-meta-grid{border-top:1px solid rgba(26,38,56,.12);border-botto
 .cal-day{text-align:center;font-family:var(--sans);font-size:.9rem;font-weight:300;color:rgba(27,27,26,.85);padding:.42rem .2rem;border-radius:6px;cursor:pointer;transition:background .12s,color .12s;line-height:1}
 .cal-day:hover:not(.cal-past):not(.cal-empty){background:rgba(16,42,67,.25);color:var(--navy)}
 .cal-day.cal-today{color:var(--navy);font-weight:500}
-.cal-day.cal-sel{background:var(--navy);color:#111;font-weight:500}
+.cal-day.cal-sel{background:var(--navy);color:#ffffff;font-weight:500}
 .cal-day.cal-past{color:rgba(27,27,26,.22);cursor:not-allowed}
 .cal-day.cal-empty{cursor:default}
 .time-drop{color-scheme:light;display:none;position:absolute;top:calc(100% + 8px);right:0;left:auto;z-index:400;background:#ffffff;border:1px solid rgba(16,42,67,.5);border-radius:12px;padding:1.1rem;width:290px;height:310px;box-shadow:0 20px 60px rgba(27,27,26,.28)}
@@ -225,7 +219,7 @@ body.mode-day .aj-meta-grid{border-top:1px solid rgba(26,38,56,.12);border-botto
 .time-col-label{font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.5);text-align:center;padding:.3rem 0;position:sticky;top:0;background:#ffffff}
 .time-opt{font-family:var(--sans);font-size:.9rem;font-weight:300;color:rgba(27,27,26,.75);padding:.32rem .5rem;border-radius:5px;cursor:pointer;text-align:center;transition:background .12s,color .12s}
 .time-opt:hover{background:rgba(16,42,67,.25);color:var(--navy)}
-.time-opt.t-sel{background:var(--navy);color:#111;font-weight:500}
+.time-opt.t-sel{background:var(--navy);color:#ffffff;font-weight:500}
 /* ── CUSTOM PAX / LUGGAGE PICKER ── */
 .pax-trigger,.bags-trigger{cursor:pointer;position:relative}
 .pick-drop{color-scheme:light;display:none;position:absolute;top:calc(100% + 8px);left:0;z-index:400;background:#ffffff;border:1px solid rgba(16,42,67,.5);border-radius:12px;padding:1.1rem;width:200px;box-shadow:0 20px 60px rgba(27,27,26,.28)}
@@ -234,7 +228,7 @@ body.mode-day .aj-meta-grid{border-top:1px solid rgba(26,38,56,.12);border-botto
 .pick-col-label{font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.5);text-align:center;padding:.3rem 0;position:sticky;top:0;background:#ffffff}
 .pick-opt{font-family:var(--sans);font-size:.95rem;font-weight:300;color:rgba(27,27,26,.78);padding:.5rem .6rem;border-radius:5px;cursor:pointer;text-align:center;transition:background .12s,color .12s;display:flex;align-items:center;justify-content:center;gap:.5rem}
 .pick-opt:hover{background:rgba(16,42,67,.25);color:var(--navy)}
-.pick-opt.p-sel{background:var(--navy);color:#111;font-weight:500}
+.pick-opt.p-sel{background:var(--navy);color:#ffffff;font-weight:500}
 .pick-counter{display:flex;align-items:center;justify-content:center;gap:1rem;padding:.4rem 0}
 .pick-btn{width:36px;height:36px;border-radius:50%;border:1px solid rgba(27,27,26,.06);background:rgba(27,27,26,.06);color:#102a43;font-size:1.2rem;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
 .pick-btn:hover{background:rgba(27,27,26,.18)}
@@ -310,7 +304,6 @@ body.mode-day .prof-acc-link{color:#102a43}
   .fr-breakdown{gap:.8rem}
 }
 @media(max-width:380px){
-  .bn-label{font-size:.85rem;letter-spacing:.12em}
   .sec-title{font-size:1.7rem}
   .wc-greeting{font-size:1.85rem}
 }
@@ -330,9 +323,6 @@ body.mode-day .tb-name{color:#1A2638}
 body.mode-day .tb-sub{color:#102a43}
 body.mode-day .tb-date{color:rgba(26,38,56,.65)}
 body.mode-day .tb-crest{border-color:rgba(16,42,67,.4);color:#102a43}
-body.mode-day .bottom-nav{background:rgba(255,255,255,.88);border-top:1px solid rgba(16,42,67,.18)}
-body.mode-day .bn-item{color:rgba(26,38,56,.45)}
-body.mode-day .bn-item.on{color:#102a43}
 body.mode-day .card,body.mode-day .welcome-card,body.mode-day .aj-card,
 body.mode-day .trip-card,body.mode-day .fare-reveal,body.mode-day .prof-card{
   background:rgba(255,255,255,.55);border:1px solid rgba(16,42,67,.22)}
@@ -445,8 +435,6 @@ body.mode-day #stripe-card-el.StripeElement--focus{border-bottom-color:#102a43}
     box-shadow:0 20px 60px rgba(27,27,26,.12);background:#fff;
   }
   .topbar{padding-left:2rem;padding-right:2rem;height:64px}
-  .bottom-nav{padding-left:1.5rem;padding-right:1.5rem;justify-content:center}
-  .bn-item{max-width:190px}
   .page-content{max-width:1080px;padding:1.6rem 2.2rem 2rem}
 }
 @media(min-width:1180px){
@@ -487,8 +475,6 @@ body.mode-day .ch,body.mode-day .tb-sub{color:var(--muted)!important}
 .loc-btn,.aj-call-btn,.filter-btn,.pick-btn{color:#1b1b1a!important;border-color:var(--line)!important}
 /* .filter-btn.on is styled in /wm-buttons.css (gold wash, not a black fill) */
 /* Bottom nav active -> charcoal (template) */
-.bn-item.on,body.mode-day .bn-item.on{color:#1b1b1a!important}
-.bn-item.on .bn-bar,.bn-item.on::after{background:#1b1b1a!important}
 /* keep a restrained gold ONLY for the serif italic heading accents (.sec-title em / h1 em) */
 .sec-title em,h1 em,body.mode-day .sec-title em{color:rgba(27,27,26,.55)!important}
 /* inputs a touch cleaner */
@@ -577,7 +563,6 @@ body::after{
 .topbar .tb-date{color:rgba(255,255,255,.72)}
 
 /* ── BOTTOM NAV: opaque cream so labels never sit on the photograph ── */
-.bottom-nav{background:rgba(255,255,255,.96);backdrop-filter:blur(24px)}
 
 /* ── DESKTOP: the app becomes a card floating on the Sussex coast ── */
 @media(min-width:600px){
@@ -667,7 +652,48 @@ body::after{
 /* ── SHELL ── */
 .dash{flex:1;display:flex;min-height:0;position:relative;z-index:1}
 .page-scroll{flex:1;min-width:0}
-.side{display:none}
+
+/* ── SIDE MENU ──────────────────────────────────────────────────────────
+   One nav, two presentations. On a wide screen the sidebar is simply there,
+   static, as it always was. Below 980px it becomes an off-canvas drawer opened
+   from the header — so a phone gets the same five sections without a bar
+   permanently occupying the bottom of the screen. It is the SAME markup and the
+   same .side-item.on active state, so nothing can drift between the two. */
+.side{
+  display:flex;flex-direction:column;width:min(80vw,290px);flex-shrink:0;
+  background:#ffffff;border-right:1px solid rgba(16,42,67,.12);
+  padding:1.6rem 0 1.2rem;overflow-y:auto;
+  position:fixed;top:0;left:0;bottom:0;z-index:80;
+  transform:translateX(-102%);
+  transition:transform .26s cubic-bezier(.4,0,.2,1);
+  box-shadow:0 0 40px rgba(16,42,67,.16);
+  padding-top:calc(1.6rem + env(safe-area-inset-top,0px));
+}
+.side.open{transform:translateX(0)}
+/* The scrim both dims the page and gives "tap outside to close" a target. */
+.side-scrim{
+  position:fixed;inset:0;background:rgba(16,42,67,.42);z-index:79;
+  opacity:0;visibility:hidden;transition:opacity .26s,visibility .26s;
+}
+.side-scrim.open{opacity:1;visibility:visible}
+/* The hamburger. 44px square — a real touch target, not a decorative glyph. */
+.tb-menu{
+  width:44px;height:44px;flex-shrink:0;margin-right:.15rem;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  background:none;border:none;cursor:pointer;border-radius:8px;padding:0;
+  -webkit-tap-highlight-color:transparent;
+}
+.tb-menu:active{background:rgba(16,42,67,.07)}
+.tb-menu span{display:block;width:19px;height:1.5px;background:var(--navy);border-radius:2px;transition:transform .22s,opacity .22s}
+.side.open ~ .topbar .tb-menu span:nth-child(1){transform:translateY(5.5px) rotate(45deg)}
+.tb-menu:focus-visible{outline:2px solid var(--navy);outline-offset:2px}
+/* Closing the drawer from inside it — the drawer covers the header on a phone. */
+.side-close{
+  position:absolute;top:calc(.9rem + env(safe-area-inset-top,0px));right:.9rem;
+  width:38px;height:38px;border:none;background:none;cursor:pointer;border-radius:8px;
+  font-family:var(--serif);font-size:1.4rem;line-height:1;color:var(--navy);
+}
+.side-close:active{background:rgba(16,42,67,.07)}
 
 @media(min-width:980px){
   .side{
@@ -675,8 +701,11 @@ body::after{
     background:rgba(255,255,255,.72);
     border-right:1px solid rgba(27,27,26,.09);
     padding:1.6rem 0 1.2rem;overflow-y:auto;
+    /* Static again: no drawer, no scrim, no shadow. */
+    position:relative;transform:none;box-shadow:none;z-index:auto;padding-top:1.6rem;
   }
-  .bottom-nav{display:none}
+  .side-scrim{display:none}
+  .tb-menu,.side-close{display:none}
   .page-content{padding-left:2.6rem;padding-right:2.6rem}
   /* Sign in / Sign out live in the sidebar on desktop — the full-width buttons
      at the foot of My Details are the phone affordance, so hide them here. */
@@ -1008,17 +1037,26 @@ body.mode-day .topbar .tb-name{color:#ffffff}
 body.mode-day .topbar .tb-sub{color:#657485!important}
 body.mode-day .topbar .tb-date{color:rgba(255,255,255,.72)}
 body.mode-day .topbar .tb-crest{color:#ffffff;border-color:rgba(16,42,67,.6)}
-body.mode-day .bottom-nav{background:rgba(255,255,255,.96);border-top:1px solid rgba(27,27,26,.06)}
 body.mode-day .side{background:rgba(255,255,255,.72)}
 body.mode-day .side-item{color:rgba(27,27,26,.62)}
 body.mode-day .side-item.on{color:var(--navy);background:rgba(16,42,67,.1)}
 
-/* ── MOBILE: five tabs across the bottom bar ── */
+/* ── PHONE: the nav is a drawer ── */
 @media(max-width:979px){
-  .bn5 .bn-item{padding:7px .15rem}
-  .bn5 .bn-label{font-size:10px;letter-spacing:.04em;font-style:normal;font-family:var(--sans);font-weight:400;text-transform:uppercase}
-  .bn5 .bn-cta .bn-label{color:var(--navy)}
-  .bn5 .bn-item.on .bn-label{font-weight:500}
+  /* OPAQUE, and above the header. The sidebar's usual 72% white is a frosted
+     panel sitting BESIDE the page; as a drawer it sits OVER the page, and at
+     72% the content and the header showed straight through it. Declared here,
+     after the day/night rules, so it wins without !important. */
+  .side,body.mode-day .side,body.mode-night .side{background:#ffffff}
+  /* .dash carries z-index:1, which makes it a stacking context — and a
+     position:fixed child cannot escape one. The drawer's z-index was therefore
+     being compared against its siblings INSIDE .dash, not against the header
+     (z-index:50) or the scrim, so both painted over it and the drawer looked
+     translucent and half-buried. Dropping the context on phones lets the fixed
+     drawer stack where it is declared to. */
+  .dash{z-index:auto}
+  .side{z-index:120}
+  .side-scrim{z-index:119}
   .page-content{max-width:640px}
   .drow{padding:.95rem 1.1rem;gap:.8rem}
   .drow-t{font-size:.95rem}
@@ -1038,7 +1076,6 @@ body.mode-day .side-item.on{color:var(--navy);background:rgba(16,42,67,.1)}
   .filter-row{padding:.8rem 1.1rem;gap:1.3rem}
 }
 @media(max-width:420px){
-  .bn5 .bn-label{font-size:9px;letter-spacing:.02em}
 }
 
 /* ── BROWSER AUTOFILL ──
@@ -1167,7 +1204,13 @@ select:-webkit-autofill:focus{
 <div class="screen" id="scr-app">
 
   <!-- TOPBAR -->
+  <div class="side-scrim" id="side-scrim" onclick="closeSideMenu()"></div>
+
   <div class="topbar">
+    <button class="tb-menu" id="tb-menu" type="button" aria-label="Open menu"
+            aria-controls="side-nav" aria-expanded="false" onclick="toggleSideMenu()">
+      <span></span><span></span><span></span>
+    </button>
     <div class="tb-brand">
       <div class="tb-crest">W</div>
       <div>
@@ -1188,6 +1231,7 @@ select:-webkit-autofill:focus{
 
   <!-- LEFT SIDEBAR (desktop) -->
   <aside class="side" id="side-nav" aria-label="Account sections">
+    <button class="side-close" type="button" aria-label="Close menu" onclick="closeSideMenu()">&times;</button>
     <div class="side-id">
       <div class="side-crest" id="side-initials">W</div>
       <div class="side-id-txt">
@@ -1400,6 +1444,18 @@ select:-webkit-autofill:focus{
               <label class="fl" for="md-phone">Mobile number</label>
               <input class="fi" type="tel" id="md-phone" autocomplete="tel" placeholder="+44 7700 000 000">
             </div>
+            <div class="fg">
+              <label class="fl" for="md-addr1">Home address</label>
+              <input class="fi" type="text" id="md-addr1" autocomplete="address-line1" placeholder="House number and street">
+            </div>
+            <div class="fg">
+              <label class="fl" for="md-addr2">Address line 2</label>
+              <input class="fi" type="text" id="md-addr2" autocomplete="address-line2" placeholder="Town or area (optional)">
+            </div>
+            <div class="fg">
+              <label class="fl" for="md-postcode">Postcode</label>
+              <input class="fi" type="text" id="md-postcode" autocomplete="postal-code" placeholder="RH16 1EA" style="text-transform:uppercase">
+            </div>
           </div>
           <div class="md-msg" id="md-msg"></div>
           <button class="btn-main md-save" id="md-save" onclick="saveMyDetails()">Save Changes</button>
@@ -1490,28 +1546,9 @@ select:-webkit-autofill:focus{
   </div>
 
   <!-- BOTTOM NAV (mobile — mirrors the desktop sidebar) -->
-  <div class="bottom-nav bn5" id="bottom-nav">
-    <button class="bn-item on" id="bn-trips" onclick="goPage('trips')">
-      <div class="bn-bar"></div>
-      <div class="bn-label">Trips</div>
-    </button>
-    <button class="bn-item" id="bn-payments" onclick="goPage('payments')">
-      <div class="bn-bar"></div>
-      <div class="bn-label">Payments</div>
-    </button>
-    <button class="bn-item" id="bn-invoices" onclick="goPage('invoices')">
-      <div class="bn-bar"></div>
-      <div class="bn-label">Invoices</div>
-    </button>
-    <button class="bn-item" id="bn-details" onclick="goPage('details')">
-      <div class="bn-bar"></div>
-      <div class="bn-label">Details</div>
-    </button>
-    <button class="bn-item bn-cta" id="bn-book" onclick="goPage('book')">
-      <div class="bn-bar"></div>
-      <div class="bn-label">Book</div>
-    </button>
-  </div>
+  <!-- The bottom tab bar was removed: navigation is the side menu now
+       (hamburger in the header), which is the same markup and the same
+       active state the desktop sidebar has always used. -->
 
 </div>
 
@@ -1907,8 +1944,45 @@ function bootApp(){
 // The five dashboard sections. 'profile' is kept as an alias of 'details' so
 // any older link/handler that still says goPage('profile') lands somewhere sane.
 var DASH_PAGES=['trips','payments','invoices','details','book','contact','rewards'];
+/* ── SIDE MENU ──────────────────────────────────────────────────────────
+   Below 980px the sidebar is an off-canvas drawer. It must close after a
+   selection (or the customer taps a section and still cannot see it), close on
+   the scrim, and close on Escape. Above 980px the drawer CSS does not apply, so
+   these are harmless no-ops there. */
+function sideMenuOpen(){
+  var el=document.getElementById('side-nav');
+  return !!(el&&el.classList.contains('open'));
+}
+function openSideMenu(){
+  var el=document.getElementById('side-nav'),sc=document.getElementById('side-scrim'),b=document.getElementById('tb-menu');
+  if(el)el.classList.add('open');
+  if(sc)sc.classList.add('open');
+  if(b)b.setAttribute('aria-expanded','true');
+  // Stop the page behind the drawer scrolling under the finger.
+  try{document.body.style.overflow='hidden';}catch(e){}
+  // Move focus into the drawer so a keyboard or screen-reader user lands there.
+  try{var first=el&&el.querySelector('.side-item');if(first)first.focus({preventScroll:true});}catch(e){}
+}
+function closeSideMenu(){
+  var el=document.getElementById('side-nav'),sc=document.getElementById('side-scrim'),b=document.getElementById('tb-menu');
+  if(el)el.classList.remove('open');
+  if(sc)sc.classList.remove('open');
+  if(b)b.setAttribute('aria-expanded','false');
+  try{document.body.style.overflow='';}catch(e){}
+}
+function toggleSideMenu(){ sideMenuOpen()?closeSideMenu():openSideMenu(); }
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&sideMenuOpen()){
+    closeSideMenu();
+    var b=document.getElementById('tb-menu');if(b)b.focus();
+  }
+});
+
 function goPage(id){
   if(id==='profile')id='details';
+  // A selection always dismisses the drawer — otherwise the page it just
+  // navigated to is sitting behind a full-height panel.
+  _safe('closeSideMenu',function(){closeSideMenu();});
   DASH_PAGES.forEach(function(p){
     var el=document.getElementById('pg-'+p);
     if(el){el.classList.remove('on');el.style.display='none';}
@@ -1931,7 +2005,7 @@ function goPage(id){
   // A tab that cannot populate must still open, and must not break the nav.
   if(id==='payments')_safe('renderPayments',function(){renderPayments();});
   if(id==='invoices')_safe('loadInvoices',function(){loadInvoices();});
-  if(id==='details')_safe('fillMyDetails',function(){fillMyDetails();});
+  if(id==='details'){_safe('fillMyDetails',function(){fillMyDetails();});_safe('loadProfileAddress',function(){loadProfileAddress();});}
   // Scroll to top
   var ps=document.getElementById('page-scroll');
   if(ps)ps.scrollTop=0;
@@ -3584,6 +3658,29 @@ function fillMyDetails(){
   f('md-name',_currentUser.name);
   f('md-email',_currentUser.email);
   f('md-phone',_currentUser.phone);
+  f('md-addr1',_currentUser.address_line1);
+  f('md-addr2',_currentUser.address_line2);
+  f('md-postcode',_currentUser.postcode);
+}
+// The address lives on the customer record, not on the session, so /auth/me does
+// not carry it. Fetch the profile once when My Details opens and fill it in.
+// Failure is silent by design: the address is a nicety, and a blank field is a
+// far better outcome than an exception taking the whole page down.
+var _profileLoaded=false;
+async function loadProfileAddress(force){
+  if(_profileLoaded&&!force)return;
+  try{
+    var r=await fetch('/api/customer/profile',{credentials:'include'});
+    if(!r.ok)return;
+    var d=await r.json();
+    var p=(d&&d.profile)||{};
+    _currentUser.address_line1=p.address_line1||'';
+    _currentUser.address_line2=p.address_line2||'';
+    _currentUser.postcode=p.postcode||'';
+    if(!_currentUser.phone&&p.phone)_currentUser.phone=p.phone;
+    _profileLoaded=true;
+    fillMyDetails();
+  }catch(e){}
 }
 async function saveMyDetails(){
   var msg=document.getElementById('md-msg');
@@ -3591,6 +3688,9 @@ async function saveMyDetails(){
   var name=(document.getElementById('md-name')||{}).value||'';
   var email=(document.getElementById('md-email')||{}).value||'';
   var phone=(document.getElementById('md-phone')||{}).value||'';
+  var addr1=(document.getElementById('md-addr1')||{}).value||'';
+  var addr2=(document.getElementById('md-addr2')||{}).value||'';
+  var postcode=(document.getElementById('md-postcode')||{}).value||'';
   var show=function(text,kind){
     if(!msg)return;
     msg.textContent=text;
@@ -3603,7 +3703,8 @@ async function saveMyDetails(){
     var r=await fetch('/api/customer/profile',{
       method:'PATCH',credentials:'include',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({full_name:name.trim(),email:email.trim(),phone:phone.trim()})
+      body:JSON.stringify({full_name:name.trim(),email:email.trim(),phone:phone.trim(),
+        address_line1:addr1.trim(),address_line2:addr2.trim(),postcode:postcode.trim()})
     });
     if(r.ok){
       var d2={};try{d2=await r.json();}catch(e){}
@@ -3611,6 +3712,9 @@ async function saveMyDetails(){
       _currentUser.name=saved.full_name||name.trim();
       _currentUser.email=saved.email||email.trim();
       _currentUser.phone=saved.phone||phone.trim();
+      _currentUser.address_line1=saved.address_line1!=null?saved.address_line1:addr1.trim();
+      _currentUser.address_line2=saved.address_line2!=null?saved.address_line2:addr2.trim();
+      _currentUser.postcode=saved.postcode!=null?saved.postcode:postcode.trim();
       updateProfile();
       paintIdentity();
       show(d2.emailChanged

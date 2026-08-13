@@ -529,6 +529,62 @@ test('the site footer is not simultaneously white and white-texted', () => {
     'its contents render invisible:\n      ' + claiming.join('\n      '));
 });
 
+// ── A SELECTED PICKER ITEM MUST SHOW ITS VALUE ───────────────────────────
+// The reported bug: in My Account's date picker the selected day was a solid
+// navy rounded square with no number in it — the "14" was invisible. Same in
+// the passengers picker. The rules were `background:var(--navy);color:#111`:
+// a dark fill with near-black text. It was never readable — against the old
+// charcoal --navy (#1b1b1a) #111 measures about 1.05:1, and after the redesign
+// repointed --navy to #102a43 it was still only 1.2:1. A picker whose selected
+// state hides the value it selected is worse than no highlight at all.
+test('every selected picker item is legible against its own fill', () => {
+  const rider = read('westmere-rider.html');
+  // The palette these rules resolve against: the app declares --navy, and the
+  // theme (loaded last) overrides it.
+  const themeNavy = (read('westmere-theme.css').match(/--westmere-navy:\s*(#[0-9a-f]{3,6})/i) || [])[1] || '#102a43';
+  const appNavy = (rider.match(/--navy:\s*(#[0-9a-f]{3,6})/i) || [])[1] || themeNavy;
+
+  const offenders = [];
+  // Any rule whose selector marks a selected/active state AND paints a background.
+  const RULE = /(\.[a-z0-9_-]+\.[a-z0-9_-]*(?:sel|selected|active|\bon\b)[a-z0-9_-]*)\s*\{([^{}]{0,240})\}/gi;
+  for (const m of rider.matchAll(RULE)) {
+    const body = m[2];
+    const bgM = body.match(/background(?:-color)?:\s*([^;!}]+)/i);
+    const fgM = body.match(/(?<!-)\bcolor:\s*([^;!}]+)/i);
+    if (!bgM || !fgM) continue;
+    const resolve = (v) => {
+      v = v.trim();
+      if (/^var\(--navy\)$/i.test(v)) return [appNavy, themeNavy];
+      if (/^var\(--westmere-navy\)$/i.test(v)) return [themeNavy];
+      if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v)) return [v];
+      return null;                       // rgba/tint/gradient — not a solid fill
+    };
+    const bgs = resolve(bgM[1]), fgs = resolve(fgM[1]);
+    if (!bgs || !fgs) continue;
+    // Fail if the pair is unreadable under ANY palette this rule can resolve to.
+    for (const bg of bgs) for (const fg of fgs) {
+      const ratio = contrast(bg, fg);
+      if (ratio < 4.5) offenders.push(`${m[1]}  ${fg} on ${bg} → ${ratio.toFixed(2)}:1`);
+    }
+  }
+  assert.deepStrictEqual([...new Set(offenders)], [],
+    'a selected picker/menu item is invisible against its own background — the ' +
+    'customer sees a solid block with no value in it:\n      ' + [...new Set(offenders)].join('\n      '));
+});
+
+test('the date, time and passenger/bags pickers all declare a selected state', () => {
+  // The bug hit three separate rules; if one is ever dropped the test above has
+  // nothing to check, so pin that all three still exist.
+  const rider = read('westmere-rider.html');
+  for (const sel of ['.cal-day.cal-sel', '.time-opt.t-sel', '.pick-opt.p-sel']) {
+    const re = new RegExp(sel.replace(/[.]/g, '\\.') + '\\s*\\{[^}]*\\}');
+    const m = rider.match(re);
+    assert.ok(m, 'missing the selected-state rule for ' + sel);
+    assert.ok(/color:\s*#f{3,6}|color:\s*#ffffff/i.test(m[0]),
+      sel + ' must set white text on its navy fill: ' + m[0]);
+  }
+});
+
 test('the invoice PDF embeds Cormorant rather than a base-14 serif', () => {
   const src = read('server/invoice-pdf.js');
   // pdfkit cannot fetch a web font, so the face has to ship with the app.

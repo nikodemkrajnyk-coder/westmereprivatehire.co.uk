@@ -68,7 +68,11 @@ function makeDb() {
     CREATE TABLE customers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       email TEXT UNIQUE, full_name TEXT, phone TEXT,
+      address_line1 TEXT, address_line2 TEXT, postcode TEXT,
       account_type TEXT DEFAULT 'personal', active INTEGER DEFAULT 1,
+      -- Owner-only columns. Present here precisely so a test can prove a
+      -- customer cannot write them through their own profile route.
+      bank_name TEXT, bank_sort_code TEXT, bank_account_no TEXT,
       created_at TEXT DEFAULT (datetime('now'))
     );
     CREATE TABLE bookings (
@@ -86,8 +90,8 @@ function makeDb() {
       user_type TEXT, user_id INTEGER, action TEXT, detail TEXT, ip TEXT
     );
   `);
-  db.prepare("INSERT INTO customers (id,email,full_name,phone) VALUES (1,'eleanor@example.com','Eleanor Voss','+44 7700 900812')").run();
-  db.prepare("INSERT INTO customers (id,email,full_name,phone) VALUES (2,'martin@example.com','Martin Ford','+44 7700 900999')").run();
+  db.prepare("INSERT INTO customers (id,email,full_name,phone,address_line1,address_line2,postcode,account_type,bank_name,bank_sort_code,bank_account_no) VALUES (1,'eleanor@example.com','Eleanor Voss','+44 7700 900812','14 Queens Road','Haywards Heath','RH16 1EA','personal','Starling','60-83-71','12345678')").run();
+  db.prepare("INSERT INTO customers (id,email,full_name,phone,address_line1,postcode) VALUES (2,'martin@example.com','Martin Ford','+44 7700 900999','9 Cliffe High Street','BN7 2AH')").run();
   return db;
 }
 
@@ -130,6 +134,125 @@ test('a customer can save their own name / email / phone', () => {
   assert.strictEqual(row.email, 'eleanor.voss@example.com');
   assert.strictEqual(row.phone, '+44 7700 900111');
   assert.ok(res.body.emailChanged, 'the response must flag that the login email changed');
+});
+
+// ── The home address in My Details ───────────────────────────────────────
+// The address columns were populated but nothing ever showed them to the
+// customer. Surfacing them widens what a customer may write to their own row,
+// so the boundary matters more than the feature: exactly three more fields,
+// on their OWN record, and the owner-only columns stay untouchable.
+const getProfile = extractHandler('get', '/customer/profile');
+
+test('the profile route returns the caller\'s own home address', () => {
+  const db = makeDb();
+  const res = run(getProfile, db, custReq({}));
+  assert.strictEqual(res.statusCode, 200, 'expected 200, got ' + res.statusCode);
+  const p = res.body.profile;
+  assert.strictEqual(p.address_line1, '14 Queens Road');
+  assert.strictEqual(p.address_line2, 'Haywards Heath');
+  assert.strictEqual(p.postcode, 'RH16 1EA');
+});
+
+test('the profile route is scoped to the authenticated caller, never a client id', () => {
+  const db = makeDb();
+  // Customer 2 asks; they must get THEIR row, whatever else is in the request.
+  const res = run(getProfile, db, { auth: { type: 'customer', id: 2 }, body: { id: 1 }, params: { id: 1 }, ip: '::1' });
+  assert.strictEqual(res.body.profile.address_line1, '9 Cliffe High Street',
+    'the route must read req.auth.id — never an id supplied by the client');
+  assert.strictEqual(res.body.profile.postcode, 'BN7 2AH');
+  // And the SQL must literally use req.auth.id.
+  assert.ok(/FROM customers WHERE id = \?'\)\.get\(req\.auth\.id\)/.test(apiSrc),
+    'the profile SELECT must be parameterised on req.auth.id');
+});
+
+test('a customer can save their own address', () => {
+  const db = makeDb();
+  const res = run(patchProfile, db, custReq({
+    full_name: 'Eleanor Voss', email: 'eleanor@example.com', phone: '+44 7700 900812',
+    address_line1: '2 Southover High Street', address_line2: 'Lewes', postcode: 'bn7 1hu'
+  }));
+  assert.strictEqual(res.statusCode, 200, 'expected 200, got ' + res.statusCode + ' ' + JSON.stringify(res.body));
+  const row = db.prepare('SELECT * FROM customers WHERE id = 1').get();
+  assert.strictEqual(row.address_line1, '2 Southover High Street');
+  assert.strictEqual(row.address_line2, 'Lewes');
+  assert.strictEqual(row.postcode, 'BN7 1HU', 'the postcode should be stored upper-cased');
+  assert.strictEqual(res.body.profile.address_line1, '2 Southover High Street',
+    'the response must echo the saved address so the form can repaint');
+});
+
+test('the address is optional and an omitted field keeps its stored value', () => {
+  const db = makeDb();
+  const res = run(patchProfile, db, custReq({ full_name: 'Eleanor Voss', email: 'eleanor@example.com' }));
+  assert.strictEqual(res.statusCode, 200);
+  const row = db.prepare('SELECT * FROM customers WHERE id = 1').get();
+  assert.strictEqual(row.address_line1, '14 Queens Road', 'an omitted address must not be blanked');
+  assert.strictEqual(row.postcode, 'RH16 1EA');
+});
+
+test('a junk postcode or an absurd address line is refused', () => {
+  for (const body of [
+    { postcode: 'not a postcode!!' },
+    { address_line1: 'x'.repeat(200) },
+    { address_line2: 'y'.repeat(200) }
+  ]) {
+    const db = makeDb();
+    const res = run(patchProfile, db, custReq(Object.assign({ full_name: 'Eleanor Voss', email: 'eleanor@example.com' }, body)));
+    assert.strictEqual(res.statusCode, 400, JSON.stringify(body) + ' must be refused, got ' + res.statusCode);
+    assert.strictEqual(db.prepare('SELECT address_line1 FROM customers WHERE id = 1').get().address_line1,
+      '14 Queens Road', 'the row must be untouched after a rejected save');
+  }
+});
+
+test('a customer can NOT write bank details or account_type through their profile', () => {
+  // The reason this route reads named fields instead of looping over req.body:
+  // a loop would happily carry these straight into the UPDATE.
+  const db = makeDb();
+  const res = run(patchProfile, db, custReq({
+    full_name: 'Eleanor Voss', email: 'eleanor@example.com',
+    account_type: 'business',
+    bank_name: 'Attacker Bank', bank_sort_code: '00-00-00', bank_account_no: '99999999',
+    active: 0, id: 2
+  }));
+  assert.strictEqual(res.statusCode, 200, 'the save itself should succeed, ignoring the extra fields');
+  const row = db.prepare('SELECT * FROM customers WHERE id = 1').get();
+  assert.strictEqual(row.account_type, 'personal', 'account_type must NOT be customer-editable');
+  assert.strictEqual(row.bank_name, 'Starling', 'bank_name must NOT be customer-editable');
+  assert.strictEqual(row.bank_sort_code, '60-83-71', 'bank_sort_code must NOT be customer-editable');
+  assert.strictEqual(row.bank_account_no, '12345678', 'bank_account_no must NOT be customer-editable');
+  assert.strictEqual(row.active, 1, 'active must NOT be customer-editable');
+  // The UPDATE statement itself must name only the six permitted columns.
+  const upd = apiSrc.match(/UPDATE customers SET ([^']*?) WHERE id = \?/);
+  assert.ok(upd, 'could not find the profile UPDATE');
+  const setClause = upd[1];
+  for (const forbidden of ['bank_', 'account_type', 'active', 'id']) {
+    assert.ok(!new RegExp('\\b' + forbidden).test(setClause),
+      'the customer profile UPDATE must not SET ' + forbidden + ': ' + setClause);
+  }
+  // …and it must still be scoped by the id, which is the WHERE, not the SET.
+  assert.ok(/WHERE id = \?/.test(upd[0]), 'the UPDATE must be scoped WHERE id = ?');
+});
+
+test('saving my own profile cannot reach another customer\'s record', () => {
+  const db = makeDb();
+  const before = db.prepare('SELECT * FROM customers WHERE id = 2').get();
+  run(patchProfile, db, custReq({
+    full_name: 'Eleanor Voss', email: 'eleanor@example.com',
+    address_line1: 'Mine', postcode: 'BN1 1AA', id: 2, customer_id: 2
+  }));
+  const after = db.prepare('SELECT * FROM customers WHERE id = 2').get();
+  assert.deepStrictEqual(after, before, "customer 2's row must be byte-identical after customer 1 saves");
+});
+
+test('My Details shows and sends the address fields', () => {
+  for (const id of ['md-addr1', 'md-addr2', 'md-postcode']) {
+    assert.ok(riderHtml.includes('id="' + id + '"'), 'My Details must have an ' + id + ' input');
+  }
+  assert.ok(/address_line1:addr1\.trim\(\)/.test(riderHtml) && /postcode:postcode\.trim\(\)/.test(riderHtml),
+    'saveMyDetails must send the address fields');
+  assert.ok(/f\('md-addr1',_currentUser\.address_line1\)/.test(riderHtml),
+    'fillMyDetails must populate the address');
+  assert.ok(/loadProfileAddress/.test(riderHtml),
+    'My Details must fetch the profile so the stored address appears without a save');
 });
 
 test('a customer can NEVER take an email another account already uses', () => {
@@ -177,9 +300,13 @@ test('the save touches ONLY name/email/phone on the caller\'s own row', () => {
   assert.strictEqual(me.account_type, 'personal', 'account_type must not be settable by the customer');
   assert.strictEqual(me.active, 1, 'active must not be settable by the customer');
   assert.strictEqual(other.full_name, 'Martin Ford', 'another customer\'s row must never be touched');
-  // and the UPDATE must be scoped by id, not by anything the body carries
-  assert.ok(/UPDATE customers SET full_name = \?, email = \?, phone = \? WHERE id = \?/.test(apiSrc),
-    'the profile UPDATE must set exactly name/email/phone and be scoped WHERE id = ?');
+  // and the UPDATE must be scoped by id, not by anything the body carries.
+  // The permitted set grew by exactly three address fields when the home
+  // address was surfaced in My Details; it is still a closed list, and it is
+  // still the caller's own row.
+  assert.ok(/UPDATE customers SET full_name = \?, email = \?, phone = \?, address_line1 = \?, address_line2 = \?, postcode = \? WHERE id = \?/.test(apiSrc),
+    'the profile UPDATE must set exactly name/email/phone + the three address ' +
+    'fields, and be scoped WHERE id = ?');
 });
 
 test('a non-customer (owner/driver token) cannot use the customer profile route', () => {

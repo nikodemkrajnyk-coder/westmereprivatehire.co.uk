@@ -239,6 +239,66 @@ test('the SW asks for redirect:manual on navigations, so the browser does the re
     'a redirected response must never be written to the cache — a later navigation would read it back');
 });
 
+// ── NAVIGATION IS A SIDE MENU, NOT A BOTTOM BAR ──────────────────────────
+// The owner asked for the nav to move off the bottom of the screen and into a
+// drawer opened from the header. The risk in a change like this is silent loss
+// of navigation: a drawer that cannot be opened, or that stays over the page
+// after a selection, leaves the customer stuck on whatever tab they were on.
+test('the bottom tab bar is gone and the side menu replaces it', () => {
+  assert.ok(!/<div class="bottom-nav/.test(riderHtml) && !/id="bn-/.test(riderHtml),
+    'the bottom tab bar markup must be removed — the side menu is the navigation now');
+  assert.ok(/<aside class="side"[^>]*id="side-nav"/.test(riderHtml), 'the side menu must exist');
+  // Every section the bottom bar carried must still be reachable.
+  for (const id of ['sd-trips', 'sd-payments', 'sd-invoices', 'sd-details', 'sd-book']) {
+    assert.ok(riderHtml.includes('id="' + id + '"'), 'the side menu is missing ' + id);
+  }
+});
+
+test('the side menu can be opened, and always closes again', () => {
+  assert.ok(/class="tb-menu"[\s\S]{0,200}onclick="toggleSideMenu\(\)"/.test(riderHtml),
+    'the header must carry a menu button wired to toggleSideMenu()');
+  for (const fn of ['function openSideMenu', 'function closeSideMenu', 'function toggleSideMenu']) {
+    assert.ok(riderHtml.includes(fn), 'missing ' + fn);
+  }
+  // Closing paths: the scrim, the close button, Escape, and — the one that
+  // matters most on a phone — choosing a section.
+  assert.ok(/id="side-scrim"[^>]*onclick="closeSideMenu\(\)"/.test(riderHtml), 'the scrim must close the menu');
+  assert.ok(/class="side-close"[\s\S]{0,160}onclick="closeSideMenu\(\)"/.test(riderHtml), 'the drawer needs a close button');
+  assert.ok(/e\.key==='Escape'[\s\S]{0,120}closeSideMenu\(\)/.test(riderHtml), 'Escape must close the menu');
+  const goPage = riderHtml.slice(riderHtml.indexOf('function goPage(id){'), riderHtml.indexOf('function goPage(id){') + 700);
+  assert.ok(/closeSideMenu\(\)/.test(goPage),
+    'goPage() must close the drawer — otherwise the section it just opened is ' +
+    'sitting behind a full-height panel on a phone');
+});
+
+test('the side menu is a drawer on a phone and a static column on desktop', () => {
+  const drawer = riderHtml.match(/\.side\{[^}]*position:fixed[^}]*\}/);
+  assert.ok(drawer, '.side must be a fixed off-canvas drawer at phone widths');
+  assert.ok(/transform:translateX\(-10?2?%\)/.test(drawer[0]), 'the drawer must start off-canvas');
+  assert.ok(/\.side\.open\{transform:translateX\(0\)\}/.test(riderHtml), '.side.open must slide it in');
+  // …and above 980px it must go back to being an ordinary column, or the
+  // desktop layout would have a permanently-hidden sidebar.
+  const desktop = riderHtml.match(/@media\(min-width:980px\)\{[\s\S]{0,900}?\n\}/);
+  assert.ok(desktop && /position:relative;transform:none/.test(desktop[0]),
+    'at >=980px the sidebar must revert to a static column');
+  assert.ok(desktop && /\.tb-menu,\.side-close\{display:none\}/.test(desktop[0]),
+    'the hamburger and close button belong to the phone layout only');
+});
+
+test('the menu button is a real touch target and is accessible', () => {
+  const btn = riderHtml.match(/\.tb-menu\{[^}]*\}/);
+  assert.ok(btn, '.tb-menu rule missing');
+  const size = btn[0].match(/width:(\d+)px;height:(\d+)px/);
+  assert.ok(size && +size[1] >= 44 && +size[2] >= 44,
+    'the menu button must be at least 44x44px to be tappable: ' + btn[0]);
+  assert.ok(/aria-label="Open menu"/.test(riderHtml), 'the menu button needs an accessible name');
+  assert.ok(/aria-controls="side-nav"/.test(riderHtml) && /aria-expanded="false"/.test(riderHtml),
+    'the menu button must declare aria-controls and aria-expanded');
+  assert.ok(/setAttribute\('aria-expanded','true'\)/.test(riderHtml) &&
+            /setAttribute\('aria-expanded','false'\)/.test(riderHtml),
+    'aria-expanded must track the drawer state, not be a static attribute');
+});
+
 test('a document fetch failure falls back before giving up', () => {
   assert.ok(/ignoreSearch/.test(sw),
     'the cache lookup must ignore the query string for documents, or arriving with ' +
