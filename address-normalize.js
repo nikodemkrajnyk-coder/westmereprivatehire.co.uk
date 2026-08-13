@@ -272,8 +272,44 @@
     return clip(tidyCase(tokens[i] || tokens[0]), 18);
   }
 
+  // BRIEF: shortDisplay, then capped to a handful of words.
+  //
+  // The booking form's autocomplete lists raw Nominatim `display_name` strings,
+  // which run to things like "London Borough of Hillingdon, Greater London,
+  // England, United Kingdom" — unreadable in a dropdown on a phone. shortDisplay
+  // already strips the country and the administrative tail, but a full street
+  // address can still come back as "14 Queens Road, Haywards Heath, RH16 1EA"
+  // (7 words). This drops trailing comma-parts until the label fits.
+  //
+  // DISPLAY ONLY. The caller keeps the full string for the booking record and
+  // for navigation — same rule as every other surface in the system.
+  function briefDisplay(raw, maxWords) {
+    var max = maxWords > 0 ? maxWords : 5;
+    var s = shortDisplay(raw);
+    if (!s) return '';
+    var parts = s.split(',').map(function (p) { return p.trim(); }).filter(Boolean);
+    if (!parts.length) return s;
+    var words = function (t) { return t.split(/\s+/).filter(Boolean).length; };
+
+    // The first part always survives — a label with nothing in it is worse than
+    // a long one — but it is itself clipped if it alone overruns.
+    var out = [parts[0]];
+    var used = words(parts[0]);
+    if (used > max) {
+      return parts[0].split(/\s+/).filter(Boolean).slice(0, max).join(' ');
+    }
+    for (var i = 1; i < parts.length; i++) {
+      var w = words(parts[i]);
+      if (used + w > max) break;
+      out.push(parts[i]);
+      used += w;
+    }
+    return out.join(', ');
+  }
+
   return {
     shortDisplay: shortDisplay,
+    briefDisplay: briefDisplay,
     tinyLabel: tinyLabel,
     findAirport: findAirport,
     isAirport: isAirport,

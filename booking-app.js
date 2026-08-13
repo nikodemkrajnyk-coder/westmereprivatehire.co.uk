@@ -170,6 +170,31 @@
   }
 
   // ── Address autocomplete (Nominatim) ───────────────────────────────────
+  // ── Address display: short in the field, full on the booking ────────────
+  // The shared normalizer (address-normalize.js) is the single source of truth
+  // for how an address is shown to a human, exactly as it is in the emails, the
+  // staff apps and the invoice. `fullAddress` on the element carries the precise
+  // string the geocoder returned, which is what the booking and the driver's
+  // Waze link must use. GUARDRAIL: server/tests/address-display.test.js.
+  function briefAddr(s) {
+    return (window.WMAddr && window.WMAddr.briefDisplay)
+      ? (window.WMAddr.briefDisplay(s) || s)
+      : s;
+  }
+  // Write a chosen address: brief in the box, full remembered alongside it.
+  function setAddress(input, full) {
+    if (!input) return;
+    input.value = briefAddr(full);
+    input.dataset.fullAddress = full;
+  }
+  // What the BOOKING should carry. Falls back to whatever is typed, so an
+  // address entered by hand (no geocoder involved) is unaffected.
+  function fullAddr(input) {
+    if (!input) return '';
+    var full = input.dataset ? input.dataset.fullAddress : '';
+    return (full && full.trim()) ? full : (input.value || '').trim();
+  }
+
   function attachAutocomplete(input) {
     var box = document.createElement('div'); box.className = 'ac-list'; box.style.display = 'none';
     input.parentNode.style.position = 'relative';
@@ -178,6 +203,10 @@
     input.setAttribute('autocomplete','off');
     input.addEventListener('input', function () {
       var v = input.value.trim();
+      // Typing replaces a picked suggestion, so the remembered full address is
+      // no longer this address. Without this, editing a chosen pickup would
+      // send the OLD full string to the booking while showing the new text.
+      if (input.dataset) delete input.dataset.fullAddress;
       if (t) clearTimeout(t);
       if (v.length < 3) { box.style.display = 'none'; return; }
       t = setTimeout(function () {
@@ -186,8 +215,21 @@
             box.innerHTML = '';
             if (!arr || !arr.length) { box.style.display = 'none'; return; }
             arr.forEach(function (o) {
-              var it = document.createElement('div'); it.className = 'ac-item'; it.textContent = o.display_name;
-              it.addEventListener('mousedown', function (e) { e.preventDefault(); input.value = o.display_name; box.style.display = 'none'; input.dispatchEvent(new Event('change')); });
+              // SHORT LABEL, FULL VALUE KEPT. Nominatim's display_name is the
+              // whole administrative chain — "London Borough of Hillingdon,
+              // Greater London, England, United Kingdom" — which is unreadable
+              // in a dropdown and worse once it lands in the field. Show the
+              // brief form; stash the full string on the input so the booking
+              // and the driver's navigation still get the precise address.
+              var it = document.createElement('div'); it.className = 'ac-item';
+              it.textContent = briefAddr(o.display_name);
+              it.title = o.display_name;
+              it.addEventListener('mousedown', function (e) {
+                e.preventDefault();
+                setAddress(input, o.display_name);
+                box.style.display = 'none';
+                input.dispatchEvent(new Event('change'));
+              });
               box.appendChild(it);
             });
             box.style.display = 'block';
@@ -208,7 +250,9 @@
     var ft = null;
     function updateFare() {
       if (!fareBox) return;
-      var p = pickup && pickup.value.trim(), d = dest && dest.value.trim();
+      // FULL addresses here, not the shortened labels: this is the fare path,
+      // and it must see exactly what it saw before the display was shortened.
+      var p = fullAddr(pickup), d = fullAddr(dest);
       if (!p || !d) { fareBox.style.display = 'none'; fareBox.className = 'fare-estimate'; return; }
       // Not an airport pickup/drop-off → no instant price, show request message.
       if (!isAirportJourney(p, d)) {
@@ -334,7 +378,7 @@
             name: nameEl ? nameEl.value.trim() : '',
             phone: phoneEl ? phoneEl.value.trim() : '',
             email: emailEl ? emailEl.value.trim() : '',
-            pickup: pickup ? pickup.value.trim() : ''
+            pickup: pickup ? fullAddr(pickup) : ''
           }));
         } else {
           localStorage.removeItem(REMEMBER_KEY);
@@ -354,7 +398,7 @@
       locBtn.textContent = 'Locating…';
       navigator.geolocation.getCurrentPosition(function (pos) {
         fetch('https://nominatim.openstreetmap.org/reverse?lat=' + pos.coords.latitude + '&lon=' + pos.coords.longitude + '&format=json')
-          .then(function(r){return r.json();}).then(function(d){ if (d && d.display_name) { pickup.value = d.display_name; updateFare(); } locBtn.textContent = 'Use my current location'; })
+          .then(function(r){return r.json();}).then(function(d){ if (d && d.display_name) { setAddress(pickup, d.display_name); updateFare(); } locBtn.textContent = 'Use my current location'; })
           .catch(function(){ locBtn.textContent = 'Use my current location'; });
       }, function () { locBtn.textContent = 'Use my current location'; });
     });
@@ -378,6 +422,12 @@
       e.preventDefault();
       var fd = new FormData(form), raw = {};
       fd.forEach(function (v, k) { raw[k] = v; });
+      // The fields show a SHORT label; the booking carries the full address so
+      // the driver's navigation is exact. (Display short, route full — the same
+      // rule the emails, apps and invoice follow.)
+      if (pickup) raw.pickup = fullAddr(pickup);
+      if (dest) raw.destination = fullAddr(dest);
+      if (stop && raw.stop_address) raw.stop_address = fullAddr(stop);
       // Client-side validation — instant feedback, no server round-trip
       var miss = [];
       if (!raw.name || !raw.name.trim()) miss.push('your name');

@@ -241,6 +241,85 @@ test('navigation keeps the FULL address on every app surface', () => {
     'the calendar Waze link must use the FULL destination');
 });
 
+// ── (f) THE BOOKING FORM'S PICKER IS SHORT ───────────────────────────────
+// The owner's report: the pickup/drop-off autocomplete and "Use my current
+// location" showed the raw Nominatim display_name — "London Borough of
+// Hillingdon, Greater London, England, United Kingdom", "Hillingdon, Greater
+// London, England, TW6 2C…". Unreadable in a dropdown, and worse once it landed
+// in the field. The label is now capped; the booking still carries the precise
+// address, because that is what the driver navigates to.
+console.log('\nThe booking form shows a SHORT address, and books the full one');
+
+const NOMINATIM = [
+  'London Borough of Hillingdon, Greater London, England, United Kingdom',
+  'Hillingdon, Greater London, England, TW6 2CX, United Kingdom',
+  'Heathrow Airport, Longford, London Borough of Hillingdon, Greater London, England, TW6 1AP, United Kingdom',
+  '14 Queens Road, Haywards Heath, Mid Sussex, West Sussex, England, RH16 1EA, United Kingdom',
+  'Gatwick Airport, Crawley, West Sussex, England, RH6 0NP, United Kingdom',
+  'Flat 2, 14 Queens Road, Haywards Heath, West Sussex, RH16 1EA, United Kingdom',
+  'Brighton, Brighton and Hove, England, United Kingdom'
+];
+
+test('briefDisplay caps a geocoder string at five words', () => {
+  for (const raw of NOMINATIM) {
+    const out = addr.briefDisplay(raw);
+    assert.ok(out, 'must still render something for: ' + raw);
+    const words = out.split(/\s+/).filter(Boolean).length;
+    assert.ok(words <= 5,
+      '"' + out + '" is ' + words + ' words (max 5) — from: ' + raw);
+    for (const junk of ['United Kingdom', 'England', 'Greater London']) {
+      assert.ok(!out.includes(junk), '"' + out + '" still carries "' + junk + '"');
+    }
+  }
+});
+
+test('the owner\'s two reported strings shorten the way he asked', () => {
+  assert.strictEqual(addr.briefDisplay('London Borough of Hillingdon, Greater London, England, United Kingdom'),
+    'London Borough of Hillingdon');
+  assert.strictEqual(addr.briefDisplay('Hillingdon, Greater London, England, TW6 2CX, United Kingdom'),
+    'Hillingdon, TW6 2CX');
+});
+
+test('an empty or junk value never yields a broken label', () => {
+  for (const v of ['', null, undefined, '   ', ',,,']) {
+    assert.strictEqual(typeof addr.briefDisplay(v), 'string');
+  }
+});
+
+test('the picker shows the short label but the BOOKING sends the full address', () => {
+  const app = read('booking-app.js');
+  // The suggestion row and the field both go through the brief form…
+  assert.ok(/it\.textContent = briefAddr\(o\.display_name\)/.test(app),
+    'the autocomplete list must show the brief label, not the raw display_name');
+  assert.ok(/function setAddress\(input, full\)[\s\S]{0,200}input\.value = briefAddr\(full\)/.test(app),
+    'choosing a suggestion must put the brief label in the field');
+  assert.ok(/setAddress\(pickup, d\.display_name\)/.test(app),
+    '"Use my current location" must fill the brief label too');
+  // …while the full string is kept and is what actually gets booked.
+  assert.ok(/input\.dataset\.fullAddress = full/.test(app),
+    'the full address must be stashed on the input');
+  assert.ok(/raw\.pickup = fullAddr\(pickup\)/.test(app) && /raw\.destination = fullAddr\(dest\)/.test(app),
+    'the submitted booking must carry the FULL pickup and destination, not the label');
+  // A hand-typed address must not inherit the previous pick's full value.
+  assert.ok(/delete input\.dataset\.fullAddress/.test(app),
+    'typing must clear the remembered full address, or the booking sends a stale one');
+  // The fare path is unchanged: it still sees the full address.
+  assert.ok(/var p = fullAddr\(pickup\), d = fullAddr\(dest\)/.test(app),
+    'the fare estimator must keep using the full address so pricing is unaffected');
+});
+
+test('every page with the booking form loads the shared normalizer first', () => {
+  for (const f of ['book.html', 'index.html']) {
+    const src = read(f);
+    const norm = src.indexOf('/address-normalize.js');
+    const app = src.indexOf('booking-app.js');
+    assert.ok(norm !== -1, f + ' must load /address-normalize.js for the short labels');
+    assert.ok(norm < app,
+      f + ' loads address-normalize.js AFTER booking-app.js — window.WMAddr would be ' +
+      'undefined when the form wires up, and the picker would fall back to the long string');
+  }
+});
+
 // ── summary ──────────────────────────────────────────────────────────────
 (async () => {
   await run();
