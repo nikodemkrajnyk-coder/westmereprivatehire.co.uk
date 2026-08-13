@@ -102,8 +102,8 @@ function buildVEvent(booking) {
       foldLine('UID:' + bookingUid(booking)),
       'DTSTART;VALUE=DATE:' + y + pad(mo) + pad(day),
       'DTEND;VALUE=DATE:'   + y + pad(mo) + pad(day),
-      foldLine('SUMMARY:'  + icsEscape(`Pickup: ${_tinyAddr(booking.pickup) || '?'}`)),
-      foldLine('LOCATION:' + icsEscape(booking.pickup || '')),
+      foldLine('SUMMARY:'  + icsEscape(`${_tinyAddr(booking.pickup) || '?'}`)),
+      foldLine('LOCATION:' + icsEscape(_shortAddr(booking.pickup) || booking.pickup || '')),
       'STATUS:CONFIRMED',
       'END:VEVENT'
     ].join('\r\n');
@@ -118,8 +118,11 @@ function buildVEvent(booking) {
     booking.ref    ? `Ref: ${booking.ref}` : null,
     name           ? `Passenger: ${name}`  : null,
     phone          ? `Phone: ${phone}`     : null,
-    booking.pickup ? `Pickup: ${_shortAddr(booking.pickup) || booking.pickup}` : null,
-    booking.destination ? `Drop-off: ${_shortAddr(booking.destination) || booking.destination}` : null,
+    // The journey, unlabelled — a driver reading this in a calendar app does not
+    // need the word "Pickup" to know which end is which. The Waze links below
+    // keep the FULL address for navigation.
+    (booking.pickup || booking.destination)
+      ? `${_shortAddr(booking.pickup) || booking.pickup || '?'} \u2192 ${_shortAddr(booking.destination) || booking.destination || '?'}` : null,
     flt ? `Flight: ${flt}` : null,
     bagsText(booking.bags) ? `Luggage: ${bagsText(booking.bags)}` : null,
     booking.fare   ? `Fare: \u00a3${booking.fare}` : null,
@@ -137,8 +140,8 @@ function buildVEvent(booking) {
     'DTSTAMP:'             + now,
     'DTSTART:'             + toIcsDate(dtStart),
     'DTEND:'               + toIcsDate(dtEnd),
-    foldLine('SUMMARY:'   + icsEscape(`Pickup: ${_tinyAddr(booking.pickup) || '?'} \u2192 ${_tinyAddr(booking.destination) || '?'}`)),
-    foldLine('LOCATION:'  + icsEscape(booking.pickup || '')),
+    foldLine('SUMMARY:'   + icsEscape(`${_tinyAddr(booking.pickup) || '?'} \u2192 ${_tinyAddr(booking.destination) || '?'}`)),
+    foldLine('LOCATION:'  + icsEscape(_shortAddr(booking.pickup) || booking.pickup || '')),
     foldLine('DESCRIPTION:' + icsEscape(descLines)),
     'STATUS:CONFIRMED',
     'END:VEVENT'

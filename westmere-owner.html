@@ -3833,8 +3833,8 @@ function assistHandleImage(dataUrl,mimeType){
             +(bk.name?'Passenger: '+bk.name+'. ':'')
             +(bk.date?'Date: '+bk.date+'. ':'')
             +(bk.time?'Time: '+bk.time+'. ':'')
-            +(bk.pickup?'Pickup: '+bk.pickup+'. ':'')
-            +(bk.destination?'Drop-off: '+bk.destination+'. ':'')
+            +(bk.pickup?'Pickup: '+_shortAddr(bk.pickup)+'. ':'')
+            +(bk.destination?'Drop-off: '+_shortAddr(bk.destination)+'. ':'')
             +(bk.fare?'Fare: £'+bk.fare+'. ':'')
             +(bk.phone?'Phone: '+bk.phone+'. ':'');
         }).join('\n');
@@ -4076,7 +4076,7 @@ function showBookingCard(bk){
   var rows=[];
   if(bk.name) rows.push('<strong>Passenger:</strong> '+escH(bk.name));
   if(bk.phone) rows.push('<strong>Phone:</strong> '+escH(bk.phone));
-  if(bk.pickup) rows.push('<strong>Pickup:</strong> '+escH(bk.pickup));
+  if(bk.pickup) rows.push('<strong>Pickup:</strong> '+escH(_shortAddr(bk.pickup)));
   if(bk.destination) rows.push('<strong>Destination:</strong> '+escH(_shortAddr(bk.destination)));
   if(bk.date) rows.push('<strong>Date:</strong> '+escH(bk.date));
   if(bk.time) rows.push('<strong>Time:</strong> '+escH(bk.time));

@@ -2,6 +2,11 @@ const express = require('express');
 const { getDb } = require('./db');
 const gcal = require('./google-calendar');
 const { deadMilesFee } = require('./dead-miles');
+// Display rule, same single source of truth as every other surface. DISPLAY
+// ONLY: the booking row keeps the full address, calculate_fare still geocodes
+// the full string, and nothing here changes what gets written to the database.
+const { shortDisplay } = require('../address-normalize');
+const shortAddr = (a) => shortDisplay(a) || a || '';
 
 const router = express.Router();
 
@@ -425,7 +430,7 @@ async function executeCalendarTool(name, input, req) {
       }
 
       return results.map(r =>
-        `Ref:${r.ref} | ${r.date} ${r.time || ''} | ${r.customer_name || 'Unknown'} | ${r.pickup} → ${r.destination} | £${r.fare || '?'} | ${r.payment || 'pending'} | Status:${r.status}` +
+        `Ref:${r.ref} | ${r.date} ${r.time || ''} | ${r.customer_name || 'Unknown'} | ${shortAddr(r.pickup)} → ${shortAddr(r.destination)} | £${r.fare || '?'} | ${r.payment || 'pending'} | Status:${r.status}` +
         (r.customer_email ? ` | Email:${r.customer_email}` : '') +
         (r.customer_phone ? ` | Phone:${r.customer_phone}` : '') +
         (r.notes ? ` | Notes:${r.notes}` : '')
@@ -608,7 +613,7 @@ async function executeCalendarTool(name, input, req) {
         } catch (_) {}
       }
 
-      return `Booking ${ref} created — ${date} ${time} | ${pickup} → ${destination} | ${passengers} passenger(s)` +
+      return `Booking ${ref} created — ${date} ${time} | ${shortAddr(pickup)} → ${shortAddr(destination)} | ${passengers} passenger(s)` +
         (fare != null ? ` | £${fare.toFixed(2)}` : '') +
         ` | ${payment} | status: ${status}` +
         (input.passenger_name ? ` | ${input.passenger_name}` : '') +
@@ -715,7 +720,7 @@ async function executeCalendarTool(name, input, req) {
 function buildSystemPrompt(todayJobs) {
   const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Europe/London' });
   const jobsSummary = todayJobs.length
-    ? todayJobs.map(j => `${j.time} ${j.customer_name || 'Guest'} ${j.pickup}→${j.destination} £${j.fare || '?'} ${j.payment || ''}`).join('\n')
+    ? todayJobs.map(j => `${j.time} ${j.customer_name || 'Guest'} ${shortAddr(j.pickup)}→${shortAddr(j.destination)} £${j.fare || '?'} ${j.payment || ''}`).join('\n')
     : 'No bookings today.';
 
   return `You are Westmere, the hands-free voice assistant for Westmere Private Hire (luxury driver service, Sussex UK). The operator is driving.

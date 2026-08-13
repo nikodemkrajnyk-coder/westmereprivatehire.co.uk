@@ -21,8 +21,9 @@ const router = express.Router();
 
 // Event titles use the SHARED short-address normalizer (address-normalize.js),
 // not a local copy — see the note in google-calendar.js.
-const { tinyLabel } = require('../address-normalize');
+const { tinyLabel, shortDisplay } = require('../address-normalize');
 function _tinyAddr(a) { return tinyLabel(a); }
+function _shortAddr(a) { return shortDisplay(a); }
 
 function requireStaff(req, res, next) {
   if (req.auth && ['admin', 'owner'].includes(req.auth.role)) return next();
@@ -122,13 +123,15 @@ router.post('/events', requireStaff, async (req, res) => {
     const pad = n => String(n).padStart(2, '0');
     const endIso = `${endDate.getUTCFullYear()}-${pad(endDate.getUTCMonth()+1)}-${pad(endDate.getUTCDate())}T${pad(endDate.getUTCHours())}:${pad(endDate.getUTCMinutes())}:00`;
     eventBody = {
-      summary: title || `Pickup: ${_tinyAddr(pickup) || '?'}${destination ? ' → ' + _tinyAddr(destination) : ''}`,
-      location: pickup || '',
+      summary: title || `${_tinyAddr(pickup) || '?'}${destination ? ' \u2192 ' + _tinyAddr(destination) : ''}`,
+      location: _shortAddr(pickup) || pickup || '',
       description: [
         name    ? `Passenger: ${name}`    : null,
         phone   ? `Phone: ${phone}`       : null,
-        pickup  ? `Pickup: ${pickup}`     : null,
-        destination ? `Drop-off: ${destination}` : null,
+        // The journey, unlabelled and short. The Waze links below keep the FULL
+        // address, which is what actually gets navigated to.
+        (pickup || destination)
+          ? `${_shortAddr(pickup) || pickup || '?'} \u2192 ${_shortAddr(destination) || destination || '?'}` : null,
         fare    ? `Fare: £${fare}`        : null,
         notes   ? `Notes: ${notes}`       : null,
         '',
@@ -140,7 +143,7 @@ router.post('/events', requireStaff, async (req, res) => {
     };
   } else {
     eventBody = {
-      summary: title || `Pickup: ${_tinyAddr(pickup) || '?'}${destination ? ' → ' + _tinyAddr(destination) : ''}`,
+      summary: title || `${_tinyAddr(pickup) || '?'}${destination ? ' \u2192 ' + _tinyAddr(destination) : ''}`,
       description: [
         name  ? `Passenger: ${name}`  : null,
         phone ? `Phone: ${phone}`     : null,

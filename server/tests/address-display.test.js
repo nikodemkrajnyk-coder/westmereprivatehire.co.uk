@@ -226,6 +226,135 @@ test('calendar, ICS and PDF surfaces delegate to the shared normalizer', () => {
   }
 });
 
+// ── (g) NO "Pickup:" LABEL ON A CALENDAR EVENT ───────────────────────────
+// The owner's report: a calendar entry still read "Pickup: <address>". The
+// booking sync (google-calendar.js) had already been cleaned up — its title is
+// the bare route and its location is the short address — but TWO other
+// composers were left on the old labelled format and nobody noticed, because
+// they are different code paths: google-routes.js builds the staff "add to
+// calendar" event, and driver-cal-routes.js builds the driver's ICS feed. A
+// booking created through either still carried the prefix.
+console.log('\nCalendar events carry the address alone — no "Pickup:" label');
+
+const CAL_SURFACES = ['server/google-calendar.js', 'server/google-routes.js', 'server/driver-cal-routes.js'];
+
+test('no calendar composer labels an address with "Pickup"', () => {
+  for (const f of CAL_SURFACES) {
+    for (const [i, line] of read(f).split('\n').entries()) {
+      if (/^\s*(\/\/|\*)/.test(line)) continue;           // comments may say the word
+      if (/Waze|maps\.google/.test(line)) continue;        // "Pickup (Waze)" is a link label
+      assert.ok(!/`?Pickup:\s*\$\{|'Pickup: '\s*\+|"Pickup: "\s*\+/.test(line),
+        f + ':' + (i + 1) + ' still prefixes an address with "Pickup:" — ' +
+        'the address must stand alone:\n        ' + line.trim().slice(0, 110));
+    }
+  }
+});
+
+test('the ICS feed titles an event with the route, not a label', () => {
+  const ics = read('server/driver-cal-routes.js');
+  for (const m of ics.matchAll(/SUMMARY:'\s*\+\s*icsEscape\(`([^`]*)`/g)) {
+    // Strip the ${...} interpolations first: `booking.pickup` is a property
+    // name, not a label, and matching it would fail on correct code.
+    const literal = m[1].replace(/\$\{[^}]*\}/g, '');
+    assert.ok(!/Pickup/i.test(literal),
+      'an ICS SUMMARY still carries a Pickup label: ' + m[1]);
+  }
+  assert.ok(/SUMMARY/.test(ics), 'expected the ICS composer to still build a SUMMARY');
+});
+
+test('every calendar LOCATION uses the SHORT address, never the raw string', () => {
+  // LOCATION is a display field; the Waze links in the description keep the
+  // full address, which is what actually gets navigated to.
+  for (const f of ['server/google-routes.js', 'server/driver-cal-routes.js']) {
+    const src = read(f);
+    for (const m of src.matchAll(/location:\s*([^,\n]+)|LOCATION:'\s*\+\s*icsEscape\(([^)]*)\)/gi)) {
+      const expr = (m[1] || m[2] || '').trim();
+      if (!expr) continue;
+      assert.ok(/_shortAddr|shortDisplay/.test(expr),
+        f + ' sets a calendar location from the raw address: ' + expr.slice(0, 80));
+    }
+  }
+});
+
+test('the composed events really do come out clean', () => {
+  // Driven, not just grepped: build a real event and read it.
+  const LONG_PU = '14 Queens Road, Haywards Heath, Mid Sussex, West Sussex, England, RH16 1EA, United Kingdom';
+  const LONG_DE = 'Gatwick Airport, Crawley, West Sussex, England, RH6 0NP, United Kingdom';
+  const gcal = require('../google-calendar');
+  const ev = gcal.bookingToEvent({
+    ref: 'WM-CAL', date: '2026-09-04', time: '05:30', pickup: LONG_PU, destination: LONG_DE,
+    customer_name: 'Test', status: 'confirmed'
+  });
+  assert.ok(!/Pickup:/.test(ev.summary + ' ' + ev.description + ' ' + (ev.location || '')),
+    'the composed event still contains a "Pickup:" label');
+  assert.ok(!/United Kingdom|Mid Sussex/.test(ev.summary + ' ' + (ev.location || '')),
+    'the composed event still carries the long raw address: ' + ev.summary + ' | ' + ev.location);
+  assert.ok(/Gatwick/.test(ev.summary), 'the title should still name the destination');
+  // …and the FULL address must survive where navigation needs it.
+  assert.ok(ev.description.includes(encodeURIComponent(LONG_DE)),
+    'the Waze link must still route to the FULL destination address');
+});
+
+// ── (h) THE AI ASSISTANT SHOWS SHORT ADDRESSES ───────────────────────────
+// The owner's report: the assistant still read back the full geocoder string.
+// Root cause: the earlier address work covered every surface that renders
+// HTML — emails, the apps, the calendar, the invoice — and missed this one,
+// because the assistant renders addresses into PROMPT TEXT. The model then
+// repeats whatever it was handed, so a raw address in the tool result or in the
+// system prompt comes straight back out in the reply.
+console.log('\nThe assistant reads back SHORT addresses');
+
+test('assistant-routes.js delegates to the shared normalizer', () => {
+  const src = read('server/assistant-routes.js');
+  assert.ok(/require\('\.\.\/address-normalize'\)/.test(src),
+    'server/assistant-routes.js must require the shared ../address-normalize');
+});
+
+test('every address the assistant echoes goes through the shortener', () => {
+  const src = read('server/assistant-routes.js');
+  const offenders = [];
+  for (const [i, line] of src.split('\n').entries()) {
+    if (/^\s*(\/\/|\*)/.test(line)) continue;
+    if (/description:/.test(line)) continue;              // tool schema prose
+    // A line that renders BOTH ends of a journey into text is an echo.
+    if (!/\$\{[^}]*pickup[^}]*\}/.test(line)) continue;
+    if (!/→|\\u2192/.test(line)) continue;
+    if (!/shortAddr|shortDisplay/.test(line)) {
+      offenders.push((i + 1) + ': ' + line.trim().slice(0, 100));
+    }
+  }
+  assert.deepStrictEqual(offenders, [],
+    'the assistant echoes a raw address — it will read the full geocoder string ' +
+    'back to the owner:\n      ' + offenders.join('\n      '));
+});
+
+test('the owner app assistant cards render the short address', () => {
+  const src = read('westmere-owner.html');
+  // showBookingCard shortened the DESTINATION and missed the PICKUP line
+  // directly above it, which is how a long address kept appearing next to a
+  // short one in the very same card.
+  const cards = [...src.matchAll(/rows\.push\('<strong>(Pickup|Destination):<\/strong> '\+escH\(([^)]*)\)/g)];
+  assert.ok(cards.length >= 2, 'expected the assistant booking cards');
+  for (const m of cards) {
+    assert.ok(/_shortAddr/.test(m[2]),
+      'an assistant card renders a raw ' + m[1] + ': ' + m[2]);
+  }
+  // …and the spoken/typed transcript too.
+  const echo = src.match(/\+\(bk\.pickup\?'Pickup: '\+([^+]*)\+/);
+  assert.ok(echo && /_shortAddr/.test(echo[1]),
+    'the assistant transcript echoes a raw pickup address');
+});
+
+test('the assistant still BOOKS and geocodes the full address', () => {
+  // Display-only: shortening what the model reads back must not change what is
+  // written to the database or what the fare engine geocodes.
+  const src = read('server/assistant-routes.js');
+  assert.ok(/calculateFare\(input\.pickup, input\.destination/.test(src),
+    'calculate_fare must still geocode the FULL address the owner dictated');
+  assert.ok(!/shortAddr\(input\.pickup\)/.test(src),
+    'the assistant must never shorten an address on its way INTO a booking or a fare');
+});
+
 test('navigation keeps the FULL address on every app surface', () => {
   // Waze / Google Maps links must never be built from the shortened display
   // form, or an old record's short label would be routed to instead.
