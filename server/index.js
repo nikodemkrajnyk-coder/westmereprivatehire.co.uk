@@ -272,6 +272,21 @@ app.get('/.well-known/apple-developer-merchantid-domain-association', (req, res)
   res.sendFile(file);
 });
 
+// ── PRIVATE PATHS — deny BEFORE anything is served from disk ────────────
+// express.static below serves the WHOLE REPO ROOT, which also published the
+// driver spreadsheet (personal data), the entire backend source and the test
+// suite. The rule for what is private lives in server/private-paths.js and is
+// exercised directly by server/tests/static-exposure.test.js.
+//
+// Answers 404, never 403 — a 403 confirms the file is there. This gate is
+// registered BEFORE express.static and AFTER the Apple Pay route, so domain
+// verification keeps working.
+const { isPrivatePath } = require('./private-paths');
+app.use((req, res, next) => {
+  if (!isPrivatePath(req.path)) return next();
+  res.status(404).type('text/plain').send('Not found');
+});
+
 // ── Static files (public pages, CSS, JS, images) ────────────────────────
 app.use(express.static(path.join(__dirname, '..'), {
   index: 'index.html',
