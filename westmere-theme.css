@@ -444,7 +444,11 @@ nav,
 .tabs button.active,
 .filter-btn.on,
 .pick-btn.on,
-[aria-selected="true"] {
+/* …but NOT the time wheel's rows. They are listbox options with
+   aria-selected="true", so this tab rule was drawing an inset underline
+   beneath the selected hour and minute — a stray line through the middle of
+   the wheel. The wheel draws its own centre frame. */
+[aria-selected="true"]:not(.wmtw-opt) {
   background: var(--westmere-white) !important;
   color: var(--westmere-navy) !important;
   border-color: var(--westmere-navy) !important;
@@ -852,10 +856,10 @@ textarea,
    paint the value white on white and hide it all over again. The direction of
    this bug reverses with the fill. GUARDRAIL: button-style.test.js. */
 #scr-app .wm-btn:active, #scr-app .btn:active,
-#scr-app .btn-main:active, #scr-app .ls-btn:active, #scr-app .filter-btn.on,
+#scr-app .btn-main:active, #scr-app .ls-btn:active,
 #scr-app .wm-btn.is-pressed, #scr-app .btn-main.is-pressed, #scr-app .ls-btn.is-pressed,
 #admin-app .wm-btn:active, #admin-app .btn:active,
-#admin-app .btn-main:active, #admin-app .btn-new:active, #admin-app .filter-btn.on,
+#admin-app .btn-main:active, #admin-app .btn-new:active,
 #admin-app .wm-btn.is-pressed, #admin-app .btn-main.is-pressed,
 #admin-login .ls-btn:active, #admin-login .btn:active, #admin-login .ls-btn.is-pressed,
 #login-screen .ls-btn:active, #login-screen .btn:active, #login-screen .ls-btn.is-pressed,
@@ -986,18 +990,25 @@ input, select, textarea {
 
 /* 16.1 — THE SELECTED FILTER PILL NEEDS ITS FILL BACK.
    Section 6 sets `background:transparent !important` across the button list so
-   nothing sits filled at rest. The SELECTED tab is the one legitimate filled
-   state, and wm-buttons.css gives it a white label — but section 6 stripped the
-   navy underneath it, so "Upcoming" rendered white-on-white and My Account's
-   filter row looked like an empty box. Measured at 1.00:1. */
+   nothing sits filled at rest. This rule used to make the SELECTED tab the one
+   legitimate FILLED state, because wm-buttons.css gives it a white label and
+   section 6 had stripped the navy underneath it — so "Upcoming" rendered
+   white-on-white and the filter row looked like an empty box (1.00:1).
+
+   The owner has since rejected filled highlights: the tab is a FRAME now, like
+   the pickers. That fixes the same invisibility from the other direction —
+   navy copy on white — and it is why .filter-btn.on had to come OUT of the
+   white-copy exception list in §15.2 above. Left there, the label would be
+   white on white all over again. GUARDRAIL: button-style.test.js. */
 .filter-btn.on,
 .tabs button.active,
 #scr-app .filter-btn.on,
 #admin-app .filter-btn.on {
-  background: var(--westmere-navy) !important;
+  background: var(--westmere-white) !important;
   border-color: var(--westmere-navy) !important;
-  color: var(--westmere-white) !important;
-  -webkit-text-fill-color: var(--westmere-white) !important;
+  color: var(--westmere-navy) !important;
+  -webkit-text-fill-color: var(--westmere-navy) !important;
+  font-weight: 500 !important;
 }
 
 /* 16.2 — READABILITY FLOORS FOR THE APP SURFACES.

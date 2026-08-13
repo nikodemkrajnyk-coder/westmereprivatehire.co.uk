@@ -687,6 +687,42 @@ test('the rider pickers match the main booking site\'s picker geometry', () => {
   }
 });
 
+// ── THE ACTIVE FILTER TAB IS A FRAME TOO ─────────────────────────────────
+// Same story as the pickers, one surface later. §16 of the theme FILLED the
+// selected tab navy with !important — added because §6 had stripped the fill
+// and left "Upcoming" white-on-white — and §15.2 forced white copy onto it.
+// The owner rejected filled highlights, so the tab is a frame now, and BOTH of
+// those had to reverse together: fill → white, and the white-copy exception
+// removed. Leave either half behind and the label is invisible again, just from
+// the other direction.
+test('the active filter/segmented tab is an outlined frame, not a filled pill', () => {
+  const theme = read('westmere-theme.css');
+  const rule = theme.match(/\.filter-btn\.on,\s*\n\.tabs button\.active,[\s\S]{0,200}?\{([^}]*)\}/);
+  assert.ok(rule, 'could not find the active-filter rule in the theme');
+  const body = rule[1];
+  assert.ok(!/background:\s*var\(--westmere-navy\)/.test(body),
+    'the active tab is still a FILLED navy pill: ' + body.trim());
+  assert.ok(/background:\s*var\(--westmere-white\)/.test(body),
+    'the active tab must sit on white');
+  assert.ok(/border-color:\s*var\(--westmere-navy\)/.test(body),
+    'the active tab must draw a navy frame');
+  assert.ok(/color:\s*var\(--westmere-navy\)/.test(body),
+    'the active tab label must be navy, not white');
+  const ratio = contrast('#102a43', '#ffffff');
+  assert.ok(ratio >= 4.5, 'the active tab label must clear AA on white');
+});
+
+test('the theme does not force WHITE copy onto the framed filter tab', () => {
+  // The exact half-fix that would re-hide it.
+  const theme = read('westmere-theme.css');
+  const whiteRules = [...theme.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+    .filter(m => /color:\s*var\(--westmere-white\)\s*!important/.test(m[2]))
+    .map(m => m[1]).join(' ');
+  assert.ok(!/\.filter-btn\.on/.test(whiteRules),
+    '.filter-btn.on is back in a white-copy rule while its background is white — ' +
+    'the label would be invisible');
+});
+
 test('the invoice PDF embeds Cormorant rather than a base-14 serif', () => {
   const src = read('server/invoice-pdf.js');
   // pdfkit cannot fetch a web font, so the face has to ship with the app.

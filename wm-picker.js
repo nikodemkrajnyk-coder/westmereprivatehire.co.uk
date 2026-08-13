@@ -126,46 +126,23 @@
   }
 
   // ── TIME popup ─────────────────────────────────────────────────────────
+  // The grid of 96 tappable HH:MM buttons is gone: the owner asked for the
+  // iOS-clock spin wheel, and for the booking form and My Account to be the
+  // same control rather than two lookalikes. Both now call the one shared
+  // component in /wm-timewheel.js. The value contract is unchanged — it hands
+  // back "HH:MM" on a 24-hour clock, exactly what this input stored before.
   function openTime(input, field) {
     closePopup();
-    var cur = input.value;
-    var bd = makeBackdrop();
-    var pop = document.createElement('div');
-    pop.className = 'wm-pop';
-    pop.setAttribute('role', 'dialog');
-    pop.setAttribute('aria-label', 'Choose a time');
-
-    var html = '<div class="wm-pop-head"><span class="wm-pop-title">Pick a time</span>'
-      + '<button type="button" class="wm-nav" data-close aria-label="Close">×</button></div>';
-    html += '<div class="wm-sub">Tap a time (24-hour clock)</div>';
-    html += '<div class="wm-times">';
-    for (var h = 0; h < 24; h++) {
-      for (var mi = 0; mi < 60; mi += 15) {
-        var t = pad(h) + ':' + pad(mi);
-        html += '<button type="button" class="wm-time' + (t === cur ? ' is-selected' : '') + '" data-t="' + t + '">' + t + '</button>';
-      }
-    }
-    html += '</div>';
-    pop.innerHTML = html;
-    bd.appendChild(pop);
-
-    pop.querySelector('[data-close]').addEventListener('click', closePopup);
-    Array.prototype.forEach.call(pop.querySelectorAll('[data-t]'), function (b) {
-      b.addEventListener('click', function () {
-        var t = b.getAttribute('data-t');
+    if (!window.WMTimeWheel) return;          // script missing: leave the native input alone
+    window.WMTimeWheel.open({
+      value: input.value,
+      title: 'Pick a time',
+      onConfirm: function (t) {
         input.value = t;
         setFieldValue(field, fmtTime(t));
         fire(input);
-        closePopup();
-      });
+      }
     });
-
-    document.body.appendChild(bd);
-    document.addEventListener('keydown', onKey);
-    openBackdrop = bd;
-
-    var sel = pop.querySelector('.wm-time.is-selected');
-    if (sel && sel.scrollIntoView) sel.scrollIntoView({ block: 'center' });
   }
 
   // ── Enhance one native input ───────────────────────────────────────────

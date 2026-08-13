@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <script src="/address-normalize.js"></script>
+<script src="/wm-timewheel.js"></script>
 <script src="/wm-lifecycle.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
 <meta name="color-scheme" content="light"/>
@@ -2511,15 +2512,39 @@ function initTimePicker(pfx){
   if(disp)disp.value=_tStr(_tH,_tM);
   // Trigger
   var trigger=document.getElementById(pfx+'-ctt-display');var drop=document.getElementById(pfx+'-time-drop');
-  if(trigger&&drop){
+  // Bind once. Without this, a second initTimePicker() for the same prefix adds
+  // a second click listener and the tap opens TWO stacked wheels — one of which
+  // is left behind when the other is dismissed.
+  if(trigger&&trigger.dataset.wmtwBound==='1')trigger=null;
+  if(trigger){
+    trigger.dataset.wmtwBound='1';
     trigger.addEventListener('click',function(e){
       e.stopPropagation();
       var cd=document.getElementById(pfx+'-cal-drop');if(cd)cd.classList.remove('open');
-      drop.classList.toggle('open');if(drop.classList.contains('open'))_renderTP();
+      if(drop)drop.classList.remove('open');
+      // THE SPIN WHEEL. Same shared component the public booking form uses
+      // (/wm-timewheel.js), so the two surfaces are one control rather than two
+      // that merely resemble each other. It hands back "HH:MM" — exactly what
+      // _rTConfirm_ already wrote — so the stored value and the fare call are
+      // untouched. If the script is missing, fall back to the old tap-list
+      // rather than leaving the field dead.
+      if(window.WMTimeWheel){
+        var cur=(document.getElementById(pfx+'-time')||{}).value||_tStr(_tH,_tM);
+        window.WMTimeWheel.open({
+          value:/^([01]\d|2[0-3]):[0-5]\d$/.test(cur)?cur:_tStr(_tH,_tM),
+          title:'Pick a time',
+          onConfirm:function(t){
+            _tH=parseInt(t.slice(0,2),10);_tM=parseInt(t.slice(3,5),10);
+            window['_rTConfirm_'+pfx]();
+          }
+        });
+        return;
+      }
+      if(drop){drop.classList.toggle('open');if(drop.classList.contains('open'))_renderTP();}
     });
     document.addEventListener('click',function(e){
       var wrap=document.getElementById(pfx+'-ctt-wrap');
-      if(wrap&&!wrap.contains(e.target))drop.classList.remove('open');
+      if(wrap&&drop&&!wrap.contains(e.target))drop.classList.remove('open');
     });
   }
 }
@@ -2531,11 +2556,14 @@ function initTimePicker(pfx){
    request). Two separate counters, so opening the change form on a 4-passenger
    trip can never rewrite what the customer had typed into the booking form. */
 var _rPaxBy={bk:1,cr:1};
+/* Four is the vehicle's capacity — the picker must not offer a fifth seat that
+   cannot be filled. Cap declared once and enforced in _rPaxSelect below, so a
+   stored 6 from an older booking still clamps rather than throwing.
+   GUARDRAIL: server/tests/passenger-cap.test.js */
+var _rPAX_MAX=4;
 var _rPAX_OPTS=[
   {v:1,label:'1 passenger'},{v:2,label:'2 passengers'},
-  {v:3,label:'3 passengers'},{v:4,label:'4 passengers'},
-  {v:5,label:'5 passengers'},{v:6,label:'6 passengers'},
-  {v:7,label:'7 passengers'},{v:8,label:'8 passengers'}
+  {v:3,label:'3 passengers'},{v:4,label:'4 passengers'}
 ];
 function _rRenderPax(pfx){
   pfx=pfx||'bk';
@@ -2547,7 +2575,7 @@ function _rRenderPax(pfx){
   drop.innerHTML='<div class="pick-col">'+h+'</div>';
 }
 function _rPaxSelect(pfx,v){
-  v=Math.max(1,Math.min(8,parseInt(v,10)||1));
+  v=Math.max(1,Math.min(_rPAX_MAX,parseInt(v,10)||1));
   _rPaxBy[pfx]=v;
   var hid=document.getElementById(pfx+'-pax');if(hid)hid.value=v;
   var disp=document.getElementById(pfx+'-pax-display');if(disp)disp.value=_rPAX_OPTS[v-1].label;
