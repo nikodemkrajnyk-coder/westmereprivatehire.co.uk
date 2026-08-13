@@ -21,9 +21,21 @@ const ROOT = path.join(__dirname, '..', '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 
 let passed = 0, failed = 0;
+const pending = [];
 function test(name, fn) {
-  try { fn(); console.log('  ✓ ' + name); passed++; }
-  catch (e) { console.error('  ✗ ' + name + '\n      ' + e.message); failed++; }
+  try {
+    const r = fn();
+    // A test may return a promise (the service-worker handler is async). Await it
+    // before the summary, or a real failure would be reported as a pass.
+    if (r && typeof r.then === 'function') {
+      pending.push(r.then(
+        () => { console.log('  ✓ ' + name); passed++; },
+        (e) => { console.error('  ✗ ' + name + '\n      ' + e.message); failed++; }
+      ));
+      return;
+    }
+    console.log('  ✓ ' + name); passed++;
+  } catch (e) { console.error('  ✗ ' + name + '\n      ' + e.message); failed++; }
 }
 
 console.log('\nRider service-worker cache guardrail');
@@ -74,6 +86,70 @@ test('rider My Account pickers/inputs are light + readable (color-scheme light)'
     assert.ok(m && /color-scheme:\s*light/.test(m[0]), cls + ' must set color-scheme:light for readable pickers');
   }
 });
+test('the SW can NEVER respond with undefined (the blank-page outage)', () => {
+  // THE OUTAGE: the fetch handler ended
+  //     .catch(function(){ return caches.match(e.request); })
+  // caches.match() resolves to UNDEFINED when nothing matches, and
+  // respondWith(undefined) is a network error — the browser renders a
+  // completely blank page. Paired with cache:'reload', which sends every
+  // document straight to the network with no HTTP-cache fallback, one blip
+  // blanked the whole account page on desktop. A query string (?verified=1,
+  // ?reset_token=…) missed the precache key and blanked it too.
+  //
+  // Driven for real: run the shipped handler with a DEAD network and an EMPTY
+  // cache and assert a genuine Response still comes back.
+  const vm = require('vm');
+  const handlerSrc = sw.slice(sw.indexOf("self.addEventListener('fetch'"));
+  const body = handlerSrc.slice(handlerSrc.indexOf('{', handlerSrc.indexOf('function (e)')) + 1,
+    handlerSrc.lastIndexOf('});'));
+
+  function drive({ networkFails, cacheHas, requestUrl, mode }) {
+    let responded = null;
+    const sandbox = {
+      URL, Response: class { constructor(b, i) { this.body = b; this.status = (i && i.status) || 200; this.ok = this.status < 400; this.headers = (i && i.headers) || {}; } clone() { return this; } },
+      CACHE: 'test-v1',
+      caches: {
+        match: () => Promise.resolve(cacheHas ? { cached: true, ok: true, clone() { return this; } } : undefined),
+        open: () => Promise.resolve({ put: () => Promise.resolve() })
+      },
+      fetch: () => networkFails ? Promise.reject(new Error('offline')) : Promise.resolve({ ok: true, clone() { return this; } }),
+      self: { location: { origin: 'https://westmereprivatehire.co.uk' } },
+      console: { log() {}, warn() {}, error() {} },
+      e: {
+        request: { url: requestUrl, method: 'GET', mode: mode || 'navigate' },
+        respondWith: (p) => { responded = p; }
+      }
+    };
+    vm.createContext(sandbox);
+    vm.runInContext('(function(e){' + body + '})(e)', sandbox);
+    return responded;
+  }
+
+  const cases = [
+    { label: 'network down, nothing cached, plain URL', networkFails: true, cacheHas: false, requestUrl: 'https://westmereprivatehire.co.uk/westmere-rider.html' },
+    { label: 'network down, nothing cached, URL WITH a query string', networkFails: true, cacheHas: false, requestUrl: 'https://westmereprivatehire.co.uk/westmere-rider.html?verified=1' },
+    { label: 'network down, cache has a copy', networkFails: true, cacheHas: true, requestUrl: 'https://westmereprivatehire.co.uk/westmere-rider.html' }
+  ];
+
+  return Promise.all(cases.map(c => {
+    const p = drive(c);
+    assert.ok(p && typeof p.then === 'function', c.label + ': respondWith was not called with a promise');
+    return p.then(res => {
+      assert.ok(res !== undefined && res !== null,
+        c.label + ': respondWith resolved to ' + res + ' — that is a network error and the ' +
+        'customer sees a BLANK PAGE. It must always resolve to a Response.');
+    });
+  }));
+});
+
+test('a document fetch failure falls back before giving up', () => {
+  assert.ok(/ignoreSearch/.test(sw),
+    'the cache lookup must ignore the query string for documents, or arriving with ' +
+    '?verified=1 or ?reset_token=… misses the precached page entirely');
+  assert.ok(!/\.catch\(function \(\) \{\s*return caches\.match\(e\.request\);\s*\}\)/.test(sw),
+    'the bare `catch -> caches.match` is the blank-page bug — it can resolve to undefined');
+});
+
 test('day mode never strips the My Account scenery (06:00–18:00 regression)', () => {
   // body.mode-day is toggled on between 06:00 and 18:00 and its rules are one
   // specificity step ABOVE the dashboard's own. This shipped a live regression:
@@ -145,5 +221,7 @@ test('rider service worker revalidates HTML (stale desktop layout guard)', () =>
     "the document's no-HTTP-cache fetch must be set up before respondWith()");
 });
 
-console.log(`\n${passed} passed, ${failed} failed`);
-process.exit(failed ? 1 : 0);
+Promise.all(pending).then(() => {
+  console.log(`\n${passed} passed, ${failed} failed`);
+  process.exit(failed ? 1 : 0);
+});

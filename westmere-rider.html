@@ -1461,8 +1461,11 @@ function todayUK(){
 // Address DISPLAY → shared normalizer (address-normalize.js), the single source
 // of truth used by the emails + owner/admin apps. Trip history shows the short
 // form; the booking flow still stores/sends the full precise address.
-/* These three delegate to shared modules loaded by <script>. Each checks the
-   MODULE **and THE FUNCTION** before calling it.
+/* These three delegate to shared modules loaded by their own script tags.
+   Each checks the MODULE **and THE FUNCTION** before calling it.
+   (Never write a literal script tag inside this file's inline JS — it splits
+   the file for any tag-based scanner and flirts with the HTML parser's
+   script-data-escaped state.)
    WHY BOTH: checking only `window.WMAddr` shipped a live outage. The account
    page called WMAddr.flightFor() while the deployed address-normalize.js had
    no such export (it exists only in an uncommitted change) — so every trip row
@@ -2704,24 +2707,52 @@ function _applyDayNight(){
   document.body.classList.toggle('mode-day',isDay);
   document.body.classList.toggle('mode-night',!isDay);
 }
+/* ── THE PAGE MUST NEVER BE BLANK ──
+   Exactly one of two things is on screen at any moment: the login card, or the
+   signed-in shell. bootApp() hides the login card FIRST and builds the shell
+   second, so a throw between those two steps leaves neither showing — and if
+   the fallback showLogin() then throws as well, the customer is looking at an
+   empty white page with no way forward. This is the last line of defence: if
+   nothing is visible, put the login card back up. */
+function _ensureSomethingVisible(){
+  try{
+    var login=document.getElementById('login-screen');
+    var app=document.getElementById('scr-app');
+    var appOn=app&&app.classList.contains('on');
+    var loginOn=login&&login.style.display!=='none';
+    if(appOn||loginOn)return;
+    if(login){login.style.display='flex';}
+    if(app){app.classList.remove('on');}
+    try{ console.error('[account] nothing was on screen after boot — restored the sign-in view'); }catch(_){ }
+  }catch(_){ }
+}
 async function _autoBoot(){
   try{
-    _applyDayNight();
-    setInterval(_applyDayNight,60000);
+    _safe('applyDayNight',function(){_applyDayNight();});
+    try{ setInterval(_applyDayNight,60000); }catch(_){ }
     var r=await fetch('/api/auth/me',{credentials:'include'});
     if(r.ok){
       var data=await r.json();
       if(data.type==='customer'&&data.customer){
         _currentUser={name:data.customer.full_name,email:data.customer.email,phone:data.customer.phone||'',loggedIn:true};
-        bootApp();
-        updateProfile();
+        // Each guarded: bootApp() has already hidden the login card by the time
+        // anything inside it can fail, so an unguarded throw here is a blank page.
+        _safe('bootApp',function(){bootApp();});
+        _safe('updateProfile',function(){updateProfile();});
+        _ensureSomethingVisible();
         return;
       }
     }
-  }catch(e){}
+  }catch(e){
+    try{ console.error('[account] sign-in check failed',e); }catch(_){ }
+  }
   _currentUser={name:'',email:'',phone:'',loggedIn:false};
-  showLogin();
+  _safe('showLogin',function(){showLogin();});
+  _ensureSomethingVisible();
 }
+// And a net under everything: if any later uncaught error leaves the page with
+// nothing on it, restore the sign-in view rather than show blank white.
+window.addEventListener('error',function(){ _ensureSomethingVisible(); });
 function updateProfile(){
   var n=document.getElementById('pv-name');if(n)n.textContent=_currentUser.name||'';
   var e=document.getElementById('pv-email');if(e)e.textContent=_currentUser.email||'--';
