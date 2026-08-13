@@ -24,14 +24,44 @@
  */
 
 const PDFDocument = require('pdfkit');
+const path = require('path');
+
+// ── Typeface ───────────────────────────────────────────────────────────────
+// Cormorant is the brand face everywhere else (westmere-theme.css), so the
+// invoice embeds it rather than falling back to a PDF base-14 serif. Two
+// weights: Regular for text, SemiBold for the small tracked uppercase labels
+// and totals — Cormorant is delicate, and small text set at Regular in a
+// serif goes weak on paper.
+const FONT_DIR = path.join(__dirname, '..', 'assets', 'fonts');
+const FONT_REG = path.join(FONT_DIR, 'Cormorant-Regular.ttf');
+const FONT_SB  = path.join(FONT_DIR, 'Cormorant-SemiBold.ttf');
+const BODY = 'Cormorant';
+const BOLD = 'Cormorant-SemiBold';
+// Reference numbers, sort codes and account numbers stay monospaced so digits
+// line up and cannot be misread — the emails do the same with Menlo.
+const MONO = 'Courier';
+
+function registerFonts(doc) {
+  doc.registerFont(BODY, FONT_REG);
+  doc.registerFont(BOLD, FONT_SB);
+}
+
+// The PDF is a DISPLAY surface like any other: journeys print in the shared
+// short-address form, and a flight number is printed only on an airport run.
+const { shortDisplay, flightFor } = require('../address-normalize');
 
 // ── Palette ────────────────────────────────────────────────────────────────
-const NAVY  = '#0E2540';
-const GOLD  = '#B8985A';
-const SOFT  = '#5A6B7F';
-const MUTED = '#9AA3B2';
-const HAIR  = '#E0E4EA';
-const IVORY = '#F5F3EE';
+// The same tokens as westmere-theme.css and server/email.js, so the invoice,
+// the emails and the site are one design. No gold and no cream: the accent is
+// navy, and emphasis comes from weight and scale.
+// (Guardrail: server/tests/button-style.test.js scans this file for any colour
+// in the cream/gold hue band.)
+const NAVY   = '#102a43';   // --westmere-navy
+const ACCENT = '#102a43';   // was gold; the accent is navy now
+const SOFT   = '#3B5268';   // secondary type
+const MUTED  = '#657485';   // --westmere-muted
+const HAIR   = '#dfe5ea';   // --westmere-line
+const TINT   = '#F2F5F8';   // cool zebra tint (was ivory)
 
 // ── Page geometry ──────────────────────────────────────────────────────────
 const PAGE_W = 595.28;
@@ -86,6 +116,7 @@ function buildInvoicePdf(data) {
     doc.on('error', reject);
 
     try {
+      registerFonts(doc);
       drawInvoice(doc, data);
     } catch (err) {
       doc.end();
@@ -126,30 +157,30 @@ function drawInvoice(doc, data) {
   let y = M;
 
   // Left: wordmark
-  doc.font('Times-Roman').fontSize(22).fillColor(NAVY)
+  doc.font(BODY).fontSize(22).fillColor(NAVY)
      .text('WESTMERE', M, y, { lineBreak: false });
-  doc.font('Helvetica').fontSize(7).fillColor(GOLD)
+  doc.font(BOLD).fontSize(7).fillColor(ACCENT)
      .text('PRIVATE HIRE  ·  SUSSEX', M, y + 29, { lineBreak: false });
 
   // Right: INVOICE label + number
-  doc.font('Helvetica').fontSize(8).fillColor(MUTED)
+  doc.font(BOLD).fontSize(8).fillColor(MUTED)
      .text('INVOICE', M, y, { width: CW, align: 'right', lineBreak: false });
-  doc.font('Courier').fontSize(13).fillColor(NAVY)
+  doc.font(MONO).fontSize(13).fillColor(NAVY)
      .text(invoiceNo, M, y + 14, { width: CW, align: 'right', lineBreak: false });
 
   y += 52;
 
-  // ── GOLD RULE ────────────────────────────────────────────────────────────
-  hline(doc, y, GOLD, 1);
+  // ── ACCENT RULE ────────────────────────────────────────────────────────────
+  hline(doc, y, ACCENT, 1);
   y += 20;
 
   // ── FROM / BILL TO ──────────────────────────────────────────────────────
   const MID  = M + CW / 2;
   const COLW = CW / 2 - 10;
 
-  doc.font('Helvetica').fontSize(7.5).fillColor(MUTED)
+  doc.font(BOLD).fontSize(7.5).fillColor(MUTED)
      .text('FROM', M, y, { lineBreak: false });
-  doc.font('Helvetica').fontSize(7.5).fillColor(MUTED)
+  doc.font(BOLD).fontSize(7.5).fillColor(MUTED)
      .text('BILL TO', MID, y, { lineBreak: false });
 
   y += 13;
@@ -157,20 +188,20 @@ function drawInvoice(doc, data) {
   let rightY = y;
 
   // FROM column
-  doc.font('Times-Bold').fontSize(11).fillColor(NAVY)
+  doc.font(BOLD).fontSize(11).fillColor(NAVY)
      .text(bizLines[0] || '', M, leftY, { width: COLW, lineBreak: false });
   leftY += 16;
-  doc.font('Times-Roman').fontSize(10).fillColor(SOFT);
+  doc.font(BODY).fontSize(10).fillColor(SOFT);
   for (let i = 1; i < bizLines.length; i++) {
     doc.text(bizLines[i], M, leftY, { width: COLW, lineBreak: false });
     leftY += 14;
   }
 
   // BILL TO column
-  doc.font('Times-Bold').fontSize(11).fillColor(NAVY)
+  doc.font(BOLD).fontSize(11).fillColor(NAVY)
      .text(recName || '—', MID, rightY, { width: COLW, lineBreak: false });
   rightY += 16;
-  doc.font('Times-Roman').fontSize(10).fillColor(SOFT);
+  doc.font(BODY).fontSize(10).fillColor(SOFT);
   if (recAddress) {
     for (const al of recAddress.split('\n')) {
       if (al.trim()) {
@@ -188,14 +219,14 @@ function drawInvoice(doc, data) {
   hline(doc, y, HAIR, 0.4);
   y += 12;
 
-  doc.font('Helvetica').fontSize(7.5).fillColor(MUTED).text('ISSUED', M, y, { lineBreak: false });
+  doc.font(BOLD).fontSize(7.5).fillColor(MUTED).text('ISSUED', M, y, { lineBreak: false });
   y += 12;
 
-  doc.font('Times-Roman').fontSize(11).fillColor(NAVY).text(fmtDate(issuedDate) || '—', M, y, { lineBreak: false });
+  doc.font(BODY).fontSize(11).fillColor(NAVY).text(fmtDate(issuedDate) || '—', M, y, { lineBreak: false });
   y += 16;
 
   if (periodLabel) {
-    doc.font('Helvetica-Oblique').fontSize(9).fillColor(SOFT)
+    doc.font(BODY).fontSize(9).fillColor(SOFT)
        .text('Period: ' + periodLabel, M, y, { lineBreak: false });
     y += 16;
   }
@@ -206,17 +237,17 @@ function drawInvoice(doc, data) {
   const ROW_H = 24;
 
   // Header strip
-  vbox(doc, M, y, CW, 22, '#EDE9E2');
+  vbox(doc, M, y, CW, 22, '#EEF2F5');
 
   if (isBespoke) {
     // --- Bespoke: Description | Amount ---
-    doc.font('Helvetica').fontSize(8).fillColor(MUTED)
+    doc.font(BOLD).fontSize(8).fillColor(MUTED)
        .text('DESCRIPTION', M + 6, y + 7, { lineBreak: false });
-    doc.font('Helvetica').fontSize(8).fillColor(MUTED)
+    doc.font(BOLD).fontSize(8).fillColor(MUTED)
        .text('AMOUNT', M, y + 7, { width: CW - 6, align: 'right', lineBreak: false });
     y += 22;
 
-    hline(doc, y, GOLD, 1.2);
+    hline(doc, y, ACCENT, 1.2);
     y += 1;
 
     const items = data.items || [];
@@ -224,22 +255,22 @@ function drawInvoice(doc, data) {
       const it = items[i];
       const hasDate = !!(it.date && String(it.date).trim());
       const rowH = hasDate ? ROW_H + 12 : ROW_H;
-      if (i % 2 === 1) vbox(doc, M, y, CW, rowH, IVORY);
+      if (i % 2 === 1) vbox(doc, M, y, CW, rowH, TINT);
       if (hasDate) {
-        doc.font('Helvetica').fontSize(7.5).fillColor(MUTED)
+        doc.font(BOLD).fontSize(7.5).fillColor(MUTED)
            .text(fmtDate(it.date), M + 6, y + 5, { lineBreak: false });
-        doc.font('Times-Roman').fontSize(11).fillColor(NAVY)
+        doc.font(BODY).fontSize(11).fillColor(NAVY)
            .text(String(it.description || ''), M + 6, y + 16, { width: CW - 90, lineBreak: false });
       } else {
-        doc.font('Times-Roman').fontSize(11).fillColor(NAVY)
+        doc.font(BODY).fontSize(11).fillColor(NAVY)
            .text(String(it.description || ''), M + 6, y + 7, { width: CW - 90, lineBreak: false });
       }
-      doc.font('Times-Roman').fontSize(11).fillColor(NAVY)
+      doc.font(BODY).fontSize(11).fillColor(NAVY)
          .text('£' + (+it.amount || 0).toFixed(2), M, y + (hasDate ? 16 : 7), { width: CW - 6, align: 'right', lineBreak: false });
       y += rowH;
     }
     if (!items.length) {
-      doc.font('Times-Roman').fontSize(11).fillColor(MUTED)
+      doc.font(BODY).fontSize(11).fillColor(MUTED)
          .text('No items on this invoice.', M, y + 7, { width: CW, align: 'center', lineBreak: false });
       y += ROW_H;
     }
@@ -252,44 +283,45 @@ function drawInvoice(doc, data) {
     const JX = M + DW + 7;
     const FX = PAGE_W - M - FW;
 
-    doc.font('Helvetica').fontSize(8).fillColor(MUTED)
+    doc.font(BOLD).fontSize(8).fillColor(MUTED)
        .text('DATE / REF', M + 6, y + 7, { lineBreak: false });
-    doc.font('Helvetica').fontSize(8).fillColor(MUTED)
+    doc.font(BOLD).fontSize(8).fillColor(MUTED)
        .text('JOURNEY', JX, y + 7, { lineBreak: false });
-    doc.font('Helvetica').fontSize(8).fillColor(MUTED)
+    doc.font(BOLD).fontSize(8).fillColor(MUTED)
        .text('FARE', FX, y + 7, { width: FW - 6, align: 'right', lineBreak: false });
     y += 22;
 
-    hline(doc, y, GOLD, 1.2);
+    hline(doc, y, ACCENT, 1.2);
     y += 1;
 
     const BK_ROW_H = 28;
     const bookings = data.bookings || [];
     for (let i = 0; i < bookings.length; i++) {
       const b = bookings[i];
-      if (i % 2 === 1) vbox(doc, M, y, CW, BK_ROW_H, IVORY);
+      if (i % 2 === 1) vbox(doc, M, y, CW, BK_ROW_H, TINT);
 
       const dateStr = (b.date || '') + (b.time && b.time !== 'ASAP' ? '  ' + b.time : '');
-      doc.font('Times-Roman').fontSize(10).fillColor(NAVY)
+      doc.font(BODY).fontSize(10).fillColor(NAVY)
          .text(dateStr, M + 6, y + 5, { width: DW - 6, lineBreak: false });
-      doc.font('Courier').fontSize(8).fillColor(MUTED)
+      doc.font(MONO).fontSize(8).fillColor(MUTED)
          .text(b.ref || '', M + 6, y + 17, { width: DW - 6, lineBreak: false });
 
-      const journey = (b.pickup || '') + ' → ' + (b.destination || '');
-      doc.font('Times-Roman').fontSize(10).fillColor(NAVY)
+      const journey = (shortDisplay(b.pickup) || b.pickup || '') + ' → ' + (shortDisplay(b.destination) || b.destination || '');
+      doc.font(BODY).fontSize(10).fillColor(NAVY)
          .text(journey, JX, y + 5, { width: JW, lineBreak: false });
-      if (b.flight) {
-        doc.font('Helvetica').fontSize(8).fillColor(MUTED)
-           .text('Flt ' + b.flight, JX, y + 17, { width: JW, lineBreak: false });
+      const flt = flightFor(b);   // airport runs only
+      if (flt) {
+        doc.font(BOLD).fontSize(8).fillColor(MUTED)
+           .text('Flt ' + flt, JX, y + 17, { width: JW, lineBreak: false });
       }
 
-      doc.font('Times-Roman').fontSize(11).fillColor(NAVY)
+      doc.font(BODY).fontSize(11).fillColor(NAVY)
          .text('£' + (+b.fare || 0).toFixed(2), FX, y + 9, { width: FW - 6, align: 'right', lineBreak: false });
 
       y += BK_ROW_H;
     }
     if (!bookings.length) {
-      doc.font('Times-Roman').fontSize(11).fillColor(MUTED)
+      doc.font(BODY).fontSize(11).fillColor(MUTED)
          .text('No journeys in this period.', M, y + 7, { width: CW, align: 'center', lineBreak: false });
       y += ROW_H;
     }
@@ -306,16 +338,16 @@ function drawInvoice(doc, data) {
   const VW   = PAGE_W - M - VX;
 
   // Subtotal
-  doc.font('Helvetica').fontSize(9.5).fillColor(SOFT)
+  doc.font(BOLD).fontSize(9.5).fillColor(SOFT)
      .text('Subtotal', TX, y, { width: LW, align: 'right', lineBreak: false });
-  doc.font('Times-Roman').fontSize(11).fillColor(NAVY)
+  doc.font(BODY).fontSize(11).fillColor(NAVY)
      .text('£' + total.toFixed(2), VX, y, { width: VW, align: 'right', lineBreak: false });
   y += 17;
 
   // VAT
-  doc.font('Helvetica').fontSize(9.5).fillColor(SOFT)
+  doc.font(BOLD).fontSize(9.5).fillColor(SOFT)
      .text('VAT (0%)', TX, y, { width: LW, align: 'right', lineBreak: false });
-  doc.font('Times-Roman').fontSize(11).fillColor(NAVY)
+  doc.font(BODY).fontSize(11).fillColor(NAVY)
      .text('£0.00', VX, y, { width: VW, align: 'right', lineBreak: false });
   y += 13;
 
@@ -324,9 +356,9 @@ function drawInvoice(doc, data) {
   y += 7;
 
   // TOTAL
-  doc.font('Helvetica-Bold').fontSize(9.5).fillColor(NAVY)
+  doc.font(BOLD).fontSize(9.5).fillColor(NAVY)
      .text('TOTAL', TX, y + 3, { width: LW, align: 'right', lineBreak: false });
-  doc.font('Times-Bold').fontSize(16).fillColor(GOLD)
+  doc.font(BOLD).fontSize(16).fillColor(ACCENT)
      .text('£' + total.toFixed(2), VX, y, { width: VW, align: 'right', lineBreak: false });
   y += 30;
 
@@ -335,10 +367,10 @@ function drawInvoice(doc, data) {
     y += 8;
     // Gold left bar + ivory background
     doc.save()
-       .rect(M, y, 3, 36).fill(GOLD)
-       .rect(M + 3, y, CW - 3, 36).fill('#FAF8F4')
+       .rect(M, y, 3, 36).fill(ACCENT)
+       .rect(M + 3, y, CW - 3, 36).fill('#F7F9FA')
        .restore();
-    doc.font('Times-Roman').fontSize(11).fillColor(SOFT)
+    doc.font(BODY).fontSize(11).fillColor(SOFT)
        .text(notes, M + 10, y + 8, { width: CW - 18, lineBreak: false });
     y += 44;
   }
@@ -357,21 +389,21 @@ function drawInvoice(doc, data) {
 
     const BH = 14 + bankRows.length * 14 + 10;
 
-    vbox(doc, M, y, CW, BH, IVORY, HAIR);
+    vbox(doc, M, y, CW, BH, TINT, HAIR);
     // Gold left accent bar
-    doc.save().rect(M, y, 3, BH).fill(GOLD).restore();
+    doc.save().rect(M, y, 3, BH).fill(ACCENT).restore();
 
     let by = y + 10;
-    doc.font('Helvetica').fontSize(7.5).fillColor(GOLD)
+    doc.font(BOLD).fontSize(7.5).fillColor(ACCENT)
        .text('PAYMENT DETAILS', M + 10, by, { lineBreak: false });
     by += 14;
 
     const LBW = 76;
     for (const [lbl, val] of bankRows) {
       const isMono = lbl === 'Sort code' || lbl === 'Account' || lbl === 'Reference';
-      doc.font('Helvetica').fontSize(8).fillColor(MUTED)
+      doc.font(BOLD).fontSize(8).fillColor(MUTED)
          .text(lbl.toUpperCase(), M + 10, by, { width: LBW, lineBreak: false });
-      doc.font(isMono ? 'Courier' : 'Times-Roman').fontSize(10).fillColor(NAVY)
+      doc.font(isMono ? MONO : BODY).fontSize(10).fillColor(NAVY)
          .text(String(val), M + 10 + LBW + 4, by, { lineBreak: false });
       by += 14;
     }
@@ -382,7 +414,7 @@ function drawInvoice(doc, data) {
   // ── FOOTER ───────────────────────────────────────────────────────────────
   const footerY = PAGE_H - M - 18;
   hline(doc, footerY, HAIR, 0.3);
-  doc.font('Helvetica').fontSize(8).fillColor(MUTED)
+  doc.font(BOLD).fontSize(8).fillColor(MUTED)
      .text(
        'Westmere Private Hire  ·  Licensed by Lewes District Council  ·  westmereprivatehire.co.uk',
        M, footerY + 6, { width: CW, align: 'center', lineBreak: false }

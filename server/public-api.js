@@ -9,7 +9,8 @@ const express = require('express');
 const { getDb } = require('./db');
 const { sendAdminAlert, sendCustomerAcknowledgement } = require('./email');
 const { sendAdminBookingWhatsApp } = require('./whatsapp');
-const { createPaymentIntent, isConfigured: stripeConfigured } = require('./stripe');
+const { createPaymentIntent, isConfigured: stripeConfigured,
+        findPaymentIntentByRef, findOpenPaymentIntentByRef } = require('./stripe');
 const { computeSuggestedFare } = require('./fare-engine');
 const gcal = require('./google-calendar');
 const intake = require('./intake');
@@ -52,25 +53,25 @@ function cashPage(state, message, ref) {
 <meta name="theme-color" content="#111D2C"><meta name="robots" content="noindex,nofollow">
 <title>Your journey | Westmere Private Hire</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--navy:#111D2C;--gold:#B8985A;--text:#1C2A3E;--muted:#6B7280;--border:#E5E0D8;--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif}
+:root{--navy:#102a43;--text:#102a43;--muted:#657485;--border:#dfe5ea;--serif:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;--sans:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif}
 html{font-size:16px}
-body{font-family:var(--sans);font-weight:300;color:var(--text);background:var(--navy);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+body{font-family:var(--sans);font-weight:400;color:var(--text);background:var(--navy);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
 .card{width:100%;max-width:440px;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.35)}
-.head{background:var(--navy);color:#fff;padding:30px 32px 26px;text-align:center;border-bottom:3px solid var(--gold)}
-.brand{font-family:var(--sans);font-size:10px;letter-spacing:3.5px;text-transform:uppercase;color:var(--gold);font-weight:500}
+.head{background:var(--navy);color:#fff;padding:30px 32px 26px;text-align:center;border-bottom:1px solid rgba(255,255,255,.18)}
+.brand{font-family:var(--sans);font-size:11px;letter-spacing:3.5px;text-transform:uppercase;color:rgba(255,255,255,.74);font-weight:600}
 .brand-name{font-family:var(--serif);font-size:26px;font-weight:400;letter-spacing:.5px;margin-top:6px}
 .body{padding:34px 32px 36px}
 .state{text-align:center}
 .ico{width:60px;height:60px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:18px}
-.ico.ok{background:rgba(184,152,90,.14);color:var(--gold)}
+.ico.ok{background:rgba(16,42,67,.08);color:var(--navy)}
 .ico.info{background:rgba(28,42,62,.08);color:var(--navy)}
 .state h2{font-family:var(--serif);font-size:24px;font-weight:400;color:var(--navy);margin-bottom:10px}
 .state p{font-size:14px;color:var(--muted);line-height:1.6}
 .muted-ref{font-family:'Menlo','Consolas',monospace;font-size:12px;letter-spacing:.5px;color:var(--navy)}
-a.link{color:var(--gold);text-decoration:none}
+a.link{color:var(--navy);text-decoration:none;border-bottom:1px solid rgba(16,42,67,.28)}
 </style></head>
 <body><div class="card">
   <div class="head"><div class="brand">Private Hire</div><div class="brand-name">Westmere</div></div>
@@ -437,7 +438,12 @@ router.get('/pay/:ref', (req, res) => {
       return res.status(404).json({ error: 'Payment link not found or has expired' });
     }
 
-    const paid = !!b.paid_at || b.payment === 'card';
+    // ONE gate for both channels (server/pay-lock.js). The email link and
+    // My Account ask the same question of the same live row, so the page can
+    // never offer a payment that the other channel has already settled.
+    const { paymentLock } = require('./pay-lock');
+    const lock = paymentLock(b);
+    const paid = lock.reason === 'paid';
     res.json({
       ok: true,
       stripeReady: stripeConfigured(),
@@ -452,8 +458,13 @@ router.get('/pay/:ref', (req, res) => {
         notes: b.notes || null,
         status: b.status,
         paid,
-        cancelled: b.status === 'cancelled',
-        payable: !paid && b.status !== 'cancelled' && !!b.fare && Number(b.fare) > 0
+        cancelled: lock.reason === 'cancelled',
+        // The customer picked "pay your driver" — in this channel or the other
+        // one. The page shows that plainly rather than a card form.
+        cashChosen: lock.reason === 'cash_chosen',
+        lockReason: lock.reason,
+        lockMessage: lock.message,
+        payable: lock.payable
       }
     });
   } catch (err) {
@@ -484,17 +495,52 @@ router.post('/pay/:ref/intent', async (req, res) => {
     if (!b || !b.pay_token || b.pay_token !== token) {
       return res.status(404).json({ error: 'Payment link not found or has expired' });
     }
-    if (b.status === 'cancelled') return res.status(409).json({ error: 'This booking has been cancelled' });
-    if (b.paid_at || b.payment === 'card') return res.status(409).json({ error: 'This booking is already paid' });
-    if (!b.fare || Number(b.fare) <= 0) return res.status(409).json({ error: 'No fare is set for this booking yet' });
+    // DOUBLE-PAYMENT GATE. Checked against the LIVE row at the moment of
+    // payment, not at page load — the customer may have opened this form and
+    // then paid (or chosen cash) in My Account before pressing Pay here.
+    // Includes the cash case: once "pay your driver" is chosen in EITHER
+    // channel, a card charge for the same journey is refused.
+    const { paymentLock } = require('./pay-lock');
+    const lock = paymentLock(b);
+    if (lock.locked) return res.status(409).json({ error: lock.message, reason: lock.reason });
+    if (!lock.payable) return res.status(409).json({ error: lock.message || 'No fare is set for this booking yet', reason: lock.reason });
 
     const amount = Math.round(Number(b.fare) * 100);
-    const intent = await createPaymentIntent({
-      amount,
-      currency: 'gbp',
-      booking: { ref: b.ref, from: b.pickup, to: b.destination, date: b.date, time: b.time },
-      customer: { name: b.passenger_name, email: b.passenger_email, phone: b.passenger_phone }
-    });
+
+    // STRIPE IS ALSO ASKED. The DB gate above cannot see a payment that has
+    // succeeded at Stripe but whose webhook has not landed yet — a delay of
+    // seconds, and precisely long enough for the customer to try the other
+    // channel. If Stripe already has a successful charge for this ref, the
+    // journey is paid whatever our row still says.
+    try {
+      const settledId = await findPaymentIntentByRef(b.ref);
+      if (settledId) {
+        console.warn('[PAY] intent refused — Stripe already has a succeeded payment', settledId, 'for', b.ref);
+        return res.status(409).json({ error: 'This trip has already been paid.', reason: 'paid' });
+      }
+    } catch (e) { console.error('[PAY] settled-intent lookup failed:', e.message); }
+
+    // REUSE an open PaymentIntent for this booking rather than minting a rival.
+    // Two channels open side by side would otherwise each get their own intent,
+    // and two live intents for one journey is the one window where both can
+    // legitimately be completed. One intent per booking closes it.
+    let intent = null;
+    try {
+      const open = await findOpenPaymentIntentByRef(b.ref);
+      if (open && open.amount === amount && open.client_secret) {
+        intent = open;
+        console.log('[PAY] reusing open intent', open.id, 'for', b.ref);
+      }
+    } catch (e) { console.error('[PAY] open-intent lookup failed (minting a new one):', e.message); }
+
+    if (!intent) {
+      intent = await createPaymentIntent({
+        amount,
+        currency: 'gbp',
+        booking: { ref: b.ref, from: b.pickup, to: b.destination, date: b.date, time: b.time },
+        customer: { name: b.passenger_name, email: b.passenger_email, phone: b.passenger_phone }
+      });
+    }
 
     // The customer has CHOSEN card and is now entering their details: move a
     // pending/offered estimate to AWAITING_PAYMENT so the owner sees the ride is
@@ -611,32 +657,24 @@ router.post('/pay/:ref/cash', (req, res) => {
     if (!b || !b.pay_token || b.pay_token !== token) {
       return res.status(404).send(cashPage('error', "We couldn't find this booking."));
     }
-    if (b.status === 'cancelled') {
-      return res.status(409).send(cashPage('error', 'This booking has been cancelled. Please call us if you need to rebook.'));
-    }
-    if (b.paid_at || b.payment === 'card') {
-      return res.send(cashPage('paid', 'This journey has already been paid online.', b.ref));
-    }
-
-    // Choosing "pay your driver" is the customer's explicit method choice.
-    // Record 'cash' (validated — never a silent default) and transition
+    // Choosing "pay your driver" is the customer's explicit method choice, and
+    // it is the SAME act however they reach it — this tokenised link, or the
+    // button in My Account. Both go through applyCashChoice (server/pay-lock.js)
+    // so they cannot drift apart, and so choosing cash in either one locks
+    // card payment in the other.
+    //
+    // Records 'cash' (validated — never a silent default) and transitions
     // pending/offered → AWAITING_PAYMENT on the edge: the ride is going ahead
     // (so it shows in the schedule/driver view) but it is NOT yet settled. It
     // becomes 'confirmed' only when the cash is received and the owner/driver
     // marks it paid (POST /bookings/:id/mark-paid). We deliberately do NOT
-    // auto-confirm cash here — see CLAUDE.md invariant #3. 'cash' is written
-    // from a genuine customer action only.
-    const { assertPaymentMethod } = require('./payment-methods');
-    const method = assertPaymentMethod('cash', 'public-api cash route');
-    const wasChosen = b.status === 'pending' || b.status === 'offered';
-    db.prepare(`UPDATE bookings
-                   SET payment = ?,
-                       status = CASE WHEN status IN ('pending','offered') THEN 'awaiting_payment' ELSE status END,
-                       updated_at = datetime('now')
-                 WHERE id = ?`).run(method, b.id);
-
-    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
-      .run('public', 0, 'payment_cash_chosen', b.ref, req.ip);
+    // auto-confirm cash here — see CLAUDE.md invariant #3.
+    const { applyCashChoice } = require('./pay-lock');
+    const outcome = applyCashChoice(db, b.id, { source: 'email link', ip: req.ip });
+    if (!outcome.ok) {
+      return res.send(cashPage(outcome.reason === 'paid' ? 'paid' : 'error', outcome.message, b.ref));
+    }
+    const wasChosen = outcome.wasChosen;
 
     // Notify the owner in real time so the job drops into the schedule as
     // "awaiting payment" and connected staff apps refresh.
@@ -678,25 +716,25 @@ function actionPage(heading, message, ref, bodyHtml, state) {
 <meta name="theme-color" content="#111D2C"><meta name="robots" content="noindex,nofollow">
 <title>Your journey | Westmere Private Hire</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--navy:#111D2C;--gold:#B8985A;--text:#1C2A3E;--muted:#6B7280;--border:#E5E0D8;--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif}
+:root{--navy:#102a43;--text:#102a43;--muted:#657485;--border:#dfe5ea;--serif:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;--sans:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif}
 html{font-size:16px}
-body{font-family:var(--sans);font-weight:300;color:var(--text);background:var(--navy);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+body{font-family:var(--sans);font-weight:400;color:var(--text);background:var(--navy);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
 .card{width:100%;max-width:440px;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.35)}
-.head{background:var(--navy);color:#fff;padding:30px 32px 26px;text-align:center;border-bottom:3px solid var(--gold)}
-.brand{font-family:var(--sans);font-size:10px;letter-spacing:3.5px;text-transform:uppercase;color:var(--gold);font-weight:500}
+.head{background:var(--navy);color:#fff;padding:30px 32px 26px;text-align:center;border-bottom:1px solid rgba(255,255,255,.18)}
+.brand{font-family:var(--sans);font-size:11px;letter-spacing:3.5px;text-transform:uppercase;color:rgba(255,255,255,.74);font-weight:600}
 .brand-name{font-family:var(--serif);font-size:26px;font-weight:400;letter-spacing:.5px;margin-top:6px}
 .body{padding:34px 32px 36px}
 .state{text-align:center}
 .ico{width:60px;height:60px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:18px}
-.ico.ok{background:rgba(184,152,90,.14);color:var(--gold)}
+.ico.ok{background:rgba(16,42,67,.08);color:var(--navy)}
 .ico.info{background:rgba(28,42,62,.08);color:var(--navy)}
 .state h2{font-family:var(--serif);font-size:24px;font-weight:400;color:var(--navy);margin-bottom:10px}
 .state p{font-size:14px;color:var(--muted);line-height:1.6}
 .muted-ref{font-family:'Menlo','Consolas',monospace;font-size:12px;letter-spacing:.5px;color:var(--navy)}
-a.link{color:var(--gold);text-decoration:none}
+a.link{color:var(--navy);text-decoration:none;border-bottom:1px solid rgba(16,42,67,.28)}
 textarea{width:100%;margin-top:18px;padding:12px 14px;border:1px solid var(--border);border-radius:8px;font-family:var(--sans);font-size:14px;color:var(--text);resize:vertical;min-height:120px}
 button.act{width:100%;margin-top:16px;padding:14px;border:none;border-radius:6px;font-family:var(--sans);font-size:13px;font-weight:500;letter-spacing:2px;text-transform:uppercase;cursor:pointer}
 button.navy{background:var(--navy);color:#fff}

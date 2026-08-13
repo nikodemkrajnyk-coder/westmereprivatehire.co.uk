@@ -67,6 +67,79 @@ test('short output never contains a stripped region/country fragment', () => {
   }
 });
 
+// ── (a2) OLD RECORDS — messy typed free text must shorten too ────────────
+// The first pass only really bit on the comma-separated geocoder strings NEW
+// bookings store. Older rows hold typed free text ("302 bishopsford Morden via
+// Greenhill avenue caterham"), and those rendered in FULL on every surface
+// because nothing in the normalizer could take them apart. Normalisation is
+// applied at RENDER time, so it has to cope with legacy junk as well.
+console.log('\nOld messy records shorten too (render-time, no data migration)');
+
+// Real-world shapes: no commas, lowercase, typos, a routing note, county and
+// country tacked on the end.
+const OLD_RECORDS = [
+  '302 bishopsford Morden via Greenhill avenue caterham',
+  'Bishopsfprd road, morden, surrey, england',
+  '302 bishopsford road morden surrey england',
+  '  crawley,  west sussex , england ',
+  'Redhill, Reigate and Banstead, Surrey, England, RH1 1AA, United Kingdom',
+  'flat 2, 14 queens road, haywards heath, west sussex, rh16 1ea, united kingdom'
+];
+// Fragments that must never survive into the short form of an OLD record.
+const OLD_FRAGMENTS = [', England', ', United Kingdom', 'united kingdom', 'england',
+  'surrey', 'Surrey', 'West Sussex', 'west sussex', ' via '];
+
+test('an old messy record renders SHORT — county/country/route noise stripped', () => {
+  for (const raw of OLD_RECORDS) {
+    const out = addr.shortDisplay(raw);
+    assert.ok(out, 'an old record must still render something: ' + raw);
+    for (const frag of OLD_FRAGMENTS) {
+      assert.ok(!out.includes(frag),
+        'the short form of "' + raw + '" still contains "' + frag + '": ' + out);
+    }
+    assert.ok(out.length < raw.trim().length,
+      'the short form must be SHORTER than the stored string — got "' + out + '" from "' + raw + '"');
+  }
+});
+
+test('specific old-record shapes render the way the owner asked', () => {
+  // A " via <route>" leg is a routing note, not part of the address.
+  assert.strictEqual(addr.shortDisplay('302 bishopsford Morden via Greenhill avenue caterham'),
+    '302 Bishopsford Morden');
+  // A street line with no house number keeps its town.
+  assert.strictEqual(addr.shortDisplay('Bishopsfprd road, morden, surrey, england'),
+    'Bishopsfprd Road, Morden');
+  // Trailing county/country with no commas at all.
+  assert.strictEqual(addr.shortDisplay('302 bishopsford road morden surrey england'),
+    '302 Bishopsford Road Morden');
+  // Lowercase input is tidied; the postcode is uppercased and spaced.
+  assert.strictEqual(addr.shortDisplay('  crawley,  west sussex , england '), 'Crawley');
+  assert.strictEqual(addr.shortDisplay('12 high street, horsham, rh12 1ab'),
+    '12 High Street, Horsham, RH12 1AB');
+});
+
+test('an unstructured blob is capped, not dumped in full', () => {
+  const rambling = 'pick up outside the big white house on the corner opposite the church in slinfold near horsham west sussex england';
+  const out = addr.shortDisplay(rambling);
+  assert.ok(out.split(' ').length <= 6, 'a free-text blob must be capped to a few words: ' + out);
+  assert.ok(!/england|sussex/i.test(out), 'region noise must still be stripped: ' + out);
+});
+
+test('normalising is DISPLAY-only — the input string is never mutated', () => {
+  const raw = '302 bishopsford Morden via Greenhill avenue caterham';
+  const copy = String(raw);
+  addr.shortDisplay(raw);
+  addr.tinyLabel(raw);
+  assert.strictEqual(raw, copy, 'the normalizer must not mutate what it is given');
+  // …and it has no database access at all, so it cannot rewrite a stored value:
+  // the normalizer is a pure display module with no way to persist anything.
+  const src = read('address-normalize.js');
+  for (const forbidden of [/better-sqlite3/, /getDb\(/, /\bUPDATE\s+bookings\b/i, /require\('\.\/db'\)/]) {
+    assert.ok(!forbidden.test(src),
+      'address-normalize.js must stay a pure display module — it must never touch stored data (' + forbidden + ')');
+  }
+});
+
 // ── (c) The real email templates must use the normalizer (no leak) ───────
 console.log('\nEmails render the SHORT address, keep FULL for nav');
 
@@ -130,12 +203,42 @@ test('email.js imports the shared normalizer and never renders a raw address', (
 
 // westmere-rider.html is the LIVE customer "My Account" app (westmere-account.html
 // 301-redirects to it), so the guardrail protects the rider app, not the legacy one.
-test('owner + admin + rider apps load the normalizer and delegate to it', () => {
-  for (const f of ['westmere-owner.html', 'westmere-admin.html', 'westmere-rider.html']) {
+test('owner + admin + rider + driver apps and the pay page load the normalizer', () => {
+  for (const f of ['westmere-owner.html', 'westmere-admin.html', 'westmere-rider.html',
+                   'westmere-driver.html', 'westmere-pay.html']) {
     const src = read(f);
     assert.ok(/<script src="\/address-normalize\.js">/.test(src), f + ' must load /address-normalize.js');
     assert.ok(/WMAddr\.shortDisplay/.test(src), f + ' must delegate its short-address helper to WMAddr.shortDisplay');
   }
+});
+
+// The calendar/ICS/PDF surfaces used to carry their OWN divergent copies of the
+// shortener — exactly the duplication this module was written to kill — so an
+// old record could still render long in a calendar entry or on an invoice.
+test('calendar, ICS and PDF surfaces delegate to the shared normalizer', () => {
+  for (const f of ['server/google-calendar.js', 'server/driver-cal-routes.js',
+                   'server/google-routes.js', 'server/invoice-pdf.js', 'server/whatsapp.js']) {
+    const src = read(f);
+    assert.ok(/require\('\.\.\/address-normalize'\)/.test(src),
+      f + ' must require the shared ../address-normalize');
+    assert.ok(!/const _AIRPORTS = \[/.test(src),
+      f + ' still carries its own local copy of the address shortener');
+  }
+});
+
+test('navigation keeps the FULL address on every app surface', () => {
+  // Waze / Google Maps links must never be built from the shortened display
+  // form, or an old record's short label would be routed to instead.
+  for (const [f, pattern] of [
+    ['westmere-driver.html', /maps\.google\.com\/\?q='\+encodeURIComponent\(j\.dest(ination)?\|\|''\)/],
+    ['westmere-owner.html', /encodeURIComponent\(j\.pickup\|\|''\)/],
+    ['westmere-admin.html', /waze\.com|maps\.google\.com/]
+  ]) {
+    assert.ok(pattern.test(read(f)), f + ' must keep the full stored address in its navigation links');
+  }
+  const gcal = read('server/google-calendar.js');
+  assert.ok(/waze\.com\/ul\?q=\$\{encodeURIComponent\(b\.destination\)\}/.test(gcal),
+    'the calendar Waze link must use the FULL destination');
 });
 
 // ── summary ──────────────────────────────────────────────────────────────

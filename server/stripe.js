@@ -79,6 +79,30 @@ async function findPaymentIntentByRef(ref) {
   }
 }
 
+// Find an OPEN (not yet succeeded) PaymentIntent for a booking, so a second
+// payment attempt on the same journey reuses it instead of minting a rival.
+// Returns the intent OBJECT (we need its client_secret), or null.
+//
+// WHY: the estimate is payable from two places at once — the tokenised link in
+// the email and My Account. Each would otherwise create its own intent, and two
+// live intents for one booking is the one window where both can legitimately be
+// completed. One intent per booking closes it.
+async function findOpenPaymentIntentByRef(ref) {
+  const s = getStripe();
+  if (!s || !ref) return null;
+  try {
+    const safe = String(ref).replace(/'/g, '');
+    const r = await s.paymentIntents.search({
+      query: `metadata['booking_ref']:'${safe}' AND status:'requires_payment_method'`,
+      limit: 1
+    });
+    return (r.data && r.data[0]) ? r.data[0] : null;
+  } catch (e) {
+    console.error('[STRIPE] findOpenPaymentIntentByRef failed:', e.message);
+    return null;
+  }
+}
+
 // Issue a refund against a PaymentIntent. amount in pence; omit for a full refund.
 async function createRefund({ paymentIntentId, amount }) {
   const s = getStripe();
@@ -137,4 +161,4 @@ async function listRecentPayouts() {
   }));
 }
 
-module.exports = { getStripe, isConfigured, createPaymentIntent, verifyWebhook, getBalance, createPayout, listRecentPayouts, findPaymentIntentByRef, createRefund };
+module.exports = { getStripe, isConfigured, createPaymentIntent, verifyWebhook, getBalance, createPayout, listRecentPayouts, findPaymentIntentByRef, findOpenPaymentIntentByRef, createRefund };

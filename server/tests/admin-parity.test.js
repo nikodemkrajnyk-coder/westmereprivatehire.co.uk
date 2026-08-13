@@ -289,8 +289,10 @@ test('admin shows passengers + luggage on the card and in the detail', () => {
   assert.ok(/_admBags\(/.test(ADMIN), 'admin must render a luggage label');
   assert.ok(/pax/.test(ADMIN), 'admin must render a passenger count');
   const detail = ADMIN.match(/function bookingDetailHtml[\s\S]*?\n\}/)[0];
-  assert.ok(/Passengers/.test(detail) && /_admBags\(b\.bags\)/.test(detail),
-    'the detail panel must show passengers and the luggage label');
+  // The labelled detail field shows the INTEGER label ("0 bags"); the compact
+  // card summary uses _admBags() and omits bags entirely when there are none.
+  assert.ok(/Passengers/.test(detail) && /_admBagsLabel\(b\.bags\)/.test(detail),
+    'the detail panel must show passengers and the integer luggage label');
 });
 test('the luggage rule is shared and identical', () => {
   assert.strictEqual(LC.bagsText('3'), '3 bags');

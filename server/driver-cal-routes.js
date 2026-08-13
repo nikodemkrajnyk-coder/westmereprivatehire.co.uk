@@ -15,28 +15,15 @@ const { getDb } = require('./db');
 
 const router = express.Router();
 
-// ── Address shortening (airport-aware) — keeps SUMMARY lines readable ──────
-const _SKIP_ADDR = /^(england|scotland|wales|northern ireland|united kingdom|uk|gb|great britain|west sussex|east sussex|sussex|surrey|kent|hampshire|hants|essex|berkshire|berks|london|greater london)$/i;
-const _POSTCODE = /^[A-Z]{1,2}\d[A-Z\d]?(\s*\d[A-Z]{2})?$/i;
-const _AIRPORTS = [
-  [/gatwick/i, 'Gatwick'], [/heathrow/i, 'Heathrow'], [/stansted/i, 'Stansted'],
-  [/luton/i, 'Luton'], [/\bcity airport\b|london city/i, 'London City'],
-  [/southampton airport/i, 'Southampton'], [/\bbristol airport\b/i, 'Bristol'],
-  [/st pancras|kings cross|king's cross/i, 'St Pancras'],
-  [/\beuston\b/i, 'Euston'], [/\bvictoria station\b/i, 'Victoria']
-];
-function _tinyAddr(a) {
-  if (!a) return '';
-  for (const [re, name] of _AIRPORTS) if (re.test(a)) return name;
-  const parts = String(a).split(',').map(p => p.trim()).filter(Boolean)
-    .filter(p => !_SKIP_ADDR.test(p) && !_POSTCODE.test(p));
-  if (!parts.length) return String(a).split(',')[0].trim().slice(0, 24);
-  // First meaningful part = the town/place the customer entered; the
-  // administrative district (e.g. "Tandridge", "Mid Sussex") is appended
-  // AFTER the town, so never use the last part. Skip a leading house number.
-  const idx = (parts.length > 1 && /^\d+[a-z]?$/i.test(parts[0])) ? 1 : 0;
-  return parts[idx].slice(0, 24);
-}
+// Address shortening + luggage + flight all come from the SINGLE sources of
+// truth (address-normalize.js / wm-lifecycle.js) — this file used to carry its
+// own divergent copy of the shortener, so a driver's ICS feed could show a long
+// address no other surface showed. DISPLAY only: LOCATION and the Waze links
+// below still carry the FULL address so navigation is unaffected.
+const { shortDisplay, tinyLabel, flightFor } = require('../address-normalize');
+const { bagsText } = require('../wm-lifecycle');
+function _tinyAddr(a) { return tinyLabel(a); }
+function _shortAddr(a) { return shortDisplay(a); }
 
 // Escape text for iCalendar DESCRIPTION / SUMMARY (RFC 5545 §3.3.11)
 // Commas, semicolons and backslashes must be escaped; newlines become \n
@@ -126,13 +113,15 @@ function buildVEvent(booking) {
 
   const name  = booking.customer_name  || booking.passenger_name  || '';
   const phone = booking.customer_phone || booking.passenger_phone || '';
+  const flt = flightFor(booking);   // airport runs only
   const descLines = [
     booking.ref    ? `Ref: ${booking.ref}` : null,
     name           ? `Passenger: ${name}`  : null,
     phone          ? `Phone: ${phone}`     : null,
-    booking.pickup ? `Pickup: ${booking.pickup}` : null,
-    booking.destination ? `Drop-off: ${booking.destination}` : null,
-    booking.flight ? `Flight: ${booking.flight}` : null,
+    booking.pickup ? `Pickup: ${_shortAddr(booking.pickup) || booking.pickup}` : null,
+    booking.destination ? `Drop-off: ${_shortAddr(booking.destination) || booking.destination}` : null,
+    flt ? `Flight: ${flt}` : null,
+    bagsText(booking.bags) ? `Luggage: ${bagsText(booking.bags)}` : null,
     booking.fare   ? `Fare: \u00a3${booking.fare}` : null,
     booking.notes  ? `Notes: ${booking.notes}`     : null,
     '',

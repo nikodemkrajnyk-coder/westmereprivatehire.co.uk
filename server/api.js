@@ -449,6 +449,708 @@ router.post('/customer/bookings/:id/cancel', (req, res) => {
   res.json({ ok: true });
 });
 
+// ══════════════════════════════════════════════════════════════════════════
+// CUSTOMER CHANGE REQUEST — "please move my trip", handled by a human
+// ══════════════════════════════════════════════════════════════════════════
+//
+// THE ONE RULE: this endpoint NEVER amends the booking. Not the journey, not
+// the date, not the passengers, not the fare, and above all not the status.
+// A customer editing their pickup address in My Account must not be able to
+// silently re-route a job the driver is already planning around, and must not
+// be able to nudge a `pending` booking into `confirmed` — that is the same
+// class of fault as the "Mr Ben" incident (see CLAUDE.md: estimate-first).
+//
+// What it does instead: records exactly what was asked in `change_requests`,
+// flags the booking so the owner and admin apps show "Change requested", and
+// emails the owner so they can apply it by hand with the existing edit tools.
+// The customer is told plainly that the booking stands until we confirm.
+//
+// GUARDRAIL: server/tests/change-request.test.js asserts (a) no core field or
+// status moves, (b) the owner is emailed with the ref + the diff, (c) a
+// customer cannot request a change on somebody else's booking, (d) both staff
+// apps surface it.
+
+// The fields a customer may propose. Anything not in this list is ignored —
+// fare, status, driver and payment are not the customer's to ask for here.
+const CHANGE_REQUEST_FIELDS = ['pickup', 'stop_address', 'destination', 'date', 'time', 'passengers', 'bags', 'flight'];
+
+// Normalise a value for COMPARISON only. Used to decide whether the customer
+// actually changed a field, so that re-submitting the form untouched doesn't
+// report eight "changes" purely from whitespace or casing.
+function crNorm(key, v) {
+  if (v == null) return '';
+  if (key === 'passengers') { const n = parseInt(v, 10); return isNaN(n) ? '' : String(n); }
+  const s = String(v).trim();
+  if (key === 'flight') return s.toUpperCase();
+  return s;
+}
+
+router.post('/customer/bookings/:id/change-request', async (req, res) => {
+  if (req.auth.role !== 'customer') {
+    return res.status(403).json({ error: 'Customer access required' });
+  }
+
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+
+  const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+  if (!booking) return res.status(404).json({ error: 'Booking not found' });
+
+  // Ownership — deliberately the SAME rule as the trip list (GET /bookings)
+  // and self-cancel above, and for the same reason: customer_id is NULL for
+  // every job the owner enters by hand and for anything booked before the
+  // customer registered. Those trips ARE listed in My Account, so a stricter
+  // rule here would show the customer a "Request a change" button on their own
+  // booking and then refuse it. A looser one would let anyone signed in file a
+  // request against a stranger's trip.
+  const me = db.prepare('SELECT email, full_name, phone FROM customers WHERE id = ?').get(req.auth.id) || {};
+  const myEmail = String(me.email || '').trim().toLowerCase();
+  const ownsById = booking.customer_id === req.auth.id;
+  const ownsByEmail = !booking.customer_id && myEmail &&
+    String(booking.passenger_email || '').trim().toLowerCase() === myEmail;
+  if (!ownsById && !ownsByEmail) {
+    return res.status(403).json({ error: 'You can only request changes to your own bookings' });
+  }
+
+  // Only a trip that is still ahead of us can be amended. A completed or
+  // cancelled booking is a record, and an in-progress one is a phone call.
+  const changeable = ['pending', 'offered', 'awaiting_payment', 'confirmed'];
+  if (!changeable.includes(booking.status)) {
+    return res.status(409).json({ error: 'This booking can no longer be changed online — please call us on 07930 342593.' });
+  }
+
+  // ── Validate what they asked for ──
+  const body = req.body || {};
+  const current = {};
+  const requested = {};
+  for (const k of CHANGE_REQUEST_FIELDS) {
+    current[k] = booking[k] == null ? '' : booking[k];
+    // A field the client omits is not a change — carry the current value.
+    requested[k] = Object.prototype.hasOwnProperty.call(body, k) ? body[k] : current[k];
+  }
+
+  const trimTo = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
+  requested.pickup       = trimTo(requested.pickup, 300);
+  requested.stop_address = trimTo(requested.stop_address, 300);
+  requested.destination  = trimTo(requested.destination, 300);
+  requested.flight       = trimTo(requested.flight, 24).toUpperCase();
+  requested.bags         = trimTo(requested.bags, 24);
+  requested.date         = trimTo(requested.date, 10);
+  requested.time         = trimTo(requested.time, 10);
+
+  if (!requested.pickup || !requested.destination) {
+    return res.status(400).json({ error: 'Pickup and destination are required' });
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(requested.date)) {
+    return res.status(400).json({ error: 'Please choose a valid date' });
+  }
+  // A wall-clock UK date, compared as a string against a UK wall-clock today —
+  // never through a Date instant. See the timezone invariant in CLAUDE.md.
+  if (requested.date < ukNow().dateStr) {
+    return res.status(400).json({ error: 'Please choose a date in the future' });
+  }
+  if (!(requested.time === 'ASAP' || /^([01]\d|2[0-3]):[0-5]\d$/.test(requested.time))) {
+    return res.status(400).json({ error: 'Please choose a valid time' });
+  }
+  const pax = parseInt(requested.passengers, 10);
+  if (isNaN(pax) || pax < 1 || pax > 8) {
+    return res.status(400).json({ error: 'Passengers must be between 1 and 8' });
+  }
+  requested.passengers = pax;
+
+  const note = trimTo(body.note, 1000);
+
+  // ── What actually differs ──
+  const changed = {};
+  for (const k of CHANGE_REQUEST_FIELDS) {
+    if (crNorm(k, requested[k]) !== crNorm(k, current[k])) changed[k] = requested[k];
+  }
+  if (!Object.keys(changed).length && !note) {
+    return res.status(400).json({ error: 'Nothing has changed — please edit a detail or tell us what you need.' });
+  }
+
+  // Human-readable summary, stored on the booking so the owner and admin apps
+  // can show WHAT was asked without a second fetch. Full addresses on purpose:
+  // the owner has to be able to copy the new one in verbatim.
+  // Field ORDER comes from the shared lifecycle module, so the Current →
+  // Requested comparison reads in the same order everywhere it is drawn.
+  const LC = require('../wm-lifecycle');
+  const LABELS = {};
+  for (const [k, label] of LC.CHANGE_FIELDS) LABELS[k] = label;
+  const changedKeys = LC.CHANGE_FIELDS.map(([k]) => k).filter(k => Object.prototype.hasOwnProperty.call(changed, k));
+  const summary = changedKeys
+    .map(k => LABELS[k] + ': ' + (String(current[k] || '').trim() || '—') + ' → ' + (String(requested[k] || '').trim() || '—'))
+    .concat(note ? ['Note: ' + note] : [])
+    .join('\n');
+
+  // The same request in the shape the staff apps RENDER. Stored alongside the
+  // summary so the owner/admin decision panel can draw Current → Requested per
+  // field with no parsing and no second fetch. `price` is advisory only — it
+  // raises a warning for the owner, it never re-prices anything.
+  const detail = {
+    at: null,                       // stamped from the row below, once written
+    note: note || '',
+    price: LC.changeAffectsPrice(changedKeys),
+    changed: changedKeys.map(k => ({
+      key: k,
+      label: LABELS[k],
+      current: String(current[k] == null ? '' : current[k]).trim(),
+      requested: String(requested[k] == null ? '' : requested[k]).trim()
+    }))
+  };
+
+  const contact = {
+    name:  booking.passenger_name  || me.full_name || '',
+    email: booking.passenger_email || me.email     || '',
+    phone: booking.passenger_phone || me.phone     || ''
+  };
+
+  let crId = null;
+  try {
+    // Two writes, one transaction — a request that is recorded but not flagged
+    // is invisible to the owner, and a flag with no record behind it is a badge
+    // pointing at nothing.
+    const save = db.transaction(() => {
+      const info = db.prepare(`
+        INSERT INTO change_requests
+          (booking_id, booking_ref, customer_id, contact_name, contact_email, contact_phone,
+           current_json, requested_json, changed_json, summary, note)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?)
+      `).run(booking.id, booking.ref, req.auth.id, contact.name, contact.email, contact.phone,
+             JSON.stringify(current), JSON.stringify(requested), JSON.stringify(changed),
+             summary, note || null);
+      // NOTE what is NOT in this UPDATE: pickup, destination, stop_address,
+      // date, time, passengers, bags, flight, fare, payment, driver_id and
+      // status. The booking is untouched — the customer's request records what
+      // they ASKED for and nothing else. The only route in the system that
+      // ever writes their requested values onto the booking is the staff-only
+      // Accept action below, and only when a human presses it.
+      // These three columns are a flag and two renderings of the note.
+      db.prepare(`UPDATE bookings SET change_requested_at = datetime('now'), change_request_summary = ?, change_request_detail = ? WHERE id = ?`)
+        .run(summary, JSON.stringify(detail), booking.id);
+      return info.lastInsertRowid;
+    });
+    crId = save();
+  } catch (e) {
+    console.error('[API] change request save failed:', e.message);
+    return res.status(500).json({ error: 'We could not record that request. Please call us on 07930 342593.' });
+  }
+
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run('customer', req.auth.id, 'booking_change_requested', booking.ref + ' — ' + summary.replace(/\n/g, ' | '), req.ip);
+  } catch (e) { console.error('[API] change request audit failed:', e.message); }
+
+  // Tell the staff apps to refresh so the badge appears without a manual reload.
+  try {
+    events.broadcast('booking:updated', { id: booking.id, ref: booking.ref, change_requested: true });
+  } catch (e) { console.error('[API] change request broadcast failed:', e.message); }
+
+  // The email is a NOTIFICATION, not the record — change_requests already has
+  // it. A Resend outage must not lose the request or fail the customer's
+  // submission, so a send failure is logged and swallowed.
+  let emailed = false;
+  try {
+    emailed = await require('./email').sendOwnerChangeRequest(booking, { current, requested, changed, note, contact });
+  } catch (e) {
+    console.error('[API] change request owner email failed:', e.message);
+  }
+
+  res.json({ ok: true, id: crId, emailed: !!emailed, summary });
+});
+
+// ── STAFF-ONLY resolution of a change request ────────────────────────────
+//
+// Three separate acts, deliberately kept apart, because they mean different
+// things to the customer and only one of them touches the booking:
+//
+//   review  — EARLY stage (the trip is not committed yet). There is nothing to
+//             accept: the owner re-prices with the new details and sends the
+//             estimate. This just dismisses the note. Booking untouched.
+//   accept  — DECISION stage. APPLIES the customer's requested values to the
+//             booking. This is the ONLY route in the system that ever does so,
+//             it is staff-authenticated, and it happens only when a human
+//             presses the button. Money is NOT touched (see below).
+//   decline — DECISION stage. Keeps the booking exactly as originally booked
+//             and clears the flag, so the owner can message the customer to
+//             explain. Booking untouched.
+
+// Shared preamble: staff-only, booking must exist. Returns null (having
+// already answered) when the caller may not proceed.
+function staffBooking(req, res) {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    res.status(403).json({ error: 'Staff access required' });
+    return null;
+  }
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: 'Invalid booking ID' }); return null; }
+  const booking = getDb().prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+  if (!booking) { res.status(404).json({ error: 'Booking not found' }); return null; }
+  return booking;
+}
+
+// Clear the flag columns and close off the open request(s) with an outcome.
+// The change_requests rows themselves are kept for good — only their status
+// moves — so the owner can always see what was once asked, and what was done.
+function closeChangeRequests(db, bookingId, outcome, staffId) {
+  db.prepare(`UPDATE change_requests SET status = ?, actioned_at = datetime('now'), actioned_by = ? WHERE booking_id = ? AND status = 'open'`)
+    .run(outcome, staffId, bookingId);
+  db.prepare(`UPDATE bookings SET change_requested_at = NULL, change_request_summary = NULL, change_request_detail = NULL WHERE id = ?`)
+    .run(bookingId);
+}
+
+// EARLY stage: "seen it, I'll price the new details." Nothing is applied,
+// because at this stage the owner is about to re-quote from scratch anyway.
+router.post('/bookings/:id/change-request/review', (req, res) => {
+  const booking = staffBooking(req, res);
+  if (!booking) return;
+  const db = getDb();
+  try {
+    db.transaction(() => closeChangeRequests(db, booking.id, 'reviewed', req.auth.id))();
+  } catch (e) {
+    console.error('[API] change request review failed:', e.message);
+    return res.status(500).json({ error: 'Could not clear that change request' });
+  }
+  db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+    .run(req.auth.role, req.auth.id, 'booking_change_reviewed', booking.ref, req.ip);
+  events.broadcast('booking:updated', { id: booking.id, ref: booking.ref, change_requested: false });
+  res.json({ ok: true });
+});
+
+// DECISION stage: DECLINE. The journey stands exactly as it was booked.
+router.post('/bookings/:id/change-request/decline', (req, res) => {
+  const booking = staffBooking(req, res);
+  if (!booking) return;
+  const db = getDb();
+  const before = CHANGE_REQUEST_FIELDS.map(k => booking[k]);
+  try {
+    db.transaction(() => closeChangeRequests(db, booking.id, 'declined', req.auth.id))();
+  } catch (e) {
+    console.error('[API] change request decline failed:', e.message);
+    return res.status(500).json({ error: 'Could not decline that change request' });
+  }
+  // Belt-and-braces: declining must leave the journey byte-identical. If this
+  // ever fires, something in closeChangeRequests has grown a side effect.
+  const after = db.prepare('SELECT * FROM bookings WHERE id = ?').get(booking.id);
+  const moved = CHANGE_REQUEST_FIELDS.filter((k, i) => after[k] !== before[i]);
+  if (moved.length) console.error('[API] DECLINE ALTERED THE BOOKING:', booking.ref, moved.join(','));
+
+  db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+    .run(req.auth.role, req.auth.id, 'booking_change_declined', booking.ref, req.ip);
+  events.broadcast('booking:updated', { id: booking.id, ref: booking.ref, change_requested: false });
+  res.json({ ok: true });
+});
+
+// DECISION stage: ACCEPT — apply the requested journey details to the booking.
+//
+// WHAT THIS WRITES: pickup, stop_address, destination, date, time, passengers,
+// bags, flight. That is the whole list.
+//
+// WHAT IT DELIBERATELY DOES NOT WRITE: `fare`, `payment`, `paid_at`, `status`.
+// A longer journey or an extra passenger may well be worth more, but this
+// endpoint will not re-price, take a payment, or issue a refund — the owner
+// settles money with the customer by hand (their explicit decision). Instead a
+// change that CAN move the price raises `fare_review_at`, which keeps
+// "Fare may change — confirm with the customer" on the job until dismissed.
+// Not touching `status` matters just as much: accepting a new pickup time must
+// never quietly re-confirm or un-confirm a booking.
+router.post('/bookings/:id/change-request/accept', async (req, res) => {
+  const booking = staffBooking(req, res);
+  if (!booking) return;
+  const db = getDb();
+
+  const cr = db.prepare(`SELECT * FROM change_requests WHERE booking_id = ? AND status = 'open' ORDER BY created_at DESC, id DESC LIMIT 1`).get(booking.id);
+  if (!cr) return res.status(409).json({ error: 'There is no open change request on this booking' });
+
+  let requested;
+  try { requested = JSON.parse(cr.requested_json); } catch (e) { requested = null; }
+  if (!requested || typeof requested !== 'object') {
+    console.error('[API] change request', cr.id, 'has an unreadable requested_json');
+    return res.status(500).json({ error: 'That change request could not be read. Please amend the booking by hand.' });
+  }
+
+  // RE-VALIDATE at apply time. The values were checked when the customer sent
+  // them, but that may have been days ago and this is the moment they actually
+  // reach the booking — so the same rules run again rather than trusting a
+  // stored blob. A date that has since passed is the realistic case.
+  const applied = {};
+  for (const k of CHANGE_REQUEST_FIELDS) {
+    if (!Object.prototype.hasOwnProperty.call(requested, k)) continue;
+    applied[k] = requested[k];
+  }
+  if (!String(applied.pickup || booking.pickup).trim() || !String(applied.destination || booking.destination).trim()) {
+    return res.status(400).json({ error: 'The request has no pickup or destination — please amend by hand.' });
+  }
+  if (applied.date !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(String(applied.date))) {
+    return res.status(400).json({ error: 'The requested date is not valid — please amend by hand.' });
+  }
+  if (applied.time !== undefined && !(applied.time === 'ASAP' || /^([01]\d|2[0-3]):[0-5]\d$/.test(String(applied.time)))) {
+    return res.status(400).json({ error: 'The requested time is not valid — please amend by hand.' });
+  }
+  if (applied.passengers !== undefined) {
+    const pax = parseInt(applied.passengers, 10);
+    if (isNaN(pax) || pax < 1 || pax > 8) {
+      return res.status(400).json({ error: 'The requested passenger count is not valid — please amend by hand.' });
+    }
+    applied.passengers = pax;
+  }
+
+  // Only what genuinely differs from the booking as it stands right now.
+  const cols = CHANGE_REQUEST_FIELDS.filter(k =>
+    Object.prototype.hasOwnProperty.call(applied, k) && crNorm(k, applied[k]) !== crNorm(k, booking[k]));
+  const LC = require('../wm-lifecycle');
+  const priceMayChange = LC.changeAffectsPrice(cols);
+
+  try {
+    db.transaction(() => {
+      if (cols.length) {
+        db.prepare(`UPDATE bookings SET ${cols.map(k => k + ' = ?').join(', ')}, updated_at = datetime('now') WHERE id = ?`)
+          .run(...cols.map(k => applied[k]), booking.id);
+      }
+      if (priceMayChange) {
+        db.prepare(`UPDATE bookings SET fare_review_at = datetime('now') WHERE id = ?`).run(booking.id);
+      }
+      closeChangeRequests(db, booking.id, 'accepted', req.auth.id);
+    })();
+  } catch (e) {
+    console.error('[API] change request accept failed:', e.message);
+    return res.status(500).json({ error: 'Could not apply that change. Please amend the booking by hand.' });
+  }
+
+  const detail = booking.ref + ' — applied: ' + (cols.length ? cols.join(', ') : 'nothing differed') +
+    (priceMayChange ? ' | fare review raised' : '');
+  db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+    .run(req.auth.role, req.auth.id, 'booking_change_accepted', detail, req.ip);
+
+  events.broadcast('booking:updated', { id: booking.id, ref: booking.ref, change_requested: false, changed: cols });
+
+  // The journey moved, so the operator's shared calendar has to move with it —
+  // otherwise the driver's feed keeps the old time and the whole point of
+  // accepting the change is lost. Background, same as PATCH /bookings/:id.
+  const updated = db.prepare(`
+    SELECT b.*,
+           COALESCE(c.full_name, b.passenger_name) as customer_name,
+           COALESCE(c.phone,     b.passenger_phone) as customer_phone
+    FROM bookings b LEFT JOIN customers c ON b.customer_id = c.id
+    WHERE b.id = ?
+  `).get(booking.id);
+  if (updated) {
+    try { autoFile.fileBooking(updated); } catch (e) {}
+    if (updated.calendar_event_id) {
+      gcal.updateEvent(updated.calendar_event_id, updated).catch(() => {});
+    }
+  }
+
+  // Price the NEW journey for the owner. This is a SUGGESTION only — nothing is
+  // written, nothing is charged. The owner sees it pre-filled in the fare box,
+  // overrides it if they disagree, and only then does the estimate go out.
+  // Non-blocking: the accept has already succeeded, so a geocoding hiccup must
+  // cost the suggestion, not the change.
+  let suggestion = null;
+  if (priceMayChange && updated) {
+    suggestion = await suggestFareFor(updated);
+  }
+
+  res.json({
+    ok: true,
+    applied: cols,
+    fare_review: priceMayChange,
+    suggested_fare: suggestion,
+    current_fare: booking.fare == null ? null : Number(booking.fare),
+    prior_payment: settledPaymentOf(booking)
+  });
+});
+
+// ── The fare step that follows an accepted change ────────────────────────
+//
+// What a settled payment on this booking amounts to right now, so the owner is
+// never re-pricing a journey without seeing what has already been collected.
+function settledPaymentOf(b) {
+  if (!b) return null;
+  const paid = !!b.paid_at || String(b.payment || '').toLowerCase() === 'card';
+  if (!paid) return null;
+  return {
+    amount: b.fare == null ? null : Number(b.fare),
+    method: String(b.payment || '').toLowerCase() || 'card',
+    at: b.paid_at || null
+  };
+}
+
+// Quick-estimate the journey as it now stands. Never throws — a null suggestion
+// just means the owner types the figure themselves.
+async function suggestFareFor(b) {
+  try {
+    const { computeSuggestedFare } = require('./fare-engine');
+    const sf = await computeSuggestedFare(b.pickup, b.destination, b.time);
+    return (sf && sf.fare) ? Number(sf.fare) : null;
+  } catch (e) {
+    console.error('[API] suggested fare failed (non-blocking):', e.message);
+    return null;
+  }
+}
+
+// Owner/admin: what should this journey cost, and what has already been paid?
+// Backs the fare box on a job flagged for fare review — including after a page
+// reload, when the figure returned by Accept is long gone.
+router.get('/bookings/:id/suggested-fare', async (req, res) => {
+  const booking = staffBooking(req, res);
+  if (!booking) return;
+  res.json({
+    ok: true,
+    suggested_fare: await suggestFareFor(booking),
+    current_fare: booking.fare == null ? null : Number(booking.fare),
+    prior_payment: settledPaymentOf(booking),
+    prior_payments: (() => { try { return JSON.parse(booking.prior_payments_json || '[]'); } catch (e) { return []; } })()
+  });
+});
+
+// ── RE-SEND THE ESTIMATE at a new fare ───────────────────────────────────
+//
+// The second half of accepting a change: the owner has seen the suggested fare,
+// set the figure they actually want, and now the customer is asked to confirm
+// the updated journey exactly as they would a fresh quote.
+//
+// WHAT THIS DOES:
+//   · writes the OWNER'S fare (never the suggestion, unless they kept it);
+//   · files any payment already collected into prior_payments_json, so a fare
+//     taken for the old journey can never silently disappear;
+//   · resets the payment state — payment='pending', paid_at=NULL — and puts the
+//     booking back to `pending` so the estimate-first ladder runs again:
+//     pending → (customer chooses) → awaiting_payment → confirmed;
+//   · keeps the SAME pay_token where one exists (so a link already in the
+//     customer's inbox still works and shows the live fare), and mints one only
+//     if it is absent — e.g. cleared by the earlier card payment;
+//   · sends the ORDINARY estimate email — same hero template, same tokenised
+//     Pay Now / pay-your-driver / cancel actions.
+//
+// WHAT IT DOES NOT DO: charge, refund, or take any money. The customer pays the
+// new fare through the normal channels, and only one of them can succeed
+// (server/pay-lock.js).
+router.post('/bookings/:id/re-estimate', async (req, res) => {
+  const booking = staffBooking(req, res);
+  if (!booking) return;
+  const db = getDb();
+
+  const fare = Number(req.body && req.body.fare);
+  if (!isFinite(fare) || fare <= 0) {
+    return res.status(400).json({ error: 'Please set a fare above zero' });
+  }
+  if (fare > 100000) return res.status(400).json({ error: 'That fare looks wrong — please check it' });
+  if (booking.status === 'cancelled') {
+    return res.status(409).json({ error: 'This booking has been cancelled' });
+  }
+
+  const settled = settledPaymentOf(booking);
+  let priors = [];
+  try { priors = JSON.parse(booking.prior_payments_json || '[]'); } catch (e) { priors = []; }
+  if (settled) priors.push(Object.assign({ cleared_at: new Date().toISOString() }, settled));
+
+  try {
+    db.transaction(() => {
+      db.prepare(`
+        UPDATE bookings
+           SET fare = ?,
+               payment = 'pending',
+               paid_at = NULL,
+               status = CASE WHEN status = 'cancelled' THEN status ELSE 'pending' END,
+               prior_payments_json = ?,
+               fare_review_at = NULL,
+               estimate_sent_at = datetime('now'),
+               re_estimated_at = datetime('now'),
+               updated_at = datetime('now')
+         WHERE id = ?
+      `).run(fare, JSON.stringify(priors), booking.id);
+    })();
+  } catch (e) {
+    console.error('[API] re-estimate failed:', e.message);
+    return res.status(500).json({ error: 'Could not re-price that booking' });
+  }
+
+  // Mint only if absent — an existing token stays valid so a link already in
+  // the customer's inbox keeps working (CLAUDE.md: never re-mint a live token).
+  // Minted through THIS route's handle so it lands in the same database the
+  // update above just wrote to.
+  const intake = require('./intake');
+  const payToken = intake.ensurePayToken(booking.id, db);
+
+  const row = db.prepare(`
+    SELECT b.*, COALESCE(c.full_name, b.passenger_name) AS name,
+                COALESCE(c.email, b.passenger_email)    AS email
+      FROM bookings b LEFT JOIN customers c ON b.customer_id = c.id
+     WHERE b.id = ?
+  `).get(booking.id);
+
+  db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+    .run(req.auth.role, req.auth.id, 'booking_re_estimated',
+         booking.ref + ' — fare £' + fare.toFixed(2) +
+         (settled ? ' | prior payment £' + Number(settled.amount || 0).toFixed(2) + ' (' + settled.method + ') retained on record' : ''),
+         req.ip);
+
+  events.broadcast('booking:updated', { id: booking.id, ref: booking.ref, status: 'pending', reason: 'Re-estimated after a change' });
+
+  let emailed = false;
+  try {
+    emailed = await require('./email').sendCustomerEstimate({
+      ref: row.ref, name: row.name, email: row.email,
+      pickup: row.pickup, destination: row.destination, stop_address: row.stop_address,
+      date: row.date, time: row.time, flight: row.flight, passengers: row.passengers,
+      fare: fare, notes: row.notes, pay_token: payToken
+    });
+  } catch (e) {
+    console.error('[API] re-estimate email failed:', e.message);
+  }
+
+  res.json({ ok: true, fare: fare, emailed: !!emailed, prior_payment: settled });
+});
+
+// Dismiss the "Fare may change" flag once the owner has settled the money with
+// the customer. Deliberately separate from Accept: accepting the journey change
+// and sorting out what it costs are two different conversations.
+router.post('/bookings/:id/fare-review/clear', (req, res) => {
+  const booking = staffBooking(req, res);
+  if (!booking) return;
+  const db = getDb();
+  try {
+    db.prepare(`UPDATE bookings SET fare_review_at = NULL WHERE id = ?`).run(booking.id);
+  } catch (e) {
+    console.error('[API] fare review clear failed:', e.message);
+    return res.status(500).json({ error: 'Could not clear that fare review' });
+  }
+  db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+    .run(req.auth.role, req.auth.id, 'booking_fare_review_cleared', booking.ref, req.ip);
+  events.broadcast('booking:updated', { id: booking.id, ref: booking.ref, fare_review: false });
+  res.json({ ok: true });
+});
+
+// Owner/admin: the full history of change requests on a booking, newest first.
+// The booking row carries only the latest summary; this is where the owner can
+// see everything that was ever asked, including requests already actioned.
+router.get('/bookings/:id/change-requests', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Staff access required' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+  const rows = db.prepare(`SELECT * FROM change_requests WHERE booking_id = ? ORDER BY created_at DESC, id DESC LIMIT 50`).all(id);
+  res.json({ ok: true, requests: rows });
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// PAYING FROM MY ACCOUNT — the second channel for the SAME estimate
+// ══════════════════════════════════════════════════════════════════════════
+//
+// The estimate email carries tokenised Pay Now / pay-your-driver links. The
+// same estimate is now also payable from My Account, so a customer who has lost
+// the email is not stuck. Both channels act on the SAME booking, the SAME
+// pay_token and the SAME Stripe payment — and both ask server/pay-lock.js,
+// against the live row, whether payment may still proceed. Whichever completes
+// first locks the other.
+//
+// Card deliberately hands off to the EXISTING pay page rather than growing a
+// second Stripe integration: one card implementation, one set of guards, one
+// place a mistake could ever be made.
+//
+// GUARDRAIL: server/tests/double-payment.test.js
+
+// Ownership for a customer acting on their own booking — the SAME rule as the
+// trip list, self-cancel and change-request (customer_id OR the account email),
+// because those are the trips My Account actually shows.
+function customerOwnedBooking(req, res) {
+  if (req.auth.role !== 'customer') {
+    res.status(403).json({ error: 'Customer access required' });
+    return null;
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: 'Invalid booking ID' }); return null; }
+  const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+  if (!booking) { res.status(404).json({ error: 'Booking not found' }); return null; }
+
+  const me = db.prepare('SELECT email FROM customers WHERE id = ?').get(req.auth.id) || {};
+  const myEmail = String(me.email || '').trim().toLowerCase();
+  const ownsById = booking.customer_id === req.auth.id;
+  const ownsByEmail = !booking.customer_id && myEmail &&
+    String(booking.passenger_email || '').trim().toLowerCase() === myEmail;
+  if (!ownsById && !ownsByEmail) {
+    res.status(403).json({ error: 'You can only pay for your own bookings' });
+    return null;
+  }
+  return booking;
+}
+
+// What can this customer do about paying for this trip, right now?
+// My Account renders straight from this, so the panel can never offer an option
+// the server would refuse a moment later.
+router.get('/customer/bookings/:id/pay-options', (req, res) => {
+  const booking = customerOwnedBooking(req, res);
+  if (!booking) return;
+  const { paymentLock } = require('./pay-lock');
+  const lock = paymentLock(booking);
+
+  // The token is this customer's own, for their own booking — the same one
+  // already in their inbox. Handing it back lets My Account open the ordinary
+  // pay page instead of reimplementing card payment.
+  let payUrl = null;
+  if (lock.payable && booking.pay_token) {
+    payUrl = '/westmere-pay.html?ref=' + encodeURIComponent(booking.ref) + '&t=' + encodeURIComponent(booking.pay_token);
+  }
+
+  res.json({
+    ok: true,
+    ref: booking.ref,
+    fare: lock.fare,
+    status: booking.status,
+    payment: booking.payment || 'pending',
+    payable: lock.payable,
+    locked: lock.locked,
+    reason: lock.reason,
+    message: lock.message,
+    // Card needs a token to hand to the pay page; cash does not (this route is
+    // authenticated), so a missing token never blocks the driver option.
+    can_card: lock.payable && !!payUrl,
+    can_cash: lock.payable,
+    pay_url: payUrl
+  });
+});
+
+// "I'll pay my driver on the day", chosen from My Account.
+// Runs the SAME applyCashChoice as the tokenised email link — same write, same
+// conditional guard, same audit — so choosing cash here locks card payment
+// there, and vice versa.
+router.post('/customer/bookings/:id/choose-cash', (req, res) => {
+  const booking = customerOwnedBooking(req, res);
+  if (!booking) return;
+  const db = getDb();
+  const { applyCashChoice } = require('./pay-lock');
+
+  const outcome = applyCashChoice(db, booking.id, {
+    source: 'My Account', ip: req.ip, userType: 'customer', userId: req.auth.id
+  });
+  if (!outcome.ok) {
+    return res.status(409).json({ error: outcome.message, reason: outcome.reason });
+  }
+
+  try {
+    events.broadcast('booking:payment', { id: booking.id, ref: booking.ref, mode: 'cash', fare: booking.fare || null });
+    if (outcome.wasChosen) {
+      events.broadcast('booking:updated', { id: booking.id, ref: booking.ref, status: 'awaiting_payment', reason: 'Customer chose to pay driver on the day' });
+    }
+  } catch (e) { console.error('[API] cash broadcast failed:', e.message); }
+
+  // Same follow-up as the email channel: the CASH confirmation ("pay your
+  // driver on the day"), which is deliberately not a paid receipt.
+  if (outcome.wasChosen) {
+    try {
+      require('./intake').notifyCustomerConfirmed(booking.id)
+        .catch(e => console.error('[API] notifyCustomerConfirmed (My Account cash) failed:', e.message));
+    } catch (e) { console.error('[API] notifyCustomerConfirmed threw:', e.message); }
+  }
+
+  res.json({ ok: true, payment: 'cash', status: 'awaiting_payment' });
+});
+
 // ── Customer self-service endpoints ──────────────────────────────────────
 
 // Customer: view their invoices

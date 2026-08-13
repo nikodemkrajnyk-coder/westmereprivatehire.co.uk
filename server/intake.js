@@ -265,8 +265,11 @@ async function evaluate(bookingId) {
 // a token in an already-sent email is NEVER invalidated by re-minting. Shared
 // by the confirmation path AND the "Send Estimate" path so an estimate email's
 // Pay/Cash/Cancel links are secured identically. Independent of fare/paid state.
-function ensurePayToken(bookingId) {
-  const db = getDb();
+// `dbOverride` lets a caller that is already inside a transaction (or a test
+// running against a throwaway database) mint through the SAME handle. Defaults
+// to the shared connection, so every existing call site is unchanged.
+function ensurePayToken(bookingId, dbOverride) {
+  const db = dbOverride || getDb();
   const row = db.prepare('SELECT pay_token FROM bookings WHERE id = ?').get(bookingId);
   if (!row) return null;
   if (row.pay_token) return row.pay_token;

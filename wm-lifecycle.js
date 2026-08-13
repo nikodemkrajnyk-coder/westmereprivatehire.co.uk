@@ -150,6 +150,106 @@
     return c.n === 0 && !c.plus ? '' : bagsLabel(bags);
   }
 
+  // ── Customer change requests ────────────────────────────────────────────
+  // A customer can ask, from My Account, for an upcoming trip to be changed.
+  // Their request NEVER edits the booking (server/api.js) — it is recorded and
+  // shown to staff here. How LOUDLY it is shown depends entirely on how far
+  // along the booking is, and that decision lives in this module so the owner
+  // and admin apps cannot drift apart on it (guardrail: admin-parity.test.js).
+  //
+  //   'early'    — the trip is not committed yet (still being priced, or the
+  //                customer has not chosen how to pay). There is nothing to
+  //                accept or decline: the owner simply prices the NEW details
+  //                and sends the estimate. So this is a quiet amber note, not
+  //                a decision. Interrupting the owner here would be noise.
+  //
+  //   'decision' — the trip is committed: confirmed (or already running). A
+  //                driver is allocated around it and the customer is expecting
+  //                that car at that time, so moving it is a real decision with
+  //                money attached. This is the prominent Accept / Decline
+  //                panel. NOTE this deliberately includes a confirmed booking
+  //                that is not yet PAID (cash on the day): the journey is just
+  //                as committed, and the owner should have the same explicit
+  //                say. Payment state changes the fare WARNING, not the stage.
+  //
+  // A completed or cancelled booking cannot receive a request at all (the
+  // route refuses); if a stale flag is ever seen on one, it degrades to the
+  // quiet note rather than shouting about a trip that has already happened.
+  var CHANGE_FIELDS = [
+    ['pickup',       'Pickup'],
+    ['stop_address', 'Stop'],
+    ['destination',  'Drop-off'],
+    ['date',         'Date'],
+    ['time',         'Time'],
+    ['passengers',   'Passengers'],
+    ['bags',         'Luggage'],
+    ['flight',       'Flight']
+  ];
+
+  // Which changed fields can move the price. Everything except the flight
+  // number: the route, the day, the hour, the head-count and the luggage all
+  // feed the fare or the vehicle size. A flight number alone never does.
+  // We do NOT re-price automatically (owner's decision) — this only decides
+  // whether to raise "Fare may change — confirm with the customer".
+  var PRICE_FIELDS = ['pickup', 'stop_address', 'destination', 'date', 'time', 'passengers', 'bags'];
+
+  function changeAffectsPrice(keys) {
+    if (!keys || !keys.length) return false;
+    for (var i = 0; i < keys.length; i++) {
+      if (PRICE_FIELDS.indexOf(keys[i]) !== -1) return true;
+    }
+    return false;
+  }
+
+  function changeRequestStage(j) {
+    if (!j || !j.change_requested_at) return 'none';
+    var st = statusOf(j);
+    if (st === 'confirmed' || st === 'active') return 'decision';
+    return 'early';
+  }
+
+  // Parse the compact detail blob the server stamps on the booking. This is
+  // rendered straight into two staff apps, so it MUST NOT be able to throw:
+  // a truncated or hand-edited value costs the panel its contents, never the
+  // page. Always returns the same shape.
+  function changeRequestDetail(j) {
+    var empty = { changed: [], note: '', price: false, at: '' };
+    if (!j) return empty;
+    var raw = j.change_request_detail;
+    if (!raw) return empty;
+    var d;
+    try { d = (typeof raw === 'string') ? JSON.parse(raw) : raw; }
+    catch (e) { return empty; }
+    if (!d || typeof d !== 'object') return empty;
+    var changed = [];
+    if (Object.prototype.toString.call(d.changed) === '[object Array]') {
+      for (var i = 0; i < d.changed.length; i++) {
+        var c = d.changed[i];
+        if (!c || typeof c !== 'object' || !c.key) continue;
+        changed.push({
+          key: String(c.key),
+          label: String(c.label || c.key),
+          current: c.current == null ? '' : String(c.current),
+          requested: c.requested == null ? '' : String(c.requested)
+        });
+      }
+    }
+    return {
+      changed: changed,
+      note: d.note == null ? '' : String(d.note),
+      price: !!d.price,
+      at: d.at == null ? '' : String(d.at)
+    };
+  }
+
+  // One-line summary for the EARLY note: "Date, Time and Passengers".
+  function changedFieldsLabel(j) {
+    var names = changeRequestDetail(j).changed.map(function (c) { return c.label.toLowerCase(); });
+    if (!names.length) return '';
+    if (names.length === 1) return names[0];
+    return names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1];
+  }
+
   // ── Which actions a staff app may offer ─────────────────────────────────
   // The ONE place that decides what staff can do to a booking. Deliberately
   // has no `confirm` key: there is no one-click confirm in any staff app.
@@ -162,12 +262,22 @@
   //   • sendReminder  — an unpaid booking with an email and a fare (e.g. a
   //                     card customer who abandoned checkout).
   //   • markCompleted / togglePaid / invoice / message / edit / del — as owner.
+  //   • reviewChange  — EARLY-stage change request: nothing to decide, the
+  //                     owner just prices the new details. This only dismisses
+  //                     the note.
+  //   • acceptChange / declineChange — DECISION-stage change request on a
+  //                     committed trip. Accept is the ONLY path in the whole
+  //                     system by which a customer's requested values ever
+  //                     reach the booking, and it is a deliberate staff act.
+  //   • clearFareReview — the trip was amended in a way that may have moved
+  //                     the price; dismissed once the owner has settled it.
   function actionsFor(j) {
     var st = statusOf(j);
     var isPaid = !!(j && j.paid_at);
     var hasEmail = !!(j && (j.email || j.customer_email || j.passenger_email));
     var hasFare = !!(j && Number(j.fare) > 0);
     var live = st !== 'cancelled';
+    var crStage = changeRequestStage(j);
     return {
       sendEstimate: st === 'pending',
       markPaid: st === 'awaiting_payment',
@@ -178,7 +288,11 @@
       invoice: (st === 'confirmed' || st === 'active' || st === 'completed') && hasFare,
       message: hasEmail && live,
       edit: live,
-      del: true
+      del: true,
+      reviewChange: crStage === 'early',
+      acceptChange: crStage === 'decision',
+      declineChange: crStage === 'decision',
+      clearFareReview: !!(j && j.fare_review_at)
     };
   }
 
@@ -255,6 +369,12 @@
     bagsLabel: bagsLabel,
     bagsText: bagsText,
     actionsFor: actionsFor,
+    CHANGE_FIELDS: CHANGE_FIELDS,
+    PRICE_FIELDS: PRICE_FIELDS,
+    changeAffectsPrice: changeAffectsPrice,
+    changeRequestStage: changeRequestStage,
+    changeRequestDetail: changeRequestDetail,
+    changedFieldsLabel: changedFieldsLabel,
     toConfirmCount: toConfirmCount,
     isAwaitingPayment: isAwaitingPayment,
     isoWeekStart: isoWeekStart,

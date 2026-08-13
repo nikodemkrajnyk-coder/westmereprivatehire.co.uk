@@ -17,14 +17,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-:root{--navy:#1b1b1a;--navy2:#2b2a26;--cream:#f5f2ec;--gold:#6a6a6a;--gold2:#8a8a8a;--text:#1b1b1a;--muted:rgba(27,27,26,.72);--border:rgba(27,27,26,.12);--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif;
---green:#2D6E47;--green-bg:rgba(45,110,71,.18);--red:#8B2222;--red-bg:rgba(139,34,34,.15);--amber:#6a6a6a;--amber-bg:rgba(106,106,106,.1);--purple:#9B7FD4;--purple-bg:rgba(155,127,212,.1);--text-light:rgba(27,27,26,.68);--text-mid:rgba(27,27,26,.8);--cream-dark:rgba(27,27,26,.04);--rule:rgba(27,27,26,.08);}
+:root{--navy:#1b1b1a;--navy2:#173b5e;--text:#1b1b1a;--muted:rgba(27,27,26,.72);--border:rgba(27,27,26,.12);
+--green:#2D6E47;--green-bg:rgba(45,110,71,.18);--red:#8B2222;--red-bg:rgba(139,34,34,.15);--amber:#6a6a6a;--amber-bg:rgba(106,106,106,.1);--purple:#9B7FD4;--purple-bg:rgba(155,127,212,.1);--text-light:rgba(27,27,26,.68);--text-mid:rgba(27,27,26,.8);--rule:rgba(27,27,26,.08);}
 html{font-size:16px;scroll-behavior:smooth}
 body{font-family:var(--sans);font-weight:300;color:var(--navy);background:#ffffff;line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh;display:flex}
 body::before{display:none}
 h1,h2,h3,h4{font-family:var(--serif);font-weight:300;color:var(--navy);letter-spacing:.05em}
 p{color:rgba(27,27,26,.72);line-height:1.8}
-a{color:var(--gold)}
+a{color:var(--navy)}
 
 /* ── HIDE SITE NAV / FOOTER / WHATSAPP FAB ── */
 #nav,.mmenu{display:none!important}
@@ -34,17 +34,17 @@ a{color:var(--gold)}
 .fg{display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem}
 .fl{font-family:var(--sans);font-size:.58rem;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:rgba(27,27,26,.7)}
 .fi{font-family:var(--sans);font-size:.92rem;font-weight:300;color:var(--navy);background:transparent;border:none;border-bottom:1px solid rgba(27,27,26,.15);padding:.78rem 0;outline:none;width:100%;transition:border-color .3s;min-height:48px;-webkit-appearance:none}
-.fi:focus{border-bottom-color:var(--gold)}
+.fi:focus{border-bottom-color:var(--navy)}
 .fi::placeholder{color:rgba(27,27,26,.62)}
-.btn-main{width:100%;padding:1rem;background:var(--gold);color:var(--navy);border:none;font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;transition:all .25s;min-height:52px}
-.btn-main:hover{background:var(--gold2)}
+.btn-main{width:100%;padding:1rem;background:rgba(27,27,26,.55);color:var(--navy);border:none;font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;transition:all .25s;min-height:52px}
+.btn-main:hover{background:rgba(27,27,26,.06)}
 /* ── ADMIN APP ── */
-#admin-login{position:fixed;inset:0;background:rgba(245,242,236,.97);backdrop-filter:blur(20px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem}
+#admin-login{position:fixed;inset:0;background:rgba(255,255,255,.97);backdrop-filter:blur(20px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem}
 .al-box{width:100%;max-width:400px;background:#fff;border:1px solid rgba(27,27,26,.08);box-shadow:0 4px 24px rgba(27,27,26,.06);position:relative;z-index:1;animation:up .4s ease}
 .al-hd{background:rgba(27,27,26,.04);padding:2rem;text-align:center;border-bottom:1px solid rgba(106,106,106,.15)}
 .al-crest{width:52px;height:52px;border:1px solid rgba(106,106,106,.38);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.3rem;font-weight:500;color:var(--navy);margin:0 auto .8rem}
 .al-name{font-family:var(--serif);font-size:1.4rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--navy);display:block}
-.al-sub{font-size:.54rem;font-weight:400;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);display:block;margin-top:.15rem}
+.al-sub{font-size:.54rem;font-weight:400;letter-spacing:.28em;text-transform:uppercase;color:var(--navy);display:block;margin-top:.15rem}
 .al-body{padding:2rem}
 .al-title{font-family:var(--serif);font-size:1.3rem;font-weight:400;color:var(--navy);margin-bottom:.2rem}
 .al-desc{font-size:.78rem;color:rgba(27,27,26,.68);margin-bottom:1.5rem;font-weight:300}
@@ -56,14 +56,14 @@ a{color:var(--gold)}
 .sb-logo{padding:1.4rem 1.2rem 1.1rem;border-bottom:1px solid rgba(27,27,26,.06);flex-shrink:0}
 .sb-crest{width:36px;height:36px;border:1px solid rgba(106,106,106,.35);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1rem;font-weight:500;color:var(--navy);margin-bottom:.6rem}
 .sb-name{font-family:var(--serif);font-size:1.1rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);display:block;line-height:1.1}
-.sb-sub{font-size:.52rem;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);display:block;margin-top:.15rem}
+.sb-sub{font-size:.52rem;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:var(--navy);display:block;margin-top:.15rem}
 .sb-section{padding:.6rem 0;border-bottom:1px solid rgba(27,27,26,.06)}
 .sb-label{font-size:.52rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:rgba(27,27,26,.62);padding:.4rem 1.2rem;display:block}
 .sb-item{display:flex;align-items:center;gap:.65rem;padding:.55rem 1.2rem;cursor:pointer;font-family:var(--sans);font-size:.75rem;font-weight:300;color:rgba(27,27,26,.68);transition:all .15s;border:none;background:transparent;width:100%;text-align:left;text-decoration:none;letter-spacing:.02em}
 .sb-item:hover{color:var(--navy);background:rgba(27,27,26,.04)}
-.sb-item.on{color:var(--gold);background:rgba(106,106,106,.08);font-weight:400}
+.sb-item.on{color:var(--navy);background:rgba(106,106,106,.08);font-weight:400}
 .sb-icon{width:18px;height:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sb-icon svg{width:16px;height:16px;display:block}
-.sb-badge{margin-left:auto;background:var(--gold);color:var(--navy);font-size:.5rem;font-weight:700;padding:.12rem .4rem;border-radius:10px}
+.sb-badge{margin-left:auto;background:var(--navy);color:var(--navy);font-size:.5rem;font-weight:700;padding:.12rem .4rem;border-radius:10px}
 .sb-badge.red{background:var(--red);color:#1a1a1a}
 .sb-bottom{margin-top:auto;padding:1rem 1.2rem;border-top:1px solid rgba(27,27,26,.06);flex-shrink:0}
 .sb-version{font-size:.55rem;color:rgba(27,27,26,.6);letter-spacing:.08em}
@@ -75,11 +75,11 @@ a{color:var(--gold)}
 .mob-menu-btn span{display:block;width:20px;height:1.5px;background:#ffffff}
 .tb-title{font-family:var(--serif);font-size:1.2rem;font-weight:500;letter-spacing:.04em;color:var(--navy)}
 .tb-right{display:flex;align-items:center;gap:.8rem}
-.tb-clock{font-family:var(--serif);font-size:1.1rem;color:var(--gold)}
+.tb-clock{font-family:var(--serif);font-size:1.1rem;color:var(--navy)}
 .tb-live{display:flex;align-items:center;gap:.35rem;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.66)}
 .live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;flex-shrink:0}
-.btn-new{font-family:var(--sans);font-size:.65rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;background:var(--gold);color:var(--navy);padding:.6rem 1.2rem;border:none;cursor:pointer;transition:all .2s;white-space:nowrap}
-.btn-new:hover{background:var(--gold2);color:var(--navy)}
+.btn-new{font-family:var(--sans);font-size:.65rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;background:rgba(27,27,26,.55);color:var(--navy);padding:.6rem 1.2rem;border:none;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn-new:hover{background:rgba(27,27,26,.06);color:var(--navy)}
 .content{padding:1.8rem 2rem;flex:1}
 /* VIEWS */
 .view{display:none}.view.on{display:block;animation:up .3s ease}
@@ -112,13 +112,13 @@ body.full-view .content{padding:1.4rem 1.9rem;max-width:100%}
 /* PAGE HEADER */
 .page-hd{margin-bottom:1.8rem}
 .page-title{font-family:var(--serif);font-size:2rem;font-weight:400;color:var(--navy);line-height:1}
-.page-title em{font-style:italic;color:var(--gold)}
+.page-title em{font-style:italic;color:var(--navy)}
 .page-sub{font-size:.82rem;color:rgba(27,27,26,.68);font-weight:300;margin-top:.3rem}
 /* STATS */
 .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:1.8rem}
 .stat{background:#fff;border:1px solid rgba(27,27,26,.08);box-shadow:0 2px 8px rgba(27,27,26,.03);padding:1.1rem 1.2rem;cursor:pointer;transition:border-color .2s;position:relative;overflow:hidden}
 .stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
-.stat.s-gold::before{background:var(--gold)}
+.stat.s-gold::before{background:var(--navy)}
 .stat.s-green::before{background:var(--green)}
 .stat.s-blue::before{background:#3B82F6}
 .stat.s-red::before{background:var(--red)}
@@ -129,17 +129,17 @@ body.full-view .content{padding:1.4rem 1.9rem;max-width:100%}
 /* CARD */
 .card{background:#fff;border:1px solid rgba(27,27,26,.08);box-shadow:0 2px 12px rgba(27,27,26,.04);margin-bottom:1.2rem}
 .ch{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.3rem;border-bottom:1px solid rgba(27,27,26,.06)}
-.ct{font-size:.58rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+.ct{font-size:.58rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--navy)}
 .cb{padding:1.2rem 1.3rem}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem}
 /* TIMELINE */
 .timeline{display:flex;flex-direction:column;gap:.7rem}
 .tl-item{display:flex;gap:.9rem;align-items:stretch}
 .tl-time-col{display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:40px}
-.tl-time{font-family:var(--serif);font-size:.9rem;color:var(--gold);line-height:1}
+.tl-time{font-family:var(--serif);font-size:.9rem;color:var(--navy);line-height:1}
 .tl-line{flex:1;width:1px;background:rgba(27,27,26,.1);margin:.2rem 0}
 .tl-card{flex:1;background:#fff;border:1px solid rgba(27,27,26,.08);padding:.8rem 1rem;cursor:pointer;transition:border-color .2s;position:relative}
-.tl-card.active{border-left:3px solid var(--gold);background:rgba(106,106,106,.06)}
+.tl-card.active{border-left:3px solid var(--navy);background:rgba(106,106,106,.06)}
 .tl-card.done{border-left:3px solid var(--green);opacity:.65}
 .tl-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem}
 .tl-name{font-size:.85rem;font-weight:500;color:var(--navy)}
@@ -147,14 +147,14 @@ body.full-view .content{padding:1.4rem 1.9rem;max-width:100%}
 .tl-actions{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.5rem}
 /* TAGS */
 .tag{display:inline-flex;align-items:center;font-size:.54rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.15rem .5rem}
-.tag-upcoming{background:rgba(106,106,106,.15);color:var(--gold)}
+.tag-upcoming{background:rgba(106,106,106,.15);color:var(--navy)}
 .tag-done{background:var(--green-bg);color:var(--green)}
 .tag-cancel{background:var(--red-bg);color:var(--red)}
 .tag-account{background:var(--purple-bg);color:var(--purple)}
 .tag-cash{background:rgba(106,106,106,.16);color:#555555}
 .tag-card{background:rgba(59,130,246,.08);color:#60A5FA}
 .tag-prepaid{background:var(--green-bg);color:var(--green)}
-.tag-await{background:rgba(156,88,0,.12);color:#9C5800}
+.tag-await{background:rgba(27,27,26,.05);color:#1b1b1a}
 /* No payment method chosen yet ("—") and a brand-new request. Both are neutral
    on purpose: nothing is "awaiting" until the customer has actually chosen. */
 .tag-none{background:rgba(27,27,26,.05);color:rgba(27,27,26,.4)}
@@ -162,16 +162,20 @@ body.full-view .content{padding:1.4rem 1.9rem;max-width:100%}
 /* BUTTONS */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;font-family:var(--sans);font-size:.62rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;padding:.6rem 1.2rem;cursor:pointer;border:none;transition:all .2s;text-decoration:none;white-space:nowrap}
 .btn:active{transform:scale(.97)}
-.btn-gold{background:var(--gold);color:var(--navy);border:1px solid var(--gold)}.btn-gold:hover{background:var(--gold2)}
-.btn-navy{background:rgba(27,27,26,.06);color:var(--navy);border:1px solid rgba(27,27,26,.15)}.btn-navy:hover{background:var(--gold);border-color:var(--gold);color:var(--navy)}
+.btn-gold{background:rgba(27,27,26,.55);color:var(--navy);border:1px solid rgba(27,27,26,.55)}.btn-gold:hover{background:rgba(27,27,26,.06)}
+.btn-navy{background:rgba(27,27,26,.06);color:var(--navy);border:1px solid rgba(27,27,26,.15)}.btn-navy:hover{background:rgba(27,27,26,.55);border-color:rgba(27,27,26,.55);color:var(--navy)}
 .btn-ghost{background:transparent;color:rgba(27,27,26,.78);border:1px solid rgba(27,27,26,.18)}.btn-ghost:hover{color:var(--navy);border-color:rgba(27,27,26,.4);background:rgba(27,27,26,.03)}
 .btn-green{background:var(--green-bg);color:var(--green);border:1px solid rgba(45,110,71,.3)}.btn-green:hover{background:rgba(45,110,71,.25)}
 .btn-red{background:var(--red-bg);color:var(--red);border:1px solid rgba(139,34,34,.3)}.btn-red:hover{background:rgba(139,34,34,.25)}
 /* Cancel / Refund action buttons — high-contrast, override the all-black white theme so they never render black-on-black */
 .btn-cancel-trip{background:#ffffff!important;color:#9C2828!important;-webkit-text-fill-color:#9C2828!important;border:1.5px solid #9C2828!important}
 .btn-cancel-trip:hover{background:#FCE4E4!important;color:#9C2828!important;-webkit-text-fill-color:#9C2828!important}
-.btn-refund{background:#1b1b1a!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important;border:1.5px solid #1b1b1a!important}
-.btn-refund:hover{background:#000000!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important}
+/* .btn-refund takes the shared danger style from /wm-buttons.css (the solid
+   charcoal fill that was here is gone). Only the text-fill reset stays, for
+   the day-mode override further up. */
+.btn-refund{-webkit-text-fill-color:currentColor!important}
+/* hover/press for .btn-refund come from the shared danger style. */
+.btn-refund:hover{-webkit-text-fill-color:currentColor!important}
 .tag-refunded{display:inline-block;padding:.28rem .6rem;font-size:.58rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border-radius:4px;background:#E6F4EA!important;color:#1E6B33!important;-webkit-text-fill-color:#1E6B33!important;border:1px solid rgba(30,107,51,.35)!important}
 .btn-blue{background:rgba(59,130,246,.08);color:#60A5FA;border:1px solid rgba(59,130,246,.2)}.btn-blue:hover{background:rgba(59,130,246,.15)}
 .btn-full{width:100%;padding:.85rem}
@@ -181,7 +185,7 @@ body.full-view .content{padding:1.4rem 1.9rem;max-width:100%}
 .fg{display:flex;flex-direction:column;gap:.38rem;margin-bottom:.9rem}
 .fl{font-size:.58rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:rgba(27,27,26,.7)}
 .fi{font-family:var(--sans);font-size:.92rem;font-weight:300;color:var(--navy);background:rgba(27,27,26,.03);border:none;border-bottom:1px solid rgba(27,27,26,.12);padding:.78rem 1rem;outline:none;width:100%;transition:border-color .2s;min-height:50px;-webkit-appearance:none}
-.fi:focus{border-bottom-color:var(--gold);background:rgba(27,27,26,.04)}
+.fi:focus{border-bottom-color:var(--navy);background:rgba(27,27,26,.04)}
 .fi::placeholder{color:rgba(27,27,26,.62)}
 select.fi{cursor:pointer}
 select.fi option{background:#fff;color:var(--navy)}
@@ -197,7 +201,7 @@ textarea.fi{resize:vertical;min-height:80px}
 .avail.no{background:var(--red-bg);border:1px solid rgba(139,34,34,.3)}
 .avail-title{font-family:var(--serif);font-size:1.1rem;font-weight:500;margin-bottom:.15rem}
 .avail.free .avail-title{color:var(--green)}
-.avail.tight .avail-title{color:var(--gold)}
+.avail.tight .avail-title{color:var(--navy)}
 .avail.no .avail-title{color:var(--red)}
 .avail-detail{font-weight:300;color:rgba(27,27,26,.7);font-size:.8rem}
 .sub-offer{display:none;margin-top:.6rem;padding:.8rem;background:var(--purple-bg);border:1px solid rgba(155,127,212,.2);font-size:.82rem;font-weight:300;color:rgba(27,27,26,.74);line-height:1.7}
@@ -206,8 +210,8 @@ textarea.fi{resize:vertical;min-height:80px}
 .price-box{display:none;background:rgba(255,255,255,.95);padding:1.4rem 1.6rem;margin-top:1rem;border:1px solid rgba(106,106,106,.15)}
 .price-box.show{display:block;animation:up .35s ease}
 .pb-label{font-size:.58rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(106,106,106,.6);margin-bottom:.3rem;display:flex;align-items:center;gap:.35rem}
-.pb-dot{width:5px;height:5px;border-radius:50%;background:var(--gold);animation:pulse 1.8s infinite}
-.pb-amount{font-family:var(--serif);font-size:3.5rem;color:var(--gold);line-height:1;margin-bottom:.2rem}
+.pb-dot{width:5px;height:5px;border-radius:50%;background:var(--navy);animation:pulse 1.8s infinite}
+.pb-amount{font-family:var(--serif);font-size:3.5rem;color:var(--navy);line-height:1;margin-bottom:.2rem}
 .pb-sub{font-size:.65rem;color:rgba(27,27,26,.62);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem;font-weight:300}
 .pb-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;padding-top:1rem;border-top:1px solid rgba(27,27,26,.06)}
 .pb-item .pbi-l{font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.62);margin-bottom:.12rem}
@@ -215,13 +219,13 @@ textarea.fi{resize:vertical;min-height:80px}
 /* NOTIFICATION OPTIONS */
 .notify-list{display:flex;flex-direction:column;gap:.6rem;margin-top:.5rem}
 .notify-opt{display:flex;align-items:center;gap:.8rem;padding:.9rem 1rem;background:#fff;border:1px solid rgba(27,27,26,.08);cursor:pointer;transition:all .2s}
-.notify-opt.on{border-color:var(--gold);background:rgba(106,106,106,.08)}
-.notify-opt:hover{border-color:var(--gold)}
+.notify-opt.on{border-color:var(--navy);background:rgba(106,106,106,.08)}
+.notify-opt:hover{border-color:var(--navy)}
 .no-icon{font-size:1rem;flex-shrink:0}
 .no-name{font-size:.86rem;font-weight:400;color:var(--navy)}
 .no-sub{font-size:.72rem;color:rgba(27,27,26,.66);margin-top:.05rem}
 .no-chk{width:18px;height:18px;border-radius:50%;border:1px solid rgba(27,27,26,.15);background:rgba(27,27,26,.04);display:flex;align-items:center;justify-content:center;font-size:.58rem;margin-left:auto;flex-shrink:0;transition:all .2s;color:transparent}
-.notify-opt.on .no-chk{background:var(--gold);border-color:var(--gold);color:var(--navy);font-weight:700}
+.notify-opt.on .no-chk{background:var(--navy);border-color:var(--navy);color:var(--navy);font-weight:700}
 /* JOBS TABLE */
 .jtable{width:100%;border-collapse:collapse}
 .jtable th{font-size:.56rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:rgba(27,27,26,.66);padding:.6rem .8rem;border-bottom:1px solid rgba(27,27,26,.08);text-align:left;white-space:nowrap;background:rgba(27,27,26,.03)}
@@ -232,10 +236,10 @@ textarea.fi{resize:vertical;min-height:80px}
 .jtable .sub-v{font-size:.66rem;color:rgba(27,27,26,.64);margin-top:.08rem}
 /* FARE TABLE */
 .fare-table{width:100%;border-collapse:collapse}
-.fare-table th{font-size:.56rem;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);padding:.5rem .7rem;background:rgba(27,27,26,.04);text-align:center}
+.fare-table th{font-size:.56rem;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--navy);padding:.5rem .7rem;background:rgba(27,27,26,.04);text-align:center}
 .fare-table td{padding:.4rem .5rem;border:1px solid rgba(27,27,26,.06);text-align:center}
 .fare-table tr:first-child td{background:rgba(27,27,26,.03);font-size:.75rem;font-weight:500;color:var(--navy);text-align:left}
-.fare-input{background:transparent;border:none;outline:none;font-family:var(--sans);font-size:.84rem;font-weight:500;color:var(--gold);text-align:center;width:100%;padding:.18rem}
+.fare-input{background:transparent;border:none;outline:none;font-family:var(--sans);font-size:.84rem;font-weight:500;color:var(--navy);text-align:center;width:100%;padding:.18rem}
 .fare-input:focus{background:rgba(106,106,106,.08)}
 /* NOTIFICATIONS LIST */
 .notif{display:flex;align-items:flex-start;gap:.65rem;padding:.7rem 0;border-bottom:1px solid rgba(27,27,26,.06)}
@@ -265,13 +269,13 @@ textarea.fi{resize:vertical;min-height:80px}
 .modal-body{padding:1.5rem}
 .modal-foot{padding:1rem 1.5rem;border-top:1px solid rgba(27,27,26,.08);display:flex;gap:.6rem;justify-content:flex-end}
 /* TOAST */
-.toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:300;background:rgba(27,27,26,.92);border:1px solid var(--gold);padding:.85rem 1.2rem;font-size:.78rem;color:#1a1a1a;display:none;max-width:340px;backdrop-filter:blur(10px)}
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:300;background:rgba(27,27,26,.92);border:1px solid var(--navy);padding:.85rem 1.2rem;font-size:.78rem;color:#1a1a1a;display:none;max-width:340px;backdrop-filter:blur(10px)}
 .toast.on{display:flex;align-items:center;gap:.5rem;animation:sl .3s ease}
-.toast .ti{color:var(--gold);flex-shrink:0}
+.toast .ti{color:var(--navy);flex-shrink:0}
 /* CUSTOMER CARDS */
 .cust-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
 .cust-card{background:#fff;border:1px solid rgba(27,27,26,.08);padding:1.1rem;cursor:pointer;transition:border-color .2s}
-.cust-card:hover{border-color:var(--gold)}
+.cust-card:hover{border-color:var(--navy)}
 .cc-name{font-size:.92rem;font-weight:500;color:var(--navy);margin-bottom:.2rem}
 .cc-type{display:inline-block;font-size:.54rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.12rem .45rem;margin-bottom:.4rem}
 .cc-business{background:var(--purple-bg);color:var(--purple)}
@@ -279,12 +283,12 @@ textarea.fi{resize:vertical;min-height:80px}
 .cc-meta{font-size:.72rem;color:rgba(27,27,26,.66);font-weight:300}
 .cc-actions{margin-top:.75rem;padding-top:.65rem;border-top:1px solid rgba(27,27,26,.06);display:flex;gap:.4rem}
 .cc-btn{flex:1;padding:.5rem .6rem;background:transparent;color:var(--navy);border:1px solid rgba(27,27,26,.15);border-radius:6px;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .2s}
-.cc-btn:hover{background:var(--gold);color:#1a1a1a;border-color:var(--gold)}
+.cc-btn:hover{background:rgba(27,27,26,.55);color:#1a1a1a;border-color:rgba(27,27,26,.55)}
 .cc-btn-del{color:var(--red)!important;border-color:rgba(139,34,34,.2)!important}
 .cc-btn-del:hover{background:var(--red)!important;border-color:var(--red)!important;color:#1a1a1a!important}
 .cc-stats{display:flex;gap:.8rem;margin-top:.45rem}
 .cc-stat{font-size:.68rem;color:rgba(27,27,26,.68)}
-.cc-stat span{color:var(--gold);font-weight:500}
+.cc-stat span{color:var(--navy);font-weight:500}
 /* INVOICE TABLE */
 .inv-table{width:100%;border-collapse:collapse}
 .inv-table th{font-size:.56rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:rgba(27,27,26,.66);padding:.6rem .8rem;border-bottom:1px solid rgba(27,27,26,.08);text-align:left;background:rgba(27,27,26,.03)}
@@ -294,7 +298,7 @@ textarea.fi{resize:vertical;min-height:80px}
 /* DRIVER CARDS */
 .driver-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
 .driver-card{background:#fff;border:1px solid rgba(27,27,26,.08);padding:1.2rem;cursor:pointer;transition:border-color .2s;position:relative}
-.driver-card:hover{border-color:var(--gold)}
+.driver-card:hover{border-color:var(--navy)}
 .driver-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:rgba(27,27,26,.08)}
 .driver-card.active::before{background:var(--green)}
 .driver-card.inactive::before{background:rgba(27,27,26,.15)}
@@ -312,11 +316,11 @@ textarea.fi{resize:vertical;min-height:80px}
 .modal-doc{max-width:700px}
 .inv-doc{background:#ffffff;color:var(--navy);padding:2.5rem 2.8rem;font-family:var(--sans);font-weight:300;line-height:1.7}
 .inv-doc *{color:var(--navy)}
-.inv-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:2px solid var(--gold)}
-.inv-crest{width:62px;height:62px;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.6rem;font-weight:500;color:var(--navy);flex-shrink:0}
+.inv-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:2px solid var(--navy)}
+.inv-crest{width:62px;height:62px;border:2px solid var(--navy);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.6rem;font-weight:500;color:var(--navy);flex-shrink:0}
 .inv-brand{margin-left:.9rem}
 .inv-brand-name{font-family:var(--serif);font-size:1.4rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--navy);line-height:1.1}
-.inv-brand-sub{font-size:.5rem;font-weight:400;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-top:.1rem;display:block}
+.inv-brand-sub{font-size:.5rem;font-weight:400;letter-spacing:.28em;text-transform:uppercase;color:var(--navy);margin-top:.1rem;display:block}
 .inv-title-block{text-align:right}
 .inv-title{font-family:var(--serif);font-size:2rem;font-weight:400;letter-spacing:.18em;text-transform:uppercase;color:var(--navy);line-height:1}
 .inv-meta{margin-top:.4rem;font-size:.78rem;color:#6a6a6a;line-height:1.8}
@@ -326,62 +330,62 @@ textarea.fi{resize:vertical;min-height:80px}
 .inv-status.overdue{background:rgba(139,34,34,.1);color:#8B2222;border:1px solid rgba(139,34,34,.2)}
 .inv-status.pending{background:rgba(106,106,106,.12);color:#555555;border:1px solid rgba(106,106,106,.25)}
 .inv-parties{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:1.8rem}
-.inv-party-label{font-size:.52rem;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:.3rem}
+.inv-party-label{font-size:.52rem;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--navy);margin-bottom:.3rem}
 .inv-party-name{font-size:.95rem;font-weight:500;color:var(--navy)}
 .inv-party-detail{font-size:.78rem;color:#6a6a6a;line-height:1.7}
 .inv-table-doc{width:100%;border-collapse:collapse;margin-bottom:1.2rem}
-.inv-table-doc thead th{font-size:.52rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);padding:.6rem .5rem;border-bottom:2px solid var(--gold);text-align:left}
+.inv-table-doc thead th{font-size:.52rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--navy);padding:.6rem .5rem;border-bottom:2px solid var(--navy);text-align:left}
 .inv-table-doc thead th:last-child{text-align:right}
-.inv-table-doc tbody td{font-size:.82rem;padding:.65rem .5rem;border-bottom:1px solid rgba(27,27,26,.08);color:#3a3833}
+.inv-table-doc tbody td{font-size:.82rem;padding:.65rem .5rem;border-bottom:1px solid rgba(27,27,26,.08);color:#102a43}
 .inv-table-doc tbody td:last-child{text-align:right;font-family:var(--serif);font-size:.95rem;color:var(--navy)}
 .inv-totals{display:flex;flex-direction:column;align-items:flex-end;margin-bottom:1.8rem}
 .inv-total-row{display:flex;justify-content:space-between;width:240px;padding:.35rem 0;font-size:.82rem;color:#6a6a6a}
-.inv-total-row.grand{border-top:2px solid var(--gold);padding-top:.6rem;margin-top:.3rem}
+.inv-total-row.grand{border-top:2px solid var(--navy);padding-top:.6rem;margin-top:.3rem}
 .inv-total-row.grand span:last-child{font-family:var(--serif);font-size:1.4rem;font-weight:500;color:var(--navy)}
 .inv-payment{background:rgba(27,27,26,.04);border:1px solid rgba(27,27,26,.08);padding:1rem 1.2rem;margin-bottom:1.5rem;font-size:.78rem;color:#6a6a6a;line-height:1.8}
 .inv-payment strong{color:var(--navy);font-weight:500}
-.inv-footer{text-align:center;padding-top:1.2rem;border-top:1px solid rgba(27,27,26,.1);font-size:.68rem;color:#a29b91;letter-spacing:.04em}
+.inv-footer{text-align:center;padding-top:1.2rem;border-top:1px solid rgba(27,27,26,.1);font-size:.68rem;color:#657485;letter-spacing:.04em}
 /* EMAIL PREVIEW */
-.email-preview{background:#E8E5E0;padding:1.2rem}
+.email-preview{background:#ffffff;padding:1.2rem}
 .email-bar{background:#fff;border:1px solid rgba(27,27,26,.1);padding:.8rem 1.2rem;margin-bottom:1px;font-size:.75rem;color:#6a6a6a;line-height:1.7}
 .email-bar strong{color:var(--navy);font-weight:500}
 .email-bar-subject{font-size:.88rem;font-weight:500;color:var(--navy)}
 .email-body{background:#fff;border:1px solid rgba(27,27,26,.1);max-width:600px;margin:0 auto}
 .email-brand{background:#ffffff;padding:1.5rem 2rem;text-align:center}
-.email-brand-crest{width:48px;height:48px;border:1.5px solid var(--gold);display:inline-flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.2rem;font-weight:500;color:#1a1a1a;margin-bottom:.5rem}
+.email-brand-crest{width:48px;height:48px;border:1.5px solid var(--navy);display:inline-flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.2rem;font-weight:500;color:#1a1a1a;margin-bottom:.5rem}
 .email-brand-name{font-family:var(--serif);font-size:1.15rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#1a1a1a;display:block}
-.email-brand-sub{font-size:.48rem;font-weight:400;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);display:block;margin-top:.1rem}
+.email-brand-sub{font-size:.48rem;font-weight:400;letter-spacing:.28em;text-transform:uppercase;color:var(--navy);display:block;margin-top:.1rem}
 .email-content{padding:2rem 2rem 1.5rem;color:var(--navy);font-family:var(--sans);font-weight:300}
 .email-content *{color:var(--navy)}
 .email-heading{font-family:var(--serif);font-size:1.5rem;font-weight:400;color:var(--navy);margin-bottom:.3rem;text-align:center}
 .email-subtext{font-size:.82rem;color:#6a6a6a;text-align:center;margin-bottom:1.5rem}
-.email-detail-card{background:#F9F7F4;border:1px solid rgba(27,27,26,.08);padding:1.2rem 1.4rem;margin-bottom:1.2rem}
-.email-detail-title{font-size:.52rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:.6rem}
+.email-detail-card{background:#ffffff;border:1px solid rgba(27,27,26,.08);padding:1.2rem 1.4rem;margin-bottom:1.2rem}
+.email-detail-title{font-size:.52rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--navy);margin-bottom:.6rem}
 .email-detail-row{display:flex;justify-content:space-between;padding:.3rem 0;font-size:.82rem;border-bottom:1px solid rgba(27,27,26,.05)}
 .email-detail-row:last-child{border-bottom:none}
-.email-detail-row .edl{color:#938b81;font-weight:400}
+.email-detail-row .edl{color:#657485;font-weight:400}
 .email-detail-row .edv{color:var(--navy);font-weight:500;text-align:right}
-.email-fare-total{display:flex;justify-content:space-between;padding:.6rem 0;margin-top:.3rem;border-top:2px solid var(--gold);font-size:.95rem}
+.email-fare-total{display:flex;justify-content:space-between;padding:.6rem 0;margin-top:.3rem;border-top:2px solid var(--navy);font-size:.95rem}
 .email-fare-total .edl{font-weight:500;color:var(--navy)}
 .email-fare-total .edv{font-family:var(--serif);font-size:1.2rem;color:var(--navy);font-weight:500}
 .email-btn{display:inline-block;font-family:var(--sans);font-size:.62rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;padding:.7rem 1.4rem;text-decoration:none;text-align:center;cursor:pointer;border:none;transition:opacity .2s}
-.email-btn-gold{background:var(--gold);color:var(--navy)!important}
+.email-btn-gold{background:rgba(27,27,26,.55);color:var(--navy)!important}
 .email-btn-navy{background:#ffffff;color:#1a1a1a!important}
 .email-btn-outline{background:transparent;color:var(--navy)!important;border:1px solid rgba(27,27,26,.2)}
 .email-btn-green{background:#2D6E47;color:#1a1a1a!important}
 .email-buttons{display:flex;gap:.5rem;justify-content:center;margin:1.2rem 0;flex-wrap:wrap}
-.email-map-placeholder{background:#E8E5E0;border:1px solid rgba(27,27,26,.1);padding:2rem;text-align:center;margin:1rem 0;font-size:.78rem;color:#938b81}
+.email-map-placeholder{background:#ffffff;border:1px solid rgba(27,27,26,.1);padding:2rem;text-align:center;margin:1rem 0;font-size:.78rem;color:#657485}
 .email-map-placeholder svg{display:block;margin:0 auto .5rem;opacity:.3}
 .email-section{margin-bottom:1.2rem}
-.email-section-title{font-size:.52rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:.5rem}
-.email-driver-card{display:flex;gap:1rem;align-items:center;background:#F9F7F4;border:1px solid rgba(27,27,26,.08);padding:1rem 1.2rem}
-.email-driver-avatar{width:44px;height:44px;background:#ffffff;border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.1rem;color:#1a1a1a;flex-shrink:0}
+.email-section-title{font-size:.52rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--navy);margin-bottom:.5rem}
+.email-driver-card{display:flex;gap:1rem;align-items:center;background:#ffffff;border:1px solid rgba(27,27,26,.08);padding:1rem 1.2rem}
+.email-driver-avatar{width:44px;height:44px;background:#ffffff;border:1px solid var(--navy);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.1rem;color:#1a1a1a;flex-shrink:0}
 .email-driver-info{font-size:.82rem;line-height:1.6}
 .email-driver-info strong{color:var(--navy);font-weight:500}
 .email-driver-info span{color:#6a6a6a}
 .email-footer{background:#ffffff;padding:1.2rem 2rem;text-align:center}
 .email-footer-text{font-size:.65rem;color:#1a1a1a;letter-spacing:.06em;line-height:1.8}
-.email-footer-text a{color:var(--gold)!important;text-decoration:none}
+.email-footer-text a{color:var(--navy)!important;text-decoration:none}
 .email-footer-brand{font-family:var(--serif);font-size:.82rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:#1a1a1a;margin-bottom:.2rem}
 .email-flight{background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);padding:.8rem 1rem;margin-bottom:1rem;font-size:.78rem;display:flex;align-items:center;gap:.6rem}
 .email-flight svg{flex-shrink:0;color:#3B82F6}
@@ -393,14 +397,14 @@ textarea.fi{resize:vertical;min-height:80px}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
 /* ── CALENDAR ── */
 .adm-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:rgba(27,27,26,.06);overflow:hidden;border:1px solid rgba(27,27,26,.06)}
-.adm-cal-hd{padding:.55rem .2rem;text-align:center;font-size:.65rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.7);background:rgba(245,242,236,.7)}
+.adm-cal-hd{padding:.55rem .2rem;text-align:center;font-size:.65rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.7);background:rgba(255,255,255,.7)}
 .adm-cal-day{min-height:78px;padding:.4rem .45rem;background:#fff;cursor:pointer;transition:background .15s;position:relative;overflow:hidden}
 .adm-cal-day:hover{background:rgba(106,106,106,.06)}
-.adm-cal-day.today{background:rgba(106,106,106,.12);box-shadow:inset 0 0 0 2px var(--gold)}
+.adm-cal-day.today{background:rgba(106,106,106,.12);box-shadow:inset 0 0 0 2px var(--navy)}
 .adm-cal-day.selected{background:rgba(106,106,106,.18)}
 .adm-cal-day.other{opacity:.3;pointer-events:none;background:#fafafa}
 .adm-cal-day.blocked{background:repeating-linear-gradient(45deg,#fff,#fff 6px,rgba(176,42,42,.06) 6px,rgba(176,42,42,.06) 12px)}
-.adm-cal-day.flagged{box-shadow:inset 0 0 0 2px #b8b0a4}
+.adm-cal-day.flagged{box-shadow:inset 0 0 0 2px #c8d1d9}
 .adm-cal-num{font-size:.82rem;font-weight:500;color:var(--navy);line-height:1}
 .adm-cal-pill{margin-top:.25rem;font-size:.62rem;color:#1a1a1a;background:#ffffff;padding:1px 5px;border-radius:3px;display:inline-block;line-height:1.4}
 .adm-cal-pill.warn{background:#555555}
@@ -411,21 +415,21 @@ textarea.fi{resize:vertical;min-height:80px}
 .adm-cal-detail{margin-top:1.1rem}
 .adm-cal-detail-job{display:flex;align-items:center;gap:.8rem;padding:.7rem 1rem;border-bottom:1px solid var(--rule)}
 .adm-cal-detail-job:last-child{border-bottom:none}
-.adm-cal-time{font-family:var(--serif);font-size:1rem;color:var(--gold);width:54px;flex-shrink:0}
+.adm-cal-time{font-family:var(--serif);font-size:1rem;color:var(--navy);width:54px;flex-shrink:0}
 .adm-cal-info{flex:1;min-width:0}
 .adm-cal-name{font-size:.85rem;font-weight:600;color:var(--navy)}
 .adm-cal-route{font-size:.74rem;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.adm-cal-fare{font-family:var(--serif);font-size:.95rem;color:var(--gold);flex-shrink:0}
+.adm-cal-fare{font-family:var(--serif);font-size:.95rem;color:var(--navy);flex-shrink:0}
 .adm-cal-status{font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;padding:2px 7px;border-radius:3px;background:rgba(27,27,26,.08);color:var(--text-light);flex-shrink:0}
 .adm-cal-status.confirmed{background:#E6F4EA;color:#1E6B33}
-.adm-cal-status.pending{background:#f0ece3;color:#555555}
+.adm-cal-status.pending{background:#ffffff;color:#555555}
 .adm-cal-status.cancelled{background:#FCE4E4;color:#9C2828}
-.adm-cal-status.flagged{background:#f0ece3;color:#555555}
+.adm-cal-status.flagged{background:#ffffff;color:#555555}
 .adm-cal-status.offered{background:#E8EEFB;color:#2A3A66}
 .adm-cal-status.active{background:#DDEEFE;color:#13426B}
 .adm-cal-status.completed{background:#E6F4EA;color:#1E6B33}
 .offer-wait{display:inline-block;font-size:.62rem;font-weight:600;letter-spacing:.04em;color:#2A3A66;background:#E8EEFB;padding:2px 7px;border-radius:3px;margin-left:.4rem;vertical-align:middle}
-.offer-timer{font-variant-numeric:tabular-nums;margin-left:.35rem;color:#837b71}
+.offer-timer{font-variant-numeric:tabular-nums;margin-left:.35rem;color:#657485}
 @media(max-width:900px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main{margin-left:0}.mob-menu-btn{display:flex}.stats{grid-template-columns:1fr 1fr}.cust-grid{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}
 @media(max-width:600px){.content{padding:1.2rem 1rem}.stats{grid-template-columns:1fr 1fr}.cust-grid{grid-template-columns:1fr}.r2,.r3{grid-template-columns:1fr}.pb-row{grid-template-columns:1fr 1fr}.topbar{padding:0 1rem}}
 .sug-drop{display:none;position:absolute;left:0;right:0;top:100%;z-index:350;background:rgba(255,255,255,.97);backdrop-filter:blur(28px);border:1px solid rgba(106,106,106,.35);border-radius:0 0 10px 10px;max-height:360px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(106,106,106,.3) transparent}
@@ -451,7 +455,7 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <meta name="description" content="Westmere operations dashboard.">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23111D2C'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='38' font-weight='500' text-anchor='middle' fill='%23B8985A'%3EW%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23111D2C'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='38' font-weight='500' text-anchor='middle' fill='%23102a43'%3EW%3C/text%3E%3C/svg%3E">
 <meta name="robots" content="noindex,nofollow">
 <meta property="og:title" content="Westmere Admin">
 <meta property="og:description" content="Westmere operations dashboard.">
@@ -472,8 +476,7 @@ if ('serviceWorker' in navigator) {
    preview is restyled). ============================================ */
 /* 0) Palette: neutralise the dark/grey accent vars */
 :root{
-  --card:#ffffff !important;--paper:#ffffff !important;--cream:#ffffff !important;
-  --gold:#000000 !important;--gold2:#000000 !important;--gold-rule:rgba(0,0,0,.12) !important;
+  --card:#ffffff !important;--paper:#ffffff !important;
   --amber:#000000 !important;--amber-bg:rgba(0,0,0,.05) !important;--rule:rgba(0,0,0,.1) !important;
 }
 /* 1) Core surfaces white */
@@ -521,16 +524,16 @@ input[type=checkbox],input[type=radio],input[type=range],input[type=file],input[
 }
 input[type=checkbox],input[type=radio]{accent-color:#111111 !important}
 [style*="color:var(--navy)"],[style*="color: var(--navy)"],
-[style*="color:var(--gold)"],[style*="color: var(--gold)"]{color:#111111 !important;-webkit-text-fill-color:#111111 !important}
-[style*="border:1px solid var(--gold)"],[style*="border: 1px solid var(--gold)"],
-[style*="border-color:var(--gold)"],[style*="border-color: var(--gold)"]{border-color:#111111 !important}
+[style*="color:var(--navy)"],[style*="color: var(--navy)"]{color:#111111 !important;-webkit-text-fill-color:#111111 !important}
+[style*="border:1px solid var(--navy)"],[style*="border: 1px solid var(--navy)"],
+[style*="border-color:var(--navy)"],[style*="border-color: var(--navy)"]{border-color:#111111 !important}
 /* No beige — neutralise leftover cream/beige surfaces to white / light grey. */
 #admin-login{background:rgba(255,255,255,.97) !important}
 .adm-cal-hd{background:#f4f4f4 !important}
 .adm-cal-status.pending,.adm-cal-status.flagged{background:#f1f1f1 !important}
 .adm-cal-day.flagged{box-shadow:inset 0 0 0 2px #cbcbcb !important}
-[style*="#f0ece3"],[style*="#F0ECE3"]{background:#f1f1f1 !important}
-[style*="#cfc9bd"],[style*="#b8b0a4"]{border-color:#d9d9d9 !important}
+[style*="#ffffff"],[style*="#ffffff"]{background:#f1f1f1 !important}
+[style*="#c8d1d9"],[style*="#c8d1d9"]{border-color:#d9d9d9 !important}
 
 /* ── BROWSER AUTOFILL ──
    Chrome/Safari paint an autofilled field with their own yellow background,
@@ -561,7 +564,9 @@ select:-webkit-autofill:focus{
   caret-color:#1b1b1a;
   transition:background-color 9999s ease-in-out 0s;
 }
-</style></head>
+</style><link rel="stylesheet" href="/wm-buttons.css">
+<link rel="stylesheet" href="/westmere-theme.css">
+</head>
 <body>
 
 <nav id="nav" style="display:none">
@@ -599,9 +604,9 @@ select:-webkit-autofill:focus{
         <div class="al-err" id="al-err"></div>
         <div class="fg"><label class="fl">Username</label><input class="fi" type="text" id="al-user" placeholder="Username" autocomplete="username" autocapitalize="none"></div>
         <div class="fg"><label class="fl">Password</label><input class="fi" type="password" id="al-pass" placeholder="Password" autocomplete="current-password"></div>
-        <label style="display:flex;align-items:center;gap:.5rem;margin-top:.8rem;cursor:pointer;font-size:.78rem;color:rgba(27,27,26,.7);font-weight:300"><input type="checkbox" id="al-remember" style="accent-color:var(--gold)"> Keep me logged in</label>
+        <label style="display:flex;align-items:center;gap:.5rem;margin-top:.8rem;cursor:pointer;font-size:.78rem;color:rgba(27,27,26,.7);font-weight:300"><input type="checkbox" id="al-remember" style="accent-color:var(--navy)"> Keep me logged in</label>
         <button class="btn-main" onclick="adminLogin()" style="margin-top:.8rem">Sign In</button>
-        <div style="text-align:center;margin-top:.9rem"><a href="#" onclick="showForgotPassword();return false;" style="font-size:.78rem;color:var(--gold);text-decoration:none;font-weight:400">Forgot password?</a></div>
+        <div style="text-align:center;margin-top:.9rem"><a href="#" onclick="showForgotPassword();return false;" style="font-size:.78rem;color:var(--navy);text-decoration:none;font-weight:400">Forgot password?</a></div>
         <div class="al-attempts" id="al-attempts"></div>
       </div>
 
@@ -796,7 +801,7 @@ select:-webkit-autofill:focus{
         </div>
         <div style="overflow-x:auto">
           <table class="jtable">
-            <thead><tr><th>Ref</th><th>Date</th><th>Time</th><th>Passenger</th><th style="width:25%">Pickup</th><th style="width:25%">Destination</th><th>Fare</th><th>Payment</th><th>Status</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Ref</th><th>Date</th><th>Time</th><th>Passenger</th><th style="width:23%">Pickup</th><th style="width:23%">Destination</th><th>Flight</th><th>Fare</th><th>Payment</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody id="jobs-tbody">
             </tbody>
           </table>
@@ -874,7 +879,7 @@ select:-webkit-autofill:focus{
     <div id="modal-new-customer" style="display:none;position:fixed;inset:0;background:rgba(10,14,20,.6);backdrop-filter:blur(6px);z-index:300;align-items:center;justify-content:center;padding:1rem" onclick="if(event.target===this)closeNewCustomerModal()">
       <div style="background:#fff;border-radius:14px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;padding:1.6rem 1.5rem;box-shadow:0 20px 60px rgba(0,0,0,.35)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem">
-          <div style="font-family:Georgia,serif;font-size:1.25rem;color:#1b1b1a">Open a Customer Account</div>
+          <div style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:1.25rem;color:#1b1b1a">Open a Customer Account</div>
           <button onclick="closeNewCustomerModal()" style="background:transparent;border:none;font-size:1.6rem;color:rgba(27,27,26,.66);cursor:pointer;line-height:1">&times;</button>
         </div>
         <div id="nc-form">
@@ -890,18 +895,18 @@ select:-webkit-autofill:focus{
             <label style="display:block;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.7);margin-bottom:.35rem">Mobile (optional)</label>
             <input id="nc-phone" type="tel" placeholder="+44 7700 000 000" style="width:100%;padding:.7rem .85rem;border:1px solid rgba(27,27,26,.14);border-radius:8px;font-size:.9rem">
           </div>
-          <div style="font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:1rem 0 .45rem">Billing Address</div>
+          <div style="font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--navy);margin:1rem 0 .45rem">Billing Address</div>
           <div style="margin-bottom:.6rem"><input id="nc-addr1" type="text" placeholder="Address line 1" style="width:100%;padding:.7rem .85rem;border:1px solid rgba(27,27,26,.14);border-radius:8px;font-size:.9rem"></div>
           <div style="display:grid;grid-template-columns:1fr 120px;gap:.5rem;margin-bottom:.8rem">
             <input id="nc-addr2" type="text" placeholder="Town / City" style="padding:.7rem .85rem;border:1px solid rgba(27,27,26,.14);border-radius:8px;font-size:.9rem">
             <input id="nc-postcode" type="text" placeholder="Postcode" style="padding:.7rem .85rem;border:1px solid rgba(27,27,26,.14);border-radius:8px;font-size:.9rem">
           </div>
-          <div style="font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:.8rem 0 .45rem">Bank (for invoice payments)</div>
+          <div style="font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--navy);margin:.8rem 0 .45rem">Bank (for invoice payments)</div>
           <div style="margin-bottom:.6rem"><input id="nc-bank-name" type="text" placeholder="Bank name (e.g. Barclays)" style="width:100%;padding:.7rem .85rem;border:1px solid rgba(27,27,26,.14);border-radius:8px;font-size:.9rem"></div>
           <div style="margin-bottom:.6rem"><input id="nc-bank-acc-name" type="text" placeholder="Account name" style="width:100%;padding:.7rem .85rem;border:1px solid rgba(27,27,26,.14);border-radius:8px;font-size:.9rem"></div>
           <div style="display:grid;grid-template-columns:130px 1fr;gap:.5rem;margin-bottom:.8rem">
-            <input id="nc-bank-sort" type="text" placeholder="Sort code" style="padding:.7rem .85rem;border:1px solid rgba(27,27,26,.14);border-radius:8px;font-size:.9rem;font-family:Menlo,Consolas,monospace">
-            <input id="nc-bank-acc" type="text" placeholder="Account number" style="padding:.7rem .85rem;border:1px solid rgba(27,27,26,.14);border-radius:8px;font-size:.9rem;font-family:Menlo,Consolas,monospace">
+            <input id="nc-bank-sort" type="text" placeholder="Sort code" style="padding:.7rem .85rem;border:1px solid rgba(27,27,26,.14);border-radius:8px;font-size:.9rem;font-family:var(--sans)">
+            <input id="nc-bank-acc" type="text" placeholder="Account number" style="padding:.7rem .85rem;border:1px solid rgba(27,27,26,.14);border-radius:8px;font-size:.9rem;font-family:var(--sans)">
           </div>
           <div id="nc-err" style="display:none;padding:.6rem .8rem;background:rgba(197,64,64,.08);color:#c54040;font-size:.8rem;border-radius:6px;margin-bottom:.8rem"></div>
           <button onclick="submitNewCustomer()" id="nc-submit" style="width:100%;padding:.9rem;background:#ffffff;color:#1a1a1a;border:none;border-radius:8px;font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Create Account</button>
@@ -910,12 +915,12 @@ select:-webkit-autofill:focus{
         <div id="nc-post-create" style="display:none">
           <div style="text-align:center;padding:1.2rem 0 .8rem">
             <div style="font-size:1.5rem;margin-bottom:.6rem">&#10003;</div>
-            <div style="font-family:Georgia,serif;font-size:1.1rem;color:#1b1b1a;margin-bottom:.3rem" id="nc-success-msg">Account created</div>
+            <div style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:1.1rem;color:#1b1b1a;margin-bottom:.3rem" id="nc-success-msg">Account created</div>
             <div style="font-size:.78rem;color:rgba(27,27,26,.68)" id="nc-success-sub"></div>
           </div>
           <div style="display:flex;flex-direction:column;gap:.6rem;margin-top:.8rem">
             <button id="nc-welcome-btn" onclick="sendWelcomeEmailNew()" style="width:100%;padding:.85rem;background:transparent;color:#1b1b1a;border:1px solid rgba(27,27,26,.18);border-radius:8px;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Send Welcome Email</button>
-            <button onclick="createInvoiceNew()" style="width:100%;padding:.85rem;background:var(--gold,#6a6a6a);color:#1a1a1a;border:none;border-radius:8px;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Create Invoice</button>
+            <button onclick="createInvoiceNew()" style="width:100%;padding:.85rem;background:var(--navy);color:#1a1a1a;border:none;border-radius:8px;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Create Invoice</button>
             <button onclick="closeNewCustomerModal()" style="width:100%;padding:.85rem;background:transparent;color:rgba(27,27,26,.7);border:none;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Done</button>
           </div>
         </div>
@@ -946,18 +951,18 @@ select:-webkit-autofill:focus{
               <div><label style="display:block;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.7);margin-bottom:.3rem">Email *</label><input id="ce-email" type="email" class="fi" style="border:1px solid rgba(27,27,26,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem"></div>
             </div>
             <div style="margin-bottom:.7rem"><label style="display:block;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.7);margin-bottom:.3rem">Phone</label><input id="ce-phone" type="tel" class="fi" style="border:1px solid rgba(27,27,26,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;width:100%"></div>
-            <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:.9rem 0 .4rem">Billing Address</div>
+            <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--navy);margin:.9rem 0 .4rem">Billing Address</div>
             <div style="margin-bottom:.6rem"><input id="ce-addr1" type="text" placeholder="Address line 1" class="fi" style="border:1px solid rgba(27,27,26,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;width:100%"></div>
             <div style="display:grid;grid-template-columns:1fr 120px;gap:.5rem;margin-bottom:.7rem">
               <input id="ce-addr2" type="text" placeholder="Town / City" class="fi" style="border:1px solid rgba(27,27,26,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem">
               <input id="ce-postcode" type="text" placeholder="Postcode" class="fi" style="border:1px solid rgba(27,27,26,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem">
             </div>
-            <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:.9rem 0 .4rem">Bank Details</div>
+            <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--navy);margin:.9rem 0 .4rem">Bank Details</div>
             <div style="margin-bottom:.6rem"><input id="ce-bank-name" type="text" placeholder="Bank name" class="fi" style="border:1px solid rgba(27,27,26,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;width:100%"></div>
             <div style="margin-bottom:.6rem"><input id="ce-bank-acc-name" type="text" placeholder="Account name" class="fi" style="border:1px solid rgba(27,27,26,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;width:100%"></div>
             <div style="display:grid;grid-template-columns:130px 1fr;gap:.5rem;margin-bottom:.7rem">
-              <input id="ce-bank-sort" type="text" placeholder="Sort code" class="fi" style="border:1px solid rgba(27,27,26,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;font-family:Menlo,Consolas,monospace">
-              <input id="ce-bank-acc" type="text" placeholder="Account number" class="fi" style="border:1px solid rgba(27,27,26,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;font-family:Menlo,Consolas,monospace">
+              <input id="ce-bank-sort" type="text" placeholder="Sort code" class="fi" style="border:1px solid rgba(27,27,26,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;font-family:var(--sans)">
+              <input id="ce-bank-acc" type="text" placeholder="Account number" class="fi" style="border:1px solid rgba(27,27,26,.14);border-radius:6px;padding:.6rem .75rem;font-size:.88rem;font-family:var(--sans)">
             </div>
             <div id="ce-err" style="display:none;padding:.55rem .75rem;background:rgba(197,64,64,.08);color:#c54040;font-size:.78rem;border-radius:6px;margin-bottom:.7rem"></div>
           </div>
@@ -1012,7 +1017,7 @@ select:-webkit-autofill:focus{
             <thead><tr><th style="text-align:left">From</th><th>Gatwick</th><th>Heathrow</th><th>Stansted</th><th>Luton</th><th>Southampton</th><th>City</th></tr></thead>
             <tbody id="fare-tbody"></tbody>
           </table>
-          <p style="font-size:.72rem;color:var(--text-light);margin-top:1rem">Click any fare to edit it. Address adjustments calculated at <strong style="color:var(--gold)">£2.80/mile</strong> above town centre rates.</p>
+          <p style="font-size:.72rem;color:var(--text-light);margin-top:1rem">Click any fare to edit it. Address adjustments calculated at <strong style="color:var(--navy)">£2.80/mile</strong> above town centre rates.</p>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.2rem" class="g3r">
@@ -1038,7 +1043,7 @@ select:-webkit-autofill:focus{
             <div class="fg"><label class="fl">Phone</label><input class="fi" id="is-phone" placeholder="07930 342593"></div>
             <div class="fg"><label class="fl">Email</label><input class="fi" id="is-email" placeholder="bookings@westmereprivatehire.co.uk"></div>
             <div style="border-top:1px solid rgba(27,27,26,.08);margin:1.2rem 0;padding-top:1rem">
-              <div style="font-size:.72rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:.8rem">Bank Details (shown on invoices)</div>
+              <div style="font-size:.72rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);margin-bottom:.8rem">Bank Details (shown on invoices)</div>
               <div class="fg"><label class="fl">Bank Name</label><input class="fi" id="is-bank-name" placeholder="e.g. Starling Bank"></div>
               <div class="fg"><label class="fl">Account Name</label><input class="fi" id="is-account-name" placeholder="e.g. N Krajnyk"></div>
               <div class="fg"><label class="fl">Sort Code</label><input class="fi" id="is-sort-code" placeholder="00-00-00"></div>
@@ -1057,15 +1062,15 @@ select:-webkit-autofill:focus{
           <div class="ch"><div class="ct">Display</div></div>
           <div class="cb">
             <div class="fg">
-              <label class="fl">Font Size <span id="ds-scale-val" style="color:var(--gold);margin-left:.4rem">100%</span></label>
+              <label class="fl">Font Size <span id="ds-scale-val" style="color:var(--navy);margin-left:.4rem">100%</span></label>
               <input type="range" min="80" max="150" step="5" value="100" id="ds-scale" oninput="setDisplayPref('scale',+this.value)" style="width:100%">
             </div>
             <div class="fg">
-              <label class="fl">Brightness <span id="ds-brightness-val" style="color:var(--gold);margin-left:.4rem">100%</span></label>
+              <label class="fl">Brightness <span id="ds-brightness-val" style="color:var(--navy);margin-left:.4rem">100%</span></label>
               <input type="range" min="50" max="150" step="5" value="100" id="ds-brightness" oninput="setDisplayPref('brightness',+this.value)" style="width:100%">
             </div>
             <div class="fg">
-              <label class="fl">Contrast <span id="ds-contrast-val" style="color:var(--gold);margin-left:.4rem">100%</span></label>
+              <label class="fl">Contrast <span id="ds-contrast-val" style="color:var(--navy);margin-left:.4rem">100%</span></label>
               <input type="range" min="80" max="140" step="5" value="100" id="ds-contrast" oninput="setDisplayPref('contrast',+this.value)" style="width:100%">
             </div>
             <button class="btn btn-ghost btn-full" style="margin-top:.5rem" onclick="resetDisplayPrefs()">Reset to default</button>
@@ -1244,7 +1249,7 @@ select:-webkit-autofill:focus{
           </div>
           <div style="padding:.9rem 1.3rem;border-top:1px solid var(--rule);display:flex;justify-content:space-between;align-items:center;font-size:.78rem;color:var(--text-light)">
             <span>Total journeys: <strong id="rb-count" style="color:var(--navy)">0</strong></span>
-            <span>Total revenue: <strong id="rb-total" style="color:var(--gold);font-family:var(--serif)">£0</strong></span>
+            <span>Total revenue: <strong id="rb-total" style="color:var(--navy);font-family:var(--serif)">£0</strong></span>
             <span style="font-size:.65rem">Generated: <span id="rb-generated"></span></span>
           </div>
         </div>
@@ -1392,7 +1397,12 @@ select:-webkit-autofill:focus{
         <div class="fg"><label class="fl">Passengers</label>
           <select class="fi" id="nb-pax" onchange="nbCapacityCheck()"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></div>
         <div class="fg"><label class="fl">Luggage</label>
-          <select class="fi" id="nb-bags" onchange="nbCapacityCheck()"><option value="0">No luggage</option><option value="small">1–2 small bags</option><option value="medium" selected>3–4 medium bags</option><option value="large">5+ large bags</option></select></div>
+          <!-- Plain integer counts — the SAME vocabulary the owner app and the
+               customer web form store, so every booking's `bags` value reads as a
+               clean number. ('small'/'medium'/'large' rows created by the older
+               version of this form still render correctly: WMLifecycle.bagsCount
+               maps them to 2/4/6.) -->
+          <select class="fi" id="nb-bags" onchange="nbCapacityCheck()"><option value="0" selected>No luggage</option><option value="1">1 bag</option><option value="2">2 bags</option><option value="3">3 bags</option><option value="4+">4+ bags</option></select></div>
       </div>
       <div id="nb-capacity-warn" style="display:none;padding:.6rem .8rem;margin-bottom:.6rem;background:rgba(156,40,40,.08);border:1px solid rgba(156,40,40,.25);color:#9C2828;font-size:.78rem;border-radius:4px"></div>
       <div class="r2">
@@ -1401,7 +1411,10 @@ select:-webkit-autofill:focus{
       </div>
       <div class="r2">
         <div class="fg"><label class="fl">Email <span style="color:#9C2828">*</span></label><input class="fi" type="email" id="nb-email" placeholder="customer@email.com" required></div>
-        <div class="fg"><label class="fl">Flight number (optional)</label><input class="fi" type="text" id="nb-flight" placeholder="e.g. BA2678"></div>
+        <!-- AIRPORT RUNS ONLY — nbFlightField() shows this once the pickup or
+             destination is an airport. A flight number on a town-to-town job is
+             meaningless, so the field is not offered at all. -->
+        <div class="fg" id="nb-flight-wrap" style="display:none"><label class="fl">Flight number (optional)</label><input class="fi" type="text" id="nb-flight" placeholder="e.g. BA2678"></div>
       </div>
       <div class="fg"><label class="fl">Payment Method</label>
         <!-- The CUSTOMER chooses card or cash — staff never record that choice
@@ -1469,7 +1482,7 @@ select:-webkit-autofill:focus{
       <input type="hidden" id="dm-id" value="">
       <input type="hidden" id="dm-photo" value="">
 
-      <div style="font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:.2rem 0 .6rem">Photo</div>
+      <div style="font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--navy);margin:.2rem 0 .6rem">Photo</div>
       <div style="display:flex;gap:1rem;align-items:center;margin-bottom:.9rem">
         <div id="dm-photo-preview" style="width:72px;height:72px;border-radius:50%;background:rgba(27,27,26,.06);border:1px solid rgba(27,27,26,.12);display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:.68rem;color:rgba(27,27,26,.66);letter-spacing:.1em;text-transform:uppercase;flex-shrink:0">None</div>
         <div style="flex:1">
@@ -1482,7 +1495,7 @@ select:-webkit-autofill:focus{
         </div>
       </div>
 
-      <div style="font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:.2rem 0 .6rem">Personal</div>
+      <div style="font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--navy);margin:.2rem 0 .6rem">Personal</div>
       <div class="r2">
         <div class="fg"><label class="fl">First Name *</label><input class="fi" type="text" id="dm-fname" placeholder="First name"></div>
         <div class="fg"><label class="fl">Last Name</label><input class="fi" type="text" id="dm-lname" placeholder="Last name"></div>
@@ -1492,7 +1505,7 @@ select:-webkit-autofill:focus{
         <div class="fg"><label class="fl">Email Address</label><input class="fi" type="email" id="dm-email" placeholder="driver@email.com"></div>
       </div>
 
-      <div style="font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:1.2rem 0 .6rem">Licensing</div>
+      <div style="font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--navy);margin:1.2rem 0 .6rem">Licensing</div>
       <div class="r2">
         <div class="fg"><label class="fl">DVLA Licence No.</label><input class="fi" type="text" id="dm-license-no" placeholder="Driver licence no."></div>
         <div class="fg"><label class="fl">Licence Expiry</label><input class="fi" type="date" id="dm-license-expiry"></div>
@@ -1506,7 +1519,7 @@ select:-webkit-autofill:focus{
         <div class="fg"><label class="fl">Insurance Policy</label><input class="fi" type="text" id="dm-insurance" placeholder="Insurance policy no."></div>
       </div>
 
-      <div style="font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:1.2rem 0 .6rem">Vehicle</div>
+      <div style="font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--navy);margin:1.2rem 0 .6rem">Vehicle</div>
       <div class="r2">
         <div class="fg"><label class="fl">Vehicle</label><input class="fi" type="text" id="dm-vehicle" placeholder="e.g. Tesla Model S - White"></div>
         <div class="fg"><label class="fl">Registration</label><input class="fi" type="text" id="dm-reg" placeholder="e.g. AB21 XYZ"></div>
@@ -1519,10 +1532,10 @@ select:-webkit-autofill:focus{
 
       <div class="fg" style="margin-top:.6rem"><label class="fl">Notes</label><textarea class="fi" id="dm-notes" placeholder="Any additional notes..." style="min-height:60px"></textarea></div>
 
-      <div style="font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:1.2rem 0 .4rem;display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--navy);margin:1.2rem 0 .4rem;display:flex;justify-content:space-between;align-items:center">
         <span>Driver App Access</span>
         <label style="font-size:.7rem;color:rgba(27,27,26,.74);text-transform:none;letter-spacing:normal;font-weight:400;cursor:pointer;display:flex;align-items:center;gap:.4rem">
-          <input type="checkbox" id="dm-has-login" onchange="toggleDriverLoginSection()" style="accent-color:var(--gold)">Grant app login
+          <input type="checkbox" id="dm-has-login" onchange="toggleDriverLoginSection()" style="accent-color:var(--navy)">Grant app login
         </label>
       </div>
       <div id="dm-login-section" style="display:none;padding:.9rem 1rem;background:rgba(27,27,26,.03);border:1px dashed rgba(27,27,26,.12);border-radius:6px">
@@ -1536,14 +1549,14 @@ select:-webkit-autofill:focus{
       <!-- Earnings (populated on edit) -->
       <div id="dm-earnings" style="display:none;margin-top:1.3rem;padding:1rem 1.1rem;background:rgba(106,106,106,.06);border:1px solid rgba(106,106,106,.2);border-radius:6px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">
-          <div style="font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:600">This Week (Mon–Sun)</div>
+          <div style="font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--navy);font-weight:600">This Week (Mon–Sun)</div>
           <div style="font-size:.66rem;color:rgba(27,27,26,.7)" id="dm-earn-period">—</div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:.7rem">
           <div style="text-align:center"><div style="font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(27,27,26,.7)">Jobs</div><div style="font-size:1.2rem;font-weight:500;color:var(--navy);margin-top:.15rem" id="dm-earn-jobs">0</div></div>
           <div style="text-align:center"><div style="font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(27,27,26,.7)">Gross</div><div style="font-size:1.2rem;font-weight:500;color:var(--navy);margin-top:.15rem" id="dm-earn-gross">£0</div></div>
           <div style="text-align:center"><div style="font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(27,27,26,.7)">Commission (10%)</div><div style="font-size:1.2rem;font-weight:500;color:#9C2828;margin-top:.15rem" id="dm-earn-comm">£0</div></div>
-          <div style="text-align:center"><div style="font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(27,27,26,.7)">Driver Net</div><div style="font-size:1.2rem;font-weight:500;color:var(--gold);margin-top:.15rem" id="dm-earn-net">£0</div></div>
+          <div style="text-align:center"><div style="font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(27,27,26,.7)">Driver Net</div><div style="font-size:1.2rem;font-weight:500;color:var(--navy);margin-top:.15rem" id="dm-earn-net">£0</div></div>
         </div>
         <div id="dm-earn-list" style="max-height:180px;overflow-y:auto;border-top:1px solid rgba(27,27,26,.08);padding-top:.6rem;font-size:.78rem"></div>
         <div style="display:flex;gap:.5rem;margin-top:.7rem;flex-wrap:wrap">
@@ -1574,7 +1587,7 @@ select:-webkit-autofill:focus{
     </div>
     <div class="modal-body">
       <div id="rs-summary" style="font-size:.82rem;color:var(--text-light);margin-bottom:1rem"></div>
-      <div style="background:#f0ece3;border:1px solid #cfc9bd;border-radius:8px;padding:.7rem .9rem;margin-bottom:1rem;font-size:.8rem">
+      <div style="background:#ffffff;border:1px solid #c8d1d9;border-radius:8px;padding:.7rem .9rem;margin-bottom:1rem;font-size:.8rem">
         <strong style="color:var(--navy)">Smart intake says:</strong>
         <div id="rs-reason" style="margin-top:.3rem"></div>
       </div>
@@ -1686,8 +1699,8 @@ select:-webkit-autofill:focus{
   <div class="modal" style="max-width:620px">
     <div class="modal-hd">
       <div>
-        <div class="modal-title" id="mid-invoice-no" style="font-family:Menlo,Consolas,monospace;letter-spacing:.04em"></div>
-        <div id="mid-badge" style="font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-top:.2rem"></div>
+        <div class="modal-title" id="mid-invoice-no" style="font-family:var(--sans);letter-spacing:.04em"></div>
+        <div id="mid-badge" style="font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--navy);margin-top:.2rem"></div>
       </div>
       <button class="modal-x" onclick="closeModal('modal-invoice-detail')">&times;</button>
     </div>
@@ -1709,9 +1722,9 @@ select:-webkit-autofill:focus{
       </div>
       <div style="text-align:right;padding:.6rem 0;border-top:2px solid var(--navy)">
         <span style="font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.7);margin-right:.8rem">Total</span>
-        <span id="mid-total" style="font-family:Georgia,serif;font-size:1.3rem;color:var(--navy);font-weight:700"></span>
+        <span id="mid-total" style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:1.3rem;color:var(--navy);font-weight:700"></span>
       </div>
-      <div id="mid-notes" style="display:none;margin-top:.8rem;padding:.6rem .8rem;background:rgba(106,106,106,.07);border-left:3px solid var(--gold);font-size:.8rem;color:var(--navy);line-height:1.6;border-radius:0 4px 4px 0"></div>
+      <div id="mid-notes" style="display:none;margin-top:.8rem;padding:.6rem .8rem;background:rgba(106,106,106,.07);border-left:3px solid var(--navy);font-size:.8rem;color:var(--navy);line-height:1.6;border-radius:0 4px 4px 0"></div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-invoice-detail')">Close</button>
@@ -1725,13 +1738,13 @@ select:-webkit-autofill:focus{
 
 <!-- ═══ AI ASSISTANT FAB + PANEL ═══ -->
 <style>
-.aa-fab{position:fixed;bottom:1.4rem;right:1.4rem;z-index:190;width:54px;height:54px;border-radius:50%;background:#ffffff;color:var(--gold);border:none;font-family:Georgia,serif;font-size:1.3rem;letter-spacing:.1em;cursor:pointer;box-shadow:0 8px 24px rgba(27,27,26,.3);display:flex;align-items:center;justify-content:center;font-weight:500;transition:transform .2s}
+.aa-fab{position:fixed;bottom:1.4rem;right:1.4rem;z-index:190;width:54px;height:54px;border-radius:50%;background:#ffffff;color:var(--navy);border:none;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:1.3rem;letter-spacing:.1em;cursor:pointer;box-shadow:0 8px 24px rgba(27,27,26,.3);display:flex;align-items:center;justify-content:center;font-weight:500;transition:transform .2s}
 .aa-fab:hover{transform:translateY(-2px)}
 .aa-panel{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:100vw;background:#fff;border-left:1px solid rgba(27,27,26,.08);box-shadow:-8px 0 30px rgba(0,0,0,.14);transform:translateX(110%);transition:transform .3s cubic-bezier(.4,0,.2,1);z-index:195;display:flex;flex-direction:column}
 .aa-panel.on{transform:translateX(0)}
 .aa-hd{padding:1.05rem 1.2rem;border-bottom:1px solid rgba(27,27,26,.08);display:flex;align-items:center;gap:.6rem;justify-content:space-between}
-.aa-hd-t{font-family:Georgia,serif;font-size:1.05rem;color:var(--navy)}
-.aa-hd-s{font-size:.56rem;letter-spacing:.26em;text-transform:uppercase;color:var(--gold);margin-top:.15rem}
+.aa-hd-t{font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:1.05rem;color:var(--navy)}
+.aa-hd-s{font-size:.56rem;letter-spacing:.26em;text-transform:uppercase;color:var(--navy);margin-top:.15rem}
 .aa-close{background:transparent;border:none;color:rgba(27,27,26,.66);cursor:pointer;font-size:1.4rem;line-height:1}
 .aa-clear{background:transparent;border:none;font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(27,27,26,.7);cursor:pointer;padding:.2rem .4rem}
 .aa-clear:hover{color:var(--navy)}
@@ -1742,18 +1755,18 @@ select:-webkit-autofill:focus{
 .aa-msg.bot.thinking{color:rgba(27,27,26,.7);font-style:italic}
 .aa-in{padding:.85rem 1rem;border-top:1px solid rgba(27,27,26,.08);display:flex;gap:.5rem;background:#fff}
 .aa-in textarea{flex:1;resize:none;font-family:inherit;font-size:.85rem;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);border-radius:6px;outline:none;background:#fafafa;color:var(--navy);min-height:42px;max-height:110px;line-height:1.4}
-.aa-in textarea:focus{border-color:var(--gold);background:#fff}
-.aa-send{background:var(--gold);color:var(--navy);border:none;padding:0 1rem;font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;font-weight:600;cursor:pointer;border-radius:4px}
+.aa-in textarea:focus{border-color:var(--navy);background:#fff}
+.aa-send{background:var(--navy);color:var(--navy);border:none;padding:0 1rem;font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;font-weight:600;cursor:pointer;border-radius:4px}
 .aa-send:disabled{opacity:.5;cursor:not-allowed}
 .aa-hint{font-size:.66rem;color:rgba(27,27,26,.68);padding:.5rem 1.2rem .7rem;background:#fafaf7;border-top:1px solid rgba(27,27,26,.06)}
 .aa-img-btn{background:none;border:1px solid rgba(27,27,26,.15);color:rgba(27,27,26,.7);width:34px;height:34px;border-radius:6px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:border-color .15s,color .15s}
-.aa-img-btn:hover{border-color:var(--gold);color:var(--gold)}
-.aa-booking-card{background:#f4f8ff;border:1.5px solid var(--gold);border-radius:10px;padding:.9rem 1rem;margin:.4rem 0;font-size:.8rem;line-height:1.6;color:var(--navy);max-width:100%}
+.aa-img-btn:hover{border-color:rgba(27,27,26,.55);color:rgba(27,27,26,.55)}
+.aa-booking-card{background:#f4f8ff;border:1.5px solid var(--navy);border-radius:10px;padding:.9rem 1rem;margin:.4rem 0;font-size:.8rem;line-height:1.6;color:var(--navy);max-width:100%}
 .aa-booking-card .abc-title{font-weight:700;font-size:.82rem;margin-bottom:.5rem;color:var(--navy)}
 .aa-booking-card .abc-row{display:flex;gap:.4rem;margin:.1rem 0}
 .aa-booking-card .abc-lbl{color:rgba(27,27,26,.7);min-width:70px;flex-shrink:0}
 .aa-booking-card .abc-val{color:var(--navy);font-weight:500}
-.aa-booking-card .abc-btn{margin-top:.75rem;width:100%;background:var(--gold);color:var(--navy);border:none;padding:.55rem;font-weight:700;font-size:.78rem;border-radius:6px;cursor:pointer;letter-spacing:.03em}
+.aa-booking-card .abc-btn{margin-top:.75rem;width:100%;background:rgba(27,27,26,.55);color:var(--navy);border:none;padding:.55rem;font-weight:700;font-size:.78rem;border-radius:6px;cursor:pointer;letter-spacing:.03em}
 .aa-booking-card .abc-btn:hover{opacity:.88}
 .aa-img-thumb{max-width:100%;max-height:140px;border-radius:6px;margin:.3rem 0;border:1px solid rgba(27,27,26,.1)}
 </style>
@@ -1919,18 +1932,19 @@ function aaShowBookingCard(b,idx,total){
     +row('Name',b.name)
     +row('Phone',b.phone)
     +row('Email',b.email)
-    +row('Pickup',b.pickup)
-    +row('Drop-off',b.destination)
+    // Short display form (the full extracted address is what gets created).
+    +row('Pickup',_admShortAddr(b.pickup))
+    +row('Drop-off',_admShortAddr(b.destination))
     +row('Date',b.date||'')
     +row('Time',b.time||'')
     +row('Passengers',b.passengers>1?b.passengers:null)
-    +row('Flight',b.flight)
+    +row('Flight',_admFlight(b))
     +row('Fare',fareDisp)
     +row('Payment',b.payment)
     +row('Notes',b.notes)
     +'<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.75rem">'
     +'<button class="abc-btn" style="flex:1;min-width:120px" onclick="aaFillModal('+bJson+')">Create This Booking</button>'
-    +'<button class="abc-btn" style="flex:1;min-width:120px;background:rgba(106,106,106,.08);border:1px solid rgba(106,106,106,.3);color:var(--gold)" onclick="aaCalOnly('+bJson+')">Calendar Only</button>'
+    +'<button class="abc-btn" style="flex:1;min-width:120px;background:rgba(106,106,106,.08);border:1px solid rgba(106,106,106,.3);color:rgba(27,27,26,.55)" onclick="aaCalOnly('+bJson+')">Calendar Only</button>'
     +'</div>';
 
   card.appendChild(inner);
@@ -2102,7 +2116,7 @@ function checkGoogleCalendarStatus(){
       btn.textContent='Disconnect';
       btn.className='btn btn-ghost btn-sm';
       btn.onclick=function(){if(confirm('Disconnect Google Calendar?'))fetch('/api/google/disconnect',{method:'POST'}).then(function(){checkGoogleCalendarStatus();showToast('Google Calendar disconnected');});};
-      if(sub)sub.innerHTML='Connected'+(d.email?' as <span style="color:var(--gold)">'+d.email+'</span>':'')+' &middot; <a href="#" onclick="syncGoogleCalendar(event)" style="color:var(--gold);text-decoration:none">Sync now</a>';
+      if(sub)sub.innerHTML='Connected'+(d.email?' as <span style="color:var(--navy)">'+d.email+'</span>':'')+' &middot; <a href="#" onclick="syncGoogleCalendar(event)" style="color:var(--navy);text-decoration:none">Sync now</a>';
     } else {
       btn.textContent='Connect';
       btn.className='btn btn-green btn-sm';
@@ -2172,9 +2186,9 @@ function renderTodayPersonal(events){
   card.style.display='';
   list.innerHTML=todayEvents.map(function(ev){
     var loc=ev.location?'<div style="font-size:.72rem;color:rgba(27,27,26,.7);margin-top:.15rem">\ud83d\udccd '+_esc(ev.location)+'</div>':'';
-    var notes=ev.notes?'<div style="font-size:.72rem;color:rgba(27,27,26,.74);margin-top:.3rem;padding:.35rem .5rem;background:rgba(91,107,154,.06);border-left:2px solid #6f665c;white-space:pre-wrap;line-height:1.4">'+_esc(ev.notes)+'</div>':'';
+    var notes=ev.notes?'<div style="font-size:.72rem;color:rgba(27,27,26,.74);margin-top:.3rem;padding:.35rem .5rem;background:rgba(91,107,154,.06);border-left:2px solid #102a43;white-space:pre-wrap;line-height:1.4">'+_esc(ev.notes)+'</div>':'';
     return '<div style="display:flex;gap:.85rem;padding:.7rem 0;border-bottom:1px solid rgba(27,27,26,.06)">'
-      +'<div style="min-width:88px;font-size:.78rem;color:var(--gold);font-weight:500;font-variant-numeric:tabular-nums">'+_evRange(ev)+'</div>'
+      +'<div style="min-width:88px;font-size:.78rem;color:var(--navy);font-weight:500;font-variant-numeric:tabular-nums">'+_evRange(ev)+'</div>'
       +'<div style="flex:1"><div style="font-size:.86rem;color:var(--navy);font-weight:500">'+_esc(ev.title)+'</div>'+loc+notes+'</div>'
       +'</div>';
   }).join('');
@@ -2199,9 +2213,9 @@ function renderDashPersonal(events){
     var label=k===todayKey?'Today':d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
     var rows=byDate[k].map(function(ev){
       var loc=ev.location?' \u00b7 '+_esc(ev.location):'';
-      var notes=ev.notes?'<div style="margin-top:.25rem;padding:.3rem .45rem;background:rgba(91,107,154,.06);border-left:2px solid #6f665c;font-size:.72rem;color:rgba(27,27,26,.74);white-space:pre-wrap;line-height:1.4">'+_esc(ev.notes)+'</div>':'';
+      var notes=ev.notes?'<div style="margin-top:.25rem;padding:.3rem .45rem;background:rgba(91,107,154,.06);border-left:2px solid #102a43;font-size:.72rem;color:rgba(27,27,26,.74);white-space:pre-wrap;line-height:1.4">'+_esc(ev.notes)+'</div>':'';
       return '<div style="display:flex;gap:.7rem;padding:.35rem 0;font-size:.8rem">'
-        +'<div style="min-width:90px;color:var(--gold);font-variant-numeric:tabular-nums">'+_evRange(ev)+'</div>'
+        +'<div style="min-width:90px;color:var(--navy);font-variant-numeric:tabular-nums">'+_evRange(ev)+'</div>'
         +'<div style="flex:1;color:var(--navy)">'+_esc(ev.title)+'<span style="color:rgba(27,27,26,.68);font-size:.75rem">'+loc+'</span>'+notes+'</div>'
         +'</div>';
     }).join('');
@@ -2244,7 +2258,7 @@ function loadInbox(){
     list.innerHTML=msgs.map(function(m){
       var date=m.date?new Date(m.date).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
       var weight=m.unread?'600':'400';
-      var dot=m.unread?'<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gold);margin-right:.5rem;vertical-align:middle"></span>':'<span style="display:inline-block;width:6px;margin-right:.5rem"></span>';
+      var dot=m.unread?'<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--navy);margin-right:.5rem;vertical-align:middle"></span>':'<span style="display:inline-block;width:6px;margin-right:.5rem"></span>';
       return '<div class="inbox-row" onclick="openInboxMessage(\''+escHtml(m.id)+'\')" style="padding:.8rem 1rem;border-bottom:1px solid rgba(27,27,26,.05);cursor:pointer;font-size:.85rem" onmouseover="this.style.background=\'rgba(27,27,26,.03)\'" onmouseout="this.style.background=\'\'">'+
         '<div style="display:flex;justify-content:space-between;gap:1rem"><div style="font-weight:'+weight+';color:var(--navy);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+dot+escHtml(m.from)+'</div><div style="color:rgba(27,27,26,.66);font-size:.75rem;flex-shrink:0">'+escHtml(date)+'</div></div>'+
         '<div style="color:var(--navy);font-weight:'+weight+';margin-top:.2rem;font-size:.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(m.subject)+'</div>'+
@@ -2297,7 +2311,7 @@ function sendInboxMessage(){
   var body=document.getElementById('ic-body').value;
   if(!to){showToast('Recipient required');return;}
   var m=document.getElementById('modal-inbox-compose');
-  var payload={to:to,subject:subject,text:body,html:'<pre style="font-family:Georgia,serif;font-size:14px;white-space:pre-wrap">'+escHtml(body)+'</pre>'};
+  var payload={to:to,subject:subject,text:body,html:'<pre style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;white-space:pre-wrap">'+escHtml(body)+'</pre>'};
   if(m.dataset.threadId)payload.threadId=m.dataset.threadId;
   if(m.dataset.inReplyTo)payload.inReplyTo=m.dataset.inReplyTo;
   if(m.dataset.references)payload.references=m.dataset.references;
@@ -2362,10 +2376,145 @@ function _jdField(label,val){
   if(val===undefined||val===null||val==='')return '';
   return '<div class="jd-field"><span class="jd-k">'+label+'</span><span class="jd-v">'+val+'</span></div>';
 }
+/* ═══════════════════════════════════════════════════════════════════════════
+   CUSTOMER CHANGE REQUESTS — mirrors the owner app exactly
+   ═══════════════════════════════════════════════════════════════════════════
+   The customer's request never edits the booking. WHICH stage a request is at
+   — a quiet note versus an Accept/Decline decision — comes from the shared
+   lifecycle module, so this app and the owner app cannot drift apart on it.
+   Both renderers are wrapped: a change request is customer-supplied data, and
+   a row that cannot draw its change block must still draw the row.
+   GUARDRAIL: server/tests/change-request.test.js + admin-parity.test.js. */
+
+// The marker in the STATUS column: quiet at the early stage, loud once the
+// journey is committed and the owner actually has a decision to make.
+function admChangeMark(b){
+  try{
+    var stage=WMLifecycle.changeRequestStage(b);
+    if(stage==='none')return '';
+    if(stage==='early'){
+      var what=WMLifecycle.changedFieldsLabel(b);
+      return '<div class="sub-v" style="color:#102a43;margin-top:.2rem">✎ Edited by the customer'+(what?' — '+escTo(what):'')+'</div>';
+    }
+    return '<div class="sub-v" style="color:#102a43;margin-top:.2rem;font-weight:700;background:rgba(16,42,67,.06);border:1px solid rgba(16,42,67,.28);border-radius:4px;padding:.15rem .35rem;display:inline-block">✎ Journey change requested</div>';
+  }catch(e){
+    try{console.error('[admin] change mark failed',(b&&b.ref)||'',e);}catch(_){ }
+    return '';
+  }
+}
+
+/* The FARE STEP that follows an accepted change — mirrors the owner app.
+   Accepting applies the journey but never touches money; this is where the
+   owner prices it and re-sends the ordinary estimate. Rendered on the job (not
+   in a modal) so the step survives a reload. */
+var _admFareCache={};
+function admFareStep(b){
+  try{
+    if(!b||!b.fare_review_at)return '';
+    var id=b.id;
+    setTimeout(function(){admFillFareStep(id);},0);
+    return '<div class="adm-fare-step" data-bid="'+id+'" style="grid-column:1/-1;margin:0 0 1rem;border:1.5px solid #102a43;border-radius:9px;overflow:hidden;background:rgba(16,42,67,.03)">'
+      +'<div style="padding:.55rem .85rem;background:rgba(16,42,67,.06);font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#102a43">£ Set the new fare</div>'
+      +'<div style="padding:.75rem .85rem">'
+        +'<div style="font-size:.8rem;color:rgba(16,42,67,.65);line-height:1.55;margin-bottom:.55rem">The journey has been updated. Set the fare and re-send the estimate — the customer confirms and pays exactly as they would a fresh quote. Nothing is charged or refunded here.</div>'
+        +'<div id="adm-prior-'+id+'"></div>'
+        +'<div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.6rem">'
+          +'<label style="font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(16,42,67,.5)">New fare £</label>'
+          +'<input id="adm-fare-'+id+'" type="number" step="0.50" min="0" inputmode="decimal" placeholder="…" style="width:100px;padding:.4rem .5rem;border:1px solid rgba(16,42,67,.25);border-radius:6px;font-size:1rem;color:var(--navy)">'
+          +'<span id="adm-sugg-'+id+'" style="font-size:.72rem;color:rgba(16,42,67,.5)">Pricing…</span>'
+        +'</div>'
+        +'<div style="display:flex;gap:.4rem;flex-wrap:wrap">'
+          +'<button class="btn btn-navy btn-sm" onclick="admSendReEstimate('+id+')">Send updated estimate</button>'
+          +'<button class="btn btn-ghost btn-sm" onclick="admClearFareReview('+id+')">Keep current fare</button>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }catch(e){
+    try{console.error('[admin] fare step failed',(b&&b.ref)||'',e);}catch(_){ }
+    return '';
+  }
+}
+function admFillFareStep(id){
+  var box=document.querySelector('.adm-fare-step[data-bid="'+id+'"]');
+  if(!box)return;
+  var input=document.getElementById('adm-fare-'+id);
+  var sugg=document.getElementById('adm-sugg-'+id);
+  var prior=document.getElementById('adm-prior-'+id);
+  var paint=function(d){
+    if(input&&!input.value&&d.suggested_fare)input.value=Number(d.suggested_fare).toFixed(2);
+    if(sugg)sugg.textContent=d.suggested_fare?('Suggested £'+Number(d.suggested_fare).toFixed(2)+(d.current_fare?' · was £'+Number(d.current_fare).toFixed(2):'')):'No suggestion — set it yourself';
+    var already=d.prior_payment||(d.prior_payments&&d.prior_payments.length?d.prior_payments[d.prior_payments.length-1]:null);
+    if(prior&&already&&already.amount){
+      prior.innerHTML='<div style="margin-bottom:.55rem;padding:.5rem .6rem;background:rgba(45,110,71,.1);border-left:2px solid #2D6E47;border-radius:0 5px 5px 0;font-size:.78rem;color:#1E5B37;line-height:1.5"><strong>Already collected: £'+Number(already.amount).toFixed(2)+'</strong> ('+escTo(already.method||'card')+'). Charge only the difference if that is what you agreed — nothing is refunded automatically.</div>';
+    }
+  };
+  if(_admFareCache[id]){paint(_admFareCache[id]);return;}
+  fetch('/api/bookings/'+id+'/suggested-fare',{credentials:'include'})
+    .then(function(r){return r.json();})
+    .then(function(d){ if(d&&d.ok){_admFareCache[id]=d;paint(d);} else if(sugg)sugg.textContent='No suggestion — set it yourself'; })
+    .catch(function(){ if(sugg)sugg.textContent='No suggestion — set it yourself'; });
+}
+
+// One changed field as "Current → Requested", requested value highlighted.
+function admChangeRow(c){
+  return '<tr>'
+    +'<td style="padding:.35rem .6rem .35rem 0;color:rgba(16,42,67,.45);font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;vertical-align:top;white-space:nowrap">'+escTo(c.label)+'</td>'
+    +'<td style="padding:.35rem .5rem .35rem 0;color:rgba(16,42,67,.5);text-decoration:line-through;vertical-align:top">'+escTo(c.current||'—')+'</td>'
+    +'<td style="padding:.35rem .4rem .35rem 0;color:rgba(16,42,67,.35);vertical-align:top">→</td>'
+    +'<td style="padding:.35rem 0;color:#102a43;font-weight:700;vertical-align:top">'+escTo(c.requested||'—')+'</td>'
+  +'</tr>';
+}
+
+// The full block, rendered at the TOP of the expanded detail so it is the
+// first thing the operator reads.
+function admChangeBlock(b){
+  try{
+    var stage=WMLifecycle.changeRequestStage(b);
+    if(stage==='none')return '';
+    var d=WMLifecycle.changeRequestDetail(b);
+
+    if(stage==='early'){
+      var what=WMLifecycle.changedFieldsLabel(b);
+      return '<div style="grid-column:1/-1;margin:0 0 .9rem;padding:.6rem .75rem;background:rgba(16,42,67,.04);border-left:2px solid rgba(16,42,67,.55);border-radius:0 5px 5px 0;font-size:.8rem;color:#102a43;line-height:1.55">'
+        +'<span style="font-weight:600">✎ Edited by the customer</span>'+(what?' — '+escTo(what):'')+'. Review before you send the estimate.'
+        +(d.note?'<div style="margin-top:.3rem;color:rgba(16,42,67,.6);font-style:italic">“'+escTo(d.note)+'”</div>':'')
+        +'<div style="margin-top:.45rem"><button class="btn btn-ghost btn-sm" style="color:#102a43;border-color:rgba(16,42,67,.28)" onclick="admReviewChange('+b.id+')">Reviewed</button></div>'
+      +'</div>';
+    }
+
+    var rows=d.changed.map(admChangeRow).join('');
+    // .jdetail is an auto-fill grid of ~220px columns; without spanning the
+    // whole row the comparison gets squeezed into one narrow column and the
+    // addresses wrap to four lines each.
+    return '<div style="grid-column:1/-1;margin:0 0 1rem;border:1.5px solid rgba(16,42,67,.55);border-radius:9px;overflow:hidden;background:rgba(16,42,67,.03)">'
+      +'<div style="padding:.55rem .85rem;background:rgba(16,42,67,.06);font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#102a43">✎ Journey change requested</div>'
+      +'<div style="padding:.75rem .85rem">'
+        +(rows?'<table style="border-collapse:collapse;font-size:.82rem;color:var(--navy)"><tr><td></td><td style="padding-bottom:.15rem;color:rgba(16,42,67,.35);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase">Current</td><td></td><td style="padding-bottom:.15rem;color:#102a43;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase">Requested</td></tr>'+rows+'</table>'
+              :'<div style="font-size:.82rem;color:rgba(16,42,67,.6)">No journey fields were edited — see their note.</div>')
+        +(d.note?'<div style="margin-top:.6rem;padding:.5rem .65rem;background:#ffffff;border-left:2px solid rgba(16,42,67,.55);font-size:.82rem;color:var(--navy);line-height:1.55;white-space:pre-wrap">'+escTo(d.note)+'</div>':'')
+        +(d.price?'<div style="margin-top:.6rem;font-size:.74rem;color:#102a43;line-height:1.5">Accepting may change the fare — nothing is charged or refunded automatically. You will be reminded to confirm the price with the customer.</div>':'')
+        +'<div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.8rem">'
+          +'<button class="btn btn-navy btn-sm" onclick="admAcceptChange('+b.id+')">Accept change</button>'
+          +'<button class="btn btn-cancel-trip btn-sm" onclick="admDeclineChange('+b.id+')">Decline</button>'
+          +'<button class="btn btn-ghost btn-sm" onclick="wmMessageOpen('+b.id+')">Message customer</button>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }catch(e){
+    try{console.error('[admin] change block failed',(b&&b.ref)||'',e);}catch(_){ }
+    return '';
+  }
+}
+
 function bookingDetailHtml(b){
   var money=function(v){return (v!=null&&v!=='')?'£'+Number(v).toFixed(2):'';};
   var tripType=b.trip_type?(/return/i.test(b.trip_type)?'Return trip':b.trip_type):'';
   return '<div class="jdetail">'
+    // First thing the operator reads when they open a job: is somebody waiting
+    // on a decision? The booking's own fields below are still the REAL values —
+    // nothing is applied until Accept is pressed.
+    +admChangeBlock(b)
+    +admFareStep(b)
     +_jdField('Reference',escTo(b.ref))
     // Human lifecycle label ("New request" / "Awaiting payment"), not the raw
     // DB value — shared with the owner app.
@@ -2380,8 +2529,8 @@ function bookingDetailHtml(b){
     +_jdField('Date',escTo(b.date))
     +_jdField('Time',escTo(b.time||'ASAP'))
     +_jdField('Passengers',escTo(b.passengers))
-    +_jdField('Luggage / bags',escTo(_admBags(b.bags)||'None'))
-    +_jdField('Flight',escTo(b.flight))
+    +_jdField('Luggage / bags',escTo(_admBagsLabel(b.bags)))
+    +_jdField('Flight',escTo(_admFlight(b)))
     +_jdField('Trip type',escTo(tripType))
     +_jdField('Fare',money(b.fare))
     +_jdField('Suggested fare',money(b.suggested_fare))
@@ -2392,6 +2541,8 @@ function bookingDetailHtml(b){
     +_jdField('Dead-miles fee',money(b.dead_miles_fee))
     +_jdField('Driver',escTo(b.driver_name||b.offered_driver_name))
     +_jdField('Notes',escTo(b.notes))
+    +(b.change_requested_at?_jdField('Change requested at',escTo(b.change_requested_at)):'')
+    +(b.fare_review_at?_jdField('Fare review','<span style="color:#1b1b1a;font-weight:700">Fare may change — confirm with the customer</span>'):'')
     +_jdField('Booked at',escTo(b.created_at))
     +'</div>';
 }
@@ -2444,7 +2595,7 @@ function buildAdmCompleted(){
   }
   var html='';
   WMLifecycle.groupByWeek(jobs).forEach(function(g){
-    html+='<div style="display:flex;justify-content:space-between;align-items:baseline;gap:.6rem;padding:.7rem 1rem .5rem;background:rgba(27,27,26,.03);border-bottom:1px solid rgba(184,152,90,.3)">'
+    html+='<div style="display:flex;justify-content:space-between;align-items:baseline;gap:.6rem;padding:.7rem 1rem .5rem;background:rgba(27,27,26,.03);border-bottom:1px solid rgba(27,27,26,.18)">'
       +'<span style="font-family:var(--serif);font-size:1.02rem;font-weight:500;color:var(--navy)">'+escTo(g.label)+'</span>'
       +'<span style="font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(27,27,26,.45);white-space:nowrap">'+g.items.length+(g.items.length===1?' job':' jobs')+' · £'+g.takings.toFixed(0)+'</span>'
       +'</div>';
@@ -2527,7 +2678,7 @@ function loadLiveBookings(){
           var statusTag='<span class="tag '+_s.cls+'">'+_s.label+'</span>';
           return '<div class="tl-item"><div class="tl-time-col"><div class="tl-time">'+(b.time||'ASAP')+'</div>'+(i<sorted.length-1?'<div class="tl-line"></div>':'')+'</div>'
             +'<div class="tl-card"><div class="tl-top"><div class="tl-name">'+escTo(b.customer_name||'')+'</div>'+statusTag+'</div>'
-            +'<div class="tl-route">'+escTo(_admShortAddr(b.pickup))+' \u2192 '+escTo(_admShortAddr(b.destination))+(b.flight?' \u00b7 '+escTo(b.flight):'')
+            +'<div class="tl-route">'+escTo(_admShortAddr(b.pickup))+' \u2192 '+escTo(_admShortAddr(b.destination))+(_admFlight(b)?' \u00b7 Flight '+escTo(_admFlight(b)):'')
             +' \u00b7 '+(b.passengers||1)+' pax'+(_admBags(b.bags)?' \u00b7 '+escTo(_admBags(b.bags)):'')
             +(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')
             +' '+admPayTag(b).label+'</div></div></div>';
@@ -2561,7 +2712,7 @@ function loadLiveBookings(){
           return '<div class="tl-item"><div class="tl-time-col"><div class="tl-time">'+(b.time||'ASAP')+'</div>'+(i<sorted.length-1?'<div class="tl-line"></div>':'')+'</div>'
             +'<div class="tl-card active"><div class="tl-top"><div class="tl-name">'+escTo(b.customer_name||'')+'</div>'+statusTag+'</div>'
             +'<div class="tl-route">'+escTo(_admShortAddr(b.pickup))+' \u2192 '+escTo(_admShortAddr(b.destination))+'</div>'
-            +'<div class="tl-route" style="margin-top:.2rem">'+(b.flight?'Flight '+escTo(b.flight)+' \u00b7 ':'')+(b.passengers||1)+' pax'+(_admBags(b.bags)?' \u00b7 '+escTo(_admBags(b.bags)):'')+(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')+' '+admPayTag(b).label+'</div>'
+            +'<div class="tl-route" style="margin-top:.2rem">'+(_admFlight(b)?'Flight '+escTo(_admFlight(b))+' \u00b7 ':'')+(b.passengers||1)+' pax'+(_admBags(b.bags)?' \u00b7 '+escTo(_admBags(b.bags)):'')+(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')+' '+admPayTag(b).label+'</div>'
             +'<div class="tl-actions">'+acts+'</div></div></div>';
         }).join('');
       } else {
@@ -2573,7 +2724,7 @@ function loadLiveBookings(){
     var tbody=el('jobs-tbody');
     if(tbody){
       if(!bookings.length){
-        tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:2rem;color:rgba(27,27,26,.62)">No bookings yet</td></tr>';
+        tbody.innerHTML='<tr><td colspan="11" style="text-align:center;padding:2rem;color:rgba(27,27,26,.62)">No bookings yet</td></tr>';
       } else {
         var _conflicts=admFindOverlaps(bookings);
         tbody.innerHTML=bookings.map(function(b){
@@ -2591,6 +2742,19 @@ function loadLiveBookings(){
           // / chooses to pay the driver), or when staff settle a real cash
           // payment via Mark as Paid. Matches the owner app exactly.
           var actionBtns='';
+          // Change-request actions come FIRST — when the customer is waiting on
+          // a decision, that is the job on this row. Which actions exist is
+          // decided by the shared lifecycle module (stage-aware), never here.
+          if(ACT.acceptChange){
+            actionBtns+='<button class="btn btn-navy btn-sm" onclick="admAcceptChange('+b.id+')">Accept change</button> ';
+            actionBtns+='<button class="btn btn-cancel-trip btn-sm" onclick="admDeclineChange('+b.id+')">Decline</button> ';
+          }
+          if(ACT.reviewChange){
+            actionBtns+='<button class="btn btn-ghost btn-sm" style="color:#1b1b1a;border-color:rgba(27,27,26,.28)" onclick="admReviewChange('+b.id+')">Reviewed</button> ';
+          }
+          if(ACT.clearFareReview){
+            actionBtns+='<button class="btn btn-ghost btn-sm" style="color:#1b1b1a;border-color:rgba(27,27,26,.28)" onclick="admClearFareReview('+b.id+')">Fare confirmed</button> ';
+          }
           if(ACT.sendEstimate){
             actionBtns+='<button class="btn btn-navy btn-sm" onclick="admSendEstimate('+b.id+')">Send Estimate</button> ';
           }
@@ -2631,9 +2795,9 @@ function loadLiveBookings(){
             var _sug=(b.suggested_fare!=null&&b.suggested_fare!=='')?Number(b.suggested_fare):(b.fare!=null?Number(b.fare):null);
             var _pv=(_sug!=null&&!isNaN(_sug))?_sug.toFixed(2):'';
             fareCellHtml='<input id="adm-fare-'+b.id+'" type="number" step="0.50" inputmode="decimal" value="'+_pv+'" style="width:74px;padding:.3rem .4rem;border:1px solid rgba(27,27,26,.25);border-radius:5px;font-size:.9rem;color:var(--navy)">'
-              +((_sug!=null&&!isNaN(_sug))?'<div style="font-size:.55rem;color:rgba(27,27,26,.68);margin-top:.15rem">Suggested \u00a3'+_sug.toFixed(0)+'</div>':'<div style="font-size:.55rem;color:rgba(27,27,26,.66);margin-top:.15rem">No suggestion</div>');
+              +((_sug!=null&&!isNaN(_sug))?'<div style="font-size:.78rem;font-weight:600;color:#657485;margin-top:.2rem">Suggested \u00a3'+_sug.toFixed(0)+'</div>':'<div style="font-size:.55rem;color:rgba(27,27,26,.66);margin-top:.15rem">No suggestion</div>');
           } else {
-            fareCellHtml='<span style="color:var(--gold);font-family:var(--serif);font-size:1.1rem">'+(b.fare?'\u00a3'+Number(b.fare).toFixed(0):'TBC')+'</span>'+(b.dead_miles_fee?'<div style="font-size:.55rem;color:rgba(27,27,26,.66);margin-top:.1rem">incl. \u00a3'+Number(b.dead_miles_fee).toFixed(0)+' dead mi</div>':'');
+            fareCellHtml='<span style="color:var(--navy);font-family:var(--serif);font-size:1.1rem">'+(b.fare?'\u00a3'+Number(b.fare).toFixed(0):'TBC')+'</span>'+(b.dead_miles_fee?'<div style="font-size:.55rem;color:rgba(27,27,26,.66);margin-top:.1rem">incl. \u00a3'+Number(b.dead_miles_fee).toFixed(0)+' dead mi</div>':'');
           }
           return '<tr data-bid="'+b.id+'" style="'+rowStyle+'">'
             +'<td><div class="main-v">'+b.ref+'</div>'+conflictMark+reasonRow+'</td>'
@@ -2642,20 +2806,32 @@ function loadLiveBookings(){
             +'<td><div class="main-v">'+(b.customer_name||'')+'</div>'+(b.customer_phone?'<div class="sub-v">'+escTo(b.customer_phone)+'</div>':'')+(b.customer_email?'<div class="sub-v">'+escTo(b.customer_email)+'</div>':'')+'</td>'
             // Short display addresses (shared WMAddr normalizer) — the full
             // precise address stays in the DB and is what navigation uses.
+            // The flight number is NOT part of the address. It used to be
+            // printed as a bare sub-line right under the pickup, where it read
+            // as another line of the address ("…, Horsham / BA2678"). It now
+            // sits in its own labelled Flight column, and only for airport runs.
             +'<td><div class="main-v">'+escTo(_admShortAddr(b.pickup))+'</div>'
-              +(b.stop_address?'<div class="sub-v">via '+escTo(_admShortAddr(b.stop_address))+'</div>':'')
-              +(b.flight?'<div class="sub-v">'+escTo(b.flight)+'</div>':'')+'</td>'
+              +(b.stop_address?'<div class="sub-v">via '+escTo(_admShortAddr(b.stop_address))+'</div>':'')+'</td>'
             +'<td><div class="main-v">'+escTo(_admShortAddr(b.destination))+'</div>'
               +'<div class="sub-v">'+(b.passengers||1)+' pax'+(_admBags(b.bags)?' · '+escTo(_admBags(b.bags)):'')+'</div></td>'
+            +'<td>'+(_admFlight(b)?'<div class="main-v" style="font-family:var(--sans);font-size:.78rem;letter-spacing:.02em">'+escTo(_admFlight(b))+'</div>':'<span style="color:rgba(27,27,26,.28)">—</span>')+'</td>'
             +'<td>'+fareCellHtml+'</td>'
             +'<td><span class="tag '+payClass+'">'+payLabel+'</span></td>'
             +'<td><span class="tag '+statusClass+'">'+statusLabel+'</span>'
+              // CHANGE REQUESTED — the customer asked for an amendment in My
+              // Account. The booking is UNTOUCHED (that is the whole point), so
+              // this sits beside the status rather than replacing it: the status
+              // is still the truth, this is a job needing the owner's attention.
+              // How loudly it reads depends on the STAGE, decided by the shared
+              // lifecycle module so admin and owner can never disagree.
+              +admChangeMark(b)
+              +(b.fare_review_at?'<div class="sub-v" style="color:#1b1b1a;margin-top:.2rem;font-weight:700">£ Fare may change</div>':'')
               +(isCancelled&&refundSt==='due'?'<div class="sub-v" style="color:#9C2828;margin-top:.2rem;font-weight:600">Refund due £'+refundAmt.toFixed(0)+'</div>':'')
               +(isCancelled&&refundSt==='refunded'?'<div class="sub-v" style="color:#1E6B33;margin-top:.2rem;font-weight:600">Refunded £'+refundAmt.toFixed(0)+(b.refund_method==='stripe'?' · Stripe':' · manual')+'</div>':'')
             +'</td>'
             +'<td style="text-decoration:none"><button class="btn btn-ghost btn-sm" onclick="toggleJDetail('+b.id+',this)">Details</button> '+actionBtns+'</td>'
             +'</tr>'
-            +'<tr class="jdetail-row" id="jdetail-'+b.id+'"><td colspan="10">'+bookingDetailHtml(b)+'</td></tr>';
+            +'<tr class="jdetail-row" id="jdetail-'+b.id+'"><td colspan="11">'+bookingDetailHtml(b)+'</td></tr>';
         }).join('');
       }
     }
@@ -2668,7 +2844,7 @@ function loadLiveBookings(){
       var html=recent.map(function(b){
         var ago='';
         try{var mins=Math.floor((Date.now()-new Date(b.created_at).getTime())/60000);ago=mins<60?mins+' min ago':mins<1440?Math.floor(mins/60)+' hours ago':Math.floor(mins/1440)+' days ago';}catch(e){ago='';}
-        return '<div class="notif"><div class="notif-dot" style="background:var(--gold)"></div><div><div class="notif-text"><strong>'+escTo(b.ref)+'</strong> \u2014 '+escTo(b.customer_name||'')+', '+escTo(_admShortAddr(b.pickup))+' \u2192 '+escTo(_admShortAddr(b.destination))+(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')+'</div><div class="notif-time">'+ago+'</div></div></div>';
+        return '<div class="notif"><div class="notif-dot" style="background:var(--navy)"></div><div><div class="notif-text"><strong>'+escTo(b.ref)+'</strong> \u2014 '+escTo(b.customer_name||'')+', '+escTo(_admShortAddr(b.pickup))+' \u2192 '+escTo(_admShortAddr(b.destination))+(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')+'</div><div class="notif-time">'+ago+'</div></div></div>';
       }).join('');
       if(actDiv)actDiv.innerHTML=html;
       if(notifDiv)notifDiv.innerHTML=html;
@@ -2698,7 +2874,6 @@ function loadLiveBookings(){
     // Keep the weekly Completed ledger and the Cancelled record in step.
     if(typeof buildAdmCompleted==='function')buildAdmCompleted();
     if(typeof buildAdmCancelled==='function')buildAdmCancelled();
-
   }).catch(function(e){console.warn('[BOOKINGS]',e);});
 
   // ── Load customers ──
@@ -2770,6 +2945,73 @@ async function admMarkPaid(bookingId){
     if(r.ok&&d.ok){showToast('Payment received — booking confirmed');loadLiveBookings();}
     else showToast(d.error||('Failed ('+r.status+')'));
   }catch(e){showToast('Network error');console.error('[admMarkPaid]',e);}
+}
+
+// ── CHANGE REQUEST: review / accept / decline ────────────────────────────
+// Mirrors the owner app exactly — same three acts, same wording, same
+// endpoints — so whichever app the operator happens to be in, the customer
+// gets the same outcome. Only Accept ever touches the booking.
+async function _admChangeAction(bookingId,path,confirmMsg,okMsg){
+  if(confirmMsg&&!confirm(confirmMsg))return;
+  try{
+    var r=await fetch('/api/bookings/'+bookingId+path,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}});
+    var d=await r.json();
+    if(r.ok&&d.ok){
+      showToast(typeof okMsg==='function'?okMsg(d):okMsg);
+      loadLiveBookings();
+    } else showToast(d.error||('Failed ('+r.status+')'));
+  }catch(e){showToast('Network error');console.error('[admChangeAction]',path,e);}
+}
+
+// EARLY stage — nothing to decide; clears the note so the operator can price
+// the new details and send the estimate as normal.
+function admReviewChange(bookingId){
+  _admChangeAction(bookingId,'/change-request/review',null,'Noted — price it with the new details');
+}
+
+// DECISION stage — APPLIES the customer's requested journey details.
+function admAcceptChange(bookingId){
+  _admChangeAction(bookingId,'/change-request/accept',
+    'Apply the requested changes to this booking?\n\nThe journey details will be updated. Nothing is charged or refunded — you settle any price difference with the customer yourself.',
+    function(d){
+      return d.fare_review ? 'Change applied — confirm the fare with the customer'
+                           : 'Change applied to the booking';
+    });
+}
+
+// DECISION stage — the journey stands exactly as it was booked.
+function admDeclineChange(bookingId){
+  _admChangeAction(bookingId,'/change-request/decline',
+    'Decline this change?\n\nThe booking stays exactly as originally booked. Let the customer know with Message customer.',
+    'Change declined — booking unchanged');
+}
+
+function admClearFareReview(bookingId){
+  delete _admFareCache[bookingId];
+  _admChangeAction(bookingId,'/fare-review/clear',null,'Fare confirmed');
+}
+
+// Re-send the ORDINARY estimate at the operator's fare. Mirrors the owner app.
+async function admSendReEstimate(bookingId){
+  var input=document.getElementById('adm-fare-'+bookingId);
+  var fare=input?parseFloat(input.value):NaN;
+  if(!isFinite(fare)||fare<=0){showToast('Set a fare first');if(input)input.focus();return;}
+  var already=(_admFareCache[bookingId]||{}).prior_payment;
+  var warn='Re-send the estimate at £'+fare.toFixed(2)+'?\n\nThe customer will be asked to confirm and pay the updated trip as normal. Nothing is charged or refunded now.';
+  if(already&&already.amount)warn+='\n\nNote: £'+Number(already.amount).toFixed(2)+' has already been collected on this booking.';
+  if(!confirm(warn))return;
+  try{
+    var r=await fetch('/api/bookings/'+bookingId+'/re-estimate',{
+      method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({fare:fare})
+    });
+    var d=await r.json();
+    if(r.ok&&d.ok){
+      delete _admFareCache[bookingId];
+      showToast(d.emailed?('Estimate re-sent at £'+Number(d.fare).toFixed(2)):('Fare set to £'+Number(d.fare).toFixed(2)+' — email not sent'));
+      loadLiveBookings();
+    } else showToast(d.error||('Failed ('+r.status+')'));
+  }catch(e){showToast('Network error');console.error('[admSendReEstimate]',e);}
 }
 
 // Chase an unpaid booking (e.g. a card customer who abandoned checkout) — the
@@ -3108,7 +3350,7 @@ async function dmLoadEarnings(which){
       return '<div style="display:grid;grid-template-columns:76px 1fr auto;gap:.5rem;padding:.45rem 0;border-bottom:1px solid rgba(27,27,26,.05)">'
         +'<div style="color:rgba(27,27,26,.72);font-size:.72rem">'+escTo(it.date)+'</div>'
         +'<div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escTo(it.pickup)+' → '+escTo(it.destination)+'">'+escTo(it.ref)+' · '+escTo(it.pickup)+' → '+escTo(it.destination)+'</div>'
-        +'<div style="text-align:right;white-space:nowrap;font-family:Menlo,Consolas,monospace;font-size:.72rem">£'+it.fare.toFixed(2)+' <span style="color:#9C2828">−£'+it.commission.toFixed(2)+'</span> = <span style="color:var(--gold);font-weight:500">£'+it.net.toFixed(2)+'</span></div>'
+        +'<div style="text-align:right;white-space:nowrap;font-family:var(--sans);font-size:.72rem">£'+it.fare.toFixed(2)+' <span style="color:#9C2828">−£'+it.commission.toFixed(2)+'</span> = <span style="color:var(--navy);font-weight:500">£'+it.net.toFixed(2)+'</span></div>'
       +'</div>';
     }).join('');
   }catch(e){showToast('Network error loading earnings');}
@@ -3490,7 +3732,7 @@ function viewCustomer(id){
     var bhtml='<table style="width:100%;border-collapse:collapse;font-size:.76rem">'
       +'<tr style="color:rgba(27,27,26,.66);font-size:.65rem;letter-spacing:.08em;text-transform:uppercase"><th style="text-align:left;padding:.35rem 0;font-weight:500">Ref</th><th style="text-align:left;padding:.35rem .4rem;font-weight:500">Date</th><th style="text-align:left;padding:.35rem .4rem;font-weight:500">Route</th><th style="text-align:right;padding:.35rem 0;font-weight:500">Fare</th></tr>';
     d.bookings.slice(0,10).forEach(function(b){
-      var statusCol=b.status==='completed'?'var(--green)':b.status==='cancelled'?'var(--red)':'var(--gold)';
+      var statusCol=b.status==='completed'?'var(--green)':b.status==='cancelled'?'var(--red)':'var(--navy)';
       bhtml+='<tr style="border-top:1px solid rgba(27,27,26,.05)">'
         +'<td style="padding:.35rem 0;color:var(--navy);font-weight:400">'+escTo(b.ref)+'</td>'
         +'<td style="padding:.35rem .4rem;color:rgba(27,27,26,.72)">'+escTo(b.date)+'</td>'
@@ -3898,14 +4140,14 @@ function openInvoicePreview(data){
         try{var d=new Date(it.date+'T00:00:00');datePrefix=d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' \u2014 ';}catch(_){}
       }
       return '<tr>'
-        +'<td style="padding:12px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:13px;color:#1b1b1a;line-height:1.5;vertical-align:top">'+(datePrefix?'<span style="color:#9a9a9a;font-size:11px;font-family:Helvetica Neue,Arial,sans-serif">'+esc(datePrefix)+'</span>':'')+''+esc(it.description||'')+'</td>'
-        +'<td style="padding:12px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:14px;color:#1b1b1a;text-align:right;vertical-align:top;white-space:nowrap;font-family:Georgia,serif">&pound;'+amt+'</td>'
+        +'<td style="padding:12px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:13px;color:#1b1b1a;line-height:1.5;vertical-align:top">'+(datePrefix?'<span style="color:#9a9a9a;font-size:11px;font-family:var(--sans)">'+esc(datePrefix)+'</span>':'')+''+esc(it.description||'')+'</td>'
+        +'<td style="padding:12px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:14px;color:#1b1b1a;text-align:right;vertical-align:top;white-space:nowrap;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif">&pound;'+amt+'</td>'
         +'</tr>';
     }).join('');
     tableHtml='<table style="width:100%;border-collapse:collapse;margin-bottom:24px">'
       +'<thead><tr>'
-      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:left;font-weight:600">Description</th>'
-      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:right;font-weight:600">Amount</th>'
+      +'<th style="font-family:var(--sans);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:left;font-weight:600">Description</th>'
+      +'<th style="font-family:var(--sans);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:right;font-weight:600">Amount</th>'
       +'</tr></thead>'
       +'<tbody>'+itemRows+'</tbody>'
       +'</table>';
@@ -3920,9 +4162,9 @@ function openInvoicePreview(data){
       var d=b.date||'';
       var t=b.time||'';
       return '<tr>'
-        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:13px;color:#1b1b1a;vertical-align:top">'+esc(d)+(t&&t!=='ASAP'?' '+esc(t):t==='ASAP'?' ASAP':'')+'<br><span style="font-family:Menlo,Consolas,monospace;font-size:10px;color:#9a9a9a">'+esc(b.ref||'')+'</span></td>'
-        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:13px;color:#1b1b1a;line-height:1.5;vertical-align:top">'+esc(b.pickup||'')+' &rarr; '+esc(b.destination||'')+(b.flight?'<br><span style="font-size:11px;color:#9a9a9a">Flight '+esc(b.flight)+'</span>':'')+'</td>'
-        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:14px;color:#1b1b1a;text-align:right;vertical-align:top;white-space:nowrap;font-family:Georgia,serif">&pound;'+fare+'</td>'
+        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:13px;color:#1b1b1a;vertical-align:top">'+esc(d)+(t&&t!=='ASAP'?' '+esc(t):t==='ASAP'?' ASAP':'')+'<br><span style="font-family:var(--sans);font-size:10px;color:#9a9a9a">'+esc(b.ref||'')+'</span></td>'
+        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:13px;color:#1b1b1a;line-height:1.5;vertical-align:top">'+esc(_admShortAddr(b.pickup)||'')+' &rarr; '+esc(_admShortAddr(b.destination)||'')+(_admFlight(b)?'<br><span style="font-size:11px;color:#9a9a9a">Flight '+esc(_admFlight(b))+'</span>':'')+'</td>'
+        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:14px;color:#1b1b1a;text-align:right;vertical-align:top;white-space:nowrap;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif">&pound;'+fare+'</td>'
         +'</tr>';
     }).join('');
     if(!bookingRows){
@@ -3930,14 +4172,14 @@ function openInvoicePreview(data){
     }
     tableHtml='<table style="width:100%;border-collapse:collapse;margin-bottom:24px">'
       +'<thead><tr>'
-      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:left;font-weight:600">Date / Ref</th>'
-      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:left;font-weight:600">Journey</th>'
-      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:right;font-weight:600">Fare</th>'
+      +'<th style="font-family:var(--sans);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:left;font-weight:600">Date / Ref</th>'
+      +'<th style="font-family:var(--sans);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:left;font-weight:600">Journey</th>'
+      +'<th style="font-family:var(--sans);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:right;font-weight:600">Fare</th>'
       +'</tr></thead>'
       +'<tbody>'+bookingRows+'</tbody>'
       +'</table>';
     toAddr=[esc(c.full_name||''),c.phone?esc(c.phone):'',c.email?esc(c.email):''].filter(Boolean).join('<br>');
-    if(p.label)periodLine='<div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#9a9a9a;margin-bottom:6px;font-weight:500">Period: '+esc(p.label)+'</div>';
+    if(p.label)periodLine='<div style="font-family:var(--sans);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#9a9a9a;margin-bottom:6px;font-weight:500">Period: '+esc(p.label)+'</div>';
   }
 
   var fromAddr=[s.business_name||'Westmere Private Hire',s.owner_name||'',s.address_line1||'',(s.address_line2||'')+(s.postcode?' '+s.postcode:''),s.phone||'',s.email||''].filter(Boolean).map(esc).join('<br>');
@@ -3945,16 +4187,16 @@ function openInvoicePreview(data){
   var bankHtml='';
   if(s.sort_code&&s.account_no){
     bankHtml='<div style="background:rgba(27,27,26,.04);border:1px solid rgba(27,27,26,.08);padding:20px 24px;margin-bottom:32px">'
-      +'<div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;font-weight:600;margin-bottom:10px">Payment Details</div>'
+      +'<div style="font-family:var(--sans);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;font-weight:600;margin-bottom:10px">Payment Details</div>'
       +'<table style="font-size:13px;color:#1b1b1a;line-height:1.8">'
       +(s.bank_name?'<tr><td style="color:#9a9a9a;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Bank</td><td>'+esc(s.bank_name)+'</td></tr>':'')
       +(s.account_name?'<tr><td style="color:#9a9a9a;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Name</td><td>'+esc(s.account_name)+'</td></tr>':'')
-      +'<tr><td style="color:#9a9a9a;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Sort code</td><td style="font-family:Menlo,Consolas,monospace">'+esc(s.sort_code)+'</td></tr>'
-      +'<tr><td style="color:#9a9a9a;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Account no.</td><td style="font-family:Menlo,Consolas,monospace">'+esc(s.account_no)+'</td></tr>'
-      +'<tr><td style="color:#9a9a9a;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Reference</td><td style="font-family:Menlo,Consolas,monospace">'+esc(data.invoiceNo||'')+'</td></tr>'
+      +'<tr><td style="color:#9a9a9a;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Sort code</td><td style="font-family:var(--sans)">'+esc(s.sort_code)+'</td></tr>'
+      +'<tr><td style="color:#9a9a9a;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Account no.</td><td style="font-family:var(--sans)">'+esc(s.account_no)+'</td></tr>'
+      +'<tr><td style="color:#9a9a9a;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Reference</td><td style="font-family:var(--sans)">'+esc(data.invoiceNo||'')+'</td></tr>'
       +'</table></div>';
   } else {
-    bankHtml='<div style="font-size:13px;color:#726a60;margin-bottom:32px">Payment is appreciated within 14 days by bank transfer. Please contact us for account details.</div>';
+    bankHtml='<div style="font-size:13px;color:#657485;margin-bottom:32px">Payment is appreciated within 14 days by bank transfer. Please contact us for account details.</div>';
   }
 
   var issuedStr=p.issuedDate||new Date().toISOString().slice(0,10);
@@ -3965,25 +4207,25 @@ function openInvoicePreview(data){
     +'@page{size:A4;margin:0}'
     +'@media print{.no-print{display:none!important}body{background:#fff!important}.wrap{box-shadow:none!important;margin:0!important;max-width:none!important}}'
     +'*{box-sizing:border-box;margin:0;padding:0}'
-    +'body{font-family:Georgia,"Times New Roman",serif;color:#1b1b1a;background:#ffffff;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+    +'body{font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;color:#1b1b1a;background:#ffffff;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
     +'.wrap{max-width:800px;margin:0 auto;background:#fff;position:relative;overflow:hidden;box-shadow:0 2px 20px rgba(0,0,0,.08)}'
     +'.wrap::before{content:"";position:absolute;top:0;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,#6a6a6a 18%,#6a6a6a 82%,transparent 100%);z-index:2}'
     +'.wrap::after{content:"";position:absolute;bottom:0;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,#6a6a6a 18%,#6a6a6a 82%,transparent 100%);z-index:2}'
     +'/* watermark removed */'
-    +'.corner-mark{position:absolute;top:28px;right:32px;font-family:Helvetica Neue,Arial,sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:rgba(27,27,26,.6);z-index:1}'
+    +'.corner-mark{position:absolute;top:28px;right:32px;font-family:var(--sans);font-size:8px;letter-spacing:3px;text-transform:uppercase;color:rgba(27,27,26,.6);z-index:1}'
     +'.toolbar{background:#ffffff;padding:12px 24px;display:flex;gap:12px;align-items:center;position:relative;z-index:3}'
-    +'.toolbar button{font-family:Helvetica Neue,Arial,sans-serif;font-size:12px;padding:8px 18px;border:none;cursor:pointer;letter-spacing:.5px}'
+    +'.toolbar button{font-family:var(--sans);font-size:12px;padding:8px 18px;border:none;cursor:pointer;letter-spacing:.5px}'
     +'.toolbar .btn-dl{background:#6a6a6a;color:#1b1b1a}'
     +'.toolbar .btn-cl{background:transparent;color:#1a1a1a;border:1px solid rgba(255,255,255,.2)}'
     +'.page{position:relative;z-index:1;padding:64px 56px 56px}'
     +'.brand-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}'
     +'.brand-mark{display:inline-block;padding-bottom:14px;border-bottom:1px solid rgba(27,27,26,.12);min-width:220px}'
-    +'.brand-name{font-family:Georgia,serif;font-size:26px;letter-spacing:10px;font-weight:400;color:#1b1b1a;line-height:1}'
-    +'.brand-sub{font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:4px;text-transform:uppercase;color:#6a6a6a;margin-top:8px;font-weight:500}'
+    +'.brand-name{font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:26px;letter-spacing:10px;font-weight:400;color:#1b1b1a;line-height:1}'
+    +'.brand-sub{font-family:var(--sans);font-size:9px;letter-spacing:4px;text-transform:uppercase;color:#6a6a6a;margin-top:8px;font-weight:500}'
     +'.inv-badge{text-align:right}'
-    +'.inv-label{font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#6a6a6a;font-weight:600;margin-bottom:8px}'
-    +'.inv-no{font-family:Menlo,Consolas,monospace;font-size:14px;color:#1b1b1a;margin-bottom:6px;letter-spacing:.5px}'
-    +'.inv-meta{font-size:12px;color:#726a60;line-height:1.6}'
+    +'.inv-label{font-family:var(--sans);font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#6a6a6a;font-weight:600;margin-bottom:8px}'
+    +'.inv-no{font-family:var(--sans);font-size:14px;color:#1b1b1a;margin-bottom:6px;letter-spacing:.5px}'
+    +'.inv-meta{font-size:12px;color:#657485;line-height:1.6}'
     +'.gold-rule{width:36px;height:1px;background:#6a6a6a;margin:18px 0 32px}'
     +'</style></head><body>'
     +'<div class="wrap">'
@@ -3999,16 +4241,16 @@ function openInvoicePreview(data){
       +'</div></div>'
     +'<div class="gold-rule"></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-bottom:36px">'
-      +'<div><div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;margin-bottom:8px;font-weight:600">From</div><div style="font-size:13px;color:#1b1b1a;line-height:1.7">'+fromAddr+'</div></div>'
-      +'<div><div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;margin-bottom:8px;font-weight:600">Bill To</div><div style="font-size:13px;color:#1b1b1a;line-height:1.7">'+toAddr+'</div></div>'
+      +'<div><div style="font-family:var(--sans);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;margin-bottom:8px;font-weight:600">From</div><div style="font-size:13px;color:#1b1b1a;line-height:1.7">'+fromAddr+'</div></div>'
+      +'<div><div style="font-family:var(--sans);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;margin-bottom:8px;font-weight:600">Bill To</div><div style="font-size:13px;color:#1b1b1a;line-height:1.7">'+toAddr+'</div></div>'
     +'</div>'
     +periodLine
     +tableHtml
     +'<div style="display:flex;flex-direction:column;align-items:flex-end;margin-bottom:32px">'
-      +'<div style="display:flex;justify-content:space-between;width:260px;padding:14px 0 8px;border-top:2px solid #6a6a6a;margin-top:4px"><span style="font-family:Helvetica Neue,Arial,sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:600;color:#1b1b1a;align-self:center">Total</span><span style="font-size:26px;font-weight:500;color:#6a6a6a;font-family:Georgia,serif">&pound;'+total+'</span></div>'
+      +'<div style="display:flex;justify-content:space-between;width:260px;padding:14px 0 8px;border-top:2px solid #6a6a6a;margin-top:4px"><span style="font-family:var(--sans);font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:600;color:#1b1b1a;align-self:center">Total</span><span style="font-size:26px;font-weight:500;color:#6a6a6a;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif">&pound;'+total+'</span></div>'
     +'</div>'
     +bankHtml
-    +'<div style="text-align:center;padding-top:24px;margin-top:20px;border-top:1px solid rgba(27,27,26,.1);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#9a9a9a;font-family:Helvetica Neue,Arial,sans-serif;font-weight:500">'
+    +'<div style="text-align:center;padding-top:24px;margin-top:20px;border-top:1px solid rgba(27,27,26,.1);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#9a9a9a;font-family:var(--sans);font-weight:500">'
       +'Westmere Private Hire &middot; Licensed by Lewes District Council &middot; westmereprivatehire.co.uk'
     +'</div>'
     +'</div></div></body></html>';
@@ -4064,8 +4306,8 @@ function loadInvoiceHistory(){
         var legacyNoJs=escTo(inv.invoice_no).replace(/'/g,"\\'");
         return '<tr style="cursor:pointer" onclick="viewLegacyInvoice(\''+legacyNoJs+'\')">'
           +'<td style="white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;word-break:break-word;max-width:none"><span style="font-weight:600;font-size:.9rem;color:var(--navy)">'+escTo(inv.recipient_name||inv.recipient_email||'—')+'</span>'+(inv.recipient_name&&inv.recipient_email?'<br><span style="font-size:.72rem;color:rgba(27,27,26,.68)">'+escTo(inv.recipient_email)+'</span>':'')+'</td>'
-          +'<td style="text-align:right;font-family:Georgia,serif;color:var(--navy)">'+total+'</td>'
-          +'<td><span style="font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)">'+kind+'</span></td>'
+          +'<td style="text-align:right;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;color:var(--navy)">'+total+'</td>'
+          +'<td><span style="font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--navy)">'+kind+'</span></td>'
           +'<td style="white-space:nowrap">'+escTo(inv.issued_date||'')+'</td>'
           +'<td><span style="font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(27,27,26,.4)">—</span></td>'
           +'<td style="white-space:nowrap">'
@@ -4077,8 +4319,8 @@ function loadInvoiceHistory(){
       }
       return '<tr style="cursor:pointer" onclick="viewInvoice('+inv.id+')">'
         +'<td style="white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;word-break:break-word;max-width:none"><span style="font-weight:600;font-size:.9rem;color:var(--navy)">'+escTo(inv.recipient_name||'')+'</span>'+(inv.recipient_email?'<br><span style="font-size:.72rem;color:rgba(27,27,26,.68)">'+escTo(inv.recipient_email)+'</span>':'')+'</td>'
-        +'<td style="text-align:right;font-family:Georgia,serif;color:var(--navy)">'+total+'</td>'
-        +'<td><span style="font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)">'+kind+'</span></td>'
+        +'<td style="text-align:right;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;color:var(--navy)">'+total+'</td>'
+        +'<td><span style="font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--navy)">'+kind+'</span></td>'
         +'<td style="white-space:nowrap">'+escTo(inv.issued_date||'')+'</td>'
         +'<td style="white-space:nowrap">'+paidBadge+'</td>'
         +'<td style="white-space:nowrap">'
@@ -4224,13 +4466,13 @@ function openInvoiceDetailModal(data){
     var parts=[escTo(r.name||'')];
     if(r.address)parts.push(escTo(r.address).replace(/\n/g,'<br>'));
     if(r.phone)parts.push(escTo(r.phone));
-    if(r.email)parts.push('<a href="mailto:'+escTo(r.email)+'" style="color:var(--gold)">'+escTo(r.email)+'</a>');
+    if(r.email)parts.push('<a href="mailto:'+escTo(r.email)+'" style="color:var(--navy)">'+escTo(r.email)+'</a>');
     recEl.innerHTML=parts.join('<br>');
   } else {
     var c=data.customer||{};
     var cparts=[escTo(c.full_name||'')];
     if(c.phone)cparts.push(escTo(c.phone));
-    if(c.email)cparts.push('<a href="mailto:'+escTo(c.email)+'" style="color:var(--gold)">'+escTo(c.email)+'</a>');
+    if(c.email)cparts.push('<a href="mailto:'+escTo(c.email)+'" style="color:var(--navy)">'+escTo(c.email)+'</a>');
     recEl.innerHTML=cparts.join('<br>');
   }
 
@@ -4256,7 +4498,7 @@ function openInvoiceDetailModal(data){
     body.innerHTML=items.length
       ? items.map(function(it){
           return '<tr><td>'+escTo(it.description||'')+'</td>'
-            +'<td style="text-align:right;font-family:Georgia,serif">£'+(+it.amount||0).toFixed(2)+'</td></tr>';
+            +'<td style="text-align:right;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif">£'+(+it.amount||0).toFixed(2)+'</td></tr>';
         }).join('')
       : '<tr><td colspan="2" style="text-align:center;padding:1.2rem;color:rgba(27,27,26,.64)">No items</td></tr>';
   } else {
@@ -4264,11 +4506,11 @@ function openInvoiceDetailModal(data){
     var bks=data.bookings||[];
     body.innerHTML=bks.length
       ? bks.map(function(b){
-          var ref=b.ref?'<br><span style="font-family:Menlo,Consolas,monospace;font-size:.7rem;color:rgba(27,27,26,.66)">'+escTo(b.ref)+'</span>':'';
+          var ref=b.ref?'<br><span style="font-family:var(--sans);font-size:.7rem;color:rgba(27,27,26,.66)">'+escTo(b.ref)+'</span>':'';
           var route=escTo(b.pickup||'')+(b.destination?' → '+escTo(b.destination):'');
           return '<tr><td>'+escTo(b.date||'')+(b.time&&b.time!=='ASAP'?' '+escTo(b.time):'')+ref+'</td>'
             +'<td>'+route+'</td>'
-            +'<td style="text-align:right;font-family:Georgia,serif;white-space:nowrap">£'+(+b.fare||0).toFixed(2)+'</td></tr>';
+            +'<td style="text-align:right;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;white-space:nowrap">£'+(+b.fare||0).toFixed(2)+'</td></tr>';
         }).join('')
       : '<tr><td colspan="3" style="text-align:center;padding:1.2rem;color:rgba(27,27,26,.64)">No journeys in period</td></tr>';
   }
@@ -4651,7 +4893,8 @@ function nbCapacityCheck(){
   var warn=document.getElementById('nb-capacity-warn');if(!warn)return;
   var pax=parseInt(document.getElementById('nb-pax').value,10)||0;
   var bagSel=document.getElementById('nb-bags');var bagVal=bagSel?bagSel.value:'';
-  var bagsNeeded={'0':0,'small':2,'medium':4,'large':6}[bagVal]||0;
+  // One parser for every shape the column has ever held (see wm-lifecycle.js).
+  var bagsNeeded=WMLifecycle.bagsCount(bagVal).n;
   // Default driver cached in DRIVERS from reloadDrivers()
   var def=(window.DRIVERS||[]).find(function(d){return d.is_default;});
   if(!def){warn.style.display='none';return;}
@@ -4667,9 +4910,22 @@ function nbCapacityCheck(){
 }
 
 let nbTimer=null;
+// Flight number is offered ONLY when this journey touches an airport (shared
+// rule: WMAddr.isAirportRun). Hiding it also clears it, so an address edited
+// from "Gatwick" to a town can't leave a stale flight number on the booking.
+function nbFlightField(){
+  var wrap=document.getElementById('nb-flight-wrap');if(!wrap)return;
+  var pu=(document.getElementById('nb-pu')||{}).value||'';
+  var de=(document.getElementById('nb-de')||{}).value||'';
+  var isAP=window.WMAddr?WMAddr.isAirportRun(pu,de):true;
+  wrap.style.display=isAP?'':'none';
+  if(!isAP){var f=document.getElementById('nb-flight');if(f)f.value='';}
+}
+
 function nbCheck(){
   clearTimeout(nbTimer);
   nbCapacityCheck();
+  nbFlightField();
   const jt='';
   const pu=document.getElementById('nb-pu').value;
   const de=document.getElementById('nb-de').value;
@@ -4747,7 +5003,7 @@ function buildFares(){
   if(!tb)return;
   for(const[town,fares]of Object.entries(FARES)){
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td style="text-align:left;font-size:.78rem;font-weight:500;color:#1a1a1a;background:var(--cream-dark);padding:.5rem .8rem">${town}</td>`;
+    tr.innerHTML=`<td style="text-align:left;font-size:.78rem;font-weight:500;color:#1a1a1a;background:#ffffff;padding:.5rem .8rem">${town}</td>`;
     APS.forEach(ap=>{
       const v=fares[ap]||'—';
       tr.innerHTML+=`<td><input class="fare-input" value="${v==='—'?'—':'£'+v}" onchange="showToast('Fare updated — remember to save')" style="${v==='—'?'color:#1a1a1a':''}"></td>`;
@@ -4897,17 +5153,17 @@ function buildRecordBook(){
       var bookedAt=b.created_at?b.created_at.replace('T',' ').slice(0,16):'—';
       html+='<tr>'
         +'<td style="color:var(--text-light);font-size:.72rem">'+n+'</td>'
-        +'<td style="font-family:monospace;font-size:.68rem;color:var(--text-mid);white-space:nowrap">'+(b.ref||'—')+'</td>'
+        +'<td style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:.68rem;color:var(--text-mid);white-space:nowrap">'+(b.ref||'—')+'</td>'
         +'<td style="font-weight:400;color:var(--navy)">'+rbDateStr(b)+'</td>'
         +'<td>'+(b.time||'—')+'</td>'
         +'<td style="font-weight:400;color:var(--navy)">'+escTo(pName)+'</td>'
         +'<td style="font-size:.72rem;white-space:nowrap">'+escTo(pPhone)+'</td>'
         +'<td style="font-size:.72rem">'+escTo(pEmail||'—')+'</td>'
-        +'<td style="font-size:.75rem">'+b.pickup+'</td>'
-        +'<td style="font-size:.75rem">'+b.destination+'</td>'
-        +'<td style="font-family:var(--serif);font-size:1rem;color:var(--gold)">'+(b.fare?'£'+Number(b.fare).toFixed(0):'TBC')+'</td>'
+        +'<td style="font-size:.75rem">'+escTo(_admShortAddr(b.pickup))+'</td>'
+        +'<td style="font-size:.75rem">'+escTo(_admShortAddr(b.destination))+'</td>'
+        +'<td style="font-family:var(--serif);font-size:1rem;color:var(--navy)">'+(b.fare?'£'+Number(b.fare).toFixed(0):'TBC')+'</td>'
         +'<td>'+escTo(admPayTag(b).label)+'</td>'
-        +'<td style="font-size:.75rem;color:var(--text-mid)">'+(b.flight||'—')+'</td>'
+        +'<td style="font-size:.75rem;color:var(--text-mid)">'+(escTo(_admFlight(b))||'—')+'</td>'
         +'<td style="font-size:.7rem;color:var(--text-mid);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escTo(notes)+'">'+escTo(notes)+'</td>'
         +'<td style="font-size:.65rem;color:var(--text-light);white-space:nowrap">'+bookedAt+'</td>'
         +'</tr>';
@@ -4955,7 +5211,7 @@ function downloadRecordBook(){
 function printRecordBook(){
   var view=currentRecordData();
   var w=window.open('','_blank');
-  var printCSS='*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:Jost,Helvetica Neue,Arial,sans-serif;font-weight:300;color:#222;background:#fff;line-height:1.7;padding:2rem}h2{font-family:Cormorant Garamond,Georgia,serif;font-weight:400;margin-bottom:.3rem}p{color:#666;margin-bottom:1.5rem;font-size:.9rem}table{width:100%;border-collapse:collapse;margin-bottom:1.5rem}th{font-size:.65rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#888;padding:.5rem .6rem;border-bottom:2px solid #ddd;text-align:left}td{font-size:.82rem;padding:.5rem .6rem;border-bottom:1px solid #eee;color:#444}.navy{color:#1b1b1a;font-weight:400}.gold{color:#6a6a6a;font-family:Cormorant Garamond,Georgia,serif;font-size:1rem}.msep td{background:#f3f4f6;font-weight:600;color:#1b1b1a;letter-spacing:.04em}.footer{display:flex;justify-content:space-between;padding-top:1rem;border-top:2px solid #ddd;font-size:.78rem;color:#888}@media print{body{padding:1rem}}';
+  var printCSS='*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-weight:300;color:#222;background:#fff;line-height:1.7;padding:2rem}h2{font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-weight:400;margin-bottom:.3rem}p{color:#666;margin-bottom:1.5rem;font-size:.9rem}table{width:100%;border-collapse:collapse;margin-bottom:1.5rem}th{font-size:.65rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#888;padding:.5rem .6rem;border-bottom:2px solid #ddd;text-align:left}td{font-size:.82rem;padding:.5rem .6rem;border-bottom:1px solid #eee;color:#444}.navy{color:#1b1b1a;font-weight:400}.gold{color:#6a6a6a;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:1rem}.msep td{background:#f3f4f6;font-weight:600;color:#1b1b1a;letter-spacing:.04em}.footer{display:flex;justify-content:space-between;padding-top:1rem;border-top:2px solid #ddd;font-size:.78rem;color:#888}@media print{body{padding:1rem}}';
   w.document.write('<html><head><title>Westmere Record Book</title><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"><style>'+printCSS+'</style></head><body>');
   w.document.write('<h2>Westmere Private Hire — Operator Record Book</h2>');
   w.document.write('<p>Licensed by Lewes District Council &nbsp;·&nbsp; Period: '
@@ -4980,17 +5236,17 @@ function printRecordBook(){
       var bAt=b.created_at?b.created_at.replace('T',' ').slice(0,16):'—';
       w.document.write('<tr>'
         +'<td style="color:#8a8a8a">'+n+'</td>'
-        +'<td style="font-family:monospace;font-size:.7rem;color:#8a8a8a">'+(b.ref||'—')+'</td>'
+        +'<td style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:.7rem;color:#8a8a8a">'+(b.ref||'—')+'</td>'
         +'<td class="navy">'+rbDateStr(b)+'</td>'
         +'<td>'+(b.time||'—')+'</td>'
         +'<td class="navy">'+pN+'</td>'
         +'<td style="font-size:.78rem">'+pH+'</td>'
         +'<td style="font-size:.72rem">'+(pE||'—')+'</td>'
-        +'<td>'+b.pickup+'</td>'
-        +'<td>'+b.destination+'</td>'
+        +'<td>'+escTo(_admShortAddr(b.pickup))+'</td>'
+        +'<td>'+escTo(_admShortAddr(b.destination))+'</td>'
         +'<td class="gold">'+(b.fare?'£'+Number(b.fare).toFixed(0):'TBC')+'</td>'
         +'<td>'+escTo(admPayTag(b).label)+'</td>'
-        +'<td>'+(b.flight||'—')+'</td>'
+        +'<td>'+(escTo(_admFlight(b))||'—')+'</td>'
         +'<td style="font-size:.72rem;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+nt+'</td>'
         +'<td style="font-size:.68rem;color:#8a8a8a;white-space:nowrap">'+bAt+'</td>'
         +'</tr>');
@@ -5015,6 +5271,14 @@ var _ADM_PC=/^[A-Z]{1,2}\d[A-Z\d]?(\s*\d[A-Z]{2})?$/i;
 // the single source of truth also used by the emails + owner app.
 function _admShortAddr(a){ return window.WMAddr ? WMAddr.shortDisplay(a) : (a||''); }
 function _admTinyAddr(a){ return window.WMAddr ? WMAddr.tinyLabel(a) : (a||''); }
+// Flight number — AIRPORT RUNS ONLY. Returns '' for a town-to-town job so the
+// caller renders no flight field at all. (It used to be printed as a bare line
+// under the pickup address in the jobs table, where it read like part of the
+// address; it now has its own labelled field.) Shared rule: address-normalize.js.
+function _admFlight(b){ return window.WMAddr ? WMAddr.flightFor(b) : ''; }
+// Explicit "Luggage" fields always show the integer label ("0 bags"); compact
+// summary lines use _admBags() and omit the bags entirely when there are none.
+function _admBagsLabel(bags){ return WMLifecycle.bagsLabel(bags); }
 function admEnrichNotes(text){
   if(!text)return '';
   var s=escTo(text);
@@ -5113,10 +5377,10 @@ function renderFlaggedBanner(list){
     if(!list.length)return;
     var div=document.createElement('div');
     div.className='flagged-banner card';
-    div.style.cssText='background:#f0ece3;border:1px solid #b8b0a4;margin-bottom:1.2rem';
+    div.style.cssText='background:#ffffff;border:1px solid #c8d1d9;margin-bottom:1.2rem';
     div.innerHTML='<div class="ch"><div class="ct" style="color:#555555">⚠️ '+list.length+' booking'+(list.length>1?'s':'')+' need'+(list.length>1?'':'s')+' your attention</div></div>'
       +'<div class="cb" style="padding:0">'+list.map(function(b){
-        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:.7rem 1rem;border-top:1px solid rgba(244,184,96,.4)">'
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:.7rem 1rem;border-top:1px solid rgba(16,42,67,.4)">'
           +'<div><div style="font-weight:600;color:var(--navy);font-size:.85rem">'+escTo(b.ref)+' · '+escTo(b.customer_name||'')+'</div>'
           +'<div style="font-size:.72rem;color:var(--text-light);margin-top:.2rem">'+escTo(b.pickup)+' → '+escTo(b.destination)+' · '+escTo(b.date)+' '+escTo(b.time)+'</div>'
           +'<div style="font-size:.72rem;color:#555555;margin-top:.2rem"><em>'+escTo(b.intake_reason||'No driver available')+'</em></div></div>'
@@ -5205,14 +5469,14 @@ function wmMessageOpen(bookingId){
   el.style.cssText='position:fixed;inset:0;background:rgba(10,14,20,.6);z-index:5000;display:flex;align-items:center;justify-content:center;padding:1rem';
   el.innerHTML='<div style="background:#fff;border-radius:14px;max-width:480px;width:100%;padding:1.5rem 1.4rem;box-shadow:0 24px 60px rgba(0,0,0,.35)">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">'
-    +'<div style="font-family:Georgia,serif;font-size:1.2rem;color:#111D2C">Message Customer</div>'
+    +'<div style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:1.2rem;color:#111D2C">Message Customer</div>'
     +'<button onclick="document.getElementById(\'wm-msg-overlay\').remove()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:#999">&times;</button>'
     +'</div>'
-    +'<div style="font-size:.74rem;color:#6B7280;margin-bottom:.8rem">'+(email?('To '+escTo(name?name+' · ':'')+escTo(email)):'<span style="color:#9C5800">No email on this booking</span>')+'</div>'
-    +'<textarea id="wm-msg-text" rows="6" placeholder="Type your message to the customer — e.g. a question about their journey…" style="width:100%;padding:.7rem .8rem;border:1px solid #E5E0D8;border-radius:8px;font-family:inherit;font-size:.9rem;color:#1C2A3E;resize:vertical"></textarea>'
+    +'<div style="font-size:.74rem;color:#6B7280;margin-bottom:.8rem">'+(email?('To '+escTo(name?name+' · ':'')+escTo(email)):'<span style="color:#1b1b1a">No email on this booking</span>')+'</div>'
+    +'<textarea id="wm-msg-text" rows="6" placeholder="Type your message to the customer — e.g. a question about their journey…" style="width:100%;padding:.7rem .8rem;border:1px solid #ffffff;border-radius:8px;font-family:inherit;font-size:.9rem;color:#1C2A3E;resize:vertical"></textarea>'
     +'<div style="display:flex;gap:.6rem;margin-top:.9rem">'
-    +'<button onclick="document.getElementById(\'wm-msg-overlay\').remove()" style="flex:1;padding:.7rem;background:#fff;border:1px solid #E5E0D8;border-radius:9px;font-family:inherit;font-size:.82rem;font-weight:500;color:#6B7280;cursor:pointer">Cancel</button>'
-    +'<button id="wm-msg-send" onclick="wmMessageSend('+bookingId+',this)" '+(email?'':'disabled ')+'style="flex:2;padding:.7rem;background:#B8985A;border:none;border-radius:9px;font-family:inherit;font-size:.82rem;font-weight:600;color:#1a1a1a;cursor:pointer'+(email?'':';opacity:.5;cursor:default')+'">Send Message</button>'
+    +'<button onclick="document.getElementById(\'wm-msg-overlay\').remove()" style="flex:1;padding:.7rem;background:#fff;border:1px solid #ffffff;border-radius:9px;font-family:inherit;font-size:.82rem;font-weight:500;color:#6B7280;cursor:pointer">Cancel</button>'
+    +'<button id="wm-msg-send" onclick="wmMessageSend('+bookingId+',this)" '+(email?'':'disabled ')+'style="flex:2;padding:.7rem;background:rgba(27,27,26,.55);border:none;border-radius:9px;font-family:inherit;font-size:.82rem;font-weight:600;color:#1a1a1a;cursor:pointer'+(email?'':';opacity:.5;cursor:default')+'">Send Message</button>'
     +'</div></div>';
   document.body.appendChild(el);
   el.addEventListener('click',function(ev){if(ev.target===el)el.remove();});
@@ -5391,7 +5655,7 @@ function buildAdminCalendar(){
         var label=t+(pu&&de?' '+pu+'→'+de:(' '+(j.customer_name||'')))+fare;
         inner+='<div class="adm-cal-job-mini">'+escTo(label)+'</div>';
       });
-      if(jobs.length>2)inner+='<div class="adm-cal-job-mini" style="color:var(--gold)">+'+(jobs.length-2)+' more</div>';
+      if(jobs.length>2)inner+='<div class="adm-cal-job-mini" style="color:var(--navy)">+'+(jobs.length-2)+' more</div>';
     }
     if(off.length&&!jobs.length){
       inner+='<div class="adm-cal-pill off">Time off</div>';
@@ -5403,9 +5667,9 @@ function buildAdminCalendar(){
       var maxShow=jobs.length?1:2;
       ext.slice(0,maxShow).forEach(function(ev){
         var t=ev.allDay?'':_evRange(ev).split(' ')[0];
-        inner+='<div class="adm-cal-job-mini" style="color:#6f665c;border-left:2px solid #6f665c;padding-left:.3rem">'+escTo((t?t+' ':'')+ev.title)+'</div>';
+        inner+='<div class="adm-cal-job-mini" style="color:#102a43;border-left:2px solid #102a43;padding-left:.3rem">'+escTo((t?t+' ':'')+ev.title)+'</div>';
       });
-      if(ext.length>maxShow)inner+='<div class="adm-cal-job-mini" style="color:#6f665c">+'+(ext.length-maxShow)+' personal</div>';
+      if(ext.length>maxShow)inner+='<div class="adm-cal-job-mini" style="color:#102a43">+'+(ext.length-maxShow)+' personal</div>';
     }
     html+='<div class="'+cls+'" onclick="admSelectDay(\''+key+'\')">'+inner+'</div>';
   }
@@ -5458,11 +5722,11 @@ function admShowDay(key){
   }
   if(ext.length){
     html+='<div style="background:#EEF1F8;padding:.7rem 1rem;border-bottom:1px solid var(--rule);font-size:.78rem;color:#2A3A66">';
-    html+='<div style="font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:#6f665c;margin-bottom:.35rem">From your calendar</div>';
+    html+='<div style="font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:#102a43;margin-bottom:.35rem">From your calendar</div>';
     html+=ext.map(function(ev){
       var when=ev.allDay?'All day':_evRange(ev);
       var loc=ev.location?' &middot; '+escTo(ev.location):'';
-      var notes=ev.notes?'<div style="margin-top:.2rem;margin-left:0;padding:.35rem .5rem;background:#fff;border-left:2px solid #6f665c;font-size:.72rem;color:rgba(27,27,26,.75);white-space:pre-wrap;line-height:1.4">'+escTo(ev.notes)+'</div>':'';
+      var notes=ev.notes?'<div style="margin-top:.2rem;margin-left:0;padding:.35rem .5rem;background:#fff;border-left:2px solid #102a43;font-size:.72rem;color:rgba(27,27,26,.75);white-space:pre-wrap;line-height:1.4">'+escTo(ev.notes)+'</div>':'';
       return '<div style="padding:.25rem 0"><strong style="color:#2A3A66">'+when+'</strong> &middot; '+escTo(ev.title)+'<span style="color:rgba(27,27,26,.7)">'+loc+'</span>'+notes+'</div>';
     }).join('')+'</div>';
   }
@@ -5487,7 +5751,7 @@ function admShowDay(key){
       if(j.needs_reassignment){
         actions='<button class="btn btn-navy btn-sm" onclick="event.stopPropagation();openReassign('+j.id+')">Resolve</button>'+_msgBtn;
       } else if(st==='pending'){
-        actions='<button class="btn btn-sm" style="background:var(--gold,#B8985A);color:#1a1a1a;border:1px solid var(--gold,#B8985A);font-weight:600" onclick="event.stopPropagation();admSendEstimate('+j.id+')">Send Estimate</button>'
+        actions='<button class="btn btn-sm" style="background:var(--navy));color:#1a1a1a;border:1px solid var(--navy));font-weight:600" onclick="event.stopPropagation();admSendEstimate('+j.id+')">Send Estimate</button>'
           +'<button class="btn btn-navy btn-sm" onclick="event.stopPropagation();openReassign('+j.id+')">Offer</button>'+_msgBtn;
       } else if(st==='offered'){
         actions='<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();reclaimOffer('+j.id+')">Reclaim</button>'+_msgBtn;
@@ -5504,7 +5768,7 @@ function admShowDay(key){
         waiting='<span class="offer-wait">Awaiting '+escTo(j.offered_driver_name)+exp+'</span>';
       }
       var notesHtml=j.notes?'<div style="margin-top:.3rem;padding:.3rem .5rem;background:rgba(27,27,26,.03);border-left:2px solid #B8989A;font-size:.72rem;color:rgba(27,27,26,.74);line-height:1.35">'+admEnrichNotes(j.notes)+'</div>':'';
-      if(j.customer_note){notesHtml+='<div style="margin-top:.3rem;padding:.3rem .5rem;background:rgba(184,152,90,.12);border-left:2px solid #B8985A;font-size:.72rem;color:#8a5a1a;line-height:1.35"><strong style="color:#b78635">Special req:</strong> '+escTo(j.customer_note)+'</div>';}
+      if(j.customer_note){notesHtml+='<div style="margin-top:.3rem;padding:.3rem .5rem;background:rgba(27,27,26,.04);border-left:2px solid #102a43;font-size:.72rem;color:#1b1b1a;line-height:1.35"><strong style="color:rgba(27,27,26,.55)">Special req:</strong> '+escTo(j.customer_note)+'</div>';}
       return '<div class="adm-cal-detail-job">'
         +'<div class="adm-cal-time">'+escTo(j.time||'ASAP')+'</div>'
         +'<div class="adm-cal-info">'
@@ -5549,7 +5813,7 @@ setInterval(function(){
     if(ms<=0){el.textContent='\u2014 expired';el.style.color='#9C2828';return;}
     var mm=Math.floor(ms/60000),ss=Math.floor((ms%60000)/1000);
     el.textContent='\u00b7 '+mm+':'+String(ss).padStart(2,'0');
-    el.style.color=ms<60000?'#9C2828':ms<180000?'#555555':'#837b71';
+    el.style.color=ms<60000?'#9C2828':ms<180000?'#555555':'#657485';
   });
 },1000);
 
@@ -5675,7 +5939,7 @@ function _renderBreakdown(byStatus, byPayment) {
     ph += `<div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.35rem">
       <div style="flex:1;font-size:.78rem;color:var(--navy);text-transform:capitalize">${_anEsc(r.payment||'unknown')}</div>
       <div style="font-size:.78rem;font-weight:500;color:var(--navy);font-variant-numeric:tabular-nums">${r.count} jobs</div>
-      <div style="font-size:.78rem;color:var(--gold);font-variant-numeric:tabular-nums;min-width:70px;text-align:right">${_anFmt(r.total)}</div>
+      <div style="font-size:.78rem;color:var(--navy);font-variant-numeric:tabular-nums;min-width:70px;text-align:right">${_anFmt(r.total)}</div>
     </div>`;
   });
   document.getElementById('an-by-payment').innerHTML = ph || '<div style="color:rgba(27,27,26,.64);font-size:.78rem">No completed bookings</div>';
@@ -5719,7 +5983,7 @@ function _renderDriverTable(drivers) {
       <td style="font-weight:500">${_anEsc(d.full_name)}</td>
       <td style="font-variant-numeric:tabular-nums">${d.jobs_completed}</td>
       <td style="font-variant-numeric:tabular-nums">${rate === '—' ? '—' : rate + '%'}</td>
-      <td style="font-variant-numeric:tabular-nums;color:var(--gold)">${_anFmt(d.total_earnings)}</td>
+      <td style="font-variant-numeric:tabular-nums;color:var(--navy)">${_anFmt(d.total_earnings)}</td>
       <td style="font-variant-numeric:tabular-nums">£${Number(d.avg_fare||0).toFixed(0)}</td>
     </tr>`;
   }).join('');
@@ -5732,7 +5996,7 @@ function _renderCustomerTable(customers) {
   tbody.innerHTML = customers.map((c, i) => `<tr>
     <td><span style="font-size:.65rem;font-weight:500;color:rgba(27,27,26,.64);margin-right:.5rem">#${i+1}</span>${_anEsc(c.full_name)}</td>
     <td style="font-variant-numeric:tabular-nums">${c.total_bookings}</td>
-    <td style="font-variant-numeric:tabular-nums;color:var(--gold)">${_anFmt(c.total_spend)}</td>
+    <td style="font-variant-numeric:tabular-nums;color:var(--navy)">${_anFmt(c.total_spend)}</td>
   </tr>`).join('');
 }
 

@@ -10,10 +10,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--navy:#1b1b1a;--navy2:#2b2a26;--cream:#f5f2ec;--gold:#b89045;--gold2:#c9a05a;--text:#fff;--muted:rgba(255,255,255,.55);--border:rgba(255,255,255,.15);--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif;}
+:root{--navy:#1b1b1a;--navy2:#173b5e;--text:#fff;--muted:rgba(255,255,255,.55);--border:rgba(255,255,255,.15);}
 html{font-size:16px;scroll-behavior:smooth}
 body{font-family:var(--sans);font-weight:300;color:#fff;background:#141412;background-attachment:fixed;background-size:cover;background-repeat:no-repeat;background-position:center 55%;line-height:1.7;-webkit-font-smoothing:antialiased;min-height:100vh}
-body::before{content:"";position:fixed;inset:0;background:rgba(10,8,4,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:0;pointer-events:none}
+body::before{content:"";position:fixed;inset:0;background:rgba(12,34,55,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:0;pointer-events:none}
 nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:.9rem 6%;display:flex;align-items:center;justify-content:space-between;transition:background .3s}
 nav.solid{background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;padding-left:0;padding-right:0}
 .brand{text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:.3rem;transition:opacity .3s ease}
@@ -26,45 +26,45 @@ nav.solid .burger{display:flex;position:fixed;top:1rem;right:6%;z-index:101}
 .nav-r{display:flex;align-items:center;gap:1.6rem;transition:opacity .3s ease}
 .nav-links{display:flex;align-items:center;gap:1.6rem}
 .nav-r a{text-decoration:none;font-size:.72rem;font-weight:400;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.82);transition:color .2s}
-.nav-r a:hover,.nav-r a.on{color:var(--gold)}
+.nav-r a:hover,.nav-r a.on{color:var(--navy)}
 .nav-book{background:none!important;color:#fff!important;padding:.4rem 0;border-radius:0;font-weight:300!important;font-family:var(--serif);font-size:1.8rem;font-style:italic;text-decoration:none;letter-spacing:.04em;border:none}
 .nav-book:hover{color:#fff!important;background:none!important}
 .nav-socials{display:flex;align-items:center;gap:.7rem}
 .nav-socials a{display:flex;align-items:center;justify-content:center;width:20px;height:20px;color:rgba(255,255,255,.7);transition:color .2s}
-.nav-socials a:hover{color:var(--gold)}
+.nav-socials a:hover{color:var(--navy)}
 .nav-socials svg{width:16px;height:16px}
-.nav-wa-mobile{display:none;color:#fff;align-items:center;text-decoration:none;transition:color .2s;margin-left:auto}.nav-wa-mobile:hover{color:var(--gold)}.nav-wa-mobile svg{width:26px;height:26px}.burger{display:none;flex-direction:column;gap:5px;cursor:pointer;border:none;background:none;padding:4px;min-width:40px;min-height:40px;justify-content:center;align-items:center}
+.nav-wa-mobile{display:none;color:#fff;align-items:center;text-decoration:none;transition:color .2s;margin-left:auto}.nav-wa-mobile:hover{color:var(--navy)}.nav-wa-mobile svg{width:26px;height:26px}.burger{display:none;flex-direction:column;gap:5px;cursor:pointer;border:none;background:none;padding:4px;min-width:40px;min-height:40px;justify-content:center;align-items:center}
 .burger span{display:block;width:20px;height:1.5px;background:#fff}
 .mmenu{display:none;position:fixed;inset:0;background:rgba(27,27,26,.55);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);z-index:99;flex-direction:column;align-items:center;justify-content:center;gap:2.4rem}
 .mmenu.open{display:flex}
 .mmenu a{font-family:var(--serif);font-size:2rem;font-weight:300;color:rgba(255,255,255,.65);text-decoration:none;transition:color .2s}
-.mmenu a:hover{color:var(--gold)}
+.mmenu a:hover{color:var(--navy)}
 footer{background:transparent;padding:1.5rem 6%;border-top:none;position:relative;z-index:1}
 .foot-inner{max-width:960px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem}
 .foot-brand{font-family:var(--serif);font-size:.85rem;font-weight:500;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.4)}
 .foot-links{display:flex;gap:1.4rem;list-style:none;flex-wrap:wrap}
 .foot-links a{text-decoration:none;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.4);transition:color .2s}
-.foot-links a:hover{color:var(--gold)}
+.foot-links a:hover{color:var(--navy)}
 .foot-copy{font-size:.65rem;color:rgba(255,255,255,.3);font-weight:300}
 section,main,.page-wrap,.content-wrap,.inner{position:relative;z-index:1}
 h1,h2,h3,h4{font-family:var(--serif);font-weight:300;color:#fff;letter-spacing:.05em}
 h1{font-size:clamp(2.2rem,5vw,3.5rem)}h2{font-size:clamp(1.8rem,3.5vw,2.6rem)}h3{font-size:clamp(1.3rem,2.5vw,1.8rem)}
 p{color:rgba(255,255,255,.72);font-size:1rem;line-height:1.8}
-a{color:var(--gold)}
-.stag{font-size:.72rem;font-weight:400;letter-spacing:.25em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:.6rem}
-.sline{width:32px;height:1.5px;background:var(--gold);margin-bottom:1.2rem}
+a{color:var(--navy)}
+.stag{font-size:.72rem;font-weight:400;letter-spacing:.25em;text-transform:uppercase;color:var(--navy);display:block;margin-bottom:.6rem}
+.sline{width:32px;height:1.5px;background:var(--navy);margin-bottom:1.2rem}
 input,select,textarea{font-family:var(--sans);font-size:1rem;font-weight:300;color:#fff;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.28);border-radius:0;padding:.75rem 0;outline:none;width:100%;transition:border-color .2s;-webkit-appearance:none}
-input:focus,select:focus,textarea:focus{border-bottom-color:var(--gold)}
+input:focus,select:focus,textarea:focus{border-bottom-color:var(--navy)}
 input::placeholder,textarea::placeholder{color:rgba(255,255,255,.55)}
 label{font-size:.8rem;font-weight:400;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.75)}
 .card,.panel,.box{background:transparent;border:none;box-shadow:none}
 table{width:100%;border-collapse:collapse;color:rgba(255,255,255,.8)}
-th{font-size:.72rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);padding:.7rem 1rem;border-bottom:1px solid rgba(255,255,255,.1);text-align:left}
+th{font-size:.72rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--navy);padding:.7rem 1rem;border-bottom:1px solid rgba(255,255,255,.1);text-align:left}
 td{font-size:.95rem;padding:.7rem 1rem;border-bottom:1px solid rgba(255,255,255,.06)}
 tr:hover td{color:#fff}
 .page-content{padding:7rem 6% 4rem;max-width:1100px;margin:0 auto;position:relative;z-index:1}
 .page-title{font-family:var(--serif);font-size:clamp(2.5rem,6vw,4rem);font-weight:300;color:#fff;letter-spacing:.08em;margin-bottom:.3rem}
-.page-title em{font-style:italic;color:var(--gold)}
+.page-title em{font-style:italic;color:var(--navy)}
 .page-sub{font-size:1rem;color:rgba(255,255,255,.6);margin-bottom:2.5rem;letter-spacing:.04em}
 @media(max-width:780px){.nav-r{display:none}.burger{display:flex}.nav-wa-mobile{display:flex}.brand-name{font-size:1.3rem;letter-spacing:.12em}}
 @media(max-width:540px){.page-content{padding:6rem 5% 3rem}}
@@ -72,7 +72,7 @@ tr:hover td{color:#fff}
 #hero{position:fixed;inset:0;z-index:0;overflow:hidden}
 .hero-bg{position:absolute;inset:0}
 .hero-bg img{width:100%;height:100%;object-fit:cover;object-position:center 40%}
-.hero-bg::after{content:'';position:absolute;inset:0;background:rgba(10,8,4,.65)}
+.hero-bg::after{content:'';position:absolute;inset:0;background:rgba(12,34,55,.65)}
 .hero-text{position:relative;z-index:1;text-align:center;padding:0 5%}
 .hw{font-family:var(--serif);font-size:clamp(2.8rem,8vw,6rem);font-weight:300;color:#fff;letter-spacing:.12em;text-transform:uppercase;line-height:.9;display:block}
 .hs{font-size:.7rem;font-weight:300;letter-spacing:.38em;text-transform:uppercase;color:rgba(255,255,255,.52);display:block;margin-top:1rem}
@@ -80,7 +80,7 @@ tr:hover td{color:#fff}
 .hero-scroll span{font-size:.52rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.4)}
 .hero-scroll-line{width:1px;height:42px;background:linear-gradient(to bottom,rgba(255,255,255,.3),transparent);animation:scrollpulse 2s ease-in-out infinite}
 @keyframes scrollpulse{0%,100%{opacity:.4;transform:scaleY(1)}50%{opacity:1;transform:scaleY(.7)}}
-#intro{position:relative;z-index:1;min-height:100vh;box-sizing:border-box;background:rgba(10,8,4,.4);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:0 6%}
+#intro{position:relative;z-index:1;min-height:100vh;box-sizing:border-box;background:rgba(12,34,55,.4);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:0 6%}
 .intro-inner{max-width:960px;margin:0 auto;text-align:center}
 #towns{padding:4rem 6% 5rem;position:relative;z-index:1}
 .towns-header{max-width:900px;margin:0 auto 2.8rem}
@@ -94,8 +94,8 @@ tr:hover td{color:#fff}
 .airports-inner{max-width:900px;margin:0 auto}
 .ap-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1.2rem;margin-top:2rem}
 .ap-card{border:1.5px solid rgba(255,255,255,.1);padding:1.4rem 1.6rem;transition:border-color .15s}
-.ap-card:hover{border-color:var(--gold)}
-.ap-code{font-size:.56rem;letter-spacing:.22em;font-weight:500;color:var(--gold);text-transform:uppercase;margin-bottom:.3rem}
+.ap-card:hover{border-color:var(--navy)}
+.ap-code{font-size:.56rem;letter-spacing:.22em;font-weight:500;color:var(--navy);text-transform:uppercase;margin-bottom:.3rem}
 .ap-name{font-family:var(--serif);font-size:1.1rem;font-weight:400;color:#fff;margin-bottom:.55rem}
 .ap-fares{font-size:.72rem;color:rgba(255,255,255,.5);line-height:1.85}
 #promise{padding:4.5rem 6%;position:relative;z-index:1}
@@ -122,16 +122,16 @@ tr:hover td{color:#fff}
 #cta{padding:5rem 6%;text-align:center;position:relative;z-index:1}
 .cta-inner{max-width:560px;margin:0 auto}
 .cta-inner p{font-size:.85rem;color:rgba(255,255,255,.55);margin-top:.9rem;line-height:1.8}
-.btn-cta{display:inline-block;margin-top:1.8rem;padding:.9rem 2.4rem;background:var(--gold);color:var(--navy);border:none;font-family:var(--sans);font-size:.66rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;text-decoration:none;cursor:pointer;transition:background .2s}
-.btn-cta:hover{background:var(--gold2)}
+.btn-cta{display:inline-block;margin-top:1.8rem;padding:.9rem 2.4rem;background:var(--navy);color:var(--navy);border:none;font-family:var(--sans);font-size:.66rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;text-decoration:none;cursor:pointer;transition:background .2s}
+.btn-cta:hover{background:var(--navy2)}
 .stitle{font-family:var(--serif);font-size:clamp(1.8rem,3.5vw,2.6rem);font-weight:300;color:#fff;line-height:1.1}
-.stitle em{font-style:italic;color:var(--gold)}
+.stitle em{font-style:italic;color:var(--navy)}
 #towns,#airports,#promise,#cta{display:none}
 
 
-footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);font-size:.66rem;letter-spacing:.1em;color:rgba(255,255,255,.38);background:rgba(13,10,6,.55);border-top:1px solid rgba(184,144,69,.12);position:relative;z-index:1}.mini-legal{margin-left:.6rem}.mini-legal a{color:rgba(255,255,255,.28);text-decoration:none;margin-left:.5rem;transition:color .2s;letter-spacing:.08em}.mini-legal a:hover{color:rgba(184,144,69,.7)}
+footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);font-size:.66rem;letter-spacing:.1em;color:rgba(255,255,255,.38);background:rgba(12,34,55,.55);border-top:1px solid rgba(16,42,67,.12);position:relative;z-index:1}.mini-legal{margin-left:.6rem}.mini-legal a{color:rgba(255,255,255,.28);text-decoration:none;margin-left:.5rem;transition:color .2s;letter-spacing:.08em}.mini-legal a:hover{color:rgba(16,42,67,.7)}
 </style>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23111D2C'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='38' font-weight='500' text-anchor='middle' fill='%23B8985A'%3EW%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23111D2C'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='38' font-weight='500' text-anchor='middle' fill='%23102a43'%3EW%3C/text%3E%3C/svg%3E">
 <meta name="robots" content="index,follow">
 <meta property="og:title" content="Premium Coverage | Westmere Private Hire | Sussex">
 <meta property="og:description" content="Westmere Private Hire covers the whole of Sussex — Brighton, Lewes, Horsham, Worthing, Crawley and all surrounding towns. Airport transfers to every London airport.">
@@ -141,6 +141,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Premium Coverage | Westmere Private Hire | Sussex">
 <meta name="twitter:description" content="Westmere Private Hire covers the whole of Sussex — Brighton, Lewes, Horsham, Worthing, Crawley and all surrounding towns. Airport transfers to every London airport.">
+<link rel="stylesheet" href="/westmere-theme.css">
 </head>
 <body>
 
@@ -165,20 +166,20 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 
 <section id="intro">
   <div class="intro-inner" style="text-align:center;max-width:800px;margin:0 auto">
-    <h2 style="font-family:var(--serif);font-size:clamp(2.2rem,5vw,3.2rem);font-weight:300;color:#fff;letter-spacing:.06em;margin-bottom:.6rem">Where we <em style="font-style:italic;color:var(--gold)">work</em></h2>
+    <h2 style="font-family:var(--serif);font-size:clamp(2.2rem,5vw,3.2rem);font-weight:300;color:#fff;letter-spacing:.06em;margin-bottom:.6rem">Where we <em style="font-style:italic;color:var(--navy)">work</em></h2>
     <p style="font-size:1.1rem;color:rgba(255,255,255,.85);margin-bottom:2rem;line-height:1.8">Airport transfers and private hire across Sussex and the South East &mdash; wherever you need to be.</p>
 
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;margin-bottom:2rem">
       <div style="text-align:center">
-        <div style="font-family:var(--serif);font-size:1.8rem;font-weight:300;color:var(--gold);margin-bottom:.3rem">East Sussex</div>
+        <div style="font-family:var(--serif);font-size:1.8rem;font-weight:300;color:var(--navy);margin-bottom:.3rem">East Sussex</div>
         <p style="font-size:.88rem;color:rgba(255,255,255,.75);line-height:1.7">Brighton · Lewes · Eastbourne<br>Hastings · Uckfield · Crowborough</p>
       </div>
       <div style="text-align:center">
-        <div style="font-family:var(--serif);font-size:1.8rem;font-weight:300;color:var(--gold);margin-bottom:.3rem">West Sussex</div>
+        <div style="font-family:var(--serif);font-size:1.8rem;font-weight:300;color:var(--navy);margin-bottom:.3rem">West Sussex</div>
         <p style="font-size:.88rem;color:rgba(255,255,255,.75);line-height:1.7">Horsham · Crawley · Worthing<br>Chichester · Burgess Hill · Haywards Heath</p>
       </div>
       <div style="text-align:center">
-        <div style="font-family:var(--serif);font-size:1.8rem;font-weight:300;color:var(--gold);margin-bottom:.3rem">Airports</div>
+        <div style="font-family:var(--serif);font-size:1.8rem;font-weight:300;color:var(--navy);margin-bottom:.3rem">Airports</div>
         <p style="font-size:.88rem;color:rgba(255,255,255,.75);line-height:1.7">Gatwick · Heathrow · Stansted<br>Luton · London City</p>
       </div>
     </div>

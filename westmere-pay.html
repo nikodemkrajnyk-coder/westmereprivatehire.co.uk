@@ -8,15 +8,14 @@
 <meta name="robots" content="noindex,nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
+<script src="/address-normalize.js"></script>
 <script src="https://js.stripe.com/v3/"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--navy:#1b1b1a;--navy2:#2b2a26;--cream:#f5f2ec;--gold:#b89045;--gold2:#c9a05a;--text:#2b2a26;--muted:#706e69;--border:#d9d4cc;--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif}
-html{font-size:16px}
-body{font-family:var(--sans);font-weight:300;color:var(--text);background:var(--navy);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+:root{--navy:#1b1b1a;--navy2:#173b5e;--text:#173b5e;--muted:#657485;--border:#c8d1d9;font-weight:300;color:var(--text);background:var(--navy);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
 .card{width:100%;max-width:440px;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.35)}
-.head{background:var(--navy);color:#fff;padding:30px 32px 26px;text-align:center;border-bottom:3px solid var(--gold)}
-.brand{font-family:var(--sans);font-size:10px;letter-spacing:3.5px;text-transform:uppercase;color:var(--gold);font-weight:500}
+.head{background:var(--navy);color:#fff;padding:30px 32px 26px;text-align:center;border-bottom:3px solid var(--navy)}
+.brand{font-family:var(--sans);font-size:10px;letter-spacing:3.5px;text-transform:uppercase;color:var(--navy);font-weight:500}
 .brand-name{font-family:var(--serif);font-size:26px;font-weight:400;letter-spacing:.5px;margin-top:6px}
 .body{padding:30px 32px 34px}
 .lead{font-family:var(--serif);font-size:21px;font-weight:400;color:var(--navy);margin-bottom:4px}
@@ -26,12 +25,12 @@ body{font-family:var(--sans);font-weight:300;color:var(--text);background:var(--
 .row:last-child{border-bottom:none}
 .row .k{font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted);font-weight:500}
 .row .v{font-family:var(--serif);font-size:15px;color:var(--navy);text-align:right;max-width:62%}
-.row.fare .v{font-size:24px;color:var(--gold);font-weight:500}
+.row.fare .v{font-size:24px;color:var(--navy);font-weight:500}
 .field{margin-bottom:14px}
 .field label{display:block;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted);font-weight:500;margin-bottom:8px}
 #card-el{background:#fff;border:1px solid var(--border);border-radius:8px;padding:13px 14px;min-height:50px;transition:border-color .2s}
 #payment-request-button{min-height:50px}
-#card-el.StripeElement--focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(184,144,69,.16)}
+#card-el.StripeElement--focus{border-color:var(--navy);box-shadow:0 0 0 2px rgba(16,42,67,.16)}
 .err{color:#c0392b;font-size:12.5px;min-height:18px;margin:8px 2px 0;line-height:1.4}
 .btn{width:100%;border:none;border-radius:8px;background:var(--navy);color:#fff;font-family:var(--sans);font-size:15px;font-weight:400;letter-spacing:.4px;padding:16px;cursor:pointer;transition:background .2s,opacity .2s;margin-top:6px}
 .btn:hover{background:var(--navy2)}
@@ -42,19 +41,19 @@ body{font-family:var(--sans);font-weight:300;color:var(--text);background:var(--
 .or-divider::before,.or-divider::after{content:"";flex:1;height:1px;background:var(--border)}
 .or-divider span{padding:0 12px}
 .note{font-size:12px;color:var(--muted);font-style:italic;text-align:center;line-height:1.5;margin-top:16px}
-.secure{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:18px;font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;color:#a49e94}
+.secure{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:18px;font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;color:#657485}
 .secure svg{width:13px;height:13px;opacity:.7}
 .state{text-align:center;padding:8px 0}
 .state .ico{width:60px;height:60px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px}
-.state .ico.ok{background:rgba(184,144,69,.14);color:var(--gold)}
-.state .ico.info{background:rgba(43,42,38,.08);color:var(--navy)}
+.state .ico.ok{background:rgba(16,42,67,.14);color:var(--navy)}
+.state .ico.info{background:rgba(23,59,94,.08);color:var(--navy)}
 .state h2{font-family:var(--serif);font-size:23px;font-weight:400;color:var(--navy);margin-bottom:8px}
 .state p{font-size:13.5px;color:var(--muted);line-height:1.6}
 .muted-ref{font-family:'Menlo','Consolas',monospace;font-size:12px;letter-spacing:.5px;color:var(--navy)}
-.spin{display:inline-block;width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:sp .8s linear infinite}
+.spin{display:inline-block;width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:sp .8s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
 .hidden{display:none!important}
-a.link{color:var(--gold);text-decoration:none}
+a.link{color:var(--navy);text-decoration:none}
 
 /* ── BROWSER AUTOFILL ──
    Chrome/Safari paint an autofilled field with their own yellow background,
@@ -82,8 +81,10 @@ select:-webkit-autofill:focus{
   transition:background-color 9999s ease-in-out 0s;
 }
 </style>
+<link rel="stylesheet" href="/wm-buttons.css">
+<link rel="stylesheet" href="/westmere-theme.css">
 </head>
-<body>
+<body class="wm-pay-page">
 <div class="card">
   <div class="head">
     <div class="brand">Private Hire</div>
@@ -99,7 +100,7 @@ select:-webkit-autofill:focus{
       <div class="ico info">
         <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
       </div>
-      <h2>Link not available</h2>
+      <h2 id="error-head">Link not available</h2>
       <p id="error-msg">We couldn't find this payment link. It may have expired or already been settled.</p>
       <p style="margin-top:14px">Questions? Call us on <a class="link" href="tel:+447930342593">07930&nbsp;342593</a>.</p>
     </div>
@@ -209,19 +210,37 @@ select:-webkit-autofill:focus{
     .then(function(res){
       if(!res.ok || !res.j || !res.j.ok){ showError((res.j && res.j.error) || "We couldn't find this payment link."); return; }
       booking = res.j.booking;
-      if(booking.cancelled){ showError("This booking has been cancelled. Please call us if you need to rebook."); return; }
+      // ── THE OTHER CHANNEL MAY HAVE GOT HERE FIRST ──
+      // The same estimate is payable from My Account. Whichever channel settles
+      // it first locks this one, and the server tells us WHY in lockReason /
+      // lockMessage (server/pay-lock.js) so this page says the same thing My
+      // Account does rather than inventing its own wording.
+      if(booking.cancelled){ showError(booking.lockMessage || "This booking has been cancelled. Please call us if you need to rebook."); return; }
       if(booking.paid){
         document.getElementById("paid-ref").textContent = "Ref: " + booking.ref;
         show("paid"); return;
       }
-      if(!booking.payable){ showError("There's nothing to pay on this booking just yet. Please call us if you have any questions."); return; }
+      if(booking.cashChosen){
+        // NOT "already paid" — nothing has been collected. Saying otherwise is
+        // a lie the customer would discover on the day. Nor is the LINK broken:
+        // it is perfectly valid, the choice is simply already made, so the
+        // heading says so rather than blaming the link.
+        var eh = document.getElementById("error-head");
+        if(eh) eh.textContent = "You're paying your driver";
+        showError(booking.lockMessage || "You have chosen to pay your driver on the day, so there is nothing to pay online.");
+        return;
+      }
+      if(!booking.payable){ showError(booking.lockMessage || "There's nothing to pay on this booking just yet. Please call us if you have any questions."); return; }
       if(!res.j.stripeReady){ showError("Online payment is temporarily unavailable. You can settle with your driver on the day."); return; }
 
       // Populate details
       document.getElementById("d-ref").textContent = booking.ref;
-      document.getElementById("d-from").textContent = booking.pickup || "—";
-      if (booking.stop_address) { document.getElementById("d-stop").textContent = booking.stop_address; document.getElementById("d-stop-row").classList.remove("hidden"); }
-      document.getElementById("d-to").textContent = booking.destination || "—";
+      // The customer sees the SHORT display form, same as every other surface
+      // (address-normalize.js). The full address stays in the booking record.
+      var _sa = function(a){ return (window.WMAddr ? WMAddr.shortDisplay(a) : a) || a || "—"; };
+      document.getElementById("d-from").textContent = _sa(booking.pickup);
+      if (booking.stop_address) { document.getElementById("d-stop").textContent = _sa(booking.stop_address); document.getElementById("d-stop-row").classList.remove("hidden"); }
+      document.getElementById("d-to").textContent = _sa(booking.destination);
       document.getElementById("d-when").textContent = fmtWhen(booking.date, booking.time);
       document.getElementById("d-fare").textContent = fmtMoney(booking.fare);
       document.getElementById("pay-amt").textContent = fmtMoney(booking.fare);
@@ -243,8 +262,8 @@ select:-webkit-autofill:focus{
     try {
       stripe = Stripe(key);
       cardEl = stripe.elements().create("card", {
-        style:{ base:{ fontFamily:'"Jost","Helvetica Neue",Arial,sans-serif', fontSize:"15px", fontWeight:"300", color:"#2b2a26",
-          "::placeholder":{ color:"rgba(43,42,38,0.4)" } }, invalid:{ color:"#c0392b", iconColor:"#c0392b" } }
+        style:{ base:{ fontFamily:'"Jost","Helvetica Neue",Arial,sans-serif', fontSize:"15px", fontWeight:"300", color:"#173b5e",
+          "::placeholder":{ color:"rgba(23,59,94,0.4)" } }, invalid:{ color:"#c0392b", iconColor:"#c0392b" } }
       });
       // #view-pay is already visible here (see caller) so the field mounts at
       // full width and is typeable.

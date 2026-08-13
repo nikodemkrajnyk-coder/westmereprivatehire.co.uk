@@ -7,10 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--gold:#b89045;--gold2:#c9a05a;--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif}
-html{font-size:16px;scroll-behavior:smooth}
+:root{scroll-behavior:smooth}
 body{font-family:var(--sans);font-weight:300;color:#fff;background-color:#1b1b1a;background-image:url("https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=2000&q=85&fm=jpg&fit=crop");background-attachment:fixed;background-size:cover;background-repeat:no-repeat;background-position:center 60%;line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden;image-rendering:-webkit-optimize-contrast;image-rendering:auto}
-body::before{content:"";position:fixed;inset:0;background:rgba(10,8,4,.35);z-index:0;pointer-events:none}
+body::before{content:"";position:fixed;inset:0;background:rgba(12,34,55,.35);z-index:0;pointer-events:none}
 
 /* NAV */
 nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:.9rem 6%;display:flex;align-items:center;justify-content:space-between;transition:background .3s}
@@ -24,55 +23,55 @@ nav.solid .burger{display:flex;position:fixed;top:1rem;right:6%;z-index:101}
 .brand-sub2{font-size:.8rem;color:#fff;letter-spacing:.38em;text-transform:uppercase;font-weight:300}
 .nav-r{display:flex;align-items:center;gap:1.6rem;transition:opacity .3s ease}
 .nav-r a{text-decoration:none;font-size:.72rem;font-weight:400;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.82);transition:color .2s}
-.nav-r a:hover,.nav-r a.on{color:var(--gold)}
+.nav-r a:hover,.nav-r a.on{color:var(--navy)}
 .nav-links{display:flex;align-items:center;gap:1.6rem}
 .nav-links a{text-decoration:none;font-size:.72rem;font-weight:400;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.82);transition:color .2s}
-.nav-links a:hover{color:var(--gold)}
+.nav-links a:hover{color:var(--navy)}
 .nav-links a.on{color:#fff;opacity:1}
 .nav-book{background:none!important;color:#fff!important;padding:.4rem 0;border-radius:0;font-weight:300!important;font-family:var(--serif);font-size:1.8rem;font-style:italic;text-decoration:none;letter-spacing:.04em;border:none}
 .nav-book:hover{color:#fff!important;background:none!important}
 .nav-socials{display:flex;gap:.85rem;align-items:center}
 .nav-socials a{color:rgba(255,255,255,.5);text-decoration:none;transition:color .25s;display:flex}
-.nav-socials a:hover{color:var(--gold)}
+.nav-socials a:hover{color:var(--navy)}
 .nav-socials svg{width:20px;height:20px}
-.nav-wa-mobile{display:none;color:#fff;align-items:center;text-decoration:none;transition:color .2s;margin-left:auto}.nav-wa-mobile:hover{color:var(--gold)}.nav-wa-mobile svg{width:26px;height:26px}.burger{display:none;flex-direction:column;gap:5px;cursor:pointer;border:none;background:none;padding:4px;min-width:40px;min-height:40px;justify-content:center;align-items:center}
+.nav-wa-mobile{display:none;color:#fff;align-items:center;text-decoration:none;transition:color .2s;margin-left:auto}.nav-wa-mobile:hover{color:var(--navy)}.nav-wa-mobile svg{width:26px;height:26px}.burger{display:none;flex-direction:column;gap:5px;cursor:pointer;border:none;background:none;padding:4px;min-width:40px;min-height:40px;justify-content:center;align-items:center}
 .burger span{display:block;width:20px;height:1.5px;background:#fff}
 .mmenu{display:none;position:fixed;inset:0;background:rgba(27,27,26,.5);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);z-index:99;flex-direction:column;align-items:center;justify-content:center;gap:2.4rem}
 .mmenu.open{display:flex}
 .mmenu a{font-family:var(--serif);font-size:2rem;font-weight:300;color:rgba(255,255,255,.65);text-decoration:none;transition:color .2s}
-.mmenu a:hover{color:var(--gold)}
+.mmenu a:hover{color:var(--navy)}
 
 /* FARES */
 #fares{padding:10rem 6% 2rem;position:relative;z-index:1;box-sizing:border-box}
 .fw{max-width:780px;margin:0 auto}
 .tabs{display:flex;gap:.5rem;margin-bottom:1.2rem;flex-wrap:wrap;position:relative;z-index:10}
-.tab-sub{font-size:.75rem;color:rgba(255,255,255,.6);letter-spacing:.08em;margin-bottom:.6rem;font-weight:300}
+.tab-sub{font-size:.75rem;color:#657485;letter-spacing:.08em;margin-bottom:.6rem;font-weight:300}
 .tab{padding:.38rem 1.1rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:30px;cursor:pointer;font-family:var(--sans);font-size:.6rem;font-weight:300;letter-spacing:.13em;text-transform:uppercase;color:rgba(255,255,255,.65);transition:all .2s;white-space:nowrap}
-.tab:hover{color:#fff;background:rgba(255,255,255,.08)}
-.tab.active{color:#fff;background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.35);font-weight:400}
+.tab:hover{color:#102a43;background:rgba(255,255,255,.08)}
+.tab.active{color:#102a43;background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.35);font-weight:400}
 .panel{display:none}
 .panel.show{display:block}
 .ftable{width:100%;border-collapse:collapse}
 .ftable tr{cursor:default;transition:background .15s}
 .ftable tr:hover{background:rgba(255,255,255,.04)}
 .ftable td{padding:.6rem .7rem;vertical-align:middle}
-.dest{font-size:.92rem;font-weight:300;color:#fff;letter-spacing:.02em}
-.meta{font-size:.64rem;color:rgba(255,255,255,.5);margin-top:.1rem;font-weight:300}
+.dest{font-size:.92rem;font-weight:300;color:#102a43;letter-spacing:.02em}
+.meta{font-size:.64rem;color:#657485;margin-top:.1rem;font-weight:300}
 .prices{text-align:right;white-space:nowrap}
 .prow{display:flex;justify-content:flex-end;align-items:baseline;gap:.55rem;line-height:1.7}
-.ptype{font-size:.58rem;font-weight:300;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.45)}
-.price{font-family:var(--serif);font-size:1.25rem;font-weight:300;color:#fff}
-.ppark{font-size:.62rem;font-weight:300;letter-spacing:.04em;color:rgba(255,255,255,.45)}
-.note{font-size:.72rem;color:rgba(255,255,255,.82);margin-top:1rem;line-height:1.9;font-weight:300}
+.ptype{font-size:.58rem;font-weight:300;letter-spacing:.1em;text-transform:uppercase;color:#657485}
+.price{font-family:var(--serif);font-size:1.25rem;font-weight:300;color:#102a43}
+.ppark{font-size:.62rem;font-weight:300;letter-spacing:.04em;color:#657485}
+.note{font-size:.72rem;color:#657485;margin-top:1rem;line-height:1.9;font-weight:300}
 
 
 @media(max-width:780px){body{background-attachment:scroll;background-size:cover}.nav-links,.nav-socials,.nav-book{display:none}.burger{display:flex}.nav-wa-mobile{display:flex}.brand-name{font-size:1.3rem;letter-spacing:.12em}}
 @media(max-width:500px){.ftable td{padding:.5rem .4rem}}
 
-footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);font-size:.66rem;letter-spacing:.1em;color:rgba(255,255,255,.38);background:rgba(13,10,6,.55);border-top:1px solid rgba(184,144,69,.12);position:relative;z-index:1}.mini-legal{margin-left:.6rem}.mini-legal a{color:rgba(255,255,255,.28);text-decoration:none;margin-left:.5rem;transition:color .2s;letter-spacing:.08em}.mini-legal a:hover{color:rgba(184,144,69,.7)}
+footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);font-size:.66rem;letter-spacing:.1em;color:rgba(255,255,255,.38);background:rgba(12,34,55,.55);border-top:1px solid rgba(16,42,67,.12);position:relative;z-index:1}.mini-legal{margin-left:.6rem}.mini-legal a{color:rgba(255,255,255,.28);text-decoration:none;margin-left:.5rem;transition:color .2s;letter-spacing:.08em}.mini-legal a:hover{color:rgba(16,42,67,.7)}
 </style>
 <meta name="description" content="Airport transfers from Sussex. Transparent pricing from Brighton, Lewes, Horsham and across the county to Gatwick, Heathrow, Stansted and Luton.">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23111D2C'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='38' font-weight='500' text-anchor='middle' fill='%23B8985A'%3EW%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23111D2C'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='38' font-weight='500' text-anchor='middle' fill='%23102a43'%3EW%3C/text%3E%3C/svg%3E">
 <meta name="robots" content="index,follow">
 <meta property="og:title" content="Airport Transfers — Westmere Private Hire">
 <meta property="og:description" content="Airport transfers from Sussex. Transparent pricing from Brighton, Lewes, Horsham and across the county to Gatwick, Heathrow, Stansted and Luton.">
@@ -82,6 +81,7 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Airport Transfers — Westmere Private Hire">
 <meta name="twitter:description" content="Airport transfers from Sussex. Transparent pricing from Brighton, Lewes, Horsham and across the county to Gatwick, Heathrow, Stansted and Luton.">
+<link rel="stylesheet" href="/westmere-theme.css">
 </head>
 <body>
 

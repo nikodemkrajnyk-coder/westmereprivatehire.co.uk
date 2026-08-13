@@ -17,7 +17,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-:root{--navy:#1b1b1a;--navy2:#2b2a26;--navy-deep:#121210;--gold:#6a6a6a;--gold2:#8a8a8a;--rule:rgba(27,27,26,.1);--gold-rule:rgba(106,106,106,.22);--text:#2b2a26;--text-mid:rgba(27,27,26,.65);--text-light:rgba(27,27,26,.4);--white:rgba(27,27,26,.85);--cream:#f5f2ec;--card:#fbfaf7;--paper:#fbfaf7;--cream-dark:rgba(27,27,26,.04);--green:#2D6E47;--green-bg:rgba(45,110,71,.18);--red:#8B2222;--red-bg:rgba(139,34,34,.15);--amber:#6a6a6a;--amber-bg:rgba(106,106,106,.1);--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',sans-serif;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);}
+:root{--navy:#1b1b1a;--navy2:#173b5e;--navy-deep:#121210;--rule:rgba(27,27,26,.1);--text:#173b5e;--text-mid:rgba(27,27,26,.65);--text-light:rgba(27,27,26,.4);--white:rgba(27,27,26,.85);--card:#ffffff;--paper:#ffffff;--green:#2D6E47;--green-bg:rgba(45,110,71,.18);--red:#8B2222;--red-bg:rgba(139,34,34,.15);--amber:#6a6a6a;--amber-bg:rgba(106,106,106,.1);--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);}
 html{height:100%;font-size:18px;overflow:hidden}
 body{font-family:var(--sans);font-weight:300;color:var(--navy);background:#ffffff;line-height:1.7;-webkit-font-smoothing:antialiased;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:pan-y;max-width:100vw}
 body::before{display:none}
@@ -29,7 +29,7 @@ body::before{display:none}
 }
 h1,h2,h3,h4{font-family:var(--serif);font-weight:300;color:var(--navy);letter-spacing:.05em}
 p{color:rgba(27,27,26,.72);line-height:1.8}
-a{color:var(--gold)}
+a{color:var(--navy)}
 
 /* ── HIDE SITE NAV ── */
 nav#nav{display:none}
@@ -38,9 +38,9 @@ nav#nav{display:none}
 .app{display:flex;flex-direction:column;height:100vh;height:100dvh;position:relative;z-index:1;overflow:hidden;max-width:100vw}
 .topbar{background:#ffffff;padding:calc(var(--safe-top) + .35rem) 1.2rem .35rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid rgba(106,106,106,.2);box-shadow:0 1px 8px rgba(0,0,0,.25);z-index:60;min-height:50px}
 .tb-left{display:flex;align-items:center;gap:.8rem}
-.tb-crest{width:36px;height:36px;border:1px solid rgba(106,106,106,.35);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1rem;color:var(--gold);flex-shrink:0}
+.tb-crest{width:36px;height:36px;border:1px solid rgba(106,106,106,.35);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1rem;color:var(--navy);flex-shrink:0}
 .tb-name{font-family:var(--serif);font-size:1rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#1a1a1a}
-.tb-mode-label{font-size:.48rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+.tb-mode-label{font-size:.48rem;letter-spacing:.2em;text-transform:uppercase;color:var(--navy)}
 .status-dot{width:8px;height:8px;border-radius:50%;background:rgba(27,27,26,.2);flex-shrink:0;transition:background .4s}
 .status-dot.ok{background:var(--green);animation:pulse 2.5s infinite}
 .status-dot.err{background:var(--red);animation:none}
@@ -50,7 +50,7 @@ nav#nav{display:none}
 .bottom-nav{background:#ffffff;border-top:1px solid rgba(106,106,106,.2);box-shadow:0 -1px 8px rgba(0,0,0,.25);display:flex;flex-direction:column;padding-bottom:var(--safe-bottom);flex-shrink:0;z-index:60}
 .bn-row{display:flex;width:100%}
 .bn{flex:1;display:flex;flex-direction:column;align-items:center;gap:.22rem;padding:.85rem .3rem;background:none;border:none;cursor:pointer;transition:color .2s;color:#1a1a1a;font-family:var(--sans);min-height:60px;position:relative}
-.bn.on{color:var(--gold)}
+.bn.on{color:var(--navy)}
 .bn-bar{width:18px;height:1px;background:currentColor;opacity:0;transition:opacity .2s}
 .bn.on .bn-bar{opacity:1}
 .bn-label{font-size:.6rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;margin-top:.1rem}
@@ -61,12 +61,12 @@ nav#nav{display:none}
 .pg{display:none;padding:1.2rem 1rem;max-width:560px;margin:0 auto;padding-bottom:1.5rem}
 .pg.on{display:block}
 .sec-title{font-family:var(--serif);font-size:2.1rem;font-weight:400;color:#1a1a1a;line-height:1.05;margin-bottom:.25rem;letter-spacing:.01em}
-.sec-title em{font-style:italic;color:var(--gold);font-family:var(--serif);font-weight:400}
-.sec-sub{font-size:.7rem;color:var(--gold2);font-weight:500;letter-spacing:.18em;text-transform:uppercase;margin-bottom:1.1rem}
+.sec-title em{font-style:italic;color:var(--navy);font-family:var(--serif);font-weight:400}
+.sec-sub{font-size:.7rem;color:var(--navy2);font-weight:500;letter-spacing:.18em;text-transform:uppercase;margin-bottom:1.1rem}
 
 /* ── CARDS ── */
-.card{background:#ffffff;border:1px solid var(--gold-rule);box-shadow:0 4px 20px rgba(0,0,0,.2);margin-bottom:.85rem;border-radius:14px;overflow:hidden}
-.ch{padding:.9rem 1.4rem;border-bottom:1px solid rgba(106,106,106,.12);font-size:.7rem;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;justify-content:space-between}
+.card{background:#ffffff;border:1px solid var(--rule);box-shadow:0 4px 20px rgba(0,0,0,.2);margin-bottom:.85rem;border-radius:14px;overflow:hidden}
+.ch{padding:.9rem 1.4rem;border-bottom:1px solid rgba(106,106,106,.12);font-size:.7rem;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:var(--navy);display:flex;align-items:center;justify-content:space-between}
 .cb{padding:0 1.1rem}
 .row{display:flex;justify-content:space-between;align-items:baseline;padding:.88rem 0;border-bottom:1px solid rgba(27,27,26,.06)}
 .row:last-child{border-bottom:none}
@@ -76,13 +76,13 @@ nav#nav{display:none}
 
 /* ── JOB CARDS ── */
 .job-card{background:#ffffff;border:1px solid rgba(27,27,26,.12);box-shadow:0 2px 14px rgba(27,27,26,.07);margin-bottom:.85rem;overflow:hidden;border-radius:12px}
-.job-card.active-job{border-color:var(--gold);border-width:2px;box-shadow:0 4px 18px rgba(106,106,106,.18)}
+.job-card.active-job{border-color:var(--navy);border-width:2px;box-shadow:0 4px 18px rgba(106,106,106,.18)}
 .job-card.done-job{opacity:.6}
 .jc-bar{height:4px;background:#ffffff}
-.job-card.active-job .jc-bar{background:var(--gold)}
+.job-card.active-job .jc-bar{background:var(--navy)}
 .job-card.done-job .jc-bar{background:var(--green)}
 .jc-header{display:flex;align-items:center;justify-content:space-between;padding:.95rem 1.1rem .8rem;border-bottom:1px solid rgba(106,106,106,.12)}
-.jc-time{font-family:var(--serif);font-size:2rem;font-weight:300;color:var(--gold);line-height:1}
+.jc-time{font-family:var(--serif);font-size:2rem;font-weight:300;color:var(--navy);line-height:1}
 .jc-name{font-size:1.15rem;font-weight:500;color:var(--navy);font-family:var(--serif);text-align:right}
 .jc-pax{font-size:.78rem;color:rgba(27,27,26,.5);font-weight:300;margin-top:.1rem;text-align:right}
 .jc-details{padding:.8rem 1.1rem;border-bottom:1px solid rgba(27,27,26,.06)}
@@ -93,24 +93,24 @@ nav#nav{display:none}
 .fp{display:inline-block;font-size:.68rem;font-weight:500;letter-spacing:.08em;padding:.18rem .6rem;border:1px solid}
 .fp-ontime{color:var(--green);border-color:rgba(45,110,71,.4);background:var(--green-bg)}
 .fp-landed{color:#60A5FA;border-color:rgba(96,165,250,.25);background:rgba(96,165,250,.06)}
-.fp-delayed{color:var(--gold);border-color:rgba(106,106,106,.3);background:var(--amber-bg)}
+.fp-delayed{color:var(--navy);border-color:rgba(106,106,106,.3);background:var(--amber-bg)}
 .jc-contact{display:flex;gap:1px;border-bottom:1px solid rgba(27,27,26,.06);background:rgba(27,27,26,.04)}
 .jcc{flex:1;padding:.85rem;background:rgba(27,27,26,.05);border:none;font-family:var(--sans);font-size:.78rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.55);cursor:pointer;transition:all .25s;text-decoration:none;display:flex;align-items:center;justify-content:center}
 .jcc:hover,.jcc:active{background:rgba(106,106,106,.15);color:var(--navy)}
 .jc-actions{padding:.8rem 1rem;display:flex;flex-wrap:wrap;gap:.5rem}
 .sbt{font-family:var(--sans);font-size:.78rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.75rem 1rem;cursor:pointer;border:none;transition:all .2s;flex:1;min-width:100px;min-height:50px}
-.sbt-enroute{background:var(--gold);color:var(--navy)}.sbt-enroute:hover{background:var(--gold2);color:var(--navy)}
+.sbt-enroute{background:var(--navy);color:var(--navy)}.sbt-enroute:hover{background:var(--navy2);color:var(--navy)}
 .sbt-atpickup{background:rgba(96,165,250,.1);color:#60A5FA;border:1px solid rgba(96,165,250,.2)}
-.sbt-onboard{background:var(--amber-bg);color:var(--gold);border:1px solid rgba(106,106,106,.3)}
+.sbt-onboard{background:var(--amber-bg);color:var(--navy);border:1px solid rgba(106,106,106,.3)}
 .sbt-dropoff{background:var(--green-bg);color:var(--green);border:1px solid rgba(45,110,71,.3)}
 .sbt-cancel{background:transparent;color:rgba(27,27,26,.4);border:1px solid rgba(27,27,26,.12)}
 .jc-links{padding:.6rem 1rem;border-top:1px solid rgba(27,27,26,.06);display:flex;gap:.5rem;flex-wrap:wrap}
 .jl{font-family:var(--sans);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;padding:.55rem .95rem;cursor:pointer;background:rgba(27,27,26,.04);border:1px solid rgba(27,27,26,.1);color:rgba(27,27,26,.55);transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;min-height:40px}
-.jl:hover{border-color:var(--gold);color:var(--navy)}
-.nav-addr{cursor:pointer;color:var(--navy);border-bottom:1px dashed var(--gold);font-size:1rem;font-weight:300;line-height:1.45;flex:1}
+.jl:hover{border-color:var(--navy);color:var(--navy)}
+.nav-addr{cursor:pointer;color:var(--navy);border-bottom:1px dashed var(--navy);font-size:1rem;font-weight:300;line-height:1.45;flex:1}
 .nav-addr:active{opacity:.6}
 .trip-status{padding:.55rem 1.1rem;font-size:.72rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;text-align:center}
-.ts-enroute{background:var(--amber-bg);color:var(--gold)}
+.ts-enroute{background:var(--amber-bg);color:var(--navy)}
 .ts-atpickup{background:rgba(96,165,250,.08);color:#60A5FA}
 .ts-onboard{background:var(--green-bg);color:var(--green)}
 .ts-done{background:rgba(27,27,26,.04);color:rgba(27,27,26,.4)}
@@ -119,7 +119,7 @@ nav#nav{display:none}
 .jc-passenger .jc-phone{font-size:.82rem;color:rgba(27,27,26,.5);margin-top:.15rem}
 .jc-fare-wrap{padding:.5rem 1.1rem;border-bottom:1px solid rgba(27,27,26,.06)}
 .jc-fare-btn{font-family:var(--sans);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;background:transparent;border:1px solid rgba(27,27,26,.12);color:rgba(27,27,26,.45);padding:.45rem .8rem;cursor:pointer}
-.jc-fare-detail{display:none;font-family:var(--serif);font-size:1.1rem;color:var(--gold)}
+.jc-fare-detail{display:none;font-family:var(--serif);font-size:1.1rem;color:var(--navy)}
 .jc-fare-detail.show{display:block}
 
 /* ── SECTION HEADERS ── */
@@ -129,7 +129,7 @@ nav#nav{display:none}
 
 /* ── JOB CARD v2 (redesigned) ── */
 .jc2{background:#ffffff;border-radius:14px;box-shadow:0 2px 18px rgba(27,27,26,.07),0 1px 4px rgba(27,27,26,.04);margin-bottom:1rem;overflow:hidden;border:1.5px solid rgba(27,27,26,.07);transition:box-shadow .2s}
-.jc2.st-upcoming,.jc2.st-confirmed{border-left:4px solid var(--gold)}
+.jc2.st-upcoming,.jc2.st-confirmed{border-left:4px solid var(--navy)}
 .jc2.st-enroute{border-left:4px solid #60A5FA}
 .jc2.st-atpickup{border-left:4px solid #6a6a6a}
 .jc2.st-onboard{border-left:4px solid var(--green)}
@@ -142,9 +142,9 @@ nav#nav{display:none}
 .jc2-pax{font-size:.7rem;color:rgba(27,27,26,.42);margin-top:.12rem}
 
 .jc2-badge{display:inline-flex;align-items:center;font-size:.58rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;padding:.2rem .7rem;border-radius:20px;margin:.15rem 1.15rem .35rem}
-.jc2-bd-upcoming,.jc2-bd-confirmed{background:rgba(106,106,106,.13);color:#6a6860}
+.jc2-bd-upcoming,.jc2-bd-confirmed{background:rgba(106,106,106,.13);color:#657485}
 .jc2-bd-enroute{background:rgba(96,165,250,.1);color:#2563EB}
-.jc2-bd-atpickup{background:rgba(245,158,11,.1);color:#555555}
+.jc2-bd-atpickup{background:rgba(16,42,67,.1);color:#555555}
 .jc2-bd-onboard{background:rgba(45,110,71,.1);color:var(--green)}
 .jc2-bd-done{background:rgba(27,27,26,.05);color:rgba(27,27,26,.38)}
 
@@ -152,7 +152,7 @@ nav#nav{display:none}
 .jc2-prog{display:flex;align-items:center;padding:0 1.15rem .7rem}
 .jc2-prog-dot{width:8px;height:8px;border-radius:50%;border:1.5px solid rgba(27,27,26,.18);background:#ffffff;flex-shrink:0}
 .jc2-prog-dot.pd-done{background:var(--green);border-color:var(--green)}
-.jc2-prog-dot.pd-active{background:var(--gold);border-color:var(--gold);box-shadow:0 0 0 3px rgba(106,106,106,.22)}
+.jc2-prog-dot.pd-active{background:var(--navy);border-color:var(--navy);box-shadow:0 0 0 3px rgba(106,106,106,.22)}
 .jc2-prog-line{flex:1;height:1.5px;background:rgba(27,27,26,.1);margin:0 2px}
 .jc2-prog-line.pl-done{background:rgba(45,110,71,.4)}
 
@@ -160,14 +160,14 @@ nav#nav{display:none}
 .jc2-route{padding:.35rem 1.15rem .75rem;border-bottom:1px solid rgba(27,27,26,.06)}
 .jc2-loc{display:flex;align-items:flex-start;gap:.6rem;padding:.2rem 0}
 .jc2-pin{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:.3rem}
-.jc2-pin.pu{background:var(--gold)}
+.jc2-pin.pu{background:var(--navy)}
 .jc2-pin.de{background:rgba(27,27,26,.35)}
 .jc2-addr{font-size:.92rem;font-weight:300;color:var(--navy);cursor:pointer;line-height:1.35;border-bottom:1px dashed rgba(106,106,106,.35)}
 .jc2-addr:active{opacity:.6}
 
 /* Fare row */
 .jc2-meta{display:flex;align-items:center;justify-content:space-between;padding:.6rem 1.15rem;border-bottom:1px solid rgba(27,27,26,.06)}
-.jc2-fare{font-family:var(--serif);font-size:1.25rem;color:var(--gold);line-height:1}
+.jc2-fare{font-family:var(--serif);font-size:1.25rem;color:var(--navy);line-height:1}
 .jc2-pay{font-size:.68rem;color:rgba(27,27,26,.4);margin-top:.1rem}
 
 /* Footer */
@@ -175,7 +175,7 @@ nav#nav{display:none}
 .jc2-cc{flex:1;padding:.82rem .5rem;background:rgba(27,27,26,.025);border:none;font-family:var(--sans);font-size:.68rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5);cursor:pointer;text-decoration:none;display:flex;align-items:center;justify-content:center;border-right:1px solid rgba(27,27,26,.05)}
 .jc2-cc:active{background:rgba(106,106,106,.12);color:var(--navy)}
 .jc2-ab{flex:2;padding:.82rem .6rem;font-family:var(--sans);font-size:.74rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border:none;transition:all .2s}
-.jc2-ab.ab-enroute{background:var(--gold);color:var(--navy)}
+.jc2-ab.ab-enroute{background:var(--navy);color:var(--navy)}
 .jc2-ab.ab-atpickup{background:#3B82F6;color:#1a1a1a}
 .jc2-ab.ab-onboard{background:#6a6a6a;color:#1a1a1a}
 .jc2-ab.ab-dropoff{background:var(--green);color:#1a1a1a}
@@ -196,7 +196,7 @@ nav#nav{display:none}
 .notif-body{flex:1}
 .notif-msg{font-size:.83rem;color:var(--navy);line-height:1.4}
 .notif-ts{font-size:.66rem;color:rgba(27,27,26,.38);margin-top:.2rem}
-.notif-badge-num{position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;border-radius:9px;background:var(--gold);color:var(--navy);font-size:.58rem;font-weight:700;display:none;align-items:center;justify-content:center;padding:0 3px;border:2px solid #f5f2ec}
+.notif-badge-num{position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;border-radius:9px;background:var(--navy);color:var(--navy);font-size:.58rem;font-weight:700;display:none;align-items:center;justify-content:center;padding:0 3px;border:2px solid #ffffff}
 .notif-backdrop{position:fixed;inset:0;z-index:499;display:none}
 .notif-backdrop.open{display:block}
 
@@ -205,7 +205,7 @@ nav#nav{display:none}
 .nav-popup-title{font-family:var(--serif);font-size:1.2rem;color:var(--navy);margin-bottom:1rem}
 .nav-popup-btns{display:flex;gap:.6rem;flex-direction:column}
 .nav-popup-btns a{display:block;padding:1rem;font-family:var(--sans);font-size:.82rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;border-radius:8px;transition:opacity .2s}
-.nav-popup-btns a:first-child{background:var(--gold);color:var(--navy)}
+.nav-popup-btns a:first-child{background:rgba(27,27,26,.55);color:var(--navy)}
 .nav-popup-btns a:last-child{background:rgba(27,27,26,.06);color:var(--navy)}
 .nav-popup-close{margin-top:.8rem;font-size:.78rem;color:rgba(27,27,26,.4);cursor:pointer;background:transparent;border:none;padding:.5rem}
 
@@ -215,8 +215,8 @@ nav#nav{display:none}
 .ss-d{font-size:.78rem;color:rgba(27,27,26,.5);font-weight:300;margin-top:.1rem}
 .ss-n{font-size:.85rem;font-weight:500;flex-shrink:0}
 .offer-btns{padding:.8rem 1rem;display:flex;gap:.6rem}
-.btn-accept{flex:1;padding:.85rem;background:var(--gold);color:var(--navy);border:none;font-family:var(--sans);font-size:.78rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:background .2s;min-height:50px}
-.btn-accept:hover{background:var(--gold2)}
+.btn-accept{flex:1;padding:.85rem;background:#ffffff;color:#102a43;border:1px solid #102a43;font-family:var(--sans);font-size:.78rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:background .2s;min-height:50px}
+.btn-accept:hover{background:rgba(27,27,26,.06)}
 .btn-decline{padding:.85rem 1.1rem;background:transparent;color:rgba(27,27,26,.5);border:1px solid rgba(27,27,26,.15);font-family:var(--sans);font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;min-height:50px}
 
 /* ── INBOX ── */
@@ -226,18 +226,18 @@ nav#nav{display:none}
 .msg-time{font-size:.78rem;color:rgba(27,27,26,.45)}
 .msg-pill{font-size:.65rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.25rem .7rem;border:1px solid}
 .pill-ok{color:var(--green);border-color:rgba(45,110,71,.4);background:var(--green-bg)}
-.pill-flag{color:var(--gold);border-color:rgba(106,106,106,.3);background:var(--amber-bg)}
+.pill-flag{color:var(--navy);border-color:rgba(106,106,106,.3);background:var(--amber-bg)}
 .pill-enquiry{color:rgba(27,27,26,.4);border-color:rgba(27,27,26,.1);background:rgba(27,27,26,.04)}
 .msg-text{font-size:.95rem;color:rgba(27,27,26,.65);font-weight:300;line-height:1.6;font-style:italic;border-left:2px solid rgba(27,27,26,.15);padding-left:.75rem;margin:.5rem 0}
 .msg-extract{font-size:.9rem;color:rgba(27,27,26,.65);font-weight:300;background:rgba(27,27,26,.04);padding:.7rem .9rem;margin:.5rem 0;line-height:1.75}
-.msg-conflict{font-size:.88rem;color:var(--gold);font-weight:300;background:var(--amber-bg);border:1px solid rgba(106,106,106,.25);padding:.6rem .9rem;margin:.5rem 0}
+.msg-conflict{font-size:.88rem;color:var(--navy);font-weight:300;background:var(--amber-bg);border:1px solid rgba(106,106,106,.25);padding:.6rem .9rem;margin:.5rem 0}
 .msg-actions{display:flex;gap:.5rem;margin-top:.7rem;flex-wrap:wrap}
 .ma-btn{font-family:var(--sans);font-size:.78rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.65rem 1rem;cursor:pointer;border:none;min-height:46px;transition:all .2s}
-.ma-accept{background:var(--gold);color:var(--navy)}.ma-accept:hover{background:var(--gold2);color:var(--navy)}
+.ma-accept{background:var(--navy);color:var(--navy)}.ma-accept:hover{background:var(--navy2);color:var(--navy)}
 .ma-pass{background:transparent;color:rgba(27,27,26,.4);border:1px solid rgba(27,27,26,.15)}.ma-pass:hover{border-color:rgba(27,27,26,.3);color:var(--navy)}
 
 /* ── ASSISTANT FAB + PANEL ── */
-.assist-panel{position:fixed;bottom:0;left:0;right:0;top:0;background:rgba(245,242,236,.98);backdrop-filter:blur(20px);z-index:100;display:none;flex-direction:column;pointer-events:none}
+.assist-panel{position:fixed;bottom:0;left:0;right:0;top:0;background:rgba(255,255,255,.98);backdrop-filter:blur(20px);z-index:100;display:none;flex-direction:column;pointer-events:none}
 .assist-panel.on{display:flex;pointer-events:auto}
 @media(min-width:720px){.assist-panel{max-width:420px;margin:0 auto}}
 .assist-header{display:flex;align-items:center;justify-content:space-between;padding:calc(var(--safe-top) + .6rem) 1rem .6rem;border-bottom:1px solid rgba(27,27,26,.06);flex-shrink:0}
@@ -246,32 +246,32 @@ nav#nav{display:none}
 .assist-status{font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.35);padding:0 1rem;display:flex;align-items:center;gap:.4rem;height:28px;flex-shrink:0}
 .assist-status-dot{width:6px;height:6px;border-radius:50%;background:rgba(27,27,26,.2)}
 .assist-status-dot.live{background:var(--green);animation:pulse 2s infinite}
-.assist-status-dot.rec{background:var(--gold);animation:pulse 1s infinite}
+.assist-status-dot.rec{background:var(--navy);animation:pulse 1s infinite}
 .assist-feed{flex:1;overflow-y:auto;padding:.9rem 1rem;display:flex;flex-direction:column;gap:.3rem;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
 .msg-user{display:flex;justify-content:flex-end;margin-bottom:.5rem}
 .msg-user div{background:rgba(106,106,106,.1);color:var(--navy);padding:.7rem .9rem;font-size:.95rem;font-weight:300;max-width:82%;line-height:1.6;border:1px solid rgba(106,106,106,.15)}
 .msg-w{display:flex;gap:.5rem;align-items:flex-start;margin-bottom:.5rem}
-.msg-w-crest{width:20px;height:20px;border:1px solid rgba(106,106,106,.3);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:.62rem;color:var(--gold);flex-shrink:0;margin-top:.15rem}
+.msg-w-crest{width:20px;height:20px;border:1px solid rgba(106,106,106,.3);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:.62rem;color:var(--navy);flex-shrink:0;margin-top:.15rem}
 .msg-w div{background:rgba(27,27,26,.04);border:1px solid rgba(27,27,26,.08);padding:.7rem .9rem;font-size:.95rem;color:var(--navy);font-weight:300;max-width:85%;line-height:1.6}
 .msg-booking{background:rgba(106,106,106,.08)!important;border:1px solid rgba(106,106,106,.25)!important;padding:.9rem 1rem!important}
-.msg-booking-title{font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem;font-weight:500}
+.msg-booking-title{font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--navy);margin-bottom:.4rem;font-weight:500}
 .msg-booking-row{font-size:.88rem;color:var(--navy);line-height:1.6;font-weight:300}
 .msg-booking-row strong{font-weight:500}
 .msg-booking-actions{display:flex;gap:.5rem;margin-top:.7rem}
 .msg-booking-actions button{font-family:var(--sans);font-size:.68rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;padding:.6rem 1rem;cursor:pointer;min-height:40px;transition:all .2s}
-.mba-confirm{background:var(--gold);color:var(--navy);border:none}
-.mba-confirm:hover{background:var(--gold2)}
+.mba-confirm{background:var(--navy);color:var(--navy);border:none}
+.mba-confirm:hover{background:var(--navy2)}
 .mba-cancel{background:transparent;color:rgba(27,27,26,.4);border:1px solid rgba(27,27,26,.15)}
 .thinking{font-size:.74rem;color:rgba(27,27,26,.4);font-style:italic;animation:blink 1.2s ease infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 .assist-input-row{border-top:1px solid rgba(27,27,26,.06);padding:.7rem 1rem calc(.7rem + var(--safe-bottom));display:flex;gap:.5rem;align-items:flex-end;background:rgba(255,255,255,.6);flex-shrink:0}
 .assist-input{flex:1;font-family:var(--sans);font-size:1rem;font-weight:300;color:var(--navy);background:transparent;border:none;border-bottom:1px solid rgba(27,27,26,.15);padding:.6rem 0;outline:none;resize:none;height:42px;min-height:42px;-webkit-appearance:none;transition:border-color .3s}
-.assist-input:focus{border-bottom-color:var(--gold)}
+.assist-input:focus{border-bottom-color:var(--navy)}
 .assist-input::placeholder{color:rgba(27,27,26,.3)}
-.btn-send{font-family:var(--sans);font-size:.58rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;background:var(--gold);border:none;color:var(--navy);padding:.55rem 1rem;cursor:pointer;min-height:42px;transition:all .25s;white-space:nowrap}
-.btn-send:hover{background:var(--gold2)}
+.btn-send{font-family:var(--sans);font-size:.58rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;background:rgba(27,27,26,.55);border:none;color:var(--navy);padding:.55rem 1rem;cursor:pointer;min-height:42px;transition:all .25s;white-space:nowrap}
+.btn-send:hover{background:rgba(27,27,26,.06)}
 .btn-cam{background:rgba(106,106,106,.12);border:1.5px solid rgba(106,106,106,.5);color:var(--navy);width:44px;height:44px;min-width:44px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;-webkit-tap-highlight-color:transparent;font-size:1.2rem}
-.btn-cam:hover,.btn-cam:active{background:rgba(106,106,106,.22);border-color:var(--gold)}
+.btn-cam:hover,.btn-cam:active{background:rgba(106,106,106,.22);border-color:rgba(27,27,26,.55)}
 .assist-img-preview{max-width:100%;max-height:120px;border:1px solid rgba(106,106,106,.3);margin-bottom:.4rem;display:block;border-radius:2px}
 
 /* ── SMART DAY ── */
@@ -285,7 +285,7 @@ nav#nav{display:none}
 
 /* ── SCORECARD ── */
 .scorecard{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(27,27,26,.06);border:1px solid rgba(27,27,26,.08);margin-bottom:.85rem;position:relative;overflow:hidden}
-.scorecard::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,var(--gold),transparent);z-index:1}
+.scorecard::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,var(--navy),transparent);z-index:1}
 .sc-stat{background:#ffffff;padding:.85rem .7rem;text-align:center}
 .sc-val{font-family:var(--serif);font-size:1.6rem;font-weight:300;line-height:1;color:var(--navy)}
 .sc-label{font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-top:.2rem}
@@ -296,9 +296,9 @@ nav#nav{display:none}
 .empty-sub{font-size:.9rem;color:rgba(27,27,26,.5);font-weight:300;line-height:1.7}
 
 /* ── NAME BOARD ── */
-.nb-overlay{position:fixed;inset:0;background:rgba(245,242,236,.97);backdrop-filter:blur(20px);z-index:200;display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center}
+.nb-overlay{position:fixed;inset:0;background:rgba(255,255,255,.97);backdrop-filter:blur(20px);z-index:200;display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center}
 .nb-overlay.on{display:flex}
-.nb-eyebrow{font-size:.6rem;font-weight:500;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:1.4rem}
+.nb-eyebrow{font-size:.6rem;font-weight:500;letter-spacing:.28em;text-transform:uppercase;color:var(--navy);margin-bottom:1.4rem}
 .nb-name-text{font-family:var(--serif);font-size:clamp(2.8rem,11vw,5.5rem);font-weight:500;color:var(--navy);line-height:1.1}
 .nb-sub{font-size:.8rem;color:rgba(27,27,26,.45);margin-top:.75rem;font-weight:300}
 .nb-close{position:absolute;top:1.5rem;right:1.5rem;font-family:var(--sans);font-size:.6rem;font-weight:400;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.4);background:transparent;border:1px solid rgba(27,27,26,.1);padding:.5rem 1rem;cursor:pointer;transition:all .25s}
@@ -321,25 +321,25 @@ input[type=date]::placeholder,input[type=text]::placeholder{color:#8a8a8a!import
 .qcmd:hover{border-color:rgba(106,106,106,.3);color:var(--navy)}
 
 /* ── INLINE BTN OVERRIDES ── */
-.ibtn-primary{font-family:var(--sans);font-size:.78rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;background:var(--gold);color:var(--navy);border:none;padding:.75rem 1.3rem;cursor:pointer;min-height:50px;transition:all .25s}
-.ibtn-primary:hover{background:var(--gold2)}
+.ibtn-primary{font-family:var(--sans);font-size:.78rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;background:#ffffff;color:#102a43;border:1px solid #102a43;padding:.75rem 1.3rem;cursor:pointer;min-height:50px;transition:all .25s}
+.ibtn-primary:hover{background:rgba(27,27,26,.06)}
 .ibtn-ghost{font-family:var(--sans);font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;background:transparent;color:rgba(27,27,26,.55);border:1px solid rgba(27,27,26,.15);padding:.75rem 1.3rem;cursor:pointer;min-height:50px;transition:all .25s}
 .ibtn-ghost:hover{border-color:rgba(27,27,26,.3);color:var(--navy)}
 .ibtn-sm{font-family:var(--sans);font-size:.56rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;background:rgba(27,27,26,.06);color:rgba(27,27,26,.5);border:none;padding:.3rem .75rem;cursor:pointer;transition:all .2s}
 .ibtn-sm:hover{background:rgba(106,106,106,.15);color:var(--navy)}
 .ibtn-sm-outline{font-family:var(--sans);font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;background:none;border:1px solid rgba(27,27,26,.1);color:rgba(27,27,26,.4);padding:.28rem .65rem;cursor:pointer;transition:all .2s}
-.ibtn-sm-outline:hover{border-color:var(--gold);color:var(--navy)}
+.ibtn-sm-outline:hover{border-color:rgba(27,27,26,.55);color:var(--navy)}
 
 /* ── SD JOB ROW ── */
 .sd-row{display:flex;align-items:center;gap:.8rem;padding:.82rem 1.1rem;border-bottom:1px solid rgba(27,27,26,.06)}
 .sd-row:last-child{border-bottom:none}
-.sd-time{font-family:var(--serif);font-size:1.15rem;color:var(--gold);flex-shrink:0;width:50px}
+.sd-time{font-family:var(--serif);font-size:1.15rem;color:var(--navy);flex-shrink:0;width:50px}
 .sd-info{flex:1}
 .sd-name{font-size:1rem;font-weight:500;color:var(--navy)}
 .sd-route{font-size:.85rem;color:rgba(27,27,26,.5)}
-.sd-fare{font-family:var(--serif);font-size:1.2rem;color:var(--gold)}
+.sd-fare{font-family:var(--serif);font-size:1.2rem;color:var(--navy)}
 .sd-del{background:none;border:1px solid rgba(27,27,26,.1);color:rgba(27,27,26,.45);font-size:.7rem;padding:.28rem .65rem;cursor:pointer;font-family:var(--sans);transition:all .2s}
-.sd-del:hover{border-color:var(--gold);color:var(--navy)}
+.sd-del:hover{border-color:var(--navy);color:var(--navy)}
 
 
 /* ── RESPONSIVE ── */
@@ -364,7 +364,7 @@ input[type=date]::placeholder,input[type=text]::placeholder{color:#8a8a8a!import
 .earn-stat-card::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(-45deg,transparent,transparent 12px,rgba(106,106,106,.04) 12px,rgba(106,106,106,.04) 13px);pointer-events:none}
 .earn-stat-card.esk-accent{background:linear-gradient(135deg,#1a2d42 0%,var(--navy) 100%);border:1px solid rgba(106,106,106,.35)}
 .esk-label{font-size:.45rem;letter-spacing:.18em;text-transform:uppercase;color:#1a1a1a;margin-bottom:.3rem;position:relative}
-.esk-amount{font-family:var(--serif);font-size:1.55rem;color:var(--gold);line-height:1;position:relative;font-weight:300}
+.esk-amount{font-family:var(--serif);font-size:1.55rem;color:var(--navy);line-height:1;position:relative;font-weight:300}
 .earn-stat-card.esk-accent .esk-amount{font-size:1.75rem}
 .esk-jobs{font-size:.5rem;color:#1a1a1a;margin-top:.25rem;letter-spacing:.06em;position:relative}
 
@@ -374,14 +374,14 @@ input[type=date]::placeholder,input[type=text]::placeholder{color:#8a8a8a!import
 .ls-crest{width:56px;height:56px;border:1px solid rgba(106,106,106,.3);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.4rem;font-weight:500;color:var(--navy);margin:0 auto 1.1rem;position:relative}
 .ls-crest::before{content:'';position:absolute;inset:-8px;border:1px solid rgba(106,106,106,.1)}
 .ls-title{font-family:var(--serif);font-size:1.6rem;font-weight:300;color:var(--navy);text-align:center;margin-bottom:.2rem}
-.ls-sub{font-size:.58rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);text-align:center;margin-bottom:2rem}
+.ls-sub{font-size:.58rem;letter-spacing:.3em;text-transform:uppercase;color:var(--navy);text-align:center;margin-bottom:2rem}
 .ls-fg{display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem}
 .ls-label{font-family:var(--sans);font-size:.58rem;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:rgba(27,27,26,.5)}
 .ls-input{font-family:var(--sans);font-size:.92rem;font-weight:300;color:var(--navy);background:transparent;border:none;border-bottom:1px solid rgba(27,27,26,.15);padding:.78rem 0;outline:none;width:100%;min-height:48px;-webkit-appearance:none;transition:border-color .3s}
-.ls-input:focus{border-bottom-color:var(--gold)}
+.ls-input:focus{border-bottom-color:var(--navy)}
 .ls-input::placeholder{color:rgba(27,27,26,.3)}
-.ls-btn{width:100%;padding:1rem;background:var(--gold);color:var(--navy);border:none;font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;transition:all .25s;margin-top:.8rem;min-height:52px}
-.ls-btn:hover{background:var(--gold2)}
+.ls-btn{width:100%;padding:1rem;background:#ffffff;color:#102a43;border:1px solid #102a43;font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;transition:all .25s;margin-top:.8rem;min-height:52px}
+.ls-btn:hover{background:rgba(27,27,26,.06)}
 .ls-err{display:none;font-size:.78rem;color:var(--red);text-align:center;margin-top:.5rem;padding:.5rem;background:var(--red-bg);border:1px solid rgba(139,34,34,.3)}
 .ls-err.show{display:block}
 .ls-hd{padding:2.5rem 2.2rem 2rem;text-align:center;border-bottom:1px solid rgba(106,106,106,.12)}
@@ -389,55 +389,55 @@ input[type=date]::placeholder,input[type=text]::placeholder{color:#8a8a8a!import
 .ls-foot{text-align:center;padding:1.4rem 2.2rem;border-top:1px solid rgba(27,27,26,.06);font-size:.78rem;color:rgba(27,27,26,.35)}
 /* ── CALENDAR ── */
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:0;border:1px solid rgba(27,27,26,.1);overflow:hidden;width:100%}
-.cal-hd{padding:.55rem .2rem;text-align:center;font-size:.65rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5);background:rgba(245,242,236,.8)}
+.cal-hd{padding:.55rem .2rem;text-align:center;font-size:.65rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5);background:rgba(255,255,255,.8)}
 .cal-day{min-height:70px;padding:.3rem .25rem;background:#ffffff;cursor:pointer;transition:background .2s;position:relative;overflow:hidden;border-right:1px solid rgba(27,27,26,.07);border-bottom:1px solid rgba(27,27,26,.07);box-sizing:border-box}
 .cal-day:active{background:rgba(106,106,106,.15)}
-.cal-day.today{background:rgba(106,106,106,.2);border:2px solid var(--gold);box-shadow:inset 0 0 0 1px rgba(106,106,106,.25)}
+.cal-day.today{background:rgba(106,106,106,.2);border:2px solid var(--navy);box-shadow:inset 0 0 0 1px rgba(106,106,106,.25)}
 .cal-day.selected{background:rgba(27,27,26,.07);border:2px solid var(--navy)}
 .cal-day.other{opacity:.25;pointer-events:none}
 .cal-num{font-size:.88rem;font-weight:400;color:var(--navy);line-height:1}
-.cal-today-label{font-size:.5rem;font-weight:500;color:var(--gold);text-transform:uppercase;letter-spacing:.08em}
-.cal-job-count{position:absolute;bottom:3px;right:4px;font-size:.6rem;font-weight:500;color:var(--gold)}
+.cal-today-label{font-size:.5rem;font-weight:500;color:var(--navy);text-transform:uppercase;letter-spacing:.08em}
+.cal-job-count{position:absolute;bottom:3px;right:4px;font-size:.6rem;font-weight:500;color:var(--navy)}
 .cal-dots{display:flex;gap:2px;margin-top:3px}
-.cal-dots span{width:5px;height:5px;border-radius:50%;background:var(--gold)}
+.cal-dots span{width:5px;height:5px;border-radius:50%;background:var(--navy)}
 .cal-nav{display:flex;align-items:center;justify-content:space-between;padding:.6rem 0;margin-bottom:.4rem}
 .cal-nav-btn{background:none;border:1px solid rgba(27,27,26,.15);color:rgba(27,27,26,.55);font-family:var(--sans);font-size:.85rem;padding:.5rem 1rem;cursor:pointer;transition:all .2s;min-height:44px}
-.cal-nav-btn:active{border-color:var(--gold);color:var(--navy)}
+.cal-nav-btn:active{border-color:rgba(27,27,26,.55);color:var(--navy)}
 .cal-month{font-family:var(--serif);font-size:1.4rem;font-weight:300;color:var(--navy)}
 .cal-summary{padding:.8rem 1.1rem;border-bottom:1px solid rgba(27,27,26,.06);font-size:.88rem;color:rgba(27,27,26,.45);display:flex;justify-content:space-between}
-.cal-summary strong{color:var(--gold);font-weight:400}
+.cal-summary strong{color:var(--navy);font-weight:400}
 .cal-day-detail{margin-top:.85rem}
 .cal-detail-job{padding:.95rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:.8rem}
 .cal-detail-job:last-child{border-bottom:none}
-.cdj-time{font-family:var(--serif);font-size:1.2rem;color:var(--gold);flex-shrink:0;width:55px}
+.cdj-time{font-family:var(--serif);font-size:1.2rem;color:var(--navy);flex-shrink:0;width:55px}
 .cdj-info{flex:1}
 .cdj-name{font-size:1.05rem;font-weight:500;color:var(--navy)}
 .cdj-route{font-size:.88rem;color:rgba(27,27,26,.5)}
-.cdj-fare{font-family:var(--serif);font-size:1.15rem;color:var(--gold);flex-shrink:0}
+.cdj-fare{font-family:var(--serif);font-size:1.15rem;color:var(--navy);flex-shrink:0}
 .cal-empty{padding:1.5rem 1.1rem;text-align:center;font-size:.95rem;color:rgba(27,27,26,.4)}
 
 /* ── WEEK STRIP (Today page mini calendar) ── */
 .week-strip{display:flex;gap:2px;margin-bottom:1rem;background:rgba(27,27,26,.03);border-radius:12px;padding:.5rem .35rem;border:1px solid rgba(27,27,26,.06)}
 .ws-day{flex:1;display:flex;flex-direction:column;align-items:center;gap:.25rem;padding:.45rem .2rem;border-radius:8px;cursor:pointer;transition:background .2s,color .2s;background:transparent;border:none;font-family:var(--sans);color:rgba(27,27,26,.5)}
-.ws-day.ws-today{background:var(--gold);color:var(--navy)}
+.ws-day.ws-today{background:var(--navy);color:var(--navy)}
 .ws-day.ws-selected:not(.ws-today){background:rgba(27,27,26,.08);color:var(--navy)}
 .ws-day-name{font-size:.52rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;line-height:1}
 .ws-day-num{font-size:.95rem;font-weight:400;line-height:1}
 .ws-today .ws-day-num{font-weight:500}
 .ws-dots{display:flex;gap:2px;min-height:6px;align-items:center;justify-content:center}
 .ws-dot{width:5px;height:5px;border-radius:50%}
-.ws-dot-job{background:var(--gold)}
+.ws-dot-job{background:var(--navy)}
 .ws-today .ws-dot-job{background:#ffffff}
 .ws-dot-personal{background:rgba(27,27,26,.25)}
 .ws-today .ws-dot-personal{background:rgba(27,27,26,.4)}
 .ws-alt-list{margin-top:.6rem}
 .ws-alt-item{background:#ffffff;border:1px solid rgba(27,27,26,.08);border-radius:10px;padding:.75rem 1rem;margin-bottom:.5rem;display:flex;gap:.8rem;align-items:flex-start}
-.ws-alt-time{font-family:var(--serif);font-size:1.05rem;color:var(--gold);flex-shrink:0;min-width:50px}
+.ws-alt-time{font-family:var(--serif);font-size:1.05rem;color:var(--navy);flex-shrink:0;min-width:50px}
 .ws-alt-info{flex:1}
 .ws-alt-name{font-size:.88rem;font-weight:500;color:var(--navy)}
 .ws-alt-route{font-size:.78rem;color:rgba(27,27,26,.5);margin-top:.1rem}
 .ws-alt-type{font-size:.62rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.15rem .45rem;border-radius:4px;display:inline-block;margin-top:.25rem}
-.ws-alt-type-job{color:var(--gold);background:var(--amber-bg);border:1px solid rgba(106,106,106,.2)}
+.ws-alt-type-job{color:var(--navy);background:var(--amber-bg);border:1px solid rgba(106,106,106,.2)}
 .ws-alt-type-event{color:rgba(27,27,26,.5);background:rgba(27,27,26,.04);border:1px solid rgba(27,27,26,.1)}
 
 /* ── FEASIBILITY BANNER ── */
@@ -446,11 +446,11 @@ input[type=date]::placeholder,input[type=text]::placeholder{color:#8a8a8a!import
 .feas-banner.tight{background:rgba(106,106,106,.12);border-color:rgba(106,106,106,.4)}
 .feas-verdict{font-family:var(--serif);font-size:1.5rem;font-weight:500;margin-bottom:.3rem;line-height:1.2}
 .feas-banner.no-go .feas-verdict{color:#E85555}
-.feas-banner.tight .feas-verdict{color:var(--gold)}
+.feas-banner.tight .feas-verdict{color:var(--navy)}
 .feas-explain{font-size:1rem;color:rgba(27,27,26,.7);font-weight:300;line-height:1.65;margin-bottom:.1rem}
 .feas-action{font-size:1rem;font-weight:500;margin-top:.5rem}
 .feas-banner.no-go .feas-action{color:#E85555}
-.feas-banner.tight .feas-action{color:var(--gold)}
+.feas-banner.tight .feas-action{color:var(--navy)}
 
 /* ── MSG SOURCE ICON ── */
 .msg-source{display:inline-flex;align-items:center;gap:.3rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;padding:.18rem .55rem;border:1px solid rgba(27,27,26,.1);color:rgba(27,27,26,.45)}
@@ -465,25 +465,25 @@ input[type=date]::placeholder,input[type=text]::placeholder{color:#8a8a8a!import
 
 footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-size:.68rem;letter-spacing:.1em;color:rgba(27,27,26,.4);background:rgba(27,27,26,.03);border-top:1px solid rgba(27,27,26,.06);position:relative;z-index:1}.mini-legal{margin-left:.6rem}.mini-legal a{color:rgba(27,27,26,.35);text-decoration:none;margin-left:.5rem;transition:color .2s;letter-spacing:.08em}.mini-legal a:hover{color:rgba(106,106,106,.8)}
 .fi{font-family:var(--sans);color:var(--navy);background:#ffffff;border:1px solid rgba(27,27,26,.15);border-radius:5px;padding:.42rem .5rem;outline:none;width:100%;box-sizing:border-box;-webkit-appearance:none}
-.fi:focus{border-color:var(--gold)}
+.fi:focus{border-color:var(--navy)}
 
 /* ── Booking-page luxe pass — warm ivory surfaces, gold accents, serif heads ── */
 /* Job/invoice list surfaces render as cream cards with a soft gold edge */
 #confirmed-list,#toconfirm-list,#completed-list,#offered-list,#inv-list-body,#drivers-list{
-  background:#ffffff;border:1px solid var(--gold-rule);border-radius:14px;
+  background:#ffffff;border:1px solid var(--rule);border-radius:14px;
   box-shadow:0 3px 16px rgba(0,0,0,.18);overflow:hidden;
 }
 /* Avoid a doubled rule where the first row meets the container edge */
 #confirmed-list>div:first-child,#toconfirm-list>div:first-child,#completed-list>div:first-child,#offered-list>div:first-child{border-top:none}
 /* Subtle gold focus accent on every field, matching the booking page */
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold)!important}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--navy)!important}
 /* Headings stay serif and navy throughout */
 h1,h2,h3,h4{font-family:var(--serif);color:var(--navy)}
 /* Uppercase, gold, letter-spaced micro-labels like the booking form */
-.ch{font-family:var(--sans);color:var(--gold);letter-spacing:.22em;text-transform:uppercase}
+.ch{font-family:var(--sans);color:var(--navy);letter-spacing:.22em;text-transform:uppercase}
 </style>
 <meta name="description" content="Westmere owner dashboard — fleet and operations overview.">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23111D2C'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='38' font-weight='500' text-anchor='middle' fill='%23B8985A'%3EW%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23111D2C'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='38' font-weight='500' text-anchor='middle' fill='%23102a43'%3EW%3C/text%3E%3C/svg%3E">
 <meta name="robots" content="noindex,nofollow">
 <meta property="og:title" content="Westmere Owner">
 <meta property="og:description" content="Westmere owner dashboard — fleet and operations overview.">
@@ -502,12 +502,12 @@ h1,h2,h3,h4{font-family:var(--serif);color:var(--navy)}
    ============================================================ */
 :root{
   /* surfaces -> white */
-  --card:#ffffff !important;--paper:#ffffff !important;--cream:#ffffff !important;--amber-bg:#ffffff !important;
+  --card:#ffffff !important;--paper:#ffffff !important;--amber-bg:#ffffff !important;
   /* accent vars that were used as DARK BACKGROUNDS -> white (text forced black below) */
-  --gold:#ffffff !important;--gold2:#ffffff !important;--navy:#ffffff !important;--navy2:#ffffff !important;--white:#ffffff !important;
+--navy:#ffffff !important;--navy2:#ffffff !important;--white:#ffffff !important;
   /* text/rule vars -> black / light hairline */
   --text:#000000 !important;--amber:#000000 !important;--muted:#000000 !important;
-  --gold-rule:rgba(0,0,0,.18) !important;--rule:rgba(0,0,0,.15) !important;
+--rule:rgba(0,0,0,.15) !important;
 }
 /* 1) Core surfaces white; kill the dark login texture */
 html,body{background:#ffffff !important;background-image:none !important}
@@ -516,7 +516,7 @@ html,body{background:#ffffff !important;background-image:none !important}
 #scr-app,#scr-app *,#login-screen,#login-screen *{color:#000000 !important;-webkit-text-fill-color:#000000 !important}
 .bn,.bn.active{color:#000000 !important}
 /* 3) Any element given a dark background inline / via JS -> white surface, black text, outline */
-[style*="background:var(--gold)"],[style*="background: var(--gold)"],[style*="background:var(--gold2)"],
+[style*="background:var(--navy)"],[style*="background: var(--navy)"],[style*="background:var(--navy2)"],
 [style*="background:var(--navy)"],[style*="background: var(--navy)"],[style*="background:var(--navy2)"],
 [style*="background:var(--red)"],[style*="background:var(--green)"],
 [style*="background:#1a1a1a"],[style*="background:#1b1b1a"],[style*="background:#0a1420"],[style*="background:#0a"],
@@ -524,7 +524,7 @@ html,body{background:#ffffff !important;background-image:none !important}
 [style*="background:#444"],[style*="background:#555"],[style*="background:#666"],[style*="background:#6a6a6a"],
 [style*="background:#3B82F6"],[style*="background:#3b82f6"]{
   background:#ffffff !important;border:1px solid #1a1a1a !important}
-[style*="background:var(--gold)"] svg,[style*="background:#1a1a1a"] svg{stroke:#000000 !important}
+[style*="background:var(--navy)"] svg,[style*="background:#1a1a1a"] svg{stroke:#000000 !important}
 /* 4) Class-based charcoal buttons / pills / active / badges -> white + (buttons) outline */
 .sbt-enroute,.sbt-onboard,.ts-enroute,.jc2-bd-enroute,.jc2-bd-atpickup,.jc2-ab.ab-enroute,.jc2-ab.ab-atpickup,
 .jc2-ab.ab-onboard,.jc2-ab.ab-dropoff,.jc2-pin.pu,.jc2-prog-dot.pd-active,.notif-badge-num,
@@ -554,7 +554,7 @@ html,body{background:#ffffff !important;background-image:none !important}
    9) FIELD-VISIBILITY FIX (appended last so it wins)
    Every input/textarea/select/contenteditable — including modals
    mounted on document.body OUTSIDE #scr-app (e.g. #edit-booking-overlay)
-   where var(--navy)/var(--gold) resolve to WHITE and text was invisible.
+   where var(--navy)/var(--navy) resolve to WHITE and text was invisible.
    Force dark #111 text on white, a visible border and a legible
    placeholder. Restyle only — no markup/logic change.
    ============================================================ */
@@ -574,9 +574,9 @@ input[type=checkbox],input[type=radio]{accent-color:#111111 !important}
 /* Inline gold/navy text (remapped to white by the theme) -> readable dark,
    incl. body-level modal titles, accent buttons and their borders. */
 [style*="color:var(--navy)"],[style*="color: var(--navy)"],
-[style*="color:var(--gold)"],[style*="color: var(--gold)"]{color:#111111 !important;-webkit-text-fill-color:#111111 !important}
-[style*="border:1px solid var(--gold)"],[style*="border: 1px solid var(--gold)"],
-[style*="border-color:var(--gold)"],[style*="border-color: var(--gold)"]{border-color:#111111 !important}
+[style*="color:var(--navy)"],[style*="color: var(--navy)"]{color:#111111 !important;-webkit-text-fill-color:#111111 !important}
+[style*="border:1px solid var(--navy)"],[style*="border: 1px solid var(--navy)"],
+[style*="border-color:var(--navy)"],[style*="border-color: var(--navy)"]{border-color:#111111 !important}
 /* Primary action in the body-level edit modal lost its fill under the white
    theme and read as plain text — give it a clear outlined-primary affordance. */
 #edit-booking-overlay button[onclick*="upcomingSave"]{border:1px solid #111111 !important;border-radius:10px;font-weight:600}
@@ -584,7 +584,7 @@ input[type=checkbox],input[type=radio]{accent-color:#111111 !important}
 .assist-panel,.nb-overlay{background:rgba(255,255,255,.97) !important}
 .cal-hd{background:#f4f4f4 !important}
 .notif-badge-num{border-color:#ffffff !important}
-[style*="#f0ece3"],[style*="#F0ECE3"]{background:#f1f1f1 !important;border-color:#d9d9d9 !important}
+[style*="#ffffff"],[style*="#ffffff"]{background:#f1f1f1 !important;border-color:#d9d9d9 !important}
 
 /* ── BROWSER AUTOFILL ──
    Chrome/Safari paint an autofilled field with their own yellow background,
@@ -615,7 +615,9 @@ select:-webkit-autofill:focus{
   caret-color:#111111;
   transition:background-color 9999s ease-in-out 0s;
 }
-</style></head>
+</style><link rel="stylesheet" href="/wm-buttons.css">
+<link rel="stylesheet" href="/westmere-theme.css">
+</head>
 <body>
 
 
@@ -636,7 +638,7 @@ select:-webkit-autofill:focus{
         <label class="ls-label">Password</label>
         <input class="ls-input" type="password" id="owner-pass" placeholder="Password" autocomplete="current-password">
       </div>
-      <label style="display:flex;align-items:center;gap:.5rem;margin-top:.6rem;cursor:pointer;font-size:.78rem;color:rgba(27,27,26,.5);font-weight:300"><input type="checkbox" id="owner-remember" style="accent-color:var(--gold)"> Keep me logged in</label>
+      <label style="display:flex;align-items:center;gap:.5rem;margin-top:.6rem;cursor:pointer;font-size:.78rem;color:rgba(27,27,26,.5);font-weight:300"><input type="checkbox" id="owner-remember" style="accent-color:var(--navy)"> Keep me logged in</label>
       <button class="ls-btn" onclick="ownerLogin()">Sign In</button>
       <div class="ls-err" id="owner-err"></div>
       <div style="text-align:center;margin-top:.4rem;font-size:.7rem;color:rgba(27,27,26,.35)" id="owner-att"></div>
@@ -656,9 +658,9 @@ select:-webkit-autofill:focus{
         <div class="tb-mode-label" id="tb-mode-label">Westmere</div>
       </div>
     </div>
-    <button id="assist-fab" onclick="openAssistant()" title="Assistant" style="display:none;background:var(--gold);border:none;color:var(--navy);cursor:pointer;width:38px;height:38px;border-radius:50%;font-family:var(--serif);font-size:1.1rem;font-weight:400;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(106,106,106,.35);flex-shrink:0">W</button>
+    <button id="assist-fab" onclick="openAssistant()" title="Assistant" style="display:none;background:#ffffff;border:1px solid #102a43;color:#102a43;cursor:pointer;width:38px;height:38px;border-radius:50%;font-family:var(--serif);font-size:1.1rem;font-weight:500;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(16,42,67,.18);flex-shrink:0">W</button>
     <div style="display:flex;align-items:center;gap:.4rem">
-      <button onclick="openSettings()" title="Settings" style="background:transparent;border:1px solid rgba(245,242,236,.2);width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#1a1a1a">
+      <button onclick="openSettings()" title="Settings" style="background:transparent;border:1px solid rgba(255,255,255,.2);width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#1a1a1a">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
       <button onclick="toggleNotifPanel()" title="Activity log" style="background:transparent;border:none;cursor:pointer;position:relative;width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:#1a1a1a">
@@ -711,15 +713,15 @@ select:-webkit-autofill:focus{
       <div style="background:rgba(27,27,26,.03);border-radius:12px;padding:1.1rem 1rem;margin-bottom:1rem">
         <div style="font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(27,27,26,.5);margin-bottom:.9rem">Display</div>
         <div style="padding:.2rem 0">
-          <div style="display:flex;justify-content:space-between;font-size:.78rem;color:rgba(27,27,26,.7);margin-bottom:.35rem">Font Size <span id="ds-scale-val" style="color:var(--gold)">100%</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:.78rem;color:rgba(27,27,26,.7);margin-bottom:.35rem">Font Size <span id="ds-scale-val" style="color:var(--navy)">100%</span></div>
           <input type="range" min="80" max="150" step="5" value="100" id="ds-scale" oninput="setDisplayPref('scale',+this.value)" style="width:100%">
         </div>
         <div style="padding:.75rem 0 .2rem">
-          <div style="display:flex;justify-content:space-between;font-size:.78rem;color:rgba(27,27,26,.7);margin-bottom:.35rem">Brightness <span id="ds-brightness-val" style="color:var(--gold)">100%</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:.78rem;color:rgba(27,27,26,.7);margin-bottom:.35rem">Brightness <span id="ds-brightness-val" style="color:var(--navy)">100%</span></div>
           <input type="range" min="50" max="150" step="5" value="100" id="ds-brightness" oninput="setDisplayPref('brightness',+this.value)" style="width:100%">
         </div>
         <div style="padding:.75rem 0 .2rem">
-          <div style="display:flex;justify-content:space-between;font-size:.78rem;color:rgba(27,27,26,.7);margin-bottom:.35rem">Contrast <span id="ds-contrast-val" style="color:var(--gold)">100%</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:.78rem;color:rgba(27,27,26,.7);margin-bottom:.35rem">Contrast <span id="ds-contrast-val" style="color:var(--navy)">100%</span></div>
           <input type="range" min="80" max="140" step="5" value="100" id="ds-contrast" oninput="setDisplayPref('contrast',+this.value)" style="width:100%">
         </div>
         <button onclick="resetDisplayPrefs()" style="margin-top:.9rem;width:100%;padding:.75rem;background:transparent;border:1px solid rgba(27,27,26,.12);border-radius:8px;color:rgba(27,27,26,.65);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Reset to Default</button>
@@ -731,7 +733,7 @@ select:-webkit-autofill:focus{
           <span>Status</span><span id="sett-conn-status" style="color:rgba(27,27,26,.4)">Checking…</span>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:.3rem 0;font-size:.8rem;color:rgba(27,27,26,.7)">
-          <span>Build</span><span id="sett-build" style="font-family:monospace;font-size:.72rem;color:rgba(27,27,26,.4)">2026-04-22</span>
+          <span>Build</span><span id="sett-build" style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:.72rem;color:rgba(27,27,26,.4)">2026-04-22</span>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:.3rem 0;font-size:.8rem;color:rgba(27,27,26,.7)">
           <span>Bookings loaded</span><span id="sett-booking-count" style="color:rgba(27,27,26,.4)">—</span>
@@ -746,10 +748,10 @@ select:-webkit-autofill:focus{
             <div style="font-size:.88rem;color:var(--navy)">Google Calendar</div>
             <div id="gcal-status" style="font-size:.72rem;color:rgba(27,27,26,.5);word-break:break-all">Two-way sync with your calendar</div>
           </div>
-          <button id="gcal-connect-btn" onclick="connectGoogleCalendar()" style="padding:.5rem 1rem;background:var(--gold);color:#1a1a1a;border:none;border-radius:6px;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;white-space:nowrap">Connect</button>
+          <button id="gcal-connect-btn" onclick="connectGoogleCalendar()" style="padding:.5rem 1rem;background:rgba(27,27,26,.55);color:#1a1a1a;border:none;border-radius:6px;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;white-space:nowrap">Connect</button>
         </div>
         <div style="display:flex;justify-content:flex-end;padding:.25rem 0 0">
-          <a href="#" id="gcal-sync-link" onclick="syncGoogleCalendar(event)" style="display:none;font-size:.68rem;color:var(--gold);text-decoration:none;letter-spacing:.08em;text-transform:uppercase">Sync now &rarr;</a>
+          <a href="#" id="gcal-sync-link" onclick="syncGoogleCalendar(event)" style="display:none;font-size:.68rem;color:var(--navy);text-decoration:none;letter-spacing:.08em;text-transform:uppercase">Sync now &rarr;</a>
         </div>
       </div>
 
@@ -793,12 +795,12 @@ select:-webkit-autofill:focus{
           <div class="sec-title"><em>Confirmed</em> Jobs</div>
           <div class="sec-sub">Weekly schedule</div>
         </div>
-        <button onclick="ownerNewBookingOpen()" style="padding:.55rem 1rem;font-family:var(--sans);font-size:.68rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;background:var(--gold);color:var(--navy);border:none;border-radius:7px;cursor:pointer;min-height:40px;white-space:nowrap">+ New Booking</button>
+        <button onclick="ownerNewBookingOpen()" style="padding:.55rem 1rem;font-family:var(--sans);font-size:.68rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;background:#ffffff;color:#102a43;border:1px solid #102a43;border-radius:7px;cursor:pointer;min-height:40px;white-space:nowrap">+ New Booking</button>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin:.5rem 0 .85rem">
-        <button onclick="confirmedWeekNav(-1)" style="background:rgba(245,242,236,.06);border:1px solid rgba(106,106,106,.3);color:#1a1a1a;font-family:var(--sans);font-size:.85rem;padding:.5rem 1rem;cursor:pointer;border-radius:6px;min-height:44px">&larr; Prev</button>
+        <button onclick="confirmedWeekNav(-1)" style="background:rgba(255,255,255,.06);border:1px solid rgba(106,106,106,.3);color:#1a1a1a;font-family:var(--sans);font-size:.85rem;padding:.5rem 1rem;cursor:pointer;border-radius:6px;min-height:44px">&larr; Prev</button>
         <div id="confirmed-week-range" style="flex:1;text-align:center;font-weight:600;color:#1a1a1a;font-size:.85rem"></div>
-        <button onclick="confirmedWeekNav(1)" style="background:rgba(245,242,236,.06);border:1px solid rgba(106,106,106,.3);color:#1a1a1a;font-family:var(--sans);font-size:.85rem;padding:.5rem 1rem;cursor:pointer;border-radius:6px;min-height:44px">Next &rarr;</button>
+        <button onclick="confirmedWeekNav(1)" style="background:rgba(255,255,255,.06);border:1px solid rgba(106,106,106,.3);color:#1a1a1a;font-family:var(--sans);font-size:.85rem;padding:.5rem 1rem;cursor:pointer;border-radius:6px;min-height:44px">Next &rarr;</button>
       </div>
       <div id="confirmed-list"></div>
     </div>
@@ -883,7 +885,7 @@ select:-webkit-autofill:focus{
         </div>
         <div id="mile-tax-year" style="display:flex;justify-content:space-between;align-items:center;padding:.6rem .8rem;background:#ffffff;border:1px solid rgba(106,106,106,.2);border-radius:8px">
           <span style="font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:#1a1a1a;font-family:var(--sans)">Tax Year Total</span>
-          <span style="font-family:var(--serif);font-size:1.1rem;color:var(--gold)">— miles</span>
+          <span style="font-family:var(--serif);font-size:1.1rem;color:var(--navy)">— miles</span>
         </div>
       </div>
 
@@ -939,7 +941,7 @@ select:-webkit-autofill:focus{
             <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.22rem">Mobile</div>
             <input id="nd-phone" type="tel" placeholder="+44 7700 000000" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.9rem;color:var(--navy);border-radius:6px">
           </div>
-          <button onclick="createDriver()" style="width:100%;padding:.7rem;background:var(--gold);color:var(--navy);border:none;font-family:var(--sans);font-size:.72rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;border-radius:6px">Create Driver Account</button>
+          <button onclick="createDriver()" style="width:100%;padding:.7rem;background:#ffffff;color:#102a43;border:1px solid #102a43;font-family:var(--sans);font-size:.72rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;border-radius:6px">Create Driver Account</button>
           <div id="nd-err" style="font-size:.78rem;margin-top:.4rem;min-height:1em"></div>
         </div>
         <!-- Credentials display after create -->
@@ -965,11 +967,11 @@ select:-webkit-autofill:focus{
         <div class="sec-title"><em>Invoices</em></div>
         <div class="sec-sub">Create, send &amp; manage invoices</div>
         <div style="padding:.75rem 1rem 0">
-          <button onclick="invOpenNew()" style="width:100%;padding:.7rem;background:var(--gold);color:var(--navy);border:none;font-family:var(--sans);font-size:.72rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;border-radius:6px">+ New Invoice</button>
+          <button onclick="invOpenNew()" style="width:100%;padding:.7rem;background:#ffffff;color:#102a43;border:1px solid #102a43;font-family:var(--sans);font-size:.72rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;border-radius:6px">+ New Invoice</button>
         </div>
         <div class="card" style="margin-top:.85rem">
           <div class="ch">Invoice History</div>
-          <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:.5rem;padding:.7rem 1rem .35rem;border-bottom:1px solid var(--gold-rule)">
+          <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:.5rem;padding:.7rem 1rem .35rem;border-bottom:1px solid var(--rule)">
             <div style="flex:1;min-width:96px">
               <div style="font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.5);margin-bottom:.2rem">From</div>
               <input type="date" id="inv-filter-from" onchange="invLoadList()" style="width:100%;padding:.4rem .5rem;border:1px solid rgba(27,27,26,.15);border-radius:6px;background:#ffffff;color:var(--navy);font-family:var(--sans);font-size:.78rem;-webkit-appearance:none">
@@ -1053,7 +1055,7 @@ select:-webkit-autofill:focus{
               <textarea id="inv-rec-address" rows="2" placeholder="Street, Town, Postcode" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.85rem;color:var(--navy);border-radius:6px;resize:vertical;box-sizing:border-box"></textarea>
             </div>
             <label style="display:flex;align-items:flex-start;gap:.5rem;margin-bottom:.8rem;cursor:pointer;font-size:.78rem;color:rgba(27,27,26,.72);line-height:1.4">
-              <input id="inv-save-customer" type="checkbox" style="width:16px;height:16px;margin-top:.05rem;accent-color:var(--gold);cursor:pointer;flex-shrink:0">
+              <input id="inv-save-customer" type="checkbox" style="width:16px;height:16px;margin-top:.05rem;accent-color:var(--navy);cursor:pointer;flex-shrink:0">
               <span>Save this recipient as a customer for future bookings &amp; invoices <span style="color:rgba(27,27,26,.45)">(requires an email)</span></span>
             </label>
             <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.3rem">Line Items *</div>
@@ -1077,7 +1079,7 @@ select:-webkit-autofill:focus{
           <div id="inv-err" style="display:none;padding:.55rem .8rem;background:rgba(156,40,40,.08);color:#9C2828;font-size:.78rem;border-radius:6px;margin-bottom:.6rem"></div>
           <div style="display:flex;gap:.5rem">
             <button id="inv-preview-btn" onclick="invPreview()" style="flex:1;padding:.7rem;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:6px;border:1px solid rgba(27,27,26,.2);background:transparent;color:var(--navy)">Preview / Download</button>
-            <button onclick="invSend()" id="inv-send-btn" style="flex:1;padding:.7rem;background:var(--gold);color:var(--navy);border:none;font-family:var(--sans);font-size:.7rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:6px">Send to Email</button>
+            <button onclick="invSend()" id="inv-send-btn" style="flex:1;padding:.7rem;background:#ffffff;color:#102a43;border:1px solid #102a43;font-family:var(--sans);font-size:.7rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:6px">Send to Email</button>
           </div>
         </div>
       </div>
@@ -1087,8 +1089,8 @@ select:-webkit-autofill:focus{
         <div style="display:flex;align-items:center;gap:.5rem;padding:.75rem 1rem;background:#ffffff;border-radius:12px 12px 0 0">
           <button onclick="invCloseDetail()" style="background:transparent;border:none;color:#1a1a1a;font-size:1.4rem;line-height:1;cursor:pointer;padding:0 .3rem 0 0">←</button>
           <div>
-            <div id="inv-det-no" style="font-family:Menlo,Consolas,monospace;font-size:.9rem;color:#1a1a1a;letter-spacing:.04em"></div>
-            <div id="inv-det-badge" style="font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-top:.1rem"></div>
+            <div id="inv-det-no" style="font-family:var(--sans);font-size:.9rem;color:#1a1a1a;letter-spacing:.04em"></div>
+            <div id="inv-det-badge" style="font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:var(--navy);margin-top:.1rem"></div>
           </div>
         </div>
         <div style="padding:1rem;background:#ffffff;border-radius:0 0 12px 12px">
@@ -1101,7 +1103,7 @@ select:-webkit-autofill:focus{
             <div id="inv-det-recipient" style="font-size:.88rem;color:var(--navy);line-height:1.6"></div>
           </div>
           <div id="inv-det-period" style="font-size:.75rem;color:rgba(27,27,26,.5);margin-bottom:.8rem;font-style:italic"></div>
-          <div id="inv-det-notes" style="display:none;margin-bottom:.8rem;padding:.55rem .7rem;background:rgba(106,106,106,.07);border-left:3px solid var(--gold);font-size:.8rem;color:var(--navy);line-height:1.6;border-radius:0 4px 4px 0"></div>
+          <div id="inv-det-notes" style="display:none;margin-bottom:.8rem;padding:.55rem .7rem;background:rgba(106,106,106,.07);border-left:3px solid var(--navy);font-size:.8rem;color:var(--navy);line-height:1.6;border-radius:0 4px 4px 0"></div>
           <div style="overflow-x:auto;margin-bottom:1rem">
             <table style="width:100%;border-collapse:collapse" id="inv-det-table">
               <thead id="inv-det-head"></thead>
@@ -1143,7 +1145,7 @@ select:-webkit-autofill:focus{
         </div>
         <div style="margin-bottom:.7rem;position:relative">
           <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.22rem;font-family:var(--sans)">Pickup Address *</div>
-          <input id="nb-pickup" type="text" placeholder="Pickup location" autocomplete="off" oninput="addrSearch('nb-pickup','nb-sug-pickup')" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
+          <input id="nb-pickup" type="text" placeholder="Pickup location" autocomplete="off" oninput="addrSearch('nb-pickup','nb-sug-pickup');nbFlightField()" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
           <div class="sug-drop" id="nb-sug-pickup"></div>
         </div>
         <div style="margin-bottom:.7rem;position:relative">
@@ -1153,7 +1155,7 @@ select:-webkit-autofill:focus{
         </div>
         <div style="margin-bottom:.7rem;position:relative">
           <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.22rem;font-family:var(--sans)">Destination *</div>
-          <input id="nb-dest" type="text" placeholder="Destination" autocomplete="off" oninput="addrSearch('nb-dest','nb-sug-dest')" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
+          <input id="nb-dest" type="text" placeholder="Destination" autocomplete="off" oninput="addrSearch('nb-dest','nb-sug-dest');nbFlightField()" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
           <div class="sug-drop" id="nb-sug-dest"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.7rem">
@@ -1186,7 +1188,10 @@ select:-webkit-autofill:focus{
             <option value="4+">4+ / extra luggage</option>
           </select>
         </div>
-        <div style="margin-bottom:.7rem">
+        <!-- AIRPORT RUNS ONLY — nbFlightField() reveals this once the pickup or
+             destination is an airport. A flight number on a town-to-town job is
+             meaningless, so the field is never offered. -->
+        <div id="nb-flight-wrap" style="margin-bottom:.7rem;display:none">
           <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.22rem;font-family:var(--sans)">Flight (optional)</div>
           <input id="nb-flight" type="text" placeholder="e.g. BA2772" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.88rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
         </div>
@@ -1198,7 +1203,7 @@ select:-webkit-autofill:focus{
              as a customer web booking — it lands as a new PENDING job, ready for
              Send Estimate → awaiting payment → confirmed. Never auto-confirmed. -->
         <div id="nb-err" style="display:none;margin-bottom:.7rem;padding:.5rem .7rem;background:rgba(163,51,51,.08);border:1px solid rgba(163,51,51,.25);border-radius:6px;font-size:.78rem;color:#8B2222"></div>
-        <button id="nb-submit-btn" onclick="ownerNewBookingSubmit()" style="width:100%;padding:.75rem;font-family:var(--sans);font-size:.82rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;background:var(--gold);color:var(--navy);border:none;border-radius:8px;cursor:pointer;min-height:48px">Create Booking</button>
+        <button id="nb-submit-btn" onclick="ownerNewBookingSubmit()" style="width:100%;padding:.75rem;font-family:var(--sans);font-size:.82rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;background:#ffffff;color:#102a43;border:1px solid #102a43;border-radius:8px;cursor:pointer;min-height:48px">Create Booking</button>
       </div>
     </div>
 
@@ -1247,12 +1252,12 @@ select:-webkit-autofill:focus{
   <div class="nb-name-text" id="nb-name"></div>
   <div class="nb-sub" id="nb-sub"></div>
   <div style="position:absolute;bottom:2rem;left:0;right:0;text-align:center">
-    <div style="font-family:var(--serif);font-size:1.1rem;font-weight:300;letter-spacing:.12em;color:var(--gold);margin-bottom:.2rem">Westmere</div>
+    <div style="font-family:var(--serif);font-size:1.1rem;font-weight:300;letter-spacing:.12em;color:var(--navy);margin-bottom:.2rem">Westmere</div>
     <div style="font-size:.48rem;font-weight:500;letter-spacing:.3em;text-transform:uppercase;color:rgba(27,27,26,.4)">Private Hire · Sussex</div>
   </div>
 </div>
 
-<div id="toast"><span style="color:var(--gold);font-size:.8rem;flex-shrink:0">✓</span><span id="toast-msg"></span></div>
+<div id="toast"><span style="color:var(--navy);font-size:.8rem;flex-shrink:0">✓</span><span id="toast-msg"></span></div>
 
 <script>
 // Force-evict stale service worker cache
@@ -1417,7 +1422,7 @@ async function loadOwnerDocs(){
           var expDate=new Date(expiry);expDate.setHours(0,0,0,0);
           var daysLeft=Math.round((expDate-today)/(1000*60*60*24));
           if(daysLeft<0){statusHtml='<span style="font-size:.58rem;padding:.15rem .5rem;border-radius:10px;background:#fde8e8;color:#c0392b;font-weight:600">Expired</span>';hasExpiring=true;}
-          else if(daysLeft<=30){statusHtml='<span style="font-size:.58rem;padding:.15rem .5rem;border-radius:10px;background:#f0ece3;color:#555555;font-weight:600">'+daysLeft+'d left</span>';hasExpiring=true;}
+          else if(daysLeft<=30){statusHtml='<span style="font-size:.58rem;padding:.15rem .5rem;border-radius:10px;background:#ffffff;color:#555555;font-weight:600">'+daysLeft+'d left</span>';hasExpiring=true;}
           else{statusHtml='<span style="font-size:.58rem;padding:.15rem .5rem;border-radius:10px;background:#e8f5e9;color:#2D6E47">Valid</span>';}
         }else{
           statusHtml='<span style="font-size:.58rem;padding:.15rem .5rem;border-radius:10px;background:#e8f5e9;color:#2D6E47">Uploaded</span>';
@@ -1544,12 +1549,12 @@ async function checkGoogleCalendarStatus(){
       btn.style.background='transparent';
       btn.style.color='var(--ink)';
       btn.style.border='1px solid rgba(27,27,26,.2)';
-      if(statusEl)statusEl.innerHTML='Connected as <span style="color:var(--gold)">'+(data.email||'your Google account')+'</span>';
+      if(statusEl)statusEl.innerHTML='Connected as <span style="color:var(--navy)">'+(data.email||'your Google account')+'</span>';
       if(syncLink)syncLink.style.display='';
     } else {
       btn.textContent='Connect';
       btn.onclick=connectGoogleCalendar;
-      btn.style.background='var(--gold)';
+      btn.style.background='var(--navy)';
       btn.style.color='#fff';
       btn.style.border='none';
       if(statusEl)statusEl.textContent='Two-way sync with your calendar';
@@ -1699,6 +1704,25 @@ function _tinyAddr(a){ return window.WMAddr ? WMAddr.tinyLabel(a) : _localTiny(a
 // there's nothing to show so the caller can omit it from a compact summary.
 // Luggage label — shared rule (see /wm-lifecycle.js).
 function _bagsText(bags){ return WMLifecycle.bagsText(bags); }
+// Explicit "Luggage" fields always show the integer label ("0 bags"); compact
+// summary lines use _bagsText() and omit the bags entirely when there are none.
+function _bagsLabel(bags){ return WMLifecycle.bagsLabel(bags); }
+// Flight number — AIRPORT RUNS ONLY. '' on a town-to-town job, so the caller
+// renders no flight field, no ✈ line and no Track Flight button at all.
+// Shared rule: WMAddr.flightFor (address-normalize.js).
+function _flightOf(j){ return window.WMAddr ? WMAddr.flightFor(j) : ''; }
+
+// Manual booking form: the Flight field only exists on an airport run. Hiding
+// it clears it too, so changing "Gatwick" to a town can't leave a stale flight
+// number behind on the created booking.
+function nbFlightField(){
+  var wrap=document.getElementById('nb-flight-wrap');if(!wrap)return;
+  var pu=(document.getElementById('nb-pickup')||{}).value||'';
+  var de=(document.getElementById('nb-dest')||{}).value||'';
+  var isAP=window.WMAddr?WMAddr.isAirportRun(pu,de):true;
+  wrap.style.display=isAP?'':'none';
+  if(!isAP){var f=document.getElementById('nb-flight');if(f)f.value='';}
+}
 
 // NOTE: the old native "decisions" list (renderDecisionsPending / decConfirm /
 // decCancel) was removed. It rendered a green "Confirm" button that PATCHed
@@ -1717,7 +1741,7 @@ setInterval(function(){
     if(ms<=0){el.textContent='\u2014 expired';el.style.color='#9C2828';return;}
     var mm=Math.floor(ms/60000),ss=Math.floor((ms%60000)/1000);
     el.textContent='\u00b7 '+mm+':'+String(ss).padStart(2,'0');
-    el.style.color=ms<60000?'#9C2828':ms<180000?'#555555':'#837b71';
+    el.style.color=ms<60000?'#9C2828':ms<180000?'#555555':'#657485';
   });
 },1000);
 
@@ -1792,7 +1816,7 @@ function _obadge(status){
 function _docBadge(status){
   if(status==='approved')return '<span style="font-size:.55rem;padding:.12rem .4rem;background:var(--green-bg);color:var(--green);border-radius:3px;font-weight:500">Approved</span>';
   if(status==='rejected')return '<span style="font-size:.55rem;padding:.12rem .4rem;background:var(--red-bg);color:var(--red);border-radius:3px;font-weight:500">Rejected</span>';
-  if(status==='pending')return '<span style="font-size:.55rem;padding:.12rem .4rem;background:rgba(106,106,106,.12);color:var(--gold);border-radius:3px;font-weight:500">Review</span>';
+  if(status==='pending')return '<span style="font-size:.55rem;padding:.12rem .4rem;background:rgba(106,106,106,.12);color:var(--navy);border-radius:3px;font-weight:500">Review</span>';
   return '<span style="font-size:.55rem;padding:.12rem .4rem;background:rgba(27,27,26,.06);color:rgba(27,27,26,.35);border-radius:3px;font-weight:500">Missing</span>';
 }
 
@@ -1867,7 +1891,7 @@ async function toggleDriverDocs(drvId){
       var doc=docMap[type];
       var status=doc?doc.status:'none';
       var lbl=DOC_LABELS[type];
-      var viewLink=doc?'<a href="/api/driver-docs/'+drvId+'/'+doc.id+'" target="_blank" style="font-size:.6rem;color:var(--gold);text-decoration:none;margin-left:.35rem">View</a>':'';
+      var viewLink=doc?'<a href="/api/driver-docs/'+drvId+'/'+doc.id+'" target="_blank" style="font-size:.6rem;color:var(--navy);text-decoration:none;margin-left:.35rem">View</a>':'';
       html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:.42rem 0;border-bottom:1px solid rgba(27,27,26,.05)">';
       html+='<div style="font-size:.76rem;color:rgba(27,27,26,.65)">'+owEsc(lbl)+'</div>';
       html+='<div style="display:flex;align-items:center;gap:.3rem">'+_docBadge(status)+viewLink;
@@ -2009,7 +2033,7 @@ function buildEarnings(){
       var tyStart=m.tax_year.start||'';
       var tyLabel='Tax Year'+(tyStart?' (from '+tyStart+')':'');
       tyEl.innerHTML='<span style="font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:#1a1a1a;font-family:var(--sans)">'+tyLabel+'</span>'
-        +'<span style="font-family:var(--serif);font-size:1.1rem;color:var(--gold)">'+m.tax_year.total_miles.toFixed(1)+' miles</span>';
+        +'<span style="font-family:var(--serif);font-size:1.1rem;color:var(--navy)">'+m.tax_year.total_miles.toFixed(1)+' miles</span>';
     }
   }).catch(function(){});
 
@@ -2020,7 +2044,7 @@ function buildEarnings(){
     '<div style="background:#ffffff;border:1px solid rgba(27,27,26,.08);padding:1.5rem;margin-bottom:.85rem;position:relative;overflow:hidden">'
     +'<div style="position:absolute;inset:0;background-image:repeating-linear-gradient(-45deg,transparent,transparent 60px,rgba(106,106,106,.02) 60px,rgba(106,106,106,.02) 61px);pointer-events:none"></div>'
     +'<span style="font-size:.52rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(27,27,26,.35);margin-bottom:.2rem;display:block;position:relative">This Week · '+fmtRange(thisWeek.start)+'</span>'
-    +'<span style="font-family:var(--serif);font-size:3rem;color:var(--gold);line-height:1;display:block;position:relative">'+fmtMoney(thisWeek.total)+'</span>'
+    +'<span style="font-family:var(--serif);font-size:3rem;color:var(--navy);line-height:1;display:block;position:relative">'+fmtMoney(thisWeek.total)+'</span>'
     +'<div style="font-size:.72rem;color:rgba(27,27,26,.45);font-weight:300;margin-top:.3rem;position:relative">Next payment '+nextPayLabel+'</div>'
     +'<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:rgba(106,106,106,.1);margin-top:1.2rem;border:1px solid rgba(106,106,106,.1);position:relative">'
       +'<div style="padding:.7rem;background:rgba(27,27,26,.04);text-align:center"><div style="font-family:var(--serif);font-size:1.3rem;color:var(--navy);font-weight:300">'+thisWeek.jobs+'</div><div style="font-size:.48rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.35);margin-top:.15rem">Jobs</div></div>'
@@ -2045,7 +2069,7 @@ function buildEarnings(){
   var totalJobs=bookings.length;
   var allEl=document.getElementById('earn-alltime');
   allEl.innerHTML=
-    '<div class="row"><span class="row-k">Total revenue</span><span class="row-v" style="color:var(--gold)">'+fmtMoney(totalRev)+'</span></div>'
+    '<div class="row"><span class="row-k">Total revenue</span><span class="row-v" style="color:var(--navy)">'+fmtMoney(totalRev)+'</span></div>'
     +'<div class="row"><span class="row-k">Total jobs</span><span class="row-v">'+totalJobs+'</span></div>'
     +'<div class="row"><span class="row-k">Average fare</span><span class="row-v">'+fmtMoney(totalJobs?totalRev/totalJobs:0)+'</span></div>';
 
@@ -2077,16 +2101,16 @@ async function loadStripeBalance(){
               +'<span style="position:absolute;left:.7rem;top:50%;transform:translateY(-50%);font-size:.9rem;color:rgba(27,27,26,.45);pointer-events:none">£</span>'
               +'<input id="payout-amt" type="number" min="1" step="0.01" value="'+(avail/100).toFixed(2)+'" '
                 +'style="width:100%;padding:.6rem .7rem .6rem 1.5rem;border:1px solid rgba(27,27,26,.18);border-radius:6px;font-family:var(--sans);font-size:.95rem;color:var(--navy);box-sizing:border-box;outline:none" '
-                +'onfocus="this.style.borderColor=\'var(--gold)\'" onblur="this.style.borderColor=\'rgba(27,27,26,.18)\'">'
+                +'onfocus="this.style.borderColor=\'var(--navy)\'" onblur="this.style.borderColor=\'rgba(27,27,26,.18)\'">'
             +'</div>'
             +'<button onclick="setFullPayout()" style="padding:.6rem .85rem;background:rgba(27,27,26,.05);border:1px solid rgba(27,27,26,.12);border-radius:6px;font-size:.68rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5);cursor:pointer;white-space:nowrap;font-family:var(--sans)">Full</button>'
           +'</div>'
-          +'<button id="payout-btn" onclick="initiatePayoutConfirm()" style="width:100%;padding:.9rem;background:var(--gold);color:#1a1a1a;border:none;border-radius:8px;font-size:.8rem;font-weight:600;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;font-family:var(--sans);transition:opacity .2s">Pay Out to Bank</button>'
+          +'<button id="payout-btn" onclick="initiatePayoutConfirm()" style="width:100%;padding:.9rem;background:rgba(27,27,26,.55);color:#1a1a1a;border:none;border-radius:8px;font-size:.8rem;font-weight:600;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;font-family:var(--sans);transition:opacity .2s">Pay Out to Bank</button>'
           +'<div id="payout-confirm-row" style="display:none;margin-top:.6rem;background:rgba(106,106,106,.08);border:1px solid rgba(106,106,106,.35);border-radius:8px;padding:.85rem">'
             +'<div id="payout-confirm-msg" style="font-size:.85rem;color:var(--navy);margin-bottom:.7rem;font-weight:500;text-align:center"></div>'
             +'<div style="display:flex;gap:.5rem">'
               +'<button onclick="cancelPayout()" style="flex:1;padding:.65rem;background:rgba(27,27,26,.06);border:1px solid rgba(27,27,26,.12);border-radius:6px;font-size:.72rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.55);cursor:pointer;font-family:var(--sans)">Cancel</button>'
-              +'<button onclick="confirmPayout()" style="flex:2;padding:.65rem;background:#ffffff;color:var(--gold);border:none;border-radius:6px;font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;font-family:var(--sans)">Yes, Pay Out</button>'
+              +'<button onclick="confirmPayout()" style="flex:2;padding:.65rem;background:#ffffff;color:rgba(27,27,26,.55);border:none;border-radius:6px;font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;font-family:var(--sans)">Yes, Pay Out</button>'
             +'</div>'
           +'</div>'
         +'</div>'
@@ -2095,7 +2119,7 @@ async function loadStripeBalance(){
       '<div style="padding:1rem 1.2rem">'
       +'<div style="display:flex;justify-content:space-between;align-items:baseline">'
         +'<div><div style="font-size:.52rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(27,27,26,.35);margin-bottom:.15rem">Available</div>'
-        +'<div style="font-family:var(--serif);font-size:2.2rem;color:var(--gold);font-weight:300">'+fmtPence(avail)+'</div></div>'
+        +'<div style="font-family:var(--serif);font-size:2.2rem;color:var(--navy);font-weight:300">'+fmtPence(avail)+'</div></div>'
         +'<div style="text-align:right"><div style="font-size:.52rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(27,27,26,.35);margin-bottom:.15rem">Pending</div>'
         +'<div style="font-family:var(--serif);font-size:1.2rem;color:rgba(27,27,26,.5);font-weight:300">'+fmtPence(pend)+'</div></div>'
       +'</div>'
@@ -2175,7 +2199,7 @@ function oEscHtml(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace
 function oSetInboxFolder(folder,btn){
   O_INBOX_FOLDER=folder;
   ['ib-tab-inbox','ib-tab-unread','ib-tab-sent'].forEach(function(id){var b=document.getElementById(id);if(b){b.style.background='';b.style.color='';}});
-  if(btn){btn.style.background='var(--gold)';btn.style.color='#fff';}
+  if(btn){btn.style.background='rgba(27,27,26,.55)';btn.style.color='#fff';}
   oLoadInbox();
 }
 function oLoadInbox(){
@@ -2198,7 +2222,7 @@ function oLoadInbox(){
     feed.innerHTML=msgs.map(function(m){
       var date=m.date?new Date(m.date).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
       var w=m.unread?'600':'400';
-      var d=m.unread?'<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gold);margin-right:.5rem;vertical-align:middle"></span>':'<span style="display:inline-block;width:6px;margin-right:.5rem"></span>';
+      var d=m.unread?'<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--navy);margin-right:.5rem;vertical-align:middle"></span>':'<span style="display:inline-block;width:6px;margin-right:.5rem"></span>';
       return '<div onclick="oOpenMessage(\''+oEscHtml(m.id)+'\')" style="padding:.85rem 1rem;border-bottom:1px solid rgba(27,27,26,.06);cursor:pointer">'+
         '<div style="display:flex;justify-content:space-between;gap:.8rem"><div style="font-weight:'+w+';color:var(--navy);font-size:.85rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+d+oEscHtml(m.from)+'</div><div style="color:rgba(27,27,26,.4);font-size:.7rem;flex-shrink:0">'+oEscHtml(date)+'</div></div>'+
         '<div style="color:var(--navy);font-weight:'+w+';margin-top:.2rem;font-size:.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+oEscHtml(m.subject)+'</div>'+
@@ -2253,7 +2277,7 @@ function oSendMessage(){
   var body=document.getElementById('oc-body').value;
   if(!to){alert('Recipient required');return;}
   var mc=document.getElementById('ov-inbox-compose');
-  var payload={to:to,subject:subject,text:body,html:'<pre style="font-family:Georgia,serif;font-size:14px;white-space:pre-wrap">'+oEscHtml(body)+'</pre>'};
+  var payload={to:to,subject:subject,text:body,html:'<pre style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;white-space:pre-wrap">'+oEscHtml(body)+'</pre>'};
   if(mc.dataset.threadId)payload.threadId=mc.dataset.threadId;
   if(mc.dataset.inReplyTo)payload.inReplyTo=mc.dataset.inReplyTo;
   if(mc.dataset.references)payload.references=mc.dataset.references;
@@ -2332,10 +2356,10 @@ function _evDateKeyO(ev){
 }
 function _evCardO(ev){
   var loc=ev.location?'<div style="font-size:.74rem;color:rgba(27,27,26,.5);margin-top:.2rem"><span class="nav-addr" onclick="navChoice(\''+encodeURIComponent(ev.location)+'\')" style="color:inherit;font-size:inherit">'+escH(ev.location)+'</span></div>':'';
-  var notes=ev.notes?'<div style="margin-top:.35rem;padding:.4rem .55rem;background:rgba(27,27,26,.03);border-left:2px solid var(--gold);font-size:.74rem;color:rgba(27,27,26,.7);white-space:pre-wrap;line-height:1.4">'+enrichNotes(ev.notes)+'</div>':'';
-  return '<div style="background:#ffffff;padding:.85rem 1rem;margin-bottom:.5rem;border:1px solid rgba(27,27,26,.08);border-left:3px solid var(--gold)">'
+  var notes=ev.notes?'<div style="margin-top:.35rem;padding:.4rem .55rem;background:rgba(27,27,26,.03);border-left:2px solid var(--navy);font-size:.74rem;color:rgba(27,27,26,.7);white-space:pre-wrap;line-height:1.4">'+enrichNotes(ev.notes)+'</div>':'';
+  return '<div style="background:#ffffff;padding:.85rem 1rem;margin-bottom:.5rem;border:1px solid rgba(27,27,26,.08);border-left:3px solid var(--navy)">'
     +'<div style="display:flex;gap:.85rem;align-items:flex-start">'
-      +'<div style="font-size:.78rem;color:var(--gold);font-weight:500;font-variant-numeric:tabular-nums;min-width:96px">'+_evRangeO(ev)+'</div>'
+      +'<div style="font-size:.78rem;color:var(--navy);font-weight:500;font-variant-numeric:tabular-nums;min-width:96px">'+_evRangeO(ev)+'</div>'
       +'<div style="flex:1"><div style="font-size:.88rem;color:var(--navy);font-weight:500">'+escH(ev.title)+'</div>'+loc+notes+'</div>'
     +'</div></div>';
 }
@@ -2449,9 +2473,9 @@ function buildWeekStrip(){
       selPersonal.forEach(function(ev){
         var loc = ev.location ? '<div style="font-size:.74rem;color:rgba(27,27,26,.5);margin-top:.15rem"><span class="nav-addr" onclick="navChoice(\''+encodeURIComponent(ev.location)+'\')" style="color:inherit;font-size:inherit">'+escH(ev.location)+'</span></div>' : '';
         var notes = ev.notes ? '<div style="margin-top:.3rem;padding:.35rem .55rem;background:rgba(27,27,26,.03);border-left:2px solid rgba(96,108,145,.3);font-size:.74rem;color:rgba(27,27,26,.6);white-space:pre-wrap;line-height:1.4">'+enrichNotes(ev.notes)+'</div>' : '';
-        altHtml += '<div style="background:#ffffff;padding:.7rem .9rem;margin-bottom:.4rem;border:1px solid rgba(27,27,26,.08);border-left:3px solid var(--gold);border-radius:8px">'
+        altHtml += '<div style="background:#ffffff;padding:.7rem .9rem;margin-bottom:.4rem;border:1px solid rgba(27,27,26,.08);border-left:3px solid var(--navy);border-radius:8px">'
           +'<div style="display:flex;gap:.7rem;align-items:flex-start">'
-          +'<div style="font-size:.78rem;color:var(--gold);font-weight:500;font-variant-numeric:tabular-nums;min-width:50px">'+_evRangeO(ev).split(' ')[0]+'</div>'
+          +'<div style="font-size:.78rem;color:var(--navy);font-weight:500;font-variant-numeric:tabular-nums;min-width:50px">'+_evRangeO(ev).split(' ')[0]+'</div>'
           +'<div style="flex:1"><div style="font-size:.85rem;color:var(--navy);font-weight:500">'+escH(ev.title)+'</div>'+loc+notes+'</div>'
           +'</div></div>';
       });
@@ -2529,14 +2553,14 @@ function buildCard(j,isOffered){
     +'<div class="jc2-loc"><div class="jc2-pin pu"></div><div class="jc2-addr" onclick="navChoice(\''+puEnc+'\')">'+escH(_shortAddr(j.pickup)||'')+'</div></div>'
     +(j.stop_address?'<div class="jc2-loc" style="margin-top:.18rem"><div class="jc2-pin de"></div><div class="jc2-addr" onclick="navChoice(\''+stEnc+'\')">↳ '+escH(_shortAddr(j.stop_address)||'')+'</div></div>':'')
     +'<div class="jc2-loc" style="margin-top:.18rem"><div class="jc2-pin de"></div><div class="jc2-addr" onclick="navChoice(\''+deEnc+'\')">'+escH(_shortAddr(j.dest)||'')+'</div></div>'
-    +(j.flight?'<div style="margin-top:.4rem;font-size:.72rem;color:rgba(27,27,26,.5)">✈ '+escH(j.flight)+'</div>':'')
+    +(_flightOf(j)?'<div style="margin-top:.4rem;font-size:.72rem;color:rgba(27,27,26,.5)">✈ '+escH(_flightOf(j))+'</div>':'')
     +'</div>';
 
   // Fare
   var fareHtml='<div class="jc2-meta">'
     +'<div><div class="jc2-fare">'+(j.fare?'£'+escH(String(Number(j.fare).toFixed(0))):'TBC')+'</div>'
     +'<div class="jc2-pay" style="margin-top:.2rem">'+wmPayBadge(j)+'</div></div>'
-    +'<div style="text-align:right"><div style="font-size:.72rem;color:rgba(27,27,26,.45)">' +escH(j.pax||1)+' pax'+(j.bags&&j.bags!=='0'?' · '+escH(j.bags)+' bags':'')+'</div>'
+    +'<div style="text-align:right"><div style="font-size:.72rem;color:rgba(27,27,26,.45)">' +escH(j.pax||1)+' pax'+(_bagsText(j.bags)?' · '+escH(_bagsText(j.bags)):'')+'</div>'
     +'<div style="font-size:.68rem;color:rgba(27,27,26,.35);margin-top:.1rem">'+escH(j.name)+'</div></div>'
     +'</div>';
 
@@ -2561,7 +2585,7 @@ function buildCard(j,isOffered){
   // Extras
   var extras='<div class="jc2-extras">'
     +'<button class="jc2-ex" onclick="showNB(\''+j.name.replace(/'/g,"\\'")+'\',\''+j.fare+'\')">Name Board</button>'
-    +(j.flight?'<a class="jc2-ex" href="https://www.flightradar24.com/data/flights/'+escH(j.flight.toLowerCase())+'" target="_blank">Track Flight</a>':'')
+    +(_flightOf(j)?'<a class="jc2-ex" href="https://www.flightradar24.com/data/flights/'+escH(_flightOf(j).toLowerCase())+'" target="_blank">Track Flight</a>':'')
     +'</div>';
 
   return '<div class="jc2 '+stClass+'" id="jc-'+escH(j.id)+'">'
@@ -2721,7 +2745,7 @@ async function renderJobList(list, jobs, opts){
     var dateSep='';
     if(j.date!==lastDate){
       lastDate=j.date;
-      dateSep='<div style="padding:.6rem 1rem .45rem;font-family:var(--serif);font-size:1.05rem;font-weight:500;letter-spacing:.05em;color:var(--navy);background:#ffffff;border-bottom:1px solid var(--gold-rule)">'+_fmtUpcomingDate(j.date)+'</div>';
+      dateSep='<div style="padding:.6rem 1rem .45rem;font-family:var(--serif);font-size:1.05rem;font-weight:500;letter-spacing:.05em;color:var(--navy);background:#ffffff;border-bottom:1px solid var(--rule)">'+_fmtUpcomingDate(j.date)+'</div>';
     }
     return dateSep+jobCardHtml(j);
   }).join('');
@@ -2730,12 +2754,152 @@ async function renderJobList(list, jobs, opts){
 // Single job/personal-event card (no date separator). Shared by the flat list
 // renderer (renderJobList) and the weekly Confirmed schedule (buildConfirmed),
 // so every tab shows the exact same card format.
+/* ═══════════════════════════════════════════════════════════════════════════
+   CUSTOMER CHANGE REQUESTS — two stages, two very different volumes
+   ═══════════════════════════════════════════════════════════════════════════
+   The customer's request never edits the booking. What the owner sees depends
+   on how far along the trip is, and WHICH stage that is comes from the shared
+   lifecycle module so this app and the admin app can never disagree:
+
+     early    — not committed yet (still being priced / no payment chosen).
+                Nothing to accept: the owner re-prices with the new details and
+                sends the estimate. A quiet amber note, no decision.
+     decision — committed (confirmed or running). Moving it is a real decision,
+                so: a prominent panel with Current → Requested per field, the
+                customer's own words, and Accept / Decline / Message.
+
+   Everything below is defensive: a change request is data from a customer, and
+   a job card that cannot render its change block must still render the job.
+   GUARDRAIL: server/tests/change-request.test.js. */
+
+// "Fare may change" — raised when an ACCEPTED change touched something that
+// can move the price. We never re-price, charge or refund automatically; this
+// stays on the job until the owner has settled it with the customer.
+function wmFareReviewChip(j){
+  if(!j||!j.fare_review_at)return '';
+  return '<span style="display:inline-block;margin-left:.35rem;font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#102a43;background:rgba(16,42,67,.05);border:1px solid rgba(16,42,67,.28);border-radius:5px;padding:.2rem .55rem">£ Fare may change</span>';
+}
+
+/* ── THE FARE STEP (second half of accepting a change) ──
+   Accepting applies the new journey but deliberately does NOT touch money. The
+   job then carries fare_review_at, and this panel is how the owner finishes:
+   see what the new journey is worth, override it, and re-send the ordinary
+   estimate so the customer re-confirms and pays the normal way.
+
+   It renders on the job itself rather than in a modal so the step survives a
+   reload — an owner who accepts and then wanders off still finds the job
+   waiting to be priced, instead of a change applied at the old fare with
+   nothing on screen to say so. */
+var _wmFareCache={};
+function wmFareStep(j){
+  try{
+    if(!j||!j.fare_review_at)return '';
+    var id=j.id;
+    // Fill in the suggestion once the markup is on the page.
+    setTimeout(function(){wmFillFareStep(id);},0);
+    return '<div class="wm-fare-step" data-bid="'+id+'" style="margin:0 1rem .85rem;border:1.5px solid #102a43;border-radius:9px;overflow:hidden;background:rgba(16,42,67,.03)">'
+      +'<div style="padding:.55rem .8rem;background:rgba(16,42,67,.06);font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#102a43">£ Set the new fare</div>'
+      +'<div style="padding:.7rem .8rem">'
+        +'<div style="font-size:.76rem;color:rgba(16,42,67,.65);line-height:1.55;margin-bottom:.55rem">The journey has been updated. Set the fare and re-send the estimate — the customer confirms and pays exactly as they would a fresh quote. Nothing is charged or refunded here.</div>'
+        +'<div id="wm-prior-'+id+'"></div>'
+        +'<div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.6rem">'
+          +'<label style="font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(16,42,67,.5)">New fare £</label>'
+          +'<input id="wm-fare-'+id+'" type="number" step="0.50" min="0" inputmode="decimal" placeholder="…" style="width:96px;padding:.4rem .5rem;border:1px solid rgba(16,42,67,.25);border-radius:6px;font-size:1rem;color:var(--navy)">'
+          +'<span id="wm-sugg-'+id+'" style="font-size:.7rem;color:rgba(16,42,67,.5)">Pricing…</span>'
+        +'</div>'
+        +'<div style="display:flex;gap:.4rem;flex-wrap:wrap">'
+          +'<button class="wm-btn wm-btn-primary wm-btn-sm" style="flex:1;min-width:10rem" onclick="event.stopPropagation();ownerSendReEstimate('+id+')">Send updated estimate</button>'
+          +'<button class="wm-btn wm-btn-ghost wm-btn-sm" onclick="event.stopPropagation();ownerClearFareReview('+id+')">Keep current fare</button>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }catch(e){
+    try{console.error('[owner] fare step failed',(j&&j.ref)||'',e);}catch(_){ }
+    return '';
+  }
+}
+
+// Price the updated journey and show what has already been collected. Failure
+// costs the suggestion only — the owner can always type the figure.
+function wmFillFareStep(id){
+  var box=document.querySelector('.wm-fare-step[data-bid="'+id+'"]');
+  if(!box)return;
+  var input=document.getElementById('wm-fare-'+id);
+  var sugg=document.getElementById('wm-sugg-'+id);
+  var prior=document.getElementById('wm-prior-'+id);
+  var paint=function(d){
+    if(input&&!input.value&&d.suggested_fare)input.value=Number(d.suggested_fare).toFixed(2);
+    if(sugg)sugg.textContent=d.suggested_fare?('Suggested £'+Number(d.suggested_fare).toFixed(2)+(d.current_fare?' · was £'+Number(d.current_fare).toFixed(2):'')):'No suggestion — set it yourself';
+    // ALREADY COLLECTED is the thing that must not be missed: re-pricing clears
+    // the payment state, so without this the owner could charge the full new
+    // fare on top of money the customer has already handed over.
+    var already=d.prior_payment||(d.prior_payments&&d.prior_payments.length?d.prior_payments[d.prior_payments.length-1]:null);
+    if(prior&&already&&already.amount){
+      prior.innerHTML='<div style="margin-bottom:.55rem;padding:.5rem .6rem;background:rgba(45,110,71,.1);border-left:2px solid #2D6E47;border-radius:0 5px 5px 0;font-size:.74rem;color:#1E5B37;line-height:1.5">'
+        +'<strong>Already collected: £'+Number(already.amount).toFixed(2)+'</strong> ('+escH(already.method||'card')+'). Charge only the difference if that is what you agreed — nothing is refunded automatically.</div>';
+    }
+  };
+  if(_wmFareCache[id]){paint(_wmFareCache[id]);return;}
+  fetch('/api/bookings/'+id+'/suggested-fare',{credentials:'include'})
+    .then(function(r){return r.json();})
+    .then(function(d){ if(d&&d.ok){_wmFareCache[id]=d;paint(d);} else if(sugg)sugg.textContent='No suggestion — set it yourself'; })
+    .catch(function(){ if(sugg)sugg.textContent='No suggestion — set it yourself'; });
+}
+
+// One changed field as "Current → Requested", the requested value highlighted.
+function wmChangeRow(c){
+  return '<tr>'
+    +'<td style="padding:.35rem .6rem .35rem 0;color:rgba(16,42,67,.45);font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;vertical-align:top;white-space:nowrap">'+escH(c.label)+'</td>'
+    +'<td style="padding:.35rem .5rem .35rem 0;color:rgba(16,42,67,.5);text-decoration:line-through;vertical-align:top">'+escH(c.current||'—')+'</td>'
+    +'<td style="padding:.35rem .4rem .35rem 0;color:rgba(16,42,67,.35);vertical-align:top">→</td>'
+    +'<td style="padding:.35rem 0;color:#102a43;font-weight:700;vertical-align:top">'+escH(c.requested||'—')+'</td>'
+  +'</tr>';
+}
+
+function wmChangeBlock(j){
+  try{
+    var stage=WMLifecycle.changeRequestStage(j);
+    if(stage==='none')return '';
+    var d=WMLifecycle.changeRequestDetail(j);
+
+    // ── EARLY: a quiet note, not a decision ──
+    if(stage==='early'){
+      var what=WMLifecycle.changedFieldsLabel(j);
+      return '<div style="margin:0 1rem .8rem;padding:.55rem .7rem;background:rgba(16,42,67,.04);border-left:2px solid rgba(16,42,67,.55);border-radius:0 5px 5px 0;font-size:.74rem;color:#102a43;line-height:1.5">'
+        +'<span style="font-weight:600">✎ Edited by the customer</span>'+(what?' — '+escH(what):'')+'. Review before you send the estimate.'
+        +(d.note?'<div style="margin-top:.3rem;color:rgba(16,42,67,.6);font-style:italic">“'+escH(d.note)+'”</div>':'')
+        +'<div style="margin-top:.5rem"><button class="wm-btn wm-btn-ghost wm-btn-sm" onclick="event.stopPropagation();ownerReviewChange('+j.id+')">Reviewed</button></div>'
+      +'</div>';
+    }
+
+    // ── DECISION: a committed journey. Make it unmissable. ──
+    var rows=d.changed.map(wmChangeRow).join('');
+    return '<div style="margin:0 1rem .85rem;border:1.5px solid rgba(16,42,67,.55);border-radius:9px;overflow:hidden;background:rgba(16,42,67,.03)">'
+      +'<div style="padding:.55rem .8rem;background:rgba(16,42,67,.06);font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#102a43">✎ Journey change requested</div>'
+      +'<div style="padding:.7rem .8rem">'
+        +(rows?'<table style="width:100%;border-collapse:collapse;font-size:.78rem;color:var(--navy)"><tr><td></td><td style="padding-bottom:.15rem;color:rgba(16,42,67,.35);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase">Current</td><td></td><td style="padding-bottom:.15rem;color:#102a43;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase">Requested</td></tr>'+rows+'</table>'
+              :'<div style="font-size:.78rem;color:rgba(16,42,67,.6)">No journey fields were edited — see their note.</div>')
+        +(d.note?'<div style="margin-top:.6rem;padding:.5rem .6rem;background:#ffffff;border-left:2px solid rgba(16,42,67,.55);font-size:.78rem;color:var(--navy);line-height:1.55;white-space:pre-wrap">'+escH(d.note)+'</div>':'')
+        +(d.price?'<div style="margin-top:.6rem;font-size:.7rem;color:#102a43;line-height:1.5">Accepting may change the fare — nothing is charged or refunded automatically. You will be reminded to confirm the price with the customer.</div>':'')
+        +'<div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.75rem">'
+          +'<button class="wm-btn wm-btn-primary wm-btn-sm" style="flex:1;min-width:7rem" onclick="event.stopPropagation();ownerAcceptChange('+j.id+')">Accept change</button>'
+          +'<button class="wm-btn wm-btn-ghost wm-btn-sm" style="flex:1;min-width:6rem" onclick="event.stopPropagation();ownerDeclineChange('+j.id+')">Decline</button>'
+          +'<button class="wm-btn wm-btn-ghost wm-btn-sm" style="flex:1;min-width:8rem" onclick="event.stopPropagation();wmMessageOpen('+j.id+')">Message customer</button>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }catch(e){
+    try{console.error('[owner] change-request block failed',(j&&j.ref)||'',e);}catch(_){ }
+    return '';
+  }
+}
+
 function jobCardHtml(j){
   if(j.type==='personal'){
     return '<div style="padding:.8rem 1rem;border-top:1px solid var(--rule);opacity:.7">'
       +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;margin-bottom:.2rem">'
       +  '<div style="font-weight:500;color:rgba(27,27,26,.75);font-size:.88rem">'+escH(j.title)+'</div>'
-      +  '<span style="display:inline-flex;align-items:center;padding:.2rem .5rem;font-size:.52rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#6f6860;background:rgba(27,27,26,.05);border-radius:4px;white-space:nowrap">'+(j.allDay?'All day':j.time||'')+'</span>'
+      +  '<span style="display:inline-flex;align-items:center;padding:.2rem .5rem;font-size:.52rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#657485;background:rgba(27,27,26,.05);border-radius:4px;white-space:nowrap">'+(j.allDay?'All day':j.time||'')+'</span>'
       +'</div>'
       +'<div style="font-size:.68rem;color:rgba(27,27,26,.35);letter-spacing:.06em;text-transform:uppercase">Personal calendar</div>'
       +'</div>';
@@ -2756,8 +2920,13 @@ function jobCardHtml(j){
       +'<div style="font-size:.8rem;color:rgba(27,27,26,.6);margin-bottom:.15rem">'+escH(_shortAddr(j.pickup||''))+(j.stop_address?' → '+escH(_shortAddr(j.stop_address)):'')+' → '+escH(_shortAddr(j.dest||''))+'</div>'
       +'<div style="font-size:.72rem;color:rgba(27,27,26,.4)">'+(j.time||'ASAP')+(j.fare?' · £'+Number(j.fare).toFixed(0):'')+' · '+(j.pax||1)+' pax'+(_bagsText(j.bags)?' · '+_bagsText(j.bags):'')+'</div>'
       +(j.apiStatus==='pending'&&j.suggestedFare!=null?'<div style="margin-top:.3rem"><span style="display:inline-block;font-size:.72rem;font-weight:600;letter-spacing:.03em;color:#555555;background:rgba(106,106,106,.16);border:1px solid rgba(106,106,106,.4);border-radius:5px;padding:.2rem .6rem">Suggested: £'+Number(j.suggestedFare).toFixed(2)+'</span></div>':'')
-      +'<div style="margin-top:.3rem">'+wmPayBadge(j)+'</div>'
+      +'<div style="margin-top:.3rem">'+wmPayBadge(j)+wmFareReviewChip(j)+'</div>'
     +'</div>'
+    // The change-request block and the fare step sit OUTSIDE the clickable
+    // header, between it and the collapsible detail: both carry buttons, and a
+    // button inside the header would toggle the card as well as fire.
+    + wmChangeBlock(j)
+    + wmFareStep(j)
     +'<div id="'+detailId+'" style="display:none;padding:0 1rem .9rem;border-top:1px solid rgba(27,27,26,.06);background:rgba(27,27,26,.02)">'
       +'<table style="width:100%;font-size:.78rem;color:rgba(27,27,26,.7);border-collapse:collapse;margin-bottom:.7rem">'
         +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4);width:80px">From</td><td>'+escH(_shortAddr(j.pickup)||'—')+'</td></tr>'
@@ -2768,23 +2937,28 @@ function jobCardHtml(j){
         +(j.fare?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Fare</td><td style="font-weight:600;color:var(--navy)">£'+Number(j.fare).toFixed(2)+'</td></tr>':'')
         +(j.apiStatus==='pending'&&j.suggestedFare!=null?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Suggested</td><td style="font-weight:600;color:#555555">£'+Number(j.suggestedFare).toFixed(2)+'</td></tr>':'')
         +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Passengers</td><td>'+(j.pax||1)+'</td></tr>'
-        +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Luggage</td><td>'+escH(_bagsText(j.bags)||'None')+'</td></tr>'
+        +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Luggage</td><td>'+escH(_bagsLabel(j.bags))+'</td></tr>'
         +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Payment</td><td>'+wmPayBadge(j)+'</td></tr>'
         +(j.notes?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4);vertical-align:top">Notes</td><td>'+escH(j.notes)+'</td></tr>':'')
-        +(j.customer_note?'<tr><td style="padding:.3rem 0;color:#b78635;vertical-align:top;font-weight:600">Special req.</td><td style="color:#8a5a1a;background:rgba(184,152,90,.1);border-left:2px solid #b78635;padding:.3rem .5rem">'+escH(j.customer_note)+'</td></tr>':'')
+        +(j.customer_note?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.55);vertical-align:top;font-weight:600">Special req.</td><td style="color:#1b1b1a;background:rgba(27,27,26,.04);border-left:2px solid rgba(27,27,26,.55);padding:.3rem .5rem">'+escH(j.customer_note)+'</td></tr>':'')
       +'</table>'
       +'<div style="display:flex;gap:.4rem;flex-wrap:wrap">';
   // WHICH ACTIONS ARE ALLOWED is decided by the shared lifecycle module, so the
   // admin app offers exactly the same set on the same states (/wm-lifecycle.js).
   var ACT=WMLifecycle.actionsFor(j);
+  // The fare was left alone when a change was accepted — this is the owner
+  // saying they have now settled the difference with the customer.
+  if(ACT.clearFareReview){
+    html+='<button class="wm-btn wm-btn-ghost wm-btn-sm" style="flex:1" onclick="ownerClearFareReview('+j.id+')">Fare Confirmed</button>';
+  }
   if(ACT.sendEstimate){
-    html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:var(--gold);color:#1a1a1a;border:1.5px solid var(--gold);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerSendEstimate('+j.id+')">Send Estimate</button>';
+    html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:rgba(27,27,26,.55);color:#1a1a1a;border:1.5px solid rgba(27,27,26,.55);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerSendEstimate('+j.id+')">Send Estimate</button>';
   }
   // Awaiting payment (cash-on-the-day chosen, or card started): settling the
   // fare is what CONFIRMS the booking. This is the only "Mark as paid" that
   // also confirms — a deliberate, explicit owner/driver action.
   if(ACT.markPaid){
-    html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:var(--gold);color:#1a1a1a;border:1.5px solid var(--gold);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerMarkPaid('+j.id+')">Mark as Paid</button>';
+    html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:rgba(27,27,26,.55);color:#1a1a1a;border:1.5px solid rgba(27,27,26,.55);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerMarkPaid('+j.id+')">Mark as Paid</button>';
   }
   if(ACT.markCompleted){
     html+='<button style="flex:1;padding:.6rem;font-size:.68rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(45,110,71,.12);color:#2D6E47;border:1.5px solid rgba(45,110,71,.3);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerMarkCompleted('+j.id+')">Mark Completed</button>';
@@ -2818,7 +2992,7 @@ function jobCardHtml(j){
   if(j.email&&(j.apiStatus==='confirmed'||j.apiStatus==='active'||j.apiStatus==='completed')){
     html+='<div style="width:100%;text-align:center;margin-top:.35rem;font-size:.62rem;color:rgba(45,110,71,.7);letter-spacing:.04em">✓ Confirmation sent to '+escH(j.email)+'</div>';
   } else if(!j.email&&j.apiStatus!=='pending'&&j.apiStatus!=='cancelled'){
-    html+='<div style="width:100%;text-align:center;margin-top:.35rem;font-size:.62rem;color:rgba(156,88,0,.6);letter-spacing:.04em">No email — confirmation not sent</div>';
+    html+='<div style="width:100%;text-align:center;margin-top:.35rem;font-size:.62rem;color:rgba(27,27,26,.6);letter-spacing:.04em">No email — confirmation not sent</div>';
   }
   html+='</div></div></div>';
   return html;
@@ -2895,7 +3069,7 @@ async function buildConfirmed(){
     var dayKey=dk(day.getFullYear(),day.getMonth(),day.getDate());
     var dayItems=items.filter(function(x){return x.date===dayKey;})
       .sort(function(a,b){return (a.time||'').localeCompare(b.time||'');});
-    html+='<div style="padding:.6rem 1rem .45rem;font-family:var(--serif);font-size:1.05rem;font-weight:500;letter-spacing:.06em;color:var(--navy);background:#ffffff;border-bottom:1px solid var(--gold-rule)">'+_fmtDayHeader(day)+'</div>';
+    html+='<div style="padding:.6rem 1rem .45rem;font-family:var(--serif);font-size:1.05rem;font-weight:500;letter-spacing:.06em;color:var(--navy);background:#ffffff;border-bottom:1px solid var(--rule)">'+_fmtDayHeader(day)+'</div>';
     html+=dayItems.length
       ? dayItems.map(jobCardHtml).join('')
       : '<div style="padding:.7rem 1rem;border-top:1px solid var(--rule);font-size:.78rem;color:rgba(27,27,26,.4)">No jobs</div>';
@@ -2930,7 +3104,7 @@ function buildCompleted(){
   // rule is shared with the admin app — see /wm-lifecycle.js.
   var html='';
   WMLifecycle.groupByWeek(jobs).forEach(function(g){
-    html+='<div style="display:flex;justify-content:space-between;align-items:baseline;gap:.6rem;padding:.7rem 1rem .5rem;background:#ffffff;border-bottom:1px solid var(--gold-rule)">'
+    html+='<div style="display:flex;justify-content:space-between;align-items:baseline;gap:.6rem;padding:.7rem 1rem .5rem;background:#ffffff;border-bottom:1px solid var(--rule)">'
       +'<span style="font-family:var(--serif);font-size:1.02rem;font-weight:500;letter-spacing:.05em;color:var(--navy)">'+escH(g.label)+'</span>'
       +'<span style="font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(27,27,26,.45);white-space:nowrap">'+g.items.length+(g.items.length===1?' job':' jobs')+' · £'+g.takings.toFixed(0)+'</span>'
       +'</div>';
@@ -3050,7 +3224,7 @@ function upcomingEdit(bookingId){
       // or email by accident. This modal has exactly two actions: Cancel + Save.
       +'<div style="display:flex;gap:.6rem">'
       +'<button onclick="document.getElementById(\'edit-booking-overlay\').remove()" style="flex:1;padding:.75rem;background:transparent;border:1px solid rgba(27,27,26,.15);border-radius:10px;font-family:inherit;font-size:.82rem;font-weight:500;color:rgba(27,27,26,.5);cursor:pointer">Cancel</button>'
-      +'<button onclick="upcomingSave()" style="flex:2;padding:.75rem;background:var(--gold);border:none;border-radius:10px;font-family:inherit;font-size:.82rem;font-weight:600;color:#1a1a1a;cursor:pointer;letter-spacing:.04em">Save Changes</button>'
+      +'<button onclick="upcomingSave()" style="flex:2;padding:.75rem;background:rgba(27,27,26,.55);border:none;border-radius:10px;font-family:inherit;font-size:.82rem;font-weight:600;color:#1a1a1a;cursor:pointer;letter-spacing:.04em">Save Changes</button>'
       +'</div></div>';
     document.body.appendChild(el);
     el.addEventListener('click',function(ev){if(ev.target===el)el.remove();});
@@ -3135,11 +3309,11 @@ function wmMessageOpen(bookingId){
     +'<div style="font-family:var(--serif);font-size:1.3rem;color:var(--navy);font-style:italic">Message Customer</div>'
     +'<button onclick="document.getElementById(\'wm-msg-overlay\').remove()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:rgba(27,27,26,.45)">&times;</button>'
     +'</div>'
-    +'<div style="font-size:.72rem;color:rgba(27,27,26,.55);margin-bottom:.9rem">'+(email?('To '+escH(name?name+' · ':'')+escH(email)):'<span style="color:#9C5800">No email on this booking</span>')+'</div>'
+    +'<div style="font-size:.72rem;color:rgba(27,27,26,.55);margin-bottom:.9rem">'+(email?('To '+escH(name?name+' · ':'')+escH(email)):'<span style="color:#1b1b1a">No email on this booking</span>')+'</div>'
     +'<textarea id="wm-msg-text" rows="6" placeholder="Type your message to the customer — e.g. a question about their journey…" style="width:100%;padding:.7rem .8rem;border:1px solid rgba(27,27,26,.15);border-radius:8px;font-family:inherit;font-size:.9rem;color:var(--navy);resize:vertical"></textarea>'
     +'<div style="display:flex;gap:.6rem;margin-top:.9rem">'
     +'<button onclick="document.getElementById(\'wm-msg-overlay\').remove()" style="flex:1;padding:.75rem;background:transparent;border:1px solid rgba(27,27,26,.15);border-radius:10px;font-family:inherit;font-size:.82rem;font-weight:500;color:rgba(27,27,26,.5);cursor:pointer">Cancel</button>'
-    +'<button id="wm-msg-send" onclick="wmMessageSend('+bookingId+',this)" '+(email?'':'disabled ')+'style="flex:2;padding:.75rem;background:var(--gold);border:none;border-radius:10px;font-family:inherit;font-size:.82rem;font-weight:600;color:#1a1a1a;cursor:pointer;letter-spacing:.04em'+(email?'':';opacity:.5;cursor:default')+'">Send Message</button>'
+    +'<button id="wm-msg-send" onclick="wmMessageSend('+bookingId+',this)" '+(email?'':'disabled ')+'style="flex:2;padding:.75rem;background:rgba(27,27,26,.55);border:none;border-radius:10px;font-family:inherit;font-size:.82rem;font-weight:600;color:#1a1a1a;cursor:pointer;letter-spacing:.04em'+(email?'':';opacity:.5;cursor:default')+'">Send Message</button>'
     +'</div></div>';
   document.body.appendChild(el);
   el.addEventListener('click',function(ev){if(ev.target===el)el.remove();});
@@ -3306,6 +3480,78 @@ async function ownerMarkPaid(bookingId){
   }catch(e){showToast('Network error');console.error('[ownerMarkPaid]',e);}
 }
 
+// ── CHANGE REQUEST: review / accept / decline ────────────────────────────────
+// Three separate acts, and only ONE of them touches the booking. The
+// change_requests rows are kept for good; only their status moves.
+async function _ownerChangeAction(bookingId,path,confirmMsg,okMsg){
+  if(confirmMsg&&!confirm(confirmMsg))return;
+  try{
+    var r=await fetch('/api/bookings/'+bookingId+path,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}});
+    var d=await r.json();
+    if(r.ok&&d.ok){
+      showToast(typeof okMsg==='function'?okMsg(d):okMsg);
+      loadOwnerBookings();
+    } else showToast(d.error||('Failed ('+r.status+')'));
+  }catch(e){showToast('Network error');console.error('[ownerChangeAction]',path,e);}
+}
+
+// EARLY stage — nothing to decide; this only clears the note. The owner prices
+// the new details and sends the estimate as normal.
+function ownerReviewChange(bookingId){
+  _ownerChangeAction(bookingId,'/change-request/review',null,'Noted — price it with the new details');
+}
+
+// DECISION stage — APPLIES the customer's requested journey details to the
+// booking. This is the only action in the app that does so, which is why it
+// confirms first and why the wording is explicit about what money will NOT do.
+function ownerAcceptChange(bookingId){
+  _ownerChangeAction(bookingId,'/change-request/accept',
+    'Apply the requested changes to this booking?\n\nThe journey details will be updated. Nothing is charged or refunded — you settle any price difference with the customer yourself.',
+    function(d){
+      return d.fare_review ? 'Change applied — confirm the fare with the customer'
+                           : 'Change applied to the booking';
+    });
+}
+
+// DECISION stage — the journey stands exactly as it was booked.
+function ownerDeclineChange(bookingId){
+  _ownerChangeAction(bookingId,'/change-request/decline',
+    'Decline this change?\n\nThe booking stays exactly as originally booked. Let the customer know with Message customer.',
+    'Change declined — booking unchanged');
+}
+
+// Dismiss the "Fare may change" reminder once the price has been settled.
+function ownerClearFareReview(bookingId){
+  delete _wmFareCache[bookingId];
+  _ownerChangeAction(bookingId,'/fare-review/clear',null,'Fare confirmed');
+}
+
+// Send the ORDINARY estimate again at the owner's fare. The booking goes back
+// to pending and the customer re-confirms and pays the normal way — by card, or
+// by telling us they will pay the driver. Nothing is charged here.
+async function ownerSendReEstimate(bookingId){
+  var input=document.getElementById('wm-fare-'+bookingId);
+  var fare=input?parseFloat(input.value):NaN;
+  if(!isFinite(fare)||fare<=0){showToast('Set a fare first');if(input)input.focus();return;}
+  var cached=_wmFareCache[bookingId]||{};
+  var already=cached.prior_payment;
+  var warn='Re-send the estimate at £'+fare.toFixed(2)+'?\n\nThe customer will be asked to confirm and pay the updated trip as normal. Nothing is charged or refunded now.';
+  if(already&&already.amount)warn+='\n\nNote: £'+Number(already.amount).toFixed(2)+' has already been collected on this booking.';
+  if(!confirm(warn))return;
+  try{
+    var r=await fetch('/api/bookings/'+bookingId+'/re-estimate',{
+      method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({fare:fare})
+    });
+    var d=await r.json();
+    if(r.ok&&d.ok){
+      delete _wmFareCache[bookingId];
+      showToast(d.emailed?('Estimate re-sent at £'+Number(d.fare).toFixed(2)):('Fare set to £'+Number(d.fare).toFixed(2)+' — email not sent'));
+      loadOwnerBookings();
+    } else showToast(d.error||('Failed ('+r.status+')'));
+  }catch(e){showToast('Network error');console.error('[ownerSendReEstimate]',e);}
+}
+
 async function ownerTogglePaid(bookingId,currentlyPaid){
   try{
     var body=currentlyPaid?{paid_at:null}:{paid_at:new Date().toISOString()};
@@ -3448,7 +3694,7 @@ function renderInbox(){
     var srcCls=m.source==='email'?'email':'wa';
     var srcLabel=m.source==='email'?'Email':'WhatsApp';
     var extract='';
-    if(m.analysis&&m.analysis.name){extract='<div class="msg-extract">'+escH(m.analysis.name)+' · '+escH(_shortAddr(m.analysis.pickup||''))+' → '+escH(_shortAddr(m.analysis.dest||''))+' · '+escH(m.analysis.date)+' '+escH(m.analysis.time)+' · <strong style="color:var(--gold)">£'+escH(String(m.analysis.fare))+'</strong></div>';}
+    if(m.analysis&&m.analysis.name){extract='<div class="msg-extract">'+escH(m.analysis.name)+' · '+escH(_shortAddr(m.analysis.pickup||''))+' → '+escH(_shortAddr(m.analysis.dest||''))+' · '+escH(m.analysis.date)+' '+escH(m.analysis.time)+' · <strong style="color:var(--navy)">£'+escH(String(m.analysis.fare))+'</strong></div>';}
     if(m.analysis&&m.analysis.conflict){
       var cj=m.analysis.conflictJob;
       var canMake=false;var reason='';
@@ -3724,7 +3970,6 @@ async function sendToAssist(msg){
       appendW(reply);
     }
 
-
   }catch(e){
     var tel=document.getElementById(tid);if(tel)tel.remove();
     appendW('Connection error — check your internet.');
@@ -3742,12 +3987,12 @@ function showScannedBookingCard(bk,idx,total){
   var rows=[];
   if(bk.name) rows.push('<strong>Passenger:</strong> '+escH(bk.name));
   if(bk.phone) rows.push('<strong>Phone:</strong> '+escH(bk.phone));
-  if(bk.pickup) rows.push('<strong>Pickup:</strong> '+escH(bk.pickup));
-  if(bk.destination) rows.push('<strong>Destination:</strong> '+escH(bk.destination));
+  if(bk.pickup) rows.push('<strong>Pickup:</strong> '+escH(_shortAddr(bk.pickup)));
+  if(bk.destination) rows.push('<strong>Destination:</strong> '+escH(_shortAddr(bk.destination)));
   if(bk.date) rows.push('<strong>Date:</strong> '+escH(bk.date));
   if(bk.time) rows.push('<strong>Time:</strong> '+escH(bk.time));
   if(bk.passengers&&bk.passengers>1) rows.push('<strong>Passengers:</strong> '+bk.passengers);
-  if(bk.flight) rows.push('<strong>Flight:</strong> '+escH(bk.flight));
+  if(_flightOf(bk)) rows.push('<strong>Flight:</strong> '+escH(_flightOf(bk)));
   if(bk.payment) rows.push('<strong>Payment:</strong> '+escH(bk.payment));
   if(bk.notes) rows.push('<strong>Notes:</strong> '+escH(bk.notes));
   var bkJson=escH(JSON.stringify(bk));
@@ -3760,7 +4005,7 @@ function showScannedBookingCard(bk,idx,total){
     +'</div>'
     +'<div class="msg-booking-actions">'
     +'<button class="mba-confirm" onclick="(function(btn){var bk=JSON.parse(btn.dataset.bk);var fi=document.getElementById(btn.dataset.cid+\'-fare\');if(fi&&fi.value)bk.fare=parseFloat(fi.value);createBookingFromAssist(bk);})(this)" data-bk="'+bkJson+'" data-cid="'+cardId+'">Create Booking</button>'
-    +'<button class="mba-cal" onclick="calOnlyFromData(JSON.parse(this.dataset.bk))" data-bk="'+bkJson+'" style="padding:.6rem 1rem;background:rgba(106,106,106,.1);border:1px solid rgba(106,106,106,.35);color:var(--gold);font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:6px">Calendar Only</button>'
+    +'<button class="mba-cal" onclick="calOnlyFromData(JSON.parse(this.dataset.bk))" data-bk="'+bkJson+'" style="padding:.6rem 1rem;background:rgba(106,106,106,.1);border:1px solid rgba(106,106,106,.35);color:rgba(27,27,26,.55);font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:6px">Calendar Only</button>'
     +'</div></div></div>';
   appendHTML(html);
 }
@@ -3832,11 +4077,11 @@ function showBookingCard(bk){
   if(bk.name) rows.push('<strong>Passenger:</strong> '+escH(bk.name));
   if(bk.phone) rows.push('<strong>Phone:</strong> '+escH(bk.phone));
   if(bk.pickup) rows.push('<strong>Pickup:</strong> '+escH(bk.pickup));
-  if(bk.destination) rows.push('<strong>Destination:</strong> '+escH(bk.destination));
+  if(bk.destination) rows.push('<strong>Destination:</strong> '+escH(_shortAddr(bk.destination)));
   if(bk.date) rows.push('<strong>Date:</strong> '+escH(bk.date));
   if(bk.time) rows.push('<strong>Time:</strong> '+escH(bk.time));
   if(bk.passengers) rows.push('<strong>Passengers:</strong> '+bk.passengers);
-  if(bk.flight) rows.push('<strong>Flight:</strong> '+escH(bk.flight));
+  if(_flightOf(bk)) rows.push('<strong>Flight:</strong> '+escH(_flightOf(bk)));
   if(bk.payment) rows.push('<strong>Payment:</strong> '+escH(bk.payment));
   if(bk.notes) rows.push('<strong>Notes:</strong> '+escH(bk.notes));
 
@@ -3849,7 +4094,7 @@ function showBookingCard(bk){
     +'</div>'
     +'<div class="msg-booking-actions">'
     +'<button class="mba-confirm" onclick="confirmAssistBooking()">Confirm &amp; Book</button>'
-    +'<button class="mba-cal" onclick="calOnlyAssistBooking()" style="padding:.6rem 1rem;background:rgba(106,106,106,.1);border:1px solid rgba(106,106,106,.35);color:var(--gold);font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:6px">Add to Calendar Only</button>'
+    +'<button class="mba-cal" onclick="calOnlyAssistBooking()" style="padding:.6rem 1rem;background:rgba(106,106,106,.1);border:1px solid rgba(106,106,106,.35);color:rgba(27,27,26,.55);font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:6px">Add to Calendar Only</button>'
     +'<button class="mba-cancel" onclick="cancelAssistBooking()">Cancel</button>'
     +'</div></div></div>';
   appendHTML(html);
@@ -4089,7 +4334,7 @@ function enrichNotes(text){
   });
   s=s.replace(/((?:\+44|0)[\s\-]?\d[\s\-]?\d{3,4}[\s\-]?\d{3,6})/g,function(m,p){
     var clean=p.replace(/[\s\-]/g,'');
-    return tok('<a href="tel:'+clean+'" style="color:var(--navy);text-decoration:none;border-bottom:1px solid var(--gold)">'+m+'</a>');
+    return tok('<a href="tel:'+clean+'" style="color:var(--navy);text-decoration:none;border-bottom:1px solid var(--navy)">'+m+'</a>');
   });
   for(var i=0;i<toks.length;i++)s=s.replace('\x01'+i+'\x01',toks[i]);
   return s;
@@ -4098,7 +4343,7 @@ function jobDetailCard(j){
   var wazeBtn=function(addr,label){
     return '<a href="https://waze.com/ul?q='+encodeURIComponent(addr)+'&navigate=yes" target="_blank" '
       +'style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:.5rem .9rem;'
-      +'background:rgba(106,106,106,.1);border:1px solid rgba(106,106,106,.3);color:var(--gold);'
+      +'background:rgba(106,106,106,.1);border:1px solid rgba(106,106,106,.3);color:var(--navy);'
       +'text-decoration:none;border-radius:8px;font-size:.68rem;font-weight:500;letter-spacing:.1em;'
       +'text-transform:uppercase;font-family:var(--sans);white-space:nowrap">&#9660; '+escH(label)+'</a>';
   };
@@ -4106,12 +4351,12 @@ function jobDetailCard(j){
 
   // Time + passenger
   h+='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.55rem">';
-  h+='<div style="font-family:var(--serif);font-size:1.75rem;color:var(--gold);font-weight:300;letter-spacing:.02em">'+escH(j.time)+'</div>';
+  h+='<div style="font-family:var(--serif);font-size:1.75rem;color:var(--navy);font-weight:300;letter-spacing:.02em">'+escH(j.time)+'</div>';
   h+='<div style="font-size:.95rem;color:var(--navy);font-weight:500;text-align:right;line-height:1.2;max-width:55%">'+escH(j.name)+'</div>';
   h+='</div>';
 
   // Pax / bags
-  if(j.pax>1||j.bags) h+='<div style="font-size:.72rem;color:rgba(27,27,26,.45);margin-bottom:.55rem;text-align:right">'+(j.pax||1)+' pax'+(j.bags?' · '+j.bags+' bags':'')+'</div>';
+  if(j.pax>1||_bagsText(j.bags)) h+='<div style="font-size:.72rem;color:rgba(27,27,26,.45);margin-bottom:.55rem;text-align:right">'+(j.pax||1)+' pax'+(_bagsText(j.bags)?' · '+escH(_bagsText(j.bags)):'')+'</div>';
 
   // Pickup
   h+='<div style="margin-bottom:.5rem">';
@@ -4133,26 +4378,26 @@ function jobDetailCard(j){
   h+='<div style="font-size:.95rem;color:var(--navy);line-height:1.4">'+escH(_shortAddr(j.dest))+'</div>';
   h+='</div>';
 
-  // Flight
-  if(j.flight){
+  // Flight — airport runs only (its own labelled field, never part of an address)
+  if(_flightOf(j)){
     h+='<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.55rem">';
     h+='<span style="font-size:.58rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(27,27,26,.35)">Flight</span>';
-    h+='<a href="https://www.flightradar24.com/data/flights/'+escH(j.flight.toLowerCase())+'" target="_blank" '
-      +'style="font-size:.9rem;color:#60A5FA;text-decoration:none;border-bottom:1px solid rgba(96,165,250,.4)">'+escH(j.flight)+'</a>';
+    h+='<a href="https://www.flightradar24.com/data/flights/'+escH(_flightOf(j).toLowerCase())+'" target="_blank" '
+      +'style="font-size:.9rem;color:#60A5FA;text-decoration:none;border-bottom:1px solid rgba(96,165,250,.4)">'+escH(_flightOf(j))+'</a>';
     h+='</div>';
   }
 
   // Fare
   h+='<div style="margin-bottom:.8rem">';
   h+='<div style="display:flex;align-items:baseline;gap:.5rem">';
-  h+='<span style="font-family:var(--serif);font-size:1.3rem;color:var(--gold)">£'+escH(String(j.fare||0))+'</span>';
+  h+='<span style="font-family:var(--serif);font-size:1.3rem;color:var(--navy)">£'+escH(String(j.fare||0))+'</span>';
   h+=wmPayBadge(j);
   h+='</div>';
   if(j.deadMilesFee)h+='<div style="font-size:.7rem;color:rgba(27,27,26,.4);margin-top:.2rem">incl. £'+escH(String(Number(j.deadMilesFee).toFixed(0)))+' dead miles</div>';
   h+='</div>';
 
   // Notes
-  if(j.notes) h+='<div style="margin-bottom:.75rem;padding:.5rem .7rem;background:rgba(27,27,26,.03);border-left:2px solid var(--gold);font-size:.82rem;color:rgba(27,27,26,.65);line-height:1.5">'+enrichNotes(j.notes)+'</div>';
+  if(j.notes) h+='<div style="margin-bottom:.75rem;padding:.5rem .7rem;background:rgba(27,27,26,.03);border-left:2px solid var(--navy);font-size:.82rem;color:rgba(27,27,26,.65);line-height:1.5">'+enrichNotes(j.notes)+'</div>';
 
   // Action buttons
   h+='<div style="display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.2rem">';
@@ -4169,9 +4414,9 @@ function jobDetailCard(j){
   if(j.stop_address) h+=wazeBtn(j.stop_address,'Stop');
   if(j.dest)   h+=wazeBtn(j.dest,'Drop-off');
 
-  // Flight tracker
-  if(j.flight){
-    h+='<a href="https://www.flightradar24.com/data/flights/'+escH(j.flight.toLowerCase())+'" target="_blank" '
+  // Flight tracker — airport runs only
+  if(_flightOf(j)){
+    h+='<a href="https://www.flightradar24.com/data/flights/'+escH(_flightOf(j).toLowerCase())+'" target="_blank" '
       +'style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:.5rem .9rem;'
       +'background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.25);color:#60A5FA;text-decoration:none;'
       +'border-radius:8px;font-size:.68rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-family:var(--sans)">&#9992; Flight</a>';
@@ -4217,12 +4462,12 @@ function showCalDay(key){
         var wazeUrl='https://waze.com/ul?q='+encodeURIComponent(ev.location)+'&navigate=yes';
         locHtml='<div style="display:flex;align-items:center;gap:.5rem;margin-top:.35rem;flex-wrap:wrap">'
           +'<span style="font-size:.82rem;color:rgba(27,27,26,.6)">'+escH(ev.location)+'</span>'
-          +'<a href="'+wazeUrl+'" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:.3rem .65rem;background:rgba(106,106,106,.1);border:1px solid rgba(106,106,106,.25);color:var(--gold);text-decoration:none;border-radius:6px;font-size:.62rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-family:var(--sans);white-space:nowrap">&#9660; Navigate</a>'
+          +'<a href="'+wazeUrl+'" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:.3rem .65rem;background:rgba(106,106,106,.1);border:1px solid rgba(106,106,106,.25);color:var(--navy);text-decoration:none;border-radius:6px;font-size:.62rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-family:var(--sans);white-space:nowrap">&#9660; Navigate</a>'
           +'</div>';
       }
       var notes=ev.notes?'<div style="margin-top:.4rem;padding:.4rem .6rem;background:rgba(27,27,26,.03);border-left:2px solid rgba(96,108,145,.3);font-size:.8rem;color:rgba(27,27,26,.6);white-space:pre-wrap;line-height:1.5">'+enrichNotes(ev.notes)+'</div>':'';
       return '<div style="padding:.6rem 0;border-bottom:1px solid rgba(27,27,26,.04)">'
-        +'<div style="font-size:.82rem;color:var(--gold);font-weight:500;margin-bottom:.25rem">'+escH(when)+'</div>'
+        +'<div style="font-size:.82rem;color:var(--navy);font-weight:500;margin-bottom:.25rem">'+escH(when)+'</div>'
         +'<div style="font-size:.95rem;color:var(--navy);font-weight:500;line-height:1.3">'+escH(ev.title)+'</div>'
         +locHtml+notes
         +'</div>';
@@ -4362,6 +4607,10 @@ function _renderSuggestions(sug,pinned,items,inp,cb){
       var full=it.sub?it.label+', '+it.sub:it.label;
       inp.value=full;
       sug.innerHTML='';sug.classList.remove('on');
+      // Picking from the dropdown sets .value directly, so `oninput` never
+      // fires — re-run the airport check by hand or the Flight field would
+      // stay hidden after choosing "Gatwick Airport" from the list.
+      if(typeof nbFlightField==='function')nbFlightField();
       if(cb)cb(full,it.lat&&it.lon?{lat:it.lat,lon:it.lon}:null);
     };
   });
@@ -4436,6 +4685,17 @@ async function loadOwnerBookings(){
         status:b.status==='completed'?'done':b.status==='active'?'enroute':b.status==='cancelled'?'done':'upcoming',
         note:b.notes||'',
         customer_note:b.customer_note||'',
+        // Customer asked for an amendment in My Account. NOTHING on the booking
+        // was changed by that — these carry the flag, the wording and the
+        // structured Current → Requested detail the panel draws from. How
+        // loudly it is shown depends on the booking's STAGE, and that decision
+        // comes from the shared module (WMLifecycle.changeRequestStage).
+        change_requested_at:b.change_requested_at||'',
+        change_request_summary:b.change_request_summary||'',
+        change_request_detail:b.change_request_detail||'',
+        // An accepted change that may have moved the price. We never re-price
+        // automatically — this keeps "confirm with the customer" on the job.
+        fare_review_at:b.fare_review_at||'',
         stop_address:b.stop_address||''
       };
     }
@@ -4497,7 +4757,6 @@ async function loadOwnerBookings(){
     if(_onPg('completed'))buildCompleted();
     if(_onPg('calendar'))buildCalendar();
     if(_onPg('earnings'))buildEarnings();
-
   }catch(e){console.error('[OWNER] Failed to load bookings:',e);_setConnDot(false);}
 }
 
@@ -4817,14 +5076,14 @@ function openInvoicePreview(data){
         try{var d=new Date(it.date+'T00:00:00');datePrefix=d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' \u2014 ';}catch(_){}
       }
       return '<tr>'
-        +'<td style="padding:12px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:13px;color:#1b1b1a;line-height:1.5;vertical-align:top">'+(datePrefix?'<span style="color:#9a9a9a;font-size:11px;font-family:Helvetica Neue,Arial,sans-serif">'+_e(datePrefix)+'</span>':'')+''+_e(it.description||'')+'</td>'
-        +'<td style="padding:12px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:14px;color:#1b1b1a;text-align:right;vertical-align:top;white-space:nowrap;font-family:Georgia,serif">&pound;'+amt+'</td>'
+        +'<td style="padding:12px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:13px;color:#1b1b1a;line-height:1.5;vertical-align:top">'+(datePrefix?'<span style="color:#9a9a9a;font-size:11px;font-family:var(--sans)">'+_e(datePrefix)+'</span>':'')+''+_e(it.description||'')+'</td>'
+        +'<td style="padding:12px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:14px;color:#1b1b1a;text-align:right;vertical-align:top;white-space:nowrap;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif">&pound;'+amt+'</td>'
         +'</tr>';
     }).join('');
     tableHtml='<table style="width:100%;border-collapse:collapse;margin-bottom:24px">'
       +'<thead><tr>'
-      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:left;font-weight:600">Description</th>'
-      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:right;font-weight:600">Amount</th>'
+      +'<th style="font-family:var(--sans);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:left;font-weight:600">Description</th>'
+      +'<th style="font-family:var(--sans);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:right;font-weight:600">Amount</th>'
       +'</tr></thead>'
       +'<tbody>'+itemRows+'</tbody>'
       +'</table>';
@@ -4837,41 +5096,41 @@ function openInvoicePreview(data){
     var bookingRows=bks.map(function(b){
       var fare=(+b.fare||0).toFixed(2);
       return '<tr>'
-        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:13px;color:#1b1b1a;vertical-align:top">'+_e(b.date||'')+(b.time&&b.time!=='ASAP'?' '+_e(b.time):b.time==='ASAP'?' ASAP':'')+'<br><span style="font-family:Menlo,Consolas,monospace;font-size:10px;color:#9a9a9a">'+_e(b.ref||'')+'</span></td>'
-        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:13px;color:#1b1b1a;line-height:1.5;vertical-align:top">'+_e(b.pickup||'')+' &rarr; '+_e(b.destination||'')+(b.flight?'<br><span style="font-size:11px;color:#9a9a9a">Flight '+_e(b.flight)+'</span>':'')+'</td>'
-        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:14px;color:#1b1b1a;text-align:right;vertical-align:top;white-space:nowrap;font-family:Georgia,serif">&pound;'+fare+'</td>'
+        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:13px;color:#1b1b1a;vertical-align:top">'+_e(b.date||'')+(b.time&&b.time!=='ASAP'?' '+_e(b.time):b.time==='ASAP'?' ASAP':'')+'<br><span style="font-family:var(--sans);font-size:10px;color:#9a9a9a">'+_e(b.ref||'')+'</span></td>'
+        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:13px;color:#1b1b1a;line-height:1.5;vertical-align:top">'+_e(_shortAddr(b.pickup)||'')+' &rarr; '+_e(_shortAddr(b.destination)||'')+(_flightOf(b)?'<br><span style="font-size:11px;color:#9a9a9a">Flight '+_e(_flightOf(b))+'</span>':'')+'</td>'
+        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:14px;color:#1b1b1a;text-align:right;vertical-align:top;white-space:nowrap;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif">&pound;'+fare+'</td>'
         +'</tr>';
     }).join('');
     if(!bookingRows){bookingRows='<tr><td colspan="3" style="padding:24px;text-align:center;font-size:13px;color:#9a9a9a;font-style:italic">No journeys in this period.</td></tr>';}
     tableHtml='<table style="width:100%;border-collapse:collapse;margin-bottom:24px">'
       +'<thead><tr>'
-      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:left;font-weight:600">Date / Ref</th>'
-      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:left;font-weight:600">Journey</th>'
-      +'<th style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:right;font-weight:600">Fare</th>'
+      +'<th style="font-family:var(--sans);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:left;font-weight:600">Date / Ref</th>'
+      +'<th style="font-family:var(--sans);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:left;font-weight:600">Journey</th>'
+      +'<th style="font-family:var(--sans);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:right;font-weight:600">Fare</th>'
       +'</tr></thead>'
       +'<tbody>'+bookingRows+'</tbody>'
       +'</table>';
     toAddr=[_e(c.full_name||''),c.phone?_e(c.phone):'',c.email?_e(c.email):''].filter(Boolean).join('<br>');
-    if(p.label)periodLine='<div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#9a9a9a;margin-bottom:6px;font-weight:500">Period: '+_e(p.label)+'</div>';
+    if(p.label)periodLine='<div style="font-family:var(--sans);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#9a9a9a;margin-bottom:6px;font-weight:500">Period: '+_e(p.label)+'</div>';
   }
   var fromAddr=[s.business_name||'Westmere Private Hire',s.owner_name||'',s.address_line1||'',(s.address_line2||'')+(s.postcode?' '+s.postcode:''),s.phone||'',s.email||''].filter(Boolean).map(_e).join('<br>');
   var bankHtml='';
   if(s.sort_code&&s.account_no){
     bankHtml='<div style="background:rgba(27,27,26,.04);border:1px solid rgba(27,27,26,.08);padding:20px 24px;margin-bottom:32px">'
-      +'<div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;font-weight:600;margin-bottom:10px">Payment Details</div>'
+      +'<div style="font-family:var(--sans);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;font-weight:600;margin-bottom:10px">Payment Details</div>'
       +'<table style="font-size:13px;color:#1b1b1a;line-height:1.8">'
       +(s.bank_name?'<tr><td style="color:#9a9a9a;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Bank</td><td>'+_e(s.bank_name)+'</td></tr>':'')
       +(s.account_name?'<tr><td style="color:#9a9a9a;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Name</td><td>'+_e(s.account_name)+'</td></tr>':'')
-      +'<tr><td style="color:#9a9a9a;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Sort code</td><td style="font-family:Menlo,Consolas,monospace">'+_e(s.sort_code)+'</td></tr>'
-      +'<tr><td style="color:#9a9a9a;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Account no.</td><td style="font-family:Menlo,Consolas,monospace">'+_e(s.account_no)+'</td></tr>'
-      +'<tr><td style="color:#9a9a9a;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Reference</td><td style="font-family:Menlo,Consolas,monospace">'+_e(data.invoiceNo||'')+'</td></tr>'
+      +'<tr><td style="color:#9a9a9a;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Sort code</td><td style="font-family:var(--sans)">'+_e(s.sort_code)+'</td></tr>'
+      +'<tr><td style="color:#9a9a9a;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Account no.</td><td style="font-family:var(--sans)">'+_e(s.account_no)+'</td></tr>'
+      +'<tr><td style="color:#9a9a9a;width:110px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Reference</td><td style="font-family:var(--sans)">'+_e(data.invoiceNo||'')+'</td></tr>'
       +'</table></div>';
   } else {
-    bankHtml='<div style="font-size:13px;color:#726a60;margin-bottom:32px">Payment is appreciated within 14 days by bank transfer. Please contact us for account details.</div>';
+    bankHtml='<div style="font-size:13px;color:#657485;margin-bottom:32px">Payment is appreciated within 14 days by bank transfer. Please contact us for account details.</div>';
   }
   var issuedStr=p.issuedDate||new Date().toISOString().slice(0,10);
   var html='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Invoice '+_e(data.invoiceNo||'')+'</title>'
-    +'<style>@page{size:A4;margin:0}@media print{.no-print{display:none!important}body{background:#ffffff!important}.wrap{box-shadow:none!important;margin:0!important;max-width:none!important}}*{box-sizing:border-box;margin:0;padding:0}body{font-family:Georgia,"Times New Roman",serif;color:#1b1b1a;background:#ffffff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.wrap{max-width:800px;margin:0 auto;background:#ffffff;position:relative;overflow:hidden;box-shadow:0 2px 20px rgba(0,0,0,.08)}.wrap::before{content:"";position:absolute;top:0;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,#6a6a6a 18%,#6a6a6a 82%,transparent 100%);z-index:2}.wrap::after{content:"";position:absolute;bottom:0;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,#6a6a6a 18%,#6a6a6a 82%,transparent 100%);z-index:2}.corner-mark{position:absolute;top:28px;right:32px;font-family:Helvetica Neue,Arial,sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:rgba(27,27,26,.28);z-index:1}.toolbar{background:#ffffff;padding:12px 24px;display:flex;gap:12px;align-items:center;position:relative;z-index:3}.toolbar button{font-family:Helvetica Neue,Arial,sans-serif;font-size:12px;padding:8px 18px;border:none;cursor:pointer;letter-spacing:.5px}.toolbar .btn-dl{background:#6a6a6a;color:#1b1b1a}.toolbar .btn-cl{background:transparent;color:#1a1a1a;border:1px solid rgba(255,255,255,.2)}.page{position:relative;z-index:1;padding:64px 56px 56px}.brand-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}.brand-mark{display:inline-block;padding-bottom:14px;border-bottom:1px solid rgba(27,27,26,.12);min-width:220px}.brand-name{font-family:Georgia,serif;font-size:26px;letter-spacing:10px;font-weight:400;color:#1b1b1a;line-height:1}.brand-sub{font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:4px;text-transform:uppercase;color:#6a6a6a;margin-top:8px;font-weight:500}.inv-badge{text-align:right}.inv-label{font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#6a6a6a;font-weight:600;margin-bottom:8px}.inv-no{font-family:Menlo,Consolas,monospace;font-size:14px;color:#1b1b1a;margin-bottom:6px;letter-spacing:.5px}.inv-meta{font-size:12px;color:#726a60;line-height:1.6}.gold-rule{width:36px;height:1px;background:#6a6a6a;margin:18px 0 32px}</style></head><body>'
+    +'<style>@page{size:A4;margin:0}@media print{.no-print{display:none!important}body{background:#ffffff!important}.wrap{box-shadow:none!important;margin:0!important;max-width:none!important}}*{box-sizing:border-box;margin:0;padding:0}body{font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;color:#1b1b1a;background:#ffffff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.wrap{max-width:800px;margin:0 auto;background:#ffffff;position:relative;overflow:hidden;box-shadow:0 2px 20px rgba(0,0,0,.08)}.wrap::before{content:"";position:absolute;top:0;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,#6a6a6a 18%,#6a6a6a 82%,transparent 100%);z-index:2}.wrap::after{content:"";position:absolute;bottom:0;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,#6a6a6a 18%,#6a6a6a 82%,transparent 100%);z-index:2}.corner-mark{position:absolute;top:28px;right:32px;font-family:var(--sans);font-size:8px;letter-spacing:3px;text-transform:uppercase;color:rgba(27,27,26,.28);z-index:1}.toolbar{background:#ffffff;padding:12px 24px;display:flex;gap:12px;align-items:center;position:relative;z-index:3}.toolbar button{font-family:var(--sans);font-size:12px;padding:8px 18px;border:none;cursor:pointer;letter-spacing:.5px}.toolbar .btn-dl{background:#6a6a6a;color:#1b1b1a}.toolbar .btn-cl{background:transparent;color:#1a1a1a;border:1px solid rgba(255,255,255,.2)}.page{position:relative;z-index:1;padding:64px 56px 56px}.brand-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}.brand-mark{display:inline-block;padding-bottom:14px;border-bottom:1px solid rgba(27,27,26,.12);min-width:220px}.brand-name{font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:26px;letter-spacing:10px;font-weight:400;color:#1b1b1a;line-height:1}.brand-sub{font-family:var(--sans);font-size:9px;letter-spacing:4px;text-transform:uppercase;color:#6a6a6a;margin-top:8px;font-weight:500}.inv-badge{text-align:right}.inv-label{font-family:var(--sans);font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#6a6a6a;font-weight:600;margin-bottom:8px}.inv-no{font-family:var(--sans);font-size:14px;color:#1b1b1a;margin-bottom:6px;letter-spacing:.5px}.inv-meta{font-size:12px;color:#657485;line-height:1.6}.gold-rule{width:36px;height:1px;background:#6a6a6a;margin:18px 0 32px}</style></head><body>'
     +'<div class="wrap">'
     +'<div class="toolbar no-print"><button class="btn-dl" onclick="window.print()">Print / Save as PDF</button><button class="btn-cl" onclick="window.close()">Close</button></div>'
     +'<div class="corner-mark">Est. Sussex</div>'
@@ -4880,13 +5139,13 @@ function openInvoicePreview(data){
     +'<div class="inv-badge"><div class="inv-label">Invoice</div><div class="inv-no">'+_e(data.invoiceNo||'')+'</div><div class="inv-meta">Issued '+_e(issuedStr)+'</div></div></div>'
     +'<div class="gold-rule"></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-bottom:36px">'
-    +'<div><div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;margin-bottom:8px;font-weight:600">From</div><div style="font-size:13px;color:#1b1b1a;line-height:1.7">'+fromAddr+'</div></div>'
-    +'<div><div style="font-family:Helvetica Neue,Arial,sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;margin-bottom:8px;font-weight:600">Bill To</div><div style="font-size:13px;color:#1b1b1a;line-height:1.7">'+toAddr+'</div></div>'
+    +'<div><div style="font-family:var(--sans);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;margin-bottom:8px;font-weight:600">From</div><div style="font-size:13px;color:#1b1b1a;line-height:1.7">'+fromAddr+'</div></div>'
+    +'<div><div style="font-family:var(--sans);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;margin-bottom:8px;font-weight:600">Bill To</div><div style="font-size:13px;color:#1b1b1a;line-height:1.7">'+toAddr+'</div></div>'
     +'</div>'+periodLine+tableHtml
     +'<div style="display:flex;flex-direction:column;align-items:flex-end;margin-bottom:32px">'
-    +'<div style="display:flex;justify-content:space-between;width:260px;padding:14px 0 8px;border-top:2px solid #6a6a6a;margin-top:4px"><span style="font-family:Helvetica Neue,Arial,sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:600;color:#1b1b1a;align-self:center">Total</span><span style="font-size:26px;font-weight:500;color:#6a6a6a;font-family:Georgia,serif">&pound;'+total+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between;width:260px;padding:14px 0 8px;border-top:2px solid #6a6a6a;margin-top:4px"><span style="font-family:var(--sans);font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:600;color:#1b1b1a;align-self:center">Total</span><span style="font-size:26px;font-weight:500;color:#6a6a6a;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif">&pound;'+total+'</span></div>'
     +'</div>'+bankHtml
-    +'<div style="text-align:center;padding-top:24px;margin-top:20px;border-top:1px solid rgba(27,27,26,.1);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#9a9a9a;font-family:Helvetica Neue,Arial,sans-serif;font-weight:500">Westmere Private Hire &middot; Licensed by Lewes District Council &middot; westmereprivatehire.co.uk</div>'
+    +'<div style="text-align:center;padding-top:24px;margin-top:20px;border-top:1px solid rgba(27,27,26,.1);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#9a9a9a;font-family:var(--sans);font-weight:500">Westmere Private Hire &middot; Licensed by Lewes District Council &middot; westmereprivatehire.co.uk</div>'
     +'</div></div></body></html>';
   var w=window.open('','_blank','width=850,height=1100');
   if(w){w.document.write(html);w.document.close();}
@@ -4943,7 +5202,7 @@ function invLoadList(){
       html+='<div style="border-bottom:1px solid rgba(27,27,26,.08)">'
         +'<div onclick="invToggleGroup('+gi+')" style="display:flex;align-items:center;gap:.7rem;padding:.85rem 1rem;cursor:pointer">'
         +'<div style="width:36px;height:36px;border-radius:50%;background:rgba(106,106,106,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">'
-        +'<span style="font-family:var(--serif);font-size:.95rem;font-weight:500;color:var(--gold)">'+owEsc(name.charAt(0).toUpperCase())+'</span></div>'
+        +'<span style="font-family:var(--serif);font-size:.95rem;font-weight:500;color:var(--navy)">'+owEsc(name.charAt(0).toUpperCase())+'</span></div>'
         +'<div style="flex:1;min-width:0">'
         +'<div style="font-size:.92rem;font-weight:500;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+owEsc(name)+'</div>'
         +'<div style="font-size:.68rem;color:rgba(27,27,26,.45);margin-top:.15rem">'+countLabel+' · £'+grpTotal.toFixed(2)+' · <span style="color:'+statusColor+'">'+statusLabel+'</span></div>'
@@ -4961,7 +5220,7 @@ function invLoadList(){
           : '';
         html+='<div onclick="invViewDetail('+inv.id+')" style="display:flex;align-items:center;gap:.6rem;padding:.7rem 1rem .7rem 3.2rem;cursor:pointer;border-top:1px solid rgba(27,27,26,.04)">'
           +'<div style="flex:1;min-width:0">'
-          +'<div style="font-family:Menlo,Consolas,monospace;font-size:.72rem;color:var(--navy)">'+owEsc(inv.invoice_no||'')+'</div>'
+          +'<div style="font-family:var(--sans);font-size:.72rem;color:var(--navy)">'+owEsc(inv.invoice_no||'')+'</div>'
           +'<div style="font-size:.65rem;color:rgba(27,27,26,.45);margin-top:.12rem">'+(inv.issued_date||'')+'</div>'
           +'</div>'
           +'<div style="display:flex;align-items:center;gap:.35rem;flex-shrink:0">'
@@ -5048,13 +5307,13 @@ function invViewDetail(id){
         var parts=[owEsc(r.name||'')];
         if(r.address)parts.push(owEsc(r.address).replace(/\n/g,'<br>'));
         if(r.phone)parts.push(owEsc(r.phone));
-        if(r.email)parts.push('<a href="mailto:'+owEsc(r.email)+'" style="color:var(--gold)">'+owEsc(r.email)+'</a>');
+        if(r.email)parts.push('<a href="mailto:'+owEsc(r.email)+'" style="color:var(--navy)">'+owEsc(r.email)+'</a>');
         recEl.innerHTML=parts.join('<br>');
       } else {
         var c=data.customer||{};
         var cparts=[owEsc(c.full_name||'')];
         if(c.phone)cparts.push(owEsc(c.phone));
-        if(c.email)cparts.push('<a href="mailto:'+owEsc(c.email)+'" style="color:var(--gold)">'+owEsc(c.email)+'</a>');
+        if(c.email)cparts.push('<a href="mailto:'+owEsc(c.email)+'" style="color:var(--navy)">'+owEsc(c.email)+'</a>');
         recEl.innerHTML=cparts.join('<br>');
       }
       document.getElementById('inv-det-period').textContent=p.label?'Period: '+p.label:'';
@@ -5073,7 +5332,7 @@ function invViewDetail(id){
         var bks=data.bookings||[];
         body.innerHTML=bks.length
           ?bks.map(function(b){
-              var ref=b.ref?'<br><span style="font-family:Menlo,Consolas,monospace;font-size:.65rem;color:rgba(27,27,26,.4)">'+owEsc(b.ref)+'</span>':'';
+              var ref=b.ref?'<br><span style="font-family:var(--sans);font-size:.65rem;color:rgba(27,27,26,.4)">'+owEsc(b.ref)+'</span>':'';
               var route=owEsc(b.pickup||'')+(b.destination?' → '+owEsc(b.destination):'');
               return '<tr><td style="padding:.5rem .5rem;font-size:.78rem;color:var(--navy);border-bottom:1px solid rgba(27,27,26,.05)">'+owEsc(b.date||'')+(b.time&&b.time!=='ASAP'?' '+owEsc(b.time):'')+ref+'</td>'
                 +'<td style="padding:.5rem .5rem;font-size:.78rem;color:var(--navy);border-bottom:1px solid rgba(27,27,26,.05)">'+route+'</td>'

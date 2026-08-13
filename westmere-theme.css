@@ -1,0 +1,1117 @@
+/*
+   WESTMERE PRIVATE HIRE — GLOBAL VISUAL THEME OVERRIDE
+   ----------------------------------------------------
+   Purpose:
+   - Apply the Westmere logo-inspired visual language to ALL existing pages.
+   - Keep your existing HTML, photos, booking logic and backend unchanged.
+   - Remove cream/gold/dark filled UI styling.
+   - Use clean white, deep navy, fine typography and subtle interaction states.
+
+   HOW TO USE
+   Add this file as the LAST stylesheet before </head> on every HTML page:
+
+   <link rel="stylesheet" href="westmere-theme.css">
+
+   It must come after styles.css and after any page-specific <style> blocks.
+*/
+
+/* Cormorant is THE face for the whole system. Roman + italic across the
+   weights the readability layer needs: 400 for large display, 500/600 for
+   body, UI and micro-labels — Cormorant is delicate, so small text is set
+   heavier than you would with a normal serif. 53 rules use italic, so the
+   italic axis is loaded too. */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&display=swap');
+
+/* =========================================================
+   1. MASTER DESIGN TOKENS
+   ========================================================= */
+:root {
+  --westmere-navy: #102a43;
+  --westmere-navy-deep: #0c2237;
+  --westmere-navy-soft: #173b5e;
+  --westmere-text: #102a43;
+  --westmere-muted: #657485;
+  --westmere-line: #dfe5ea;
+  --westmere-line-strong: #c8d1d9;
+  --westmere-white: #ffffff;
+  --westmere-press: rgba(16, 42, 67, 0.07);
+  --westmere-focus: rgba(16, 42, 67, 0.17);
+
+  /* Override existing site variables without changing existing HTML. */
+  --ink: var(--westmere-navy);
+  --muted: var(--westmere-muted);
+  --paper: var(--westmere-white);
+  --line: var(--westmere-line);
+
+  --dark: var(--westmere-navy);
+  --navy: var(--westmere-navy);
+  --navy2: var(--westmere-navy-soft);
+  --text: var(--westmere-navy);
+  --border: var(--westmere-line);
+
+  /* ── ONE TYPEFACE, EVERYWHERE ────────────────────────────────────────────
+     The owner chose CORMORANT. It sets ALL type — headings and body/UI alike —
+     on the public site, My Account, the owner app, admin, the pay page and the
+     emails. There is exactly one stack and it is declared HERE, once. Pages do
+     not define --serif/--sans of their own; they inherit these, so changing the
+     brand face is a single edit.
+
+     Cormorant replaced a Didot-first stack deliberately. Didot is an Apple
+     system font: it cannot be served, so it rendered as real Didot on the
+     owner's iPhone and as a substitute everywhere else — the site literally
+     looked different depending on the device. Cormorant is a Google web font,
+     so EVERY visitor gets the same letterforms, the owner included. The system
+     fonts that follow are only a safety net for a failed font fetch.
+
+     --serif and --sans are kept as names because ~460 existing declarations
+     reference them. They deliberately resolve to the SAME stack. */
+  --westmere-type:'Cormorant','Cormorant Garamond','Didot','Bodoni MT',Georgia,'Times New Roman',serif;
+  --serif: var(--westmere-type);
+  --sans:  var(--westmere-type);
+
+  color-scheme: light;
+}
+
+/* =========================================================
+   2. BASE — WHITE CANVAS + READABLE NAVY TYPE
+   ========================================================= */
+html {
+  background: var(--westmere-white) !important;
+  color-scheme: light !important;
+}
+
+body {
+  background: var(--westmere-white) !important;
+  color: var(--westmere-text) !important;
+  font-family: var(--sans) !important;
+  font-weight: 300 !important;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body,
+button,
+input,
+select,
+textarea {
+  font-synthesis: none;
+}
+
+p,
+li,
+small,
+.muted,
+.sec-sub,
+.upd,
+.legal {
+  color: var(--westmere-muted) !important;
+}
+
+a {
+  color: var(--westmere-navy);
+}
+
+/* =========================================================
+   3. TYPOGRAPHY — THINNER, MORE LIKE THE LOGO
+   ========================================================= */
+.brand b,
+.brand-name,
+.serif,
+h1,
+h2,
+h3,
+h4,
+.section-title,
+.split h2,
+.photo-card h3,
+.coverage-card h3,
+.cta-band h2,
+.sec-title,
+.ls-title,
+.aj-driver,
+.aj-meta-v,
+.review-quote {
+  font-family: var(--serif) !important;
+  font-weight: 400 !important;
+  color: var(--westmere-navy);
+}
+
+/* Main headings: elegant, not heavy or oversized. */
+.hero h1,
+.book-hero h1 {
+  font-family: var(--serif) !important;
+  font-weight: 400 !important;
+  font-size: clamp(2.75rem, 5.4vw, 4.7rem) !important;
+  letter-spacing: 0.09em !important;
+  line-height: 1.02 !important;
+}
+
+.hero.left h1 {
+  font-size: clamp(2.7rem, 5vw, 4.4rem) !important;
+  letter-spacing: 0.035em !important;
+}
+
+.section-title,
+.split h2 {
+  font-size: clamp(2rem, 3.5vw, 3rem) !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.025em;
+  line-height: 1.12 !important;
+}
+
+main h1 {
+  font-family: var(--serif) !important;
+  font-size: clamp(2rem, 4vw, 3rem) !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.08em !important;
+  color: var(--westmere-navy) !important;
+}
+
+main h2 {
+  font-family: var(--serif) !important;
+  font-size: clamp(1.35rem, 2.2vw, 1.8rem) !important;
+  font-weight: 400 !important;
+  color: var(--westmere-navy) !important;
+}
+
+.sec-title {
+  font-size: clamp(1.55rem, 3vw, 2rem) !important;
+  font-weight: 400 !important;
+}
+
+.sec-title em,
+h1 em,
+h2 em,
+em {
+  color: inherit !important;
+  font-family: var(--serif) !important;
+  font-weight: 400 !important;
+}
+
+.eyebrow,
+.ch,
+.tb-sub,
+.feature strong,
+.field label,
+.fl {
+  color: var(--westmere-navy) !important;
+  font-family: var(--sans) !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.20em !important;
+}
+
+.brand b,
+.brand-name {
+  font-size: 1.3rem !important;
+  letter-spacing: 0.28em !important;
+  line-height: 1 !important;
+}
+
+.brand span {
+  color: var(--westmere-navy) !important;
+  letter-spacing: 0.36em !important;
+}
+
+/* =========================================================
+   4. REMOVE CREAM / COLOURED PANELS
+   ========================================================= */
+.section.soft,
+.book-form-col,
+.quick-box,
+.fare-estimate,
+.fare-estimate.msg,
+.card,
+.photo-card,
+.notice,
+.vehicle-hero .copy,
+.spec,
+.ls-inner,
+.sec,
+.aj-card,
+.tc-card,
+.prof-card,
+.topbar,
+.bottom-nav,
+.sug-drop,
+select.fi option {
+  background: var(--westmere-white) !important;
+}
+
+/* Cards should not look like blocks. Use spacing and fine rules. */
+.card,
+.sec,
+.tc-card,
+.prof-card,
+.aj-card {
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  border: 0 !important;
+  border-top: 1px solid var(--westmere-line) !important;
+}
+
+.photo-card {
+  box-shadow: none !important;
+  border: 1px solid var(--westmere-line) !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+}
+
+.quick-box,
+.notice {
+  box-shadow: none !important;
+  border: 1px solid var(--westmere-line) !important;
+  border-radius: 14px !important;
+}
+
+.fare-estimate {
+  box-shadow: none !important;
+  border: 1px solid var(--westmere-line) !important;
+  border-radius: 12px !important;
+}
+
+/* Keep photo heroes, but tint overlays navy rather than black. */
+.hero::after,
+.hero.center::after {
+  background: rgba(12, 34, 55, 0.24) !important;
+}
+
+.hero.left::after {
+  background: linear-gradient(90deg, rgba(12,34,55,.34), rgba(12,34,55,.10)) !important;
+}
+
+.book-hero {
+  /* Preserve the page's existing photo. Only the overlay colour changes. */
+  background-blend-mode: multiply;
+}
+
+.cta-band::before {
+  background: rgba(12, 34, 55, 0.30) !important;
+}
+
+/* =========================================================
+   5. NAVIGATION — WHITE, FINE, QUIET
+   ========================================================= */
+nav,
+.topbar {
+  background: rgba(255,255,255,.97) !important;
+  color: var(--westmere-navy) !important;
+  border-bottom: 1px solid var(--westmere-line) !important;
+  box-shadow: none !important;
+}
+
+.brand,
+.brand b,
+.brand span,
+.brand-name,
+.navlinks a,
+.nav-links a,
+.acct-nav,
+.nav-book,
+.tb-name,
+.tb-sub {
+  color: var(--westmere-navy) !important;
+}
+
+.navlinks a,
+.nav-links a,
+.acct-nav {
+  font-family: var(--sans) !important;
+  font-weight: 400 !important;
+  letter-spacing: .10em !important;
+}
+
+.navlinks a.active,
+.navlinks a:hover,
+.nav-links a:hover,
+.acct-nav:hover {
+  color: var(--westmere-navy) !important;
+  border-bottom-color: var(--westmere-navy) !important;
+}
+
+.burger,
+.burger span {
+  color: var(--westmere-navy) !important;
+}
+
+.burger span {
+  background: var(--westmere-navy) !important;
+}
+
+.mobile-menu,
+.mmenu {
+  background: rgba(255,255,255,.99) !important;
+}
+
+.mobile-menu a,
+.mmenu a {
+  color: var(--westmere-navy) !important;
+  font-family: var(--serif) !important;
+  font-weight: 400 !important;
+}
+
+/* =========================================================
+   6. BUTTONS — OUTLINE BY DEFAULT, BRIEF FILL ONLY ON PRESS
+   ========================================================= */
+.book-btn,
+.btn,
+.btn.dark,
+.nav-book,
+.ls-btn,
+.btn-main,
+.btn-ghost,
+.btn-sm,
+.aj-send-btn,
+.aj-call-btn,
+.modal-btn-primary,
+.filter-btn,
+.pick-btn {
+  background: transparent !important;
+  color: var(--westmere-navy) !important;
+  border: 1px solid var(--westmere-navy) !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+  font-family: var(--sans) !important;
+  font-weight: 400 !important;
+  letter-spacing: .16em !important;
+  text-transform: uppercase !important;
+  transition:
+    background-color .12s ease,
+    color .12s ease,
+    border-color .18s ease,
+    box-shadow .18s ease,
+    transform .08s ease !important;
+}
+
+.link-btn,
+.ls-switch button {
+  background: transparent !important;
+  color: var(--westmere-navy) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Hover is deliberately subtle: no permanent block of colour. */
+@media (hover:hover) {
+  .book-btn:hover,
+  .btn:hover,
+  .btn.dark:hover,
+  .nav-book:hover,
+  .ls-btn:hover,
+  .btn-main:hover,
+  .btn-ghost:hover,
+  .btn-sm:hover,
+  .aj-send-btn:hover,
+  .aj-call-btn:hover,
+  .modal-btn-primary:hover,
+  .filter-btn:hover,
+  .pick-btn:hover {
+    background: rgba(16,42,67,.025) !important;
+    color: var(--westmere-navy) !important;
+    border-color: var(--westmere-navy-deep) !important;
+  }
+}
+
+/* The only filled state: while the customer is physically pressing/tapping. */
+.book-btn:active,
+.btn:active,
+.btn.dark:active,
+.nav-book:active,
+.ls-btn:active,
+.btn-main:active,
+.btn-ghost:active,
+.btn-sm:active,
+.aj-send-btn:active,
+.aj-call-btn:active,
+.modal-btn-primary:active,
+.filter-btn:active,
+.pick-btn:active {
+  background: var(--westmere-navy) !important;
+  color: var(--westmere-white) !important;
+  transform: translateY(1px);
+}
+
+/* Active filters / tabs remain white; the outline/underline communicates state. */
+.tabs button,
+.filter-btn,
+.pick-btn {
+  background: var(--westmere-white) !important;
+  color: var(--westmere-navy) !important;
+  border: 1px solid var(--westmere-line-strong) !important;
+  border-radius: 10px !important;
+}
+
+.tabs button.active,
+.filter-btn.on,
+.pick-btn.on,
+[aria-selected="true"] {
+  background: var(--westmere-white) !important;
+  color: var(--westmere-navy) !important;
+  border-color: var(--westmere-navy) !important;
+  box-shadow: inset 0 -1px 0 var(--westmere-navy) !important;
+}
+
+/* =========================================================
+   7. FORMS — WHITE, ROUNDED, THIN NAVY FOCUS
+   ========================================================= */
+.field input,
+.field select,
+.field textarea,
+.fi,
+.ls-input,
+input,
+select,
+textarea {
+  color-scheme: light !important;
+  background: var(--westmere-white) !important;
+  color: var(--westmere-navy) !important;
+  font-family: var(--sans) !important;
+  font-weight: 300 !important;
+  border-color: var(--westmere-line-strong) !important;
+  outline: none;
+  box-shadow: none !important;
+}
+
+.field input,
+.field select,
+.field textarea {
+  border: 1px solid var(--westmere-line-strong) !important;
+  border-radius: 12px !important;
+}
+
+.fi,
+.ls-input {
+  border-bottom: 1px solid var(--westmere-line-strong) !important;
+}
+
+textarea.fi {
+  border: 1px solid var(--westmere-line-strong) !important;
+  border-radius: 12px !important;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus,
+.fi:focus,
+.ls-input:focus,
+textarea.fi:focus,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  border-color: var(--westmere-navy) !important;
+  box-shadow: 0 0 0 3px var(--westmere-focus) !important;
+}
+
+input::placeholder,
+textarea::placeholder,
+.fi::placeholder,
+.ls-input::placeholder {
+  color: #8a97a4 !important;
+  opacity: 1;
+}
+
+input[type="checkbox"],
+input[type="radio"],
+.book-form-col input[type="date"],
+.book-form-col input[type="time"] {
+  accent-color: var(--westmere-navy) !important;
+}
+
+.book-form-col input[type="date"]::-webkit-calendar-picker-indicator,
+.book-form-col input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: none !important;
+  opacity: .72 !important;
+}
+
+.ac-list,
+.sug-drop {
+  background: var(--westmere-white) !important;
+  border: 1px solid var(--westmere-line) !important;
+  box-shadow: 0 12px 30px rgba(16,42,67,.08) !important;
+}
+
+.ac-item,
+.sug-item {
+  background: var(--westmere-white) !important;
+  color: var(--westmere-navy) !important;
+}
+
+.ac-item:hover,
+.sug-item:hover {
+  background: rgba(16,42,67,.035) !important;
+}
+
+/* =========================================================
+   8. VEHICLE PREFERENCE — SUBTLE, NOT A FLEET SHOWCASE
+   These selectors are ready for the booking selector when used.
+   ========================================================= */
+.vehicle-choice,
+.vehicle-option,
+[data-vehicle-option],
+[data-vehicle-choice] {
+  background: var(--westmere-white) !important;
+  color: var(--westmere-navy) !important;
+  border: 1px solid var(--westmere-line) !important;
+  border-radius: 14px !important;
+  box-shadow: none !important;
+  transition: border-color .16s ease, box-shadow .16s ease, background-color .10s ease;
+}
+
+.vehicle-option:hover,
+[data-vehicle-option]:hover {
+  border-color: var(--westmere-line-strong) !important;
+}
+
+.vehicle-option.selected,
+.vehicle-option.is-selected,
+[data-vehicle-option][aria-selected="true"],
+[data-vehicle-option].selected {
+  background: var(--westmere-white) !important;
+  border-color: var(--westmere-navy) !important;
+  box-shadow: 0 0 0 1px var(--westmere-navy) !important;
+}
+
+.vehicle-option:active,
+[data-vehicle-option]:active {
+  background: var(--westmere-press) !important;
+}
+
+/* =========================================================
+   9. DIVIDERS / FEATURES — USE LINES, NOT COLOURED BLOCKS
+   ========================================================= */
+.feature-strip,
+.review-strip,
+.form-divider,
+.fares th,
+.fares td,
+.coverage-card,
+.image-row figcaption,
+.ch,
+.topbar,
+.bottom-nav {
+  border-color: var(--westmere-line) !important;
+}
+
+.feature {
+  background: var(--westmere-white) !important;
+  border-color: var(--westmere-line) !important;
+}
+
+.feature p,
+.coverage-card p,
+.review-note,
+.fare-estimate .fe-note,
+.fare-estimate .fe-calc,
+.quick-note {
+  color: var(--westmere-muted) !important;
+}
+
+.icon,
+.fare-estimate .fe-amount,
+.google-g,
+.stars {
+  color: var(--westmere-navy) !important;
+}
+
+/* =========================================================
+   10. FOOTER — WHITE, NOT BLACK / CREAM
+   ========================================================= */
+.footer,
+footer.mini-foot {
+  background: var(--westmere-white) !important;
+  color: var(--westmere-navy) !important;
+  border-top: 1px solid var(--westmere-line) !important;
+}
+
+.footer .brand,
+.footer .brand b,
+.footer .brand span,
+.footer-contact,
+.footer-contact a,
+footer.mini-foot,
+.mini-legal,
+.mini-legal a {
+  color: var(--westmere-navy) !important;
+}
+
+.legal,
+.legal a {
+  color: var(--westmere-muted) !important;
+}
+
+/* =========================================================
+   11. LEGAL PAGES — REMOVE THE OLD BLACK/GOLD THEME
+   ========================================================= */
+body main {
+  background: var(--westmere-white) !important;
+}
+
+body main p,
+body main li,
+body main .upd {
+  color: var(--westmere-muted) !important;
+}
+
+body main h1,
+body main h2,
+body main .eyebrow {
+  color: var(--westmere-navy) !important;
+}
+
+body main a,
+body main a[style] {
+  color: var(--westmere-navy) !important;
+}
+
+body main ul li::before {
+  color: var(--westmere-navy) !important;
+}
+
+table.cookies,
+table.cookies th,
+table.cookies td {
+  background: var(--westmere-white) !important;
+  color: var(--westmere-navy) !important;
+  border-color: var(--westmere-line) !important;
+}
+
+table.cookies th {
+  color: var(--westmere-navy) !important;
+}
+
+/* =========================================================
+   12. RIDER / ACCOUNT APP — SAME WESTMERE LANGUAGE
+   ========================================================= */
+body.mode-day,
+.login-screen,
+.app-shell,
+.app-content {
+  background: var(--westmere-white) !important;
+}
+
+.ls-inner {
+  border: 1px solid var(--westmere-line) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 55px rgba(16,42,67,.08) !important;
+}
+
+.ls-crest,
+.tb-crest,
+.aj-driver-avatar {
+  color: var(--westmere-navy) !important;
+  border-color: var(--westmere-line-strong) !important;
+}
+
+.ch,
+.tb-sub,
+.aj-eta,
+.aj-meta-v.aj-fare,
+.bn-item.on,
+.aj-step.on span {
+  color: var(--westmere-navy) !important;
+}
+
+.aj-bar,
+.bn-item.on .bn-bar,
+.bn-item.on::after,
+.aj-step.on .aj-step-dot {
+  background: var(--westmere-navy) !important;
+}
+
+/* =========================================================
+   13. ACCESSIBILITY / INTERACTION LOGIC
+   ========================================================= */
+:focus-visible {
+  outline: 2px solid var(--westmere-navy) !important;
+  outline-offset: 3px;
+}
+
+button,
+a,
+input,
+select,
+textarea,
+[role="button"],
+[tabindex] {
+  -webkit-tap-highlight-color: rgba(16,42,67,.08);
+}
+
+::selection {
+  background: rgba(16,42,67,.14);
+  color: var(--westmere-navy-deep);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* =========================================================
+   14. MOBILE TUNING — KEEP THE LIGHT, EDITORIAL FEEL
+   ========================================================= */
+@media (max-width: 900px) {
+  .hero h1,
+  .hero.left h1,
+  .book-hero h1 {
+    font-size: clamp(2.35rem, 11vw, 3.55rem) !important;
+    letter-spacing: .055em !important;
+  }
+
+  .section-title,
+  .split h2 {
+    font-size: clamp(1.8rem, 8vw, 2.45rem) !important;
+  }
+
+  .brand b,
+  .brand-name {
+    letter-spacing: .22em !important;
+  }
+
+  .book-btn,
+  .btn,
+  .btn.dark,
+  .nav-book,
+  .ls-btn,
+  .btn-main {
+    border-radius: 11px !important;
+  }
+}
+
+/* =========================================================
+   15. INTEGRATION FIXES  (added during integration, not by the designer)
+   =========================================================
+   Everything above is the supplied theme, unchanged. This section holds the
+   small number of corrections found when it was applied to the real pages.
+   Kept at the bottom, and clearly fenced, so a future re-supply of the theme
+   is easy to diff against.
+   --------------------------------------------------------- */
+
+/* 15.1 — TEXT OVER THE HERO PHOTOGRAPH MUST STAY LIGHT.
+   Section 3 sets an explicit navy on h1/h2/h3, which beats the colour the
+   hero previously INHERITED from its own container (#fff). The result was the
+   "Westmere" wordmark rendering navy-on-dark over the photograph — present on
+   index, about, contact, services, airport-transfers and coverage.
+   `inherit` restores the old behaviour exactly: over a photo the container is
+   white so the heading is white; on a plain white hero the container is navy
+   so the heading stays navy. It adapts rather than hard-coding either.
+
+   The list covers the SUB-COPY too, not just the heading: §2 paints <p> the
+   muted grey and §3 paints .eyebrow navy, and both landed on the booking
+   page's dark hero photograph. Buttons are deliberately excluded — they carry
+   their own outlined treatment from wm-buttons.css. */
+.hero h1, .hero h2, .hero h3,
+.hero p, .hero li,
+.hero .sub, .hero .tag, .hero .eyebrow,
+.hero-content h1, .hero-content h2, .hero-content p, .hero-content .eyebrow,
+.book-hero h1, .book-hero h2,
+.book-hero p, .book-hero .sub, .book-hero .tag, .book-hero .eyebrow {
+  color: inherit !important;
+}
+
+/* 15.2 — STAFF APPS: NAVY TEXT, NOT PURE BLACK.
+   The owner and admin apps each carry an older legibility patch that repaints
+   the whole app white and forces EVERY element to #000 with !important:
+       owner:  #scr-app, #scr-app *, #login-screen, #login-screen *   (1,0,1)
+       admin:  body *                                                 (0,0,2)
+   Both beat the theme's body colour, so the two staff apps rendered pure black
+   text while the rest of the site rendered navy — the charcoal conflict.
+
+   Re-pointed here at the theme's own ink. NOTE the selectors are scoped to each
+   app's own root ids, never to a bare `body *` — this file is global, and a
+   blanket rule here would repaint the white hero copy on the public pages navy.
+   The owner selectors match the original exactly and win on load order; the
+   admin ones are id-scoped so they outrank `body *` on specificity. */
+#scr-app,
+#scr-app *,
+#login-screen,
+#login-screen *,
+#admin-login,
+#admin-login *,
+#admin-app,
+#admin-app *,
+#nav, #nav *,
+#mmenu, #mmenu * {
+  color: var(--westmere-text) !important;
+  -webkit-text-fill-color: var(--westmere-text) !important;
+}
+
+/* …with one exception: a button that is FILLED (pressed, or a selected filter
+   pill) needs its white label back, or the press state is navy-on-navy and
+   unreadable. Each of these outranks the blanket above. */
+#scr-app .wm-btn:active, #scr-app .btn:active,
+#scr-app .btn-main:active, #scr-app .ls-btn:active, #scr-app .filter-btn.on,
+#scr-app .wm-btn.is-pressed, #scr-app .btn-main.is-pressed, #scr-app .ls-btn.is-pressed,
+#admin-app .wm-btn:active, #admin-app .btn:active,
+#admin-app .btn-main:active, #admin-app .btn-new:active, #admin-app .filter-btn.on,
+#admin-app .wm-btn.is-pressed, #admin-app .btn-main.is-pressed,
+#admin-login .ls-btn:active, #admin-login .btn:active, #admin-login .ls-btn.is-pressed,
+#login-screen .ls-btn:active, #login-screen .btn:active, #login-screen .ls-btn.is-pressed,
+.wm-btn.is-pressed {
+  color: var(--westmere-white) !important;
+  -webkit-text-fill-color: var(--westmere-white) !important;
+}
+
+/* 15.3 — THE SIGN-IN HEADER IS NOT THE SAME COLOUR ON EVERY APP.
+   My Account's `.ls-hd` is a near-black car photograph; the driver portal and
+   the owner app reuse the SAME class over a white panel. A blanket rule here
+   cannot be right for both — forcing light copy blanked the driver's wordmark
+   to white-on-white. So the theme does not decide this: My Account declares its
+   own light copy at #login-screen .ls-hd (1,2,0), which outranks 15.2's
+   #login-screen * (1,0,1) on its own, and every other app keeps the navy the
+   theme gives it. */
+
+/* 15.4 — THE PAY PAGE'S HEADER IS A SOLID NAVY BLOCK.
+   Section 5 paints `.brand` / `.brand-name` navy because on every other page
+   the wordmark sits in a white nav bar. The pay page puts it inside `.head`,
+   which is filled with the same navy — so the wordmark went navy-on-navy and
+   vanished. Anything inside that block keeps the light copy it was designed
+   with. Scoped to .wm-pay-page so no other header is affected. */
+.wm-pay-page .head,
+.wm-pay-page .head * {
+  color: var(--westmere-white) !important;
+  -webkit-text-fill-color: var(--westmere-white) !important;
+}
+
+/* =========================================================
+   16. READABILITY — CORMORANT AT SMALL SIZES
+   =========================================================
+   Cormorant is a delicate, low-contrast-stroke Garamond revival with a SMALL
+   x-height. It is beautiful at display sizes and genuinely faint at UI sizes —
+   more so than the Didot it replaced, because Cormorant's Regular is lighter
+   than most serifs' Regular. Now that it sets ALL type, the small end has to be
+   raised deliberately or the apps become tiring to read.
+
+   Three levers, applied in order of how much they cost the design:
+     1. WEIGHT — the big one for Cormorant. Body and UI run at 500, micro-labels
+                 and navigation at 600. 400 is reserved for large display, where
+                 the delicacy is the point. (The 400/500/600/700 roman + italic
+                 weights are all loaded at the top of this file.)
+     2. SIZE   — nothing below 12.5px; wide-tracked uppercase micro-labels may
+                 sit at 12px because the tracking does the separating work.
+                 Cormorant's small x-height means these floors sit a little
+                 higher than they would for another face.
+     3. TRACKING — a little more letter-spacing at the small end, which buys
+                 legibility without adding more weight.
+   ========================================================= */
+
+/* The root and the form controls inherit too. Browsers give <button>, <input>,
+   <select> and <textarea> their own UA font rather than inheriting, which is how
+   a stray Arial survives an otherwise complete sweep. */
+html { font-family: var(--westmere-type) !important; }
+button, input, select, textarea, optgroup { font-family: inherit !important; }
+
+/* Body copy is MEDIUM, not Regular. Cormorant 400 at 16px reads as grey wash;
+   500 gives it a stem you can actually follow. Large display stays at 400 —
+   §3 pins h1–h4 and the hero explicitly, so they are unaffected by this. */
+body { font-weight: 500 !important; }
+
+/* ── The micro-label tier: uppercase, widely tracked, 11.5px floor ───────── */
+.brand span, .brand-sub, .brand-sub2, .eyebrow, .ch, .prof-ch, .tb-sub,
+.fl, .field label, .tag, .upd, .mini-legal, .mini-legal a,
+.tab, .tab-sub, .stag, .sl, .ptype, .ppark, .meta,
+.contact-label, .driver-title, .as-lbl, .jd-key, .sub-k {
+  font-size: max(0.75rem, 12px) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.14em !important;
+}
+
+/* ── Navigation and actions: 12.5px floor, medium weight ─────────────────── */
+.navlinks a, .nav-links a, .acct-nav, .nav-book, .book-btn, .nav-wa-mobile,
+.bn, .side-item, .tc-change, .tc-cancel, .tc-again, .filter-btn {
+  font-size: max(0.8rem, 13px) !important;
+  font-weight: 600 !important;
+}
+
+/* ── Body / UI text ──────────────────────────────────────────────────────
+   NOTE: `font-size: max(a, b)` on two constants is a FIXED size, not a floor —
+   CSS cannot express "raise this element's own declared size to at least X".
+   So this list holds ONLY the classes measured below the floor. It must never
+   grow to bare `p`/`li`/`td`: doing that clamps the hero sub-head and the
+   section copy DOWN to 13px, which is how the homepage lost its body scale
+   the first time this was written. Everything not listed keeps its own size. */
+.note, .sub-v, .as-desc, .trip-meta, .jd-val, .aj-meta-k, .drow-tag {
+  font-size: max(0.85rem, 13.5px) !important;
+  font-weight: 500 !important;
+}
+
+/* Form controls: never below 16px on touch, or iOS zooms the page on focus. */
+input, select, textarea {
+  font-size: max(1rem, 16px) !important;
+  font-weight: 500 !important;
+}
+
+/* Buttons carry the shared sizing from wm-buttons.css; only weight/floor here.
+   Button labels are short, uppercase and tracked — at Cormorant 500 they read
+   as faint, so they take 600 like the rest of the UI tier. */
+.wm-btn, .btn, button { font-weight: 600 !important; }
+.wm-btn-sm { font-size: max(0.72rem, 11.5px) !important; letter-spacing: 0.12em !important; }
+
+/* ── DARK SURFACES KEEP LIGHT COPY ───────────────────────────────────────
+   Navy ink is the default everywhere, but a handful of bands are genuinely
+   dark: the site footer, the fleet spec panel, the coverage intro scrim.
+   Navy on those measured 1.20:1 — invisible. They take white. */
+.footer, .footer *,
+.right-panel, .right-panel *,
+#intro, #intro *,
+.cta-band, .cta-band * {
+  color: var(--westmere-white) !important;
+  -webkit-text-fill-color: var(--westmere-white) !important;
+}
+/* …but .spec blocks are WHITE cards sitting INSIDE that dark panel (§4 whitens
+   them), so their copy stays navy. Measured: without this they render 1.00:1. */
+.right-panel .spec,
+.right-panel .spec *,
+#intro .card, #intro .card *,
+.footer .spec, .footer .spec * {
+  color: var(--westmere-navy) !important;
+  -webkit-text-fill-color: var(--westmere-navy) !important;
+}
+
+/* …and the coverage scrim is deepened so white clears AA over the photo. */
+#intro { background: rgba(12, 34, 55, .82) !important; }
+
+/* 16.1 — THE SELECTED FILTER PILL NEEDS ITS FILL BACK.
+   Section 6 sets `background:transparent !important` across the button list so
+   nothing sits filled at rest. The SELECTED tab is the one legitimate filled
+   state, and wm-buttons.css gives it a white label — but section 6 stripped the
+   navy underneath it, so "Upcoming" rendered white-on-white and My Account's
+   filter row looked like an empty box. Measured at 1.00:1. */
+.filter-btn.on,
+.tabs button.active,
+#scr-app .filter-btn.on,
+#admin-app .filter-btn.on {
+  background: var(--westmere-navy) !important;
+  border-color: var(--westmere-navy) !important;
+  color: var(--westmere-white) !important;
+  -webkit-text-fill-color: var(--westmere-white) !important;
+}
+
+/* 16.2 — READABILITY FLOORS FOR THE APP SURFACES.
+   Same rule as §16, applied to the class names the apps use for their micro
+   copy. Measured: these were rendering between 8.3px and 11.9px in a hairline
+   didone — the bottom-nav labels and the "SOON" chip were the worst. */
+.sub-soon, .bn-label, .aj-label, .drow-tag, .aj-meta-k, .sub-item,
+.pp-note, .st-chip, .tc-when, .cr-hint, .jc2-ab, .sbt, .ts-lbl {
+  font-size: max(0.75rem, 12px) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.1em !important;
+}
+.pp-card, .pp-cash, .aj-meta-v, .tc-route, .drow-v {
+  font-size: max(0.82rem, 13px) !important;
+  font-weight: 600 !important;
+}
+
+/* 16.3 — READABILITY FLOORS FOR THE STAFF APPS.
+   The owner and admin apps carry the densest micro-copy on the site — sidebar
+   labels and the assistant panel were down at 8.3px, which a didone simply
+   cannot hold. These are all chrome and labels, never table data, so raising
+   them costs no rows. (The admin's own table cells measured 12.5px+ already and
+   are left exactly as they are — see §16.4.) */
+.sb-label, .sb-sub, .sb-version, .aa-hd-s, .aa-hint, .aa-clear, .aa-send,
+.ct, .tag, .tb-back, .tb-mode-label, .btn-new, .adm-cal-job-mini,
+.jc2-pin, .jc2-prog-dot, .drv-lbl, .sett-k {
+  font-size: max(0.75rem, 12px) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.1em !important;
+}
+
+/* 16.4 — WHERE READABILITY BEATS FONT PURITY.
+   Nothing is exempted today: the admin's journey table renders its cells at
+   12.8px Didot and cleared both the size floor and AA contrast when measured,
+   so the whole system is genuinely one typeface. If a future column is ever
+   squeezed below the floor, widen the column or shorten the label — do NOT
+   drop this surface back to a second font, because that is exactly the
+   inconsistency the owner asked to remove. */
+
+/* =========================================================
+   17. MY ACCOUNT'S CANVAS IS WHITE, NOT A CREAM VEIL
+   =========================================================
+   My Account paints the Sussex coast photograph TWICE:
+
+     body::before    fixed, behind everything — the scenery you see in the
+                     margin around the rounded sheet. Deliberate, and guarded
+                     by rider-cache.test.js ("day mode never strips the My
+                     Account scenery"). Left exactly as it is.
+
+     .screen::before inset 0 across the app shell itself, the same photo behind
+                     a 90–95.5% white veil. Its own source comment calls it
+                     "cream veil over the coast" — and that is measurably what
+                     it produced: the canvas composited to #f3f2f0, hue 40°,
+                     squarely inside the cream band this theme exists to remove.
+
+   That second layer is why the two My Account screenshots looked different.
+   Both views have it; the dashboard just covers it with opaque white .dpanel
+   cards, while My Details has one short card and leaves it showing below.
+   So the "difference" was really the cream canvas becoming visible.
+
+   It is neutralised to flat white here rather than deleted in the page, so the
+   scenery around the sheet — and the guardrail protecting it — stay intact.
+   To bring the frosted-glass look back, delete this rule. */
+.screen::before {
+  background: var(--westmere-white) !important;
+}
+
+/* 16.5 — WHAT CORMORANT SURFACED THAT DIDOT HAD NOT.
+   Swapping the face re-ran the measurements and exposed small text the previous
+   pass never flagged, because Didot's heavier Regular carried sizes Cormorant
+   cannot. Worst of it: "Request booking" — the primary submit on the booking
+   form — computed to 9.6px at weight 400, and a "Leave a Review" button to 8px.
+
+   NOTE the deliberate absence of a bare `strong` or `a` rule. Both appear
+   inside larger copy, and a fixed size on them would SHRINK bold words in a
+   16px paragraph — the same trap that clamped the homepage body text earlier.
+   Only the specific small contexts are listed. */
+.btn, .btn.dark, .btn.review-cta, a.btn, .link-btn {
+  font-size: max(0.82rem, 13px) !important;
+  font-weight: 600 !important;
+}
+.quick-note, .stars, .chip, .feature strong, .footer-contact a {
+  font-size: max(0.82rem, 13px) !important;
+  font-weight: 500 !important;
+}
+.field-help .muted, .field-help span {
+  font-size: max(0.78rem, 12.5px) !important;
+  font-weight: 500 !important;
+}
+/* Fine print stays fine print, but 9.9px in Cormorant is not readable. */
+.legal a, .legal, .mini-legal a, .mini-legal {
+  font-size: max(0.75rem, 12px) !important;
+  font-weight: 500 !important;
+}
+
+/* 16.6 — WEIGHT FLOORS FOR THE APPS.
+   Cormorant's Light/Regular is where it gets faint. These are all elements
+   that declare their own 300/400 and sit under 20px — trip routes, the topbar
+   date, section sub-heads, admin table cells. Weight is raised, not size: a
+   heavier stem costs no layout, whereas a size floor would reflow the tables.
+   (Measured at 14px/300 for the trip route before this.) */
+.tb-date, .sec-sub, .dp-note, .drow-v, .drow-arrow,
+.trip-route, .tc-route, .aj-meta-v, .main-v, .sub-v, .jd-val,
+.side-id-sub, .side-id, .btn-main, .drow-tag {
+  font-weight: 500 !important;
+}
+/* The route line and the table values are the content people actually read. */
+.drow-v, .main-v, .tc-route, .trip-route { font-weight: 600 !important; }
+
+/* 16.7 — the last few micro-labels the app scan turned up. */
+.side-pill, .sb-pill { font-size: max(0.72rem, 11.5px) !important; font-weight: 600 !important; }
+.jd-tbl th, table th   { font-size: max(0.72rem, 11.5px) !important; font-weight: 600 !important; }
+.side-id-sub           { font-size: max(0.75rem, 12px) !important; }
+
+/* 16.8 — the last of it, found by scanning the rendered apps.
+   .aj-from / .aj-to are the pickup and drop-off on the "Next Journey" card —
+   the single most-read line in My Account — and they were sitting at 14px/300.
+   .dp-head and .aj-step are section eyebrows and the progress labels. */
+.aj-from, .aj-to, .aj-from span, .aj-to span {
+  font-weight: 600 !important;
+}
+.dp-head span, .aj-step span, .aj-step {
+  font-size: max(0.75rem, 12px) !important;
+  font-weight: 600 !important;
+}

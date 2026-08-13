@@ -40,7 +40,10 @@ console.log('\nAutofill override — no browser yellow on any form');
 // Each surface, and the field colours the override must match. The public
 // pages all link styles.css, so one rule there covers six pages.
 const SURFACES = [
-  { file: 'styles.css',          bg: '#fbfaf7', fg: '#1b1b1a', note: 'public pages (fields are transparent over --paper)' },
+  // --paper used to be the cream #fbfaf7; the navy-on-white theme made it white,
+  // so the shadow that masks Chrome's yellow has to be white too or an autofilled
+  // field shows as a cream patch on a white form.
+  { file: 'styles.css',          bg: '#ffffff', fg: '#1b1b1a', note: 'public pages (fields are transparent over --paper)' },
   { file: 'westmere-rider.html', bg: '#ffffff', fg: '#1b1b1a', note: 'My Account (fields sit on white cards)' },
   { file: 'westmere-owner.html', bg: '#ffffff', fg: '#111111', note: 'owner app (inputs are explicitly white)' },
   { file: 'westmere-admin.html', bg: '#f7f7f7', fg: '#1b1b1a', note: 'admin app (.fi is a 3% tint over white)' },

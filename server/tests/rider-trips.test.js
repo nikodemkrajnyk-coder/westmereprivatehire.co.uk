@@ -159,6 +159,15 @@ function makeSandbox(stored) {
     // the real Europe/London "today" helper the filters depend on — see
     // server/tests/timezone-dayofweek.test.js
     extractFn(riderHtml, 'todayUK') + '\n' +
+    // The REAL status/action derivation and pay panel, not stubs: the status
+    // chip and the buttons on a row are now decided by these, so a row that
+    // renders here is a row that renders in the app. See live-status.test.js
+    // for what they decide; this file cares that a hostile row cannot blank
+    // the list through them.
+    extractFn(riderHtml, '_payState') + '\n' +
+    extractFn(riderHtml, '_tripStatus') + '\n' +
+    extractFn(riderHtml, '_tripActions') + '\n' +
+    extractFn(riderHtml, '_payPanel') + '\n' +
     "var _tripFilter='upcoming';\n" +
     extractFn(riderHtml, 'renderTrips') + '\n', sandbox);
   return { sandbox, listEl, warnings };

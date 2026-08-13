@@ -15,6 +15,10 @@
 
 const WHATSAPP_API = 'https://graph.facebook.com/v21.0';
 
+// Shared display rules (short addresses / airport-gated flight / integer bags).
+const { shortDisplay, flightFor } = require('../address-normalize');
+const { bagsText } = require('../wm-lifecycle');
+
 function isConfigured() {
   return !!(process.env.WHATSAPP_TOKEN && process.env.WHATSAPP_PHONE_ID);
 }
@@ -128,17 +132,21 @@ async function sendAdminBookingWhatsApp(booking) {
   const adminPhone = process.env.WHATSAPP_ADMIN_PHONE;
   if (!isConfigured() || !adminPhone) return;
 
+  // Same display rules as every other surface: short addresses, integer bags,
+  // and a flight number only when the journey actually touches an airport.
+  const flt = flightFor(booking);
+  const bags = bagsText(booking.bags);
   const lines = [
     `*NEW BOOKING* - ${booking.ref}`,
     ``,
     `${booking.name} (${booking.phone})`,
-    `${booking.pickup} \u2192 ${booking.destination}`,
+    `${shortDisplay(booking.pickup) || booking.pickup} \u2192 ${shortDisplay(booking.destination) || booking.destination}`,
     `${booking.date} at ${booking.time || 'ASAP'}`,
   ];
 
-  if (booking.flight) lines.push(`Flight: ${booking.flight}`);
+  if (flt) lines.push(`Flight: ${flt}`);
   if (booking.passengers) lines.push(`Pax: ${booking.passengers}`);
-  if (booking.bags) lines.push(`Bags: ${booking.bags}`);
+  if (bags) lines.push(`Bags: ${bags}`);
   if (booking.fare) lines.push(`Fare: \u00a3${typeof booking.fare === 'number' ? booking.fare.toFixed(2) : booking.fare}`);
   lines.push(`Payment: ${booking.payment === 'card' || booking.paid_at ? 'PAID' : (booking.payment === 'cash' ? 'CASH' : 'AWAITING')}`);
   if (booking.notes) lines.push(`Notes: ${booking.notes}`);

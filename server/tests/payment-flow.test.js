@@ -106,8 +106,17 @@ function cashPostBlock() {
 }
 test('cash route records cash + moves pending → awaiting_payment (never confirmed)', () => {
   const block = cashPostBlock();
-  assert.ok(/assertPaymentMethod\('cash'/.test(block), 'cash route must validate the cash write');
-  assert.ok(/THEN 'awaiting_payment'/.test(block), "cash route must move an unsettled booking to 'awaiting_payment'");
+  // The cash WRITE now lives in server/pay-lock.js, shared with the My Account
+  // channel so the two cannot drift (see double-payment.test.js). The invariant
+  // is unchanged and still pinned — it just moved one call deep: the route
+  // delegates, and the shared writer is the thing that validates and that
+  // refuses to auto-confirm.
+  assert.ok(/applyCashChoice\(/.test(block),
+    'cash route must go through the shared applyCashChoice, so both payment channels behave identically');
+  const lock = read('server/pay-lock.js');
+  assert.ok(/assertPaymentMethod\('cash'/.test(lock), 'the shared cash write must validate the method (never a silent default)');
+  assert.ok(/THEN 'awaiting_payment'/.test(lock), "the shared cash write must move an unsettled booking to 'awaiting_payment'");
+  assert.ok(!/THEN 'confirmed'/.test(lock), 'the shared cash write must NOT auto-confirm (spec: awaiting payment first)');
   assert.ok(!/THEN 'confirmed'/.test(block), 'cash route must NOT auto-confirm (spec: awaiting payment first)');
 });
 test('cash route sends the booking-confirmed email when the customer chooses cash', () => {
@@ -387,7 +396,12 @@ test('/pay/:ref/intent returns a clientSecret for the mounted field to confirm',
   const pub = read('server/public-api.js');
   const start = pub.indexOf("router.post('/pay/:ref/intent'");
   assert.ok(start !== -1, 'intent route not found');
-  const block = pub.slice(start, start + 3500);
+  // Read to the NEXT route rather than a fixed byte count — the route grows
+  // (it now also asks Stripe whether the booking is already settled), and a
+  // fixed slice silently stops covering the end of it.
+  const rest = pub.slice(start + 10);
+  const next = rest.search(/router\.(post|get)\(/);
+  const block = pub.slice(start, start + 10 + (next === -1 ? rest.length : next));
   assert.ok(/clientSecret: intent\.client_secret/.test(block),
     'intent route must return { clientSecret } so the card field can confirm the payment');
 });
@@ -539,8 +553,13 @@ test('Notes row is OMITTED when there is no note at all', async () => {
 test('email uses larger, phone-legible detail fonts', () => {
   const src = read('server/email.js');
   // confRow value + fare bumped for readability (was 14px / 22px).
-  assert.ok(/font-size:17px;line-height:1.5;color:#1d1d1d/.test(src), 'detail value font must be bumped to 17px');
-  assert.ok(/font-size:28px;line-height:1.2;color:#b78635/.test(src), 'fare font must be bumped to 28px');
+  // This pins the SIZES only. It used to pin the colours alongside them
+  // (#1d1d1d and the gold #b78635), which meant the readability guard doubled
+  // as a guard that the gold stayed — so the palette could not be changed
+  // without appearing to break readability. Colour is button-style.test.js's
+  // job; this test is about whether a customer can read it on a phone.
+  assert.ok(/font-size:17px;line-height:1\.5/.test(src), 'detail value font must be bumped to 17px');
+  assert.ok(/font-size:28px;line-height:1\.2/.test(src), 'fare font must be bumped to 28px');
 });
 test('rider app no longer dumps the vehicle type into notes', () => {
   const src = read('westmere-rider.html');
@@ -810,7 +829,10 @@ test('booking card renders passenger count + luggage in summary AND detail', () 
   assert.ok(/_bagsText\(j\.bags\)\?' · '\+_bagsText\(j\.bags\)/.test(jc), 'summary must append luggage when present');
   // Detail rows: explicit Passengers + Luggage rows.
   assert.ok(/>Passengers<\/td><td>'\+\(j\.pax\|\|1\)/.test(jc), 'detail must show a Passengers row');
-  assert.ok(/>Luggage<\/td><td>'\+escH\(_bagsText\(j\.bags\)\|\|'None'\)/.test(jc), 'detail must show a Luggage row (None when empty)');
+  // An explicitly-labelled Luggage row always shows the INTEGER label ("0 bags"),
+  // never a raw column value and never the old "None" placeholder. The compact
+  // summary above is the one that omits bags entirely. See bags-flight.test.js.
+  assert.ok(/>Luggage<\/td><td>'\+escH\(_bagsLabel\(j\.bags\)\)/.test(jc), 'detail must show a Luggage row via the shared integer label');
 });
 test('manual create-booking form captures luggage (nb-bags) and sends it', () => {
   const src = read('westmere-owner.html');

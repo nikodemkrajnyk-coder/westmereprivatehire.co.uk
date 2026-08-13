@@ -197,46 +197,22 @@ async function apiCall(method, pathSuffix, body) {
   return data;
 }
 
-// ── Address shortening ───────────────────────────────────────────────────
-// Strips country/county noise from an address so calendar titles and
-// descriptions stay readable. Shared by the title (tiny, single token) and
-// the description/location (short, up to a few parts).
-const _SKIP_ADDR = /^(england|scotland|wales|northern ireland|united kingdom|uk|gb|great britain|west sussex|east sussex|sussex|surrey|kent|hampshire|hants|essex|berkshire|berks|london|greater london)$/i;
-const _POSTCODE = /^[A-Z]{1,2}\d[A-Z\d]?(\s*\d[A-Z]{2})?$/i;
-const _AIRPORTS = [
-  [/gatwick/i, 'Gatwick'], [/heathrow/i, 'Heathrow'], [/stansted/i, 'Stansted'],
-  [/luton/i, 'Luton'], [/\bcity airport\b|london city/i, 'London City'],
-  [/southampton airport/i, 'Southampton'], [/\bbristol airport\b/i, 'Bristol'],
-  [/\bbirmingham airport\b/i, 'Birmingham'], [/\bmanchester airport\b/i, 'Manchester'],
-  [/\bstanding\b|st pancras|kings cross|king's cross/i, 'St Pancras'],
-  [/\beuston\b/i, 'Euston'], [/\bvictoria station\b/i, 'Victoria']
-];
+// ── Address shortening + luggage + flight ────────────────────────────────
+// These used to be three divergent local copies (here, driver-cal-routes.js
+// and google-routes.js) of the shortener the apps and emails already shared,
+// so a calendar event could show the long raw address that no other surface
+// showed. They now delegate to the SINGLE sources of truth:
+//   address-normalize.js — short display form + "is this an airport run?"
+//   wm-lifecycle.js      — the integer luggage label
+// Display only: LOCATION and the Waze links still carry the FULL address.
+const { shortDisplay, tinyLabel, flightFor } = require('../address-normalize');
+const { bagsText } = require('../wm-lifecycle');
 
 // Single most-distinctive token for the event title (airport name or town).
-function _tinyAddr(a) {
-  if (!a) return '';
-  for (const [re, name] of _AIRPORTS) if (re.test(a)) return name;
-  const parts = String(a).split(',').map(p => p.trim()).filter(Boolean)
-    .filter(p => !_SKIP_ADDR.test(p) && !_POSTCODE.test(p));
-  if (!parts.length) return String(a).split(',')[0].trim().slice(0, 24);
-  // Use the FIRST meaningful part — the town/place the customer actually
-  // entered. Autocomplete (Nominatim display_name) and Google-formatted
-  // addresses order fields most-specific-first, appending the administrative
-  // DISTRICT (e.g. "Tandridge", "Mid Sussex") AFTER the town — so the last
-  // part is the council area, not the place. Skip a leading bare house
-  // number so a street line reads as the street/town, never a district.
-  const idx = (parts.length > 1 && /^\d+[a-z]?$/i.test(parts[0])) ? 1 : 0;
-  return parts[idx].slice(0, 24);
-}
+function _tinyAddr(a) { return tinyLabel(a); }
 
-// Up to three meaningful parts for description/location fields.
-function _shortAddr(a) {
-  if (!a) return '';
-  for (const [re, name] of _AIRPORTS) if (re.test(a)) return name;
-  const parts = String(a).split(',').map(p => p.trim()).filter(Boolean)
-    .filter(p => !_SKIP_ADDR.test(p));
-  return (parts.length > 3 ? parts.slice(0, 3) : parts).join(', ');
-}
+// The short display form for description/location fields.
+function _shortAddr(a) { return shortDisplay(a); }
 
 // Convert a booking row into a Google Calendar event body
 function bookingToEvent(booking) {
@@ -283,10 +259,11 @@ function buildDescription(b) {
     b.fare ? `\u00a3${b.fare}` : null,
     b.payment || null
   ].filter(Boolean).join('  \u00b7  ');
+  const flt = flightFor(b);          // airport runs only
   const extras = [
     b.passengers ? `${b.passengers} pax` : null,
-    b.bags ? `${b.bags} bags` : null,
-    b.flight ? `Flight ${b.flight}` : null
+    bagsText(b.bags) || null,        // integer label, omitted when zero
+    flt ? `Flight ${flt}` : null
   ].filter(Boolean).join('  \u00b7  ');
   const lines = [
     `${b.customer_name || 'Guest'}${b.customer_phone ? '  \u00b7  ' + b.customer_phone : ''}`,

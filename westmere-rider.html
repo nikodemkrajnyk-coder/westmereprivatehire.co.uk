@@ -19,15 +19,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-:root{--navy:#1b1b1a;--navy2:#2b2a26;--cream:#f5f2ec;--gold:#b89045;--gold2:#c9a05a;--text:#1b1b1a;--muted:rgba(27,27,26,.5);--border:rgba(27,27,26,.1);--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost','Helvetica Neue',Arial,sans-serif;
---green:#2D6E47;--green-bg:rgba(45,110,71,.15);--red:#8B2222;--red-bg:rgba(139,34,34,.15);--amber:#b89045;--amber-bg:rgba(184,144,69,.1)}
+:root{--navy:#1b1b1a;--navy2:#173b5e;--text:#1b1b1a;--muted:rgba(27,27,26,.5);--border:rgba(27,27,26,.1);
+--green:#2D6E47;--green-bg:rgba(45,110,71,.15);--red:#8B2222;--red-bg:rgba(139,34,34,.15);--amber:rgba(27,27,26,.55);--amber-bg:rgba(16,42,67,.1)}
 html{height:100%;font-size:18px;scroll-behavior:smooth}
-body{font-family:var(--sans);font-weight:200;color:var(--navy);background:#f5f2ec;line-height:1.7;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden;overflow-y:hidden}
+body{font-family:var(--sans);font-weight:200;color:var(--navy);background:#ffffff;line-height:1.7;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden;overflow-y:hidden}
 body::before{display:none}
 h1,h2,h3,h4{font-family:var(--serif);font-weight:300;color:var(--navy);letter-spacing:.05em}
-em{color:var(--gold);font-style:italic;font-weight:300}
+em{color:var(--navy);font-style:italic;font-weight:300}
 p{color:rgba(27,27,26,.65);line-height:1.8}
-a{color:var(--gold)}
+a{color:var(--navy)}
 
 /* ── HIDE SITE NAV ── */
 nav#nav{display:none}
@@ -35,42 +35,42 @@ nav#nav{display:none}
 /* ── LOGIN SCREEN ── */
 #login-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1rem;position:relative;z-index:1;padding-top:6rem}
 .ls-inner{width:100%;max-width:420px;background:#fff;border:1px solid rgba(27,27,26,.08);box-shadow:0 4px 24px rgba(27,27,26,.06);animation:up .5s ease}
-.ls-hd{padding:2.5rem 2.2rem 2rem;text-align:center;border-bottom:1px solid rgba(184,144,69,.2)}
-.ls-crest{width:56px;height:56px;border:1px solid rgba(184,144,69,.4);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.4rem;font-weight:500;color:var(--navy);margin:0 auto 1.1rem;position:relative}
-.ls-crest::before{content:'';position:absolute;inset:-8px;border:1px solid rgba(184,144,69,.15)}
+.ls-hd{padding:2.5rem 2.2rem 2rem;text-align:center;border-bottom:1px solid rgba(16,42,67,.2)}
+.ls-crest{width:56px;height:56px;border:1px solid rgba(16,42,67,.4);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1.4rem;font-weight:500;color:var(--navy);margin:0 auto 1.1rem;position:relative}
+.ls-crest::before{content:'';position:absolute;inset:-8px;border:1px solid rgba(27,27,26,.10)}
 .ls-title{font-family:var(--serif);font-size:1.6rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--navy);display:block}
-.ls-sub{font-size:.58rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);text-align:center;margin-top:.25rem;display:block}
+.ls-sub{font-size:.58rem;letter-spacing:.3em;text-transform:uppercase;color:var(--navy);text-align:center;margin-top:.25rem;display:block}
 .ls-body{padding:2.2rem 2.2rem 1.8rem}
 .ls-fg{display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem}
 .ls-label{font-family:var(--sans);font-size:.58rem;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:rgba(27,27,26,.5)}
 .ls-input{font-family:var(--sans);font-size:.92rem;font-weight:300;color:var(--navy);background:transparent;border:none;border-bottom:1px solid rgba(27,27,26,.12);padding:.78rem 0;outline:none;width:100%;min-height:48px;-webkit-appearance:none;transition:border-color .3s}
-.ls-input:focus{border-bottom-color:var(--gold)}
+.ls-input:focus{border-bottom-color:var(--navy)}
 .ls-input::placeholder{color:rgba(27,27,26,.3)}
-.ls-btn{width:100%;padding:1rem;background:var(--gold);color:var(--navy);border:none;font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;transition:all .25s;margin-top:.8rem;min-height:52px}
-.ls-btn:hover{background:var(--gold2)}
+.ls-btn{width:100%;padding:1rem;background:rgba(27,27,26,.55);color:var(--navy);border:none;font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;transition:all .25s;margin-top:.8rem;min-height:52px}
+.ls-btn:hover{background:rgba(27,27,26,.06)}
 .ls-err{display:none;font-size:.78rem;color:var(--red);text-align:center;margin-top:.5rem;padding:.5rem;background:var(--red-bg);border:1px solid rgba(139,34,34,.3)}
 .ls-err.show{display:block}
 .ls-switch{text-align:center;margin-top:1.2rem;font-size:.82rem;color:rgba(27,27,26,.4)}
-.ls-switch button{background:none;border:none;color:var(--gold);cursor:pointer;font-family:var(--sans);font-size:.82rem;font-weight:400;text-decoration:none;letter-spacing:.02em}
+.ls-switch button{background:none;border:none;color:rgba(27,27,26,.55);cursor:pointer;font-family:var(--sans);font-size:.82rem;font-weight:400;text-decoration:none;letter-spacing:.02em}
 .ls-switch button:hover{text-decoration:underline}
 .ls-foot{text-align:center;padding:1.4rem 2.2rem;border-top:1px solid rgba(27,27,26,.06);font-size:.78rem;color:rgba(27,27,26,.35)}
 .ls-foot a{color:rgba(27,27,26,.45);text-decoration:none;transition:color .2s}
-.ls-foot a:hover{color:var(--gold)}
+.ls-foot a:hover{color:var(--navy)}
 
 /* ── APP SHELL ── */
 .screen{display:none;height:100vh;height:100dvh;flex-direction:column;position:relative;z-index:1;overflow:hidden}
 .screen.on{display:flex}
 .topbar{background:rgba(255,255,255,.92);backdrop-filter:blur(24px);padding:calc(env(safe-area-inset-top,0px) + .55rem) 1.2rem .55rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid rgba(27,27,26,.06);box-shadow:0 1px 8px rgba(27,27,26,.04);z-index:50;height:56px}
 .tb-brand{display:flex;align-items:center;gap:.8rem;text-decoration:none}
-.tb-crest{width:36px;height:36px;border:1px solid rgba(184,144,69,.35);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1rem;color:var(--navy);letter-spacing:.02em;flex-shrink:0}
+.tb-crest{width:36px;height:36px;border:1px solid rgba(16,42,67,.35);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1rem;color:var(--navy);letter-spacing:.02em;flex-shrink:0}
 .tb-name{font-family:var(--serif);font-size:1.15rem;font-weight:400;letter-spacing:.14em;text-transform:uppercase;color:var(--navy)}
-.tb-sub{font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:400}
+.tb-sub{font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--navy);font-weight:400}
 .tb-date{font-family:var(--serif);font-size:.85rem;color:rgba(27,27,26,.5);font-weight:300;letter-spacing:.04em;font-style:italic}
 
 /* ── BOTTOM NAV ── */
 .bottom-nav{background:rgba(255,255,255,.92);backdrop-filter:blur(24px);border-top:1px solid rgba(27,27,26,.06);box-shadow:0 -1px 8px rgba(27,27,26,.04);display:flex;padding-bottom:env(safe-area-inset-bottom,0px);flex-shrink:0;z-index:50;padding-top:0}
 .bn-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:.1rem;padding:6px .4rem;background:none;border:none;cursor:pointer;transition:color .2s;color:rgba(27,27,26,.4);font-family:var(--sans);min-height:0;position:relative}
-.bn-item.on{color:var(--gold)}
+.bn-item.on{color:var(--navy)}
 .bn-label{font-family:var(--serif);font-size:11px;font-weight:400;letter-spacing:.12em;text-transform:uppercase;font-style:italic}
 .bn-bar{width:20px;height:1px;background:currentColor;opacity:0;transition:opacity .2s;margin-bottom:.1rem}
 .bn-item.on .bn-bar{opacity:1}
@@ -81,39 +81,39 @@ nav#nav{display:none}
 .page-content{padding:.9rem 1.1rem;max-width:560px;margin:0 auto;display:none}
 .page-content.on{display:block;animation:up .35s ease}
 .sec-title{font-family:var(--serif);font-size:1.85rem;font-weight:300;color:var(--navy);line-height:1.05;margin-bottom:.2rem}
-.sec-title em{font-style:italic;color:var(--gold)}
+.sec-title em{font-style:italic;color:var(--navy)}
 .sec-sub{font-size:.82rem;color:rgba(27,27,26,.5);font-weight:300;margin-bottom:.7rem;letter-spacing:.04em;font-style:italic;font-family:var(--serif)}
 
 /* ── CARDS ── */
 .card{background:#fff;border:1px solid rgba(27,27,26,.06);margin-bottom:.7rem;overflow:hidden;box-shadow:0 2px 12px rgba(27,27,26,.04)}
-.ch{padding:.65rem 1.2rem;border-bottom:1px solid rgba(184,144,69,.18);font-size:.7rem;font-weight:300;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;justify-content:space-between}
+.ch{padding:.65rem 1.2rem;border-bottom:1px solid rgba(16,42,67,.18);font-size:.7rem;font-weight:300;letter-spacing:.22em;text-transform:uppercase;color:var(--navy);display:flex;align-items:center;justify-content:space-between}
 .cb{padding:.8rem 1.1rem .55rem}
 
 /* ── FORM FIELDS ── */
 .fg{display:flex;flex-direction:column;gap:.2rem;margin-bottom:.55rem}
 .fl{font-family:var(--sans);font-size:.72rem;font-weight:300;letter-spacing:.16em;text-transform:uppercase;color:rgba(27,27,26,.55)}
 .fi{color-scheme:light;font-family:var(--sans);font-size:1.02rem;font-weight:300;color:var(--navy);background:transparent;border:none;border-bottom:1px solid rgba(27,27,26,.12);padding:.45rem 0;outline:none;width:100%;transition:border-color .3s;min-height:42px;-webkit-appearance:none}
-.fi:focus{border-bottom-color:var(--gold)}
+.fi:focus{border-bottom-color:var(--navy)}
 .fi::placeholder{color:rgba(27,27,26,.3)}
 select.fi{cursor:pointer;background:transparent;padding:.78rem 0}
 select.fi option{background:#fff;color:var(--navy)}
 textarea.fi{resize:vertical;min-height:72px;border:1px solid rgba(27,27,26,.1);padding:.6rem;border-radius:0}
-textarea.fi:focus{border-color:var(--gold)}
+textarea.fi:focus{border-color:var(--navy)}
 
 /* ── SUGGESTION DROPDOWN ── */
-.sug-drop{display:none;position:absolute;left:0;right:0;top:100%;z-index:350;background:rgba(255,255,255,.98);backdrop-filter:blur(28px);border:1px solid rgba(27,27,26,.08);box-shadow:0 8px 24px rgba(27,27,26,.1);border-radius:0 0 10px 10px;max-height:360px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(184,144,69,.3) transparent}
+.sug-drop{display:none;position:absolute;left:0;right:0;top:100%;z-index:350;background:rgba(255,255,255,.98);backdrop-filter:blur(28px);border:1px solid rgba(27,27,26,.08);box-shadow:0 8px 24px rgba(27,27,26,.1);border-radius:0 0 10px 10px;max-height:360px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(27,27,26,.18) transparent}
 .sug-drop.open{display:block}
 .sug-item{padding:.7rem 1rem;cursor:pointer;border-bottom:1px solid rgba(27,27,26,.04);transition:background .15s}
-.sug-item:hover{background:rgba(184,144,69,.15)}
+.sug-item:hover{background:rgba(27,27,26,.10)}
 .si-main{font-size:.85rem;color:var(--navy);font-weight:300}
 .si-sub{font-size:.68rem;color:rgba(27,27,26,.4);margin-top:.15rem}
 .sug-powered{padding:.4rem 1rem;text-align:right;font-size:.55rem;color:rgba(27,27,26,.25);letter-spacing:.04em}
 
 /* ── BUTTONS ── */
-.btn-main{width:100%;padding:.95rem;background:var(--gold);color:var(--navy);border:none;font-family:var(--sans);font-size:.88rem;font-weight:400;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;transition:all .25s;min-height:50px;margin-top:.6rem}
-.btn-main:hover{background:var(--gold2)}
+.btn-main{width:100%;padding:.95rem;background:rgba(27,27,26,.55);color:var(--navy);border:none;font-family:var(--sans);font-size:.88rem;font-weight:400;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;transition:all .25s;min-height:50px;margin-top:.6rem}
+.btn-main:hover{background:rgba(27,27,26,.06)}
 .btn-ghost{font-family:var(--sans);font-size:.6rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;padding:.68rem 1.2rem;cursor:pointer;border:1px solid rgba(27,27,26,.12);background:transparent;color:rgba(27,27,26,.5);transition:all .25s;min-height:44px}
-.btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
+.btn-ghost:hover{border-color:rgba(27,27,26,.55);color:rgba(27,27,26,.55)}
 .btn-sm{font-family:var(--sans);font-size:.56rem;font-weight:400;letter-spacing:.1em;text-transform:uppercase;padding:.35rem .8rem;cursor:pointer;transition:all .25s;border:1px solid rgba(27,27,26,.1);background:transparent;color:rgba(27,27,26,.4)}
 .btn-sm:hover{border-color:rgba(27,27,26,.3);color:var(--navy)}
 .btn-sm.danger:hover{border-color:var(--red);color:var(--red)}
@@ -121,8 +121,8 @@ textarea.fi:focus{border-color:var(--gold)}
 /* ── WELCOME CARD ── */
 
 /* ── ACTIVE JOURNEY CARD ── */
-.aj-card{background:#fff;border:1px solid rgba(184,144,69,.3);margin-bottom:1rem;overflow:hidden;box-shadow:0 2px 12px rgba(27,27,26,.06)}
-.aj-bar{height:3px;background:linear-gradient(90deg,var(--gold),var(--gold2))}
+.aj-card{background:#fff;border:1px solid rgba(27,27,26,.18);margin-bottom:1rem;overflow:hidden;box-shadow:0 2px 12px rgba(27,27,26,.06)}
+.aj-bar{height:3px;background:linear-gradient(90deg,var(--navy),var(--navy2))}
 .aj-body{padding:1rem 1.2rem}
 .aj-status{display:flex;align-items:center;gap:.5rem;margin-bottom:.7rem}
 .aj-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
@@ -133,49 +133,49 @@ textarea.fi:focus{border-color:var(--gold)}
 .aj-route{margin-top:.6rem;padding-top:.6rem;border-top:1px solid rgba(27,27,26,.06)}
 .aj-from,.aj-to{font-size:.78rem;color:rgba(27,27,26,.6);font-weight:300;padding:.15rem 0;display:flex;align-items:center;gap:.5rem}
 .aj-dot-sm{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.aj-from .aj-dot-sm{background:var(--gold)}
+.aj-from .aj-dot-sm{background:var(--navy)}
 .aj-to .aj-dot-sm{background:var(--green)}
 .aj-line{width:1px;height:12px;background:rgba(27,27,26,.1);margin-left:2.5px}
-.aj-eta{font-family:var(--serif);font-style:italic;font-size:1.1rem;color:var(--gold);margin-bottom:.7rem}
+.aj-eta{font-family:var(--serif);font-style:italic;font-size:1.1rem;color:var(--navy);margin-bottom:.7rem}
 .aj-eta strong{color:var(--navy);font-style:normal;font-weight:400}
 .aj-meta-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;padding:.7rem 0;margin-bottom:.8rem;border-top:1px solid rgba(27,27,26,.06);border-bottom:1px solid rgba(27,27,26,.06)}
 .aj-meta-cell{text-align:center}
 .aj-meta-k{font-size:.55rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(27,27,26,.5);margin-bottom:.2rem}
 .aj-meta-v{font-family:var(--serif);font-size:1.05rem;color:var(--navy);font-weight:300}
-.aj-meta-v.aj-fare{color:var(--gold)}
+.aj-meta-v.aj-fare{color:var(--navy)}
 body.mode-day .aj-meta-k{color:rgba(26,38,56,.55)}
 body.mode-day .aj-meta-v{color:#1A2638}
-body.mode-day .aj-meta-v.aj-fare{color:#8a6d34}
+body.mode-day .aj-meta-v.aj-fare{color:#102a43}
 body.mode-day .aj-meta-grid{border-top:1px solid rgba(26,38,56,.12);border-bottom:1px solid rgba(26,38,56,.12)}
 .aj-progress{display:flex;align-items:center;gap:.4rem;margin-bottom:.9rem}
 .aj-step{display:flex;flex-direction:column;align-items:center;gap:.25rem;flex-shrink:0}
 .aj-step-dot{width:8px;height:8px;border-radius:50%;background:rgba(27,27,26,.18)}
-.aj-step.on .aj-step-dot{background:var(--gold)}
+.aj-step.on .aj-step-dot{background:var(--navy)}
 .aj-step span{font-size:.5rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.45)}
-.aj-step.on span{color:var(--gold)}
+.aj-step.on span{color:var(--navy)}
 .aj-step-line{flex:1;height:1px;background:rgba(27,27,26,.12)}
 .aj-driver-info{display:flex;align-items:center;gap:.7rem;margin-top:.8rem;padding-top:.8rem;border-top:1px solid rgba(255,255,255,.08)}
-.aj-driver-avatar{width:38px;height:38px;border:1px solid rgba(184,144,69,.4);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1rem;color:var(--gold);flex-shrink:0}
+.aj-driver-avatar{width:38px;height:38px;border:1px solid rgba(16,42,67,.4);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1rem;color:var(--navy);flex-shrink:0}
 .aj-driver-details{flex:1;min-width:0}
 .aj-driver-name{font-family:var(--serif);font-size:1.05rem;color:var(--navy)}
 .aj-driver-vehicle{font-size:.7rem;color:rgba(27,27,26,.5)}
-.aj-chat-toggle{display:block;width:100%;margin-top:.7rem;padding:.65rem;background:transparent;border:1px solid rgba(184,144,69,.3);color:var(--gold);font-family:var(--sans);font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;transition:all .2s}
-.aj-chat-toggle:hover{background:rgba(184,144,69,.08)}
+.aj-chat-toggle{display:block;width:100%;margin-top:.7rem;padding:.65rem;background:transparent;border:1px solid rgba(27,27,26,.18);color:var(--navy);font-family:var(--sans);font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;transition:all .2s}
+.aj-chat-toggle:hover{background:rgba(16,42,67,.08)}
 .aj-chat{margin-top:.7rem;border:1px solid rgba(255,255,255,.08);padding:.7rem;background:rgba(0,0,0,.18)}
 .aj-chat-messages{max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:.4rem;margin-bottom:.6rem}
 .aj-chat-bubble{padding:.5rem .7rem;font-size:.78rem;line-height:1.5;max-width:80%}
 .aj-chat-bubble.them{background:rgba(27,27,26,.06);color:rgba(27,27,26,.85);align-self:flex-start}
-.aj-chat-bubble.me{background:rgba(184,144,69,.18);color:var(--navy);align-self:flex-end}
+.aj-chat-bubble.me{background:rgba(16,42,67,.18);color:var(--navy);align-self:flex-end}
 .aj-chat-time{display:block;font-size:.55rem;color:rgba(27,27,26,.45);margin-top:.2rem}
 .aj-chat-input{display:flex;gap:.4rem}
 .aj-chat-input .fi{flex:1}
-.aj-send-btn{padding:.5rem 1rem;background:var(--gold);color:var(--navy);border:none;font-family:var(--sans);font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;cursor:pointer}
+.aj-send-btn{padding:.5rem 1rem;background:rgba(27,27,26,.55);color:var(--navy);border:none;font-family:var(--sans);font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;cursor:pointer}
 
 /* ── TRIP CARDS ── */
 .trip-card{background:#fff;border:1px solid rgba(27,27,26,.08);margin-bottom:.75rem;padding:1rem 1.2rem;transition:border-color .2s;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .trip-card:hover{border-color:rgba(27,27,26,.12)}
 .tc-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.4rem}
-.tc-date{font-family:var(--serif);font-size:1rem;color:var(--gold);font-weight:300}
+.tc-date{font-family:var(--serif);font-size:1rem;color:var(--navy);font-weight:300}
 .tc-fare{font-family:var(--serif);font-size:1.1rem;color:var(--navy);font-weight:300}
 .tc-route{font-size:.82rem;color:var(--navy);font-weight:400;margin-bottom:.2rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tc-meta{font-size:.68rem;color:rgba(27,27,26,.4);font-weight:300}
@@ -187,11 +187,11 @@ body.mode-day .aj-meta-grid{border-top:1px solid rgba(26,38,56,.12);border-botto
 .badge-cancelled{background:var(--red-bg);color:var(--red)}
 
 /* ── FARE REVEAL ── */
-.fare-reveal{background:#fff;border:1px solid rgba(27,27,26,.08);padding:1.8rem;text-align:center;margin-top:1rem;display:none;border:1px solid rgba(184,144,69,.3);position:relative;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-.fare-reveal::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+.fare-reveal{background:#fff;border:1px solid rgba(27,27,26,.08);padding:1.8rem;text-align:center;margin-top:1rem;display:none;border:1px solid rgba(27,27,26,.18);position:relative;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.fare-reveal::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--navy),transparent)}
 .fare-reveal.show{display:block}
 .fr-lbl{font-size:.56rem;letter-spacing:.26em;text-transform:uppercase;color:rgba(27,27,26,.25);margin-bottom:.3rem}
-.fr-amt{font-family:var(--serif);font-size:3.2rem;font-weight:300;color:var(--gold);line-height:1}
+.fr-amt{font-family:var(--serif);font-size:3.2rem;font-weight:300;color:var(--navy);line-height:1}
 .fr-note{font-size:.62rem;color:rgba(27,27,26,.35);margin-top:.5rem;font-weight:300}
 .fr-breakdown{display:flex;justify-content:center;gap:1.4rem;margin-top:.9rem;padding-top:.9rem;border-top:1px solid rgba(255,255,255,.05);flex-wrap:wrap}
 .fr-item{text-align:center}
@@ -204,70 +204,70 @@ body.mode-day .aj-meta-grid{border-top:1px solid rgba(26,38,56,.12);border-botto
    is open, let it escape the card so the calendar grid / time list is never cut
    off or hidden behind the card below (was a silent booking blocker). */
 .card:has(.cal-drop.open),.card:has(.time-drop.open),.card:has(.pick-drop.open){overflow:visible}
-.cal-drop{color-scheme:light;display:none;position:absolute;top:calc(100% + 8px);left:0;z-index:400;background:#fffdf9;border:1px solid rgba(184,144,69,.5);border-radius:12px;padding:1.1rem;width:290px;min-height:310px;box-shadow:0 20px 60px rgba(27,27,26,.28)}
+.cal-drop{color-scheme:light;display:none;position:absolute;top:calc(100% + 8px);left:0;z-index:400;background:#ffffff;border:1px solid rgba(16,42,67,.5);border-radius:12px;padding:1.1rem;width:290px;min-height:310px;box-shadow:0 20px 60px rgba(27,27,26,.28)}
 .cal-drop.open{display:block}
 .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem}
 .cal-month-label{font-family:var(--serif);font-size:1.15rem;font-weight:300;color:var(--navy);letter-spacing:.06em}
-.cal-arrow{background:none;border:none;color:var(--gold);font-size:1.3rem;cursor:pointer;padding:.2rem .5rem;line-height:1;transition:opacity .15s;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
+.cal-arrow{background:none;border:none;color:var(--navy);font-size:1.3rem;cursor:pointer;padding:.2rem .5rem;line-height:1;transition:opacity .15s;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
 .cal-arrow:hover{opacity:.7}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
 .cal-day-name{text-align:center;font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5);padding:.35rem 0}
 .cal-day{text-align:center;font-family:var(--sans);font-size:.9rem;font-weight:300;color:rgba(27,27,26,.85);padding:.42rem .2rem;border-radius:6px;cursor:pointer;transition:background .12s,color .12s;line-height:1}
-.cal-day:hover:not(.cal-past):not(.cal-empty){background:rgba(184,144,69,.25);color:var(--navy)}
-.cal-day.cal-today{color:var(--gold);font-weight:500}
-.cal-day.cal-sel{background:var(--gold);color:#111;font-weight:500}
+.cal-day:hover:not(.cal-past):not(.cal-empty){background:rgba(16,42,67,.25);color:var(--navy)}
+.cal-day.cal-today{color:var(--navy);font-weight:500}
+.cal-day.cal-sel{background:var(--navy);color:#111;font-weight:500}
 .cal-day.cal-past{color:rgba(27,27,26,.22);cursor:not-allowed}
 .cal-day.cal-empty{cursor:default}
-.time-drop{color-scheme:light;display:none;position:absolute;top:calc(100% + 8px);right:0;left:auto;z-index:400;background:#fffdf9;border:1px solid rgba(184,144,69,.5);border-radius:12px;padding:1.1rem;width:290px;height:310px;box-shadow:0 20px 60px rgba(27,27,26,.28)}
+.time-drop{color-scheme:light;display:none;position:absolute;top:calc(100% + 8px);right:0;left:auto;z-index:400;background:#ffffff;border:1px solid rgba(16,42,67,.5);border-radius:12px;padding:1.1rem;width:290px;height:310px;box-shadow:0 20px 60px rgba(27,27,26,.28)}
 .time-drop.open{display:block}
 .time-cols{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.8rem}
-.time-col{display:flex;flex-direction:column;gap:2px;overflow-y:auto;max-height:218px;scrollbar-width:thin;scrollbar-color:rgba(184,144,69,.3) transparent}
-.time-col-label{font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.5);text-align:center;padding:.3rem 0;position:sticky;top:0;background:#f5f2ec}
+.time-col{display:flex;flex-direction:column;gap:2px;overflow-y:auto;max-height:218px;scrollbar-width:thin;scrollbar-color:rgba(27,27,26,.18) transparent}
+.time-col-label{font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.5);text-align:center;padding:.3rem 0;position:sticky;top:0;background:#ffffff}
 .time-opt{font-family:var(--sans);font-size:.9rem;font-weight:300;color:rgba(27,27,26,.75);padding:.32rem .5rem;border-radius:5px;cursor:pointer;text-align:center;transition:background .12s,color .12s}
-.time-opt:hover{background:rgba(184,144,69,.25);color:var(--navy)}
-.time-opt.t-sel{background:var(--gold);color:#111;font-weight:500}
+.time-opt:hover{background:rgba(16,42,67,.25);color:var(--navy)}
+.time-opt.t-sel{background:var(--navy);color:#111;font-weight:500}
 /* ── CUSTOM PAX / LUGGAGE PICKER ── */
 .pax-trigger,.bags-trigger{cursor:pointer;position:relative}
-.pick-drop{color-scheme:light;display:none;position:absolute;top:calc(100% + 8px);left:0;z-index:400;background:#fffdf9;border:1px solid rgba(184,144,69,.5);border-radius:12px;padding:1.1rem;width:200px;box-shadow:0 20px 60px rgba(27,27,26,.28)}
+.pick-drop{color-scheme:light;display:none;position:absolute;top:calc(100% + 8px);left:0;z-index:400;background:#ffffff;border:1px solid rgba(16,42,67,.5);border-radius:12px;padding:1.1rem;width:200px;box-shadow:0 20px 60px rgba(27,27,26,.28)}
 .pick-drop.open{display:block}
-.pick-col{display:flex;flex-direction:column;gap:2px;overflow-y:auto;max-height:240px;scrollbar-width:thin;scrollbar-color:rgba(184,144,69,.3) transparent}
-.pick-col-label{font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.5);text-align:center;padding:.3rem 0;position:sticky;top:0;background:#fffdf9}
+.pick-col{display:flex;flex-direction:column;gap:2px;overflow-y:auto;max-height:240px;scrollbar-width:thin;scrollbar-color:rgba(27,27,26,.18) transparent}
+.pick-col-label{font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.5);text-align:center;padding:.3rem 0;position:sticky;top:0;background:#ffffff}
 .pick-opt{font-family:var(--sans);font-size:.95rem;font-weight:300;color:rgba(27,27,26,.78);padding:.5rem .6rem;border-radius:5px;cursor:pointer;text-align:center;transition:background .12s,color .12s;display:flex;align-items:center;justify-content:center;gap:.5rem}
-.pick-opt:hover{background:rgba(184,144,69,.25);color:var(--navy)}
-.pick-opt.p-sel{background:var(--gold);color:#111;font-weight:500}
+.pick-opt:hover{background:rgba(16,42,67,.25);color:var(--navy)}
+.pick-opt.p-sel{background:var(--navy);color:#111;font-weight:500}
 .pick-counter{display:flex;align-items:center;justify-content:center;gap:1rem;padding:.4rem 0}
-.pick-btn{width:36px;height:36px;border-radius:50%;border:1px solid rgba(184,144,69,.4);background:rgba(184,144,69,.12);color:#8a6d34;font-size:1.2rem;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
-.pick-btn:hover{background:rgba(184,144,69,.3)}
+.pick-btn{width:36px;height:36px;border-radius:50%;border:1px solid rgba(27,27,26,.06);background:rgba(27,27,26,.06);color:#102a43;font-size:1.2rem;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.pick-btn:hover{background:rgba(27,27,26,.18)}
 .pick-count{font-family:var(--serif);font-size:1.3rem;color:var(--navy);min-width:1.5rem;text-align:center}
 
 /* ── FILTER TABS ── */
 .filter-row{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap}
 .filter-btn{font-family:var(--sans);font-size:.58rem;font-weight:400;letter-spacing:.12em;text-transform:uppercase;padding:.45rem .9rem;background:transparent;border:1px solid rgba(27,27,26,.1);cursor:pointer;color:rgba(27,27,26,.4);transition:all .25s;min-height:36px}
 .filter-btn.on{background:rgba(27,27,26,.08);color:var(--navy);border-color:rgba(27,27,26,.2)}
-.filter-btn:hover:not(.on){border-color:var(--gold);color:var(--gold)}
+.filter-btn:hover:not(.on){border-color:rgba(27,27,26,.55);color:rgba(27,27,26,.55)}
 
 /* ── PROFILE ── */
 .prof-card{background:#fff;border:1px solid rgba(27,27,26,.08);margin-bottom:1rem;overflow:hidden;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-.prof-ch{padding:.9rem 1.4rem;border-bottom:1px solid rgba(184,144,69,.12);font-size:.56rem;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:var(--gold)}
+.prof-ch{padding:.9rem 1.4rem;border-bottom:1px solid rgba(16,42,67,.12);font-size:.56rem;font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:var(--navy)}
 .prof-cb{padding:.2rem 1.1rem}
 .prof-row{display:flex;align-items:center;justify-content:space-between;padding:.85rem 0;border-bottom:1px solid rgba(255,255,255,.06);gap:.5rem}
 .prof-row:last-child{border-bottom:none}
 .prof-label{font-size:.56rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45)}
 .prof-val{font-size:.82rem;color:var(--navy);font-weight:300;text-align:right;flex:1}
-.prof-acc-link{display:block;text-align:center;margin-top:1rem;font-family:var(--serif);font-style:italic;font-size:.82rem;color:var(--gold);text-decoration:none;letter-spacing:.04em;opacity:.85}
+.prof-acc-link{display:block;text-align:center;margin-top:1rem;font-family:var(--serif);font-style:italic;font-size:.82rem;color:var(--navy);text-decoration:none;letter-spacing:.04em;opacity:.85}
 .prof-acc-link:hover{opacity:1;text-decoration:underline}
-body.mode-day .prof-acc-link{color:#8a6d34}
+body.mode-day .prof-acc-link{color:#102a43}
 .toggle{display:flex;align-items:center;gap:.55rem;cursor:pointer}
 .toggle-track{width:36px;height:20px;border-radius:10px;background:rgba(27,27,26,.15);position:relative;transition:background .2s;flex-shrink:0}
-.toggle-track.on{background:var(--gold)}
+.toggle-track.on{background:var(--navy)}
 .toggle-thumb{width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
 .toggle-track.on .toggle-thumb{left:18px}
 
 /* ── CONFIRMATION MODAL ── */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(245,242,236,.95);backdrop-filter:blur(12px);z-index:500;align-items:center;justify-content:center;padding:1.5rem}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);z-index:500;align-items:center;justify-content:center;padding:1.5rem}
 .modal-overlay.on{display:flex}
-.modal-box{width:100%;max-width:440px;background:rgba(18,14,10,.96);border:1px solid rgba(184,144,69,.3);max-height:90vh;overflow-y:auto;animation:up .3s ease}
-.modal-hd{padding:1.5rem 1.6rem;border-bottom:1px solid rgba(184,144,69,.12);display:flex;align-items:center;justify-content:space-between}
+.modal-box{width:100%;max-width:440px;background:rgba(12,34,55,.96);border:1px solid rgba(27,27,26,.18);max-height:90vh;overflow-y:auto;animation:up .3s ease}
+.modal-hd{padding:1.5rem 1.6rem;border-bottom:1px solid rgba(16,42,67,.12);display:flex;align-items:center;justify-content:space-between}
 .modal-title{font-family:var(--serif);font-size:1.3rem;font-weight:300;color:var(--navy)}
 .modal-close{background:none;border:none;color:rgba(27,27,26,.4);font-size:1.2rem;cursor:pointer;padding:.3rem;min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center}
 .modal-close:hover{color:var(--navy)}
@@ -276,9 +276,9 @@ body.mode-day .prof-acc-link{color:#8a6d34}
 .modal-row:last-child{border-bottom:none}
 .modal-rk{font-size:.54rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.4)}
 .modal-rv{font-size:.85rem;color:var(--navy);font-weight:300;text-align:right;max-width:65%}
-.modal-fare{text-align:center;padding:1.2rem;margin:.8rem 0;background:rgba(27,27,26,.02);border:1px solid rgba(184,144,69,.15)}
+.modal-fare{text-align:center;padding:1.2rem;margin:.8rem 0;background:rgba(27,27,26,.02);border:1px solid rgba(27,27,26,.10)}
 .modal-fare-lbl{font-size:.5rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(27,27,26,.25);margin-bottom:.2rem}
-.modal-fare-amt{font-family:var(--serif);font-size:2.4rem;font-weight:300;color:var(--gold)}
+.modal-fare-amt{font-family:var(--serif);font-size:2.4rem;font-weight:300;color:var(--navy)}
 .modal-ft{padding:1.2rem 1.6rem;border-top:1px solid rgba(27,27,26,.06)}
 
 /* ── EMPTY STATE ── */
@@ -287,7 +287,7 @@ body.mode-day .prof-acc-link{color:#8a6d34}
 .empty-sub{font-size:.72rem;color:rgba(27,27,26,.35);font-weight:300}
 
 /* ── TOAST ── */
-.toast{position:fixed;bottom:5.5rem;left:50%;transform:translateX(-50%) translateY(12px);z-index:600;background:rgba(27,27,26,.92);border:1px solid rgba(184,144,69,.25);padding:.88rem 1.3rem;font-size:.78rem;color:#fff;opacity:0;pointer-events:none;transition:all .3s ease;white-space:nowrap;backdrop-filter:blur(16px);max-width:340px}
+.toast{position:fixed;bottom:5.5rem;left:50%;transform:translateX(-50%) translateY(12px);z-index:600;background:rgba(27,27,26,.92);border:1px solid rgba(16,42,67,.25);padding:.88rem 1.3rem;font-size:.78rem;color:#fff;opacity:0;pointer-events:none;transition:all .3s ease;white-space:nowrap;backdrop-filter:blur(16px);max-width:340px}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
 .toast.success{border-color:rgba(45,110,71,.4)}
 .toast.error{border-color:rgba(139,34,34,.4)}
@@ -320,104 +320,104 @@ body.mode-day .prof-acc-link{color:#8a6d34}
    Lighter cream wash over the vineyard, dark navy text
    ───────────────────────────────────────────────────────────── */
 body.mode-day{color:#1A2638}
-body.mode-day::before{background:linear-gradient(180deg,rgba(245,242,236,.22),rgba(245,242,236,.38))}
+body.mode-day::before{background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,.38))}
 body.mode-day h1,body.mode-day h2,body.mode-day h3,body.mode-day h4,
 body.mode-day .sec-title,body.mode-day .wc-greeting,
 body.mode-day .modal-title,body.mode-day .empty-title{color:#1A2638}
-body.mode-day em,body.mode-day .sec-title em,body.mode-day .wc-greeting em{color:#8a6d34}
-body.mode-day .topbar{background:rgba(245,242,236,.85);border-bottom:1px solid rgba(122,98,48,.18)}
+body.mode-day em,body.mode-day .sec-title em,body.mode-day .wc-greeting em{color:#102a43}
+body.mode-day .topbar{background:rgba(255,255,255,.85);border-bottom:1px solid rgba(16,42,67,.18)}
 body.mode-day .tb-name{color:#1A2638}
-body.mode-day .tb-sub{color:#8a6d34}
+body.mode-day .tb-sub{color:#102a43}
 body.mode-day .tb-date{color:rgba(26,38,56,.65)}
-body.mode-day .tb-crest{border-color:rgba(122,98,48,.4);color:#8a6d34}
-body.mode-day .bottom-nav{background:rgba(245,242,236,.88);border-top:1px solid rgba(122,98,48,.18)}
+body.mode-day .tb-crest{border-color:rgba(16,42,67,.4);color:#102a43}
+body.mode-day .bottom-nav{background:rgba(255,255,255,.88);border-top:1px solid rgba(16,42,67,.18)}
 body.mode-day .bn-item{color:rgba(26,38,56,.45)}
-body.mode-day .bn-item.on{color:#8a6d34}
+body.mode-day .bn-item.on{color:#102a43}
 body.mode-day .card,body.mode-day .welcome-card,body.mode-day .aj-card,
 body.mode-day .trip-card,body.mode-day .fare-reveal,body.mode-day .prof-card{
-  background:rgba(255,255,255,.55);border:1px solid rgba(122,98,48,.22)}
-body.mode-day .ch,body.mode-day .prof-ch{color:#8a6d34;border-bottom:1px solid rgba(122,98,48,.2)}
+  background:rgba(255,255,255,.55);border:1px solid rgba(16,42,67,.22)}
+body.mode-day .ch,body.mode-day .prof-ch{color:#102a43;border-bottom:1px solid rgba(16,42,67,.2)}
 body.mode-day .fl{color:rgba(26,38,56,.65)}
 body.mode-day .fi{color:#1A2638;border-bottom:1px solid rgba(26,38,56,.3)}
 body.mode-day .fi::placeholder{color:rgba(26,38,56,.4)}
-body.mode-day .fi:focus{border-bottom-color:#8a6d34}
-body.mode-day select.fi option{background:#f5f2ec;color:#1A2638}
+body.mode-day .fi:focus{border-bottom-color:#102a43}
+body.mode-day select.fi option{background:#ffffff;color:#1A2638}
 body.mode-day .sec-sub{color:rgba(26,38,56,.65)}
 body.mode-day .wc-date{color:rgba(26,38,56,.65)}
-body.mode-day .btn-main{background:#8a6d34;color:#f5f2ec}
-body.mode-day .btn-main:hover{background:#5C4A24}
+body.mode-day .btn-main{background:#102a43;color:#ffffff}
+body.mode-day .btn-main:hover{background:#102a43}
 body.mode-day .filter-btn{color:rgba(26,38,56,.55);border-color:rgba(26,38,56,.18)}
-body.mode-day .filter-btn.on{background:rgba(122,98,48,.12);color:#1A2638;border-color:rgba(122,98,48,.4)}
-body.mode-day .tc-date{color:#8a6d34}
+body.mode-day .filter-btn.on{background:rgba(16,42,67,.12);color:#1A2638;border-color:rgba(16,42,67,.4)}
+body.mode-day .tc-date{color:#102a43}
 body.mode-day .tc-fare,body.mode-day .tc-route{color:#1A2638}
 body.mode-day .tc-meta{color:rgba(26,38,56,.55)}
 body.mode-day .prof-label{color:rgba(26,38,56,.55)}
 body.mode-day .prof-val{color:#1A2638}
 body.mode-day .prof-row{border-bottom:1px solid rgba(26,38,56,.1)}
 body.mode-day .fr-lbl{color:rgba(26,38,56,.55)}
-body.mode-day .fr-amt{color:#8a6d34}
+body.mode-day .fr-amt{color:#102a43}
 body.mode-day .fr-note{color:rgba(26,38,56,.6)}
 body.mode-day .fr-item .fi-l{color:rgba(26,38,56,.5)}
 body.mode-day .fr-item .fi-v{color:rgba(26,38,56,.75)}
-body.mode-day .aj-eta{color:#8a6d34}
+body.mode-day .aj-eta{color:#102a43}
 body.mode-day .aj-eta strong{color:#1A2638}
 body.mode-day .aj-from,body.mode-day .aj-to{color:rgba(26,38,56,.8)}
 body.mode-day .aj-driver-name{color:#1A2638}
 body.mode-day .aj-driver-vehicle{color:rgba(26,38,56,.6)}
-body.mode-day .aj-driver-avatar{color:#8a6d34;border-color:rgba(122,98,48,.4)}
-body.mode-day .aj-chat-toggle{color:#8a6d34;border-color:rgba(122,98,48,.35)}
-body.mode-day .aj-chat{background:rgba(255,255,255,.55);border:1px solid rgba(122,98,48,.18)}
+body.mode-day .aj-driver-avatar{color:#102a43;border-color:rgba(16,42,67,.4)}
+body.mode-day .aj-chat-toggle{color:#102a43;border-color:rgba(16,42,67,.35)}
+body.mode-day .aj-chat{background:rgba(255,255,255,.55);border:1px solid rgba(16,42,67,.18)}
 body.mode-day .aj-chat-bubble.them{background:rgba(255,255,255,.7);color:#1A2638}
-body.mode-day .aj-chat-bubble.me{background:rgba(122,98,48,.18);color:#1A2638}
+body.mode-day .aj-chat-bubble.me{background:rgba(16,42,67,.18);color:#1A2638}
 body.mode-day .aj-chat-time{color:rgba(26,38,56,.55)}
 body.mode-day .aj-step span{color:rgba(26,38,56,.5)}
-body.mode-day .aj-step.on span{color:#8a6d34}
+body.mode-day .aj-step.on span{color:#102a43}
 body.mode-day .aj-step-dot{background:rgba(26,38,56,.18)}
-body.mode-day .aj-step.on .aj-step-dot{background:#8a6d34}
-body.mode-day .modal-overlay{background:rgba(245,242,236,.85)}
-body.mode-day .modal-box{background:rgba(255,255,255,.96);border:1px solid rgba(122,98,48,.3)}
+body.mode-day .aj-step.on .aj-step-dot{background:#102a43}
+body.mode-day .modal-overlay{background:rgba(255,255,255,.85)}
+body.mode-day .modal-box{background:rgba(255,255,255,.96);border:1px solid rgba(16,42,67,.3)}
 body.mode-day .modal-rk{color:rgba(26,38,56,.55)}
 body.mode-day .modal-rv{color:#1A2638}
 body.mode-day .modal-close{color:rgba(26,38,56,.55)}
-body.mode-day .modal-fare-amt{color:#8a6d34}
+body.mode-day .modal-fare-amt{color:#102a43}
 
 
 /* ── MY LOCATION BUTTON ── */
-.loc-btn{position:absolute;right:0;top:50%;transform:translateY(-50%);background:none;border:1px solid rgba(184,144,69,.3);color:var(--gold);font-family:var(--sans);font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;padding:.4rem .65rem;cursor:pointer;transition:all .2s;z-index:5;min-height:36px;display:flex;align-items:center;gap:.3rem}
-.loc-btn:hover{background:rgba(184,144,69,.12);border-color:var(--gold)}
+.loc-btn{position:absolute;right:0;top:50%;transform:translateY(-50%);background:none;border:1px solid rgba(27,27,26,.18);color:rgba(27,27,26,.55);font-family:var(--sans);font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;padding:.4rem .65rem;cursor:pointer;transition:all .2s;z-index:5;min-height:36px;display:flex;align-items:center;gap:.3rem}
+.loc-btn:hover{background:rgba(27,27,26,.06);border-color:rgba(27,27,26,.55)}
 .loc-btn svg{width:14px;height:14px;fill:currentColor;flex-shrink:0}
 
 /* ── PAYMENT CHOICE ── */
 .pay-grid{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin:.8rem 0}
 .pay-card{background:transparent;border:1px solid rgba(27,27,26,.1);padding:1rem;cursor:pointer;transition:all .25s;text-align:center}
-.pay-card:hover{border-color:var(--gold)}
-.pay-card.sel{border-color:var(--gold);background:rgba(184,144,69,.08)}
+.pay-card:hover{border-color:var(--navy)}
+.pay-card.sel{border-color:var(--navy);background:rgba(16,42,67,.08)}
 .pay-card-ttl{font-family:var(--serif);font-size:1rem;color:var(--navy);margin-bottom:.2rem}
 .pay-card-sub{font-size:.62rem;color:rgba(27,27,26,.4);font-weight:300}
 .pay-methods{margin:.8rem 0;display:none}
 .pay-method{display:flex;align-items:center;gap:.8rem;padding:.85rem 1rem;border:1px solid rgba(27,27,26,.08);cursor:pointer;transition:all .2s;margin-bottom:.5rem}
-.pay-method:hover{border-color:var(--gold)}
-.pay-method.sel{border-color:var(--gold);background:rgba(184,144,69,.08)}
-.pay-method-type{font-family:var(--sans);font-size:.55rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);min-width:40px}
+.pay-method:hover{border-color:var(--navy)}
+.pay-method.sel{border-color:var(--navy);background:rgba(16,42,67,.08)}
+.pay-method-type{font-family:var(--sans);font-size:.55rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--navy);min-width:40px}
 .pay-method-ttl{font-size:.85rem;color:var(--navy);font-weight:300}
 .pay-method-sub{font-size:.62rem;color:rgba(27,27,26,.4)}
 #stripe-card-wrap{display:none;margin:.8rem 0}
 #stripe-card-el{border:none;border-bottom:1px solid rgba(27,27,26,.18);padding:.9rem 0;min-height:50px;transition:border-color .2s}
-#stripe-card-el.StripeElement--focus{border-bottom-color:var(--gold)}
+#stripe-card-el.StripeElement--focus{border-bottom-color:var(--navy)}
 #bk-card-error{color:var(--red);font-size:.72rem;margin-top:.4rem;min-height:1rem}
 #bk-pr-btn{min-height:52px;margin:.8rem 0}
 .bk-pr-na{font-size:.72rem;color:rgba(27,27,26,.4);text-align:center;padding:.8rem;display:none}
 body.mode-day .pay-card{border-color:rgba(26,38,56,.15)}
-body.mode-day .pay-card.sel{border-color:#8a6d34;background:rgba(122,98,48,.08)}
+body.mode-day .pay-card.sel{border-color:#102a43;background:rgba(16,42,67,.08)}
 body.mode-day .pay-method{border-color:rgba(26,38,56,.12)}
-body.mode-day .pay-method.sel{border-color:#8a6d34;background:rgba(122,98,48,.08)}
+body.mode-day .pay-method.sel{border-color:#102a43;background:rgba(16,42,67,.08)}
 body.mode-day #stripe-card-el{border-bottom-color:rgba(26,38,56,.25)}
-body.mode-day #stripe-card-el.StripeElement--focus{border-bottom-color:#8a6d34}
+body.mode-day #stripe-card-el.StripeElement--focus{border-bottom-color:#102a43}
 /* iOS install banner */
-#ios-install-banner{display:none;position:fixed;top:0;left:0;right:0;z-index:500;background:#1b1b1a;border-bottom:1px solid rgba(184,144,69,.35);padding:.65rem 1rem .65rem 1.1rem;align-items:center;gap:.8rem}
+#ios-install-banner{display:none;position:fixed;top:0;left:0;right:0;z-index:500;background:#1b1b1a;border-bottom:1px solid rgba(16,42,67,.35);padding:.65rem 1rem .65rem 1.1rem;align-items:center;gap:.8rem}
 #ios-install-banner.show{display:flex}
-.iib-text{flex:1;font-family:var(--sans,sans-serif);font-size:.78rem;color:rgba(255,255,255,.85);font-weight:300;line-height:1.45}
-.iib-text strong{color:#b89045;font-weight:500}
+.iib-text{flex:1;font-family:var(--sans);font-size:.78rem;color:rgba(255,255,255,.85);font-weight:300;line-height:1.45}
+.iib-text strong{color:rgba(27,27,26,.55);font-weight:500}
 .iib-share{display:inline-flex;vertical-align:middle;margin:0 .15rem}
 .iib-close{background:none;border:none;color:rgba(255,255,255,.4);font-size:1.1rem;line-height:1;cursor:pointer;padding:.25rem .3rem;flex-shrink:0;transition:color .15s}
 .iib-close:hover{color:#fff}
@@ -461,7 +461,7 @@ body.mode-day #stripe-card-el.StripeElement--focus{border-bottom-color:#8a6d34}
 <script src="/config.js"></script>
 <script src="https://js.stripe.com/v3/" async></script>
 <meta name="description" content="Westmere My Account — book private hire journeys across Sussex with real-time tracking, fixed quotes and premium drivers.">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23111D2C'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='38' font-weight='500' text-anchor='middle' fill='%23B8985A'%3EW%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23111D2C'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='38' font-weight='500' text-anchor='middle' fill='%23102a43'%3EW%3C/text%3E%3C/svg%3E">
 <meta name="robots" content="noindex,nofollow">
 <meta property="og:title" content="Westmere · My Account">
 <meta property="og:description" content="Westmere My Account — book private hire journeys across Sussex with real-time tracking, fixed quotes and premium drivers.">
@@ -478,18 +478,19 @@ body.mode-day #stripe-card-el.StripeElement--focus{border-bottom-color:#8a6d34}
 body.mode-day .ch,body.mode-day .tb-sub{color:var(--muted)!important}
 /* Cards -> clean template cards */
 .card,.sec,.aj-card,.tc-card,.prof-card{background:var(--paper)!important;border:1px solid var(--line)!important;border-radius:8px!important}
-/* Primary buttons -> clean charcoal (was gold), template tracking */
-.btn-main,.ls-btn,.aj-send-btn,.modal-btn-primary{background:#1b1b1a!important;color:#f5f2ec!important;border:none!important;border-radius:0!important;letter-spacing:.2em!important;font-weight:400!important;text-transform:uppercase}
-.btn-main:hover,.ls-btn:hover{background:#2b2a26!important}
-body.mode-day .btn-main{background:#1b1b1a!important;color:#f5f2ec!important}
+/* Primary buttons: colour, border and shape now come from ONE place —
+   /wm-buttons.css (loaded last in <head>). The solid-charcoal square fills
+   that used to live here are gone: the owner's brief was outlined, rounded,
+   gold-accented buttons. Only the letter-spacing/weight stay local. */
+.btn-main,.ls-btn,.aj-send-btn,.modal-btn-primary{letter-spacing:.2em;font-weight:400;text-transform:uppercase}
 /* Ghost/secondary + locate + call -> charcoal outline */
 .loc-btn,.aj-call-btn,.filter-btn,.pick-btn{color:#1b1b1a!important;border-color:var(--line)!important}
-.filter-btn.on{background:#1b1b1a!important;color:#f5f2ec!important;border-color:#1b1b1a!important}
+/* .filter-btn.on is styled in /wm-buttons.css (gold wash, not a black fill) */
 /* Bottom nav active -> charcoal (template) */
 .bn-item.on,body.mode-day .bn-item.on{color:#1b1b1a!important}
 .bn-item.on .bn-bar,.bn-item.on::after{background:#1b1b1a!important}
 /* keep a restrained gold ONLY for the serif italic heading accents (.sec-title em / h1 em) */
-.sec-title em,h1 em,body.mode-day .sec-title em{color:#b89045!important}
+.sec-title em,h1 em,body.mode-day .sec-title em{color:rgba(27,27,26,.55)!important}
 /* inputs a touch cleaner */
 .fi,.ls-input{font-family:var(--sans)}
 
@@ -500,8 +501,8 @@ body.mode-day .btn-main{background:#1b1b1a!important;color:#f5f2ec!important}
 .ls-crest::before{border-color:rgba(27,27,26,.1)!important}
 .ls-sub{color:var(--muted)!important;letter-spacing:.32em!important}
 .ls-input:focus{border-bottom-color:var(--ink)!important}
-.ls-btn{background:transparent!important;color:var(--ink)!important;border:1px solid var(--ink)!important;letter-spacing:.24em!important;font-weight:400!important;text-transform:uppercase;border-radius:0!important;transition:border-color .25s,color .25s,background .25s;padding:.95rem!important}
-.ls-btn:hover{background:var(--ink)!important;color:var(--paper)!important}
+/* Sign In: shape + colour from /wm-buttons.css; only spacing stays here. */
+.ls-btn{letter-spacing:.24em!important;font-weight:400!important;text-transform:uppercase;padding:.95rem!important}
 .ls-switch button{color:var(--ink)!important;text-decoration:underline!important;text-underline-offset:3px}
 .ls-foot a:hover{color:var(--ink)!important}
 </style>
@@ -545,19 +546,19 @@ body::after{
   background:linear-gradient(rgba(20,20,19,.58),rgba(20,20,19,.78)),
              url('/assets/westmere-email-hero.jpg') center 28%/auto 132% no-repeat;
   background-color:#1b1b1a;
-  border-bottom:1px solid rgba(184,144,69,.45)!important;
+  border-bottom:1px solid rgba(16,42,67,.45)!important;
   padding:2.3rem 2.2rem 1.9rem!important;
 }
-.ls-hd .ls-crest{color:#f5f2ec;border:1px solid rgba(201,160,90,.65)!important}
-.ls-hd .ls-crest::before{border-color:rgba(201,160,90,.28)!important}
-.ls-hd .ls-title{color:#f5f2ec}
-.ls-hd .ls-sub{color:#d3ac6b!important}
+#login-screen .ls-hd .ls-crest{color:#ffffff!important;-webkit-text-fill-color:#ffffff!important;border:1px solid rgba(255,255,255,.55)!important}
+#login-screen .ls-hd .ls-crest::before{border-color:rgba(255,255,255,.28)!important}
+#login-screen .ls-hd .ls-title{color:#ffffff!important;-webkit-text-fill-color:#ffffff!important}
+#login-screen .ls-hd .ls-sub{color:rgba(255,255,255,.78)!important;-webkit-text-fill-color:rgba(255,255,255,.78)!important}
 
 /* ── APP SHELL: cream veil over the coast, so cards stay dark-on-white ── */
-.screen{background:#f5f2ec}
+.screen{background:#ffffff}
 .screen::before{
   content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
-  background:linear-gradient(rgba(245,242,236,.90),rgba(245,242,236,.955)),
+  background:linear-gradient(rgba(255,255,255,.90),rgba(255,255,255,.955)),
              url('/assets/sussex-coast.webp') center center/cover no-repeat;
 }
 .page-scroll{position:relative;z-index:1}
@@ -567,13 +568,13 @@ body::after{
   background:linear-gradient(rgba(20,20,19,.70),rgba(20,20,19,.82)),
              url('/assets/westmere-email-hero.jpg') center 40%/cover no-repeat;
   backdrop-filter:none;
-  border-bottom:1px solid rgba(184,144,69,.38);
+  border-bottom:1px solid rgba(16,42,67,.38);
   box-shadow:0 2px 14px rgba(12,12,11,.18);
 }
-.topbar .tb-crest{color:#f5f2ec;border-color:rgba(201,160,90,.6)}
-.topbar .tb-name{color:#f5f2ec}
-.topbar .tb-sub{color:#d3ac6b!important}
-.topbar .tb-date{color:rgba(245,242,236,.72)}
+.topbar .tb-crest{color:#ffffff;border-color:rgba(16,42,67,.6)}
+.topbar .tb-name{color:#ffffff}
+.topbar .tb-sub{color:#657485!important}
+.topbar .tb-date{color:rgba(255,255,255,.72)}
 
 /* ── BOTTOM NAV: opaque cream so labels never sit on the photograph ── */
 .bottom-nav{background:rgba(255,255,255,.96);backdrop-filter:blur(24px)}
@@ -608,7 +609,7 @@ body::after{
     grid-column:1;grid-row:1 / span 2;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     border-bottom:none!important;
-    border-right:1px solid rgba(184,144,69,.45);
+    border-right:1px solid rgba(16,42,67,.45);
     padding:3.4rem 2.4rem!important;
     /* Oversize + pull up: `cover` on this tall column would scale the (very
        wide) hero by HEIGHT and so expose the white email strip along its
@@ -623,7 +624,7 @@ body::after{
 /* Honour reduced-motion/data preferences: drop to flat brand colours. */
 @media(prefers-reduced-transparency:reduce){
   body::before{background:#1b1b1a}
-  .screen::before{background:#f5f2ec}
+  .screen::before{background:#ffffff}
 }
 </style>
 
@@ -686,8 +687,8 @@ body::after{
 .side-id{display:flex;align-items:center;gap:.85rem;padding:0 1.5rem 1.4rem;border-bottom:1px solid rgba(27,27,26,.08);margin-bottom:1.2rem}
 .side-crest{
   width:46px;height:46px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
-  border:1px solid rgba(184,144,69,.5);font-family:var(--serif);font-size:1rem;letter-spacing:.06em;
-  color:var(--navy);background:rgba(184,144,69,.06);
+  border:1px solid rgba(16,42,67,.5);font-family:var(--serif);font-size:1rem;letter-spacing:.06em;
+  color:var(--navy);background:rgba(16,42,67,.06);
 }
 .side-id-txt{min-width:0}
 .side-id-name{font-family:var(--serif);font-size:1.12rem;font-weight:400;color:var(--navy);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -703,9 +704,9 @@ body::after{
   min-height:46px;
 }
 .side-mark{width:2px;height:17px;background:transparent;flex-shrink:0;transition:background .2s}
-.side-item:hover{color:var(--navy);background:rgba(184,144,69,.06)}
-.side-item.on{color:var(--navy);background:rgba(184,144,69,.1)}
-.side-item.on .side-mark{background:var(--gold)}
+.side-item:hover{color:var(--navy);background:rgba(16,42,67,.06)}
+.side-item.on{color:var(--navy);background:rgba(16,42,67,.1)}
+.side-item.on .side-mark{background:var(--navy)}
 .side-item.on .side-lbl{letter-spacing:.045em}
 .side-sep{height:1px;background:rgba(27,27,26,.08);margin:.9rem .7rem}
 /* "Book New Journey" reads as the one action, not a fifth tab */
@@ -714,13 +715,13 @@ body::after{
   border:1px solid rgba(27,27,26,.16);justify-content:center;color:var(--navy);margin:0 .7rem;
 }
 .side-cta .side-mark{display:none}
-.side-cta:hover{background:#1b1b1a;color:#f5f2ec;border-color:#1b1b1a}
-.side-cta.on{background:#1b1b1a;color:#f5f2ec;border-color:#1b1b1a}
+.side-cta:hover{background:#1b1b1a;color:#ffffff;border-color:#1b1b1a}
+.side-cta.on{background:#1b1b1a;color:#ffffff;border-color:#1b1b1a}
 
 /* ── SIDEBAR: Contact Us + Airport Rewards (below the rule) ── */
 .side-pill{
   margin-left:auto;font-family:var(--sans);font-size:.5rem;font-weight:500;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--gold);border:1px solid rgba(184,144,69,.4);
+  text-transform:uppercase;color:var(--navy);border:1px solid rgba(16,42,67,.4);
   padding:.16rem .4rem;white-space:nowrap;
 }
 .side-soon .side-lbl{color:inherit}
@@ -743,8 +744,8 @@ body::after{
   .sub-item.on{font-weight:500}
   .sub-div{width:1px;height:12px;background:rgba(27,27,26,.14)}
   .sub-soon{
-    font-size:.46rem;letter-spacing:.12em;color:var(--gold);
-    border:1px solid rgba(184,144,69,.4);padding:.1rem .28rem;
+    font-size:.46rem;letter-spacing:.12em;color:var(--navy);
+    border:1px solid rgba(16,42,67,.4);padding:.1rem .28rem;
   }
 }
 
@@ -755,10 +756,10 @@ body::after{
   border-bottom:1px solid rgba(27,27,26,.06);transition:background .2s;
 }
 .ct-row:last-child{border-bottom:none}
-.ct-row:hover{background:rgba(184,144,69,.06)}
+.ct-row:hover{background:rgba(16,42,67,.06)}
 .ct-k{font-size:.6rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:rgba(27,27,26,.42);width:9rem;flex-shrink:0}
 .ct-v{font-family:var(--serif);font-size:1.08rem;color:var(--navy);flex:1;min-width:0;word-break:break-word}
-.ct-go{font-size:.56rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);flex-shrink:0}
+.ct-go{font-size:.56rem;letter-spacing:.16em;text-transform:uppercase;color:var(--navy);flex-shrink:0}
 .ct-note{font-size:.88rem;line-height:1.8;color:rgba(27,27,26,.6);margin:0}
 .ct-note em{color:var(--navy);font-style:italic}
 @media(max-width:599px){
@@ -771,36 +772,37 @@ body::after{
 .rw-body{text-align:center;padding:2.2rem 1.6rem 2rem;max-width:44rem;margin:0 auto}
 .rw-mark{
   width:54px;height:54px;margin:0 auto 1.2rem;display:flex;align-items:center;justify-content:center;
-  border:1px solid rgba(184,144,69,.45);font-family:var(--serif);font-size:1.2rem;color:var(--navy);
-  background:rgba(184,144,69,.06);
+  border:1px solid rgba(16,42,67,.45);font-family:var(--serif);font-size:1.2rem;color:var(--navy);
+  background:rgba(16,42,67,.06);
 }
 .rw-title{font-family:var(--serif);font-size:1.6rem;font-weight:300;color:var(--navy);line-height:1.25;margin-bottom:.7rem}
 .rw-copy{font-size:.92rem;line-height:1.85;color:rgba(27,27,26,.6);margin-bottom:1.8rem}
 .rw-steps{display:flex;flex-direction:column;gap:.7rem;text-align:left;margin-bottom:1.6rem}
-.rw-step{display:flex;align-items:center;gap:.9rem;padding:.85rem 1.1rem;border:1px solid rgba(27,27,26,.08);background:rgba(184,144,69,.04)}
+.rw-step{display:flex;align-items:center;gap:.9rem;padding:.85rem 1.1rem;border:1px solid rgba(27,27,26,.08);background:rgba(16,42,67,.04)}
 .rw-n{
   width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
-  font-family:var(--serif);font-size:.85rem;color:var(--gold);border:1px solid rgba(184,144,69,.4);
+  font-family:var(--serif);font-size:.85rem;color:var(--navy);border:1px solid rgba(16,42,67,.4);
 }
 .rw-step span:last-child{font-size:.86rem;color:rgba(27,27,26,.65);line-height:1.5}
-.rw-foot{font-family:var(--serif);font-style:italic;font-size:.95rem;color:var(--gold)}
+.rw-foot{font-family:var(--serif);font-style:italic;font-size:.95rem;color:var(--navy)}
 @media(min-width:760px){.rw-steps{flex-direction:row}.rw-step{flex:1;align-items:flex-start}}
 
 /* ── SIDEBAR: footer ── */
 .side-foot{padding:1.2rem 1.6rem 0;margin-top:1rem;border-top:1px solid rgba(27,27,26,.08);display:flex;flex-direction:column;gap:.55rem;align-items:flex-start}
-.side-out{background:none;border:none;padding:0;cursor:pointer;font-family:var(--sans);font-size:.64rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(27,27,26,.45);transition:color .2s}
-.side-out:hover{color:var(--navy)}
+/* Sign Out is now a shared ghost pill (/wm-buttons.css); only its width in
+   the sidebar footer is set here. */
+.side-out{width:100%;font-size:.62rem;letter-spacing:.18em}
 .side-back{font-size:.72rem;color:rgba(27,27,26,.35);text-decoration:none;transition:color .2s}
-.side-back:hover{color:var(--gold)}
+.side-back:hover{color:var(--navy)}
 
 /* ── DASHBOARD PANELS (Payments / Invoices / Details) ── */
 .dpanel{background:#fff;border:1px solid rgba(27,27,26,.09);border-radius:8px;overflow:hidden;margin-bottom:1rem;box-shadow:0 2px 14px rgba(27,27,26,.05)}
 .dp-head{
   display:flex;align-items:baseline;justify-content:space-between;gap:1rem;
-  padding:.9rem 1.4rem;border-bottom:1px solid rgba(184,144,69,.2);
+  padding:.9rem 1.4rem;border-bottom:1px solid rgba(16,42,67,.2);
   font-size:.66rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:rgba(27,27,26,.5);
 }
-.dp-note{font-family:var(--serif);font-style:italic;font-size:.85rem;letter-spacing:.02em;text-transform:none;color:var(--gold);font-weight:400}
+.dp-note{font-family:var(--serif);font-style:italic;font-size:.85rem;letter-spacing:.02em;text-transform:none;color:var(--navy);font-weight:400}
 .dp-body{padding:1.4rem}
 .dp-empty{padding:2.6rem 1.4rem;text-align:center}
 .dpe-title{font-family:var(--serif);font-size:1.25rem;color:var(--navy);font-weight:300;margin-bottom:.3rem}
@@ -814,7 +816,7 @@ body::after{
 .trip-card{background:none;border-radius:0;box-shadow:none;margin-bottom:0;border-top:none;border-left:none;border-right:none}
 .drow-main{flex:1;min-width:0}
 .drow-t{font-family:var(--serif);font-size:1.05rem;color:var(--navy);font-weight:400;line-height:1.35;overflow:hidden;text-overflow:ellipsis}
-.drow-arrow{color:var(--gold);font-style:normal;padding:0 .15rem}
+.drow-arrow{color:var(--navy);font-style:normal;padding:0 .15rem}
 .drow-s{font-size:.72rem;color:rgba(27,27,26,.42);margin-top:.22rem;letter-spacing:.02em}
 .drow-side{text-align:right;flex-shrink:0}
 .drow-amt{font-family:var(--serif);font-size:1.15rem;color:var(--navy);font-weight:400}
@@ -838,39 +840,95 @@ body::after{
    app-style status pills, coloured dots and pulsing badges.
    ════════════════════════════════════════════════════════════════════════════ */
 .aj-card{border:1px solid rgba(27,27,26,.09)!important;border-radius:8px!important;box-shadow:0 2px 14px rgba(27,27,26,.05)!important}
-.aj-bar{height:2px;background:var(--gold)}
+.aj-bar{height:2px;background:var(--navy)}
 .aj-body{padding:1.5rem 1.6rem}
-.aj-dot{animation:none;background:var(--gold)}
+.aj-dot{animation:none;background:var(--navy)}
 .aj-label{color:rgba(27,27,26,.5)!important;letter-spacing:.22em!important}
 /* the BOOKED / EN ROUTE / ARRIVED rail: hairline + serif, not an app stepper */
 .aj-progress{margin:.4rem 0 1.2rem}
 .aj-step span{font-family:var(--serif);font-style:italic;font-size:.66rem;letter-spacing:.1em;text-transform:none}
 .aj-step-dot{width:6px;height:6px}
-.aj-step-line{background:rgba(184,144,69,.28)}
+.aj-step-line{background:rgba(16,42,67,.28)}
 .aj-meta-grid{border-top:1px solid rgba(27,27,26,.07);border-bottom:1px solid rgba(27,27,26,.07);padding:1rem 0;margin-bottom:1rem}
 .aj-meta-k{font-size:.58rem;letter-spacing:.2em;color:rgba(27,27,26,.42)}
 .aj-meta-v{font-size:1.15rem}
 .aj-driver-info{border-top:none!important;padding-top:.2rem;margin-top:.2rem}
-.aj-driver-avatar{color:var(--gold);border-color:rgba(184,144,69,.45)}
+.aj-driver-avatar{color:var(--navy);border-color:rgba(16,42,67,.45)}
 
 /* Status: a small-caps eyebrow, never a filled chip. */
 .tc-badge{
   background:none!important;border:none!important;padding:0!important;border-radius:0!important;
   font-family:var(--sans);font-size:.56rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;
 }
-.tc-badge.badge-confirmed{color:var(--green)!important}
-.tc-badge.badge-pending{color:var(--gold)!important}
-.tc-badge.badge-completed{color:rgba(27,27,26,.4)!important}
-.tc-badge.badge-cancelled{color:var(--red)!important}
+/* (.badge-* retired: the status colour now comes from the .st-* tones above.) */
 .drow-pending{font-family:var(--serif);font-style:italic;font-size:.9rem;color:rgba(27,27,26,.42)}
-.tc-cancel,.tc-again{
+.tc-cancel,.tc-again,.tc-change{
   display:block;margin-top:.35rem;background:none;border:none;padding:0;cursor:pointer;
   font-family:var(--sans);font-size:.56rem;letter-spacing:.16em;text-transform:uppercase;
   color:rgba(27,27,26,.35);text-decoration:underline;text-underline-offset:3px;transition:color .2s;
 }
 .tc-cancel:hover{color:var(--red)}
 .tc-again{color:rgba(27,27,26,.4)}
-.tc-again:hover{color:var(--gold)}
+.tc-again:hover{color:var(--navy)}
+/* "Request a change" is the ACTION the customer is most likely to want on an
+   upcoming trip, so it reads a shade stronger than Cancel sitting beside it. */
+.tc-change{color:rgba(27,27,26,.72);opacity:1}
+.tc-change:hover{opacity:1}
+
+/* ── STATUS CHIP ──
+   One chip per trip, saying where it actually stands. The colours carry the
+   meaning at a glance: amber = you still owe us something, green = settled or
+   underway, grey = over. Monochrome, to match the logo: the ONE chip that
+   earns ink is "Paid" — filled charcoal, the way the wordmark is. Everything
+   else is a hairline outline or a light tint, so the list stays calm.
+   Derived server-side-first in _tripStatus(); nothing here decides anything. */
+.st-chip{
+  display:inline-block;padding:.15rem .5rem;border-radius:4px;
+  font-family:var(--sans);font-size:.56rem;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;white-space:nowrap;
+}
+/* These must obey the "eyebrow, never a filled chip" rule further down, which
+   forces background:none — a filled chip here rendered PAID as white text on
+   white. Monochrome WEIGHT carries the hierarchy instead of colour. */
+.st-paid{color:#1b1b1a;font-weight:700}
+.st-warn{color:#1b1b1a;font-weight:600}
+.st-live{color:rgba(27,27,26,.62)}
+.st-done{color:rgba(27,27,26,.42)}
+.st-off {color:rgba(27,27,26,.42);text-decoration:line-through}
+/* The one exception: an outstanding change request is an ALERT, so it keeps a
+   hairline outline to stand apart from the status beside it. */
+.st-ask {color:#1b1b1a;background:#fff;box-shadow:inset 0 0 0 1px rgba(27,27,26,.32);
+         padding:.15rem .5rem;border-radius:999px;margin-top:.25rem}
+
+/* ── PAY PANEL ──
+   Sits under its trip as a full-width block (the trip row is a flex row, so
+   this cannot live inside it). This is the ONE call to action on an unpaid
+   estimate, so it is allowed to be the loudest thing in the list — but the
+   settled variants (.pp-done) go quiet, because there is nothing left to do. */
+.pay-panel{
+  margin:0 1.4rem 1rem;padding:.9rem 1.1rem;background:#fff;
+  border:1px solid rgba(27,27,26,.18);border-radius:10px;
+}
+.pp-title{font-family:var(--sans);font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#1b1b1a;line-height:1.5}
+.pp-fare{font-family:var(--serif);font-size:1.9rem;font-weight:300;color:var(--navy);margin:.25rem 0 .55rem;line-height:1}
+.pp-btns{display:flex;gap:.5rem;flex-wrap:wrap}
+/* Colour, border, radius and the press feedback come from /wm-buttons.css —
+   these two only set how they SIT in the panel (share the row, wrap on a
+   phone). The old solid-charcoal fill lived here and is gone. */
+.pp-card,.pp-cash{
+  flex:1;min-width:9rem;padding:.75rem .9rem;min-height:44px;
+  font-family:var(--sans);font-size:.66rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;
+}
+.pp-note{margin-top:.55rem;font-size:.66rem;color:rgba(27,27,26,.45);line-height:1.5}
+.pp-sub{margin-top:.25rem;font-size:.74rem;color:rgba(27,27,26,.6);line-height:1.55;text-transform:none;letter-spacing:0}
+/* Settled: quieter still — a flat off-white card with no call to action. */
+.pay-panel.pp-done{background:#fafafa;border-color:rgba(27,27,26,.10)}
+.pay-panel.pp-done .pp-title{color:rgba(27,27,26,.55)}
+@media(max-width:599px){
+  .pay-panel{margin:0 1.1rem 1rem;padding:.85rem .9rem}
+  .pp-btns{flex-direction:column}
+  .pp-card,.pp-cash{width:100%}
+}
 
 /* Filters: quiet text tabs inside the panel, not boxed buttons. */
 .filter-row{display:flex;gap:1.6rem;margin:0;padding:.85rem 1.4rem;border-bottom:1px solid rgba(27,27,26,.06)}
@@ -884,7 +942,7 @@ body::after{
    !important — which turned the active tab into a black box with invisible
    text once the buttons became plain text tabs. */
 .filter-btn.on{color:var(--navy)!important;background:none!important;border-color:transparent!important;font-weight:500}
-.filter-btn.on::after{content:'';position:absolute;left:0;right:0;bottom:-.35rem;height:1px;background:var(--gold)}
+.filter-btn.on::after{content:'';position:absolute;left:0;right:0;bottom:-.35rem;height:1px;background:rgba(27,27,26,.55)}
 
 /* The next-journey card now lives INSIDE a panel — it must not draw a second
    border, radius and shadow inside the first. */
@@ -910,18 +968,18 @@ body.mode-day .filter-btn{color:rgba(27,27,26,.42)!important;border:none!importa
 body.mode-day .filter-btn.on{color:var(--navy)!important;background:none!important;border:none!important}
 body.mode-day .drow-t,body.mode-day .drow-amt{color:var(--navy)}
 body.mode-day .drow-s{color:rgba(27,27,26,.42)}
-body.mode-day .drow-arrow{color:var(--gold)}
+body.mode-day .drow-arrow{color:var(--navy)}
 body.mode-day .aj-meta-k{color:rgba(27,27,26,.42)}
 body.mode-day .aj-meta-v{color:var(--navy)}
-body.mode-day .aj-meta-v.aj-fare{color:var(--gold)}
+body.mode-day .aj-meta-v.aj-fare{color:var(--navy)}
 body.mode-day .aj-meta-grid{border-top:1px solid rgba(27,27,26,.07);border-bottom:1px solid rgba(27,27,26,.07)}
 body.mode-day .aj-from,body.mode-day .aj-to{color:rgba(27,27,26,.6)}
 body.mode-day .aj-driver-name{color:var(--navy)}
 body.mode-day .aj-driver-vehicle{color:rgba(27,27,26,.5)}
-body.mode-day .aj-driver-avatar{color:var(--gold);border-color:rgba(184,144,69,.45)}
+body.mode-day .aj-driver-avatar{color:var(--navy);border-color:rgba(16,42,67,.45)}
 body.mode-day .aj-step span{color:rgba(27,27,26,.45)}
-body.mode-day .aj-step.on span{color:var(--gold)}
-body.mode-day .aj-step-line{background:rgba(184,144,69,.28)}
+body.mode-day .aj-step.on span{color:var(--navy)}
+body.mode-day .aj-step-line{background:rgba(16,42,67,.28)}
 /* THE BACKDROP ITSELF — the one this pass originally missed, caught on the
    live site. body.mode-day::before (0,2,1) outranks the plain body::before
    (0,1,1) that paints the Sussex coast, and replaces it with a flat cream
@@ -944,22 +1002,22 @@ body.mode-day::after{
 body.mode-day .topbar{
   background:linear-gradient(rgba(20,20,19,.70),rgba(20,20,19,.82)),
              url('/assets/westmere-email-hero.jpg') center 45%/cover no-repeat;
-  border-bottom:1px solid rgba(184,144,69,.38);
+  border-bottom:1px solid rgba(16,42,67,.38);
 }
-body.mode-day .topbar .tb-name{color:#f5f2ec}
-body.mode-day .topbar .tb-sub{color:#d3ac6b!important}
-body.mode-day .topbar .tb-date{color:rgba(245,242,236,.72)}
-body.mode-day .topbar .tb-crest{color:#f5f2ec;border-color:rgba(201,160,90,.6)}
+body.mode-day .topbar .tb-name{color:#ffffff}
+body.mode-day .topbar .tb-sub{color:#657485!important}
+body.mode-day .topbar .tb-date{color:rgba(255,255,255,.72)}
+body.mode-day .topbar .tb-crest{color:#ffffff;border-color:rgba(16,42,67,.6)}
 body.mode-day .bottom-nav{background:rgba(255,255,255,.96);border-top:1px solid rgba(27,27,26,.06)}
 body.mode-day .side{background:rgba(255,255,255,.72)}
 body.mode-day .side-item{color:rgba(27,27,26,.62)}
-body.mode-day .side-item.on{color:var(--navy);background:rgba(184,144,69,.1)}
+body.mode-day .side-item.on{color:var(--navy);background:rgba(16,42,67,.1)}
 
 /* ── MOBILE: five tabs across the bottom bar ── */
 @media(max-width:979px){
   .bn5 .bn-item{padding:7px .15rem}
   .bn5 .bn-label{font-size:10px;letter-spacing:.04em;font-style:normal;font-family:var(--sans);font-weight:400;text-transform:uppercase}
-  .bn5 .bn-cta .bn-label{color:var(--gold)}
+  .bn5 .bn-cta .bn-label{color:var(--navy)}
   .bn5 .bn-item.on .bn-label{font-weight:500}
   .page-content{max-width:640px}
   .drow{padding:.95rem 1.1rem;gap:.8rem}
@@ -976,7 +1034,7 @@ body.mode-day .side-item.on{color:var(--navy);background:rgba(184,144,69,.1)}
   .drow-side{text-align:left;display:flex;align-items:baseline;gap:.75rem;flex-wrap:wrap}
   .drow-tag{margin-top:0}
   .drow-amt{font-size:1.1rem}
-  .tc-cancel{margin-top:0}
+  .tc-cancel,.tc-change{margin-top:0}
   .filter-row{padding:.8rem 1.1rem;gap:1.3rem}
 }
 @media(max-width:420px){
@@ -1008,7 +1066,9 @@ select:-webkit-autofill:focus{
   caret-color:#1b1b1a;
   transition:background-color 9999s ease-in-out 0s;
 }
-</style></head>
+</style><link rel="stylesheet" href="/wm-buttons.css">
+<link rel="stylesheet" href="/westmere-theme.css">
+</head>
 <body>
 
 <!-- iOS PWA install banner -->
@@ -1016,7 +1076,7 @@ select:-webkit-autofill:focus{
   <div class="iib-text">
     Tap
     <span class="iib-share" aria-label="Share">
-      <svg width="14" height="17" viewBox="0 0 14 17" fill="none" stroke="#b89045" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 1v10M4 4l3-3 3 3"/><rect x="1" y="7" width="12" height="9" rx="1.5"/></svg>
+      <svg width="14" height="17" viewBox="0 0 14 17" fill="none" stroke="rgba(27,27,26,.55)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 1v10M4 4l3-3 3 3"/><rect x="1" y="7" width="12" height="9" rx="1.5"/></svg>
     </span>
     then <strong>'Add to Home Screen'</strong> for the best experience.
   </div>
@@ -1164,7 +1224,7 @@ select:-webkit-autofill:focus{
     </nav>
 
     <div class="side-foot">
-      <button class="side-out" onclick="doLogout()">Sign Out</button>
+      <button class="side-out wm-btn wm-btn-ghost wm-btn-sm" onclick="doLogout()">Sign Out</button>
       <a class="side-back" href="index.html">Back to site</a>
     </div>
   </aside>
@@ -1196,7 +1256,7 @@ select:-webkit-autofill:focus{
             <div class="sug-drop" id="bk-sug-dest"></div>
           </div>
           <div id="bk-stop-toggle-wrap" style="margin:-.35rem 0 .2rem">
-            <button type="button" id="bk-stop-toggle" onclick="toggleStop()" style="background:none;border:none;color:var(--gold);font-family:var(--sans);font-size:.72rem;font-weight:400;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;padding:.4rem 0;min-height:36px">+ Add a stop on the way</button>
+            <button type="button" id="bk-stop-toggle" onclick="toggleStop()" style="background:none;border:none;color:rgba(27,27,26,.72);font-family:var(--sans);font-size:.72rem;font-weight:400;letter-spacing:.08em;text-transform:uppercase;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:.4rem 0;min-height:36px">+ Add a stop on the way</button>
           </div>
           <div class="fg" id="bk-stop-wrap" style="position:relative;display:none">
             <label class="fl">Stop on the way (optional)</label>
@@ -1347,7 +1407,7 @@ select:-webkit-autofill:focus{
       </div>
 
       <button class="btn-main" id="prof-login-btn" onclick="showLogin()" style="margin-top:.5rem">Sign In</button>
-      <button class="btn-main" id="prof-logout-btn" onclick="doLogout()" style="margin-top:.5rem;background:transparent;border:1px solid rgba(27,27,26,.15);color:rgba(27,27,26,.5);display:none">Sign Out</button>
+      <button class="wm-btn wm-btn-ghost wm-btn-block" id="prof-logout-btn" onclick="doLogout()" style="margin-top:.5rem;display:none">Sign Out</button>
     </div>
 
     <!-- ─── CONTACT US ─── (real details, not a placeholder) -->
@@ -1465,6 +1525,80 @@ select:-webkit-autofill:focus{
     <div class="modal-bd" id="modal-details"></div>
     <div class="modal-ft">
       <button class="btn-main" id="bk-confirm-btn" onclick="confirmBooking()" style="margin-top:0">Request an Estimate</button>
+    </div>
+  </div>
+</div>
+
+<!-- REQUEST A CHANGE MODAL
+     Pre-filled with the booking exactly as it stands. Submitting does NOT
+     amend the trip: it sends the request to the office, and the booking is
+     left alone until the owner applies it by hand. That promise is made in
+     the copy at the top and again on the button, because a form that looks
+     like an edit form will be read as one.
+     The ids all carry the 'cr-' prefix — that is what binds them to the
+     change-request instance of the shared pickers and to the shared address
+     autocomplete (see initCalendar(pfx) / _addrPicked). -->
+<div class="modal-overlay" id="change-modal">
+  <div class="modal-box" style="max-width:520px">
+    <div class="modal-hd">
+      <div class="modal-title">Request a Change</div>
+      <button class="modal-close" onclick="closeChangeModal()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-bd">
+      <div id="cr-intro" style="margin:-.2rem 0 1.1rem;padding:.7rem .85rem;background:#fff;border-left:2px solid rgba(27,27,26,.55);font-size:.78rem;line-height:1.6;color:rgba(27,27,26,.75)">
+        <strong id="cr-ref-line" style="display:block;letter-spacing:.06em;text-transform:uppercase;font-size:.6rem;color:#1b1b1a;margin-bottom:.25rem"></strong>
+        Edit anything below and tell us what you need. <strong>Your booking will not change yet</strong> — we will confirm the update with you.
+      </div>
+
+      <div class="fg" style="position:relative">
+        <label class="fl">Pickup Address</label>
+        <input class="fi" type="text" id="cr-from" placeholder="Pickup address" oninput="addrSearch('cr-from','cr-sug-from')" autocomplete="off">
+        <div class="sug-drop" id="cr-sug-from"></div>
+      </div>
+      <div class="fg" style="position:relative">
+        <label class="fl">Stop on the way (optional)</label>
+        <input class="fi" type="text" id="cr-stop" placeholder="Leave blank if none" oninput="addrSearch('cr-stop','cr-sug-stop')" autocomplete="off">
+        <div class="sug-drop" id="cr-sug-stop"></div>
+      </div>
+      <div class="fg" style="position:relative">
+        <label class="fl">Destination</label>
+        <input class="fi" type="text" id="cr-dest" placeholder="Destination" oninput="addrSearch('cr-dest','cr-sug-dest')" autocomplete="off">
+        <div class="sug-drop" id="cr-sug-dest"></div>
+      </div>
+      <div class="r2">
+        <div class="fg">
+          <label class="fl">Date</label>
+          <div class="custom-date-trigger" id="cr-cdt-wrap">
+            <input class="fi" type="text" id="cr-cdt-display" placeholder="Select date" readonly>
+            <input type="hidden" id="cr-date">
+            <div class="cal-drop" id="cr-cal-drop"></div>
+          </div>
+        </div>
+        <div class="fg">
+          <label class="fl">Time</label>
+          <div class="custom-time-trigger" id="cr-ctt-wrap">
+            <input class="fi" type="text" id="cr-ctt-display" placeholder="Select time" readonly>
+            <input type="hidden" id="cr-time" value="08:00">
+            <div class="time-drop" id="cr-time-drop"></div>
+          </div>
+        </div>
+      </div>
+      <div class="r2">
+        <div class="fg"><label class="fl">Passengers</label><div class="pax-trigger" id="cr-pax-wrap"><input class="fi cdt-val" type="text" id="cr-pax-display" placeholder="Passengers" readonly><input type="hidden" id="cr-pax" value="1"><div class="pick-drop" id="cr-pax-drop"></div></div></div>
+        <div class="fg"><label class="fl">Luggage</label><div class="bags-trigger" id="cr-bags-inner"><input class="fi cdt-val" type="text" id="cr-bags-display" placeholder="Luggage" readonly><input type="hidden" id="cr-bags" value="0s+0l"><div class="pick-drop" id="cr-bags-drop"></div></div></div>
+      </div>
+      <div class="fg" id="cr-flight-wrap" style="display:none">
+        <label class="fl">Flight Number (optional)</label>
+        <input class="fi" type="text" id="cr-flight" placeholder="e.g. BA2431" autocomplete="off">
+      </div>
+      <div class="fg">
+        <label class="fl">What would you like to change?</label>
+        <textarea class="fi" id="cr-note" rows="3" placeholder="e.g. Could we make it two hours later? Flight has moved." style="resize:vertical;min-height:5rem;font-family:inherit"></textarea>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn-main" id="cr-send-btn" onclick="submitChangeRequest()" style="margin-top:0">Send Change Request</button>
+      <button class="wm-btn wm-btn-ghost wm-btn-block" onclick="closeChangeModal()" style="margin-top:.6rem">Keep booking as it is</button>
     </div>
   </div>
 </div>
@@ -1643,7 +1777,7 @@ async function doRegister(){
       if(data.error&&data.error.includes('already exists')){
         var fp=document.getElementById('fp-email');if(fp)fp.value=email;
         var li=document.getElementById('l-email');if(li)li.value=email;
-        errEl.innerHTML='An account with this email already exists.<div style="display:flex;gap:.5rem;margin-top:.6rem"><button onclick="swFrm(\'login\')" style="flex:1;padding:.5rem;background:var(--gold);color:var(--navy);border:none;font-family:var(--sans);font-size:.72rem;cursor:pointer">Sign in</button><button onclick="swFrm(\'forgot\')" style="flex:1;padding:.5rem;background:transparent;border:1px solid rgba(27,27,26,.25);color:rgba(27,27,26,.7);border-radius:0;font-family:var(--sans);font-size:.72rem;cursor:pointer">Forgot password?</button></div>';
+        errEl.innerHTML='An account with this email already exists.<div style="display:flex;gap:.5rem;margin-top:.6rem"><button onclick="swFrm(\'login\')" class="wm-btn wm-btn-ghost wm-btn-sm" style="flex:1">Sign in</button><button onclick="swFrm(\'forgot\')" style="flex:1;padding:.5rem;background:transparent;border:1px solid rgba(27,27,26,.25);color:rgba(27,27,26,.7);font-family:var(--sans);font-size:.72rem;cursor:pointer">Forgot password?</button></div>';
         errEl.classList.add('show');
       } else {
         errEl.textContent=data.error||'Registration failed.';errEl.classList.add('show');
@@ -1957,13 +2091,26 @@ function _nominatim(q){
     });
   });
 }
+/* ONE autocomplete, TWO forms. addrSearch() serves both the booking form
+   ('bk-…') and the change-request form ('cr-…'), so what happens AFTER an
+   address is picked has to be dispatched on the owning form rather than
+   hard-wired to the booking one. The change form re-tests for an airport run
+   (to show/hide its flight + luggage fields) but must never touch the booking
+   form's fare state. Wrapped, because a follow-up that throws must cost the
+   follow-up — not the address the customer just chose. */
+function _addrPicked(inputId){
+  try{
+    if(String(inputId||'').indexOf('cr-')===0){crCheckFlightField();return;}
+    checkFlightField();bkCalcFare();
+  }catch(e){try{console.error('[account] address follow-up failed',e);}catch(_){}}
+}
 function addrSearch(inputId,dropId){
   clearTimeout(_addrTimers[dropId]);
   var inp=document.getElementById(inputId);
   var q=inp?inp.value.trim():'';
   var drop=document.getElementById(dropId);
   if(!drop)return;
-  if(q.length<2){drop.classList.remove('open');drop.innerHTML='';checkFlightField();return;}
+  if(q.length<2){drop.classList.remove('open');drop.innerHTML='';_addrPicked(inputId);return;}
   _addrTimers[dropId]=setTimeout(function(){
     var ql=q.toLowerCase();
     var apItems=AIRPORTS.filter(function(ap){
@@ -2007,13 +2154,13 @@ function _renderSuggestions(inp,drop,apItems,stItems,items){
   apItems.forEach(function(ap){
     var d=document.createElement('div');d.className='sug-item';
     d.innerHTML='<div class="si-main">\u2708 '+esc(ap.name)+'</div><div class="si-sub">'+esc(ap.sub)+'</div>';
-    d.onclick=function(){inp.value=ap.name;if(ap.lat&&ap.lon)_gc[ap.name]={lat:ap.lat,lon:ap.lon};drop.classList.remove('open');drop.innerHTML='';checkFlightField();bkCalcFare();};
+    d.onclick=function(){inp.value=ap.name;if(ap.lat&&ap.lon)_gc[ap.name]={lat:ap.lat,lon:ap.lon};drop.classList.remove('open');drop.innerHTML='';_addrPicked(inp&&inp.id);};
     drop.appendChild(d);
   });
   stItems.forEach(function(st){
     var d=document.createElement('div');d.className='sug-item';
     d.innerHTML='<div class="si-main">\ud83d\ude89 '+esc(st.name)+'</div><div class="si-sub">'+esc(st.sub)+'</div>';
-    d.onclick=function(){inp.value=st.name;if(st.lat&&st.lon)_gc[st.name]={lat:st.lat,lon:st.lon};drop.classList.remove('open');drop.innerHTML='';checkFlightField();bkCalcFare();};
+    d.onclick=function(){inp.value=st.name;if(st.lat&&st.lon)_gc[st.name]={lat:st.lat,lon:st.lon};drop.classList.remove('open');drop.innerHTML='';_addrPicked(inp&&inp.id);};
     drop.appendChild(d);
   });
   items=items.filter(function(it){return !_isAirportNoise(it);});
@@ -2027,7 +2174,7 @@ function _renderSuggestions(inp,drop,apItems,stItems,items){
     d.onclick=function(){
       inp.value=full;
       if(it.lat&&it.lon)_gc[full]={lat:it.lat,lon:it.lon};
-      drop.classList.remove('open');drop.innerHTML='';checkFlightField();bkCalcFare();
+      drop.classList.remove('open');drop.innerHTML='';_addrPicked(inp&&inp.id);
     };
     drop.appendChild(d);
   });
@@ -2170,7 +2317,21 @@ function bkRunCalc(from,to){
 /* ═══════════════════════════════════════════════════════════════════════════
    CALENDAR PICKER
    ═══════════════════════════════════════════════════════════════════════════ */
-function initCalendar(){
+/* ── ONE PICKER IMPLEMENTATION, TWO FORMS ──
+   The booking form and the "Request a change" form need the SAME working
+   date / time / passenger / luggage pickers. They are parametrised by an id
+   PREFIX ('bk' for the booking form, 'cr' for the change-request form) rather
+   than copied, so the change form cannot drift into a second, worse set of
+   pickers and a fix to one is a fix to both.
+
+   Each instance keeps its own state in a closure and publishes its own window
+   callbacks (window._rCalSel_bk / window._rCalSel_cr): the inline onclick
+   handlers in the generated markup can only reach globals, so the prefix has
+   to be baked into the name. Everything 'bk'-specific — recalculating the
+   fare — is gated on the prefix, because the change form must never touch the
+   booking form's fare state. */
+function initCalendar(pfx){
+  pfx=pfx||'bk';
   var _today=new Date();_today.setHours(0,0,0,0);
   var _calM=_today.getMonth(),_calY=_today.getFullYear(),_selDateStr='';
   var _MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -2179,47 +2340,62 @@ function initCalendar(){
   function _dateVal(y,m,d){return y+'-'+_fmt2(m+1)+'-'+_fmt2(d);}
   function _dateDisp(y,m,d){var dt=new Date(y,m,d);var dn=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];return dn[dt.getDay()]+' '+d+' '+_MONTHS[m]+' '+y;}
   function _renderCal(){
-    var drop=document.getElementById('bk-cal-drop');
+    var drop=document.getElementById(pfx+'-cal-drop');
     if(!drop||!drop.classList.contains('open'))return;
     var firstDay=new Date(_calY,_calM,1).getDay();firstDay=(firstDay+6)%7;
     var dim=new Date(_calY,_calM+1,0).getDate();
-    var h='<div class="cal-header"><button class="cal-arrow" onclick="event.stopPropagation();window._rCalPrev()" type="button">&#8249;</button><span class="cal-month-label">'+_MONTHS[_calM]+' '+_calY+'</span><button class="cal-arrow" onclick="event.stopPropagation();window._rCalNext()" type="button">&#8250;</button></div><div class="cal-grid">';
+    var h='<div class="cal-header"><button class="cal-arrow" onclick="event.stopPropagation();window._rCalPrev_'+pfx+'()" type="button">&#8249;</button><span class="cal-month-label">'+_MONTHS[_calM]+' '+_calY+'</span><button class="cal-arrow" onclick="event.stopPropagation();window._rCalNext_'+pfx+'()" type="button">&#8250;</button></div><div class="cal-grid">';
     _DAYS.forEach(function(n){h+='<div class="cal-day-name">'+n+'</div>';});
     for(var i=0;i<firstDay;i++)h+='<div class="cal-day cal-empty"></div>';
     for(var d=1;d<=dim;d++){
       var dt=new Date(_calY,_calM,d);var isPast=dt<_today;var isTod=(dt.getTime()===_today.getTime());
       var dv=_dateVal(_calY,_calM,d);var isSel=(_selDateStr===dv);
       var cls='cal-day'+(isPast?' cal-past':'')+(isTod?' cal-today':'')+(isSel?' cal-sel':'');
-      h+='<div class="'+cls+'"'+(isPast?'':' onclick="event.stopPropagation();window._rCalSel('+d+')" tabindex="0"')+'>'+d+'</div>';
+      h+='<div class="'+cls+'"'+(isPast?'':' onclick="event.stopPropagation();window._rCalSel_'+pfx+'('+d+')" tabindex="0"')+'>'+d+'</div>';
     }
     h+='</div>';drop.innerHTML=h;
   }
-  window._rCalPrev=function(){_calM--;if(_calM<0){_calM=11;_calY--;}_renderCal();};
-  window._rCalNext=function(){_calM++;if(_calM>11){_calM=0;_calY++;}_renderCal();};
-  window._rCalSel=function(d){
+  window['_rCalPrev_'+pfx]=function(){_calM--;if(_calM<0){_calM=11;_calY--;}_renderCal();};
+  window['_rCalNext_'+pfx]=function(){_calM++;if(_calM>11){_calM=0;_calY++;}_renderCal();};
+  window['_rCalSel_'+pfx]=function(d){
     _selDateStr=_dateVal(_calY,_calM,d);
-    var hid=document.getElementById('bk-date');var disp=document.getElementById('bk-cdt-display');
+    var hid=document.getElementById(pfx+'-date');var disp=document.getElementById(pfx+'-cdt-display');
     if(hid)hid.value=_selDateStr;if(disp)disp.value=_dateDisp(_calY,_calM,d);
-    var drop=document.getElementById('bk-cal-drop');if(drop)drop.classList.remove('open');
-    bkCalcFare();
+    var drop=document.getElementById(pfx+'-cal-drop');if(drop)drop.classList.remove('open');
+    if(pfx==='bk')bkCalcFare();
+  };
+  /* Programmatic set — how the change-request form is PRE-FILLED with the
+     booking's existing date. The string is split into its literal components
+     and rebuilt as a local date; it is never handed to `new Date('2026-08-16')`,
+     which parses as UTC midnight and renders the day before west of UTC.
+     See the timezone invariant in CLAUDE.md. */
+  window['_rCalSet_'+pfx]=function(iso){
+    var p=String(iso||'').slice(0,10).split('-');
+    if(p.length!==3)return false;
+    var y=parseInt(p[0],10),m=parseInt(p[1],10)-1,d=parseInt(p[2],10);
+    if(isNaN(y)||isNaN(m)||isNaN(d))return false;
+    _calY=y;_calM=m;_selDateStr=_dateVal(y,m,d);
+    var hid=document.getElementById(pfx+'-date');if(hid)hid.value=_selDateStr;
+    var disp=document.getElementById(pfx+'-cdt-display');if(disp)disp.value=_dateDisp(y,m,d);
+    return true;
   };
   // Set default to today
   var _now=new Date();
   _selDateStr=_dateVal(_now.getFullYear(),_now.getMonth(),_now.getDate());
-  var hid=document.getElementById('bk-date');
+  var hid=document.getElementById(pfx+'-date');
   if(hid)hid.value=_selDateStr;
-  var disp=document.getElementById('bk-cdt-display');
+  var disp=document.getElementById(pfx+'-cdt-display');
   if(disp)disp.value=_dateDisp(_now.getFullYear(),_now.getMonth(),_now.getDate());
   // Trigger
-  var trigger=document.getElementById('bk-cdt-display');var drop=document.getElementById('bk-cal-drop');
+  var trigger=document.getElementById(pfx+'-cdt-display');var drop=document.getElementById(pfx+'-cal-drop');
   if(trigger&&drop){
     trigger.addEventListener('click',function(e){
       e.stopPropagation();
-      var td=document.getElementById('bk-time-drop');if(td)td.classList.remove('open');
+      var td=document.getElementById(pfx+'-time-drop');if(td)td.classList.remove('open');
       drop.classList.toggle('open');if(drop.classList.contains('open'))_renderCal();
     });
     document.addEventListener('click',function(e){
-      var wrap=document.getElementById('bk-cdt-wrap');
+      var wrap=document.getElementById(pfx+'-cdt-wrap');
       if(wrap&&!wrap.contains(e.target))drop.classList.remove('open');
     });
   }
@@ -2228,46 +2404,71 @@ function initCalendar(){
 /* ═══════════════════════════════════════════════════════════════════════════
    TIME PICKER
    ═══════════════════════════════════════════════════════════════════════════ */
-function initTimePicker(){
+function initTimePicker(pfx){
+  pfx=pfx||'bk';
   var _tnow=new Date(),_tH=_tnow.getHours(),_tM=Math.ceil(_tnow.getMinutes()/5)*5;if(_tM>=60){_tM=0;_tH=(_tH+1)%24;}
   var _MINS=[0,5,10,15,20,25,30,35,40,45,50,55];
   function _f2(n){return String(n).padStart(2,'0');}
   function _tStr(h,m){return _f2(h)+':'+_f2(m);}
   function _renderTP(){
-    var drop=document.getElementById('bk-time-drop');if(!drop||!drop.classList.contains('open'))return;
+    var drop=document.getElementById(pfx+'-time-drop');if(!drop||!drop.classList.contains('open'))return;
     var hHtml='<div class="time-col-label">Hour</div>';
-    for(var h=0;h<24;h++){var s=(_tH===h)?' t-sel':'';hHtml+='<div class="time-opt'+s+'" onclick="event.stopPropagation();window._rTSelH('+h+')">'+_f2(h)+'</div>';}
+    for(var h=0;h<24;h++){var s=(_tH===h)?' t-sel':'';hHtml+='<div class="time-opt'+s+'" onclick="event.stopPropagation();window._rTSelH_'+pfx+'('+h+')">'+_f2(h)+'</div>';}
     var mHtml='<div class="time-col-label">Min</div>';
-    _MINS.forEach(function(mm){var s=(_tM===mm)?' t-sel':'';mHtml+='<div class="time-opt'+s+'" onclick="event.stopPropagation();window._rTSelM('+mm+')">'+_f2(mm)+'</div>';});
-    drop.innerHTML='<div class="time-cols"><div class="time-col" id="bk-tc-h">'+hHtml+'</div><div class="time-col" id="bk-tc-m">'+mHtml+'</div></div>';
+    _MINS.forEach(function(mm){var s=(_tM===mm)?' t-sel':'';mHtml+='<div class="time-opt'+s+'" onclick="event.stopPropagation();window._rTSelM_'+pfx+'('+mm+')">'+_f2(mm)+'</div>';});
+    drop.innerHTML='<div class="time-cols"><div class="time-col" id="'+pfx+'-tc-h">'+hHtml+'</div><div class="time-col" id="'+pfx+'-tc-m">'+mHtml+'</div></div>';
     setTimeout(function(){
-      var hc=document.getElementById('bk-tc-h');if(hc){var se=hc.querySelector('.t-sel');if(se)se.scrollIntoView({block:'center'});}
-      var mc=document.getElementById('bk-tc-m');if(mc){var se2=mc.querySelector('.t-sel');if(se2)se2.scrollIntoView({block:'center'});}
+      var hc=document.getElementById(pfx+'-tc-h');if(hc){var se=hc.querySelector('.t-sel');if(se)se.scrollIntoView({block:'center'});}
+      var mc=document.getElementById(pfx+'-tc-m');if(mc){var se2=mc.querySelector('.t-sel');if(se2)se2.scrollIntoView({block:'center'});}
     },0);
   }
-  window._rTSelH=function(h){_tH=h;_renderTP();setTimeout(function(){var mc=document.getElementById('bk-tc-m');if(mc){var se=mc.querySelector('.t-sel');if(se)se.scrollIntoView({block:'center'});}},30);};
-  window._rTSelM=function(m){_tM=m;window._rTConfirm();};
-  window._rTConfirm=function(){
-    var hid=document.getElementById('bk-time');var disp=document.getElementById('bk-ctt-display');
+  window['_rTSelH_'+pfx]=function(h){_tH=h;_renderTP();setTimeout(function(){var mc=document.getElementById(pfx+'-tc-m');if(mc){var se=mc.querySelector('.t-sel');if(se)se.scrollIntoView({block:'center'});}},30);};
+  window['_rTSelM_'+pfx]=function(m){_tM=m;window['_rTConfirm_'+pfx]();};
+  window['_rTConfirm_'+pfx]=function(){
+    var hid=document.getElementById(pfx+'-time');var disp=document.getElementById(pfx+'-ctt-display');
     var ts=_tStr(_tH,_tM);
     if(hid){hid.value=ts;hid.dispatchEvent(new Event('change'));}
     if(disp)disp.value=ts;
-    var drop=document.getElementById('bk-time-drop');if(drop)drop.classList.remove('open');
-    bkCalcFare();
+    var drop=document.getElementById(pfx+'-time-drop');if(drop)drop.classList.remove('open');
+    if(pfx==='bk')bkCalcFare();
+  };
+  /* Programmatic set — pre-fills the change-request form with the booking's
+     existing time. 'ASAP' is a legitimate stored value and is NOT a clock
+     time: it is shown as-is and left alone, never fed to a parser (building a
+     Date from '…TASAP' is how "Invalid Date" once reached every ASAP
+     customer's emails — see CLAUDE.md). */
+  window['_rTSet_'+pfx]=function(hhmm){
+    var s=String(hhmm||'').trim();
+    var disp=document.getElementById(pfx+'-ctt-display');
+    var hid=document.getElementById(pfx+'-time');
+    if(/^([01]\d|2[0-3]):[0-5]\d$/.test(s)){
+      _tH=parseInt(s.slice(0,2),10);_tM=parseInt(s.slice(3,5),10);
+      // Snap to the 5-minute grid the picker offers, so the highlighted option
+      // matches the value in the field.
+      _tM=Math.min(55,Math.round(_tM/5)*5);
+      s=_tStr(_tH,_tM);
+    } else if(s.toUpperCase()==='ASAP'){
+      s='ASAP';
+    } else {
+      s=_tStr(_tH,_tM);
+    }
+    if(hid)hid.value=s;
+    if(disp)disp.value=s;
+    return s;
   };
   // Default
-  var disp=document.getElementById('bk-ctt-display');
+  var disp=document.getElementById(pfx+'-ctt-display');
   if(disp)disp.value=_tStr(_tH,_tM);
   // Trigger
-  var trigger=document.getElementById('bk-ctt-display');var drop=document.getElementById('bk-time-drop');
+  var trigger=document.getElementById(pfx+'-ctt-display');var drop=document.getElementById(pfx+'-time-drop');
   if(trigger&&drop){
     trigger.addEventListener('click',function(e){
       e.stopPropagation();
-      var cd=document.getElementById('bk-cal-drop');if(cd)cd.classList.remove('open');
+      var cd=document.getElementById(pfx+'-cal-drop');if(cd)cd.classList.remove('open');
       drop.classList.toggle('open');if(drop.classList.contains('open'))_renderTP();
     });
     document.addEventListener('click',function(e){
-      var wrap=document.getElementById('bk-ctt-wrap');
+      var wrap=document.getElementById(pfx+'-ctt-wrap');
       if(wrap&&!wrap.contains(e.target))drop.classList.remove('open');
     });
   }
@@ -2276,74 +2477,107 @@ function initTimePicker(){
 /* ═══════════════════════════════════════════════════════════════════════════
    PASSENGER PICKER
    ═══════════════════════════════════════════════════════════════════════════ */
-var _rPax=1;
+/* Per-form state, keyed by the id prefix ('bk' booking form, 'cr' change
+   request). Two separate counters, so opening the change form on a 4-passenger
+   trip can never rewrite what the customer had typed into the booking form. */
+var _rPaxBy={bk:1,cr:1};
 var _rPAX_OPTS=[
   {v:1,label:'1 passenger'},{v:2,label:'2 passengers'},
   {v:3,label:'3 passengers'},{v:4,label:'4 passengers'},
   {v:5,label:'5 passengers'},{v:6,label:'6 passengers'},
   {v:7,label:'7 passengers'},{v:8,label:'8 passengers'}
 ];
-function _rRenderPax(){
-  var drop=document.getElementById('bk-pax-drop');if(!drop||!drop.classList.contains('open'))return;
+function _rRenderPax(pfx){
+  pfx=pfx||'bk';
+  var drop=document.getElementById(pfx+'-pax-drop');if(!drop||!drop.classList.contains('open'))return;
   var h='<div class="pick-col-label">Passengers</div>';
   _rPAX_OPTS.forEach(function(o){
-    h+='<div class="pick-opt'+(_rPax===o.v?' p-sel':'')+'" onclick="event.stopPropagation();window._rPaxSel('+o.v+')">'+o.label+'</div>';
+    h+='<div class="pick-opt'+(_rPaxBy[pfx]===o.v?' p-sel':'')+'" onclick="event.stopPropagation();window._rPaxSel_'+pfx+'('+o.v+')">'+o.label+'</div>';
   });
   drop.innerHTML='<div class="pick-col">'+h+'</div>';
 }
-window._rPaxSel=function(v){
-  _rPax=v;
-  var hid=document.getElementById('bk-pax');if(hid)hid.value=v;
-  var disp=document.getElementById('bk-pax-display');if(disp)disp.value=_rPAX_OPTS[v-1].label;
-  var drop=document.getElementById('bk-pax-drop');if(drop)drop.classList.remove('open');
-};
+function _rPaxSelect(pfx,v){
+  v=Math.max(1,Math.min(8,parseInt(v,10)||1));
+  _rPaxBy[pfx]=v;
+  var hid=document.getElementById(pfx+'-pax');if(hid)hid.value=v;
+  var disp=document.getElementById(pfx+'-pax-display');if(disp)disp.value=_rPAX_OPTS[v-1].label;
+  var drop=document.getElementById(pfx+'-pax-drop');if(drop)drop.classList.remove('open');
+  return v;
+}
+window._rPaxSel_bk=function(v){return _rPaxSelect('bk',v);};
+window._rPaxSel_cr=function(v){return _rPaxSelect('cr',v);};
 /* ═══════════════════════════════════════════════════════════════════════════
    LUGGAGE PICKER
    ═══════════════════════════════════════════════════════════════════════════ */
-var _rSmall=0,_rLarge=0;
-function _rBagLabel(){
-  if(!_rSmall&&!_rLarge)return 'No luggage';
-  var p=[];if(_rSmall)p.push(_rSmall+' small');if(_rLarge)p.push(_rLarge+' large');return p.join(', ');
+var _rBagsBy={bk:{s:0,l:0},cr:{s:0,l:0}};
+function _rBagLabel(pfx){
+  var b=_rBagsBy[pfx||'bk']||{s:0,l:0};
+  if(!b.s&&!b.l)return 'No luggage';
+  var p=[];if(b.s)p.push(b.s+' small');if(b.l)p.push(b.l+' large');return p.join(', ');
 }
-function _rRenderBags(){
-  var drop=document.getElementById('bk-bags-drop');if(!drop||!drop.classList.contains('open'))return;
+function _rRenderBags(pfx){
+  pfx=pfx||'bk';
+  var drop=document.getElementById(pfx+'-bags-drop');if(!drop||!drop.classList.contains('open'))return;
+  var b=_rBagsBy[pfx];
   var h='<div class="pick-col-label">Small suitcases / cabin bags</div><div class="pick-counter">';
-  h+='<button type="button" class="pick-btn" onclick="event.stopPropagation();window._rBagsAdj(\'s\',-1)">−</button>';
-  h+='<span class="pick-count" id="rcnt-small">'+_rSmall+'</span>';
-  h+='<button type="button" class="pick-btn" onclick="event.stopPropagation();window._rBagsAdj(\'s\',1)">+</button></div>';
+  h+='<button type="button" class="pick-btn" onclick="event.stopPropagation();window._rBagsAdj_'+pfx+'(\'s\',-1)">−</button>';
+  h+='<span class="pick-count" id="rcnt-'+pfx+'-small">'+b.s+'</span>';
+  h+='<button type="button" class="pick-btn" onclick="event.stopPropagation();window._rBagsAdj_'+pfx+'(\'s\',1)">+</button></div>';
   h+='<div class="pick-col-label" style="margin-top:.8rem">Large suitcases</div><div class="pick-counter">';
-  h+='<button type="button" class="pick-btn" onclick="event.stopPropagation();window._rBagsAdj(\'l\',-1)">−</button>';
-  h+='<span class="pick-count" id="rcnt-large">'+_rLarge+'</span>';
-  h+='<button type="button" class="pick-btn" onclick="event.stopPropagation();window._rBagsAdj(\'l\',1)">+</button></div>';
+  h+='<button type="button" class="pick-btn" onclick="event.stopPropagation();window._rBagsAdj_'+pfx+'(\'l\',-1)">−</button>';
+  h+='<span class="pick-count" id="rcnt-'+pfx+'-large">'+b.l+'</span>';
+  h+='<button type="button" class="pick-btn" onclick="event.stopPropagation();window._rBagsAdj_'+pfx+'(\'l\',1)">+</button></div>';
   drop.innerHTML=h;
 }
-window._rBagsAdj=function(type,delta){
-  if(type==='s'){_rSmall=Math.max(0,Math.min(10,_rSmall+delta));var el=document.getElementById('rcnt-small');if(el)el.textContent=_rSmall;}
-  else{_rLarge=Math.max(0,Math.min(10,_rLarge+delta));var el2=document.getElementById('rcnt-large');if(el2)el2.textContent=_rLarge;}
-  var hid=document.getElementById('bk-bags');if(hid)hid.value=_rSmall+'s+'+_rLarge+'l';
-  var disp=document.getElementById('bk-bags-display');if(disp)disp.value=_rBagLabel();
-};
-function initPaxPicker(){
-  var trigger=document.getElementById('bk-pax-display');var drop=document.getElementById('bk-pax-drop');
-  if(!trigger||!drop)return;
-  trigger.value=_rPAX_OPTS[_rPax-1].label;
-  trigger.addEventListener('click',function(e){
-    e.stopPropagation();
-    document.querySelectorAll('.pick-drop.open,.cal-drop.open,.time-drop.open').forEach(function(d){d.classList.remove('open');});
-    drop.classList.toggle('open');if(drop.classList.contains('open'))_rRenderPax();
-  });
-  document.addEventListener('click',function(e){var w=document.getElementById('bk-pax-wrap');if(w&&!w.contains(e.target))drop.classList.remove('open');});
+function _rBagsAdjust(pfx,type,delta){
+  var b=_rBagsBy[pfx];
+  if(type==='s'){b.s=Math.max(0,Math.min(10,b.s+delta));var el=document.getElementById('rcnt-'+pfx+'-small');if(el)el.textContent=b.s;}
+  else{b.l=Math.max(0,Math.min(10,b.l+delta));var el2=document.getElementById('rcnt-'+pfx+'-large');if(el2)el2.textContent=b.l;}
+  var hid=document.getElementById(pfx+'-bags');if(hid)hid.value=b.s+'s+'+b.l+'l';
+  var disp=document.getElementById(pfx+'-bags-display');if(disp)disp.value=_rBagLabel(pfx);
 }
-function initBagsPicker(){
-  var trigger=document.getElementById('bk-bags-display');var drop=document.getElementById('bk-bags-drop');
+window._rBagsAdj_bk=function(t,d){_rBagsAdjust('bk',t,d);};
+window._rBagsAdj_cr=function(t,d){_rBagsAdjust('cr',t,d);};
+/* Programmatic set — pre-fills a luggage picker from a stored `bags` value.
+   The column holds several historic shapes ('3', '0.0', '2s+1l', '4+'), so the
+   compound form is read directly and anything else falls back to the shared
+   whole-number count (wm-lifecycle.js) placed in "small". */
+function _rBagsSet(pfx,bags){
+  var raw=String(bags==null?'':bags).trim().toLowerCase();
+  var m=raw.match(/^(\d+)\s*s\s*\+\s*(\d+)\s*l$/);
+  var b=_rBagsBy[pfx];
+  if(m){b.s=Math.max(0,Math.min(10,parseInt(m[1],10)||0));b.l=Math.max(0,Math.min(10,parseInt(m[2],10)||0));}
+  else{
+    var n=0;
+    try{ n=(window.WMLifecycle&&typeof WMLifecycle.bagsCount==='function')?WMLifecycle.bagsCount(raw).n:(parseInt(raw,10)||0); }catch(e){ n=0; }
+    b.s=Math.max(0,Math.min(10,n));b.l=0;
+  }
+  var hid=document.getElementById(pfx+'-bags');if(hid)hid.value=b.s+'s+'+b.l+'l';
+  var disp=document.getElementById(pfx+'-bags-display');if(disp)disp.value=_rBagLabel(pfx);
+}
+function initPaxPicker(pfx){
+  pfx=pfx||'bk';
+  var trigger=document.getElementById(pfx+'-pax-display');var drop=document.getElementById(pfx+'-pax-drop');
   if(!trigger||!drop)return;
-  trigger.value=_rBagLabel();
+  trigger.value=_rPAX_OPTS[_rPaxBy[pfx]-1].label;
   trigger.addEventListener('click',function(e){
     e.stopPropagation();
     document.querySelectorAll('.pick-drop.open,.cal-drop.open,.time-drop.open').forEach(function(d){d.classList.remove('open');});
-    drop.classList.toggle('open');if(drop.classList.contains('open'))_rRenderBags();
+    drop.classList.toggle('open');if(drop.classList.contains('open'))_rRenderPax(pfx);
   });
-  document.addEventListener('click',function(e){var w=document.getElementById('bk-bags-inner');if(w&&!w.contains(e.target))drop.classList.remove('open');});
+  document.addEventListener('click',function(e){var w=document.getElementById(pfx+'-pax-wrap');if(w&&!w.contains(e.target))drop.classList.remove('open');});
+}
+function initBagsPicker(pfx){
+  pfx=pfx||'bk';
+  var trigger=document.getElementById(pfx+'-bags-display');var drop=document.getElementById(pfx+'-bags-drop');
+  if(!trigger||!drop)return;
+  trigger.value=_rBagLabel(pfx);
+  trigger.addEventListener('click',function(e){
+    e.stopPropagation();
+    document.querySelectorAll('.pick-drop.open,.cal-drop.open,.time-drop.open').forEach(function(d){d.classList.remove('open');});
+    drop.classList.toggle('open');if(drop.classList.contains('open'))_rRenderBags(pfx);
+  });
+  document.addEventListener('click',function(e){var w=document.getElementById(pfx+'-bags-inner');if(w&&!w.contains(e.target))drop.classList.remove('open');});
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -2557,10 +2791,19 @@ function renderTrips(filter){
     // with no vehicle, no time, a null status or a missing address - so build
     // each card defensively and skip only the card that genuinely can't render.
     try{
-      var status=String(b.status||'pending');
-      var badgeClass='badge-'+esc(status);
-      var statusLabel=status.charAt(0).toUpperCase()+status.slice(1);
-      var canCancel=(status==='confirmed'&&b.date&&b.date>=now);
+      /* Status AND actions both come from _tripStatus/_tripActions, derived
+         from the row the SERVER last returned — so what the chip says and what
+         the buttons offer can never disagree. "Request a change" is offered on
+         any upcoming live trip (a customer still awaiting an estimate is just
+         as likely to need a different time); it needs a database id, because a
+         row that has not yet come back from the server has nothing to attach a
+         request to. */
+      var _st=_tripStatus(b);
+      var _act=_tripActions(b,now);
+      var badgeClass='st-chip '+_st.tone;
+      var statusLabel=_st.label;
+      var canCancel=_act.cancel;
+      var canChange=_act.change;
       // Same ledger shape as Payment History and Invoices (.drow-*): route on
       // top, one quiet detail line, fare and a small-caps status on the right.
       // .trip-card is kept as the row class \u2014 rider-trips.test.js counts it.
@@ -2576,10 +2819,20 @@ function renderTrips(filter){
       row+='<div class="drow-side">';
       row+='<div class="drow-amt">'+(b.fare?'\u00a3'+esc(b.fare):'<span class="drow-pending">Estimate pending</span>')+'</div>';
       row+='<div class="drow-tag tc-badge '+badgeClass+'">'+esc(statusLabel)+'</div>';
+      // A change request is orthogonal to the lifecycle — a confirmed, paid
+      // trip can still have one outstanding — so it gets its own chip rather
+      // than replacing the status the customer needs to read.
+      if(b.changeRequestedAt)row+='<div class="drow-tag st-chip st-ask">Change requested</div>';
+      if(canChange)row+='<button class="tc-change" onclick="openChangeRequest('+parseInt(b.id,10)+')">Request a change</button>';
       if(canCancel)row+='<button class="tc-cancel" onclick="cancelTrip('+(b.id?parseInt(b.id,10):0)+',\''+esc(b.ref)+'\')">Cancel</button>';
-      if(!canCancel)row+='<button class="tc-again" onclick="rebookTrip(\''+esc(b.ref)+'\')">Book again</button>';
+      if(_act.invoice)row+='<button class="tc-again" onclick="goPage(\'invoices\')">Invoice</button>';
+      if(_act.rebook&&!canChange&&!canCancel)row+='<button class="tc-again" onclick="rebookTrip(\''+esc(b.ref)+'\')">Book again</button>';
       row+='</div>';
       row+='</div>';
+      // The pay panel is a SIBLING of the card, not inside it: the card is a
+      // flex row and this needs the full width. Built in its own guarded call
+      // so a payment panel that cannot render costs only itself.
+      row+=(typeof _payPanel==='function'?_payPanel(b):'');
       html+=row;
     }catch(e){
       console.error('[trips] skipped an unrenderable booking',b&&b.ref,e);
@@ -2626,6 +2879,321 @@ async function cancelTrip(id,ref){
     showToast('No connection — please try again, or call 07930 342593.','error');
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PAYING FROM MY ACCOUNT — the second channel for the SAME estimate
+   ═══════════════════════════════════════════════════════════════════════════
+   The estimate email carries tokenised Pay Now / pay-your-driver links. The
+   SAME estimate is payable here too, so a customer who has lost the email is
+   not stuck — and after the owner accepts a journey change and re-prices it,
+   this is where the customer confirms the new fare.
+
+   BOTH CHANNELS, ONE BOOKING. Card hands off to the ORDINARY pay page with the
+   ORDINARY pay_token, so there is exactly one card implementation and one set
+   of guards. Cash posts to an endpoint that performs the very same write as the
+   email link. Whichever channel completes first locks the other: the server
+   re-checks the LIVE booking on every action (server/pay-lock.js) and refuses
+   with a plain message, which is what these handlers surface.
+
+   What is drawn here is only ever a mirror of that server rule, and it can be
+   stale — the customer may have paid in the other channel a moment ago. That is
+   exactly why every action re-checks before doing anything.
+   GUARDRAIL: server/tests/double-payment.test.js */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ONE STATUS, FROM THE SERVER
+   ═══════════════════════════════════════════════════════════════════════════
+   My Account is the customer's control hub: it has to tell them where a trip
+   actually stands and offer only the actions that are actually available. Both
+   answers are derived HERE, from the booking row as the server last returned
+   it, so the chip the customer reads and the buttons they can press can never
+   disagree with each other — or with the booking record that the email flow
+   writes to.
+
+   WHY THIS MATTERS (stale cache has bitten this app before): the trip list is
+   cached in localStorage so the page can paint instantly and still work
+   offline. That cache is a FALLBACK, never the truth. A customer who pays via
+   the link in their email changes the booking on the SERVER; if My Account
+   went on drawing its cached copy, it would still be offering "Pay by card" on
+   a trip that is already paid. So the cache is refreshed on load, after every
+   action, and whenever the tab is brought back to the front — and until the
+   server has answered at least once, the list says so rather than presenting
+   old data as current.
+   GUARDRAIL: server/tests/live-status.test.js */
+
+// The customer-facing state of a booking. Ordered by what matters most to the
+// person reading it: a cancelled trip is cancelled whatever else is true, and
+// money settled outranks the lifecycle label.
+function _tripStatus(b){
+  var st=String((b&&b.status)||'pending').toLowerCase();
+  var method=String((b&&b.payment)||'pending').toLowerCase();
+  var paid=!!(b&&b.paidAt)||method==='card';
+  if(st==='cancelled')  return {key:'cancelled', label:'Cancelled',       tone:'st-off'};
+  if(st==='completed')  return {key:'completed', label:paid?'Completed · paid':'Completed', tone:'st-done'};
+  if(paid)              return {key:'paid',      label:'Paid',            tone:'st-paid'};
+  if(st==='active')     return {key:'active',    label:'Driver on the way', tone:'st-live'};
+  if(method==='cash')   return {key:'cash',      label:'Paying the driver', tone:'st-live'};
+  if(st==='awaiting_payment') return {key:'awaiting', label:'Awaiting payment', tone:'st-warn'};
+  if(st==='confirmed')  return {key:'confirmed', label:'Confirmed',       tone:'st-live'};
+  var fare=parseFloat(b&&b.fare);
+  if(isFinite(fare)&&fare>0) return {key:'estimate', label:'Awaiting payment', tone:'st-warn'};
+  return {key:'pending', label:'Awaiting your estimate', tone:'st-warn'};
+}
+
+/* Which actions this trip really offers, from the SAME server state. Every one
+   of these is re-checked by the server when pressed — this only decides what
+   is worth showing, so the customer is never handed a button that will be
+   refused. */
+function _tripActions(b,todayStr){
+  var s=_tripStatus(b);
+  var hasId=!!(b&&b.id);
+  var upcoming=!!(b&&b.date&&String(b.date)>=String(todayStr||''));
+  var live=s.key!=='cancelled'&&s.key!=='completed';
+  return {
+    // Pay only while the money is genuinely outstanding (see _payState, which
+    // mirrors the server's pay-lock). Once paid or once the driver is being
+    // paid, the option is gone — not disabled, gone.
+    pay:     hasId&&_payState(b)==='payable',
+    change:  hasId&&upcoming&&live&&s.key!=='active',
+    cancel:  hasId&&upcoming&&live&&(s.key==='confirmed'||s.key==='paid'||s.key==='awaiting'||s.key==='cash'),
+    invoice: s.key==='paid'||s.key==='completed',
+    rebook:  !upcoming||s.key==='cancelled'||s.key==='completed'
+  };
+}
+
+// Mirrors server/pay-lock.js paymentLock() for DISPLAY only. The server is the
+// authority; this just decides what to draw.
+function _payState(b){
+  if(!b)return 'none';
+  var st=String(b.status||'');
+  var method=String(b.payment||'pending').toLowerCase();
+  if(st==='cancelled')return 'none';
+  if(b.paidAt||method==='card')return 'paid';
+  if(method==='cash')return 'cash';
+  if(st==='completed')return 'none';
+  var fare=parseFloat(b.fare);
+  if(!isFinite(fare)||fare<=0)return 'none';
+  if(st==='pending'||st==='offered'||st==='awaiting_payment')return 'payable';
+  return 'none';
+}
+
+function _payPanel(b){
+  try{
+    var state=_payState(b);
+    if(state==='none')return '';
+    var id=b.id?parseInt(b.id,10):0;
+    if(state==='paid'){
+      // The visible half of the double-payment guarantee: once either channel
+      // has settled, this one says so plainly and offers nothing to press.
+      return '<div class="pay-panel pp-done"><div class="pp-title">Paid — thank you</div>'
+        +'<div class="pp-sub">This trip has already been paid. There is nothing further to do.</div></div>';
+    }
+    if(state==='cash'){
+      return '<div class="pay-panel pp-done"><div class="pp-title">You’re paying your driver</div>'
+        +'<div class="pp-sub">Settle the fare with your driver on the day, by cash or card. Call us on 07930 342593 if you’d rather pay online after all.</div></div>';
+    }
+    var fare=parseFloat(b.fare);
+    var head=b.reEstimatedAt?'Change accepted — choose how you’d like to pay'
+                            :'Your estimate is ready — choose how you’d like to pay';
+    return '<div class="pay-panel">'
+      +'<div class="pp-title">'+esc(head)+'</div>'
+      +'<div class="pp-fare">£'+esc(fare%1?fare.toFixed(2):fare.toFixed(0))+'</div>'
+      +'<div class="pp-btns">'
+        +'<button class="pp-card" onclick="payTripByCard('+id+')">Pay by card</button>'
+        +'<button class="pp-cash" onclick="payTripCash('+id+',\''+esc(b.ref)+'\')">Pay my driver on the day</button>'
+      +'</div>'
+      +'<div class="pp-note">Whichever you choose applies to this one trip — you cannot be charged twice.</div>'
+    +'</div>';
+  }catch(e){
+    try{console.error('[account] pay panel failed',(b&&b.ref)||'',e);}catch(_){ }
+    return '';
+  }
+}
+
+/* Card: hand off to the ORDINARY pay page with the ordinary token. The server
+   re-checks the live booking first, so a trip settled in the email channel a
+   moment ago is refused here with the reason — rather than opening a card form
+   that would only fail at the end. */
+async function payTripByCard(id){
+  if(!id){showToast('Please call us on 07930 342593 to pay for this trip.','error');return;}
+  try{
+    var r=await fetch('/api/customer/bookings/'+encodeURIComponent(id)+'/pay-options',{credentials:'include'});
+    var d={};try{d=await r.json();}catch(e){}
+    if(!r.ok){showToast(d.error||'We could not open payment. Please call us.','error');return;}
+    if(!d.payable||!d.pay_url){
+      showToast(d.message||'This trip cannot be paid online.','error');
+      loadServerTrips();
+      return;
+    }
+    window.location.href=d.pay_url;
+  }catch(e){
+    showToast('No connection — please try again, or call 07930 342593.','error');
+  }
+}
+
+/* Cash: the SAME write as the email link's "pay your driver" button. Choosing
+   it here locks card payment there, and vice versa. */
+async function payTripCash(id,ref){
+  if(!id){showToast('Please call us on 07930 342593.','error');return;}
+  if(!confirm('Pay your driver on the day?\n\nYou will settle the fare directly with your driver, by cash or card.'))return;
+  try{
+    var r=await fetch('/api/customer/bookings/'+encodeURIComponent(id)+'/choose-cash',{
+      method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}
+    });
+    var d={};try{d=await r.json();}catch(e){}
+    if(!r.ok){
+      showToast(d.error||'We could not record that. Please call us.','error');
+      loadServerTrips();
+      return;
+    }
+    showToast('Thank you — pay your driver on the day.','success');
+    loadServerTrips();
+  }catch(e){
+    showToast('No connection — please try again, or call 07930 342593.','error');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   REQUEST A CHANGE — the office is asked; the booking is NOT amended
+   ═══════════════════════════════════════════════════════════════════════════
+   A customer who needs a later pickup used to have one option: telephone.
+   This form lets them say it in the app — but it is deliberately NOT an edit
+   form. Submitting records the request and emails the owner; the trip stays
+   exactly as it is until a human applies the change. The customer is told so
+   in the form, on the button, and again in the confirmation, because a
+   pre-filled form that looks like an edit will be read as one, and a customer
+   who believes their pickup has moved when it has not is worse off than one
+   who was never offered the form.
+
+   Everything here is wrapped: this is reached from a trip card, and no button
+   on a trip card may be able to take My Account down.
+   GUARDRAIL: server/tests/change-request.test.js. */
+
+var _crBookingId=null;
+var _crPickersBuilt=false;
+
+/* The change form's pickers are built ON FIRST OPEN, not at boot: they are
+   worth nothing until the modal is on screen, and building them at boot would
+   add four more ways for start-up to fail. Each one is still isolated — a
+   picker that will not build costs the customer that picker, not the form. */
+function _crInitPickers(){
+  if(_crPickersBuilt)return;
+  _safe('initCalendar:cr',function(){initCalendar('cr');});
+  _safe('initTimePicker:cr',function(){initTimePicker('cr');});
+  _safe('initPaxPicker:cr',function(){initPaxPicker('cr');});
+  _safe('initBagsPicker:cr',function(){initBagsPicker('cr');});
+  _crPickersBuilt=true;
+}
+
+/* Flight number is an AIRPORT-RUN field (address-normalize.js) — but if the
+   booking already carries one, keep the field visible whatever the addresses
+   now say, or editing the pickup would silently drop the flight number out of
+   the request. */
+function crCheckFlightField(){
+  var from=(document.getElementById('cr-from')||{}).value||'';
+  var to=(document.getElementById('cr-dest')||{}).value||'';
+  var has=((document.getElementById('cr-flight')||{}).value||'').trim();
+  var isAP=false;
+  try{ isAP=(window.WMAddr&&typeof WMAddr.isAirportRun==='function'&&WMAddr.isAirportRun(from,to))||!!nAP(from)||!!nAP(to); }catch(e){ isAP=false; }
+  var wrap=document.getElementById('cr-flight-wrap');
+  if(wrap)wrap.style.display=(isAP||has)?'block':'none';
+}
+
+function openChangeRequest(id){
+  try{
+    id=parseInt(id,10);
+    var b=null;
+    getBookings().forEach(function(x){ if(x&&parseInt(x.id,10)===id)b=x; });
+    if(!b){showToast('We could not find that journey. Please call us on 07930 342593.','error');return;}
+    _crBookingId=id;
+    _crInitPickers();
+    var set=function(elid,v){var el=document.getElementById(elid);if(el)el.value=(v==null?'':String(v));};
+    var refLine=document.getElementById('cr-ref-line');
+    if(refLine)refLine.textContent='Booking '+(b.ref||'')+(b.date?' · currently '+b.date+(b.time?' at '+b.time:''):'');
+    // PRE-FILL WITH THE TRIP AS IT STANDS. Every field matters — a field left
+    // blank here is reported to the owner as a requested DELETION. The stop is
+    // the one that bites: it is not shown on the trip card, so if it were not
+    // carried into the form, every change request on a booking with a stop
+    // would read "Stop: Brighton → —".
+    set('cr-from',b.from);
+    set('cr-stop',b.stop||b.stop_address||'');
+    set('cr-dest',b.dest);
+    set('cr-flight',b.flight||'');
+    set('cr-note','');
+    _safe('cr:date',function(){ if(window._rCalSet_cr)_rCalSet_cr(b.date); });
+    _safe('cr:time',function(){ if(window._rTSet_cr)_rTSet_cr(b.time); });
+    _safe('cr:pax',function(){ _rPaxSelect('cr',b.pax||1); });
+    _safe('cr:bags',function(){ _rBagsSet('cr',b.bags||''); });
+    _safe('cr:flightField',function(){ crCheckFlightField(); });
+    var btn=document.getElementById('cr-send-btn');
+    if(btn){btn.disabled=false;btn.textContent='Send Change Request';}
+    var ov=document.getElementById('change-modal');
+    if(ov)ov.classList.add('on');
+  }catch(e){
+    try{console.error('[account] could not open the change-request form',e);}catch(_){}
+    showToast('We could not open that form. Please call us on 07930 342593.','error');
+  }
+}
+
+function closeChangeModal(){
+  var ov=document.getElementById('change-modal');
+  if(ov)ov.classList.remove('on');
+  // Leave any open picker dropdown behind with the modal.
+  try{document.querySelectorAll('#change-modal .pick-drop.open,#change-modal .cal-drop.open,#change-modal .time-drop.open,#change-modal .sug-drop.open')
+    .forEach(function(d){d.classList.remove('open');});}catch(e){}
+  _crBookingId=null;
+}
+
+async function submitChangeRequest(){
+  var btn=document.getElementById('cr-send-btn');
+  var reset=function(){ if(btn){btn.disabled=false;btn.textContent='Send Change Request';} };
+  var g=function(elid){var el=document.getElementById(elid);return el?String(el.value||'').trim():'';};
+  if(!_crBookingId){showToast('Please reopen the form and try again.','error');return;}
+  var payload={
+    pickup:g('cr-from'),
+    stop_address:g('cr-stop'),
+    destination:g('cr-dest'),
+    date:g('cr-date'),
+    time:g('cr-time'),
+    passengers:parseInt(g('cr-pax'),10)||1,
+    bags:g('cr-bags'),
+    flight:g('cr-flight'),
+    note:g('cr-note')
+  };
+  if(!payload.pickup||!payload.destination){
+    showToast('Please give us a pickup and a destination.','error');return;
+  }
+  if(btn){btn.disabled=true;btn.textContent='Sending…';}
+  try{
+    var r=await fetch('/api/customer/bookings/'+encodeURIComponent(_crBookingId)+'/change-request',{
+      method:'POST',credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    var data={};try{data=await r.json();}catch(e){}
+    if(!r.ok){
+      reset();
+      showToast(data.error||'We could not send that request. Please call us on 07930 342593.','error');
+      return;
+    }
+    closeChangeModal();
+    showToast('Your change request has been sent — we’ll confirm the update shortly.','success');
+    // The booking is deliberately UNCHANGED. Refresh from the server anyway so
+    // what the customer sees is the trip as it genuinely still stands — never a
+    // half-applied version of what they just asked for.
+    loadServerTrips();
+  }catch(e){
+    reset();
+    showToast('No connection — please try again, or call 07930 342593.','error');
+  }
+}
+
+// Escape closes the change form, like every other dismissable layer.
+document.addEventListener('keydown',function(e){
+  if(e.key!=='Escape')return;
+  var ov=document.getElementById('change-modal');
+  if(ov&&ov.classList.contains('on'))closeChangeModal();
+});
 
 /* ── BOOK AGAIN — one tap from a past trip into a prefilled booking form ── */
 function rebookTrip(ref){
@@ -2694,7 +3262,7 @@ function renderActiveTrip(){
   h+='<div class="aj-step"><div class="aj-step-dot"></div><span>Arrived</span></div>';
   h+='</div>';
   h+='<div class="aj-route">';
-  h+='<div class="aj-from"><div class="aj-dot-sm" style="background:var(--gold)"></div><span>'+esc(_shortAddr(active.from))+'</span></div>';
+  h+='<div class="aj-from"><div class="aj-dot-sm" style="background:var(--navy)"></div><span>'+esc(_shortAddr(active.from))+'</span></div>';
   h+='<div class="aj-line"></div>';
   h+='<div class="aj-to"><div class="aj-dot-sm" style="background:var(--green)"></div><span>'+esc(_shortAddr(active.dest))+'</span></div>';
   h+='</div>';
@@ -2799,13 +3367,36 @@ function updateProfile(){
   }
   loadServerTrips();
 }
+/* ── FRESHNESS ──
+   `_tripsLive` is false until the server has answered at least once in this
+   session. While it is false the list is being drawn from the localStorage
+   cache, which may be minutes or days old — the customer might have paid via
+   the link in their email since. Rather than pass that off as current, the
+   panel says it is refreshing, and the moment the server answers the cache is
+   replaced and the notice goes.
+   GUARDRAIL: server/tests/live-status.test.js */
+var _tripsLive=false;
+var _tripsSyncing=false;
+
+function _paintFreshness(){
+  var el=document.getElementById('trips-summary');
+  if(!el)return;
+  if(_tripsSyncing&&!_tripsLive){ el.textContent='Checking for updates…'; return; }
+  if(!_tripsLive){ el.textContent='Showing your last known details'; return; }
+  el.textContent='Up to date';
+}
+
 async function loadServerTrips(){
   if(!_currentUser.loggedIn)return;
+  _tripsSyncing=true;
+  _safe('freshness',function(){_paintFreshness();});
   try{
-    var r=await fetch('/api/bookings',{credentials:'include'});
-    if(!r.ok)return;
+    // cache:'no-store' so a returning tab cannot be handed a stale 200 by the
+    // browser's HTTP cache — the whole point of this fetch is to be current.
+    var r=await fetch('/api/bookings',{credentials:'include',cache:'no-store'});
+    if(!r.ok){_tripsSyncing=false;_safe('freshness',function(){_paintFreshness();});return;}
     var data=await r.json();
-    if(!data||!Array.isArray(data.bookings))return;
+    if(!data||!Array.isArray(data.bookings)){_tripsSyncing=false;_safe('freshness',function(){_paintFreshness();});return;}
     var mapped=data.bookings.map(function(b){
       // payment + paidAt carry the Payment History tab. They are part of the
       // booking row (there is no separate payments table), so they must survive
@@ -2813,7 +3404,18 @@ async function loadServerTrips(){
       // id is what POST /api/customer/bookings/:id/cancel needs — without it the
       // Cancel button can only edit this device's copy, which is how a customer
       // ends up believing a trip is cancelled while the office still has it.
-      return{id:b.id,ref:b.ref,from:b.pickup,dest:b.destination,date:b.date,time:b.time,flight:b.flight||'',pax:b.passengers||1,bags:b.bags||'',vehicle:b.driver_vehicle||'',fare:b.fare||0,status:b.status,created:b.created_at,driverName:b.driver_name||'',driverReg:b.driver_reg||'',payment:b.payment||'pending',paidAt:b.paid_at||''};
+      // stop is not shown on the trip card, but the "Request a change" form has
+      // to pre-fill it: a stop that never reaches the client comes back to the
+      // owner as a requested DELETION of the stop. See openChangeRequest().
+      // reEstimatedAt lets the pay panel say "Change accepted" rather than the
+      // generic "estimate ready", so the quote reads as the answer to the
+      // change THIS customer asked for.
+      // EVERY field the status chip and the action list are derived from has to
+      // survive this mapping, or My Account will draw a state the server does
+      // not agree with: status/payment/paidAt decide paid-vs-unpaid,
+      // changeRequestedAt shows an outstanding ask, reEstimatedAt names an
+      // accepted change. See _tripStatus / _tripActions.
+      return{id:b.id,ref:b.ref,from:b.pickup,dest:b.destination,stop:b.stop_address||'',date:b.date,time:b.time,flight:b.flight||'',pax:b.passengers||1,bags:b.bags||'',vehicle:b.driver_vehicle||'',fare:b.fare||0,status:b.status,created:b.created_at,driverName:b.driver_name||'',driverReg:b.driver_reg||'',payment:b.payment||'pending',paidAt:b.paid_at||'',reEstimatedAt:b.re_estimated_at||'',changeRequestedAt:b.change_requested_at||''};
     });
     // The server is the source of truth, but never DROP a trip the customer can
     // already see: keep any local-only row (one just booked in this tab, before
@@ -2822,11 +3424,43 @@ async function loadServerTrips(){
     mapped.forEach(function(b){if(b.ref)serverRefs[b.ref]=1;});
     var localOnly=getBookings().filter(function(b){return b&&b.ref&&!serverRefs[b.ref];});
     try{localStorage.setItem('wph_rider_bookings',JSON.stringify(mapped.concat(localOnly)));}catch(e){}
+    // The server has spoken: what is on screen from here on is live, including
+    // any payment made through the email link since this page was opened.
+    _tripsLive=true;
+    _tripsSyncing=false;
     renderTrips(_tripFilter);
+    _safe('freshness',function(){_paintFreshness();});
+    // The other tabs read the same cache, so refresh them too rather than
+    // leaving Payment History showing a fare that has since been settled.
+    _safe('renderPayments',function(){renderPayments();});
   }catch(e){
+    _tripsSyncing=false;
+    _safe('freshness',function(){_paintFreshness();});
     console.error('[trips] could not refresh from the server',e);
   }
 }
+
+/* Re-sync whenever the customer could plausibly have changed something
+   ELSEWHERE — most obviously by paying through the link in their email in
+   another tab, then coming back to this one. Without this, My Account would
+   sit there offering "Pay by card" on a trip that is already paid until the
+   page happened to be reloaded.
+   Guarded: a failed re-sync must cost the refresh, never the page. */
+function refreshTripsFromServer(){
+  _safe('loadServerTrips',function(){
+    if(_currentUser&&_currentUser.loggedIn)loadServerTrips();
+  });
+}
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='visible')refreshTripsFromServer();
+});
+window.addEventListener('focus',function(){refreshTripsFromServer();});
+window.addEventListener('pageshow',function(e){
+  // bfcache restore (the customer pressed Back from the pay page) hands back a
+  // fully rendered DOM with none of its data re-fetched — exactly the stale
+  // screen this feature exists to prevent.
+  if(e&&e.persisted)refreshTripsFromServer();
+});
 /* ═══════════════════════════════════════════════════════════════════════════
    DASHBOARD TABS — Payment History · Invoices · My Details
    ═══════════════════════════════════════════════════════════════════════════ */

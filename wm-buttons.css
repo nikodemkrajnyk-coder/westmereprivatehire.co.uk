@@ -1,0 +1,301 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   WESTMERE BUTTONS — the single source of truth for every button, everywhere
+   ═══════════════════════════════════════════════════════════════════════════
+   Loaded by My Account, the booking page, the owner app, the admin app and the
+   pay page, LAST in <head> so it wins without a specificity fight.
+
+   THE PALETTE comes from the owner's finished theme (/westmere-theme.css):
+   deep navy #102a43 on white, Italiana/Jost, no gold and no cream. There is no
+   solid fill at rest either — a page of filled slabs is exactly the heaviness
+   the owner objected to.
+
+   At rest a button is an outline: a thin navy border on white, navy text,
+   softly rounded. It earns fill only when you touch it —
+     hover  → the faintest navy wash
+     press  → fills solid navy with white text
+   so a tap is unmistakable on a phone, where there is no hover at all.
+
+   THERE ARE EXACTLY TWO STYLES:
+     .wm-btn.wm-btn-primary   the main action — full navy border, navy text
+     .wm-btn.wm-btn-ghost     everything quieter — hairline border, softer navy
+   The difference is weight, not colour. Destructive actions use the ghost
+   style; their confirm dialog carries the warning, not a red button.
+
+   CHANGING THE LOOK IS ONE EDIT: every colour, the radius and the press feel
+   come from the tokens directly below. Nothing further down hard-codes one.
+
+   GUARDRAIL: server/tests/button-style.test.js
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── RECONCILED WITH /westmere-theme.css ──────────────────────────────────
+   The owner's global theme is loaded AFTER this file and is the source of
+   truth for the palette: navy #102a43 on white, 12px radius, outline at rest,
+   navy fill on press.
+
+   These tokens are therefore set to the THEME'S values, not to a second
+   opinion. That matters because of specificity: several selectors here carry
+   `:hover:not(:disabled)` (0,3,0), which outranks the theme's `:hover`
+   (0,2,0) even though the theme loads later — so where the two overlap, THIS
+   file's values are what render. Matching them means whichever rule wins, the
+   result is identical navy, with no doubled or half-applied styling.
+
+   If the theme's palette changes, change these five values with it.
+   ──────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Navy — the theme's --westmere-navy / --westmere-navy-deep */
+  --wmb-ink:          #102a43;
+  --wmb-ink-soft:     rgba(16, 42, 67, 0.72);
+
+  /* Surface — white, never cream */
+  --wmb-surface:      #ffffff;
+
+  /* Borders: primary is full navy, ghost is the theme's hairline */
+  --wmb-line-strong:  #102a43;
+  --wmb-line:         #c8d1d9;
+
+  /* Feedback — the theme's whisper on hover, solid navy on press */
+  --wmb-hover:        rgba(16, 42, 67, 0.025);
+  --wmb-press:        #102a43;
+  --wmb-on-press:     #ffffff;
+
+  /* Shape + feel — 12px to match the theme's buttons exactly */
+  --wmb-radius:       12px;
+  --wmb-border:       1px;
+  --wmb-ease:         .18s cubic-bezier(.4, 0, .2, 1);
+}
+
+/* ── Base ──────────────────────────────────────────────────────────────── */
+.wm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5em;
+  box-sizing: border-box;
+  margin: 0;
+  padding: .8em 1.5em;
+  min-height: 44px;                             /* comfortable tap target */
+  font-family: inherit;
+  font-size: .7rem;
+  font-weight: 500;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  color: var(--wmb-ink);
+  background-color: var(--wmb-surface);
+  border: var(--wmb-border) solid var(--wmb-line);
+  border-radius: var(--wmb-radius);
+  transition: background-color var(--wmb-ease),
+              border-color var(--wmb-ease),
+              color var(--wmb-ease),
+              transform .08s ease;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* A small physical dip under whichever fill the variant supplies. */
+.wm-btn:active { transform: translateY(1px); }
+
+.wm-btn:focus-visible {
+  outline: 2px solid var(--wmb-ink);
+  outline-offset: 2px;
+}
+
+.wm-btn:disabled,
+.wm-btn[disabled] {
+  opacity: .4;
+  cursor: default;
+  transform: none;
+}
+
+/* ── Primary — the main action. Firmer border, full-strength ink. ──────── */
+.wm-btn-primary {
+  color: var(--wmb-ink);
+  border-color: var(--wmb-line-strong);
+  background-color: var(--wmb-surface);
+  font-weight: 600;
+}
+.wm-btn-primary:hover:not(:disabled) {
+  background-color: var(--wmb-hover);
+  border-color: var(--wmb-ink);
+}
+/* PRESSED: inverts. Unmissable on touch, and gone the moment you let go. */
+.wm-btn-primary:active:not(:disabled),
+.wm-btn-primary.is-pressed {
+  background-color: var(--wmb-press);
+  border-color: var(--wmb-press);
+  color: var(--wmb-on-press);
+}
+
+/* ── Ghost — quieter. Hairline border, softened ink. ───────────────────── */
+.wm-btn-ghost {
+  color: var(--wmb-ink-soft);
+  border-color: var(--wmb-line);
+  background-color: var(--wmb-surface);
+}
+.wm-btn-ghost:hover:not(:disabled) {
+  background-color: var(--wmb-hover);
+  border-color: var(--wmb-line-strong);
+  color: var(--wmb-ink);
+}
+.wm-btn-ghost:active:not(:disabled),
+.wm-btn-ghost.is-pressed {
+  background-color: var(--wmb-press);
+  border-color: var(--wmb-press);
+  color: var(--wmb-on-press);
+}
+
+/* ── Size / layout modifiers ───────────────────────────────────────────── */
+.wm-btn-sm    { padding: .5em 1.1em; min-height: 36px; font-size: .62rem; letter-spacing: .1em; }
+.wm-btn-lg    { padding: 1em 1.8em;  min-height: 52px; font-size: .78rem; }
+.wm-btn-block { display: flex; width: 100%; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LEGACY CLASS MAP
+   ═══════════════════════════════════════════════════════════════════════════
+   The apps carry years of button class names, many written straight into
+   generated HTML strings. Rather than rewrite every call site (and risk
+   breaking what the buttons DO), each existing name is mapped onto one of the
+   two styles above — so the look still comes from ONE place.
+
+   Only colour, border and shape are overridden; width, padding and typography
+   stay with the original rules, so no layout moves. !important is required
+   because several of these pages set button colours with !important themselves,
+   and a few are inline styles.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* — PRIMARY: the main action on each surface — */
+.btn-main,
+.ls-btn,
+.aj-send-btn,
+.modal-btn-primary,
+.pp-card,
+.btn-navy,
+.btn-green,
+.btn-gold,
+.email-btn-gold,
+.ibtn-primary,
+.btn-new,
+.wm-pay-page .btn {
+  background-color: var(--wmb-surface) !important;
+  background-image: none !important;
+  color: var(--wmb-ink) !important;
+  border: var(--wmb-border) solid var(--wmb-line-strong) !important;
+  border-radius: var(--wmb-radius) !important;
+  transition: background-color var(--wmb-ease), border-color var(--wmb-ease), color var(--wmb-ease) !important;
+}
+.btn-main:hover:not(:disabled),
+.ls-btn:hover:not(:disabled),
+.aj-send-btn:hover:not(:disabled),
+.modal-btn-primary:hover:not(:disabled),
+.pp-card:hover:not(:disabled),
+.btn-navy:hover:not(:disabled),
+.btn-green:hover:not(:disabled),
+.btn-gold:hover:not(:disabled),
+.email-btn-gold:hover:not(:disabled),
+.ibtn-primary:hover:not(:disabled),
+.btn-new:hover:not(:disabled),
+.wm-pay-page .btn:hover:not(:disabled) {
+  background-color: var(--wmb-hover) !important;
+  border-color: var(--wmb-ink) !important;
+}
+.btn-main.is-pressed,
+.ls-btn.is-pressed,
+.aj-send-btn.is-pressed,
+.pp-card.is-pressed,
+.btn-navy.is-pressed,
+.btn-main:active:not(:disabled),
+.ls-btn:active:not(:disabled),
+.aj-send-btn:active:not(:disabled),
+.modal-btn-primary:active:not(:disabled),
+.pp-card:active:not(:disabled),
+.btn-navy:active:not(:disabled),
+.btn-green:active:not(:disabled),
+.btn-gold:active:not(:disabled),
+.email-btn-gold:active:not(:disabled),
+.ibtn-primary:active:not(:disabled),
+.btn-new:active:not(:disabled),
+.wm-pay-page .btn:active:not(:disabled) {
+  background-color: var(--wmb-press) !important;
+  border-color: var(--wmb-press) !important;
+  color: var(--wmb-on-press) !important;
+}
+
+/* — GHOST: quieter actions, and every destructive one — */
+.btn-ghost,
+.btn-alt,
+.pp-cash,
+.loc-btn,
+.pick-btn,
+.ibtn-sm,
+.btn-red,
+.btn-cancel-trip,
+.btn-refund,
+.wm-pay-page .btn-alt {
+  background-color: var(--wmb-surface) !important;
+  background-image: none !important;
+  color: var(--wmb-ink-soft) !important;
+  -webkit-text-fill-color: currentColor !important;
+  border: var(--wmb-border) solid var(--wmb-line) !important;
+  border-radius: var(--wmb-radius) !important;
+  transition: background-color var(--wmb-ease), border-color var(--wmb-ease), color var(--wmb-ease) !important;
+}
+.btn-ghost:hover:not(:disabled),
+.btn-alt:hover:not(:disabled),
+.pp-cash:hover:not(:disabled),
+.loc-btn:hover:not(:disabled),
+.pick-btn:hover:not(:disabled),
+.ibtn-sm:hover:not(:disabled),
+.btn-red:hover:not(:disabled),
+.btn-cancel-trip:hover:not(:disabled),
+.btn-refund:hover:not(:disabled),
+.wm-pay-page .btn-alt:hover:not(:disabled) {
+  background-color: var(--wmb-hover) !important;
+  border-color: var(--wmb-line-strong) !important;
+  color: var(--wmb-ink) !important;
+}
+.btn-ghost.is-pressed,
+.btn-alt.is-pressed,
+.pp-cash.is-pressed,
+.btn-red.is-pressed,
+.btn-cancel-trip.is-pressed,
+.btn-ghost:active:not(:disabled),
+.btn-alt:active:not(:disabled),
+.pp-cash:active:not(:disabled),
+.loc-btn:active:not(:disabled),
+.pick-btn:active:not(:disabled),
+.ibtn-sm:active:not(:disabled),
+.btn-red:active:not(:disabled),
+.btn-cancel-trip:active:not(:disabled),
+.btn-refund:active:not(:disabled),
+.wm-pay-page .btn-alt:active:not(:disabled) {
+  background-color: var(--wmb-press) !important;
+  border-color: var(--wmb-press) !important;
+  color: var(--wmb-on-press) !important;
+}
+
+/* — Tab filters: pills too; the selected one is the inverted state — */
+.filter-btn {
+  border-radius: var(--wmb-radius) !important;
+  transition: background-color var(--wmb-ease), border-color var(--wmb-ease), color var(--wmb-ease) !important;
+}
+.filter-btn.on {
+  background-color: var(--wmb-press) !important;
+  color: var(--wmb-on-press) !important;
+  border-color: var(--wmb-press) !important;
+}
+.filter-btn:active:not(.on) { background-color: var(--wmb-hover) !important; }
+
+/* The staff apps' shared `.btn` shell keeps its sizing, takes our shape. */
+.btn { border-radius: var(--wmb-radius) !important; }
+
+/* Quiet text-link actions (Request a change / Cancel / Book again) are not
+   boxed buttons and never were part of the complaint — navy, and they
+   acknowledge a tap by fading. */
+.tc-change, .tc-cancel, .tc-again { color: var(--wmb-ink-soft) !important; }
+.tc-change:hover, .tc-cancel:hover, .tc-again:hover { color: var(--wmb-ink) !important; }
+.tc-change:active, .tc-cancel:active, .tc-again:active, .side-out:active { opacity: .55; }

@@ -787,6 +787,92 @@ function migrate() {
       )
     `);
   } catch (e) { console.error('[DB] review_emails_sent table failed:', e.message); }
+
+  // ── Customer CHANGE REQUESTS ───────────────────────────────────────────
+  // A customer asking for an amendment to an already-booked trip does NOT
+  // amend it. The booking is untouched — fields, fare and status all stay
+  // exactly as they were — and the ask is recorded here for the owner to
+  // apply by hand with the existing edit tools.
+  //
+  // WHY ITS OWN TABLE: the email can be missed, filtered or deleted. If the
+  // only record of "please move me to the 18th" is an inbox, the request is
+  // one bad spam rule away from being lost. Every request is kept here in
+  // full — the snapshot of the booking AS IT WAS, what was asked for, and
+  // the customer's own words — so the owner can always see exactly what was
+  // requested, and a second request never overwrites the first.
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS change_requests (
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        booking_id    INTEGER NOT NULL REFERENCES bookings(id),
+        booking_ref   TEXT    NOT NULL,
+        customer_id   INTEGER REFERENCES customers(id),
+        contact_name  TEXT,
+        contact_email TEXT,
+        contact_phone TEXT,
+        current_json  TEXT    NOT NULL,
+        requested_json TEXT   NOT NULL,
+        changed_json  TEXT    NOT NULL DEFAULT '{}',
+        summary       TEXT,
+        note          TEXT,
+        -- open      → waiting on the owner
+        -- reviewed  → EARLY-stage note dismissed (nothing to accept: the owner
+        --             simply prices the new details and sends the estimate)
+        -- accepted  → the owner APPLIED the requested values to the booking
+        -- declined  → the owner kept the booking exactly as originally booked
+        status        TEXT    NOT NULL DEFAULT 'open' CHECK(status IN ('open','reviewed','accepted','declined')),
+        created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+        actioned_at   TEXT,
+        actioned_by   INTEGER REFERENCES users(id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_change_requests_booking ON change_requests(booking_id);
+      CREATE INDEX IF NOT EXISTS idx_change_requests_status  ON change_requests(status);
+    `);
+  } catch (e) { console.error('[DB] change_requests table failed:', e.message); }
+
+  // Denormalised flag + human-readable summary of the LATEST open change
+  // request, carried on the booking row itself. Deliberate duplication: the
+  // owner and admin lists both read `SELECT b.*`, so the "Change requested"
+  // badge costs no join and no second fetch, and cannot be dropped by a query
+  // that forgets about it. Neither column is a core booking field — writing
+  // them never alters the journey, the fare or the status.
+  try { db.exec(`ALTER TABLE bookings ADD COLUMN change_requested_at TEXT`); } catch(_){}
+  try { db.exec(`ALTER TABLE bookings ADD COLUMN change_request_summary TEXT`); } catch(_){}
+  // The same request in the shape the staff apps RENDER: a compact
+  // {changed:[{key,label,current,requested}], note, price} blob. The owner and
+  // admin apps draw the Current → Requested comparison straight from this, so
+  // neither has to parse the human-readable summary above nor make a second
+  // fetch per row. Parsed through WMLifecycle.changeRequestDetail(), which can
+  // never throw on a bad value.
+  try { db.exec(`ALTER TABLE bookings ADD COLUMN change_request_detail TEXT`); } catch(_){}
+
+  // Set when an ACCEPTED change altered something that can move the price
+  // (anything but the flight number). We deliberately do NOT re-price, charge
+  // or refund automatically — the owner settles the money by hand. This is the
+  // flag that keeps "Fare may change — confirm with the customer" on the job
+  // until they have done so.
+  try { db.exec(`ALTER TABLE bookings ADD COLUMN fare_review_at TEXT`); } catch(_){}
+
+  // MONEY ALREADY COLLECTED, before a re-estimate cleared the payment state.
+  //
+  // When the owner accepts a journey change and re-prices it, the booking goes
+  // back to pending for the NEW fare — which means paid_at/payment have to be
+  // cleared so the customer can pay the new amount the normal way. If that were
+  // all we did, the £96 already taken for the old journey would vanish from the
+  // record and the owner could innocently charge the full new fare on top.
+  //
+  // So every settled payment cleared by a re-estimate is appended here as
+  // [{amount, method, at, fare, ref_of_change}], and the owner sees
+  // "Already collected £96 (card)" next to the fare box when they set the new
+  // price. We do not auto-refund or auto-deduct (owner's decision) — but the
+  // figure can never be lost.
+  try { db.exec(`ALTER TABLE bookings ADD COLUMN prior_payments_json TEXT`); } catch(_){}
+
+  // When the owner last re-priced this booking after accepting a journey
+  // change. Lets My Account say "Change accepted — choose how you'd like to
+  // pay" rather than the generic "your estimate is ready", so the customer
+  // recognises the quote as the answer to the change THEY asked for.
+  try { db.exec(`ALTER TABLE bookings ADD COLUMN re_estimated_at TEXT`); } catch(_){}
 }
 
 function seedDefaults() {
