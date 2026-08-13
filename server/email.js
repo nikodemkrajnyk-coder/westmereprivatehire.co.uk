@@ -350,17 +350,17 @@ function heroShell(innerHtml, opts) {
 
 ${innerHtml}
 
-<tr><td style="padding:22px 40px;background:#F7F9FA;border-top:1px solid #dfe5ea">
+<tr><td style="padding:22px 40px;background:#FFFFFF;border-top:1px solid #dfe5ea">
   <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
     <td width="60" valign="middle"><img src="${HOST}/assets/westmere-email-thumb.jpg" width="60" height="60" alt="Westmere Private Hire" style="display:block;width:60px;height:60px;border-radius:50%;border:1px solid #c8d1d9"></td>
     <td valign="middle" style="padding-left:16px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:16px;line-height:1.55;color:#102a43">With kind regards,<br><strong style="font-size:18px;color:#102a43">Westmere Private Hire</strong></td>
   </tr></table>
 </td></tr>
 
-<tr><td style="padding:24px 30px;background:#102a43;text-align:center">
-  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:12px;line-height:1.7;color:#dfe5ea"><a href="tel:+447930342593" style="color:#ffffff;text-decoration:none">07930 342593</a> &middot; <a href="mailto:bookings@westmereprivatehire.co.uk" style="color:#ffffff;text-decoration:none">bookings@westmereprivatehire.co.uk</a> &middot; <a href="${HOST}" style="color:#ffffff;text-decoration:none">westmereprivatehire.co.uk</a></p>
-  <p style="margin:0 0 4px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:12px;line-height:1.7;color:#c8d1d9">Reply to this email or call us if anything needs adjusting.</p>
-  <p style="margin:0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:12px;line-height:1.7;color:#c8d1d9">Westmere Private Hire &middot; Licensed Private Hire Operator</p>
+<tr><td style="padding:24px 30px;background:#FFFFFF;border-top:1px solid #dfe5ea;text-align:center">
+  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:12px;line-height:1.7;color:#657485"><a href="tel:+447930342593" style="color:#102a43;text-decoration:none">07930 342593</a> &middot; <a href="mailto:bookings@westmereprivatehire.co.uk" style="color:#102a43;text-decoration:none">bookings@westmereprivatehire.co.uk</a> &middot; <a href="${HOST}" style="color:#102a43;text-decoration:none">westmereprivatehire.co.uk</a></p>
+  <p style="margin:0 0 4px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:12px;line-height:1.7;color:#657485">Reply to this email or call us if anything needs adjusting.</p>
+  <p style="margin:0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:12px;line-height:1.7;color:#657485">Westmere Private Hire &middot; Licensed Private Hire Operator</p>
 </td></tr>
 
 </table>

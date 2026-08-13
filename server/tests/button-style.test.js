@@ -432,6 +432,103 @@ test('no email button prints its label in its own background colour', () => {
     'an email button is unreadable against its own background:\n      ' + [...new Set(bad)].join('\n      '));
 });
 
+// ── NO FILLED HEADERS OR FOOTERS ─────────────────────────────────────────
+// The owner's rule: "no more filled footers or headers anywhere." A header or
+// footer separates itself with a hairline, never with a block of colour. The
+// check is on LUMINANCE, not on a list of hexes, so a charcoal or a navy
+// nobody has written yet fails too. Near-white fills pass — that is the point.
+function isFilled(colour) {
+  const c = colour.trim().toLowerCase();
+  if (/^(transparent|none|inherit|unset|#fff|#ffffff|white)$/.test(c)) return false;
+  let rgb = null, alpha = 1;
+  if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/.test(c)) rgb = hex2rgb(c);
+  const m = c.match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*(?:,\s*([\d.]+))?/);
+  if (m) { rgb = [+m[1], +m[2], +m[3]]; if (m[4] !== undefined) alpha = parseFloat(m[4]); }
+  if (!rgb) return false;                      // a var() or a gradient — handled by the caller
+  // Composite over the white page. A 3% wash is not a filled bar; a 55% navy is.
+  const over = rgb.map(v => Math.round(v * alpha + 255 * (1 - alpha)));
+  return luminance(over) < 0.80;
+}
+
+test('no header or footer anywhere carries a solid fill', () => {
+  const offenders = [];
+  const files = PAGES_AND_CSS.concat(['server/email.js', 'server/public-api.js']);
+  const NAMES = /(^|[.#\s>,])(footer|header|head|topbar|top-bar|appbar|navbar|bottom-nav|tabbar|mini-foot)([.\s:,]|$)/i;
+  // One pass per file. Selector and body are both length-capped: these files
+  // include 380kB minified apps, and an unbounded rule pattern backtracks for
+  // minutes on a single long line.
+  const RULE = /([^{}();]{1,120})\{([^{}]{0,600})\}/g;
+  for (const f of files) {
+    const src = read(f);
+    const lineAt = (idx) => src.slice(0, idx).split('\n').length;
+    for (const m of src.matchAll(RULE)) {
+      const sel = m[1].trim();
+      if (!NAMES.test(sel)) continue;
+      const bg = m[2].match(/background(?:-color)?:\s*([^;!}]{1,60})/i);
+      if (!bg) continue;
+      const val = bg[1].trim();
+      const dark = /^var\(--(navy|dark|ink|westmere-navy[a-z-]*|westmere-text)\)$/i.test(val);
+      if (dark || isFilled(val)) {
+        offenders.push(f + ':' + lineAt(m.index) + '  ' + sel.slice(0, 44) + ' → ' + val);
+      }
+    }
+    // Inline styles on an element whose class names it a header or footer.
+    for (const m of src.matchAll(/class="([^"]{0,120})"[^>]{0,200}?style="([^"]{0,400})"/g)) {
+      if (!NAMES.test(m[1])) continue;
+      const bg = m[2].match(/background(?:-color)?:\s*([^;!}]{1,60})/i);
+      if (bg && isFilled(bg[1])) offenders.push(f + ':' + lineAt(m.index) + '  .' + m[1].trim().slice(0, 30) + ' → ' + bg[1].trim());
+    }
+  }
+  assert.deepStrictEqual(offenders, [],
+    'a header or footer is still a filled block — use a hairline instead:\n      ' + offenders.join('\n      '));
+});
+
+test('the email footer band is white, and its text is legible on white', () => {
+  // Unfilling a band is only half the job: its type was light-on-navy, so it
+  // has to flip in the same edit or the band renders blank. That is exactly how
+  // the site footer ended up white-on-white — the theme painted it white but a
+  // later rule still forced white copy, and the phone number, the contact links
+  // and the licence line were invisible on every public page.
+  const src = read('server/email.js');
+  const start = src.indexOf('<tr><td style="padding:24px 30px;background:');
+  assert.ok(start !== -1, 'could not find the email footer band');
+  const end = src.indexOf('</td></tr>', start);
+  const band = src.slice(start, end === -1 ? start + 1400 : end);
+  const bg = band.match(/background:([^;"]+)/);
+  assert.ok(bg && /^#(fff|ffffff)$/i.test(bg[1].trim()), 'the email footer band must be white, got ' + (bg || [])[1]);
+  const colours = [...band.matchAll(/color:(#[0-9a-fA-F]{3,6})/g)].map(m => m[1]);
+  assert.ok(colours.length >= 3, 'expected the footer band to declare its own colours');
+  for (const c of colours) {
+    const ratio = contrast(c, '#ffffff');
+    assert.ok(ratio >= 4.5,
+      'the email footer prints ' + c + ' on white at ' + ratio.toFixed(2) + ':1 — unreadable');
+  }
+});
+
+test('the site footer is not simultaneously white and white-texted', () => {
+  // The specific regression this whole change fixes, pinned so it cannot return:
+  // the theme's "dark surfaces keep light copy" rule must NOT claim .footer.
+  // Comments are stripped first: the note explaining why .footer was REMOVED
+  // from this rule mentions ".footer", and scanning raw text flags the comment.
+  const theme = read('westmere-theme.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  // There are SEVERAL rules that force white copy (pressed buttons, the fleet
+  // panel, the coverage scrim). Check every one of them — matching only the
+  // first made this assertion pass no matter what the footer did.
+  const rules = [...theme.matchAll(/([^{}]*)\{([^{}]*-webkit-text-fill-color:\s*var\(--westmere-white\)[^{}]*)\}/g)];
+  assert.ok(rules.length >= 2, 'expected several light-copy rules in the theme, found ' + rules.length);
+  // Every band that has been unfilled. A rule forcing WHITE copy onto any of
+  // them is the white-on-white bug, whichever one it lands on: the site footer
+  // lost its contact details this way, and the pay page's header very nearly
+  // lost its wordmark the same way in the same change.
+  const UNFILLED = [/(^|[\s,])\.footer\b/, /(^|[\s,])[^\s,]*\.head\b/, /(^|[\s,])footer\.mini-foot\b/];
+  const claiming = rules
+    .filter(r => UNFILLED.some(re => re.test(r[1])))
+    .map(r => r[1].trim().replace(/\s+/g, ' ').slice(0, 70));
+  assert.deepStrictEqual(claiming, [],
+    'a header or footer that is now WHITE is still being forced to white copy — ' +
+    'its contents render invisible:\n      ' + claiming.join('\n      '));
+});
+
 test('the invoice PDF embeds Cormorant rather than a base-14 serif', () => {
   const src = read('server/invoice-pdf.js');
   // pdfkit cannot fetch a web font, so the face has to ship with the app.

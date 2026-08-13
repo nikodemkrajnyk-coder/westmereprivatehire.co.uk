@@ -58,10 +58,10 @@ function cashPage(state, message, ref) {
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--navy:#102a43;--text:#102a43;--muted:#657485;--border:#dfe5ea;--serif:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;--sans:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif}
 html{font-size:16px}
-body{font-family:var(--sans);font-weight:400;color:var(--text);background:var(--navy);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
-.card{width:100%;max-width:440px;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.35)}
-.head{background:var(--navy);color:#fff;padding:30px 32px 26px;text-align:center;border-bottom:1px solid rgba(255,255,255,.18)}
-.brand{font-family:var(--sans);font-size:11px;letter-spacing:3.5px;text-transform:uppercase;color:rgba(255,255,255,.74);font-weight:600}
+body{font-family:var(--sans);font-weight:400;color:var(--text);background:#EEF2F5;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.card{width:100%;max-width:440px;background:#fff;border-radius:14px;overflow:hidden;border:1px solid var(--border)}
+.head{background:transparent;color:var(--navy);padding:30px 32px 26px;text-align:center;border-bottom:1px solid var(--border)}
+.brand{font-family:var(--sans);font-size:11px;letter-spacing:3.5px;text-transform:uppercase;color:var(--muted);font-weight:600}
 .brand-name{font-family:var(--serif);font-size:26px;font-weight:400;letter-spacing:.5px;margin-top:6px}
 .body{padding:34px 32px 36px}
 .state{text-align:center}
@@ -721,10 +721,10 @@ function actionPage(heading, message, ref, bodyHtml, state) {
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--navy:#102a43;--text:#102a43;--muted:#657485;--border:#dfe5ea;--serif:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;--sans:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif}
 html{font-size:16px}
-body{font-family:var(--sans);font-weight:400;color:var(--text);background:var(--navy);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
-.card{width:100%;max-width:440px;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.35)}
-.head{background:var(--navy);color:#fff;padding:30px 32px 26px;text-align:center;border-bottom:1px solid rgba(255,255,255,.18)}
-.brand{font-family:var(--sans);font-size:11px;letter-spacing:3.5px;text-transform:uppercase;color:rgba(255,255,255,.74);font-weight:600}
+body{font-family:var(--sans);font-weight:400;color:var(--text);background:#EEF2F5;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.card{width:100%;max-width:440px;background:#fff;border-radius:14px;overflow:hidden;border:1px solid var(--border)}
+.head{background:transparent;color:var(--navy);padding:30px 32px 26px;text-align:center;border-bottom:1px solid var(--border)}
+.brand{font-family:var(--sans);font-size:11px;letter-spacing:3.5px;text-transform:uppercase;color:var(--muted);font-weight:600}
 .brand-name{font-family:var(--serif);font-size:26px;font-weight:400;letter-spacing:.5px;margin-top:6px}
 .body{padding:34px 32px 36px}
 .state{text-align:center}

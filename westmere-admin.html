@@ -184,7 +184,7 @@ body.full-view .content{padding:1.4rem 1.9rem;max-width:100%}
 /* FORMS */
 .fg{display:flex;flex-direction:column;gap:.38rem;margin-bottom:.9rem}
 .fl{font-size:.58rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:rgba(27,27,26,.7)}
-.fi{font-family:var(--sans);font-size:.92rem;font-weight:300;color:var(--navy);background:rgba(27,27,26,.03);border:none;border-bottom:1px solid rgba(27,27,26,.12);padding:.78rem 1rem;outline:none;width:100%;transition:border-color .2s;min-height:50px;-webkit-appearance:none}
+.fi{font-family:var(--sans);font-size:.92rem;font-weight:300;color:var(--navy);background:transparent;border:none;border-bottom:1px solid rgba(27,27,26,.12);padding:.78rem 1rem;outline:none;width:100%;transition:border-color .2s;min-height:50px;-webkit-appearance:none}
 .fi:focus{border-bottom-color:var(--navy);background:rgba(27,27,26,.04)}
 .fi::placeholder{color:rgba(27,27,26,.62)}
 select.fi{cursor:pointer}
@@ -238,7 +238,7 @@ textarea.fi{resize:vertical;min-height:80px}
 .fare-table{width:100%;border-collapse:collapse}
 .fare-table th{font-size:.56rem;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--navy);padding:.5rem .7rem;background:rgba(27,27,26,.04);text-align:center}
 .fare-table td{padding:.4rem .5rem;border:1px solid rgba(27,27,26,.06);text-align:center}
-.fare-table tr:first-child td{background:rgba(27,27,26,.03);font-size:.75rem;font-weight:500;color:var(--navy);text-align:left}
+.fare-table tr:first-child td{background:transparent;font-size:.75rem;font-weight:500;color:var(--navy);text-align:left}
 .fare-input{background:transparent;border:none;outline:none;font-family:var(--sans);font-size:.84rem;font-weight:500;color:var(--navy);text-align:center;width:100%;padding:.18rem}
 .fare-input:focus{background:rgba(106,106,106,.08)}
 /* NOTIFICATIONS LIST */
@@ -440,7 +440,7 @@ textarea.fi{resize:vertical;min-height:80px}
 .si-sub{font-size:.68rem;color:rgba(27,27,26,.66);margin-top:.15rem}
 .sug-powered{padding:.4rem 1rem;text-align:right;font-size:.55rem;color:rgba(27,27,26,.6);letter-spacing:.04em}
 
-footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);font-size:.66rem;letter-spacing:.1em;color:rgba(27,27,26,.66);background:rgba(27,27,26,.03);border-top:1px solid rgba(27,27,26,.06);position:relative;z-index:1}.mini-legal{margin-left:.6rem}.mini-legal a{color:rgba(27,27,26,.62);text-decoration:none;margin-left:.5rem;transition:color .2s;letter-spacing:.08em}.mini-legal a:hover{color:rgba(106,106,106,.8)}
+footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);font-size:.66rem;letter-spacing:.1em;color:rgba(27,27,26,.66);background:transparent;border-top:1px solid rgba(27,27,26,.06);position:relative;z-index:1}.mini-legal{margin-left:.6rem}.mini-legal a{color:rgba(27,27,26,.62);text-decoration:none;margin-left:.5rem;transition:color .2s;letter-spacing:.08em}.mini-legal a:hover{color:rgba(106,106,106,.8)}
 </style>
 <script src="/config.js"></script>
 <script>
@@ -1538,7 +1538,7 @@ select:-webkit-autofill:focus{
           <input type="checkbox" id="dm-has-login" onchange="toggleDriverLoginSection()" style="accent-color:var(--navy)">Grant app login
         </label>
       </div>
-      <div id="dm-login-section" style="display:none;padding:.9rem 1rem;background:rgba(27,27,26,.03);border:1px dashed rgba(27,27,26,.12);border-radius:6px">
+      <div id="dm-login-section" style="display:none;padding:.9rem 1rem;background:transparent;border:1px dashed rgba(27,27,26,.12);border-radius:6px">
         <div class="r2">
           <div class="fg"><label class="fl">Username</label><input class="fi" type="text" id="dm-username" placeholder="driver_username" autocomplete="off"></div>
           <div class="fg"><label class="fl">Password</label><input class="fi" type="password" id="dm-password" placeholder="Min 8 characters" autocomplete="new-password"></div>
@@ -2595,7 +2595,7 @@ function buildAdmCompleted(){
   }
   var html='';
   WMLifecycle.groupByWeek(jobs).forEach(function(g){
-    html+='<div style="display:flex;justify-content:space-between;align-items:baseline;gap:.6rem;padding:.7rem 1rem .5rem;background:rgba(27,27,26,.03);border-bottom:1px solid rgba(27,27,26,.18)">'
+    html+='<div style="display:flex;justify-content:space-between;align-items:baseline;gap:.6rem;padding:.7rem 1rem .5rem;background:transparent;border-bottom:1px solid rgba(27,27,26,.18)">'
       +'<span style="font-family:var(--serif);font-size:1.02rem;font-weight:500;color:var(--navy)">'+escTo(g.label)+'</span>'
       +'<span style="font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(27,27,26,.45);white-space:nowrap">'+g.items.length+(g.items.length===1?' job':' jobs')+' · £'+g.takings.toFixed(0)+'</span>'
       +'</div>';
@@ -5767,7 +5767,7 @@ function admShowDay(key){
         }
         waiting='<span class="offer-wait">Awaiting '+escTo(j.offered_driver_name)+exp+'</span>';
       }
-      var notesHtml=j.notes?'<div style="margin-top:.3rem;padding:.3rem .5rem;background:rgba(27,27,26,.03);border-left:2px solid #B8989A;font-size:.72rem;color:rgba(27,27,26,.74);line-height:1.35">'+admEnrichNotes(j.notes)+'</div>':'';
+      var notesHtml=j.notes?'<div style="margin-top:.3rem;padding:.3rem .5rem;background:transparent;border-left:2px solid #B8989A;font-size:.72rem;color:rgba(27,27,26,.74);line-height:1.35">'+admEnrichNotes(j.notes)+'</div>':'';
       if(j.customer_note){notesHtml+='<div style="margin-top:.3rem;padding:.3rem .5rem;background:rgba(27,27,26,.04);border-left:2px solid #102a43;font-size:.72rem;color:#1b1b1a;line-height:1.35"><strong style="color:rgba(27,27,26,.55)">Special req:</strong> '+escTo(j.customer_note)+'</div>';}
       return '<div class="adm-cal-detail-job">'
         +'<div class="adm-cal-time">'+escTo(j.time||'ASAP')+'</div>'

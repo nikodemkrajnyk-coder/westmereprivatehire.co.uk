@@ -12,9 +12,17 @@
 <script src="https://js.stripe.com/v3/"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--navy:#1b1b1a;--navy2:#173b5e;--text:#173b5e;--muted:#657485;--border:#c8d1d9;font-weight:300;color:var(--text);background:var(--navy);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
-.card{width:100%;max-width:440px;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.35)}
-.head{background:var(--navy);color:#fff;padding:30px 32px 26px;text-align:center;border-bottom:3px solid var(--navy)}
+/* The page's own tokens. --navy is the BRAND navy, not the old charcoal:
+   this page had kept #1b1b1a, so its buttons and headings were a different
+   colour from every other surface. */
+:root{--navy:#102a43;--navy2:#173b5e;--text:#173b5e;--muted:#657485;--border:#c8d1d9}
+/* These layout declarations had ended up inside the :root block above, which
+   applied them to the html element — so `background:var(--navy)` painted the
+   whole page charcoal behind the card. They belong on body, and the canvas is
+   the same light tint the emails and the served pay/cancel pages use. */
+body{font-weight:400;color:var(--text);background:#EEF2F5;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.card{width:100%;max-width:440px;background:#fff;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+.head{background:transparent;color:var(--navy);padding:30px 32px 26px;text-align:center;border-bottom:1px solid var(--line)}
 .brand{font-family:var(--sans);font-size:10px;letter-spacing:3.5px;text-transform:uppercase;color:var(--navy);font-weight:500}
 .brand-name{font-family:var(--serif);font-size:26px;font-weight:400;letter-spacing:.5px;margin-top:6px}
 .body{padding:30px 32px 34px}

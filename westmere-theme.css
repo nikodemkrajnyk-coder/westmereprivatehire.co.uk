@@ -866,16 +866,16 @@ textarea,
    #login-screen * (1,0,1) on its own, and every other app keeps the navy the
    theme gives it. */
 
-/* 15.4 — THE PAY PAGE'S HEADER IS A SOLID NAVY BLOCK.
-   Section 5 paints `.brand` / `.brand-name` navy because on every other page
-   the wordmark sits in a white nav bar. The pay page puts it inside `.head`,
-   which is filled with the same navy — so the wordmark went navy-on-navy and
-   vanished. Anything inside that block keeps the light copy it was designed
-   with. Scoped to .wm-pay-page so no other header is affected. */
+/* 15.4 — THE PAY PAGE'S HEADER IS NO LONGER A NAVY BLOCK.
+   It used to be filled navy, so the wordmark inside it needed white copy or it
+   went navy-on-navy and vanished. The header is transparent now ("no filled
+   headers anywhere"), so that white copy would vanish the other way — white on
+   white. The wordmark takes the same navy as every other header.
+   Guardrail: button-style.test.js. */
 .wm-pay-page .head,
 .wm-pay-page .head * {
-  color: var(--westmere-white) !important;
-  -webkit-text-fill-color: var(--westmere-white) !important;
+  color: var(--westmere-navy) !important;
+  -webkit-text-fill-color: var(--westmere-navy) !important;
 }
 
 /* =========================================================
@@ -956,7 +956,9 @@ input, select, textarea {
    Navy ink is the default everywhere, but a handful of bands are genuinely
    dark: the site footer, the fleet spec panel, the coverage intro scrim.
    Navy on those measured 1.20:1 — invisible. They take white. */
-.footer, .footer *,
+/* NOTE: .footer is NOT in this list any more — it is white now, so the
+   white-copy rule below would make it invisible. It was: the contact
+   details and the licence line rendered white-on-white on every page. */
 .right-panel, .right-panel *,
 #intro, #intro *,
 .cta-band, .cta-band * {
@@ -967,8 +969,7 @@ input, select, textarea {
    them), so their copy stays navy. Measured: without this they render 1.00:1. */
 .right-panel .spec,
 .right-panel .spec *,
-#intro .card, #intro .card *,
-.footer .spec, .footer .spec * {
+#intro .card, #intro .card * {
   color: var(--westmere-navy) !important;
   -webkit-text-fill-color: var(--westmere-navy) !important;
 }
