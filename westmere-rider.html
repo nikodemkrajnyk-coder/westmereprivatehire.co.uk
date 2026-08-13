@@ -698,7 +698,9 @@ body::after{
 @media(min-width:980px){
   .side{
     display:flex;flex-direction:column;width:272px;flex-shrink:0;
-    background:rgba(255,255,255,.72);
+    /* Opaque, matching the phone drawer exactly — the same navigation should
+       not look like two different surfaces depending on the screen. */
+    background:#ffffff;
     border-right:1px solid rgba(27,27,26,.09);
     padding:1.6rem 0 1.2rem;overflow-y:auto;
     /* Static again: no drawer, no scrim, no shadow. */
@@ -1020,7 +1022,7 @@ body.mode-day .topbar .tb-name{color:#ffffff}
 body.mode-day .topbar .tb-sub{color:#657485!important}
 body.mode-day .topbar .tb-date{color:rgba(255,255,255,.72)}
 body.mode-day .topbar .tb-crest{color:#ffffff;border-color:rgba(16,42,67,.6)}
-body.mode-day .side{background:rgba(255,255,255,.72)}
+body.mode-day .side{background:#ffffff}
 body.mode-day .side-item{color:rgba(27,27,26,.62)}
 body.mode-day .side-item.on{color:var(--navy);background:rgba(16,42,67,.1)}
 
