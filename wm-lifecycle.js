@@ -101,11 +101,53 @@
   }
 
   // ── Luggage ─────────────────────────────────────────────────────────────
-  // '', '0' and the '0s+0l' shape all mean "no bags" and render as nothing.
+  // A bag count is ALWAYS a whole number. `bags` is a TEXT column that has
+  // collected five different shapes over the life of the app, and rendering it
+  // raw is what produced "0.0 bags" on old records and "small bags" / nothing
+  // at all on others:
+  //   ''  null                  → 0        (never recorded)
+  //   '0' '3' 3                 → 0, 3     (owner app + web form)
+  //   '0.0' '2.0' 2.0           → 0, 2     (rows migrated from the old
+  //                                         INTEGER/REAL bags column — the
+  //                                         source of the "0.0 bags" report)
+  //   '4+'                      → 4+       (the web form's top option; the
+  //                                         "+" is kept, it is not a decimal)
+  //   '2s+1l'                   → 3        (rider app: small + large picker)
+  //   'small' 'medium' 'large'  → 2, 4, 6  (legacy admin form, matching the
+  //                                         capacity guard's own mapping)
+  // Anything else falls back to the sum of the integers in the string, so a
+  // free-typed "3 large + 2 carry-on" reads as 5 rather than as itself.
+  var _WORD_BAGS = { none: 0, small: 2, medium: 4, large: 6 };
+
+  // → { n: <integer>, plus: <bool> }. Never fractional, never negative.
+  function bagsCount(bags) {
+    var b = (bags == null ? '' : String(bags)).trim().toLowerCase();
+    if (!b) return { n: 0, plus: false };
+    if (_WORD_BAGS.hasOwnProperty(b)) return { n: _WORD_BAGS[b], plus: false };
+    if (/^no\b/.test(b)) return { n: 0, plus: false };
+    var compound = b.match(/^(\d+)\s*s\s*\+\s*(\d+)\s*l$/);            // '2s+1l'
+    if (compound) return { n: Math.round(+compound[1]) + Math.round(+compound[2]), plus: false };
+    var plus = /\+\s*$/.test(b);
+    var nums = b.match(/\d+(?:\.\d+)?/g);
+    if (!nums) return { n: 0, plus: false };
+    var total = nums.reduce(function (s, v) { return s + (parseFloat(v) || 0); }, 0);
+    return { n: Math.max(0, Math.round(total)), plus: plus };
+  }
+
+  // ALWAYS a label, integer and correctly pluralised: '0 bags', '1 bag',
+  // '3 bags', '4+ bags'. Use where a field is explicitly labelled "Luggage"
+  // and must show something.
+  function bagsLabel(bags) {
+    var c = bagsCount(bags);
+    return c.n + (c.plus ? '+' : '') + ' bag' + (c.n === 1 && !c.plus ? '' : 's');
+  }
+
+  // The COMPACT rule: a zero-bag journey adds nothing to a summary line, so
+  // this returns '' and the caller omits the bags entirely. Every non-zero
+  // count renders exactly as bagsLabel.
   function bagsText(bags) {
-    var b = (bags == null ? '' : String(bags)).trim();
-    if (!b || b === '0' || b === '0s+0l') return '';
-    return b + ' bag' + (b === '1' ? '' : 's');
+    var c = bagsCount(bags);
+    return c.n === 0 && !c.plus ? '' : bagsLabel(bags);
   }
 
   // ── Which actions a staff app may offer ─────────────────────────────────
@@ -209,6 +251,8 @@
     paymentOf: paymentOf,
     statusLabel: statusLabel,
     payStatus: payStatus,
+    bagsCount: bagsCount,
+    bagsLabel: bagsLabel,
     bagsText: bagsText,
     actionsFor: actionsFor,
     toConfirmCount: toConfirmCount,
