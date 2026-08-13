@@ -541,7 +541,73 @@ test('the site footer is not simultaneously white and white-texted', () => {
 //      and the theme exception had to come back OUT. Left in, it would have
 //      painted the value white on white and hidden it all over again.
 // So this asserts the frame, not a fill, and still asserts legibility.
+// The frame is now the system-wide default, so the sweep covers every surface
+// that has a picker — not just My Account. The public booking form used the
+// filled navy this replaced, so it is the one most likely to regress.
 const PICKERS = ['.cal-day.cal-sel', '.time-opt.t-sel', '.pick-opt.p-sel'];
+const SYSTEM_PICKERS = [
+  { file: 'westmere-rider.html', sels: ['.cal-day.cal-sel', '.time-opt.t-sel', '.pick-opt.p-sel'] },
+  { file: 'styles.css',          sels: ['.wm-day.is-selected', '.wm-time.is-selected'] },
+  { file: 'westmere-owner.html', sels: ['.cal-day.selected'] }
+];
+
+test('EVERY picker in the system selects with a frame, never a fill', () => {
+  const offenders = [];
+  for (const { file, sels } of SYSTEM_PICKERS) {
+    const src = read(file);
+    for (const sel of sels) {
+      const m = src.match(new RegExp(sel.replace(/[.]/g, '\\.') + '\\s*\\{([^}]*)\\}'));
+      if (!m) { offenders.push(file + ': missing ' + sel); continue; }
+      const body = m[1];
+      const bg = (body.match(/background(?:-color)?:\s*([^;]+)/) || [])[1];
+      if (bg && /#102a43|#0e2540|#1b1b1a|var\(--navy\)/i.test(bg)) {
+        offenders.push(file + ' ' + sel + ' is FILLED (' + bg.trim() + ')');
+      }
+      const framed = /border-color:|box-shadow:\s*inset|border:\s*\d/.test(body);
+      if (!framed) offenders.push(file + ' ' + sel + ' draws no frame: ' + body.trim().slice(0, 70));
+    }
+  }
+  assert.deepStrictEqual(offenders, [],
+    'the selected state must be an outlined frame on every surface:\n      ' + offenders.join('\n      '));
+});
+
+test('SELECTED and TODAY are different in KIND, not just in weight', () => {
+  // Both used to be a navy ring — 1.5px vs 1px on the booking form, and an
+  // identical 2px border in the owner app. A customer cannot read a half-pixel
+  // as a different state. Today is a dot now; the test fails if it goes back to
+  // being a ring/border while selected is also one.
+  for (const [file, todaySel, selSel] of [
+    ['styles.css', '.wm-day.is-today', '.wm-day.is-selected'],
+    ['westmere-owner.html', '.cal-day.today', '.cal-day.selected'],
+    ['westmere-rider.html', '.cal-day.cal-today', '.cal-day.cal-sel']
+  ]) {
+    const src = read(file);
+    // The today rule that is NOT the ::after dot.
+    const re = new RegExp(todaySel.replace(/[.]/g, '\\.') + '(?::not\\([^)]*\\))?\\s*\\{([^}]*)\\}', 'g');
+    let ringed = false;
+    for (const m of src.matchAll(re)) {
+      if (/box-shadow:\s*inset|border(?:-color)?:\s*\d?[^;]*(?:#102a43|var\(--navy\))/i.test(m[1])) ringed = true;
+    }
+    assert.ok(!ringed,
+      file + ': ' + todaySel + ' still draws a navy ring/border, which is what ' + selSel +
+      ' uses — the two states would be indistinguishable');
+    // …and today must still mark itself somehow.
+    assert.ok(new RegExp(todaySel.replace(/[.]/g, '\\.') + '[^{]*::after').test(src),
+      file + ': ' + todaySel + ' has no dot — today would be unmarked entirely');
+  }
+});
+
+test('the theme carries ONE canonical picker selected-state for all surfaces', () => {
+  const theme = read('westmere-theme.css');
+  const block = theme.slice(theme.indexOf('18. PICKERS'));
+  assert.ok(block.length > 200, 'the theme must define the shared picker selected-state');
+  for (const sel of ['.wm-day.is-selected', '.cal-day.cal-sel', '.cal-day.selected',
+                     '.wm-time.is-selected', '.time-opt.t-sel', '.pick-opt.p-sel']) {
+    assert.ok(block.includes(sel), 'the shared picker definition is missing ' + sel);
+  }
+  assert.ok(/background:\s*transparent\s*!important/.test(block), 'the shared day rule must clear the fill');
+  assert.ok(!/background:\s*var\(--westmere-navy\)/.test(block), 'the shared rule must never re-fill navy');
+});
 
 test('every selected picker item is an outlined frame, not a filled block', () => {
   const rider = read('westmere-rider.html');

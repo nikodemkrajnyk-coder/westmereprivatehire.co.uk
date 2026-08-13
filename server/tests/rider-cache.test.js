@@ -254,6 +254,26 @@ test('the bottom tab bar is gone and the side menu replaces it', () => {
   }
 });
 
+test('NOTHING is mounted at the bottom of My Account', () => {
+  // The owner's rule: the side menu is the only navigation. The bottom tab bar
+  // went first; a slim secondary strip carrying Contact Us and Airport Rewards
+  // survived it and is now gone too. Both items live in the side menu, so the
+  // strip lost nothing — but a future "just a small bar at the bottom" is
+  // exactly what this is here to stop.
+  for (const gone of ['class="subnav"', 'id="sub-nav"', 'class="sub-item"', 'class="bottom-nav"', 'id="bn-']) {
+    assert.ok(!riderHtml.includes(gone),
+      'My Account still mounts something at the bottom (' + gone + ') — the side menu is the only nav');
+  }
+  // Nothing useful may be lost with it: both items must be in the side menu.
+  for (const id of ['sd-contact', 'sd-rewards']) {
+    assert.ok(riderHtml.includes('id="' + id + '"'),
+      'the side menu must carry ' + id + ' — it was in the strip that was removed');
+  }
+  // And no orphan CSS pretending the strip is still there.
+  assert.ok(!/\.subnav\s*\{/.test(riderHtml) && !/\.sub-item\s*\{/.test(riderHtml),
+    'the removed bottom strip still has CSS in the page');
+});
+
 test('the side menu can be opened, and always closes again', () => {
   assert.ok(/class="tb-menu"[\s\S]{0,200}onclick="toggleSideMenu\(\)"/.test(riderHtml),
     'the header must carry a menu button wired to toggleSideMenu()');

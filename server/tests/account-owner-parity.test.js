@@ -175,15 +175,20 @@ test('Contact Us is a real section with the real contact details', () => {
   assert.ok(/tel:\+447930342593/.test(rider), 'it must carry the phone number 07930 342593');
   assert.ok(/mailto:bookings@westmereprivatehire\.co\.uk/.test(rider),
     'it must carry the bookings email address');
-  assert.ok(/id="sd-contact"/.test(rider) && /id="sn-contact"/.test(rider),
-    'Contact Us must be reachable on desktop (sidebar) AND on mobile');
+  // Reachable on BOTH form factors — but there is one nav now, not two. The
+  // mobile strip that used to carry this (sn-contact) is gone; the side menu is
+  // a static column on desktop and a drawer on mobile, so a single sidebar
+  // entry plus the menu button IS both.
+  assert.ok(/id="sd-contact"/.test(rider), 'Contact Us must be in the side menu');
+  assert.ok(/id="tb-menu"/.test(rider) && /toggleSideMenu\(\)/.test(rider),
+    'the side menu must be openable on mobile, or Contact Us is desktop-only');
 });
 
 test('Airport Rewards is present, last, and clearly marked coming soon', () => {
   assert.ok(/id="pg-rewards"/.test(rider), 'there must be an Airport Rewards section');
   assert.ok(/Coming soon/i.test(rider), 'it must be marked as coming soon');
-  assert.ok(/id="sd-rewards"/.test(rider) && /id="sn-rewards"/.test(rider),
-    'Airport Rewards must be reachable on desktop AND on mobile');
+  assert.ok(/id="sd-rewards"/.test(rider), 'Airport Rewards must be in the side menu');
+  assert.ok(/id="tb-menu"/.test(rider), 'the side menu must be openable on mobile');
   // last item in the sidebar
   const order = ['sd-trips', 'sd-payments', 'sd-invoices', 'sd-details', 'sd-book', 'sd-contact', 'sd-rewards']
     .map(id => rider.indexOf('id="' + id + '"'));

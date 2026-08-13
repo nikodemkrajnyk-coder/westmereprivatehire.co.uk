@@ -1123,3 +1123,40 @@ input, select, textarea {
   font-size: max(0.75rem, 12px) !important;
   font-weight: 600 !important;
 }
+
+/* =========================================================
+   18. PICKERS — ONE SELECTED-STATE FOR THE WHOLE SYSTEM
+   =========================================================
+   The owner's decision: a selected day / time / option is an OUTLINED FRAME —
+   a navy ring on white, navy text, rounded — never a filled navy block. It
+   applies to every picker on every surface, so it is declared once here rather
+   than re-derived per app:
+
+     public booking form  .wm-day.is-selected      .wm-time.is-selected
+     My Account           .cal-day.cal-sel         .time-opt.t-sel  .pick-opt.p-sel
+     owner month view     .cal-day.selected
+
+   SELECTED vs TODAY must stay tellable apart. Both used to be a navy ring —
+   1.5px vs 1px on the booking form, and an identical 2px border in the owner
+   app, which is to say not distinguishable at all. So the two states now differ
+   in KIND, not in weight: selected is a frame, today is a dot beneath the
+   number. Each page also carries these values itself, so a surface still looks
+   right if the theme fails to load; this block is what keeps them agreeing.
+   GUARDRAIL: server/tests/button-style.test.js. */
+.wm-day.is-selected,
+.cal-day.cal-sel,
+.cal-day.selected {
+  background: transparent !important;
+  color: var(--westmere-navy) !important;
+  -webkit-text-fill-color: var(--westmere-navy) !important;
+  font-weight: 500 !important;
+}
+.wm-time.is-selected,
+.time-opt.t-sel,
+.pick-opt.p-sel {
+  background: var(--westmere-white) !important;
+  color: var(--westmere-navy) !important;
+  -webkit-text-fill-color: var(--westmere-navy) !important;
+  border-color: var(--westmere-navy) !important;
+  font-weight: 500 !important;
+}
