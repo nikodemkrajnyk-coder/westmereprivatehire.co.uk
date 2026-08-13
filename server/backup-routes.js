@@ -105,7 +105,34 @@ function pruneBackups(dir) {
 // Core backup — uses better-sqlite3 .backup() (SQLite Online Backup API).
 // Safe during live writes, consistent with WAL mode, atomic copy.
 // ---------------------------------------------------------------------------
+// Two guards, both learned the hard way: a local dev boot wrote an EMPTY
+// database into the real iCloud backup set and rotated a genuine backup out to
+// make room for it. A backup that contains nothing is worse than no backup —
+// restoring from it silently wipes the business.
+//   BACKUP_DISABLED=1  → never back up from this process (local/dev/CI)
+//   empty-DB floor     → never write a backup with 0 bookings AND 0 customers
+function backupSkipReason() {
+  if (process.env.BACKUP_DISABLED) return 'BACKUP_DISABLED is set';
+  try {
+    const db = getDb();
+    const bookings = db.prepare('SELECT COUNT(*) n FROM bookings').get().n;
+    const customers = db.prepare('SELECT COUNT(*) n FROM customers').get().n;
+    if (bookings === 0 && customers === 0) {
+      return 'the database has no bookings and no customers — refusing to write an empty backup';
+    }
+  } catch (e) {
+    // If we cannot even read the counts, do not write anything.
+    return 'could not read the database to verify it has content (' + e.message + ')';
+  }
+  return null;
+}
+
 async function runBackup() {
+  const skip = backupSkipReason();
+  if (skip) {
+    console.log('[BACKUP] Skipped — ' + skip);
+    return { skipped: true, reason: skip };
+  }
   const db = getDb();
   const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
   const filename = `westmere-${ts}.db`;
@@ -190,6 +217,10 @@ function exportAllJson() {
 // Auto-backup scheduler — called once from server/index.js on startup
 // ---------------------------------------------------------------------------
 function startAutoBackup() {
+  if (process.env.BACKUP_DISABLED) {
+    console.log('[BACKUP] Auto-backup DISABLED (BACKUP_DISABLED is set) — nothing will be written');
+    return;
+  }
   const icloud = isICloudAvailable();
   const primary = icloud ? ICLOUD_DIR : LOCAL_DIR + ' (iCloud unavailable)';
 
@@ -199,7 +230,7 @@ function startAutoBackup() {
 
   // Run immediately on server start
   runBackup()
-    .then(r => console.log(`[BACKUP] Startup backup complete → ${r.filename}`))
+    .then(r => { if (!r.skipped) console.log(`[BACKUP] Startup backup complete → ${r.filename}`); })
     .catch(e => console.error('[BACKUP] Startup backup failed:', e.message));
 
   // Then every 6 hours
@@ -323,3 +354,5 @@ router.get('/export', (req, res) => {
 module.exports = router;
 module.exports.startAutoBackup = startAutoBackup;
 module.exports.runBackup = runBackup;
+// Exported so server/tests/cleanup-guards.test.js can drive the guard directly.
+module.exports.backupSkipReason = backupSkipReason;

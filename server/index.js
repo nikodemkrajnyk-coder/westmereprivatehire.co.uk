@@ -18,7 +18,6 @@ const backupRouter = require('./backup-routes');
 let exportRouter;
 try { exportRouter = require('./export-routes'); } catch(e) { console.error('[EXPORT] Module failed:', e.message); }
 const trackingRouter = require('./tracking-routes');
-const publicTrackingRouter = require('./public-tracking-routes');
 const onboardingRouter = require('./driver-onboarding-routes');
 const driverCalRouter = require('./driver-cal-routes');
 const { createAuthMiddleware } = require('./middleware');
@@ -103,8 +102,8 @@ app.use('/api/auth', authLimiter, authRouter);
 // Public API routes (booking, payment — no auth needed)
 app.use('/api/public', apiLimiter, publicApiRouter);
 
-// Public tracking (rider views their own booking by ref + phone)
-app.use('/api/public', apiLimiter, publicTrackingRouter);
+// (The public ref+phone tracking page and its router were removed in the
+// cleanliness audit; a proper in-app tracker will replace them.)
 
 // Public invoice download — no auth required. Invoice number is the access key.
 // Used by the "Download Invoice PDF" button in emailed invoices.

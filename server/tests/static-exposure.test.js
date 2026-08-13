@@ -65,7 +65,7 @@ const MUST_BE_PRIVATE = [
   '/package.json',
   '/package-lock.json',
   '/CLAUDE.md',
-  '/push_files.sh',
+  '/push_files.sh',          // deleted, but must stay refused if ever restored
   '/.git/config',
   '/.env',
   '/.claude/settings.json',
@@ -78,7 +78,7 @@ const MUST_BE_PUBLIC = [
   '/', '/index.html', '/book.html', '/contact.html', '/about.html', '/services.html',
   '/airport-transfers.html',
   '/westmere-rider.html', '/westmere-owner.html', '/westmere-admin.html', '/westmere-driver.html',
-  '/westmere-pay.html', '/westmere-track.html',
+  '/westmere-pay.html',
   '/assets/sussex-coast.webp', '/assets/westmere-email-hero.jpg', '/assets/ic-cash.png',
   '/styles.css', '/booking-app.js', '/frontend.js', '/reviews.js',
   '/address-normalize.js', '/wm-lifecycle.js', '/wm-picker.js', '/wm-realtime.js',

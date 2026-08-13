@@ -6,7 +6,7 @@
 //   /data/WestmereData/Drivers/drivers.csv  → driver names, emails, phones,
 //                                             registrations, licence expiry
 //   /server/db.js, /server/api.js, …        → the entire backend source
-//   /package.json, /CLAUDE.md, /push_files.sh, /server/tests/*
+//   /package.json, /CLAUDE.md, committed shell scripts, /server/tests/*
 //
 // The drivers file is personal data, so that was a live data-protection
 // breach rather than untidiness. This module is the single rule for what is
