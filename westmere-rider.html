@@ -1461,13 +1461,32 @@ function todayUK(){
 // Address DISPLAY → shared normalizer (address-normalize.js), the single source
 // of truth used by the emails + owner/admin apps. Trip history shows the short
 // form; the booking flow still stores/sends the full precise address.
-function _shortAddr(a){return window.WMAddr?WMAddr.shortDisplay(a):(a||'');}
+/* These three delegate to shared modules loaded by <script>. Each checks the
+   MODULE **and THE FUNCTION** before calling it.
+   WHY BOTH: checking only `window.WMAddr` shipped a live outage. The account
+   page called WMAddr.flightFor() while the deployed address-normalize.js had
+   no such export (it exists only in an uncommitted change) — so every trip row
+   threw "WMAddr.flightFor is not a function", every row was skipped by the
+   per-row guard, and every customer's trip list read "No trips found".
+   A module can always be older than the page that calls it: a stale cached
+   copy, a half-finished deploy, or an export that has not landed yet. Degrade
+   to a sensible local value instead of throwing. */
+function _shortAddr(a){
+  return (window.WMAddr&&typeof WMAddr.shortDisplay==='function')?WMAddr.shortDisplay(a):(a||'');
+}
 /* Luggage: always a whole number ("1 bag" / "3 bags"), '' when there is none —
    the SAME helper the staff apps and the emails use (wm-lifecycle.js). */
-function _bagsText(b){return window.WMLifecycle?WMLifecycle.bagsText(b):'';}
+function _bagsText(b){
+  return (window.WMLifecycle&&typeof WMLifecycle.bagsText==='function')?WMLifecycle.bagsText(b):'';
+}
 /* Flight number: AIRPORT RUNS ONLY. '' on a town-to-town trip, so no flight
-   appears anywhere in the trip list or the confirmation (address-normalize.js). */
-function _flightOf(b){return window.WMAddr?WMAddr.flightFor(b):'';}
+   appears anywhere in the trip list or the confirmation (address-normalize.js).
+   Fallback when the shared rule is unavailable: show the flight we were given
+   rather than lose the whole row over it. */
+function _flightOf(b){
+  if(window.WMAddr&&typeof WMAddr.flightFor==='function')return WMAddr.flightFor(b);
+  return (b&&b.flight)?String(b.flight).trim().toUpperCase():'';
+}
 
 /* ── MY LOCATION ── */
 var LOC_ICON='<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>Locate';
