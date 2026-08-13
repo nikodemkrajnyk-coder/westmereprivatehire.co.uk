@@ -394,6 +394,44 @@ test('the email row icons are navy artwork, not gold', () => {
     'own artwork did not: ' + offenders.join(', '));
 });
 
+// Purging the gold nearly shipped six invisible buttons. The email call-to-
+// actions were gold backgrounds with dark text; mapping gold AND the dark ink
+// both onto navy left `background:navy;color:navy` — a solid navy bar with a
+// label nobody could read, on the payment reminder and the review request among
+// others. Nothing in the suite noticed, because every colour involved was a
+// legitimate brand colour. So: no button may fail contrast against its own
+// background, whatever the palette becomes next.
+function srgb(c) { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
+function luminance([r, g, b]) { return 0.2126 * srgb(r) + 0.7152 * srgb(g) + 0.0722 * srgb(b); }
+function hex2rgb(h) {
+  h = h.replace('#', '');
+  if (h.length === 3) h = h.replace(/./g, c => c + c);
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+function contrast(a, b) {
+  const l1 = luminance(hex2rgb(a)), l2 = luminance(hex2rgb(b));
+  return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+}
+
+test('no email button prints its label in its own background colour', () => {
+  let src = read('server/email.js');
+  // Resolve the palette constants so ${ACCENT}/${INK} become real values.
+  const consts = {};
+  for (const m of src.matchAll(/^const\s+([A-Z_]+)\s*=\s*'(#[0-9a-fA-F]{3,6})'/gm)) consts[m[1]] = m[2];
+  assert.ok(Object.keys(consts).length >= 4, 'could not read the email palette constants');
+  src = src.replace(/\$\{([A-Z_]+)\}/g, (whole, name) => consts[name] || whole);
+
+  const bad = [];
+  for (const m of src.matchAll(/background:(#[0-9a-fA-F]{3,6});color:(#[0-9a-fA-F]{3,6})/g)) {
+    const ratio = contrast(m[1], m[2]);
+    // 4.5:1 is WCAG AA for body text; these labels are small and often bold,
+    // but a call-to-action a customer must find should clear the stricter bar.
+    if (ratio < 4.5) bad.push(m[1] + ' on ' + m[2] + ' → ' + ratio.toFixed(2) + ':1');
+  }
+  assert.deepStrictEqual([...new Set(bad)], [],
+    'an email button is unreadable against its own background:\n      ' + [...new Set(bad)].join('\n      '));
+});
+
 test('the invoice PDF embeds Cormorant rather than a base-14 serif', () => {
   const src = read('server/invoice-pdf.js');
   // pdfkit cannot fetch a web font, so the face has to ship with the app.

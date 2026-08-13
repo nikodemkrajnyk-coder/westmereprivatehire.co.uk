@@ -975,7 +975,7 @@ async function sendInvoiceReminder(recipient, invoiceNo, total, payUrl) {
 
   const payBtn = payUrl ? `
   <div style="text-align:center;margin:26px 0 8px">
-    <a href="${escHtml(payUrl)}" style="display:inline-block;padding:13px 32px;background:${ACCENT};color:#0E2540;text-decoration:none;border-radius:6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;font-weight:600;letter-spacing:.03em">Pay Now</a>
+    <a href="${escHtml(payUrl)}" style="display:inline-block;padding:13px 32px;background:${ACCENT};color:#FFFFFF;text-decoration:none;border-radius:6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;font-weight:600;letter-spacing:.03em">Pay Now</a>
   </div>` : '';
 
   const body = `
@@ -1216,7 +1216,7 @@ async function sendRecommendation(recipientEmail) {
   <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Someone you know thought you&rsquo;d appreciate our private hire service. We provide premium private-hire transfers across Sussex &mdash; airport runs to Gatwick and Heathrow, corporate travel, special occasions, and reliable local journeys.</p>
   <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">Licensed by Lewes District Council. Professional, punctual, and always at your service.</p>
   <div style="text-align:center;margin:26px 0 8px">
-    <a href="https://westmereprivatehire.co.uk" style="display:inline-block;padding:13px 32px;background:${ACCENT};color:#0E2540;text-decoration:none;border-radius:6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;font-weight:600;letter-spacing:.03em">Book Your Journey</a>
+    <a href="https://westmereprivatehire.co.uk" style="display:inline-block;padding:13px 32px;background:${ACCENT};color:#FFFFFF;text-decoration:none;border-radius:6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;font-weight:600;letter-spacing:.03em">Book Your Journey</a>
   </div>
   <p style="margin:20px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">We look forward to welcoming you.</p>`;
 
@@ -1243,7 +1243,7 @@ async function sendPaymentReminder(booking) {
     const payUrl = `https://westmereprivatehire.co.uk/westmere-pay.html?ref=${encodeURIComponent(ref)}&t=${encodeURIComponent(pay_token)}`;
     payBlock = `
   <div style="text-align:center;margin:26px 0 8px">
-    <a href="${payUrl}" style="display:inline-block;padding:13px 32px;background:${ACCENT};color:${INK};text-decoration:none;border-radius:6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;font-weight:600;letter-spacing:.03em">Pay Now \u2014 Apple Pay, Google Pay, or Card</a>
+    <a href="${payUrl}" style="display:inline-block;padding:13px 32px;background:${ACCENT};color:#FFFFFF;text-decoration:none;border-radius:6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;font-weight:600;letter-spacing:.03em">Pay Now \u2014 Apple Pay, Google Pay, or Card</a>
   </div>`;
   }
 
@@ -1291,7 +1291,7 @@ async function sendPartnershipOutreach(recipientEmail, companyName) {
   <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Please feel free to get in touch at any time &mdash; I&rsquo;d be delighted to hear from you.</p>
 
   <div style="text-align:center;margin:22px 0 8px">
-    <a href="https://westmereprivatehire.co.uk" style="display:inline-block;padding:13px 32px;background:${ACCENT};color:${INK};text-decoration:none;border-radius:6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;font-weight:600;letter-spacing:.03em">Visit Our Website</a>
+    <a href="https://westmereprivatehire.co.uk" style="display:inline-block;padding:13px 32px;background:${ACCENT};color:#FFFFFF;text-decoration:none;border-radius:6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;font-weight:600;letter-spacing:.03em">Visit Our Website</a>
   </div>
 
   <p style="margin:20px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">With warm regards,</p>
@@ -1335,7 +1335,7 @@ async function sendCorporateIntro(recipientEmail, companyName) {
   <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">I&rsquo;d welcome the opportunity to discuss how we could support your team. Please don&rsquo;t hesitate to get in touch.</p>
 
   <div style="text-align:center;margin:22px 0 8px">
-    <a href="https://westmereprivatehire.co.uk" style="display:inline-block;padding:13px 32px;background:${ACCENT};color:${INK};text-decoration:none;border-radius:6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;font-weight:600;letter-spacing:.03em">Visit Our Website</a>
+    <a href="https://westmereprivatehire.co.uk" style="display:inline-block;padding:13px 32px;background:${ACCENT};color:#FFFFFF;text-decoration:none;border-radius:6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;font-weight:600;letter-spacing:.03em">Visit Our Website</a>
   </div>
 
   <p style="margin:20px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">With kind regards,</p>
@@ -1364,7 +1364,7 @@ async function sendReviewRequest(email, firstName, ref) {
   <p style="margin:0 0 18px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Thank you for travelling with us today${ref ? ' (booking ' + escHtml(ref) + ')' : ''}. We truly hope your journey was comfortable and that we met your expectations.</p>
   <p style="margin:0 0 22px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">If you have a spare moment, we would be deeply grateful if you could share a few words about your experience. Reviews help other travellers find us and allow us to keep doing what we love.</p>
   <div style="text-align:center;margin:28px 0 24px">
-    <a href="https://g.page/r/Ce764VxFTR4VEAE/review" style="display:inline-block;padding:14px 36px;background:${ACCENT};color:${INK};text-decoration:none;border-radius:6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;font-weight:600;letter-spacing:.04em">Leave a Google Review</a>
+    <a href="https://g.page/r/Ce764VxFTR4VEAE/review" style="display:inline-block;padding:14px 36px;background:${ACCENT};color:#FFFFFF;text-decoration:none;border-radius:6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;font-weight:600;letter-spacing:.04em">Leave a Google Review</a>
   </div>
   <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">It takes less than a minute and means a great deal to a small, independent business like ours.</p>
   <p style="margin:20px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">With warm thanks,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
