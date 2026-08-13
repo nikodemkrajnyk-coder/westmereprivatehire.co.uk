@@ -74,6 +74,41 @@ test('rider My Account pickers/inputs are light + readable (color-scheme light)'
     assert.ok(m && /color-scheme:\s*light/.test(m[0]), cls + ' must set color-scheme:light for readable pickers');
   }
 });
+test('day mode never strips the My Account scenery (06:00–18:00 regression)', () => {
+  // body.mode-day is toggled on between 06:00 and 18:00 and its rules are one
+  // specificity step ABOVE the dashboard's own. This shipped a live regression:
+  // body.mode-day::before replaced the Sussex backdrop with a flat cream
+  // gradient, so for twelve hours a day customers saw the login screen on blank
+  // grey. Anything mode-day restyles must be restated for mode-day.
+  const hasDayOverride = (sel) => new RegExp('body\\.mode-day' + sel + '\\s*\\{').test(riderHtml);
+
+  // 1. the fixed backdrop
+  const dayBefore = [...riderHtml.matchAll(/body\.mode-day::before\s*\{([^}]*)\}/g)].map(m => m[1]);
+  assert.ok(dayBefore.length, 'body.mode-day::before must be restated by the dashboard styles');
+  assert.ok(dayBefore.some(b => /sussex-coast\.webp/.test(b)),
+    'day mode must keep the Sussex backdrop — it currently replaces it with a flat wash. ' +
+    'Restate body.mode-day::before with the coast image.');
+
+  // 2. the hero band
+  assert.ok(hasDayOverride('\\s+\\.topbar'),
+    'day mode must keep the hero band on .topbar, not a flat cream bar');
+
+  // 3. the components the dashboard draws
+  for (const sel of ['\\s+\\.trip-card', '\\s+\\.filter-btn']) {
+    assert.ok(hasDayOverride(sel),
+      'day mode must not re-skin ' + sel.trim() + ' back to the old palette');
+  }
+
+  // 4. and the last rule wins: every dashboard-level day override must come
+  //    AFTER the original mode-day block, or it is dead CSS.
+  const firstOriginal = riderHtml.indexOf('body.mode-day::before');
+  const dashboardBlock = riderHtml.indexOf('wm-rider-dashboard');
+  assert.ok(dashboardBlock !== -1, 'the dashboard style block must exist');
+  const lastDayBefore = riderHtml.lastIndexOf('body.mode-day::before');
+  assert.ok(lastDayBefore > dashboardBlock && lastDayBefore > firstOriginal,
+    'the day-mode backdrop override must sit inside the dashboard block, after the original rule');
+});
+
 test('rider My Account has a DESKTOP layout (not mobile-width on a wide screen)', () => {
   // The breakpoint must fire at or below 720px CSS. A half-screen browser window
   // on a 1280–1440 desktop, or a browser at 150–200% page zoom, lands BELOW

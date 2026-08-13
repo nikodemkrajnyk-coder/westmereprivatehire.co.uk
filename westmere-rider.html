@@ -921,6 +921,23 @@ body.mode-day .aj-driver-avatar{color:var(--gold);border-color:rgba(184,144,69,.
 body.mode-day .aj-step span{color:rgba(27,27,26,.45)}
 body.mode-day .aj-step.on span{color:var(--gold)}
 body.mode-day .aj-step-line{background:rgba(184,144,69,.28)}
+/* THE BACKDROP ITSELF — the one this pass originally missed, caught on the
+   live site. body.mode-day::before (0,2,1) outranks the plain body::before
+   (0,1,1) that paints the Sussex coast, and replaces it with a flat cream
+   gradient. Between 06:00 and 18:00 the entire scenery therefore disappeared
+   and the login screen sat on blank grey. Restated here, with its scrim, so
+   the backdrop is identical at every hour. */
+body.mode-day::before{
+  background:#1b1b1a url('/assets/sussex-coast.webp') center center/cover no-repeat;
+}
+body.mode-day::after{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:linear-gradient(160deg,rgba(20,20,19,.55) 0%,rgba(20,20,19,.42) 45%,rgba(27,27,26,.62) 100%);
+}
+@media(prefers-reduced-transparency:reduce){
+  body.mode-day::before{background:#1b1b1a}
+}
+
 /* …and the hero band itself: mode-day replaced it with a flat cream bar, so
    between 06:00 and 18:00 the Sussex/Tesla header simply vanished. */
 body.mode-day .topbar{
