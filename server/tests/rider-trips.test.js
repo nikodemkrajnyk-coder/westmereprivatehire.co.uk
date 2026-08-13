@@ -146,6 +146,10 @@ function makeSandbox(stored) {
     // display helpers, wired to the real shared normalizer
     esc: (s) => (s == null ? '' : String(s).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]))),
     _shortAddr: (a) => require(path.join(ROOT, 'address-normalize')).shortDisplay(a),
+    // …and the other two shared display helpers the trip card uses: the integer
+    // luggage label and the airport-only flight number.
+    _bagsText: (b) => require(path.join(ROOT, 'wm-lifecycle')).bagsText(b),
+    _flightOf: (b) => require(path.join(ROOT, 'address-normalize')).flightFor(b),
     renderActiveTrip: () => {},
     Date, JSON, Array, String, Object
   };
