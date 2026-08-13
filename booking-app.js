@@ -108,6 +108,59 @@
       .catch(function(){ return null; });
   }
   // Faithful port of calculateFare — returns {fare,distance_miles,duration_min,rate_type}
+  // ── NON-AIRPORT QUICK ESTIMATE ────────────────────────────────────────
+  // Town-to-town journeys used to show no price at all — just "please request
+  // a booking". The owner asked for an approximate distance-based guide:
+  //   £2.50 per routed mile, with a £40 floor.
+  //
+  // This is DELIBERATELY separate from calculateFare() and from FARE_CF. It
+  // never runs for a journey with an airport at either end, so no airport quote
+  // moves by a penny: those keep the fixed FARE_CF fares and the tapered
+  // per-mile engine (day 3.79/2.37/2.13, night 3.60/2.95/2.64, 10-mile floor)
+  // exactly as they were. Nothing here touches the owner's manual fare-setting
+  // or the confirmation flow — this is the customer-facing preliminary guide.
+  // GUARDRAIL: server/tests/quick-estimate-nonairport.test.js
+  var NONAP_PER_MILE = 2.50;
+  var NONAP_MIN = 40;
+  function nonAirportEstimate(mi) {
+    if (!(mi > 0)) return null;                       // no distance → no guess
+    var f = Math.ceil((mi * NONAP_PER_MILE) / 0.5) * 0.5;
+    return Math.max(NONAP_MIN, f);
+  }
+  // Route the journey and price it. Fails CLOSED: if the geocoder or the router
+  // cannot answer, the widget goes back to "request a booking" rather than
+  // inventing a distance.
+  // The shared geocode() appends ", UK" unless the string already contains the
+  // standalone token "UK". An address chosen from the autocomplete ends in
+  // "United Kingdom", which does NOT contain that token — so it was sending
+  // Nominatim "…, United Kingdom, UK", which returns nothing at all. That
+  // pre-existing quirk is invisible on the airport path (a known town matches
+  // FARE_CF by name and never geocodes) but it would stop this estimate firing
+  // for almost every real customer, so the non-airport path gets its own
+  // country handling. geocode() itself is deliberately left alone: "fixing" it
+  // there would start pricing airport journeys that currently quote nothing.
+  function geocodeForEstimate(addr) {
+    var a = String(addr || '');
+    var q = /\bUK\b|united kingdom/i.test(a) ? a : a + ', UK';
+    return fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q) +
+                 '&format=json&limit=1&countrycodes=gb', { headers: { 'Accept': 'application/json' } })
+      .then(function (r) { return r.json(); })
+      .then(function (arr) { return (arr && arr[0]) ? { lat: parseFloat(arr[0].lat), lon: parseFloat(arr[0].lon) } : null; })
+      .catch(function () { return null; });
+  }
+
+  function quoteNonAirport(pickup, destination) {
+    return Promise.all([geocodeForEstimate(pickup), geocodeForEstimate(destination)]).then(function (g) {
+      if (!g[0] || !g[1]) return null;
+      return route(g[0].lat, g[0].lon, g[1].lat, g[1].lon).then(function (rt) {
+        if (!rt) return null;
+        var mi = Math.round(rt.distance / 1609.34 * 10) / 10;
+        var fare = nonAirportEstimate(mi);
+        return fare == null ? null : { fare: fare, distance_miles: mi, rate_type: 'approx_per_mile' };
+      });
+    }).catch(function () { return null; });
+  }
+
   function calculateFare(pickup, destination, timeStr) {
     var h = timeStr ? parseInt(timeStr.split(':')[0],10) : new Date().getHours();
     var night = h >= 22 || h < 6;
@@ -245,6 +298,11 @@
   // (initQuick), so both surfaces share ONE engine — no duplicate fare logic.
   // Airport journeys get a price; anything else gets a "request a booking"
   // message. Returns updateFare so callers (e.g. use-my-location) can refresh.
+  // ── #B: an estimate is NOT a booking ──────────────────────────────────
+  // Customers were reading the quick estimate as a confirmed booking. The
+  // heading says so in as many words, on every estimate the widget shows.
+  var ESTIMATE_LABEL = '<span class="fe-label fe-label-warn">Approximate estimate — not a confirmed booking</span>';
+
   function makeEstimator(pickup, dest, timeEl, fareBox) {
     function isAirportJourney(p, d) { return !!(normAirport(p) || normAirport(d)); }
     var ft = null;
@@ -257,10 +315,26 @@
       // Not an airport pickup/drop-off → no instant price, show request message.
       if (!isAirportJourney(p, d)) {
         if (ft) clearTimeout(ft);
-        fareBox.style.display = 'block';
-        fareBox.className = 'fare-estimate msg';
-        fareBox.innerHTML = '<span class="fe-label">Your journey</span>'
-          + '<span class="fe-note" style="margin-top:3px">For this journey, please request a booking below and we’ll confirm your fare.</span>';
+        ft = setTimeout(function () {
+          fareBox.style.display = 'block';
+          fareBox.className = 'fare-estimate';
+          fareBox.innerHTML = '<span class="fe-calc">Calculating estimate…</span>';
+          quoteNonAirport(p, d).then(function (r) {
+            var money = function (n) { return (n % 1 === 0) ? n : n.toFixed(2); };
+            if (r && r.fare) {
+              fareBox.className = 'fare-estimate';
+              fareBox.innerHTML = ESTIMATE_LABEL
+                + '<span class="fe-amount">approx £' + money(r.fare) + '</span>'
+                + '<span class="fe-note">About ' + r.distance_miles + ' miles · approximate guide only. '
+                + 'Request your booking below and we’ll confirm the exact fare.</span>';
+            } else {
+              // Fail closed — never guess a distance.
+              fareBox.className = 'fare-estimate msg';
+              fareBox.innerHTML = '<span class="fe-label">Your journey</span>'
+                + '<span class="fe-note" style="margin-top:3px">For this journey, please request a booking below and we’ll confirm your fare.</span>';
+            }
+          });
+        }, 500);
         return;
       }
       if (ft) clearTimeout(ft);
@@ -277,7 +351,7 @@
             if (r.toll_fee) extras.push('£' + money(r.toll_fee) + ' toll');
             var extraNote = extras.length ? ' · incl. ' + extras.join(' + ') : '';
             fareBox.className = 'fare-estimate';
-            fareBox.innerHTML = '<span class="fe-label">Estimated fare</span><span class="fe-amount">approx £' + money(total) + '</span>'
+            fareBox.innerHTML = ESTIMATE_LABEL + '<span class="fe-amount">approx £' + money(total) + '</span>'
               + '<span class="fe-note">' + (r.label || 'Airport transfer') + extraNote + ' · approximate — we confirm the exact price with your request</span>';
           } else {
             fareBox.className = 'fare-estimate msg';

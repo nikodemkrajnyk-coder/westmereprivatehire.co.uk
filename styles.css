@@ -74,7 +74,13 @@ nav{height:78px;display:flex;align-items:center;justify-content:space-between;pa
 .quick-box{border:1px solid var(--line);background:#fff;padding:26px clamp(20px,3vw,30px)}
 .fare-estimate{display:none;margin-top:18px;border:1px solid var(--line);background:rgba(16,42,67,.06);padding:18px 20px}
 .fare-estimate.msg{background:#ffffff}
-.fare-estimate .fe-label{display:block;font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.fare-estimate .fe-label{display:block;font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}/* The caveat heading. Customers were reading the quick estimate as a
+   confirmed booking, so it is navy and heavier than a normal field label —
+   it has to read as a statement, not decoration. */
+.fe-label-warn{color:var(--ink);font-weight:600;font-size:.64rem;letter-spacing:.16em}
+/* The real step, directly above the submit button. */
+.book-step{margin:0 0 .7rem;font-size:.72rem;color:var(--muted);line-height:1.55}
+.book-step b{color:var(--ink);font-weight:600}
 .fare-estimate .fe-amount{display:block;font-family:var(--serif);font-size:2.2rem;font-weight:400;color:var(--ink);margin:.15rem 0}
 .fare-estimate .fe-note{display:block;font-size:.72rem;color:var(--muted);line-height:1.5}
 .fare-estimate .fe-calc{font-size:.82rem;color:var(--muted)}
