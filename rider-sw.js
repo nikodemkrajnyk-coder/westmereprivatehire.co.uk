@@ -3,7 +3,7 @@
 // GUARDRAIL: server/tests/rider-cache.test.js pins this to the rider-html hash
 // below — if you edit westmere-rider.html without bumping both, `npm test` fails.
 // rider-html-sha256: 79740ecd71a70b079659f43a1276085c5bca30e8d0b24c212a94dd4abf357772
-var CACHE = 'westmere-rider-v33';
+var CACHE = 'westmere-rider-v34';
 var PRECACHE = [
   '/westmere-rider.html',
   '/config.js',
@@ -59,10 +59,45 @@ self.addEventListener('fetch', function (e) {
   // (Fetch by URL rather than re-wrapping the Request: a navigate-mode Request
   // cannot be reconstructed with its mode intact, and an HTML GET needs nothing
   // from the original but its URL and cookies.)
-  var isDoc = e.request.mode === 'navigate' || /\.html$/.test(url.pathname) || url.pathname === '/';
+  var isNav = e.request.mode === 'navigate';
+  var isDoc = isNav || /\.html$/.test(url.pathname) || url.pathname === '/';
+
+  // ── A NAVIGATION MAY NEVER BE ANSWERED WITH A FOLLOWED REDIRECT ──
+  // Safari: "Response served by service worker has redirections", and the page
+  // simply refuses to open. It is not a Safari quirk — the Fetch spec forbids a
+  // service worker from handing a navigation a response whose `redirected` flag
+  // is set, because the URL bar would disagree with the document.
+  //
+  // We hit it because /westmere-account.html 301s to /westmere-rider.html. With
+  // redirect:'follow' the SW quietly followed it and returned the rider page
+  // with redirected=true, so opening My Account from an old link or bookmark
+  // failed outright — and reloading "fixed" it only because the second attempt
+  // landed on the already-redirected URL.
+  //
+  // redirect:'manual' returns the 3xx as an OPAQUEREDIRECT instead: a response a
+  // service worker IS allowed to hand back, which the browser then follows
+  // itself, so the redirect happens where it belongs. Non-navigation document
+  // fetches keep 'follow' — nothing forbids it there and they need the body.
+  // GUARDRAIL: rider-cache.test.js drives this handler with a redirecting
+  // network and asserts a navigation never receives a redirected response.
   var hit = isDoc
-    ? fetch(e.request.url, { cache: 'reload', credentials: 'include', redirect: 'follow' })
+    ? fetch(e.request.url, {
+        cache: 'reload',
+        credentials: 'include',
+        redirect: isNav ? 'manual' : 'follow'
+      })
     : fetch(e.request);
+
+  // Belt and braces: if a redirected response ever reaches a navigation by any
+  // route (a cached copy from an older SW, a future edit switching back to
+  // 'follow'), rebuild it as a plain Response so the redirect flag is dropped
+  // rather than failing the navigation.
+  function navSafe(res) {
+    if (!isNav || !res || !res.redirected) return Promise.resolve(res);
+    return res.blob().then(function (b) {
+      return new Response(b, { status: res.status, statusText: res.statusText, headers: res.headers });
+    }).catch(function () { return res; });
+  }
 
   // ── respondWith MUST ALWAYS RESOLVE TO A RESPONSE ──
   // This handler previously ended `.catch(function(){ return caches.match(e.request); })`.
@@ -83,7 +118,7 @@ self.addEventListener('fetch', function (e) {
   function cachedOrRetry() {
     return caches.match(e.request, { ignoreSearch: isDoc })
       .then(function (cached) {
-        if (cached) return cached;
+        if (cached) return navSafe(cached);
         // Our cache has nothing. Try the network once more WITHOUT cache:'reload',
         // so a browser HTTP-cache copy can still answer.
         return fetch(e.request).catch(function () { return null; });
@@ -114,11 +149,17 @@ self.addEventListener('fetch', function (e) {
 
   e.respondWith(
     hit.then(function (res) {
-      if (res.ok) {
+      // An opaqueredirect (status 0) is the browser's cue to follow the redirect
+      // itself. Hand it straight back: it must not be cached, and res.ok is
+      // false for it anyway so the block below would skip it regardless.
+      if (isNav && res && res.type === 'opaqueredirect') return res;
+      // Never store a response that carries a redirect — a later navigation
+      // reading it out of the cache would fail the same way.
+      if (res.ok && !res.redirected) {
         var clone = res.clone();
         caches.open(CACHE).then(function (cache) { cache.put(e.request, clone); }).catch(function () {});
       }
-      return res;
+      return navSafe(res);
     }).catch(cachedOrRetry)
   );
 });

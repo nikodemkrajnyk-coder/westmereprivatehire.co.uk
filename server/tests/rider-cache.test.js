@@ -142,6 +142,103 @@ test('the SW can NEVER respond with undefined (the blank-page outage)', () => {
   }));
 });
 
+test('a navigation is NEVER answered with a redirected response (Safari outage)', () => {
+  // THE OUTAGE: iPhone Safari refused to open the site —
+  //     "Safari can't open the page. The error was: 'Response served by service
+  //      worker has redirections'"
+  // — and My Account only appeared after a second reload.
+  //
+  // /westmere-account.html 301s to /westmere-rider.html (server/index.js). The
+  // SW fetched documents with redirect:'follow', so it followed that 301 itself
+  // and handed the navigation a response with redirected=true. The Fetch spec
+  // forbids exactly that: a service worker may not answer a navigation with a
+  // response that followed a redirect, because the URL bar would then disagree
+  // with the document. Safari enforces it by failing the navigation outright.
+  //
+  // Driven for real: run the shipped handler against a network that redirects,
+  // and assert that whatever reaches respondWith is not a redirected response.
+  const vm = require('vm');
+  const handlerSrc = sw.slice(sw.indexOf("self.addEventListener('fetch'"));
+  const body = handlerSrc.slice(handlerSrc.indexOf('{', handlerSrc.indexOf('function (e)')) + 1,
+    handlerSrc.lastIndexOf('});'));
+
+  function drive({ requestUrl, mode, redirectMode, cachedIsRedirected }) {
+    let responded = null;
+    let fetchOpts = null;
+    class Res {
+      constructor(b, i) {
+        this.body = b; this.status = (i && i.status) || 200;
+        this.ok = this.status >= 200 && this.status < 300;
+        this.headers = (i && i.headers) || {}; this.redirected = false; this.type = 'basic';
+      }
+      clone() { return this; }
+      blob() { return Promise.resolve('body-bytes'); }
+    }
+    const sandbox = {
+      URL, Response: Res, CACHE: 'test-v1',
+      caches: {
+        match: () => Promise.resolve(cachedIsRedirected
+          ? { cached: true, ok: true, redirected: true, status: 200, headers: {}, type: 'basic',
+              clone() { return this; }, blob() { return Promise.resolve('cached-bytes'); } }
+          : undefined),
+        open: () => Promise.resolve({ put: () => Promise.resolve() })
+      },
+      // The server 301s this path. What comes back depends on the redirect mode
+      // the handler asked for — exactly as a real browser would behave.
+      fetch: (u, opts) => {
+        fetchOpts = opts || {};
+        if (redirectMode === 'network-down') return Promise.reject(new Error('offline'));
+        if (fetchOpts.redirect === 'manual') {
+          return Promise.resolve({ type: 'opaqueredirect', status: 0, ok: false, redirected: false,
+            headers: {}, clone() { return this; }, blob() { return Promise.resolve(''); } });
+        }
+        // redirect:'follow' (or unspecified) → the redirect was followed for us.
+        return Promise.resolve({ type: 'basic', status: 200, ok: true, redirected: true,
+          headers: {}, clone() { return this; }, blob() { return Promise.resolve('followed-bytes'); } });
+      },
+      self: { location: { origin: 'https://westmereprivatehire.co.uk' } },
+      console: { log() {}, warn() {}, error() {} },
+      e: {
+        request: { url: requestUrl, method: 'GET', mode: mode || 'navigate' },
+        respondWith: (p) => { responded = p; }
+      }
+    };
+    vm.createContext(sandbox);
+    vm.runInContext('(function(e){' + body + '})(e)', sandbox);
+    return { responded, opts: () => fetchOpts };
+  }
+
+  const ACCOUNT = 'https://westmereprivatehire.co.uk/westmere-account.html';
+  const cases = [
+    { label: 'navigating to the redirecting /westmere-account.html', requestUrl: ACCOUNT },
+    { label: 'navigating to the site root', requestUrl: 'https://westmereprivatehire.co.uk/' },
+    { label: 'navigation falling back to a REDIRECTED cached copy',
+      requestUrl: ACCOUNT, redirectMode: 'network-down', cachedIsRedirected: true }
+  ];
+
+  return Promise.all(cases.map(c => {
+    const { responded } = drive(c);
+    assert.ok(responded && typeof responded.then === 'function', c.label + ': respondWith was not called');
+    return responded.then(res => {
+      assert.ok(res, c.label + ': respondWith resolved to nothing');
+      assert.ok(!res.redirected,
+        c.label + ': the service worker handed a NAVIGATION a response with redirected=true. ' +
+        'Safari refuses to open the page ("Response served by service worker has redirections").');
+    });
+  }));
+});
+
+test('the SW asks for redirect:manual on navigations, so the browser does the redirect', () => {
+  // The root fix, pinned at source: with 'manual' a 3xx comes back as an
+  // opaqueredirect, which a service worker IS allowed to return for a
+  // navigation. Switching this back to 'follow' reintroduces the outage.
+  assert.ok(/redirect:\s*isNav\s*\?\s*'manual'\s*:\s*'follow'/.test(sw),
+    "document fetches must use redirect:'manual' for navigations — 'follow' makes " +
+    'the response carry the redirect and Safari rejects the navigation');
+  assert.ok(/!res\.redirected/.test(sw),
+    'a redirected response must never be written to the cache — a later navigation would read it back');
+});
+
 test('a document fetch failure falls back before giving up', () => {
   assert.ok(/ignoreSearch/.test(sw),
     'the cache lookup must ignore the query string for documents, or arriving with ' +
