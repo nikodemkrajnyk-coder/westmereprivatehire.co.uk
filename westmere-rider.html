@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <script src="/address-normalize.js"></script>
+<script src="/wm-lifecycle.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
 <meta name="color-scheme" content="light"/>
 <meta name="mobile-web-app-capable" content="yes">
@@ -1461,6 +1462,12 @@ function todayUK(){
 // of truth used by the emails + owner/admin apps. Trip history shows the short
 // form; the booking flow still stores/sends the full precise address.
 function _shortAddr(a){return window.WMAddr?WMAddr.shortDisplay(a):(a||'');}
+/* Luggage: always a whole number ("1 bag" / "3 bags"), '' when there is none —
+   the SAME helper the staff apps and the emails use (wm-lifecycle.js). */
+function _bagsText(b){return window.WMLifecycle?WMLifecycle.bagsText(b):'';}
+/* Flight number: AIRPORT RUNS ONLY. '' on a town-to-town trip, so no flight
+   appears anywhere in the trip list or the confirmation (address-normalize.js). */
+function _flightOf(b){return window.WMAddr?WMAddr.flightFor(b):'';}
 
 /* ── MY LOCATION ── */
 var LOC_ICON='<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>Locate';
@@ -1684,6 +1691,16 @@ document.addEventListener('keydown',function(e){
 });
 
 /* ── BOOT APP ── */
+/* ── ONE FAILING PIECE MUST NOT TAKE THE ACCOUNT DOWN ──
+   Every panel below is independent: a booking row the renderer dislikes, a
+   picker that fails to build, an endpoint having a bad day. Run each through
+   _safe() so it can fail alone, loudly in the console, while everything else
+   still renders. Straight-line calls meant the first throw killed every step
+   after it — which is how one bad row turns into "my account is broken". */
+function _safe(label,fn){
+  try{ return fn(); }
+  catch(e){ try{ console.error('[account] '+label+' failed',e); }catch(_){ } return null; }
+}
 function bootApp(){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('scr-app').classList.add('on');
@@ -1693,12 +1710,15 @@ function bootApp(){
   var months=['January','February','March','April','May','June','July','August','September','October','November','December'];
   var dateStr=days[now.getDay()]+' '+now.getDate()+' '+months[now.getMonth()];
   document.getElementById('tb-date').textContent=dateStr;
-  renderTrips('upcoming');
-  initCalendar();
-  initTimePicker();
-  initPaxPicker();
-  initBagsPicker();
-  updateProfileUI();
+  // Each of these used to be able to abort every line after it: a throw in
+  // initCalendar() left the time, passenger and luggage pickers unbuilt and the
+  // booking form unusable, with nothing on screen to say why.
+  _safe('renderTrips',function(){renderTrips('upcoming');});
+  _safe('initCalendar',function(){initCalendar();});
+  _safe('initTimePicker',function(){initTimePicker();});
+  _safe('initPaxPicker',function(){initPaxPicker();});
+  _safe('initBagsPicker',function(){initBagsPicker();});
+  _safe('updateProfileUI',function(){updateProfileUI();});
 }
 
 /* ── PAGE NAVIGATION ── */
@@ -1726,9 +1746,10 @@ function goPage(id){
   var sn=document.getElementById('sn-'+id);
   if(sn)sn.classList.add('on');
   // Populate on entry — cheap, and keeps a tab from showing a stale list.
-  if(id==='payments')renderPayments();
-  if(id==='invoices')loadInvoices();
-  if(id==='details')fillMyDetails();
+  // A tab that cannot populate must still open, and must not break the nav.
+  if(id==='payments')_safe('renderPayments',function(){renderPayments();});
+  if(id==='invoices')_safe('loadInvoices',function(){loadInvoices();});
+  if(id==='details')_safe('fillMyDetails',function(){fillMyDetails();});
   // Scroll to top
   var ps=document.getElementById('page-scroll');
   if(ps)ps.scrollTop=0;
@@ -1971,7 +1992,10 @@ document.addEventListener('click',function(e){document.querySelectorAll('.sug-dr
 function checkFlightField(){
   var from=(document.getElementById('bk-from')||{}).value||'';
   var to=(document.getElementById('bk-dest')||{}).value||'';
-  var isAP=nAP(from)||nAP(to);
+  /* The SHARED airport test (address-normalize.js) — nAP() only knows the
+     fare-zone airports, so an airport it has never heard of would leave the
+     field hidden on a genuine airport run. */
+  var isAP=(window.WMAddr&&WMAddr.isAirportRun(from,to))||!!nAP(from)||!!nAP(to);
   var wrap=document.getElementById('bk-flight-wrap');
   if(wrap)wrap.style.display=isAP?'block':'none';
   var bags=document.getElementById('bk-bags-wrap');
@@ -2317,7 +2341,8 @@ function openConfirmModal(){
   if(stop)html+='<div class="modal-row"><span class="modal-rk">Stop</span><span class="modal-rv">'+esc(stop)+'</span></div>';
   html+='<div class="modal-row"><span class="modal-rk">Date</span><span class="modal-rv">'+esc(date)+'</span></div>';
   html+='<div class="modal-row"><span class="modal-rk">Time</span><span class="modal-rv">'+esc(time)+'</span></div>';
-  if(flight)html+='<div class="modal-row"><span class="modal-rk">Flight</span><span class="modal-rv">'+esc(flight)+'</span></div>';
+  var flightShown=window.WMAddr?WMAddr.flightFor({flight:flight,pickup:from,destination:dest}):'';
+  if(flightShown)html+='<div class="modal-row"><span class="modal-rk">Flight</span><span class="modal-rv">'+esc(flightShown)+'</span></div>';
   html+='<div class="modal-row"><span class="modal-rk">Passengers</span><span class="modal-rv">'+esc(pax)+'</span></div>';
   html+='<div style="text-align:center;font-size:.78rem;color:rgba(27,27,26,.5);font-weight:300;margin-top:1rem;line-height:1.6">Thank you &mdash; we&rsquo;ll review your request and email you an estimate shortly.</div>';
   document.getElementById('modal-details').innerHTML=html;
@@ -2491,20 +2516,23 @@ function renderTrips(filter){
       // Same ledger shape as Payment History and Invoices (.drow-*): route on
       // top, one quiet detail line, fare and a small-caps status on the right.
       // .trip-card is kept as the row class \u2014 rider-trips.test.js counts it.
-      var meta=[_fmtDay(b.date)||b.dateDisp||b.date||'Date to confirm',b.time,b.vehicle,(b.pax?b.pax+' pax':''),b.flight].filter(Boolean).map(esc).join(' \u00b7 ');
+      var meta=[_fmtDay(b.date)||b.dateDisp||b.date||'Date to confirm',b.time,b.vehicle,(b.pax?b.pax+' pax':''),_bagsText(b.bags),_flightOf(b)].filter(Boolean).map(esc).join(' \u00b7 ');
       var route=esc(_shortAddr(b.from))+' <span class="drow-arrow">\u2192</span> '+esc(_shortAddr(b.dest));
-      html+='<div class="trip-card">';
-      html+='<div class="drow-main">';
-      html+='<div class="drow-t">'+route+'</div>';
-      html+='<div class="drow-s">'+meta+'</div>';
-      html+='</div>';
-      html+='<div class="drow-side">';
-      html+='<div class="drow-amt">'+(b.fare?'\u00a3'+esc(b.fare):'<span class="drow-pending">Estimate pending</span>')+'</div>';
-      html+='<div class="drow-tag tc-badge '+badgeClass+'">'+esc(statusLabel)+'</div>';
-      if(canCancel)html+='<button class="tc-cancel" onclick="cancelTrip('+(b.id?parseInt(b.id,10):0)+',\''+esc(b.ref)+'\')">Cancel</button>';
-      if(!canCancel)html+='<button class="tc-again" onclick="rebookTrip(\''+esc(b.ref)+'\')">Book again</button>';
-      html+='</div>';
-      html+='</div>';
+      // Built into its own string and committed only when complete — a throw
+      // partway through must not leave an unclosed card behind.
+      var row='<div class="trip-card">';
+      row+='<div class="drow-main">';
+      row+='<div class="drow-t">'+route+'</div>';
+      row+='<div class="drow-s">'+meta+'</div>';
+      row+='</div>';
+      row+='<div class="drow-side">';
+      row+='<div class="drow-amt">'+(b.fare?'\u00a3'+esc(b.fare):'<span class="drow-pending">Estimate pending</span>')+'</div>';
+      row+='<div class="drow-tag tc-badge '+badgeClass+'">'+esc(statusLabel)+'</div>';
+      if(canCancel)row+='<button class="tc-cancel" onclick="cancelTrip('+(b.id?parseInt(b.id,10):0)+',\''+esc(b.ref)+'\')">Cancel</button>';
+      if(!canCancel)row+='<button class="tc-again" onclick="rebookTrip(\''+esc(b.ref)+'\')">Book again</button>';
+      row+='</div>';
+      row+='</div>';
+      html+=row;
     }catch(e){
       console.error('[trips] skipped an unrenderable booking',b&&b.ref,e);
     }
@@ -2565,9 +2593,11 @@ function rebookTrip(ref){
     var pd=document.getElementById('bk-pax-display');
     if(pd)pd.value=b.pax+(b.pax==1?' passenger':' passengers');
   }
-  if(b.flight){
-    set('bk-flight',b.flight);
-    var fw=document.getElementById('bk-flight-wrap');if(fw)fw.style.display='';
+  // Carry the flight number over only when the copied journey is an airport
+  // run; checkFlightField() (called via bkCalcFare below) owns the visibility.
+  if(_flightOf(b)){
+    set('bk-flight',_flightOf(b));
+    checkFlightField();
   }
   // Date is deliberately NOT copied — a repeat journey is a new date, and a
   // past date would silently fail validation on submit.
@@ -2679,8 +2709,11 @@ function updateProfile(){
   var p=document.getElementById('pv-phone');if(p)p.textContent=_currentUser.phone||'--';
   // Dashboard: the sidebar identity, the My Details form and the topbar all
   // read from the same _currentUser, so they can never drift apart.
-  paintIdentity();
-  fillMyDetails();
+  // GUARDED: these two were added in front of loadServerTrips() below, so a
+  // throw in either one silently stopped the trip list from ever loading —
+  // the customer signs in and sees an account with no journeys in it.
+  _safe('paintIdentity',function(){paintIdentity();});
+  _safe('fillMyDetails',function(){fillMyDetails();});
   var tb=document.getElementById('tb-name');
   if(tb&&_currentUser.name)tb.textContent=(_currentUser.name.split(/\s+/)[0]||'Rider');
   if(_currentUser.loggedIn){
@@ -2759,17 +2792,29 @@ function renderPayments(){
   if(sum)sum.textContent=settled.length+' settled · '+_money(total)+' total';
   var html='';
   rows.forEach(function(b){
-    var paid=(b.payment==='card'||b.payment==='cash'||!!b.paidAt);
-    var method=PAY_LABEL[b.payment]||PAY_LABEL.pending;
-    html+='<div class="drow">';
-    html+='<div class="drow-main">';
-    html+='<div class="drow-t">'+esc(_shortAddr(b.from))+' <span class="drow-arrow">→</span> '+esc(_shortAddr(b.dest))+'</div>';
-    html+='<div class="drow-s">'+esc(_niceDate(b.date))+' · '+esc(b.ref||'')+' · '+esc(method)+'</div>';
-    html+='</div>';
-    html+='<div class="drow-side">';
-    html+='<div class="drow-amt">'+(_money(b.fare)||'—')+'</div>';
-    html+='<div class="drow-tag '+(paid?'is-paid':'is-due')+'">'+(paid?'Paid':'Due')+'</div>';
-    html+='</div></div>';
+    // ONE BAD ROW MUST NEVER BLANK THE LEDGER — the same rule renderTrips
+    // follows. Every field here is optional in practice: a phone booking can
+    // reach the app with no address, no ref and a null fare.
+    try{
+      // Build the row into its OWN string and only commit it once it is
+      // complete. Appending straight to `html` meant a throw halfway through
+      // left an unclosed <div class="drow"> behind — a skipped row that still
+      // broke the layout of everything under it.
+      var paid=(b.payment==='card'||b.payment==='cash'||!!b.paidAt);
+      var method=PAY_LABEL[b.payment]||PAY_LABEL.pending;
+      var row='<div class="drow">';
+      row+='<div class="drow-main">';
+      row+='<div class="drow-t">'+esc(_shortAddr(b.from))+' <span class="drow-arrow">→</span> '+esc(_shortAddr(b.dest))+'</div>';
+      row+='<div class="drow-s">'+esc(_niceDate(b.date))+' · '+esc(b.ref||'')+' · '+esc(method)+'</div>';
+      row+='</div>';
+      row+='<div class="drow-side">';
+      row+='<div class="drow-amt">'+(_money(b.fare)||'—')+'</div>';
+      row+='<div class="drow-tag '+(paid?'is-paid':'is-due')+'">'+(paid?'Paid':'Due')+'</div>';
+      row+='</div></div>';
+      html+=row;
+    }catch(e){
+      try{ console.warn('[account] skipped a payment row',(b&&b.ref)||'(no ref)',e); }catch(_){ }
+    }
   });
   list.innerHTML=html;
 }
@@ -2794,18 +2839,23 @@ async function loadInvoices(){
     if(sum)sum.textContent=invs.length+' issued'+(outstanding?' · '+outstanding+' outstanding':'');
     var html='';
     invs.forEach(function(i){
-      html+='<div class="drow">';
-      html+='<div class="drow-main">';
-      html+='<div class="drow-t">'+esc(i.invoice_no||'Invoice')+'</div>';
-      html+='<div class="drow-s">Issued '+esc(_niceDate(i.issued_date))+(i.due_date?' · due '+esc(_niceDate(i.due_date)):'')+(i.kind?' · '+esc(i.kind==='account'?'Account':'Bespoke'):'')+'</div>';
-      html+='</div>';
-      html+='<div class="drow-side">';
-      html+='<div class="drow-amt">'+(_money(i.total)||'—')+'</div>';
-      html+='<div class="drow-tag '+(i.paid?'is-paid':'is-due')+'">'+(i.paid?'Paid':'Outstanding')+'</div>';
+      try{
+      var row='<div class="drow">';
+      row+='<div class="drow-main">';
+      row+='<div class="drow-t">'+esc(i.invoice_no||'Invoice')+'</div>';
+      row+='<div class="drow-s">Issued '+esc(_niceDate(i.issued_date))+(i.due_date?' · due '+esc(_niceDate(i.due_date)):'')+(i.kind?' · '+esc(i.kind==='account'?'Account':'Bespoke'):'')+'</div>';
+      row+='</div>';
+      row+='<div class="drow-side">';
+      row+='<div class="drow-amt">'+(_money(i.total)||'—')+'</div>';
+      row+='<div class="drow-tag '+(i.paid?'is-paid':'is-due')+'">'+(i.paid?'Paid':'Outstanding')+'</div>';
       // GET /api/customer/invoices/:id/pdf — ownership-checked, serves the
       // stored PDF (and says so plainly if one was never generated).
-      if(i.id)html+='<a class="tc-again" href="/api/customer/invoices/'+encodeURIComponent(i.id)+'/pdf">Download PDF</a>';
-      html+='</div></div>';
+      if(i.id)row+='<a class="tc-again" href="/api/customer/invoices/'+encodeURIComponent(i.id)+'/pdf">Download PDF</a>';
+      row+='</div></div>';
+      html+=row;
+      }catch(e){
+        try{ console.warn('[account] skipped an invoice row',(i&&i.invoice_no)||'(no number)',e); }catch(_){ }
+      }
     });
     list.innerHTML=html;
   }catch(e){
