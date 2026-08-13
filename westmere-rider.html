@@ -982,6 +982,32 @@ body.mode-day .side-item.on{color:var(--navy);background:rgba(184,144,69,.1)}
 @media(max-width:420px){
   .bn5 .bn-label{font-size:9px;letter-spacing:.02em}
 }
+
+/* ── BROWSER AUTOFILL ──
+   Chrome/Safari paint an autofilled field with their own yellow background,
+   which is what turned the My Account register / sign-in fields yellow. An autofilled control's
+   background cannot be set directly, so cover it with an inset box-shadow and
+   set the text with -webkit-text-fill-color (plain colour is ignored while a
+   field is autofilled). The 9999s transition stops the yellow flashing in
+   before the shadow paints. Colours match this surface's real field
+   background (#ffffff) and text (#1b1b1a) so it is seamless.
+   GUARDRAIL: server/tests/autofill.test.js */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus{
+  -webkit-box-shadow:0 0 0 1000px #ffffff inset;
+  box-shadow:0 0 0 1000px #ffffff inset;
+  -webkit-text-fill-color:#1b1b1a;
+  caret-color:#1b1b1a;
+  transition:background-color 9999s ease-in-out 0s;
+}
 </style></head>
 <body>
 

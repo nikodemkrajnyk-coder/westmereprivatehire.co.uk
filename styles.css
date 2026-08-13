@@ -79,3 +79,37 @@ nav{height:78px;display:flex;align-items:center;justify-content:space-between;pa
 .fare-estimate .fe-amount{display:block;font-family:var(--serif);font-size:2.2rem;font-weight:400;color:var(--ink);margin:.15rem 0}
 .fare-estimate .fe-note{display:block;font-size:.72rem;color:var(--muted);line-height:1.5}
 .fare-estimate .fe-calc{font-size:.82rem;color:var(--muted)}
+
+/* ── BROWSER AUTOFILL ────────────────────────────────────────────────────
+   Chrome/Safari paint an autofilled field with their own yellow background
+   and, on some builds, a yellow ring — the customer's name/email/phone turn
+   yellow on the booking and contact forms the moment the browser fills them.
+   The background of an autofilled control cannot be set directly, so the
+   standard fix is an inset box-shadow thick enough to cover the field, plus
+   -webkit-text-fill-color for the text (colour alone is ignored while
+   autofilled). The near-infinite transition stops the yellow flashing in
+   before the shadow paints.
+   Fields here are transparent over --paper (#fbfaf7): the public pages and
+   the booking column in book.html both sit on it, so that is the colour the
+   inset shadow has to be for this to look seamless.
+   Applies to every page that links this stylesheet — index, book,
+   airport-transfers, about, contact, services. The standalone apps carry the
+   same rule in their own style block, in their own field colours.
+   GUARDRAIL: server/tests/autofill.test.js. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus{
+  -webkit-box-shadow:0 0 0 1000px #fbfaf7 inset;
+  box-shadow:0 0 0 1000px #fbfaf7 inset;
+  -webkit-text-fill-color:#1b1b1a;
+  caret-color:#1b1b1a;
+  border-color:#cbc5bc;
+  transition:background-color 9999s ease-in-out 0s;
+}

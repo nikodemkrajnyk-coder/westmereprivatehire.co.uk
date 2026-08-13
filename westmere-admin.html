@@ -531,6 +531,36 @@ input[type=checkbox],input[type=radio]{accent-color:#111111 !important}
 .adm-cal-day.flagged{box-shadow:inset 0 0 0 2px #cbcbcb !important}
 [style*="#f0ece3"],[style*="#F0ECE3"]{background:#f1f1f1 !important}
 [style*="#cfc9bd"],[style*="#b8b0a4"]{border-color:#d9d9d9 !important}
+
+/* ── BROWSER AUTOFILL ──
+   Chrome/Safari paint an autofilled field with their own yellow background,
+   which is what turned the admin app fields yellow. An autofilled control's
+   background cannot be set directly, so cover it with an inset box-shadow and
+   set the text with -webkit-text-fill-color (plain colour is ignored while a
+   field is autofilled). The 9999s transition stops the yellow flashing in
+   before the shadow paints. Colours match this surface's real field
+   background (#f7f7f7) and text (#1b1b1a) so it is seamless.
+   NB: this must live in the page's OWN head stylesheet. The final closing
+   style tag in this file belongs to a print window built inside a JS string,
+   and never write a literal closing style tag in here — the HTML tokenizer
+   does not read CSS comments and would end the stylesheet right there.
+   GUARDRAIL: server/tests/autofill.test.js */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus{
+  -webkit-box-shadow:0 0 0 1000px #f7f7f7 inset;
+  box-shadow:0 0 0 1000px #f7f7f7 inset;
+  -webkit-text-fill-color:#1b1b1a;
+  caret-color:#1b1b1a;
+  transition:background-color 9999s ease-in-out 0s;
+}
 </style></head>
 <body>
 
