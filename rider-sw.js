@@ -3,7 +3,7 @@
 // GUARDRAIL: server/tests/rider-cache.test.js pins this to the rider-html hash
 // below — if you edit westmere-rider.html without bumping both, `npm test` fails.
 // rider-html-sha256: d97c9369b0f4c6071f0a527f0ee148d62dcf42d4c21a2f6b9eff5c099955b8cf
-var CACHE = 'westmere-rider-v35';
+var CACHE = 'westmere-rider-v36';
 var PRECACHE = [
   '/westmere-rider.html',
   '/config.js',

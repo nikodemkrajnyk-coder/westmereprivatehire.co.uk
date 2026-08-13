@@ -841,9 +841,19 @@ textarea,
   -webkit-text-fill-color: var(--westmere-text) !important;
 }
 
-/* …with one exception: a button that is FILLED (pressed, or a selected filter
-   pill) needs its white label back, or the press state is navy-on-navy and
-   unreadable. Each of these outranks the blanket above. */
+/* …with one exception: anything FILLED navy needs its white label back, or it
+   renders navy-on-navy and unreadable. Each of these outranks the blanket above.
+   Two families qualify:
+
+     1. a button that is filled (pressed, or a selected filter pill);
+     2. a SELECTED ITEM IN A CUSTOM PICKER. This one was missed, and it is why
+        the selected day in My Account's date picker was a solid navy square
+        with no number in it: `.cal-day.cal-sel` sets white, but `#scr-app *`
+        above carries !important and beat it, so the "14" was painted navy on
+        a navy fill. Same for the time picker and for the shared rule behind
+        BOTH the passengers and the luggage pickers.
+        GUARDRAIL: server/tests/button-style.test.js. */
+#scr-app .cal-day.cal-sel, #scr-app .time-opt.t-sel, #scr-app .pick-opt.p-sel,
 #scr-app .wm-btn:active, #scr-app .btn:active,
 #scr-app .btn-main:active, #scr-app .ls-btn:active, #scr-app .filter-btn.on,
 #scr-app .wm-btn.is-pressed, #scr-app .btn-main.is-pressed, #scr-app .ls-btn.is-pressed,

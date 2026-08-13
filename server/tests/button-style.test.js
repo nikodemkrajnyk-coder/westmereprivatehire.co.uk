@@ -572,6 +572,52 @@ test('every selected picker item is legible against its own fill', () => {
     'customer sees a solid block with no value in it:\n      ' + [...new Set(offenders)].join('\n      '));
 });
 
+// The test above reads the app's own stylesheet, and the app's own rule DOES
+// say white. That was not enough, and this is the lesson: westmere-theme.css
+// carries a blanket `#scr-app *{color:…!important}` legibility rule, so an
+// app-level rule without !important never reaches the screen. The selected day
+// stayed navy-on-navy in production while the app's CSS looked correct — and a
+// file:// render could not show it, because the theme is loaded by absolute
+// path and simply does not load there. So: whenever a blanket rule forces a
+// colour across the whole app, every navy-FILLED selected state must appear in
+// the theme's exception list, which is the only thing that can outrank it.
+test('a blanket !important text rule cannot repaint a filled picker selection', () => {
+  const theme = read('westmere-theme.css');
+  const rider = read('westmere-rider.html');
+
+  const blanket = [...theme.matchAll(/([^{}]*\*[^{}]*)\{([^{}]*)\}/g)].filter(m =>
+    /#scr-app\s*\*/.test(m[1]) && /color:[^;]*!important/.test(m[2]));
+  if (!blanket.length) return;   // no blanket rule → nothing can be overridden
+
+  // Every selected state in the app that paints a solid navy fill.
+  const filled = [...rider.matchAll(/(\.[a-z0-9_-]+\.[a-z0-9_-]*sel[a-z0-9_-]*)\s*\{([^{}]{0,200})\}/gi)]
+    .filter(m => /background:\s*var\(--navy\)|background:\s*#102a43|background:\s*#1b1b1a/i.test(m[2]))
+    .map(m => m[1]);
+  assert.ok(filled.length >= 3, 'expected the filled picker selected-states, found ' + filled.length);
+
+  // The theme's exception list: rules that restore white WITH !important.
+  const exceptions = [...theme.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+    .filter(m => /color:\s*var\(--westmere-white\)\s*!important/.test(m[2]))
+    .map(m => m[1]).join(' ');
+
+  const missing = filled.filter(sel => !exceptions.includes(sel));
+  assert.deepStrictEqual(missing, [],
+    'these navy-filled picker selections are not in westmere-theme.css\'s white-copy ' +
+    'exception list, so the blanket #scr-app * rule repaints them navy-on-navy and the ' +
+    'customer sees a solid block with no value in it: ' + missing.join(', '));
+});
+
+test('the picker exception restores the text FILL colour too, not just colour', () => {
+  // The blanket rule sets -webkit-text-fill-color as well; an override that
+  // only sets `color` loses on iOS Safari, which is the device this was
+  // reported on.
+  const theme = read('westmere-theme.css');
+  const rule = theme.match(/#scr-app \.cal-day\.cal-sel[^{]*\{([^}]*)\}/);
+  assert.ok(rule, 'the theme must carry a white-copy exception for the picker selection');
+  assert.ok(/-webkit-text-fill-color:\s*var\(--westmere-white\)\s*!important/.test(rule[1]),
+    'the exception must also set -webkit-text-fill-color, or iOS keeps the navy fill');
+});
+
 test('the date, time and passenger/bags pickers all declare a selected state', () => {
   // The bug hit three separate rules; if one is ever dropped the test above has
   // nothing to check, so pin that all three still exist.
