@@ -206,10 +206,10 @@ body.mode-day .aj-meta-grid{border-top:1px solid rgba(26,38,56,.12);border-botto
 .cal-arrow:hover{opacity:.7}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
 .cal-day-name{text-align:center;font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5);padding:.35rem 0}
-.cal-day{text-align:center;font-family:var(--sans);font-size:.9rem;font-weight:300;color:rgba(27,27,26,.85);padding:.42rem .2rem;border-radius:6px;cursor:pointer;transition:background .12s,color .12s;line-height:1}
+.cal-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;text-align:center;font-family:var(--sans);font-size:.9rem;font-weight:300;color:rgba(27,27,26,.85);padding:0;border-radius:50%;cursor:pointer;transition:box-shadow .12s,color .12s;line-height:1}
 .cal-day:hover:not(.cal-past):not(.cal-empty){background:rgba(16,42,67,.25);color:var(--navy)}
 .cal-day.cal-today{color:var(--navy);font-weight:500}
-.cal-day.cal-sel{background:var(--navy);color:#ffffff;font-weight:500}
+.cal-day.cal-sel{background:transparent;color:var(--navy);font-weight:500;box-shadow:inset 0 0 0 1.5px var(--navy)}
 .cal-day.cal-past{color:rgba(27,27,26,.22);cursor:not-allowed}
 .cal-day.cal-empty{cursor:default}
 .time-drop{color-scheme:light;display:none;position:absolute;top:calc(100% + 8px);right:0;left:auto;z-index:400;background:#ffffff;border:1px solid rgba(16,42,67,.5);border-radius:12px;padding:1.1rem;width:290px;height:310px;box-shadow:0 20px 60px rgba(27,27,26,.28)}
@@ -217,18 +217,18 @@ body.mode-day .aj-meta-grid{border-top:1px solid rgba(26,38,56,.12);border-botto
 .time-cols{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.8rem}
 .time-col{display:flex;flex-direction:column;gap:2px;overflow-y:auto;max-height:218px;scrollbar-width:thin;scrollbar-color:rgba(27,27,26,.18) transparent}
 .time-col-label{font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.5);text-align:center;padding:.3rem 0;position:sticky;top:0;background:#ffffff}
-.time-opt{font-family:var(--sans);font-size:.9rem;font-weight:300;color:rgba(27,27,26,.75);padding:.32rem .5rem;border-radius:5px;cursor:pointer;text-align:center;transition:background .12s,color .12s}
+.time-opt{font-family:var(--sans);font-size:.9rem;font-weight:300;color:rgba(27,27,26,.75);padding:.32rem .5rem;border:1px solid transparent;border-radius:8px;cursor:pointer;text-align:center;transition:border-color .12s,color .12s;background:#ffffff}
 .time-opt:hover{background:rgba(16,42,67,.25);color:var(--navy)}
-.time-opt.t-sel{background:var(--navy);color:#ffffff;font-weight:500}
+.time-opt.t-sel{background:#ffffff;color:var(--navy);font-weight:500;border-color:var(--navy)}
 /* ── CUSTOM PAX / LUGGAGE PICKER ── */
 .pax-trigger,.bags-trigger{cursor:pointer;position:relative}
 .pick-drop{color-scheme:light;display:none;position:absolute;top:calc(100% + 8px);left:0;z-index:400;background:#ffffff;border:1px solid rgba(16,42,67,.5);border-radius:12px;padding:1.1rem;width:200px;box-shadow:0 20px 60px rgba(27,27,26,.28)}
 .pick-drop.open{display:block}
 .pick-col{display:flex;flex-direction:column;gap:2px;overflow-y:auto;max-height:240px;scrollbar-width:thin;scrollbar-color:rgba(27,27,26,.18) transparent}
 .pick-col-label{font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.5);text-align:center;padding:.3rem 0;position:sticky;top:0;background:#ffffff}
-.pick-opt{font-family:var(--sans);font-size:.95rem;font-weight:300;color:rgba(27,27,26,.78);padding:.5rem .6rem;border-radius:5px;cursor:pointer;text-align:center;transition:background .12s,color .12s;display:flex;align-items:center;justify-content:center;gap:.5rem}
-.pick-opt:hover{background:rgba(16,42,67,.25);color:var(--navy)}
-.pick-opt.p-sel{background:var(--navy);color:#ffffff;font-weight:500}
+.pick-opt{font-family:var(--sans);font-size:.95rem;font-weight:300;color:rgba(27,27,26,.78);padding:.5rem .6rem;border:1px solid transparent;border-radius:8px;cursor:pointer;text-align:center;transition:border-color .12s,color .12s;background:#ffffff;display:flex;align-items:center;justify-content:center;gap:.5rem}
+.pick-opt:hover{border-color:rgba(16,42,67,.45);color:var(--navy)}
+.pick-opt.p-sel{background:#ffffff;color:var(--navy);font-weight:500;border-color:var(--navy)}
 .pick-counter{display:flex;align-items:center;justify-content:center;gap:1rem;padding:.4rem 0}
 .pick-btn{width:36px;height:36px;border-radius:50%;border:1px solid rgba(27,27,26,.06);background:rgba(27,27,26,.06);color:#102a43;font-size:1.2rem;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
 .pick-btn:hover{background:rgba(27,27,26,.18)}

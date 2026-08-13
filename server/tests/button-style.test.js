@@ -529,105 +529,95 @@ test('the site footer is not simultaneously white and white-texted', () => {
     'its contents render invisible:\n      ' + claiming.join('\n      '));
 });
 
-// ── A SELECTED PICKER ITEM MUST SHOW ITS VALUE ───────────────────────────
-// The reported bug: in My Account's date picker the selected day was a solid
-// navy rounded square with no number in it — the "14" was invisible. Same in
-// the passengers picker. The rules were `background:var(--navy);color:#111`:
-// a dark fill with near-black text. It was never readable — against the old
-// charcoal --navy (#1b1b1a) #111 measures about 1.05:1, and after the redesign
-// repointed --navy to #102a43 it was still only 1.2:1. A picker whose selected
-// state hides the value it selected is worse than no highlight at all.
-test('every selected picker item is legible against its own fill', () => {
-  const rider = read('westmere-rider.html');
-  // The palette these rules resolve against: the app declares --navy, and the
-  // theme (loaded last) overrides it.
-  const themeNavy = (read('westmere-theme.css').match(/--westmere-navy:\s*(#[0-9a-f]{3,6})/i) || [])[1] || '#102a43';
-  const appNavy = (rider.match(/--navy:\s*(#[0-9a-f]{3,6})/i) || [])[1] || themeNavy;
+// ── A SELECTED PICKER ITEM IS AN OUTLINED FRAME ──────────────────────────
+// History, because the failure reversed direction twice and the guard has to
+// survive both ends of it:
+//   1. selected was `background:var(--navy);color:#111` — a dark fill with
+//      near-black text, about 1.2:1. The value was invisible.
+//   2. fixed to white-on-navy, which needed an !important exception in the
+//      theme to beat the blanket `#scr-app *{color:…!important}` rule.
+//   3. the owner rejected the filled look. Selected is now a FRAME: a navy
+//      ring on white, navy text — so the blanket navy is the colour it wants,
+//      and the theme exception had to come back OUT. Left in, it would have
+//      painted the value white on white and hidden it all over again.
+// So this asserts the frame, not a fill, and still asserts legibility.
+const PICKERS = ['.cal-day.cal-sel', '.time-opt.t-sel', '.pick-opt.p-sel'];
 
-  const offenders = [];
-  // Any rule whose selector marks a selected/active state AND paints a background.
-  const RULE = /(\.[a-z0-9_-]+\.[a-z0-9_-]*(?:sel|selected|active|\bon\b)[a-z0-9_-]*)\s*\{([^{}]{0,240})\}/gi;
-  for (const m of rider.matchAll(RULE)) {
-    const body = m[2];
-    const bgM = body.match(/background(?:-color)?:\s*([^;!}]+)/i);
-    const fgM = body.match(/(?<!-)\bcolor:\s*([^;!}]+)/i);
-    if (!bgM || !fgM) continue;
-    const resolve = (v) => {
-      v = v.trim();
-      if (/^var\(--navy\)$/i.test(v)) return [appNavy, themeNavy];
-      if (/^var\(--westmere-navy\)$/i.test(v)) return [themeNavy];
-      if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v)) return [v];
-      return null;                       // rgba/tint/gradient — not a solid fill
-    };
-    const bgs = resolve(bgM[1]), fgs = resolve(fgM[1]);
-    if (!bgs || !fgs) continue;
-    // Fail if the pair is unreadable under ANY palette this rule can resolve to.
-    for (const bg of bgs) for (const fg of fgs) {
-      const ratio = contrast(bg, fg);
-      if (ratio < 4.5) offenders.push(`${m[1]}  ${fg} on ${bg} → ${ratio.toFixed(2)}:1`);
+test('every selected picker item is an outlined frame, not a filled block', () => {
+  const rider = read('westmere-rider.html');
+  for (const sel of PICKERS) {
+    const m = rider.match(new RegExp(sel.replace(/[.]/g, '\\.') + '\\s*\\{([^}]*)\\}'));
+    assert.ok(m, 'missing the selected-state rule for ' + sel);
+    const body = m[1];
+
+    // (a) A visible frame: either a border-colour or an inset ring.
+    const framed = /border-color:\s*var\(--navy\)|border:\s*[^;]*var\(--navy\)|box-shadow:\s*inset[^;]*var\(--navy\)/.test(body);
+    assert.ok(framed, sel + ' must draw a navy frame (border-color or an inset ring): ' + body);
+
+    // (b) NOT filled. This is the owner's actual objection, so it is the
+    //     assertion that matters most: no navy background may survive.
+    const bg = (body.match(/background(?:-color)?:\s*([^;]+)/) || [])[1];
+    if (bg !== undefined) {
+      assert.ok(!/var\(--navy\)|#102a43|#1b1b1a/i.test(bg),
+        sel + ' still paints a navy fill (' + bg.trim() + ') — the selected state must be a frame');
+      assert.ok(/transparent|#fff|#ffffff/i.test(bg),
+        sel + ' should sit on white or transparent, got: ' + bg.trim());
     }
+
+    // (c) Rounded, never a squared block.
+    const radius = (body.match(/border-radius:\s*([^;]+)/) || [])[1];
+    const baseRule = rider.match(new RegExp(sel.split('.').slice(0, 2).join('.').replace(/[.]/g, '\\.') + '\\s*\\{([^}]*)\\}'));
+    const baseRadius = baseRule ? (baseRule[1].match(/border-radius:\s*([^;]+)/) || [])[1] : null;
+    const r = radius || baseRadius;
+    assert.ok(r && !/^0/.test(r.trim()),
+      sel + ' must be rounded (its own or its base rule\'s border-radius), got: ' + r);
+
+    // (d) Legible: navy copy on white clears AA comfortably.
+    const fg = (body.match(/(?<!-)\bcolor:\s*(#[0-9a-fA-F]{3,6}|var\(--navy\))/) || [])[1];
+    assert.ok(fg, sel + ' must state its text colour');
+    const fgHex = /var\(--navy\)/.test(fg) ? '#102a43' : fg;
+    const ratio = contrast(fgHex, '#ffffff');
+    assert.ok(ratio >= 4.5,
+      sel + ' prints ' + fgHex + ' on white at ' + ratio.toFixed(2) + ':1 — unreadable');
   }
-  assert.deepStrictEqual([...new Set(offenders)], [],
-    'a selected picker/menu item is invisible against its own background — the ' +
-    'customer sees a solid block with no value in it:\n      ' + [...new Set(offenders)].join('\n      '));
 });
 
-// The test above reads the app's own stylesheet, and the app's own rule DOES
-// say white. That was not enough, and this is the lesson: westmere-theme.css
-// carries a blanket `#scr-app *{color:…!important}` legibility rule, so an
-// app-level rule without !important never reaches the screen. The selected day
-// stayed navy-on-navy in production while the app's CSS looked correct — and a
-// file:// render could not show it, because the theme is loaded by absolute
-// path and simply does not load there. So: whenever a blanket rule forces a
-// colour across the whole app, every navy-FILLED selected state must appear in
-// the theme's exception list, which is the only thing that can outrank it.
-test('a blanket !important text rule cannot repaint a filled picker selection', () => {
+test('the theme must NOT force white copy onto a framed picker selection', () => {
+  // The exact regression that would re-hide the value: with the fill gone, an
+  // !important white override paints navy-on-white text white-on-white.
   const theme = read('westmere-theme.css');
-  const rider = read('westmere-rider.html');
-
-  const blanket = [...theme.matchAll(/([^{}]*\*[^{}]*)\{([^{}]*)\}/g)].filter(m =>
-    /#scr-app\s*\*/.test(m[1]) && /color:[^;]*!important/.test(m[2]));
-  if (!blanket.length) return;   // no blanket rule → nothing can be overridden
-
-  // Every selected state in the app that paints a solid navy fill.
-  const filled = [...rider.matchAll(/(\.[a-z0-9_-]+\.[a-z0-9_-]*sel[a-z0-9_-]*)\s*\{([^{}]{0,200})\}/gi)]
-    .filter(m => /background:\s*var\(--navy\)|background:\s*#102a43|background:\s*#1b1b1a/i.test(m[2]))
-    .map(m => m[1]);
-  assert.ok(filled.length >= 3, 'expected the filled picker selected-states, found ' + filled.length);
-
-  // The theme's exception list: rules that restore white WITH !important.
-  const exceptions = [...theme.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+  const whiteRules = [...theme.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
     .filter(m => /color:\s*var\(--westmere-white\)\s*!important/.test(m[2]))
     .map(m => m[1]).join(' ');
-
-  const missing = filled.filter(sel => !exceptions.includes(sel));
-  assert.deepStrictEqual(missing, [],
-    'these navy-filled picker selections are not in westmere-theme.css\'s white-copy ' +
-    'exception list, so the blanket #scr-app * rule repaints them navy-on-navy and the ' +
-    'customer sees a solid block with no value in it: ' + missing.join(', '));
+  const claimed = PICKERS.filter(sel => whiteRules.includes(sel));
+  assert.deepStrictEqual(claimed, [],
+    'the picker selection is a frame on white now — forcing white copy on it hides ' +
+    'the value: ' + claimed.join(', '));
 });
 
-test('the picker exception restores the text FILL colour too, not just colour', () => {
-  // The blanket rule sets -webkit-text-fill-color as well; an override that
-  // only sets `color` loses on iOS Safari, which is the device this was
-  // reported on.
-  const theme = read('westmere-theme.css');
-  const rule = theme.match(/#scr-app \.cal-day\.cal-sel[^{]*\{([^}]*)\}/);
-  assert.ok(rule, 'the theme must carry a white-copy exception for the picker selection');
-  assert.ok(/-webkit-text-fill-color:\s*var\(--westmere-white\)\s*!important/.test(rule[1]),
-    'the exception must also set -webkit-text-fill-color, or iOS keeps the navy fill');
-});
-
-test('the date, time and passenger/bags pickers all declare a selected state', () => {
-  // The bug hit three separate rules; if one is ever dropped the test above has
-  // nothing to check, so pin that all three still exist.
+test('the rider pickers match the main booking site\'s picker geometry', () => {
+  // styles.css is the public booking form. The two pickers should not drift:
+  // the day cell is a circle, the time/option pill is an 8px rounded box.
+  const site = read('styles.css');
   const rider = read('westmere-rider.html');
-  for (const sel of ['.cal-day.cal-sel', '.time-opt.t-sel', '.pick-opt.p-sel']) {
-    const re = new RegExp(sel.replace(/[.]/g, '\\.') + '\\s*\\{[^}]*\\}');
-    const m = rider.match(re);
-    assert.ok(m, 'missing the selected-state rule for ' + sel);
-    assert.ok(/color:\s*#f{3,6}|color:\s*#ffffff/i.test(m[0]),
-      sel + ' must set white text on its navy fill: ' + m[0]);
+  const siteDay = site.match(/\.wm-day\{([^}]*)\}/);
+  const siteTime = site.match(/\.wm-time\{([^}]*)\}/);
+  assert.ok(siteDay && siteTime, 'could not read the main site picker rules');
+
+  const riderDay = rider.match(/\.cal-day\{([^}]*)\}/);
+  assert.ok(riderDay, 'could not read the rider day rule');
+  assert.ok(/aspect-ratio:\s*1/.test(riderDay[1]) && /border-radius:\s*50%/.test(riderDay[1]),
+    'the rider day cell must be a circle like the main site\'s .wm-day: ' + riderDay[1]);
+
+  const siteTimeRadius = (siteTime[1].match(/border-radius:\s*([^;]+)/) || [])[1];
+  for (const sel of ['.time-opt', '.pick-opt']) {
+    const m = rider.match(new RegExp(sel.replace(/[.]/g, '\\.') + '\\{([^}]*)\\}'));
+    assert.ok(m, 'missing ' + sel);
+    const r = (m[1].match(/border-radius:\s*([^;]+)/) || [])[1];
+    assert.strictEqual((r || '').trim(), (siteTimeRadius || '').trim(),
+      sel + ' should share the main site .wm-time radius (' + siteTimeRadius + '), got ' + r);
+    assert.ok(/border:\s*1px solid/.test(m[1]),
+      sel + ' needs a 1px border in its base rule so selecting it does not shift the layout');
   }
 });
 
