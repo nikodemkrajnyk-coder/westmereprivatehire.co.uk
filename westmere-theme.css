@@ -1248,3 +1248,58 @@ input, select, textarea {
   border-color: var(--westmere-navy) !important;
   font-weight: 500 !important;
 }
+
+/* =========================================================
+   19. AT A GLANCE — DATE, TIME AND FARE ON A TRIP CARD
+   =========================================================
+   The owner reads his job list off a phone in a windscreen cradle, often with
+   the car moving. Three fields carry that glance: WHEN the job is, WHAT TIME,
+   and HOW MUCH. Everything else on the card — name, route, passengers, bags —
+   he reads when he is stopped.
+
+   Those three used to be buried in the card's third line, at --text-sm in 40%
+   ink: the smallest and faintest thing on the card. They are now their own row
+   at --text-xl in full-strength navy, so every card has an obvious first stop.
+
+   THE SIZE IS A TOKEN, NEVER A LITERAL. Re-tuning the glance for the whole
+   system — both trip lists in the owner app, the full-screen trip page, and
+   the admin's job rows — is a one-line edit to --text-xl in §1, or to the tier
+   named here. That is the entire point of the token layer.
+
+   Lining tabular figures: Cormorant's default old-style numerals hang below
+   the baseline and vary in height, which is precisely wrong for a number read
+   in a fraction of a second. Tabular also stops the fare jittering as the
+   digits change.
+
+   The row wraps rather than shrinks — at this size a narrow phone would rather
+   drop the fare to its own line than render all three small, which would undo
+   the change. GUARDRAIL: server/tests/owner-glance.test.js */
+.wm-glance {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2, .5rem);
+  margin: var(--space-2, .5rem) 0 var(--space-1, .25rem);
+}
+.wm-glance-when {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3, .75rem);
+  min-width: 0;
+}
+.wm-glance-date,
+.wm-glance-time,
+.wm-glance-fare {
+  /* No font-family here on purpose: the theme’s `html { font-family: var(--westmere-type)
+     !important }` already puts every surface on Cormorant, and a second
+     declaration would be a second source of truth for the typeface — which is
+     exactly what typography.test.js forbids. */
+  font-size: var(--text-xl, 1.5rem);
+  font-weight: var(--weight-semi, 600);
+  line-height: 1.1;
+  color: var(--westmere-navy, #102a43);
+  -webkit-text-fill-color: var(--westmere-navy, #102a43);
+  font-variant-numeric: lining-nums tabular-nums;
+  white-space: nowrap;
+}

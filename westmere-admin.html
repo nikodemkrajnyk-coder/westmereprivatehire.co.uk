@@ -2624,11 +2624,21 @@ function admJobRow(b){
       +'<div style="font-weight:600;color:var(--navy)">'+escTo(b.customer_name||b.passenger_name||'Guest')+'</div>'
       +'<span class="tag '+s.cls+'">'+s.label+'</span>'
     +'</div>'
+    // AT A GLANCE — date, time and fare at --text-xl navy, the same row and the
+    // same classes the owner app uses (§19 of westmere-theme.css). Parity is
+    // the point: the two apps show one job list in two places, and a field
+    // that is prominent in one and buried in the other is a trap.
+    +'<div class="wm-glance">'
+    +  '<span class="wm-glance-when">'
+    +    '<span class="wm-glance-date">'+escTo(_admGlanceDate(b.date))+'</span>'
+    +    '<span class="wm-glance-time">'+escTo(b.time||'ASAP')+'</span>'
+    +  '</span>'
+    +  '<span class="wm-glance-fare">'+(b.fare?'£'+Number(b.fare).toFixed(0):'—')+'</span>'
+    +'</div>'
     +'<div style="font-size:.9rem;color:rgba(27,27,26,.6)">'+escTo(_admShortAddr(b.pickup))
       +(b.stop_address?' → '+escTo(_admShortAddr(b.stop_address)):'')
       +' → '+escTo(_admShortAddr(b.destination))+'</div>'
-    +'<div style="font-size:.84rem;color:rgba(27,27,26,.45);margin-top:.15rem">'+escTo(b.ref||'')+' · '+escTo(b.date||'')+' '+escTo(b.time||'ASAP')
-      +(b.fare?' · £'+Number(b.fare).toFixed(0):'')
+    +'<div style="font-size:.84rem;color:rgba(27,27,26,.45);margin-top:.15rem">'+escTo(b.ref||'')
       +' · '+(b.passengers||1)+' pax'+(_admBags(b.bags)?' · '+escTo(_admBags(b.bags)):'')
       +' · <span class="tag '+p.cls+'">'+p.label+'</span></div>'
     +(acts?'<div style="margin-top:.5rem;display:flex;gap:.4rem;flex-wrap:wrap">'+acts+'</div>':'')
@@ -3719,6 +3729,26 @@ function admStatusTag(b){
 }
 // Luggage label ("3 bags"), shared rule.
 function _admBags(bags){ return WMLifecycle.bagsText(bags); }
+
+// "Today" / "Tomorrow" / "Tue 25 Aug" for the at-a-glance row. Built from the
+// literal YYYY-MM-DD components — never new Date('2026-08-25'), which parses as
+// UTC midnight and renders the day before west of UTC. "Today" is the UK
+// calendar day, not the host's: between 00:00 and 01:00 BST the UTC date is
+// still yesterday, which would label today's job "Tomorrow".
+var _ADM_DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+var _ADM_MONS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function _admGlanceDate(dateStr){
+  if(!dateStr)return '—';
+  var today=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/London'});
+  var tomorrow=new Date(Date.now()+86400000).toLocaleDateString('sv-SE',{timeZone:'Europe/London'});
+  if(dateStr===today)return 'Today';
+  if(dateStr===tomorrow)return 'Tomorrow';
+  var p=String(dateStr).split('-');
+  if(p.length!==3)return dateStr;
+  var d=new Date(parseInt(p[0],10),parseInt(p[1],10)-1,parseInt(p[2],10));
+  if(isNaN(d.getTime()))return dateStr;
+  return _ADM_DAYS[d.getDay()]+' '+parseInt(p[2],10)+' '+_ADM_MONS[parseInt(p[1],10)-1];
+}
 // Flag same-day bookings whose pickup times fall within ~2h of each other.
 // Only bookings sharing the same date are compared — two jobs at a similar
 // time of day but on different days are NOT a conflict.

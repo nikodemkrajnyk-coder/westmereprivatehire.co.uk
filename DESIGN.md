@@ -31,6 +31,15 @@ theme (`--wmb-ink: var(--westmere-navy, #102a43)`), so a palette change reaches
 the buttons automatically. Edit `wm-buttons.css` only to change button
 *structure* (padding, the two variants) — never to change colour.
 
+### The at-a-glance row
+`.wm-glance` (theme §19) is the date / time / fare line on a trip card — the
+three fields the owner reads while driving. It renders at `--text-xl`, and the
+owner app's trip lists, the full-screen trip page and the admin's job rows all
+use the same classes. To make the glance bigger or smaller for every one of
+them, change the tier named in §19 — do not add a font-size to the markup, or
+the inline style outranks the token and the dial stops working.
+Guardrail: `server/tests/owner-glance.test.js`.
+
 ### Why every token reference has a fallback
 `var(--westmere-navy, #102a43)`. A `var()` that resolves to nothing is invalid
 at computed-value time and the **whole declaration is dropped** — an unstyled

@@ -2994,8 +2994,22 @@ function jobCardHtml(j){
       +  '<div style="font-weight:500;color:var(--navy);font-size:.98rem;font-family:var(--serif)">'+escH(j.name)+'</div>'
       +  '<span style="display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .5rem;font-size:.67rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:'+stColor+';background:'+stBg+';border-radius:4px;white-space:nowrap">'+stLabel+'<span style="font-size:.82rem;opacity:.6">▼</span></span>'
       +'</div>'
+      // AT A GLANCE — the three fields the owner reads while driving, pulled
+      // out of the small grey meta line into their own row at --text-xl navy.
+      // Sizing lives in §19 of westmere-theme.css and comes off the type
+      // scale; nothing here carries a font-size. Same row, same classes, on
+      // the To Confirm list, the Confirmed week and the full-screen trip page,
+      // because all three render THIS function.
+      +'<div class="wm-glance">'
+      +  '<span class="wm-glance-when">'
+      +    '<span class="wm-glance-date">'+escH(_fmtUpcomingDate(j.date)||'—')+'</span>'
+      +    '<span class="wm-glance-time">'+escH(j.time||'ASAP')+'</span>'
+      +  '</span>'
+      +  '<span class="wm-glance-fare">'+(j.fare?'£'+Number(j.fare).toFixed(0):'—')+'</span>'
+      +'</div>'
       +'<div style="font-size:.9rem;color:rgba(27,27,26,.6);margin-bottom:.15rem">'+escH(_shortAddr(j.pickup||''))+(j.stop_address?' → '+escH(_shortAddr(j.stop_address)):'')+' → '+escH(_shortAddr(j.dest||''))+'</div>'
-      +'<div style="font-size:.84rem;color:rgba(27,27,26,.4)">'+(j.time||'ASAP')+(j.fare?' · £'+Number(j.fare).toFixed(0):'')+' · '+(j.pax||1)+' pax'+(_bagsText(j.bags)?' · '+_bagsText(j.bags):'')+'</div>'
+      // What is left is detail, not glance: passengers and bags stay small.
+      +'<div style="font-size:.84rem;color:rgba(27,27,26,.4)">'+(j.pax||1)+' pax'+(_bagsText(j.bags)?' · '+_bagsText(j.bags):'')+'</div>'
       +(j.apiStatus==='pending'&&j.suggestedFare!=null?'<div style="margin-top:.3rem"><span style="display:inline-block;font-size:.84rem;font-weight:600;letter-spacing:.03em;color:#555555;background:rgba(106,106,106,.16);border:1px solid rgba(106,106,106,.4);border-radius:5px;padding:.2rem .6rem">Suggested: £'+Number(j.suggestedFare).toFixed(2)+'</span></div>':'')
       +'<div style="margin-top:.3rem">'+wmPayBadge(j)+wmFareReviewChip(j)+'</div>'
     +'</div>'
