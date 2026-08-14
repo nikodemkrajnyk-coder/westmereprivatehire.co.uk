@@ -1388,7 +1388,7 @@ input, select, textarea {
 }
 
 /* =========================================================
-   21. "BY ADVANCE BOOKING ONLY" — ONE NOTE, ONE PLACE TO EDIT
+   21. "PRE-BOOKINGS ONLY" — ONE NOTE, ONE PLACE TO EDIT
    =========================================================
    Westmere is a PRE-BOOKED service. It does not take on-demand work, and a
    customer rang expecting a car within the minute — so the site now says so,
@@ -1404,7 +1404,9 @@ input, select, textarea {
    TO CHANGE HOW LOUD IT IS: this one rule. Raise it to --text-sm to make it
    more assertive, or drop `.wm-advance b`'s colour to --westmere-muted to make
    it quieter still. To change the WORDS, they appear in four places — grep
-   "advance booking". GUARDRAIL: server/tests/advance-booking.test.js */
+   "Pre-bookings only". The phrase is the owner's, and it is deliberately
+   general: no lead time is quoted, because quoting one invites an argument
+   about whether the customer met it. GUARDRAIL: server/tests/advance-booking.test.js */
 .wm-advance {
   display: block;
   /* Breathing room on BOTH sides. Without the lower margin the note collides

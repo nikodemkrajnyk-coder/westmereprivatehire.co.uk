@@ -1,5 +1,5 @@
 /**
- * "By advance booking only" — run with:
+ * "Pre-bookings only" — run with:
  *   node server/tests/advance-booking.test.js   (also gated by `npm test`)
  *
  * WHY THIS EXISTS
@@ -39,7 +39,7 @@ const SURFACES = [
   ['westmere-rider.html', "My Account's booking form"]
 ];
 
-console.log('\nBy advance booking only');
+console.log('\nPre-bookings only');
 
 test('every surface that takes a booking carries the note', () => {
   const missing = SURFACES.filter(([f]) => !/class="wm-advance"/.test(read(f)))
@@ -48,14 +48,19 @@ test('every surface that takes a booking carries the note', () => {
     'these surfaces no longer tell the customer we are pre-booked only:\n      ' + missing.join('\n      '));
 });
 
-test('the note actually says advance booking, not something vague', () => {
+test("the note actually says 'Pre-bookings only', not something vague", () => {
   for (const [f, what] of SURFACES) {
     const src = read(f);
     const m = /<p class="wm-advance">([\s\S]*?)<\/p>/.exec(src);
     assert.ok(m, f + ' has the class but no note');
     const text = m[1].replace(/<[^>]+>/g, '').trim();
-    assert.ok(/advance booking/i.test(text),
-      what + ' no longer says "advance booking" — it reads: ' + JSON.stringify(text));
+    // The owner chose this phrase. It is deliberately general — no lead time
+    // is quoted anywhere, because quoting one ("24 hours") invites an argument
+    // about whether 23 counts.
+    assert.ok(/pre-bookings only/i.test(text),
+      what + ' no longer says "Pre-bookings only" — it reads: ' + JSON.stringify(text));
+    assert.ok(!/\b(hour|day|notice period|\d+\s*h)\b/i.test(text),
+      what + ' has started quoting a lead time. The phrase is deliberately general: ' + JSON.stringify(text));
     assert.ok(text.length > 30, what + "'s note is too short to be understood: " + JSON.stringify(text));
   }
 });
@@ -66,7 +71,7 @@ test('the two surfaces where someone is ABOUT to act spell out why', () => {
   for (const f of ['book.html', 'contact.html']) {
     const text = /<p class="wm-advance">([\s\S]*?)<\/p>/.exec(read(f))[1].replace(/<[^>]+>/g, '');
     assert.ok(/on-demand/i.test(text),
-      f + ' no longer says we do not do on-demand pickups — "advance booking only" alone is easy to read past');
+      f + ' no longer says we do not do on-demand pickups — "Pre-bookings only" alone is easy to read past');
     assert.ok(/reserve ahead/i.test(text), f + ' should tell the customer what to do instead, not only what we will not do');
   }
 });
