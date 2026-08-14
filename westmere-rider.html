@@ -3510,12 +3510,36 @@ async function loadServerTrips(){
       // accepted change. See _tripStatus / _tripActions.
       return{id:b.id,ref:b.ref,from:b.pickup,dest:b.destination,stop:b.stop_address||'',date:b.date,time:b.time,flight:b.flight||'',pax:b.passengers||1,bags:b.bags||'',vehicle:b.driver_vehicle||'',fare:b.fare||0,status:b.status,created:b.created_at,driverName:b.driver_name||'',driverReg:b.driver_reg||'',payment:b.payment||'pending',paidAt:b.paid_at||'',reEstimatedAt:b.re_estimated_at||'',changeRequestedAt:b.change_requested_at||''};
     });
-    // The server is the source of truth, but never DROP a trip the customer can
-    // already see: keep any local-only row (one just booked in this tab, before
-    // the server list has caught up) whose ref the server didn't return.
-    var serverRefs={};
-    mapped.forEach(function(b){if(b.ref)serverRefs[b.ref]=1;});
-    var localOnly=getBookings().filter(function(b){return b&&b.ref&&!serverRefs[b.ref];});
+    // RECONCILE REMOVALS, NOT JUST STATUSES.
+    //
+    // This used to keep EVERY local row the server did not return, so that a
+    // trip booked seconds ago in this tab would not vanish before the server
+    // list caught up. Well meant, but "the server has not caught up yet" and
+    // "the office deleted it" look identical from here — so a booking the owner
+    // deleted stayed in My Account for ever, frozen at whatever status it had
+    // when it was last seen. A customer looking at "pending" on a trip that no
+    // longer exists will ring up about it.
+    //
+    // The two cases are told apart by whether the SERVER has ever acknowledged
+    // the row:
+    //   · it has an id  -> the server assigned that, so the server has seen it.
+    //                      Absent from the list now means DELETED. Drop it.
+    //   · it has no id  -> created in this tab and not yet acknowledged. Keep
+    //                      it, but only for a grace window; after that its
+    //                      absence is real and it goes too, otherwise a booking
+    //                      that never reached the server haunts the list.
+    var GRACE_MS=2*60*1000;
+    var serverRefs={},serverIds={};
+    mapped.forEach(function(b){ if(b.ref)serverRefs[b.ref]=1; if(b.id!=null)serverIds[String(b.id)]=1; });
+    var now=Date.now();
+    var localOnly=getBookings().filter(function(b){
+      if(!b||!b.ref)return false;
+      if(serverRefs[b.ref])return false;                       // the server returned it — its row wins
+      if(b.id!=null&&serverIds[String(b.id)])return false;      // same, matched by id
+      if(b.id!=null)return false;                               // KNOWN to the server and now gone -> deleted
+      var born=Date.parse(b.created||'')||0;                    // never acknowledged: keep briefly
+      return born>0&&(now-born)<GRACE_MS;
+    });
     try{localStorage.setItem('wph_rider_bookings',JSON.stringify(mapped.concat(localOnly)));}catch(e){}
     // The server has spoken: what is on screen from here on is live, including
     // any payment made through the email link since this page was opened.
