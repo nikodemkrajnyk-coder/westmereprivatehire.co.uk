@@ -46,6 +46,26 @@ function test(name, fn) {
 }
 
 const CSS = read('wm-buttons.css');
+
+// Design values are token references now — var(--token, fallback). These tests
+// compare the value the browser ends up with, so resolve a reference to the
+// token's declared value (falling back to the literal in the var()).
+function resolveToken(val, sheets) {
+  let v = String(val || '').trim();
+  for (let i = 0; i < 5 && /^var\(/.test(v); i++) {
+    const m = v.match(/^var\(\s*(--[a-z0-9-]+)\s*(?:,\s*([^)]+))?\)$/i);
+    if (!m) break;
+    let decl = null;
+    for (const src of sheets) {
+      const d = src.match(new RegExp('\\' + m[1] + ':\\s*([^;]+);'));
+      if (d) { decl = d[1].trim(); break; }
+    }
+    v = (decl || (m[2] || '').trim());
+    if (!v) break;
+  }
+  return v.trim();
+}
+
 // Every surface that shows a button to a human.
 const SURFACES = [
   'westmere-rider.html',   // My Account
@@ -143,7 +163,7 @@ test('the button tokens track the theme — one palette, not two opinions', () =
   const btnVal = (name) => {
     const m = CSS.match(new RegExp('--' + name + ':\\s*([^;]+);'));
     assert.ok(m, 'wm-buttons.css no longer defines --' + name);
-    return m[1].trim().toLowerCase();
+    return resolveToken(m[1].trim(), [THEME, CSS]).toLowerCase();
   };
   const navy = themeVal('westmere-navy');
   assert.strictEqual(btnVal('wmb-ink'), navy,
@@ -157,7 +177,7 @@ test('the button tokens track the theme — one palette, not two opinions', () =
 });
 
 test('navy is the accent — the buttons are neither gold nor black', () => {
-  const ink = (CSS.match(/--wmb-ink:\s*([^;]+);/) || [])[1].trim();
+  const ink = resolveToken((CSS.match(/--wmb-ink:\s*([^;]+);/) || [])[1], [read('westmere-theme.css'), CSS]).trim();
   assert.ok(/^#102a43$/i.test(ink), 'the accent must be the theme navy (got: ' + ink + ')');
   assert.ok(!DARK.test(ink), 'the accent must not be a near-black');
 });
@@ -680,7 +700,8 @@ test('the rider pickers match the main booking site\'s picker geometry', () => {
     const m = rider.match(new RegExp(sel.replace(/[.]/g, '\\.') + '\\{([^}]*)\\}'));
     assert.ok(m, 'missing ' + sel);
     const r = (m[1].match(/border-radius:\s*([^;]+)/) || [])[1];
-    assert.strictEqual((r || '').trim(), (siteTimeRadius || '').trim(),
+    const sheets = [read('westmere-theme.css'), read('styles.css'), CSS];
+    assert.strictEqual(resolveToken(r, sheets), resolveToken(siteTimeRadius, sheets),
       sel + ' should share the main site .wm-time radius (' + siteTimeRadius + '), got ' + r);
     assert.ok(/border:\s*1px solid/.test(m[1]),
       sel + ' needs a 1px border in its base rule so selecting it does not shift the layout');

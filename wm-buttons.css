@@ -43,25 +43,25 @@
    ──────────────────────────────────────────────────────────────────────── */
 :root {
   /* Navy — the theme's --westmere-navy / --westmere-navy-deep */
-  --wmb-ink:          #102a43;
+  --wmb-ink:          var(--westmere-navy, #102a43);
   --wmb-ink-soft:     rgba(16, 42, 67, 0.72);
 
   /* Surface — white, never cream */
-  --wmb-surface:      #ffffff;
+  --wmb-surface:      var(--westmere-white, #ffffff);
 
   /* Borders: primary is full navy, ghost is the theme's hairline */
-  --wmb-line-strong:  #102a43;
-  --wmb-line:         #c8d1d9;
+  --wmb-line-strong:  var(--westmere-navy, #102a43);
+  --wmb-line:         var(--westmere-line-strong, #c8d1d9);
 
   /* Feedback — the theme's whisper on hover, solid navy on press */
-  --wmb-hover:        rgba(16, 42, 67, 0.025);
-  --wmb-press:        #102a43;
-  --wmb-on-press:     #ffffff;
+  --wmb-hover:        var(--westmere-hover, rgba(16, 42, 67, 0.025));
+  --wmb-press:        var(--westmere-navy, #102a43);
+  --wmb-on-press:     var(--westmere-white, #ffffff);
 
   /* Shape + feel — 12px to match the theme's buttons exactly */
-  --wmb-radius:       12px;
-  --wmb-border:       1px;
-  --wmb-ease:         .18s cubic-bezier(.4, 0, .2, 1);
+  --wmb-radius:       var(--radius-lg, 12px);
+  --wmb-border:       var(--border-hair, 1px);
+  --wmb-ease:         var(--ease-ui, .18s cubic-bezier(.4, 0, .2, 1));
 }
 
 /* ── Base ──────────────────────────────────────────────────────────────── */

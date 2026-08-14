@@ -35,6 +35,83 @@
   --westmere-line-strong: #c8d1d9;
   --westmere-white: #ffffff;
   --westmere-press: rgba(16, 42, 67, 0.07);
+  --westmere-hover: rgba(16, 42, 67, 0.025);
+  /* The pre-redesign charcoal. Still the ink inside the booking-form picker
+     popup, so it is named rather than left as a stray literal — but it keeps
+     its exact value: this refactor changes no pixels. Re-point it at
+     --westmere-navy when the owner wants that popup to match the rest. */
+  --westmere-ink-legacy: #1b1b1a;
+  --westmere-line-inverse: #ddd;   /* hairlines ON a dark photo band */
+
+  /* ── STATE COLOURS ──────────────────────────────────────────────────────
+     The only hues in the system that are not navy. Each is the value that was
+     already in use; they are named here so a state can be restyled once. */
+  --westmere-danger:       #9C2828;   /* cancel / destructive copy   */
+  --westmere-danger-soft:  #c0392b;   /* inline form errors          */
+  --westmere-danger-wash:  #fbf6f5;   /* danger button resting fill  */
+  --westmere-success:      #2d6e47;   /* paid / confirmed copy       */
+  --westmere-info:         #2563EB;   /* en-route / live states      */
+  --westmere-scrim:        rgba(16, 42, 67, .42);  /* modal backdrops */
+
+  /* ── FRAME SHAPE ────────────────────────────────────────────────────────
+     THE ROUNDNESS OF EVERYTHING. This is the "shape of frames" dial: set the
+     scale here and every card, button, pill, input and panel follows. The
+     values are exactly what the system already used, so changing them is a
+     deliberate act rather than a side effect of this refactor.
+       sm  small chrome — chips, tags, small inputs
+       md  the default — buttons, inputs, most panels
+       lg  cards and larger panels
+       xl  full sheets and modals
+       pill / round  fully rounded (a pill button, a circular day cell) */
+  --radius-sm:    8px;
+  --radius-md:   10px;
+  --radius-btn:  11px;   /* app buttons at phone widths */
+  --radius-lg:   12px;
+  --radius-xl:   14px;
+  --radius-2xl:  16px;
+  --radius-pill: 999px;
+  --radius-round: 50%;
+  --radius-none:  0;
+
+  /* ── BORDERS / HAIRLINES ────────────────────────────────────────────────
+     Widths only; the colours are the --westmere-line tokens above. */
+  --border-hair:   1px;    /* the standard 1px rule                 */
+  --border-strong: 1.5px;  /* a selected frame — picker, filter tab */
+  --border-heavy:  2px;    /* an emphasised panel edge              */
+
+  /* ── TYPOGRAPHY SCALE ───────────────────────────────────────────────────
+     Cormorant is delicate, so the small tiers are set heavier than you would
+     with a normal serif — see §16, the readability layer, which is what keeps
+     these legible. Sizes are the ones already in use. */
+  --text-2xs:  0.62rem;
+  --text-xs:   0.68rem;
+  --text-sm:   0.78rem;
+  --text-base: 0.9rem;
+  --text-md:   1rem;
+  --text-lg:   1.15rem;
+  --text-xl:   1.5rem;
+  --text-2xl:  2rem;
+  --text-3xl:  2.6rem;
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semi:   600;
+  --weight-bold:   700;
+  --tracking-wide:  .08em;   /* small-caps labels */
+  --tracking-wider: .2em;    /* the wordmark      */
+
+  /* ── SPACING SCALE ──────────────────────────────────────────────────────
+     Layout rhythm. Used for padding/margin/gap so density is one edit. */
+  --space-1: .25rem;
+  --space-2: .5rem;
+  --space-3: .75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+
+  /* ── MOTION ─────────────────────────────────────────────────────────────*/
+  --ease-ui: .18s cubic-bezier(.4, 0, .2, 1);
+  --ease-panel: .26s cubic-bezier(.4, 0, .2, 1);
   --westmere-focus: rgba(16, 42, 67, 0.17);
 
   /* Override existing site variables without changing existing HTML. */
@@ -245,7 +322,7 @@ select.fi option {
 .prof-card,
 .aj-card {
   box-shadow: none !important;
-  border-radius: 0 !important;
+  border-radius: var(--radius-none) !important;
   border: 0 !important;
   border-top: 1px solid var(--westmere-line) !important;
 }
@@ -253,7 +330,7 @@ select.fi option {
 .photo-card {
   box-shadow: none !important;
   border: 1px solid var(--westmere-line) !important;
-  border-radius: 12px !important;
+  border-radius: var(--radius-lg) !important;
   overflow: hidden;
 }
 
@@ -261,13 +338,13 @@ select.fi option {
 .notice {
   box-shadow: none !important;
   border: 1px solid var(--westmere-line) !important;
-  border-radius: 14px !important;
+  border-radius: var(--radius-xl) !important;
 }
 
 .fare-estimate {
   box-shadow: none !important;
   border: 1px solid var(--westmere-line) !important;
-  border-radius: 12px !important;
+  border-radius: var(--radius-lg) !important;
 }
 
 /* Keep photo heroes, but tint overlays navy rather than black. */
@@ -369,7 +446,7 @@ nav,
   background: transparent !important;
   color: var(--westmere-navy) !important;
   border: 1px solid var(--westmere-navy) !important;
-  border-radius: 12px !important;
+  border-radius: var(--radius-lg) !important;
   box-shadow: none !important;
   font-family: var(--sans) !important;
   font-weight: 400 !important;
@@ -438,7 +515,7 @@ nav,
   background: var(--westmere-white) !important;
   color: var(--westmere-navy) !important;
   border: 1px solid var(--westmere-line-strong) !important;
-  border-radius: 10px !important;
+  border-radius: var(--radius-md) !important;
 }
 
 .tabs button.active,
@@ -480,7 +557,7 @@ textarea {
 .field select,
 .field textarea {
   border: 1px solid var(--westmere-line-strong) !important;
-  border-radius: 12px !important;
+  border-radius: var(--radius-lg) !important;
 }
 
 .fi,
@@ -490,7 +567,7 @@ textarea {
 
 textarea.fi {
   border: 1px solid var(--westmere-line-strong) !important;
-  border-radius: 12px !important;
+  border-radius: var(--radius-lg) !important;
 }
 
 .field input:focus,
@@ -556,7 +633,7 @@ input[type="radio"],
   background: var(--westmere-white) !important;
   color: var(--westmere-navy) !important;
   border: 1px solid var(--westmere-line) !important;
-  border-radius: 14px !important;
+  border-radius: var(--radius-xl) !important;
   box-shadow: none !important;
   transition: border-color .16s ease, box-shadow .16s ease, background-color .10s ease;
 }
@@ -695,7 +772,7 @@ body.mode-day,
 
 .ls-inner {
   border: 1px solid var(--westmere-line) !important;
-  border-radius: 16px !important;
+  border-radius: var(--radius-2xl) !important;
   box-shadow: 0 20px 55px rgba(16,42,67,.08) !important;
 }
 
@@ -783,7 +860,7 @@ textarea,
   .nav-book,
   .ls-btn,
   .btn-main {
-    border-radius: 11px !important;
+    border-radius: var(--radius-btn) !important;
   }
 }
 

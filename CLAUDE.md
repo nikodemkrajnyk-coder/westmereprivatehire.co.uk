@@ -8,6 +8,15 @@ Run the payment regression guard before deploying anything that touches bookings
 node server/tests/payment-flow.test.js      # or: npm test
 ```
 
+## Changing the look — read DESIGN.md first
+
+All design lives in one token layer (`westmere-theme.css` §1) and the button
+system derives from it. A re-skin is a token edit, not a sweep through markup.
+Back-end logic files carry NO design values and must not be opened for design
+work — `server/fare-engine.js` is pinned by content hash, so a design task that
+touches it fails the suite. The full rules, the dial-by-dial table, the
+front/back boundary and the pixel-parity procedure are in **DESIGN.md**.
+
 ## Payment invariants — DO NOT REGRESS
 
 These three invariants exist because of a real incident (the "Mr Ben" booking): a card choice was recorded as cash, the estimate email's Pay/Cash links didn't work, and "Send Estimate" auto-confirmed the booking. Each has an automated guard in `server/tests/payment-flow.test.js`.

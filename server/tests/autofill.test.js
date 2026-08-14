@@ -82,9 +82,14 @@ test('each override uses that surface\'s real field colours', () => {
   for (const s of SURFACES) {
     const blk = autofillBlock(read(s.file));
     assert.ok(blk, s.file + ': no autofill block found');
-    assert.ok(blk.body.includes('0 0 0 1000px ' + s.bg + ' inset'),
-      s.file + ' must cover the field with ' + s.bg + ' (' + s.note + ')');
-    assert.ok(blk.body.includes('-webkit-text-fill-color:' + s.fg),
+    // The mask colour may be a TOKEN reference now — var(--token, #fff). That is
+    // better than a literal: a palette change carries the autofill mask with it.
+    // Flatten any var(--token, literal) to its literal, then check as before.
+    const flat = blk.body.replace(/var\(\s*--[a-z0-9-]+\s*,\s*([^)]+)\)/gi, '$1');
+    assert.ok(flat.includes('0 0 0 1000px ' + s.bg + ' inset'),
+      s.file + ' must cover the field with ' + s.bg + ' (' + s.note + ') — ' +
+      'either literally or via a token that resolves to it');
+    assert.ok(flat.includes('-webkit-text-fill-color:' + s.fg),
       s.file + ' must set -webkit-text-fill-color to ' + s.fg +
       ' — `color` alone is ignored while a field is autofilled');
     assert.ok(/-webkit-box-shadow:/.test(blk.body) && /(^|[^-])box-shadow:/.test(blk.body),
