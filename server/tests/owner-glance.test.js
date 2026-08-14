@@ -132,6 +132,52 @@ test('the owner trip card emits all three glance fields', () => {
   assert.ok(/wm-glance-fare[^]{0,90}j\.fare/.test(CARD_BODY), 'the glance fare is not fed from j.fare');
 });
 
+test('the card reads WHEN, then WHO, then WHERE', () => {
+  // The owner's ordering: the date and time lead, the name follows, the route
+  // after that. He scans a day rather than looking a person up, so the slot is
+  // the first thing he needs — and it is also the largest thing on the card,
+  // which is where the eye lands anyway. Pinned because a reorder is exactly
+  // the kind of change a later tidy-up undoes without noticing.
+  const glance = CARD_BODY.indexOf('class="wm-glance"');
+  const name   = CARD_BODY.indexOf('escH(j.name)');
+  const route  = CARD_BODY.indexOf('_shortAddr(j.pickup');
+  assert.ok(glance !== -1 && name !== -1 && route !== -1, 'the card no longer renders all three of date/name/route');
+  assert.ok(glance < name, 'the name is above the date/time again — the date/time leads the card');
+  assert.ok(name < route, 'the route is above the name');
+
+  // Nothing was dropped in the move.
+  assert.ok(/wm-chip '\+stCls/.test(CARD_BODY), 'the status chip is gone from the card');
+  assert.ok(CARD_BODY.indexOf("wm-chip '+stCls") > glance,
+    'the status chip sits on the glance row, competing with the fare for that corner — ' +
+    'it belongs on the name row');
+  assert.ok(/pax/.test(CARD_BODY) && /wmPayBadge\(j\)/.test(CARD_BODY),
+    'the passenger count or the payment badge was lost in the reorder');
+});
+
+test('a personal event reads in the same order as a job', () => {
+  const i = OWNER.indexOf("if(j.type==='personal'){");
+  const branch = OWNER.slice(i, OWNER.indexOf('\n  }', i));
+  const glance = branch.indexOf('class="wm-glance"');
+  const title  = branch.indexOf('escH(j.title)');
+  assert.ok(glance !== -1 && title !== -1, 'the personal card lost its glance row or its title');
+  assert.ok(glance < title, 'the event title is above its date/time — a job and an event must read alike');
+  assert.ok(/Personal<\/span>/.test(branch), 'the PERSONAL chip was lost in the reorder');
+  assert.ok(/Personal calendar/.test(branch), 'the "Personal calendar" label was lost in the reorder');
+});
+
+test('the admin card matches the owner ordering', () => {
+  const i = ADMIN.indexOf('function admJobRow(b){');
+  const body = ADMIN.slice(i, ADMIN.indexOf('\n}\n', i));
+  const glance = body.indexOf('class="wm-glance"');
+  const name   = body.indexOf('b.customer_name');
+  const route  = body.indexOf('_admShortAddr(b.pickup)');
+  assert.ok(glance !== -1 && name !== -1 && route !== -1, 'the admin row lost date, name or route');
+  assert.ok(glance < name && name < route,
+    'the admin row reads in a different order from the owner app: glance@' + glance +
+    ' name@' + name + ' route@' + route);
+  assert.ok(/tag '\+s\.cls/.test(body), 'the admin status tag was lost in the reorder');
+});
+
 test('the glance carries no inline font-size that would outrank the token', () => {
   // Check the glance SPANS themselves, across every card the file builds —
   // the card now has more than one glance row (a booking and a personal

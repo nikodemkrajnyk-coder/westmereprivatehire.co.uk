@@ -2624,10 +2624,7 @@ function admJobRow(b){
   // A cancelled booking is a record only — the operator removes it by hand.
   if(A.del)acts+='<button class="btn btn-red btn-sm" onclick="admDeleteBooking('+b.id+')">Delete</button>';
   return '<div style="padding:.75rem 1rem;border-top:1px solid rgba(27,27,26,.08)">'
-    +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.6rem;margin-bottom:.25rem">'
-      +'<div style="font-weight:600;color:var(--navy)">'+escTo(b.customer_name||b.passenger_name||'Guest')+'</div>'
-      +'<span class="tag '+s.cls+'">'+s.label+'</span>'
-    +'</div>'
+
     // AT A GLANCE — date, time and fare at --text-xl navy, the same row and the
     // same classes the owner app uses (§19 of westmere-theme.css). Parity is
     // the point: the two apps show one job list in two places, and a field
@@ -2638,6 +2635,12 @@ function admJobRow(b){
     +    '<span class="wm-glance-time">'+escTo(b.time||'ASAP')+'</span>'
     +  '</span>'
     +  '<span class="wm-glance-fare">'+(b.fare?'£'+Number(b.fare).toFixed(0):'—')+'</span>'
+    +'</div>'
+    // WHEN, THEN WHO, THEN WHERE — the owner app's order, matched here so one
+    // job reads the same whichever app a member of staff is in.
+    +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.6rem;margin-bottom:.25rem">'
+      +'<div style="font-weight:600;color:var(--navy)">'+escTo(b.customer_name||b.passenger_name||'Guest')+'</div>'
+      +'<span class="tag '+s.cls+'">'+s.label+'</span>'
     +'</div>'
     +'<div style="font-size:.9rem;color:rgba(27,27,26,.6)">'+escTo(_admShortAddr(b.pickup))
       +(b.stop_address?' → '+escTo(_admShortAddr(b.stop_address)):'')

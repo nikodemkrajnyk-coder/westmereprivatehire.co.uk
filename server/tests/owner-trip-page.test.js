@@ -57,9 +57,13 @@ test('no pixel-sized text is below 13px either', () => {
 
 test('the trip card headline tiers actually grew', () => {
   // Spot-check the lines the owner named: name, route, time/pax.
-  const card = OWNER.match(/function jobCardHtml\(j\)\{[\s\S]{0,4000}/);
-  assert.ok(card, 'jobCardHtml is missing');
-  const sizes = [...card[0].matchAll(/font-size:(\.\d+)rem/g)].map(m => parseFloat(m[1]));
+  // The WHOLE function, not a fixed 4000-character window: a comment added at
+  // the top used to push the sized elements out of the window and the test
+  // then failed on markup it had not even looked at.
+  const i = OWNER.indexOf('function jobCardHtml(j){');
+  assert.ok(i !== -1, 'jobCardHtml is missing');
+  const body = OWNER.slice(i, OWNER.indexOf('\n}\n', i));
+  const sizes = [...body.matchAll(/font-size:(\.\d+)rem/g)].map(m => parseFloat(m[1]));
   assert.ok(sizes.length > 5, 'expected several sized elements on the trip card');
   assert.ok(Math.min(...sizes) >= FLOOR_REM,
     'the trip card still has text below the floor: ' + Math.min(...sizes) + 'rem');

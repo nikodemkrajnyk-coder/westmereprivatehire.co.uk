@@ -3016,16 +3016,19 @@ function jobCardHtml(j){
   // never confused. What changed is the SIZE of the thing the owner reads.
   // GUARDRAIL: server/tests/owner-week.test.js
   if(j.type==='personal'){
+    // Same order as a booking — when, then what it is — so the two read
+    // identically down a day. The PERSONAL chip rides on the title row for the
+    // same reason the status chip does on a job.
     return '<div style="padding:.8rem 1rem;border-top:1px solid var(--rule)">'
-      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;margin-bottom:.2rem">'
-      +  '<div style="font-weight:500;color:var(--navy);font-size:.98rem;font-family:var(--serif)">'+escH(j.title)+'</div>'
-      +  '<span class="wm-chip" style="display:inline-flex;align-items:center;font-size:.67rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap">Personal</span>'
-      +'</div>'
       +'<div class="wm-glance">'
       +  '<span class="wm-glance-when">'
       +    '<span class="wm-glance-date">'+escH(_fmtUpcomingDate(j.date)||'—')+'</span>'
       +    '<span class="wm-glance-time">'+escH(j.allDay?'All day':(j.time||''))+'</span>'
       +  '</span>'
+      +'</div>'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;margin-bottom:.2rem">'
+      +  '<div style="font-weight:500;color:var(--navy);font-size:.98rem;font-family:var(--serif)">'+escH(j.title)+'</div>'
+      +  '<span class="wm-chip" style="display:inline-flex;align-items:center;font-size:.67rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap">Personal</span>'
       +'</div>'
       +'<div style="font-size:.8rem;color:rgba(27,27,26,.4);letter-spacing:.06em;text-transform:uppercase">Personal calendar</div>'
       +'</div>';
@@ -3039,22 +3042,31 @@ function jobCardHtml(j){
   var detailId='uj-det-'+j.id;
   var html='<div style="border-top:1px solid var(--rule)">'
     +'<div style="padding:.8rem 1rem;cursor:pointer" onclick="openTripPage(\''+j.id+'\')">'
-      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;margin-bottom:.2rem">'
-      +  '<div style="font-weight:500;color:var(--navy);font-size:.98rem;font-family:var(--serif)">'+escH(j.name)+'</div>'
-      +  '<span class="wm-chip '+stCls+'" style="display:inline-flex;align-items:center;gap:.3rem;font-size:.67rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap">'+stLabel+'<span style="font-size:.82rem;opacity:.6">&#9662;</span></span>'
-      +'</div>'
-      // AT A GLANCE — the three fields the owner reads while driving, pulled
-      // out of the small grey meta line into their own row at --text-xl navy.
-      // Sizing lives in §19 of westmere-theme.css and comes off the type
-      // scale; nothing here carries a font-size. Same row, same classes, on
-      // the To Confirm list, the Confirmed week and the full-screen trip page,
-      // because all three render THIS function.
+      // WHEN, THEN WHO, THEN WHERE.
+      //
+      // The date and time lead the card. The owner's first question of any job
+      // is when it is — he is scanning a day, not looking someone up — and the
+      // name only matters once he knows the slot. This is the owner's own
+      // ordering, and it puts the largest thing on the card at the top of it,
+      // which is also where the eye lands first.
+      //
+      // The status chip moves down onto the NAME row rather than disappearing:
+      // the glance row's right-hand side already belongs to the fare, and two
+      // things competing for that corner is how one of them gets missed.
+      //
+      // ONLY THE ORDER CHANGED. The glance keeps its classes, its size and its
+      // fare exactly as they were (§19 of westmere-theme.css).
+      // GUARDRAIL: server/tests/owner-glance.test.js
       +'<div class="wm-glance">'
       +  '<span class="wm-glance-when">'
       +    '<span class="wm-glance-date">'+escH(_fmtUpcomingDate(j.date)||'—')+'</span>'
       +    '<span class="wm-glance-time">'+escH(j.time||'ASAP')+'</span>'
       +  '</span>'
       +  '<span class="wm-glance-fare">'+(j.fare?'£'+Number(j.fare).toFixed(0):'—')+'</span>'
+      +'</div>'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;margin-bottom:.2rem">'
+      +  '<div style="font-weight:500;color:var(--navy);font-size:.98rem;font-family:var(--serif)">'+escH(j.name)+'</div>'
+      +  '<span class="wm-chip '+stCls+'" style="display:inline-flex;align-items:center;gap:.3rem;font-size:.67rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap">'+stLabel+'<span style="font-size:.82rem;opacity:.6">&#9662;</span></span>'
       +'</div>'
       +'<div style="font-size:.9rem;color:rgba(27,27,26,.6);margin-bottom:.15rem">'+escH(_shortAddr(j.pickup||''))+(j.stop_address?' → '+escH(_shortAddr(j.stop_address)):'')+' → '+escH(_shortAddr(j.dest||''))+'</div>'
       // What is left is detail, not glance: passengers and bags stay small.
