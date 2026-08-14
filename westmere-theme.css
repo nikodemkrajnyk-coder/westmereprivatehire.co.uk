@@ -1386,3 +1386,53 @@ input, select, textarea {
   border-color: var(--westmere-navy, #102a43) !important;
   font-weight: var(--weight-semi, 600) !important;
 }
+
+/* =========================================================
+   21. "BY ADVANCE BOOKING ONLY" — ONE NOTE, ONE PLACE TO EDIT
+   =========================================================
+   Westmere is a PRE-BOOKED service. It does not take on-demand work, and a
+   customer rang expecting a car within the minute — so the site now says so,
+   at the three moments where that expectation forms: the booking form, the
+   homepage, and the contact page.
+
+   Deliberately NOT a banner. A warning strip on a premium site reads as an
+   apology, and the people who need this are not skim-reading a banner — they
+   are filling in a date field or dialling the number. So it is set as quiet
+   secondary copy in the muted tone at --text-xs, sitting exactly where the
+   decision is being made, with only the opening clause carrying weight.
+
+   TO CHANGE HOW LOUD IT IS: this one rule. Raise it to --text-sm to make it
+   more assertive, or drop `.wm-advance b`'s colour to --westmere-muted to make
+   it quieter still. To change the WORDS, they appear in four places — grep
+   "advance booking". GUARDRAIL: server/tests/advance-booking.test.js */
+.wm-advance {
+  display: block;
+  /* Breathing room on BOTH sides. Without the lower margin the note collides
+     with whatever field comes next — in My Account it sat hard against the
+     Passengers label and read as that field's caption rather than as a note
+     about the two fields above it. */
+  margin: var(--space-2, .5rem) 0 var(--space-3, .75rem);
+  /* --text-sm, not --text-xs. Cormorant is a delicate face and --text-xs
+     renders at 10.9px, which in the muted tone is quiet to the point of not
+     being read — and a note nobody reads is the same as no note. This is the
+     same 12px floor §16 applies to every other small label in the system. */
+  font-size: var(--text-sm, .78rem);
+  font-weight: var(--weight-normal, 400);
+  letter-spacing: .04em;
+  line-height: 1.65;
+  color: var(--westmere-muted, #657485);
+  -webkit-text-fill-color: var(--westmere-muted, #657485);
+}
+/* The opening clause is the part someone catches at a glance. It earns weight
+   and full-strength ink — never a fill, never a colour of its own (§20). */
+.wm-advance b {
+  font-weight: var(--weight-semi, 600);
+  color: var(--westmere-navy, #102a43);
+  -webkit-text-fill-color: var(--westmere-navy, #102a43);
+}
+/* Inside the two customer apps §15.2 paints every descendant navy, which would
+   erase the muted/emphasis distinction that carries the whole effect. */
+#scr-app .wm-advance {
+  color: var(--westmere-muted, #657485) !important;
+  -webkit-text-fill-color: var(--westmere-muted, #657485) !important;
+}
