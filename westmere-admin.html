@@ -36,8 +36,8 @@ a{color:var(--navy)}
 .fi{font-family:var(--sans);font-size:.98rem;font-weight:300;color:var(--navy);background:transparent;border:none;border-bottom:1px solid rgba(27,27,26,.15);padding:.78rem 0;outline:none;width:100%;transition:border-color .3s;min-height:48px;-webkit-appearance:none}
 .fi:focus{border-bottom-color:var(--navy)}
 .fi::placeholder{color:rgba(27,27,26,.62)}
-.btn-main{width:100%;padding:1rem;background:rgba(27,27,26,.55);color:var(--navy);border:none;font-family:var(--sans);font-size:.82rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;transition:all .25s;min-height:52px}
-.btn-main:hover{background:rgba(27,27,26,.06)}
+.btn-main{width:100%;padding:1rem;color:var(--navy);border:none;font-family:var(--sans);font-size:.82rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;transition:all .25s;min-height:52px;background:transparent}
+.btn-main:hover{;background:var(--westmere-hover,rgba(16,42,67,.025))}
 /* ── ADMIN APP ── */
 #admin-login{position:fixed;inset:0;background:rgba(255,255,255,.97);backdrop-filter:blur(20px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem}
 .al-box{width:100%;max-width:400px;background:#fff;border:1px solid rgba(27,27,26,.08);box-shadow:0 4px 24px rgba(27,27,26,.06);position:relative;z-index:1;animation:up .4s ease}
@@ -78,8 +78,8 @@ a{color:var(--navy)}
 .tb-clock{font-family:var(--serif);font-size:1.1rem;color:var(--navy)}
 .tb-live{display:flex;align-items:center;gap:.35rem;font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.66)}
 .live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;flex-shrink:0}
-.btn-new{font-family:var(--sans);font-size:.79rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;background:rgba(27,27,26,.55);color:var(--navy);padding:.6rem 1.2rem;border:none;cursor:pointer;transition:all .2s;white-space:nowrap}
-.btn-new:hover{background:rgba(27,27,26,.06);color:var(--navy)}
+.btn-new{font-family:var(--sans);font-size:.79rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--navy);padding:.6rem 1.2rem;border:none;cursor:pointer;transition:all .2s;white-space:nowrap;background:transparent}
+.btn-new:hover{color:var(--navy);background:var(--westmere-hover,rgba(16,42,67,.025))}
 .content{padding:1.8rem 2rem;flex:1}
 /* VIEWS */
 .view{display:none}.view.on{display:block;animation:up .3s ease}
@@ -160,7 +160,7 @@ body.full-view .content{padding:1.4rem 1.9rem;max-width:100%}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;font-family:var(--sans);font-size:.76rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;padding:.6rem 1.2rem;cursor:pointer;border:none;transition:all .2s;text-decoration:none;white-space:nowrap}
 .btn:active{transform:scale(.97)}
 .btn-gold{background:rgba(27,27,26,.55);color:var(--navy);border:1px solid rgba(27,27,26,.55)}.btn-gold:hover{background:rgba(27,27,26,.06)}
-.btn-navy{background:rgba(27,27,26,.06);color:var(--navy);border:1px solid rgba(27,27,26,.15)}.btn-navy:hover{background:rgba(27,27,26,.55);border-color:rgba(27,27,26,.55);color:var(--navy)}
+.btn-navy{color:var(--navy);border:1px solid rgba(27,27,26,.15);background:transparent}.btn-navy:hover{background:rgba(27,27,26,.55);border-color:rgba(27,27,26,.55);color:var(--navy)}
 .btn-ghost{background:transparent;color:rgba(27,27,26,.78);border:1px solid rgba(27,27,26,.18)}.btn-ghost:hover{color:var(--navy);border-color:rgba(27,27,26,.4);background:rgba(27,27,26,.03)}
 .btn-green{background:var(--green-bg);color:var(--green);border:1px solid rgba(45,110,71,.3)}.btn-green:hover{background:rgba(45,110,71,.25)}
 .btn-red{background:var(--red-bg);color:var(--red);border:1px solid rgba(139,34,34,.3)}.btn-red:hover{background:rgba(139,34,34,.25)}
@@ -487,7 +487,7 @@ html,body{background:#ffffff !important}
 body *{color:#000000 !important;-webkit-text-fill-color:#000000 !important}
 /* 3) Dark/charcoal-filled buttons -> white with a blue outline */
 .btn-main,.btn-new,.btn-gold,.btn-navy,.aa-send,.abc-btn{background:#ffffff !important;color:#000000 !important;-webkit-text-fill-color:#000000 !important;border:1px solid #000000 !important;letter-spacing:.14em}
-.btn-main:hover,.btn-new:hover,.btn-gold:hover,.btn-navy:hover,.aa-send:hover,.abc-btn:hover{background:#f1f1f1 !important;color:#000000 !important;-webkit-text-fill-color:#000000 !important;border-color:#000000 !important}
+.btn-main:hover,.btn-new:hover,.btn-gold:hover,.btn-navy:hover,.aa-send:hover,.abc-btn:hover{color:#000000 !important;-webkit-text-fill-color:#000000 !important;border-color:#000000 !important;background:var(--westmere-hover,rgba(16,42,67,.025))}
 .sb-badge{border:var(--border-hair,1px) solid var(--westmere-navy,#102a43) !important}
 .notify-opt.on .no-chk{background:#000000 !important;color:#ffffff !important;-webkit-text-fill-color:#ffffff !important;border-color:#000000 !important}
 /* 4) Dark surfaces that aren't buttons -> light */
@@ -533,7 +533,10 @@ input[type=checkbox],input[type=radio]{accent-color:#111111 !important}
 .adm-cal-hd{background:#f4f4f4 !important}
 .adm-cal-status.pending,.adm-cal-status.flagged{}
 .adm-cal-day.flagged{box-shadow:inset 0 0 0 2px #cbcbcb !important}
-[style*="#ffffff"],[style*="#ffffff"]{background:#f1f1f1 !important}
+/* REMOVED: the same pre-redesign [style*="#ffffff"] grey repaint the owner app
+   carried. It greyed anything whose inline style merely mentioned white, which
+   is unfixable from the markup end. White is the design now.
+   GUARDRAIL: server/tests/no-fills.test.js */
 [style*="#c8d1d9"],[style*="#c8d1d9"]{border-color:#d9d9d9 !important}
 
 /* ── BROWSER AUTOFILL ──
@@ -941,7 +944,7 @@ select:-webkit-autofill:focus{
             <input id="nc-bank-acc" type="text" placeholder="Account number" style="padding:.7rem .85rem;border:1px solid rgba(27,27,26,.14);border-radius:8px;font-size:.96rem;font-family:var(--sans)">
           </div>
           <div id="nc-err" style="display:none;padding:.6rem .8rem;background:rgba(197,64,64,.08);color:#c54040;font-size:.9rem;border-radius:6px;margin-bottom:.8rem"></div>
-          <button onclick="submitNewCustomer()" id="nc-submit" style="width:100%;padding:.9rem;background:#ffffff;color:#1a1a1a;border:none;border-radius:8px;font-size:.9rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">Create Account</button>
+          <button class="wm-primary" onclick="submitNewCustomer()" id="nc-submit" style="width:100%;padding:.9rem;background:#ffffff;color:#1a1a1a;border:none;border-radius:8px;text-transform:uppercase;cursor:pointer">Create Account</button>
         </div>
         <!-- Post-create actions -->
         <div id="nc-post-create" style="display:none">
@@ -951,9 +954,9 @@ select:-webkit-autofill:focus{
             <div style="font-size:.88rem;color:rgba(27,27,26,.68)" id="nc-success-sub"></div>
           </div>
           <div style="display:flex;flex-direction:column;gap:.6rem;margin-top:.8rem">
-            <button id="nc-welcome-btn" onclick="sendWelcomeEmailNew()" style="width:100%;padding:.85rem;background:transparent;color:#1b1b1a;border:1px solid rgba(27,27,26,.18);border-radius:8px;font-size:.9rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Send Welcome Email</button>
-            <button onclick="createInvoiceNew()" style="width:100%;padding:.85rem;border-radius:8px;font-size:.9rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)">Create Invoice</button>
-            <button onclick="closeNewCustomerModal()" style="width:100%;padding:.85rem;background:transparent;color:rgba(27,27,26,.7);border:none;font-size:.9rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Done</button>
+            <button id="nc-welcome-btn" onclick="sendWelcomeEmailNew()" style="width:100%;padding:.85rem;background:transparent;color:#1b1b1a;border:1px solid rgba(27,27,26,.18);border-radius:8px;font-size:.84rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Send Welcome Email</button>
+            width:100%;padding:.85rem;border-radius:8px;text-transform:uppercase;cursor:pointer;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)<button class="wm-primary" onclick="createInvoiceNew()" style="width:100%;padding:.85rem;border-radius:8px;text-transform:uppercase;cursor:pointer;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)">Create Invoice</button>
+            <button onclick="closeNewCustomerModal()" style="width:100%;padding:.85rem;background:transparent;color:rgba(27,27,26,.7);border:none;font-size:.84rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Done</button>
           </div>
         </div>
         <div style="font-size:.84rem;color:rgba(27,27,26,.7);margin-top:.7rem;line-height:1.55">Accounts are managed by Westmere. No email is sent automatically — use the button above to notify the customer.</div>
@@ -2766,7 +2769,7 @@ function loadLiveBookings(){
           var A=WMLifecycle.actionsFor(b);
           // Same lifecycle actions as the owner app's day view.
           var acts='';
-          if(A.sendEstimate)acts+='<button class="btn btn-navy btn-sm" onclick="admSendEstimate('+b.id+')">Send Estimate</button>';
+          if(A.sendEstimate)acts+='<button class="wm-primary btn btn-navy btn-sm" onclick="admSendEstimate('+b.id+')">Send Estimate</button>';
           if(A.markPaid)acts+='<button class="btn btn-navy btn-sm" onclick="admMarkPaid('+b.id+')">Mark as Paid</button>';
           if(A.markCompleted)acts+='<button class="btn btn-green btn-sm" onclick="markJobDone('+b.id+',this)">\u2713 Done</button>';
           if(A.sendReminder)acts+='<button class="btn btn-ghost btn-sm" onclick="admSendPayReminder('+b.id+')">Send Reminder</button>';
@@ -2818,7 +2821,7 @@ function loadLiveBookings(){
             actionBtns+='<button class="btn btn-ghost btn-sm" style="color:#1b1b1a;border-color:rgba(27,27,26,.28)" onclick="admClearFareReview('+b.id+')">Fare confirmed</button> ';
           }
           if(ACT.sendEstimate){
-            actionBtns+='<button class="btn btn-navy btn-sm" onclick="admSendEstimate('+b.id+')">Send Estimate</button> ';
+            actionBtns+='<button class="wm-primary btn btn-navy btn-sm" onclick="admSendEstimate('+b.id+')">Send Estimate</button> ';
           }
           if(ACT.markPaid){
             actionBtns+='<button class="btn btn-navy btn-sm" onclick="admMarkPaid('+b.id+')">Mark as Paid</button> ';
@@ -5615,7 +5618,7 @@ function wmMessageOpen(bookingId){
     +'<textarea id="wm-msg-text" rows="6" placeholder="Type your message to the customer — e.g. a question about their journey…" style="width:100%;padding:.7rem .8rem;border:1px solid #ffffff;border-radius:8px;font-family:inherit;font-size:.96rem;color:#1C2A3E;resize:vertical"></textarea>'
     +'<div style="display:flex;gap:.6rem;margin-top:.9rem">'
     +'<button onclick="document.getElementById(\'wm-msg-overlay\').remove()" style="flex:1;padding:.7rem;background:#fff;border:1px solid #ffffff;border-radius:9px;font-family:inherit;font-size:.92rem;font-weight:500;color:#6B7280;cursor:pointer">Cancel</button>'
-    +'<button id="wm-msg-send" onclick="wmMessageSend('+bookingId+',this)" '+(email?'':'disabled ')+'style="flex:2;padding:.7rem;border-radius:9px;font-family:inherit;font-size:.92rem;font-weight:600;cursor:pointer'+(email?'':';opacity:.5;cursor:default')+';border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)">Send Message</button>'
+    +'<button class="wm-primary" id="wm-msg-send" onclick="wmMessageSend('+bookingId+',this)" '+(email?'':'disabled ')+'style="flex:2;padding:.7rem;border-radius:9px;font-family:inherit;cursor:pointer'+(email?'':';opacity:.5;cursor:default')+';border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)">Send Message</button>'
     +'</div></div>';
   document.body.appendChild(el);
   el.addEventListener('click',function(ev){if(ev.target===el)el.remove();});
@@ -5900,7 +5903,7 @@ function admShowDay(key){
       if(j.needs_reassignment){
         actions='<button class="btn btn-navy btn-sm" onclick="event.stopPropagation();openReassign('+j.id+')">Resolve</button>'+_msgBtn;
       } else if(st==='pending'){
-        actions='<button class="btn btn-sm" style="font-weight:600;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)" onclick="event.stopPropagation();admSendEstimate('+j.id+')">Send Estimate</button>'
+        actions='border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)<button class="wm-primary btn btn-sm" style="border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)" onclick="event.stopPropagation();admSendEstimate('+j.id+')">Send Estimate</button>'
           +'<button class="btn btn-navy btn-sm" onclick="event.stopPropagation();openReassign('+j.id+')">Offer</button>'+_msgBtn;
       } else if(st==='offered'){
         actions='<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();reclaimOffer('+j.id+')">Reclaim</button>'+_msgBtn;

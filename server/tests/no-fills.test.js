@@ -38,7 +38,9 @@ function test(name, fn) {
 }
 
 // A value that is not a fill: see-through, or the page's own white.
-const NOT_A_FILL = /^(transparent|none|inherit|initial|unset|currentcolor|#fff|#ffffff|white|rgba?\(255,\s*255,\s*255(,\s*1)?\)|var\(--westmere-white[^)]*\)|var\(--wmb-surface[^)]*\))$/i;
+// White at ANY opacity counts as "not a fill": it is the page's own colour, so
+// a translucent white veil (a modal scrim) is not highlighting anything.
+const NOT_A_FILL = /^(transparent|none|inherit|initial|unset|currentcolor|#fff|#ffffff|white|rgba?\(\s*255,\s*255,\s*255\s*(,\s*[\d.]+)?\s*\)|var\(--westmere-white[^)]*\)|var\(--wmb-surface[^)]*\))$/i;
 
 // Pull `background` / `background-color` out of a declaration list.
 function fillIn(style) {
@@ -53,6 +55,7 @@ function fillIn(style) {
 // solid-black slab in the whole system was hiding there: a permission prompt
 // appended straight to document.body, out of reach of every app stylesheet.
 const APPS = ['westmere-owner.html', 'westmere-admin.html', 'westmere-rider.html', 'westmere-driver.html',
+              'westmere-card.html', 'westmere-pay.html',
               'wm-realtime.js', 'wm-lifecycle.js', 'booking-app.js', 'wm-picker.js'];
 
 console.log('\nNothing highlights by filling');
@@ -75,17 +78,185 @@ test('no button in any app ships with a filled background', () => {
     offenders.join('\n      '));
 });
 
+// An <a> that the user reads as a button — CALL, WHATSAPP, NAVIGATE. The first
+// version of this guard only inspected <button>, which is how a solid green
+// WhatsApp slab and a row of grey ones survived every previous pass: they are
+// links, and the guard was looking at the wrong tag. What makes an anchor a
+// button is that it is BOXED — it has padding — not what element it happens to
+// be. A phone number inside a note is a link and is left alone.
+test('no action LINK ships with a filled background', () => {
+  const offenders = [];
+  for (const f of APPS) {
+    let src; try { src = read(f); } catch (e) { continue; }
+    for (const m of src.matchAll(/<a\b[^>]*style=["']([^"']*)["'][^>]*>/gi)) {
+      const style = m[1];
+      if (!/padding/.test(style)) continue;            // inline link, not a button
+      const fill = fillIn(style);
+      if (!fill) continue;
+      const line = src.slice(0, m.index).split('\n').length;
+      offenders.push(`${f}:${line}  background:${fill}`);
+    }
+  }
+  assert.deepStrictEqual(offenders, [],
+    'these action links highlight by filling. An <a> styled as a button obeys the same rule as a\n' +
+    '      <button> — the user cannot tell the two apart, so neither can the design:\n      ' +
+    offenders.join('\n      '));
+});
+
+test("no app paints anything in another company's brand colour", () => {
+  // WhatsApp green (#25D366) and Instagram pink were the two that got in. They
+  // are somebody else's brand sitting on Westmere's, and the owner asked for
+  // the green specifically. The channel is named by its glyph and its label.
+  const offenders = [];
+  for (const f of APPS.concat(['westmere-theme.css', 'styles.css'])) {
+    let src; try { src = read(f); } catch (e) { continue; }
+    // Hex AND rgb() forms — the Instagram pink was hiding as #e1306c on an SVG
+    // stroke, which the rgba-only pattern walked straight past.
+    for (const m of src.matchAll(/#25D366|#E1306C|rgba?\(\s*37,\s*211,\s*102|rgba?\(\s*225,\s*48,\s*108/gi)) {
+      offenders.push(f + ':' + src.slice(0, m.index).split('\n').length + '  ' + m[0]);
+    }
+  }
+  assert.deepStrictEqual(offenders, [], 'third-party brand colour is back:\n      ' + offenders.join('\n      '));
+});
+
+test('no stylesheet repaints an element just for MENTIONING a colour', () => {
+  // `[style*="#ffffff"]{background:#f1f1f1 !important}` — a pre-redesign hack
+  // that greyed any element whose inline style merely mentioned white. It is
+  // what made CALL and NAVIGATE grey slabs no matter what their markup said,
+  // and it is unfixable from the markup end, so it must never come back.
+  const offenders = [];
+  for (const f of APPS) {
+    let src; try { src = read(f); } catch (e) { continue; }
+    src = src.replace(/\/\*[\s\S]*?\*\//g, '');
+    for (const m of src.matchAll(/\[style\*=["'][^"']*["']\][^{]*\{([^}]*)\}/g)) {
+      if (fillIn(m[1])) offenders.push(f + ':' + src.slice(0, m.index).split('\n').length + '  ' + m[0].slice(0, 90));
+    }
+  }
+  assert.deepStrictEqual(offenders, [],
+    'a blanket [style*=…] selector is filling elements by what their markup MENTIONS:\n      ' + offenders.join('\n      '));
+});
+
+// ── THE PRIMARY BUTTON: louder by LABEL, never by fill ─────────────────
+// The owner chose this from a sheet of eight alternatives. The whole point is
+// the DIFFERENCE between primary and secondary, so both halves are pinned: a
+// primary that loses its bolder label is as broken as one that gains a fill,
+// because either way the hierarchy disappears and every button looks the same.
+const BTN = read('wm-buttons.css');
+// Resolve the TOKEN first and the literal fallback only if there is none. The
+// other way round reads the fallback — which is precisely the value that goes
+// stale when someone re-points the token and forgets it.
+const rem = (v) => {
+  const tok = /var\((--[a-z0-9-]+)/.exec(v);
+  if (tok) {
+    const src = BTN + read('westmere-theme.css');
+    let name = tok[1], seen = 0;
+    while (seen++ < 4) {
+      const d = new RegExp('\\' + name + ':\\s*([^;]+);').exec(src);
+      if (!d) break;
+      const chain = /var\((--[a-z0-9-]+)/.exec(d[1]);
+      const lit = /^\s*([0-9.]+)rem/.exec(d[1]);
+      if (lit) return parseFloat(lit[1]);
+      if (chain) { name = chain[1]; continue; }
+      break;
+    }
+  }
+  const m = /([0-9.]+)rem/.exec(v);
+  return m ? parseFloat(m[1]) : NaN;
+};
+const weight = (v) => {
+  const m = /(\d{3})/.exec(v);
+  if (m) return +m[1];
+  const tok = /var\((--[a-z0-9-]+)/.exec(v);
+  if (tok) {
+    const d = new RegExp('\\' + tok[1] + ':\\s*(\\d{3})').exec(BTN + read('westmere-theme.css'));
+    if (d) return +d[1];
+  }
+  return NaN;
+};
+const decl = (block, prop) => (new RegExp(prop + ':\\s*([^;]+);').exec(block) || [])[1] || '';
+
 test('the primary button variant is a frame, not a fill', () => {
-  const B = read('wm-buttons.css');
-  const block = B.slice(B.indexOf('.wm-btn-primary {'), B.indexOf('}', B.indexOf('.wm-btn-primary {')));
+  const block = BTN.slice(BTN.indexOf('.wm-btn-primary {'), BTN.indexOf('}', BTN.indexOf('.wm-btn-primary {')));
   const fill = fillIn(block.replace(/\n/g, ' '));
   assert.strictEqual(fill, null,
-    '.wm-btn-primary rests on a fill (' + fill + ') — primary is denoted by border weight and ink, not by a slab');
+    '.wm-btn-primary rests on a fill (' + fill + ') — primary is the LABEL, not a slab');
   assert.ok(/border-color:\s*var\(--wmb-line-strong/.test(block), 'primary must carry the strong border');
   // ...and it must still fill on PRESS, or a tap has no feedback on a phone.
-  const press = B.slice(B.indexOf('.wm-btn-primary:active'));
+  const press = BTN.slice(BTN.indexOf('.wm-btn-primary:active'));
   assert.ok(/background-color:\s*var\(--wmb-press/.test(press.slice(0, 300)),
     'the pressed state must still fill — that is the one legitimate fill, and without it a tap is invisible on touch');
+});
+
+test('the primary label is BIGGER and BOLDER than the secondary one', () => {
+  const base = BTN.slice(BTN.indexOf('.wm-btn {'), BTN.indexOf('}', BTN.indexOf('.wm-btn {')));
+  const prim = BTN.slice(BTN.indexOf('.wm-btn-primary {'), BTN.indexOf('}', BTN.indexOf('.wm-btn-primary {')));
+
+  const bSize = rem(decl(base, 'font-size')), pSize = rem(decl(prim, 'font-size'));
+  const bW = weight(decl(base, 'font-weight')), pW = weight(decl(prim, 'font-weight'));
+  assert.ok(!isNaN(bSize) && !isNaN(pSize), 'both button labels must declare a resolvable size');
+  assert.ok(pSize > bSize,
+    'the primary label (' + pSize + 'rem) is not larger than the secondary one (' + bSize + 'rem) — ' +
+    'size is half of what makes it primary, and without it the two are indistinguishable');
+  assert.ok(pW >= 700 && pW > bW,
+    'the primary label is weight ' + pW + ' against a secondary ' + bW + ' — primary must be bold (700+)');
+
+  // ...and it must clear the LOUDEST hand-written secondary in the staff apps,
+  // not merely the base class. Those buttons carry their own inline sizes
+  // (.79–.8rem), which is how the primary ended up SMALLER than the buttons it
+  // was supposed to lead — a hierarchy pointing the wrong way is worse than none.
+  let loudest = 0, where = '';
+  for (const f of ['westmere-owner.html', 'westmere-admin.html']) {
+    for (const m of read(f).matchAll(/<button\b[^>]*style="([^"]*font-size:\s*([0-9.]+)rem[^"]*)"[^>]*>/g)) {
+      // Labelled ACTION buttons only. The apps also hand-write icon buttons —
+      // a close ×, a chevron — at 1.6rem, and a glyph is not a secondary action
+      // competing with the primary for attention.
+      if (!/text-transform:\s*uppercase/.test(m[1])) continue;
+      if (/wm-primary/.test(m[0])) continue;          // that IS a primary, not its competition
+      const v = parseFloat(m[2]);
+      if (v > loudest) { loudest = v; where = f; }
+    }
+  }
+  assert.ok(pSize > loudest,
+    'the primary label is ' + pSize + 'rem but ' + where + ' hand-writes a secondary button at ' +
+    loudest + 'rem — the primary would render SMALLER than an ordinary one');
+});
+
+test('the primary treatment comes from tokens, not from a literal', () => {
+  const prim = BTN.slice(BTN.indexOf('.wm-btn-primary {'), BTN.indexOf('}', BTN.indexOf('.wm-btn-primary {')));
+  for (const prop of ['font-size', 'font-weight', 'letter-spacing']) {
+    assert.ok(/var\(--wmb-/.test(decl(prim, prop)),
+      'primary hardcodes ' + prop + ' (' + decl(prim, prop).trim() + ') — re-tuning the hierarchy must be one edit');
+  }
+  // And the theme's application layer must not restate a size of its own.
+  const T = read('westmere-theme.css');
+  const s22 = T.slice(T.indexOf('22. PRIMARY IS THE LABEL'));
+  const block = s22.slice(s22.indexOf('.wm-primary,'), s22.indexOf('}', s22.indexOf('.wm-primary,')));
+  assert.ok(/font-size:\s*var\(--wmb-label-primary/.test(block),
+    'theme §22 restates the primary size instead of pointing at the token — two sources of truth');
+  assert.strictEqual(fillIn(block.replace(/\n/g, ' ')), null, 'theme §22 gives the primary a fill');
+});
+
+test('the genuine main actions are marked primary — and only those', () => {
+  // A screen with two primaries has none. These are the one-per-surface main
+  // actions; Cancel, Edit, Delete and Send Message must stay plain frames.
+  const MAIN = [
+    ['westmere-owner.html', 'ownerSendEstimate('], ['westmere-owner.html', 'upcomingSave()'],
+    ['westmere-admin.html', 'createInvoiceNew('], ['westmere-admin.html', 'admSendEstimate('],
+    ['book.html', 'Request booking'], ['westmere-pay.html', 'id="pay-btn"']
+  ];
+  for (const [f, anchor] of MAIN) {
+    const src = read(f);
+    const tag = (src.match(new RegExp('<button[^>]*' + anchor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[^>]*>')) ||
+                 src.match(new RegExp('<button[^>]*>(?=[^<]*' + anchor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')')) || [''])[0];
+    assert.ok(/wm-primary|btn-main|ls-btn|pp-card|btn-navy/.test(tag),
+      f + "'s main action (" + anchor + ') is no longer marked primary: ' + tag.slice(0, 100));
+  }
+  // The quiet ones must NOT be.
+  const owner = read('westmere-owner.html');
+  for (const quiet of ['wmMessageOpen(', 'upcomingEdit(', 'upcomingDelete(']) {
+    const tag = (owner.match(new RegExp('<button[^>]*' + quiet.replace(/[.*+?^${}()|[\]]/g, '\\$&') + '[^>]*>')) || [''])[0];
+    assert.ok(!/wm-primary/.test(tag), quiet + ' has been promoted to primary — a screen of primaries has none');
+  }
 });
 
 // ── 2. STATUS CHIPS ─────────────────────────────────────────────────────
@@ -252,6 +423,15 @@ test('NEGATIVE: a dot modifier is exempt, a chip modifier is not', () => {
   const dots = dotClassesIn(css);
   assert.ok(dots.has('status-dot'), 'a real dot was not recognised as one');
   assert.ok(!dots.has('tag-x'), 'a labelled chip was recognised as a dot');
+});
+
+test('NEGATIVE: the link guard catches the green slab but spares a text link', () => {
+  const slab = '<a href="https://wa.me/1" style="min-height:44px;padding:.5rem .9rem;background:#25D366">WhatsApp</a>';
+  const link = '<a href="tel:1" style="color:var(--navy);border-bottom:1px solid">07700 900123</a>';
+  const boxed = /<a\b[^>]*style=["']([^"']*)["'][^>]*>/i;
+  assert.strictEqual(fillIn(boxed.exec(slab)[1]), '#25D366', 'the WhatsApp slab would pass — the guard is useless');
+  const ls = boxed.exec(link)[1];
+  assert.ok(!/padding/.test(ls), 'a plain text link must not be treated as a button');
 });
 
 test('NEGATIVE: the guard does NOT fire on white, transparent, or a press', () => {

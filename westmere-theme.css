@@ -1443,3 +1443,59 @@ input, select, textarea {
   color: var(--westmere-muted, #657485) !important;
   -webkit-text-fill-color: var(--westmere-muted, #657485) !important;
 }
+
+/* =========================================================
+   22. PRIMARY IS THE LABEL, NOT A FILL
+   =========================================================
+   The owner chose this from a sheet of eight alternatives: the main action on
+   any screen is a BOLDER, LARGER WORD inside the same outlined frame as
+   everything else. No fill, no second colour, not even a heavier border — the
+   label alone. It is the only signal that still works at arm's length in a
+   moving car, which is where these buttons get pressed.
+
+   The canonical definition is .wm-btn-primary in wm-buttons.css. This section
+   does two things that file cannot:
+
+     a) applies the same treatment to the app class names the button system
+        maps as primary — those carry !important, and §16's readability floors
+        (which load after wm-buttons.css) would otherwise pin them back to
+        12px/600 and quietly flatten the hierarchy;
+     b) gives the hand-written buttons in the staff apps a class to opt in with,
+        .wm-primary, since most of them carry no class at all.
+
+   ONE DIAL. To widen or narrow the gap between primary and secondary, edit
+   --wmb-label-primary / --wmb-weight-primary in wm-buttons.css. Nothing below
+   restates a size.
+   GUARDRAIL: server/tests/no-fills.test.js */
+.wm-primary,
+#scr-app .wm-primary, #admin-app .wm-primary,
+/* The compound forms matter: the public site's own `.btn` and `.btn.dark`
+   rules carry !important too, so a bare `.wm-primary` (0,1,0) loses the tie on
+   specificity and the booking form's main action stayed at the secondary size. */
+.btn.wm-primary, .wm-btn.wm-primary, button.wm-primary, a.wm-primary,
+.btn.dark.wm-primary,
+.btn-main, .ls-btn, .aj-send-btn, .modal-btn-primary, .pp-card,
+.btn-navy, .ibtn-primary, .btn-new, .wm-pay-page .btn,
+#scr-app .btn-main, #admin-app .btn-main {
+  background: transparent !important;
+  background-image: none !important;
+  color: var(--westmere-navy, #102a43) !important;
+  -webkit-text-fill-color: var(--westmere-navy, #102a43) !important;
+  border: var(--border-hair, 1px) solid var(--westmere-navy, #102a43) !important;
+  border-radius: var(--radius-lg, 12px) !important;
+  font-size: var(--wmb-label-primary, .9rem) !important;
+  font-weight: var(--wmb-weight-primary, 700) !important;
+  letter-spacing: var(--wmb-track-primary, .13em) !important;
+  text-transform: uppercase !important;
+}
+/* A press still fills, for the moment your finger is down. §15.2's exception
+   list already turns the label white underneath it. */
+.wm-primary:active:not(:disabled), .wm-primary.is-pressed,
+.btn-main:active:not(:disabled), .ls-btn:active:not(:disabled),
+.pp-card:active:not(:disabled), .btn-navy:active:not(:disabled),
+.wm-pay-page .btn:active:not(:disabled) {
+  background: var(--westmere-navy, #102a43) !important;
+  border-color: var(--westmere-navy, #102a43) !important;
+}
+/* Secondary stays exactly as it was: the base label, the hairline frame. The
+   hierarchy is the DIFFERENCE between the two, so nothing here touches them. */

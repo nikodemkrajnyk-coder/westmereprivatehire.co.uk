@@ -123,7 +123,7 @@ nav.solid{background:rgba(255,255,255,.85);backdrop-filter:blur(20px)}
 .fp-landed{color:#60A5FA;border-color:rgba(96,165,250,.25);background:rgba(96,165,250,.06)}
 .fp-delayed{color:var(--navy);border-color:rgba(16,42,67,.4);background:var(--amber-bg)}
 .jc-contact{display:flex;gap:1px;border-bottom:1px solid rgba(17,29,44,.06);background:rgba(17,29,44,.03)}
-.jcc{flex:1;padding:.78rem;background:rgba(17,29,44,.06);border:none;font-family:var(--sans);font-size:.6rem;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:rgba(17,29,44,.5);cursor:pointer;transition:all .25s;text-decoration:none;display:flex;align-items:center;justify-content:center}
+.jcc{flex:1;padding:.78rem;background:transparent;border:var(--border-hair,1px) solid var(--westmere-line-strong,#c8d1d9);font-family:var(--sans);font-size:.6rem;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:rgba(17,29,44,.5);cursor:pointer;transition:all .25s;text-decoration:none;display:flex;align-items:center;justify-content:center}
 .jcc:hover,.jcc:active{background:rgba(16,42,67,.12);color:var(--navy)}
 .jc-actions{padding:.85rem 1.1rem;display:flex;flex-wrap:wrap;gap:.55rem}
 .sbt{font-family:var(--sans);font-size:.6rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.68rem 1rem;cursor:pointer;border:none;transition:all .2s;flex:1;min-width:110px;min-height:44px}
@@ -167,8 +167,8 @@ nav.solid{background:rgba(255,255,255,.85);backdrop-filter:blur(20px)}
 .ls-input{font-family:var(--sans);font-size:.92rem;font-weight:300;color:var(--navy);background:transparent;border:none;border-bottom:1px solid rgba(17,29,44,.15);padding:.78rem 0;outline:none;width:100%;min-height:48px;-webkit-appearance:none;transition:border-color .3s}
 .ls-input:focus{border-bottom-color:var(--navy)}
 .ls-input::placeholder{color:rgba(17,29,44,.3)}
-.ls-btn{width:100%;padding:1rem;background:var(--navy);color:var(--navy);border:none;font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;transition:all .25s;margin-top:.8rem;min-height:52px}
-.ls-btn:hover{background:var(--navy2)}
+.ls-btn{width:100%;padding:1rem;color:var(--navy);border:none;font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;transition:all .25s;margin-top:.8rem;min-height:52px;background:transparent}
+.ls-btn:hover{;background:var(--westmere-hover,rgba(16,42,67,.025))}
 .ls-err{display:none;font-size:.78rem;color:var(--red);text-align:center;margin-top:.5rem;padding:.5rem;background:var(--red-bg);border:1px solid rgba(139,34,34,.3)}
 .ls-err.show{display:block}
 .ls-hd{padding:2.5rem 2.2rem 2rem;text-align:center;border-bottom:1px solid rgba(16,42,67,.12)}
@@ -1548,15 +1548,15 @@ function drvJobDetailCard(j){
     var nm=drvEsc((j.customer_name||'').split(' ')[0]);
     var wm=encodeURIComponent('Hi '+nm+', this is your Westmere driver.');
     h+='<div style="display:flex;gap:1px;margin-top:.55rem;background:rgba(17,29,44,.04);border-radius:8px;overflow:hidden">';
-    h+='<a href="tel:'+drvEsc(j.customer_phone)+'" style="flex:1;padding:.65rem;text-align:center;font-size:.72rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.55);text-decoration:none;background:rgba(17,29,44,.04)">Call</a>';
-    h+='<a href="https://wa.me/'+j.customer_phone.replace(/\D/g,'')+'?text='+wm+'" target="_blank" style="flex:1;padding:.65rem;text-align:center;font-size:.72rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.55);text-decoration:none;background:rgba(17,29,44,.04)">WhatsApp</a>';
-    h+='<a href="sms:'+drvEsc(j.customer_phone)+'" style="flex:1;padding:.65rem;text-align:center;font-size:.72rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.55);text-decoration:none;background:rgba(17,29,44,.04)">Text</a>';
+    h+='<a href="tel:'+drvEsc(j.customer_phone)+'" style="flex:1;padding:.65rem;text-align:center;font-size:.72rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)">Call</a>';
+    h+='<a href="https://wa.me/'+j.customer_phone.replace(/\D/g,'')+'?text='+wm+'" target="_blank" style="flex:1;padding:.65rem;text-align:center;font-size:.72rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)">WhatsApp</a>';
+    h+='<a href="sms:'+drvEsc(j.customer_phone)+'" style="flex:1;padding:.65rem;text-align:center;font-size:.72rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)">Text</a>';
     h+='</div>';
   }
   h+='<div style="display:flex;gap:.4rem;margin-top:.45rem;flex-wrap:wrap">';
-  h+='<a href="https://maps.google.com/?q='+encodeURIComponent(j.destination||'')+'" target="_blank" style="font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;padding:.45rem .7rem;background:rgba(17,29,44,.04);border:1px solid rgba(17,29,44,.1);color:rgba(17,29,44,.55);text-decoration:none;border-radius:6px">Maps</a>';
-  h+='<a href="waze://?q='+encodeURIComponent(j.destination||'')+'" target="_blank" style="font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;padding:.45rem .7rem;background:rgba(17,29,44,.04);border:1px solid rgba(17,29,44,.1);color:rgba(17,29,44,.55);text-decoration:none;border-radius:6px">Waze</a>';
-  if(dFlight) h+='<a href="https://www.flightradar24.com/data/flights/'+drvEsc(dFlight.toLowerCase())+'" target="_blank" style="font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;padding:.45rem .7rem;background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.2);color:#60A5FA;text-decoration:none;border-radius:6px">Flight</a>';
+  h+='<a href="https://maps.google.com/?q='+encodeURIComponent(j.destination||'')+'" target="_blank" style="font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;padding:.45rem .7rem;text-decoration:none;border-radius:6px;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)">Maps</a>';
+  h+='<a href="waze://?q='+encodeURIComponent(j.destination||'')+'" target="_blank" style="font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;padding:.45rem .7rem;text-decoration:none;border-radius:6px;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)">Waze</a>';
+  if(dFlight) h+='<a href="https://www.flightradar24.com/data/flights/'+drvEsc(dFlight.toLowerCase())+'" target="_blank" style="font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;padding:.45rem .7rem;text-decoration:none;border-radius:6px;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)">Flight</a>';
   h+='</div>';
   h+='</div>';
   return h;

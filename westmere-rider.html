@@ -47,8 +47,8 @@ nav#nav{display:none}
 .ls-input{font-family:var(--sans);font-size:.92rem;font-weight:300;color:var(--navy);background:transparent;border:none;border-bottom:1px solid rgba(27,27,26,.12);padding:.78rem 0;outline:none;width:100%;min-height:48px;-webkit-appearance:none;transition:border-color .3s}
 .ls-input:focus{border-bottom-color:var(--navy)}
 .ls-input::placeholder{color:rgba(27,27,26,.3)}
-.ls-btn{width:100%;padding:1rem;background:rgba(27,27,26,.55);color:var(--navy);border:none;font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;transition:all .25s;margin-top:.8rem;min-height:52px}
-.ls-btn:hover{background:rgba(27,27,26,.06)}
+.ls-btn{width:100%;padding:1rem;color:var(--navy);border:none;font-family:var(--sans);font-size:.7rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;transition:all .25s;margin-top:.8rem;min-height:52px;background:transparent}
+.ls-btn:hover{;background:var(--westmere-hover,rgba(16,42,67,.025))}
 .ls-err{display:none;font-size:.78rem;color:var(--red);text-align:center;margin-top:.5rem;padding:.5rem;background:var(--red-bg);border:1px solid rgba(139,34,34,.3)}
 .ls-err.show{display:block}
 .ls-switch{text-align:center;margin-top:1.2rem;font-size:.82rem;color:rgba(27,27,26,.4)}
@@ -105,8 +105,8 @@ textarea.fi:focus{border-color:var(--navy)}
 .sug-powered{padding:.4rem 1rem;text-align:right;font-size:.55rem;color:rgba(27,27,26,.25);letter-spacing:.04em}
 
 /* ── BUTTONS ── */
-.btn-main{width:100%;padding:.95rem;background:rgba(27,27,26,.55);color:var(--navy);border:none;font-family:var(--sans);font-size:.88rem;font-weight:400;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;transition:all .25s;min-height:50px;margin-top:.6rem}
-.btn-main:hover{background:rgba(27,27,26,.06)}
+.btn-main{width:100%;padding:.95rem;color:var(--navy);border:none;font-family:var(--sans);font-size:.88rem;font-weight:400;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;transition:all .25s;min-height:50px;margin-top:.6rem;background:transparent}
+.btn-main:hover{;background:var(--westmere-hover,rgba(16,42,67,.025))}
 .btn-ghost{font-family:var(--sans);font-size:.6rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;padding:.68rem 1.2rem;cursor:pointer;border:1px solid rgba(27,27,26,.12);background:transparent;color:rgba(27,27,26,.5);transition:all .25s;min-height:44px}
 .btn-ghost:hover{border-color:rgba(27,27,26,.55);color:rgba(27,27,26,.55)}
 .btn-sm{font-family:var(--sans);font-size:.56rem;font-weight:400;letter-spacing:.1em;text-transform:uppercase;padding:.35rem .8rem;cursor:pointer;transition:all .25s;border:1px solid rgba(27,27,26,.1);background:transparent;color:rgba(27,27,26,.4)}
@@ -164,7 +164,7 @@ body.mode-day .aj-meta-grid{border-top:1px solid rgba(26,38,56,.12);border-botto
 .aj-chat-time{display:block;font-size:.55rem;color:rgba(27,27,26,.45);margin-top:.2rem}
 .aj-chat-input{display:flex;gap:.4rem}
 .aj-chat-input .fi{flex:1}
-.aj-send-btn{padding:.5rem 1rem;background:rgba(27,27,26,.55);color:var(--navy);border:none;font-family:var(--sans);font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;cursor:pointer}
+.aj-send-btn{padding:.5rem 1rem;color:var(--navy);border:none;font-family:var(--sans);font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;background:transparent}
 
 /* ── TRIP CARDS ── */
 .trip-card{background:#fff;border:1px solid rgba(27,27,26,.08);margin-bottom:.75rem;padding:1rem 1.2rem;transition:border-color .2s;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
@@ -334,8 +334,8 @@ body.mode-day .fi:focus{border-bottom-color:#102a43}
 body.mode-day select.fi option{background:#ffffff;color:#1A2638}
 body.mode-day .sec-sub{color:rgba(26,38,56,.65)}
 body.mode-day .wc-date{color:rgba(26,38,56,.65)}
-body.mode-day .btn-main{background:#102a43;color:#ffffff}
-body.mode-day .btn-main:hover{background:#102a43}
+body.mode-day .btn-main{color:#ffffff;background:transparent}
+body.mode-day .btn-main:hover{;background:var(--westmere-hover,rgba(16,42,67,.025))}
 body.mode-day .filter-btn{color:rgba(26,38,56,.55);border-color:rgba(26,38,56,.18)}
 body.mode-day .filter-btn.on{background:rgba(16,42,67,.12);color:#1A2638;border-color:rgba(16,42,67,.4)}
 body.mode-day .tc-date{color:#102a43}

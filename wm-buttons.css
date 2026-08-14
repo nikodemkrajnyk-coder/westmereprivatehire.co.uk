@@ -58,6 +58,27 @@
   --wmb-press:        var(--westmere-navy, #102a43);
   --wmb-on-press:     var(--westmere-white, #ffffff);
 
+  /* ── THE LABEL IS THE HIERARCHY ──────────────────────────────────────
+     The owner picked this from a comparison sheet: a primary action is a
+     BOLDER, LARGER WORD in the same outlined frame. Not a fill, not a colour,
+     not even a thicker border — the label. It is the one signal that survives
+     being read at arm's length, in a car, in a hurry, which is where these
+     buttons are actually used.
+
+     Secondary keeps the base label. To re-tune the gap between them, change
+     these two lines and nothing else. */
+  --wmb-label:          .7rem;                      /* secondary — unchanged */
+  /* --text-base, not --text-sm. The staff apps hand-write their own secondary
+     buttons at .79–.8rem, so a primary at .78rem measured SMALLER than the
+     buttons it was meant to lead — the hierarchy was inverted on the very
+     screen the owner looks at. It has to clear the loudest secondary in the
+     system, not just the base class. */
+  --wmb-label-primary:  var(--text-base, .9rem);    /* primary — larger      */
+  --wmb-weight:         var(--weight-medium, 500);
+  --wmb-weight-primary: var(--weight-bold, 700);
+  --wmb-track:          .14em;
+  --wmb-track-primary:  .13em;                      /* bolder needs less air */
+
   /* Shape + feel — 12px to match the theme's buttons exactly */
   --wmb-radius:       var(--radius-lg, 12px);
   --wmb-border:       var(--border-hair, 1px);
@@ -75,9 +96,9 @@
   padding: .8em 1.5em;
   min-height: 44px;                             /* comfortable tap target */
   font-family: inherit;
-  font-size: .7rem;
-  font-weight: 500;
-  letter-spacing: .14em;
+  font-size: var(--wmb-label, .7rem);
+  font-weight: var(--wmb-weight, 500);
+  letter-spacing: var(--wmb-track, .14em);
   text-transform: uppercase;
   line-height: 1.2;
   text-align: center;
@@ -112,12 +133,14 @@
   transform: none;
 }
 
-/* ── Primary — the main action. Firmer border, full-strength ink. ──────── */
+/* ── Primary — the main action. NO FILL. It is louder by LABEL. ────────── */
 .wm-btn-primary {
   color: var(--wmb-ink);
   border-color: var(--wmb-line-strong);
   background-color: var(--wmb-surface);
-  font-weight: 600;
+  font-size: var(--wmb-label-primary, .9rem);
+  font-weight: var(--wmb-weight-primary, 700);
+  letter-spacing: var(--wmb-track-primary, .13em);
 }
 .wm-btn-primary:hover:not(:disabled) {
   background-color: var(--wmb-hover);
