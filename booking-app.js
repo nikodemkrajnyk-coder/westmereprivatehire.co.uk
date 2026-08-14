@@ -142,11 +142,65 @@
   function geocodeForEstimate(addr) {
     var a = String(addr || '');
     var q = /\bUK\b|united kingdom/i.test(a) ? a : a + ', UK';
+    // limit=5 + addressdetails: with limit=1 there is no way to tell a good
+    // match from a bad one — see placeIsPlausible below for why that matters.
     return fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q) +
-                 '&format=json&limit=1&countrycodes=gb', { headers: { 'Accept': 'application/json' } })
+                 '&format=json&addressdetails=1&limit=5&countrycodes=gb', { headers: { 'Accept': 'application/json' } })
       .then(function (r) { return r.json(); })
-      .then(function (arr) { return (arr && arr[0]) ? { lat: parseFloat(arr[0].lat), lon: parseFloat(arr[0].lon) } : null; })
+      .then(function (arr) {
+        if (!arr || !arr.length) return null;
+        for (var i = 0; i < arr.length; i++) {
+          if (placeIsPlausible(arr[i], a)) {
+            return { lat: parseFloat(arr[i].lat), lon: parseFloat(arr[i].lon) };
+          }
+        }
+        return null;   // nothing we can trust → the caller shows the safe message
+      })
       .catch(function () { return null; });
+  }
+
+  // ── IS THIS RESULT ACTUALLY THE PLACE THEY MEANT? ─────────────────────
+  // The owner wants customers to be able to TYPE an address rather than having
+  // to pick a suggestion. The risk that creates is not a failed lookup — it is
+  // a confident-looking WRONG one.
+  //
+  // Real example: "Brighton, East Sussex" returns, as its single best match,
+  // "Brighton&Hove Buses Eastbourne Depot" — a bus depot in EASTBOURNE, twenty
+  // miles away. Brighton is in "Brighton and Hove", not East Sussex, so no
+  // exact match exists and Nominatim falls back to a fuzzy one whose NAME
+  // contains "Brighton". With limit=1 there is no signal that anything is
+  // wrong: the customer would have been quoted a confident £40 for a journey
+  // that is really 21 miles.
+  //
+  // So: the place the geocoder resolved to must be one the customer actually
+  // named. Every word of the resolved town/city/village (or of the result's own
+  // first component) has to appear in what they typed. The depot fails on
+  // "eastbourne"/"depot"; "Brighton, Brighton and Hove…" passes on "brighton".
+  // When nothing passes we show the safe "we'll confirm your fare" message
+  // rather than a number we do not believe.
+  function _normPlace(s) {
+    return String(s || '').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+  function placeIsPlausible(cand, typed) {
+    if (!cand) return false;
+    var hay = ' ' + _normPlace(typed) + ' ';
+    var ad = cand.address || {};
+    // SETTLEMENT ONLY — deliberately no county. "East Sussex" appearing in the
+    // query proves nothing about which town was resolved: Brighton and
+    // Eastbourne are both in it, which is precisely how the depot slipped
+    // through the first version of this check.
+    var names = [ad.city, ad.town, ad.village, ad.hamlet, ad.suburb,
+                 String(cand.display_name || '').split(',')[0]];
+    for (var i = 0; i < names.length; i++) {
+      var words = _normPlace(names[i]).split(' ').filter(function (w) { return w.length > 2; });
+      if (!words.length) continue;
+      var all = true;
+      for (var j = 0; j < words.length; j++) {
+        if (hay.indexOf(' ' + words[j] + ' ') === -1) { all = false; break; }
+      }
+      if (all) return true;
+    }
+    return false;
   }
 
   function quoteNonAirport(pickup, destination) {
@@ -328,10 +382,13 @@
                 + '<span class="fe-note">About ' + r.distance_miles + ' miles · approximate guide only. '
                 + 'Request your booking below and we’ll confirm the exact fare.</span>';
             } else {
-              // Fail closed — never guess a distance.
+              // GRACEFUL DEGRADE. We could not resolve the addresses well enough
+              // to trust a distance, so we show no number at all — a wrong
+              // price is far worse than no price. Never a blank box either.
               fareBox.className = 'fare-estimate msg';
-              fareBox.innerHTML = '<span class="fe-label">Your journey</span>'
-                + '<span class="fe-note" style="margin-top:3px">For this journey, please request a booking below and we’ll confirm your fare.</span>';
+              fareBox.innerHTML = ESTIMATE_LABEL
+                + '<span class="fe-note" style="margin-top:5px">We couldn’t look that route up automatically — '
+                + 'it may be a hard-to-find address. Request your booking below and we’ll confirm your fare.</span>';
             }
           });
         }, 500);

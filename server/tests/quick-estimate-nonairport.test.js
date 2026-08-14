@@ -156,6 +156,116 @@ test('the estimate geocodes an autocomplete address without doubling the country
     'the shared geocode() must keep its original country test — changing it moves airport quotes');
 });
 
+// ── A TYPED ADDRESS MUST NEVER PRODUCE A CONFIDENT WRONG PRICE ───────────
+// The owner wants free typing allowed ("sometimes geo can't find it"). The risk
+// that creates is not a failed lookup — it is a confident WRONG one.
+//
+// The real case: "Brighton, East Sussex" returns as its single best match
+// "Brighton&Hove Buses Eastbourne Depot" — a depot in EASTBOURNE, ~20 miles
+// from Brighton. Brighton is in "Brighton and Hove", not East Sussex, so no
+// exact match exists and Nominatim falls back to a fuzzy one whose NAME
+// contains "Brighton". The customer would have been quoted £40 for a 21-mile
+// journey. These are the ACTUAL payloads that search returned.
+console.log('\nA typed address never yields a confident wrong price');
+
+vm.runInContext(extract('_normPlace') + extract('placeIsPlausible'), sandbox);
+const plausible = sandbox.placeIsPlausible;
+
+// Verbatim from Nominatim for "Brighton, East Sussex, UK".
+const BAD = [
+  { display_name: "Brighton&Hove Buses Eastbourne Depot, St Anthony's Hill, Eastbourne, East Sussex, England, United Kingdom",
+    class: 'landuse', type: 'industrial', address: { city: 'Eastbourne', county: 'East Sussex' } },
+  { display_name: 'Brighton Road, Wallands Park, Lewes, East Sussex, England, BN7 1EA, United Kingdom',
+    class: 'highway', type: 'primary', address: { town: 'Lewes', county: 'East Sussex' } },
+  { display_name: 'Brighton Road, Nevill, Lewes, East Sussex, England, BN7 1EW, United Kingdom',
+    class: 'highway', type: 'primary', address: { town: 'Lewes', county: 'East Sussex' } }
+];
+// …and for the two that resolve correctly.
+const GOOD_BRIGHTON = { display_name: 'Brighton, Brighton and Hove, England, BN1 1HJ, United Kingdom',
+  class: 'place', type: 'city', address: { city: 'Brighton' } };
+const GOOD_CRAWLEY = { display_name: 'Crawley, West Sussex, England, United Kingdom',
+  class: 'boundary', type: 'administrative', address: { town: 'Crawley', county: 'West Sussex' } };
+
+test('THE REPORTED CASE: an Eastbourne depot is rejected for a Brighton query', () => {
+  for (const cand of BAD) {
+    assert.strictEqual(plausible(cand, 'Brighton, East Sussex'), false,
+      'accepted a result in the wrong town: ' + cand.display_name.slice(0, 60));
+  }
+});
+
+test('the COUNTY alone never makes a result plausible', () => {
+  // The hole the first version of this check had: the depot carries
+  // county "East Sussex", which the query also contains — but Brighton and
+  // Eastbourne are both in East Sussex, so it proves nothing about the town.
+  const countyOnly = { display_name: 'Somewhere Else, Eastbourne, East Sussex, England, United Kingdom',
+    address: { city: 'Eastbourne', county: 'East Sussex' } };
+  assert.strictEqual(plausible(countyOnly, 'Brighton, East Sussex'), false,
+    'a shared COUNTY must not be enough to accept a result in a different town');
+});
+
+test('a correctly resolved address is accepted', () => {
+  assert.strictEqual(plausible(GOOD_BRIGHTON, 'Brighton, Brighton and Hove, England, United Kingdom'), true);
+  assert.strictEqual(plausible(GOOD_CRAWLEY, 'Crawley, West Sussex, England, United Kingdom'), true);
+});
+
+test('a TYPED street address still resolves — free typing is not blocked', () => {
+  // The owner explicitly does not want customers forced through autocomplete.
+  const typed = { display_name: '14, Queens Road, Haywards Heath, West Sussex, England, RH16 1EA, United Kingdom',
+    class: 'building', type: 'house', address: { road: 'Queens Road', town: 'Haywards Heath', county: 'West Sussex' } };
+  assert.strictEqual(plausible(typed, '14 Queens Road, Haywards Heath'), true,
+    'a hand-typed street address that resolves correctly must still be priced');
+  assert.strictEqual(plausible(typed, 'Queens Road Haywards Heath'), true);
+});
+
+test('the check reads the whole candidate, not just one field', () => {
+  // A POI with no town in addressdetails must still pass on its own name.
+  const poi = { display_name: 'Gatwick Airport, Crawley, West Sussex, England, United Kingdom',
+    class: 'aeroway', type: 'aerodrome', address: {} };
+  assert.strictEqual(plausible(poi, 'Gatwick Airport'), true);
+  assert.strictEqual(plausible(null, 'anything'), false, 'a missing candidate is never plausible');
+});
+
+test('the geocoder asks for enough candidates to be able to judge', () => {
+  const fn = extract('geocodeForEstimate');
+  assert.ok(/limit=5/.test(fn), 'limit=1 gives no way to tell a good match from a bad one');
+  assert.ok(/addressdetails=1/.test(fn), 'the town fields are what the plausibility check reads');
+  assert.ok(/placeIsPlausible\(arr\[i\], a\)/.test(fn), 'candidates must be filtered by plausibility');
+  assert.ok(/return null;/.test(fn), 'when nothing is plausible it must return null, not a guess');
+});
+
+test('an unresolvable address degrades to the safe message, never a price', () => {
+  // quoteNonAirport returns null when either end will not geocode…
+  const q = extract('quoteNonAirport');
+  assert.ok(/if \(!g\[0\] \|\| !g\[1\]\) return null;/.test(q),
+    'a failed geocode must produce no quote');
+  assert.ok(/if \(!rt\) return null;/.test(q), 'a failed route must produce no quote');
+  // …and the widget then shows the fallback, with no number in it.
+  const branch = APP.slice(APP.indexOf('quoteNonAirport(p, d).then'));
+  const fallback = branch.slice(branch.indexOf('} else {'), branch.indexOf('} else {') + 700);
+  assert.ok(/We couldn’t look that route up automatically/.test(fallback),
+    'the fallback must explain itself rather than showing a blank box');
+  assert.ok(/Request your booking below and we’ll confirm your fare/.test(fallback),
+    'the fallback must send the customer to the booking request');
+  assert.ok(!/approx £|fe-amount/.test(fallback),
+    'the fallback must NEVER render a price');
+});
+
+// ── Crawley stays on the per-mile estimate ───────────────────────────────
+test('Crawley town-to-town is priced like anywhere else (owner decision)', () => {
+  // FARE_ON_REQUEST is consulted ONLY inside calculateFare's airport branches,
+  // so a Crawley town-to-town journey reaches the £2.50/mile rule like any
+  // other. Pinned so it cannot silently become quote-only again.
+  const calc = extract('calculateFare');
+  const onRequestCalls = (calc.match(/onRequest\(/g) || []).length;
+  assert.strictEqual(onRequestCalls, 2,
+    'onRequest must be checked exactly twice, in the two airport branches');
+  const nonAirportBranch = APP.slice(APP.indexOf('if (!isAirportJourney(p, d)) {'),
+                                     APP.indexOf('if (!isAirportJourney(p, d)) {') + 1400);
+  assert.ok(!/onRequest\(/.test(nonAirportBranch),
+    'the non-airport estimate must NOT consult the quote-on-request town list — ' +
+    'the owner wants Crawley priced at £2.50/mile like anywhere else');
+});
+
 // ── #B: an estimate is not a booking ─────────────────────────────────────
 console.log('\nThe estimate reads as an estimate, not a booking');
 
