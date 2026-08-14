@@ -110,6 +110,18 @@ const CLASSES = ['wm-glance-date', 'wm-glance-time', 'wm-glance-fare'];
 const CARD = OWNER.slice(OWNER.indexOf('function jobCardHtml(j){'));
 const CARD_BODY = CARD.slice(0, CARD.indexOf('\n}\n'));
 
+// The two list renderers, each sliced to its OWN body — a slice that runs to
+// the next function definition would match calls belonging to whatever sits in
+// between, and quietly pass.
+const LIST_FN = (() => {
+  const s = OWNER.slice(OWNER.indexOf('function renderJobList'));
+  return s.slice(0, s.indexOf('\n}\n'));
+})();
+const WEEK_FN = (() => {
+  const s = OWNER.slice(OWNER.indexOf('function buildConfirmed'));
+  return s.slice(0, s.indexOf('\n}\n'));
+})();
+
 test('the owner trip card emits all three glance fields', () => {
   for (const c of CLASSES) {
     assert.ok(CARD_BODY.includes(c), 'jobCardHtml no longer renders .' + c);
@@ -142,15 +154,61 @@ test('BOTH owner trip lists and the trip page render through that one card', () 
   // To Confirm (flat list, with date separators), Confirmed (weekly schedule),
   // and the full-screen trip page. All three call jobCardHtml, so all three
   // get the glance — that is why this change is three lines and not thirty.
-  const listRender = OWNER.slice(OWNER.indexOf('function renderJobList'), OWNER.indexOf('function jobCardHtml'));
-  assert.ok(/jobCardHtml\(j\)/.test(listRender), 'the flat trip list (To Confirm) no longer renders jobCardHtml');
-
-  const weekly = OWNER.slice(OWNER.indexOf('function buildConfirmed'));
-  assert.ok(/jobCardHtml/.test(weekly.slice(0, 4000)), 'the Confirmed weekly schedule no longer renders jobCardHtml');
+  // Scoped to each function's OWN body: sliced to the next definition, these
+  // would match a jobCardHtml call belonging to some other function in between.
+  assert.ok(/jobCardHtml/.test(LIST_FN), 'the flat trip list (To Confirm) no longer renders jobCardHtml');
+  assert.ok(/jobCardHtml/.test(WEEK_FN), 'the Confirmed weekly schedule no longer renders jobCardHtml');
 
   const tripPage = OWNER.slice(OWNER.indexOf('function openTripPage'), OWNER.indexOf('function jobCardHtml'));
   assert.ok(/jobCardHtml\(j\)/.test(tripPage),
     'the full-screen trip page no longer renders jobCardHtml — it would need its own copy of the glance');
+});
+
+// ── The date is printed ONCE per trip ────────────────────────────────────
+// Once every card carried its own date, the day separators above them were
+// printing the same date twice, a line apart. They are gone. What follows
+// stops them coming back the next time someone "adds grouping".
+
+test('the flat trip list prints no day separator above the cards', () => {
+  assert.ok(!/_fmtUpcomingDate/.test(LIST_FN),
+    'renderJobList is formatting a date again — the card already shows it large in the glance row, ' +
+    'so a separator prints the same date twice, one line apart');
+  assert.ok(!/dateSep|lastDate/.test(LIST_FN),
+    'renderJobList has a day-separator variable again');
+  assert.ok(/allItems\.map\(jobCardHtml\)/.test(LIST_FN),
+    're-point this assertion: the flat list no longer maps straight to jobCardHtml');
+});
+
+test('the Confirmed week labels ONLY the days that have no card to label them', () => {
+  // The Mon→Sun scaffold has to survive: an empty day still needs its name, or
+  // the owner cannot see which day the gap is. A day WITH jobs must not.
+  assert.ok(/_fmtDayHeader\(day\)/.test(WEEK_FN), 'the weekly view no longer labels its empty days — the gaps become unreadable');
+  const header = WEEK_FN.indexOf('_fmtDayHeader(day)');
+  const cards = WEEK_FN.indexOf('dayItems.map(jobCardHtml)');
+  assert.ok(cards !== -1, 'the weekly view no longer renders jobCardHtml');
+  assert.ok(header > cards,
+    'the weekly view prints the day header BEFORE its cards again — that repeats the date the ' +
+    'glance row already shows. The header belongs in the empty-day branch only.');
+  // And it must be in the branch, not merely later in the function.
+  const branch = WEEK_FN.slice(WEEK_FN.indexOf('dayItems.length'));
+  const empty = branch.slice(branch.indexOf(': '));
+  assert.ok(/_fmtDayHeader\(day\)/.test(empty) && /No jobs/.test(empty),
+    'the day label must sit in the "No jobs" branch, alongside the thing it is labelling');
+});
+
+test('every remaining group header is a WEEK, not a day', () => {
+  // Completed and Cancelled group by ISO week with a count and takings. That is
+  // information no card carries, so those headers stay — but if one of them
+  // ever starts printing a single day's date, it is a duplicate again.
+  for (const fn of ['function buildCompleted', 'function buildAdmCompleted']) {
+    const src = (fn.includes('Adm') ? ADMIN : OWNER);
+    const s = src.slice(src.indexOf(fn));
+    const body = s.slice(0, s.indexOf('\n}\n'));
+    if (!body) continue;
+    assert.ok(!/_fmtUpcomingDate|_fmtDayHeader|_admGlanceDate/.test(body),
+      fn + ' prints a per-day date above its rows — the rows already show it in the glance');
+    assert.ok(/groupByWeek/.test(body), fn + ' is no longer grouping by week');
+  }
 });
 
 test('the admin job row shows the same glance, for parity', () => {

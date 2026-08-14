@@ -2763,15 +2763,12 @@ async function renderJobList(list, jobs, opts){
     return;
   }
 
-  var lastDate='';
-  list.innerHTML=allItems.map(function(j){
-    var dateSep='';
-    if(j.date!==lastDate){
-      lastDate=j.date;
-      dateSep='<div style="padding:.6rem 1rem .45rem;font-family:var(--serif);font-size:1.05rem;font-weight:500;letter-spacing:.05em;color:var(--navy);background:#ffffff;border-bottom:1px solid var(--rule)">'+_fmtUpcomingDate(j.date)+'</div>';
-    }
-    return dateSep+jobCardHtml(j);
-  }).join('');
+  // NO day separator here. Every card now carries its own date, large, in the
+  // at-a-glance row — a separator above the first card of each day printed the
+  // same date twice, one line apart. The list is still sorted by date, so the
+  // days still read as blocks; they are just labelled on the cards themselves
+  // instead of above them. GUARDRAIL: server/tests/owner-glance.test.js
+  list.innerHTML=allItems.map(jobCardHtml).join('');
 }
 
 // Single job/personal-event card (no date separator). Shared by the flat list
@@ -3160,10 +3157,21 @@ async function buildConfirmed(){
     var dayKey=dk(day.getFullYear(),day.getMonth(),day.getDate());
     var dayItems=items.filter(function(x){return x.date===dayKey;})
       .sort(function(a,b){return (a.time||'').localeCompare(b.time||'');});
-    html+='<div style="padding:.6rem 1rem .45rem;font-family:var(--serif);font-size:1.05rem;font-weight:500;letter-spacing:.06em;color:var(--navy);background:#ffffff;border-bottom:1px solid var(--rule)">'+_fmtDayHeader(day)+'</div>';
+    // The day header is printed ONLY on a day with nothing in it.
+    //
+    // This view is a Mon→Sun scaffold: every day is rendered, empty ones
+    // included, so the owner can see his gaps. A day WITH jobs no longer needs
+    // a label, because each card states its own date large in the glance row —
+    // the header was repeating it one line above. A day WITHOUT jobs has no
+    // card to carry the date, so it keeps its label, folded into the same line
+    // as "No jobs" rather than sitting on a row of its own: one quiet line per
+    // empty day instead of two.
     html+=dayItems.length
       ? dayItems.map(jobCardHtml).join('')
-      : '<div style="padding:.7rem 1rem;border-top:1px solid var(--rule);font-size:.88rem;color:rgba(27,27,26,.4)">No jobs</div>';
+      : '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:.6rem;padding:.7rem 1rem;border-top:1px solid var(--rule)">'
+        +'<span style="font-size:.78rem;letter-spacing:.06em;color:rgba(27,27,26,.4)">'+_fmtDayHeader(day)+'</span>'
+        +'<span style="font-size:.78rem;letter-spacing:.06em;color:rgba(27,27,26,.3)">No jobs</span>'
+        +'</div>';
   }
   list.innerHTML=html;
 }
