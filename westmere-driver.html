@@ -75,7 +75,7 @@ nav.solid{background:rgba(255,255,255,.85);backdrop-filter:blur(20px)}
 .bn-label{font-size:.46rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase}
 .bn-bar{width:20px;height:1px;background:currentColor;opacity:0;transition:opacity .2s;margin-bottom:.1rem}
 .bn-item.on .bn-bar{opacity:1}
-.bn-badge{position:absolute;top:.42rem;right:calc(50% - 16px);background:var(--red);color:#fff;font-size:.48rem;font-weight:700;min-width:14px;height:14px;border-radius:7px;padding:0 3px;display:none;align-items:center;justify-content:center}
+.bn-badge{position:absolute;top:.42rem;right:calc(50% - 16px);font-size:.48rem;font-weight:700;min-width:14px;height:14px;border-radius:7px;padding:0 3px;display:none;align-items:center;justify-content:center;border:var(--border-hair,1px) solid var(--westmere-navy,#102a43)}
 /* ── DRIVER CALENDAR ── */
 .dcal-hd{padding:.4rem .2rem;text-align:center;font-size:.55rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(17,29,44,.45);background:rgba(255,255,255,.7)}
 .dcal-day{min-height:48px;padding:.3rem .25rem;background:#fff;cursor:pointer;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;transition:background .15s}
@@ -376,7 +376,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
       <div id="today-onboarding-nudge" style="display:none;margin-bottom:1rem;padding:.85rem 1rem;border-radius:10px;background:rgba(16,42,67,.09);border:1px solid rgba(16,42,67,.25)">
         <div style="font-size:.65rem;letter-spacing:.16em;text-transform:uppercase;color:var(--navy);font-weight:500;margin-bottom:.2rem">Action Required</div>
         <div style="font-size:.82rem;color:var(--navy);line-height:1.5" id="today-nudge-msg">Please complete your onboarding in <strong>Profile</strong>.</div>
-        <button onclick="goPage('profile',document.getElementById('bn-profile'))" style="margin-top:.55rem;padding:.45rem .9rem;font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;background:var(--navy);color:var(--navy);border:none;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:5px">Go to Profile →</button>
+        <button onclick="goPage('profile',document.getElementById('bn-profile'))" style="margin-top:.55rem;padding:.45rem .9rem;font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:5px;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)">Go to Profile →</button>
       </div>
       <div id="today-personal"></div>
       <div id="today-list"></div>
@@ -439,7 +439,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
 
       <!-- Personal details form -->
       <div class="p-card">
-        <div class="p-ch" style="justify-content:space-between">Personal Details <button onclick="saveDriverProfile()" style="font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;padding:.35rem .7rem;background:var(--navy);color:var(--navy);border:none;cursor:pointer;font-family:var(--sans);font-weight:500;border-radius:4px" id="profile-save-btn">Save</button></div>
+        <div class="p-ch" style="justify-content:space-between">Personal Details <button onclick="saveDriverProfile()" style="font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;padding:.35rem .7rem;cursor:pointer;font-family:var(--sans);font-weight:500;border-radius:4px;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)" id="profile-save-btn">Save</button></div>
         <div class="p-cb" style="padding:.6rem .9rem">
           <div style="margin-bottom:.65rem">
             <div style="font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(17,29,44,.45);margin-bottom:.25rem">Full Name</div>
@@ -1035,7 +1035,7 @@ function _renderCalCard(token){
     +'Tap <strong>Subscribe</strong> to add your jobs to your phone calendar. Updates automatically every few hours — works with Apple Calendar, Google Calendar, and Outlook.'
     +'</div>'
     +'<div style="display:flex;gap:.5rem;flex-wrap:wrap">'
-    +'<button onclick="driverCalSubscribe()" style="padding:.6rem 1.1rem;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;background:var(--navy);color:var(--navy);border:none;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:5px">Subscribe</button>'
+    +'<button onclick="driverCalSubscribe()" style="padding:.6rem 1.1rem;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:5px;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)">Subscribe</button>'
     +'<button onclick="driverCalCopy()" id="cal-copy-btn" style="padding:.6rem 1rem;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;background:transparent;border:1px solid rgba(17,29,44,.18);color:rgba(17,29,44,.6);font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:5px">Copy Link</button>'
     +'</div>'
     +'<div style="margin-top:.65rem;font-size:.7rem;color:rgba(17,29,44,.35);word-break:break-all;line-height:1.45">'+esc(httpsUrl)+'</div>';
@@ -1166,10 +1166,10 @@ function renderDocSlots(){
     var doc=_driverDocs[type];
     var status=doc?doc.status:'none';
     var statusHtml='';
-    if(status==='approved') statusHtml='<span style="font-size:.6rem;padding:.2rem .5rem;background:var(--green-bg);color:var(--green);border-radius:3px;font-weight:500;letter-spacing:.08em;text-transform:uppercase">Approved</span>';
-    else if(status==='rejected') statusHtml='<span style="font-size:.6rem;padding:.2rem .5rem;background:var(--red-bg);color:var(--red);border-radius:3px;font-weight:500;letter-spacing:.08em;text-transform:uppercase">Rejected</span>';
-    else if(status==='pending') statusHtml='<span style="font-size:.6rem;padding:.2rem .5rem;background:rgba(16,42,67,.12);color:var(--navy);border-radius:3px;font-weight:500;letter-spacing:.08em;text-transform:uppercase">Under Review</span>';
-    else statusHtml='<span style="font-size:.6rem;padding:.2rem .5rem;background:rgba(17,29,44,.06);color:rgba(17,29,44,.4);border-radius:3px;font-weight:500;letter-spacing:.08em;text-transform:uppercase">Not Uploaded</span>';
+    if(status==='approved') statusHtml='<span class="wm-chip" style="font-size:.6rem;padding:.2rem .5rem;border-radius:3px;font-weight:500;letter-spacing:.08em;text-transform:uppercase">Approved</span>';
+    else if(status==='rejected') statusHtml='<span class="wm-chip" style="font-size:.6rem;padding:.2rem .5rem;border-radius:3px;font-weight:500;letter-spacing:.08em;text-transform:uppercase">Rejected</span>';
+    else if(status==='pending') statusHtml='<span class="wm-chip" style="font-size:.6rem;padding:.2rem .5rem;border-radius:3px;font-weight:500;letter-spacing:.08em;text-transform:uppercase">Under Review</span>';
+    else statusHtml='<span class="wm-chip" style="font-size:.6rem;padding:.2rem .5rem;border-radius:3px;font-weight:500;letter-spacing:.08em;text-transform:uppercase">Not Uploaded</span>';
 
     var rejectNote=status==='rejected'&&doc&&doc.notes?'<div style="margin-top:.3rem;padding:.35rem .55rem;background:var(--red-bg);border-left:2px solid var(--red);font-size:.74rem;color:var(--red);line-height:1.4">'+esc(doc.notes)+'</div>':'';
 

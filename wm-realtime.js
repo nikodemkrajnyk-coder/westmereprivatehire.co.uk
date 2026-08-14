@@ -87,16 +87,22 @@
     if (Notification.permission !== 'default') return;
     if (sessionStorage.getItem('wm_perm_dismissed') === '1') return;
 
+    // A white card with a navy hairline, not a black pill. This was the last
+    // solid-black slab in the owner's app — it sat in the corner of the very
+    // screenshot he sent — and it also ran on the system sans, so it did not
+    // even look like the rest of the product. Nothing highlights by filling.
     var pill = document.createElement('div');
     pill.style.cssText = [
       'position:fixed','bottom:1rem','right:1rem','z-index:99998',
-      'background:#1a1a1a','color:#fff','padding:.7rem .9rem','border-radius:.6rem',
-      'box-shadow:0 8px 24px rgba(0,0,0,.25)','display:flex','gap:.7rem','align-items:center',
-      'font:500 .8rem/1.3 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif'
+      'background:var(--westmere-white, #ffffff)','color:var(--westmere-navy, #102a43)',
+      'border:var(--border-hair, 1px) solid var(--westmere-navy, #102a43)',
+      'padding:.7rem .9rem','border-radius:var(--radius-lg, 12px)',
+      'display:flex','gap:.7rem','align-items:center',
+      'font-size:.8rem','line-height:1.3','font-weight:500'
     ].join(';');
     pill.innerHTML = '<span>Get desktop alerts for new bookings?</span>'
-      + '<button style="background:#ffffff;color:#1a1a1a;border:none;padding:.4rem .7rem;border-radius:.4rem;font:600 .78rem/1 inherit;cursor:pointer">Enable</button>'
-      + '<button style="background:transparent;color:rgba(255,255,255,.6);border:none;padding:.3rem .4rem;cursor:pointer;font-size:1rem">×</button>';
+      + '<button style="background:transparent;padding:.4rem .7rem;border-radius:var(--radius-sm, 8px);font-size:.78rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)">Enable</button>'
+      + '<button style="background:transparent;padding:.3rem .4rem;cursor:pointer;font-size:1rem;border:0">&times;</button>';
     document.body.appendChild(pill);
     var btns = pill.querySelectorAll('button');
     btns[0].onclick = function(){

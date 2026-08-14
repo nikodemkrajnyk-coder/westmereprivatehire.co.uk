@@ -63,7 +63,7 @@ a{color:var(--navy)}
 .sb-item:hover{color:var(--navy);background:rgba(27,27,26,.04)}
 .sb-item.on{color:var(--navy);background:rgba(106,106,106,.08);font-weight:400}
 .sb-icon{width:18px;height:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.sb-icon svg{width:16px;height:16px;display:block}
-.sb-badge{margin-left:auto;background:var(--navy);color:var(--navy);font-size:.65rem;font-weight:700;padding:.12rem .4rem;border-radius:10px}
+.sb-badge{margin-left:auto;font-size:.65rem;font-weight:700;padding:.12rem .4rem;border-radius:10px}
 .sb-badge.red{background:var(--red);color:#1a1a1a}
 .sb-bottom{margin-top:auto;padding:1rem 1.2rem;border-top:1px solid rgba(27,27,26,.06);flex-shrink:0}
 .sb-version{font-size:.7rem;color:rgba(27,27,26,.6);letter-spacing:.08em}
@@ -147,18 +147,15 @@ body.full-view .content{padding:1.4rem 1.9rem;max-width:100%}
 .tl-actions{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.5rem}
 /* TAGS */
 .tag{display:inline-flex;align-items:center;font-size:.69rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.15rem .5rem}
-.tag-upcoming{background:rgba(106,106,106,.15);color:var(--navy)}
-.tag-done{background:var(--green-bg);color:var(--green)}
-.tag-cancel{background:var(--red-bg);color:var(--red)}
-.tag-account{background:var(--purple-bg);color:var(--purple)}
-.tag-cash{background:rgba(106,106,106,.16);color:#555555}
-.tag-card{background:rgba(59,130,246,.08);color:#60A5FA}
-.tag-prepaid{background:var(--green-bg);color:var(--green)}
-.tag-await{background:rgba(27,27,26,.05);color:#1b1b1a}
+/* NO FILLS. Every status chip is a navy frame on white — one rule, §20 of
+   westmere-theme.css. These variants used to each carry their own pale wash
+   (green for done, red for cancelled, amber for awaiting); at chip size they
+   all read as the same grey smudge anyway, and the owner's rule is that
+   nothing highlights by filling. The state is told by the WORDS.
+   The class names stay: they are the semantic hook the theme styles through,
+   and wm-lifecycle.js returns them. GUARDRAIL: server/tests/no-fills.test.js */
 /* No payment method chosen yet ("—") and a brand-new request. Both are neutral
    on purpose: nothing is "awaiting" until the customer has actually chosen. */
-.tag-none{background:rgba(27,27,26,.05);color:rgba(27,27,26,.4)}
-.tag-new{background:rgba(106,106,106,.12);color:#555555}
 /* BUTTONS */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;font-family:var(--sans);font-size:.76rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;padding:.6rem 1.2rem;cursor:pointer;border:none;transition:all .2s;text-decoration:none;white-space:nowrap}
 .btn:active{transform:scale(.97)}
@@ -176,7 +173,7 @@ body.full-view .content{padding:1.4rem 1.9rem;max-width:100%}
 .btn-refund{-webkit-text-fill-color:currentColor!important}
 /* hover/press for .btn-refund come from the shared danger style. */
 .btn-refund:hover{-webkit-text-fill-color:currentColor!important}
-.tag-refunded{display:inline-block;padding:.28rem .6rem;font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border-radius:4px;background:#E6F4EA!important;color:#1E6B33!important;-webkit-text-fill-color:#1E6B33!important;border:1px solid rgba(30,107,51,.35)!important}
+.tag-refunded{display:inline-block;padding:.28rem .6rem;font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
 .btn-blue{background:rgba(59,130,246,.08);color:#60A5FA;border:1px solid rgba(59,130,246,.2)}.btn-blue:hover{background:rgba(59,130,246,.15)}
 .btn-full{width:100%;padding:.85rem}
 .btn-sm{padding:.38rem .8rem;font-size:.72rem}
@@ -420,7 +417,7 @@ textarea.fi{resize:vertical;min-height:80px}
 .adm-cal-name{font-size:.95rem;font-weight:600;color:var(--navy)}
 .adm-cal-route{font-size:.86rem;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .adm-cal-fare{font-family:var(--serif);font-size:1.01rem;color:var(--navy);flex-shrink:0}
-.adm-cal-status{font-size:.74rem;text-transform:uppercase;letter-spacing:.08em;padding:2px 7px;border-radius:3px;background:rgba(27,27,26,.08);color:var(--text-light);flex-shrink:0}
+.adm-cal-status{font-size:.74rem;text-transform:uppercase;letter-spacing:.08em;padding:2px 7px;flex-shrink:0}
 .adm-cal-status.confirmed{background:#E6F4EA;color:#1E6B33}
 .adm-cal-status.pending{background:#ffffff;color:#555555}
 .adm-cal-status.cancelled{background:#FCE4E4;color:#9C2828}
@@ -487,7 +484,7 @@ body *{color:#000000 !important;-webkit-text-fill-color:#000000 !important}
 /* 3) Dark/charcoal-filled buttons -> white with a blue outline */
 .btn-main,.btn-new,.btn-gold,.btn-navy,.aa-send,.abc-btn{background:#ffffff !important;color:#000000 !important;-webkit-text-fill-color:#000000 !important;border:1px solid #000000 !important;letter-spacing:.14em}
 .btn-main:hover,.btn-new:hover,.btn-gold:hover,.btn-navy:hover,.aa-send:hover,.abc-btn:hover{background:#f1f1f1 !important;color:#000000 !important;-webkit-text-fill-color:#000000 !important;border-color:#000000 !important}
-.sb-badge{background:#ffffff !important;color:#000000 !important;-webkit-text-fill-color:#000000 !important;border:1px solid rgba(0,0,0,.35) !important}
+.sb-badge{border:var(--border-hair,1px) solid var(--westmere-navy,#102a43) !important}
 .notify-opt.on .no-chk{background:#000000 !important;color:#ffffff !important;-webkit-text-fill-color:#ffffff !important;border-color:#000000 !important}
 /* 4) Dark surfaces that aren't buttons -> light */
 .toast{background:#ffffff !important;color:#000000 !important;-webkit-text-fill-color:#000000 !important;border:1px solid #000000 !important}
@@ -951,7 +948,7 @@ select:-webkit-autofill:focus{
           </div>
           <div style="display:flex;flex-direction:column;gap:.6rem;margin-top:.8rem">
             <button id="nc-welcome-btn" onclick="sendWelcomeEmailNew()" style="width:100%;padding:.85rem;background:transparent;color:#1b1b1a;border:1px solid rgba(27,27,26,.18);border-radius:8px;font-size:.9rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Send Welcome Email</button>
-            <button onclick="createInvoiceNew()" style="width:100%;padding:.85rem;background:var(--navy);color:#1a1a1a;border:none;border-radius:8px;font-size:.9rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Create Invoice</button>
+            <button onclick="createInvoiceNew()" style="width:100%;padding:.85rem;border-radius:8px;font-size:.9rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)">Create Invoice</button>
             <button onclick="closeNewCustomerModal()" style="width:100%;padding:.85rem;background:transparent;color:rgba(27,27,26,.7);border:none;font-size:.9rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Done</button>
           </div>
         </div>
@@ -1484,7 +1481,7 @@ select:-webkit-autofill:focus{
         <div class="sub-offer" id="nb-sub-offer">
           <strong>Hold job — find a driver, keep commission.</strong> Accept the booking, subcontract to a licensed driver and take your operator's fee.
           <div style="margin-top:.6rem;display:flex;gap:.5rem">
-            <button class="btn btn-sm" style="background:var(--purple-bg);color:var(--purple);border:1px solid rgba(107,70,160,.2)" onclick="showToast('Job held. Find a licensed driver.')">📋 Hold &amp; Find Driver</button>
+            <button class="btn btn-sm" style="border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)" onclick="showToast('Job held. Find a licensed driver.')">📋 Hold &amp; Find Driver</button>
             <button class="btn btn-ghost btn-sm" onclick="showToast('Job declined.')">Decline</button>
           </div>
         </div>
@@ -1622,8 +1619,8 @@ select:-webkit-autofill:focus{
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-add-driver')">Cancel</button>
-      <button class="btn btn-sm" id="dm-revoke-btn" onclick="revokeDriverLogin()" style="background:rgba(139,34,34,.08);color:#8B2222;border:1px solid rgba(139,34,34,.2);display:none">Revoke Login</button>
-      <button class="btn btn-sm" id="dm-default-btn" onclick="dmSetDefault()" style="background:rgba(106,106,106,.1);color:#6a6a6a;border:1px solid rgba(106,106,106,.3);display:none;font-size:.8rem">Set as default driver</button>
+      <button class="btn btn-sm" id="dm-revoke-btn" onclick="revokeDriverLogin()" style="display:none;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)">Revoke Login</button>
+      <button class="btn btn-sm" id="dm-default-btn" onclick="dmSetDefault()" style="display:none;font-size:.8rem;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)">Set as default driver</button>
       <button class="btn btn-navy" id="dm-save-btn" onclick="saveDriver()">Save Driver</button>
     </div>
   </div>
@@ -1995,7 +1992,7 @@ function aaShowBookingCard(b,idx,total){
     +row('Notes',b.notes)
     +'<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.75rem">'
     +'<button class="abc-btn" style="flex:1;min-width:120px" onclick="aaFillModal('+bJson+')">Create This Booking</button>'
-    +'<button class="abc-btn" style="flex:1;min-width:120px;background:rgba(106,106,106,.08);border:1px solid rgba(106,106,106,.3);color:rgba(27,27,26,.55)" onclick="aaCalOnly('+bJson+')">Calendar Only</button>'
+    +'<button class="abc-btn" style="flex:1;min-width:120px;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)" onclick="aaCalOnly('+bJson+')">Calendar Only</button>'
     +'</div>';
 
   card.appendChild(inner);
@@ -2951,7 +2948,7 @@ function loadLiveBookings(){
       }
       cg.innerHTML=d.customers.map(function(c){
         var safeName=(c.full_name||'Unknown').replace(/"/g,'&quot;').replace(/'/g,"\\'");
-        var unvBadge=c.verified===0?'<span style="margin-left:.5rem;padding:.15rem .45rem;font-size:.74rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:rgba(106,106,106,.15);color:#6a6a6a;border-radius:2px">Unverified</span>':'';
+        var unvBadge=c.verified===0?'<span class="wm-chip" style="margin-left:.5rem;padding:.15rem .45rem;font-size:.74rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-radius:2px">Unverified</span>':'';
         var typeBadge=c.account_type==='business'?'<span class="cc-type cc-business">Business</span>':'<span class="cc-type cc-personal">Personal</span>';
         return '<div class="cust-card"><div class="cc-name">'+(c.full_name||'Unknown')+unvBadge+'</div>'
           +typeBadge
@@ -3552,10 +3549,10 @@ function buildDrivers(){
     var regLine=d.reg?d.reg:'';
     var phvLine=d.phv?('PHV: '+d.phv):'';
     var loginBadge=d.has_login
-      ? '<span style="font-size:.74rem;color:var(--green);background:var(--green-bg);padding:.15rem .4rem;border-radius:3px;letter-spacing:.08em;text-transform:uppercase">App access</span>'
-      : '<span style="font-size:.74rem;color:rgba(27,27,26,.7);background:rgba(27,27,26,.06);padding:.15rem .4rem;border-radius:3px;letter-spacing:.08em;text-transform:uppercase">No login</span>';
+      ? '<span class="wm-chip" style="font-size:.74rem;padding:.15rem .4rem;border-radius:3px;letter-spacing:.08em;text-transform:uppercase">App access</span>'
+      : '<span class="wm-chip" style="font-size:.74rem;padding:.15rem .4rem;border-radius:3px;letter-spacing:.08em;text-transform:uppercase">No login</span>';
     var defaultBadge=d.is_default
-      ? '<span style="font-size:.74rem;color:#6a6a6a;background:rgba(106,106,106,.12);padding:.15rem .4rem;border-radius:3px;letter-spacing:.08em;text-transform:uppercase;margin-left:.3rem">★ Default</span>'
+      ? '<span class="wm-chip" style="font-size:.74rem;padding:.15rem .4rem;border-radius:3px;letter-spacing:.08em;text-transform:uppercase;margin-left:.3rem">★ Default</span>'
       : '';
     var avatarInner=d.photo
       ? '<img src="'+d.photo+'" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" alt="">'
@@ -3574,7 +3571,7 @@ function buildDrivers(){
       +'</div>'
       +'<div style="display:flex;gap:.4rem;margin-top:.7rem">'
       +'<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEditDriver('+d.id+')" style="flex:1;font-size:.78rem;padding:.45rem .8rem">Edit</button>'
-      +'<button class="btn btn-sm" onclick="event.stopPropagation();deleteDriver('+d.id+',\''+escTo(d.name)+'\')" style="flex:0 0 auto;font-size:.78rem;padding:.45rem .8rem;background:rgba(163,51,51,.08);color:#a33;border:1px solid rgba(163,51,51,.2)">Delete</button>'
+      +'<button class="btn btn-sm" onclick="event.stopPropagation();deleteDriver('+d.id+',\''+escTo(d.name)+'\')" style="flex:0 0 auto;font-size:.78rem;padding:.45rem .8rem;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)">Delete</button>'
       +'</div>'
       +'</div>';
   }).join('');
@@ -3852,7 +3849,7 @@ function viewCustomer(id){
     var typeCls=c.account_type==='business'?'cc-business':'cc-personal';
     html+='<div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.9rem">'
       +'<span class="cc-type '+typeCls+'" style="font-size:.74rem">'+escTo(c.account_type||'personal')+'</span>'
-      +(c.verified?'':'<span style="padding:.12rem .45rem;font-size:.74rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:rgba(106,106,106,.15);color:#6a6a6a;border-radius:2px">Unverified</span>')
+      +(c.verified?'':'<span class="wm-chip" style="padding:.12rem .45rem;font-size:.74rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-radius:2px">Unverified</span>')
       +'</div>';
     var rows=[['Email',c.email],['Phone',c.phone],['Address',[c.address_line1,c.address_line2,c.postcode].filter(Boolean).join(', ')],['Bank',[c.bank_name,c.bank_account_name].filter(Boolean).join(' / ')],['Sort / Acc',[c.bank_sort_code,c.bank_account_no].filter(Boolean).join(' / ')],['Member since',c.created_at?c.created_at.slice(0,10):'']];
     rows.forEach(function(row){
@@ -4464,7 +4461,7 @@ function loadInvoiceHistory(){
         +'<td style="white-space:nowrap">'
           +'<button class="btn btn-ghost btn-sm" style="font-size:.79rem;padding:.3rem .7rem" onclick="event.stopPropagation();viewInvoice('+inv.id+')">View</button>'
           +' <button class="btn btn-ghost btn-sm" style="font-size:.79rem;padding:.3rem .7rem" onclick="event.stopPropagation();downloadInvoice('+inv.id+',\''+escTo(inv.invoice_no)+'\')">Download</button>'
-          +((!paid&&inv.recipient_email)?' <button class="btn btn-sm" style="font-size:.79rem;padding:.3rem .7rem;color:#555555;background:rgba(106,106,106,.12);border:1px solid rgba(106,106,106,.45)" onclick="event.stopPropagation();remindInvoice('+inv.id+',this)">Remind</button>':'')
+          +((!paid&&inv.recipient_email)?' <button class="btn btn-sm" style="font-size:.79rem;padding:.3rem .7rem;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)" onclick="event.stopPropagation();remindInvoice('+inv.id+',this)">Remind</button>':'')
           +' <button class="btn btn-ghost btn-sm" style="font-size:.79rem;padding:.3rem .7rem;color:#a33;border-color:rgba(163,51,51,.25)" onclick="event.stopPropagation();deleteInvoice('+inv.id+',\''+escTo(inv.invoice_no)+'\')">Delete</button>'
         +'</td>'
         +'</tr>';
@@ -5614,7 +5611,7 @@ function wmMessageOpen(bookingId){
     +'<textarea id="wm-msg-text" rows="6" placeholder="Type your message to the customer — e.g. a question about their journey…" style="width:100%;padding:.7rem .8rem;border:1px solid #ffffff;border-radius:8px;font-family:inherit;font-size:.96rem;color:#1C2A3E;resize:vertical"></textarea>'
     +'<div style="display:flex;gap:.6rem;margin-top:.9rem">'
     +'<button onclick="document.getElementById(\'wm-msg-overlay\').remove()" style="flex:1;padding:.7rem;background:#fff;border:1px solid #ffffff;border-radius:9px;font-family:inherit;font-size:.92rem;font-weight:500;color:#6B7280;cursor:pointer">Cancel</button>'
-    +'<button id="wm-msg-send" onclick="wmMessageSend('+bookingId+',this)" '+(email?'':'disabled ')+'style="flex:2;padding:.7rem;background:rgba(27,27,26,.55);border:none;border-radius:9px;font-family:inherit;font-size:.92rem;font-weight:600;color:#1a1a1a;cursor:pointer'+(email?'':';opacity:.5;cursor:default')+'">Send Message</button>'
+    +'<button id="wm-msg-send" onclick="wmMessageSend('+bookingId+',this)" '+(email?'':'disabled ')+'style="flex:2;padding:.7rem;border-radius:9px;font-family:inherit;font-size:.92rem;font-weight:600;cursor:pointer'+(email?'':';opacity:.5;cursor:default')+';border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)">Send Message</button>'
     +'</div></div>';
   document.body.appendChild(el);
   el.addEventListener('click',function(ev){if(ev.target===el)el.remove();});
@@ -5889,7 +5886,7 @@ function admShowDay(key){
       if(j.needs_reassignment){
         actions='<button class="btn btn-navy btn-sm" onclick="event.stopPropagation();openReassign('+j.id+')">Resolve</button>'+_msgBtn;
       } else if(st==='pending'){
-        actions='<button class="btn btn-sm" style="background:var(--navy));color:#1a1a1a;border:1px solid var(--navy));font-weight:600" onclick="event.stopPropagation();admSendEstimate('+j.id+')">Send Estimate</button>'
+        actions='<button class="btn btn-sm" style="font-weight:600;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)" onclick="event.stopPropagation();admSendEstimate('+j.id+')">Send Estimate</button>'
           +'<button class="btn btn-navy btn-sm" onclick="event.stopPropagation();openReassign('+j.id+')">Offer</button>'+_msgBtn;
       } else if(st==='offered'){
         actions='<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();reclaimOffer('+j.id+')">Reclaim</button>'+_msgBtn;

@@ -62,20 +62,33 @@
   // `pending` splits in two for the operator: a brand-new request that still
   // needs a price, versus one where the estimate has gone out and we are
   // waiting on the customer.
+  //
+  // A DESCRIPTOR CARRIES NO COLOUR. These used to return `color` and `bg` — an
+  // amber wash for awaiting, a green wash for paid, a red one for cancelled —
+  // and all three apps painted them straight into an inline style. That made
+  // this file the source of every filled status pill in the system, and made
+  // the filled pill impossible to restyle from the theme, because an inline
+  // background outranks a stylesheet.
+  //
+  // The owner's rule is that nothing highlights by filling. So the descriptor
+  // is now semantics only — key, label and a class name — and what a chip
+  // LOOKS like is decided in one place, §20 of westmere-theme.css: a navy
+  // hairline frame on white. Do not add a colour back here.
+  // GUARDRAIL: server/tests/no-fills.test.js
   function statusLabel(j) {
     var st = statusOf(j);
     if (st === 'pending') {
       if (j && j.estimate_sent_at) {
-        return { key: 'pending_sent', label: 'Pending · estimate sent', cls: 'tag-await', color: '#9C5800', bg: 'rgba(156,88,0,.10)' };
+        return { key: 'pending_sent', label: 'Pending · estimate sent', cls: 'tag-await' };
       }
-      return { key: 'new', label: 'New request', cls: 'tag-new', color: '#555555', bg: 'rgba(106,106,106,.12)' };
+      return { key: 'new', label: 'New request', cls: 'tag-new' };
     }
-    if (st === 'offered') return { key: 'offered', label: 'Awaiting driver', cls: 'tag-upcoming', color: '#2A3A66', bg: 'rgba(42,58,102,.07)' };
-    if (st === 'awaiting_payment') return { key: 'awaiting_payment', label: 'Awaiting payment', cls: 'tag-await', color: '#9C5800', bg: 'rgba(156,88,0,.12)' };
-    if (st === 'cancelled') return { key: 'cancelled', label: 'Cancelled', cls: 'tag-cancel', color: '#8B2222', bg: 'rgba(139,34,34,.10)' };
-    if (st === 'active') return { key: 'active', label: 'Active', cls: 'tag-upcoming', color: '#2D6E47', bg: 'rgba(45,110,71,.1)' };
-    if (st === 'completed') return { key: 'completed', label: 'Completed', cls: 'tag-done', color: '#2D6E47', bg: 'rgba(45,110,71,.12)' };
-    return { key: 'confirmed', label: 'Confirmed', cls: 'tag-upcoming', color: '#2D6E47', bg: 'rgba(45,110,71,.08)' };
+    if (st === 'offered') return { key: 'offered', label: 'Awaiting driver', cls: 'tag-upcoming' };
+    if (st === 'awaiting_payment') return { key: 'awaiting_payment', label: 'Awaiting payment', cls: 'tag-await' };
+    if (st === 'cancelled') return { key: 'cancelled', label: 'Cancelled', cls: 'tag-cancel' };
+    if (st === 'active') return { key: 'active', label: 'Active', cls: 'tag-upcoming' };
+    if (st === 'completed') return { key: 'completed', label: 'Completed', cls: 'tag-done' };
+    return { key: 'confirmed', label: 'Confirmed', cls: 'tag-upcoming' };
   }
 
   // ── Payment badge ───────────────────────────────────────────────────────
@@ -84,20 +97,20 @@
   // Those show a neutral "—"; the STATUS badge carries the real state.
   function payStatus(j) {
     if (j && (j.paid_at || paymentOf(j) === 'card')) {
-      return { key: 'prepaid', label: 'Prepaid', short: 'Prepaid ✓', cls: 'tag-prepaid', color: '#2D6E47', bg: 'rgba(45,110,71,.12)' };
+      return { key: 'prepaid', label: 'Prepaid', short: 'Prepaid ✓', cls: 'tag-prepaid' };
     }
     var p = paymentOf(j);
-    if (p === 'cash') return { key: 'cash', label: 'Cash', short: 'Cash', cls: 'tag-cash', color: '#555555', bg: 'rgba(106,106,106,.16)' };
-    if (p === 'account' || p === 'invoice') return { key: 'account', label: 'Account', short: 'Account', cls: 'tag-account', color: '#3A5A8C', bg: 'rgba(58,90,140,.12)' };
+    if (p === 'cash') return { key: 'cash', label: 'Cash', short: 'Cash', cls: 'tag-cash' };
+    if (p === 'account' || p === 'invoice') return { key: 'account', label: 'Account', short: 'Account', cls: 'tag-account' };
     var st = statusOf(j);
     // Nothing is "awaiting" on a booking where no method was ever chosen: a new
     // request, one that only got an estimate, or one that was cancelled before
     // the customer decided. Those read neutral — the STATUS badge carries the
     // real state.
     if (st === 'pending' || st === 'offered' || st === 'cancelled' || st === '') {
-      return { key: 'none', label: 'No payment chosen yet', short: '—', cls: 'tag-none', color: 'rgba(27,27,26,.4)', bg: 'rgba(27,27,26,.05)' };
+      return { key: 'none', label: 'No payment chosen yet', short: '—', cls: 'tag-none' };
     }
-    return { key: 'await', label: 'Awaiting payment', short: 'Awaiting', cls: 'tag-await', color: '#9C5800', bg: 'rgba(156,88,0,.12)' };
+    return { key: 'await', label: 'Awaiting payment', short: 'Awaiting', cls: 'tag-await' };
   }
 
   // ── Luggage ─────────────────────────────────────────────────────────────

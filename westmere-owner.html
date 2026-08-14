@@ -210,7 +210,7 @@ nav#nav{display:none}
 .notif-body{flex:1}
 .notif-msg{font-size:.93rem;color:var(--navy);line-height:1.4}
 .notif-ts{font-size:.78rem;color:rgba(27,27,26,.38);margin-top:.2rem}
-.notif-badge-num{position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;border-radius:9px;background:var(--navy);color:var(--navy);font-size:.72rem;font-weight:700;display:none;align-items:center;justify-content:center;padding:0 3px;border:2px solid #ffffff}
+.notif-badge-num{position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;border-radius:9px;font-size:.72rem;font-weight:700;display:none;align-items:center;justify-content:center;padding:0 3px;border:var(--border-hair,1px) solid var(--westmere-navy,#102a43)}
 .notif-backdrop{position:fixed;inset:0;z-index:499;display:none}
 .notif-backdrop.open{display:block}
 
@@ -597,7 +597,7 @@ input[type=checkbox],input[type=radio]{accent-color:#111111 !important}
 /* No beige — neutralise leftover cream/beige surfaces to white / light grey. */
 .assist-panel,.nb-overlay{background:rgba(255,255,255,.97) !important}
 .cal-hd{background:#f4f4f4 !important}
-.notif-badge-num{border-color:#ffffff !important}
+.notif-badge-num{border-color:var(--westmere-navy,#102a43) !important}
 [style*="#ffffff"],[style*="#ffffff"]{background:#f1f1f1 !important;border-color:#d9d9d9 !important}
 
 /* ── BROWSER AUTOFILL ──
@@ -771,7 +771,7 @@ select:-webkit-autofill:focus{
             <div style="font-size:.94rem;color:var(--navy)">Google Calendar</div>
             <div id="gcal-status" style="font-size:.84rem;color:rgba(27,27,26,.5);word-break:break-all">Two-way sync with your calendar</div>
           </div>
-          <button id="gcal-connect-btn" onclick="connectGoogleCalendar()" style="padding:.5rem 1rem;background:rgba(27,27,26,.55);color:#1a1a1a;border:none;border-radius:6px;font-size:.84rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;white-space:nowrap">Connect</button>
+          <button id="gcal-connect-btn" onclick="connectGoogleCalendar()" style="padding:.5rem 1rem;border-radius:6px;font-size:.84rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;white-space:nowrap;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)">Connect</button>
         </div>
         <div style="display:flex;justify-content:flex-end;padding:.25rem 0 0">
           <a href="#" id="gcal-sync-link" onclick="syncGoogleCalendar(event)" style="display:none;font-size:.8rem;color:var(--navy);text-decoration:none;letter-spacing:.08em;text-transform:uppercase">Sync now &rarr;</a>
@@ -821,9 +821,9 @@ select:-webkit-autofill:focus{
         <button onclick="ownerNewBookingOpen()" style="padding:.55rem 1rem;font-family:var(--sans);font-size:.8rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;background:#ffffff;color:#102a43;border:1px solid #102a43;border-radius:7px;cursor:pointer;min-height:40px;white-space:nowrap">+ New Booking</button>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin:.5rem 0 .85rem">
-        <button onclick="confirmedWeekNav(-1)" style="background:rgba(255,255,255,.06);border:1px solid rgba(106,106,106,.3);color:#1a1a1a;font-family:var(--sans);font-size:.95rem;padding:.5rem 1rem;cursor:pointer;border-radius:6px;min-height:44px">&larr; Prev</button>
+        <button onclick="confirmedWeekNav(-1)" style="font-family:var(--sans);font-size:.95rem;padding:.5rem 1rem;cursor:pointer;border-radius:6px;min-height:44px;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)">&larr; Prev</button>
         <div id="confirmed-week-range" style="flex:1;text-align:center;font-weight:600;color:#1a1a1a;font-size:.95rem"></div>
-        <button onclick="confirmedWeekNav(1)" style="background:rgba(255,255,255,.06);border:1px solid rgba(106,106,106,.3);color:#1a1a1a;font-family:var(--sans);font-size:.95rem;padding:.5rem 1rem;cursor:pointer;border-radius:6px;min-height:44px">Next &rarr;</button>
+        <button onclick="confirmedWeekNav(1)" style="font-family:var(--sans);font-size:.95rem;padding:.5rem 1rem;cursor:pointer;border-radius:6px;min-height:44px;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)">Next &rarr;</button>
       </div>
       <div id="confirmed-list"></div>
     </div>
@@ -971,7 +971,7 @@ select:-webkit-autofill:focus{
         <div id="nd-creds" style="display:none;padding:.85rem 1rem;background:rgba(45,110,71,.06);border-top:1px solid rgba(45,110,71,.15)">
           <div style="font-size:.74rem;letter-spacing:.15em;text-transform:uppercase;color:var(--green);font-weight:500;margin-bottom:.5rem">Account Created</div>
           <div id="nd-creds-body"></div>
-          <button onclick="copyDriverCreds()" style="margin-top:.6rem;padding:.45rem .9rem;font-size:.79rem;letter-spacing:.12em;text-transform:uppercase;background:rgba(27,27,26,.06);border:1px solid rgba(27,27,26,.12);color:rgba(27,27,26,.6);font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:4px">Copy Credentials</button>
+          <button onclick="copyDriverCreds()" style="margin-top:.6rem;padding:.45rem .9rem;font-size:.79rem;letter-spacing:.12em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:4px;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)">Copy Credentials</button>
         </div>
       </div>
 
@@ -1003,7 +1003,7 @@ select:-webkit-autofill:focus{
               <div style="font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.5);margin-bottom:.2rem">To</div>
               <input type="date" id="inv-filter-to" onchange="invLoadList()" style="width:100%;padding:.4rem .5rem;border:1px solid rgba(27,27,26,.15);border-radius:6px;background:#ffffff;color:var(--navy);font-family:var(--sans);font-size:.88rem;-webkit-appearance:none">
             </div>
-            <button onclick="invClearFilter()" style="padding:.45rem .8rem;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;background:rgba(27,27,26,.06);color:rgba(27,27,26,.6);border:1px solid rgba(27,27,26,.15);border-radius:6px;cursor:pointer;min-height:38px">Clear</button>
+            <button onclick="invClearFilter()" style="padding:.45rem .8rem;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;border-radius:6px;cursor:pointer;min-height:38px;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)">Clear</button>
           </div>
           <div id="inv-list-body" style="font-size:.88rem;color:rgba(27,27,26,.4);padding:1rem;text-align:center">Loading…</div>
         </div>
@@ -1832,9 +1832,9 @@ function copyDriverCreds(){
 function owEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 function _obadge(status){
-  if(status==='approved')return '<span style="font-size:.7rem;padding:.15rem .45rem;background:var(--green-bg);color:var(--green);border-radius:3px;font-weight:600;letter-spacing:.08em;text-transform:uppercase">Approved</span>';
-  if(status==='submitted')return '<span style="font-size:.7rem;padding:.15rem .45rem;background:var(--amber-bg);color:var(--amber);border-radius:3px;font-weight:600;letter-spacing:.08em;text-transform:uppercase">Docs Submitted</span>';
-  return '<span style="font-size:.7rem;padding:.15rem .45rem;background:rgba(27,27,26,.06);color:rgba(27,27,26,.4);border-radius:3px;font-weight:600;letter-spacing:.08em;text-transform:uppercase">Pending</span>';
+  if(status==='approved')return '<span class="wm-chip" style="font-size:.7rem;padding:.15rem .45rem;border-radius:3px;font-weight:600;letter-spacing:.08em;text-transform:uppercase">Approved</span>';
+  if(status==='submitted')return '<span class="wm-chip" style="font-size:.7rem;padding:.15rem .45rem;border-radius:3px;font-weight:600;letter-spacing:.08em;text-transform:uppercase">Docs Submitted</span>';
+  return '<span class="wm-chip" style="font-size:.7rem;padding:.15rem .45rem;border-radius:3px;font-weight:600;letter-spacing:.08em;text-transform:uppercase">Pending</span>';
 }
 function _docBadge(status){
   if(status==='approved')return '<span style="font-size:.7rem;padding:.12rem .4rem;background:var(--green-bg);color:var(--green);border-radius:3px;font-weight:500">Approved</span>';
@@ -1919,8 +1919,8 @@ async function toggleDriverDocs(drvId){
       html+='<div style="font-size:.86rem;color:rgba(27,27,26,.65)">'+owEsc(lbl)+'</div>';
       html+='<div style="display:flex;align-items:center;gap:.3rem">'+_docBadge(status)+viewLink;
       if(doc&&(status==='pending')){
-        html+='<button onclick="reviewDoc('+drvId+','+doc.id+',\'approve\')" style="font-size:.7rem;padding:.15rem .4rem;background:var(--green-bg);color:var(--green);border:1px solid rgba(45,110,71,.2);cursor:pointer;border-radius:3px;font-family:var(--sans)">✓</button>';
-        html+='<button onclick="reviewDoc('+drvId+','+doc.id+',\'reject\')" style="font-size:.7rem;padding:.15rem .4rem;background:var(--red-bg);color:var(--red);border:1px solid rgba(139,34,34,.2);cursor:pointer;border-radius:3px;font-family:var(--sans)">✕</button>';
+        html+='<button onclick="reviewDoc('+drvId+','+doc.id+',\'approve\')" style="font-size:.7rem;padding:.15rem .4rem;cursor:pointer;border-radius:3px;font-family:var(--sans);border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)">✓</button>';
+        html+='<button onclick="reviewDoc('+drvId+','+doc.id+',\'reject\')" style="font-size:.7rem;padding:.15rem .4rem;cursor:pointer;border-radius:3px;font-family:var(--sans);border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)">✕</button>';
       }
       html+='</div></div>';
     });
@@ -1931,7 +1931,7 @@ async function toggleDriverDocs(drvId){
       +'</div>';
     // Approve driver button (only if submitted or pending with some docs)
     if(driver.onboarding_status!=='approved'){
-      html+='<button onclick="approveDriver('+drvId+')" style="width:100%;padding:.65rem;background:var(--green);color:#1a1a1a;border:none;font-family:var(--sans);font-size:.82rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;border-radius:6px;margin-bottom:.4rem">Confirm &amp; Approve Driver</button>';
+      html+='<button onclick="approveDriver('+drvId+')" style="width:100%;padding:.65rem;font-family:var(--sans);font-size:.82rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;border-radius:6px;margin-bottom:.4rem;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)">Confirm &amp; Approve Driver</button>';
     } else {
       html+='<div style="padding:.5rem .75rem;background:var(--green-bg);color:var(--green);font-size:.84rem;border-radius:5px;margin-bottom:.4rem;text-align:center">Driver fully approved ✓</div>';
     }
@@ -2126,13 +2126,13 @@ async function loadStripeBalance(){
                 +'style="width:100%;padding:.6rem .7rem .6rem 1.5rem;border:1px solid rgba(27,27,26,.18);border-radius:6px;font-family:var(--sans);font-size:1.01rem;color:var(--navy);box-sizing:border-box;outline:none" '
                 +'onfocus="this.style.borderColor=\'var(--navy)\'" onblur="this.style.borderColor=\'rgba(27,27,26,.18)\'">'
             +'</div>'
-            +'<button onclick="setFullPayout()" style="padding:.6rem .85rem;background:rgba(27,27,26,.05);border:1px solid rgba(27,27,26,.12);border-radius:6px;font-size:.8rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5);cursor:pointer;white-space:nowrap;font-family:var(--sans)">Full</button>'
+            +'<button onclick="setFullPayout()" style="padding:.6rem .85rem;border-radius:6px;font-size:.8rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;white-space:nowrap;font-family:var(--sans);border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)">Full</button>'
           +'</div>'
-          +'<button id="payout-btn" onclick="initiatePayoutConfirm()" style="width:100%;padding:.9rem;background:rgba(27,27,26,.55);color:#1a1a1a;border:none;border-radius:8px;font-size:.9rem;font-weight:600;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;font-family:var(--sans);transition:opacity .2s">Pay Out to Bank</button>'
+          +'<button id="payout-btn" onclick="initiatePayoutConfirm()" style="width:100%;padding:.9rem;border-radius:8px;font-size:.9rem;font-weight:600;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;font-family:var(--sans);transition:opacity .2s;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)">Pay Out to Bank</button>'
           +'<div id="payout-confirm-row" style="display:none;margin-top:.6rem;background:rgba(106,106,106,.08);border:1px solid rgba(106,106,106,.35);border-radius:8px;padding:.85rem">'
             +'<div id="payout-confirm-msg" style="font-size:.95rem;color:var(--navy);margin-bottom:.7rem;font-weight:500;text-align:center"></div>'
             +'<div style="display:flex;gap:.5rem">'
-              +'<button onclick="cancelPayout()" style="flex:1;padding:.65rem;background:rgba(27,27,26,.06);border:1px solid rgba(27,27,26,.12);border-radius:6px;font-size:.84rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.55);cursor:pointer;font-family:var(--sans)">Cancel</button>'
+              +'<button onclick="cancelPayout()" style="flex:1;padding:.65rem;border-radius:6px;font-size:.84rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;font-family:var(--sans);border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)">Cancel</button>'
               +'<button onclick="confirmPayout()" style="flex:2;padding:.65rem;background:#ffffff;color:rgba(27,27,26,.55);border:none;border-radius:6px;font-size:.84rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;font-family:var(--sans)">Yes, Pay Out</button>'
             +'</div>'
           +'</div>'
@@ -2530,7 +2530,10 @@ setInterval(loadExternalCalEvents,5*60*1000);
 // app and the admin app can never disagree about what a booking's state means.
 // Do not re-implement it here — change wm-lifecycle.js and both apps move.
 function wmPayStatus(j){ return WMLifecycle.payStatus(j); }
-function wmPayBadge(j){var p=wmPayStatus(j);return'<span style="display:inline-block;padding:.12rem .45rem;font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:'+p.color+';background:'+p.bg+';border-radius:4px;white-space:nowrap">'+p.short+'</span>';}
+// The chip's LOOK is not decided here: class only, styled once in §20 of
+// westmere-theme.css as a navy frame on white. It used to paint p.color and
+// p.bg inline, which is why no theme rule could ever restyle it.
+function wmPayBadge(j){var p=wmPayStatus(j);return'<span class="wm-chip '+p.cls+'" style="display:inline-block;font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap">'+p.short+'</span>';}
 
 // Flag bookings whose pickup time falls within ~2h of another booking on the
 // same day (journey + buffer) — surfaces potential double-bookings. Keyed by id.
@@ -2797,7 +2800,7 @@ async function renderJobList(list, jobs, opts){
 // stays on the job until the owner has settled it with the customer.
 function wmFareReviewChip(j){
   if(!j||!j.fare_review_at)return '';
-  return '<span style="display:inline-block;margin-left:.35rem;font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#102a43;background:rgba(16,42,67,.05);border:1px solid rgba(16,42,67,.28);border-radius:5px;padding:.2rem .55rem">£ Fare may change</span>';
+  return '<span style="display:inline-block;margin-left:.35rem;font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .55rem" class="wm-chip wm-chip-alert">£ Fare may change</span>';
 }
 
 /* ── THE FARE STEP (second half of accepting a change) ──
@@ -2973,7 +2976,7 @@ function jobCardHtml(j){
     return '<div style="padding:.8rem 1rem;border-top:1px solid var(--rule);opacity:.7">'
       +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;margin-bottom:.2rem">'
       +  '<div style="font-weight:500;color:rgba(27,27,26,.75);font-size:.94rem">'+escH(j.title)+'</div>'
-      +  '<span style="display:inline-flex;align-items:center;padding:.2rem .5rem;font-size:.67rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#657485;background:rgba(27,27,26,.05);border-radius:4px;white-space:nowrap">'+(j.allDay?'All day':j.time||'')+'</span>'
+      +  '<span class="wm-chip" style="display:inline-flex;align-items:center;padding:.2rem .5rem;font-size:.67rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;border-radius:4px;white-space:nowrap">'+(j.allDay?'All day':j.time||'')+'</span>'
       +'</div>'
       +'<div style="font-size:.8rem;color:rgba(27,27,26,.35);letter-spacing:.06em;text-transform:uppercase">Personal calendar</div>'
       +'</div>';
@@ -2982,14 +2985,14 @@ function jobCardHtml(j){
   // Status badge — shared ladder (New request → Pending · estimate sent →
   // Awaiting payment → Confirmed, plus Cancelled). See /wm-lifecycle.js.
   var _st=WMLifecycle.statusLabel(j);
-  var stLabel=_st.label,stColor=_st.color,stBg=_st.bg;
+  var stLabel=_st.label,stCls=_st.cls;
 
   var detailId='uj-det-'+j.id;
   var html='<div style="border-top:1px solid var(--rule)">'
     +'<div style="padding:.8rem 1rem;cursor:pointer" onclick="openTripPage(\''+j.id+'\')">'
       +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;margin-bottom:.2rem">'
       +  '<div style="font-weight:500;color:var(--navy);font-size:.98rem;font-family:var(--serif)">'+escH(j.name)+'</div>'
-      +  '<span style="display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .5rem;font-size:.67rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:'+stColor+';background:'+stBg+';border-radius:4px;white-space:nowrap">'+stLabel+'<span style="font-size:.82rem;opacity:.6">▼</span></span>'
+      +  '<span class="wm-chip '+stCls+'" style="display:inline-flex;align-items:center;gap:.3rem;font-size:.67rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap">'+stLabel+'<span style="font-size:.82rem;opacity:.6">&#9662;</span></span>'
       +'</div>'
       // AT A GLANCE — the three fields the owner reads while driving, pulled
       // out of the small grey meta line into their own row at --text-xl navy.
@@ -3007,7 +3010,7 @@ function jobCardHtml(j){
       +'<div style="font-size:.9rem;color:rgba(27,27,26,.6);margin-bottom:.15rem">'+escH(_shortAddr(j.pickup||''))+(j.stop_address?' → '+escH(_shortAddr(j.stop_address)):'')+' → '+escH(_shortAddr(j.dest||''))+'</div>'
       // What is left is detail, not glance: passengers and bags stay small.
       +'<div style="font-size:.84rem;color:rgba(27,27,26,.4)">'+(j.pax||1)+' pax'+(_bagsText(j.bags)?' · '+_bagsText(j.bags):'')+'</div>'
-      +(j.apiStatus==='pending'&&j.suggestedFare!=null?'<div style="margin-top:.3rem"><span style="display:inline-block;font-size:.84rem;font-weight:600;letter-spacing:.03em;color:#555555;background:rgba(106,106,106,.16);border:1px solid rgba(106,106,106,.4);border-radius:5px;padding:.2rem .6rem">Suggested: £'+Number(j.suggestedFare).toFixed(2)+'</span></div>':'')
+      +(j.apiStatus==='pending'&&j.suggestedFare!=null?'<div style="margin-top:.3rem"><span class="wm-chip" style="display:inline-block;font-size:.84rem;font-weight:600;letter-spacing:.03em;padding:.2rem .6rem">Suggested: £'+Number(j.suggestedFare).toFixed(2)+'</span></div>':'')
       +'<div style="margin-top:.3rem">'+wmPayBadge(j)+wmFareReviewChip(j)+'</div>'
     +'</div>'
     // The change-request block and the fare step sit OUTSIDE the clickable
@@ -3040,16 +3043,16 @@ function jobCardHtml(j){
     html+='<button class="wm-btn wm-btn-ghost wm-btn-sm" style="flex:1" onclick="ownerClearFareReview('+j.id+')">Fare Confirmed</button>';
   }
   if(ACT.sendEstimate){
-    html+='<button style="flex:1;padding:.6rem;font-size:.8rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:rgba(27,27,26,.55);color:#1a1a1a;border:1.5px solid rgba(27,27,26,.55);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerSendEstimate('+j.id+')">Send Estimate</button>';
+    html+='<button style="flex:1;padding:.6rem;font-size:.8rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)" onclick="ownerSendEstimate('+j.id+')">Send Estimate</button>';
   }
   // Awaiting payment (cash-on-the-day chosen, or card started): settling the
   // fare is what CONFIRMS the booking. This is the only "Mark as paid" that
   // also confirms — a deliberate, explicit owner/driver action.
   if(ACT.markPaid){
-    html+='<button style="flex:1;padding:.6rem;font-size:.8rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:rgba(27,27,26,.55);color:#1a1a1a;border:1.5px solid rgba(27,27,26,.55);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerMarkPaid('+j.id+')">Mark as Paid</button>';
+    html+='<button style="flex:1;padding:.6rem;font-size:.8rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)" onclick="ownerMarkPaid('+j.id+')">Mark as Paid</button>';
   }
   if(ACT.markCompleted){
-    html+='<button style="flex:1;padding:.6rem;font-size:.8rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(45,110,71,.12);color:#2D6E47;border:1.5px solid rgba(45,110,71,.3);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerMarkCompleted('+j.id+')">Mark Completed</button>';
+    html+='<button style="flex:1;padding:.6rem;font-size:.8rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)" onclick="ownerMarkCompleted('+j.id+')">Mark Completed</button>';
   }
   var _isPaid=!!(j.paid_at);
   if(ACT.togglePaid){
@@ -3061,11 +3064,11 @@ function jobCardHtml(j){
   // Send Payment Reminder — shown on unpaid bookings with an email (completed,
   // confirmed, or awaiting payment — e.g. a card customer who didn't finish).
   if(ACT.sendReminder){
-    html+='<button style="flex:1;padding:.6rem;font-size:.8rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(139,34,34,.06);color:#8B2222;border:1.5px solid rgba(139,34,34,.2);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerSendPayReminder('+j.id+')">Send Reminder</button>';
+    html+='<button style="flex:1;padding:.6rem;font-size:.8rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)" onclick="ownerSendPayReminder('+j.id+')">Send Reminder</button>';
   }
   // Create Invoice button — available on all confirmed/completed jobs with a fare
   if(ACT.invoice){
-    html+='<button style="flex:1;padding:.6rem;font-size:.8rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(27,27,26,.06);color:var(--navy);border:1.5px solid rgba(27,27,26,.15);border-radius:7px;cursor:pointer;min-height:40px" onclick="ownerQuickInvoice('+j.id+',\''+escH(j.name||'')+'\',\''+escH(j.email||'')+'\','+Number(j.fare||0)+',\''+escH(j.pickup||'')+'\',\''+escH(j.dest||'')+'\',\''+escH(j.date||'')+'\')">Create Invoice</button>';
+    html+='<button style="flex:1;padding:.6rem;font-size:.8rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)" onclick="ownerQuickInvoice('+j.id+',\''+escH(j.name||'')+'\',\''+escH(j.email||'')+'\','+Number(j.fare||0)+',\''+escH(j.pickup||'')+'\',\''+escH(j.dest||'')+'\',\''+escH(j.date||'')+'\')">Create Invoice</button>';
   }
   // A cancelled booking is a record only: no message/edit (it's out of the live
   // job lists) — just the hard Delete the owner performs by hand.
@@ -3073,9 +3076,9 @@ function jobCardHtml(j){
     html+='<button style="padding:.6rem .85rem;font-size:.79rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:#ffffff;color:#1a1a1a;border:1px solid rgba(27,27,26,.28);border-radius:7px;cursor:pointer;min-height:40px" onclick="wmMessageOpen('+j.id+')">Send Message</button>';
   }
   if(ACT.edit){
-    html+='<button style="padding:.6rem .85rem;font-size:.79rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(27,27,26,.06);color:rgba(27,27,26,.6);border:1px solid rgba(27,27,26,.12);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingEdit('+j.id+')">Edit</button>';
+    html+='<button style="padding:.6rem .85rem;font-size:.79rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)" onclick="upcomingEdit('+j.id+')">Edit</button>';
   }
-  html+='<button style="padding:.6rem .85rem;font-size:.79rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(139,34,34,.08);color:#8B2222;border:1.5px solid rgba(139,34,34,.2);border-radius:7px;cursor:pointer;min-height:40px" onclick="upcomingDelete('+j.id+')">Delete</button>';
+  html+='<button style="padding:.6rem .85rem;font-size:.79rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)" onclick="upcomingDelete('+j.id+')">Delete</button>';
   // Email sent indicator
   if(j.email&&(j.apiStatus==='confirmed'||j.apiStatus==='active'||j.apiStatus==='completed')){
     html+='<div style="width:100%;text-align:center;margin-top:.35rem;font-size:.76rem;color:rgba(45,110,71,.7);letter-spacing:.04em">✓ Confirmation sent to '+escH(j.email)+'</div>';
@@ -3323,7 +3326,7 @@ function upcomingEdit(bookingId){
       // or email by accident. This modal has exactly two actions: Cancel + Save.
       +'<div style="display:flex;gap:.6rem">'
       +'<button onclick="document.getElementById(\'edit-booking-overlay\').remove()" style="flex:1;padding:.75rem;background:transparent;border:1px solid rgba(27,27,26,.15);border-radius:10px;font-family:inherit;font-size:.92rem;font-weight:500;color:rgba(27,27,26,.5);cursor:pointer">Cancel</button>'
-      +'<button onclick="upcomingSave()" style="flex:2;padding:.75rem;background:rgba(27,27,26,.55);border:none;border-radius:10px;font-family:inherit;font-size:.92rem;font-weight:600;color:#1a1a1a;cursor:pointer;letter-spacing:.04em">Save Changes</button>'
+      +'<button onclick="upcomingSave()" style="flex:2;padding:.75rem;border-radius:10px;font-family:inherit;font-size:.92rem;font-weight:600;cursor:pointer;letter-spacing:.04em;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)">Save Changes</button>'
       +'</div></div>';
     document.body.appendChild(el);
     el.addEventListener('click',function(ev){if(ev.target===el)el.remove();});
@@ -3412,7 +3415,7 @@ function wmMessageOpen(bookingId){
     +'<textarea id="wm-msg-text" rows="6" placeholder="Type your message to the customer — e.g. a question about their journey…" style="width:100%;padding:.7rem .8rem;border:1px solid rgba(27,27,26,.15);border-radius:8px;font-family:inherit;font-size:.96rem;color:var(--navy);resize:vertical"></textarea>'
     +'<div style="display:flex;gap:.6rem;margin-top:.9rem">'
     +'<button onclick="document.getElementById(\'wm-msg-overlay\').remove()" style="flex:1;padding:.75rem;background:transparent;border:1px solid rgba(27,27,26,.15);border-radius:10px;font-family:inherit;font-size:.92rem;font-weight:500;color:rgba(27,27,26,.5);cursor:pointer">Cancel</button>'
-    +'<button id="wm-msg-send" onclick="wmMessageSend('+bookingId+',this)" '+(email?'':'disabled ')+'style="flex:2;padding:.75rem;background:rgba(27,27,26,.55);border:none;border-radius:10px;font-family:inherit;font-size:.92rem;font-weight:600;color:#1a1a1a;cursor:pointer;letter-spacing:.04em'+(email?'':';opacity:.5;cursor:default')+'">Send Message</button>'
+    +'<button id="wm-msg-send" onclick="wmMessageSend('+bookingId+',this)" '+(email?'':'disabled ')+'style="flex:2;padding:.75rem;border-radius:10px;font-family:inherit;font-size:.92rem;font-weight:600;cursor:pointer;letter-spacing:.04em'+(email?'':';opacity:.5;cursor:default')+';border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)">Send Message</button>'
     +'</div></div>';
   document.body.appendChild(el);
   el.addEventListener('click',function(ev){if(ev.target===el)el.remove();});
@@ -4104,7 +4107,7 @@ function showScannedBookingCard(bk,idx,total){
     +'</div>'
     +'<div class="msg-booking-actions">'
     +'<button class="mba-confirm" onclick="(function(btn){var bk=JSON.parse(btn.dataset.bk);var fi=document.getElementById(btn.dataset.cid+\'-fare\');if(fi&&fi.value)bk.fare=parseFloat(fi.value);createBookingFromAssist(bk);})(this)" data-bk="'+bkJson+'" data-cid="'+cardId+'">Create Booking</button>'
-    +'<button class="mba-cal" onclick="calOnlyFromData(JSON.parse(this.dataset.bk))" data-bk="'+bkJson+'" style="padding:.6rem 1rem;background:rgba(106,106,106,.1);border:1px solid rgba(106,106,106,.35);color:rgba(27,27,26,.55);font-family:var(--sans);font-size:.82rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:6px">Calendar Only</button>'
+    +'<button class="mba-cal" onclick="calOnlyFromData(JSON.parse(this.dataset.bk))" data-bk="'+bkJson+'" style="padding:.6rem 1rem;font-family:var(--sans);font-size:.82rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:6px;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)">Calendar Only</button>'
     +'</div></div></div>';
   appendHTML(html);
 }
@@ -4193,7 +4196,7 @@ function showBookingCard(bk){
     +'</div>'
     +'<div class="msg-booking-actions">'
     +'<button class="mba-confirm" onclick="confirmAssistBooking()">Confirm &amp; Book</button>'
-    +'<button class="mba-cal" onclick="calOnlyAssistBooking()" style="padding:.6rem 1rem;background:rgba(106,106,106,.1);border:1px solid rgba(106,106,106,.35);color:rgba(27,27,26,.55);font-family:var(--sans);font-size:.82rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:6px">Add to Calendar Only</button>'
+    +'<button class="mba-cal" onclick="calOnlyAssistBooking()" style="padding:.6rem 1rem;font-family:var(--sans);font-size:.82rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:6px;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)">Add to Calendar Only</button>'
     +'<button class="mba-cancel" onclick="cancelAssistBooking()">Cancel</button>'
     +'</div></div></div>';
   appendHTML(html);

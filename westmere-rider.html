@@ -69,7 +69,7 @@ nav#nav{display:none}
 .tb-date{font-family:var(--serif);font-size:.85rem;color:rgba(27,27,26,.5);font-weight:300;letter-spacing:.04em;font-style:italic}
 
 /* ── BOTTOM NAV ── */
-.bn-badge{position:absolute;top:.42rem;right:calc(50% - 16px);background:var(--red);color:#fff;font-size:.48rem;font-weight:700;min-width:14px;height:14px;border-radius:7px;padding:0 3px;display:none;align-items:center;justify-content:center}
+.bn-badge{position:absolute;top:.42rem;right:calc(50% - 16px);font-size:.48rem;font-weight:700;min-width:14px;height:14px;border-radius:7px;padding:0 3px;display:none;align-items:center;justify-content:center;border:var(--border-hair,1px) solid var(--westmere-navy,#102a43)}
 
 /* ── PAGE SCROLL ── */
 .page-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;padding-bottom:1rem}
@@ -176,10 +176,9 @@ body.mode-day .aj-meta-grid{border-top:1px solid rgba(26,38,56,.12);border-botto
 .tc-meta{font-size:.68rem;color:rgba(27,27,26,.4);font-weight:300}
 .tc-bottom{display:flex;align-items:center;justify-content:space-between;margin-top:.5rem}
 .tc-badge{display:inline-block;font-size:.5rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.16rem .55rem}
-.badge-confirmed{background:var(--green-bg);color:var(--green)}
-.badge-enroute{background:var(--amber-bg);color:var(--amber)}
-.badge-completed{background:var(--green-bg);color:var(--green)}
-.badge-cancelled{background:var(--red-bg);color:var(--red)}
+/* NO FILLS — a status is a navy frame on white, styled once in §20 of
+   westmere-theme.css. These four carried a green/amber/red wash; the state is
+   carried by the word, not the hue. GUARDRAIL: server/tests/no-fills.test.js */
 
 /* ── FARE REVEAL ── */
 .fare-reveal{background:#fff;border:1px solid rgba(27,27,26,.08);padding:1.8rem;text-align:center;margin-top:1rem;display:none;border:1px solid rgba(27,27,26,.18);position:relative;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
@@ -912,7 +911,7 @@ body::after{
 .st-off {color:rgba(27,27,26,.42);text-decoration:line-through}
 /* The one exception: an outstanding change request is an ALERT, so it keeps a
    hairline outline to stand apart from the status beside it. */
-.st-ask {color:#1b1b1a;background:#fff;box-shadow:inset 0 0 0 1px rgba(27,27,26,.32);
+.st-ask {box-shadow:inset 0 0 0 var(--border-hair,1px) var(--westmere-navy,#102a43);
          padding:.15rem .5rem;border-radius:999px;margin-top:.25rem}
 
 /* ── PAY PANEL ──
