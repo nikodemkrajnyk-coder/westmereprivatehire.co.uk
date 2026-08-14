@@ -211,6 +211,50 @@ test('every remaining group header is a WEEK, not a day', () => {
   }
 });
 
+// ── The CALENDAR views use the same row ─────────────────────────────────
+// The owner reads his day from the Calendar tab as often as from the trip
+// list. A glance that only exists on one of them means he has to read two
+// different layouts for the same job.
+test('the owner calendar shows the glance on jobs AND on calendar events', () => {
+  const day = OWNER.slice(OWNER.indexOf('function showCalDay'));
+  const dayBody = day.slice(0, day.indexOf('\n}\n'));
+  const card = OWNER.slice(OWNER.indexOf('function jobDetailCard'));
+  const cardBody = card.slice(0, card.indexOf('\n}\n'));
+
+  for (const c of ['wm-glance-date', 'wm-glance-time']) {
+    assert.ok(cardBody.includes(c), "the owner calendar's job entry no longer renders ." + c);
+    assert.ok(dayBody.includes(c), "the owner calendar's Google Calendar event no longer renders ." + c);
+  }
+  assert.ok(/wm-glance-fare[^]{0,90}j\.fare/.test(cardBody), "the calendar job entry's glance fare is not fed from j.fare");
+  // A calendar EVENT has no fare. An em-dash there would read as an unpriced
+  // job rather than as "not a job", so the fare span must be absent.
+  const evRow = dayBody.slice(dayBody.indexOf('wm-glance'), dayBody.indexOf('ev.title'));
+  assert.ok(!/wm-glance-fare/.test(evRow),
+    'a Google Calendar event is rendering a fare slot — an event has no fare');
+
+  // And the time it shows must be the real one, not a hardcoded placeholder.
+  assert.ok(/wm-glance-time[^]{0,80}j\.time/.test(cardBody), 'the calendar job glance time is not fed from j.time');
+  assert.ok(/wm-glance-time[^]{0,80}\bwhen\b/.test(evRow), "the calendar event glance time is not fed from the event's own time");
+});
+
+test('the admin calendar shows the same glance, and only one fare', () => {
+  const d = ADMIN.slice(ADMIN.indexOf('function admShowDay'));
+  const body = d.slice(0, d.indexOf('\n}\n'));
+  for (const c of CLASSES) {
+    assert.ok(body.includes(c), 'the admin calendar entry no longer renders .' + c);
+  }
+  assert.ok(/wm-glance-date[^]{0,90}_admGlanceDate/.test(body), 'the admin calendar glance date is not formatted from the booking date');
+  // The fare moved INTO the glance. The old cell at the end of the row has to
+  // go with it, or every entry prints its fare twice.
+  assert.ok(!/adm-cal-fare/.test(body),
+    'the admin calendar still renders the old .adm-cal-fare cell — the fare now lives in the glance, so it would print twice');
+  // The glance is --text-xl and cannot share a 54px column.
+  assert.ok(/adm-cal-glance/.test(body) && /\.adm-cal-glance\{[^}]*flex:0 0 100%/.test(ADMIN),
+    'the admin glance must take its own full-width line; the old time column was sized for 1rem type');
+  assert.ok(/\.adm-cal-detail-job\{[^}]*flex-wrap:wrap/.test(ADMIN),
+    'the admin calendar entry row must wrap, or the full-width glance forces the rest off the row');
+});
+
 test('the admin job row shows the same glance, for parity', () => {
   const row = ADMIN.slice(ADMIN.indexOf('function admJobRow(b){'));
   const body = row.slice(0, row.indexOf('\n}\n'));

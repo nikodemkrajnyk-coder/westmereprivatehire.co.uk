@@ -1359,6 +1359,10 @@ input, select, textarea {
 .wm-chip,
 #scr-app .tag, #admin-app .tag,
 #scr-app [class*="tag-"], #admin-app [class*="tag-"],
+/* The staff apps name a few status chips their own way — the calendar entry's
+   state, an invoice's state. They are chips like any other; they were simply
+   invisible to a selector list built from the class names of the day. */
+.adm-cal-status, .inv-status,
 .tc-badge, .st-chip, [class*="badge-"] {
   background: transparent !important;
   background-color: transparent !important;
@@ -1373,6 +1377,7 @@ input, select, textarea {
 .wm-chip,
 #scr-app .tag, #admin-app .tag,
 #scr-app [class*="tag-"], #admin-app [class*="tag-"],
+.adm-cal-status, .inv-status,
 .tc-badge {
   border: var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9) !important;
   border-radius: var(--radius-sm, 8px) !important;

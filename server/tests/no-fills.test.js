@@ -117,17 +117,38 @@ function isIndicatorDot(decls) {
   return round && tiny && noText;
 }
 
+// A dot's MODIFIER (.status-dot.ok, .dc-status.on .dc-dot) sets only a colour —
+// the geometry that makes it a dot lives on the base rule, so isIndicatorDot()
+// cannot see it from the modifier alone. Collect the base classes that really
+// are dots, then exempt the rules that decorate them. Still measurement-driven:
+// a class only enters this set by proving itself round, tiny and textless.
+function dotClassesIn(src) {
+  const set = new Set();
+  for (const m of src.matchAll(/^\s*\.([\w-]+)\s*\{([^}]*)\}/gim)) {
+    if (isIndicatorDot(m[2].replace(/\n/g, ' '))) set.add(m[1]);
+  }
+  return set;
+}
+
 test('no status chip class defines a fill', () => {
   const offenders = [];
-  const CHIP = /^\s*([.#][\w-]*(?:tag|chip|badge|status)[\w-]*(?:\s*,\s*[.#][\w-]+)*)\s*\{([^}]*)\}/gim;
+  // Any rule whose selector mentions a chip-ish class — INCLUDING compound and
+  // descendant forms. The first version of this only matched a bare class or a
+  // comma list, so `.adm-cal-status.cancelled { background:#FCE4E4 }` sailed
+  // straight through it: a filled status chip, in a guard written to catch
+  // filled status chips. Narrow selectors are how a guard quietly stops working.
+  const CHIP = /^\s*([^{}\n]*[.#][\w-]*(?:tag|chip|badge|status)[\w-]*[^{}\n]*?)\s*\{([^}]*)\}/gim;
   for (const f of APPS.concat(['westmere-theme.css', 'styles.css'])) {
     let src; try { src = read(f); } catch (e) { continue; }
     src = src.replace(/\/\*[\s\S]*?\*\//g, '');
+    const dots = dotClassesIn(src);
     for (const m of src.matchAll(CHIP)) {
       const decls = m[2].replace(/\n/g, ' ');
       const fill = fillIn(decls);
       if (!fill) continue;
       if (isIndicatorDot(decls)) continue;
+      // ...or it decorates one.
+      if ([...m[1].matchAll(/\.([\w-]+)/g)].some(c => dots.has(c[1]))) continue;
       const line = src.slice(0, m.index).split('\n').length;
       offenders.push(`${f}:${line}  ${m[1].trim()} { background:${fill} }`);
     }
@@ -214,6 +235,23 @@ test('NEGATIVE: the dot exemption cannot be used to smuggle a chip through', () 
     'a pill with a label slipped through the dot exemption');
   assert.ok(!isIndicatorDot('width:40px;height:20px;border-radius:50%;background:#102a43'),
     'a 40px block slipped through the dot exemption');
+});
+
+test('NEGATIVE: the widened chip selector catches compound forms', () => {
+  // The exact miss that let a filled status chip ship: a compound selector.
+  const CHIP = /^\s*([^{}\n]*[.#][\w-]*(?:tag|chip|badge|status)[\w-]*[^{}\n]*?)\s*\{([^}]*)\}/gim;
+  const css = '.adm-cal-status.cancelled{background:#FCE4E4;color:#9C2828}\n.x{background:red}';
+  const hits = [...css.matchAll(CHIP)].filter(m => fillIn(m[2]));
+  assert.strictEqual(hits.length, 1, 'the compound selector is still not being read');
+  assert.strictEqual(fillIn(hits[0][2]), '#FCE4E4');
+});
+
+test('NEGATIVE: a dot modifier is exempt, a chip modifier is not', () => {
+  const css = '.status-dot{width:8px;height:8px;border-radius:50%;background:#ccc}\n' +
+              '.tag-x{padding:.2rem;font-size:.7rem}';
+  const dots = dotClassesIn(css);
+  assert.ok(dots.has('status-dot'), 'a real dot was not recognised as one');
+  assert.ok(!dots.has('tag-x'), 'a labelled chip was recognised as a dot');
 });
 
 test('NEGATIVE: the guard does NOT fire on white, transparent, or a press', () => {
