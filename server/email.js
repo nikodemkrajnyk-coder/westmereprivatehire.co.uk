@@ -133,6 +133,8 @@ const INK_SOFT    = '#3B5268';   // secondary type
 const INK_MUTED   = '#657485';   // --westmere-muted — labels & footer
 const ACCENT      = '#102a43';   // was gold; the accent is navy now
 const HAIRLINE    = 'rgba(16,42,67,0.12)';
+const HAIRLINE_S  = '#c8d1d9';   // --westmere-line-strong, solid: VML strokecolor
+                                 // cannot take an rgba(), and neither can Outlook.
 
 // The old imageless emailShell has been RETIRED — every email now renders
 // through heroShell()/heroEmail() (defined below) so there is exactly ONE
@@ -276,19 +278,78 @@ function confRow(icon, label, valueHtml, opts) {
     <td valign="top" style="padding:16px 0;border-bottom:1px solid #dfe5ea;${valStyle}">${valueHtml}</td>
   </tr>`;
 }
-// One uniform action button — IDENTICAL size/shape for all three (full-width,
-// same padding/radius/font). Only `kind` changes the colour emphasis so the
-// buttons read as a consistent set (owner request: three equal buttons).
+/* ═══════════════════════════════════════════════════════════════════════
+   THE EMAIL BUTTON — an outlined frame, everywhere, in every client
+   ═══════════════════════════════════════════════════════════════════════
+   Same language as the apps: navy border on white, navy ink, NO FILL at
+   rest. Primary is louder by LABEL — bigger and bolder — exactly as the
+   owner chose for the buttons on screen. There is no hover and no press in
+   an inbox, so the label is the only signal available; it is also the one
+   that survives a client stripping half the CSS.
+
+   BULLETPROOF, because an inbox is not a browser:
+     · The BORDER lives on the <td>, not only on the <a>. Outlook drops many
+       <a> box properties but honours a table cell's border, so the frame
+       survives even where the anchor's own styling does not.
+     · An mso-only VML <v:roundrect> carries the rounded frame in Outlook
+       2007–2019, which has no border-radius: fillcolor is the page white and
+       strokecolor the navy, so the shape is a frame there too rather than a
+       filled slab or a bare word.
+     · Every declaration is inline. No class, no <style> dependency, nothing
+       that Gmail's clipper can strip.
+     · mso-padding-alt restores the padding Outlook takes off the anchor, so
+       the tap target does not collapse to the height of the text.
+     · bgcolor="#ffffff" is set as an ATTRIBUTE as well as CSS — a handful of
+       older clients ignore background declarations but honour the attribute,
+       and without it a dark-mode client can invert the cell behind navy ink.
+
+   COLOUR IS NOT USED TO RANK THESE. All three are navy on white; primary is
+   16px/700 and the others 14px/600. Cancel is quieter still, in the muted
+   tone, which measures 4.8:1 on white — clear AA.
+   GUARDRAIL: server/tests/button-style.test.js */
+const EMAIL_BTN = {
+  primary:   { size: 16, weight: 700, ink: INK,       border: INK,       width: 2, track: '1.4px' },
+  secondary: { size: 14, weight: 600, ink: INK,       border: INK,       width: 1, track: '1.2px' },
+  danger:    { size: 14, weight: 600, ink: INK_MUTED, border: HAIRLINE_S, width: 1, track: '1.2px' }
+};
+
+// `block` = full-width stacked button (the payment actions); otherwise the
+// button hugs its label and is centred (the one-CTA emails).
+function emailBtn(href, text, kind, block) {
+  const b = EMAIL_BTN[kind] || EMAIL_BTN.secondary;
+  const padV = block ? 17 : 15, padH = block ? 16 : 34;
+  const radius = 10;
+  const font = 'Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif';
+  const label =
+    `font-family:${font};font-size:${b.size}px;font-weight:${b.weight};` +
+    `letter-spacing:${b.track};text-transform:uppercase;color:${b.ink};text-decoration:none`;
+  // Outlook: a VML frame at the same radius, white fill, navy stroke.
+  const vml =
+    `<!--[if mso]>` +
+    `<v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" ` +
+    `href="${href}" style="height:52px;v-text-anchor:middle;width:${block ? '100%' : '260px'};" ` +
+    `arcsize="19%" strokecolor="${b.border}" strokeweight="${b.width}px" fillcolor="#ffffff">` +
+    `<w:anchorlock/><center style="${label}">${text}</center></v:roundrect>` +
+    `<![endif]-->`;
+  const cell =
+    `background-color:#ffffff;border:${b.width}px solid ${b.border};border-radius:${radius}px;` +
+    `mso-padding-alt:${padV}px ${padH}px`;
+  const anchor =
+    `display:${block ? 'block' : 'inline-block'};box-sizing:border-box;` +
+    `${block ? 'width:100%;' : ''}padding:${padV}px ${padH}px;text-align:center;${label}`;
+  return `${vml}<!--[if !mso]><!-->` +
+    `<table role="presentation" border="0" cellpadding="0" cellspacing="0" ` +
+    `style="border-collapse:separate;${block ? 'width:100%' : ''}"><tr>` +
+    `<td align="center" bgcolor="#ffffff" style="${cell}">` +
+    `<a href="${href}" style="${anchor}">${text}</a>` +
+    `</td></tr></table><!--<![endif]-->`;
+}
+
+// One uniform action button — IDENTICAL shape for all three (full-width, same
+// padding/radius). `kind` no longer changes a FILL: it changes the label, which
+// is how the apps rank a primary action too.
 function actionBtn(href, text, kind) {
-  const palette = {
-    primary:   'color:#ffffff;background:#102a43;border:1px solid #102a43',
-    secondary: 'color:#102a43;background:#FFFFFF;border:1px solid #102a43',
-    danger:    'color:#9a4a4a;background:#fbf6f5;border:1px solid #c9a3a3'
-  };
-  const c = palette[kind] || palette.secondary;
-  return `<tr><td style="padding-bottom:12px">
-    <a href="${href}" style="display:block;box-sizing:border-box;width:100%;text-decoration:none;border-radius:10px;padding:17px 16px;text-align:center;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;${c}">${text}</a>
-  </td></tr>`;
+  return `<tr><td style="padding-bottom:12px">${emailBtn(href, text, kind, true)}</td></tr>`;
 }
 // Returns a REAL owner note or '' — the Notes row is for the owner's own
 // message only. Blank notes, and the rider app's auto "Vehicle: <type>" dump,
@@ -813,7 +874,7 @@ async function sendCustomerInvoice(customer, bookings, period, invoiceNo, settin
   ${bankSection}
 
   <div style="text-align:center;margin:28px 0 10px">
-    <a href="https://westmereprivatehire.co.uk/api/public/invoice/${escHtml(invoiceNo)}/pdf" style="display:inline-block;padding:13px 32px;background:#0E2540;color:#ffffff;text-decoration:none;border-radius:6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;font-weight:600;letter-spacing:.03em">Download Invoice PDF</a>
+    ${emailBtn(`https://westmereprivatehire.co.uk/api/public/invoice/${escHtml(invoiceNo)}/pdf`, `Download Invoice PDF`, `secondary`, false)}
   </div>
 
   <p style="margin:18px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">We hope this is all in order. If you have any questions or would like to discuss anything, please don't hesitate to get in touch &mdash; we&rsquo;re always happy to help.</p>
@@ -943,7 +1004,7 @@ async function sendBespokeInvoice(recipient, items, period, invoiceNo, settings,
   ${bankSection}
 
   <div style="text-align:center;margin:28px 0 10px">
-    <a href="https://westmereprivatehire.co.uk/api/public/invoice/${escHtml(invoiceNo)}/pdf" style="display:inline-block;padding:13px 32px;background:#0E2540;color:#ffffff;text-decoration:none;border-radius:6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;font-weight:600;letter-spacing:.03em">Download Invoice PDF</a>
+    ${emailBtn(`https://westmereprivatehire.co.uk/api/public/invoice/${escHtml(invoiceNo)}/pdf`, `Download Invoice PDF`, `secondary`, false)}
   </div>
 
   <p style="margin:18px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">If you have any questions about this invoice, please don&rsquo;t hesitate to get in touch &mdash; we&rsquo;re always happy to help.</p>
@@ -975,7 +1036,7 @@ async function sendInvoiceReminder(recipient, invoiceNo, total, payUrl) {
 
   const payBtn = payUrl ? `
   <div style="text-align:center;margin:26px 0 8px">
-    <a href="${escHtml(payUrl)}" style="display:inline-block;padding:13px 32px;background:${ACCENT};color:#FFFFFF;text-decoration:none;border-radius:6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;font-weight:600;letter-spacing:.03em">Pay Now</a>
+    ${emailBtn(`${escHtml(payUrl)}`, `Pay Now`, `primary`, false)}
   </div>` : '';
 
   const body = `
@@ -985,7 +1046,7 @@ async function sendInvoiceReminder(recipient, invoiceNo, total, payUrl) {
   <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">If you&rsquo;ve already made payment, please disregard this message &mdash; and thank you.</p>
   ${payBtn}
   <div style="text-align:center;margin:${payUrl ? '14px' : '26px'} 0 8px">
-    <a href="${pdfUrl}" style="display:inline-block;padding:13px 32px;background:#0E2540;color:#ffffff;text-decoration:none;border-radius:6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;font-weight:600;letter-spacing:.03em">View Invoice</a>
+    ${emailBtn(`${pdfUrl}`, `View Invoice`, `secondary`, false)}
   </div>
   <p style="margin:20px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">If you have any questions about this invoice, please don&rsquo;t hesitate to get in touch &mdash; we&rsquo;re always happy to help.</p>`;
 
@@ -1016,7 +1077,7 @@ async function sendPasswordResetEmail(customer, token) {
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0">
     <tr>
       <td align="center">
-        <a href="${resetUrl}" style="display:inline-block;padding:14px 36px;background:${INK};color:#FFFFFF;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;text-decoration:none">Reset Password</a>
+        ${emailBtn(`${resetUrl}`, `Reset Password`, `primary`, false)}
       </td>
     </tr>
   </table>
@@ -1048,7 +1109,7 @@ async function sendAdminPasswordResetEmail(user, token) {
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0">
     <tr>
       <td align="center">
-        <a href="${resetUrl}" style="display:inline-block;padding:14px 36px;background:${INK};color:#FFFFFF;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;text-decoration:none">Reset Password</a>
+        ${emailBtn(`${resetUrl}`, `Reset Password`, `primary`, false)}
       </td>
     </tr>
   </table>
@@ -1187,7 +1248,7 @@ async function sendVerificationEmail(customer, token) {
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0">
     <tr>
       <td align="center">
-        <a href="${verifyUrl}" style="display:inline-block;padding:14px 36px;background:${INK};color:#FFFFFF;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;text-decoration:none">Verify Email Address</a>
+        ${emailBtn(`${verifyUrl}`, `Verify Email Address`, `primary`, false)}
       </td>
     </tr>
   </table>
@@ -1216,7 +1277,7 @@ async function sendRecommendation(recipientEmail) {
   <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Someone you know thought you&rsquo;d appreciate our private hire service. We provide premium private-hire transfers across Sussex &mdash; airport runs to Gatwick and Heathrow, corporate travel, special occasions, and reliable local journeys.</p>
   <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">Licensed by Lewes District Council. Professional, punctual, and always at your service.</p>
   <div style="text-align:center;margin:26px 0 8px">
-    <a href="https://westmereprivatehire.co.uk" style="display:inline-block;padding:13px 32px;background:${ACCENT};color:#FFFFFF;text-decoration:none;border-radius:6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;font-weight:600;letter-spacing:.03em">Book Your Journey</a>
+    ${emailBtn(`https://westmereprivatehire.co.uk`, `Book Your Journey`, `secondary`, false)}
   </div>
   <p style="margin:20px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">We look forward to welcoming you.</p>`;
 
@@ -1243,7 +1304,7 @@ async function sendPaymentReminder(booking) {
     const payUrl = `https://westmereprivatehire.co.uk/westmere-pay.html?ref=${encodeURIComponent(ref)}&t=${encodeURIComponent(pay_token)}`;
     payBlock = `
   <div style="text-align:center;margin:26px 0 8px">
-    <a href="${payUrl}" style="display:inline-block;padding:13px 32px;background:${ACCENT};color:#FFFFFF;text-decoration:none;border-radius:6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;font-weight:600;letter-spacing:.03em">Pay Now \u2014 Apple Pay, Google Pay, or Card</a>
+    ${emailBtn(`${payUrl}`, `Pay Now \u2014 Apple Pay, Google Pay, or Card`, `primary`, false)}
   </div>`;
   }
 
@@ -1291,7 +1352,7 @@ async function sendPartnershipOutreach(recipientEmail, companyName) {
   <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Please feel free to get in touch at any time &mdash; I&rsquo;d be delighted to hear from you.</p>
 
   <div style="text-align:center;margin:22px 0 8px">
-    <a href="https://westmereprivatehire.co.uk" style="display:inline-block;padding:13px 32px;background:${ACCENT};color:#FFFFFF;text-decoration:none;border-radius:6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;font-weight:600;letter-spacing:.03em">Visit Our Website</a>
+    ${emailBtn(`https://westmereprivatehire.co.uk`, `Visit Our Website`, `secondary`, false)}
   </div>
 
   <p style="margin:20px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">With warm regards,</p>
@@ -1335,7 +1396,7 @@ async function sendCorporateIntro(recipientEmail, companyName) {
   <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">I&rsquo;d welcome the opportunity to discuss how we could support your team. Please don&rsquo;t hesitate to get in touch.</p>
 
   <div style="text-align:center;margin:22px 0 8px">
-    <a href="https://westmereprivatehire.co.uk" style="display:inline-block;padding:13px 32px;background:${ACCENT};color:#FFFFFF;text-decoration:none;border-radius:6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;font-weight:600;letter-spacing:.03em">Visit Our Website</a>
+    ${emailBtn(`https://westmereprivatehire.co.uk`, `Visit Our Website`, `secondary`, false)}
   </div>
 
   <p style="margin:20px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">With kind regards,</p>
@@ -1364,7 +1425,7 @@ async function sendReviewRequest(email, firstName, ref) {
   <p style="margin:0 0 18px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Thank you for travelling with us today${ref ? ' (booking ' + escHtml(ref) + ')' : ''}. We truly hope your journey was comfortable and that we met your expectations.</p>
   <p style="margin:0 0 22px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">If you have a spare moment, we would be deeply grateful if you could share a few words about your experience. Reviews help other travellers find us and allow us to keep doing what we love.</p>
   <div style="text-align:center;margin:28px 0 24px">
-    <a href="https://g.page/r/Ce764VxFTR4VEAE/review" style="display:inline-block;padding:14px 36px;background:${ACCENT};color:#FFFFFF;text-decoration:none;border-radius:6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;font-weight:600;letter-spacing:.04em">Leave a Google Review</a>
+    ${emailBtn(`https://g.page/r/Ce764VxFTR4VEAE/review`, `Leave a Google Review`, `secondary`, false)}
   </div>
   <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">It takes less than a minute and means a great deal to a small, independent business like ours.</p>
   <p style="margin:20px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">With warm thanks,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;

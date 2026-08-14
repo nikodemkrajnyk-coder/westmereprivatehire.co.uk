@@ -433,6 +433,86 @@ function contrast(a, b) {
   return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
 }
 
+// ── THE EMAIL BUTTONS ARE FRAMES TOO ────────────────────────────────────
+// An inbox has no hover and no press, so a button there has ONE state and it
+// has to be right. These used to be filled navy slabs; they are now the same
+// outlined frame the apps use, with primary louder by label. What follows pins
+// the shape, the hierarchy and the client-robustness — because the whole point
+// of the bulletproof markup is that it survives clients we cannot test from
+// here, and a "simplification" that drops the VML or the <td> border would look
+// perfectly fine in Chrome and break in Outlook.
+const EMAIL = read('server/email.js');
+const btnFn = EMAIL.slice(EMAIL.indexOf('function emailBtn'), EMAIL.indexOf('function actionBtn'));
+
+test('every email CTA goes through the ONE button helper', () => {
+  assert.ok(btnFn.length > 200, 'server/email.js has no emailBtn() — the CTAs would each style themselves again');
+  // No hand-written filled anchor may survive anywhere in the templates.
+  const offenders = [];
+  for (const m of EMAIL.matchAll(/<a\b[^>]*style="([^"]*)"/g)) {
+    const bg = /background(?:-color)?:\s*([^;"]+)/.exec(m[1]);
+    if (!bg) continue;
+    const v = bg[1].trim();
+    if (/^(transparent|none|#fff|#ffffff)$/i.test(v)) continue;
+    offenders.push('line ' + EMAIL.slice(0, m.index).split('\n').length + ': background:' + v);
+  }
+  assert.deepStrictEqual(offenders, [],
+    'these email CTAs still paint their own fill instead of using emailBtn():\n      ' + offenders.join('\n      '));
+});
+
+test('the email button is a FRAME — no fill at rest, in any client', () => {
+  // The anchor and the cell must both be unfilled or white; the frame is a
+  // border, and the cell carries it because Outlook drops the anchor's.
+  assert.ok(/background-color:#ffffff;border:\$\{b\.width\}px solid \$\{b\.border\}/.test(btnFn),
+    'the email button cell must be white with a real border — that border IS the button');
+  assert.ok(/bgcolor="#ffffff"/.test(btnFn),
+    'bgcolor must be set as an ATTRIBUTE too: some clients ignore the CSS, and a dark-mode ' +
+    'client can otherwise invert the cell behind navy ink');
+  const filled = /background(?:-color)?:\s*(?!#ffffff|transparent|none)[^;`'"]+/.exec(
+    btnFn.replace(/background-color:#ffffff/g, ''));
+  assert.strictEqual(filled, null, 'the email button has grown a fill: ' + (filled && filled[0]));
+});
+
+test('the email PRIMARY is bolder and larger than the secondary', () => {
+  const tbl = EMAIL.slice(EMAIL.indexOf('const EMAIL_BTN'), EMAIL.indexOf('function emailBtn'));
+  const row = (k) => {
+    const m = new RegExp(k + ':\\s*\\{([^}]*)\\}').exec(tbl);
+    assert.ok(m, 'the email button table has no "' + k + '" row');
+    return {
+      size: +/size:\s*(\d+)/.exec(m[1])[1],
+      weight: +/weight:\s*(\d+)/.exec(m[1])[1],
+      width: +/width:\s*(\d+)/.exec(m[1])[1]
+    };
+  };
+  const p = row('primary'), s2 = row('secondary'), d = row('danger');
+  assert.ok(p.size > s2.size, 'the email primary (' + p.size + 'px) is not larger than the secondary (' + s2.size + 'px)');
+  assert.ok(p.weight >= 700 && p.weight > s2.weight,
+    'the email primary is weight ' + p.weight + ' against a secondary ' + s2.weight + ' — primary must be bold');
+  assert.ok(p.width >= s2.width, 'the email primary should not have a lighter border than the secondary');
+  assert.strictEqual(d.weight, s2.weight, 'Cancel must read as a normal-weight frame, not a second primary');
+});
+
+test('the email buttons survive Outlook — VML frame, cell border, inline only', () => {
+  assert.ok(/<!--\[if mso\]>/.test(btnFn) && /v:roundrect/.test(btnFn),
+    'the Outlook VML fallback is gone — Outlook has no border-radius, so without it the frame ' +
+    'degrades to a bare word or a square slab');
+  assert.ok(/fillcolor="#ffffff"/.test(btnFn),
+    'the VML must be filled WHITE, not navy — otherwise Outlook alone shows the old filled slab');
+  assert.ok(/strokecolor=\$\{?/.test(btnFn) || /strokecolor="\$\{b\.border\}"/.test(btnFn),
+    'the VML must stroke the frame in the button colour');
+  assert.ok(/mso-padding-alt/.test(btnFn),
+    'without mso-padding-alt Outlook strips the padding and the tap target collapses to the text height');
+  assert.ok(!/class=/.test(btnFn), 'the email button must not depend on a class — Gmail strips <style>');
+  // rgba() cannot be a VML strokecolor, and Outlook cannot read it either.
+  const stroke = /border:\s*'([^']+)'/.exec(EMAIL.slice(EMAIL.indexOf('const EMAIL_BTN'), EMAIL.indexOf('function emailBtn')));
+  assert.ok(!/rgba\(/.test(btnFn.replace(/\/\*[\s\S]*?\*\//g, '')),
+    'an rgba() reached the email button — VML strokecolor and Outlook both need a solid hex');
+});
+
+test('no email button is gold or green', () => {
+  const BANNED = /#b78635|#c9a227|#d4af37|#25D366|#2D6E47|goldenrod/i;
+  assert.ok(!BANNED.test(btnFn), 'a gold or green value is back in the email button');
+});
+
 test('no email button prints its label in its own background colour', () => {
   let src = read('server/email.js');
   // Resolve the palette constants so ${ACCENT}/${INK} become real values.
