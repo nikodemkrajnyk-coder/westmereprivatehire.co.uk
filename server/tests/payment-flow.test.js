@@ -521,7 +521,12 @@ test('a representative sample across all email categories renders the hero image
 
 // ── 11. Email refinements: bigger fonts, three equal buttons, clean notes ──
 console.log('\nEmail refinements (fonts / three buttons / notes)');
-const UNIFORM_BTN = /width:100%;text-decoration:none;border-radius:10px;padding:17px 16px/g;
+// The three payment actions are still one uniform stacked set — same width,
+// same padding, same radius. What changed is that they are FRAMES now, built
+// by emailBtn(): the fill is gone and the ranking is carried by the label. So
+// the shape is matched on the anchor's geometry, which is what "equal size"
+// actually means, rather than on the old filled-button string.
+const UNIFORM_BTN = /display:block;box-sizing:border-box;width:100%;padding:17px 16px/g;
 test('estimate email has THREE equal-size stacked buttons (Pay Now / Pay Driver / Cancel)', async () => {
   const html = await renderEmail('sendCustomerEstimate', { ...emailFixture });
   assert.ok(/Pay Now &mdash; Card, Apple Pay or Google Pay/.test(html), 'missing Pay Now button');
@@ -529,6 +534,10 @@ test('estimate email has THREE equal-size stacked buttons (Pay Now / Pay Driver 
   assert.ok(/Cancel Request/.test(html), 'missing Cancel Request button');
   const btns = html.match(UNIFORM_BTN);
   assert.ok(btns && btns.length === 3, 'expected exactly 3 identically-styled buttons, got ' + (btns ? btns.length : 0));
+  // ...and none of them may be a filled slab: an inbox has no hover or press,
+  // so the one state these have is the one the customer sees.
+  const filled = html.match(/<a\b[^>]*background(?:-color)?:\s*(?!#ffffff|transparent)[^;"]+/g);
+  assert.strictEqual(filled, null, 'an estimate-email button is filled again: ' + (filled || []).join(' | '));
 });
 test('confirmation email has the same three equal-size buttons', async () => {
   const html = await renderEmail('sendCustomerConfirmed', { ...emailFixture, paid: false, payment: 'pending' });

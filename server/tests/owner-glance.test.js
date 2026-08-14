@@ -133,12 +133,19 @@ test('the owner trip card emits all three glance fields', () => {
 });
 
 test('the glance carries no inline font-size that would outrank the token', () => {
-  const start = CARD_BODY.indexOf('class="wm-glance"');
-  const end = CARD_BODY.indexOf("'</div>'", CARD_BODY.indexOf('wm-glance-fare'));
-  const row = CARD_BODY.slice(start, end);
-  assert.ok(!/font-size/.test(row),
-    'the owner card sets an inline font-size on the glance row — an inline style beats the stylesheet, ' +
-    'so the token would stop being the dial');
+  // Check the glance SPANS themselves, across every card the file builds —
+  // the card now has more than one glance row (a booking and a personal
+  // event), and a window around "the first one" picks up whatever markup
+  // happens to sit beside it.
+  const offenders = [];
+  for (const src of [OWNER, ADMIN]) {
+    for (const m of src.matchAll(/<span class="wm-glance-(?:date|time|fare)"[^>]*>/g)) {
+      if (/font-size|font-weight|letter-spacing/.test(m[0])) offenders.push(m[0].slice(0, 90));
+    }
+  }
+  assert.deepStrictEqual(offenders, [],
+    'a glance field carries inline type — an inline style beats the stylesheet, so the token ' +
+    'would stop being the dial:\n      ' + offenders.join('\n      '));
 });
 
 test('date, time and fare are no longer left in the small meta line', () => {
@@ -288,9 +295,14 @@ test('the admin glance date is built from literal components, not parsed', () =>
 
 // It has to actually produce the right label, not merely look right.
 test('_admGlanceDate returns the correct weekday for a known date', () => {
-  const fn = ADMIN.slice(ADMIN.indexOf('var _ADM_DAYS'));
-  const src = fn.slice(0, fn.indexOf('\n}\n') + 2);
-  const run = new Function(src + '\nreturn _admGlanceDate;')();
+  // Slice the two lookup arrays AND _admGlanceDate itself. Slicing to the first
+  // '\n}\n' broke the moment another helper was added between them — a nearby
+  // edit should not be able to make this test stop testing anything.
+  const arrays = ADMIN.slice(ADMIN.indexOf('var _ADM_DAYS'));
+  const head = arrays.slice(0, arrays.indexOf('function '));
+  const i = ADMIN.indexOf('function _admGlanceDate');
+  const body = ADMIN.slice(i, ADMIN.indexOf('\n}', i) + 2);
+  const run = new Function(head + body + '\nreturn _admGlanceDate;')();
   assert.strictEqual(run('2026-08-25'), 'Tue 25 Aug');      // a Tuesday
   assert.strictEqual(run('2026-01-01'), 'Thu 1 Jan');       // month index, not off by one
   assert.strictEqual(run(''), '—');                          // no date is a dash, not "Invalid Date"

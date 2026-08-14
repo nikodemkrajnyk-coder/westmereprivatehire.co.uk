@@ -1408,8 +1408,34 @@ router.delete('/bookings/:id', (req, res) => {
     gcal.deleteEvent(booking.calendar_event_id).catch(() => {});
   }
 
+  // THE BUG THE OWNER HIT: "failed to delete the booking".
+  //
+  // change_requests.booking_id is `NOT NULL REFERENCES bookings(id)` with no
+  // ON DELETE CASCADE, and db.js runs `PRAGMA foreign_keys = ON`. So deleting
+  // a booking that a customer had asked to change threw FOREIGN KEY constraint
+  // failed, this catch turned it into a 500, and the app showed "Failed to
+  // delete booking. Please try again." — forever, because nothing about
+  // retrying changes the constraint.
+  //
+  // It bit a TO-CONFIRM booking specifically because that is exactly where a
+  // change request puts one: the request reopens the booking for re-pricing,
+  // so the bookings most likely to carry one are the ones sitting in that tab.
+  //
+  // The dependents go first, in ONE transaction with the booking, so a failure
+  // half way cannot leave change requests pointing at a booking that is gone.
+  // linked_booking_id is cleared the same way — a return leg pointing at this
+  // booking would block the delete for the same reason.
   try {
-    db.prepare('DELETE FROM bookings WHERE id = ?').run(id);
+    // Each dependent is best-effort: db.js creates these with IF NOT EXISTS
+    // inside a try, so on an old or half-migrated database one of them may not
+    // be there — and a missing dependent must never be the reason a booking
+    // cannot be deleted. The BOOKING delete is not guarded: if that fails the
+    // whole transaction rolls back and the caller gets its 500, which is right.
+    db.transaction(() => {
+      try { db.prepare('UPDATE bookings SET linked_booking_id = NULL WHERE linked_booking_id = ?').run(id); } catch (_) {}
+      try { db.prepare('DELETE FROM change_requests WHERE booking_id = ?').run(id); } catch (_) {}
+      db.prepare('DELETE FROM bookings WHERE id = ?').run(id);
+    })();
     autoFile.removeBooking(booking.ref, booking.date);
   } catch (e) {
     console.error('[API] booking delete failed:', e.message);

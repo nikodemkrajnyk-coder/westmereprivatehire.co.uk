@@ -2714,6 +2714,28 @@ function checkFeasibility(offered){
   return null;
 }
 var _CAL_MONTHS_S=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+// "Tuesday 25 August 2026" — the long form, for a DETAIL row where there is
+// room and the owner is reading one booking rather than scanning a list.
+//
+// Built from the literal Y-M-D components, per the timezone invariant in
+// CLAUDE.md. NEVER new Date('2026-08-25'): that parses as UTC midnight and
+// reads back as Monday the 24th anywhere west of UTC — which is exactly the
+// class of bug that once put the wrong weekday in customers' emails. A numeric
+// constructor makes a LOCAL midnight, and getDay() reads it back locally, so
+// the two agree.
+var _DOW_LONG=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+var _MON_LONG=['January','February','March','April','May','June','July','August','September','October','November','December'];
+function _fmtLongDate(dateStr){
+  var s=String(dateStr==null?'':dateStr).trim();
+  if(!s)return '';
+  var p=s.split('-');
+  if(p.length!==3)return s;                       // 'ASAP' or anything odd passes through
+  var y=parseInt(p[0],10),m=parseInt(p[1],10),d=parseInt(p[2],10);
+  if(!(y&&m&&d))return s;
+  var dt=new Date(y,m-1,d);
+  if(isNaN(dt.getTime()))return s;
+  return _DOW_LONG[dt.getDay()]+' '+d+' '+_MON_LONG[m-1]+' '+y;
+}
 function _fmtUpcomingDate(dateStr){
   if(!dateStr)return'';
   // UK calendar dates, not the device's UTC date — between 00:00 and 01:00 BST
@@ -2979,13 +3001,33 @@ function wmChangeBlock(j){
 }
 
 function jobCardHtml(j){
+  // A GOOGLE CALENDAR EVENT IS READ THE SAME WAY AS A JOB.
+  //
+  // These two render side by side in the weekly schedule, and they did not
+  // match: a Westmere booking carried the glance row — date and time at
+  // --text-xl navy — while a personal event put its time in a 0.67rem
+  // uppercase chip with no date at all, the whole card dimmed to 70%. Next to
+  // each other the event looked like a footnote to the booking above it rather
+  // than a separate commitment on the same day.
+  //
+  // It is the same row now, from the same classes (§19 of the theme). An event
+  // still takes no fare slot — it has none, and an em-dash there would read as
+  // an unpriced job — and it keeps its "Personal calendar" label so the two are
+  // never confused. What changed is the SIZE of the thing the owner reads.
+  // GUARDRAIL: server/tests/owner-week.test.js
   if(j.type==='personal'){
-    return '<div style="padding:.8rem 1rem;border-top:1px solid var(--rule);opacity:.7">'
+    return '<div style="padding:.8rem 1rem;border-top:1px solid var(--rule)">'
       +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;margin-bottom:.2rem">'
-      +  '<div style="font-weight:500;color:rgba(27,27,26,.75);font-size:.94rem">'+escH(j.title)+'</div>'
-      +  '<span class="wm-chip" style="display:inline-flex;align-items:center;padding:.2rem .5rem;font-size:.67rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;border-radius:4px;white-space:nowrap">'+(j.allDay?'All day':j.time||'')+'</span>'
+      +  '<div style="font-weight:500;color:var(--navy);font-size:.98rem;font-family:var(--serif)">'+escH(j.title)+'</div>'
+      +  '<span class="wm-chip" style="display:inline-flex;align-items:center;font-size:.67rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap">Personal</span>'
       +'</div>'
-      +'<div style="font-size:.8rem;color:rgba(27,27,26,.35);letter-spacing:.06em;text-transform:uppercase">Personal calendar</div>'
+      +'<div class="wm-glance">'
+      +  '<span class="wm-glance-when">'
+      +    '<span class="wm-glance-date">'+escH(_fmtUpcomingDate(j.date)||'—')+'</span>'
+      +    '<span class="wm-glance-time">'+escH(j.allDay?'All day':(j.time||''))+'</span>'
+      +  '</span>'
+      +'</div>'
+      +'<div style="font-size:.8rem;color:rgba(27,27,26,.4);letter-spacing:.06em;text-transform:uppercase">Personal calendar</div>'
       +'</div>';
   }
 
@@ -3030,7 +3072,7 @@ function jobCardHtml(j){
         +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4);width:80px">From</td><td>'+escH(_shortAddr(j.pickup)||'—')+'</td></tr>'
         +(j.stop_address?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Stop</td><td>'+escH(_shortAddr(j.stop_address))+'</td></tr>':'')
         +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">To</td><td>'+escH(_shortAddr(j.dest)||'—')+'</td></tr>'
-        +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Date</td><td>'+escH(j.date||'—')+' '+(j.time?'at '+j.time:'')+'</td></tr>'
+        +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Date</td><td>'+escH(_fmtLongDate(j.date)||'—')+(j.time?' &middot; '+escH(j.time):'')+'</td></tr>'
         +(j.phone?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Phone</td><td><a href="tel:'+escH(j.phone)+'" style="color:var(--navy)">'+escH(j.phone)+'</a></td></tr>':'')
         +(j.fare?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Fare</td><td style="font-weight:600;color:var(--navy)">£'+Number(j.fare).toFixed(2)+'</td></tr>':'')
         +(j.apiStatus==='pending'&&j.suggestedFare!=null?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Suggested</td><td style="font-weight:600;color:#555555">£'+Number(j.suggestedFare).toFixed(2)+'</td></tr>':'')
@@ -3285,9 +3327,15 @@ async function upcomingDelete(bookingId){
   try{
     var r=await fetch('/api/bookings/'+bookingId,{method:'DELETE',credentials:'include'});
     var d=await r.json();
-    if(r.ok&&d.ok){showToast('Booking deleted');loadOwnerBookings();}
+    if(r.ok&&d.ok){
+      showToast('Booking deleted');
+      // Shut the trip page immediately if it is showing what we just deleted —
+      // do not leave a deleted booking on screen for the length of a refetch.
+      if(typeof _tripPageId!=='undefined'&&_tripPageId!=null&&String(_tripPageId)===String(bookingId))closeTripPage();
+      loadOwnerBookings();
+    }
     else showToast(d.error||('Failed ('+r.status+')'));
-  }catch(e){showToast('Network error');}
+  }catch(e){showToast('Network error');console.error('[upcomingDelete]',e);}
 }
 
 function upcomingEdit(bookingId){
@@ -4884,6 +4932,14 @@ async function loadOwnerBookings(){
     if(_onPg('completed'))buildCompleted();
     if(_onPg('calendar'))buildCalendar();
     if(_onPg('earnings'))buildEarnings();
+    // ...and the full-screen trip page, which sits OVER all of them. Without
+    // this the owner taps Delete (or Mark as Paid, or Send Estimate) on the
+    // trip page, the server does the work, the list rebuilds underneath — and
+    // the page he is looking at never changes. It reads as "the button does
+    // nothing". refreshTripPage() closes the page if the booking is gone and
+    // re-renders it if it is not; it existed from the day the trip page shipped
+    // and was never wired up. GUARDRAIL: server/tests/owner-actions.test.js
+    refreshTripPage();
   }catch(e){console.error('[OWNER] Failed to load bookings:',e);_setConnDot(false);}
 }
 
@@ -5200,7 +5256,9 @@ function openInvoicePreview(data){
       var amt=(+it.amount||0).toFixed(2);
       var datePrefix='';
       if(it.date&&String(it.date).trim()){
-        try{var d=new Date(it.date+'T00:00:00');datePrefix=d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' \u2014 ';}catch(_){}
+        // Weekday included, and via the safe helper: it.date+'T00:00:00' is an
+        // Invalid Date the moment the value is 'ASAP', which is a real column value.
+        var _rl=_fmtUpcomingDate(it.date); if(_rl)datePrefix=_rl+' \u2014 ';
       }
       return '<tr>'
         +'<td style="padding:12px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:13px;color:#1b1b1a;line-height:1.5;vertical-align:top">'+(datePrefix?'<span style="color:#9a9a9a;font-size:13px;font-family:var(--sans)">'+_e(datePrefix)+'</span>':'')+''+_e(it.description||'')+'</td>'
