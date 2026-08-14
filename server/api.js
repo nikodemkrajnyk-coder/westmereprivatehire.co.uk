@@ -676,6 +676,102 @@ router.post('/customer/bookings/:id/change-request', async (req, res) => {
 //             and clears the flag, so the owner can message the customer to
 //             explain. Booking untouched.
 
+// ── CUSTOMER SPEND (admin reporting) ─────────────────────────────────────
+// Who has actually spent money with the company, ranked. Read-only: this route
+// computes and returns, it never writes, and it does not touch the fare or
+// payment logic.
+//
+// WHAT COUNTS AS "SPENT" — the headline figure is money that genuinely changed
+// hands, not money quoted:
+//   paid      fare > 0, NOT cancelled, AND (paid_at is set OR status is
+//             'completed'). paid_at covers card payments (written by the
+//             Stripe webhook) and anything the owner marked paid; 'completed'
+//             covers a cash job where the driver collected on the day.
+//   quoted    fare > 0, NOT cancelled, and not in the paid set — a real
+//             estimate the customer has not settled. Reported alongside so the
+//             owner can see exposure, but it is NOT part of the total spent.
+//   ignored   cancelled trips, and anything with no fare.
+//
+// IDENTITY: customers are deduped by EMAIL, lower-cased and trimmed, taking the
+// registered account email first and the one typed on the booking second. A
+// booking with no email at all falls back to the name, so a phone/manual
+// booking still aggregates rather than vanishing.
+//
+// STAFF ONLY. This is the owner's business data — names, emails and spend — so
+// it sits on the authenticated /api router (never /api/public) behind the same
+// role gate every other staff route uses.
+// GUARDRAIL: server/tests/customer-spend.test.js
+router.get('/customer-spend', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Staff access required' });
+  }
+  const db = getDb();
+  const rows = db.prepare(`
+    SELECT b.id, b.fare, b.status, b.payment, b.paid_at, b.date,
+           COALESCE(c.email, b.passenger_email)     AS email,
+           COALESCE(c.full_name, b.passenger_name)  AS name
+    FROM bookings b
+    LEFT JOIN customers c ON b.customer_id = c.id
+  `).all();
+
+  const byKey = new Map();
+  for (const r of rows) {
+    const fare = Number(r.fare);
+    if (!isFinite(fare) || fare <= 0) continue;                 // no money involved
+    const status = String(r.status || '').toLowerCase();
+    if (status === 'cancelled') continue;                        // never revenue
+
+    const email = String(r.email || '').trim().toLowerCase();
+    const name = String(r.name || '').trim();
+    const key = email || ('name:' + name.toLowerCase());
+    if (!key || key === 'name:') continue;                       // nothing to group by
+
+    let e = byKey.get(key);
+    if (!e) {
+      e = { key, name: name || email, email, trips: 0, totalSpent: 0,
+            quotedUnpaid: 0, unpaidTrips: 0, lastTrip: null };
+      byKey.set(key, e);
+    }
+    // Prefer a real name over an email as the display label.
+    if (!e.name || e.name === e.email) { if (name) e.name = name; }
+    if (!e.email && email) e.email = email;
+
+    const settled = !!r.paid_at || status === 'completed';
+    if (settled) {
+      e.totalSpent += fare;
+      e.trips += 1;
+      if (r.date && (!e.lastTrip || r.date > e.lastTrip)) e.lastTrip = r.date;
+    } else {
+      e.quotedUnpaid += fare;
+      e.unpaidTrips += 1;
+    }
+  }
+
+  const customers = [...byKey.values()]
+    .filter(e => e.trips > 0 || e.quotedUnpaid > 0)
+    .map(e => ({
+      name: e.name, email: e.email,
+      trips: e.trips,
+      totalSpent: Math.round(e.totalSpent * 100) / 100,
+      avgPerTrip: e.trips ? Math.round((e.totalSpent / e.trips) * 100) / 100 : 0,
+      quotedUnpaid: Math.round(e.quotedUnpaid * 100) / 100,
+      unpaidTrips: e.unpaidTrips,
+      lastTrip: e.lastTrip
+    }))
+    .sort((a, b) => b.totalSpent - a.totalSpent || b.trips - a.trips);
+
+  res.json({
+    ok: true,
+    definition: 'Spent = fare on trips that are paid (paid_at set) or completed. Cancelled trips and unfared bookings are excluded.',
+    totals: {
+      customers: customers.length,
+      revenue: Math.round(customers.reduce((s, c) => s + c.totalSpent, 0) * 100) / 100,
+      outstanding: Math.round(customers.reduce((s, c) => s + c.quotedUnpaid, 0) * 100) / 100
+    },
+    customers
+  });
+});
+
 // Shared preamble: staff-only, booking must exist. Returns null (having
 // already answered) when the caller may not proceed.
 function staffBooking(req, res) {

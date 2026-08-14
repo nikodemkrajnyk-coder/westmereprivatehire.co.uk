@@ -564,6 +564,36 @@ select:-webkit-autofill:focus{
   caret-color:#1b1b1a;
   transition:background-color 9999s ease-in-out 0s;
 }
+
+/* ── CUSTOMER SPEND ─────────────────────────────────────────────────────
+   Navy on white, Cormorant, frames not fills — the house style. Colours and
+   radii come from the theme tokens (see DESIGN.md), so a re-skin carries it. */
+.sp-totals{display:flex;gap:.9rem;flex-wrap:wrap;margin:0 0 1.1rem}
+.sp-tot{flex:1;min-width:9rem;border:var(--border-hair,1px) solid var(--westmere-line,#dfe5ea);
+  border-radius:var(--radius-lg,12px);padding:.85rem 1rem;background:var(--westmere-white,#fff)}
+.sp-tot-k{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--westmere-muted,#657485)}
+.sp-tot-v{font-family:var(--serif);font-size:1.6rem;color:var(--westmere-navy,#102a43);margin-top:.2rem}
+.sp-chart-wrap{border:var(--border-hair,1px) solid var(--westmere-line,#dfe5ea);
+  border-radius:var(--radius-lg,12px);padding:1rem 1.1rem 1.2rem;margin-bottom:1.1rem;
+  background:var(--westmere-white,#fff);overflow-x:auto}
+.sp-chart-hd{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--westmere-muted,#657485);margin-bottom:.8rem}
+.sp-bar-row{display:grid;grid-template-columns:minmax(6rem,10rem) 1fr auto;align-items:center;gap:.7rem;margin-bottom:.55rem}
+.sp-bar-name{font-size:.86rem;color:var(--westmere-navy,#102a43);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sp-bar-track{height:16px;background:rgba(16,42,67,.06);border-radius:var(--radius-pill,999px);overflow:hidden}
+.sp-bar-fill{height:100%;background:var(--westmere-navy,#102a43);border-radius:var(--radius-pill,999px)}
+.sp-bar-val{font-size:.86rem;color:var(--westmere-navy,#102a43);font-weight:500;white-space:nowrap}
+.sp-table-wrap{overflow-x:auto;border:var(--border-hair,1px) solid var(--westmere-line,#dfe5ea);
+  border-radius:var(--radius-lg,12px);background:var(--westmere-white,#fff)}
+.sp-table{width:100%;border-collapse:collapse;font-size:.86rem;color:var(--westmere-navy,#102a43)}
+.sp-table th{text-align:left;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--westmere-muted,#657485);font-weight:600;padding:.7rem .8rem;border-bottom:var(--border-hair,1px) solid var(--westmere-line,#dfe5ea)}
+.sp-table td{padding:.7rem .8rem;border-bottom:var(--border-hair,1px) solid rgba(16,42,67,.06)}
+.sp-table tr:last-child td{border-bottom:none}
+.sp-rank{color:var(--westmere-muted,#657485);width:2.2rem}
+.sp-money{font-weight:600;white-space:nowrap}
+.sp-quoted{color:var(--westmere-muted,#657485);white-space:nowrap}
+.sp-note{margin-top:.9rem;font-size:.78rem;line-height:1.6;color:var(--westmere-muted,#657485)}
+.sp-empty{padding:1.4rem;text-align:center;color:var(--westmere-muted,#657485);font-size:.86rem}
 </style><link rel="stylesheet" href="/wm-buttons.css">
 <link rel="stylesheet" href="/westmere-theme.css">
 </head>
@@ -675,6 +705,7 @@ select:-webkit-autofill:focus{
   <div class="sb-section">
     <span class="sb-label">Analytics</span>
     <button class="sb-item" onclick="nav('analytics',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>Reports</button>
+    <button class="sb-item" onclick="nav('spend',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>Customer Spend</button>
   </div>
 
   <div class="sb-section">
@@ -1285,6 +1316,26 @@ select:-webkit-autofill:focus{
     </div>
 
     <!-- ══ ANALYTICS ══ -->
+    <!-- CUSTOMER SPEND — who actually pays us, ranked. Staff-only data served
+         by GET /api/customer-spend (never a public route). Read-only. -->
+    <div class="view" id="view-spend">
+      <div class="page-hd">
+        <div class="page-title">Customer <em>Spend</em></div>
+        <div class="page-sub">Ranked by money actually paid &mdash; completed or settled trips only</div>
+      </div>
+      <div class="sp-totals" id="sp-totals"></div>
+      <div class="sp-chart-wrap">
+        <div class="sp-chart-hd">Top spenders</div>
+        <div id="sp-chart"></div>
+      </div>
+      <div class="sp-table-wrap"><table class="sp-table" id="sp-table"></table></div>
+      <div class="sp-note">
+        <b>What counts:</b> a trip is counted once it is <b>paid</b> (card, or marked paid) or
+        <b>completed</b> (cash collected on the day). Cancelled trips and bookings with no fare
+        are excluded. &ldquo;Quoted&rdquo; is estimated work not yet settled and is <i>not</i> part of the total.
+      </div>
+    </div>
+
     <div class="view" id="view-analytics">
       <div class="page-hd">
         <div class="page-title">Reports &amp; <em>Analytics</em></div>
@@ -3534,7 +3585,63 @@ function tick(){const n=new Date();document.getElementById('clock').textContent=
 setInterval(tick,10000);
 
 // ── NAV ──
-const TITLES={dashboard:'Dashboard',today:"Today's Jobs",notifications:'Notifications',inbox:'Inbox','all-jobs':'All Journeys',completed:'Completed Journeys',cancelled:'Cancelled Bookings',calendar:'Calendar',customers:'Customers',invoices:'Invoices','time-off':'Time Off',fares:'Fare Editor','record-book':'Record Book',drivers:'Drivers',settings:'Settings',analytics:'Reports & Analytics'};
+const TITLES={dashboard:'Dashboard',today:"Today's Jobs",notifications:'Notifications',inbox:'Inbox','all-jobs':'All Journeys',completed:'Completed Journeys',cancelled:'Cancelled Bookings',calendar:'Calendar',customers:'Customers',invoices:'Invoices','time-off':'Time Off',fares:'Fare Editor','record-book':'Record Book',drivers:'Drivers',settings:'Settings',analytics:'Reports & Analytics',spend:'Customer Spend'};
+
+/* ── CUSTOMER SPEND ─────────────────────────────────────────────────────
+   Reads GET /api/customer-spend (staff-only) and paints a ranked table plus a
+   bar chart of the top 10. The chart is plain divs — no charting dependency
+   for ten bars, and it inherits the theme like everything else. Read-only. */
+var SPEND=null;
+async function loadSpend(){
+  var tbl=document.getElementById('sp-table'),chart=document.getElementById('sp-chart'),tot=document.getElementById('sp-totals');
+  if(!tbl)return;
+  tbl.innerHTML='<tr><td class="sp-empty">Loading…</td></tr>';
+  try{
+    var r=await fetch('/api/customer-spend',{credentials:'include'});
+    if(!r.ok){tbl.innerHTML='<tr><td class="sp-empty">Could not load spend ('+r.status+').</td></tr>';return;}
+    SPEND=await r.json();
+  }catch(e){ tbl.innerHTML='<tr><td class="sp-empty">No connection.</td></tr>'; return; }
+  var cs=(SPEND&&SPEND.customers)||[];
+  var money=function(n){return '\u00a3'+Number(n||0).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});};
+
+  if(tot&&SPEND&&SPEND.totals){
+    tot.innerHTML=
+      '<div class="sp-tot"><div class="sp-tot-k">Customers</div><div class="sp-tot-v">'+SPEND.totals.customers+'</div></div>'
+     +'<div class="sp-tot"><div class="sp-tot-k">Total paid</div><div class="sp-tot-v">'+money(SPEND.totals.revenue)+'</div></div>'
+     +'<div class="sp-tot"><div class="sp-tot-k">Quoted, unsettled</div><div class="sp-tot-v">'+money(SPEND.totals.outstanding)+'</div></div>';
+  }
+  if(!cs.length){
+    if(chart)chart.innerHTML='<div class="sp-empty">No paid trips yet.</div>';
+    tbl.innerHTML='<tr><td class="sp-empty">No customer spend to show yet.</td></tr>';
+    return;
+  }
+  // Bars, scaled to the biggest spender.
+  var top=cs.slice(0,10),max=Math.max.apply(null,top.map(function(c){return c.totalSpent;}))||1;
+  if(chart)chart.innerHTML=top.map(function(c){
+    var pct=Math.max(2,Math.round(c.totalSpent/max*100));
+    return '<div class="sp-bar-row">'
+      +'<div class="sp-bar-name" title="'+escTo(c.name||c.email||'')+'">'+escTo(c.name||c.email||'—')+'</div>'
+      +'<div class="sp-bar-track"><div class="sp-bar-fill" style="width:'+pct+'%"></div></div>'
+      +'<div class="sp-bar-val">'+money(c.totalSpent)+'</div>'
+    +'</div>';
+  }).join('');
+
+  tbl.innerHTML='<tr><th class="sp-rank">#</th><th>Customer</th><th>Email</th><th>Total paid</th>'
+    +'<th>Trips</th><th>Avg / trip</th><th>Quoted</th><th>Last trip</th></tr>'
+    +cs.map(function(c,i){
+      return '<tr>'
+        +'<td class="sp-rank">'+(i+1)+'</td>'
+        +'<td>'+escTo(c.name||'—')+'</td>'
+        +'<td>'+escTo(c.email||'—')+'</td>'
+        +'<td class="sp-money">'+money(c.totalSpent)+'</td>'
+        +'<td>'+c.trips+'</td>'
+        +'<td>'+money(c.avgPerTrip)+'</td>'
+        +'<td class="sp-quoted">'+(c.quotedUnpaid?money(c.quotedUnpaid):'—')+'</td>'
+        +'<td>'+escTo(c.lastTrip||'—')+'</td>'
+      +'</tr>';
+    }).join('');
+}
+
 function nav(id,btn){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
   document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('on'));
@@ -3557,6 +3664,7 @@ function nav(id,btn){
   if(id==='today'&&typeof loadFlaggedBookings==='function')loadFlaggedBookings();
   if(id==='calendar'&&typeof loadAdminCalendar==='function')loadAdminCalendar();
   if(id==='analytics'&&typeof loadAnalytics==='function')loadAnalytics();
+  if(id==='spend'&&typeof loadSpend==='function')loadSpend();
 }
 
 // Back button → return to the Dashboard hub (restores the sidebar).
