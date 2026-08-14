@@ -2880,6 +2880,16 @@ function renderTrips(filter){
       var _act=_tripActions(b,now);
       var badgeClass='st-chip '+_st.tone;
       var statusLabel=_st.label;
+      /* CHANGE REQUESTED — WAITING FOR A REPLY.
+         After sending a change request the customer was returned to their trips
+         with no sign anything had happened, so the request appeared to vanish.
+         This is a SEPARATE badge, deliberately not folded into _tripStatus():
+         that function derives payment state, and a pending change must never
+         mask "Paid" or "Awaiting payment". Nothing here decides anything — the
+         booking itself is untouched until the owner accepts.
+         GUARDRAIL: server/tests/change-request.test.js */
+      var _stLower=String(b.status||'').toLowerCase();
+      var awaitingChange=!!(b.changeRequestedAt)&&_stLower!=='cancelled'&&_stLower!=='completed';
       var canCancel=_act.cancel;
       var canChange=_act.change;
       // Same ledger shape as Payment History and Invoices (.drow-*): route on
@@ -2887,6 +2897,7 @@ function renderTrips(filter){
       // .trip-card is kept as the row class \u2014 rider-trips.test.js counts it.
       var meta=[_fmtDay(b.date)||b.dateDisp||b.date||'Date to confirm',b.time,b.vehicle,(b.pax?b.pax+' pax':''),_bagsText(b.bags),_flightOf(b)].filter(Boolean).map(esc).join(' \u00b7 ');
       var route=esc(_shortAddr(b.from))+' <span class="drow-arrow">\u2192</span> '+esc(_shortAddr(b.dest));
+
       // Built into its own string and committed only when complete — a throw
       // partway through must not leave an unclosed card behind.
       var row='<div class="trip-card">';
@@ -2900,7 +2911,11 @@ function renderTrips(filter){
       // A change request is orthogonal to the lifecycle — a confirmed, paid
       // trip can still have one outstanding — so it gets its own chip rather
       // than replacing the status the customer needs to read.
-      if(b.changeRequestedAt)row+='<div class="drow-tag st-chip st-ask">Change requested</div>';
+      // The customer is waiting on the owner, and the chip now says so. It used
+      // to read just "Change requested", which does not tell them anything is
+      // going to happen next. Suppressed once the trip is cancelled or done —
+      // there is nothing left to reply to.
+      if(awaitingChange)row+='<div class="drow-tag st-chip st-ask">Change requested &middot; awaiting reply</div>';
       if(canChange)row+='<button class="tc-change" onclick="openChangeRequest('+parseInt(b.id,10)+')">Request a change</button>';
       if(canCancel)row+='<button class="tc-cancel" onclick="cancelTrip('+(b.id?parseInt(b.id,10):0)+',\''+esc(b.ref)+'\')">Cancel</button>';
       if(_act.invoice)row+='<button class="tc-again" onclick="goPage(\'invoices\')">Invoice</button>';
