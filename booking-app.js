@@ -321,6 +321,60 @@
           .then(function(r){return r.json();}).then(function(arr){
             box.innerHTML = '';
             if (!arr || !arr.length) { box.style.display = 'none'; return; }
+            // DE-DUPLICATE ON WHAT THE CUSTOMER ACTUALLY SEES.
+            //
+            // Nominatim returns rows that are genuinely distinct to it — the
+            // terminal building, the airport polygon, the site in one district
+            // and the same site in the next — but briefAddr() shortens all of
+            // them to the same words. The dropdown then offered "Gatwick
+            // Airport" five times, identical, and picking any of them looked
+            // like the box was broken.
+            //
+            // THE KEY IS THE LABEL *PLUS* THE PLACE'S OWN NAME, and it has to
+            // be both. On the label alone this removed "Gatwick Airport Railway
+            // Station", because briefDisplay shortens that to "Gatwick Airport"
+            // too — and a de-duplicator that hides a place the customer wanted
+            // is worse than the duplicates it was written to remove. The first
+            // segment of display_name is the thing itself, before any
+            // administrative chain, so it separates the station from the
+            // airport while the five airport rows still share it.
+            //
+            // Keeping the FIRST occurrence keeps the best match: Nominatim
+            // returns rows in relevance order.
+            var norm = function (x) { return String(x || '').toLowerCase().replace(/\s+/g, ' ').trim(); };
+
+            // Two passes, because dropping is not always the right answer.
+            //
+            // PASS 1 — collapse true repeats. Five rows all called "Gatwick
+            // Airport" whose own name is also "Gatwick Airport" are the same
+            // place described by five administrative chains. Keep the first:
+            // Nominatim returns them in relevance order.
+            var seen = {};
+            arr = arr.filter(function (o) {
+              var k = norm(String(o.display_name || '').split(',')[0]) + '|' + norm(briefAddr(o.display_name));
+              if (k === '|') return false;
+              if (seen[k]) return false;
+              seen[k] = 1;
+              return true;
+            });
+
+            // PASS 2 — disambiguate what survives. "Gatwick Airport Railway
+            // Station" is a DIFFERENT place, but briefDisplay shortens it to
+            // "Gatwick Airport" as well, so pass 1 rightly keeps it and the
+            // customer would still read two identical lines. Where a label is
+            // shared by more than one place, each of them shows its own full
+            // name instead. Nothing is hidden and nothing is repeated.
+            var byLabel = {};
+            arr.forEach(function (o) {
+              var lab = norm(briefAddr(o.display_name));
+              (byLabel[lab] = byLabel[lab] || []).push(o);
+            });
+            arr.forEach(function (o) {
+              var lab = norm(briefAddr(o.display_name));
+              o._acLabel = (byLabel[lab] && byLabel[lab].length > 1)
+                ? String(o.display_name || '').split(',')[0].trim()
+                : briefAddr(o.display_name);
+            });
             arr.forEach(function (o) {
               // SHORT LABEL, FULL VALUE KEPT. Nominatim's display_name is the
               // whole administrative chain — "London Borough of Hillingdon,
@@ -329,7 +383,7 @@
               // brief form; stash the full string on the input so the booking
               // and the driver's navigation still get the precise address.
               var it = document.createElement('div'); it.className = 'ac-item';
-              it.textContent = briefAddr(o.display_name);
+              it.textContent = o._acLabel || briefAddr(o.display_name);
               it.title = o.display_name;
               it.addEventListener('mousedown', function (e) {
                 e.preventDefault();
@@ -421,6 +475,65 @@
     return updateFare;
   }
 
+  // ── CARRYING THE QUICK ESTIMATE INTO THE BOOKING FORM ──────────────────
+  // A visitor types a pickup and a drop-off on the homepage, sees "approx £X",
+  // and clicks through to book — and the booking form asked for the same two
+  // addresses again. Re-typing at the exact moment somebody has decided to
+  // commit is the worst place in the funnel to put work.
+  //
+  // sessionStorage, NOT a query string: these are home addresses. A URL is
+  // logged by the server, kept in history and handed to any referrer, and
+  // there is no reason for someone's address to travel that way. sessionStorage
+  // stays in the tab and dies with it.
+  //
+  // The FULL address is stored beside the short label, so the fare engine and
+  // the driver's navigation still receive the precise string the geocoder
+  // resolved — the short form is only ever what the field displays.
+  var DRAFT_KEY = 'wm_booking_draft';
+
+  function saveDraft(fields) {
+    try {
+      var draft = {};
+      for (var k in fields) {
+        var el = fields[k];
+        if (!el) continue;
+        if (k === 'pickup' || k === 'destination' || k === 'stop_address') {
+          var full = fullAddr(el);
+          if (full) draft[k] = { full: full, label: (el.value || '').trim() };
+        } else if (el.value) {
+          draft[k] = el.value;
+        }
+      }
+      if (Object.keys(draft).length) sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    } catch (e) {}
+  }
+
+  function readDraft() {
+    try { return JSON.parse(sessionStorage.getItem(DRAFT_KEY) || 'null'); } catch (e) { return null; }
+  }
+  function clearDraft() { try { sessionStorage.removeItem(DRAFT_KEY); } catch (e) {} }
+
+  // Fills a field ONLY if it is empty and the visitor has not typed in it —
+  // a draft must never overwrite something being entered right now.
+  function applyDraft(fields) {
+    var draft = readDraft();
+    if (!draft) return false;
+    var used = false;
+    for (var k in fields) {
+      var el = fields[k], v = draft[k];
+      if (!el || !v || el.dataset.userEdited || (el.value || '').trim()) continue;
+      if (v && typeof v === 'object' && v.full) {
+        el.value = v.label || briefAddr(v.full);
+        el.dataset.fullAddress = v.full;
+      } else if (typeof v === 'string') {
+        el.value = v;
+      } else { continue; }
+      used = true;
+      try { el.dispatchEvent(new Event('change')); } catch (e) {}
+    }
+    return used;
+  }
+
   // Standalone quick-estimate widget (e.g. homepage, below the fixed fares).
   // Reuses makeEstimator + autocomplete without the full booking form/submit.
   function initQuick() {
@@ -436,6 +549,18 @@
         if (!pickup || !dest || !fareBox) return;
         [pickup, dest].forEach(function (el) { attachAutocomplete(el); });
         makeEstimator(pickup, dest, timeEl, fareBox);
+        // Remember what was entered here so the booking form can open with it
+        // already filled in. Saved on every change, because a visitor may click
+        // through at any point rather than tabbing out of the last field.
+        var watch = { pickup: pickup, destination: dest, time: timeEl,
+                      date: scope.querySelector('[name="date"]'),
+                      passengers: scope.querySelector('[name="passengers"]') };
+        function remember() { saveDraft(watch); }
+        [pickup, dest, timeEl, watch.date, watch.passengers].forEach(function (el) {
+          if (!el) return;
+          el.addEventListener('change', remember);
+          el.addEventListener('blur', remember);
+        });
       })(scopes[i]);
     }
   }
@@ -487,6 +612,28 @@
       return false;
     }
     applyRemembered();
+
+    // 1b) ...then the quick-estimate draft, which is more specific: it is what
+    //     this visitor typed minutes ago on the way here, so it wins over the
+    //     remembered default pickup. Still never overwrites a field they have
+    //     already touched.
+    var draftFields = { pickup: pickup, destination: dest, stop_address: stop,
+                        date: dateEl, time: timeEl,
+                        passengers: form.querySelector('[name="passengers"]') };
+    if (applyDraft(draftFields)) {
+      // A stop only arrives from a draft that had one; reveal the field so the
+      // visitor can see what was carried over rather than losing it silently.
+      var stopVal = stop && (stop.value || '').trim();
+      var stopWrap = form.querySelector('[data-stop-field]');
+      if (stopVal && stopWrap) stopWrap.style.display = '';
+    }
+
+    // Keep the draft current while they are ON the booking form too, so a
+    // reload or a trip to the fares page and back does not lose their work.
+    [pickup, dest, stop, dateEl, timeEl, draftFields.passengers].forEach(function (el) {
+      if (!el) return;
+      el.addEventListener('change', function () { saveDraft(draftFields); });
+    });
 
     // 2) Logged-in account data takes PRIORITY over remember-me: if a customer
     //    session cookie is present, override contact details from their profile.
@@ -588,6 +735,9 @@
           if (res.ok && res.d.ok) {
             if (status) { status.style.color = '#2f6b34'; status.textContent = 'Thank you for booking with us — we will be in touch shortly. Reference ' + (res.d.ref || '') + '.'; }
             form.reset(); if (fareBox) fareBox.style.display = 'none';
+            // The journey is booked, so the draft has done its job. Leaving it
+            // would pre-fill the NEXT booking with the last one's addresses.
+            clearDraft();
             clearEdited(); applyRemembered(); // restore saved details (+ ticked box) for a follow-up booking
           } else { throw new Error((res.d && res.d.error) || 'Could not submit'); }
         })

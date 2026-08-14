@@ -418,8 +418,14 @@ test('an empty or junk value never yields a broken label', () => {
 test('the picker shows the short label but the BOOKING sends the full address', () => {
   const app = read('booking-app.js');
   // The suggestion row and the field both go through the brief form…
-  assert.ok(/it\.textContent = briefAddr\(o\.display_name\)/.test(app),
+  // The row shows a SHORT label. It is normally briefAddr(display_name); where
+  // two distinct places shorten to the same words (the airport and its railway
+  // station) the row falls back to that place's own name so the two can be told
+  // apart — still short, still never the raw administrative chain.
+  assert.ok(/it\.textContent = [^;]*briefAddr\(o\.display_name\)/.test(app),
     'the autocomplete list must show the brief label, not the raw display_name');
+  assert.ok(!/it\.textContent\s*=\s*o\.display_name\s*;/.test(app),
+    'the autocomplete list is printing the raw display_name');
   assert.ok(/function setAddress\(input, full\)[\s\S]{0,200}input\.value = briefAddr\(full\)/.test(app),
     'choosing a suggestion must put the brief label in the field');
   assert.ok(/setAddress\(pickup, d\.display_name\)/.test(app),
