@@ -2581,7 +2581,7 @@ function bookingDetailHtml(b){
     +_jdField('Pickup',escTo(_admShortAddr(b.pickup)))
     +_jdField('Stop on the way',escTo(_admShortAddr(b.stop_address)))
     +_jdField('Destination',escTo(_admShortAddr(b.destination)))
-    +_jdField('Date',escTo(b.date))
+    +_jdField('Date',escTo(_admLongDate(b.date))+(b.time?' \u00b7 '+escTo(b.time):''))
     +_jdField('Time',escTo(b.time||'ASAP'))
     +_jdField('Passengers',escTo(b.passengers))
     +_jdField('Luggage / bags',escTo(_admBagsLabel(b.bags)))
@@ -3741,6 +3741,28 @@ function _admBags(bags){ return WMLifecycle.bagsText(bags); }
 // still yesterday, which would label today's job "Tomorrow".
 var _ADM_DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 var _ADM_MONS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+// "Tuesday 25 August 2026" — the long form, for a DETAIL row where there is
+// room and the owner is reading one booking rather than scanning a list.
+//
+// Built from the literal Y-M-D components, per the timezone invariant in
+// CLAUDE.md. NEVER new Date('2026-08-25'): that parses as UTC midnight and
+// reads back as Monday the 24th anywhere west of UTC — which is exactly the
+// class of bug that once put the wrong weekday in customers' emails. A numeric
+// constructor makes a LOCAL midnight, and getDay() reads it back locally, so
+// the two agree.
+var _ADM_DOW_LONG=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+var _ADM_MON_LONG=['January','February','March','April','May','June','July','August','September','October','November','December'];
+function _admLongDate(dateStr){
+  var s=String(dateStr==null?'':dateStr).trim();
+  if(!s)return '';
+  var p=s.split('-');
+  if(p.length!==3)return s;                       // 'ASAP' or anything odd passes through
+  var y=parseInt(p[0],10),m=parseInt(p[1],10),d=parseInt(p[2],10);
+  if(!(y&&m&&d))return s;
+  var dt=new Date(y,m-1,d);
+  if(isNaN(dt.getTime()))return s;
+  return _ADM_DOW_LONG[dt.getDay()]+' '+d+' '+_ADM_MON_LONG[m-1]+' '+y;
+}
 function _admGlanceDate(dateStr){
   if(!dateStr)return '—';
   var today=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/London'});
@@ -3877,7 +3899,7 @@ function viewCustomer(id){
       var statusCol=b.status==='completed'?'var(--green)':b.status==='cancelled'?'var(--red)':'var(--navy)';
       bhtml+='<tr style="border-top:1px solid rgba(27,27,26,.05)">'
         +'<td style="padding:.35rem 0;color:var(--navy);font-weight:400">'+escTo(b.ref)+'</td>'
-        +'<td style="padding:.35rem .4rem;color:rgba(27,27,26,.72)">'+escTo(b.date)+'</td>'
+        +'<td style="padding:.35rem .4rem;color:rgba(27,27,26,.72)">'+escTo(_admGlanceDate(b.date))+'</td>'
         +'<td style="padding:.35rem .4rem;color:rgba(27,27,26,.72);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escTo(b.pickup)+' &rarr; '+escTo(b.destination)+'</td>'
         +'<td style="padding:.35rem 0;text-align:right;color:'+statusCol+'">'+(b.fare?'£'+Number(b.fare).toFixed(0):'—')+'</td>'
         +'</tr>';
@@ -4279,7 +4301,7 @@ function openInvoicePreview(data){
       var amt=(+it.amount||0).toFixed(2);
       var datePrefix='';
       if(it.date&&String(it.date).trim()){
-        try{var d=new Date(it.date+'T00:00:00');datePrefix=d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' \u2014 ';}catch(_){}
+        var _rl=_admGlanceDate(it.date); if(_rl&&_rl!=='\u2014')datePrefix=_rl+' \u2014 ';
       }
       return '<tr>'
         +'<td style="padding:12px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:13px;color:#1b1b1a;line-height:1.5;vertical-align:top">'+(datePrefix?'<span style="color:#9a9a9a;font-size:13px;font-family:var(--sans)">'+esc(datePrefix)+'</span>':'')+''+esc(it.description||'')+'</td>'
@@ -4650,7 +4672,7 @@ function openInvoiceDetailModal(data){
       ? bks.map(function(b){
           var ref=b.ref?'<br><span style="font-family:var(--sans);font-size:.82rem;color:rgba(27,27,26,.66)">'+escTo(b.ref)+'</span>':'';
           var route=escTo(b.pickup||'')+(b.destination?' → '+escTo(b.destination):'');
-          return '<tr><td>'+escTo(b.date||'')+(b.time&&b.time!=='ASAP'?' '+escTo(b.time):'')+ref+'</td>'
+          return '<tr><td>'+escTo(_admGlanceDate(b.date))+(b.time&&b.time!=='ASAP'?' '+escTo(b.time):'')+ref+'</td>'
             +'<td>'+route+'</td>'
             +'<td style="text-align:right;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;white-space:nowrap">£'+(+b.fare||0).toFixed(2)+'</td></tr>';
         }).join('')
@@ -5524,7 +5546,7 @@ function renderFlaggedBanner(list){
       +'<div class="cb" style="padding:0">'+list.map(function(b){
         return '<div style="display:flex;justify-content:space-between;align-items:center;padding:.7rem 1rem;border-top:1px solid rgba(16,42,67,.4)">'
           +'<div><div style="font-weight:600;color:var(--navy);font-size:.95rem">'+escTo(b.ref)+' · '+escTo(b.customer_name||'')+'</div>'
-          +'<div style="font-size:.84rem;color:var(--text-light);margin-top:.2rem">'+escTo(b.pickup)+' → '+escTo(b.destination)+' · '+escTo(b.date)+' '+escTo(b.time)+'</div>'
+          +'<div style="font-size:.84rem;color:var(--text-light);margin-top:.2rem">'+escTo(b.pickup)+' → '+escTo(b.destination)+' · '+escTo(_admGlanceDate(b.date))+' '+escTo(b.time)+'</div>'
           +'<div style="font-size:.84rem;color:#555555;margin-top:.2rem"><em>'+escTo(b.intake_reason||'No driver available')+'</em></div></div>'
           +'<button class="btn btn-navy btn-sm" onclick="openReassign('+b.id+')">Resolve</button>'
           +'</div>';
@@ -5539,7 +5561,7 @@ async function openReassign(bookingId){
   var b=FLAGGED_CACHE[bookingId];
   if(!b){showToast('Booking not loaded');return;}
   REASSIGN_CURRENT=b;
-  document.getElementById('rs-summary').innerHTML='<strong style="color:var(--navy)">'+escTo(b.ref)+'</strong> · '+escTo(b.customer_name||'')+'<br>'+escTo(b.pickup)+' → '+escTo(b.destination)+'<br>'+escTo(b.date)+' at '+escTo(b.time);
+  document.getElementById('rs-summary').innerHTML='<strong style="color:var(--navy)">'+escTo(b.ref)+'</strong> · '+escTo(b.customer_name||'')+'<br>'+escTo(b.pickup)+' → '+escTo(b.destination)+'<br>'+escTo(_admLongDate(b.date))+' \u00b7 '+escTo(b.time);
   document.getElementById('rs-reason').textContent=b.intake_reason||'Cannot fit alongside existing jobs.';
   document.getElementById('rs-apology').style.display='none';
   // Load drivers
