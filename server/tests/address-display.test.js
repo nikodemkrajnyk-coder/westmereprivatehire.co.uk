@@ -446,9 +446,13 @@ test('the picker shows the short label but the BOOKING sends the full address', 
 test('every page with the booking form loads the shared normalizer first', () => {
   for (const f of ['book.html', 'index.html']) {
     const src = read(f);
-    const norm = src.indexOf('/address-normalize.js');
-    const app = src.indexOf('booking-app.js');
+    // Compare the SCRIPT TAGS, not any mention of the filename: a comment in
+    // the markup naming booking-app.js used to be matched here, and the test
+    // failed on a page whose script order was perfectly correct.
+    const norm = src.search(/<script[^>]+src="[^"]*address-normalize\.js"/);
+    const app = src.search(/<script[^>]+src="[^"]*booking-app\.js"/);
     assert.ok(norm !== -1, f + ' must load /address-normalize.js for the short labels');
+    assert.ok(app !== -1, f + ' no longer loads booking-app.js');
     assert.ok(norm < app,
       f + ' loads address-normalize.js AFTER booking-app.js — window.WMAddr would be ' +
       'undefined when the form wires up, and the picker would fall back to the long string');

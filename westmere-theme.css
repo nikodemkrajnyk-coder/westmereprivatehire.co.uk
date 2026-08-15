@@ -1499,3 +1499,75 @@ input, select, textarea {
 }
 /* Secondary stays exactly as it was: the base label, the hairline frame. The
    hierarchy is the DIFFERENCE between the two, so nothing here touches them. */
+
+/* =========================================================
+   23. THE HERO PHOTOGRAPH ROTATES
+   =========================================================
+   A slow crossfade between hero photographs, in the same register as the
+   reviews — 6s dwell, 1.4s fade, matched deliberately so the two moving things
+   on a page move at the same speed rather than arguing with each other.
+
+   THE STACK, bottom to top:
+     .hero-photo    the photographs, crossfading   z-index 0
+     .hero:after    the page's own scrim            z-index 1
+     .hero-content  the copy and the buttons        z-index 2
+
+   The scrim sits ABOVE the photographs on purpose. Each hero already carries a
+   gradient chosen to hold its heading legible; putting the rotation underneath
+   means the overlay a page had over one photograph is the overlay it has over
+   every photograph, so a bright one cannot wash the copy out halfway through a
+   fade. Nothing here touches the scrim, the copy or the buttons.
+
+   The photographs are only ever added by JS, and only when there are two or
+   more and the visitor has not asked for reduced motion — so with one photo
+   this section does nothing at all and the inline background stands.
+   GUARDRAIL: server/tests/hero-rotate.test.js */
+.hero-photo {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  /* Matches .review-fade.is-out — the same easing and the same 1.4s. */
+  transition: opacity 1.4s ease;
+  z-index: 0;
+  pointer-events: none;
+}
+.hero-photo.is-on { opacity: 1; }
+
+/* The scrim and the copy stay above the rotation. .hero-content already
+   declares z-index:2; the pseudo-element is given its layer explicitly rather
+   than relying on paint order, which changes the moment a positioned child is
+   inserted — which is exactly what the rotation does. */
+.hero:after { z-index: 1; }
+
+/* Belt and braces: if the media query is honoured but the script has already
+   built its layers (a visitor turning reduced motion on mid-visit), the fade
+   stops rather than snapping between photographs. */
+@media (prefers-reduced-motion: reduce) {
+  .hero-photo { transition: none; }
+}
+
+/* =========================================================
+   24. "NO BOOKING, NO DETAILS" — THE LINE THAT LETS PEOPLE TYPE
+   =========================================================
+   People hesitate over the quick estimate because typing an address feels like
+   the start of a commitment. It is not, so the widget says so before they
+   begin — not after, and not in the small print underneath.
+
+   Its own class rather than reusing .wm-advance: that note carries a policy
+   ("Pre-bookings only"), this one carries permission, and they sit on the same
+   screen. Keeping them separate means either can be re-tuned or moved without
+   dragging the other with it. Same quiet register though — the tokens are the
+   same, one tier down in weight, because a reassurance that shouts is not
+   reassuring. GUARDRAIL: server/tests/price-first.test.js */
+.wm-reassure {
+  display: block;
+  margin: 0 0 var(--space-3, .75rem);
+  font-size: var(--text-sm, .78rem);
+  font-weight: var(--weight-normal, 400);
+  letter-spacing: .04em;
+  line-height: 1.6;
+  color: var(--westmere-muted, #657485);
+  -webkit-text-fill-color: var(--westmere-muted, #657485);
+}

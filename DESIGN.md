@@ -40,6 +40,39 @@ them, change the tier named in §19 — do not add a font-size to the markup, or
 the inline style outranks the token and the dial stops working.
 Guardrail: `server/tests/owner-glance.test.js`.
 
+### Adding a hero photograph
+
+Each page with a hero carries its own list, on the `<section class="hero …">`
+tag. **Adding a photo is one line in that list** — nothing else:
+
+```html
+<section class="hero center"
+         style="background-image:linear-gradient(…),url('assets/tesla-london.webp')"
+         data-hero-photos="assets/tesla-london.webp
+                         | assets/country-car.webp
+                         | assets/home-hero.webp">   ← add here
+```
+
+Rules, all enforced by `server/tests/hero-rotate.test.js`:
+
+* **The first entry must also be the one in `background-image`.** That inline
+  photo is what paints before any script runs; if the list started elsewhere the
+  hero would visibly jump on load.
+* **The file must exist in `assets/`.** A missing one is dropped at runtime, but
+  the test fails first so you find out at commit time, not in front of a visitor.
+* **One photo = a static hero.** No layers, no timer, no flicker. The rotation
+  only starts at two or more.
+* **`prefers-reduced-motion` turns it off entirely** — the single inline photo
+  stands.
+
+Timing lives in `hero-rotate.js` (`DWELL_MS` / `FADE_MS`) and is deliberately
+matched to `reviews.js` — 6s dwell, 1.4s fade — so the two moving things on a
+page move at the same speed. Change both together or the page feels restless.
+
+**You do not need to think about legibility.** The photographs are inserted
+*beneath* the page's existing scrim (theme §23), so whatever overlay held the
+heading readable over one photo holds it over all of them.
+
 ### Why every token reference has a fallback
 `var(--westmere-navy, #102a43)`. A `var()` that resolves to nothing is invalid
 at computed-value time and the **whole declaration is dropped** — an unstyled

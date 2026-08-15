@@ -42,11 +42,20 @@ test('homepage has a quick-estimate widget with the hooks booking-app.js needs',
   assert.ok(/data-fare-estimate/.test(w), 'widget missing the [data-fare-estimate] output box');
 });
 
-test('quick estimate is positioned BELOW the fixed airport fares', () => {
+test('quick estimate LEADS the page, above the fixed airport fares', () => {
+  // REVERSED, deliberately, and the reason is worth keeping: the estimate used
+  // to sit below the fares table as a "not on the list?" fallback. The audit
+  // found people were not engaging at all — "book" reads as commitment and they
+  // would not start — so the first thing on the page is now the free thing: two
+  // addresses in, a price back, no details, no obligation. The fares table is
+  // the reference material that follows it, not the other way round.
+  // See server/tests/price-first.test.js for the rest of that flow.
   const fares = index.indexOf('id="fares-window"');
   const quick = index.indexOf('data-quick-estimate');
   assert.ok(fares !== -1 && quick !== -1, 'both sections must exist');
-  assert.ok(quick > fares, 'the quick estimate must come AFTER the fixed airport fares section');
+  assert.ok(quick < fares,
+    'the quick estimate must come BEFORE the fixed airport fares — the price check is what the ' +
+    'page leads with');
 });
 
 test('homepage loads the shared booking-app.js engine', () => {
