@@ -146,7 +146,7 @@ parity check below after each — rather than in one sweep.
 ## Proving you changed nothing
 
 The refactor that created this file was verified **pixel-identical** across
-home, services, contact, book, My Account, owner, admin, fleet, terms and pay.
+home, services, contact, book, My Account, owner, admin, terms and pay.
 Use the same method for any presentation-preserving change:
 
 1. Start the server on a spare port, screenshot the pages, label them `before`.

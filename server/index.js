@@ -252,6 +252,25 @@ app.get('/westmere-account.html', (req, res) => {
   res.redirect(301, '/westmere-rider.html' + qs);
 });
 
+// ── Retired page: the old Premium Fleet spec sheet ──────────────────────
+// Deleted, not merely unlinked. It was the last page still wearing the
+// pre-redesign dark navy — a Tesla Model S spec sheet with filled navy panels
+// — and Google had indexed it well enough to show it as a SITELINK, so it was
+// being offered to people searching for the business.
+//
+// A 404 would keep that sitelink alive as a dead end for weeks. A 301 tells
+// Google the page is gone and where its authority should go, and sends anyone
+// who follows an old link or bookmark somewhere useful instead of nowhere.
+// Home rather than the fleet content's nearest relative: there is no
+// replacement page, and the homepage is what the search was looking for.
+//
+// Keep this route. It costs nothing and the alternative is a 404 for every
+// stale link that still exists in the index, in someone's bookmarks, or in a
+// message sent months ago. GUARDRAIL: server/tests/retired-pages.test.js
+app.get('/westmere-fleet.html', (req, res) => {
+  res.redirect(301, '/');
+});
+
 // ── Apple Pay domain verification ────────────────────────────────────────
 // Stripe (and Apple) verify a site can offer Apple Pay by fetching this exact
 // path and matching the association file against the domain registered in the
