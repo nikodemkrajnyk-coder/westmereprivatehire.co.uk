@@ -588,10 +588,14 @@ test('rider app no longer dumps the vehicle type into notes', () => {
 // ── 12. Payment-system hardening audit (locks the recurring regressions) ──
 console.log('\nPayment-system hardening audit');
 test('(c) pay-info route reports stripeReady and is token-gated', () => {
+  // The whole route, not a 1500-character window off the front of it: a longer
+  // SELECT above the assertion would otherwise silently stop testing it.
   const pub = read('server/public-api.js');
   const i = pub.indexOf("router.get('/pay/:ref',");
   assert.ok(i !== -1, 'pay-info route not found');
-  const block = pub.slice(i, i + 1500);
+  const after = pub.slice(i + 10);
+  const nxt = after.search(/router\.(post|get)\(/);
+  const block = pub.slice(i, i + 10 + (nxt === -1 ? after.length : nxt));
   assert.ok(/stripeReady: stripeConfigured\(\)/.test(block),
     'pay-info must report stripeReady so the page knows online payment is available');
   assert.ok(/b\.pay_token !== token/.test(block),

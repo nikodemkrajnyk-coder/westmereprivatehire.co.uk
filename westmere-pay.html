@@ -135,6 +135,10 @@ select:-webkit-autofill:focus{
         <div class="row"><span class="k">Drop-off</span><span class="v" id="d-to"></span></div>
         <div class="row"><span class="k">Date</span><span class="v" id="d-when"></span></div>
         <div class="row fare"><span class="k">Fare</span><span class="v" id="d-fare"></span></div>
+        <!-- Shown only when the trip was re-priced after it was paid for: what
+             they already paid, then the balance this page is actually taking. -->
+        <div class="row hidden" id="d-paid-row"><span class="k">Already paid</span><span class="v" id="d-paid"></span></div>
+        <div class="row fare hidden" id="d-due-row"><span class="k">Now due</span><span class="v" id="d-due"></span></div>
       </div>
 
       <!-- Apple Pay / Google Pay (shown only on supported devices) -->
@@ -251,7 +255,21 @@ select:-webkit-autofill:focus{
       document.getElementById("d-to").textContent = _sa(booking.destination);
       document.getElementById("d-when").textContent = fmtWhen(booking.date, booking.time);
       document.getElementById("d-fare").textContent = fmtMoney(booking.fare);
-      document.getElementById("pay-amt").textContent = fmtMoney(booking.fare);
+      // THE BALANCE, NOT THE FARE. On a trip re-priced after payment the server
+      // will only ever charge amountDue, so this page has to show that same
+      // figure — quoting the full fare and taking the difference reads as a
+      // fault, and quoting the fare on the button is how someone concludes they
+      // were charged twice.
+      var _due = (booking.amountDue != null) ? booking.amountDue : booking.fare;
+      document.getElementById("pay-amt").textContent = fmtMoney(_due);
+      if (booking.topUp) {
+        if (booking.alreadyPaid != null) {
+          document.getElementById("d-paid").textContent = fmtMoney(booking.alreadyPaid);
+          document.getElementById("d-paid-row").classList.remove("hidden");
+        }
+        document.getElementById("d-due").textContent = fmtMoney(_due);
+        document.getElementById("d-due-row").classList.remove("hidden");
+      }
 
       // Reveal the form FIRST, then mount Stripe. The Card Element measures its
       // host's width at mount time; if #view-pay were still display:none the
@@ -299,8 +317,11 @@ select:-webkit-autofill:focus{
   // appears on devices that actually support a wallet (Apple Pay on iOS/Safari,
   // Google Pay on Chrome) — otherwise the card form stands on its own.
   function initWallet(){
-    if(!stripe || !booking || !booking.fare) return;
-    var amount = Math.round(Number(booking.fare) * 100);
+    if(!stripe || !booking) return;
+    // Same figure the server will charge (pay-lock amountDue), never the fare.
+    var _d = (booking.amountDue != null) ? booking.amountDue : booking.fare;
+    if(!_d) return;
+    var amount = Math.round(Number(_d) * 100);
     if(!amount || amount < 1) return;
 
     var paymentRequest;
@@ -399,7 +420,7 @@ select:-webkit-autofill:focus{
     .then(function(result){
       if(result.error){
         cardErr.textContent = result.error.message || "Payment failed. Please check your card details.";
-        btn.disabled = false; btn.innerHTML = "Pay " + fmtMoney(booking.fare);
+        btn.disabled = false; btn.innerHTML = "Pay " + fmtMoney(booking.amountDue != null ? booking.amountDue : booking.fare);
         return;
       }
       if(result.paymentIntent && result.paymentIntent.status === "succeeded"){
@@ -407,12 +428,12 @@ select:-webkit-autofill:focus{
         show("success");
       } else {
         cardErr.textContent = "Payment is pending confirmation. If you're charged, your booking will update shortly.";
-        btn.disabled = false; btn.innerHTML = "Pay " + fmtMoney(booking.fare);
+        btn.disabled = false; btn.innerHTML = "Pay " + fmtMoney(booking.amountDue != null ? booking.amountDue : booking.fare);
       }
     })
     .catch(function(e){
       cardErr.textContent = (e && e.message) || "Payment failed. Please try again.";
-      btn.disabled = false; btn.innerHTML = "Pay " + fmtMoney(booking.fare);
+      btn.disabled = false; btn.innerHTML = "Pay " + fmtMoney(booking.amountDue != null ? booking.amountDue : booking.fare);
     });
   });
 })();

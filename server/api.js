@@ -1496,6 +1496,12 @@ router.get('/customer/bookings/:id/pay-options', (req, res) => {
     ok: true,
     ref: booking.ref,
     fare: lock.fare,
+    // What is actually owed — the fare normally, the balance only on a trip
+    // re-priced after it was paid for. My Account must never quote the full
+    // new fare to someone who has already paid most of it.
+    amountDue: lock.amountDue,
+    topUp: lock.reason === 'top_up',
+    alreadyPaid: lock.reason === 'top_up' ? lock.alreadyPaid : null,
     status: booking.status,
     payment: booking.payment || 'pending',
     payable: lock.payable,

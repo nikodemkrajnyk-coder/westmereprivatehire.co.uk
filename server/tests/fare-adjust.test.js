@@ -479,6 +479,42 @@ test('the intent route charges lock.amountDue, never the fare', () => {
   assert.ok(/adjust_key/.test(block), 'the top-up intent carries no adjustment key');
 });
 
+test('the pay page can SEE the balance — it reads the adjust columns', () => {
+  const start = pubSrc.indexOf("router.get('/pay/:ref'");
+  const rest = pubSrc.slice(start + 10);
+  const next = rest.search(/router\.(post|get)\(/);
+  const block = pubSrc.slice(start, start + 10 + (next === -1 ? rest.length : next));
+  // Without these columns the lock sees paid_at, reports 'paid', and the Pay
+  // button we emailed the customer lands on "this trip has already been paid".
+  for (const col of ['fare_adjust_kind', 'fare_adjust_amount', 'fare_adjust_paid',
+                     'fare_adjust_at', 'fare_adjust_method', 'fare_adjust_settled_at']) {
+    assert.ok(block.includes(col), 'GET /pay/:ref does not select ' + col + ' — a balance would read as fully paid');
+  }
+  assert.ok(/amountDue: lock\.amountDue/.test(block), 'the pay page is not told what is actually due');
+});
+
+test('the pay page DISPLAYS and charges the same figure the server will take', () => {
+  const page = read('westmere-pay.html');
+  assert.ok(/booking\.amountDue != null/.test(page), 'the pay page still quotes the raw fare');
+  // The wallet, the button label and the amount line must all agree with the
+  // server. Showing £57.50 while taking £15.50 reads as a fault even when the
+  // smaller number is the correct one.
+  assert.ok(!/var amount = Math\.round\(Number\(booking\.fare\) \* 100\)/.test(page),
+    'Apple/Google Pay would ask for the full fare on a re-priced trip');
+  assert.ok(!/fmtMoney\(booking\.fare\)\s*;?\s*$/m.test(page.replace(/d-fare[\s\S]{0,40}/g, '')) ||
+            /"Pay " \+ fmtMoney\(booking\.amountDue/.test(page),
+    'a Pay button still names the full fare');
+  assert.ok(/d-due-row/.test(page) && /d-paid-row/.test(page),
+    'the page has nowhere to show what was already paid and what is now due');
+});
+
+test('My Account is told the balance too, not just the fare', () => {
+  const start = apiSrc.indexOf("router.get('/customer/bookings/:id/pay-options'");
+  assert.ok(start !== -1, 'the pay-options route is gone');
+  const block = apiSrc.slice(start, start + 2000);
+  assert.ok(/amountDue: lock\.amountDue/.test(block), 'My Account would quote the full new fare');
+});
+
 test('a settled balance closes, once, however often Stripe replays the webhook', () => {
   const start = pubSrc.indexOf("router.post('/stripe-webhook'");
   const block = pubSrc.slice(start, start + 6000);

@@ -430,8 +430,14 @@ router.get('/pay/:ref', (req, res) => {
     const token = String(req.query.t || req.query.token || '').trim();
     if (!ref || !token) return res.status(400).json({ error: 'Booking reference and token required' });
 
+    // The fare_adjust_* columns are NOT optional here. Without them the lock
+    // cannot see an open balance on a re-priced trip, reads paid_at, and tells
+    // a customer who still owes £15.50 that their trip is already paid — a
+    // dead end at the end of the Pay button we just emailed them.
     const b = db.prepare(`
-      SELECT ref, pickup, destination, stop_address, date, time, fare, status, payment, pay_token, paid_at, notes
+      SELECT ref, pickup, destination, stop_address, date, time, fare, status, payment, pay_token, paid_at, notes,
+             fare_adjust_kind, fare_adjust_amount, fare_adjust_paid,
+             fare_adjust_at, fare_adjust_method, fare_adjust_settled_at
         FROM bookings WHERE ref = ?
     `).get(ref);
     if (!b || !b.pay_token || b.pay_token !== token) {
@@ -455,6 +461,13 @@ router.get('/pay/:ref', (req, res) => {
         date: b.date,
         time: b.time,
         fare: b.fare,
+        // THE AMOUNT THIS PAGE MAY TAKE. Normally the fare; on a re-priced
+        // prepaid trip it is the balance only. The page must charge and DISPLAY
+        // this figure — showing £57.50 and taking £15.50 looks like a fault even
+        // though the smaller number is the right one.
+        amountDue: lock.amountDue,
+        topUp: lock.reason === 'top_up',
+        alreadyPaid: lock.reason === 'top_up' ? lock.alreadyPaid : null,
         notes: b.notes || null,
         status: b.status,
         paid,
