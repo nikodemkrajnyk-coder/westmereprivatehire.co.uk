@@ -25,6 +25,7 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
+const { regionFrom, routeBlock } = require('./_source');
 
 const ROOT = path.join(__dirname, '..', '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -46,7 +47,8 @@ const api = read('server/api.js');
 const riderSubmit = (() => {
   const i = rider.indexOf("fetch('/api/public/book'");
   assert.ok(i !== -1, 'westmere-rider.html no longer posts to /api/public/book');
-  return rider.slice(i, i + 1600);
+  // Bounded by the next function, not by a character budget.
+  return regionFrom(rider, i, [/\n\s*(?:async )?function /]);
 })();
 
 // ── 1. SAME CREATE PATH ──────────────────────────────────────────────────

@@ -31,6 +31,7 @@ function read(rel) { return fs.readFileSync(path.join(ROOT, rel), 'utf8'); }
 // ── 1. Payment-method guardrail (Problem 2) ──────────────────────────────
 console.log('\nPayment-method guardrail');
 const pm = require('../payment-methods');
+const { regionFrom, routeBlock } = require('./_source');
 test('unknown method normalizes to pending, never cash', () => {
   assert.strictEqual(pm.normalizePaymentMethod('', 'test'), 'pending');
   assert.strictEqual(pm.normalizePaymentMethod(null, 'test'), 'pending');
@@ -615,7 +616,7 @@ test('(h) every public pay/cash/cancel/note route rejects a wrong pay_token', ()
   for (const decl of routes) {
     const i = pub.indexOf(decl);
     assert.ok(i !== -1, 'route not found: ' + decl);
-    const block = pub.slice(i, i + 1400);
+    const block = routeBlock(pub, decl);
     assert.ok(/!b\.pay_token \|\| b\.pay_token !== token/.test(block),
       decl + ' must be gated by the per-booking pay_token (reject wrong/blank token)');
   }

@@ -44,6 +44,7 @@ async function run() {
 
 const LC = require('../../wm-lifecycle');
 const ADDR = require('../../address-normalize');
+const { regionFrom, routeBlock } = require('./_source');
 
 const OWNER  = read('westmere-owner.html');
 const ADMIN  = read('westmere-admin.html');
@@ -267,7 +268,8 @@ test('the flight number is never concatenated into an address line', async () =>
   // The Pickup/Drop-off values must contain the address and nothing else.
   const puIdx = html.indexOf('Gatwick Airport');
   assert.ok(puIdx !== -1, 'the short drop-off address is missing');
-  const around = html.slice(puIdx, puIdx + 120);
+  // Bounded by the end of the table cell the address lives in.
+  const around = regionFrom(html, puIdx, [/<\/td>/]);
   assert.ok(!/BA2678/.test(around), 'the flight number is rendered inside the address value');
   assert.ok(!/BA2678/.test(subject), 'the flight number must not be in the subject route');
 });

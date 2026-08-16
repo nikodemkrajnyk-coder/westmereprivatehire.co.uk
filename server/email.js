@@ -249,7 +249,7 @@ async function sendCustomerAcknowledgement(booking) {
   const estStr = hasEst ? ('~\u00a3' + money(estNum)) : null;
 
   const dateStr = formatDate(date, time);
-  const firstName = (name || '').split(' ')[0] || 'there';
+  const firstName = greetingName(name);
 
   // Acknowledgement now uses the SAME branded hero-image template
   // (variant:'ack'). No fare is locked in and there is no pay_token yet, so it
@@ -283,7 +283,7 @@ async function sendCustomerConfirmed(booking) {
   const dateStr = formatDate(date, time);
   const fareNum = typeof fare === 'number' ? fare : parseFloat(fare);
   const fareStr = (fareNum && !isNaN(fareNum)) ? ('£' + fareNum.toFixed(2)) : null;
-  const firstName = (name || '').split(' ')[0] || 'there';
+  const firstName = greetingName(name);
 
   // This email is only ever sent in two genuine states, and it NEVER labels an
   // uncollected cash booking as "paid":
@@ -457,7 +457,7 @@ function heroShell(innerHtml, opts) {
 <title>${escHtml(title)}</title>
 <!--[if mso]><style>table,td,a{font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif}</style><![endif]-->
 <style>:root{color-scheme:light only;supported-color-schemes:light only}
-@media(max-width:600px){.wm-pad{padding-left:22px!important;padding-right:22px!important}.wm-badge{display:block!important;width:100%!important;text-align:left!important;padding:14px 0 0 0!important}}</style>
+@media(max-width:600px){.wm-pad{padding-left:22px!important;padding-right:22px!important}.wm-copy{display:block!important;width:100%!important}.wm-badge{display:block!important;width:100%!important;max-width:100%!important;text-align:left!important;padding:14px 0 0 0!important}.wm-badge p{letter-spacing:1.2px!important}}</style>
 </head>
 <body style="margin:0;padding:0;background:#EEF2F5;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#EEF2F5" style="background:#EEF2F5">
@@ -638,7 +638,7 @@ function confirmationEmailHtml(d) {
 
 <tr><td class="wm-pad" style="padding:30px 40px 6px;background:#FFFFFF">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-    <td valign="top">
+    <td class="wm-copy" valign="top">
       <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:12px;letter-spacing:2.4px;text-transform:uppercase;color:#102a43;font-weight:700">${d.eyebrow || 'Confirmed'}</p>
       <h1 style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:30px;font-weight:400;color:#102a43;line-height:1.15">Dear ${escHtml(d.firstName)},</h1>
       <p style="margin:0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:17px;line-height:1.65;color:#3B5268">${d.intro || 'Your journey is confirmed. A driver has been assigned and we look forward to welcoming you on the day.'}</p>
@@ -684,7 +684,7 @@ async function sendCustomerEstimate(booking) {
   const fareStr = '£' + fareNum.toFixed(2);
 
   const dateStr = formatDate(date, time);
-  const firstName = (name || '').split(' ')[0] || 'there';
+  const firstName = greetingName(name);
 
   // Estimate now renders with the SAME branded hero-image template as the
   // confirmation (variant:'estimate'). The tokenised Pay Now / Pay-driver /
@@ -741,7 +741,7 @@ async function sendCustomerBookingUpdated(booking, changes, adjust) {
   const list = (changes || []).filter(c => c && known.includes(c.key));
   if (!list.length) return false;   // nothing customer-facing moved — say nothing
 
-  const firstName = (name || '').split(' ')[0] || 'there';
+  const firstName = greetingName(name);
   const fareNum = typeof booking.fare === 'number' ? booking.fare : parseFloat(booking.fare);
   const fareStr = (!fareNum || isNaN(fareNum)) ? '' : '£' + fareNum.toFixed(2);
   const fareMoved = list.some(c => c.key === 'fare');
@@ -952,6 +952,38 @@ function formatDate(date, time) {
   }
 }
 
+/* ── HOW WE ADDRESS SOMEBODY ──────────────────────────────────────────────
+   Fifteen emails each did `(name || '').split(' ')[0]`, which is right only
+   when the customer typed a bare first name. Most do not: this database is
+   full of "Mr J Whitfield", and every acknowledgement, estimate, confirmation,
+   cancellation, reminder, invoice and review request opened "Dear Mr,".
+
+   The rule, in the register a private-hire firm actually writes in:
+     · a title is present  → Title + surname   "Mr J Whitfield" → "Mr Whitfield"
+     · no title            → first name        "Eleanor Whitfield" → "Eleanor"
+     · only an initial     → the name as given "J Whitfield" → "J Whitfield"
+     · nothing usable      → the fallback      "" → "there"
+
+   Formal where they were formal, familiar where they were familiar — and never
+   a title on its own. GUARDRAIL: server/tests/greeting.test.js */
+const TITLES = /^(mr|mrs|ms|miss|mx|dr|prof|professor|sir|dame|lord|lady|rev|reverend|capt|captain)\.?$/i;
+
+function greetingName(full, fallback) {
+  const parts = String(full == null ? '' : full).trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return fallback || 'there';
+  const title = TITLES.test(parts[0]) ? parts[0].replace(/\.$/, '') : null;
+  const rest = title ? parts.slice(1) : parts;
+  if (!rest.length) return fallback || 'there';        // a title and nothing else
+  if (title) {
+    // Title + the last name they gave. "Dr A Patel" → "Dr Patel".
+    return title + ' ' + rest[rest.length - 1];
+  }
+  // No title. A leading initial ("J Whitfield") reads oddly as a first name,
+  // so use what they wrote rather than inventing familiarity.
+  if (/^[A-Za-z]\.?$/.test(rest[0])) return rest.join(' ');
+  return rest[0];
+}
+
 function escHtml(s) {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -963,7 +995,7 @@ function escAttr(s) { return escHtml(s); }
 async function sendCustomerWelcome(customer) {
   if (!customer || !customer.email) return;
   const { email, full_name } = customer;
-  const firstName = (full_name || '').split(' ')[0] || 'there';
+  const firstName = greetingName(full_name);
 
   const body = `
   <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Account opened</p>
@@ -1001,7 +1033,7 @@ async function sendCustomerWelcome(customer) {
 async function sendCustomerInvoice(customer, bookings, period, invoiceNo, settings, pdfBuffer) {
   if (!customer || !customer.email) return false;
   const { email, full_name } = customer;
-  const firstName = (full_name || '').split(' ')[0] || 'there';
+  const firstName = greetingName(full_name);
   settings = settings || {};
 
   const rows = (bookings || []).map(b => {
@@ -1124,7 +1156,7 @@ async function sendCustomerInvoice(customer, bookings, period, invoiceNo, settin
 async function sendBespokeInvoice(recipient, items, period, invoiceNo, settings, pdfBuffer) {
   if (!recipient || !recipient.email) return false;
   settings = settings || {};
-  const firstName = (recipient.name || '').split(' ')[0] || 'there';
+  const firstName = greetingName(recipient.name);
 
   const rows = (items || []).map(it => {
     const amount = +it.amount || 0;
@@ -1250,7 +1282,7 @@ async function sendBespokeInvoice(recipient, items, period, invoiceNo, settings,
 // Polite, professional nudge for an outstanding (unpaid) invoice.
 async function sendInvoiceReminder(recipient, invoiceNo, total, payUrl) {
   if (!recipient || !recipient.email) return false;
-  const firstName = (recipient.name || '').split(' ')[0] || 'there';
+  const firstName = greetingName(recipient.name);
   const totalStr = (Number(total) || 0).toFixed(2);
   const pdfUrl = `https://westmereprivatehire.co.uk/api/public/invoice/${encodeURIComponent(invoiceNo || '')}/pdf`;
 
@@ -1282,7 +1314,7 @@ async function sendInvoiceReminder(recipient, invoiceNo, total, payUrl) {
 async function sendPasswordResetEmail(customer, token) {
   if (!customer || !customer.email) return false;
   const { email, full_name } = customer;
-  const firstName = (full_name || '').split(' ')[0] || 'there';
+  const firstName = greetingName(full_name);
   // Must land on the customer account app — westmere-rider.html is the ONLY page
   // that reads `reset_token` from the query and shows the reset form. The old
   // `/?skip=1&reset_token=` pointed at index.html (the marketing homepage), which
@@ -1318,7 +1350,7 @@ async function sendPasswordResetEmail(customer, token) {
 async function sendAdminPasswordResetEmail(user, token) {
   if (!user || !user.email) return false;
   const { email, full_name } = user;
-  const firstName = (full_name || '').split(' ')[0] || 'there';
+  const firstName = greetingName(full_name);
   const resetUrl = `https://westmereprivatehire.co.uk/westmere-admin.html?reset_token=${token}`;
 
   const body = `
@@ -1351,7 +1383,7 @@ async function sendCustomerCancellation(booking) {
 
   const dateStr = formatDate(date, time);
   const fareStr = fare ? ('\u00a3' + (typeof fare === 'number' ? fare.toFixed(2) : fare)) : null;
-  const firstName = (name || '').split(' ')[0] || 'there';
+  const firstName = greetingName(name);
 
   let rows = '';
   rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:'+INK+'">' + ref + '</span>');
@@ -1426,7 +1458,7 @@ async function sendDriverWelcome(driver) {
   const { email, full_name, username, temp_password } = driver;
   if (!email) return false;
 
-  const firstName = (full_name || 'Driver').split(' ')[0];
+  const firstName = greetingName(full_name, 'Driver');
   const appUrl = 'https://westmereprivatehire.co.uk/westmere-driver.html';
 
   const body = `
@@ -1457,7 +1489,7 @@ async function sendDriverWelcome(driver) {
 async function sendVerificationEmail(customer, token) {
   if (!customer || !customer.email) return false;
   const { email, full_name } = customer;
-  const firstName = (full_name || '').split(' ')[0] || 'there';
+  const firstName = greetingName(full_name);
   const verifyUrl = `https://westmereprivatehire.co.uk/api/auth/customer/verify?token=${token}`;
 
   const body = `
@@ -1514,7 +1546,7 @@ async function sendRecommendation(recipientEmail) {
 async function sendPaymentReminder(booking) {
   const { email, name, ref, fare, pickup, destination, date, time, pay_token } = booking;
   if (!email) return false;
-  const firstName = (name || '').split(' ')[0] || 'there';
+  const firstName = greetingName(name);
   const fareStr = fare ? '\u00a3' + Number(fare).toFixed(2) : '';
   const dateStr = formatDate(date, time);
 
@@ -1835,7 +1867,7 @@ async function sendOwnerChangeRequest(booking, cr) {
 async function sendCustomerMessage(booking, message) {
   const { ref, name, email } = booking;
   if (!email || !message) return false;
-  const firstName = (name || '').split(' ')[0] || 'there';
+  const firstName = greetingName(name);
 
   const body = `
   <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">A message from Westmere${ref ? ' · ' + escHtml(ref) : ''}</p>

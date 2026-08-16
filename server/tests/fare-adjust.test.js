@@ -55,6 +55,7 @@ const pubSrc = read('server/public-api.js');
 const OWNER = read('westmere-owner.html');
 const EMAIL = require('../email');
 const LOCK = require('../pay-lock');
+const { regionFrom, routeBlock } = require('./_source');
 
 // ── Pull the real handlers out of server/api.js ──────────────────────────
 function braceBody(src, from) {
@@ -511,13 +512,13 @@ test('the pay page DISPLAYS and charges the same figure the server will take', (
 test('My Account is told the balance too, not just the fare', () => {
   const start = apiSrc.indexOf("router.get('/customer/bookings/:id/pay-options'");
   assert.ok(start !== -1, 'the pay-options route is gone');
-  const block = apiSrc.slice(start, start + 2000);
+  const block = routeBlock(apiSrc, "router.get('/customer/bookings/:id/pay-options'");
   assert.ok(/amountDue: lock\.amountDue/.test(block), 'My Account would quote the full new fare');
 });
 
 test('a settled balance closes, once, however often Stripe replays the webhook', () => {
   const start = pubSrc.indexOf("router.post('/stripe-webhook'");
-  const block = pubSrc.slice(start, start + 6000);
+  const block = routeBlock(pubSrc, "router.post('/stripe-webhook'");
   assert.ok(/metadata\.topup === '1'/.test(block), 'the webhook cannot tell a balance payment apart');
   assert.ok(/fare_adjust_settled_at IS NULL/.test(block), 'the webhook would bank a replayed balance twice');
   assert.ok(/paid_amount = COALESCE\(paid_amount, 0\) \+ \?/.test(block), 'the balance is not added to what we hold');

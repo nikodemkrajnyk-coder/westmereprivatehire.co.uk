@@ -25,6 +25,7 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
+const { regionFrom, routeBlock } = require('./_source');
 
 const ROOT = path.join(__dirname, '..', '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -105,7 +106,8 @@ test('no doubled braces — the block must actually parse', () => {
   for (const s of SURFACES) {
     const src = read(s.file);
     const i = src.indexOf(':-webkit-autofill');
-    const region = src.slice(i, i + 1400);
+    // Bounded by the end of the stylesheet, not by a character budget.
+    const region = regionFrom(src, i, [/<\/style>/]);
     assert.ok(!/\{\{/.test(region) && !/\}\}/.test(region),
       s.file + ': doubled braces in the autofill block — the selectors parse but every ' +
       'declaration is dropped and the fields stay yellow (this actually shipped once)');
