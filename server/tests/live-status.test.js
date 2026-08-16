@@ -290,18 +290,21 @@ test('the columns exist end to end, and the webhook really sets them', () => {
   const db = new Database(':memory:');
   db.exec(`CREATE TABLE bookings (
      id INTEGER PRIMARY KEY, ref TEXT UNIQUE, fare REAL, payment TEXT DEFAULT 'pending',
-     status TEXT DEFAULT 'pending', paid_at TEXT, pay_token TEXT, payment_intent_id TEXT,
+     status TEXT DEFAULT 'pending', paid_at TEXT, paid_amount REAL, pay_token TEXT, payment_intent_id TEXT,
      change_requested_at TEXT, re_estimated_at TEXT, updated_at TEXT)`);
   db.prepare("INSERT INTO bookings (id,ref,fare,pay_token,status) VALUES (1,'WPH-LIVE1',137,'tok','pending')").run();
 
   // The SHIPPED webhook UPDATE — the email channel's write.
   const i = publicSrc.indexOf("SET payment = 'card'");
   const sql = publicSrc.slice(publicSrc.lastIndexOf('UPDATE bookings', i), publicSrc.indexOf('`', i));
-  db.prepare(sql).run('pi_test', 'WPH-LIVE1');
+  // paid_amount (what was actually taken) comes first in the shipped UPDATE.
+  db.prepare(sql).run(137, 'pi_test', 'WPH-LIVE1');
 
   const row = db.prepare('SELECT * FROM bookings WHERE id = 1').get();
   assert.strictEqual(row.payment, 'card');
   assert.ok(row.paid_at, 'the webhook must stamp paid_at');
+  assert.strictEqual(row.paid_amount, 137,
+    'the webhook must record WHAT WAS TAKEN — a later fare edit has nothing to refund against without it');
   assert.strictEqual(row.pay_token, null, 'and kill the emailed link');
 
   // …and that is what My Account then draws.

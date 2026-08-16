@@ -231,7 +231,37 @@ router.post('/bookings', (req, res) => {
 });
 
 // Update booking status
-router.patch('/bookings/:id', (req, res) => {
+/* ── WHAT THE CUSTOMER IS TOLD ABOUT ─────────────────────────────────────
+   The columns a customer actually travels on. When an operator's Edit → Save
+   moves one of these, the customer is emailed the new details automatically
+   (sendCustomerBookingUpdated). Everything else — the private note, the
+   driver, the status, the payment method, the mileage — is the operator's own
+   record and is saved in silence.
+
+   Adding a column here puts it in a customer's inbox. Do that deliberately.
+   GUARDRAIL: server/tests/booking-updated.test.js */
+const CUSTOMER_FIELDS = ['pickup', 'stop_address', 'destination', 'date', 'time',
+                         'passengers', 'bags', 'flight', 'fare'];
+
+// True when the two values mean the same thing to a customer, so a re-save
+// that retypes the same journey is silent. Money and head-counts compare as
+// numbers ('42' and 42 and 42.00 are one fare); a flight number compares
+// case-insensitively; everything else compares trimmed, with null/'' equal.
+function sameCustomerValue(key, before, after) {
+  if (key === 'fare' || key === 'passengers') {
+    const a = before == null || before === '' ? null : Number(before);
+    const b = after  == null || after  === '' ? null : Number(after);
+    if (a === null || b === null) return a === b;
+    if (isNaN(a) || isNaN(b)) return String(before).trim() === String(after).trim();
+    return Math.abs(a - b) < 0.005;
+  }
+  const a = before == null ? '' : String(before).trim();
+  const b = after  == null ? '' : String(after).trim();
+  if (key === 'flight') return a.toUpperCase() === b.toUpperCase();
+  return a === b;
+}
+
+router.patch('/bookings/:id', async (req, res) => {
   const { role } = req.auth;
   if (!['admin', 'owner', 'driver'].includes(role)) {
     return res.status(403).json({ error: 'Access denied' });
@@ -258,7 +288,7 @@ router.patch('/bookings/:id', (req, res) => {
     req.body.payment = String(req.body.payment).toLowerCase();
   }
 
-  const allowed = ['status', 'driver_id', 'fare', 'notes', 'payment', 'passenger_name', 'passenger_phone', 'passenger_email', 'pickup', 'destination', 'stop_address', 'date', 'time', 'passengers', 'customer_id', 'paid_at', 'trip_miles'];
+  const allowed = ['status', 'driver_id', 'fare', 'notes', 'payment', 'passenger_name', 'passenger_phone', 'passenger_email', 'pickup', 'destination', 'stop_address', 'date', 'time', 'passengers', 'bags', 'flight', 'customer_id', 'paid_at', 'trip_miles'];
   const updates = [];
   const values = [];
   for (const key of allowed) {
@@ -270,6 +300,16 @@ router.patch('/bookings/:id', (req, res) => {
 
   if (updates.length === 0) return res.status(400).json({ error: 'No valid fields to update' });
 
+  // Diff BEFORE the write — `booking` is the row as it was when this save
+  // arrived, and it is the only chance to see what the customer's journey used
+  // to say. A field the body never mentioned cannot have changed.
+  const customerChanges = [];
+  for (const key of CUSTOMER_FIELDS) {
+    if (req.body[key] === undefined) continue;
+    if (sameCustomerValue(key, booking[key], req.body[key])) continue;
+    customerChanges.push({ key, from: booking[key], to: req.body[key] });
+  }
+
   updates.push("updated_at = datetime('now')");
   values.push(req.params.id);
 
@@ -278,6 +318,79 @@ router.patch('/bookings/:id', (req, res) => {
   } catch (e) {
     console.error('[API] booking update failed:', e.message);
     return res.status(500).json({ error: 'Failed to update booking. Please try again.' });
+  }
+
+  /* ── THE PRICE MOVED ON A TRIP THEY HAD ALREADY PAID FOR ───────────────
+     Only the DIFFERENCE is ever settled — never the full new fare, which
+     would take the money twice for one journey.
+
+       new < paid   we owe them back            → 'refund'
+       new > paid   they owe us the balance     → 'topup'
+       new = paid   nothing outstanding         → any open difference is cleared
+
+     NOTHING IS CHARGED OR REFUNDED HERE. This only records what is
+     outstanding. A refund needs the owner's deliberate click
+     (POST /bookings/:id/fare-refund); a balance needs the customer to pay it.
+
+     `paid_amount` is what was actually collected. Bookings settled before that
+     column existed fall back to the fare as it stood before this edit — which
+     is, by definition, the price they were charged. Re-pricing twice simply
+     recomputes against the same collected amount and re-stamps
+     fare_adjust_at, minting a fresh idempotency key so a refund issued for the
+     old difference can never be counted as settling the new one.
+
+     GUARDRAIL: server/tests/fare-adjust.test.js */
+  const { round2 } = require('./pay-lock');
+  let fareAdjust = null;
+  const fareMoved = customerChanges.some(c => c.key === 'fare');
+  const wasPrepaid = !!booking.paid_at;
+  if (fareMoved && wasPrepaid && booking.status !== 'cancelled') {
+    const collected = round2(booking.paid_amount != null ? booking.paid_amount : booking.fare);
+    const newFare = round2(req.body.fare);
+    if (isFinite(collected) && collected > 0 && isFinite(newFare) && newFare >= 0) {
+      const diff = round2(newFare - collected);
+      if (Math.abs(diff) < 0.01) {
+        // The new price matches what we hold. Clear any difference that has NOT
+        // been settled; one that has is left alone, because paid_amount already
+        // reflects it and the audit log holds the record.
+        db.prepare(`UPDATE bookings SET fare_adjust_kind = NULL, fare_adjust_amount = NULL,
+                           fare_adjust_paid = NULL, fare_adjust_at = NULL, fare_adjust_method = NULL,
+                           updated_at = datetime('now')
+                     WHERE id = ? AND fare_adjust_settled_at IS NULL`).run(id);
+      } else {
+        // Recomputed against what we CURRENTLY hold, every time. A settled
+        // refund has already reduced paid_amount and a settled balance has
+        // already increased it, so re-pricing a second time produces a genuinely
+        // new difference rather than double-counting the first one.
+        const kind = diff < 0 ? 'refund' : 'topup';
+        const amount = round2(Math.abs(diff));
+        // A refund can never exceed what was actually taken. Belt and braces:
+        // the refund route caps it again against the recorded figure.
+        const capped = kind === 'refund' ? Math.min(amount, collected) : amount;
+        // The method is decided by how they PAID, not by what we would prefer.
+        // Cash cannot be refunded through Stripe, and pretending otherwise is
+        // how an owner ends up thinking money went back when it did not.
+        const method = kind === 'refund'
+          ? (String(booking.payment || '').toLowerCase() === 'card' ? 'stripe' : 'cash')
+          : null;
+        try {
+          db.prepare(`UPDATE bookings
+                         SET fare_adjust_kind = ?, fare_adjust_amount = ?, fare_adjust_paid = ?,
+                             fare_adjust_at = datetime('now'), fare_adjust_method = ?,
+                             fare_adjust_settled_at = NULL, fare_adjust_ref = NULL,
+                             status = CASE WHEN ? = 'topup' AND status IN ('confirmed','pending','offered')
+                                           THEN 'awaiting_payment' ELSE status END,
+                             updated_at = datetime('now')
+                       WHERE id = ?`).run(kind, capped, collected, method, kind, id);
+          fareAdjust = { kind, amount: capped, paid: collected, newFare, method };
+        } catch (e) {
+          // The edit itself has already been saved and must not be lost over
+          // this. The owner is told the difference was not recorded.
+          console.error('[API] fare adjustment write failed:', e.message);
+          fareAdjust = { kind, amount: capped, paid: collected, newFare, method, error: true };
+        }
+      }
+    }
   }
 
   // If THIS update transitioned the booking from pending → confirmed, fire
@@ -322,7 +435,8 @@ router.patch('/bookings/:id', (req, res) => {
   const updated = db.prepare(`
     SELECT b.*,
            COALESCE(c.full_name, b.passenger_name) as customer_name,
-           COALESCE(c.phone,     b.passenger_phone) as customer_phone
+           COALESCE(c.phone,     b.passenger_phone) as customer_phone,
+           COALESCE(b.passenger_email, c.email)     as customer_email
     FROM bookings b LEFT JOIN customers c ON b.customer_id = c.id
     WHERE b.id = ?
   `).get(req.params.id);
@@ -378,7 +492,192 @@ router.patch('/bookings/:id', (req, res) => {
 
   }
 
-  res.json({ ok: true });
+  /* ── TELL THE CUSTOMER THEIR JOURNEY MOVED ─────────────────────────────
+     The operator edited something the customer travels on, so they are
+     emailed the was → now diff and the booking as it now reads.
+
+     Four reasons NOT to send, each deliberate:
+       no-change   nothing on CUSTOMER_FIELDS actually differs — a no-op save,
+                   or an internal-only edit (the note, the driver, a status).
+       suppressed  this same save is already sending them a confirmation or a
+                   cancellation, which carries the new details itself. One edit
+                   must never put two emails in one inbox — and a booking that
+                   has just been cancelled or completed has nothing to update.
+       no-email    no address on the booking (a phone-only job).
+       failed      Resend rejected it. The operator is told, so they can pick
+                   up the phone instead of assuming it landed.
+
+     Awaited, not fired and forgotten: the whole point of the feature is that
+     the owner knows it went out, and a promise nobody waits on cannot report
+     that. GUARDRAIL: server/tests/booking-updated.test.js */
+  let customerNotified = false;
+  let notifyReason = 'no-change';
+  if (customerChanges.length) {
+    const settledByThisSave = becameConfirmed || becameCancelled;
+    const finished = updated && (updated.status === 'cancelled' || updated.status === 'completed');
+    const custEmail = updated ? updated.customer_email : null;
+    if (settledByThisSave || finished) {
+      notifyReason = 'suppressed';
+    } else if (!custEmail) {
+      notifyReason = 'no-email';
+    } else {
+      try {
+        // Idempotent — an existing token stays valid, so a link already sitting
+        // in the customer's inbox keeps working (CLAUDE.md: never re-mint).
+        const payToken = require('./intake').ensurePayToken(updated.id, db) || updated.pay_token || null;
+        const sentOk = await require('./email').sendCustomerBookingUpdated(
+          Object.assign({}, updated, { email: custEmail, name: updated.customer_name, pay_token: payToken }),
+          customerChanges, fareAdjust);
+        customerNotified = !!sentOk;
+        notifyReason = customerNotified ? 'sent' : 'failed';
+      } catch (e) {
+        console.error('[API] sendCustomerBookingUpdated failed:', e.message);
+        notifyReason = 'failed';
+      }
+    }
+    if (customerNotified) {
+      try {
+        db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+          .run(req.auth.type, req.auth.id, 'booking_update_emailed',
+               booking.ref + ' — ' + customerChanges.map(c => c.key).join(', '), req.ip);
+      } catch (_) {}
+    }
+  }
+
+  res.json({
+    ok: true,
+    customerChanged: customerChanges.map(c => c.key),
+    customerNotified,
+    notifyReason,
+    // The owner's safety step. A refund NEVER happens on a save — the app shows
+    // this as a deliberate control the owner has to press.
+    fareAdjust: fareAdjust ? {
+      kind: fareAdjust.kind, amount: fareAdjust.amount, paid: fareAdjust.paid,
+      newFare: fareAdjust.newFare, method: fareAdjust.method,
+      error: !!fareAdjust.error
+    } : null
+  });
+});
+
+/* ── REFUND THE DIFFERENCE ON A RE-PRICED PREPAID TRIP ───────────────────
+   The owner's deliberate click, never automatic. Saving a lower fare only
+   RECORDS that money is owed back; this is the moment it actually moves.
+
+   Refunds exactly the recorded difference, against the original charge, and
+   only ever once:
+     · the DB latch — the UPDATE is conditional on fare_adjust_settled_at
+       still being NULL, so two clicks cannot both record a refund;
+     · the STRIPE latch — the idempotency key is the adjustment key, so even
+       if two requests race past the DB check, Stripe replays the first refund
+       instead of creating a second. Money leaves the account once.
+   And it can never exceed what was collected: the amount is capped against
+   the paid figure recorded when the difference was raised.
+
+   Cash bookings never touch Stripe. There is no charge to refund against, so
+   the click records that the owner is settling it by hand.
+   GUARDRAIL: server/tests/fare-adjust.test.js */
+router.post('/bookings/:id/fare-refund', async (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+  const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+  if (!booking) return res.status(404).json({ error: 'Booking not found' });
+
+  const { openAdjustment, round2 } = require('./pay-lock');
+  const adj = openAdjustment(booking);
+
+  // Already done → say so and stop. Idempotent by design: the owner double-taps
+  // a button on a phone, and the second tap must be a no-op, not a second
+  // refund.
+  if (!adj) {
+    if (booking.fare_adjust_kind === 'refund' && booking.fare_adjust_settled_at) {
+      return res.json({ ok: true, outcome: 'already_refunded',
+                        method: booking.fare_adjust_method || 'manual',
+                        amount: booking.fare_adjust_amount || 0 });
+    }
+    return res.status(409).json({ error: 'There is no refund outstanding on this booking.' });
+  }
+  if (adj.kind !== 'refund') {
+    return res.status(409).json({ error: 'This booking is owed a balance, not a refund.' });
+  }
+
+  // Never more than was actually collected.
+  const collected = round2(booking.fare_adjust_paid != null ? booking.fare_adjust_paid
+                    : (booking.paid_amount != null ? booking.paid_amount : booking.fare));
+  const amount = round2(Math.min(adj.amount, collected));
+  if (!(amount > 0)) return res.status(409).json({ error: 'There is nothing to refund.' });
+  if (amount > collected + 0.005) {
+    console.error('[REFUND] refused — £' + amount + ' exceeds the £' + collected + ' collected on ' + booking.ref);
+    return res.status(409).json({ error: 'That refund is larger than the amount paid.' });
+  }
+
+  const stripe = require('./stripe');
+  const paidByCard = String(booking.payment || '').toLowerCase() === 'card';
+  let method = 'cash', refundId = null;
+
+  if (paidByCard && stripe.isConfigured()) {
+    let intentId = booking.payment_intent_id || null;
+    if (!intentId) { try { intentId = await stripe.findPaymentIntentByRef(booking.ref); } catch (_) {} }
+    if (intentId) {
+      try {
+        const refund = await stripe.createRefund({
+          paymentIntentId: intentId,
+          amount: Math.round(amount * 100),
+          idempotencyKey: 'wm-fare-refund-' + adj.key
+        });
+        method = 'stripe';
+        refundId = refund.id;
+      } catch (e) {
+        // The booking is untouched — nothing is recorded as refunded, so the
+        // owner can try again or settle by hand. A Stripe failure must never
+        // leave the row claiming money went back when it did not.
+        console.error('[REFUND] Stripe partial refund failed for', booking.ref, ':', e.message);
+        return res.status(502).json({ error: 'Stripe refund failed: ' + e.message });
+      }
+    } else {
+      method = 'manual';   // card booking, but no charge on file to refund against
+    }
+  } else if (paidByCard && !stripe.isConfigured()) {
+    return res.status(503).json({ error: 'Stripe is not configured — cannot refund this card payment.' });
+  }
+
+  // Record it. Conditional on the difference still being open: if another
+  // request settled it while Stripe was working, we do NOT write a second
+  // record — and Stripe's idempotency key means no second refund was created.
+  const info = db.prepare(`
+    UPDATE bookings
+       SET fare_adjust_settled_at = datetime('now'),
+           fare_adjust_method = ?,
+           fare_adjust_ref = ?,
+           paid_amount = MAX(COALESCE(paid_amount, 0) - ?, 0),
+           updated_at = datetime('now')
+     WHERE id = ?
+       AND fare_adjust_kind = 'refund'
+       AND fare_adjust_settled_at IS NULL
+  `).run(method, refundId, amount, id);
+
+  if (info.changes === 0) {
+    return res.json({ ok: true, outcome: 'already_refunded', method, amount, refund_id: refundId });
+  }
+
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run(req.auth.type, req.auth.id, 'fare_refunded',
+           booking.ref + ' £' + amount.toFixed(2) + ' [' + method + (refundId ? ' ' + refundId : '') + ']', req.ip);
+  } catch (_) {}
+  events.broadcast('booking:updated', { id, ref: booking.ref, reason: 'Fare refund issued' });
+
+  return res.json({
+    ok: true,
+    outcome: method === 'stripe' ? 'refunded_stripe' : 'refunded_manual',
+    method, amount, refund_id: refundId,
+    message: method === 'stripe'
+      ? '£' + amount.toFixed(2) + ' refunded to the customer’s card. It usually shows in 5–10 days.'
+      : '£' + amount.toFixed(2) + ' recorded as refunded — return it to the customer by hand.'
+  });
 });
 
 // NOTE: the old POST /bookings/:id/send-estimate endpoint was removed. Setting
@@ -2576,11 +2875,41 @@ router.post('/bookings/:id/mark-paid', (req, res) => {
   // Settle: stamp paid_at (once) and promote an unsettled booking to confirmed.
   // Completed jobs stay completed but still get paid_at stamped.
   const wasUnsettled = ['pending', 'offered', 'awaiting_payment'].includes(b.status);
-  db.prepare(`UPDATE bookings
-                 SET paid_at = COALESCE(paid_at, datetime('now')),
-                     status = CASE WHEN status IN ('pending','offered','awaiting_payment') THEN 'confirmed' ELSE status END,
-                     updated_at = datetime('now')
-               WHERE id = ?`).run(id);
+
+  // AN OPEN BALANCE settles here too. The owner re-priced a prepaid trip
+  // upwards and the customer is handing the DIFFERENCE to the driver — so this
+  // click closes the difference and adds it to what has been collected, rather
+  // than re-stamping a paid_at that was set weeks ago. Conditional on the
+  // difference still being open, so a second click cannot bank it twice.
+  const { openTopUp } = require('./pay-lock');
+  const topUp = openTopUp(b);
+  if (topUp) {
+    const info = db.prepare(`
+      UPDATE bookings
+         SET fare_adjust_settled_at = datetime('now'),
+             fare_adjust_method = COALESCE(NULLIF(fare_adjust_method,''), 'cash'),
+             paid_amount = COALESCE(paid_amount, 0) + ?,
+             status = CASE WHEN status IN ('pending','offered','awaiting_payment') THEN 'confirmed' ELSE status END,
+             updated_at = datetime('now')
+       WHERE id = ?
+         AND fare_adjust_kind = 'topup'
+         AND fare_adjust_settled_at IS NULL
+    `).run(topUp.amount, id);
+    if (info.changes) {
+      try {
+        db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+          .run(req.auth.type || 'user', req.auth.id, 'fare_topup_settled',
+               b.ref + ' £' + topUp.amount.toFixed(2) + ' [cash]', req.ip);
+      } catch (_) {}
+    }
+  } else {
+    db.prepare(`UPDATE bookings
+                   SET paid_at = COALESCE(paid_at, datetime('now')),
+                       paid_amount = COALESCE(paid_amount, fare),
+                       status = CASE WHEN status IN ('pending','offered','awaiting_payment') THEN 'confirmed' ELSE status END,
+                       updated_at = datetime('now')
+                 WHERE id = ?`).run(id);
+  }
 
   try {
     db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')

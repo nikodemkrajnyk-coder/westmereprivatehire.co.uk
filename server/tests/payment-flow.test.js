@@ -104,6 +104,18 @@ function cashPostBlock() {
   const next = rest.search(/router\.(post|get)\(/);
   return pub.slice(start, start + 10 + (next === -1 ? rest.length : next));
 }
+// The WHOLE webhook route, not a fixed-size window off the front of it. A
+// character budget silently stops testing the code it was pointed at the moment
+// somebody adds a branch above the assertion — which is exactly what happened
+// when the balance-payment branch landed.
+function webhookBlock() {
+  const pub = read('server/public-api.js');
+  const start = pub.indexOf("router.post('/stripe-webhook'");
+  assert.ok(start !== -1, 'stripe webhook route not found');
+  const rest = pub.slice(start + 10);
+  const next = rest.search(/\nrouter\.(post|get)\(/);
+  return pub.slice(start, start + 10 + (next === -1 ? rest.length : next));
+}
 test('cash route records cash + moves pending → awaiting_payment (never confirmed)', () => {
   const block = cashPostBlock();
   // The cash WRITE now lives in server/pay-lock.js, shared with the My Account
@@ -138,10 +150,7 @@ test('card intent route moves pending → awaiting_payment', () => {
   assert.ok(/THEN 'awaiting_payment'/.test(block), 'intent route must move a pending booking to awaiting_payment');
 });
 test('stripe webhook confirms from awaiting_payment (and pending), not only pending', () => {
-  const pub = read('server/public-api.js');
-  const start = pub.indexOf("'/stripe-webhook'");
-  assert.ok(start !== -1, 'stripe webhook route not found');
-  const block = pub.slice(start, start + 3000);
+  const block = webhookBlock();
   // Confirms unless cancelled — so awaiting_payment → confirmed is covered.
   assert.ok(/WHEN status = 'cancelled' THEN status ELSE 'confirmed'/.test(block), 'webhook must confirm non-cancelled bookings on payment');
   assert.ok(/row\.status === 'awaiting_payment'/.test(block), 'webhook must fire the confirmed email off the awaiting_payment edge too');
@@ -893,8 +902,7 @@ test('confirmation email: CASH is confirmed-but-pending (never "Paid"); CARD is 
 test('confirmation fires on card-webhook and cash-CHOICE; NOT on cash mark-paid', () => {
   const pub = read('server/public-api.js');
   // Card: the Stripe webhook fires the (card, paid) confirmation.
-  const wh = pub.indexOf("'/stripe-webhook'");
-  assert.ok(wh !== -1 && /notifyCustomerConfirmed/.test(pub.slice(wh, wh + 3000)), 'stripe webhook must fire the confirmation');
+  assert.ok(/notifyCustomerConfirmed/.test(webhookBlock()), 'stripe webhook must fire the confirmation');
   // Cash: choosing cash (pay/:ref/cash) fires the (cash, pending) confirmation.
   assert.ok(/notifyCustomerConfirmed/.test(cashPostBlock()), 'cash choice must fire the confirmation');
   // Mark-as-paid is internal only — it must NOT email the customer again.

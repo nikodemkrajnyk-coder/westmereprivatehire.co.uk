@@ -735,6 +735,40 @@ function migrate() {
     }
   } catch(e) { console.error('[DB] refund column migration failed:', e.message); }
 
+  // ── FARE CHANGED AFTER THE CUSTOMER ALREADY PAID ──────────────────────
+  //
+  // The owner edits a prepaid trip and the price moves. Only the DIFFERENCE is
+  // ever refunded or collected — never the full new fare, or the customer is
+  // charged twice for one journey. These columns hold that one open difference.
+  //
+  //   paid_amount            — £ ACTUALLY COLLECTED. Stamped by the Stripe
+  //                            webhook (the real charge) and by mark-paid.
+  //                            Without it, editing the fare would destroy the
+  //                            only record of what was taken.
+  //   fare_adjust_kind       — NULL | 'refund' (we owe them) | 'topup' (they owe us)
+  //   fare_adjust_amount     — £ of that difference, always POSITIVE
+  //   fare_adjust_paid       — the paid_amount it was computed against, kept so
+  //                            a refund can be capped at what was really taken
+  //   fare_adjust_at         — when the edit raised it; also half the
+  //                            idempotency key, so re-pricing twice can never
+  //                            let an old refund settle the new difference
+  //   fare_adjust_method     — 'stripe' | 'cash' — how it will be settled
+  //   fare_adjust_settled_at — set ONCE, the moment it is refunded/collected.
+  //                            This is the no-double-refund latch.
+  //   fare_adjust_ref        — Stripe refund id / payment-intent id, for audit
+  //
+  // NOT the same as refund_status/refund_amount above: those mean "the whole
+  // booking was cancelled and the whole fare goes back". Mixing them would
+  // cancel a live trip. GUARDRAIL: server/tests/fare-adjust.test.js
+  try {
+    const bi = db.prepare("PRAGMA table_info(bookings)").all();
+    for (const [n, t] of [['paid_amount','REAL'],['fare_adjust_kind','TEXT'],['fare_adjust_amount','REAL'],
+                          ['fare_adjust_paid','REAL'],['fare_adjust_at','TEXT'],['fare_adjust_method','TEXT'],
+                          ['fare_adjust_settled_at','TEXT'],['fare_adjust_ref','TEXT']]) {
+      if (!bi.find(c => c.name === n)) { db.exec(`ALTER TABLE bookings ADD COLUMN ${n} ${t}`); console.log('[DB] Added ' + n + ' column to bookings'); }
+    }
+  } catch(e) { console.error('[DB] fare-adjust column migration failed:', e.message); }
+
   // Owner/driver documents: add expiry_date column
   try {
     const ddInfo = db.prepare("PRAGMA table_info(driver_documents)").all();

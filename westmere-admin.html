@@ -2990,9 +2990,28 @@ function loadLiveBookings(){
 }
 
 // ── Job status actions ──
+// Every booking save in this app goes through PATCH /api/bookings/:id, the
+// same route the owner app edits through — so it gets the same automatic
+// customer email when a journey field moves, and the same answer about it.
+// admSaved() turns that answer into words, and stays quiet when there is
+// nothing to report: a status action changes nothing the customer travels on,
+// so "no email sent" on "Journey completed" would be noise, not information.
+// Guardrail: server/tests/booking-updated.test.js
+function admSaved(d,base){
+  d=d||{};
+  var names={pickup:'pickup',stop_address:'stop',destination:'drop-off',date:'date',time:'time',
+             passengers:'passengers',bags:'luggage',flight:'flight',fare:'fare'};
+  var what=(d.customerChanged||[]).map(function(k){return names[k]||k;}).join(', ');
+  if(d.notifyReason==='sent')     return base+' · customer emailed the new '+what;
+  if(d.notifyReason==='failed')   return base+' · COULD NOT email the customer — tell them yourself';
+  if(d.notifyReason==='no-email'&&(d.customerChanged||[]).length) return base+' · no email address on this booking';
+  return base;
+}
 function markJobDone(id,btn){
   fetch('/api/bookings/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'completed'})})
-    .then(function(){showToast('Journey completed');loadLiveBookings();}).catch(function(){showToast('Error updating');});
+    .then(function(r){return r.json().catch(function(){return {};});})
+    .then(function(d){showToast(admSaved(d,'Journey completed'));loadLiveBookings();})
+    .catch(function(){showToast('Error updating');});
 }
 // NOTE: the old one-click confirmJob() is GONE (it PATCHed status:'confirmed'
 // straight from a new request). It broke the estimate-first lifecycle the owner
@@ -3096,7 +3115,7 @@ function cancelJob(id,btn){
   if(!confirm('Are you sure you want to cancel this booking?'))return;
   fetch('/api/bookings/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'cancelled'})})
     .then(function(r){return r.json();})
-    .then(function(d){if(d.ok){showToast('Booking cancelled');loadLiveBookings();}else{showToast(d.error||'Error cancelling');}})
+    .then(function(d){if(d.ok){showToast(admSaved(d,'Booking cancelled'));loadLiveBookings();}else{showToast(d.error||'Error cancelling');}})
     .catch(function(){showToast('Error cancelling booking');});
 }
 function deleteJob(id,btn){

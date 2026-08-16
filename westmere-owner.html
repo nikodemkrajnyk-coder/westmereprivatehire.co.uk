@@ -3441,15 +3441,96 @@ function ebCollectBody(){
   return body;
 }
 
+// What the operator is told after a save. The server decides whether the
+// customer was emailed and why; this only puts it into words. Saying "Saved"
+// and nothing else is what we are fixing — the owner needs to know whether an
+// email left the building, especially when it did NOT.
+// Guardrail: server/tests/booking-updated.test.js
+function wmSavedMessage(d){
+  var names={pickup:'pickup',stop_address:'stop',destination:'drop-off',date:'date',time:'time',
+             passengers:'passengers',bags:'luggage',flight:'flight',fare:'fare'};
+  var what=(d.customerChanged||[]).map(function(k){return names[k]||k;}).join(', ');
+  if(d.notifyReason==='sent')      return 'Saved · customer emailed the new '+what;
+  if(d.notifyReason==='failed')    return 'Saved · COULD NOT email the customer — tell them yourself';
+  if(d.notifyReason==='no-email')  return 'Saved · no email address on this booking — nothing sent';
+  if(d.notifyReason==='suppressed')return 'Saved · the confirmation email carries the new details';
+  return 'Saved · nothing the customer sees changed, so no email was sent';
+}
+
 async function upcomingSave(){
   var id=document.getElementById('eb-id').value;
   if(!id)return;
   try{
     var r=await fetch('/api/bookings/'+id,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(ebCollectBody())});
     var d=await r.json();
-    if(r.ok&&d.ok){showToast('Booking updated');document.getElementById('edit-booking-overlay').remove();loadOwnerBookings();}
+    if(r.ok&&d.ok){
+      showToast(wmSavedMessage(d));
+      document.getElementById('edit-booking-overlay').remove();
+      loadOwnerBookings();
+      // The price moved on a trip the customer had already paid for. NOTHING
+      // has been refunded or charged — this only shows what is outstanding, and
+      // a refund waits for a deliberate press.
+      if(d.fareAdjust)wmAdjustOpen(id,d.fareAdjust);
+    }
     else showToast(d.error||('Failed ('+r.status+')'));
   }catch(e){showToast('Network error');}
+}
+
+// ── The money panel after a re-price ─────────────────────────────────────
+// Two shapes. A REFUND is a button the owner presses — never automatic, and
+// never on the save itself. A BALANCE is information only: the customer pays
+// it through the email we have just sent them, or hands it to the driver and
+// the owner marks it paid the normal way.
+// Guardrail: server/tests/fare-adjust.test.js
+function wmAdjustOpen(bookingId,adj){
+  if(!adj||!adj.amount)return;
+  var money='£'+Number(adj.amount).toFixed(2);
+  var paid='£'+Number(adj.paid||0).toFixed(2);
+  var neu='£'+Number(adj.newFare||0).toFixed(2);
+  var refund=adj.kind==='refund';
+  var byCard=adj.method==='stripe';
+  var el=document.getElementById('wm-adjust-overlay'); if(el)el.remove();
+  el=document.createElement('div');
+  el.id='wm-adjust-overlay';
+  el.style.cssText='position:fixed;inset:0;background:rgba(10,14,20,.65);backdrop-filter:blur(6px);z-index:420;display:flex;align-items:flex-end;justify-content:center;padding:1rem';
+  var head=refund?'Refund due to the customer':'Balance due from the customer';
+  var body=refund
+    ?(byCard
+      ?'They paid <b>'+paid+'</b> by card. The new fare is <b>'+neu+'</b>, so <b>'+money+'</b> goes back to their card. Nothing has been refunded yet.'
+      :'They paid <b>'+paid+'</b> — not by card, so there is no card charge to refund against. <b>'+money+'</b> must be returned by hand. Press below once you have settled it.')
+    :'They paid <b>'+paid+'</b>. The new fare is <b>'+neu+'</b>, so <b>'+money+'</b> is still outstanding. Their email has Pay-by-card and Pay-the-driver options for the difference only — they will not be charged the full fare again. If they pay the driver, use <b>Mark as paid</b> on the job.';
+  var act=refund
+    ?'<button class="wm-primary" id="wm-adjust-go" onclick="wmAdjustGo('+bookingId+',this)" style="flex:2;padding:.75rem;border-radius:10px;font-family:inherit;cursor:pointer;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)">'+(byCard?('Refund '+money+' to their card'):('Mark '+money+' returned'))+'</button>'
+    :'';
+  el.innerHTML='<div style="background:#ffffff;border-radius:18px 18px 0 0;max-width:520px;width:100%;padding:1.6rem 1.4rem">'
+    +'<div style="font-family:var(--serif);font-size:1.3rem;color:var(--navy);font-style:italic;margin-bottom:.5rem">'+head+'</div>'
+    +'<div style="font-size:.94rem;line-height:1.6;color:var(--navy);margin-bottom:1rem">'+body+'</div>'
+    +'<div id="wm-adjust-msg" style="display:none;font-size:.88rem;line-height:1.5;margin-bottom:.8rem;color:var(--navy)"></div>'
+    +'<div style="display:flex;gap:.6rem">'
+    +'<button onclick="document.getElementById(\'wm-adjust-overlay\').remove()" style="flex:1;padding:.75rem;background:transparent;border:1px solid rgba(27,27,26,.15);border-radius:10px;font-family:inherit;font-size:.92rem;font-weight:500;color:rgba(27,27,26,.55);cursor:pointer">'+(refund?'Not now':'Close')+'</button>'
+    +act+'</div></div>';
+  document.body.appendChild(el);
+  el.addEventListener('click',function(ev){if(ev.target===el)el.remove();});
+}
+
+async function wmAdjustGo(bookingId,btn){
+  var msg=document.getElementById('wm-adjust-msg');
+  if(btn){btn.disabled=true;btn.style.opacity='.6';btn.textContent='Refunding…';}
+  try{
+    var r=await fetch('/api/bookings/'+bookingId+'/fare-refund',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}});
+    var d={};try{d=await r.json();}catch(_){}
+    if(r.ok&&d.ok){
+      showToast(d.outcome==='already_refunded'?'Already refunded':(d.message||'Refund issued'));
+      var ov=document.getElementById('wm-adjust-overlay');if(ov)ov.remove();
+      loadOwnerBookings();
+    }else{
+      if(msg){msg.style.display='';msg.textContent=d.error||('Refund failed ('+r.status+') — nothing has been refunded.');}
+      if(btn){btn.disabled=false;btn.style.opacity='';btn.textContent='Try again';}
+    }
+  }catch(e){
+    if(msg){msg.style.display='';msg.textContent='Network error — nothing has been refunded.';}
+    if(btn){btn.disabled=false;btn.style.opacity='';btn.textContent='Try again';}
+  }
 }
 
 // NOTE: the edit modal deliberately has NO sending actions — the old

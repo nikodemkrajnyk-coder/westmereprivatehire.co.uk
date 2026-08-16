@@ -26,7 +26,7 @@ function isConfigured() {
 }
 
 // ── Create a PaymentIntent ───────────────────────────────────────────────
-async function createPaymentIntent({ amount, currency = 'gbp', booking, customer }) {
+async function createPaymentIntent({ amount, currency = 'gbp', booking, customer, extraMetadata }) {
   const s = getStripe();
   if (!s) throw new Error('Stripe not configured');
 
@@ -42,6 +42,15 @@ async function createPaymentIntent({ amount, currency = 'gbp', booking, customer
     if (customer.name) metadata.customer_name = customer.name;
     if (customer.email) metadata.customer_email = customer.email;
     if (customer.phone) metadata.customer_phone = customer.phone;
+  }
+
+  // Extra metadata (the top-up marker + its adjustment key). Applied LAST so a
+  // caller can never silently lose it to a booking/customer field of the same
+  // name — the key is what makes a balance payment idempotent.
+  if (extraMetadata && typeof extraMetadata === 'object') {
+    for (const k of Object.keys(extraMetadata)) {
+      if (extraMetadata[k] != null) metadata[k] = String(extraMetadata[k]);
+    }
   }
 
   const params = {
@@ -103,14 +112,42 @@ async function findOpenPaymentIntentByRef(ref) {
   }
 }
 
+/* Find a PaymentIntent by the ADJUSTMENT key rather than the booking ref.
+   A re-priced booking already has one succeeded intent — the original fare —
+   so "has this ref been paid?" is the wrong question for a balance payment and
+   would refuse every top-up. This asks the right one: has THIS difference been
+   paid? `status` is 'succeeded' to check for a completed balance payment, or
+   'requires_payment_method' to reuse an open one instead of minting a rival. */
+async function findIntentByAdjustKey(key, status) {
+  const s = getStripe();
+  if (!s || !key) return null;
+  try {
+    const safe = String(key).replace(/'/g, '');
+    const r = await s.paymentIntents.search({
+      query: `metadata['adjust_key']:'${safe}' AND status:'${status === 'open' ? 'requires_payment_method' : 'succeeded'}'`,
+      limit: 1
+    });
+    return (r.data && r.data[0]) ? r.data[0] : null;
+  } catch (e) {
+    console.error('[STRIPE] findIntentByAdjustKey failed:', e.message);
+    return null;
+  }
+}
+
 // Issue a refund against a PaymentIntent. amount in pence; omit for a full refund.
-async function createRefund({ paymentIntentId, amount }) {
+//
+// `idempotencyKey` is not optional in spirit: Stripe replays the FIRST result
+// for a repeated key instead of creating a second refund, which is the only
+// thing that holds when a double-click races past our own database latch.
+// Money left the account once; a retry must not make it leave twice.
+async function createRefund({ paymentIntentId, amount, idempotencyKey }) {
   const s = getStripe();
   if (!s) throw new Error('Stripe not configured');
   if (!paymentIntentId) throw new Error('No payment intent to refund');
   const params = { payment_intent: paymentIntentId };
   if (amount) params.amount = Math.round(amount);
-  return s.refunds.create(params);
+  const opts = idempotencyKey ? { idempotencyKey: String(idempotencyKey) } : undefined;
+  return opts ? s.refunds.create(params, opts) : s.refunds.create(params);
 }
 
 // ── Verify webhook signature ─────────────────────────────────────────────
@@ -161,4 +198,4 @@ async function listRecentPayouts() {
   }));
 }
 
-module.exports = { getStripe, isConfigured, createPaymentIntent, verifyWebhook, getBalance, createPayout, listRecentPayouts, findPaymentIntentByRef, findOpenPaymentIntentByRef, createRefund };
+module.exports = { getStripe, isConfigured, createPaymentIntent, verifyWebhook, getBalance, createPayout, listRecentPayouts, findPaymentIntentByRef, findOpenPaymentIntentByRef, findIntentByAdjustKey, createRefund };

@@ -164,6 +164,71 @@ ${rowsHtml}
 </table>`;
 }
 
+/* ── THE was → now ROW ───────────────────────────────────────────────────
+   One shared renderer for every "this used to say X, it now says Y" line in
+   the system: the owner's change-request alert and the customer's booking-
+   updated email both draw their diff through this, so a customer and the
+   owner are always looking at the SAME comparison in the same shape.
+
+   The old value is struck through in the muted tone and the new one is bold
+   navy. Nothing is coloured to rank it — a strike-through and a weight carry
+   the whole message, which is also the only pair of signals every mail client
+   renders. GUARDRAIL: server/tests/booking-updated.test.js */
+function diffRow(label, wasHtml, nowHtml) {
+  return `<tr>
+  <td style="padding:10px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:1.8px;text-transform:uppercase;color:${INK_MUTED};vertical-align:top;width:96px;font-weight:600">${escHtml(label)}</td>
+  <td style="padding:10px 0 10px 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;line-height:1.5;color:${INK}">
+    <span style="color:${INK_MUTED};text-decoration:line-through">${wasHtml}</span>
+    <span style="color:${INK_MUTED};padding:0 6px">&rarr;</span>
+    <strong style="color:${ACCENT};font-weight:600">${nowHtml}</strong>
+  </td>
+</tr>`;
+}
+
+/* ── The fields a CUSTOMER is emailed about when the operator edits ───────
+   The journey, in the order a customer reads it. This list is the copy layer
+   only — server/api.js owns the matching list of column names and decides
+   what actually changed; keeping the labels here means api.js carries no
+   presentation (DESIGN.md, the front/back boundary).
+
+   Deliberately absent: the private note, the driver, the status and the
+   payment method. Those are the operator's business, and re-saving them must
+   never put an email in a customer's inbox. */
+const UPDATE_FIELDS = [
+  ['pickup',       'Pickup'],
+  ['stop_address', 'Stop'],
+  ['destination',  'Drop-off'],
+  ['date',         'Date'],
+  ['time',         'Time'],
+  ['passengers',   'Passengers'],
+  ['bags',         'Luggage'],
+  ['flight',       'Flight'],
+  ['fare',         'Fare']
+];
+
+// Render one field for the CUSTOMER's eye. Addresses, luggage and flight go
+// through the same shorteners as every other surface (changeFieldValue); the
+// three the owner's alert never has to show get their own treatment here.
+// A date is spelled out in full — the customer is checking whether the day
+// moved, and "2026-08-25" does not answer that at a glance.
+function updateFieldValue(key, value) {
+  const raw = value == null ? '' : String(value).trim();
+  if (!raw) return '&mdash;';
+  if (key === 'fare') {
+    const n = Number(raw);
+    // A literal £, not &pound; — every other price in this file is written that
+    // way, and one entity in the middle of them is how a test starts looking
+    // for a number that is really there and not finding it.
+    return isNaN(n) ? escHtml(raw) : '£' + n.toFixed(2);
+  }
+  if (key === 'date') return escHtml(formatDate(raw));
+  if (key === 'passengers') {
+    const n = Number(raw);
+    return isNaN(n) ? escHtml(raw) : (n + ' passenger' + (n === 1 ? '' : 's'));
+  }
+  return changeFieldValue(key, raw);
+}
+
 // ── Customer ACKNOWLEDGEMENT (auto-sent the instant a booking is submitted) ──────────────
 // A branded "thank you, we'll be in touch" receipt that goes out immediately on
 // submission \u2014 separate from, and NOT a replacement for, the owner's manual Send
@@ -464,7 +529,36 @@ function confirmationEmailHtml(d) {
   const bagsTxt = bagsText(d.bags);
   if (bagsTxt) rows += confRow('ic-travellers', 'Luggage', escHtml(bagsTxt));
   if (d.fareStr) rows += confRow('ic-fare', fareLabel, escHtml(d.fareStr), { fare: true });
+  // A re-priced prepaid trip. What they already paid, then ONLY the difference —
+  // never the whole new fare, which is the number that would take their money
+  // twice for one journey.
+  if (d.paidStr)   rows += confRow('ic-payment', 'Already paid', escHtml(d.paidStr));
+  if (d.dueStr)    rows += confRow('ic-fare', 'Now due', escHtml(d.dueStr), { fare: true });
+  if (d.refundStr) rows += confRow('ic-fare', 'Refund to you', escHtml(d.refundStr), { fare: true });
   if (d.showPaymentRow !== false) rows += confRow('ic-payment', 'Payment', escHtml(d.paymentLabel || paymentText(d)));
+
+  // ── WHAT CHANGED (the 'updated' variant only) ──────────────────────────
+  // Sits between "Dear X" and the details table, because the first question a
+  // customer has when a booking email arrives unprompted is "what moved?" —
+  // and the second is "so what does it say now?". The details table below
+  // answers the second, in the same shape as their original confirmation.
+  let changesBlock = '';
+  if (Array.isArray(d.changes) && d.changes.length) {
+    let diffRows = '';
+    for (const [key, label] of UPDATE_FIELDS) {
+      const c = d.changes.find(x => x && x.key === key);
+      if (!c) continue;
+      diffRows += diffRow(label, updateFieldValue(key, c.from), updateFieldValue(key, c.to));
+    }
+    if (diffRows) {
+      const eyebrow = 'font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#102a43;font-weight:700';
+      changesBlock = `<tr><td class="wm-pad" style="padding:22px 40px 0;background:#FFFFFF">
+  <p style="margin:0 0 2px;${eyebrow}">What changed</p>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 22px">${diffRows}</table>
+  <p style="margin:0;${eyebrow}">Your booking as it now stands</p>
+</td></tr>`;
+    }
+  }
 
   // For the ACKNOWLEDGEMENT (no fare/token yet) show a reassurance caption
   // instead of pay buttons.
@@ -481,24 +575,34 @@ function confirmationEmailHtml(d) {
   // Same size/shape via actionBtn(); only the colour emphasis differs. Shown
   // whenever there's an unpaid fare + token (estimate AND confirmation). A
   // settled/paid confirmation keeps just the Cancel button.
+  // A refund email offers NOTHING to pay. The customer has already paid and is
+  // owed money back — a Pay Now button on that email is the single most
+  // alarming thing we could put in front of them.
   let payBlock = '';
-  if (d.pay_token) {
+  if (d.pay_token && !d.noActions) {
     const payUrl    = `${HOST}/westmere-pay.html?ref=${encodeURIComponent(d.ref)}&t=${encodeURIComponent(d.pay_token)}`;
     const cashUrl   = `${HOST}/api/public/pay/${encodeURIComponent(d.ref)}/cash?t=${encodeURIComponent(d.pay_token)}`;
     const cancelUrl = `${HOST}/api/public/cancel/${encodeURIComponent(d.ref)}?t=${encodeURIComponent(d.pay_token)}`;
-    const payable = !d.alreadyPaid && d.fareStr;
+    // The amount the buttons are for. On a re-priced prepaid trip that is the
+    // BALANCE, not the fare — the pay page charges the same figure.
+    const owedStr = d.dueStr || d.fareStr;
+    const payable = !d.alreadyPaid && owedStr;
     if (payable) {
       const leadIn = variant === 'estimate'
         ? `<p style="margin:0 0 16px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:16px;color:#102a43;line-height:1.6;text-align:center">To confirm your journey, choose how you'd like to pay:</p>`
+        : d.dueStr
+        ? `<p style="margin:0 0 16px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:16px;color:#102a43;line-height:1.6;text-align:center">Only the difference is outstanding &mdash; choose how you'd like to settle it:</p>`
         : '';
       const caption = variant === 'estimate'
         ? `Nothing is confirmed until you choose &mdash; or call <a href="tel:+447930342593" style="color:#102a43;text-decoration:none">07930&nbsp;342593</a>.`
+        : d.dueStr
+        ? `You have already paid <strong style="color:#102a43">${escHtml(d.paidStr || '')}</strong>. Only <strong style="color:#102a43">${escHtml(d.dueStr)}</strong> is outstanding &mdash; you will not be charged the full fare again.`
         : `Pay <strong style="color:#102a43">${escHtml(d.fareStr)}</strong> securely now, or settle with your driver on the day.`;
       payBlock = `<tr><td class="wm-pad" style="padding:24px 40px 6px;background:#FFFFFF">
         ${leadIn}
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-          ${actionBtn(payUrl, 'Pay Now &mdash; Card, Apple Pay or Google Pay', 'primary')}
-          ${actionBtn(cashUrl, 'Pay Your Driver On The Day', 'secondary')}
+          ${actionBtn(payUrl, d.dueStr ? ('Pay ' + escHtml(d.dueStr) + ' Now &mdash; Card, Apple Pay or Google Pay') : 'Pay Now &mdash; Card, Apple Pay or Google Pay', 'primary')}
+          ${actionBtn(cashUrl, d.dueStr ? 'Pay The Difference To Your Driver' : 'Pay Your Driver On The Day', 'secondary')}
           ${actionBtn(cancelUrl, 'Cancel Request', 'danger')}
         </table>
         <p style="margin:14px 0 4px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:#657485;line-height:1.6;text-align:center">${caption}</p>
@@ -513,6 +617,15 @@ function confirmationEmailHtml(d) {
     }
   }
   const actionsBlock = '';
+
+  // The refund promise, set apart in the same quoted frame the owner's own
+  // messages use — so the one sentence about their money is not lost in a list
+  // of journey details.
+  const adjustBlock = d.adjustNote ? `<tr><td class="wm-pad" style="padding:22px 40px 4px;background:#FFFFFF">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:16px 18px;background:#F0F4F7;border-left:2px solid #102a43">
+        <p style="margin:0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:16px;color:#102a43;line-height:1.6">${d.adjustNote}</p>
+      </td></tr></table>
+    </td></tr>` : '';
 
   const notesBlock = ownerNote ? `<tr><td class="wm-pad" style="padding:4px 40px 8px;background:#FFFFFF">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:16px 18px;background:#F0F4F7;border-left:2px solid #102a43">
@@ -537,6 +650,8 @@ function confirmationEmailHtml(d) {
   </tr></table>
 </td></tr>
 
+${changesBlock}
+
 <tr><td class="wm-pad" style="padding:14px 40px 6px;background:#FFFFFF">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #dfe5ea">
     ${rows}
@@ -544,6 +659,7 @@ function confirmationEmailHtml(d) {
 </td></tr>
 
 ${captionBlock}
+${adjustBlock}
 ${payBlock}
 ${notesBlock}
 ${actionsBlock}`;
@@ -587,6 +703,110 @@ async function sendCustomerEstimate(booking) {
   const preheader = 'Estimated fare ' + fareStr + ' — pay by card, pay your driver, or reply to confirm.';
   const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
   if (ok) console.log('[EMAIL] Customer estimate sent (' + ref + ')');
+  return ok;
+}
+
+/* ── Customer: THE OPERATOR EDITED YOUR BOOKING ──────────────────────────
+   Sent automatically when a save in the owner or admin app moves something
+   the customer travels on — the addresses, the day, the time, how many of
+   them there are, the bags, the flight or the price. Nothing else emails
+   them: the private note, the driver and the internal status are the
+   operator's own record.
+
+   The customer gets both halves of the answer, in that order: the was → now
+   diff first, then the full journey as it now reads, in the same branded
+   template as the confirmation they already have. Where the fare is still
+   outstanding the usual tokenised actions come with it, so an edit that
+   changes the price does not leave them with a number and no way to settle it.
+
+   WHEN THE TRIP WAS ALREADY PAID FOR, `adjust` says what happened to the money:
+     { kind:'refund', amount, method } — we owe them the difference back. The
+       email promises the refund and shows NO payment options; they have paid.
+     { kind:'topup',  amount, paid }   — they owe us the difference. The email
+       shows what they already paid beside what is now due, and the pay options
+       are for the DIFFERENCE ONLY. It never quotes the full new fare as the
+       amount to pay, which would take their money twice for one journey.
+   Nothing is charged or refunded by this function; it only reports.
+
+   `changes` is [{ key, from, to }], computed server-side in the PATCH route —
+   never taken from the browser.
+   GUARDRAILS: server/tests/booking-updated.test.js, server/tests/fare-adjust.test.js */
+async function sendCustomerBookingUpdated(booking, changes, adjust) {
+  const ref   = booking.ref;
+  const name  = booking.name  || booking.customer_name || booking.passenger_name;
+  const email = booking.email || booking.customer_email || booking.passenger_email;
+  if (!email) return false;
+
+  const known = UPDATE_FIELDS.map(([k]) => k);
+  const list = (changes || []).filter(c => c && known.includes(c.key));
+  if (!list.length) return false;   // nothing customer-facing moved — say nothing
+
+  const firstName = (name || '').split(' ')[0] || 'there';
+  const fareNum = typeof booking.fare === 'number' ? booking.fare : parseFloat(booking.fare);
+  const fareStr = (!fareNum || isNaN(fareNum)) ? '' : '£' + fareNum.toFixed(2);
+  const fareMoved = list.some(c => c.key === 'fare');
+  // Settled = a real card payment or a stamped paid_at. A booking still owing
+  // money keeps its Pay Now / Pay-driver / Cancel actions (same rule, same
+  // tokens, as the estimate and the confirmation).
+  const alreadyPaid = !!booking.paid_at || booking.payment === 'card';
+
+  // ── What the money did ──
+  const kind = adjust && adjust.amount > 0 ? String(adjust.kind || '') : '';
+  const money = kind ? '£' + Number(adjust.amount).toFixed(2) : '';
+  const paidStr = (kind && adjust.paid != null) ? '£' + Number(adjust.paid).toFixed(2) : '';
+  const isRefund = kind === 'refund';
+  const isTopUp  = kind === 'topup';
+
+  let adjustNote = '';
+  if (isRefund) {
+    adjustNote = adjust.method === 'stripe'
+      ? `Your new fare is lower than the amount you paid, so a refund of <strong>${money}</strong> will be issued to the card you paid with. Refunds usually appear within 5&ndash;10 days.`
+      : `Your new fare is lower than the amount you paid, so <strong>${money}</strong> is due back to you. We will return it to you directly &mdash; call us on <a href="tel:+447930342593" style="color:#102a43;text-decoration:none">07930&nbsp;342593</a> if you would like to arrange that now.`;
+  } else if (isTopUp) {
+    adjustNote = `Your new fare is higher than the amount you have already paid. <strong>Only the difference of ${money} is outstanding</strong> &mdash; you will not be charged the full fare a second time.`;
+  }
+
+  const html = confirmationEmailHtml({
+    variant: 'updated',
+    eyebrow: 'Booking updated',
+    intro: 'We have made a change to your booking. Everything not listed below stays exactly as it was.',
+    fareLabel: fareMoved ? 'Updated fare' : 'Fare',
+    changes: list,
+    ref, firstName,
+    pickup: booking.pickup, stop_address: booking.stop_address, destination: booking.destination,
+    dateStr: formatDate(booking.date, booking.time),
+    flight: booking.flight, passengers: booking.passengers, bags: booking.bags,
+    fareStr,
+    // A refund email shows no actions at all. A top-up email is payable for the
+    // DIFFERENCE, so it must not be treated as settled even though paid_at is
+    // set — otherwise the customer is owed a balance with no way to pay it.
+    alreadyPaid: isTopUp ? false : alreadyPaid,
+    noActions: isRefund,
+    paidStr: isTopUp ? paidStr : '',
+    dueStr:  isTopUp ? money : '',
+    refundStr: isRefund ? money : '',
+    adjustNote,
+    pay_token: booking.pay_token,
+    payment: booking.payment, paid_at: booking.paid_at,
+    paymentLabel: isTopUp ? 'Difference outstanding' : (isRefund ? 'Paid — refund due to you' : null),
+    showPaymentRow: true
+    // `notes` is deliberately NOT passed. The confirmation email renders it as
+    // "A message from Westmere", but the owner app labels that same box
+    // "Private notes about this trip" — so on a NEW email we take the field at
+    // the name the owner types it under and keep it out. This email is about
+    // what changed; the note is not part of that.
+  });
+
+  const labels = UPDATE_FIELDS.filter(([k]) => list.some(c => c.key === k)).map(([, l]) => l.toLowerCase());
+  const subject = 'Your booking has been updated — ' + ref;
+  const preheader = isRefund
+    ? 'We have updated ' + ref + ' — a refund of ' + money + ' is due back to you.'
+    : isTopUp
+    ? 'We have updated ' + ref + ' — only the difference of ' + money + ' is outstanding.'
+    : 'We have updated ' + ref + ' — ' + labels.join(', ') +
+      (labels.length === 1 ? ' has changed.' : ' have changed.');
+  const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
+  if (ok) console.log('[EMAIL] Customer booking-updated sent (' + ref + ') — ' + labels.join(', '));
   return ok;
 }
 
@@ -1556,16 +1776,7 @@ async function sendOwnerChangeRequest(booking, cr) {
   let diffRows = '';
   for (const [key, label] of CHANGE_FIELDS) {
     if (!Object.prototype.hasOwnProperty.call(changed, key)) continue;
-    const was = changeFieldValue(key, current[key]);
-    const now = changeFieldValue(key, requested[key]);
-    diffRows += `<tr>
-  <td style="padding:10px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:1.8px;text-transform:uppercase;color:${INK_MUTED};vertical-align:top;width:96px;font-weight:600">${escHtml(label)}</td>
-  <td style="padding:10px 0 10px 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;line-height:1.5;color:${INK}">
-    <span style="color:${INK_MUTED};text-decoration:line-through">${was}</span>
-    <span style="color:${INK_MUTED};padding:0 6px">&rarr;</span>
-    <strong style="color:${ACCENT};font-weight:600">${now}</strong>
-  </td>
-</tr>`;
+    diffRows += diffRow(label, changeFieldValue(key, current[key]), changeFieldValue(key, requested[key]));
   }
 
   // ── The booking as it stands (unchanged), so the owner can find it ──
@@ -1643,6 +1854,7 @@ async function sendCustomerMessage(booking, message) {
 module.exports = {
   sendCustomerAcknowledgement, sendCustomerConfirmed, sendCustomerEstimate, sendAdminAlert,
   sendOwnerCancelledRequest, sendOwnerCustomerNote, sendOwnerChangeRequest, sendCustomerMessage,
+  sendCustomerBookingUpdated,
   sendCustomerWelcome, sendCustomerInvoice, sendBespokeInvoice, sendInvoiceReminder,
   sendCustomerCancellation, sendDriverStatement, sendDriverWelcome,
   sendVerificationEmail, sendPasswordResetEmail, sendAdminPasswordResetEmail,

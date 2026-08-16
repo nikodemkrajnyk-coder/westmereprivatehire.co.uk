@@ -10,7 +10,7 @@ const { getDb } = require('./db');
 const { sendAdminAlert, sendCustomerAcknowledgement } = require('./email');
 const { sendAdminBookingWhatsApp } = require('./whatsapp');
 const { createPaymentIntent, isConfigured: stripeConfigured,
-        findPaymentIntentByRef, findOpenPaymentIntentByRef } = require('./stripe');
+        findPaymentIntentByRef, findOpenPaymentIntentByRef, findIntentByAdjustKey } = require('./stripe');
 const { computeSuggestedFare } = require('./fare-engine');
 const gcal = require('./google-calendar');
 const intake = require('./intake');
@@ -489,7 +489,9 @@ router.post('/pay/:ref/intent', async (req, res) => {
 
     const b = db.prepare(`
       SELECT ref, pickup, destination, date, time, fare, status, payment, pay_token, paid_at,
-             passenger_name, passenger_phone, passenger_email
+             passenger_name, passenger_phone, passenger_email,
+             fare_adjust_kind, fare_adjust_amount, fare_adjust_paid,
+             fare_adjust_at, fare_adjust_method, fare_adjust_settled_at
         FROM bookings WHERE ref = ?
     `).get(ref);
     if (!b || !b.pay_token || b.pay_token !== token) {
@@ -505,28 +507,52 @@ router.post('/pay/:ref/intent', async (req, res) => {
     if (lock.locked) return res.status(409).json({ error: lock.message, reason: lock.reason });
     if (!lock.payable) return res.status(409).json({ error: lock.message || 'No fare is set for this booking yet', reason: lock.reason });
 
-    const amount = Math.round(Number(b.fare) * 100);
+    // CHARGE THE AMOUNT THE LOCK SAYS, NEVER THE FARE. On a normal booking they
+    // are the same number. On a re-priced prepaid booking `amountDue` is the
+    // DIFFERENCE, and reading b.fare here would take the whole new fare from a
+    // customer who has already paid most of it.
+    const isTopUp = lock.reason === 'top_up';
+    const amount = Math.round(Number(lock.amountDue) * 100);
+    if (!isFinite(amount) || amount <= 0) {
+      return res.status(409).json({ error: 'There is nothing to pay on this booking.', reason: 'no_fare' });
+    }
+    const adjustKey = isTopUp ? lock.adjustKey : null;
 
     // STRIPE IS ALSO ASKED. The DB gate above cannot see a payment that has
     // succeeded at Stripe but whose webhook has not landed yet — a delay of
     // seconds, and precisely long enough for the customer to try the other
-    // channel. If Stripe already has a successful charge for this ref, the
-    // journey is paid whatever our row still says.
+    // channel. If Stripe already has a successful charge, the journey is paid
+    // whatever our row still says.
+    //
+    // A TOP-UP asks a DIFFERENT question. A re-priced booking always has one
+    // succeeded intent already — the original fare — so "has this ref been
+    // paid?" would refuse every balance payment. The right question is whether
+    // THIS difference has been paid, which is what the adjustment key answers.
     try {
-      const settledId = await findPaymentIntentByRef(b.ref);
-      if (settledId) {
-        console.warn('[PAY] intent refused — Stripe already has a succeeded payment', settledId, 'for', b.ref);
-        return res.status(409).json({ error: 'This trip has already been paid.', reason: 'paid' });
+      if (isTopUp) {
+        const done = await findIntentByAdjustKey(adjustKey, 'succeeded');
+        if (done) {
+          console.warn('[PAY] top-up refused — Stripe already has a succeeded balance payment', done.id, 'for', b.ref);
+          return res.status(409).json({ error: 'The balance on this trip has already been paid.', reason: 'paid' });
+        }
+      } else {
+        const settledId = await findPaymentIntentByRef(b.ref);
+        if (settledId) {
+          console.warn('[PAY] intent refused — Stripe already has a succeeded payment', settledId, 'for', b.ref);
+          return res.status(409).json({ error: 'This trip has already been paid.', reason: 'paid' });
+        }
       }
     } catch (e) { console.error('[PAY] settled-intent lookup failed:', e.message); }
 
-    // REUSE an open PaymentIntent for this booking rather than minting a rival.
-    // Two channels open side by side would otherwise each get their own intent,
-    // and two live intents for one journey is the one window where both can
-    // legitimately be completed. One intent per booking closes it.
+    // REUSE an open PaymentIntent rather than minting a rival. Two channels open
+    // side by side would otherwise each get their own intent, and two live
+    // intents for one journey is the one window where both can legitimately be
+    // completed. One intent per booking (per difference) closes it.
     let intent = null;
     try {
-      const open = await findOpenPaymentIntentByRef(b.ref);
+      const open = isTopUp
+        ? await findIntentByAdjustKey(adjustKey, 'open')
+        : await findOpenPaymentIntentByRef(b.ref);
       if (open && open.amount === amount && open.client_secret) {
         intent = open;
         console.log('[PAY] reusing open intent', open.id, 'for', b.ref);
@@ -538,7 +564,8 @@ router.post('/pay/:ref/intent', async (req, res) => {
         amount,
         currency: 'gbp',
         booking: { ref: b.ref, from: b.pickup, to: b.destination, date: b.date, time: b.time },
-        customer: { name: b.passenger_name, email: b.passenger_email, phone: b.passenger_phone }
+        customer: { name: b.passenger_name, email: b.passenger_email, phone: b.passenger_phone },
+        extraMetadata: isTopUp ? { topup: '1', adjust_key: adjustKey } : null
       });
     }
 
@@ -897,23 +924,69 @@ router.post('/stripe-webhook', express.raw({ type: 'application/json' }), (req, 
     }
     if (ref) {
       const db = getDb();
-      const row = db.prepare("SELECT id, status, fare FROM bookings WHERE ref = ?").get(ref);
+      const row = db.prepare(`SELECT id, status, fare, paid_amount, fare_adjust_kind, fare_adjust_amount,
+                                     fare_adjust_at, fare_adjust_settled_at
+                                FROM bookings WHERE ref = ?`).get(ref);
       if (!row) {
         console.error('[STRIPE] payment_intent.succeeded for unknown booking ref', ref);
       }
+
+      // ── A BALANCE PAYMENT, NOT THE WHOLE FARE ──────────────────────────
+      // The customer settled the DIFFERENCE after the owner re-priced a trip
+      // they had already paid for. Handled separately because almost nothing
+      // the normal branch does is right here: they were already paid and
+      // already confirmed, so re-stamping paid_at would move the date of the
+      // original payment, and re-firing the confirmation email would send them
+      // a second copy of a booking they have had for weeks.
+      //
+      // The write is CONDITIONAL on the difference still being open, so a
+      // webhook Stripe replays (it retries for days) adds the money once.
+      const isTopUp = intent.metadata && intent.metadata.topup === '1';
+      if (isTopUp && row) {
+        const paidNow = intent.amount / 100;
+        const info = db.prepare(`
+          UPDATE bookings
+             SET fare_adjust_settled_at = datetime('now'),
+                 fare_adjust_method = 'stripe',
+                 fare_adjust_ref = ?,
+                 paid_amount = COALESCE(paid_amount, 0) + ?,
+                 pay_token = NULL,
+                 status = CASE WHEN status IN ('awaiting_payment','pending','offered') THEN 'confirmed' ELSE status END,
+                 updated_at = datetime('now')
+           WHERE ref = ?
+             AND fare_adjust_kind = 'topup'
+             AND fare_adjust_settled_at IS NULL
+        `).run(intent.id, paidNow, ref);
+        if (info.changes === 0) {
+          console.warn('[STRIPE] top-up webhook replayed for', ref, '— difference was already closed, ignoring');
+        } else {
+          console.log('[STRIPE] Balance of £' + paidNow.toFixed(2) + ' settled for', ref);
+          try {
+            db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+              .run('stripe', 0, 'fare_topup_paid', ref + ' £' + paidNow.toFixed(2) + ' [' + intent.id + ']', null);
+          } catch (_) {}
+        }
+        events.broadcast('booking:payment', { id: row.id, ref, mode: 'online', topUp: paidNow, fare: row.fare });
+        events.broadcast('booking:updated', { id: row.id, ref, reason: 'Balance paid online' });
+        return res.json({ received: true });
+      }
+
       if (row && row.fare && Math.round(row.fare * 100) !== intent.amount) {
         console.error('[STRIPE] Amount mismatch for', ref, '- expected', Math.round(row.fare * 100), 'got', intent.amount);
       }
       // Mark paid online. Stamp paid_at and clear pay_token so the "Pay Now"
       // link can't be reused. Keep status confirmed (cancelled stays cancelled).
+      // paid_amount records what was ACTUALLY taken — without it, a later fare
+      // edit would have nothing to compute a refund or a balance against.
       db.prepare(`UPDATE bookings
                      SET payment = 'card',
                          paid_at = COALESCE(paid_at, datetime('now')),
+                         paid_amount = COALESCE(paid_amount, ?),
                          payment_intent_id = COALESCE(payment_intent_id, ?),
                          pay_token = NULL,
                          status = CASE WHEN status = 'cancelled' THEN status ELSE 'confirmed' END,
                          updated_at = datetime('now')
-                   WHERE ref = ?`).run(intent.id, ref);
+                   WHERE ref = ?`).run(intent.amount / 100, intent.id, ref);
       console.log('[STRIPE] Payment confirmed for', ref);
       // Tell the owner the customer paid online (amount in pounds for the toast).
       events.broadcast('booking:payment', {

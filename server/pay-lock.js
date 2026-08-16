@@ -50,39 +50,93 @@ function isCashChosen(b) {
   return !!b && String(b.payment || '').toLowerCase() === 'cash';
 }
 
+/* ── AN OPEN DIFFERENCE ON AN ALREADY-PAID BOOKING ───────────────────────
+   The owner re-priced a trip the customer had already paid for. Only the
+   DIFFERENCE moves: either we owe them (`refund`) or they owe us (`topup`).
+   Never the full new fare — that would take the money twice for one journey.
+
+   `fare_adjust_settled_at` is the latch. Once it is stamped the difference is
+   closed and this returns null, which is what stops a second refund and a
+   second charge. The key pairs the ref with the moment the edit raised it, so
+   re-pricing again mints a NEW key and a refund issued against the old one can
+   never be mistaken for settling the new one. */
+function round2(n) { return Math.round(Number(n) * 100) / 100; }
+
+function adjustKey(b) {
+  return String((b && b.ref) || '') + ':' + String((b && b.fare_adjust_at) || '');
+}
+
+function openAdjustment(b) {
+  if (!b) return null;
+  const kind = String(b.fare_adjust_kind || '').toLowerCase();
+  if (kind !== 'refund' && kind !== 'topup') return null;
+  if (b.fare_adjust_settled_at) return null;
+  const amount = Number(b.fare_adjust_amount);
+  if (!isFinite(amount) || amount < 0.01) return null;
+  return {
+    kind,
+    amount: round2(amount),
+    paid: b.fare_adjust_paid == null ? null : round2(b.fare_adjust_paid),
+    method: String(b.fare_adjust_method || '') || null,
+    key: adjustKey(b)
+  };
+}
+function openTopUp(b) { const a = openAdjustment(b); return a && a.kind === 'topup' ? a : null; }
+
 /**
- * → { locked, reason, message, payable, fare }
- *   `locked`  — true when NO payment action may proceed on either channel.
- *   `payable` — true only when a card payment or a cash choice is still open.
- *   `message` — customer-facing wording, identical in the email channel and in
- *               My Account so the two never contradict each other.
+ * → { locked, reason, message, payable, fare, amountDue }
+ *   `locked`    — true when NO payment action may proceed on either channel.
+ *   `payable`   — true only when a card payment or a cash choice is still open.
+ *   `amountDue` — THE AMOUNT TO CHARGE, in pounds. Normally the fare; on a
+ *                 re-priced prepaid booking it is the DIFFERENCE only. Every
+ *                 charging path must read this and never `fare`, or a customer
+ *                 who has already paid £42 is asked for the whole £57 again.
+ *   `message`   — customer-facing wording, identical in the email channel and
+ *                 in My Account so the two never contradict each other.
  */
 function paymentLock(b) {
   if (!b) {
-    return { locked: true, reason: 'not_found', payable: false, fare: null,
+    return { locked: true, reason: 'not_found', payable: false, fare: null, amountDue: null,
              message: 'We could not find that booking.' };
   }
   const fare = (b.fare == null || b.fare === '') ? null : Number(b.fare);
 
   if (String(b.status || '') === 'cancelled') {
-    return { locked: true, reason: 'cancelled', payable: false, fare,
+    return { locked: true, reason: 'cancelled', payable: false, fare, amountDue: null,
              message: 'This booking has been cancelled. Please call us if you need to rebook.' };
   }
+
+  // AN OPEN TOP-UP OUTRANKS "already paid". The booking IS paid — for the old
+  // price — and that is exactly why the difference is still owed. Checked
+  // before isSettled(), which would otherwise lock a re-priced trip and leave
+  // the customer with no way to settle the balance.
+  const topUp = openTopUp(b);
+  if (topUp) {
+    if (topUp.method === 'cash') {
+      // They chose to settle the difference with the driver. The card door is
+      // shut, or both channels could take the same balance.
+      return { locked: true, reason: 'cash_chosen', payable: false, fare, amountDue: null,
+               message: 'You have chosen to settle the difference with your driver on the day, so there is nothing to pay online. Call us on 07930 342593 if you would rather pay by card.' };
+    }
+    return { locked: false, reason: 'top_up', payable: true, fare, amountDue: topUp.amount,
+             adjustKey: topUp.key, alreadyPaid: topUp.paid, message: '' };
+  }
+
   if (isSettled(b)) {
-    return { locked: true, reason: 'paid', payable: false, fare,
+    return { locked: true, reason: 'paid', payable: false, fare, amountDue: null,
              message: 'This trip has already been paid.' };
   }
   if (isCashChosen(b)) {
     // NOT an error and NOT "paid" — the customer made a choice, and saying
     // "already paid" here would be a lie they would notice on the day.
-    return { locked: true, reason: 'cash_chosen', payable: false, fare,
+    return { locked: true, reason: 'cash_chosen', payable: false, fare, amountDue: null,
              message: 'You have chosen to pay your driver on the day, so there is nothing to pay online. Call us on 07930 342593 if you would rather pay by card.' };
   }
   if (!fare || fare <= 0) {
-    return { locked: false, reason: 'no_fare', payable: false, fare,
+    return { locked: false, reason: 'no_fare', payable: false, fare, amountDue: null,
              message: 'There is nothing to pay on this booking just yet — we will send your estimate shortly.' };
   }
-  return { locked: false, reason: null, payable: true, fare, message: '' };
+  return { locked: false, reason: null, payable: true, fare, amountDue: round2(fare), message: '' };
 }
 
 /**
@@ -104,7 +158,10 @@ function paymentLock(b) {
  */
 function applyCashChoice(db, bookingId, ctx) {
   ctx = ctx || {};
-  const before = db.prepare('SELECT id, ref, fare, status, payment, paid_at FROM bookings WHERE id = ?').get(bookingId);
+  const COLS = `id, ref, fare, status, payment, paid_at,
+                fare_adjust_kind, fare_adjust_amount, fare_adjust_paid,
+                fare_adjust_at, fare_adjust_method, fare_adjust_settled_at`;
+  const before = db.prepare('SELECT ' + COLS + ' FROM bookings WHERE id = ?').get(bookingId);
   const lock = paymentLock(before);
   if (lock.locked) {
     return { ok: false, already: true, reason: lock.reason, message: lock.message, wasChosen: false };
@@ -113,21 +170,44 @@ function applyCashChoice(db, bookingId, ctx) {
   // Validated, never a silent default — see CLAUDE.md payment invariant #1.
   const method = assertPaymentMethod('cash', ctx.source || 'pay-lock applyCashChoice');
   const wasChosen = before.status === 'pending' || before.status === 'offered';
+  const topUp = openTopUp(before);
 
-  const info = db.prepare(`
-    UPDATE bookings
-       SET payment = ?,
-           status = CASE WHEN status IN ('pending','offered') THEN 'awaiting_payment' ELSE status END,
-           updated_at = datetime('now')
-     WHERE id = ?
-       AND paid_at IS NULL
-       AND payment <> 'card'
-       AND status <> 'cancelled'
-  `).run(method, bookingId);
+  // TWO different writes, because they mean two different things.
+  //
+  // Normally: the customer is choosing HOW to pay a fare nobody has paid yet,
+  // so `payment` becomes cash and the guard refuses to touch a row that has
+  // since been settled by card.
+  //
+  // On a TOP-UP the booking is already paid — by card, most likely — and the
+  // customer is choosing how to settle only the DIFFERENCE. `payment` must NOT
+  // be rewritten to cash: that would erase the record of a real card charge and
+  // make a settled booking look unpaid. Only the adjustment's method moves, and
+  // it moves once (settled_at IS NULL), which is what closes the card door.
+  const info = topUp
+    ? db.prepare(`
+        UPDATE bookings
+           SET fare_adjust_method = 'cash',
+               status = CASE WHEN status IN ('pending','offered') THEN 'awaiting_payment' ELSE status END,
+               updated_at = datetime('now')
+         WHERE id = ?
+           AND fare_adjust_settled_at IS NULL
+           AND COALESCE(fare_adjust_method, '') <> 'cash'
+           AND status <> 'cancelled'
+      `).run(bookingId)
+    : db.prepare(`
+        UPDATE bookings
+           SET payment = ?,
+               status = CASE WHEN status IN ('pending','offered') THEN 'awaiting_payment' ELSE status END,
+               updated_at = datetime('now')
+         WHERE id = ?
+           AND paid_at IS NULL
+           AND payment <> 'card'
+           AND status <> 'cancelled'
+      `).run(method, bookingId);
 
   if (info.changes === 0) {
     // Something settled it underneath us between the read and the write.
-    const after = db.prepare('SELECT id, ref, fare, status, payment, paid_at FROM bookings WHERE id = ?').get(bookingId);
+    const after = db.prepare('SELECT ' + COLS + ' FROM bookings WHERE id = ?').get(bookingId);
     const now = paymentLock(after);
     return { ok: false, already: true, reason: now.reason || 'locked', message: now.message, wasChosen: false };
   }
@@ -138,7 +218,10 @@ function applyCashChoice(db, bookingId, ctx) {
            before.ref + (ctx.source ? ' — ' + ctx.source : ''), ctx.ip || null);
   } catch (e) { console.error('[PAY-LOCK] cash audit failed:', e.message); }
 
-  return { ok: true, already: false, reason: null, message: '', wasChosen: wasChosen, ref: before.ref, id: before.id, fare: before.fare };
+  return { ok: true, already: false, reason: null, message: '', wasChosen: wasChosen,
+           ref: before.ref, id: before.id, fare: before.fare,
+           topUp: topUp ? topUp.amount : null };
 }
 
-module.exports = { paymentLock, applyCashChoice, isSettled, isCashChosen };
+module.exports = { paymentLock, applyCashChoice, isSettled, isCashChosen,
+                   openAdjustment, openTopUp, adjustKey, round2 };

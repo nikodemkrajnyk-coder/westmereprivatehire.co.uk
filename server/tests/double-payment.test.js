@@ -134,6 +134,13 @@ function makeDb() {
       status TEXT NOT NULL DEFAULT 'pending', notes TEXT,
       passenger_name TEXT, passenger_phone TEXT, passenger_email TEXT,
       paid_at TEXT, pay_token TEXT, payment_intent_id TEXT, calendar_event_id TEXT,
+      -- What was ACTUALLY collected, and any open difference after a re-price.
+      -- The lock reads these to tell "paid, nothing owed" apart from "paid for
+      -- the old price, the balance is still owed". Mirrors server/db.js.
+      paid_amount REAL,
+      fare_adjust_kind TEXT, fare_adjust_amount REAL, fare_adjust_paid REAL,
+      fare_adjust_at TEXT, fare_adjust_method TEXT, fare_adjust_settled_at TEXT,
+      fare_adjust_ref TEXT,
       estimate_sent_at TEXT, re_estimated_at TEXT,
       change_requested_at TEXT, change_request_summary TEXT, change_request_detail TEXT,
       fare_review_at TEXT, prior_payments_json TEXT,
@@ -177,8 +184,12 @@ const WEBHOOK_SQL = (() => {
   const end = publicSrc.indexOf('`', i);
   return publicSrc.slice(start, end);
 })();
-function payByCardViaWebhook(db, ref) {
-  db.prepare(WEBHOOK_SQL).run('pi_test_123', ref);
+// The shipped webhook UPDATE, run as shipped. It stamps paid_amount — what was
+// ACTUALLY taken — ahead of the intent id, so a later fare edit has something to
+// compute a refund or a balance against.
+function payByCardViaWebhook(db, ref, amountPaid) {
+  const fare = db.prepare('SELECT fare FROM bookings WHERE ref = ?').get(ref);
+  db.prepare(WEBHOOK_SQL).run(amountPaid != null ? amountPaid : (fare ? fare.fare : null), 'pi_test_123', ref);
 }
 
 let sent = [];
