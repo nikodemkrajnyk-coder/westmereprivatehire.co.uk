@@ -18,10 +18,16 @@
      BOOK NOW regardless, for anyone who already knew.)
      GUARDRAIL: server/tests/price-first.test.js -->
 <div class="quick-box" data-quick-estimate style="text-align:left;margin-top:26px">
-  <!-- Read BEFORE the first keystroke, which is when the hesitation happens.
-       Under the inputs it would arrive too late to be the thing that lets
-       somebody start typing. -->
-  <p class="wm-reassure">Instant estimate — no booking, no details needed.</p>
+  <!-- Both lines are read BEFORE the first keystroke, which is when the
+       hesitation happens. Under the inputs they would arrive too late to be
+       the thing that lets somebody start typing.
+
+       The HEADING exists because two address boxes look like a booking form
+       whatever the small print says. It labels the box as a price check, at a
+       size that is read rather than skimmed; the muted line under it answers
+       the specific fear — that typing an address commits you to something. -->
+  <p class="qe-title">Get an instant <em>estimate</em></p>
+  <p class="wm-reassure">No booking, no details needed.</p>
   <div class="form-grid">
     <div class="field full"><label>Pickup location</label><input name="pickup" placeholder="Home address, hotel or airport" autocomplete="off"></div>
     <div class="field full"><label>Drop-off</label><input name="destination" placeholder="Airport, town or postcode" autocomplete="off"></div>

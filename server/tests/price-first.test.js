@@ -190,8 +190,16 @@ test('the estimate says, before you type, that it is not a booking', () => {
   assert.ok(/no booking/i.test(text),
     'the line must say plainly that this is not a booking — that is the fear it exists to answer: ' +
     JSON.stringify(text));
-  assert.ok(/estimate|price/i.test(text), 'the line must say what it IS as well as what it is not: ' + JSON.stringify(text));
   assert.ok(text.length < 70, 'the line has grown into a paragraph; it is meant to be glanced at: ' + JSON.stringify(text));
+
+  // "…and say what it IS" now lives in the HEADING, which carries the word
+  // ESTIMATE at 24px. The requirement has not been dropped, it has moved to
+  // where it is actually read — so it is asserted across the pair, and the
+  // widget as a whole must still say both halves.
+  const heading = /<p class="qe-title">([\s\S]*?)<\/p>/.exec(HOME);
+  const intro = (heading ? heading[1] : '') + ' ' + text;
+  assert.ok(/estimate|price|fare/i.test(intro.replace(/<[^>]*>/g, '')),
+    'nothing above the fields says what the box GIVES you, only what it is not: ' + JSON.stringify(intro));
 
   // Inside the widget, and above the inputs.
   const widget = HOME.indexOf('data-quick-estimate');
@@ -199,6 +207,51 @@ test('the estimate says, before you type, that it is not a booking', () => {
   assert.ok(m.index > widget && m.index < pickup,
     'the reassurance must sit inside the estimate and BEFORE the fields — under them it arrives ' +
     'too late to be the thing that lets somebody start typing');
+});
+
+test('the box is HEADED as a price check, above the fields', () => {
+  // The muted line alone was not enough: two address boxes read as a booking
+  // form, and visitors hesitated over the first keystroke. The heading is what
+  // labels the widget, so it has to exist, say "price" or "estimate", and sit
+  // above the inputs — under them it captions nothing.
+  const m = /<p class="qe-title">([\s\S]*?)<\/p>/.exec(HOME);
+  assert.ok(m, 'the estimate box has lost its heading — the fields read as a booking form again');
+  const text = m[1].replace(/<[^>]*>/g, '').trim();
+  // ESTIMATE specifically, and not merely "price" — the owner's call, and the
+  // whole reason the heading exists. A customer who reads "price" can still
+  // believe they are being quoted a fixed fare; "estimate" is the word that
+  // stops the address boxes reading as a booking form.
+  assert.ok(/estimate/i.test(text),
+    'the heading no longer says ESTIMATE — that is the word this heading exists to put in front of people: ' +
+    JSON.stringify(text));
+  assert.ok(text.length < 40, 'the heading has grown into a sentence: ' + JSON.stringify(text));
+  // The emphasis sits on that word, in the house italic-on-one-word style.
+  assert.ok(/<em>\s*estimate\s*<\/em>/i.test(m[1]),
+    'the italic emphasis has moved off the word "estimate": ' + JSON.stringify(m[1]));
+  const widget = HOME.indexOf('data-quick-estimate');
+  const pickup = HOME.indexOf('name="pickup"');
+  assert.ok(m.index > widget && m.index < pickup, 'the heading must sit inside the widget and BEFORE the fields');
+  // …and above the reassurance, so the box is named before it is qualified.
+  const reassure = HOME.indexOf('<p class="wm-reassure">');
+  assert.ok(m.index < reassure, 'the heading must come before the reassurance line');
+});
+
+test('the heading is prominent by SCALE, not by shouting', () => {
+  const T = read('westmere-theme.css');
+  const i = T.indexOf('.qe-title {');
+  assert.ok(i !== -1, 'the theme no longer styles .qe-title');
+  const block = T.slice(i, T.indexOf('}', i));
+  // Off the type scale, and a real tier above the muted line it replaces.
+  const size = /font-size:\s*var\(--(text-[a-z0-9]+)/.exec(block);
+  assert.ok(size, 'the heading size must come off the type scale, not a literal');
+  assert.ok(['text-lg', 'text-xl', 'text-2xl'].includes(size[1]),
+    'the heading is back down at body size and stops being read: ' + size[1]);
+  // Elegant, not a banner: §20 says nothing highlights by filling.
+  assert.ok(!/background|border(?!-)/.test(block),
+    'the heading has grown a fill or a box — it is emphasised by scale, not decoration');
+  assert.ok(/color:\s*var\(--westmere-navy/.test(block), 'the heading must be navy, off the token');
+  assert.ok(!/font-weight:\s*var\(--weight-bold/.test(block),
+    'bold at this size reads as a banner; the scale is already doing the work');
 });
 
 test('the reassurance is quiet, and separate from the pre-bookings note', () => {

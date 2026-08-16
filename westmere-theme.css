@@ -1597,3 +1597,36 @@ input, select, textarea {
    out-specify the attribute's UA style and the button would show before there
    was ever a price — the one thing this must never do. */
 .qe-book[hidden] { display: none; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   §26  THE ESTIMATE BOX SAYS WHAT IT IS
+   ═══════════════════════════════════════════════════════════════════════
+   Two address fields look like a booking form no matter what the small print
+   says, and visitors were hesitating over the first keystroke because of it.
+   The muted line under this heading answers the fear ("no booking"); it could
+   not also do the labelling, because at --text-sm in the muted tone it is
+   skimmed rather than read.
+
+   So the box gets a HEADING — the size a label needs to be to arrive before
+   the fields do. Deliberately --text-xl and NOT the section scale: the h2
+   above it runs to 3.2rem, and a second heading at that weight would compete
+   with the page rather than caption the box. This one is plainly subordinate
+   to the section title and plainly dominant over the fields.
+
+   No fill, no rule, no box (§20) — it is emphasised by SCALE, the same way a
+   primary button is emphasised by its label. Cormorant comes from the global
+   face; only the tier, the weight and the ink are set here.
+   GUARDRAIL: server/tests/price-first.test.js */
+.qe-title {
+  display: block;
+  margin: 0 0 var(--space-1, .25rem);
+  font-size: var(--text-xl, 1.5rem);
+  font-weight: var(--weight-normal, 400);
+  line-height: 1.15;
+  letter-spacing: .005em;
+  color: var(--westmere-navy, #102a43);
+  -webkit-text-fill-color: var(--westmere-navy, #102a43);
+}
+/* One italic word, as everywhere else a heading carries emphasis in this
+   system. Italic, not bold: bold at this size reads as a banner. */
+.qe-title em { font-style: italic; }
