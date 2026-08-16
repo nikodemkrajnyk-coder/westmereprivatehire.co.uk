@@ -9,9 +9,14 @@
 <!-- THE PRIME SPOT IS A PRICE, NOT A COMMITMENT.
      What stood here was a "Book your journey" button. People are wary of
      booking and would not start, so the same spot now asks for nothing: two
-     addresses in, an instant approximate fare back. No booking control sits
-     under it — anyone ready to book has BOOK NOW in the header, where it has
-     always been. GUARDRAIL: server/tests/price-first.test.js -->
+     addresses in, an instant approximate fare back.
+
+     BOOK NOW then appears UNDER the price — but only once there IS a price.
+     Before that the spot asks for nothing, which is the whole point; after it,
+     the visitor has the number they came for and the next step is right where
+     they are looking, rather than back up in the header. (The header keeps its
+     BOOK NOW regardless, for anyone who already knew.)
+     GUARDRAIL: server/tests/price-first.test.js -->
 <div class="quick-box" data-quick-estimate style="text-align:left;margin-top:26px">
   <!-- Read BEFORE the first keystroke, which is when the hesitation happens.
        Under the inputs it would arrive too late to be the thing that lets
@@ -22,6 +27,12 @@
     <div class="field full"><label>Drop-off</label><input name="destination" placeholder="Airport, town or postcode" autocomplete="off"></div>
   </div>
   <div class="fare-estimate" data-fare-estimate></div>
+  <!-- Revealed by booking-app.js ONLY once a real price is on screen, and
+       hidden again the moment the estimate goes back to calculating or to a
+       "we could not price this" message. Server-rendered and hidden rather
+       than injected, so the markup is one thing in one place — and so the
+       guard can read it. GUARDRAIL: server/tests/price-first.test.js -->
+  <a class="wm-primary qe-book" data-book-cta href="book.html" hidden>Book Now</a>
   <p class="quick-note" style="margin-top:12px;font-size:.72rem;color:var(--muted);line-height:1.5">Airport estimates include the airport drop-off / pick-up fee and any road tolls (e.g. Dartford Crossing, Blackwall Tunnel). Airport parking is separate.</p>
 </div></div></section>
 <section class="section soft" id="fares-window"><div class="container"><div class="section-head"><span class="eyebrow">Airport fares</span><h2 class="section-title">Airport fares from £54.</h2><p class="muted">Indicative starting fares to every major London airport from our Sussex towns — the lowest current prices shown. Your exact fare is confirmed when you book. <strong>Airport drop-off &amp; pick-up fees and any road tolls (e.g. Dartford Crossing, Blackwall Tunnel) are added on top;</strong> airport parking is separate.</p></div><div class="grid3" style="gap:1px;background:var(--line);border:1px solid var(--line)"><div style="background:var(--paper);padding:34px 22px;text-align:center"><span class="eyebrow" style="color:var(--muted)">Gatwick</span><div style="font-family:var(--serif);font-size:2.3rem;font-weight:400;color:var(--ink);margin-top:8px;line-height:1">from £54</div></div><div style="background:var(--paper);padding:34px 22px;text-align:center"><span class="eyebrow" style="color:var(--muted)">Heathrow</span><div style="font-family:var(--serif);font-size:2.3rem;font-weight:400;color:var(--ink);margin-top:8px;line-height:1">from £94</div></div><div style="background:var(--paper);padding:34px 22px;text-align:center"><span class="eyebrow" style="color:var(--muted)">Luton</span><div style="font-family:var(--serif);font-size:2.3rem;font-weight:400;color:var(--ink);margin-top:8px;line-height:1">from £120</div></div><div style="background:var(--paper);padding:34px 22px;text-align:center"><span class="eyebrow" style="color:var(--muted)">Stansted</span><div style="font-family:var(--serif);font-size:2.3rem;font-weight:400;color:var(--ink);margin-top:8px;line-height:1">from £135</div></div><div style="background:var(--paper);padding:34px 22px;text-align:center"><span class="eyebrow" style="color:var(--muted)">Southampton</span><div style="font-family:var(--serif);font-size:2.3rem;font-weight:400;color:var(--ink);margin-top:8px;line-height:1">from £104</div></div><div style="background:var(--paper);padding:34px 22px;text-align:center"><span class="eyebrow" style="color:var(--muted)">London City</span><div style="font-family:var(--serif);font-size:2.3rem;font-weight:400;color:var(--ink);margin-top:8px;line-height:1">from £120</div></div></div><p style="text-align:center;margin-top:28px"><a class="btn" href="airport-transfers.html">View full fare tables</a></p></div></section>

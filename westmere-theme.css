@@ -1571,3 +1571,29 @@ input, select, textarea {
   color: var(--westmere-muted, #657485);
   -webkit-text-fill-color: var(--westmere-muted, #657485);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   §25  BOOK NOW UNDER THE HOMEPAGE ESTIMATE
+   ═══════════════════════════════════════════════════════════════════════
+   The one control the quick-estimate offers, and only after a price is on
+   screen (booking-app.js reveals it; index.html ships it hidden).
+
+   LOOK IS NOT DEFINED HERE. It carries .wm-primary, so it is the same
+   bolder-label frame as every other primary action in the system and follows
+   the same dial — §22 owns the size, the weight and the frame. This section
+   sets POSITION ONLY: full width under the estimate, with the estimate's own
+   rhythm above and below it.
+   GUARDRAIL: server/tests/price-first.test.js */
+.qe-book {
+  display: block;
+  width: 100%;
+  margin: var(--space-4, 1rem) 0 0;
+  padding: var(--space-3, .75rem) var(--space-4, 1rem);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+/* `hidden` is the reveal switch. Layout `display:block` above would otherwise
+   out-specify the attribute's UA style and the button would show before there
+   was ever a price — the one thing this must never do. */
+.qe-book[hidden] { display: none; }

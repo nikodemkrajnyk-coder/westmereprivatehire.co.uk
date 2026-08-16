@@ -561,6 +561,48 @@
           el.addEventListener('change', remember);
           el.addEventListener('blur', remember);
         });
+
+        // ── BOOK NOW, revealed by the price ──────────────────────────────
+        // Gated on the PRICE BEING ON SCREEN, not on "we asked for one". The
+        // estimate box has several endings — calculating, a real amount, and
+        // two different "we could not price this" messages — and only one of
+        // them is a price. So the test is the rendered .fe-amount itself
+        // rather than any flag we would have to remember to set on each path.
+        //
+        // A MutationObserver watches the box, so EVERY render re-evaluates,
+        // including ones added later. Edit an address after seeing a price and
+        // the button disappears with the number and comes back with the new
+        // one — it can never advertise a fare that is no longer on screen.
+        var cta = scope.querySelector('[data-book-cta]');
+        if (cta) {
+          var syncCta = function () {
+            var priced = !!fareBox.querySelector('.fe-amount') &&
+                         fareBox.style.display !== 'none';
+            if (priced) cta.removeAttribute('hidden');
+            else cta.setAttribute('hidden', '');
+          };
+          try {
+            new MutationObserver(syncCta).observe(fareBox,
+              { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['style', 'class'] });
+          } catch (e) {}
+          // The box does not re-render for half a second after a keystroke
+          // (updateFare is debounced), and on a non-airport route the lookup
+          // that follows is a real network call. Watching the box alone would
+          // leave BOOK NOW sitting under a price that no longer matches the
+          // fields for that whole window. A keystroke makes the number stale
+          // immediately, so the button goes immediately; the observer brings
+          // it back when the new price lands.
+          [pickup, dest, timeEl].forEach(function (el) {
+            if (el) el.addEventListener('input', function () { cta.setAttribute('hidden', ''); });
+          });
+          // Save on the way out too. `remember` fires on change/blur, but a
+          // click straight from the price to this button can beat a blur, and
+          // arriving at an empty booking form is the exact re-typing this
+          // whole mechanism exists to prevent.
+          cta.addEventListener('mousedown', remember);
+          cta.addEventListener('click', remember);
+          syncCta();
+        }
       })(scopes[i]);
     }
   }

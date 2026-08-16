@@ -459,6 +459,109 @@ test('a change list with nothing recognisable sends nothing at all', async () =>
 });
 
 /* ═══════════════════════════════════════════════════════════════════════
+   4b. THE EDIT FORM CAN ACTUALLY REACH THESE FIELDS
+   ═══════════════════════════════════════════════════════════════════════
+   Detection on the server is worthless if the form has no input for the
+   field. Passengers was missing entirely: an owner taking "can we make it
+   three of us?" over the phone had nowhere to put it, so the job reached the
+   driver still saying two and the customer was never told. */
+console.log('\nThe owner edit form exposes the fields the customer travels on');
+
+const EB = (() => {
+  const i = OWNER.indexOf("el.id='edit-booking-overlay'");
+  assert.ok(i !== -1, 'the owner app no longer builds an edit modal');
+  return OWNER.slice(i, OWNER.indexOf('document.body.appendChild(el)', i));
+})();
+
+test('the edit form has a passengers field, capped at 4 like the booking form', () => {
+  assert.ok(/id="eb-pax"/.test(EB), 'the edit form still has no passengers field');
+  const tag = EB.match(/<input id="eb-pax"[^>]*>/);
+  assert.ok(tag, 'the passengers field is not an input');
+  assert.ok(/max="4"/.test(tag[0]), 'passengers is not capped at 4 — the vehicle is the limit');
+  assert.ok(/min="1"/.test(tag[0]), 'passengers can be set below 1');
+  assert.ok(/>Passengers</.test(EB), 'the passengers field has no label');
+});
+
+test('luggage and flight are editable too', () => {
+  assert.ok(/id="eb-bags"/.test(EB), 'the edit form has no luggage field');
+  assert.ok(/id="eb-flight"/.test(EB), 'the edit form has no flight-number field');
+  assert.ok(/>Luggage</.test(EB) && /Flight number/.test(EB), 'the new fields are unlabelled');
+});
+
+test('the new fields match the form around them, not a style of their own', () => {
+  for (const id of ['eb-pax', 'eb-bags', 'eb-flight']) {
+    const tag = EB.match(new RegExp('<(?:input|select) id="' + id + '"[^>]*>'));
+    assert.ok(tag, id + ' is missing');
+    const style = (tag[0].match(/style="([^"]*)"/) || [])[1] || '';
+    assert.ok(/border:1px solid rgba\(27,27,26,\.15\)/.test(style), id + ' does not use the form frame');
+    assert.ok(/font-family:inherit/.test(style), id + ' does not inherit Cormorant');
+    assert.ok(/color:var\(--navy\)/.test(style), id + ' is not navy ink');
+  }
+});
+
+test('the save actually submits them', () => {
+  const fn = OWNER.slice(OWNER.indexOf('function ebCollectBody'));
+  const body = fn.slice(0, fn.indexOf('\n}\n'));
+  assert.ok(/body\.passengers\s*=/.test(body), 'passengers is collected but never sent');
+  assert.ok(/body\.bags\s*=/.test(body), 'luggage is never sent');
+  assert.ok(/body\.flight\s*=/.test(body), 'the flight number is never sent');
+  // A number, not a string: the server compares passengers numerically, and
+  // '3' vs 3 would report a change on every save.
+  assert.ok(/parseInt\(g\('eb-pax'\), *10\)/.test(body), 'passengers is sent as a string');
+  assert.ok(/Math\.min\(4, *Math\.max\(1, *pax\)\)/.test(body), 'a typed 40 would reach the server');
+});
+
+test('opening the form never destroys a luggage value the dropdown cannot show', () => {
+  const fn = OWNER.slice(OWNER.indexOf("document.getElementById('eb-id').value=bookingId"));
+  const body = fn.slice(0, fn.indexOf("el.style.display='flex'"));
+  assert.ok(/dataset\.custom/.test(body),
+    "an unrecognised bags value ('2s+1l') would snap to No luggage and be deleted on save");
+  assert.ok(/eb-pax'\)\.value=/.test(body), 'the passengers field is never populated');
+  assert.ok(/eb-flight'\)\.value=/.test(body), 'the flight field is never populated');
+});
+
+test('a passengers change flows through PATCH into the update email', async () => {
+  const db = makeDb(); seed(db);
+  const out = await callPatch(db, { passengers: 4 });
+  assert.strictEqual(out.payload.customerNotified, true, 'a passenger change did not email the customer');
+  assert.deepStrictEqual(out.payload.customerChanged, ['passengers']);
+  assert.strictEqual(db.prepare('SELECT passengers FROM bookings WHERE id = 10').get().passengers, 4,
+    'the new passenger count was not saved');
+  const m = updateEmail();
+  assert.ok(/4 passengers/.test(m.html), 'the email does not show the new count');
+  assert.ok(/2 passengers/.test(m.html), 'the email does not show what it was');
+});
+
+test('re-saving the same passenger count is silent', async () => {
+  const db = makeDb(); const b = seed(db);
+  // The form sends a NUMBER; the row holds a number. Sending the string '2'
+  // must not read as a change either.
+  for (const same of [2, '2']) {
+    const db2 = makeDb(); seed(db2);
+    const out = await callPatch(db2, { passengers: same });
+    assert.strictEqual(out.payload.notifyReason, 'no-change',
+      'passengers ' + JSON.stringify(same) + ' emailed the customer for no reason');
+  }
+  assert.strictEqual(b.passengers, 2);
+});
+
+test('the modal markup is not corrupted — no leaked style string', () => {
+  // A regex sweep once duplicated a <button> tag here and left a raw CSS
+  // string in front of it, which rendered as visible garbage above Save.
+  // Four of these were live in production, across BOTH staff apps, from a
+  // regex sweep that rewrote button tags. Check every page, not just this
+  // modal: a leaked declaration renders as visible garbage next to a control.
+  for (const [name, src] of [['owner', OWNER], ['admin', ADMIN]]) {
+    assert.ok(!/#102a43\)<button/.test(src),
+      'a style string has leaked in front of a button tag in the ' + name + ' app — it prints as text on screen');
+    assert.ok(!/[;)]"?\s*<button\b[^>]*class="wm-primary"[^>]*>[^<]*<\/button>'?\s*\+?\s*'[a-z-]+:/.test(src),
+      'the ' + name + ' app has a stray style fragment beside a button');
+  }
+  const buttons = (EB.match(/<button /g) || []).length;
+  assert.strictEqual(buttons, 3, 'the edit modal should have exactly close + Cancel + Save, found ' + buttons);
+});
+
+/* ═══════════════════════════════════════════════════════════════════════
    5. THE OPERATOR IS TOLD WHAT HAPPENED
    ═══════════════════════════════════════════════════════════════════════ */
 console.log('\nBoth apps tell the operator whether the customer was emailed');

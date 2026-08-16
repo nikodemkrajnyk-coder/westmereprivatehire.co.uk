@@ -10,9 +10,13 @@
  *
  * The two things that make it work are both easy to undo by accident, so both
  * are pinned:
- *   · NO booking control sits under the estimate. Putting one back turns a free
- *     price check into a funnel step again, which is the whole thing this
- *     replaced.
+ *   · The estimate asks for NOTHING until it has given something. BOOK NOW
+ *     sits under it, but ships hidden and is revealed only once a real price is
+ *     on screen — gated on the rendered amount, not on a flag, and re-evaluated
+ *     on every render so editing an address takes the button away with the
+ *     stale number. (This reverses the original "no control at all" rule, on
+ *     the owner's instruction; the property that made it worth having — a
+ *     visitor who has asked for nothing is offered nothing — is unchanged.)
  *   · BOOK NOW stays in the header. Someone who already knows they want to book
  *     must never have to hunt for it — the estimate is for the undecided, not a
  *     toll gate for the decided.
@@ -70,15 +74,94 @@ test('it is the real widget, with the hooks the fare engine needs', () => {
     'there is more than one estimate widget on the homepage');
 });
 
-// ── No booking control under it ──────────────────────────────────────────
-test('NOTHING under the estimate offers to book', () => {
+// ── BOOK NOW under the estimate: absent until there is a price ───────────
+// REVERSAL, deliberate and on the owner's instruction. This spot used to
+// forbid any booking control; it now carries one, but ONLY after a price is on
+// screen. The property that made the original rule worth having is unchanged —
+// a visitor who has asked for nothing is offered nothing — so what is pinned
+// here is the GATE, not the absence.
+const CTA_BLOCK = (() => {
   const from = BODY.indexOf('data-quick-estimate');
   const to = BODY.indexOf('id="fares-window"');
-  const block = BODY.slice(from, to === -1 ? from + 3000 : to);
-  assert.ok(!/href="book\.html"/.test(block),
-    'a booking link has appeared under the estimate — the point of this spot is that it asks for nothing');
-  assert.ok(!/data-book-after-price/.test(HOME),
-    'the reveal-after-price booking button is back; the owner asked for no book button beneath the estimate');
+  return BODY.slice(from, to === -1 ? from + 3000 : to);
+})();
+
+test('the estimate carries a BOOK NOW, and it ships hidden', () => {
+  assert.ok(/data-book-cta/.test(CTA_BLOCK), 'the estimate has no Book Now control');
+  const tag = CTA_BLOCK.match(/<a[^>]*data-book-cta[^>]*>/);
+  assert.ok(tag, 'the Book Now control is not a link');
+  assert.ok(/\bhidden\b/.test(tag[0]),
+    'the Book Now button ships visible — it must not appear before a price exists');
+  assert.ok(/href="book\.html"/.test(tag[0]), 'Book Now does not point at book.html');
+  assert.ok(/>\s*Book Now\s*</i.test(CTA_BLOCK), 'the button does not read "Book Now"');
+});
+
+test('it sits BELOW the estimate, not above it', () => {
+  const fare = CTA_BLOCK.indexOf('data-fare-estimate');
+  const cta  = CTA_BLOCK.indexOf('data-book-cta');
+  assert.ok(fare !== -1 && cta !== -1 && cta > fare,
+    'the Book Now button is not below the price it is meant to follow');
+});
+
+test('the reveal is gated on the RENDERED price, and re-runs on every render', () => {
+  const q = APP.slice(APP.indexOf('function initQuick'));
+  const body = q.slice(0, q.indexOf('\n  }\n'));
+  assert.ok(/data-book-cta/.test(body), 'the quick estimate never looks for the button');
+  // The gate must read the price that is actually on screen. A flag set by the
+  // success path would drift the moment a new ending is added to the estimate.
+  assert.ok(/querySelector\('\.fe-amount'\)/.test(body),
+    'the reveal is not gated on the rendered .fe-amount — it could show with no price');
+  assert.ok(/MutationObserver/.test(body),
+    'nothing re-evaluates the button when the estimate re-renders; editing an address would leave a stale button');
+  assert.ok(/setAttribute\('hidden'/.test(body) && /removeAttribute\('hidden'\)/.test(body),
+    'the button is never actually hidden again');
+  // Watching the estimate box alone is not enough: updateFare is debounced by
+  // half a second, and on a non-airport route a network lookup follows. For
+  // that whole window BOOK NOW would sit under a price that no longer matches
+  // the fields. Measured: without this the button survived the full 500ms.
+  assert.ok(/addEventListener\('input', function \(\) \{ cta\.setAttribute\('hidden', ''\); \}\)/.test(body),
+    'a keystroke does not hide the button — it would advertise a stale price for the debounce window');
+});
+
+test('a "we could not price this" ending shows no button', () => {
+  // Both graceful-degrade endings render .fe-note and NO .fe-amount, so the
+  // same gate that reveals on a price keeps them silent. Pinned so nobody
+  // "helpfully" adds an amount span to a message that has no number in it.
+  const est = APP.slice(APP.indexOf('function makeEstimator'));
+  const body = est.slice(0, est.indexOf('\n  }\n\n'));
+  const msgEndings = body.match(/fare-estimate msg[\s\S]{0,400}?fe-note/g) || [];
+  assert.ok(msgEndings.length >= 2, 'expected the two "could not price it" endings');
+  for (const m of msgEndings) {
+    assert.ok(!/fe-amount/.test(m), 'a no-price message now renders an amount — the button would appear with no fare');
+  }
+});
+
+test('clicking it carries the addresses over rather than re-asking', () => {
+  const q = APP.slice(APP.indexOf('function initQuick'));
+  const body = q.slice(0, q.indexOf('\n  }\n'));
+  assert.ok(/cta\.addEventListener\('(mousedown|click)', remember\)/.test(body),
+    'the draft is not saved on the way out — the booking form would open empty');
+  // …into the mechanism that already exists, not a second one.
+  assert.ok(/sessionStorage\.setItem\(DRAFT_KEY/.test(APP), 'the carry-over no longer uses sessionStorage');
+  assert.ok(/function applyDraft/.test(APP) && /applyDraft\(draftFields\)/.test(APP),
+    'book.html no longer applies the carried-over draft');
+  assert.ok(/draft\[k\] = \{ full: full, label:/.test(APP),
+    'the FULL address is no longer preserved beside the short label');
+});
+
+test('the button is the primary frame, and takes its look from the system', () => {
+  const tag = CTA_BLOCK.match(/<a[^>]*data-book-cta[^>]*>/)[0];
+  assert.ok(/class="[^"]*\bwm-primary\b/.test(tag),
+    'the button does not carry .wm-primary, so it is not the primary bolder-label frame');
+  const THEME = read('westmere-theme.css');
+  const sec = THEME.slice(THEME.indexOf('.qe-book {'));
+  assert.ok(sec, 'the button has no layout rule');
+  const block = sec.slice(0, sec.indexOf('}'));
+  // Position only. A size or a colour here would fork the button system.
+  assert.ok(!/font-size|font-weight|background|border(?!-)|color/.test(block),
+    'the .qe-book rule restates a look instead of leaving it to .wm-primary: ' + block.replace(/\s+/g, ' '));
+  assert.ok(/\.qe-book\[hidden\]\s*{\s*display:\s*none/.test(THEME),
+    'display:block would out-specify the hidden attribute and the button would show with no price');
 });
 
 // ── BOOK NOW stays where it always was ───────────────────────────────────

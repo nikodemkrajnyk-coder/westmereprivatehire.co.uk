@@ -778,7 +778,7 @@ select:-webkit-autofill:focus{
             <div style="font-size:.94rem;color:var(--navy)">Google Calendar</div>
             <div id="gcal-status" style="font-size:.84rem;color:rgba(27,27,26,.5);word-break:break-all">Two-way sync with your calendar</div>
           </div>
-          padding:.5rem 1rem;border-radius:6px;text-transform:uppercase;cursor:pointer;white-space:nowrap;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)<button class="wm-primary" id="gcal-connect-btn" onclick="connectGoogleCalendar()" style="padding:.5rem 1rem;border-radius:6px;text-transform:uppercase;cursor:pointer;white-space:nowrap;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)">Connect</button>
+          <button class="wm-primary" id="gcal-connect-btn" onclick="connectGoogleCalendar()" style="padding:.5rem 1rem;border-radius:6px;text-transform:uppercase;cursor:pointer;white-space:nowrap;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)">Connect</button>
         </div>
         <div style="display:flex;justify-content:flex-end;padding:.25rem 0 0">
           <a href="#" id="gcal-sync-link" onclick="syncGoogleCalendar(event)" style="display:none;font-size:.8rem;color:var(--navy);text-decoration:none;letter-spacing:.08em;text-transform:uppercase">Sync now &rarr;</a>
@@ -2135,7 +2135,7 @@ async function loadStripeBalance(){
             +'</div>'
             +'<button onclick="setFullPayout()" style="padding:.6rem .85rem;border-radius:6px;font-size:.8rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;white-space:nowrap;font-family:var(--sans);border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)">Full</button>'
           +'</div>'
-          +'width:100%;padding:.9rem;border-radius:8px;text-transform:uppercase;cursor:pointer;font-family:var(--sans);transition:opacity .2s;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)<button class="wm-primary" id="payout-btn" onclick="initiatePayoutConfirm()" style="width:100%;padding:.9rem;border-radius:8px;text-transform:uppercase;cursor:pointer;font-family:var(--sans);transition:opacity .2s;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)">Pay Out to Bank</button>'
+          +'<button class="wm-primary" id="payout-btn" onclick="initiatePayoutConfirm()" style="width:100%;padding:.9rem;border-radius:8px;text-transform:uppercase;cursor:pointer;font-family:var(--sans);transition:opacity .2s;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)">Pay Out to Bank</button>'
           +'<div id="payout-confirm-row" style="display:none;margin-top:.6rem;background:rgba(106,106,106,.08);border:1px solid rgba(106,106,106,.35);border-radius:8px;padding:.85rem">'
             +'<div id="payout-confirm-msg" style="font-size:.95rem;color:var(--navy);margin-bottom:.7rem;font-weight:500;text-align:center"></div>'
             +'<div style="display:flex;gap:.5rem">'
@@ -3383,6 +3383,21 @@ function upcomingEdit(bookingId){
       +'<div><label style="font-size:.79rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.5);display:block;margin-bottom:.3rem">Time</label>'
       +'<input id="eb-time" type="time" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(27,27,26,.15);border-radius:8px;font-family:inherit;font-size:.96rem;color:var(--navy)"></div>'
       +'</div>'
+      // WHO AND WHAT IS TRAVELLING. Absent until now, so an owner taking "can
+      // we make it three of us?" over the phone had no way to record it — the
+      // job went to the driver still saying two. Capped at 4 to match the
+      // booking form and the new-booking form; the vehicle is the limit, not
+      // the input.
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.7rem">'
+      +'<div><label style="font-size:.79rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.5);display:block;margin-bottom:.3rem">Passengers</label>'
+      +'<input id="eb-pax" type="number" min="1" max="4" step="1" inputmode="numeric" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(27,27,26,.15);border-radius:8px;font-family:inherit;font-size:.96rem;color:var(--navy)"></div>'
+      +'<div><label style="font-size:.79rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.5);display:block;margin-bottom:.3rem">Luggage</label>'
+      +'<select id="eb-bags" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(27,27,26,.15);border-radius:8px;font-family:inherit;font-size:.96rem;color:var(--navy);background:#ffffff">'
+      +'<option value="0">No luggage</option><option value="1">1 bag</option><option value="2">2 bags</option>'
+      +'<option value="3">3 bags</option><option value="4+">4+ bags</option></select></div>'
+      +'</div>'
+      +'<div style="margin-bottom:.7rem"><label style="font-size:.79rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.5);display:block;margin-bottom:.3rem">Flight number</label>'
+      +'<input id="eb-flight" type="text" placeholder="Optional — e.g. BA2431" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(27,27,26,.15);border-radius:8px;font-family:inherit;font-size:.96rem;color:var(--navy);text-transform:uppercase" autocomplete="off"></div>'
       +'<div style="margin-bottom:.7rem"><label style="font-size:.79rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.5);display:block;margin-bottom:.3rem">Fare £</label>'
       +'<input id="eb-fare" type="number" min="0" step="0.5" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(27,27,26,.15);border-radius:8px;font-family:inherit;font-size:.96rem;color:var(--navy)"></div>'
       +'<input type="hidden" id="eb-id">'
@@ -3393,7 +3408,7 @@ function upcomingEdit(bookingId){
       // or email by accident. This modal has exactly two actions: Cancel + Save.
       +'<div style="display:flex;gap:.6rem">'
       +'<button onclick="document.getElementById(\'edit-booking-overlay\').remove()" style="flex:1;padding:.75rem;background:transparent;border:1px solid rgba(27,27,26,.15);border-radius:10px;font-family:inherit;font-size:.92rem;font-weight:500;color:rgba(27,27,26,.5);cursor:pointer">Cancel</button>'
-      +'flex:2;padding:.75rem;border-radius:10px;font-family:inherit;cursor:pointer;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)<button class="wm-primary" onclick="upcomingSave()" style="flex:2;padding:.75rem;border-radius:10px;font-family:inherit;cursor:pointer;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)">Save Changes</button>'
+      +'<button class="wm-primary" onclick="upcomingSave()" style="flex:2;padding:.75rem;border-radius:10px;font-family:inherit;cursor:pointer;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)">Save Changes</button>'
       +'</div></div>';
     document.body.appendChild(el);
     el.addEventListener('click',function(ev){if(ev.target===el)el.remove();});
@@ -3409,6 +3424,27 @@ function upcomingEdit(bookingId){
   document.getElementById('eb-time').value=j.time||'';
   document.getElementById('eb-fare').value=j.fare||'';
   document.getElementById('eb-notes').value=j.note||j.notes||'';
+  document.getElementById('eb-pax').value=j.pax||j.passengers||1;
+  document.getElementById('eb-flight').value=(j.flight||'').toUpperCase();
+  // LUGGAGE WITHOUT LOSING IT. Bookings store bags in more shapes than this
+  // dropdown offers — '2s+1l' from the rider app, free text from older rows.
+  // If the stored value is not one of the five options, we ADD it as its own
+  // option and select that, so opening the modal and pressing Save leaves it
+  // exactly as it was. Snapping an unrecognised value to "No luggage" would
+  // quietly delete a booking's luggage every time the owner edited the time.
+  var bagsEl=document.getElementById('eb-bags');
+  var bagsVal=(j.bags==null?'':String(j.bags)).trim();
+  for(var bi=bagsEl.options.length-1;bi>=0;bi--){ if(bagsEl.options[bi].dataset.custom) bagsEl.remove(bi); }
+  var known=false;
+  for(var bk=0;bk<bagsEl.options.length;bk++){ if(bagsEl.options[bk].value===bagsVal) known=true; }
+  if(!known&&bagsVal){
+    var opt=document.createElement('option');
+    opt.value=bagsVal;
+    opt.dataset.custom='1';
+    opt.textContent=(window.WMLifecycle?WMLifecycle.bagsLabel(bagsVal):bagsVal)+' (as booked)';
+    bagsEl.appendChild(opt);
+  }
+  bagsEl.value=bagsVal||'0';
   el.style.display='flex';
 }
 
@@ -3427,7 +3463,17 @@ function ebCollectBody(){
   var time=g('eb-time');
   var fare=parseFloat(g('eb-fare'))||null;
   var notes=g('eb-notes').trim();
+  var pax=parseInt(g('eb-pax'),10);
+  var bags=g('eb-bags');
+  var flight=g('eb-flight').trim().toUpperCase();
   var body={};
+  // Clamped to the same 1–4 the booking form allows, so a typed 40 cannot put
+  // a job on the board that no vehicle can take. Sent as a number: the server
+  // compares passengers numerically to decide whether the customer needs
+  // telling, and '3' vs 3 would read as a change every save.
+  if(!isNaN(pax))body.passengers=Math.min(4,Math.max(1,pax));
+  if(bags!=='')body.bags=bags;
+  body.flight=flight||null;
   if(name)body.passenger_name=name;
   body.passenger_phone=phone||null;
   body.passenger_email=email||null;

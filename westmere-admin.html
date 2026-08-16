@@ -954,7 +954,7 @@ select:-webkit-autofill:focus{
           </div>
           <div style="display:flex;flex-direction:column;gap:.6rem;margin-top:.8rem">
             <button id="nc-welcome-btn" onclick="sendWelcomeEmailNew()" style="width:100%;padding:.85rem;background:transparent;color:#1b1b1a;border:1px solid rgba(27,27,26,.18);border-radius:8px;font-size:.84rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Send Welcome Email</button>
-            width:100%;padding:.85rem;border-radius:8px;text-transform:uppercase;cursor:pointer;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)<button class="wm-primary" onclick="createInvoiceNew()" style="width:100%;padding:.85rem;border-radius:8px;text-transform:uppercase;cursor:pointer;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)">Create Invoice</button>
+            <button class="wm-primary" onclick="createInvoiceNew()" style="width:100%;padding:.85rem;border-radius:8px;text-transform:uppercase;cursor:pointer;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)">Create Invoice</button>
             <button onclick="closeNewCustomerModal()" style="width:100%;padding:.85rem;background:transparent;color:rgba(27,27,26,.7);border:none;font-size:.84rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Done</button>
           </div>
         </div>
@@ -5946,7 +5946,7 @@ function admShowDay(key){
       if(j.needs_reassignment){
         actions='<button class="btn btn-navy btn-sm" onclick="event.stopPropagation();openReassign('+j.id+')">Resolve</button>'+_msgBtn;
       } else if(st==='pending'){
-        actions='border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)<button class="wm-primary btn btn-sm" style="border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)" onclick="event.stopPropagation();admSendEstimate('+j.id+')">Send Estimate</button>'
+        actions='<button class="wm-primary btn btn-sm" style="border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)" onclick="event.stopPropagation();admSendEstimate('+j.id+')">Send Estimate</button>'
           +'<button class="btn btn-navy btn-sm" onclick="event.stopPropagation();openReassign('+j.id+')">Offer</button>'+_msgBtn;
       } else if(st==='offered'){
         actions='<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();reclaimOffer('+j.id+')">Reclaim</button>'+_msgBtn;
