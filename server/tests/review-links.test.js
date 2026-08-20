@@ -106,11 +106,54 @@ test('the copy tells them either will do', () => {
     'the copy does not say that either platform is fine — which is the whole point of offering two');
 });
 
-test('the greeting fix still holds here', async () => {
+test('the greeting is right for what the REAL CALLER passes', async () => {
+  /* The earlier version of this test handed sendReviewRequest a full name and
+     asserted no "Dear Mr,". It passed — and the live email still said
+     "Dear Mr,", because api.js was passing name.split(' ')[0] and the test was
+     never exercising that. A guard that feeds itself convenient input is worse
+     than no guard: it reports green over a live defect.
+
+     So this reads the expression api.js ACTUALLY builds, evaluates it against
+     a booking row, and feeds the result through the shipped sender. If the
+     caller starts truncating the name again, this fails. */
+  const api = read('server/api.js');
+  const m = /const reviewName = ([^;]+);\s*\n\s*sendReviewRequest\(/.exec(api);
+  assert.ok(m, 'api.js no longer builds the review-request name where this guard can read it — ' +
+    'if the call site moved, point this test at the new one rather than deleting it');
+  const buildName = new Function('updated', 'return ' + m[1] + ';');
+  assert.ok(!/split\(/.test(m[1]),
+    'the caller is truncating the name again: ' + m[1].trim());
+
   delete require.cache[require.resolve('../email')];
   const EMAIL = require('../email');
-  await EMAIL.sendReviewRequest('a@b.c', 'Mr J Whitfield', 'WPH-REV2');
-  assert.ok(!/Dear Mr,/.test(SENT.html), '"Dear Mr," is back in the review request');
+  const cases = [
+    ['Mr Ben', 'Dear Mr Ben,'],
+    ['Mr J Whitfield', 'Dear Mr Whitfield,'],
+    ['Eleanor Whitfield', 'Dear Eleanor,'],
+    ['', 'Dear there,'],
+    [null, 'Dear there,']
+  ];
+  for (const [bookingName, want] of cases) {
+    const reviewName = buildName({ customer_name: bookingName, passenger_name: null });
+    await EMAIL.sendReviewRequest('a@b.c', reviewName, 'WPH-REV2');
+    const got = (/Dear ([^,<]+),/.exec(SENT.html) || [])[0];
+    assert.strictEqual(got, want,
+      'a booking named ' + JSON.stringify(bookingName) + ' is greeted "' + got + '"');
+    assert.ok(!/Dear (Mr|Mrs|Ms|Dr|Miss),/.test(SENT.html),
+      '"Dear <title>," is back for ' + JSON.stringify(bookingName));
+  }
+});
+
+test('the sender itself defends against a truncated name', () => {
+  // Belt and braces: even if some future caller passes a bare "Mr", the sender
+  // must not print it as the greeting.
+  const src = read('server/email.js');
+  const fn = src.slice(src.indexOf('async function sendReviewRequest'));
+  const body = fn.slice(0, fn.indexOf('\n}\n'));
+  assert.ok(/firstName = greetingName\(firstName\)/.test(body),
+    'sendReviewRequest no longer routes the name through greetingName');
+  assert.ok(!/firstName = firstName \|\| 'there'/.test(body),
+    'the old raw fallback is back — it prints whatever it is handed');
 });
 
 test('this guardrail is wired into npm test', () => {

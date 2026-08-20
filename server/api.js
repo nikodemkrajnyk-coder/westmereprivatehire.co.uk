@@ -458,8 +458,11 @@ router.patch('/bookings/:id', async (req, res) => {
         const emailKey = reviewEmail.trim().toLowerCase();
         const alreadyAsked = db.prepare('SELECT 1 FROM review_emails_sent WHERE email = ?').get(emailKey);
         if (!alreadyAsked) {
-          const firstName = (updated.customer_name || updated.passenger_name || '').split(' ')[0] || 'there';
-          sendReviewRequest(reviewEmail, firstName, updated.ref)
+          // The FULL name — email.js decides how to address somebody, and it
+          // cannot do that from a name this line has already truncated to
+          // "Mr". Splitting here is what produced "Dear Mr,".
+          const reviewName = updated.customer_name || updated.passenger_name || '';
+          sendReviewRequest(reviewEmail, reviewName, updated.ref)
             .then(ok => {
               if (ok) {
                 // Record per-email so this customer is never asked again, and

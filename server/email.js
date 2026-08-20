@@ -1695,7 +1695,15 @@ const TRUSTPILOT_REVIEW_LINK = 'https://uk.trustpilot.com/evaluate/westmerepriva
 
 async function sendReviewRequest(email, firstName, ref) {
   if (!email) return;
-  firstName = firstName || 'there';
+  /* This one takes the name as a PARAMETER, which is exactly why it escaped the
+     sweep that fixed the other fifteen: there was no `(name||'').split(' ')[0]`
+     in this file to find. The caller had it instead, so a booking for
+     "Mr Ben" arrived here as "Mr" and the email opened "Dear Mr,".
+     greetingName is applied here as well as at the call site — it is
+     idempotent ("Ben" stays "Ben"), so a caller that already passes a clean
+     first name loses nothing, and one that passes a full name is handled.
+     GUARDRAIL: server/tests/review-links.test.js */
+  firstName = greetingName(firstName);
   const body = `
   <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
   <p style="margin:0 0 18px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Thank you for travelling with us today${ref ? ' (booking ' + escHtml(ref) + ')' : ''}. We truly hope your journey was comfortable and that we met your expectations.</p>
