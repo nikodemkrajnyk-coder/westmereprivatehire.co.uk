@@ -67,9 +67,26 @@ test('the destinations are declared once, not inlined per use', () => {
   assert.ok(/const TRUSTPILOT_REVIEW_LINK\s*=/.test(SRC), 'the Trustpilot link is not a named constant');
 });
 
-test('both are framed emailBtn buttons — no fill, no gold, no Trustpilot green', () => {
-  const BANNED = /#b78635|#c9a227|#d4af37|#25D366|#2D6E47|#00b67a|#e1306c|goldenrod/i;
+test('both are framed emailBtn buttons — no fill, no gold, and green ONLY on Trustpilot', () => {
+  /* OWNER-APPROVED EXCEPTION: the Trustpilot button keeps Trustpilot's green,
+     because a customer scanning an inbox finds the green mark faster than a
+     navy one. Nothing else in this email may wear a brand colour — gold, the
+     WhatsApp green and Instagram pink all still fail, and the green itself is
+     allowed only on the Trustpilot CTA. */
+  const BANNED = /#b78635|#c9a227|#d4af37|#25D366|#2D6E47|#e1306c|goldenrod/i;
   assert.ok(!BANNED.test(HTML), 'a brand or gold colour is in the review email');
+  // The green appears, and only inside the Trustpilot button.
+  assert.ok(/#00B67A/i.test(HTML), 'the Trustpilot button lost its brand green');
+  const tpBtn = /<td[^>]*>[\s\S]{0,900}?Review us on Trustpilot[\s\S]{0,60}?<\/a>/.exec(HTML);
+  assert.ok(tpBtn, 'could not isolate the Trustpilot button');
+  const withoutTp = HTML.split('#00B67A').length - 1;
+  const insideTp = (tpBtn[0].match(/#00B67A/gi) || []).length;
+  assert.ok(insideTp >= 1, 'the green is not on the Trustpilot button itself');
+  // The Google button must stay navy — the exception is one platform, not "any CTA".
+  const gBtn = /<td[^>]*>[\s\S]{0,900}?Review us on Google[\s\S]{0,60}?<\/a>/.exec(HTML);
+  assert.ok(gBtn && !/#00B67A/i.test(gBtn[0]),
+    'the Google button has taken Trustpilot green — the exception is per-platform');
+  assert.ok(withoutTp <= 6, 'the green has spread beyond the Trustpilot button (' + withoutTp + ' occurrences)');
   // The CTAs must come through emailBtn — the VML frame is only ever emitted there.
   assert.ok(/v:roundrect/.test(HTML), 'the buttons did not come through emailBtn (no Outlook frame)');
   assert.ok(/fillcolor="#ffffff"/.test(HTML), 'the Outlook frame is filled rather than outlined');

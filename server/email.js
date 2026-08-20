@@ -134,6 +134,9 @@ const INK_MUTED   = '#657485';   // --westmere-muted — labels & footer
 const ACCENT      = '#102a43';   // was gold; the accent is navy now
 const HAIRLINE    = 'rgba(16,42,67,0.12)';
 const HAIRLINE_S  = '#c8d1d9';   // --westmere-line-strong, solid: VML strokecolor
+// Trustpilot's own green. The ONE third-party colour in this file, and only
+// for the Trustpilot review button — see the EMAIL_BTN note below.
+const TRUSTPILOT_GREEN = '#00B67A';
                                  // cannot take an rgba(), and neither can Outlook.
 
 // The old imageless emailShell has been RETIRED — every email now renders
@@ -375,7 +378,19 @@ function confRow(icon, label, valueHtml, opts) {
 const EMAIL_BTN = {
   primary:   { size: 16, weight: 700, ink: INK,       border: INK,       width: 2, track: '1.4px' },
   secondary: { size: 14, weight: 600, ink: INK,       border: INK,       width: 1, track: '1.2px' },
-  danger:    { size: 14, weight: 600, ink: INK_MUTED, border: HAIRLINE_S, width: 1, track: '1.2px' }
+  danger:    { size: 14, weight: 600, ink: INK_MUTED, border: HAIRLINE_S, width: 1, track: '1.2px' },
+  /* OWNER-APPROVED EXCEPTION — Trustpilot keeps its brand green.
+     The rule everywhere else in this system is that nothing carries another
+     company's colour (§20, no-fills.test.js). Trustpilot and Instagram are the
+     deliberate exceptions the owner asked for: they are recognised BY their
+     colour, and a customer scanning an email finds the green Trustpilot star
+     faster than a navy one. Scoped to this one row and the social glyphs on
+     the site — nothing else may use it.
+     Still a FRAME, not a slab: white cell, green hairline, green label. The
+     green measures 3.1:1 on white, so it stays on the 14px/600 secondary
+     tier where it is a large-text AA pass rather than body copy.
+     GUARDRAIL: server/tests/review-links.test.js */
+  trustpilot: { size: 14, weight: 600, ink: TRUSTPILOT_GREEN, border: TRUSTPILOT_GREEN, width: 1, track: '1.2px' }
 };
 
 // `block` = full-width stacked button (the payment actions); otherwise the
@@ -1696,7 +1711,7 @@ async function sendReviewRequest(email, firstName, ref) {
        no Trustpilot green. GUARDRAIL: server/tests/review-links.test.js -->
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:26px 0 22px">
     <tr><td style="padding-bottom:12px">${emailBtn(`${GOOGLE_REVIEW_LINK}`, `Review us on Google`, `primary`, true)}</td></tr>
-    <tr><td>${emailBtn(`${TRUSTPILOT_REVIEW_LINK}`, `Review us on Trustpilot`, `secondary`, true)}</td></tr>
+    <tr><td>${emailBtn(`${TRUSTPILOT_REVIEW_LINK}`, `Review us on Trustpilot`, `trustpilot`, true)}</td></tr>
   </table>
   <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">It takes less than a minute and means a great deal to a small, independent business like ours.</p>
   <p style="margin:20px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">With warm thanks,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;

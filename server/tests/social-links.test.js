@@ -121,20 +121,71 @@ test('the pair sits in the HEADER too, at every width', () => {
     'without margin-left:auto the desktop nav spreads three children and the links drift to the middle');
 });
 
-test('the icons are MONOCHROME — no Instagram pink, no Trustpilot green', () => {
-  // The two brand palettes, plus the gradient stops Instagram's logo uses.
-  const BANNED = /#e1306c|#c13584|#833ab4|#f77737|#fcaf45|#405de6|#00b67a|#005128|#191919/i;
+test('the badges carry their OWN brand colour — the one approved exception', () => {
+  /* OWNER-APPROVED EXCEPTION. Everywhere else in this system nothing wears
+     another company's colour (§20, no-fills.test.js). Instagram and Trustpilot
+     are the deliberate exceptions: these are recognised BY their colour, and a
+     visitor scanning a footer finds the green star and the Instagram gradient
+     faster than two navy glyphs.
+
+     The exception is scoped to the GLYPH. The button around it stays a navy
+     hairline frame on white, so the no-fill rule is untouched — this is a
+     coloured mark inside a Westmere control, not a borrowed badge. */
+  const IG_GRADIENT = 'url(#wm-ig-gradient)';
+  const TP_GREEN = /#00B67A/i;
   for (const f of PUBLIC) {
     const src = read(f);
-    for (const m of src.matchAll(/<a[^>]*data-social="[^"]*"[\s\S]*?<\/a>/g)) {
-      assert.ok(!BANNED.test(m[0]),
-        f + ': a brand colour is back on a social icon — these are navy, like every other control');
-      assert.ok(/stroke="currentColor"/.test(m[0]),
-        f + ': the glyph no longer inherits currentColor, so it can drift from the frame');
-      assert.ok(!/<img/i.test(m[0]),
-        f + ': the icon has been swapped for an image — a logo file brings its brand colour with it');
+    // The gradient is defined ONCE per page and referenced by every Instagram
+    // glyph on it — three <linearGradient id="…"> copies would be three
+    // duplicate ids, which page-integrity rightly fails on.
+    assert.strictEqual((src.match(/<linearGradient id="wm-ig-gradient"/g) || []).length, 1,
+      f + ': the Instagram gradient must be defined exactly once per page');
+    let ig = 0, tp = 0;
+    for (const m of src.matchAll(/<a[^>]*data-social="([^"]*)"[\s\S]*?<\/a>/g)) {
+      const [whole, which] = m;
+      if (which === 'instagram') {
+        ig++;
+        assert.ok(whole.includes(IG_GRADIENT),
+          f + ': the Instagram glyph is not painted with the brand gradient');
+      }
+      if (which === 'trustpilot') {
+        tp++;
+        assert.ok(TP_GREEN.test(whole), f + ': the Trustpilot star is not Trustpilot green');
+      }
+      assert.ok(!/<img/i.test(whole),
+        f + ': the icon is an image file — the colour must come from the inline SVG we control');
+    }
+    assert.ok(ig >= 1 && tp >= 1, f + ': expected at least one of each badge');
+  }
+});
+
+test('the exception is NARROW — brand colour on anything else still fails', () => {
+  // The rule this relaxes is real, so prove the relaxation cannot be borrowed.
+  // A non-exempt element wearing the same colours must still be caught.
+  const EXEMPT = /data-social="(instagram|trustpilot)"/;
+  const BRAND = /#00B67A|url\(#wm-ig-gradient\)|#e1306c|#c13584|#833ab4|#405de6/i;
+  for (const f of PUBLIC) {
+    const src = read(f);
+    // Every element carrying a brand colour must be one of the two badges, or
+    // the gradient definition that feeds them.
+    for (const m of src.matchAll(/<(?!linearGradient|stop)[a-z][^>]*>/gi)) {
+      if (!BRAND.test(m[0])) continue;
+      const tagStart = m.index;
+      const enclosing = src.slice(Math.max(0, tagStart - 400), tagStart + m[0].length);
+      assert.ok(EXEMPT.test(enclosing) || /wm-ig-gradient"/.test(m[0]),
+        f + ': a NON-exempt element carries a brand colour — the exception is only for the ' +
+        'Instagram and Trustpilot badges: ' + m[0].slice(0, 110));
     }
   }
+  // And the detector really does fire: plant the green on an ordinary element.
+  const planted = read('index.html').replace('<nav>', '<nav><span style="color:#00B67A">stray</span>');
+  let caught = false;
+  for (const m of planted.matchAll(/<(?!linearGradient|stop)[a-z][^>]*>/gi)) {
+    if (!BRAND.test(m[0])) continue;
+    const enclosing = planted.slice(Math.max(0, m.index - 400), m.index + m[0].length);
+    if (!EXEMPT.test(enclosing) && !/wm-ig-gradient"/.test(m[0])) caught = true;
+  }
+  assert.ok(caught, 'a brand colour planted on an ordinary element was NOT caught — the check is inert');
 });
 
 test('the buttons are framed, not filled, and are a real tap target', () => {

@@ -296,10 +296,43 @@ function coloursIn(src) {
   return out;
 }
 
+/* OWNER-APPROVED EXCEPTION, and the only one.
+   The Instagram badge keeps its brand gradient — the owner's call, because a
+   social badge is recognised BY its colour. That gradient runs through orange
+   (#FDB24C, #F5763B), which is a gold hue and which this sweep is otherwise
+   right to reject.
+
+   So the gradient DEFINITION is cut out before the sweep runs, and nothing
+   else is. A gold anywhere else on the same page still fails, and the
+   Instagram exemption cannot be borrowed by another element: the colours live
+   inside <linearGradient id="wm-ig-gradient">, referenced as url(#…), so an
+   element wanting this orange has to point at Instagram's own gradient.
+   Negative-tested below. */
+function withoutInstagramGradient(src) {
+  // Keep newlines so the line numbers this sweep reports stay true.
+  return src.replace(/<linearGradient id="wm-ig-gradient"[\s\S]*?<\/linearGradient>/g,
+                     m => m.replace(/[^\n]/g, ' '));
+}
+
+test('the Instagram exemption is NARROW — gold elsewhere on the page still fails', () => {
+  // Same detector, run over a page that has the real gradient plus one stray
+  // gold outside it. The gradient must be forgiven and the stray must not.
+  const page = read('index.html');
+  assert.ok(/wm-ig-gradient/.test(page), 'index.html no longer carries the gradient this exemption is for');
+  assert.strictEqual(coloursIn(withoutInstagramGradient(page)).filter(c => warmHue(c.r, c.g, c.b) !== null).length, 0,
+    'the live page has a gold outside the Instagram gradient');
+  const planted = page.replace('<nav>', '<nav><span style="color:#c9a227">stray gold</span>');
+  const hits = coloursIn(withoutInstagramGradient(planted)).filter(c => warmHue(c.r, c.g, c.b) !== null);
+  assert.ok(hits.length >= 1,
+    'a gold planted OUTSIDE the Instagram gradient was forgiven — the exemption is too wide');
+  assert.ok(hits.some(c => /c9a227/i.test(c.value)), 'the planted gold was not the one caught: ' +
+    hits.map(c => c.value).join(', '));
+});
+
 test('NO cream or gold value exists anywhere in the code', () => {
   const found = [];
   for (const f of PAGES_AND_CSS) {
-    for (const c of coloursIn(read(f))) {
+    for (const c of coloursIn(withoutInstagramGradient(read(f)))) {
       const hue = warmHue(c.r, c.g, c.b);
       if (hue !== null) {
         const kind = (c.r > 0xdf && c.g > 0xdf && c.b > 0xdf) ? 'cream' : 'gold';
