@@ -1669,16 +1669,35 @@ async function sendCorporateIntro(recipientEmail, companyName) {
 }
 
 // ── Review request (sent once per customer after their first completed job) ──
+/* ── WHERE WE ASK FOR REVIEWS ─────────────────────────────────────────────
+   Two links, declared once. Google is the business's own profile, keyed by the
+   CID that reviews.js and the homepage widget already use — payment-flow's
+   guard asserts the email and the site never drift apart on it. Trustpilot is
+   the /evaluate/ path, which opens the write-a-review form directly rather
+   than the profile page a customer would then have to find the button on. */
+const GOOGLE_REVIEW_LINK     = 'https://g.page/r/Ce764VxFTR4VEAE/review';
+const TRUSTPILOT_REVIEW_LINK = 'https://uk.trustpilot.com/evaluate/westmereprivatehire.co.uk';
+
 async function sendReviewRequest(email, firstName, ref) {
   if (!email) return;
   firstName = firstName || 'there';
   const body = `
   <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
   <p style="margin:0 0 18px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Thank you for travelling with us today${ref ? ' (booking ' + escHtml(ref) + ')' : ''}. We truly hope your journey was comfortable and that we met your expectations.</p>
-  <p style="margin:0 0 22px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">If you have a spare moment, we would be deeply grateful if you could share a few words about your experience. Reviews help other travellers find us and allow us to keep doing what we love.</p>
-  <div style="text-align:center;margin:28px 0 24px">
-    ${emailBtn(`https://g.page/r/Ce764VxFTR4VEAE/review`, `Leave a Google Review`, `secondary`, false)}
-  </div>
+  <p style="margin:0 0 22px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">If you have a spare moment, we would be deeply grateful if you could share a few words about your experience &mdash; on Google or on Trustpilot, whichever you already use. Reviews help other travellers find us and allow us to keep doing what we love.</p>
+  <!-- BOTH platforms, because a customer already has an account on one of them
+       and will not create one on the other. Google first: it is the business's
+       own profile (CID Ce764VxFTR4VEAE — the same link reviews.js puts on the
+       site, pinned by payment-flow.test.js so the two can never drift), and it
+       is where a search for "Westmere Private Hire" lands. Trustpilot second,
+       on the UK domain so a British customer is not bounced through the
+       "go to the British site" interstitial on the way to writing a review.
+       Both are the framed navy emailBtn — no fill, no gold, and emphatically
+       no Trustpilot green. GUARDRAIL: server/tests/review-links.test.js -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:26px 0 22px">
+    <tr><td style="padding-bottom:12px">${emailBtn(`${GOOGLE_REVIEW_LINK}`, `Review us on Google`, `primary`, true)}</td></tr>
+    <tr><td>${emailBtn(`${TRUSTPILOT_REVIEW_LINK}`, `Review us on Trustpilot`, `secondary`, true)}</td></tr>
+  </table>
   <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">It takes less than a minute and means a great deal to a small, independent business like ours.</p>
   <p style="margin:20px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">With warm thanks,<br><span style="color:${INK}">Westmere Private Hire</span></p>`;
 

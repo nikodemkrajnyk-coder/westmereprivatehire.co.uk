@@ -1630,3 +1630,118 @@ input, select, textarea {
 /* One italic word, as everywhere else a heading carries emphasis in this
    system. Italic, not bold: bold at this size reads as a banner. */
 .qe-title em { font-style: italic; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   §27  FIND US — INSTAGRAM AND TRUSTPILOT
+   ═══════════════════════════════════════════════════════════════════════
+   Instagram used to be the fourth item in a row of .78rem footer text links,
+   between an email address and a phone number, and nobody saw it. Trustpilot
+   did not exist at all.
+
+   Both are now framed icon buttons: a navy hairline on white with a 20px
+   monochrome glyph and an uppercase label, at a real 44px tap target. They
+   sit in the footer on every public page, and again directly under the
+   reviews block on the homepage, where somebody who has just read the
+   testimonials is deciding whether to believe them.
+
+   MONOCHROME, DELIBERATELY. Instagram pink and Trustpilot green are the two
+   most obvious places a brand colour sneaks back into this system, and §20
+   says nothing highlights by filling. These read as Westmere's own controls,
+   not as two borrowed logos — emphasis comes from the frame and the glyph.
+   A press still fills navy, the same as every other control.
+   GUARDRAIL: server/tests/social-links.test.js */
+.wm-social {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3, .75rem);
+  margin: var(--space-4, 1rem) 0 0;
+}
+.wm-social-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2, .5rem);
+  min-height: 44px;                     /* the tap target, not a decoration */
+  padding: var(--space-2, .5rem) var(--space-4, 1rem);
+  background: transparent;
+  border: var(--border-hair, 1px) solid var(--westmere-navy, #102a43);
+  border-radius: var(--radius-btn, 11px);
+  color: var(--westmere-navy, #102a43);
+  -webkit-text-fill-color: var(--westmere-navy, #102a43);
+  text-decoration: none;
+  font-size: var(--text-sm, .78rem);
+  font-weight: var(--weight-semi, 600);
+  letter-spacing: var(--tracking-wide, .08em);
+  text-transform: uppercase;
+  transition: background var(--ease-ui, .2s ease), color var(--ease-ui, .2s ease);
+}
+/* The glyph carries the recognition, so it is the largest thing in the button
+   — bigger than the label, which is only there for anyone who does not read
+   icons. currentColor keeps it in step with the frame. */
+.wm-social-link svg {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  display: block;
+}
+/* A press fills, for the moment a finger is down — feedback, not decoration
+   (§20's one exemption). */
+.wm-social-link:active {
+  background: var(--westmere-navy, #102a43);
+  color: var(--westmere-white, #ffffff);
+  -webkit-text-fill-color: var(--westmere-white, #ffffff);
+}
+.wm-social-lead {
+  display: block;
+  margin: 0;
+  font-size: var(--text-sm, .78rem);
+  font-weight: var(--weight-normal, 400);
+  letter-spacing: var(--tracking-wide, .08em);
+  text-transform: uppercase;
+  color: var(--westmere-muted, #657485);
+  -webkit-text-fill-color: var(--westmere-muted, #657485);
+}
+
+/* ── §27b  THE SAME PAIR, IN THE HEADER ─────────────────────────────────
+   The owner wants them at the TOP as well as by the reviews, so they are read
+   before anyone scrolls.
+
+   Placed as a direct child of <nav>, immediately before the burger, NOT inside
+   .navlinks — that container is display:none under 900px, which is precisely
+   the width where the owner most wants these seen. The burger is never hidden,
+   so sitting beside it means they survive every breakpoint.
+
+   ICON ONLY up here. A label beside each glyph doubles the width and, on a
+   390px screen, pushes the pair into the burger. The accessible name is on
+   aria-label, so a screen reader still hears "Westmere Private Hire on
+   Instagram" rather than a bare link.
+
+   .navlinks gets margin-left:auto so the desktop header keeps its shape:
+   brand hard left, everything else hard right, exactly as before this pair
+   arrived. Without it, nav's space-between would spread three children and
+   push the links into the middle of the bar.
+   GUARDRAIL: server/tests/social-links.test.js */
+nav > .navlinks { margin-left: auto; }
+.wm-social-nav {
+  /* --space-5, not --space-3. Measured at 1280px, a 12px gap left the BOOK NOW
+     frame and the Instagram frame 12px apart — two bordered boxes that close
+     together read as one broken control rather than two. 24px separates the
+     nav's actions from its social pair. */
+  margin: 0 0 0 var(--space-5, 1.5rem);
+  gap: var(--space-2, .5rem);
+  flex-wrap: nowrap;
+}
+.wm-social-nav .wm-social-link {
+  width: 44px;                 /* square, and still a full tap target */
+  padding: 0;
+  gap: 0;
+  justify-content: center;
+}
+/* On a phone the brand and the burger compete for the same bar, so the pair
+   pulls in — but only its outer margin. The gap BETWEEN the two icons stays at
+   --space-2: measured at 390px the pair still clears the burger by 37px, so
+   squeezing them to 4px bought nothing and made two frames look like one. */
+@media (max-width: 620px) {
+  .wm-social-nav { margin-left: var(--space-2, .5rem); }
+}
