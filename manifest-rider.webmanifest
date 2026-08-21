@@ -1,14 +1,41 @@
 {
   "name": "Westmere Rider",
   "short_name": "Rider",
-  "description": "Book a Westmere Private Hire car across Sussex \u2014 fixed fares, licensed drivers.",
+  "description": "Book a Westmere Private Hire car across Sussex — fixed fares, licensed drivers.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#F5F2ED",
-  "theme_color": "#111D2C",
+  "theme_color": "#ffffff",
   "lang": "en-GB",
-  "categories": ["travel", "lifestyle"],
-  "icons": []
+  "categories": [
+    "travel",
+    "lifestyle"
+  ],
+  "icons": [
+    {
+      "src": "/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
 }
