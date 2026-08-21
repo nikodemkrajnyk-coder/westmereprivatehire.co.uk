@@ -1,30 +1,21 @@
 /**
  * 12-hour owner pickup reminder — server-side sweeper (Railway, no Claude).
  *
- * Every 15 minutes it finds going-ahead bookings whose pickup is within the next
- * 12 hours and which haven't been reminded yet, emails the OWNER (never the
- * customer) the details, and stamps bookings.reminder_sent_at so each booking
- * reminds exactly once. Runs entirely on the server through Resend — there is NO
- * dependency on Claude or any assistant.
+ * Every 15 minutes it finds going-ahead bookings whose pickup falls anywhere in
+ * the next 12 hours — the window is 0 < gap <= 12h, so a booking made two hours
+ * before pickup is picked up on the very next sweep rather than missed — and
+ * which haven't been reminded yet, emails the OWNER (never the customer) the
+ * details, and stamps bookings.reminder_sent_at so each booking reminds exactly
+ * once. The email states the REAL remaining time, computed at send time.
+ * Runs entirely on the server through Resend — there is NO dependency on Claude
+ * or any assistant.
  */
 const { getDb } = require('./db');
-
-// "now" as UK wall-clock, parsed as a naive UTC timestamp. Pickup times are also
-// stored as UK-local wall-clock, so parsing BOTH the same naive way makes the
-// difference correct in UK-local terms (DST edges are negligible for a 12h gap).
-function ukNowMs() {
-  const s = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/London' }); // "YYYY-MM-DD HH:MM:SS"
-  return Date.parse(s.replace(' ', 'T') + 'Z');
-}
-
-// Pickup wall-clock → ms (naive UTC). Returns null for ASAP / no fixed time.
-function pickupMs(date, time) {
-  if (!date || !time) return null;
-  const m = String(time).match(/^(\d{2}):(\d{2})/);
-  if (!m) return null; // 'ASAP' or malformed → no scheduled reminder
-  const t = Date.parse(String(date) + 'T' + m[1] + ':' + m[2] + ':00Z');
-  return isNaN(t) ? null : t;
-}
+// ukNowMs/pickupMs live in time-gap.js so the sweeper and the email wording read
+// the clock the same way — the email now states the REAL gap, and it must agree
+// with the window this file used to decide the booking was due. Re-exported
+// below, so this module's public surface is unchanged.
+const { ukNowMs, pickupMs } = require('./time-gap');
 
 // PURE: given booking rows + "now", return those due for a reminder — pickup is
 // still in the future but within the next `windowHours`, and not yet reminded.
@@ -63,7 +54,8 @@ async function sweepDueReminders() {
        AND b.date >= date('now', '-1 day')
   `).all();
 
-  const due = dueReminders(rows, ukNowMs(), 12);
+  const nowMs = ukNowMs();
+  const due = dueReminders(rows, nowMs, 12);
   if (!due.length) return { checked: rows.length, sent: 0 };
 
   const ownerEmail = ownerReminderEmail(db);
@@ -71,7 +63,7 @@ async function sweepDueReminders() {
   let sent = 0;
   for (const b of due) {
     try {
-      const ok = await sendOwnerBookingReminder(b, ownerEmail);
+      const ok = await sendOwnerBookingReminder(b, ownerEmail, nowMs);
       if (ok) {
         db.prepare("UPDATE bookings SET reminder_sent_at = datetime('now') WHERE id = ?").run(b.id);
         sent++;
@@ -80,7 +72,7 @@ async function sweepDueReminders() {
       console.error('[REMINDER] send failed for', b.ref, '-', e.message);
     }
   }
-  if (sent) console.log('[REMINDER] sent', sent, 'owner 12h reminder(s) to', ownerEmail);
+  if (sent) console.log('[REMINDER] sent', sent, 'owner pickup reminder(s) to', ownerEmail);
   return { checked: rows.length, sent };
 }
 

@@ -880,12 +880,22 @@ async function sendAdminAlert(booking) {
   if (ok) console.log('[EMAIL] Admin alert sent (' + ref + ')');
 }
 
-// ── 12-hour pickup reminder → the OWNER ──────────────────────────────────
+// ── Pickup reminder → the OWNER (fires anywhere inside the next 12h) ─────
 // Fired by the server-side reminder sweeper ~12h before pickup so the owner is
 // never late again. Goes to the owner's own inbox (never the customer).
-async function sendOwnerBookingReminder(booking, ownerEmail) {
+async function sendOwnerBookingReminder(booking, ownerEmail, nowMs) {
   const to = ownerEmail || process.env.ADMIN_EMAIL || process.env.GMAIL_USER;
   if (!to) return false;
+  // The REAL remaining time, worked out when the email is built rather than
+  // assumed. The sweeper fires for anything inside the next 12 hours, so this is
+  // just as often five hours or forty minutes. It passes its own sweep clock in
+  // so the window decision and this sentence come from one instant; called
+  // without it (a manual resend), we read the clock ourselves.
+  const { ukNowMs, pickupMs, gapPhrase, urgencyLine } = require('./time-gap');
+  const _now = typeof nowMs === 'number' ? nowMs : ukNowMs();
+  const _pickupAt = pickupMs(booking.date, booking.time);
+  const gapMs = _pickupAt == null ? null : _pickupAt - _now;
+  const gapWords = gapPhrase(gapMs);
   const { ref, date, time, pickup, destination, stop_address, fare, payment,
           passengers, bags, flight, customer_name, customer_phone } = booking;
   const name  = customer_name  || booking.passenger_name  || 'Guest';
@@ -917,15 +927,15 @@ async function sendOwnerBookingReminder(booking, ownerEmail) {
 
   const body = `
   <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Pickup reminder</p>
-  <p style="margin:0 0 8px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:18px;color:${INK};font-weight:400;line-height:1.4">A booking is coming up in about 12 hours.</p>
-  <p style="margin:0 0 22px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Give yourself plenty of time — full details below.</p>
+  <p style="margin:0 0 8px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:18px;color:${INK};font-weight:400;line-height:1.4">A booking is coming up ${escHtml(gapWords)}.</p>
+  <p style="margin:0 0 22px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">${escHtml(urgencyLine(gapMs))}</p>
   ${buildDetailsTable(rows)}`;
 
   const html = heroEmail(body);
   const subject = 'Reminder — ' + name + ' pickup ' + (time && time !== 'ASAP' ? 'at ' + time : '') + ' · ' + ref;
-  const preheader = 'Pickup in ~12 hours: ' + name + ' — ' + shortDisplay(pickup) + ' → ' + shortDisplay(destination);
+  const preheader = 'Pickup ' + gapWords + ': ' + name + ' — ' + shortDisplay(pickup) + ' → ' + shortDisplay(destination);
   const ok = await sendEmail(to, subject, html, 'Westmere Bookings', preheader);
-  if (ok) console.log('[EMAIL] Owner 12h reminder sent (' + ref + ') to', to);
+  if (ok) console.log('[EMAIL] Owner pickup reminder sent (' + ref + ', ' + gapWords + ') to', to);
   return ok;
 }
 
