@@ -15,9 +15,17 @@
  *   always was) but "can the mark actually be SEEN". A contrast assertion is the
  *   only form of that check a test can make.
  *
+ *   The mark itself has since changed — it is now the capital W outlined from
+ *   the same Cormorant as the WESTMERE wordmark, in the wordmark's own colour,
+ *   on white. The assertions below are deliberately about legibility and format
+ *   rather than about a particular shape, so new artwork can land without
+ *   rewriting the guard.
+ *
  * WHAT IS PINNED
- *   · the mark's stroke reads against its own plate at >= 4.5:1, so recolouring
- *     one without the other fails here rather than in the owner's tab;
+ *   · the mark reads against its own ground at >= 4.5:1, so recolouring one
+ *     without the other fails here rather than in the owner's tab;
+ *   · the mark is the WORDMARK's colour — if the brand navy moves in the theme
+ *     and the favicon does not follow, the tab stops matching the site;
  *   · every page carries the same five icon links, so a rebuilt page cannot
  *     quietly drop back to the browser's default;
  *   · no page reintroduces an inline data: URI icon — those are what drifted,
@@ -65,18 +73,40 @@ function contrast(a, b) {
 console.log('\nFAVICON\n');
 
 // ── 1. THE ACTUAL DEFECT ────────────────────────────────────────────────
-test('the mark is legible against its own plate (>= 4.5:1)', () => {
+// The mark may be a filled glyph outline or a stroked path; measure whichever
+// it is against the ground rect. What must never come back is a mark and a
+// ground that are the same darkness.
+function markColour(svg) {
+  const fill = (svg.match(/<path[^>]*\sfill=['"](#[0-9a-fA-F]{3,6})['"]/) || [])[1];
+  const stroke = (svg.match(/<path[^>]*\sstroke=['"](#[0-9a-fA-F]{3,6})['"]/) || [])[1];
+  return fill && fill.toLowerCase() !== 'none' ? fill : stroke;
+}
+
+test('the mark is legible against its own ground (>= 4.5:1)', () => {
   const svg = read('favicon.svg');
-  const plate = (svg.match(/<rect[^>]*fill=['"](#[0-9a-fA-F]{3,6})['"]/) || [])[1];
-  const stroke = (svg.match(/<path[^>]*stroke=['"](#[0-9a-fA-F]{3,6})['"]/) || [])[1];
-  assert.ok(plate, 'favicon.svg has no background <rect fill="#…"> to measure');
-  assert.ok(stroke, 'favicon.svg has no <path stroke="#…"> to measure');
-  const ratio = contrast(stroke, plate);
+  const ground = (svg.match(/<rect[^>]*fill=['"](#[0-9a-fA-F]{3,6})['"]/) || [])[1];
+  const mark = markColour(svg);
+  assert.ok(ground, 'favicon.svg has no background <rect fill="#…"> to measure');
+  assert.ok(mark, 'favicon.svg has no <path> fill or stroke colour to measure');
+  const ratio = contrast(mark, ground);
   assert.ok(ratio >= 4.5,
-    'the favicon mark is ' + ratio.toFixed(2) + ':1 against its plate (' + stroke +
-    ' on ' + plate + '). Below 4.5:1 it reads as a solid square at 16px — this is ' +
+    'the favicon mark is ' + ratio.toFixed(2) + ':1 against its ground (' + mark +
+    ' on ' + ground + '). Below 4.5:1 it reads as a flat square at 16px — this is ' +
     'exactly the "black square" the owner reported. Recolour BOTH, not one.');
-  console.log('      ' + stroke + ' on ' + plate + ' = ' + ratio.toFixed(2) + ':1');
+  console.log('      ' + mark + ' on ' + ground + ' = ' + ratio.toFixed(2) + ':1');
+});
+
+test('the mark wears the wordmark\'s own colour', () => {
+  // The favicon is the WESTMERE wordmark's W. styles.css paints .brand with
+  // var(--ink), which westmere-theme.css resolves to --westmere-navy. Read that
+  // token rather than hard-coding a hex, so moving the brand navy moves both or
+  // fails here.
+  const navy = (read('westmere-theme.css').match(/--westmere-navy:\s*(#[0-9a-fA-F]{3,6})/) || [])[1];
+  assert.ok(navy, 'could not read --westmere-navy out of westmere-theme.css');
+  const mark = markColour(read('favicon.svg'));
+  assert.strictEqual(mark.toLowerCase(), navy.toLowerCase(),
+    'the favicon mark is ' + mark + ' but the wordmark is ' + navy + '. The tab ' +
+    'icon is the wordmark\'s letter — they have to be the same colour.');
 });
 
 test('the mark is drawn as geometry, not as <text>', () => {
