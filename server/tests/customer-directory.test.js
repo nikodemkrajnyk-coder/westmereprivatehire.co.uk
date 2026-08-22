@@ -1,29 +1,37 @@
 /**
- * THE OWNER'S CUSTOMER DIRECTORY — run with:
+ * THE OWNER'S CUSTOMER LIST — run with:
  *   node server/tests/customer-directory.test.js   (also gated by `npm test`)
  *
  * WHAT THIS IS FOR
  *   The owner retypes the same phone number and email every time a regular
- *   rings up. Anyone who has ridden MORE THAN TWICE is now saved automatically
- *   and can be picked on a new booking.
+ *   rings up. He can now tap "Add to list" on a booking and pick that person on
+ *   the next one.
  *
- *   Two things make that dangerous rather than merely useful. It is a store of
- *   customer PII, so it must never reach an unauthenticated endpoint. And it is
- *   built by matching people across bookings, so a sloppy key either splits one
- *   person into three rows or — far worse — merges two strangers into one.
+ * MANUAL, NOT AUTOMATIC — AND THAT IS THE FIRST THING PINNED
+ *   This list used to add anyone with more than two bookings, on a rebuild.
+ *   The owner asked for that gone: he would rather choose. So the very first
+ *   assertion below is that a customer with plenty of bookings does NOT appear
+ *   unless somebody added them — that rule coming back by accident is the
+ *   regression this file exists to catch.
+ *
+ *   Because nothing repopulates the list, removal is a plain DELETE and needs no
+ *   suppression flag.
+ *
+ * THE OTHER RISKS
+ *   It is a store of customer PII, so it must never reach an unauthenticated
+ *   endpoint. And it matches people across bookings, so a sloppy key either
+ *   splits one person into three rows or — worse — merges two strangers.
  *
  * WHAT IS PINNED
- *   1. The threshold is exactly "more than two": 2 bookings → not listed,
- *      3 → listed. Cancelled trips do not count.
- *   2. Dedup by normalised phone: +44 / 0044 / 44 / leading-0 / spaces are one
- *      person. Dedup by email, case-insensitively.
- *   3. Rebuilding is idempotent — running it twice changes nothing.
- *   4. Two different people never merge, and a customer with no phone AND no
- *      email is skipped rather than pooled with every other anonymous booking.
- *   5. Home address = most frequent pickup, ties to the most recent; once the
- *      owner edits it, the recompute stops overwriting it.
- *   6. The picker fills the REAL booking-form field ids.
- *   7. NO public router exposes the directory or its table.
+ *   1. NO auto-add: bookings alone never put anybody on the list.
+ *   2. Add works from a booking, is idempotent on the normalised identity, and
+ *      copies name / phone / email / pickup-as-home.
+ *   3. Remove deletes from the list only; bookings are untouched by both.
+ *   4. Dedup by normalised phone (+44 / 0044 / 44 / leading-0 / spaces) and by
+ *      email, case-insensitively. Two people never merge.
+ *   5. An owner-edited address is never overwritten by a later Add.
+ *   6. Trip counts are computed live from bookings, so they cannot go stale.
+ *   7. Add and remove are owner/admin only; no public router exposes any of it.
  *
  * Runs the shipped module and the shipped route handlers against a throwaway
  * database. Exit 1 on failure.
@@ -62,6 +70,10 @@ const runList = new Function('req', 'res', 'getDb', 'require', 'console',
   'return (async()=>{' + handler('get', '/customer-directory') + '})();');
 const runEdit = new Function('req', 'res', 'getDb', 'require', 'console',
   'return (async()=>{' + handler('patch', '/customer-directory/:id') + '})();');
+const runAdd = new Function('req', 'res', 'getDb', 'require', 'console',
+  'return (async()=>{' + handler('post', '/bookings/:id/add-customer') + '})();');
+const runDelete = new Function('req', 'res', 'getDb', 'require', 'console',
+  'return (async()=>{' + handler('delete', '/customer-directory/:id') + '})();');
 
 function makeDb() {
   const db = new Database(':memory:');
@@ -78,12 +90,14 @@ function makeDb() {
 }
 let refN = 0;
 function book(db, o) {
-  db.prepare(`INSERT INTO bookings (ref, customer_id, pickup, destination, date, time, status,
+  o = o || {};
+  const info = db.prepare(`INSERT INTO bookings (ref, customer_id, pickup, destination, date, time, status,
               passenger_name, passenger_phone, passenger_email)
               VALUES (?,?,?,?,?,?,?,?,?,?)`).run(
     'R' + (++refN), o.customer_id || null, o.pickup || 'Somewhere', o.destination || 'Gatwick',
     o.date || '2026-01-0' + ((refN % 9) + 1), '09:00', o.status || 'confirmed',
     o.name || null, o.phone || null, o.email || null);
+  return info.lastInsertRowid;
 }
 const names = (db) => dir.list(db).map((r) => r.name).sort();
 
@@ -95,223 +109,207 @@ function mkRes() {
 }
 const OWNER_AUTH = { role: 'owner', id: 1, type: 'user' };
 const REQ = (m) => require(m.replace(/^\.\//, '../'));
+const call = async (fn, db, id, auth) => {
+  const res = mkRes();
+  await fn({ params: { id: String(id) }, body: {}, query: {}, auth: auth || OWNER_AUTH, ip: '1.1.1.1' },
+    res, () => db, REQ, console);
+  return res;
+};
 
-console.log('\nCustomer directory — who gets saved');
+console.log('\nCustomer list — manual only');
 
-// ── 1. THE THRESHOLD ─────────────────────────────────────────────────────
-test('two bookings is NOT enough; the third saves them', () => {
+// ── 1. THE RULE THAT WAS REMOVED ─────────────────────────────────────────
+test('bookings alone NEVER put anybody on the list', () => {
   const db = makeDb();
-  book(db, { name: 'Twice Only', phone: '07700900111' });
-  book(db, { name: 'Twice Only', phone: '07700900111' });
-  dir.rebuild(db);
-  assert.deepStrictEqual(names(db), [], 'two bookings must not be listed');
-
-  book(db, { name: 'Twice Only', phone: '07700900111' });
-  dir.rebuild(db);
-  assert.deepStrictEqual(names(db), ['Twice Only'], 'the third booking must save them');
-  assert.strictEqual(dir.list(db)[0].booking_count, 3);
+  for (let i = 0; i < 12; i++) book(db, { name: 'Very Frequent', phone: '07700900111' });
+  assert.deepStrictEqual(names(db), [],
+    'twelve bookings must not add anybody — the auto rule is gone and must stay gone');
 });
 
-test('cancelled trips do not count towards the threshold', () => {
-  const db = makeDb();
-  book(db, { name: 'Flaky', phone: '07700900222' });
-  book(db, { name: 'Flaky', phone: '07700900222' });
-  book(db, { name: 'Flaky', phone: '07700900222', status: 'cancelled' });
-  dir.rebuild(db);
-  assert.deepStrictEqual(names(db), [], 'two real + one cancelled is still only two');
+test('nothing in the codebase still auto-populates the list', () => {
+  // The old rule lived in a rebuild() called from three places. All three go, or
+  // the list quietly refills behind the owner's back.
+  const mod = read('server/customer-directory.js');
+  assert.ok(!/MIN_BOOKINGS/.test(mod), 'the booking threshold must be gone');
+  assert.ok(!/function rebuild\(/.test(mod), 'rebuild() must be gone');
+  assert.ok(!/syncAfterBooking/.test(mod), 'syncAfterBooking() must be gone');
+  for (const f of ['server/api.js', 'server/public-api.js', 'server/index.js']) {
+    assert.ok(!/syncAfterBooking|customer-directory'\)\.rebuild/.test(read(f)),
+      f + ' still calls into the old automatic population');
+  }
+  // And no UI copy promising it.
+  assert.ok(!/more than \d+ bookings each|on their \d+rd booking|appear automatically/i.test(OWNER),
+    'the owner app must not still say customers are recorded automatically');
 });
 
-// ── 2. DEDUP ─────────────────────────────────────────────────────────────
-test('every written form of one phone number is ONE customer', () => {
+// ── 2. ADDING ────────────────────────────────────────────────────────────
+test('Add puts the booking\'s customer on the list with their details', async () => {
+  const db = makeDb();
+  const id = book(db, { name: 'Mr Ben Chan', phone: '07700 900123', email: 'Ben@Example.com',
+                        pickup: '14 Greenhill Avenue, Caterham, CR3 6PQ' });
+  const res = await call(runAdd, db, id);
+  assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
+  assert.strictEqual(res.body.already, false);
+  const c = dir.list(db)[0];
+  assert.strictEqual(c.name, 'Mr Ben Chan');
+  assert.strictEqual(c.phone, '07700 900123');
+  assert.strictEqual(c.email, 'Ben@Example.com');
+  assert.strictEqual(c.home_address, '14 Greenhill Avenue, Caterham, CR3 6PQ',
+    'the pickup on that booking becomes their home address');
+  assert.strictEqual(c.added_by, 'manual');
+});
+
+test('Add is idempotent — a second tap does not create a twin', async () => {
+  const db = makeDb();
+  const a = book(db, { name: 'Twice', phone: '07700900222', email: 'twice@example.com' });
+  const b = book(db, { name: 'Twice', phone: '+44 7700 900222', email: 'TWICE@example.com' });
+  await call(runAdd, db, a);
+  const second = await call(runAdd, db, b);
+  assert.strictEqual(second.statusCode, 200);
+  assert.strictEqual(second.body.already, true, 'the second Add must report "already"');
+  assert.strictEqual(dir.list(db).length, 1, 'and must not add a second row');
+});
+
+test('every written form of one number is the same person', async () => {
   const db = makeDb();
   for (const p of ['+44 7700 900333', '07700 900333', '07700900333', '00447700900333', '447700900333']) {
-    book(db, { name: 'Many Formats', phone: p });
+    await call(runAdd, db, book(db, { name: 'Many Formats', phone: p }));
   }
-  dir.rebuild(db);
-  const rows = dir.list(db);
-  assert.strictEqual(rows.length, 1, 'five spellings must be one row, got ' + rows.length);
-  assert.strictEqual(rows[0].booking_count, 5, 'and all five bookings must count');
+  assert.strictEqual(dir.list(db).length, 1, 'five spellings must be one row');
 });
 
-test('email matching is case-insensitive when there is no phone', () => {
+test('email matches case-insensitively when there is no phone', async () => {
   const db = makeDb();
-  book(db, { name: 'Ben Chan', email: 'Ben@Example.com' });
-  book(db, { name: 'Ben Chan', email: 'ben@example.com' });
-  book(db, { name: 'Ben Chan', email: '  BEN@EXAMPLE.COM ' });
-  dir.rebuild(db);
-  const rows = dir.list(db);
-  assert.strictEqual(rows.length, 1, 'three cases of one address must be one row');
-  assert.strictEqual(rows[0].booking_count, 3);
+  await call(runAdd, db, book(db, { name: 'Ben', email: 'Ben@Example.com' }));
+  await call(runAdd, db, book(db, { name: 'Ben', email: '  ben@example.com ' }));
+  assert.strictEqual(dir.list(db).length, 1);
 });
 
-test('a phone-less booking joins the person already known by that email', () => {
+test('two different people never merge', async () => {
   const db = makeDb();
-  book(db, { name: 'Mixed', phone: '07700900444', email: 'mixed@example.com' });
-  book(db, { name: 'Mixed', phone: '07700900444', email: 'mixed@example.com' });
-  book(db, { name: 'Mixed', email: 'mixed@example.com' });   // no phone this time
-  dir.rebuild(db);
-  const rows = dir.list(db);
-  assert.strictEqual(rows.length, 1, 'must not split into two rows');
-  assert.strictEqual(rows[0].booking_count, 3);
-});
-
-test('two different people NEVER merge', () => {
-  const db = makeDb();
-  for (let i = 0; i < 3; i++) book(db, { name: 'Alice', phone: '07700900555', email: 'alice@example.com' });
-  for (let i = 0; i < 3; i++) book(db, { name: 'Bob',   phone: '07700900666', email: 'bob@example.com' });
-  dir.rebuild(db);
+  await call(runAdd, db, book(db, { name: 'Alice', phone: '07700900555', email: 'alice@example.com' }));
+  await call(runAdd, db, book(db, { name: 'Bob', phone: '07700900666', email: 'bob@example.com' }));
   assert.deepStrictEqual(names(db), ['Alice', 'Bob']);
 });
 
-test('bookings with NO phone and NO email are skipped, not pooled', () => {
-  // The dangerous case: three anonymous bookings must not become one "customer"
-  // stitched together out of unrelated strangers.
+test('a booking with no phone AND no email cannot be added', async () => {
+  // There would be nothing to match them by later — not even a second Add.
   const db = makeDb();
-  book(db, { name: 'Walk-in' }); book(db, { name: 'Another' }); book(db, { name: 'Third' });
-  dir.rebuild(db);
-  assert.deepStrictEqual(names(db), [], 'anonymous bookings cannot identify anybody');
+  const res = await call(runAdd, db, book(db, { name: 'Anonymous Walk-in' }));
+  assert.strictEqual(res.statusCode, 400);
+  assert.strictEqual(res.body.reason, 'no_contact');
+  assert.deepStrictEqual(names(db), []);
 });
 
-// ── 3. IDEMPOTENCE ───────────────────────────────────────────────────────
-test('rebuilding twice changes nothing', () => {
+test('an owner-edited address survives a later Add', async () => {
   const db = makeDb();
-  for (let i = 0; i < 3; i++) book(db, { name: 'Repeat', phone: '07700900777' });
-  dir.rebuild(db);
-  const first = JSON.stringify(dir.list(db));
-  dir.rebuild(db); dir.rebuild(db);
-  assert.strictEqual(JSON.stringify(dir.list(db)), first, 'the directory must be stable');
-  assert.strictEqual(dir.list(db).length, 1, 'and must not grow a duplicate row');
-});
-
-// ── 5. HOME ADDRESS ──────────────────────────────────────────────────────
-test('an airport is never somebody\'s home address', () => {
-  // The first version of pickHomeAddress filed a regular as living at Gatwick,
-  // because their return legs outnumbered their house pickups. A transport hub
-  // is where a customer is COLLECTED, not where they live.
-  const db = makeDb();
-  book(db, { name: 'Flyer', phone: '07700901234', pickup: 'Gatwick Airport, South Terminal', date: '2026-01-01' });
-  book(db, { name: 'Flyer', phone: '07700901234', pickup: 'Gatwick Airport, South Terminal', date: '2026-02-01' });
-  book(db, { name: 'Flyer', phone: '07700901234', pickup: '9 Hill Road, Lewes',              date: '2026-03-01' });
-  dir.rebuild(db);
-  assert.strictEqual(dir.list(db)[0].home_address, '9 Hill Road, Lewes',
-    'the house must win even though the airport appears twice as often');
-
-  // Nothing but airports → no guess at all, rather than a wrong one.
-  const db2 = makeDb();
-  for (let i = 0; i < 3; i++) book(db2, { name: 'Airside', phone: '07700905678', pickup: 'Heathrow Terminal 5' });
-  dir.rebuild(db2);
-  assert.strictEqual(dir.list(db2)[0].home_address, null,
-    'with no residential pickup the address must stay empty for the owner to fill');
-});
-
-test('home address is the most frequent pickup, ties going to the most recent', () => {
-  const db = makeDb();
-  book(db, { name: 'Homer', phone: '07700900888', pickup: '12 Elm Road, Lewes', date: '2026-01-01' });
-  book(db, { name: 'Homer', phone: '07700900888', pickup: '12 Elm Road, Lewes', date: '2026-02-01' });
-  book(db, { name: 'Homer', phone: '07700900888', pickup: 'Gatwick Airport',    date: '2026-03-01' });
-  dir.rebuild(db);
-  assert.strictEqual(dir.list(db)[0].home_address, '12 Elm Road, Lewes',
-    'twice-used home beats a one-off airport pickup');
-
-  // Tie on frequency → the newer address wins, because people move.
-  const db2 = makeDb();
-  book(db2, { name: 'Mover', phone: '07700900999', pickup: 'Old Street, Hove', date: '2026-01-01' });
-  book(db2, { name: 'Mover', phone: '07700900999', pickup: 'New Lane, Lewes',  date: '2026-05-01' });
-  book(db2, { name: 'Mover', phone: '07700900999', pickup: 'Gatwick Airport',  date: '2026-06-01' });
-  dir.rebuild(db2);
-  assert.strictEqual(dir.list(db2)[0].home_address, 'New Lane, Lewes');
-});
-
-test("an owner-edited address survives every later rebuild", async () => {
-  const db = makeDb();
-  for (let i = 0; i < 3; i++) book(db, { name: 'Fixer', phone: '07700901000', pickup: 'Wrong Guess, Hove' });
-  dir.rebuild(db);
+  const first = book(db, { name: 'Mover', phone: '07700900777', pickup: 'Old Street, Hove' });
+  await call(runAdd, db, first);
   const id = dir.list(db)[0].id;
-
-  const res = mkRes();
+  const edit = mkRes();
   await runEdit({ params: { id: String(id) }, body: { home_address: '4 Correct Way, Lewes BN7' },
-                  auth: OWNER_AUTH, ip: '1.1.1.1' }, res, () => db, REQ, console);
-  assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
-
-  book(db, { name: 'Fixer', phone: '07700901000', pickup: 'Wrong Guess, Hove' });
-  dir.rebuild(db);
+                  auth: OWNER_AUTH, ip: '1' }, edit, () => db, REQ, console);
+  assert.strictEqual(edit.statusCode, 200, JSON.stringify(edit.body));
+  await call(runAdd, db, book(db, { name: 'Mover', phone: '07700900777', pickup: 'Gatwick Airport' }));
   assert.strictEqual(dir.list(db)[0].home_address, '4 Correct Way, Lewes BN7',
-    "the owner's own address must outrank the guess, for ever");
-  assert.strictEqual(dir.list(db)[0].booking_count, 4, 'but the count still updates');
+    'a later Add must not overwrite the address the owner typed');
 });
 
-test('editing to a phone that belongs to somebody else is refused', async () => {
+// ── 3. REMOVING ──────────────────────────────────────────────────────────
+test('Remove takes them off the list and nothing puts them back', async () => {
   const db = makeDb();
-  for (let i = 0; i < 3; i++) book(db, { name: 'One', phone: '07700901111' });
-  for (let i = 0; i < 3; i++) book(db, { name: 'Two', phone: '07700902222' });
-  dir.rebuild(db);
-  const two = dir.list(db).filter((r) => r.name === 'Two')[0];
-  const res = mkRes();
-  await runEdit({ params: { id: String(two.id) }, body: { phone: '07700 901111' },
-                  auth: OWNER_AUTH, ip: '1.1.1.1' }, res, () => db, REQ, console);
-  assert.strictEqual(res.statusCode, 409, 'a clash must be refused, not silently merged');
-  assert.deepStrictEqual(names(db), ['One', 'Two'], 'both people must survive');
+  const id = book(db, { name: 'Gone', phone: '07700900888' });
+  await call(runAdd, db, id);
+  const res = await call(runDelete, db, dir.list(db)[0].id);
+  assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
+  assert.deepStrictEqual(names(db), []);
+  // More bookings must not resurrect them — there is no rule left to do it.
+  for (let i = 0; i < 5; i++) book(db, { name: 'Gone', phone: '07700900888' });
+  assert.deepStrictEqual(names(db), [], 'nothing repopulates the list');
 });
 
-test('a junk email or phone is rejected on edit', async () => {
+test('neither Add nor Remove touches booking history', async () => {
   const db = makeDb();
-  for (let i = 0; i < 3; i++) book(db, { name: 'Valid', phone: '07700903333' });
-  dir.rebuild(db);
-  const id = dir.list(db)[0].id;
-  for (const body of [{ email: 'not-an-email' }, { phone: '123' }]) {
-    const res = mkRes();
-    await runEdit({ params: { id: String(id) }, body, auth: OWNER_AUTH, ip: '1' }, res, () => db, REQ, console);
-    assert.strictEqual(res.statusCode, 400, JSON.stringify(body) + ' must be rejected');
+  const id = book(db, { name: 'Untouched', phone: '07700900999' });
+  book(db, { name: 'Untouched', phone: '07700900999' });
+  const before = db.prepare('SELECT id, ref, status, pickup, date, passenger_name FROM bookings ORDER BY id').all();
+  await call(runAdd, db, id);
+  assert.deepStrictEqual(db.prepare('SELECT id, ref, status, pickup, date, passenger_name FROM bookings ORDER BY id').all(),
+    before, 'Add must not change a booking');
+  await call(runDelete, db, dir.list(db)[0].id);
+  assert.deepStrictEqual(db.prepare('SELECT id, ref, status, pickup, date, passenger_name FROM bookings ORDER BY id').all(),
+    before, 'Remove must not change a booking');
+  assert.strictEqual(db.prepare('SELECT COUNT(*) n FROM customers').get().n, 0,
+    'and neither may touch the accounts table');
+});
+
+// ── 4. TRIP COUNTS ARE LIVE ──────────────────────────────────────────────
+test('trip counts are computed from bookings, so they cannot go stale', async () => {
+  const db = makeDb();
+  const id = book(db, { name: 'Counter', phone: '07700901000', date: '2026-01-01' });
+  await call(runAdd, db, id);
+  assert.strictEqual(dir.list(db)[0].booking_count, 1);
+  book(db, { name: 'Counter', phone: '07700901000', date: '2026-05-05' });
+  book(db, { name: 'Counter', phone: '07700901000', date: '2026-06-06', status: 'cancelled' });
+  const c = dir.list(db)[0];
+  assert.strictEqual(c.booking_count, 2, 'the new booking counts, the cancelled one does not');
+  assert.strictEqual(c.last_booking, '2026-05-05');
+});
+
+// ── 5. THE EXISTING AUTO-ADDED ROWS ──────────────────────────────────────
+test('rows left by the old rule are marked auto and can be cleared on their own', () => {
+  const db = makeDb();
+  dir.ensureSchema(db);
+  // Simulate what the live table looks like after the previous deploy.
+  db.prepare("INSERT INTO customer_directory (phone_key, name, phone, added_by) VALUES ('7700901111','Auto One','07700901111','auto')").run();
+  db.prepare("INSERT INTO customer_directory (phone_key, name, phone, added_by) VALUES ('7700902222','Auto Two','07700902222','auto')").run();
+  db.prepare("INSERT INTO customer_directory (phone_key, name, phone, added_by) VALUES ('7700903333','Chosen','07700903333','manual')").run();
+  assert.strictEqual(dir.list(db).length, 3, 'by default the existing rows are KEPT');
+  const cleared = dir.clearAutoAdded(db);
+  assert.strictEqual(cleared, 2, 'exactly the auto rows go');
+  assert.deepStrictEqual(names(db), ['Chosen'], "the owner's own choices are never touched");
+});
+
+// ── 6. AUTH ──────────────────────────────────────────────────────────────
+console.log('\nCustomer list — the routes');
+
+test('Add and Remove are owner/admin only', async () => {
+  const db = makeDb();
+  const bId = book(db, { name: 'Protected', phone: '07700904444' });
+  await call(runAdd, db, bId);
+  const cId = dir.list(db)[0].id;
+  for (const role of ['driver', 'customer', undefined]) {
+    const a = await call(runAdd, db, bId, { role, id: 9, type: 'user' });
+    assert.strictEqual(a.statusCode, 403, 'Add: role ' + role + ' must be refused');
+    const d = await call(runDelete, db, cId, { role, id: 9, type: 'user' });
+    assert.strictEqual(d.statusCode, 403, 'Remove: role ' + role + ' must be refused');
   }
+  assert.deepStrictEqual(names(db), ['Protected'], 'and nothing may have changed');
 });
 
-// ── SEARCH + AUTH ────────────────────────────────────────────────────────
-console.log('\nCustomer directory — the routes');
-
-test('the list route searches by name, phone and email — and needs owner/admin', async () => {
+test('the list route searches by name, phone and email, and needs owner/admin', async () => {
   const db = makeDb();
-  for (let i = 0; i < 3; i++) book(db, { name: 'Ada Lovelace', phone: '07700904444', email: 'ada@example.com' });
-  for (let i = 0; i < 3; i++) book(db, { name: 'Bob Brown',    phone: '07700905555', email: 'bob@example.com' });
-  dir.rebuild(db);
-
-  const call = async (q, auth) => {
+  await call(runAdd, db, book(db, { name: 'Ada Lovelace', phone: '07700905555', email: 'ada@example.com' }));
+  await call(runAdd, db, book(db, { name: 'Bob Brown', phone: '07700906666', email: 'bob@example.com' }));
+  const q = async (term, auth) => {
     const res = mkRes();
-    await runList({ query: q ? { q } : {}, auth: auth || OWNER_AUTH }, res, () => db, REQ, console);
+    await runList({ query: term ? { q: term } : {}, auth: auth || OWNER_AUTH }, res, () => db, REQ, console);
     return res;
   };
-  assert.strictEqual((await call()).body.customers.length, 2);
-  assert.strictEqual((await call('ada')).body.customers[0].name, 'Ada Lovelace');
-  assert.strictEqual((await call('+44 7700 905555')).body.customers[0].name, 'Bob Brown',
-    'searching an international-format number must find the national-format record');
-  assert.strictEqual((await call('BOB@EXAMPLE.COM')).body.customers[0].name, 'Bob Brown');
-
+  assert.strictEqual((await q()).body.customers.length, 2);
+  assert.strictEqual((await q('ada')).body.customers[0].name, 'Ada Lovelace');
+  assert.strictEqual((await q('+44 7700 906666')).body.customers[0].name, 'Bob Brown',
+    'an international-format search must find the national-format record');
+  assert.strictEqual((await q('BOB@EXAMPLE.COM')).body.customers[0].name, 'Bob Brown');
   for (const role of ['driver', 'customer', undefined]) {
-    const res = await call(null, { role, id: 9, type: 'user' });
-    assert.strictEqual(res.statusCode, 403, 'role ' + role + ' must be refused');
+    assert.strictEqual((await q(null, { role, id: 9, type: 'user' })).statusCode, 403);
   }
 });
 
-// ── 7. PII IS NOT PUBLIC ─────────────────────────────────────────────────
-test('NO public router exposes the directory', () => {
-  // server/index.js mounts apiRouter behind requireAuth; the public router is not
-  // gated at all, so the directory must never appear there.
-  const pub = read('server/public-api.js');
-  assert.ok(!/customer-directory'/.test(pub) || !/router\.(get|post|patch|delete)\([^)]*customer-directory/.test(pub),
-    'server/public-api.js must not route the customer directory');
-  assert.ok(!/FROM customer_directory/i.test(pub),
-    'server/public-api.js must not read the customer_directory table');
-
-  const idx = read('server/index.js');
-  assert.ok(/app\.use\('\/api', apiLimiter, requireAuth, apiRouter\)/.test(idx),
-    'the router carrying the directory must stay behind requireAuth');
-
-  // And the table is not reachable as a file either.
-  const { isPrivatePath } = require('../private-paths');
-  assert.ok(isPrivatePath('/server/customer-directory.js'), 'the module must not be served');
-});
-
-test('both directory routes check the role before touching the database', () => {
-  for (const route of ["router.get('/customer-directory'", "router.patch('/customer-directory/:id'"]) {
+test('every directory route checks the role before touching the database', () => {
+  const routes = ["router.get('/customer-directory'", "router.patch('/customer-directory/:id'",
+                  "router.delete('/customer-directory/:id'", "router.post('/bookings/:id/add-customer'"];
+  for (const route of routes) {
     const start = apiSrc.indexOf(route);
     assert.ok(start !== -1, route + ' is missing');
     const body = braceBody(apiSrc, apiSrc.indexOf('=>', start));
@@ -322,45 +320,51 @@ test('both directory routes check the role before touching the database', () => 
   }
 });
 
-test('the directory route does not collide with the existing /customers CRUD', () => {
-  // /api/customers is already the ACCOUNTS table admin CRUD. A second
-  // router.get on that path would simply never fire.
-  assert.strictEqual((apiSrc.match(/router\.get\('\/customers'/g) || []).length, 1,
-    'exactly one GET /customers must exist (the accounts one)');
-  assert.ok(/router\.get\('\/customer-directory'/.test(apiSrc),
-    'the directory must live on its own path');
+test('NO public router exposes the list or its table', () => {
+  const pub = read('server/public-api.js');
+  assert.ok(!/router\.(get|post|patch|delete|put)\([^)]{0,60}(customer-directory|add-customer)/.test(pub),
+    'server/public-api.js must not route any of this');
+  assert.ok(!/FROM\s+customer_directory/i.test(pub),
+    'server/public-api.js must not read the customer_directory table');
+  const idx = read('server/index.js');
+  assert.ok(/app\.use\('\/api', apiLimiter, requireAuth, apiRouter\)/.test(idx),
+    'the router carrying it must stay behind requireAuth');
+  const { isPrivatePath } = require('../private-paths');
+  assert.ok(isPrivatePath('/server/customer-directory.js'), 'the module must not be served');
 });
 
-// ── 6. THE OWNER APP ─────────────────────────────────────────────────────
-console.log('\nCustomer directory — the owner app');
+// ── 7. THE OWNER APP ─────────────────────────────────────────────────────
+console.log('\nCustomer list — the owner app');
 
-test('there is a Customers tab wired to the pane', () => {
-  assert.ok(/id="bn-customers"[^>]*onclick="goPage\('customers',this\)"/.test(OWNER), 'nav button');
-  assert.ok(/id="pg-customers"/.test(OWNER), 'the pane');
-  assert.ok(/if\(id==='customers'\)custLoad\(\);/.test(OWNER), 'goPage must load it');
-  assert.ok(/id="cust-search"/.test(OWNER), 'and it must be searchable');
+test('every job card offers Add, and shows a settled state once added', () => {
+  assert.ok(/onclick="ownerAddCustomer\('\+j\.id\+',this\)"/.test(OWNER), 'the Add button must be on the job card');
+  assert.ok(/On your list/.test(OWNER), 'and must become a settled "On your list" state');
+  assert.ok(/function custOnList\(phone,email\)/.test(OWNER), 'decided by the same normalised identity the server uses');
+  assert.ok(/\/add-customer'/.test(OWNER), 'and must call the add route');
 });
 
-test('the picker fills the REAL booking-form fields', () => {
-  // The whole point is that name/phone/email/pickup stop being retyped, so the
-  // ids it writes to must be the ids the form actually submits.
-  const fn = OWNER.slice(OWNER.indexOf('function nbCustPick('));
+test('the customer list is loaded before the job cards render', () => {
+  // Otherwise every card offers "Add to list", including for saved customers.
+  assert.ok(/await custLoad\(\{quiet:true\}\)/.test(OWNER),
+    'loadOwnerBookings must warm the list first');
+});
+
+test('Remove is behind a confirm and says the history is safe', () => {
+  assert.ok(/function custRemove\(id\)\{[\s\S]{0,400}?confirm\(/.test(OWNER), 'removing must ask first');
+  assert.ok(/method:'DELETE'/.test(OWNER), 'and must call the DELETE route');
+  assert.ok(/bookings, invoices and earnings are NOT deleted/i.test(OWNER),
+    'the confirm must state that booking history is untouched');
+});
+
+test('the picker draws from the manual list', () => {
+  const fn = OWNER.slice(OWNER.indexOf('function nbCustSearch('));
   const body = fn.slice(0, fn.indexOf('\n}'));
+  assert.ok(/CUSTOMERS\.filter/.test(body), 'the picker must read the saved list');
+  const pick = OWNER.slice(OWNER.indexOf('function nbCustPick('));
+  const pbody = pick.slice(0, pick.indexOf('\n}'));
   for (const id of ['nb-name', 'nb-phone', 'nb-email', 'nb-pickup']) {
-    assert.ok(new RegExp("set\\('" + id + "'").test(body), 'the picker must fill #' + id);
+    assert.ok(new RegExp("set\\('" + id + "'").test(pbody), 'the picker must fill #' + id);
   }
-  // Those ids must exist as inputs on the new-booking form.
-  for (const id of ['nb-name', 'nb-phone', 'nb-email', 'nb-pickup', 'nb-cust']) {
-    assert.ok(new RegExp('<input id="' + id + '"').test(OWNER), '#' + id + ' must be a real input');
-  }
-});
-
-test('the picker is optional — a brand-new customer can still be typed', () => {
-  assert.ok(/id="nb-cust"[^>]*type="search"/.test(OWNER), 'the picker is a separate search box');
-  // It must NOT be marked required, and must not gate the submit.
-  const submit = OWNER.slice(OWNER.indexOf('function ownerNewBookingSubmit'));
-  const body = submit.slice(0, submit.indexOf('\n}'));
-  assert.ok(!/nb-cust/.test(body), 'submit must not depend on the picker at all');
 });
 
 test('this guardrail is wired into npm test', () => {

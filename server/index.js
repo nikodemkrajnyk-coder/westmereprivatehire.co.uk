@@ -377,13 +377,21 @@ app.listen(PORT, () => {
 
   // Background: email the owner ~12h before each upcoming pickup (once per
   // booking). Server-side via Resend — no Claude/assistant dependency.
-  // Backfill the owner's customer directory from existing booking history, so
-  // the Customers tab is populated the first time he opens it rather than only
-  // filling up from new bookings onwards. Idempotent — safe on every boot.
+  // NOTHING populates the customer list automatically any more — the owner adds
+  // people by tapping Add on a booking. All that happens at boot is the schema
+  // check, plus an OPTIONAL one-shot clear of the rows the old
+  // more-than-two-bookings rule left behind (added_by='auto'). Set
+  // CUSTDIR_CLEAR_AUTO=1 to run it; anything the owner added by hand is
+  // 'manual' and is never touched, so the flag is safe to leave set.
   try {
-    const r = require('./customer-directory').rebuild(require('./db').getDb());
-    console.log('[CUSTDIR] directory built —', r.listed, 'saved customers (' + r.skipped + ' under the threshold)');
-  } catch (e) { console.error('[CUSTDIR] backfill failed:', e.message); }
+    const dir = require('./customer-directory');
+    const db = require('./db').getDb();
+    dir.ensureSchema(db);
+    if (process.env.CUSTDIR_CLEAR_AUTO === '1') {
+      const n = dir.clearAutoAdded(db);
+      console.log('[CUSTDIR] cleared', n, 'auto-added row(s) — the list is now manual-only');
+    }
+  } catch (e) { console.error('[CUSTDIR] schema check failed:', e.message); }
 
   try { require('./reminder').startBookingReminders(); }
   catch (e) { console.error('[REMINDER] failed to start:', e.message); }

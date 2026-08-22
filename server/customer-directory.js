@@ -1,40 +1,47 @@
 /**
- * THE OWNER'S CUSTOMER DIRECTORY — who has ridden with us more than twice.
+ * THE OWNER'S CUSTOMER LIST — the people HE has chosen to keep.
  *
  * WHY THIS IS ITS OWN TABLE
  *   `customers` already exists, but it is an ACCOUNT table: email is NOT NULL
  *   UNIQUE and password is NOT NULL, because a row there is a rider login. Most
  *   of this business arrives by phone and never makes an account, and a regular
  *   who has never given an email address cannot be represented there at all.
- *   Forcing them in would mean inventing a fake email, which is how a directory
- *   fills up with `07700900123@placeholder.invalid`.
+ *   Forcing them in would mean inventing `07700900123@placeholder.invalid`.
  *
- *   So the directory is its own table, derived from booking history, and it
- *   carries `customer_id` when the person ALSO has an account — one row per
- *   human either way.
+ *   So this is its own table, and it carries `customer_id` when the person also
+ *   happens to have an account — one row per human either way.
+ *
+ * MANUAL, NOT AUTOMATIC
+ *   This list used to populate itself: anyone with more than two bookings was
+ *   added on a rebuild. The owner asked for that removed — he would rather tap
+ *   "Add to customer list" on the booking of somebody he actually wants to keep.
+ *   So there is no threshold, no rebuild, and nothing writes to this table
+ *   except an explicit owner action.
+ *
+ *   That has a pleasant consequence: because nothing repopulates the list,
+ *   removing somebody is a plain DELETE. There is no resurrection to defend
+ *   against, so there is no suppression flag and no "Removed" view to maintain.
+ *   To put somebody back, the owner taps Add on any of their bookings again.
  *
  * THE MATCH KEY
- *   A phone number is what this trade actually identifies people by, so
- *   `phone_key` is primary and UNIQUE. Email is the fallback for the rare
- *   booking with an address but no number. Both are normalised hard —
- *   "+44 7700 900123", "07700 900123" and "07700900123" are one person, and
- *   "Ben@Example.com" and "ben@example.com" are one person.
- *
- * THE RULE
- *   MORE THAN TWO bookings — three or more — and the person is listed. One or
- *   two and they are not. Cancelled bookings do not count towards it: someone
- *   who booked twice and cancelled both is not a regular.
+ *   A phone number is what this trade identifies people by, so `phone_key` is
+ *   primary and UNIQUE; email is the fallback for the rare booking with an
+ *   address but no number. Both are normalised hard — "+44 7700 900123",
+ *   "07700 900123" and "07700900123" are one person; "Ben@Example.com" and
+ *   "ben@example.com" are one person. This is what makes Add idempotent: tapping
+ *   it on a second booking by the same customer updates the row rather than
+ *   creating a twin.
  *
  * GUARDRAIL: server/tests/customer-directory.test.js
  */
 
 /**
  * UK mobile/landline → a stable comparison key.
- * Strips everything that is not a digit, then folds the international forms
- * onto the national one: +447700900123 / 00447700900123 / 447700900123 /
- * 07700900123 all become 7700900123. Returns '' when there is nothing usable,
- * and callers must treat '' as "no key", never as a matchable value — otherwise
- * every customer with no phone number collapses into one row.
+ * Strips everything that is not a digit, then folds the international forms onto
+ * the national one: +447700900123 / 00447700900123 / 447700900123 / 07700900123
+ * all become 7700900123. Returns '' when there is nothing usable, and callers
+ * must treat '' as "no key", never as a matchable value — otherwise every
+ * customer with no phone number collapses into one row.
  */
 function normPhone(raw) {
   if (raw == null) return '';
@@ -54,8 +61,6 @@ function normEmail(raw) {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) ? e : '';
 }
 
-const MIN_BOOKINGS = 3; // "more than two"
-
 function ensureSchema(db) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS customer_directory (
@@ -67,15 +72,23 @@ function ensureSchema(db) {
       phone         TEXT,
       email         TEXT,
       home_address  TEXT,
-      -- Set once the owner edits the address by hand. The nightly/booking-time
-      -- recompute then leaves it alone: his correction outranks our guess.
-      address_locked INTEGER NOT NULL DEFAULT 0,
-      booking_count INTEGER NOT NULL DEFAULT 0,
-      last_booking  TEXT,
+      -- 'manual' for anything the owner added by tapping Add on a booking.
+      -- 'auto' marks the rows left behind by the old more-than-two-bookings
+      -- rule, so they can be told apart from his own choices for as long as
+      -- they survive. Nothing writes 'auto' any more.
+      added_by      TEXT NOT NULL DEFAULT 'manual',
       created_at    TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);
+  try {
+    const cols = db.prepare('PRAGMA table_info(customer_directory)').all().map((c) => c.name);
+    // Rows that predate this column were all put there by the automatic rule.
+    if (!cols.includes('added_by')) {
+      db.exec("ALTER TABLE customer_directory ADD COLUMN added_by TEXT NOT NULL DEFAULT 'auto'");
+      db.exec("UPDATE customer_directory SET added_by = 'auto' WHERE added_by IS NULL OR added_by = ''");
+    }
+  } catch (e) { console.error('[CUSTDIR] added_by migration failed:', e.message); }
   // A partial index: many rows legitimately have no email, and a plain UNIQUE
   // would collide them all on ''.
   try {
@@ -84,153 +97,136 @@ function ensureSchema(db) {
   } catch (_) {}
 }
 
+/** Is this person already on the list? → the row, or null. */
+function findByIdentity(db, phone, email) {
+  ensureSchema(db);
+  const pk = normPhone(phone), ek = normEmail(email);
+  if (pk) {
+    const byPhone = db.prepare('SELECT * FROM customer_directory WHERE phone_key = ?').get(pk);
+    if (byPhone) return byPhone;
+  }
+  if (ek) {
+    const byEmail = db.prepare("SELECT * FROM customer_directory WHERE email_key = ? AND email_key <> ''").get(ek);
+    if (byEmail) return byEmail;
+  }
+  return null;
+}
+
 /**
- * Every booking that counts, folded into one record per person.
- * A booking contributes its passenger_* fields, or the linked account's, and
- * cancelled trips are excluded from the count that decides listing.
+ * Add the customer on a booking to the list — the ONLY way anything gets in.
+ *
+ * Idempotent on the normalised identity: tapping Add on a second booking by the
+ * same person refreshes their details instead of creating a twin. An existing
+ * home address the owner typed is never overwritten by a pickup.
+ *
+ * Reads the booking; writes ONLY to customer_directory. The booking itself, the
+ * accounts table, invoices and earnings are untouched.
+ *
+ * → { ok, already, customer } | { ok:false, reason }
  */
-function gatherFromBookings(db) {
-  const rows = db.prepare(`
-    SELECT b.id, b.pickup, b.date, b.status,
+function addFromBooking(db, bookingId) {
+  ensureSchema(db);
+  const b = db.prepare(`
+    SELECT b.id, b.pickup, b.date, b.customer_id,
            COALESCE(NULLIF(TRIM(c.full_name), ''), b.passenger_name)  AS name,
            COALESCE(NULLIF(TRIM(c.phone), ''),     b.passenger_phone) AS phone,
-           COALESCE(NULLIF(TRIM(c.email), ''),     b.passenger_email) AS email,
-           b.customer_id
-      FROM bookings b
-      LEFT JOIN customers c ON b.customer_id = c.id
-     WHERE COALESCE(b.status, '') <> 'cancelled'
-     ORDER BY b.date ASC, b.id ASC
-  `).all();
+           COALESCE(NULLIF(TRIM(c.email), ''),     b.passenger_email) AS email
+      FROM bookings b LEFT JOIN customers c ON b.customer_id = c.id
+     WHERE b.id = ?
+  `).get(bookingId);
+  if (!b) return { ok: false, reason: 'not_found' };
 
-  const people = new Map();          // key → record
-  const byEmail = new Map();         // email_key → key, so a phone-less booking joins the right person
+  const pk = normPhone(b.phone), ek = normEmail(b.email);
+  // Without a phone or an email there is nothing to identify them by, and a row
+  // with neither could never be matched again — including by a second Add.
+  if (!pk && !ek) return { ok: false, reason: 'no_contact' };
 
-  for (const r of rows) {
-    const pk = normPhone(r.phone);
-    const ek = normEmail(r.email);
-    // Phone first; fall back to a person already known by this email; otherwise
-    // the email itself becomes the key. A booking with NEITHER cannot identify
-    // anybody and is skipped — it would otherwise merge strangers together.
-    let key = pk ? 'p:' + pk : (ek ? (byEmail.get(ek) || 'e:' + ek) : null);
-    if (!key) continue;
-    if (ek && !byEmail.has(ek)) byEmail.set(ek, key);
+  const name = (b.name || '').trim() || null;
+  const phone = (b.phone || '').trim() || null;
+  const email = (b.email || '').trim() || null;
+  // The pickup on THIS booking is the best guess at where they live. It is only
+  // a guess, so it never overwrites an address already on the record.
+  const home = (b.pickup || '').trim() || null;
 
-    let rec = people.get(key);
-    if (!rec) {
-      rec = { key, phone_key: pk || null, email_key: ek || null, name: null, phone: null,
-              email: null, customer_id: null, count: 0, last: null, pickups: new Map() };
-      people.set(key, rec);
-    }
-    rec.count++;
-    // Latest non-empty value wins — bookings are walked oldest first, so the most
-    // recent spelling of a name or the newest email is what the owner sees.
-    if (r.name && String(r.name).trim()) rec.name = String(r.name).trim();
-    if (r.phone && String(r.phone).trim()) rec.phone = String(r.phone).trim();
-    if (r.email && String(r.email).trim()) rec.email = String(r.email).trim();
-    if (!rec.phone_key && pk) rec.phone_key = pk;
-    if (!rec.email_key && ek) rec.email_key = ek;
-    if (r.customer_id) rec.customer_id = r.customer_id;
-    if (r.date && (!rec.last || r.date > rec.last)) rec.last = r.date;
-
-    // HOME ADDRESS = where they are usually collected from. Most frequent pickup
-    // wins; a tie goes to the most recent, because people move.
-    const pu = (r.pickup || '').trim();
-    if (pu) {
-      const cur = rec.pickups.get(pu) || { n: 0, last: '' };
-      cur.n++; if (r.date && r.date > cur.last) cur.last = r.date;
-      rec.pickups.set(pu, cur);
-    }
+  const existing = findByIdentity(db, b.phone, b.email);
+  if (existing) {
+    db.prepare(`
+      UPDATE customer_directory
+         SET name = COALESCE(?, name), phone = COALESCE(?, phone), email = COALESCE(?, email),
+             phone_key = COALESCE(?, phone_key), email_key = COALESCE(?, email_key),
+             customer_id = COALESCE(?, customer_id),
+             home_address = COALESCE(home_address, ?),
+             updated_at = datetime('now')
+       WHERE id = ?
+    `).run(name, phone, email, pk || null, ek || null, b.customer_id || null, home, existing.id);
+    return { ok: true, already: true, customer: db.prepare('SELECT * FROM customer_directory WHERE id = ?').get(existing.id) };
   }
-  return people;
+
+  const info = db.prepare(`
+    INSERT INTO customer_directory (phone_key, email_key, customer_id, name, phone, email, home_address, added_by)
+    VALUES (?,?,?,?,?,?,?,'manual')
+  `).run(pk || null, ek || null, b.customer_id || null, name, phone, email, home);
+  return { ok: true, already: false, customer: db.prepare('SELECT * FROM customer_directory WHERE id = ?').get(info.lastInsertRowid) };
 }
 
-/* Airports and terminals are where a regular gets COLLECTED on the way home,
-   not where they live. A customer with three airport return legs and one house
-   pickup would otherwise be filed as living at Gatwick — which is exactly what
-   the first version of this did. Anything that looks like a transport hub is
-   excluded from the candidates; if that leaves nothing, we return null and the
-   owner fills the address in himself, which is honest. */
-const NOT_A_HOME = /\bairport\b|\bterminal\b|\bheathrow\b|\bgatwick\b|\bstansted\b|\bluton\b|\bstation\b|\bst pancras\b|\bking'?s cross\b|\beuston\b|\bcruise\b|\bport of\b|\bferry\b/i;
-
-function pickHomeAddress(pickups) {
-  let best = null;
-  for (const [addr, v] of pickups) {
-    if (NOT_A_HOME.test(addr)) continue;
-    if (!best || v.n > best.n || (v.n === best.n && v.last > best.last)) best = { addr, n: v.n, last: v.last };
-  }
-  return best ? best.addr : null;
-}
-
-/**
- * Rebuild the directory from booking history.
- *
- * Idempotent by construction: it upserts on phone_key (or email_key), so
- * running it twice produces exactly the same table. Owner-edited addresses are
- * preserved — `address_locked` is the record of "he has already corrected this".
- *
- * → { listed, skipped } — how many met the threshold, how many did not.
- */
-function rebuild(db) {
+/** Take somebody off the list. A plain delete — nothing repopulates it. */
+function remove(db, id) {
   ensureSchema(db);
-  const people = gatherFromBookings(db);
-  const findByPhone = db.prepare('SELECT * FROM customer_directory WHERE phone_key = ?');
-  const findByEmail = db.prepare("SELECT * FROM customer_directory WHERE email_key = ? AND email_key <> ''");
-  let listed = 0, skipped = 0;
-
-  for (const rec of people.values()) {
-    if (rec.count < MIN_BOOKINGS) { skipped++; continue; }
-    listed++;
-    const home = pickHomeAddress(rec.pickups);
-    const existing = (rec.phone_key && findByPhone.get(rec.phone_key))
-                  || (rec.email_key && findByEmail.get(rec.email_key))
-                  || null;
-    if (existing) {
-      db.prepare(`
-        UPDATE customer_directory
-           SET name = COALESCE(?, name),
-               phone = COALESCE(?, phone),
-               email = COALESCE(?, email),
-               phone_key = COALESCE(?, phone_key),
-               email_key = COALESCE(?, email_key),
-               customer_id = COALESCE(?, customer_id),
-               home_address = CASE WHEN address_locked = 1 THEN home_address ELSE COALESCE(?, home_address) END,
-               booking_count = ?, last_booking = ?, updated_at = datetime('now')
-         WHERE id = ?
-      `).run(rec.name, rec.phone, rec.email, rec.phone_key, rec.email_key,
-             rec.customer_id, home, rec.count, rec.last, existing.id);
-    } else {
-      db.prepare(`
-        INSERT INTO customer_directory (phone_key, email_key, customer_id, name, phone, email,
-                                        home_address, booking_count, last_booking)
-        VALUES (?,?,?,?,?,?,?,?,?)
-      `).run(rec.phone_key, rec.email_key, rec.customer_id, rec.name, rec.phone,
-             rec.email, home, rec.count, rec.last);
-    }
-  }
-  return { listed, skipped };
+  const row = db.prepare('SELECT id, name FROM customer_directory WHERE id = ?').get(id);
+  if (!row) return null;
+  db.prepare('DELETE FROM customer_directory WHERE id = ?').run(id);
+  return row;
 }
 
 /**
- * Called after a booking is created or its status changes. A full rebuild is
- * cheap at this scale (one pass over bookings, a few hundred rows) and it is the
- * only version that cannot drift from the history it claims to summarise — an
- * incremental counter would eventually disagree with the bookings table, and
- * the owner would have no way to tell which was lying.
+ * How many trips has each listed customer taken, and when was the last?
+ *
+ * Counted live from bookings rather than stored, because nothing rebuilds this
+ * table any more — a stored counter would freeze on the day they were added and
+ * quietly drift for ever. Cancelled trips do not count.
  */
-function syncAfterBooking(db) {
-  try { return rebuild(db); }
-  catch (e) { console.error('[CUSTDIR] sync failed:', e.message); return null; }
+function tripStats(db) {
+  const rows = db.prepare(`
+    SELECT b.date,
+           COALESCE(NULLIF(TRIM(c.phone), ''), b.passenger_phone) AS phone,
+           COALESCE(NULLIF(TRIM(c.email), ''), b.passenger_email) AS email
+      FROM bookings b LEFT JOIN customers c ON b.customer_id = c.id
+     WHERE COALESCE(b.status, '') <> 'cancelled'
+  `).all();
+  const byPhone = new Map(), byEmail = new Map();
+  const bump = (map, key, date) => {
+    if (!key) return;
+    const cur = map.get(key) || { n: 0, last: null };
+    cur.n++; if (date && (!cur.last || date > cur.last)) cur.last = date;
+    map.set(key, cur);
+  };
+  for (const r of rows) {
+    const pk = normPhone(r.phone), ek = normEmail(r.email);
+    bump(byPhone, pk, r.date);
+    if (!pk) bump(byEmail, ek, r.date);   // only count by email when there is no number, or they'd double
+  }
+  return { byPhone, byEmail };
 }
 
-/** The saved list, newest activity first, optionally filtered. */
+/** The saved list, most recent trip first, optionally filtered. */
 function list(db, q) {
   ensureSchema(db);
-  const term = String(q || '').trim().toLowerCase();
+  const stats = tripStats(db);
   const rows = db.prepare(`
-    SELECT id, name, phone, email, home_address, booking_count, last_booking, customer_id, address_locked
+    SELECT id, name, phone, email, home_address, customer_id, added_by, created_at
       FROM customer_directory
-     ORDER BY (last_booking IS NULL), last_booking DESC, name COLLATE NOCASE ASC
-  `).all();
+  `).all().map((r) => {
+    const s = (r.phone_key || normPhone(r.phone)) ? stats.byPhone.get(normPhone(r.phone)) : null;
+    const e = s || stats.byEmail.get(normEmail(r.email));
+    return Object.assign({}, r, { booking_count: (e && e.n) || 0, last_booking: (e && e.last) || null });
+  });
+  rows.sort((a, b) => {
+    if (!!a.last_booking !== !!b.last_booking) return a.last_booking ? -1 : 1;
+    if (a.last_booking && b.last_booking && a.last_booking !== b.last_booking) return a.last_booking < b.last_booking ? 1 : -1;
+    return String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' });
+  });
+
+  const term = String(q || '').trim().toLowerCase();
   if (!term) return rows;
   // Search the way the owner would: by name, by any form of the number, by email.
   const tphone = normPhone(term);
@@ -244,5 +240,22 @@ function list(db, q) {
   });
 }
 
-module.exports = { normPhone, normEmail, ensureSchema, rebuild, syncAfterBooking, list,
-                   pickHomeAddress, gatherFromBookings, NOT_A_HOME, MIN_BOOKINGS };
+/**
+ * One-shot cleanup for the rows the old automatic rule left behind.
+ *
+ * The last deploy backfilled everyone with three or more bookings. Those rows
+ * are marked added_by='auto'. Setting CUSTDIR_CLEAR_AUTO=1 in the environment
+ * deletes exactly those on the next boot and nothing else — anything the owner
+ * has since added by hand is 'manual' and is never touched.
+ *
+ * Not destructive by default, and safe to leave set: once the auto rows are
+ * gone it deletes nothing on every subsequent boot.
+ */
+function clearAutoAdded(db) {
+  ensureSchema(db);
+  const info = db.prepare("DELETE FROM customer_directory WHERE added_by = 'auto'").run();
+  return info.changes;
+}
+
+module.exports = { normPhone, normEmail, ensureSchema, addFromBooking, remove,
+                   findByIdentity, list, tripStats, clearAutoAdded };

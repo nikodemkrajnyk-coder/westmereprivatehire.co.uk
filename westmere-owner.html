@@ -3145,6 +3145,17 @@ function jobCardHtml(j){
   if(ACT.markCompleted){
     html+='<button style="flex:1;padding:.6rem;font-size:.8rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)" onclick="ownerMarkCompleted('+j.id+')">Mark Completed</button>';
   }
+  // ADD TO CUSTOMER LIST — the only way anybody gets onto the list. Shown on any
+  // job that has something to identify the customer by; renders as a settled
+  // "On your list ✓" once they are on it, so a second tap is never needed and a
+  // duplicate is never implied.
+  var _cPhone=j.phone||j.customer_phone||j.passenger_phone||'';
+  var _cEmail=j.email||j.customer_email||j.passenger_email||'';
+  if(_cPhone||_cEmail){
+    html+=custOnList(_cPhone,_cEmail)
+      ? '<button disabled style="flex:1;padding:.6rem;font-size:.8rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;min-height:40px;background:transparent;border:var(--border-hairline, 1px) solid rgba(27,27,26,.15);color:rgba(27,27,26,.4);cursor:default">On your list &#10003;</button>'
+      : '<button style="flex:1;padding:.6rem;font-size:.8rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;background:transparent;border:var(--border-hairline, 1px) solid rgba(27,27,26,.25);color:var(--westmere-navy,#102a43)" onclick="ownerAddCustomer('+j.id+',this)">Add to list</button>';
+  }
   var _isPaid=!!(j.paid_at);
   if(ACT.togglePaid){
     html+='<button style="flex:1;padding:.6rem;font-size:.8rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;'
@@ -5061,19 +5072,75 @@ var _tt;
    typing. The SAME cache backs the new-booking picker.
    Guardrail: server/tests/customer-directory.test.js */
 var CUSTOMERS = [];
-var CUST_THRESHOLD = 3;
 
-async function custLoad(){
+// The job cards ask this to decide between "Add to list" and "On your list ✓".
+// It matches the SAME normalised identity the server does, so the two can never
+// disagree about whether somebody is already saved.
+function custOnList(phone,email){
+  var pk=custNormPhone(phone);
+  var ek=String(email==null?'':email).trim().toLowerCase();
+  for(var i=0;i<CUSTOMERS.length;i++){
+    var c=CUSTOMERS[i];
+    if(pk && custNormPhone(c.phone)===pk) return true;
+    if(ek && String(c.email||'').trim().toLowerCase()===ek) return true;
+  }
+  return false;
+}
+
+// Re-render whichever job list is open, so an Add on one card updates the rest.
+function custRefreshOpenList(){
+  try{
+    var on=document.querySelector('.pg.on');
+    var id=on?String(on.id||'').replace(/^pg-/,''):'';
+    if(id==='confirmed'&&typeof buildConfirmed==='function')buildConfirmed();
+    else if(id==='toconfirm'&&typeof buildToConfirm==='function')buildToConfirm();
+    else if(id==='completed'&&typeof buildCompleted==='function')buildCompleted();
+  }catch(e){}
+}
+
+// Adding somebody from a booking. Idempotent server-side, so a double tap is
+// harmless — the button settles into its "on your list" state either way.
+async function ownerAddCustomer(bookingId,btn){
+  if(btn){btn.disabled=true;btn.textContent='Adding…';}
+  try{
+    var r=await fetch('/api/bookings/'+bookingId+'/add-customer',{method:'POST',credentials:'include'});
+    var d=await r.json();
+    if(!r.ok||!d.ok){
+      showToast(d.error||('Failed ('+r.status+')'));
+      if(btn){btn.disabled=false;btn.textContent='Add to list';}
+      return;
+    }
+    // Keep the local list in step so every other card for this customer flips
+    // to "On your list" without a reload.
+    if(d.customer){
+      var seen=false;
+      for(var i=0;i<CUSTOMERS.length;i++) if(CUSTOMERS[i].id===d.customer.id){CUSTOMERS[i]=d.customer;seen=true;}
+      if(!seen)CUSTOMERS.push(d.customer);
+    }
+    if(btn){btn.textContent='On your list \u2713';btn.disabled=true;btn.style.color='rgba(27,27,26,.4)';btn.style.borderColor='rgba(27,27,26,.15)';btn.style.cursor='default';}
+    // A regular usually has more than one job on the board. Re-render the open
+    // list so EVERY card for this customer settles, not just the one tapped —
+    // otherwise the next card still says "Add to list" for somebody now saved.
+    custRefreshOpenList();
+    showToast(d.already?((d.customer&&d.customer.name)||'They')+' are already on your list':((d.customer&&d.customer.name)||'Customer')+' added to your list');
+  }catch(e){
+    showToast('Network error');
+    if(btn){btn.disabled=false;btn.textContent='Add to list';}
+  }
+}
+
+
+async function custLoad(opts){
+  var quiet=!!(opts&&opts.quiet);
   var list=document.getElementById('cust-list');
-  if(list) list.innerHTML='<div style="padding:1.2rem 0;color:rgba(27,27,26,.4);font-size:.9rem">Loading…</div>';
+  if(list&&!quiet) list.innerHTML='<div style="padding:1.2rem 0;color:rgba(27,27,26,.4);font-size:.9rem">Loading…</div>';
   try{
     var r=await fetch('/api/customer-directory',{credentials:'include'});
     var d=await r.json();
-    if(!r.ok||!d.ok){ if(list) list.innerHTML='<div style="padding:1.2rem 0;color:#8B2222;font-size:.9rem">'+(d.error||'Could not load customers')+'</div>'; return; }
+    if(!r.ok||!d.ok){ if(list&&!quiet) list.innerHTML='<div style="padding:1.2rem 0;color:#8B2222;font-size:.9rem">'+(d.error||'Could not load customers')+'</div>'; return; }
     CUSTOMERS=d.customers||[];
-    CUST_THRESHOLD=d.threshold||3;
-  }catch(e){ if(list) list.innerHTML='<div style="padding:1.2rem 0;color:#8B2222;font-size:.9rem">Network error</div>'; return; }
-  custRender();
+  }catch(e){ if(list&&!quiet) list.innerHTML='<div style="padding:1.2rem 0;color:#8B2222;font-size:.9rem">Network error</div>'; return; }
+  if(!quiet) custRender();
 }
 
 // Same matching the server uses, so the picker and the list agree.
@@ -5103,13 +5170,11 @@ function custRender(){
   var rows=CUSTOMERS.filter(function(c){return custMatch(c,term);});
   var cnt=document.getElementById('cust-count');
   if(cnt) cnt.textContent = CUSTOMERS.length
-    ? (rows.length===CUSTOMERS.length
-        ? CUSTOMERS.length+' saved · more than '+(CUST_THRESHOLD-1)+' bookings each'
-        : rows.length+' of '+CUSTOMERS.length)
-    : 'Nobody yet — a customer is saved here on their '+CUST_THRESHOLD+'rd booking.';
+    ? (rows.length===CUSTOMERS.length ? CUSTOMERS.length+' saved' : rows.length+' of '+CUSTOMERS.length)
+    : 'Nobody yet — tap "Add to list" on a booking to save a customer here.';
   if(!rows.length){
     list.innerHTML='<div style="padding:1.2rem 0;color:rgba(27,27,26,.4);font-size:.9rem">'
-      +(CUSTOMERS.length?'No match.':'Customers appear automatically once they have booked more than '+(CUST_THRESHOLD-1)+' times.')+'</div>';
+      +(CUSTOMERS.length?'No match.':'Open any booking and tap &ldquo;Add to list&rdquo; to save that customer here.')+'</div>';
     return;
   }
   list.innerHTML=rows.map(function(c){
@@ -5136,6 +5201,22 @@ function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(m){retur
 // this app's own shortener if the module has not loaded.
 function wmShort(a){ try{ return esc((window.WMAddr && WMAddr.shortDisplay) ? WMAddr.shortDisplay(a) : _localShort(a)); }catch(e){ return esc(a); } }
 
+// Removing somebody from the list. A plain delete — nothing repopulates this
+// list, so there is nothing to suppress and no "removed" state to keep.
+async function custRemove(id){
+  var c=CUSTOMERS.filter(function(x){return x.id===id;})[0];
+  var who=(c&&c.name)?c.name:'this customer';
+  if(!confirm('Remove '+who+' from your customer list?\n\nTheir bookings, invoices and earnings are NOT deleted. You can add them again any time from one of their bookings.'))return;
+  try{
+    var r=await fetch('/api/customer-directory/'+id,{method:'DELETE',credentials:'include'});
+    var d=await r.json();
+    if(!r.ok||!d.ok){ showToast(d.error||('Failed ('+r.status+')')); return; }
+    var ov=document.getElementById('cust-edit-overlay'); if(ov)ov.remove();
+    CUSTOMERS=CUSTOMERS.filter(function(x){return x.id!==id;});
+    custRender(); showToast((d.name||'Customer')+' removed from the list');
+  }catch(e){ showToast('Network error'); }
+}
+
 // Editing a record. The address the owner types outranks the one we guessed, and
 // saving it tells the server to stop recomputing that field.
 function custEdit(id){
@@ -5155,11 +5236,18 @@ function custEdit(id){
     +f('Name','ce-name',c.name)+f('Phone','ce-phone',c.phone,'tel')+f('Email','ce-email',c.email,'email')
     +f('Home address','ce-addr',c.home_address)
     +'<div style="font-size:.78rem;color:rgba(27,27,26,.45);margin:-.3rem 0 .9rem;line-height:1.45">'
-    +(c.address_locked?'You have set this address — it will not be overwritten.':'Guessed from where this customer is usually collected. Editing it makes it permanent.')+'</div>'
+    +'Taken from the pickup on the booking you added them from. Edit it if they are usually collected somewhere else.'+'</div>'
     +'<div id="ce-err" style="display:none;margin-bottom:.7rem;padding:.5rem .7rem;background:rgba(163,51,51,.08);border:1px solid rgba(163,51,51,.25);border-radius:6px;font-size:.88rem;color:#8B2222"></div>'
     +'<div style="display:flex;gap:.6rem">'
     +'<button onclick="document.getElementById(\'cust-edit-overlay\').remove()" style="flex:1;padding:.75rem;background:transparent;border:1px solid rgba(27,27,26,.15);border-radius:10px;font-family:inherit;font-size:.92rem;color:rgba(27,27,26,.5);cursor:pointer">Cancel</button>'
     +'<button class="wm-primary" onclick="custEditSave('+id+')" style="flex:2;padding:.75rem;border-radius:10px;font-family:inherit;cursor:pointer;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)">Save</button>'
+    +'</div>'
+    // Removal lives BEHIND the edit sheet, under a rule, away from the routine
+    // row actions. A destructive-looking control next to "New booking" on a
+    // phone row is a mis-tap waiting to happen.
+    +'<div style="margin-top:1.1rem;padding-top:.9rem;border-top:1px solid rgba(27,27,26,.08)">'
+    +'<button onclick="custRemove('+id+')" style="width:100%;padding:.6rem;background:transparent;border:1px solid rgba(139,34,34,.35);border-radius:10px;font-family:inherit;font-size:.88rem;color:#8B2222;cursor:pointer">Remove from customer list</button>'
+    +'<div style="font-size:.76rem;color:rgba(27,27,26,.42);margin-top:.45rem;line-height:1.45">Takes them off this list and out of the new-booking picker. Their bookings, invoices and earnings are not affected &mdash; add them again any time from one of their bookings.</div>'
     +'</div></div>';
   document.body.appendChild(el);
   el.addEventListener('click',function(ev){if(ev.target===el)el.remove();});
@@ -5242,6 +5330,14 @@ function manualRefresh(){loadOwnerBookings();showToast('Refreshing…');}
 
 async function loadOwnerBookings(){
   try{
+    // The job cards need to know who is already on the customer list before they
+    // render, or every card would offer "Add to list" — including for customers
+    // already saved. Fetched alongside the bookings, once, and never allowed to
+    // block them: if it fails the cards simply offer Add, and the server is
+    // idempotent so a redundant Add is harmless.
+    if(!CUSTOMERS.length && typeof custLoad==='function'){
+      try{ await custLoad({quiet:true}); }catch(e){}
+    }
     var res=await fetch('/api/bookings',{credentials:'include'});
     var data=await res.json();
     if(!res.ok||!data.ok){_setConnDot(false);return;}

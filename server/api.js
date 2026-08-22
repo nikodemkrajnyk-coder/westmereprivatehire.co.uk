@@ -185,13 +185,6 @@ router.post('/bookings', (req, res) => {
     } catch (e) { console.error('[API] trip_miles calc failed:', e.message); }
   })();
 
-  // The directory counts bookings, so a new one may be somebody's third — the
-  // moment they become a saved customer. Rebuilt rather than incremented: a
-  // counter would eventually disagree with the bookings table and there would be
-  // no way to tell which was lying. Never allowed to break a booking.
-  try { require('./customer-directory').syncAfterBooking(db); }
-  catch (e) { console.error('[API] customer directory sync failed:', e.message); }
-
   // Send admin notifications in background.
   // A MANUAL booking has no linked customer (customer_id null), so the name /
   // email / phone live in the passenger_* fields the form supplied. Fall back to
@@ -2984,17 +2977,15 @@ router.get('/customer-directory', (req, res) => {
   }
   try {
     const dir = require('./customer-directory');
-    const rows = dir.list(getDb(), req.query && req.query.q);
-    res.json({ ok: true, customers: rows, threshold: dir.MIN_BOOKINGS });
+    res.json({ ok: true, customers: dir.list(getDb(), req.query && req.query.q) });
   } catch (e) {
     console.error('[API] customer directory list failed:', e.message);
     res.status(500).json({ error: 'Could not load customers' });
   }
 });
 
-// Correcting a record by hand. An address the owner has typed is better than the
-// one we inferred from pickups, so saving it sets address_locked and the
-// recompute stops overwriting it.
+// Correcting a record by hand. Nothing recomputes this table any more, so an
+// edit simply stands — there is no lock to set and nothing to defend it from.
 router.patch('/customer-directory/:id', (req, res) => {
   if (!['admin', 'owner'].includes(req.auth.role)) {
     return res.status(403).json({ error: 'Access denied' });
@@ -3030,22 +3021,70 @@ router.patch('/customer-directory/:id', (req, res) => {
     if (clash) return res.status(409).json({ error: 'That email already belongs to ' + (clash.name || 'another customer') + '.' });
   }
 
-  const addressChanged = b.home_address !== undefined && String(home) !== String(row.home_address || '');
   db.prepare(`
     UPDATE customer_directory
        SET name = ?, phone = ?, email = ?, home_address = ?,
-           phone_key = ?, email_key = ?,
-           address_locked = CASE WHEN ? = 1 THEN 1 ELSE address_locked END,
-           updated_at = datetime('now')
+           phone_key = ?, email_key = ?, updated_at = datetime('now')
      WHERE id = ?
-  `).run(name || null, phone || null, email || null, home || null, pk, ek, addressChanged ? 1 : 0, id);
+  `).run(name || null, phone || null, email || null, home || null, pk, ek, id);
 
   try {
     db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
       .run(req.auth.type || 'user', req.auth.id, 'customer_directory_edited', (name || row.name || '#' + id), req.ip);
   } catch (_) {}
 
-  res.json({ ok: true, customer: db.prepare('SELECT id, name, phone, email, home_address, booking_count, last_booking, address_locked FROM customer_directory WHERE id = ?').get(id) });
+  res.json({ ok: true, customer: db.prepare('SELECT id, name, phone, email, home_address, added_by FROM customer_directory WHERE id = ?').get(id) });
+});
+
+/* Add the customer on a booking to the owner's list.
+   The ONLY way anything gets into customer_directory. Nothing automatic writes
+   to it — the more-than-two-bookings rule is gone at the owner's request.
+
+   Reads the booking; writes only to customer_directory. The booking, the
+   accounts table, invoices and earnings are untouched by this.
+   GUARDRAIL: server/tests/customer-directory.test.js */
+router.post('/bookings/:id/add-customer', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+  const db = getDb();
+  const out = require('./customer-directory').addFromBooking(db, id);
+  if (!out.ok) {
+    if (out.reason === 'not_found') return res.status(404).json({ error: 'Booking not found' });
+    return res.status(400).json({
+      error: 'This booking has no phone number or email, so there is nothing to save them under.',
+      reason: out.reason
+    });
+  }
+  if (!out.already) {
+    try {
+      db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+        .run(req.auth.type || 'user', req.auth.id, 'customer_list_added', (out.customer.name || '#' + out.customer.id), req.ip);
+    } catch (_) {}
+  }
+  res.json({ ok: true, already: out.already, customer: out.customer });
+});
+
+/* Take somebody off the list.
+   A plain delete: nothing repopulates this table, so there is nothing to
+   suppress. To put them back the owner taps Add on any of their bookings.
+   Their bookings and money are not touched. */
+router.delete('/customer-directory/:id', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid customer ID' });
+  const db = getDb();
+  const row = require('./customer-directory').remove(db, id);
+  if (!row) return res.status(404).json({ error: 'Customer not found' });
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run(req.auth.type || 'user', req.auth.id, 'customer_list_removed', (row.name || '#' + id), req.ip);
+  } catch (_) {}
+  res.json({ ok: true, removed: true, name: row.name || null });
 });
 
 /* ── REOPEN / CHANGE THE PAYMENT OPTION ──────────────────────────────────
