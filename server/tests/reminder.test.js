@@ -42,12 +42,19 @@ test('dueReminders fires only inside the next 12h, once, skipping ASAP/past/futu
     { ref: 'A', date: '2026-08-12', time: '18:00', reminder_sent_at: null },              // 10h → due
     { ref: 'F', date: '2026-08-12', time: '19:59', reminder_sent_at: null },              // ~12h → due
     { ref: 'B', date: '2026-08-12', time: '23:00', reminder_sent_at: null },              // 15h → not yet
-    { ref: 'C', date: '2026-08-12', time: '12:00', reminder_sent_at: '2026-08-11 20:00' },// already reminded
+    // BOTH latches set → nothing left to send. There are two reminders now (owner
+    // and customer) and a booking stays due until both have gone.
+    { ref: 'C', date: '2026-08-12', time: '12:00', reminder_sent_at: '2026-08-11 20:00',
+      customer_reminder_sent_at: '2026-08-11 20:00' },                                   // both done
+    // Owner's has gone, the customer's has NOT — still due, or the customer
+    // would silently never be told.
+    { ref: 'G', date: '2026-08-12', time: '16:00', reminder_sent_at: '2026-08-11 20:00' },
     { ref: 'D', date: '2026-08-12', time: 'ASAP',  reminder_sent_at: null },              // ASAP → skip
     { ref: 'E', date: '2026-08-12', time: '07:00', reminder_sent_at: null },              // past → skip
   ];
   const due = reminder.dueReminders(rows, now, 12).map((r) => r.ref).sort();
-  assert.deepStrictEqual(due, ['A', 'F'], 'only the two bookings within the next 12h (and not yet reminded) are due');
+  assert.deepStrictEqual(due, ['A', 'F', 'G'],
+    'due = inside the next 12h with at least one reminder still outstanding');
 });
 
 // ── End-to-end sweep against a real (temp) DB ─────────────────────────────
@@ -177,7 +184,13 @@ test('the once-only latch is still what stops a second send', () => {
   assert.ok(/reminder_sent_at IS NULL/.test(rem), 'the sweep query must exclude already-reminded bookings');
   assert.ok(/UPDATE bookings SET reminder_sent_at = datetime\('now'\) WHERE id = \?/.test(rem),
     'a successful send must stamp reminder_sent_at');
-  assert.ok(/if \(r\.reminder_sent_at\) return false/.test(rem), 'dueReminders must also honour the latch');
+  // Two latches now: a booking stops being due only when BOTH have been stamped.
+  assert.ok(/if \(r\.reminder_sent_at && r\.customer_reminder_sent_at\) return false/.test(rem),
+    'dueReminders must honour BOTH latches');
+  assert.ok(/UPDATE bookings SET customer_reminder_sent_at = datetime\('now'\) WHERE id = \?/.test(rem),
+    'a successful customer send must stamp its own column');
+  assert.ok(/ALTER TABLE bookings ADD COLUMN customer_reminder_sent_at/.test(read('server/db.js')),
+    'the customer latch column must exist');
 });
 
 // ── Wiring + schema ───────────────────────────────────────────────────────

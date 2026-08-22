@@ -2844,9 +2844,25 @@ router.post('/bookings/:id/send-message', async (req, res) => {
   if (!b) return res.status(404).json({ error: 'Booking not found' });
   if (!b.contact_email) return res.status(400).json({ error: 'No email address on this booking' });
 
+  /* The owner's ask: include the payment links only while the customer still has
+     a choice to make. paymentLock is the same question every other channel asks,
+     so a cash-locked or settled booking gets the message and nothing to press —
+     no card button into a booking that would refuse the card.
+     The token is minted only when there is genuinely something to pay;
+     ensurePayToken is idempotent, so a token already in a delivered estimate is
+     never re-minted. */
+  const { paymentLock } = require('./pay-lock');
+  const lock = paymentLock(b);
+  const msgPayToken = lock.payable
+    ? (require('./intake').ensurePayToken(id) || b.pay_token || null)
+    : null;
+
   try {
     const { sendCustomerMessage } = require('./email');
-    const ok = await sendCustomerMessage({ ref: b.ref, name: b.contact_name, email: b.contact_email }, message);
+    const ok = await sendCustomerMessage(
+      { ref: b.ref, name: b.contact_name, email: b.contact_email, pay_token: msgPayToken },
+      message,
+      { pay: { payable: !!lock.payable, amountDue: lock.amountDue } });
     if (!ok) return res.status(502).json({ error: 'Email delivery failed' });
     try {
       db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')

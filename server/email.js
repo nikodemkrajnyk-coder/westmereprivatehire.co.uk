@@ -12,7 +12,7 @@ const RESEND_URL = 'https://api.resend.com/emails';
 // Address DISPLAY normalizer — single source of truth (see address-normalize.js).
 // Every pickup/drop-off/stop shown to a human goes through dispAddr(); the FULL
 // address is still used for Waze/nav links so routing is never broken.
-const { shortDisplay, flightFor } = require('../address-normalize');
+const { shortDisplay, flightFor, isAirportRun } = require('../address-normalize');
 function dispAddr(a) { return escHtml(shortDisplay(a || '')); }
 // Luggage label — single source of truth (see wm-lifecycle.js). Bags are always
 // a whole number here; the raw column value is never printed.
@@ -20,6 +20,131 @@ const { bagsText, bagsLabel } = require('../wm-lifecycle');
 // A flight number is shown ONLY on an airport run — flightFor() returns '' for
 // a town-to-town job, so `if (flt)` omits the row entirely.
 function dispFlight(booking) { return flightFor(booking); }
+
+/* A tracking link for a flight number the CUSTOMER typed.
+   flightFor() has already uppercased it and stripped spaces, but it hands back
+   whatever was entered — so anything going into a URL is VALIDATED here, not
+   merely escaped. Only a plausible airline ident gets a link; free text like
+   "Terminal 5 arrivals" gets none, and the flight number is still shown either
+   way. A dead "Track your flight" button is worse than no button.
+
+   An airline designator is 2 characters (IATA) or 3 (ICAO), and IATA codes are
+   NOT always two letters: easyJet is U2, Germanwings was 4U. A two-LETTER rule
+   rejected U21234, and easyJet flies out of Gatwick all day — so the prefix is
+   alphanumeric with at least one letter, which still refuses a bare "12345".
+
+   FlightAware's /live/flight/<ident> takes both IATA and ICAO idents and is a
+   real tracker rather than a search-results page. */
+const FLIGHT_IDENT = /^([A-Z0-9]{2,3})([0-9]{1,4})([A-Z]?)$/;
+function flightTrackUrl(raw) {
+  const ident = String(raw == null ? '' : raw).toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const m = ident && FLIGHT_IDENT.exec(ident);
+  if (!m || !/[A-Z]/.test(m[1])) return null;
+  return 'https://www.flightaware.com/live/flight/' + encodeURIComponent(ident);
+}
+
+/* THE AIRPORT BLOCK — meet & greet, and flight tracking.
+   Shared by the CONFIRMATION and the customer's 12-hour REMINDER, so the two
+   carry exactly the same promises. Two copies of a promise is how one of them
+   quietly stops matching the other.
+
+   Needs pickup / destination / stop_address / flight. Returns '' for a
+   town-to-town job; omits the flight half when there is no flight number, so
+   there is no empty "Flight:" label anywhere.
+
+   "Airport" is isAirportRun() from address-normalize.js — the same detector
+   that gates the flight-number field, so the form and the emails agree. It is
+   deliberately BROADER than the fare engine's six priced airports: a Birmingham
+   run is still met, and still has parking. */
+/* WHO IS COMING, AND IN WHAT.
+   bookings.driver_id joins users(full_name, vehicle, reg), so a booking CAN
+   carry an assigned driver and car. Callers pass whatever the join found; these
+   three are the fallback for the (currently usual) case of no assignment, which
+   is the owner's own car.
+
+   Kept as one helper so the confirmation and the reminder can never disagree
+   about who is turning up. */
+const DEFAULT_DRIVER  = 'Nikodem';
+const DEFAULT_VEHICLE = 'Tesla Model S';
+const DEFAULT_REG     = 'ML68 YHC';
+function driverDetails(d) {
+  const pick = (v, fallback) => {
+    const t = String(v == null ? '' : v).trim();
+    return t || fallback;
+  };
+  return {
+    name: pick(d && d.driver_name, DEFAULT_DRIVER),
+    vehicle: pick(d && d.driver_vehicle, DEFAULT_VEHICLE),
+    reg: pick(d && d.driver_reg, DEFAULT_REG)
+  };
+}
+
+/* ── WHO IS TURNING UP, AND IN WHAT ──────────────────────────────────────
+   One renderer, used by BOTH customer emails, so the confirmation and the
+   12-hour reminder can never disagree about the car that is coming. Rendered
+   as its own strip rather than a details-table row because the two emails
+   build their tables differently (icon rows vs plain rows) — this way the
+   customer sees the identical thing in each.
+
+   The plate is set in the mono face the Reference row uses: a registration is
+   a code to be read off against a car on a kerb, not prose.
+   GUARDRAIL: server/tests/booking-notes.test.js, rider-reminder.test.js */
+/* ── THE WAY OUT, UNDER THE PAY DOORS ────────────────────────────────────
+   A customer who is being asked for money is entitled to the other answer in
+   the same breath. This renders under the pay buttons in the reminder and in
+   the owner's Send Message email, and ONLY there — both callers gate it behind
+   paymentLock, so a paid booking never gets an auto-cancel link in an email.
+   Cancelling a paid trip is refund territory and stays a phone call.
+
+   It is a LINK, not a button: the pay doors are the offer, this is the exit,
+   and the weight difference is the whole message.
+
+   The href is the EXISTING tokenised cancel flow — /api/public/cancel/:ref is
+   a GET that only ever renders a confirmation page, with the cancellation
+   itself behind a POST from that page. An email scanner or a mis-tap therefore
+   cannot cancel anybody's car. Do not "simplify" this into a one-click GET.
+   GUARDRAIL: server/tests/rider-reminder.test.js */
+function cancelLinkHtml(ref, token) {
+  if (!ref || !token) return '';
+  const url = `${HOST}/api/public/cancel/${encodeURIComponent(ref)}?t=${encodeURIComponent(token)}`;
+  return `<p style="margin:14px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6;text-align:center">Need to cancel? <a href="${escAttr(url)}" style="color:${INK};text-decoration:underline">Cancel this trip</a></p>`;
+}
+
+function driverBlockHtml(d) {
+  const dv = driverDetails(d);
+  const serif = 'Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif';
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #dfe5ea;margin-top:2px">
+  <tr><td style="padding:14px 0 0">
+    <p style="margin:0 0 4px;font-family:${serif};font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Your driver and car</p>
+    <p style="margin:0;font-family:${serif};font-size:15px;color:${INK};line-height:1.5">${escHtml(dv.name)} &mdash; ${escHtml(dv.vehicle)}</p>
+    <p style="margin:2px 0 0;font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:1px;color:${INK_MUTED}">${escHtml(dv.reg)}</p>
+  </td></tr>
+</table>`;
+}
+
+function airportBlockHtml(d) {
+  if (!isAirportRun(d.pickup, d.destination, d.stop_address)) return '';
+  let flightBlock = '';
+  const flightNo = dispFlight(d);
+  if (flightNo) {
+    const trackUrl = flightTrackUrl(flightNo);
+    const trackLink = trackUrl
+      ? ' &nbsp;<a href="' + trackUrl + '" style="color:#102a43;text-decoration:underline">Track your flight</a>'
+      : '';
+    flightBlock = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:10px;border-top:1px solid #eef1f4">'
+      + '<tr><td style="padding-top:10px">'
+      + '<p style="margin:0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:#102a43;line-height:1.65"><strong style="font-weight:500">Flight ' + escHtml(flightNo) + '</strong>' + trackLink + '</p>'
+      + '<p style="margin:6px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:#657485;line-height:1.6">We track your flight, so delays are no problem.</p>'
+      + '</td></tr></table>';
+  }
+  return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">'
+    + '<tr><td style="padding:12px 16px;border:1px solid #dfe5ea;border-radius:6px">'
+    + '<p style="margin:0 0 4px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#657485;font-weight:600">Your airport transfer</p>'
+    + '<p style="margin:0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:#102a43;line-height:1.65"><strong style="font-weight:500">Meet &amp; greet included</strong> &mdash; your driver will meet you at arrivals and help with your luggage.</p>'
+    + '<p style="margin:8px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:#657485;line-height:1.6">Airport parking is included in your fare &mdash; there is nothing extra to pay.</p>'
+    + flightBlock
+    + '</td></tr></table>';
+}
 
 function isConfigured() {
   return !!process.env.RESEND_API_KEY;
@@ -280,7 +405,8 @@ async function sendCustomerAcknowledgement(booking) {
 // ── Customer booking CONFIRMED (sent when the CUSTOMER acts: card paid, or
 // "pay driver" chosen — never by an assistant, never by "Send Estimate") ──
 async function sendCustomerConfirmed(booking) {
-  const { ref, name, email, pickup, destination, date, time, fare, payment, flight, passengers, bags, pay_token, paid, stop_address, notes } = booking;
+  const { ref, name, email, pickup, destination, date, time, fare, payment, flight, passengers, bags, pay_token, paid, stop_address, notes,
+          driver_name, driver_vehicle, driver_reg } = booking;
   if (!email) return;
 
   const dateStr = formatDate(date, time);
@@ -322,6 +448,7 @@ async function sendCustomerConfirmed(booking) {
   const html = confirmationEmailHtml({
     ref, firstName, pickup, stop_address, destination, dateStr, flight, passengers, bags,
     fareStr, alreadyPaid: noPayButtons, payment, paymentLabel, pay_token, notes,
+    driver_name, driver_vehicle, driver_reg,
     eyebrow: 'Booking confirmed', intro
   });
   const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
@@ -577,6 +704,24 @@ function confirmationEmailHtml(d) {
 
   // For the ACKNOWLEDGEMENT (no fare/token yet) show a reassurance caption
   // instead of pay buttons.
+  // The airport promises. Not on the acknowledgement: that goes out before a
+  // fare exists, and promising what a fare includes before quoting one is
+  // premature.
+  // The car itself — on a CONFIRMED booking and on the "your booking has been
+  // updated" restatement of one. Deliberately NOT on the acknowledgement or the
+  // estimate: both go out before the customer has said yes, and naming the
+  // driver there would promise a car for a journey nobody has agreed to run.
+  let driverBlock = '';
+  if (variant === 'confirmed' || variant === 'updated') {
+    driverBlock = '<tr><td class="wm-pad" style="padding:6px 40px 0;background:#FFFFFF">' + driverBlockHtml(d) + '</td></tr>';
+  }
+
+  let meetGreetBlock = '';
+  if (variant !== 'ack') {
+    const ab = airportBlockHtml(d);
+    if (ab) meetGreetBlock = '<tr><td class="wm-pad" style="padding:16px 40px 0;background:#FFFFFF">' + ab + '</td></tr>';
+  }
+
   let captionBlock = '';
   if (variant === 'ack' && d.caption) {
     captionBlock = `<tr><td class="wm-pad" style="padding:10px 40px 2px;background:#FFFFFF">
@@ -673,6 +818,8 @@ ${changesBlock}
   </table>
 </td></tr>
 
+${driverBlock}
+${meetGreetBlock}
 ${captionBlock}
 ${adjustBlock}
 ${payBlock}
@@ -878,6 +1025,98 @@ async function sendAdminAlert(booking) {
   const preheader = (name || 'Guest') + ' \u2014 ' + dateStr;
   const ok = await sendEmail(adminEmail, subject, html, 'Westmere Bookings', preheader);
   if (ok) console.log('[EMAIL] Admin alert sent (' + ref + ')');
+}
+
+/* ── JOURNEY REMINDER → THE CUSTOMER ──────────────────────────────────────
+   The owner has had a 12-hour reminder for a while; the customer never did.
+   This is the same sweep, the same window, a SEPARATE latch
+   (bookings.customer_reminder_sent_at) so the two fire independently and each
+   exactly once.
+
+   What it carries: who is coming, when, from where to where, what is owed and
+   how to settle it, and — on an airport run — the same meet & greet and flight
+   tracking the confirmation promised. The remaining time is the REAL gap, from
+   the same time-gap module the owner's reminder uses, so the two never disagree
+   about how long is left.
+
+   PAYMENT. The caller passes a `pay` object derived from paymentLock, because
+   this module must not touch the database. When the booking is genuinely
+   payable it gets BOTH doors — card and pay-the-driver — exactly as the
+   estimate email does. When the customer has already chosen, or has paid, it
+   gets a plain status line and no buttons: a card button pointing into a
+   cash-locked booking is the dead end this codebase already fixed once.
+
+   GUARDRAIL: server/tests/rider-reminder.test.js */
+async function sendCustomerJourneyReminder(booking, opts) {
+  const o = opts || {};
+  const { ref, name, email, pickup, destination, stop_address, date, time,
+          fare, payment, paid_at, flight, passengers, bags, pay_token } = booking;
+  if (!email) return false;
+
+  const firstName = greetingName(name);
+  const dateStr = formatDate(date, time);
+  const { gapPhrase } = require('./time-gap');
+  // The real remaining time, from the same module the owner's reminder uses.
+  const gapWords = o.gapMs == null ? 'shortly' : gapPhrase(o.gapMs);
+
+  let rows = '';
+  rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:' + INK + '">' + escHtml(ref) + '</span>');
+  rows += detailRow('Date & Time', escHtml(dateStr), { gold: true });
+  rows += rowDivider();
+  rows += detailRow('Pickup', dispAddr(pickup));
+  if (stop_address) rows += detailRow('Stop', dispAddr(stop_address));
+  rows += detailRow('Drop-off', dispAddr(destination));
+  const remFlight = dispFlight(booking);
+  if (remFlight) rows += detailRow('Flight', escHtml(remFlight));
+  if (passengers) rows += detailRow('Passengers', String(passengers));
+  const remBags = bagsText(bags);
+  if (remBags) rows += detailRow('Luggage', escHtml(remBags));
+  rows += rowDivider();
+  const fareStr = (fare || fare === 0) ? ('£' + Number(fare).toFixed(2)) : null;
+  if (fareStr) rows += detailRow('Fare', fareStr);
+  // Never "paid" unless it genuinely is — see the payment invariants.
+  const payLabel = paid_at || payment === 'card' ? 'Paid ✓'
+    : payment === 'cash' ? 'Pay your driver on the day'
+    : payment === 'account' || payment === 'invoice' ? 'On account'
+    : 'To be arranged';
+  rows += detailRow('Payment', payLabel);
+
+  // The airport promises, identical to the confirmation's.
+  const airportBlock = airportBlockHtml(booking);
+
+  /* BOTH DOORS, or none. o.pay is { payable, amountDue } straight from
+     paymentLock — the module that every other channel asks. */
+  let payBlock = '';
+  if (o.pay && o.pay.payable && pay_token && o.pay.amountDue > 0) {
+    const dueStr = '£' + Number(o.pay.amountDue).toFixed(2);
+    const payUrl  = `${HOST}/westmere-pay.html?ref=${encodeURIComponent(ref)}&t=${encodeURIComponent(pay_token)}`;
+    const cashUrl = `${HOST}/api/public/pay/${encodeURIComponent(ref)}/cash?t=${encodeURIComponent(pay_token)}`;
+    payBlock = `
+  <p style="margin:20px 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};line-height:1.6;text-align:center">There is still ${escHtml(dueStr)} to settle &mdash; choose whichever suits you:</p>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+    ${actionBtn(payUrl, 'Pay ' + escHtml(dueStr) + ' Now &mdash; Card, Apple Pay or Google Pay', 'primary')}
+    ${actionBtn(cashUrl, 'Pay Your Driver On The Day', 'secondary')}
+  </table>
+  ${cancelLinkHtml(ref, pay_token)}`;
+  }
+
+  const body = `
+  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Your journey</p>
+  <p style="margin:0 0 8px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:18px;color:${INK};font-weight:400;line-height:1.4">Dear ${escHtml(firstName)}, your car is booked for ${escHtml(gapWords)}.</p>
+  <p style="margin:0 0 20px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Everything is arranged and we are looking forward to taking you. Your details are below &mdash; do check them over.</p>
+  ${buildDetailsTable(rows)}
+  ${driverBlockHtml(booking)}
+  ${airportBlock ? '<div style="margin-top:18px">' + airportBlock + '</div>' : ''}
+  ${payBlock}
+  <p style="margin:22px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">If anything has changed, reply to this email or call us on <a href="tel:+447930342593" style="color:${INK};text-decoration:none">07930&nbsp;342593</a>.</p>`;
+
+  const html = heroEmail(body);
+  const subject = 'Your journey ' + gapWords + ' — ' + ref;
+  const preheader = 'Your Westmere car is booked for ' + gapWords + ' — ' + shortDisplay(pickup) + ' → ' + shortDisplay(destination);
+  const to = o.testTo || email;
+  const ok = await sendEmail(to, subject, html, 'Westmere Private Hire', preheader);
+  if (ok) console.log('[EMAIL] Customer journey reminder sent (' + ref + ', ' + gapWords + ') to', to);
+  return ok;
 }
 
 // ── Pickup reminder → the OWNER (fires anywhere inside the next 12h) ─────
@@ -1931,16 +2170,46 @@ async function sendOwnerChangeRequest(booking, cr) {
 // ── Free-text message from operator to customer ──────────────────────────
 // A lighter version of the brand template — the owner types a message (e.g. a
 // question) and it is delivered to the customer from Westmere.
-async function sendCustomerMessage(booking, message) {
-  const { ref, name, email } = booking;
+/* A message the owner typed, plus — ONLY when it is useful — the two payment
+   doors underneath it.
+
+   The owner's ask: "when they haven't chosen a payment option yet, include the
+   payment links; once they've chosen, send it without them." So the block is
+   conditional on paymentLock, asked by the CALLER (this module must not touch
+   the database) and handed in as `opts.pay`.
+
+   Never a card button into a cash-locked booking: that dead end has been fixed
+   once already and must not be reintroduced through a different email. */
+async function sendCustomerMessage(booking, message, opts) {
+  const o = opts || {};
+  const { ref, name, email, pay_token } = booking;
   if (!email || !message) return false;
   const firstName = greetingName(name);
+
+  let payBlock = '';
+  if (o.pay && o.pay.payable && pay_token && o.pay.amountDue > 0) {
+    const dueStr = '£' + Number(o.pay.amountDue).toFixed(2);
+    const payUrl  = `${HOST}/westmere-pay.html?ref=${encodeURIComponent(ref)}&t=${encodeURIComponent(pay_token)}`;
+    const cashUrl = `${HOST}/api/public/pay/${encodeURIComponent(ref)}/cash?t=${encodeURIComponent(pay_token)}`;
+    payBlock = `
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:22px 0 0;border-top:1px solid #dfe5ea">
+    <tr><td style="padding-top:18px">
+      <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};line-height:1.6;text-align:center">Whenever you are ready, here are your payment options for ${escHtml(dueStr)}:</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        ${actionBtn(payUrl, 'Pay ' + escHtml(dueStr) + ' Now &mdash; Card, Apple Pay or Google Pay', 'primary')}
+        ${actionBtn(cashUrl, 'Pay Your Driver On The Day', 'secondary')}
+      </table>
+      ${cancelLinkHtml(ref, pay_token)}
+    </td></tr>
+  </table>`;
+  }
 
   const body = `
   <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">A message from Westmere${ref ? ' · ' + escHtml(ref) : ''}</p>
   <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
   <p style="margin:0 0 22px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.7">${escHtml(message).replace(/\n/g, '<br>')}</p>
-  <p style="margin:0 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">You can simply reply to this email or call us on <a href="tel:+447930342593" style="color:${INK};text-decoration:none">07930 342593</a>.</p>`;
+  <p style="margin:0 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">You can simply reply to this email or call us on <a href="tel:+447930342593" style="color:${INK};text-decoration:none">07930 342593</a>.</p>
+  ${payBlock}`;
 
   const html = heroEmail(body);
   const subject = ref ? ('Regarding your booking — ' + ref) : 'A message from Westmere Private Hire';
@@ -1953,6 +2222,7 @@ async function sendCustomerMessage(booking, message) {
 module.exports = {
   sendCustomerAcknowledgement, sendCustomerConfirmed, sendCustomerEstimate, sendAdminAlert,
   sendOwnerCancelledRequest, sendOwnerCustomerNote, sendOwnerChangeRequest, sendCustomerMessage,
+  sendCustomerJourneyReminder, airportBlockHtml, flightTrackUrl, driverBlockHtml, driverDetails, cancelLinkHtml,
   sendCustomerBookingUpdated,
   sendCustomerWelcome, sendCustomerInvoice, sendBespokeInvoice, sendInvoiceReminder,
   sendCustomerCancellation, sendDriverStatement, sendDriverWelcome,

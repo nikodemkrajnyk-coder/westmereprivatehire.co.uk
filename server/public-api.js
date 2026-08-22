@@ -809,8 +809,23 @@ router.get('/cancel/:ref', (req, res) => {
     if (b.status === 'cancelled') {
       return res.send(actionPage('Already cancelled', 'This request has already been cancelled. If this was a mistake, please call us and we will be glad to help.', b.ref, '', 'ok'));
     }
-    const formHtml = `<form method="POST"><button type="submit" class="act danger">Confirm — Cancel Request</button></form>`;
-    res.send(actionPage('Cancel your request?', "If the price or timing doesn't suit, you can cancel this request below. We'll be notified straight away — no charge applies.", b.ref, formHtml, 'confirm'));
+    /* WHAT THE CUSTOMER IS LOOKING AT DEPENDS ON WHERE THEY ARE.
+       Before they have chosen how to pay, this is still a REQUEST and the
+       honest question is whether the quote suits. Once the car is booked it is
+       a TRIP, and calling it a request reads as though we never took it
+       seriously. Same page, same POST, same token — only the words move.
+
+       Anything unrecognised falls back to the request wording, which is the
+       one that is true earliest and claims least.
+       GUARDRAIL: server/tests/rider-reminder.test.js */
+    const booked = ['confirmed', 'active', 'awaiting_payment'].indexOf(String(b.status || '')) !== -1;
+    const heading = booked ? 'Cancel this trip?' : 'Cancel your request?';
+    const blurb = booked
+      ? "If your plans have changed, you can cancel this trip below. We'll be notified straight away — no charge applies."
+      : "If the price or timing doesn't suit, you can cancel this request below. We'll be notified straight away — no charge applies.";
+    const btn = booked ? 'Confirm — Cancel This Trip' : 'Confirm — Cancel Request';
+    const formHtml = `<form method="POST"><button type="submit" class="act danger">${btn}</button></form>`;
+    res.send(actionPage(heading, blurb, b.ref, formHtml, 'confirm'));
   } catch (err) {
     console.error('[CANCEL] page error:', err.message);
     res.status(500).send(actionPage('Something went wrong', 'Please call us on 07930 342593 and we will sort it out.', null, '', 'error'));

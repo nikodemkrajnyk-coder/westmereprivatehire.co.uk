@@ -810,6 +810,10 @@ function migrate() {
   // When the 12-hour owner pickup-reminder was sent for THIS booking. Per-booking
   // guard so each upcoming booking reminds the owner exactly once.
   try { db.exec(`ALTER TABLE bookings ADD COLUMN reminder_sent_at TEXT`); } catch(_){}
+  // The CUSTOMER's 12-hour reminder has its own latch. Sharing the owner's
+  // reminder_sent_at would mean one send suppressing the other — the owner would
+  // get his and the customer would silently get nothing, or the reverse.
+  try { db.exec(`ALTER TABLE bookings ADD COLUMN customer_reminder_sent_at TEXT`); } catch(_){}
 
   // Review request tracking — sent once per email address, never resent
   try {

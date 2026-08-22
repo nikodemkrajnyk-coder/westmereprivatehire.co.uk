@@ -290,9 +290,11 @@ function ensurePayToken(bookingId, dbOverride) {
 async function notifyCustomerConfirmed(bookingId) {
   const db = getDb();
   const row = db.prepare(`
-    SELECT b.*, c.email AS cust_email, c.full_name AS cust_name, c.phone AS cust_phone
+    SELECT b.*, c.email AS cust_email, c.full_name AS cust_name, c.phone AS cust_phone,
+           d.full_name AS driver_name, d.vehicle AS driver_vehicle, d.reg AS driver_reg
       FROM bookings b
       LEFT JOIN customers c ON b.customer_id = c.id
+      LEFT JOIN users     d ON b.driver_id   = d.id
      WHERE b.id = ?
   `).get(bookingId);
   if (!row) return;
@@ -318,7 +320,12 @@ async function notifyCustomerConfirmed(bookingId) {
     // Always pass the token so the Cancel Request + Add-a-note links work even
     // once paid; the "Pay Now / Cash" block is separately hidden when paid.
     pay_token: payToken,
-    paid: !!row.paid_at
+    paid: !!row.paid_at,
+    // The car that is coming. NULL when nobody is assigned yet, which is the
+    // usual case for a one-car firm — the email then names the owner's own.
+    driver_name: row.driver_name || null,
+    driver_vehicle: row.driver_vehicle || null,
+    driver_reg: row.driver_reg || null
   };
 
   await Promise.allSettled([

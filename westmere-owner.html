@@ -3030,6 +3030,29 @@ function wmChangeBlock(j){
   }
 }
 
+/* THE OWNER'S OWN NOTE, OR NOTHING.
+   Two things went wrong here and both are fixed together.
+
+   The mapper emits `note` (line ~5377: `note:b.notes||''`) but the card asked
+   for `j.notes`, which is undefined — so the Notes row was gated on a field that
+   never existed and NEVER rendered. Edit worked only because ebOpen reads
+   `j.note||j.notes`.
+
+   And the rider app used to write "Vehicle: <name>" into notes. That is not an
+   owner note, it is a dump, and server/email.js has always stripped it with
+   cleanOwnerNote(). The owner app had no equivalent, so showing notes without
+   this would have started printing "Vehicle: Executive" on the cards.
+
+   Accepts either field name so it cannot break again if the mapper changes.
+   Guardrail: server/tests/booking-notes.test.js */
+function ownerNoteOf(j){
+  var raw = (j && (j.note != null ? j.note : j.notes));
+  var t = String(raw == null ? '' : raw).trim();
+  if(!t) return '';
+  if(/^vehicle\s*:/i.test(t)) return '';
+  return t;
+}
+
 function jobCardHtml(j){
   // A GOOGLE CALENDAR EVENT IS READ THE SAME WAY AS A JOB.
   //
@@ -3121,7 +3144,7 @@ function jobCardHtml(j){
         +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Passengers</td><td>'+(j.pax||1)+'</td></tr>'
         +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Luggage</td><td>'+escH(_bagsLabel(j.bags))+'</td></tr>'
         +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Payment</td><td>'+wmPayBadge(j)+'</td></tr>'
-        +(j.notes?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4);vertical-align:top">Notes</td><td>'+escH(j.notes)+'</td></tr>':'')
+        +(ownerNoteOf(j)?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4);vertical-align:top">Notes</td><td style="white-space:pre-line">'+escH(ownerNoteOf(j))+'</td></tr>':'')
         +(j.customer_note?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.55);vertical-align:top;font-weight:600">Special req.</td><td style="color:#1b1b1a;background:rgba(27,27,26,.04);border-left:2px solid rgba(27,27,26,.55);padding:.3rem .5rem">'+escH(j.customer_note)+'</td></tr>':'')
       +'</table>'
       +'<div style="display:flex;gap:.4rem;flex-wrap:wrap">';
@@ -4819,7 +4842,7 @@ function jobDetailCard(j){
   h+='</div>';
 
   // Notes
-  if(j.notes) h+='<div style="margin-bottom:.75rem;padding:.5rem .7rem;background:transparent;border-left:2px solid var(--navy);font-size:.92rem;color:rgba(27,27,26,.65);line-height:1.5">'+enrichNotes(j.notes)+'</div>';
+  if(ownerNoteOf(j)) h+='<div style="margin-bottom:.75rem;padding:.5rem .7rem;background:transparent;border-left:2px solid var(--navy);font-size:.92rem;color:rgba(27,27,26,.65);line-height:1.5">'+enrichNotes(ownerNoteOf(j))+'</div>';
 
   // Action buttons
   h+='<div style="display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.2rem">';
