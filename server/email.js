@@ -1572,17 +1572,32 @@ async function sendPaymentReminder(booking) {
   const { email, name, ref, fare, pickup, destination, date, time, pay_token } = booking;
   if (!email) return false;
   const firstName = greetingName(name);
-  const fareStr = fare ? '\u00a3' + Number(fare).toFixed(2) : '';
+  // What the pay page will actually take. Normally the fare; on a re-priced
+  // prepaid trip the caller passes the balance, and naming the fare here would
+  // promise a bigger charge than the button makes.
+  const due = booking.amountDue == null ? fare : booking.amountDue;
+  const fareStr = due ? '\u00a3' + Number(due).toFixed(2) : '';
   const dateStr = formatDate(date, time);
 
-  // Only card payment link — no cash option
+  /* BOTH DOORS, NOT ONE.
+     This email used to carry a single "Pay Now" button. That was wrong twice
+     over: it hid the cash option the pay page has always offered, and when the
+     booking was locked to cash it sent a card button to someone who could not
+     use it. The route now refuses to send into a cash-locked booking at all
+     (server/api.js), and what goes out shows the same two choices the estimate
+     email does, pointing at the same tokenised endpoints.
+     GUARDRAIL: server/tests/payment-option.test.js */
   let payBlock = '';
   if (pay_token && fareStr) {
-    const payUrl = `https://westmereprivatehire.co.uk/westmere-pay.html?ref=${encodeURIComponent(ref)}&t=${encodeURIComponent(pay_token)}`;
+    const payUrl  = `${HOST}/westmere-pay.html?ref=${encodeURIComponent(ref)}&t=${encodeURIComponent(pay_token)}`;
+    const cashUrl = `${HOST}/api/public/pay/${encodeURIComponent(ref)}/cash?t=${encodeURIComponent(pay_token)}`;
     payBlock = `
-  <div style="text-align:center;margin:26px 0 8px">
-    ${emailBtn(`${payUrl}`, `Pay Now \u2014 Apple Pay, Google Pay, or Card`, `primary`, false)}
-  </div>`;
+  <p style="margin:22px 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};line-height:1.6;text-align:center">Choose how you&rsquo;d like to settle it:</p>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+    ${actionBtn(payUrl, 'Pay ' + escHtml(fareStr) + ' Now &mdash; Card, Apple Pay or Google Pay', 'primary')}
+    ${actionBtn(cashUrl, 'Pay Your Driver On The Day', 'secondary')}
+  </table>
+  <p style="margin:12px 0 4px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.6;text-align:center">Either is fine &mdash; cash or card with the driver on the day, or online now. Prefer to talk? Call <a href="tel:+447930342593" style="color:${INK};text-decoration:none">07930&nbsp;342593</a>.</p>`;
   }
 
   const body = `
@@ -1590,13 +1605,13 @@ async function sendPaymentReminder(booking) {
   <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
   <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Thank you for travelling with us. We noticed that payment for your recent journey has not yet been completed.</p>
   <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Your trip from <strong>${dispAddr(pickup)}</strong> to <strong>${dispAddr(destination)}</strong> on ${dateStr}${fareStr ? ' for <strong style="color:' + ACCENT + '">' + fareStr + '</strong>' : ''} is still outstanding.</p>
-  <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">If you&rsquo;ve already made payment, please disregard this message. Otherwise, you can pay securely using the link below.</p>
+  <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">If you&rsquo;ve already made payment, please disregard this message. Otherwise, you can pay online now or simply settle with your driver on the day &mdash; whichever suits you.</p>
   ${payBlock}
   <p style="margin:20px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">If you have any questions, please don&rsquo;t hesitate to get in touch.</p>`;
 
   const html = heroEmail(body);
   const subject = 'Payment reminder \u2014 ' + (ref || 'your journey') + ' \u00b7 Westmere Private Hire';
-  const preheader = fareStr ? fareStr + ' outstanding for your recent journey' : 'Payment outstanding for your recent journey';
+  const preheader = fareStr ? fareStr + ' outstanding — pay by card or settle with your driver' : 'Payment outstanding for your recent journey';
   const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
   if (ok) console.log('[EMAIL] Payment reminder sent to', email, 'for', ref);
   return ok;

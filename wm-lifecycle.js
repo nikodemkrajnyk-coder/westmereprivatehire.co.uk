@@ -84,7 +84,19 @@
       return { key: 'new', label: 'New request', cls: 'tag-new' };
     }
     if (st === 'offered') return { key: 'offered', label: 'Awaiting driver', cls: 'tag-upcoming' };
-    if (st === 'awaiting_payment') return { key: 'awaiting_payment', label: 'Awaiting payment', cls: 'tag-await' };
+    if (st === 'awaiting_payment') {
+      // TWO different awaiting_payment states, and they read differently to the
+      // owner. If a method IS chosen (cash) we are genuinely awaiting the money.
+      // If none is — a fresh estimate, or a booking the owner has just REOPENED
+      // from the Edit form — nobody is awaiting payment yet; we are waiting for
+      // the customer to pick a door. Calling that "Awaiting payment" made a
+      // reopened job look like it was already mid-collection.
+      var pmAw = paymentOf(j);
+      if (!pmAw || pmAw === 'pending') {
+        return { key: 'to_be_confirmed', label: 'To be confirmed', cls: 'tag-await' };
+      }
+      return { key: 'awaiting_payment', label: 'Awaiting payment', cls: 'tag-await' };
+    }
     if (st === 'cancelled') return { key: 'cancelled', label: 'Cancelled', cls: 'tag-cancel' };
     if (st === 'active') return { key: 'active', label: 'Active', cls: 'tag-upcoming' };
     if (st === 'completed') return { key: 'completed', label: 'Completed', cls: 'tag-done' };

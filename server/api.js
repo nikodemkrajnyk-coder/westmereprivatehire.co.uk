@@ -2957,6 +2957,115 @@ router.post('/send-corporate-intro', async (req, res) => {
   }
 });
 
+/* ── REOPEN / CHANGE THE PAYMENT OPTION ──────────────────────────────────
+   The customer picked the wrong option — "pay your driver" when he meant to pay
+   by card. pay-lock treats `payment='cash'` as a LOCK: the pay page stops
+   offering the card form and POST /pay/:ref/intent answers 409. That lock is
+   correct — it is what stops two channels charging one fare — but until now
+   there was no way back from it, so the owner's only recourse was the phone
+   number in the lock message.
+
+   This route is the way back. Setting the option to `pending` clears the lock,
+   so the emailed pay page offers BOTH doors again, and moves a booking that had
+   been confirmed back to awaiting_payment — the pre-confirmed stage the owner
+   app labels "To be confirmed" while no method is chosen.
+
+   WHAT IT WILL NOT DO
+     A booking whose card payment actually CAPTURED is refused outright, with no
+     confirm override. Reopening it would put a Pay button in front of someone
+     whose money we already hold, which is the double-charge path this codebase
+     exists to avoid. Getting money back out is a refund
+     (POST /bookings/:id/fare-refund), and a refund is a deliberate press.
+
+     A booking marked paid in CASH is different — no card charge exists, so the
+     owner is really saying "he did not actually hand me the money". That is
+     allowed, but only with an explicit confirm, because it un-settles a trip
+     somebody has already reconciled.
+
+   GUARDRAIL: server/tests/payment-option.test.js */
+router.post('/bookings/:id/payment-option', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+
+  // Only the two the owner may set by hand. 'card' is NOT settable here — a card
+  // payment is written by the Stripe webhook and by nothing else (CLAUDE.md
+  // payment invariant #1), so offering it as a dropdown value would be a way to
+  // mark a booking paid that nobody paid.
+  const REOPEN = 'pending', CASH = 'cash';
+  const want = String((req.body && req.body.payment) || '').toLowerCase();
+  if (want !== REOPEN && want !== CASH) {
+    return res.status(400).json({ error: 'Payment option must be "pending" or "cash"' });
+  }
+  const confirm = !!(req.body && req.body.confirm);
+
+  const b = db.prepare('SELECT id, ref, status, payment, paid_at, fare, payment_intent_id FROM bookings WHERE id = ?').get(id);
+  if (!b) return res.status(404).json({ error: 'Booking not found' });
+  if (b.status === 'cancelled') {
+    return res.status(409).json({ error: 'This booking has been cancelled.', reason: 'cancelled' });
+  }
+
+  const capturedByCard = String(b.payment || '').toLowerCase() === 'card' || !!b.payment_intent_id;
+  const markedPaid = !!b.paid_at;
+
+  // HARD STOP. No confirm flag opens this door.
+  if (capturedByCard) {
+    return res.status(409).json({
+      error: 'This trip was paid by card, so the payment cannot be reopened — that would let the customer be charged twice. '
+           + 'Refund it first (the Refund action on the job), then reopen.',
+      reason: 'card_paid', blocked: true
+    });
+  }
+  // Soft stop — real, but reversible by an owner who means it.
+  if (markedPaid && !confirm) {
+    return res.status(409).json({
+      error: 'This trip is already marked as paid in cash. Reopening it will mark it UNPAID again and ask the customer to choose a payment method. Continue?',
+      reason: 'needs_confirm', needsConfirm: true
+    });
+  }
+  if (String(b.payment || '').toLowerCase() === want && !markedPaid) {
+    return res.json({ ok: true, unchanged: true, payment: want, status: b.status });
+  }
+
+  // Validated, never a silent default — CLAUDE.md payment invariant #1.
+  const { assertPaymentMethod } = require('./payment-methods');
+  const method = assertPaymentMethod(want, 'api payment-option');
+
+  // Reopening un-settles: paid_at goes only when the owner has confirmed the
+  // cash never arrived. A confirmed/active job drops back to awaiting_payment so
+  // the board shows it needs the customer again; a job already earlier in the
+  // lifecycle stays where it is.
+  const reopening = want === REOPEN;
+  const REOPENABLE = ['confirmed', 'active'];
+  const nextStatus = reopening && REOPENABLE.includes(b.status) ? 'awaiting_payment' : b.status;
+
+  db.prepare(`
+    UPDATE bookings
+       SET payment = ?,
+           paid_at = CASE WHEN ? = 1 THEN NULL ELSE paid_at END,
+           status  = ?,
+           updated_at = datetime('now')
+     WHERE id = ? AND status <> 'cancelled'
+  `).run(method, reopening ? 1 : 0, nextStatus, id);
+
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run(req.auth.type || 'user', req.auth.id, 'payment_option_changed',
+           b.ref + ': ' + (b.payment || 'pending') + ' -> ' + method
+           + (b.status !== nextStatus ? ' (' + b.status + ' -> ' + nextStatus + ')' : '')
+           + (markedPaid && reopening ? ' [un-settled, owner confirmed]' : ''), req.ip);
+  } catch (e) { console.error('[API] payment-option audit failed:', e.message); }
+
+  try { events.broadcast('booking:updated', { id, ref: b.ref, status: nextStatus, reason: 'Payment option changed' }); } catch (_) {}
+
+  res.json({ ok: true, payment: method, status: nextStatus,
+             reopened: reopening, wasPaid: markedPaid,
+             from: { payment: b.payment || 'pending', status: b.status } });
+});
+
 router.post('/bookings/:id/payment-reminder', async (req, res) => {
   if (!['admin', 'owner'].includes(req.auth.role)) {
     return res.status(403).json({ error: 'Access denied' });
@@ -2973,7 +3082,37 @@ router.post('/bookings/:id/payment-reminder', async (req, res) => {
   `).get(id);
   if (!b) return res.status(404).json({ error: 'Booking not found' });
   if (!b.contact_email) return res.status(400).json({ error: 'No email address on this booking' });
-  if (b.paid_at) return res.status(409).json({ error: 'This booking is already paid' });
+
+  /* THE DEAD END THIS CLOSES
+     This route used to block on paid_at alone. A booking locked to
+     "pay your driver" has no paid_at, so the send succeeded and mailed a
+     customer a Pay Now button — onto a page that then told him he could not
+     pay. Ask pay-lock the same question every other channel asks, and refuse
+     to send a card button that cannot work.
+
+     `no_fare` is not a lock (pay-lock says payable:false, locked:false) but it
+     is still nothing to chase, so it is refused here too. */
+  const { paymentLock } = require('./pay-lock');
+  const lock = paymentLock(b);
+  if (lock.reason === 'paid') {
+    return res.status(409).json({ error: 'This booking is already paid', reason: 'paid' });
+  }
+  if (lock.reason === 'cash_chosen') {
+    return res.status(409).json({
+      error: 'This customer chose to pay the driver on the day, so a card link would not work for them. '
+           + 'Change the payment option to "To be confirmed" in Edit first — the reminder will then offer both card and cash.',
+      reason: 'cash_chosen'
+    });
+  }
+  if (!lock.payable) {
+    return res.status(409).json({ error: lock.message || 'There is nothing to pay on this booking yet', reason: lock.reason || 'not_payable' });
+  }
+
+  // Mint the token if this booking never had one — otherwise the reminder is
+  // prose asking for payment with no way to make it. send-estimate has always
+  // done this; the reminder simply never did. ensurePayToken is idempotent, so
+  // a token already in a sent email is never invalidated.
+  const payToken = require('./intake').ensurePayToken(id) || b.pay_token || null;
 
   try {
     const { sendPaymentReminder } = require('./email');
@@ -2982,11 +3121,15 @@ router.post('/bookings/:id/payment-reminder', async (req, res) => {
       name: b.contact_name || '',
       ref: b.ref,
       fare: b.fare,
+      // What the pay page will actually take. On a re-priced prepaid trip that
+      // is the balance, not the fare — the email must not name a bigger number
+      // than the button charges.
+      amountDue: lock.amountDue,
       pickup: b.pickup,
       destination: b.destination,
       date: b.date,
       time: b.time,
-      pay_token: b.pay_token
+      pay_token: payToken
     });
     if (!ok) return res.status(502).json({ error: 'Email delivery failed' });
 

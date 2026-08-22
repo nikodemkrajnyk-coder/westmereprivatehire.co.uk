@@ -212,7 +212,16 @@ test('once the estimate is sent the request reads "Pending · estimate sent"', (
     'an estimate-sent booking still has no chosen method — still no "Awaiting"');
 });
 test('"Awaiting payment" appears ONLY after the customer chooses a method', () => {
-  assert.strictEqual(LC.statusLabel({ status: 'awaiting_payment' }).label, 'Awaiting payment');
+  // This test's TITLE was always the rule; the first assertion used to
+  // contradict it, expecting "Awaiting payment" on a booking where nobody had
+  // chosen anything. Since the owner can now REOPEN a payment option from Edit,
+  // that state has a name of its own — "To be confirmed" — and the assertion
+  // finally matches the rule the title states. The genuinely-awaiting case (a
+  // method IS chosen) is asserted right below, so nothing was weakened.
+  assert.strictEqual(LC.statusLabel({ status: 'awaiting_payment' }).label, 'To be confirmed',
+    'no method chosen yet — nobody is awaiting payment');
+  assert.strictEqual(LC.statusLabel({ status: 'awaiting_payment', payment: 'cash' }).label, 'Awaiting payment',
+    'a cash booking IS genuinely awaiting the money');
   assert.strictEqual(LC.payStatus({ status: 'awaiting_payment' }).short, 'Awaiting');
   assert.strictEqual(LC.payStatus({ status: 'awaiting_payment', payment: 'cash' }).short, 'Cash',
     'a cash choice reads "Cash", not "Awaiting"');

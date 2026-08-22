@@ -3400,6 +3400,19 @@ function upcomingEdit(bookingId){
       +'<input id="eb-flight" type="text" placeholder="Optional — e.g. BA2431" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(27,27,26,.15);border-radius:8px;font-family:inherit;font-size:.96rem;color:var(--navy);text-transform:uppercase" autocomplete="off"></div>'
       +'<div style="margin-bottom:.7rem"><label style="font-size:.79rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.5);display:block;margin-bottom:.3rem">Fare £</label>'
       +'<input id="eb-fare" type="number" min="0" step="0.5" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(27,27,26,.15);border-radius:8px;font-family:inherit;font-size:.96rem;color:var(--navy)"></div>'
+      // PAYMENT OPTION — the way back out of a wrong choice. "pay your driver"
+      // is a LOCK in server/pay-lock.js: it shuts the card door so two channels
+      // can never charge one fare. Correct, but until now one-way, so a customer
+      // who picked it by mistake could only be rescued by phone. Setting this
+      // back to "To be confirmed" clears the lock and the pay page offers card
+      // AND cash again. 'card' is deliberately not a choice here: a card payment
+      // is written by the Stripe webhook and nothing else (invariant #1).
+      +'<div style="margin-bottom:.7rem"><label style="font-size:.79rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.5);display:block;margin-bottom:.3rem">Payment option</label>'
+      +'<select id="eb-payment" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(27,27,26,.15);border-radius:8px;font-family:inherit;font-size:.96rem;color:var(--navy);background:#ffffff">'
+      +'<option value="pending">To be confirmed — customer chooses</option>'
+      +'<option value="cash">Pay driver (cash on the day)</option>'
+      +'</select>'
+      +'<div id="eb-payment-note" style="font-size:.78rem;color:rgba(27,27,26,.5);margin-top:.35rem;line-height:1.45"></div></div>'
       +'<input type="hidden" id="eb-id">'
       +'<div style="margin:.2rem 0 1rem"><label style="font-size:.79rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.5);display:block;margin-bottom:.3rem">Notes</label>'
       +'<textarea id="eb-notes" rows="3" placeholder="Private notes about this trip (optional)" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(27,27,26,.15);border-radius:8px;font-family:inherit;font-size:.96rem;color:var(--navy);resize:vertical"></textarea></div>'
@@ -3423,6 +3436,28 @@ function upcomingEdit(bookingId){
   document.getElementById('eb-date').value=j.date||'';
   document.getElementById('eb-time').value=j.time||'';
   document.getElementById('eb-fare').value=j.fare||'';
+  // The select shows what the booking is on NOW. A card-paid trip is not offered
+  // as a choice at all — the money is captured and the way back is a refund, not
+  // a dropdown — so the control is disabled and says why.
+  var payEl=document.getElementById('eb-payment');
+  var payNote=document.getElementById('eb-payment-note');
+  var curPay=String(j.payment||j.payment_method||'pending').toLowerCase();
+  var isCardPaid=(curPay==='card');
+  EB_PAY_WAS=isCardPaid?'card':(curPay==='cash'?'cash':'pending');
+  EB_PAY_PAID=!!(j.paid_at);
+  for(var pi=payEl.options.length-1;pi>=0;pi--){ if(payEl.options[pi].dataset.locked) payEl.remove(pi); }
+  if(isCardPaid){
+    var lockOpt=document.createElement('option');
+    lockOpt.value='card'; lockOpt.dataset.locked='1'; lockOpt.textContent='Paid by card';
+    payEl.appendChild(lockOpt); payEl.value='card'; payEl.disabled=true;
+    payNote.textContent='Paid by card — reopening would let them be charged twice. Refund it first if this is wrong.';
+  }else{
+    payEl.disabled=false;
+    payEl.value=(curPay==='cash')?'cash':'pending';
+    payNote.textContent=(curPay==='cash')
+      ? 'Set to pay the driver — online card payment is closed. Switch to "To be confirmed" to open both options again.'
+      : 'The customer chooses card or cash. This is the state a payment reminder can offer both options in.';
+  }
   document.getElementById('eb-notes').value=j.note||j.notes||'';
   document.getElementById('eb-pax').value=j.pax||j.passengers||1;
   document.getElementById('eb-flight').value=(j.flight||'').toUpperCase();
@@ -3503,10 +3538,44 @@ function wmSavedMessage(d){
   return 'Saved · nothing the customer sees changed, so no email was sent';
 }
 
+// What the payment select was showing when the modal opened, so Save can tell an
+// actual change from a no-op. A reopen is a money-state change and goes through
+// its own endpoint (with its own safeguards) — never through the generic PATCH,
+// which would move `payment` with no lock check at all.
+var EB_PAY_WAS='pending', EB_PAY_PAID=false;
+
+// Returns true if the save may continue, false if the owner backed out.
+async function ebApplyPaymentOption(id){
+  var el=document.getElementById('eb-payment');
+  if(!el||el.disabled)return true;                  // card-paid: not editable
+  var want=el.value;
+  if(want===EB_PAY_WAS && !EB_PAY_PAID)return true; // nothing to do
+  var body={payment:want};
+  for(var attempt=0;attempt<2;attempt++){
+    var r=await fetch('/api/bookings/'+id+'/payment-option',{method:'POST',credentials:'include',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var d=await r.json().catch(function(){return {};});
+    if(r.ok&&d.ok)return true;
+    // The server asks before un-settling a trip somebody already reconciled.
+    // The owner answers that question, not the app.
+    if(d.needsConfirm&&attempt===0){
+      if(!confirm(d.error))return false;
+      body.confirm=true;
+      continue;
+    }
+    showToast(d.error||('Could not change the payment option ('+r.status+')'));
+    return false;
+  }
+  return false;
+}
+
 async function upcomingSave(){
   var id=document.getElementById('eb-id').value;
   if(!id)return;
   try{
+    // Payment option first. If the owner cancels the confirm, nothing at all is
+    // saved — a half-applied edit is worse than none.
+    if(!(await ebApplyPaymentOption(id)))return;
     var r=await fetch('/api/bookings/'+id,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(ebCollectBody())});
     var d=await r.json();
     if(r.ok&&d.ok){
