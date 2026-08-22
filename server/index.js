@@ -377,6 +377,14 @@ app.listen(PORT, () => {
 
   // Background: email the owner ~12h before each upcoming pickup (once per
   // booking). Server-side via Resend — no Claude/assistant dependency.
+  // Backfill the owner's customer directory from existing booking history, so
+  // the Customers tab is populated the first time he opens it rather than only
+  // filling up from new bookings onwards. Idempotent — safe on every boot.
+  try {
+    const r = require('./customer-directory').rebuild(require('./db').getDb());
+    console.log('[CUSTDIR] directory built —', r.listed, 'saved customers (' + r.skipped + ' under the threshold)');
+  } catch (e) { console.error('[CUSTDIR] backfill failed:', e.message); }
+
   try { require('./reminder').startBookingReminders(); }
   catch (e) { console.error('[REMINDER] failed to start:', e.message); }
 });

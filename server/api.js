@@ -185,6 +185,13 @@ router.post('/bookings', (req, res) => {
     } catch (e) { console.error('[API] trip_miles calc failed:', e.message); }
   })();
 
+  // The directory counts bookings, so a new one may be somebody's third — the
+  // moment they become a saved customer. Rebuilt rather than incremented: a
+  // counter would eventually disagree with the bookings table and there would be
+  // no way to tell which was lying. Never allowed to break a booking.
+  try { require('./customer-directory').syncAfterBooking(db); }
+  catch (e) { console.error('[API] customer directory sync failed:', e.message); }
+
   // Send admin notifications in background.
   // A MANUAL booking has no linked customer (customer_id null), so the name /
   // email / phone live in the passenger_* fields the form supplied. Fall back to
@@ -2955,6 +2962,90 @@ router.post('/send-corporate-intro', async (req, res) => {
     console.error('[API] corporate intro failed:', e.message);
     res.status(500).json({ error: 'Failed to send' });
   }
+});
+
+/* ── THE CUSTOMER DIRECTORY ───────────────────────────────────────────────
+   Everyone who has ridden more than twice, so the owner stops retyping a phone
+   number he has already typed three times.
+
+   Mounted at /api/customer-directory, NOT /api/customers — that path is
+   already the accounts table's admin CRUD (rider logins, invoicing), and a
+   second router.get on it would simply never fire.
+
+   PII, and therefore owner/admin ONLY. These sit on the apiRouter, which
+   server/index.js mounts behind requireAuth — there is no public counterpart and
+   there must never be one. server/tests/customer-directory.test.js asserts that
+   no public router exposes any of it.
+
+   GUARDRAIL: server/tests/customer-directory.test.js */
+router.get('/customer-directory', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  try {
+    const dir = require('./customer-directory');
+    const rows = dir.list(getDb(), req.query && req.query.q);
+    res.json({ ok: true, customers: rows, threshold: dir.MIN_BOOKINGS });
+  } catch (e) {
+    console.error('[API] customer directory list failed:', e.message);
+    res.status(500).json({ error: 'Could not load customers' });
+  }
+});
+
+// Correcting a record by hand. An address the owner has typed is better than the
+// one we inferred from pickups, so saving it sets address_locked and the
+// recompute stops overwriting it.
+router.patch('/customer-directory/:id', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid customer ID' });
+  const dir = require('./customer-directory');
+  dir.ensureSchema(db);
+  const row = db.prepare('SELECT * FROM customer_directory WHERE id = ?').get(id);
+  if (!row) return res.status(404).json({ error: 'Customer not found' });
+
+  const b = req.body || {};
+  const name  = b.name  === undefined ? row.name  : String(b.name  || '').trim();
+  const phone = b.phone === undefined ? row.phone : String(b.phone || '').trim();
+  const email = b.email === undefined ? row.email : String(b.email || '').trim();
+  const home  = b.home_address === undefined ? row.home_address : String(b.home_address || '').trim();
+
+  if (email && !dir.normEmail(email)) return res.status(400).json({ error: 'That email address is not valid' });
+  if (phone && !dir.normPhone(phone)) return res.status(400).json({ error: 'That phone number is not valid' });
+
+  // Editing the phone or email moves the match key, so a second row for the same
+  // person could otherwise appear on the next rebuild. Refuse a collision rather
+  // than silently merging two people's histories.
+  const pk = dir.normPhone(phone) || null;
+  const ek = dir.normEmail(email) || null;
+  if (pk && pk !== row.phone_key) {
+    const clash = db.prepare('SELECT id, name FROM customer_directory WHERE phone_key = ? AND id <> ?').get(pk, id);
+    if (clash) return res.status(409).json({ error: 'That phone number already belongs to ' + (clash.name || 'another customer') + '.' });
+  }
+  if (ek && ek !== row.email_key) {
+    const clash = db.prepare("SELECT id, name FROM customer_directory WHERE email_key = ? AND email_key <> '' AND id <> ?").get(ek, id);
+    if (clash) return res.status(409).json({ error: 'That email already belongs to ' + (clash.name || 'another customer') + '.' });
+  }
+
+  const addressChanged = b.home_address !== undefined && String(home) !== String(row.home_address || '');
+  db.prepare(`
+    UPDATE customer_directory
+       SET name = ?, phone = ?, email = ?, home_address = ?,
+           phone_key = ?, email_key = ?,
+           address_locked = CASE WHEN ? = 1 THEN 1 ELSE address_locked END,
+           updated_at = datetime('now')
+     WHERE id = ?
+  `).run(name || null, phone || null, email || null, home || null, pk, ek, addressChanged ? 1 : 0, id);
+
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run(req.auth.type || 'user', req.auth.id, 'customer_directory_edited', (name || row.name || '#' + id), req.ip);
+  } catch (_) {}
+
+  res.json({ ok: true, customer: db.prepare('SELECT id, name, phone, email, home_address, booking_count, last_booking, address_locked FROM customer_directory WHERE id = ?').get(id) });
 });
 
 /* ── REOPEN / CHANGE THE PAYMENT OPTION ──────────────────────────────────

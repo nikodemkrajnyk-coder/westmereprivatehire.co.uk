@@ -381,6 +381,12 @@ router.post('/book', async (req, res) => {
     const fullBooking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(result.lastInsertRowid);
     if (fullBooking) autoFile.fileBooking(fullBooking);
 
+    // A customer's own web booking counts towards the owner's directory exactly
+    // like one he takes by phone — otherwise a regular who books online never
+    // reaches the threshold. Never allowed to break the booking.
+    try { require('./customer-directory').syncAfterBooking(db); }
+    catch (e) { console.error('[PUBLIC] customer directory sync failed:', e.message); }
+
     res.status(201).json({ ok: true, ref, bookingId: result.lastInsertRowid, suggested_fare: suggestedFare });
 
   } catch (err) {

@@ -1161,6 +1161,16 @@ select:-webkit-autofill:focus{
         <span style="font-family:var(--serif);font-size:1.05rem;color:#1a1a1a;font-weight:300;letter-spacing:.04em">New Booking</span>
       </div>
       <div style="padding:1rem;background:#ffffff;border-radius:0 0 12px 12px">
+        <!-- OPTIONAL SHORTCUT. Picking a saved customer fills the four fields
+             the owner would otherwise retype. Typing a brand-new customer
+             straight into the fields below still works exactly as before —
+             this is never a required step. -->
+        <div style="margin-bottom:.7rem;position:relative">
+          <div style="font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.22rem;font-family:var(--sans)">Choose existing customer <span style="text-transform:none;letter-spacing:0;color:rgba(27,27,26,.35)">&mdash; optional</span></div>
+          <input id="nb-cust" type="search" placeholder="Search saved customers by name, phone or email" autocomplete="off" oninput="nbCustSearch()" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.94rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
+          <div class="sug-drop" id="nb-cust-drop"></div>
+          <div id="nb-cust-note" style="display:none;font-size:.78rem;color:rgba(27,27,26,.45);margin-top:.28rem"></div>
+        </div>
         <div style="margin-bottom:.7rem">
           <div style="font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.22rem;font-family:var(--sans)">Passenger Name *</div>
           <input id="nb-name" type="text" placeholder="Full name" style="width:100%;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);background:#ffffff;font-family:var(--sans);font-size:.94rem;color:var(--navy);border-radius:6px;box-sizing:border-box">
@@ -1237,6 +1247,24 @@ select:-webkit-autofill:focus{
       </div>
     </div>
 
+
+    <!-- ── CUSTOMERS ──────────────────────────────────────────────────────
+         Everyone who has ridden more than twice. The list is derived from
+         booking history by server/customer-directory.js, so it needs no upkeep
+         — a third booking puts somebody here on their own. The home address is
+         a guess (their most frequent pickup) until the owner corrects it; once
+         he does, the recompute stops overwriting it. -->
+    <div class="pg" id="pg-customers">
+      <div style="padding:.9rem 1rem .4rem">
+        <div style="font-family:var(--serif);font-size:1.25rem;color:var(--navy);font-style:italic;margin-bottom:.15rem">Customers</div>
+        <div id="cust-count" style="font-size:.8rem;color:rgba(27,27,26,.45);margin-bottom:.7rem">&nbsp;</div>
+        <input id="cust-search" type="search" placeholder="Search name, phone, email or address" autocomplete="off"
+               oninput="custRender()"
+               style="width:100%;padding:.6rem .8rem;border:1px solid rgba(27,27,26,.15);border-radius:8px;font-family:inherit;font-size:.94rem;color:var(--navy);background:#ffffff;box-sizing:border-box">
+      </div>
+      <div id="cust-list" style="padding:0 1rem 1.2rem"></div>
+    </div>
+
   </div><!-- /page-scroll -->
 
   <!-- BOTTOM NAV -->
@@ -1251,6 +1279,7 @@ select:-webkit-autofill:focus{
       <button class="bn" id="bn-drivers" onclick="goPage('drivers',this)"><div class="bn-bar"></div><div class="bn-label">Drivers</div><div class="bn-dot" id="drivers-dot" style="display:none"></div></button>
       <button class="bn" id="bn-invoices" onclick="goPage('invoices',this)"><div class="bn-bar"></div><div class="bn-label">Invoices</div></button>
       <button class="bn" id="bn-earnings" onclick="goPage('earnings',this)"><div class="bn-bar"></div><div class="bn-label">Earnings</div></button>
+      <button class="bn" id="bn-customers" onclick="goPage('customers',this)"><div class="bn-bar"></div><div class="bn-label">Customers</div></button>
     </div>
   </div>
 
@@ -1698,6 +1727,7 @@ function goPage(id,btn){
   if(id==='earnings')buildEarnings();
   if(id==='drivers')loadDriversList();
   if(id==='invoices')invLoad();
+  if(id==='customers')custLoad();
   if(id==='smart'){var d=new Date();document.getElementById('sd-date').value=d.toISOString().split('T')[0];}
 }
 
@@ -3705,6 +3735,13 @@ function declineJob(id){upcomingDelete(id);}
 
 // ── NEW BOOKING FORM ─────────────────────────────────────────────────────────
 function ownerNewBookingOpen(){
+  // The picker reads the same cache the Customers tab fills. Load it on first
+  // use so the shortcut works without visiting that tab first.
+  if(!CUSTOMERS.length && typeof custLoad==='function') custLoad();
+  var _cf=document.getElementById('nb-cust'); if(_cf)_cf.value='';
+  var _cd=document.getElementById('nb-cust-drop'); if(_cd){_cd.innerHTML='';_cd.classList.remove('on');}
+  var _cn=document.getElementById('nb-cust-note'); if(_cn){_cn.textContent='';_cn.style.display='none';}
+
   document.getElementById('new-booking-sheet').style.display='';
   document.getElementById('pg-confirmed').style.display='none';
   // Pre-fill date with today
@@ -5016,6 +5053,181 @@ var CF={
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
 var _tt;
+
+/* ── CUSTOMERS ────────────────────────────────────────────────────────────
+   The saved directory: everyone with more than two bookings. Loaded once per
+   visit to the tab and filtered in the browser, because the whole list is a few
+   hundred rows at most and a round-trip per keystroke would be slower than the
+   typing. The SAME cache backs the new-booking picker.
+   Guardrail: server/tests/customer-directory.test.js */
+var CUSTOMERS = [];
+var CUST_THRESHOLD = 3;
+
+async function custLoad(){
+  var list=document.getElementById('cust-list');
+  if(list) list.innerHTML='<div style="padding:1.2rem 0;color:rgba(27,27,26,.4);font-size:.9rem">Loading…</div>';
+  try{
+    var r=await fetch('/api/customer-directory',{credentials:'include'});
+    var d=await r.json();
+    if(!r.ok||!d.ok){ if(list) list.innerHTML='<div style="padding:1.2rem 0;color:#8B2222;font-size:.9rem">'+(d.error||'Could not load customers')+'</div>'; return; }
+    CUSTOMERS=d.customers||[];
+    CUST_THRESHOLD=d.threshold||3;
+  }catch(e){ if(list) list.innerHTML='<div style="padding:1.2rem 0;color:#8B2222;font-size:.9rem">Network error</div>'; return; }
+  custRender();
+}
+
+// Same matching the server uses, so the picker and the list agree.
+function custNormPhone(v){
+  var d=String(v==null?'':v).replace(/\D+/g,'');
+  if(!d)return '';
+  if(d.indexOf('0044')===0)d=d.slice(4);
+  else if(d.indexOf('44')===0&&d.length>=12)d=d.slice(2);
+  if(d.indexOf('0')===0)d=d.slice(1);
+  return d.length>=9?d:'';
+}
+function custMatch(c,term){
+  if(!term)return true;
+  var t=term.toLowerCase().trim();
+  if(String(c.name||'').toLowerCase().indexOf(t)>=0)return true;
+  if(String(c.email||'').toLowerCase().indexOf(t)>=0)return true;
+  if(String(c.home_address||'').toLowerCase().indexOf(t)>=0)return true;
+  var tp=custNormPhone(t);
+  if(tp&&custNormPhone(c.phone).indexOf(tp)>=0)return true;
+  if(String(c.phone||'').replace(/\s+/g,'').indexOf(t.replace(/\s+/g,''))>=0)return true;
+  return false;
+}
+
+function custRender(){
+  var list=document.getElementById('cust-list'); if(!list)return;
+  var term=(document.getElementById('cust-search')||{}).value||'';
+  var rows=CUSTOMERS.filter(function(c){return custMatch(c,term);});
+  var cnt=document.getElementById('cust-count');
+  if(cnt) cnt.textContent = CUSTOMERS.length
+    ? (rows.length===CUSTOMERS.length
+        ? CUSTOMERS.length+' saved · more than '+(CUST_THRESHOLD-1)+' bookings each'
+        : rows.length+' of '+CUSTOMERS.length)
+    : 'Nobody yet — a customer is saved here on their '+CUST_THRESHOLD+'rd booking.';
+  if(!rows.length){
+    list.innerHTML='<div style="padding:1.2rem 0;color:rgba(27,27,26,.4);font-size:.9rem">'
+      +(CUSTOMERS.length?'No match.':'Customers appear automatically once they have booked more than '+(CUST_THRESHOLD-1)+' times.')+'</div>';
+    return;
+  }
+  list.innerHTML=rows.map(function(c){
+    var addr=c.home_address?wmShort(c.home_address):'<span style="color:rgba(27,27,26,.35)">No address yet</span>';
+    return '<div style="border:1px solid rgba(27,27,26,.1);border-radius:12px;padding:.75rem .85rem;margin-bottom:.6rem;background:#ffffff">'
+      +'<div style="display:flex;justify-content:space-between;align-items:baseline;gap:.6rem">'
+      +'<div style="font-family:var(--serif);font-size:1.05rem;color:var(--navy)">'+esc(c.name||'—')+'</div>'
+      +'<div style="font-size:.74rem;color:rgba(27,27,26,.45);white-space:nowrap">'+c.booking_count+' trips</div></div>'
+      +'<div style="font-size:.86rem;color:var(--navy);margin-top:.25rem">'
+      + (c.phone?('<a href="tel:'+esc(c.phone)+'" style="color:var(--navy);text-decoration:none">'+esc(c.phone)+'</a>'):'<span style="color:rgba(27,27,26,.35)">No phone</span>')
+      +'</div>'
+      +'<div style="font-size:.84rem;color:rgba(27,27,26,.6);word-break:break-all">'+(c.email?esc(c.email):'<span style="color:rgba(27,27,26,.35)">No email</span>')+'</div>'
+      +'<div style="font-size:.84rem;color:rgba(27,27,26,.6);margin-top:.2rem">'+addr+'</div>'
+      +'<div style="display:flex;gap:.45rem;margin-top:.6rem">'
+      +'<button onclick="custEdit('+c.id+')" style="flex:1;padding:.45rem;background:transparent;border:1px solid rgba(27,27,26,.15);border-radius:8px;font-family:inherit;font-size:.84rem;color:var(--navy);cursor:pointer">Edit</button>'
+      +'<button onclick="custBookFor('+c.id+')" style="flex:1;padding:.45rem;background:transparent;border:1px solid var(--westmere-navy,#102a43);border-radius:8px;font-family:inherit;font-size:.84rem;color:var(--navy);cursor:pointer">New booking</button>'
+      +'</div></div>';
+  }).join('');
+}
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
+// The exported name is shortDisplay — there is no `short` export, and calling
+// a name a module does not export is the "is not a function" outage that
+// server/tests/shared-module-contract.test.js exists to catch. Falls back to
+// this app's own shortener if the module has not loaded.
+function wmShort(a){ try{ return esc((window.WMAddr && WMAddr.shortDisplay) ? WMAddr.shortDisplay(a) : _localShort(a)); }catch(e){ return esc(a); } }
+
+// Editing a record. The address the owner types outranks the one we guessed, and
+// saving it tells the server to stop recomputing that field.
+function custEdit(id){
+  var c=CUSTOMERS.filter(function(x){return x.id===id;})[0]; if(!c)return;
+  var el=document.getElementById('cust-edit-overlay'); if(el)el.remove();
+  el=document.createElement('div');
+  el.id='cust-edit-overlay';
+  el.style.cssText='position:fixed;inset:0;background:rgba(10,14,20,.65);backdrop-filter:blur(6px);z-index:320;display:flex;align-items:flex-end;justify-content:center;padding:1rem';
+  var f=function(label,id2,val,type){
+    return '<div style="margin-bottom:.7rem"><label style="font-size:.79rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.5);display:block;margin-bottom:.3rem">'+label+'</label>'
+      +'<input id="'+id2+'" type="'+(type||'text')+'" value="'+esc(val||'')+'" style="width:100%;padding:.6rem .8rem;border:1px solid rgba(27,27,26,.15);border-radius:8px;font-family:inherit;font-size:.96rem;color:var(--navy)" autocomplete="off"></div>';
+  };
+  el.innerHTML='<div style="background:#ffffff;border-radius:18px 18px 0 0;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;padding:1.6rem 1.4rem">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">'
+    +'<div style="font-family:var(--serif);font-size:1.25rem;color:var(--navy);font-style:italic">Edit Customer</div>'
+    +'<button onclick="document.getElementById(\'cust-edit-overlay\').remove()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:rgba(27,27,26,.45)">&times;</button></div>'
+    +f('Name','ce-name',c.name)+f('Phone','ce-phone',c.phone,'tel')+f('Email','ce-email',c.email,'email')
+    +f('Home address','ce-addr',c.home_address)
+    +'<div style="font-size:.78rem;color:rgba(27,27,26,.45);margin:-.3rem 0 .9rem;line-height:1.45">'
+    +(c.address_locked?'You have set this address — it will not be overwritten.':'Guessed from where this customer is usually collected. Editing it makes it permanent.')+'</div>'
+    +'<div id="ce-err" style="display:none;margin-bottom:.7rem;padding:.5rem .7rem;background:rgba(163,51,51,.08);border:1px solid rgba(163,51,51,.25);border-radius:6px;font-size:.88rem;color:#8B2222"></div>'
+    +'<div style="display:flex;gap:.6rem">'
+    +'<button onclick="document.getElementById(\'cust-edit-overlay\').remove()" style="flex:1;padding:.75rem;background:transparent;border:1px solid rgba(27,27,26,.15);border-radius:10px;font-family:inherit;font-size:.92rem;color:rgba(27,27,26,.5);cursor:pointer">Cancel</button>'
+    +'<button class="wm-primary" onclick="custEditSave('+id+')" style="flex:2;padding:.75rem;border-radius:10px;font-family:inherit;cursor:pointer;border:var(--border-strong, 1.5px) solid var(--westmere-navy, #102a43)">Save</button>'
+    +'</div></div>';
+  document.body.appendChild(el);
+  el.addEventListener('click',function(ev){if(ev.target===el)el.remove();});
+}
+async function custEditSave(id){
+  var g=function(i){var e=document.getElementById(i);return e?e.value.trim():'';};
+  var body={name:g('ce-name'),phone:g('ce-phone'),email:g('ce-email'),home_address:g('ce-addr')};
+  try{
+    var r=await fetch('/api/customer-directory/'+id,{method:'PATCH',credentials:'include',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var d=await r.json();
+    if(!r.ok||!d.ok){
+      var err=document.getElementById('ce-err');
+      if(err){err.textContent=d.error||('Failed ('+r.status+')');err.style.display='block';}
+      return;
+    }
+    for(var i=0;i<CUSTOMERS.length;i++) if(CUSTOMERS[i].id===id) CUSTOMERS[i]=Object.assign(CUSTOMERS[i],d.customer);
+    var ov=document.getElementById('cust-edit-overlay'); if(ov)ov.remove();
+    custRender(); showToast('Customer saved');
+  }catch(e){ showToast('Network error'); }
+}
+
+/* ── THE NEW-BOOKING PICKER ───────────────────────────────────────────────
+   Choosing a saved customer fills name, phone, email and their home address as
+   the pickup — the four things the owner would otherwise retype. Everything
+   else (destination, date, fare) is still his to enter, and typing a brand-new
+   customer straight into the fields works exactly as before: the picker is an
+   optional shortcut, never a required step. */
+function nbCustSearch(){
+  var box=document.getElementById('nb-cust-drop'); if(!box)return;
+  var term=(document.getElementById('nb-cust')||{}).value||'';
+  if(!term.trim()){ box.innerHTML=''; box.classList.remove('on'); return; }
+  var rows=CUSTOMERS.filter(function(c){return custMatch(c,term);}).slice(0,6);
+  if(!rows.length){
+    box.innerHTML='<div style="color:rgba(27,27,26,.4)">No saved customer — just type the details below.</div>';
+    box.classList.add('on'); return;
+  }
+  // ONE flat div per row. `.sug-drop div` styles EVERY descendant, so a nested
+  // pair gets padding and a divider twice over — which is what made the first
+  // version of this list look inflated. The secondary line is a <span>.
+  box.innerHTML=rows.map(function(c){
+    return '<div onclick="nbCustPick('+c.id+')">'+esc(c.name||'—')
+      +'<span style="display:block;font-size:.8rem;color:rgba(27,27,26,.45);margin-top:.12rem">'
+      +esc(c.phone||'')+(c.email?' · '+esc(c.email):'')+'</span></div>';
+  }).join('');
+  box.classList.add('on');
+}
+function nbCustPick(id){
+  var c=CUSTOMERS.filter(function(x){return x.id===id;})[0]; if(!c)return;
+  var set=function(i,v){var e=document.getElementById(i);if(e&&v)e.value=v;};
+  set('nb-name',c.name); set('nb-phone',c.phone); set('nb-email',c.email);
+  // Their usual pickup, prefilled — the owner overwrites it for an airport
+  // return leg without thinking about it.
+  set('nb-pickup',c.home_address);
+  var box=document.getElementById('nb-cust-drop'); if(box){box.innerHTML='';box.classList.remove('on');}
+  var f=document.getElementById('nb-cust'); if(f)f.value=c.name||'';
+  var note=document.getElementById('nb-cust-note');
+  if(note){ note.textContent='Filled from '+(c.name||'saved customer')+' · '+c.booking_count+' previous trips'; note.style.display='block'; }
+  if(typeof nbFlightField==='function')nbFlightField();
+}
+
+// "New booking" from a customer card: open the form with them already chosen.
+function custBookFor(id){
+  var c=CUSTOMERS.filter(function(x){return x.id===id;})[0]; if(!c)return;
+  if(typeof ownerNewBookingOpen==='function')ownerNewBookingOpen();
+  setTimeout(function(){ nbCustPick(id); },60);
+}
+
 function showToast(msg){var el=document.getElementById('toast');document.getElementById('toast-msg').textContent=msg;el.classList.add('on');clearTimeout(_tt);_tt=setTimeout(function(){el.classList.remove('on');},3000);}
 
 // ── LOAD LIVE BOOKINGS ───────────────────────────────────────────────────────
