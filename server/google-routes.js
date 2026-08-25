@@ -80,6 +80,9 @@ router.get('/external-events', requireStaff, async (req, res) => {
     });
     res.json({ ok: true, events });
   } catch (e) {
+    // A dead grant is not a server fault, and it is not an empty diary either.
+    // Say which it is, so the UI can offer the one thing that actually helps.
+    if (e && e.needsReconnect) return res.json({ ok: true, events: [], reason: 'needs_reconnect' });
     res.status(500).json({ error: e.message });
   }
 });
@@ -155,7 +158,10 @@ router.post('/events', requireStaff, async (req, res) => {
   }
 
   try {
-    const token = await gcal.getAccessToken();
+    /* Uses gcal.googleFetch, exactly like every other calendar call, so the
+       assistant's "add to my calendar" and the owner app's calendar READ can
+       never be holding different opinions about the token. This path used to
+       take a token once and fetch raw — which is how the two drifted apart. */
     const t = gcal.loadTokens();
     const calId = encodeURIComponent((t && t.calendar_id) || 'primary');
     const API = 'https://www.googleapis.com/calendar/v3';
@@ -167,10 +173,8 @@ router.post('/events', requireStaff, async (req, res) => {
       const dayMin = encodeURIComponent(`${date}T00:00:00Z`);
       const dayMax = encodeURIComponent(`${date}T23:59:59Z`);
       try {
-        const sr = await fetch(
-          `${API}/calendars/${calId}/events?timeMin=${dayMin}&timeMax=${dayMax}&singleEvents=true&maxResults=50`,
-          { headers: { Authorization: 'Bearer ' + token } }
-        );
+        const sr = await gcal.googleFetch(
+          `${API}/calendars/${calId}/events?timeMin=${dayMin}&timeMax=${dayMax}&singleEvents=true&maxResults=50`);
         if (sr.ok) {
           const sd = await sr.json();
           const wantedStart = `${date}T${normalTime}`;
@@ -195,9 +199,9 @@ router.post('/events', requireStaff, async (req, res) => {
       }
     }
 
-    const r = await fetch(`${API}/calendars/${calId}/events`, {
+    const r = await gcal.googleFetch(`${API}/calendars/${calId}/events`, {
       method: 'POST',
-      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(eventBody)
     });
     const d = await r.json();
@@ -213,10 +217,8 @@ router.post('/events', requireStaff, async (req, res) => {
 // extendedProperties, and deletes them. Used to clean up test bookings.
 router.delete('/booking-events', requireStaff, async (req, res) => {
   if (!gcal.isConfigured()) return res.status(503).json({ error: 'Google Calendar not configured' });
-  const token = await gcal.getAccessToken().catch(() => null);
-  if (!token) return res.status(503).json({ error: 'Google Calendar not connected' });
-
   const t = gcal.loadTokens();
+  if (!t || !t.refresh_token) return res.status(503).json({ error: 'Google Calendar not connected' });
   const calId = encodeURIComponent((t && t.calendar_id) || 'primary');
   const API = 'https://www.googleapis.com/calendar/v3';
   const from = new Date(Date.now() - 14 * 86400000).toISOString();
@@ -224,10 +226,8 @@ router.delete('/booking-events', requireStaff, async (req, res) => {
 
   let items = [];
   try {
-    const r = await fetch(
-      `${API}/calendars/${calId}/events?timeMin=${encodeURIComponent(from)}&timeMax=${encodeURIComponent(to)}&singleEvents=true&maxResults=500`,
-      { headers: { Authorization: 'Bearer ' + token } }
-    );
+    const r = await gcal.googleFetch(
+      `${API}/calendars/${calId}/events?timeMin=${encodeURIComponent(from)}&timeMax=${encodeURIComponent(to)}&singleEvents=true&maxResults=500`);
     const d = await r.json();
     items = d.items || [];
   } catch (e) {
@@ -242,10 +242,7 @@ router.delete('/booking-events', requireStaff, async (req, res) => {
   let deleted = 0;
   for (const ev of wphEvents) {
     try {
-      await fetch(`${API}/calendars/${calId}/events/${encodeURIComponent(ev.id)}`, {
-        method: 'DELETE',
-        headers: { Authorization: 'Bearer ' + token }
-      });
+      await gcal.googleFetch(`${API}/calendars/${calId}/events/${encodeURIComponent(ev.id)}`, { method: 'DELETE' });
       deleted++;
     } catch (e) {
       console.error('[GCAL] delete event failed:', ev.id, e.message);

@@ -13,11 +13,11 @@ function hasGmailScope() {
   return /gmail\.(readonly|modify|send)/.test(t.scope);
 }
 
+/* Gmail drinks from the SAME grant as the calendar, so it goes through the same
+   choke point — otherwise a token refreshed for one would be a token still
+   stale for the other, which is the drift this whole fix is about. */
 async function authFetch(url, opts = {}) {
-  const token = await gcal.getAccessToken();
-  if (!token) throw new Error('Google account not connected');
-  opts.headers = Object.assign({}, opts.headers, { Authorization: 'Bearer ' + token });
-  const res = await fetch(url, opts);
+  const res = await gcal.googleFetch(url, opts);
   const text = await res.text();
   let data = {};
   try { data = text ? JSON.parse(text) : {}; } catch (e) { data = { raw: text }; }

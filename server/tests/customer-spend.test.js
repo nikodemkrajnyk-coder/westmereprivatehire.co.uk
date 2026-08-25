@@ -76,6 +76,11 @@ function run(db, role) {
   const sandbox = {
     getDb: () => db, res,
     req: { auth: { role: role, id: 1, type: role === 'customer' ? 'customer' : 'staff' }, params: {}, body: {}, ip: '::1' },
+    // The handler now asks customer-directory for the ONE definition of
+    // "settled" rather than spelling it out inline, so the sandbox needs a
+    // require. Resolved against the real server directory — this must keep
+    // testing the shipped rule, not a stand-in for it.
+    require: (m) => require(path.join(ROOT, 'server', m.replace(/^\.\//, ''))),
     Number, String, Math, isFinite, Map, Array, Object, JSON, console: { log() {}, error() {} }
   };
   vm.createContext(sandbox);

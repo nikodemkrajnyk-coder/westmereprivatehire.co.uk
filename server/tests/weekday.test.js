@@ -127,8 +127,15 @@ test('the trip detail Date row and the glance row agree on the day', () => {
     months.slice(0, months.indexOf('\n')) + '\n' +
     (() => { const i = OWNER.indexOf('function _fmtUpcomingDate'); return OWNER.slice(i, OWNER.indexOf('\n}', i) + 2); })() +
     '\nreturn _fmtUpcomingDate;')();
-  const d = '2026-08-25';
-  const dow = long(d).split(' ')[0];                       // Tuesday
+  /* A DATE FAR ENOUGH OUT TO HAVE A WEEKDAY NAME.
+     This was hardcoded to '2026-08-25', which quietly became a time bomb: the
+     glance deliberately says "Today"/"Tomorrow" inside its two-day window, so
+     on 24 and 25 August 2026 the fixture had no weekday to compare and the
+     guard failed on a calendar date rather than on a defect. Derived from the
+     run date instead, so it can never sit in that window again. */
+  const far = new Date(Date.now() + 30 * 86400000).toLocaleDateString('sv-SE', { timeZone: 'Europe/London' });
+  const d = far;
+  const dow = long(d).split(' ')[0];                       // e.g. Tuesday
   assert.ok(short(d).startsWith(dow.slice(0, 3)),
     'the glance says "' + short(d) + '" and the detail row says "' + long(d) + '" — different days');
 

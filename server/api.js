@@ -1038,7 +1038,10 @@ router.get('/customer-spend', (req, res) => {
     if (!e.name || e.name === e.email) { if (name) e.name = name; }
     if (!e.email && email) e.email = email;
 
-    const settled = !!r.paid_at || status === 'completed';
+    // ONE definition of revenue, shared with the customer detail page. This
+    // used to be spelled out here; a second copy over there would eventually
+    // have disagreed with this one about the same customer.
+    const settled = require('./customer-directory').isSettledForSpend(r);
     if (settled) {
       e.totalSpent += fare;
       e.trips += 1;
@@ -2997,6 +3000,24 @@ router.get('/customer-directory', (req, res) => {
   } catch (e) {
     console.error('[API] customer directory list failed:', e.message);
     res.status(500).json({ error: 'Could not load customers' });
+  }
+});
+
+/* One saved customer's spend and every trip they have taken.
+   Staff only, exactly like the rest of the directory — this is a named person's
+   address, number and spending history in one response. */
+router.get('/customer-directory/:id/trips', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  try {
+    const dir = require('./customer-directory');
+    const out = dir.tripsFor(getDb(), parseInt(req.params.id, 10));
+    if (!out) return res.status(404).json({ error: 'Customer not found' });
+    res.json({ ok: true, customer: out.customer, trips: out.trips, stats: out.stats });
+  } catch (e) {
+    console.error('[API] customer trips failed:', e.message);
+    res.status(500).json({ error: 'Could not load this customer' });
   }
 });
 

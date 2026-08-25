@@ -54,7 +54,25 @@ nav#nav{display:none}
 .bn-bar{width:18px;height:1px;background:currentColor;opacity:0;transition:opacity .2s}
 .bn.on .bn-bar{opacity:1}
 .bn-label{font-size:.74rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;margin-top:.1rem}
-.bn-dot{position:absolute;top:.3rem;right:calc(50% - 18px);background:var(--red);color:#fff;font-size:.72rem;font-weight:700;min-width:16px;height:16px;border-radius:8px;padding:0 3px;display:none;align-items:center;justify-content:center;line-height:1}
+/* THE TAB COUNT — A NUMBER THE OWNER CAN ACTUALLY READ.
+   It always held the count; it just could not be read as one. Three things
+   were against it at once: 16px of circle, .72rem of a light high-contrast
+   display serif, and font-weight:700 on a face loaded only at 300/400/500 — so
+   the browser SYNTHESISED the bold and smeared the one glyph that mattered.
+   From arm's length it read as a featureless red dot, which is exactly how the
+   owner reported it.
+
+   The house has one typeface on purpose (--sans and --serif both resolve to
+   Cormorant, DESIGN.md §1), so this does not reach for a UI face. It buys
+   legibility the way the system allows: a bigger circle, a bigger glyph, and
+   weight 500 — the heaviest weight actually LOADED, so it is drawn rather than
+   faked. Tabular figures and letter-spacing:0 keep 9 → 10 from shifting about,
+   the nav's tracking being inherited otherwise.
+   Guard: server/tests/nav-count-badge.test.js */
+.bn-dot{position:absolute;top:.24rem;right:calc(50% - 21px);background:var(--red);color:#fff;
+  font-size:.82rem;font-weight:500;font-variant-numeric:lining-nums tabular-nums;letter-spacing:0;
+  min-width:20px;height:20px;border-radius:10px;padding:0 5px;display:none;
+  align-items:center;justify-content:center;line-height:1}
 
 /* ── PAGES ── */
 .page-scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:none}
@@ -673,6 +691,16 @@ select:-webkit-autofill:focus{
 
   <!-- TOP BAR -->
   <!-- Full-screen trip detail. Replaces the old inline accordion. -->
+  <!-- ONE CUSTOMER, IN FULL. Same slide-over shell as the trip page, so the
+       back gesture and the scroll lock behave identically. -->
+  <div class="trip-page" id="cust-page" role="dialog" aria-modal="true" aria-label="Customer detail">
+    <div class="trip-page-hd">
+      <button class="trip-back" type="button" aria-label="Back to customers" onclick="custCloseDetail()">&#8249;</button>
+      <div class="trip-page-title" id="cust-page-title">Customer</div>
+    </div>
+    <div class="trip-page-body" id="cust-page-body"></div>
+  </div>
+
   <div class="trip-page" id="trip-page" role="dialog" aria-modal="true" aria-label="Trip detail">
     <div class="trip-page-hd">
       <button class="trip-back" type="button" aria-label="Back" onclick="closeTripPage()">&#8249;</button>
@@ -1602,6 +1630,21 @@ async function checkGoogleCalendarStatus(){
   try{
     var res=await fetch('/api/google/status');
     var data=await res.json();
+    /* GOOGLE HAS REJECTED THE GRANT. Say so, rather than showing "Connected"
+       over a calendar that has quietly stopped loading — that gap is what sent
+       the owner round the disconnect/reconnect loop with no idea why.
+       This is the ONLY case where reconnecting is genuinely the fix; an expired
+       access token now refreshes itself and never reaches here. */
+    if(res.ok&&data.ok&&data.needsReconnect){
+      btn.textContent='Reconnect';
+      btn.onclick=connectGoogleCalendar;
+      btn.style.background='var(--navy)';
+      btn.style.color='#fff';
+      btn.style.border='none';
+      if(statusEl)statusEl.innerHTML='Google has signed you out &mdash; reconnect to restore your calendar';
+      if(syncLink)syncLink.style.display='none';
+      return;
+    }
     if(res.ok&&data.ok&&data.connected){
       btn.textContent='Disconnect';
       btn.onclick=disconnectGoogleCalendar;
@@ -1894,7 +1937,7 @@ async function loadDriversList(){
     // Update badge
     var pendingCount=drivers.filter(function(d){return d.onboarding_status&&d.onboarding_status!=='approved';}).length;
     var dot=document.getElementById('drivers-dot');
-    if(dot){dot.textContent=pendingCount||'';dot.style.display=pendingCount?'flex':'none';}
+    if(dot){dot.textContent=wmCountLabel(pendingCount);dot.style.display=pendingCount?'flex':'none';}
     if(!drivers.length){el.innerHTML='<div style="padding:1rem;text-align:center;font-size:.88rem;color:rgba(27,27,26,.4)">No drivers yet</div>';return;}
     // Sort: pending/submitted first
     drivers.sort(function(a,b){
@@ -3045,6 +3088,15 @@ function wmChangeBlock(j){
 
    Accepts either field name so it cannot break again if the mapper changes.
    Guardrail: server/tests/booking-notes.test.js */
+/* Nothing at zero, the number up to 99, then "99+" — a three-figure backlog
+   would stretch the badge wider than the tab it sits on. One helper so the two
+   badges can never disagree about how a count is written. */
+function wmCountLabel(n){
+  var c=parseInt(n,10);
+  if(!c||c<1)return '';
+  return c>99?'99+':String(c);
+}
+
 function ownerNoteOf(j){
   var raw = (j && (j.note != null ? j.note : j.notes));
   var t = String(raw == null ? '' : raw).trim();
@@ -5153,6 +5205,130 @@ async function ownerAddCustomer(bookingId,btn){
 }
 
 
+/* ── ONE CUSTOMER, IN FULL ────────────────────────────────────────────────
+   Tapping a row opens their spend and every journey they have taken.
+
+   WHAT COUNTS AS "SPENT" — money that has actually changed hands:
+     • a CARD payment that landed (paid_at set), even for a future trip;
+     • a COMPLETED journey, whose cash or account fare was collected on the day.
+   Cancelled trips never count. Everything else — a confirmed cash job next
+   Tuesday, an estimate nobody has accepted — is money EXPECTED, and is shown
+   separately as "Booked". Counting it as spend would flatter every customer by
+   whatever they happen to have in the diary.
+
+   The server decides all of this (customer-directory.isSettledForSpend), and
+   the same function answers the Customer Spend report — one definition, so the
+   two screens can never quote different figures for the same person.
+   Guardrail: server/tests/customer-detail.test.js */
+var CUST_DETAIL=null;
+
+async function custOpenDetail(id){
+  var page=document.getElementById('cust-page'),body=document.getElementById('cust-page-body');
+  if(!page||!body)return;
+  body.innerHTML='<div style="padding:1.4rem 1.1rem;color:rgba(27,27,26,.4);font-size:.9rem">Loading…</div>';
+  page.classList.add('on');
+  try{document.body.style.overflow='hidden';}catch(e){}
+  try{body.scrollTop=0;}catch(e){}
+  try{
+    var r=await fetch('/api/customer-directory/'+id+'/trips',{credentials:'include'});
+    var d=await r.json();
+    if(!r.ok||!d.ok){ body.innerHTML='<div style="padding:1.4rem 1.1rem;color:#8B2222;font-size:.9rem">'+esc(d.error||'Could not load this customer')+'</div>'; return; }
+    CUST_DETAIL=d;
+    custRenderDetail(d);
+  }catch(e){
+    body.innerHTML='<div style="padding:1.4rem 1.1rem;color:#8B2222;font-size:.9rem">Network error</div>';
+  }
+}
+
+function custCloseDetail(){
+  var page=document.getElementById('cust-page');
+  if(page)page.classList.remove('on');
+  try{document.body.style.overflow='';}catch(e){}
+  CUST_DETAIL=null;
+}
+
+/* completed / upcoming / cancelled — the three words the owner actually uses.
+   A paid-but-not-yet-taken journey is still upcoming; it is the MONEY that is
+   settled, not the trip, and saying otherwise on the row would be a lie about
+   a car that has not turned up yet. */
+function custTripState(t){
+  var st=String(t.status||'').toLowerCase();
+  if(st==='cancelled')return {label:'Cancelled',tone:'rgba(27,27,26,.35)'};
+  if(st==='completed')return {label:'Completed',tone:'rgba(27,27,26,.5)'};
+  /* A card-paid journey that has not happened yet is BOTH: the money is in the
+     bank (so it is inside Total spent) and the car has not turned up (so it is
+     still upcoming). Without saying both, the owner reads "5 paid trips" above
+     a list where only four say Completed, and has no way to find the fifth. */
+  if(t.paid_at)return {label:'Upcoming · Paid',tone:'var(--westmere-navy,#102a43)'};
+  return {label:'Upcoming',tone:'var(--westmere-navy,#102a43)'};
+}
+
+function custStatBlock(label,value,sub){
+  return '<div style="flex:1;min-width:0">'
+    +'<div style="font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(27,27,26,.45)">'+esc(label)+'</div>'
+    +'<div style="font-family:var(--serif);font-size:1.5rem;color:var(--westmere-navy,#102a43);line-height:1.25;margin-top:.15rem">'+value+'</div>'
+    +(sub?'<div style="font-size:.74rem;color:rgba(27,27,26,.45);margin-top:.1rem">'+esc(sub)+'</div>':'')
+    +'</div>';
+}
+
+function custRenderDetail(d){
+  var body=document.getElementById('cust-page-body'); if(!body)return;
+  var c=d.customer||{}, st=d.stats||{}, trips=d.trips||[];
+  var ttl=document.getElementById('cust-page-title');
+  if(ttl)ttl.textContent=c.name||'Customer';
+
+  var frame='border:1px solid rgba(27,27,26,.1);border-radius:12px;background:#ffffff;padding:.85rem .9rem;margin:0 1rem .7rem';
+  var h='';
+
+  // ── Who they are ──
+  h+='<div style="'+frame+';margin-top:.9rem">'
+    +'<div style="font-family:var(--serif);font-size:1.35rem;color:var(--westmere-navy,#102a43)">'+esc(c.name||'—')+'</div>'
+    +(c.phone?'<div style="font-size:.9rem;margin-top:.3rem"><a href="tel:'+esc(c.phone)+'" style="color:var(--westmere-navy,#102a43);text-decoration:none">'+esc(c.phone)+'</a></div>':'<div style="font-size:.9rem;margin-top:.3rem;color:rgba(27,27,26,.35)">No phone</div>')
+    +(c.email?'<div style="font-size:.86rem;color:rgba(27,27,26,.6);word-break:break-all;margin-top:.1rem">'+esc(c.email)+'</div>':'')
+    +(c.home_address?'<div style="font-size:.86rem;color:rgba(27,27,26,.6);margin-top:.2rem">'+wmShort(c.home_address)+'</div>':'')
+    +((st.firstTrip||st.lastTrip)?'<div style="font-size:.74rem;color:rgba(27,27,26,.4);margin-top:.45rem">First trip '+esc(_fmtLongDate(st.firstTrip)||'—')+' · Last trip '+esc(_fmtLongDate(st.lastTrip)||'—')+'</div>':'')
+    +'<div style="display:flex;gap:.45rem;margin-top:.7rem">'
+    +'<button onclick="custEdit('+c.id+')" style="flex:1;padding:.45rem;background:transparent;border:1px solid rgba(27,27,26,.15);border-radius:8px;font-family:inherit;font-size:.84rem;color:var(--westmere-navy,#102a43);cursor:pointer">Edit details</button>'
+    +'<button onclick="custBookFor('+c.id+')" style="flex:1;padding:.45rem;background:transparent;border:1px solid var(--westmere-navy,#102a43);border-radius:8px;font-family:inherit;font-size:.84rem;color:var(--westmere-navy,#102a43);cursor:pointer">New booking</button>'
+    +'</div></div>';
+
+  // ── The money ──
+  h+='<div style="'+frame+'">'
+    +'<div style="display:flex;gap:.9rem">'
+    +custStatBlock('Total spent',fmtMoney(st.totalSpent),st.settledTrips+(st.settledTrips===1?' paid trip':' paid trips'))
+    +custStatBlock('Booked',fmtMoney(st.bookedValue),st.bookedTrips+(st.bookedTrips===1?' to come':' to come'))
+    +'</div>'
+    +'<div style="border-top:1px solid rgba(27,27,26,.08);margin-top:.75rem;padding-top:.6rem;display:flex;gap:.9rem">'
+    +custStatBlock('Trips',String(st.totalTrips),st.cancelledTrips?(st.cancelledTrips+' cancelled'):'')
+    +custStatBlock('Average fare',fmtMoney(st.averageFare),'per paid trip')
+    +'</div>'
+    +'<div style="font-size:.72rem;color:rgba(27,27,26,.42);line-height:1.5;margin-top:.7rem">'
+    +'&ldquo;Total spent&rdquo; is money taken &mdash; card payments received and journeys completed. Cancelled trips are never counted.'
+    +'</div></div>';
+
+  // ── Every journey ──
+  h+='<div style="'+frame+'">'
+    +'<div style="font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.5rem">Trip history</div>';
+  if(!trips.length){
+    h+='<div style="color:rgba(27,27,26,.4);font-size:.88rem;padding:.3rem 0">No trips on record yet.</div>';
+  }else{
+    h+=trips.map(function(t){
+      var s2=custTripState(t);
+      var cancelled=s2.label==='Cancelled';
+      return '<div style="border-top:1px solid rgba(27,27,26,.07);padding:.55rem 0'+(cancelled?';opacity:.55':'')+'">'
+        +'<div style="display:flex;justify-content:space-between;gap:.6rem;align-items:baseline">'
+        +'<div style="font-size:.84rem;color:var(--westmere-navy,#102a43)">'+esc(_fmtLongDate(t.date)||t.date||'—')+(t.time&&t.time!=='ASAP'?' · '+esc(t.time):'')+'</div>'
+        +'<div style="font-family:var(--serif);font-size:1rem;color:var(--westmere-navy,#102a43);white-space:nowrap'+(cancelled?';text-decoration:line-through':'')+'">'+(t.fare?fmtMoney(t.fare):'—')+'</div>'
+        +'</div>'
+        +'<div style="font-size:.86rem;color:rgba(27,27,26,.65);margin-top:.15rem">'+wmShort(t.pickup)+' &rarr; '+wmShort(t.destination)+'</div>'
+        +'<div style="font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:'+s2.tone+';margin-top:.2rem">'+esc(s2.label)+'</div>'
+        +'</div>';
+    }).join('');
+  }
+  h+='</div>';
+  body.innerHTML=h;
+}
+
 async function custLoad(opts){
   var quiet=!!(opts&&opts.quiet);
   var list=document.getElementById('cust-list');
@@ -5203,6 +5379,7 @@ function custRender(){
   list.innerHTML=rows.map(function(c){
     var addr=c.home_address?wmShort(c.home_address):'<span style="color:rgba(27,27,26,.35)">No address yet</span>';
     return '<div style="border:1px solid rgba(27,27,26,.1);border-radius:12px;padding:.75rem .85rem;margin-bottom:.6rem;background:#ffffff">'
+      +'<div onclick="custOpenDetail('+c.id+')" style="cursor:pointer">'
       +'<div style="display:flex;justify-content:space-between;align-items:baseline;gap:.6rem">'
       +'<div style="font-family:var(--serif);font-size:1.05rem;color:var(--navy)">'+esc(c.name||'—')+'</div>'
       +'<div style="font-size:.74rem;color:rgba(27,27,26,.45);white-space:nowrap">'+c.booking_count+' trips</div></div>'
@@ -5211,6 +5388,7 @@ function custRender(){
       +'</div>'
       +'<div style="font-size:.84rem;color:rgba(27,27,26,.6);word-break:break-all">'+(c.email?esc(c.email):'<span style="color:rgba(27,27,26,.35)">No email</span>')+'</div>'
       +'<div style="font-size:.84rem;color:rgba(27,27,26,.6);margin-top:.2rem">'+addr+'</div>'
+      +'</div>'
       +'<div style="display:flex;gap:.45rem;margin-top:.6rem">'
       +'<button onclick="custEdit('+c.id+')" style="flex:1;padding:.45rem;background:transparent;border:1px solid rgba(27,27,26,.15);border-radius:8px;font-family:inherit;font-size:.84rem;color:var(--navy);cursor:pointer">Edit</button>'
       +'<button onclick="custBookFor('+c.id+')" style="flex:1;padding:.45rem;background:transparent;border:1px solid var(--westmere-navy,#102a43);border-radius:8px;font-family:inherit;font-size:.84rem;color:var(--navy);cursor:pointer">New booking</button>'
@@ -5459,7 +5637,7 @@ async function loadOwnerBookings(){
     var dot=document.getElementById('toconfirm-dot');
     if(dot){
       var awaitingCount=WMLifecycle.toConfirmCount(OFFERED_JOBS||[]);
-      dot.textContent=awaitingCount?String(awaitingCount):'';
+      dot.textContent=wmCountLabel(awaitingCount);
       dot.style.display=awaitingCount?'flex':'none';
     }
 

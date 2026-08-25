@@ -815,6 +815,12 @@ function migrate() {
   // get his and the customer would silently get nothing, or the reverse.
   try { db.exec(`ALTER TABLE bookings ADD COLUMN customer_reminder_sent_at TEXT`); } catch(_){}
 
+  // Set when Google REJECTS the refresh token itself (invalid_grant), which no
+  // retry can fix. Lets the owner app say "reconnect Google" instead of showing
+  // a healthy connection above an empty calendar. Cleared on the next
+  // successful refresh, so a network blip never leaves a false alarm.
+  try { db.exec(`ALTER TABLE integrations ADD COLUMN needs_reconnect INTEGER DEFAULT 0`); } catch(_){}
+
   // Review request tracking — sent once per email address, never resent
   try {
     db.exec(`

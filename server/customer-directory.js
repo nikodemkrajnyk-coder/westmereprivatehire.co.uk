@@ -169,6 +169,95 @@ function addFromBooking(db, bookingId) {
   return { ok: true, already: false, customer: db.prepare('SELECT * FROM customer_directory WHERE id = ?').get(info.lastInsertRowid) };
 }
 
+/**
+ * HAS THIS TRIP'S MONEY ACTUALLY CHANGED HANDS?
+ *
+ * The single definition of "spent" in this system. It already existed, inline,
+ * inside GET /customer-spend; lifting it here rather than writing a second copy
+ * for the customer detail page is the whole point — two definitions of revenue
+ * is two different answers to "what has this customer spent with me", and the
+ * owner would have no way to know which one to believe.
+ *
+ *   • CANCELLED is never revenue, whatever else is true of it.
+ *   • paid_at set  → a genuine card payment landed. Money is in the bank even
+ *     if the journey has not happened yet.
+ *   • completed    → the journey ran, so the cash or account fare is collected.
+ *
+ * Everything else — a confirmed cash job next Tuesday, an estimate nobody has
+ * accepted — is money EXPECTED, not money taken, and belongs in a separate
+ * figure. Counting it as spend would flatter every customer by the value of
+ * whatever they happen to have booked.
+ *
+ * GUARDRAIL: server/tests/customer-spend.test.js, customer-detail.test.js
+ */
+function isSettledForSpend(b) {
+  if (!b) return false;
+  if (String(b.status || '').toLowerCase() === 'cancelled') return false;
+  return !!b.paid_at || String(b.status || '').toLowerCase() === 'completed';
+}
+
+/**
+ * Every trip belonging to one saved customer, newest first, with the money
+ * totalled the way isSettledForSpend defines it.
+ *
+ * Matched on the NORMALISED phone and email — the same keys the directory
+ * itself is built on — so a regular whose number was typed "+44 7700 900123"
+ * on one booking and "07700900123" on the next is one person with one history,
+ * which is the entire reason those keys exist.
+ */
+function tripsFor(db, id) {
+  ensureSchema(db);
+  const c = db.prepare('SELECT * FROM customer_directory WHERE id = ?').get(id);
+  if (!c) return null;
+
+  const pk = c.phone_key || normPhone(c.phone);
+  const ek = c.email_key || normEmail(c.email);
+  const rows = db.prepare(`
+    SELECT b.id, b.ref, b.date, b.time, b.pickup, b.destination, b.stop_address,
+           b.fare, b.status, b.payment, b.paid_at,
+           COALESCE(NULLIF(TRIM(cu.phone), ''), b.passenger_phone) AS phone,
+           COALESCE(NULLIF(TRIM(cu.email), ''), b.passenger_email) AS email
+      FROM bookings b LEFT JOIN customers cu ON b.customer_id = cu.id
+  `).all();
+
+  const mine = rows.filter((r) => {
+    // Phone first — it is what this trade identifies people by. An empty key
+    // must never match, or every customer without a number becomes this one.
+    if (pk && normPhone(r.phone) === pk) return true;
+    if (ek && normEmail(r.email) === ek) return true;
+    return false;
+  });
+
+  let totalSpent = 0, settledTrips = 0, bookedValue = 0, bookedTrips = 0, cancelled = 0;
+  for (const r of mine) {
+    const fare = Number(r.fare);
+    const money = isFinite(fare) && fare > 0 ? fare : 0;
+    if (String(r.status || '').toLowerCase() === 'cancelled') { cancelled++; continue; }
+    if (isSettledForSpend(r)) { totalSpent += money; settledTrips++; }
+    else { bookedValue += money; bookedTrips++; }
+  }
+
+  // Newest first. Dates are UK wall-clock strings and sort correctly as text —
+  // never parse them into a Date to compare (the timezone invariant, CLAUDE.md).
+  mine.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+
+  return {
+    customer: c,
+    trips: mine,
+    stats: {
+      totalTrips: mine.length,
+      totalSpent: Math.round(totalSpent * 100) / 100,
+      settledTrips,
+      bookedValue: Math.round(bookedValue * 100) / 100,
+      bookedTrips,
+      cancelledTrips: cancelled,
+      averageFare: settledTrips ? Math.round((totalSpent / settledTrips) * 100) / 100 : 0,
+      firstTrip: mine.length ? mine[mine.length - 1].date : null,
+      lastTrip: mine.length ? mine[0].date : null
+    }
+  };
+}
+
 /** Take somebody off the list. A plain delete — nothing repopulates it. */
 function remove(db, id) {
   ensureSchema(db);
@@ -258,4 +347,5 @@ function clearAutoAdded(db) {
 }
 
 module.exports = { normPhone, normEmail, ensureSchema, addFromBooking, remove,
-                   findByIdentity, list, tripStats, clearAutoAdded };
+                   findByIdentity, list, tripStats, clearAutoAdded,
+                   isSettledForSpend, tripsFor };

@@ -349,8 +349,12 @@ test('_admGlanceDate returns the correct weekday for a known date', () => {
   const i = ADMIN.indexOf('function _admGlanceDate');
   const body = ADMIN.slice(i, ADMIN.indexOf('\n}', i) + 2);
   const run = new Function(head + body + '\nreturn _admGlanceDate;')();
-  assert.strictEqual(run('2026-08-25'), 'Tue 25 Aug');      // a Tuesday
-  assert.strictEqual(run('2026-01-01'), 'Thu 1 Jan');       // month index, not off by one
+  /* A PAST date, deliberately. _admGlanceDate short-circuits today and tomorrow
+     to words, so a fixture in the future is a time bomb — this one was pinned
+     to '2026-08-25' and duly failed on 24 August 2026 for no reason but the
+     calendar. A date behind us can never wander into that window. */
+  assert.strictEqual(run('2024-08-27'), 'Tue 27 Aug');      // a Tuesday
+  assert.strictEqual(run('2024-01-01'), 'Mon 1 Jan');       // month index, not off by one
   assert.strictEqual(run(''), '—');                          // no date is a dash, not "Invalid Date"
   assert.strictEqual(run('ASAP'), 'ASAP');                   // junk passes through untouched
 });

@@ -85,6 +85,19 @@ function saveTokens(payload) {
   return loadTokens();
 }
 
+/* IS THE GRANT ITSELF DEAD?
+   Distinct from "the access token expired", which is normal and handled
+   silently. This is set only when Google rejects the REFRESH token, which no
+   amount of retrying will fix — the owner has to consent again. Cleared the
+   moment a refresh succeeds, so a transient outage cannot leave a false alarm
+   on the screen. */
+function markNeedsReconnect(v) {
+  try {
+    getDb().prepare("UPDATE integrations SET needs_reconnect = ?, updated_at = datetime('now') WHERE provider = ?")
+      .run(v ? 1 : 0, PROVIDER);
+  } catch (e) { console.error('[GCAL] needs_reconnect write failed:', e.message); }
+}
+
 function clearTokens() {
   const db = getDb();
   db.prepare('DELETE FROM integrations WHERE provider = ?').run(PROVIDER);
@@ -142,9 +155,19 @@ async function refreshAccessToken(refresh_token) {
     body
   });
   const data = await res.json();
-  if (!res.ok) throw new Error('Refresh failed: ' + (data.error_description || data.error || res.status));
+  if (!res.ok) {
+    const err = new Error('Refresh failed: ' + (data.error_description || data.error || res.status));
+    // Google names the cause in `error`. invalid_grant means the refresh token
+    // is revoked/expired — the ONE case where reconnecting is the real answer.
+    err.googleError = (data && data.error) || null;
+    err.status = res.status;
+    throw err;
+  }
   return data;
 }
+
+// The errors that mean "this grant is finished", as opposed to "try again".
+const DEAD_GRANT = ['invalid_grant', 'invalid_client', 'unauthorized_client'];
 
 async function fetchUserEmail(access_token) {
   try {
@@ -158,34 +181,87 @@ async function fetchUserEmail(access_token) {
 }
 
 // ── Access token getter (auto-refresh) ───────────────────────────────────
-async function getAccessToken() {
+/* THE ACCESS TOKEN, REFRESHED WHEN IT NEEDS TO BE — NOT WHEN A CLOCK SAYS SO.
+   This used to decide purely on the stored expiry, which meant a token that
+   Google had already invalidated (a re-consent, a scope change, a security
+   event) went on being sent until the clock caught up. Nothing anywhere reacted
+   to a 401, so those calls simply failed, `listExternalEvents` turned the
+   failure into an empty list, and the owner's personal calendar went blank with
+   the app still reporting "Connected".
+
+   `opts.force` skips the cached token — googleFetch uses it after a 401, which
+   is the answer from Google itself rather than a guess from a clock. */
+async function getAccessToken(opts) {
+  const force = !!(opts && opts.force);
   const t = loadTokens();
   if (!t || !t.refresh_token) return null;
   const now = Math.floor(Date.now() / 1000);
-  if (t.access_token && t.expires_at && t.expires_at > now) return t.access_token;
+  if (!force && t.access_token && t.expires_at && t.expires_at > now) return t.access_token;
 
-  const refreshed = await refreshAccessToken(t.refresh_token);
+  let refreshed;
+  try {
+    refreshed = await refreshAccessToken(t.refresh_token);
+  } catch (e) {
+    if (DEAD_GRANT.indexOf(e.googleError) !== -1) {
+      // Only here. A network blip must never nag the owner to reconnect.
+      markNeedsReconnect(1);
+      e.needsReconnect = true;
+      console.error('[GCAL] refresh token rejected by Google (' + e.googleError + ') — reconnect required');
+    } else {
+      console.error('[GCAL] token refresh failed (transient):', e.message);
+    }
+    throw e;
+  }
   saveTokens({
     access_token: refreshed.access_token,
     expires_in: refreshed.expires_in,
     scope: refreshed.scope
   });
+  markNeedsReconnect(0);   // it works — retract any previous alarm
   return refreshed.access_token;
+}
+
+/* EVERY CALL TO GOOGLE GOES THROUGH HERE.
+   One choke point that attaches the token and, on a 401, mints a fresh one and
+   tries again exactly once. 401 is the only status retried: it is Google saying
+   "this token is no good". A 403 is permission or quota, and a new token will
+   not change either — retrying it would just double the failures.
+
+   Before this existed, the assistant's create path, the owner app's calendar
+   read and the sync each fetched a token once and used it raw, so they could
+   hold different opinions about whether the connection worked. */
+async function googleFetch(url, init) {
+  const opts = init || {};
+  const withToken = (tok) => Object.assign({}, opts, {
+    headers: Object.assign({}, opts.headers, { Authorization: 'Bearer ' + tok })
+  });
+
+  let token = await getAccessToken();
+  if (!token) {
+    const e = new Error('Google Calendar not connected');
+    e.status = 401;
+    throw e;
+  }
+  let res = await fetch(url, withToken(token));
+  if (res.status !== 401) return res;
+
+  const fresh = await getAccessToken({ force: true });
+  if (!fresh) return res;
+  console.log('[GCAL] access token rejected — refreshed and retried once');
+  return fetch(url, withToken(fresh));
 }
 
 // ── Calendar API helpers ─────────────────────────────────────────────────
 async function apiCall(method, pathSuffix, body) {
-  const token = await getAccessToken();
-  if (!token) throw new Error('Google Calendar not connected');
   const t = loadTokens();
   const calendarId = encodeURIComponent((t && t.calendar_id) || DEFAULT_CAL);
   const url = `${API_BASE}/calendars/${calendarId}${pathSuffix}`;
-  const opts = { method, headers: { Authorization: 'Bearer ' + token } };
+  const opts = { method, headers: {} };
   if (body !== undefined) {
     opts.headers['Content-Type'] = 'application/json';
     opts.body = JSON.stringify(body);
   }
-  const res = await fetch(url, opts);
+  const res = await googleFetch(url, opts);
   if (res.status === 204) return null;
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
@@ -315,9 +391,17 @@ async function deleteEvent(eventId) {
 // ── Two-way sync: pull changes from Google into our bookings ─────────────
 async function pullChanges() {
   if (!isConfigured() || !loadTokens()) return { ok: false, reason: 'not_connected' };
+  try {
+    return await _pullChanges();
+  } catch (e) {
+    if (e && e.needsReconnect) return { ok: false, reason: 'needs_reconnect' };
+    console.error('[GCAL] pullChanges failed:', e.message);
+    return { ok: false, reason: 'error' };
+  }
+}
 
-  const token = await getAccessToken();
-  if (!token) return { ok: false, reason: 'no_token' };
+async function _pullChanges() {
+
   const t = loadTokens();
   const calendarId = encodeURIComponent((t && t.calendar_id) || DEFAULT_CAL);
   const syncToken = t && t.sync_token;
@@ -338,9 +422,7 @@ async function pullChanges() {
   let newSyncToken = null;
 
   do {
-    const res = await fetch(nextPage ? url + '&pageToken=' + encodeURIComponent(nextPage) : url, {
-      headers: { Authorization: 'Bearer ' + token }
-    });
+    const res = await googleFetch(nextPage ? url + '&pageToken=' + encodeURIComponent(nextPage) : url);
     if (res.status === 410) {
       // Sync token invalid — reset and full-sync next time
       updateSyncToken(null);
@@ -399,10 +481,14 @@ async function pullChanges() {
 // Fetches from ALL of the user's visible calendars (including subscribed
 // ones like iCloud-published feeds) so operators who keep events elsewhere
 // still see them surfaced in the admin UI.
+/* A FAILURE HERE USED TO LOOK EXACTLY LIKE AN EMPTY DIARY.
+   Every non-OK response returned [], so a 401 rendered as "you have nothing on"
+   in the owner app — the "out of sync" the owner kept hitting. An auth failure
+   now propagates (the caller turns it into an honest "reconnect Google"); a
+   single misbehaving subscribed calendar still degrades quietly, because one
+   broken feed should not blank the whole week. */
 async function listExternalEvents(opts) {
   if (!isConfigured() || !loadTokens()) return [];
-  const token = await getAccessToken();
-  if (!token) return [];
 
   // Accept either { from, to } as YYYY-MM-DD or { days } for a rolling window
   // from "now". Caps the window at 400 days to keep API responses sane.
@@ -425,16 +511,20 @@ async function listExternalEvents(opts) {
   // exactly like native Google calendars.
   let calendars = [];
   try {
-    const lr = await fetch(`${API_BASE}/users/me/calendarList?minAccessRole=reader`, {
-      headers: { Authorization: 'Bearer ' + token }
-    });
+    const lr = await googleFetch(`${API_BASE}/users/me/calendarList?minAccessRole=reader`);
     const ld = await lr.json();
     if (!lr.ok) {
       console.error('[GCAL] calendarList HTTP', lr.status, ld && ld.error && ld.error.message);
-      return [];
+      // Still unauthorised AFTER a forced refresh — the grant is the problem,
+      // and pretending the diary is empty is how this hid for so long.
+      const e = new Error('Google rejected the calendar list (HTTP ' + lr.status + ')');
+      e.status = lr.status;
+      if (lr.status === 401 || lr.status === 403) e.needsReconnect = true;
+      throw e;
     }
     calendars = (ld.items || []).filter(c => !c.hidden && c.selected !== false);
   } catch (e) {
+    if (e && e.needsReconnect) throw e;
     console.error('[GCAL] calendarList failed:', e.message);
     return [];
   }
@@ -451,7 +541,7 @@ async function listExternalEvents(opts) {
       + `&timeMax=${encodeURIComponent(to)}`
       + `&singleEvents=true&orderBy=startTime&maxResults=250`;
     try {
-      const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+      const res = await googleFetch(url);
       const data = await res.json();
       if (!res.ok) {
         // Subscribed calendars that failed temporarily, calendars without
@@ -506,9 +596,15 @@ async function listExternalEvents(opts) {
 // ── Status (for frontend) ────────────────────────────────────────────────
 function getStatus() {
   const t = loadTokens();
+  // `connected` used to mean "a refresh token string is in the database", which
+  // stayed true long after Google stopped honouring it — the owner app showed a
+  // healthy connection above an empty calendar. It now means the grant is
+  // believed to still work.
+  const needsReconnect = !!(t && t.needs_reconnect);
   return {
     configured: isConfigured(),
-    connected: !!(t && t.refresh_token),
+    connected: !!(t && t.refresh_token) && !needsReconnect,
+    needsReconnect,
     email: t ? t.account_email : null,
     calendarId: t ? t.calendar_id : null
   };
@@ -529,6 +625,8 @@ module.exports = {
   getStatus,
   loadTokens,
   getAccessToken,
+  googleFetch,
+  markNeedsReconnect,
   bookingToEvent,
   _tinyAddr,
   _shortAddr

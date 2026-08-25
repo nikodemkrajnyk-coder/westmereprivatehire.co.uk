@@ -1154,7 +1154,9 @@ test('the To Confirm badge shows the COUNT of awaiting-payment bookings, hidden 
     LC.toConfirmCount([{ status: 'awaiting_payment' }, { status: 'pending' }, { status: 'confirmed' }, { status: 'awaiting_payment' }]), 2,
     'toConfirmCount must count awaiting_payment bookings only (a new request is not "to confirm")');
   assert.strictEqual(LC.toConfirmCount([{ status: 'pending' }]), 0, 'no awaiting-payment bookings → zero');
-  assert.ok(/dot\.textContent\s*=\s*awaitingCount\?String\(awaitingCount\):''/.test(flat), 'must render the number');
+  // The number goes through wmCountLabel now (blank at zero, capped at 99+), so
+  // that the To Confirm and Drivers badges cannot write a count two ways.
+  assert.ok(/dot\.textContent\s*=\s*wmCountLabel\(awaitingCount\)/.test(flat), 'must render the number');
   assert.ok(/dot\.style\.display\s*=\s*awaitingCount\?'flex':'none'/.test(flat), 'must hide the badge at zero');
   // Viewing the To Confirm tab must NOT clear the badge any more.
   const fn = src.match(/function buildToConfirm\(\)\{[\s\S]*?\n\}/);
