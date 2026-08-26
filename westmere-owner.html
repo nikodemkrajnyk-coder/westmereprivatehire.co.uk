@@ -1326,7 +1326,7 @@ select:-webkit-autofill:focus{
             <span id="inv-det-total" style="font-family:var(--serif);font-size:1.3rem;color:var(--navy);font-weight:700"></span>
           </div>
           <div style="display:flex;gap:.5rem;margin-top:1.2rem;flex-wrap:wrap">
-            <a id="inv-det-pdf-btn" href="#" target="_blank" style="flex:1;padding:.65rem;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:6px;border:1px solid rgba(27,27,26,.2);background:transparent;color:var(--navy);text-align:center;text-decoration:none">Download PDF</a>
+            <a id="inv-det-pdf-btn" href="#" download style="flex:1;padding:.65rem;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:6px;border:1px solid rgba(27,27,26,.2);background:transparent;color:var(--navy);text-align:center;text-decoration:none">Download PDF</a>
             <button onclick="invDetailPreview()" style="flex:1;padding:.65rem;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:6px;border:1px solid rgba(27,27,26,.2);background:transparent;color:var(--navy)">Print Preview</button>
             <button onclick="invDetailDelete()" style="flex:1;padding:.65rem;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:6px;border:1px solid rgba(163,51,51,.3);background:transparent;color:var(--red)">Delete</button>
           </div>
@@ -6331,111 +6331,48 @@ function invPreview(){
   .then(function(res){
     if(btn){btn.disabled=false;btn.textContent='Preview / Download';}
     if(!res.ok||!res.d.ok){err.textContent=res.d&&res.d.error?res.d.error:'Invoice failed ('+res.status+')';err.style.display='';return;}
-    openInvoicePreview(res.d);
+    invOpenPdf(res.d.invoiceNo);
     if(req.saveCustomer)invSaveRecipientAsCustomer(req.recipient);
     invLoadList();
   })
   .catch(function(){if(btn){btn.disabled=false;btn.textContent='Preview / Download';}err.textContent='Network error. Please try again.';err.style.display='';});
 }
 
-function invDownload(invoiceNo){
-  window.open('/api/public/invoice/'+encodeURIComponent(invoiceNo)+'/pdf','_blank');
+/* PRINT, PREVIEW AND DOWNLOAD ALL SHOW THE SAME DOCUMENT.
+   This file used to carry openInvoicePreview() — a second, complete invoice
+   template written in HTML. It is the reason "Print" and "Review" still showed
+   the old design after the PDF was redesigned: they were never rendering the
+   PDF at all, they were drawing their own copy from the same data. Two
+   templates for one document will always drift, and this one had drifted by an
+   entire redesign. It is gone; every path now opens the generated PDF.
+
+   AND DOWNLOAD NO LONGER OPENS A BLANK TAB. window.open() on a URL that
+   responds with Content-Disposition: attachment leaves an empty tab behind
+   while the file downloads — which is exactly the "blank white screen" that was
+   reported. A link click starts the download with no tab at all. */
+function _invPdfUrl(invoiceNo, inline){
+  if(!invoiceNo)return '';
+  return '/api/public/invoice/'+encodeURIComponent(invoiceNo)+'/pdf'+(inline?'?inline=1':'');
 }
 
-function openInvoicePreview(data){
-  function _e(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-  var s=data.settings||{};
-  var p=data.period||{};
-  var total=(+data.total||0).toFixed(2);
-  var isBespoke=!!data.bespoke;
-  var tableHtml='';
-  var toAddr='';
-  var periodLine='';
-  if(isBespoke){
-    var items=data.items||[];
-    var itemRows=items.map(function(it){
-      var amt=(+it.amount||0).toFixed(2);
-      var datePrefix='';
-      if(it.date&&String(it.date).trim()){
-        // Weekday included, and via the safe helper: it.date+'T00:00:00' is an
-        // Invalid Date the moment the value is 'ASAP', which is a real column value.
-        var _rl=_fmtUpcomingDate(it.date); if(_rl)datePrefix=_rl+' \u2014 ';
-      }
-      return '<tr>'
-        +'<td style="padding:12px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:13px;color:#1b1b1a;line-height:1.5;vertical-align:top">'+(datePrefix?'<span style="color:#9a9a9a;font-size:13px;font-family:var(--sans)">'+_e(datePrefix)+'</span>':'')+''+_e(it.description||'')+'</td>'
-        +'<td style="padding:12px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:14px;color:#1b1b1a;text-align:right;vertical-align:top;white-space:nowrap;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif">&pound;'+amt+'</td>'
-        +'</tr>';
-    }).join('');
-    tableHtml='<table style="width:100%;border-collapse:collapse;margin-bottom:24px">'
-      +'<thead><tr>'
-      +'<th style="font-family:var(--sans);font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:left;font-weight:600">Description</th>'
-      +'<th style="font-family:var(--sans);font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:right;font-weight:600">Amount</th>'
-      +'</tr></thead>'
-      +'<tbody>'+itemRows+'</tbody>'
-      +'</table>';
-    var r=data.recipient||{};
-    toAddr=[_e(r.name||''),r.address?_e(r.address).replace(/\n/g,'<br>'):'',r.phone?_e(r.phone):'',r.email?_e(r.email):''].filter(Boolean).join('<br>');
-    if(p.notes)periodLine='<div style="margin-bottom:18px;padding:12px 14px;background:rgba(106,106,106,.08);border-left:3px solid #6a6a6a;font-size:13px;color:#1b1b1a;line-height:1.6">'+_e(p.notes).replace(/\n/g,'<br>')+'</div>';
-  } else {
-    var c=data.customer||{};
-    var bks=data.bookings||[];
-    var bookingRows=bks.map(function(b){
-      var fare=(+b.fare||0).toFixed(2);
-      return '<tr>'
-        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:13px;color:#1b1b1a;vertical-align:top">'+_e(b.date||'')+(b.time&&b.time!=='ASAP'?' '+_e(b.time):b.time==='ASAP'?' ASAP':'')+'<br><span style="font-family:var(--sans);font-size:13px;color:#9a9a9a">'+_e(b.ref||'')+'</span></td>'
-        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:13px;color:#1b1b1a;line-height:1.5;vertical-align:top">'+_e(_shortAddr(b.pickup)||'')+' &rarr; '+_e(_shortAddr(b.destination)||'')+(_flightOf(b)?'<br><span style="font-size:13px;color:#9a9a9a">Flight '+_e(_flightOf(b))+'</span>':'')+'</td>'
-        +'<td style="padding:10px 8px;border-bottom:1px solid rgba(27,27,26,.08);font-size:14px;color:#1b1b1a;text-align:right;vertical-align:top;white-space:nowrap;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif">&pound;'+fare+'</td>'
-        +'</tr>';
-    }).join('');
-    if(!bookingRows){bookingRows='<tr><td colspan="3" style="padding:24px;text-align:center;font-size:13px;color:#9a9a9a;font-style:italic">No journeys in this period.</td></tr>';}
-    tableHtml='<table style="width:100%;border-collapse:collapse;margin-bottom:24px">'
-      +'<thead><tr>'
-      +'<th style="font-family:var(--sans);font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:left;font-weight:600">Date / Ref</th>'
-      +'<th style="font-family:var(--sans);font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:left;font-weight:600">Journey</th>'
-      +'<th style="font-family:var(--sans);font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;padding:8px;border-bottom:2px solid #6a6a6a;text-align:right;font-weight:600">Fare</th>'
-      +'</tr></thead>'
-      +'<tbody>'+bookingRows+'</tbody>'
-      +'</table>';
-    toAddr=[_e(c.full_name||''),c.phone?_e(c.phone):'',c.email?_e(c.email):''].filter(Boolean).join('<br>');
-    if(p.label)periodLine='<div style="font-family:var(--sans);font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#9a9a9a;margin-bottom:6px;font-weight:500">Period: '+_e(p.label)+'</div>';
-  }
-  var fromAddr=[s.business_name||'Westmere Private Hire',s.owner_name||'',s.address_line1||'',(s.address_line2||'')+(s.postcode?' '+s.postcode:''),s.phone||'',s.email||''].filter(Boolean).map(_e).join('<br>');
-  var bankHtml='';
-  if(s.sort_code&&s.account_no){
-    bankHtml='<div style="background:rgba(27,27,26,.04);border:1px solid rgba(27,27,26,.08);padding:20px 24px;margin-bottom:32px">'
-      +'<div style="font-family:var(--sans);font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;font-weight:600;margin-bottom:10px">Payment Details</div>'
-      +'<table style="font-size:13px;color:#1b1b1a;line-height:1.8">'
-      +(s.bank_name?'<tr><td style="color:#9a9a9a;width:110px;font-size:13px;letter-spacing:1px;text-transform:uppercase">Bank</td><td>'+_e(s.bank_name)+'</td></tr>':'')
-      +(s.account_name?'<tr><td style="color:#9a9a9a;width:110px;font-size:13px;letter-spacing:1px;text-transform:uppercase">Name</td><td>'+_e(s.account_name)+'</td></tr>':'')
-      +'<tr><td style="color:#9a9a9a;width:110px;font-size:13px;letter-spacing:1px;text-transform:uppercase">Sort code</td><td style="font-family:var(--sans)">'+_e(s.sort_code)+'</td></tr>'
-      +'<tr><td style="color:#9a9a9a;width:110px;font-size:13px;letter-spacing:1px;text-transform:uppercase">Account no.</td><td style="font-family:var(--sans)">'+_e(s.account_no)+'</td></tr>'
-      +'<tr><td style="color:#9a9a9a;width:110px;font-size:13px;letter-spacing:1px;text-transform:uppercase">Reference</td><td style="font-family:var(--sans)">'+_e(data.invoiceNo||'')+'</td></tr>'
-      +'</table></div>';
-  } else {
-    bankHtml='<div style="font-size:13px;color:#657485;margin-bottom:32px">Payment is appreciated within 14 days by bank transfer. Please contact us for account details.</div>';
-  }
-  var issuedStr=p.issuedDate||new Date().toISOString().slice(0,10);
-  var html='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Invoice '+_e(data.invoiceNo||'')+'</title>'
-    +'<style>@page{size:A4;margin:0}@media print{.no-print{display:none!important}body{background:#ffffff!important}.wrap{box-shadow:none!important;margin:0!important;max-width:none!important}}*{box-sizing:border-box;margin:0;padding:0}body{font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;color:#1b1b1a;background:#ffffff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.wrap{max-width:800px;margin:0 auto;background:#ffffff;position:relative;overflow:hidden;box-shadow:0 2px 20px rgba(0,0,0,.08)}.wrap::before{content:"";position:absolute;top:0;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,#6a6a6a 18%,#6a6a6a 82%,transparent 100%);z-index:2}.wrap::after{content:"";position:absolute;bottom:0;left:0;right:0;height:6px;background:linear-gradient(90deg,transparent 0%,#6a6a6a 18%,#6a6a6a 82%,transparent 100%);z-index:2}.corner-mark{position:absolute;top:28px;right:32px;font-family:var(--sans);font-size:13px;letter-spacing:3px;text-transform:uppercase;color:rgba(27,27,26,.28);z-index:1}.toolbar{background:#ffffff;padding:12px 24px;display:flex;gap:12px;align-items:center;position:relative;z-index:3}.toolbar button{font-family:var(--sans);font-size:13px;padding:8px 18px;border:none;cursor:pointer;letter-spacing:.5px}.toolbar .btn-dl{background:#6a6a6a;color:#1b1b1a}.toolbar .btn-cl{background:transparent;color:#1a1a1a;border:1px solid rgba(255,255,255,.2)}.page{position:relative;z-index:1;padding:64px 56px 56px}.brand-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}.brand-mark{display:inline-block;padding-bottom:14px;border-bottom:1px solid rgba(27,27,26,.12);min-width:220px}.brand-name{font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:26px;letter-spacing:10px;font-weight:400;color:#1b1b1a;line-height:1}.brand-sub{font-family:var(--sans);font-size:13px;letter-spacing:4px;text-transform:uppercase;color:#6a6a6a;margin-top:8px;font-weight:500}.inv-badge{text-align:right}.inv-label{font-family:var(--sans);font-size:13px;letter-spacing:3px;text-transform:uppercase;color:#6a6a6a;font-weight:600;margin-bottom:8px}.inv-no{font-family:var(--sans);font-size:14px;color:#1b1b1a;margin-bottom:6px;letter-spacing:.5px}.inv-meta{font-size:13px;color:#657485;line-height:1.6}.gold-rule{width:36px;height:1px;background:#6a6a6a;margin:18px 0 32px}</style></head><body>'
-    +'<div class="wrap">'
-    +'<div class="toolbar no-print"><button class="btn-dl" onclick="window.print()">Print / Save as PDF</button><button class="btn-cl" onclick="window.close()">Close</button></div>'
-    +'<div class="corner-mark">Est. Sussex</div>'
-    +'<div class="page">'
-    +'<div class="brand-head"><div class="brand-mark"><div class="brand-name">WESTMERE</div><div class="brand-sub">Private Hire &middot; Sussex</div></div>'
-    +'<div class="inv-badge"><div class="inv-label">Invoice</div><div class="inv-no">'+_e(data.invoiceNo||'')+'</div><div class="inv-meta">Issued '+_e(issuedStr)+'</div></div></div>'
-    +'<div class="gold-rule"></div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-bottom:36px">'
-    +'<div><div style="font-family:var(--sans);font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;margin-bottom:8px;font-weight:600">From</div><div style="font-size:13px;color:#1b1b1a;line-height:1.7">'+fromAddr+'</div></div>'
-    +'<div><div style="font-family:var(--sans);font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#6a6a6a;margin-bottom:8px;font-weight:600">Bill To</div><div style="font-size:13px;color:#1b1b1a;line-height:1.7">'+toAddr+'</div></div>'
-    +'</div>'+periodLine+tableHtml
-    +'<div style="display:flex;flex-direction:column;align-items:flex-end;margin-bottom:32px">'
-    +'<div style="display:flex;justify-content:space-between;width:260px;padding:14px 0 8px;border-top:2px solid #6a6a6a;margin-top:4px"><span style="font-family:var(--sans);font-size:13px;letter-spacing:2px;text-transform:uppercase;font-weight:600;color:#1b1b1a;align-self:center">Total</span><span style="font-size:26px;font-weight:500;color:#6a6a6a;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif">&pound;'+total+'</span></div>'
-    +'</div>'+bankHtml
-    +'<div style="text-align:center;padding-top:24px;margin-top:20px;border-top:1px solid rgba(27,27,26,.1);font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#9a9a9a;font-family:var(--sans);font-weight:500">Westmere Private Hire &middot; Licensed by Lewes District Council &middot; westmereprivatehire.co.uk</div>'
-    +'</div></div></body></html>';
-  var w=window.open('','_blank','width=850,height=1100');
-  if(w){w.document.write(html);w.document.close();}
-  else{showToast('Pop-up blocked — please allow pop-ups for this site.');}
+function invDownload(invoiceNo){
+  if(!invoiceNo){showToast('No invoice number for this document');return;}
+  var a=document.createElement('a');
+  a.href=_invPdfUrl(invoiceNo,false);
+  a.download=invoiceNo+'.pdf';
+  a.style.display='none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){a.remove();},0);
+  showToast('Downloading '+invoiceNo+'…');
+}
+
+// Print / Preview: the same PDF, asked for inline so the browser DISPLAYS it.
+// Its own viewer carries a print button, so there is nothing here to duplicate.
+function invOpenPdf(invoiceNo){
+  if(!invoiceNo){showToast('No invoice number for this document');return;}
+  var w=window.open(_invPdfUrl(invoiceNo,true),'_blank');
+  if(!w)showToast('Pop-up blocked — please allow pop-ups for this site.');
 }
 
 // Clear the invoice date-range filter and show all invoices again.
@@ -6627,7 +6564,7 @@ function invViewDetail(id){
           :'<tr><td colspan="3" style="text-align:center;padding:1.2rem;font-size:.88rem;color:rgba(27,27,26,.35)">No journeys in period</td></tr>';
       }
       var pdfBtn=document.getElementById('inv-det-pdf-btn');
-      if(pdfBtn)pdfBtn.href='/api/public/invoice/'+encodeURIComponent(data.invoiceNo||'')+'/pdf';
+      if(pdfBtn){pdfBtn.href=_invPdfUrl(data.invoiceNo,false);pdfBtn.setAttribute('download',(data.invoiceNo||'invoice')+'.pdf');}
       document.getElementById('inv-list-view').style.display='none';
       document.getElementById('inv-detail-sheet').style.display='';
     }).catch(function(){showToast('Network error loading invoice');});
@@ -6639,7 +6576,7 @@ function invViewDetail(id){
   }).catch(function(){doOpen({});});
 }
 
-function invDetailPreview(){if(_INV_PRINT_DATA)openInvoicePreview(_INV_PRINT_DATA);}
+function invDetailPreview(){invOpenPdf(_INV_PRINT_DATA&&_INV_PRINT_DATA.invoiceNo);}
 
 async function invDetailDelete(){
   if(!_INV_DETAIL_ID)return;

@@ -7,7 +7,10 @@ const { sendAdminBookingWhatsApp } = require('./whatsapp');
 const gcal = require('./google-calendar');
 const events = require('./events');
 
-const INVOICES_DIR = path.join(DATA_DIR, 'invoices');
+/* Invoices live wherever server/invoice-pdf.js says they do — this file used
+   to derive its own answer from the database directory, which agreed with the
+   other one only on the deploy box. */
+const { invoiceCacheDir } = require('./invoice-pdf');
 let autoFile;
 try { autoFile = require('./auto-file'); } catch(e) { autoFile = { fileBooking(){}, fileCustomer(){}, fileInvoice(){}, removeBooking(){}, removeInvoice(){}, updateEarnings(){}, fileDriverProfile(){}, fileDriverDoc(){} }; console.error('[AUTOFILE] Module failed:', e.message); }
 
@@ -1678,7 +1681,7 @@ router.patch('/customer/profile', (req, res) => {
 // theirs by customer_id OR by the email on their account (invoices raised
 // before an account existed carry the email only — the same rule
 // GET /customer/invoices already lists by).
-router.get('/customer/invoices/:id/pdf', (req, res) => {
+router.get('/customer/invoices/:id/pdf', async (req, res) => {
   if (req.auth.type !== 'customer') return res.status(403).json({ error: 'Customer access required' });
   const db = getDb();
   const id = parseInt(req.params.id, 10);
@@ -1695,13 +1698,20 @@ router.get('/customer/invoices/:id/pdf', (req, res) => {
   if (!mine) return res.status(403).json({ error: 'You can only download your own invoices' });
 
   const safeNo = String(row.invoice_no || '').replace(/[^A-Za-z0-9\-_]/g, '');
-  const pdfPath = path.join(INVOICES_DIR, safeNo + '.pdf');
-  if (!fs.existsSync(pdfPath)) {
-    return res.status(404).json({ error: 'That invoice PDF is not available yet. Please contact the office.' });
+  /* Was: 404 "contact the office" whenever the file was not on disk, and the
+     old design whenever it was. resolveInvoicePdf rebuilds from the stored
+     invoice when the cache is missing or was drawn by an older template. */
+  try {
+    const { resolveInvoicePdf } = require('./invoice-pdf');
+    const buf = await resolveInvoicePdf(db, row);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="' + safeNo + '.pdf"');
+    res.setHeader('Cache-Control', 'private, no-cache, must-revalidate');
+    return res.send(buf);
+  } catch (e) {
+    console.error('[INVOICE PDF] customer copy failed:', safeNo, e && e.stack ? e.stack : e);
+    return res.status(500).json({ error: 'That invoice could not be produced. Please contact the office.' });
   }
-  res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', 'attachment; filename="' + safeNo + '.pdf"');
-  return res.sendFile(pdfPath);
 });
 
 // Delete booking (admin/owner only — permanently removes the record)
@@ -2254,8 +2264,11 @@ router.post('/customers/:id/invoice', async (req, res) => {
       bookings: lineItemsForPdf,
       period: { issuedDate, dueDate, label: periodLabel }
     });
-    fs.mkdirSync(INVOICES_DIR, { recursive: true });
-    fs.writeFileSync(path.join(INVOICES_DIR, invoiceNo + '.pdf'), pdfBuffer);
+    // Written under the TEMPLATE-VERSIONED name the readers look for; an
+    // unversioned file here would simply never be found again.
+    const { invoiceCacheDir, invoiceCachePath } = require('./invoice-pdf');
+    fs.mkdirSync(invoiceCacheDir(), { recursive: true });
+    fs.writeFileSync(invoiceCachePath(invoiceNo), pdfBuffer);
     console.log('[INVOICE] PDF saved:', invoiceNo + '.pdf');
   } catch (e) {
     console.error('[INVOICE] PDF generation failed:', e.message);
@@ -2382,8 +2395,11 @@ router.post('/invoices/bespoke', async (req, res) => {
       items: cleanItems,
       period: { issuedDate, dueDate, label: '' }
     });
-    fs.mkdirSync(INVOICES_DIR, { recursive: true });
-    fs.writeFileSync(path.join(INVOICES_DIR, invoiceNo + '.pdf'), pdfBuffer);
+    // Written under the TEMPLATE-VERSIONED name the readers look for; an
+    // unversioned file here would simply never be found again.
+    const { invoiceCacheDir, invoiceCachePath } = require('./invoice-pdf');
+    fs.mkdirSync(invoiceCacheDir(), { recursive: true });
+    fs.writeFileSync(invoiceCachePath(invoiceNo), pdfBuffer);
     console.log('[INVOICE] PDF saved:', invoiceNo + '.pdf');
   } catch (e) {
     console.error('[INVOICE] PDF generation failed:', e.message);
@@ -2590,60 +2606,20 @@ router.get('/invoices/:id/pdf', async (req, res) => {
   if (!row) return res.status(404).json({ error: 'Invoice not found' });
 
   const safeNo = (row.invoice_no || '').replace(/[^A-Za-z0-9\-_]/g, '');
-  const pdfPath = path.join(INVOICES_DIR, safeNo + '.pdf');
-
-  // Serve cached file if it exists
-  if (fs.existsSync(pdfPath)) {
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename="' + safeNo + '.pdf"');
-    return res.sendFile(pdfPath);
-  }
-
-  // Regenerate from stored invoice data
+  /* One resolver, shared with the public download and the customer's own copy.
+     This route used to rebuild the data shape by hand and cache to an unversioned
+     filename, which is how "Download" kept serving the pre-redesign document. */
   try {
-    let settings = {};
-    try {
-      const sr = db.prepare("SELECT value FROM integrations WHERE key = 'invoice_settings'").get();
-      if (sr) settings = JSON.parse(sr.value);
-    } catch (_) {}
-
-    let lineItems = [];
-    try { lineItems = JSON.parse(row.line_items_json || '[]'); } catch (_) {}
-
-    const data = {
-      invoiceNo: row.invoice_no,
-      kind: row.kind,
-      total: row.total,
-      notes: row.notes || '',
-      settings,
-      period: { issuedDate: row.issued_date, dueDate: row.due_date || '', label: row.period_label || '' }
-    };
-
-    if (row.kind === 'bespoke') {
-      data.recipient = {
-        name: row.recipient_name, email: row.recipient_email || '',
-        phone: row.recipient_phone || '', address: row.recipient_addr || ''
-      };
-      data.items = lineItems;
-    } else {
-      data.customer = {
-        full_name: row.recipient_name, email: row.recipient_email || '', phone: row.recipient_phone || ''
-      };
-      data.bookings = lineItems;
-    }
-
-    const { buildInvoicePdf } = require('./invoice-pdf');
-    const buf = await buildInvoicePdf(data);
-
-    fs.mkdirSync(INVOICES_DIR, { recursive: true });
-    fs.writeFileSync(pdfPath, buf);
-
+    const { resolveInvoicePdf } = require('./invoice-pdf');
+    const buf = await resolveInvoicePdf(db, row);
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename="' + safeNo + '.pdf"');
-    res.send(buf);
+    res.setHeader('Content-Disposition',
+      (req.query.inline === '1' ? 'inline' : 'attachment') + '; filename="' + safeNo + '.pdf"');
+    res.setHeader('Cache-Control', 'private, no-cache, must-revalidate');
+    return res.send(buf);
   } catch (e) {
-    console.error('[INVOICE PDF]', e.message);
-    res.status(500).json({ error: 'Failed to generate PDF' });
+    console.error('[INVOICE PDF] staff download failed:', safeNo, e && e.stack ? e.stack : e);
+    return res.status(500).json({ error: 'That invoice could not be produced. Please try again, or contact support.' });
   }
 });
 
@@ -2667,9 +2643,10 @@ router.delete('/invoices/:id', async (req, res) => {
 
     // Delete cached PDF if it exists
     try {
-      const safeNo = (row.invoice_no || '').replace(/[^A-Za-z0-9\-_]/g, '');
-      const pdfPath = path.join(INVOICES_DIR, safeNo + '.pdf');
-      if (fs.existsSync(pdfPath)) fs.unlinkSync(pdfPath);
+      // EVERY rendering of it, not just the current template's.
+      for (const f of require('./invoice-pdf').invoiceCachePaths(row.invoice_no)) {
+        if (fs.existsSync(f)) fs.unlinkSync(f);
+      }
     } catch (e) { /* non-fatal */ }
 
     db.prepare('DELETE FROM invoices WHERE id = ?').run(id);
@@ -2698,8 +2675,9 @@ router.delete('/invoices/:id', async (req, res) => {
 
   // Clean up any cached PDF / filed copy keyed by the number.
   try {
-    const pdfPath = path.join(INVOICES_DIR, invoiceNo + '.pdf');
-    if (fs.existsSync(pdfPath)) fs.unlinkSync(pdfPath);
+    for (const f of require('./invoice-pdf').invoiceCachePaths(invoiceNo)) {
+      if (fs.existsSync(f)) fs.unlinkSync(f);
+    }
   } catch (e) { /* non-fatal */ }
   autoFile.removeInvoice(invoiceNo);
 

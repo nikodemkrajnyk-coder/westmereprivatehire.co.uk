@@ -105,41 +105,63 @@ app.use('/api/public', apiLimiter, publicApiRouter);
 // (The public ref+phone tracking page and its router were removed in the
 // cleanliness audit; a proper in-app tracker will replace them.)
 
-// Public invoice download — no auth required. Invoice number is the access key.
-// Used by the "Download Invoice PDF" button in emailed invoices.
+/* THE ONE PLACE AN INVOICE IS RENDERED.
+   Serves the PDF built by server/invoice-pdf.js — for the emailed link, for
+   Download, and (with ?inline=1) for Print/Preview in the owner app, which used
+   to draw its OWN copy of the invoice in HTML and therefore stayed on the old
+   design when the PDF was redesigned. One artefact, one template; the duplicate
+   is gone.
+
+   TWO THINGS THIS ROUTE GOT WRONG, both reported as "the redesign didn't work":
+
+     THE CACHE OUTLIVED THE TEMPLATE. Generated PDFs are written to the volume
+     and served back if present. Every invoice made before the redesign kept
+     downloading in the OLD design, because a bare invoice number is not a
+     cache key for a document whose appearance can change. The filename now
+     carries TEMPLATE_VERSION, so a redesign orphans the old files rather than
+     serving them, and nothing has to be deleted.
+
+     ATTACHMENT vs INLINE. Print/Preview needs a document the browser DISPLAYS;
+     Download needs one it saves. Same bytes, different Content-Disposition.
+
+   A failure returns a readable page, not an empty one: this is opened in a new
+   tab, and a bare 500 there is a white screen the owner cannot act on.
+   GUARDRAIL: server/tests/invoice-paths.test.js */
 app.get('/api/public/invoice/:invoiceNo/pdf', apiLimiter, async (req, res) => {
-  const fs = require('fs');
-  const path = require('path');
-  const db = getDb();
+  const { resolveInvoicePdf } = require('./invoice-pdf');
+
   const safeNo = (req.params.invoiceNo || '').replace(/[^A-Za-z0-9\-_]/g, '');
-  if (!safeNo) return res.status(400).send('Invalid invoice number');
-  const row = db.prepare("SELECT * FROM invoices WHERE invoice_no = ?").get(safeNo);
-  if (!row) return res.status(404).send('Invoice not found');
-  const INVOICES_DIR = process.env.INVOICES_DIR || '/data/invoices';
-  const pdfPath = path.join(INVOICES_DIR, safeNo + '.pdf');
-  if (fs.existsSync(pdfPath)) {
-    res.setHeader('Content-Type', 'application/octet-stream');
-    res.setHeader('Content-Disposition', 'attachment; filename="' + safeNo + '.pdf"');
-    return res.sendFile(pdfPath);
+  const inline = req.query.inline === '1' || req.query.inline === 'true';
+
+  function fail(status, heading, detail) {
+    res.status(status).type('html').send(
+      '<!doctype html><meta charset="utf-8"><title>' + heading + '</title>' +
+      '<body style="font-family:Georgia,serif;color:#102a43;background:#fff;margin:0;' +
+      'display:flex;min-height:100vh;align-items:center;justify-content:center;text-align:center">' +
+      '<div style="max-width:30rem;padding:2rem">' +
+      '<p style="font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:#657485;margin:0 0 .75rem">Westmere Private Hire</p>' +
+      '<h1 style="font-size:1.5rem;font-weight:400;margin:0 0 .75rem">' + heading + '</h1>' +
+      '<p style="color:#3B5268;line-height:1.6;margin:0">' + detail + '</p>' +
+      '</div></body>');
   }
-  // Regenerate if not cached
+
   try {
-    let settings = {};
-    try { const sr = db.prepare("SELECT value FROM integrations WHERE key = 'invoice_settings'").get(); if (sr) settings = JSON.parse(sr.value); } catch (_) {}
-    let lineItems = []; try { lineItems = JSON.parse(row.line_items_json || '[]'); } catch (_) {}
-    const data = { invoiceNo: row.invoice_no, kind: row.kind, total: row.total, notes: row.notes || '', settings, period: { issuedDate: row.issued_date, dueDate: row.due_date || '', label: row.period_label || '' } };
-    if (row.kind === 'bespoke') { data.recipient = { name: row.recipient_name, email: row.recipient_email || '', phone: row.recipient_phone || '', address: row.recipient_addr || '' }; data.items = lineItems; }
-    else { data.customer = { full_name: row.recipient_name, email: row.recipient_email || '', phone: row.recipient_phone || '' }; data.bookings = lineItems; }
-    const { buildInvoicePdf } = require('./invoice-pdf');
-    const buf = await buildInvoicePdf(data);
-    fs.mkdirSync(INVOICES_DIR, { recursive: true });
-    fs.writeFileSync(pdfPath, buf);
-    res.setHeader('Content-Type', 'application/octet-stream');
-    res.setHeader('Content-Disposition', 'attachment; filename="' + safeNo + '.pdf"');
-    res.send(buf);
+    if (!safeNo) return fail(400, 'That invoice number is not valid', 'Please check the link and try again.');
+    const db = getDb();
+    const row = db.prepare('SELECT * FROM invoices WHERE invoice_no = ?').get(safeNo);
+    if (!row) return fail(404, 'Invoice not found', 'No invoice with that number exists. If you followed a link from an email, please reply to it and we will send the document across.');
+
+    const buf = await resolveInvoicePdf(db, row);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition',
+      (inline ? 'inline' : 'attachment') + '; filename="' + safeNo + '.pdf"');
+    // The document changes when the template does; never let a proxy hold one.
+    res.setHeader('Cache-Control', 'private, no-cache, must-revalidate');
+    return res.send(buf);
   } catch (e) {
-    console.error('[PUBLIC PDF]', e.message);
-    res.status(500).send('Failed to generate PDF');
+    console.error('[PUBLIC PDF]', safeNo, e && e.stack ? e.stack : e);
+    return fail(500, 'We could not produce that invoice',
+      'Something went wrong generating the document. Please reply to your invoice email, or call 07930&nbsp;342593, and we will send it across.');
   }
 });
 

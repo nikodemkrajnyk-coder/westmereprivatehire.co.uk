@@ -38,10 +38,8 @@ const ROOT = path.join(__dirname, '..', '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 
 let passed = 0, failed = 0;
-function test(name, fn) {
-  try { fn(); console.log('  ✓ ' + name); passed++; }
-  catch (e) { console.error('  ✗ ' + name + '\n      ' + e.message); failed++; }
-}
+const queue = [];
+function test(name, fn) { queue.push({ name, fn }); }
 
 console.log('\nCustomer My Account — profile save / cancel / invoice download');
 
@@ -117,8 +115,26 @@ function run(handlerSrc, db, req) {
     parseInt, isNaN, String, Number, Object, JSON, Date
   };
   vm.createContext(sandbox);
-  vm.runInContext('(function(req,res){' + handlerSrc + '})(req,res)', sandbox);
+  /* The wrapper is ASYNC because the invoice route became async when it started
+     rebuilding a missing PDF instead of refusing — a synchronous wrapper turns
+     that into "await is only valid in async functions", which reads like four
+     broken authorisation checks and is really a broken harness.
+
+     `res` is still returned synchronously: an async function runs its body
+     eagerly up to the first await, so a handler with no await has already
+     finished by the time this returns, and the sync callers below are
+     unchanged. Handlers that DO await use runAsync. */
+  const out = vm.runInContext(
+    '(async function(req,res){' + handlerSrc + '})(req,res)', sandbox);
+  res.__done = (out && typeof out.then === 'function')
+    ? out.then(() => res, () => res)
+    : Promise.resolve(res);
   return res;
+}
+
+/** For handlers that actually await something. → Promise<res> */
+function runAsync(handlerSrc, db, req) {
+  return run(handlerSrc, db, req).__done;
 }
 
 // ── 1. PATCH /customer/profile ───────────────────────────────────────────
@@ -363,35 +379,48 @@ test('a trip already underway or finished cannot be cancelled', () => {
 const invoicePdf = extractHandler('get', '/customer/invoices/:id/pdf');
 const invReq = (id, authId) => ({ auth: { type: 'customer', role: 'customer', id: authId || 1 }, params: { id: String(id) }, body: {}, ip: '::1' });
 
-test('a customer can NEVER download another customer\'s invoice', () => {
+test('a customer can NEVER download another customer\'s invoice', async () => {
   const db = makeDb();
   db.prepare("INSERT INTO invoices (id,invoice_no,customer_id,recipient_email) VALUES (5,'INV-1',2,'martin@example.com')").run();
-  const res = run(invoicePdf, db, invReq(5));
+  const res = await runAsync(invoicePdf, db, invReq(5));
   assert.strictEqual(res.statusCode, 403, 'someone else\'s invoice must be refused, got ' + res.statusCode);
   assert.strictEqual(res.sentFile, null, 'no file may be sent for a refused invoice');
 });
 
-test('an invoice matched only by email is still the customer\'s own', () => {
+test('an invoice matched only by email is still the customer\'s own', async () => {
   const db = makeDb();
   db.prepare("INSERT INTO invoices (id,invoice_no,customer_id,recipient_email) VALUES (6,'INV-2',NULL,'Eleanor@Example.com')").run();
-  const res = run(invoicePdf, db, invReq(6));
+  const res = await runAsync(invoicePdf, db, invReq(6));
   assert.notStrictEqual(res.statusCode, 403, 'an email-matched invoice must not be refused as someone else\'s');
 });
 
-test('a missing PDF says so plainly instead of 500ing or serving nothing', () => {
+test('a cold cache REBUILDS the invoice instead of refusing it', async () => {
+  /* This used to assert a 404 reading "not available yet — please contact the
+     office", and that was the bug, not the contract: the invoice exists, the
+     data to draw it is in the row, and the only thing missing was a file on a
+     volume. It is rebuilt now. What still has to hold is that a genuine
+     failure is a stated error and never an empty response. */
   const db = makeDb();
-  db.prepare("INSERT INTO invoices (id,invoice_no,customer_id) VALUES (7,'INV-DOES-NOT-EXIST',1)").run();
-  const res = run(invoicePdf, db, invReq(7));
-  assert.strictEqual(res.statusCode, 404);
-  assert.ok(/not available/i.test(res.body.error || ''), 'the message must tell the customer what to do');
+  db.prepare("INSERT INTO invoices (id,invoice_no,customer_id) VALUES (7,'INV-NOT-CACHED',1)").run();
+  const res = await runAsync(invoicePdf, db, invReq(7));
+  assert.notStrictEqual(res.statusCode, 404,
+    'the customer must not be told to ring the office for an invoice the system can draw');
+  if (res.statusCode >= 400) {
+    assert.ok((res.body.error || '').length > 10, 'a failure must say something usable, never blank');
+  }
 });
 
-test('the invoice filename is sanitised (no path traversal via invoice_no)', () => {
+test('the invoice filename is sanitised (no path traversal via invoice_no)', async () => {
   const db = makeDb();
   db.prepare("INSERT INTO invoices (id,invoice_no,customer_id) VALUES (8,'../../../etc/passwd',1)").run();
-  const res = run(invoicePdf, db, invReq(8));
-  assert.strictEqual(res.statusCode, 404);
+  const res = await runAsync(invoicePdf, db, invReq(8));
   assert.ok(!/\.\./.test(res.sentFile || ''), 'a traversal attempt must never reach sendFile');
+  assert.ok(!/\.\./.test(String((res.headers || {})['Content-Disposition'] || '')),
+    'nor the filename offered to the browser');
+  // And the cache path it would write is inside the invoices directory.
+  const { invoiceCachePath, invoiceCacheDir } = require('../invoice-pdf');
+  assert.ok(invoiceCachePath('../../../etc/passwd').indexOf(invoiceCacheDir()) === 0,
+    'a traversal attempt must not escape the invoices directory');
 });
 
 // ── 4. The client actually calls these ───────────────────────────────────
@@ -448,5 +477,11 @@ test('the app presents as "My Account", not a separate "Rider" app', () => {
     'start_url must NOT change — installed PWAs already point at this file');
 });
 
-console.log(`\n${passed} passed, ${failed} failed`);
-process.exit(failed ? 1 : 0);
+(async () => {
+  for (const { name, fn } of queue) {
+    try { await fn(); console.log('  ✓ ' + name); passed++; }
+    catch (e) { console.error('  ✗ ' + name + '\n      ' + e.message); failed++; }
+  }
+  console.log(`\n${passed} passed, ${failed} failed`);
+  process.exit(failed ? 1 : 0);
+})();

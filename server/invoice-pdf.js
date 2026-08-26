@@ -24,6 +24,7 @@
  */
 
 const PDFDocument = require('pdfkit');
+const fs   = require('fs');
 const path = require('path');
 
 // ── Typeface ───────────────────────────────────────────────────────────────
@@ -78,6 +79,17 @@ function fmtDate(d) {
     });
   } catch (_) { return String(d); }
 }
+
+/* THE TEMPLATE VERSION, and why a number in this file matters elsewhere.
+   Generated invoices are CACHED to disk, and the download route served whatever
+   it found there. So the redesign shipped and every invoice already on the
+   volume kept downloading in the old design — the template changed and the
+   cache had no way to know. The cache key carries this number, so a template
+   change orphans the old files instead of serving them. Bump it whenever the
+   VISIBLE design changes; nothing else needs to be cleared, and the owner's
+   existing files are left alone rather than deleted.
+   GUARDRAIL: server/tests/invoice-paths.test.js */
+const TEMPLATE_VERSION = 3;
 
 /* "Mon 3 Aug 2026" — the form every other Westmere surface uses.
    The table used to print the raw ISO string, which is the one date format
@@ -668,4 +680,114 @@ function drawInvoice(doc, data, slack) {
   return measured;
 }
 
-module.exports = { buildInvoicePdf };
+/* ONE WAY TO GET AN INVOICE'S PDF, used by every route that serves one.
+   There were three: the public download, the owner/admin download, and the
+   customer's own download. Each rebuilt the same data shape by hand and each
+   cached to `<invoiceNo>.pdf` — so the redesign shipped and all three carried on
+   serving files drawn by the old template, and the third did not regenerate at
+   all: if the file was missing it told the customer to ring the office.
+
+   THE CACHE KEY CARRIES THE TEMPLATE VERSION. A bare invoice number is not a
+   key for a document whose appearance can change. Old files are orphaned rather
+   than deleted — nothing of the owner's is destroyed by a redesign.
+
+   A failed cache WRITE never costs the caller their document; the buffer is
+   returned either way. `row` is a row of the invoices table. */
+function invoiceDataFromRow(row, settings) {
+  const lineItems = (() => {
+    try { return JSON.parse(row.line_items_json || '[]'); } catch (_) { return []; }
+  })();
+  const data = {
+    invoiceNo: row.invoice_no,
+    kind: row.kind,
+    total: row.total,
+    notes: row.notes || '',
+    settings: settings || {},
+    period: { issuedDate: row.issued_date, dueDate: row.due_date || '', label: row.period_label || '' }
+  };
+  if (row.kind === 'bespoke') {
+    data.recipient = {
+      name: row.recipient_name, email: row.recipient_email || '',
+      phone: row.recipient_phone || '', address: row.recipient_addr || ''
+    };
+    data.items = lineItems;
+  } else {
+    data.customer = {
+      full_name: row.recipient_name, email: row.recipient_email || '', phone: row.recipient_phone || ''
+    };
+    data.bookings = lineItems;
+  }
+  return data;
+}
+
+/* WHERE INVOICES LIVE — one answer.
+   api.js derived this from the database's directory and index.js from an
+   environment variable. On the deploy box they happen to agree; anywhere else
+   they do not, which is the shape of a bug that only appears in production. */
+function invoiceCacheDir() {
+  return process.env.INVOICES_DIR || '/data/invoices';
+}
+
+function invoiceSafeNo(invoiceNo) {
+  return String(invoiceNo || '').replace(/[^A-Za-z0-9\-_]/g, '');
+}
+
+function invoiceCachePath(invoiceNo) {
+  return path.join(invoiceCacheDir(), invoiceSafeNo(invoiceNo) + '.v' + TEMPLATE_VERSION + '.pdf');
+}
+
+/* Every cached rendering of one invoice, whatever template drew it — the
+   current version, older versions, and the unversioned files written before
+   the cache knew about versions at all. Deleting an invoice has to take all of
+   them; leaving one behind leaves the document downloadable. */
+function invoiceCachePaths(invoiceNo) {
+  const safeNo = invoiceSafeNo(invoiceNo);
+  if (!safeNo) return [];
+  const dir = invoiceCacheDir();
+  const out = [path.join(dir, safeNo + '.pdf')];
+  try {
+    for (const f of fs.readdirSync(dir)) {
+      if (new RegExp('^' + safeNo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.v\\d+\\.pdf$').test(f)) {
+        out.push(path.join(dir, f));
+      }
+    }
+  } catch (_) { /* no directory yet */ }
+  return out;
+}
+
+/** → Promise<Buffer>. Throws only if the document genuinely cannot be built. */
+async function resolveInvoicePdf(db, row) {
+  const pdfPath = invoiceCachePath(row.invoice_no);
+  try {
+    if (fs.existsSync(pdfPath)) {
+      const cached = fs.readFileSync(pdfPath);
+      // A truncated or empty cache file is worse than none: it downloads as a
+      // broken document rather than failing loudly. Rebuild instead.
+      if (cached && cached.length > 1000 && cached.slice(0, 5).toString() === '%PDF-') return cached;
+    }
+  } catch (e) {
+    console.error('[INVOICE PDF] cache read failed, rebuilding:', e.message);
+  }
+
+  let settings = {};
+  try {
+    const sr = db.prepare("SELECT value FROM integrations WHERE key = 'invoice_settings'").get();
+    if (sr) settings = JSON.parse(sr.value);
+  } catch (_) {}
+
+  const buf = await buildInvoicePdf(invoiceDataFromRow(row, settings));
+  if (!buf || !buf.length) throw new Error('the invoice generator returned an empty buffer');
+
+  try {
+    fs.mkdirSync(path.dirname(pdfPath), { recursive: true });
+    fs.writeFileSync(pdfPath, buf);
+  } catch (e) {
+    console.error('[INVOICE PDF] cache write failed (serving anyway):', e.message);
+  }
+  return buf;
+}
+
+module.exports = {
+  buildInvoicePdf, TEMPLATE_VERSION, resolveInvoicePdf,
+  invoiceDataFromRow, invoiceCacheDir, invoiceCachePath, invoiceCachePaths
+};
