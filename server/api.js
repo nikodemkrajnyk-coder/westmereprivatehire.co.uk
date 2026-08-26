@@ -2313,7 +2313,7 @@ router.post('/invoices/bespoke', async (req, res) => {
     return res.status(403).json({ error: 'Access denied' });
   }
 
-  const { recipient, items, due_days, send_email, notes } = req.body || {};
+  const { recipient, items, due_days, send_email, notes, journey } = req.body || {};
   if (!recipient || !recipient.name || !String(recipient.name).trim()) {
     return res.status(400).json({ error: 'Recipient name is required' });
   }
@@ -2327,6 +2327,24 @@ router.post('/invoices/bespoke', async (req, res) => {
   if (!cleanItems.length) {
     return res.status(400).json({ error: 'Items must have description and positive amount' });
   }
+
+  /* THE JOURNEY BEHIND THE INVOICE, when there is one.
+     "Create Invoice" on a job card knows the route, the date and the reference;
+     it used to flatten all three into one description string, which is fine on
+     a line of a PDF and useless to an email that wants to show the trip the way
+     a confirmation does. Optional, and whitelisted field by field — this is a
+     body from a page, and it ends up rendered in an email.
+     Dates stay WALL-CLOCK strings; nothing here parses one. */
+  const cleanJourney = (journey && typeof journey === 'object') ? {
+    ref:         String(journey.ref || '').trim().slice(0, 40),
+    date:        /^\d{4}-\d{2}-\d{2}$/.test(String(journey.date || '')) ? String(journey.date) : '',
+    time:        String(journey.time || '').trim().slice(0, 10),
+    pickup:      String(journey.pickup || '').trim().slice(0, 200),
+    destination: String(journey.destination || '').trim().slice(0, 200),
+    flight:      String(journey.flight || '').trim().slice(0, 20)
+  } : null;
+  // A journey with no route is not a journey; fall back to the line items.
+  const journeyForEmail = (cleanJourney && cleanJourney.pickup && cleanJourney.destination) ? cleanJourney : null;
 
   const db = getDb();
   const _ukn = ukNow();
@@ -2377,7 +2395,7 @@ router.post('/invoices/bespoke', async (req, res) => {
       return res.status(400).json({ error: 'Invalid recipient email' });
     }
     const { sendBespokeInvoice } = require('./email');
-    const ok = await sendBespokeInvoice(cleanRecipient, cleanItems, { dueDate, issuedDate, notes }, invoiceNo, settings, pdfBuffer);
+    const ok = await sendBespokeInvoice(cleanRecipient, cleanItems, { dueDate, issuedDate, notes, journey: journeyForEmail }, invoiceNo, settings, pdfBuffer);
     if (!ok) return res.status(502).json({ error: 'Email delivery failed' });
 
     db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')

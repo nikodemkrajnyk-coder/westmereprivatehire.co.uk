@@ -79,6 +79,23 @@ function fmtDate(d) {
   } catch (_) { return String(d); }
 }
 
+/* "Mon 3 Aug 2026" — the form every other Westmere surface uses.
+   The table used to print the raw ISO string, which is the one date format
+   nobody reads aloud. Built from the components: never `new Date('2026-08-03')`,
+   which parses as UTC midnight and reads back a day early west of London
+   (the timezone invariant in CLAUDE.md). */
+const _DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const _MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function fmtShortDate(d) {
+  const p = String(d == null ? '' : d).trim().split('-');
+  if (p.length !== 3) return String(d || '');
+  const y = +p[0], m = +p[1], day = +p[2];
+  if (!(y && m >= 1 && m <= 12 && day)) return String(d || '');
+  const dt = new Date(Date.UTC(y, m - 1, day));
+  if (isNaN(dt.getTime())) return String(d || '');
+  return _DOW[dt.getUTCDay()] + ' ' + day + ' ' + _MON[m - 1] + ' ' + y;
+}
+
 function hline(doc, y, color, width) {
   doc.save()
      .moveTo(M, y).lineTo(PAGE_W - M, y)
@@ -117,7 +134,7 @@ function buildInvoicePdf(data) {
 
     try {
       registerFonts(doc);
-      drawInvoice(doc, data);
+      drawInvoice(doc, data, measureSlack(data));
     } catch (err) {
       doc.end();
       return reject(err);
@@ -126,7 +143,85 @@ function buildInvoicePdf(data) {
   });
 }
 
-function drawInvoice(doc, data) {
+/* The footer rule and line, drawn on EVERY page. It used to be written once at
+   the end of the draw, which was fine while an invoice was always one page. */
+function drawFooter(doc) {
+  const footerY = PAGE_H - M - 18;
+  hline(doc, footerY, HAIR, 0.3);
+  doc.font(BOLD).fontSize(8).fillColor(MUTED)
+     .text(
+       'Westmere Private Hire  ·  Licensed by Lewes District Council  ·  westmereprivatehire.co.uk',
+       M, footerY + 6, { width: CW, align: 'center', lineBreak: false }
+     );
+}
+
+/* WHERE THE SPARE INCH GOES.
+   A three-journey account invoice and a one-line bespoke one are the same page
+   with very different amounts of content, and the leftover has to go SOMEWHERE.
+   Two earlier attempts put it in one place and both looked wrong: pooled at the
+   bottom it reads as an unfinished page, and pooled above the payment details —
+   once those were pinned to the foot — it opened a hole in the middle.
+
+   So it is measured and then SPREAD. The document is drawn once into a
+   throwaway to find out where the total actually lands, the shortfall to the
+   pinned foot group is divided between the table rows and the three breathing
+   gaps, and the real page is drawn with those. A one-item invoice gets a taller
+   row and wider margins between its blocks rather than a void; a seven-journey
+   one gets nothing, because it has no spare inch to give.
+
+   Both shares are capped — slack is for air, not for stretching one row to the
+   height of a paragraph — and the whole thing is inside a try, because a
+   spacing refinement must never be the reason an invoice fails to generate. */
+const NO_SLACK = { row: 0, gap: 0 };
+
+function measureSlack(data) {
+  try {
+    const probe = new PDFDocument({ size: 'A4', margins: { top: M, bottom: M, left: M, right: M } });
+    probe.on('data', () => {});     // measured, never written anywhere
+    probe.on('error', () => {});
+    registerFonts(probe);
+    const m = drawInvoice(probe, data, NO_SLACK);
+    probe.end();
+    if (!m) return NO_SLACK;
+
+    /* An invoice that already broke over two pages has no spare inch to spend:
+       its `yAfterTotal` is a position on the LAST page, and reading that as
+       room to breathe would push the first page half-empty. */
+    if (m.pages > 1) return NO_SLACK;
+
+    /* TOO MUCH CONTENT, not too little. A seven-journey month plus terms plus
+       bank details does not fit A4 at a comfortable row height, so the same
+       measurement runs the other way: rows tighten first, down to a floor that
+       still holds two lines of type, then the gaps give up some air. If even
+       that is not enough the foot group takes a second page rather than being
+       printed over the footer — which is what it did before this. */
+    const over = m.yAfterTotal - m.groupMax;
+    if (over > 0) {
+      const n    = Math.max(1, ((data.bookings || data.items || []).length) || 1);
+      const row  = -Math.min(4, Math.ceil(over / n));
+      const rest = over + row * n;
+      const gap  = rest > 0 ? -Math.min(10, Math.ceil(rest / 3)) : 0;
+      return { row, gap };
+    }
+
+    const spare = m.groupPin - m.yAfterTotal;
+    if (!(spare > 12)) return NO_SLACK;
+
+    /* Rows first, up to a limit — a taller row is the least conspicuous place
+       to put height. What the rows cannot absorb goes to the three gaps: under
+       the paperwork row, under FROM/BILL TO, and above the total. */
+    const rows = Math.max(1, ((data.bookings || data.items || []).length) || 1);
+    const row  = Math.min(14, Math.floor((spare * 0.55) / rows));
+    const gap  = Math.min(46, Math.floor((spare - row * rows) / 3));
+    return { row: Math.max(0, row), gap: Math.max(0, gap) };
+  } catch (_) {
+    return NO_SLACK;                // never block an invoice over spacing
+  }
+}
+
+function drawInvoice(doc, data, slack) {
+  const SLACK = slack || { row: 0, gap: 0 };
+  let pages = 1;                     // so the measuring pass can tell it broke
   const isBespoke = data.kind === 'bespoke' || !!data.bespoke;
   const s    = data.settings || {};
   const p    = data.period   || {};
@@ -156,23 +251,99 @@ function drawInvoice(doc, data) {
   // ── HEADER ─────────────────────────────────────────────────────────────
   let y = M;
 
-  // Left: wordmark
-  doc.font(BODY).fontSize(22).fillColor(NAVY)
-     .text('WESTMERE', M, y, { lineBreak: false });
-  doc.font(BOLD).fontSize(7).fillColor(ACCENT)
-     .text('PRIVATE HIRE  ·  SUSSEX', M, y + 29, { lineBreak: false });
+  /* THE MASTHEAD — the confirmation email's header, on paper.
+     A centred W, the wordmark stretched the full width of the page, the
+     strapline beneath it and a short centred rule: the same five elements, in
+     the same order, as heroShell() in server/email.js. A customer who has just
+     read the confirmation should recognise the invoice as the same company
+     without being told.
 
-  // Right: INVOICE label + number
-  doc.font(BOLD).fontSize(8).fillColor(MUTED)
-     .text('INVOICE', M, y, { width: CW, align: 'right', lineBreak: false });
-  doc.font(MONO).fontSize(13).fillColor(NAVY)
-     .text(invoiceNo, M, y + 14, { width: CW, align: 'right', lineBreak: false });
+     SET IN TYPE, NOT PLACED AS AN IMAGE. The obvious reading of "stretched
+     logo" is a raster scaled to 491pt wide, and it is the wrong one here: the
+     only wordmark artwork in the repo is a 512px square crest, and blowing a
+     bitmap up to full page width would land soft on paper — the one surface
+     that gets printed and photocopied. Cormorant is already embedded, so the
+     wordmark draws as vector outlines: crisp at any size, selectable, and
+     searchable in a PDF reader.
 
-  y += 52;
+     The tracking is COMPUTED rather than guessed. widthOfString measures the
+     letters at the chosen size, and the leftover space is divided between the
+     gaps, so the word spans the measure exactly whatever the font metrics turn
+     out to be. */
+  /* Tracked to a FIXED PROPORTION of the type size and centred — not justified
+     to the margins. Spanning the full measure was the first reading of "a
+     stretched logo" and it overdid it: at 42pt of tracking the wordmark stopped
+     being a word and became eight letters sharing a line. The email sets it at
+     29px with 11px of letter-spacing, so the ratio below IS that proportion,
+     written as the fraction it came from rather than as a number somebody would
+     later have to reverse-engineer. Change the size and the tracking follows.
 
-  // ── ACCENT RULE ────────────────────────────────────────────────────────────
-  hline(doc, y, ACCENT, 1);
+     Placed by hand rather than with { width, align: 'center' }: pdfkit decides
+     whether a line fits using the advance INCLUDING the spacing it adds after
+     the final glyph, so a centred, tracked line can measure one gap too wide
+     and wrap — which is what put the last E of WESTMERE on a line of its own. */
+  const EMAIL_TRACK = 11 / 29;      // heroShell() in server/email.js
+
+  function centredWide(str, size, font, ratio, atY, color) {
+    doc.font(font).fontSize(size);
+    const track   = size * ratio;
+    // Between the GAPS, one fewer than the letters — pdfkit does not track
+    // after the last glyph, and its own widthOfString agrees.
+    const gaps    = Math.max(1, str.length - 1);
+    const width   = doc.widthOfString(str, { characterSpacing: 0 }) + gaps * track;
+    doc.fillColor(color).text(str, M + (CW - width) / 2, atY, {
+      characterSpacing: track, lineBreak: false
+    });
+    return width;
+  }
+
+  // The small W above the wordmark, exactly as the email opens.
+  doc.font(BODY).fontSize(15).fillColor(NAVY)
+     .text('W', M, y, { width: CW, align: 'center', characterSpacing: 1, lineBreak: false });
   y += 20;
+
+  // The wordmark, at the email's proportions.
+  centredWide('WESTMERE', 30, BODY, EMAIL_TRACK, y, NAVY);
+  y += 34;
+
+  // The strapline beneath it — the email tracks this one harder, 5px on 10px.
+  centredWide('PRIVATE HIRE · SUSSEX', 8, BOLD, 5 / 10, y, ACCENT);
+  y += 16;
+
+  // The short centred hairline the email closes its header with.
+  doc.save()
+     .moveTo(M + CW / 2 - 30, y).lineTo(M + CW / 2 + 30, y)
+     .lineWidth(0.6).strokeColor(HAIR).stroke().restore();
+  y += 26;
+
+  /* THE PAPERWORK ROW, BELOW THE BAND.
+     Number, issue date, due date and period, as four labelled cells across the
+     measure — the email's label-above-value detail row, on paper. It replaces
+     two separate things: a reference crammed into the top right corner, and a
+     free-standing ISSUED block halfway down that printed the same date a second
+     time. `dueDate` was read from the data and then never drawn at all, which
+     on an invoice carrying "payment within 14 days" is the one date the reader
+     is looking for. */
+  const cells = [
+    { label: 'INVOICE',  value: invoiceNo || '—', mono: true },
+    { label: 'ISSUED',   value: fmtDate(issuedDate) || '—' },
+    { label: 'DUE',      value: fmtDate(dueDate) || '—' },
+    { label: 'PERIOD',   value: periodLabel || '' }
+  ].filter(c => c.value);
+
+  hline(doc, y, HAIR, 0.4);
+  y += 13;
+  const CELL_W = CW / cells.length;
+  cells.forEach((c, i) => {
+    const cx = M + i * CELL_W;
+    doc.font(BOLD).fontSize(7).fillColor(MUTED)
+       .text(c.label, cx, y, { characterSpacing: 1.4, lineBreak: false });
+    doc.font(c.mono ? MONO : BODY).fontSize(c.mono ? 11 : 10.5).fillColor(NAVY)
+       .text(c.value, cx, y + 13, { width: CELL_W - 8, lineBreak: false });
+  });
+  y += 32;
+  hline(doc, y, HAIR, 0.4);
+  y += 26 + SLACK.gap;
 
   // ── FROM / BILL TO ──────────────────────────────────────────────────────
   const MID  = M + CW / 2;
@@ -213,33 +384,13 @@ function drawInvoice(doc, data) {
   if (recPhone) { doc.text(recPhone, MID, rightY, { width: COLW, lineBreak: false }); rightY += 14; }
   if (recEmail) { doc.text(recEmail, MID, rightY, { width: COLW, lineBreak: false }); rightY += 14; }
 
-  y = Math.max(leftY, rightY) + 20;
-
-  // ── DATES ────────────────────────────────────────────────────────────────
-  hline(doc, y, HAIR, 0.4);
-  y += 12;
-
-  doc.font(BOLD).fontSize(7.5).fillColor(MUTED).text('ISSUED', M, y, { lineBreak: false });
-  y += 12;
-
-  doc.font(BODY).fontSize(11).fillColor(NAVY).text(fmtDate(issuedDate) || '—', M, y, { lineBreak: false });
-  y += 16;
-
-  if (periodLabel) {
-    doc.font(BODY).fontSize(9).fillColor(SOFT)
-       .text('Period: ' + periodLabel, M, y, { lineBreak: false });
-    y += 16;
-  }
-
-  y += 14;
+  y = Math.max(leftY, rightY) + 20 + SLACK.gap;
 
   // ── TABLE ────────────────────────────────────────────────────────────────
   const ROW_H = 24;
 
-  // Header strip
-  vbox(doc, M, y, CW, 22, '#EEF2F5');
-
   if (isBespoke) {
+    vbox(doc, M, y, CW, 22, '#EEF2F5');
     // --- Bespoke: Description | Amount ---
     doc.font(BOLD).fontSize(8).fillColor(MUTED)
        .text('DESCRIPTION', M + 6, y + 7, { lineBreak: false });
@@ -254,7 +405,7 @@ function drawInvoice(doc, data) {
     for (let i = 0; i < items.length; i++) {
       const it = items[i];
       const hasDate = !!(it.date && String(it.date).trim());
-      const rowH = hasDate ? ROW_H + 12 : ROW_H;
+      const rowH = (hasDate ? ROW_H + 12 : ROW_H) + SLACK.row;
       if (i % 2 === 1) vbox(doc, M, y, CW, rowH, TINT);
       if (hasDate) {
         doc.font(BOLD).fontSize(7.5).fillColor(MUTED)
@@ -277,46 +428,76 @@ function drawInvoice(doc, data) {
 
   } else {
     // --- Account: Date/Ref | Journey | Fare ---
-    const DW = 124;   // date column
+    const DW = 132;   // date column — wider, the date is now words not digits
     const FW = 66;    // fare column
     const JW = CW - DW - FW - 14;
     const JX = M + DW + 7;
     const FX = PAGE_W - M - FW;
 
-    doc.font(BOLD).fontSize(8).fillColor(MUTED)
-       .text('DATE / REF', M + 6, y + 7, { lineBreak: false });
-    doc.font(BOLD).fontSize(8).fillColor(MUTED)
-       .text('JOURNEY', JX, y + 7, { lineBreak: false });
-    doc.font(BOLD).fontSize(8).fillColor(MUTED)
-       .text('FARE', FX, y + 7, { width: FW - 6, align: 'right', lineBreak: false });
-    y += 22;
+    /* A month long enough to run past the bottom of the page continues on the
+       next one, under a repeated column header. Rows used to simply keep
+       drawing downwards, off the paper. */
+    const BK_LIMIT = PAGE_H - M - 18 - 34;
+    const bkHead = () => {
+      vbox(doc, M, y, CW, 22, '#EEF2F5');
+      doc.font(BOLD).fontSize(8).fillColor(MUTED)
+         .text('DATE / REF', M + 8, y + 7, { characterSpacing: 0.8, lineBreak: false });
+      doc.font(BOLD).fontSize(8).fillColor(MUTED)
+         .text('JOURNEY', JX, y + 7, { characterSpacing: 0.8, lineBreak: false });
+      doc.font(BOLD).fontSize(8).fillColor(MUTED)
+         .text('FARE', FX, y + 7, { width: FW - 6, align: 'right', characterSpacing: 0.8, lineBreak: false });
+      y += 22;
+    };
+    bkHead();
 
     hline(doc, y, ACCENT, 1.2);
     y += 1;
 
-    const BK_ROW_H = 28;
+    /* Rows given room. Two lines of information were being squeezed into 28pt
+       with a third — the flight — jammed underneath at 8pt, which is where this
+       table stopped being readable. The date is now the human form, the flight
+       rides INLINE after the route as a quiet tag, and the reference keeps its
+       monospace so a customer can quote it back accurately. */
     const bookings = data.bookings || [];
+    /* Rows breathe when there is room and tighten when there is not. A busy
+       month of journeys plus the terms plus the bank block genuinely does not
+       fit an A4 page at 34pt a row — and the alternative to tightening is
+       either a second page for one line of overflow, or the foot matter
+       printing over the total. Both are worse than three points of leading. */
+    const BK_ROW_H = (bookings.length > 5 ? 30 : 34) + SLACK.row;
+    /* Slack makes the band taller; without this the two lines stay pinned to
+       the top of it and every other row looks like it has slipped. */
+    const BK_PAD = Math.round(SLACK.row / 2);
     for (let i = 0; i < bookings.length; i++) {
       const b = bookings[i];
+      if (y + BK_ROW_H > BK_LIMIT) {
+        drawFooter(doc);
+        doc.addPage();
+        pages++;
+        y = M;
+        bkHead();
+      }
       if (i % 2 === 1) vbox(doc, M, y, CW, BK_ROW_H, TINT);
 
-      const dateStr = (b.date || '') + (b.time && b.time !== 'ASAP' ? '  ' + b.time : '');
       doc.font(BODY).fontSize(10).fillColor(NAVY)
-         .text(dateStr, M + 6, y + 5, { width: DW - 6, lineBreak: false });
-      doc.font(MONO).fontSize(8).fillColor(MUTED)
-         .text(b.ref || '', M + 6, y + 17, { width: DW - 6, lineBreak: false });
+         .text(fmtShortDate(b.date), M + 8, y + 8 + BK_PAD, { width: DW - 10, lineBreak: false });
+      const timeStr = (b.time && b.time !== 'ASAP') ? b.time : '';
+      doc.font(MONO).fontSize(7.5).fillColor(MUTED)
+         .text((b.ref || '') + (timeStr ? '  ·  ' + timeStr : ''), M + 8, y + 21 + BK_PAD, { width: DW - 10, lineBreak: false });
 
       const journey = (shortDisplay(b.pickup) || b.pickup || '') + ' → ' + (shortDisplay(b.destination) || b.destination || '');
       doc.font(BODY).fontSize(10).fillColor(NAVY)
-         .text(journey, JX, y + 5, { width: JW, lineBreak: false });
+         .text(journey, JX, y + 8 + BK_PAD, { width: JW, lineBreak: false });
       const flt = flightFor(b);   // airport runs only
       if (flt) {
-        doc.font(BOLD).fontSize(8).fillColor(MUTED)
-           .text('Flt ' + flt, JX, y + 17, { width: JW, lineBreak: false });
+        // A quiet tag on its own line, tracked and muted so it reads as a note
+        // about the journey rather than a second journey.
+        doc.font(BOLD).fontSize(7.5).fillColor(MUTED)
+           .text('FLIGHT ' + flt, JX, y + 21 + BK_PAD, { width: JW, characterSpacing: 0.8, lineBreak: false });
       }
 
-      doc.font(BODY).fontSize(11).fillColor(NAVY)
-         .text('£' + (+b.fare || 0).toFixed(2), FX, y + 9, { width: FW - 6, align: 'right', lineBreak: false });
+      doc.font(BODY).fontSize(11.5).fillColor(NAVY)
+         .text('£' + (+b.fare || 0).toFixed(2), FX, y + 11 + BK_PAD, { width: FW - 6, align: 'right', lineBreak: false });
 
       y += BK_ROW_H;
     }
@@ -329,7 +510,7 @@ function drawInvoice(doc, data) {
 
   // Bottom table border
   hline(doc, y, HAIR, 0.4);
-  y += 14;
+  y += 14 + SLACK.gap;
 
   // ── TOTALS ───────────────────────────────────────────────────────────────
   const TX   = PAGE_W - M - 220;     // label column start
@@ -337,46 +518,116 @@ function drawInvoice(doc, data) {
   const VX   = TX + LW + 6;
   const VW   = PAGE_W - M - VX;
 
-  // Subtotal
-  doc.font(BOLD).fontSize(9.5).fillColor(SOFT)
-     .text('Subtotal', TX, y, { width: LW, align: 'right', lineBreak: false });
-  doc.font(BODY).fontSize(11).fillColor(NAVY)
-     .text('£' + total.toFixed(2), VX, y, { width: VW, align: 'right', lineBreak: false });
-  y += 17;
+  /* VAT ONLY WHEN THERE IS VAT.
+     "VAT (0%) — £0.00" was hardcoded on every invoice. The business is not
+     registered, so the line was not a zero — it was a statement about tax
+     status that nothing in the system had authority to make, printed on a
+     document that goes to other people's accountants.
 
-  // VAT
-  doc.font(BOLD).fontSize(9.5).fillColor(SOFT)
-     .text('VAT (0%)', TX, y, { width: LW, align: 'right', lineBreak: false });
-  doc.font(BODY).fontSize(11).fillColor(NAVY)
-     .text('£0.00', VX, y, { width: VW, align: 'right', lineBreak: false });
-  y += 13;
+     It now appears only when a VAT number AND a rate are configured in the
+     invoice settings, and when it does it computes properly: the stored total
+     is treated as VAT-INCLUSIVE, because that is what the fares are. */
+  const vatNo   = String((s.vat_number || '')).trim();
+  const vatRate = Number(s.vat_rate);
+  const showVat = !!vatNo && isFinite(vatRate) && vatRate > 0;
+  const net     = showVat ? total / (1 + vatRate / 100) : total;
+  const vatAmt  = showVat ? total - net : 0;
 
-  // Divider
-  doc.save().moveTo(TX, y).lineTo(PAGE_W - M, y).lineWidth(0.5).strokeColor(NAVY).stroke().restore();
-  y += 7;
+  if (showVat) {
+    doc.font(BOLD).fontSize(9).fillColor(SOFT)
+       .text('Subtotal', TX, y, { width: LW, align: 'right', characterSpacing: 0.8, lineBreak: false });
+    doc.font(BODY).fontSize(11).fillColor(SOFT)
+       .text('£' + net.toFixed(2), VX, y, { width: VW, align: 'right', lineBreak: false });
+    y += 17;
+    doc.font(BOLD).fontSize(9).fillColor(SOFT)
+       .text('VAT (' + vatRate + '%)', TX, y, { width: LW, align: 'right', characterSpacing: 0.8, lineBreak: false });
+    doc.font(BODY).fontSize(11).fillColor(SOFT)
+       .text('£' + vatAmt.toFixed(2), VX, y, { width: VW, align: 'right', lineBreak: false });
+    y += 20;
+  } else {
+    /* No VAT line at all. A single "Subtotal" identical to the total is noise,
+       so on an unregistered invoice the total simply IS the figure. */
+    y += 2;
+  }
 
-  // TOTAL
-  doc.font(BOLD).fontSize(9.5).fillColor(NAVY)
-     .text('TOTAL', TX, y + 3, { width: LW, align: 'right', lineBreak: false });
-  doc.font(BOLD).fontSize(16).fillColor(ACCENT)
-     .text('£' + total.toFixed(2), VX, y, { width: VW, align: 'right', lineBreak: false });
-  y += 30;
+  /* THE TOTAL IS THE ANCHOR.
+     It used to be a right-aligned number in the same column as everything else,
+     with "VAT (0%)" drawing equal attention immediately above it. It is now
+     framed, on its own, at a size nothing else on the page competes with —
+     because it is the one number the recipient is looking for. */
+  const TOT_H = 42;
+  const TOT_X = PAGE_W - M - 236;
+  const TOT_W = 236;
+  vbox(doc, TOT_X, y, TOT_W, TOT_H, null, NAVY);
+  doc.font(BOLD).fontSize(9).fillColor(SOFT)
+     .text('TOTAL DUE', TOT_X + 14, y + 16, { characterSpacing: 1.6, lineBreak: false });
+  doc.font(BOLD).fontSize(20).fillColor(NAVY)
+     .text('£' + total.toFixed(2), TOT_X, y + 11, { width: TOT_W - 14, align: 'right', lineBreak: false });
+  y += TOT_H + 8;
+
+  if (showVat) {
+    doc.font(BODY).fontSize(7.5).fillColor(MUTED)
+       .text('VAT registration ' + vatNo, TOT_X, y, { width: TOT_W - 14, align: 'right', lineBreak: false });
+    y += 12;
+  }
+  y += 6;
 
   // ── NOTES ────────────────────────────────────────────────────────────────
-  if (notes && y < PAGE_H - M - 120) {
-    y += 8;
-    // Gold left bar + ivory background
+  /* THE FOOT GROUP — notes and payment details travel together.
+     Pinning the payment block alone just moved the empty band up the page and
+     stranded the notes bar in the middle of it. Both are foot matter, so both
+     are measured as one group and placed as one: they flow naturally on a long
+     invoice, and on a short one they sit together above the footer with a
+     single, deliberate gap after the total. */
+  const FOOT_Y  = PAGE_H - M - 18;                       // the footer line
+  const NOTES_H = notes ? 44 : 0;
+  /* The block's height, computed the SAME way the block itself computes it —
+     an estimate here is how the account invoice ran off the bottom of the page
+     the first time. Rows: Bank, Name, Sort code, Account, Reference. */
+  const payRowCount = (s.sort_code && s.account_no)
+    ? [s.bank_name, s.account_name, 1, 1, 1].filter(Boolean).length : 0;
+  const PAY_H   = payRowCount ? (14 + payRowCount * 14 + 10) : 0;
+  const GROUP_H = NOTES_H + (NOTES_H && PAY_H ? 10 : 0) + PAY_H;
+
+  /* Pin to the foot on a SHORT page; flow on a long one — but never past the
+     bottom. A seven-journey invoice plus notes plus the bank block genuinely
+     does not fit with the old spacing, so when it will not, the gap above the
+     foot group closes to nothing rather than the block printing off the paper. */
+  const GROUP_PIN = FOOT_Y - 24 - GROUP_H;
+  const GROUP_MAX = FOOT_Y - 10 - GROUP_H;               // the last position that still fits
+  const measured  = { yAfterTotal: y, groupPin: GROUP_PIN, groupMax: GROUP_MAX, pages: pages };
+  /* Never above where the total finished — a clamp that could pull the foot
+     group upward would print the terms across the one number the recipient is
+     looking for. `y` is the floor; the pin can only push it down. */
+  /* If the squeeze could not claw back enough — a very long month, or long
+     terms — the notes and the bank details go over the page rather than over
+     the footer. Overlapping type on the one document that gets filed by
+     somebody else's accounts department is not an acceptable failure. */
+  if (y > GROUP_MAX) {
+    drawFooter(doc);
+    doc.addPage();
+    pages++;
+    y = M;
+    doc.font(BOLD).fontSize(7).fillColor(MUTED)
+       .text('INVOICE ' + (invoiceNo || ''), M, y, { characterSpacing: 1.4, lineBreak: false });
+    y += 26;
+  } else {
+    y = Math.max(y, Math.min(Math.max(y, GROUP_PIN), GROUP_MAX));
+  }
+
+  // ── NOTES ────────────────────────────────────────────────────────────────
+  if (notes) {
     doc.save()
        .rect(M, y, 3, 36).fill(ACCENT)
        .rect(M + 3, y, CW - 3, 36).fill('#F7F9FA')
        .restore();
     doc.font(BODY).fontSize(11).fillColor(SOFT)
-       .text(notes, M + 10, y + 8, { width: CW - 18, lineBreak: false });
+       .text(notes, M + 12, y + 9, { width: CW - 22, lineBreak: false });
     y += 44;
   }
 
   // ── PAYMENT DETAILS ──────────────────────────────────────────────────────
-  if (s.sort_code && s.account_no && y < PAGE_H - M - 80) {
+  if (s.sort_code && s.account_no) {
     y += 10;
 
     const bankRows = [
@@ -412,13 +663,9 @@ function drawInvoice(doc, data) {
   }
 
   // ── FOOTER ───────────────────────────────────────────────────────────────
-  const footerY = PAGE_H - M - 18;
-  hline(doc, footerY, HAIR, 0.3);
-  doc.font(BOLD).fontSize(8).fillColor(MUTED)
-     .text(
-       'Westmere Private Hire  ·  Licensed by Lewes District Council  ·  westmereprivatehire.co.uk',
-       M, footerY + 6, { width: CW, align: 'center', lineBreak: false }
-     );
+  drawFooter(doc);
+
+  return measured;
 }
 
 module.exports = { buildInvoicePdf };

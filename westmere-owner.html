@@ -4176,9 +4176,15 @@ async function ownerQuickInvoice(bookingId,name,email,fare,pickup,dest,date){
   try{
     var desc=pickup+' → '+dest;
     if(date)desc+=' ('+date+')';
+    // The job itself, so the invoice EMAIL can show the trip the way a
+    // confirmation does instead of one flattened description string. Looked up
+    // rather than threaded through nine positional arguments.
+    var j=(OFFERED_JOBS||[]).find(function(x){return String(x.id)===String(bookingId);})||{};
     var body={
       recipient:{name:name||'Customer',email:email||''},
       items:[{description:desc,amount:fare}],
+      journey:{ref:j.ref||'',date:j.date||date||'',time:j.time||'',
+               pickup:j.pickup||pickup||'',destination:j.dest||dest||'',flight:j.flight||''},
       send_email:false
     };
     var r=await fetch('/api/invoices/bespoke',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});

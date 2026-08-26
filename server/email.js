@@ -813,19 +813,12 @@ async function sendOutreachMessage(to, subject, message, opts) {
   return ok;
 }
 
-function confirmationEmailHtml(d) {
-  // Shared branded hero template for ALL customer booking emails. `variant`
-  // selects the copy/actions: 'confirmed' (default), 'estimate', or 'ack'
-  // (acknowledgement). There is intentionally NO imageless fallback — every
-  // one of these emails renders the hosted hero image (guardrail in
-  // payment-flow.test.js / booking-ack.test.js).
-  const variant = d.variant || 'confirmed';
-  const fareLabel = d.fareLabel || 'Fare';
-  // Owner note ONLY — the rider app used to stuff the chosen vehicle into
-  // `notes` (e.g. "Vehicle: Standard Saloon"); that is NOT an owner note, so it
-  // (and any blank) is dropped and the Notes row is omitted entirely.
-  const ownerNote = cleanOwnerNote(d.notes);
-
+/* The journey rows every booking email shares. Lifted out of
+   confirmationEmailHtml unchanged so the INVOICE variant can supply a
+   different set of rows without the trip rows growing a branch through the
+   middle of them — these are pinned by payment-flow.test.js and are not the
+   place to be clever. */
+function tripRows(d, fareLabel) {
   let rows = '';
   rows += confRow('ic-reference', 'Reference', `<span style="font-family:Menlo,Consolas,monospace;font-size:15px;letter-spacing:.5px;color:#102a43">${escHtml(d.ref)}</span>`);
   rows += confRow('ic-pickup', 'Pickup', dispAddr(d.pickup));
@@ -846,6 +839,69 @@ function confirmationEmailHtml(d) {
   if (d.dueStr)    rows += confRow('ic-fare', 'Now due', escHtml(d.dueStr), { fare: true });
   if (d.refundStr) rows += confRow('ic-fare', 'Refund to you', escHtml(d.refundStr), { fare: true });
   if (d.showPaymentRow !== false) rows += confRow('ic-payment', 'Payment', escHtml(d.paymentLabel || paymentText(d)));
+  return rows;
+}
+
+/* THE INVOICE ROWS.
+   Same visual language as a confirmation — icon, tracked label, value — but
+   answering the questions an invoice raises rather than the ones a booking
+   does. Three shapes:
+
+     • a single journey (a bespoke invoice raised from a job card) gets the
+       real trip rows: reference, route, date and time, flight;
+     • an ACCOUNT invoice gets a summary — period, how many journeys, total —
+       because the itemised list is the attached PDF's job, and twenty rows of
+       it in an email is a worse version of the document already attached;
+     • a bespoke invoice with no structured journey behind it falls back to the
+       line descriptions the owner typed, which is all there is.
+
+   Every one of them ends the same way: total, invoice number, when it is due,
+   and PAYMENT METHOD — INVOICE. That last row is the point. This booking is
+   billed to an account; it was not paid by card and no cash is owed to a
+   driver, and the customer should not have to infer that from an absence. */
+function invoiceRows(d) {
+  const mono = (v) => '<span style="font-family:Menlo,Consolas,monospace;font-size:15px;letter-spacing:.5px;color:#102a43">' + escHtml(v) + '</span>';
+  let rows = '';
+
+  if (d.journey) {
+    const j = d.journey;
+    if (j.ref) rows += confRow('ic-reference', 'Reference', mono(j.ref));
+    if (j.pickup) rows += confRow('ic-pickup', 'Pickup', dispAddr(j.pickup));
+    if (j.destination) rows += confRow('ic-dropoff', 'Drop-off', dispAddr(j.destination));
+    if (j.dateStr) rows += confRow('ic-datetime', 'Date &amp; Time', escHtml(j.dateStr));
+    const flt = dispFlight(j);
+    if (flt) rows += confRow('ic-flight', 'Flight', escHtml(flt));
+  } else if (d.summary) {
+    if (d.summary.period) rows += confRow('ic-datetime', 'Period', escHtml(d.summary.period));
+    const n = Number(d.summary.count) || 0;
+    rows += confRow('ic-reference', 'Journeys', n + ' journey' + (n === 1 ? '' : 's') + ' &mdash; itemised on the attached invoice');
+  } else if (Array.isArray(d.lines) && d.lines.length) {
+    d.lines.forEach((line, i) => {
+      rows += confRow(i === 0 ? 'ic-pickup' : 'ic-dropoff', i === 0 ? 'Journey' : '&nbsp;', escHtml(line));
+    });
+  }
+
+  if (d.fareStr) rows += confRow('ic-fare', 'Total', escHtml(d.fareStr), { fare: true });
+  if (d.invoiceNo) rows += confRow('ic-reference', 'Invoice no.', mono(d.invoiceNo));
+  if (d.dueDateStr) rows += confRow('ic-datetime', 'Payment due', escHtml(d.dueDateStr));
+  rows += confRow('ic-payment', 'Payment method', 'Invoice');
+  return rows;
+}
+
+function confirmationEmailHtml(d) {
+  // Shared branded hero template for ALL customer booking emails. `variant`
+  // selects the copy/actions: 'confirmed' (default), 'estimate', or 'ack'
+  // (acknowledgement). There is intentionally NO imageless fallback — every
+  // one of these emails renders the hosted hero image (guardrail in
+  // payment-flow.test.js / booking-ack.test.js).
+  const variant = d.variant || 'confirmed';
+  const fareLabel = d.fareLabel || 'Fare';
+  // Owner note ONLY — the rider app used to stuff the chosen vehicle into
+  // `notes` (e.g. "Vehicle: Standard Saloon"); that is NOT an owner note, so it
+  // (and any blank) is dropped and the Notes row is omitted entirely.
+  const ownerNote = cleanOwnerNote(d.notes);
+
+  let rows = variant === 'invoice' ? invoiceRows(d) : tripRows(d, fareLabel);
 
   // ── WHAT CHANGED (the 'updated' variant only) ──────────────────────────
   // Sits between "Dear X" and the details table, because the first question a
@@ -907,7 +963,11 @@ function confirmationEmailHtml(d) {
   // owed money back — a Pay Now button on that email is the single most
   // alarming thing we could put in front of them.
   let payBlock = '';
-  if (d.pay_token && !d.noActions) {
+  /* An invoice has nothing to pay online and nothing to cancel: it is billed
+     to an account and settled against the document. The variant is checked
+     here, not only at the call site, so a stray pay_token on an invoice cannot
+     put a Pay Now button in front of somebody who has already been invoiced. */
+  if (d.pay_token && !d.noActions && variant !== 'invoice') {
     const payUrl    = `${HOST}/westmere-pay.html?ref=${encodeURIComponent(d.ref)}&t=${encodeURIComponent(d.pay_token)}`;
     const cashUrl   = `${HOST}/api/public/pay/${encodeURIComponent(d.ref)}/cash?t=${encodeURIComponent(d.pay_token)}`;
     const cancelUrl = `${HOST}/api/public/cancel/${encodeURIComponent(d.ref)}?t=${encodeURIComponent(d.pay_token)}`;
@@ -1456,6 +1516,46 @@ async function sendCustomerWelcome(customer) {
   if (ok) console.log('[EMAIL] Welcome sent to', email);
 }
 
+/* WHO AN INVOICE IS ADDRESSED TO.
+   greetingName() is built for people: it finds a title and a surname, so
+   "Mr Ben Chan" becomes "Mr Chan". Given an ORGANISATION it takes the first
+   word, and an account invoice to The Grand Hotel Brighton went out saying
+   "Dear The," — which is what this exists to stop. Invoices are the one place
+   the recipient is routinely a company rather than a passenger.
+
+   The test is deliberately narrow: a leading "The", an ampersand, or a real
+   legal suffix. Anything else is treated as a person, because guessing wrong
+   in that direction merely writes a name in full, while guessing wrong in the
+   other writes "Dear The". */
+const ORG_MARKERS = /(^the\s)|&|\b(ltd|limited|plc|llp|llc|inc|incorporated|co|company|group|holdings|partners|trust|council|university|college|school|society|association)\b\.?/i;
+function invoiceGreeting(name) {
+  const n = String(name == null ? '' : name).trim();
+  if (!n) return 'there';
+  if (ORG_MARKERS.test(n)) return n;      // addressed as it trades
+  return greetingName(n);
+}
+
+/* How long they have to pay, said in the words the invoice uses. Derived from
+   the two dates rather than assuming 14 — the bespoke route lets the owner set
+   the terms per invoice, and an email that says "14 days" over an invoice that
+   says 30 is the kind of small contradiction an accounts department queries. */
+function invoiceTermsLine(period) {
+  const p = period || {};
+  const dueStr = p.dueDate ? formatDate(p.dueDate, null) : '';
+  let days = null;
+  if (p.issuedDate && p.dueDate) {
+    const a = String(p.issuedDate).split('-').map(Number);
+    const b = String(p.dueDate).split('-').map(Number);
+    if (a.length === 3 && b.length === 3) {
+      const ms = Date.UTC(b[0], b[1] - 1, b[2]) - Date.UTC(a[0], a[1] - 1, a[2]);
+      if (isFinite(ms) && ms > 0) days = Math.round(ms / 86400000);
+    }
+  }
+  if (days) return 'Payment is due within ' + days + ' day' + (days === 1 ? '' : 's') + ', by ' + dueStr + '.';
+  if (dueStr) return 'Payment is due by ' + dueStr + '.';
+  return 'Payment terms are set out on the invoice.';
+}
+
 // ── Invoice (sent to account customers with all their journeys) ──────────
 // `bookings` = array of { ref, date, time, pickup, destination, fare, flight, passengers }
 // `period`   = { label: 'November 2025', dueDate: 'YYYY-MM-DD' }
@@ -1465,106 +1565,41 @@ async function sendCustomerWelcome(customer) {
 async function sendCustomerInvoice(customer, bookings, period, invoiceNo, settings, pdfBuffer) {
   if (!customer || !customer.email) return false;
   const { email, full_name } = customer;
-  const firstName = greetingName(full_name);
-  settings = settings || {};
-
-  const rows = (bookings || []).map(b => {
-    const fare = +b.fare || 0;
-    const dateStr = formatDate(b.date, b.time);
-    const routeStr = dispAddr(b.pickup) + ' &rarr; ' + dispAddr(b.destination);
-    const refStr = '<span style="font-family:Menlo,Consolas,monospace;font-size:11px;color:' + INK_MUTED + '">' + escHtml(b.ref || '') + '</span>';
-    const rowFlight = dispFlight(b);   // airport runs only
-    return `<tr>
-      <td style="padding:10px 0;border-bottom:1px solid ${HAIRLINE};font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:12px;color:${INK};vertical-align:top">
-        <div>${escHtml(dateStr)}</div>
-        <div style="margin-top:3px">${refStr}</div>
-      </td>
-      <td style="padding:10px 10px;border-bottom:1px solid ${HAIRLINE};font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:12px;color:${INK};line-height:1.45;vertical-align:top">${routeStr}${rowFlight ? '<div style="color:' + INK_MUTED + ';font-size:11px;margin-top:3px">Flight ' + escHtml(rowFlight) + '</div>' : ''}</td>
-      <td style="padding:10px 0;border-bottom:1px solid ${HAIRLINE};font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK};text-align:right;vertical-align:top;white-space:nowrap">&pound;${fare.toFixed(2)}</td>
-    </tr>`;
-  }).join('');
+  const firstName = invoiceGreeting(full_name);
 
   const subtotal = (bookings || []).reduce((s, b) => s + (+b.fare || 0), 0);
   const total = subtotal;
   const summaryCount = (bookings || []).length;
   const dueStr = period && period.dueDate ? formatDate(period.dueDate, null) : '';
 
-  const fromAddr = [
-    settings.business_name || 'Westmere Private Hire',
-    settings.owner_name || '',
-    settings.address_line1 || '',
-    [settings.address_line2, settings.postcode].filter(Boolean).join(' '),
-    settings.phone || '',
-    settings.email || ''
-  ].filter(Boolean).map(l => escHtml(l)).join('<br>');
+  /* "Please find your invoice attached" must not be written on an email with
+     nothing attached. PDF generation is wrapped in a try/catch at both call
+     sites, so a failure there sends this anyway — and the customer reading it
+     would go looking for a file that is not there. */
+  const attached = !!pdfBuffer;
 
-  const bankSection = (settings.sort_code && settings.account_no) ? `
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:22px;background:rgba(14,37,64,0.04);border:1px solid ${HAIRLINE}">
-    <tr><td style="padding:14px 18px">
-      <p style="margin:0 0 8px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Payment details</p>
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-        ${settings.bank_name ? `<tr><td style="padding:3px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:${INK_MUTED};width:100px;font-weight:600">Bank</td><td style="padding:3px 0 3px 10px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK}">${escHtml(settings.bank_name)}</td></tr>` : ''}
-        ${settings.account_name ? `<tr><td style="padding:3px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:${INK_MUTED};width:100px;font-weight:600">Name</td><td style="padding:3px 0 3px 10px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK}">${escHtml(settings.account_name)}</td></tr>` : ''}
-        <tr><td style="padding:3px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:${INK_MUTED};width:100px;font-weight:600">Sort code</td><td style="padding:3px 0 3px 10px;font-family:Menlo,Consolas,monospace;font-size:13px;color:${INK}">${escHtml(settings.sort_code)}</td></tr>
-        <tr><td style="padding:3px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:${INK_MUTED};width:100px;font-weight:600">Account no.</td><td style="padding:3px 0 3px 10px;font-family:Menlo,Consolas,monospace;font-size:13px;color:${INK}">${escHtml(settings.account_no)}</td></tr>
-        <tr><td style="padding:3px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:${INK_MUTED};width:100px;font-weight:600">Reference</td><td style="padding:3px 0 3px 10px;font-family:Menlo,Consolas,monospace;font-size:13px;color:${INK}">${escHtml(invoiceNo)}</td></tr>
-      </table>
-    </td></tr>
-  </table>` : `<p style="margin:22px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">Payment is appreciated within 14 days by bank transfer. Please contact us for account details.</p>`;
+  /* THE BRANDED CONFIRMATION SHELL, not a covering note for an attachment.
+     The owner's point was that this is the same company writing to the same
+     customer about the same journeys, and it should look like it. So it is the
+     confirmation template — hero, Cormorant, the icon rows — carrying the
+     summary rather than the itemised list, because the list is the PDF. */
+  const html = confirmationEmailHtml({
+    variant: 'invoice',
+    eyebrow: 'Invoice',
+    firstName,
+    invoiceNo,
+    summary: { period: period.label || '', count: summaryCount },
+    fareStr: '\u00a3' + total.toFixed(2),
+    dueDateStr: dueStr,
+    intro: (attached
+             ? 'Please find your invoice attached, covering ' + escHtml(period.label || 'this period') + '. '
+             : 'This is your invoice for ' + escHtml(period.label || 'this period') + '. ') +
+           invoiceTermsLine(period) +
+           (attached
+             ? ' Bank details and the full itemised list of journeys are on the invoice itself.'
+             : ' Please reply to this email and we will send the invoice document across.')
+  });
 
-  const body = `
-  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Invoice &middot; ${escHtml(period.label || '')}</p>
-  <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
-  <p style="margin:0 0 10px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Please find attached your invoice <span style="font-family:Menlo,Consolas,monospace;font-size:13px">${escHtml(invoiceNo)}</span> for ${escHtml(period.label || 'this period')}.</p>
-  <p style="margin:0 0 22px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">The total amount is <strong style="color:${INK}">&pound;${total.toFixed(2)}</strong>. Payment details are included below for your convenience.</p>
-
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px">
-    <tr>
-      <td style="padding:6px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:1.8px;text-transform:uppercase;color:${INK_MUTED};vertical-align:top;width:110px;font-weight:600">Invoice no.</td>
-      <td style="padding:6px 0 6px 14px;font-family:Menlo,Consolas,monospace;font-size:12px;color:${INK}">${escHtml(invoiceNo || '')}</td>
-    </tr>
-    <tr>
-      <td style="padding:6px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:1.8px;text-transform:uppercase;color:${INK_MUTED};vertical-align:top;width:110px;font-weight:600">From</td>
-      <td style="padding:6px 0 6px 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:12px;color:${INK};line-height:1.6">${fromAddr}</td>
-    </tr>
-    <tr><td colspan="2" style="padding:2px 0"><div style="border-top:1px solid ${HAIRLINE}"></div></td></tr>
-    <tr>
-      <td style="padding:6px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:1.8px;text-transform:uppercase;color:${INK_MUTED};vertical-align:top;width:110px;font-weight:600">Bill to</td>
-      <td style="padding:6px 0 6px 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK}">${escHtml(full_name || '')}${customer.phone ? '<br><span style="font-size:12px;color:' + INK_SOFT + '">' + escHtml(customer.phone) + '</span>' : ''}${customer.email ? '<br><span style="font-size:12px;color:' + INK_SOFT + '">' + escHtml(customer.email) + '</span>' : ''}</td>
-    </tr>
-  </table>
-
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:14px">
-    <thead>
-      <tr>
-        <th style="padding:0 0 8px;border-bottom:2px solid ${INK};font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:1.6px;text-transform:uppercase;color:${INK_MUTED};text-align:left;font-weight:600">Date &amp; Ref</th>
-        <th style="padding:0 10px 8px;border-bottom:2px solid ${INK};font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:1.6px;text-transform:uppercase;color:${INK_MUTED};text-align:left;font-weight:600">Journey</th>
-        <th style="padding:0 0 8px;border-bottom:2px solid ${INK};font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:1.6px;text-transform:uppercase;color:${INK_MUTED};text-align:right;font-weight:600">Fare</th>
-      </tr>
-    </thead>
-    <tbody>${rows || `<tr><td colspan="3" style="padding:22px 0;text-align:center;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_MUTED};font-style:italic">No journeys in this period.</td></tr>`}</tbody>
-    <tfoot>
-      <tr>
-        <td colspan="2" style="padding:14px 10px 6px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:${INK_MUTED};text-align:right;font-weight:600">Subtotal (${summaryCount} journey${summaryCount === 1 ? '' : 's'})</td>
-        <td style="padding:14px 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK};text-align:right">&pound;${subtotal.toFixed(2)}</td>
-      </tr>
-      <tr>
-        <td colspan="2" style="padding:6px 10px 6px 0;border-top:1px solid ${HAIRLINE};font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:11px;letter-spacing:1.8px;text-transform:uppercase;color:${INK};text-align:right;font-weight:600">Total</td>
-        <td style="padding:6px 0;border-top:1px solid ${HAIRLINE};font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:18px;color:${ACCENT};text-align:right;font-weight:500">&pound;${total.toFixed(2)}</td>
-      </tr>
-    </tfoot>
-  </table>
-
-  ${bankSection}
-
-  <div style="text-align:center;margin:28px 0 10px">
-    ${emailBtn(`https://westmereprivatehire.co.uk/api/public/invoice/${escHtml(invoiceNo)}/pdf`, `Download Invoice PDF`, `secondary`, false)}
-  </div>
-
-  <p style="margin:18px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">We hope this is all in order. If you have any questions or would like to discuss anything, please don't hesitate to get in touch &mdash; we&rsquo;re always happy to help.</p>
-  <p style="margin:12px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">Thank you as always for choosing Westmere Private Hire. We look forward to welcoming you on your next journey.</p>`;
-
-  const html = heroEmail(body);
   const subject = 'Invoice ' + (invoiceNo || '') + ' \u2014 ' + (period.label || '');
   const preheader = summaryCount + ' journey' + (summaryCount === 1 ? '' : 's') + ' \u00b7 \u00a3' + total.toFixed(2) + ' total';
   let attachments;
@@ -1587,114 +1622,44 @@ async function sendCustomerInvoice(customer, bookings, period, invoiceNo, settin
 // `pdfBuffer` = optional Buffer — attached to the email as a PDF file
 async function sendBespokeInvoice(recipient, items, period, invoiceNo, settings, pdfBuffer) {
   if (!recipient || !recipient.email) return false;
-  settings = settings || {};
-  const firstName = greetingName(recipient.name);
-
-  const rows = (items || []).map(it => {
-    const amount = +it.amount || 0;
-    let datePrefix = '';
-    if (it.date && String(it.date).trim()) {
-      try {
-        datePrefix = new Date(it.date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ' \u2014 ';
-      } catch (_) {}
-    }
-    return `<tr>
-      <td style="padding:10px 0;border-bottom:1px solid ${HAIRLINE};font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK};line-height:1.5;vertical-align:top">${datePrefix ? `<span style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:11px;color:${INK_MUTED}">${escHtml(datePrefix)}</span>` : ''}${escHtml(it.description || '')}</td>
-      <td style="padding:10px 0;border-bottom:1px solid ${HAIRLINE};font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK};text-align:right;vertical-align:top;white-space:nowrap">&pound;${amount.toFixed(2)}</td>
-    </tr>`;
-  }).join('');
+  const firstName = invoiceGreeting(recipient.name);
 
   const total = (items || []).reduce((s, it) => s + (+it.amount || 0), 0);
   const dueStr = period && period.dueDate ? formatDate(period.dueDate, null) : '';
-  const issuedStr = period && period.issuedDate ? formatDate(period.issuedDate, null) : '';
 
-  const fromAddr = [
-    settings.business_name || 'Westmere Private Hire',
-    settings.owner_name || '',
-    settings.address_line1 || '',
-    [settings.address_line2, settings.postcode].filter(Boolean).join(' '),
-    settings.phone || '',
-    settings.email || ''
-  ].filter(Boolean).map(l => escHtml(l)).join('<br>');
+  /* "Please find your invoice attached" must not be written on an email with
+     nothing attached. PDF generation is wrapped in a try/catch at both call
+     sites, so a failure there sends this anyway — and the customer reading it
+     would go looking for a file that is not there. */
+  const attached = !!pdfBuffer;
 
-  const toAddr = [
-    escHtml(recipient.name || ''),
-    recipient.address ? escHtml(recipient.address).replace(/\n/g, '<br>') : '',
-    recipient.phone ? escHtml(recipient.phone) : '',
-    recipient.email ? escHtml(recipient.email) : ''
-  ].filter(Boolean).join('<br>');
+  /* Same shell as the account invoice and as every confirmation. A bespoke
+     invoice raised from a job card carries the real journey, so it gets the
+     real trip rows; one typed by hand has only its descriptions, so it shows
+     those. Neither invents a route it was not given. */
+  const j = period && period.journey;
+  const journey = j ? {
+    ref: j.ref || '', pickup: j.pickup || '', destination: j.destination || '',
+    flight: j.flight || '',
+    dateStr: j.date ? formatDate(j.date, j.time) : ''
+  } : null;
 
-  const bankSection = (settings.sort_code && settings.account_no) ? `
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:22px;background:rgba(14,37,64,0.04);border:1px solid ${HAIRLINE}">
-    <tr><td style="padding:14px 18px">
-      <p style="margin:0 0 8px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Payment details</p>
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-        ${settings.bank_name ? `<tr><td style="padding:3px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:${INK_MUTED};width:100px;font-weight:600">Bank</td><td style="padding:3px 0 3px 10px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK}">${escHtml(settings.bank_name)}</td></tr>` : ''}
-        ${settings.account_name ? `<tr><td style="padding:3px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:${INK_MUTED};width:100px;font-weight:600">Name</td><td style="padding:3px 0 3px 10px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK}">${escHtml(settings.account_name)}</td></tr>` : ''}
-        <tr><td style="padding:3px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:${INK_MUTED};width:100px;font-weight:600">Sort code</td><td style="padding:3px 0 3px 10px;font-family:Menlo,Consolas,monospace;font-size:13px;color:${INK}">${escHtml(settings.sort_code)}</td></tr>
-        <tr><td style="padding:3px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:${INK_MUTED};width:100px;font-weight:600">Account no.</td><td style="padding:3px 0 3px 10px;font-family:Menlo,Consolas,monospace;font-size:13px;color:${INK}">${escHtml(settings.account_no)}</td></tr>
-        <tr><td style="padding:3px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:${INK_MUTED};width:100px;font-weight:600">Reference</td><td style="padding:3px 0 3px 10px;font-family:Menlo,Consolas,monospace;font-size:13px;color:${INK}">${escHtml(invoiceNo)}</td></tr>
-      </table>
-    </td></tr>
-  </table>` : `<p style="margin:22px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">Payment is appreciated within 14 days by bank transfer. Please contact us for account details.</p>`;
+  const html = confirmationEmailHtml({
+    variant: 'invoice',
+    eyebrow: 'Invoice',
+    firstName,
+    invoiceNo,
+    journey,
+    lines: journey ? null : (items || []).map(it => String(it.description || '')).filter(Boolean),
+    fareStr: '\u00a3' + total.toFixed(2),
+    dueDateStr: dueStr,
+    intro: (attached ? 'Please find your invoice attached. ' : 'This is your invoice. ') +
+           invoiceTermsLine(period) +
+           (attached
+             ? ' Bank details and the full breakdown are on the invoice itself.'
+             : ' Please reply to this email and we will send the invoice document across.')
+  });
 
-  const notesSection = period && period.notes ? `
-  <p style="margin:20px 0 0;padding:12px 14px;background:rgba(16,42,67,.08);border-left:2px solid ${ACCENT};font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK};line-height:1.6">${escHtml(period.notes).replace(/\n/g, '<br>')}</p>` : '';
-
-  const body = `
-  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Invoice</p>
-  <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
-  <p style="margin:0 0 10px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Please find attached invoice <span style="font-family:Menlo,Consolas,monospace;font-size:13px">${escHtml(invoiceNo)}</span> from Westmere Private Hire.</p>
-  <p style="margin:0 0 22px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">The total amount is <strong style="color:${INK}">&pound;${total.toFixed(2)}</strong>. Payment details are included below for your convenience.</p>
-
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px">
-    <tr>
-      <td style="padding:6px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:1.8px;text-transform:uppercase;color:${INK_MUTED};vertical-align:top;width:110px;font-weight:600">Invoice no.</td>
-      <td style="padding:6px 0 6px 14px;font-family:Menlo,Consolas,monospace;font-size:12px;color:${INK}">${escHtml(invoiceNo || '')}</td>
-    </tr>
-    ${issuedStr ? `<tr>
-      <td style="padding:6px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:1.8px;text-transform:uppercase;color:${INK_MUTED};vertical-align:top;width:110px;font-weight:600">Issued</td>
-      <td style="padding:6px 0 6px 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK}">${escHtml(issuedStr)}</td>
-    </tr>` : ''}
-    <tr><td colspan="2" style="padding:2px 0"><div style="border-top:1px solid ${HAIRLINE}"></div></td></tr>
-    <tr>
-      <td style="padding:6px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:1.8px;text-transform:uppercase;color:${INK_MUTED};vertical-align:top;width:110px;font-weight:600">From</td>
-      <td style="padding:6px 0 6px 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:12px;color:${INK};line-height:1.6">${fromAddr}</td>
-    </tr>
-    <tr><td colspan="2" style="padding:2px 0"><div style="border-top:1px solid ${HAIRLINE}"></div></td></tr>
-    <tr>
-      <td style="padding:6px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:1.8px;text-transform:uppercase;color:${INK_MUTED};vertical-align:top;width:110px;font-weight:600">Bill to</td>
-      <td style="padding:6px 0 6px 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK};line-height:1.6">${toAddr}</td>
-    </tr>
-  </table>
-
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:14px">
-    <thead>
-      <tr>
-        <th style="padding:0 0 8px;border-bottom:2px solid ${INK};font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:1.6px;text-transform:uppercase;color:${INK_MUTED};text-align:left;font-weight:600">Description</th>
-        <th style="padding:0 0 8px;border-bottom:2px solid ${INK};font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:1.6px;text-transform:uppercase;color:${INK_MUTED};text-align:right;font-weight:600">Amount</th>
-      </tr>
-    </thead>
-    <tbody>${rows}</tbody>
-    <tfoot>
-      <tr>
-        <td style="padding:14px 0 6px;border-top:1px solid ${HAIRLINE};font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:11px;letter-spacing:1.8px;text-transform:uppercase;color:${INK};text-align:right;font-weight:600">Total</td>
-        <td style="padding:14px 0 6px;border-top:1px solid ${HAIRLINE};font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:18px;color:${ACCENT};text-align:right;font-weight:500">&pound;${total.toFixed(2)}</td>
-      </tr>
-    </tfoot>
-  </table>
-
-  ${notesSection}
-  ${bankSection}
-
-  <div style="text-align:center;margin:28px 0 10px">
-    ${emailBtn(`https://westmereprivatehire.co.uk/api/public/invoice/${escHtml(invoiceNo)}/pdf`, `Download Invoice PDF`, `secondary`, false)}
-  </div>
-
-  <p style="margin:18px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">If you have any questions about this invoice, please don&rsquo;t hesitate to get in touch &mdash; we&rsquo;re always happy to help.</p>
-  <p style="margin:12px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">Thank you for choosing Westmere Private Hire.</p>`;
-
-  const html = heroEmail(body);
   const subject = 'Invoice ' + (invoiceNo || '') + ' \u2014 Westmere Private Hire';
   const preheader = 'Invoice \u00b7 \u00a3' + total.toFixed(2);
   let attachments;
