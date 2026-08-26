@@ -1325,7 +1325,17 @@ select:-webkit-autofill:focus{
             <span style="font-size:.79rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.5);margin-right:.6rem">Total</span>
             <span id="inv-det-total" style="font-family:var(--serif);font-size:1.3rem;color:var(--navy);font-weight:700"></span>
           </div>
-          <div style="display:flex;gap:.5rem;margin-top:1.2rem;flex-wrap:wrap">
+            <!-- SEND INVOICE. The primary action on this sheet, and the one
+                 that was missing entirely: an invoice could only be emailed at
+                 the moment it was created. It sits on its own row above the
+                 others because it is the thing the owner opened the invoice to
+                 do, and because it is the only one here that reaches a
+                 customer. -->
+            <div style="margin-top:1.2rem">
+              <button id="inv-det-send-btn" onclick="invDetailSend()" style="width:100%;padding:.8rem;font-size:.84rem;letter-spacing:.1em;text-transform:uppercase;font-family:var(--sans);font-weight:600;cursor:pointer;border-radius:6px;border:2px solid var(--navy);background:transparent;color:var(--navy)">Send Invoice</button>
+              <div id="inv-det-send-to" style="margin-top:.45rem;font-size:.78rem;color:rgba(27,27,26,.55);text-align:center"></div>
+            </div>
+          <div style="display:flex;gap:.5rem;margin-top:.7rem;flex-wrap:wrap">
             <a id="inv-det-pdf-btn" href="#" download style="flex:1;padding:.65rem;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:6px;border:1px solid rgba(27,27,26,.2);background:transparent;color:var(--navy);text-align:center;text-decoration:none">Download PDF</a>
             <button onclick="invDetailPreview()" style="flex:1;padding:.65rem;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:6px;border:1px solid rgba(27,27,26,.2);background:transparent;color:var(--navy)">Print Preview</button>
             <button onclick="invDetailDelete()" style="flex:1;padding:.65rem;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:6px;border:1px solid rgba(163,51,51,.3);background:transparent;color:var(--red)">Delete</button>
@@ -4192,20 +4202,15 @@ async function ownerQuickInvoice(bookingId,name,email,fare,pickup,dest,date){
     if(r.ok&&d.ok){
       showToast('Invoice '+d.invoiceNo+' created (£'+d.total+')');
       // Ask if they want to send it
-      if(email&&confirm('Send invoice to '+email+'?')){
-        // Find the invoice ID and send
-        var lr=await fetch('/api/invoices',{credentials:'include'});
-        var ld=await lr.json();
-        var inv=(ld.invoices||[]).find(function(i){return i.invoice_no===d.invoiceNo;});
-        if(inv){
-          // Need to recreate with send_email:true - delete and recreate
-          await fetch('/api/invoices/'+inv.id,{method:'DELETE',credentials:'include'});
-          body.send_email=true;
-          var r2=await fetch('/api/invoices/bespoke',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-          var d2=await r2.json();
-          if(r2.ok&&d2.ok)showToast('Invoice sent to '+email);
-          else showToast('Invoice created but sending failed');
-        }
+      /* Sent, not re-made. This used to DELETE the invoice and create it
+         again with send_email set, purely to flip one boolean — losing the row,
+         its id and its created_at, and losing the invoice altogether if the
+         second call failed. POST /invoices/:id/send exists now. */
+      if(email&&d.invoiceId&&confirm('Send invoice to '+email+'?')){
+        var sr=await fetch('/api/invoices/'+d.invoiceId+'/send',{method:'POST',credentials:'include'});
+        var sd=await sr.json();
+        if(sr.ok&&sd.ok)showToast('Invoice sent to '+sd.to);
+        else showToast(sd.error||'Invoice created but sending failed');
       }
     } else {
       showToast(d.error||'Failed to create invoice');
@@ -6503,7 +6508,7 @@ function invViewDetail(id){
     fetch('/api/invoices/'+id,{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
       if(!d.ok){showToast('Could not load invoice');return;}
       var inv=d.invoice;
-      var data={invoiceNo:inv.invoice_no,total:inv.total,bespoke:inv.kind==='bespoke',settings:settings||{},period:{issuedDate:inv.issued_date,dueDate:inv.due_date||'',label:inv.period_label||'',notes:inv.notes||''}};
+      var data={invoiceNo:inv.invoice_no,total:inv.total,bespoke:inv.kind==='bespoke',recipientEmail:inv.recipient_email||'',settings:settings||{},period:{issuedDate:inv.issued_date,dueDate:inv.due_date||'',label:inv.period_label||'',notes:inv.notes||''}};
       if(inv.kind==='bespoke'){
         data.items=inv.line_items||[];
         data.recipient={name:inv.recipient_name,email:inv.recipient_email||'',phone:inv.recipient_phone||'',address:inv.recipient_addr||''};
@@ -6559,6 +6564,13 @@ function invViewDetail(id){
             }).join('')
           :'<tr><td colspan="3" style="text-align:center;padding:1.2rem;font-size:.88rem;color:rgba(27,27,26,.35)">No journeys in period</td></tr>';
       }
+      var sendBtn=document.getElementById('inv-det-send-btn');
+      var sendTo=document.getElementById('inv-det-send-to');
+      // No address on file is not something to discover by tapping Send.
+      if(sendBtn){sendBtn.disabled=!data.recipientEmail;sendBtn.style.opacity=data.recipientEmail?'1':'.45';}
+      if(sendTo)sendTo.textContent=data.recipientEmail
+        ? ((inv.emailed?'Last sent to ':'Will be sent to ')+data.recipientEmail)
+        : 'No email address on this invoice';
       var pdfBtn=document.getElementById('inv-det-pdf-btn');
       if(pdfBtn){pdfBtn.href=_invPdfUrl(id,false);pdfBtn.setAttribute('download',(data.invoiceNo||'invoice')+'.pdf');}
       document.getElementById('inv-list-view').style.display='none';
@@ -6573,6 +6585,26 @@ function invViewDetail(id){
 }
 
 function invDetailPreview(){invOpenPdf(_INV_DETAIL_ID);}
+
+/* SEND THIS INVOICE — the branded email, with the PDF attached, to the address
+   the invoice is billed to. Confirms first with the address spelled out: this
+   is the one control on the sheet that reaches a customer, and "which address
+   did that just go to?" is not a question to be asked afterwards. */
+async function invDetailSend(){
+  if(!_INV_DETAIL_ID){showToast('No invoice open');return;}
+  var to=(_INV_PRINT_DATA&&_INV_PRINT_DATA.recipientEmail)||'';
+  if(!to){showToast('No email address on this invoice');return;}
+  if(!confirm('Email invoice '+((_INV_PRINT_DATA&&_INV_PRINT_DATA.invoiceNo)||'')+' to '+to+'?\n\nThe PDF is attached.'))return;
+  var btn=document.getElementById('inv-det-send-btn');
+  if(btn){btn.disabled=true;btn.textContent='Sending…';}
+  try{
+    var r=await fetch('/api/invoices/'+_INV_DETAIL_ID+'/send',{method:'POST',credentials:'include'});
+    var d=await r.json();
+    if(r.ok&&d.ok){showToast('Invoice '+d.invoiceNo+' sent to '+d.to);invLoadList();}
+    else showToast(d.error||('Sending failed ('+r.status+')'));
+  }catch(e){showToast('Network error');console.error('[invDetailSend]',e);}
+  if(btn){btn.disabled=false;btn.textContent='Send Invoice';}
+}
 
 async function invDetailDelete(){
   if(!_INV_DETAIL_ID)return;

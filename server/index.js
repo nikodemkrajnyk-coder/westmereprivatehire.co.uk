@@ -111,19 +111,24 @@ app.use('/api/public', apiLimiter, publicApiRouter);
    go through the authenticated route instead; this one is for the customer who
    was sent a link.
 
-   IT REQUIRES A TOKEN, because the invoice number is not a secret.
-   Invoice numbers are sequential — INV-202608-0001, 0002, 0003 — and this route
-   used to accept one as its only credential. Anyone who guessed a number was
-   handed a PDF carrying the business's bank details and a customer's name and
-   address. The number stays in the path so the URL still says which invoice it
-   is; `?t=` is what authorises.
+   THIS ROUTE IS OPEN, BY THE OWNER'S DECISION — READ THIS BEFORE "FIXING" IT.
+   Invoice numbers are sequential (INV-202608-0001, 0002, 0003) and the number
+   is the only thing needed to fetch the document. Anyone who counts can pull an
+   invoice PDF carrying the business's bank details and a customer's name,
+   address and journey. That is not an oversight and it is not news: a
+   per-invoice token was built, tested and deployed, and the owner asked for it
+   to be taken off because he wants invoice links to open without one.
 
-   THE LOOKUP IS BY TOKEN, not by number. A query keyed on the number would
-   answer "that invoice exists, but you lack the token" — which is an
-   enumeration oracle even when the status code is 404. Here a wrong or missing
-   token finds no row at all, and there is exactly ONE failure response, byte
-   for byte, for every way this can go wrong: no token, wrong token, another
-   invoice's token, a number that does not exist. Nothing distinguishes them.
+   The machinery to close it again is still here and costs one line. Every
+   invoice already HAS an access_token (server/db.js mints and backfills them),
+   the emailed reminder already carries `?t=`, and invoicePublicUrl() already
+   builds tokenised links. To re-enable the lock: look the row up by
+   access_token instead of invoice_no and refuse when it does not match, with
+   ONE identical 404 for every failure — distinct wording, or a 403, is an
+   enumeration oracle even when no document is served.
+
+   Whoever revisits this: it is a decision to revisit with the owner, not a bug
+   to fix quietly.
 
    Earlier faults kept fixed here: the cache is keyed by TEMPLATE_VERSION so a
    redesign cannot serve a document drawn by the old one, and a failure returns
@@ -134,7 +139,6 @@ app.get('/api/public/invoice/:invoiceNo/pdf', apiLimiter, async (req, res) => {
   const { resolveInvoicePdf } = require('./invoice-pdf');
 
   const safeNo = (req.params.invoiceNo || '').replace(/[^A-Za-z0-9\-_]/g, '');
-  const token  = String(req.query.t || '').trim();
   const inline = req.query.inline === '1' || req.query.inline === 'true';
 
   function page(status, heading, detail) {
@@ -148,25 +152,18 @@ app.get('/api/public/invoice/:invoiceNo/pdf', apiLimiter, async (req, res) => {
       '<p style="color:#3B5268;line-height:1.6;margin:0">' + detail + '</p>' +
       '</div></body>');
   }
-  /* ONE response for every refusal. Distinct wording — or a 403 — would tell a
-     stranger which invoice numbers exist, which is the thing being closed. */
   const refuse = () => page(404, 'Invoice not available',
-    'This link is not valid. Invoice links are personal to the recipient and can expire if an ' +
-    'invoice is reissued &mdash; please reply to your invoice email, or call 07930&nbsp;342593, ' +
-    'and we will send it across.');
+    'No invoice with that reference is available. Please reply to your invoice email, or call ' +
+    '07930&nbsp;342593, and we will send it across.');
 
   try {
-    if (!safeNo || !token || token.length < 16) return refuse();
+    if (!safeNo) return refuse();
 
     const db = getDb();
-    const row = db.prepare('SELECT * FROM invoices WHERE access_token = ?').get(token);
+    const row = db.prepare('SELECT * FROM invoices WHERE invoice_no = ?').get(safeNo);
     if (!row) return refuse();
-
-    /* The token found a row; it must be the row the URL names. Compared
-       constant-time so the check itself cannot be used to narrow a guess. */
-    const a = Buffer.from(String(row.invoice_no || ''));
-    const b = Buffer.from(safeNo);
-    if (a.length !== b.length || !require('crypto').timingSafeEqual(a, b)) return refuse();
+    /* `t=` is accepted and ignored — links already sent carry one, and they
+       must keep working whichever way this decision goes next. */
 
     const buf = await resolveInvoicePdf(db, row);
     res.setHeader('Content-Type', 'application/pdf');

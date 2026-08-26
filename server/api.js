@@ -2687,6 +2687,96 @@ router.delete('/invoices/:id', async (req, res) => {
 });
 
 // Mark a stored invoice as paid (records the payment date).
+/* SEND AN INVOICE THAT ALREADY EXISTS.
+   Until now an invoice could only be emailed at the MOMENT it was created, by
+   passing send_email on the create route. There was no way to send one
+   afterwards — which meant the owner app, wanting to send an invoice it had
+   just made, DELETED the invoice and created it again with the flag set. That
+   is in westmere-owner.html today, comment and all. It destroys the row, its id
+   and its created_at to change one boolean, and if the second call fails the
+   invoice is simply gone.
+
+   This route sends the invoice in front of it: same branded email, same
+   attached PDF, same recipient. Nothing is recreated and nothing is deleted.
+
+   The PDF comes from resolveInvoicePdf, so the customer is sent the same
+   document the Download and Print buttons produce — not a second rendering that
+   could differ from it.
+
+   GUARDRAIL: server/tests/invoice-send.test.js */
+router.post('/invoices/:id/send', async (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid invoice ID' });
+
+  const row = db.prepare('SELECT * FROM invoices WHERE id = ?').get(id);
+  if (!row) return res.status(404).json({ error: 'Invoice not found' });
+
+  /* The bill-to address, and nowhere else. An invoice is sent to the party it
+     is addressed to; a "send it to this address instead" field on this route
+     would be a way to mail somebody else's invoice out of the owner app. */
+  const to = String(row.recipient_email || '').trim();
+  if (!to) return res.status(400).json({ error: 'No email address on file for this invoice' });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+    return res.status(400).json({ error: 'The email address on this invoice is not valid: ' + to });
+  }
+
+  let settings = {};
+  try {
+    const sr = db.prepare("SELECT value FROM integrations WHERE key = 'invoice_settings'").get();
+    if (sr) settings = JSON.parse(sr.value);
+  } catch (_) {}
+
+  let lineItems = [];
+  try { lineItems = JSON.parse(row.line_items_json || '[]'); } catch (_) {}
+
+  let pdfBuffer = null;
+  try {
+    pdfBuffer = await require('./invoice-pdf').resolveInvoicePdf(db, row);
+  } catch (e) {
+    // The email copes with a missing attachment — it stops claiming there is
+    // one — but the owner should be told rather than left to find out.
+    console.error('[INVOICE] send: PDF generation failed for', row.invoice_no, e.message);
+    return res.status(500).json({ error: 'The invoice PDF could not be generated, so nothing was sent.' });
+  }
+
+  const period = {
+    label: row.period_label || '',
+    dueDate: row.due_date || '',
+    issuedDate: row.issued_date || '',
+    notes: row.notes || ''
+  };
+
+  let ok = false;
+  try {
+    const email = require('./email');
+    if (row.kind === 'bespoke') {
+      ok = await email.sendBespokeInvoice(
+        { name: row.recipient_name, email: to, phone: row.recipient_phone || '', address: row.recipient_addr || '' },
+        lineItems, period, row.invoice_no, settings, pdfBuffer);
+    } else {
+      ok = await email.sendCustomerInvoice(
+        { full_name: row.recipient_name, email: to, phone: row.recipient_phone || '' },
+        lineItems, period, row.invoice_no, settings, pdfBuffer);
+    }
+  } catch (e) {
+    console.error('[INVOICE] send failed:', row.invoice_no, e.message);
+    return res.status(500).json({ error: 'Sending failed: ' + e.message });
+  }
+  if (!ok) return res.status(502).json({ error: 'Email delivery failed' });
+
+  db.prepare('UPDATE invoices SET emailed = 1 WHERE id = ?').run(id);
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run(req.auth.type || 'user', req.auth.id, 'invoice_sent', row.invoice_no + ' to ' + to, req.ip);
+  } catch (_) { /* the send happened; the log is not worth failing it for */ }
+
+  res.json({ ok: true, invoiceNo: row.invoice_no, to, attached: !!(pdfBuffer && pdfBuffer.length) });
+});
+
 router.patch('/invoices/:id/mark-paid', (req, res) => {
   if (!['admin', 'owner'].includes(req.auth.role)) {
     return res.status(403).json({ error: 'Access denied' });
