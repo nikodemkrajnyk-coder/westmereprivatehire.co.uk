@@ -680,6 +680,36 @@ function drawInvoice(doc, data, slack) {
   return measured;
 }
 
+/* THE PER-INVOICE SECRET, and the URL built from it.
+   Minted once and NEVER re-minted: re-minting invalidates the link in an
+   invoice email that has already gone out, which is the same rule pay_token
+   lives by. Callers hand it a row; it returns the token, creating one only if
+   the row somehow has none (a race with the boot-time backfill, or a row
+   inserted by an older build).
+
+   The number stays in the path because a customer looking at the URL should
+   still see which invoice it is; the token is what actually authorises. */
+function ensureInvoiceToken(db, row) {
+  if (row && row.access_token) return row.access_token;
+  if (!row || !row.id) return null;
+  try {
+    const token = require('crypto').randomBytes(16).toString('hex');
+    db.prepare('UPDATE invoices SET access_token = ? WHERE id = ?').run(token, row.id);
+    row.access_token = token;
+    return token;
+  } catch (e) {
+    console.error('[INVOICE] access_token minting failed:', e.message);
+    return null;
+  }
+}
+
+/** The link that goes in an email. Never build one of these by hand. */
+function invoicePublicUrl(invoiceNo, token, opts) {
+  const host = (opts && opts.host) || 'https://westmereprivatehire.co.uk';
+  return host + '/api/public/invoice/' + encodeURIComponent(invoiceNo || '') +
+         '/pdf?t=' + encodeURIComponent(token || '');
+}
+
 /* ONE WAY TO GET AN INVOICE'S PDF, used by every route that serves one.
    There were three: the public download, the owner/admin download, and the
    customer's own download. Each rebuilt the same data shape by hand and each
@@ -789,5 +819,6 @@ async function resolveInvoicePdf(db, row) {
 
 module.exports = {
   buildInvoicePdf, TEMPLATE_VERSION, resolveInvoicePdf,
-  invoiceDataFromRow, invoiceCacheDir, invoiceCachePath, invoiceCachePaths
+  invoiceDataFromRow, invoiceCacheDir, invoiceCachePath, invoiceCachePaths,
+  ensureInvoiceToken, invoicePublicUrl
 };

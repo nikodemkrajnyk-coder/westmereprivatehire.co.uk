@@ -4303,7 +4303,7 @@ function previewInvoice(){
     if(!res.ok||!res.d.ok){
       err.textContent=res.d.error||('Invoice failed ('+res.status+')');err.style.display='';return;
     }
-    invOpenPdf(res.d.invoiceNo);
+    invOpenPdf(res.d.invoiceId);
   }).catch(function(){
     btn.disabled=false;btn.textContent='Preview / Download';
     err.textContent='Network error.';err.style.display='';
@@ -4315,13 +4315,19 @@ function previewInvoice(){
    template in HTML, the twin of the one in westmere-owner.html. Between them
    they are why "Print" and "Review" still showed the old design after the PDF
    was redesigned: neither was rendering the PDF. Both are gone. */
-function _invPdfUrl(invoiceNo, inline){
-  if(!invoiceNo)return '';
-  return '/api/public/invoice/'+encodeURIComponent(invoiceNo)+'/pdf'+(inline?'?inline=1':'');
+/* THE STAFF APPS USE THE AUTHENTICATED ROUTE.
+   The public /api/public/invoice/:no/pdf link now requires a per-invoice
+   token, because invoice numbers are sequential and a number is not a secret.
+   Staff are already signed in, so they go through /api/invoices/:id/pdf, which
+   is gated by the session — no token to mislay, and no reason to put a
+   customer's access secret on the owner's screen. */
+function _invPdfUrl(invoiceId, inline){
+  if(!invoiceId&&invoiceId!==0)return '';
+  return '/api/invoices/'+encodeURIComponent(invoiceId)+'/pdf'+(inline?'?inline=1':'');
 }
-function invOpenPdf(invoiceNo){
-  if(!invoiceNo){showToast('No invoice number for this document');return;}
-  var w=window.open(_invPdfUrl(invoiceNo,true),'_blank');
+function invOpenPdf(invoiceId){
+  if(!invoiceId&&invoiceId!==0){showToast('No invoice id for this document');return;}
+  var w=window.open(_invPdfUrl(invoiceId,true),'_blank');
   if(!w)showToast('Pop-up blocked — please allow pop-ups for this site.');
 }
 
@@ -4583,7 +4589,7 @@ function openInvoiceDetailModal(data){
 }
 
 function midOpenPrint(){
-  invOpenPdf(_MID_PRINT_DATA&&_MID_PRINT_DATA.invoiceNo);
+  invOpenPdf(_MID_INVOICE_ID);
 }
 function midDownloadPdf(){
   if(_MID_INVOICE_ID)window.location.href='/api/invoices/'+_MID_INVOICE_ID+'/pdf';

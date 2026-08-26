@@ -1706,11 +1706,16 @@ async function sendBespokeInvoice(recipient, items, period, invoiceNo, settings,
 
 // ── Invoice payment reminder ──────────────────────────────────────────────
 // Polite, professional nudge for an outstanding (unpaid) invoice.
-async function sendInvoiceReminder(recipient, invoiceNo, total, payUrl) {
+async function sendInvoiceReminder(recipient, invoiceNo, total, payUrl, accessToken) {
   if (!recipient || !recipient.email) return false;
-  const firstName = greetingName(recipient.name);
+  const firstName = invoiceGreeting(recipient.name);
   const totalStr = (Number(total) || 0).toFixed(2);
-  const pdfUrl = `https://westmereprivatehire.co.uk/api/public/invoice/${encodeURIComponent(invoiceNo || '')}/pdf`;
+  /* TOKENISED. This link used to be the invoice number alone, which is what
+     made a sequential number enough to fetch somebody's invoice. Without a
+     token there is no link at all — an untokenised one now 404s, and a button
+     that cannot work is worse than none. */
+  const { invoicePublicUrl } = require('./invoice-pdf');
+  const pdfUrl = accessToken ? invoicePublicUrl(invoiceNo, accessToken) : '';
 
   const payBtn = payUrl ? `
   <div style="text-align:center;margin:26px 0 8px">
@@ -1723,9 +1728,9 @@ async function sendInvoiceReminder(recipient, invoiceNo, total, payUrl) {
   <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">This is a gentle reminder that invoice <span style="font-family:Menlo,Consolas,monospace;font-size:13px">${escHtml(invoiceNo || '')}</span> for <strong style="color:${INK}">&pound;${totalStr}</strong> remains outstanding.</p>
   <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">If you&rsquo;ve already made payment, please disregard this message &mdash; and thank you.</p>
   ${payBtn}
-  <div style="text-align:center;margin:${payUrl ? '14px' : '26px'} 0 8px">
-    ${emailBtn(`${pdfUrl}`, `View Invoice`, `secondary`, false)}
-  </div>
+  ${pdfUrl ? `<div style="text-align:center;margin:${payUrl ? '14px' : '26px'} 0 8px">
+    ${emailBtn(`${escHtml(pdfUrl)}`, `View Invoice`, `secondary`, false)}
+  </div>` : ''}
   <p style="margin:20px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">If you have any questions about this invoice, please don&rsquo;t hesitate to get in touch &mdash; we&rsquo;re always happy to help.</p>`;
 
   const html = heroEmail(body);

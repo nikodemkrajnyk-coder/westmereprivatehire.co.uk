@@ -6331,7 +6331,7 @@ function invPreview(){
   .then(function(res){
     if(btn){btn.disabled=false;btn.textContent='Preview / Download';}
     if(!res.ok||!res.d.ok){err.textContent=res.d&&res.d.error?res.d.error:'Invoice failed ('+res.status+')';err.style.display='';return;}
-    invOpenPdf(res.d.invoiceNo);
+    invOpenPdf(res.d.invoiceId);
     if(req.saveCustomer)invSaveRecipientAsCustomer(req.recipient);
     invLoadList();
   })
@@ -6349,29 +6349,25 @@ function invPreview(){
    AND DOWNLOAD NO LONGER OPENS A BLANK TAB. window.open() on a URL that
    responds with Content-Disposition: attachment leaves an empty tab behind
    while the file downloads — which is exactly the "blank white screen" that was
-   reported. A link click starts the download with no tab at all. */
-function _invPdfUrl(invoiceNo, inline){
-  if(!invoiceNo)return '';
-  return '/api/public/invoice/'+encodeURIComponent(invoiceNo)+'/pdf'+(inline?'?inline=1':'');
-}
-
-function invDownload(invoiceNo){
-  if(!invoiceNo){showToast('No invoice number for this document');return;}
-  var a=document.createElement('a');
-  a.href=_invPdfUrl(invoiceNo,false);
-  a.download=invoiceNo+'.pdf';
-  a.style.display='none';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(function(){a.remove();},0);
-  showToast('Downloading '+invoiceNo+'…');
+   reported. Download is the #inv-det-pdf-btn anchor, carrying the `download`
+   attribute, so the browser saves the file and opens no tab; window.open is
+   used only by invOpenPdf, which always asks for the document INLINE. */
+/* THE STAFF APPS USE THE AUTHENTICATED ROUTE.
+   The public /api/public/invoice/:no/pdf link now requires a per-invoice
+   token, because invoice numbers are sequential and a number is not a secret.
+   Staff are already signed in, so they go through /api/invoices/:id/pdf, which
+   is gated by the session — no token to mislay, and no reason to put a
+   customer's access secret on the owner's screen. */
+function _invPdfUrl(invoiceId, inline){
+  if(!invoiceId&&invoiceId!==0)return '';
+  return '/api/invoices/'+encodeURIComponent(invoiceId)+'/pdf'+(inline?'?inline=1':'');
 }
 
 // Print / Preview: the same PDF, asked for inline so the browser DISPLAYS it.
 // Its own viewer carries a print button, so there is nothing here to duplicate.
-function invOpenPdf(invoiceNo){
-  if(!invoiceNo){showToast('No invoice number for this document');return;}
-  var w=window.open(_invPdfUrl(invoiceNo,true),'_blank');
+function invOpenPdf(invoiceId){
+  if(!invoiceId&&invoiceId!==0){showToast('No invoice id for this document');return;}
+  var w=window.open(_invPdfUrl(invoiceId,true),'_blank');
   if(!w)showToast('Pop-up blocked — please allow pop-ups for this site.');
 }
 
@@ -6564,7 +6560,7 @@ function invViewDetail(id){
           :'<tr><td colspan="3" style="text-align:center;padding:1.2rem;font-size:.88rem;color:rgba(27,27,26,.35)">No journeys in period</td></tr>';
       }
       var pdfBtn=document.getElementById('inv-det-pdf-btn');
-      if(pdfBtn){pdfBtn.href=_invPdfUrl(data.invoiceNo,false);pdfBtn.setAttribute('download',(data.invoiceNo||'invoice')+'.pdf');}
+      if(pdfBtn){pdfBtn.href=_invPdfUrl(id,false);pdfBtn.setAttribute('download',(data.invoiceNo||'invoice')+'.pdf');}
       document.getElementById('inv-list-view').style.display='none';
       document.getElementById('inv-detail-sheet').style.display='';
     }).catch(function(){showToast('Network error loading invoice');});
@@ -6576,7 +6572,7 @@ function invViewDetail(id){
   }).catch(function(){doOpen({});});
 }
 
-function invDetailPreview(){invOpenPdf(_INV_PRINT_DATA&&_INV_PRINT_DATA.invoiceNo);}
+function invDetailPreview(){invOpenPdf(_INV_DETAIL_ID);}
 
 async function invDetailDelete(){
   if(!_INV_DETAIL_ID)return;

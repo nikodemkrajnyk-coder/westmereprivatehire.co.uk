@@ -106,34 +106,38 @@ app.use('/api/public', apiLimiter, publicApiRouter);
 // cleanliness audit; a proper in-app tracker will replace them.)
 
 /* THE ONE PLACE AN INVOICE IS RENDERED.
-   Serves the PDF built by server/invoice-pdf.js — for the emailed link, for
-   Download, and (with ?inline=1) for Print/Preview in the owner app, which used
-   to draw its OWN copy of the invoice in HTML and therefore stayed on the old
-   design when the PDF was redesigned. One artefact, one template; the duplicate
-   is gone.
+   Serves the PDF built by server/invoice-pdf.js — for the emailed link, and
+   (with ?inline=1) for a preview. Print/Review and Download in the STAFF apps
+   go through the authenticated route instead; this one is for the customer who
+   was sent a link.
 
-   TWO THINGS THIS ROUTE GOT WRONG, both reported as "the redesign didn't work":
+   IT REQUIRES A TOKEN, because the invoice number is not a secret.
+   Invoice numbers are sequential — INV-202608-0001, 0002, 0003 — and this route
+   used to accept one as its only credential. Anyone who guessed a number was
+   handed a PDF carrying the business's bank details and a customer's name and
+   address. The number stays in the path so the URL still says which invoice it
+   is; `?t=` is what authorises.
 
-     THE CACHE OUTLIVED THE TEMPLATE. Generated PDFs are written to the volume
-     and served back if present. Every invoice made before the redesign kept
-     downloading in the OLD design, because a bare invoice number is not a
-     cache key for a document whose appearance can change. The filename now
-     carries TEMPLATE_VERSION, so a redesign orphans the old files rather than
-     serving them, and nothing has to be deleted.
+   THE LOOKUP IS BY TOKEN, not by number. A query keyed on the number would
+   answer "that invoice exists, but you lack the token" — which is an
+   enumeration oracle even when the status code is 404. Here a wrong or missing
+   token finds no row at all, and there is exactly ONE failure response, byte
+   for byte, for every way this can go wrong: no token, wrong token, another
+   invoice's token, a number that does not exist. Nothing distinguishes them.
 
-     ATTACHMENT vs INLINE. Print/Preview needs a document the browser DISPLAYS;
-     Download needs one it saves. Same bytes, different Content-Disposition.
-
-   A failure returns a readable page, not an empty one: this is opened in a new
-   tab, and a bare 500 there is a white screen the owner cannot act on.
-   GUARDRAIL: server/tests/invoice-paths.test.js */
+   Earlier faults kept fixed here: the cache is keyed by TEMPLATE_VERSION so a
+   redesign cannot serve a document drawn by the old one, and a failure returns
+   a readable page rather than the white screen a bare 500 gives you in a new
+   tab.
+   GUARDRAILS: server/tests/invoice-access.test.js, invoice-paths.test.js */
 app.get('/api/public/invoice/:invoiceNo/pdf', apiLimiter, async (req, res) => {
   const { resolveInvoicePdf } = require('./invoice-pdf');
 
   const safeNo = (req.params.invoiceNo || '').replace(/[^A-Za-z0-9\-_]/g, '');
+  const token  = String(req.query.t || '').trim();
   const inline = req.query.inline === '1' || req.query.inline === 'true';
 
-  function fail(status, heading, detail) {
+  function page(status, heading, detail) {
     res.status(status).type('html').send(
       '<!doctype html><meta charset="utf-8"><title>' + heading + '</title>' +
       '<body style="font-family:Georgia,serif;color:#102a43;background:#fff;margin:0;' +
@@ -144,12 +148,25 @@ app.get('/api/public/invoice/:invoiceNo/pdf', apiLimiter, async (req, res) => {
       '<p style="color:#3B5268;line-height:1.6;margin:0">' + detail + '</p>' +
       '</div></body>');
   }
+  /* ONE response for every refusal. Distinct wording — or a 403 — would tell a
+     stranger which invoice numbers exist, which is the thing being closed. */
+  const refuse = () => page(404, 'Invoice not available',
+    'This link is not valid. Invoice links are personal to the recipient and can expire if an ' +
+    'invoice is reissued &mdash; please reply to your invoice email, or call 07930&nbsp;342593, ' +
+    'and we will send it across.');
 
   try {
-    if (!safeNo) return fail(400, 'That invoice number is not valid', 'Please check the link and try again.');
+    if (!safeNo || !token || token.length < 16) return refuse();
+
     const db = getDb();
-    const row = db.prepare('SELECT * FROM invoices WHERE invoice_no = ?').get(safeNo);
-    if (!row) return fail(404, 'Invoice not found', 'No invoice with that number exists. If you followed a link from an email, please reply to it and we will send the document across.');
+    const row = db.prepare('SELECT * FROM invoices WHERE access_token = ?').get(token);
+    if (!row) return refuse();
+
+    /* The token found a row; it must be the row the URL names. Compared
+       constant-time so the check itself cannot be used to narrow a guess. */
+    const a = Buffer.from(String(row.invoice_no || ''));
+    const b = Buffer.from(safeNo);
+    if (a.length !== b.length || !require('crypto').timingSafeEqual(a, b)) return refuse();
 
     const buf = await resolveInvoicePdf(db, row);
     res.setHeader('Content-Type', 'application/pdf');
@@ -160,7 +177,7 @@ app.get('/api/public/invoice/:invoiceNo/pdf', apiLimiter, async (req, res) => {
     return res.send(buf);
   } catch (e) {
     console.error('[PUBLIC PDF]', safeNo, e && e.stack ? e.stack : e);
-    return fail(500, 'We could not produce that invoice',
+    return page(500, 'We could not produce that invoice',
       'Something went wrong generating the document. Please reply to your invoice email, or call 07930&nbsp;342593, and we will send it across.');
   }
 });

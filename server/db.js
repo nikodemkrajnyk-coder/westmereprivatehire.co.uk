@@ -514,6 +514,41 @@ function migrate() {
       CREATE INDEX IF NOT EXISTS idx_invoices_customer ON invoices(customer_id);
       CREATE INDEX IF NOT EXISTS idx_invoices_issued ON invoices(issued_date);
     `);
+
+  /* THE INVOICE ACCESS TOKEN.
+     The public PDF route took the invoice NUMBER as its only credential, and
+     invoice numbers are sequential: INV-202608-0001, 0002, 0003. Anyone who
+     guessed one was handed a PDF carrying the business's bank details and a
+     customer's name and address. A number that a customer can read off their
+     own invoice is an identifier, not a secret.
+
+     Same pattern as bookings.pay_token: a per-row secret, minted once and
+     never re-minted — re-minting would invalidate the link in an invoice email
+     that has already been sent. 32 hex characters from crypto.randomBytes.
+
+     BACKFILLED, so invoices raised before this keep working the moment their
+     recipient is sent a new link. The backfill is idempotent: it only touches
+     rows with no token, so it is safe on every boot.
+
+     GUARDRAIL: server/tests/invoice-access.test.js */
+  try {
+    const invInfo = db.prepare('PRAGMA table_info(invoices)').all();
+    if (!invInfo.find(c => c.name === 'access_token')) {
+      db.exec('ALTER TABLE invoices ADD COLUMN access_token TEXT');
+      console.log('[DB] Added access_token column to invoices');
+    }
+    db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_invoices_access_token ON invoices(access_token)');
+    const crypto = require('crypto');
+    const untokened = db.prepare(
+      "SELECT id FROM invoices WHERE access_token IS NULL OR access_token = ''").all();
+    if (untokened.length) {
+      const set = db.prepare('UPDATE invoices SET access_token = ? WHERE id = ?');
+      for (const r of untokened) set.run(crypto.randomBytes(16).toString('hex'), r.id);
+      console.log('[DB] Backfilled access_token for ' + untokened.length + ' invoice(s)');
+    }
+  } catch (e) {
+    console.error('[DB] invoice access_token migration failed:', e.message);
+  }
   } catch (e) {
     console.error('[DB] invoices table creation failed:', e.message);
   }

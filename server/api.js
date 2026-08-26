@@ -2312,7 +2312,9 @@ router.post('/customers/:id/invoice', async (req, res) => {
   if (invRow) autoFile.fileInvoice(invoiceNo, invRow, pdfBuffer);
 
   res.json({
-    ok: true, invoiceNo, journeys: bookings.length, total,
+    // The row id, so the staff app opens this through the AUTHENTICATED pdf
+    // route rather than the public tokenised one.
+    ok: true, invoiceNo, invoiceId: invRow ? invRow.id : null, journeys: bookings.length, total,
     customer: { id: customer.id, email: customer.email, full_name: customer.full_name, phone: customer.phone },
     bookings, period: { label: periodLabel, from: dateFrom, to: dateTo, dueDate, issuedDate },
     settings, emailed: shouldEmail
@@ -2461,7 +2463,7 @@ router.post('/invoices/bespoke', async (req, res) => {
   if (bespInvRow) autoFile.fileInvoice(invoiceNo, bespInvRow, pdfBuffer);
 
   res.json({
-    ok: true, invoiceNo, total, bespoke: true,
+    ok: true, invoiceNo, invoiceId: bespInvRow ? bespInvRow.id : null, total, bespoke: true,
     recipient: cleanRecipient, items: cleanItems,
     period: { label: '', dueDate, issuedDate, notes: notes || '' },
     settings, emailed: shouldEmail
@@ -3381,15 +3383,17 @@ router.post('/invoices/:id/remind', async (req, res) => {
   const db = getDb();
   const id = parseInt(req.params.id, 10);
   if (isNaN(id)) return res.status(400).json({ error: 'Invalid invoice ID' });
-  const row = db.prepare('SELECT invoice_no, recipient_name, recipient_email, total, paid FROM invoices WHERE id = ?').get(id);
+  const row = db.prepare('SELECT * FROM invoices WHERE id = ?').get(id);
   if (!row) return res.status(404).json({ error: 'Invoice not found' });
   if (!row.recipient_email) return res.status(400).json({ error: 'No email address on file for this invoice' });
 
   try {
     const { sendInvoiceReminder } = require('./email');
+    // Minted here if the row somehow has none, so the View Invoice link works.
+    const token = require('./invoice-pdf').ensureInvoiceToken(db, row);
     const ok = await sendInvoiceReminder(
       { name: row.recipient_name || '', email: row.recipient_email },
-      row.invoice_no, row.total, null
+      row.invoice_no, row.total, null, token
     );
     if (!ok) return res.status(502).json({ error: 'Email delivery failed' });
   } catch (e) {

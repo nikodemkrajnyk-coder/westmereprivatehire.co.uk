@@ -112,8 +112,8 @@ test('the admin app no longer draws its own invoice either', () => {
 
 test('Print / Preview opens the PDF, asked for inline', () => {
   for (const [name, src] of [['owner', OWNER], ['admin', ADMIN]]) {
-    assert.ok(/function invOpenPdf\(invoiceNo\)/.test(src), name + ': invOpenPdf is missing');
-    assert.ok(/_invPdfUrl\(invoiceNo,\s*true\)/.test(src),
+    assert.ok(/function invOpenPdf\(invoiceId\)/.test(src), name + ': invOpenPdf is missing');
+    assert.ok(/_invPdfUrl\(invoiceId,\s*true\)/.test(src),
       name + ': preview must request inline, or the browser downloads it instead of showing it');
     assert.ok(/inline=1/.test(src), name + ': the inline flag must be on the URL');
   }
@@ -127,13 +127,18 @@ test('the server honours inline vs attachment', () => {
 
 console.log('\nThe blank tab');
 
-test('Download is a link click, never window.open', () => {
-  const fn = /function invDownload\(invoiceNo\)\{[\s\S]*?\n\}/.exec(OWNER);
-  assert.ok(fn, 'invDownload is missing');
-  assert.ok(!/window\.open/.test(fn[0]),
-    'window.open on an attachment response leaves an empty tab — that is the reported white screen');
-  assert.ok(/a\.download\s*=/.test(fn[0]) && /a\.click\(\)/.test(fn[0]),
-    'it must click a download link instead');
+test('the only window.open asks for the document INLINE', () => {
+  /* This is the whole white-screen bug: window.open on a URL that answers with
+     Content-Disposition: attachment leaves an empty tab behind. Downloading is
+     the anchor's job (below); window.open is for viewing, and a viewable
+     response must be inline. */
+  for (const [name, src] of [['owner', OWNER], ['admin', ADMIN]]) {
+    const opens = src.match(/window\.open\(_invPdfUrl\([^)]*\)/g) || [];
+    assert.ok(opens.length >= 1, name + ': invOpenPdf must open the PDF');
+    for (const o of opens) {
+      assert.ok(/,\s*true\)/.test(o), name + ': opened without inline — ' + o);
+    }
+  }
 });
 
 test('the detail sheet\'s Download PDF is a real download, not a new tab', () => {
@@ -215,7 +220,7 @@ test('the response is a PDF, with headers that do not lie', () => {
 });
 
 test('a generation failure never returns a blank page', () => {
-  assert.ok(/function fail\(status, heading, detail\)/.test(INDEX), 'the error page helper must exist');
+  assert.ok(/function page\(status, heading, detail\)/.test(INDEX), 'the error page helper must exist');
   assert.ok(/We could not produce that invoice/.test(INDEX), 'and say so in words');
   assert.ok(/07930/.test(INDEX), 'with a way to reach a human');
   assert.ok(!/res\.status\(500\)\.send\('Failed to generate PDF'\)/.test(INDEX),
