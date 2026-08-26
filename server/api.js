@@ -2450,12 +2450,15 @@ router.post('/invoices/bespoke', async (req, res) => {
     db.prepare(`
       INSERT INTO invoices
         (invoice_no, kind, recipient_name, recipient_email, recipient_phone, recipient_addr,
-         issued_date, due_date, notes, line_items_json, total, emailed, created_by)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+         issued_date, due_date, notes, line_items_json, journey_json, total, emailed, created_by)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     `).run(
       invoiceNo, 'bespoke', cleanRecipient.name, cleanRecipient.email, cleanRecipient.phone, cleanRecipient.address,
       issuedDate, dueDate, notes || null,
-      JSON.stringify(cleanItems), total, shouldEmail ? 1 : 0, req.auth.id
+      JSON.stringify(cleanItems),
+      // Kept, so a send NEXT WEEK shows the same trip block as a send today.
+      journeyForEmail ? JSON.stringify(journeyForEmail) : null,
+      total, shouldEmail ? 1 : 0, req.auth.id
     );
   } catch (e) {
     console.error('[INVOICE] persist bespoke failed:', e.message);
@@ -2768,11 +2771,17 @@ router.post('/invoices/:id/send', async (req, res) => {
     return res.status(500).json({ error: 'The invoice PDF could not be generated, so nothing was sent.' });
   }
 
+  /* The stored journey, so a send a week later shows the same structured trip
+     block — reference, route, date and time — that a send at creation did. */
+  let storedJourney = null;
+  try { storedJourney = row.journey_json ? JSON.parse(row.journey_json) : null; } catch (_) {}
+
   const period = {
     label: row.period_label || '',
     dueDate: row.due_date || '',
     issuedDate: row.issued_date || '',
-    notes: row.notes || ''
+    notes: row.notes || '',
+    journey: storedJourney
   };
 
   let ok = false;

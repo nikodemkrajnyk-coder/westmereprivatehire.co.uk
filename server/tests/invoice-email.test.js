@@ -250,6 +250,133 @@ test('the terms are derived from the dates, not assumed to be 14 days', async ()
     'a 30-day invoice must not be described as 14 — the owner sets the terms per invoice');
 });
 
+console.log('\nThe foot of the email is the foot of the invoice');
+
+test('Payment due is the LAST row, below Payment method', async () => {
+  /* The order mirrors the PDF: Total, Invoice no., Payment method, Payment due.
+     The due date was sitting ABOVE the payment method, which buried the one
+     thing the reader is meant to leave with. */
+  for (const sent of [await accountEmail(), await bespokeEmail()]) {
+    const h = sent.html;
+    const iTotal  = h.indexOf('>Total<');
+    const iNo     = h.indexOf('Invoice no.');
+    const iMethod = h.indexOf('Payment method');
+    const iDue    = h.indexOf('Payment due');
+    assert.ok(iTotal !== -1 && iNo !== -1 && iMethod !== -1 && iDue !== -1,
+      'all four rows must be present');
+    assert.ok(iTotal < iNo, 'Total first');
+    assert.ok(iNo < iMethod, 'then the invoice number');
+    assert.ok(iMethod < iDue, 'then the payment method, and the DUE DATE LAST');
+  }
+});
+
+test('the due date is the real one, and carries the terms', async () => {
+  const sent = await bespokeEmail();
+  assert.ok(/9 September 2026/.test(sent.html), 'the due date itself');
+  assert.ok(/14 days from the invoice date/.test(sent.html),
+    'and how long that was, so "when" and "how long" are one answer');
+});
+
+test('the terms are DERIVED, not assumed to be 14', async () => {
+  const { email, captured } = loadEmailModule();
+  await email.sendBespokeInvoice(
+    { name: 'Acme Ltd', email: 'a@b.co' }, [{ description: 'Journey', amount: 100 }],
+    { issuedDate: '2026-08-26', dueDate: '2026-09-25' }, 'INV-1', SETTINGS, FAKE_PDF);
+  assert.ok(/30 days from the invoice date/.test(captured[0].html),
+    'a 30-day invoice must not say 14 in the row either');
+});
+
+test('an invoice with no due date simply omits the row', async () => {
+  const { email, captured } = loadEmailModule();
+  await email.sendBespokeInvoice(
+    { name: 'Acme Ltd', email: 'a@b.co' }, [{ description: 'Journey', amount: 100 }],
+    { issuedDate: '2026-08-26' }, 'INV-2', SETTINGS, FAKE_PDF);
+  assert.ok(!/Payment due/.test(captured[0].html), 'never an empty or invented date');
+  assert.ok(/Payment method/.test(captured[0].html), 'the rest of the foot stays');
+});
+
+console.log('\nThe journey, written out');
+
+test('a stored journey gives the full trip block with a HUMAN date', async () => {
+  const sent = await bespokeEmail();
+  assert.ok(/WPH-5012/.test(sent.html), 'Reference');
+  assert.ok(/Pulborough/.test(sent.html), 'Pickup');
+  assert.ok(/Hackney/.test(sent.html), 'Drop-off');
+  assert.ok(/Date &amp;\s*Time|Date &amp; Time/.test(sent.html), 'a Date & Time row');
+  assert.ok(/26 August 2026/.test(sent.html) && /11:15/.test(sent.html),
+    'with the date written out, as the confirmation email does it');
+});
+
+test('NO raw ISO date reaches the email, on any path', async () => {
+  const withJourney = await bespokeEmail();
+  const typed = await bespokeEmail({ journey: null,
+    items: [{ description: 'Pulborough \u2192 Hackney, London N1 6AH (2026-08-26)', amount: 250 }] });
+  const account = await accountEmail();
+  for (const [name, sent] of [['bespoke', withJourney], ['typed', typed], ['account', account]]) {
+    /* Stripped of markup first: style attributes carry no dates, but the check
+       should be about what a READER sees. */
+    const text = sent.html.replace(/<[^>]+>/g, ' ');
+    const iso = text.match(/\b\d{4}-\d{2}-\d{2}\b/g) || [];
+    assert.deepStrictEqual(iso, [], name + ' shows a raw ISO date: ' + iso.join(', '));
+  }
+});
+
+test('an OLD invoice with no stored journey still reads properly', async () => {
+  const sent = await bespokeEmail({ journey: null,
+    items: [{ description: 'Pulborough \u2192 Hackney, London N1 6AH (2026-08-26)', amount: 250 }] });
+  assert.ok(/Wed 26 Aug 2026/.test(sent.html),
+    'the date inside the description must be rewritten, not left as 2026-08-26');
+  assert.ok(/Pulborough/.test(sent.html) && /Hackney/.test(sent.html),
+    'and the route it was given must survive the rewrite');
+});
+
+test('the journey is PERSISTED, so a send next week matches a send today', () => {
+  /* MIGRATED FOR REAL, against a throwaway database. Reading the ALTER out of
+     db.js proves nothing: wrapping it in `if (false)` leaves the text in place
+     and the source-shape assertion passing, which is exactly what happened when
+     this was first written. */
+  const os = require('os');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wm-mig-'));
+  const prev = process.env.SQLITE_DB;
+  process.env.SQLITE_DB = path.join(dir, 'migrate.db');
+  delete require.cache[require.resolve('../db')];
+  let cols;
+  try {
+    const live = require('../db').getDb();
+    cols = live.prepare('PRAGMA table_info(invoices)').all().map(c => c.name);
+    live.close();
+  } finally {
+    if (prev === undefined) delete process.env.SQLITE_DB; else process.env.SQLITE_DB = prev;
+    delete require.cache[require.resolve('../db')];
+    try { fs.rmSync(dir, { recursive: true, force: true }); } catch (_) {}
+  }
+  assert.ok(cols.indexOf('journey_json') !== -1,
+    'invoices.journey_json must exist after migration — the structured journey used to be ' +
+    'handed to the email at create time and then thrown away. Columns: ' + cols.join(', '));
+  const api = read('server/api.js');
+  assert.ok(/journeyForEmail \? JSON\.stringify\(journeyForEmail\) : null/.test(api),
+    'the bespoke create route must store it');
+  const send = api.slice(api.indexOf("router.post('/invoices/:id/send'"));
+  assert.ok(/row\.journey_json \? JSON\.parse\(row\.journey_json\) : null/.test(send.slice(0, 3000)),
+    'and the send route must read it back');
+  assert.ok(/journey: storedJourney/.test(send.slice(0, 3000)), 'and pass it to the email');
+});
+
+test('a corrupt journey_json degrades to the descriptions, never throws', () => {
+  const send = read('server/api.js').slice(read('server/api.js').indexOf("router.post('/invoices/:id/send'"));
+  assert.ok(/try \{ storedJourney = row\.journey_json/.test(send.slice(0, 3000)),
+    'one bad column must not cost the whole send');
+});
+
+console.log('\nThe account summary is unchanged');
+
+test('an account invoice still summarises, and gained no trip block', async () => {
+  const sent = await accountEmail();
+  assert.ok(/August 2026/.test(sent.html) && /2 journeys/.test(sent.html), 'period and count');
+  assert.ok(!/Pickup/.test(sent.html) && !/Drop-off/.test(sent.html),
+    'the itemisation stays on the PDF — this is the summary shape');
+});
+
 console.log('\nThe subject line, and the inbox');
 
 test('the subject names the business AND the invoice number', async () => {

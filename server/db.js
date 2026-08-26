@@ -537,6 +537,21 @@ function migrate() {
       db.exec('ALTER TABLE invoices ADD COLUMN access_token TEXT');
       console.log('[DB] Added access_token column to invoices');
     }
+    /* THE JOURNEY BEHIND A BESPOKE INVOICE.
+       "Create Invoice" on a job card knows the route, the date, the time and
+       the reference. It was flattening all four into one description string —
+       fine on a line of a PDF, useless to an email that wants to show the trip
+       the way a confirmation does — and the structured version was passed to
+       the email at CREATE time and then thrown away. So sending the same
+       invoice a week later could only print the flattened line.
+       Stored as JSON, nullable: an invoice with no journey behind it (one typed
+       by hand, or any invoice raised before this) simply has NULL and falls
+       back to its descriptions. Nothing needs backfilling, because there is
+       nothing to backfill it FROM. */
+    if (!invInfo.find(c => c.name === 'journey_json')) {
+      db.exec('ALTER TABLE invoices ADD COLUMN journey_json TEXT');
+      console.log('[DB] Added journey_json column to invoices');
+    }
     db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_invoices_access_token ON invoices(access_token)');
     const crypto = require('crypto');
     const untokened = db.prepare(

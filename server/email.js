@@ -842,6 +842,26 @@ function tripRows(d, fareLabel) {
   return rows;
 }
 
+/* NO RAW ISO DATE REACHES A CUSTOMER.
+   A bespoke invoice raised from a job card has its route and date flattened
+   into one description string — "Pulborough → Hackney (2026-08-26)" — and that
+   string is stored, so an invoice created before journeys were persisted can
+   only ever print what it was given. This rewrites any YYYY-MM-DD it finds into
+   the form every other Westmere surface uses. Built from the components: never
+   `new Date('2026-08-26')`, which reads back a day early west of London. */
+const _ISO_IN_TEXT = /\b(\d{4})-(\d{2})-(\d{2})\b/g;
+function humaniseIsoDates(text) {
+  return String(text == null ? '' : text).replace(_ISO_IN_TEXT, (whole, y, m, day) => {
+    const yy = +y, mm = +m, dd = +day;
+    if (!(yy && mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31)) return whole;
+    const dt = new Date(Date.UTC(yy, mm - 1, dd));
+    if (isNaN(dt.getTime()) || dt.getUTCMonth() !== mm - 1) return whole;
+    const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return DOW[dt.getUTCDay()] + ' ' + dd + ' ' + MON[mm - 1] + ' ' + yy;
+  });
+}
+
 /* THE INVOICE ROWS.
    Same visual language as a confirmation — icon, tracked label, value — but
    answering the questions an invoice raises rather than the ones a booking
@@ -877,14 +897,27 @@ function invoiceRows(d) {
     rows += confRow('ic-reference', 'Journeys', n + ' journey' + (n === 1 ? '' : 's') + ' &mdash; itemised on the attached invoice');
   } else if (Array.isArray(d.lines) && d.lines.length) {
     d.lines.forEach((line, i) => {
-      rows += confRow(i === 0 ? 'ic-pickup' : 'ic-dropoff', i === 0 ? 'Journey' : '&nbsp;', escHtml(line));
+      rows += confRow(i === 0 ? 'ic-pickup' : 'ic-dropoff', i === 0 ? 'Journey' : '&nbsp;',
+        escHtml(humaniseIsoDates(line)));
     });
   }
 
+  /* The foot of the email is the foot of the invoice, in the same order:
+     Total, Invoice no., Payment method, Payment due. The due date is LAST
+     because it is the thing the reader is meant to leave with — it was sitting
+     above "Payment method", which buried it. */
   if (d.fareStr) rows += confRow('ic-fare', 'Total', escHtml(d.fareStr), { fare: true });
   if (d.invoiceNo) rows += confRow('ic-reference', 'Invoice no.', mono(d.invoiceNo));
-  if (d.dueDateStr) rows += confRow('ic-datetime', 'Payment due', escHtml(d.dueDateStr));
   rows += confRow('ic-payment', 'Payment method', 'Invoice');
+  if (d.dueDateStr) {
+    // The terms beneath the date, so "when" and "how long" are one answer.
+    const term = d.dueTermDays
+      ? '<div style="margin-top:3px;font-size:13px;color:#657485">' +
+        escHtml(d.dueTermDays + ' day' + (d.dueTermDays === 1 ? '' : 's') + ' from the invoice date') +
+        '</div>'
+      : '';
+    rows += confRow('ic-datetime', 'Payment due', escHtml(d.dueDateStr) + term);
+  }
   return rows;
 }
 
@@ -1565,18 +1598,20 @@ function invoiceGreeting(name) {
    the two dates rather than assuming 14 — the bespoke route lets the owner set
    the terms per invoice, and an email that says "14 days" over an invoice that
    says 30 is the kind of small contradiction an accounts department queries. */
+function invoiceTermDays(period) {
+  const p = period || {};
+  if (!p.issuedDate || !p.dueDate) return null;
+  const a = String(p.issuedDate).split('-').map(Number);
+  const b = String(p.dueDate).split('-').map(Number);
+  if (a.length !== 3 || b.length !== 3) return null;
+  const ms = Date.UTC(b[0], b[1] - 1, b[2]) - Date.UTC(a[0], a[1] - 1, a[2]);
+  return (isFinite(ms) && ms > 0) ? Math.round(ms / 86400000) : null;
+}
+
 function invoiceTermsLine(period) {
   const p = period || {};
   const dueStr = p.dueDate ? formatDate(p.dueDate, null) : '';
-  let days = null;
-  if (p.issuedDate && p.dueDate) {
-    const a = String(p.issuedDate).split('-').map(Number);
-    const b = String(p.dueDate).split('-').map(Number);
-    if (a.length === 3 && b.length === 3) {
-      const ms = Date.UTC(b[0], b[1] - 1, b[2]) - Date.UTC(a[0], a[1] - 1, a[2]);
-      if (isFinite(ms) && ms > 0) days = Math.round(ms / 86400000);
-    }
-  }
+  const days = invoiceTermDays(p);
   if (days) return 'Payment is due within ' + days + ' day' + (days === 1 ? '' : 's') + ', by ' + dueStr + '.';
   if (dueStr) return 'Payment is due by ' + dueStr + '.';
   return 'Payment terms are set out on the invoice.';
@@ -1617,6 +1652,7 @@ async function sendCustomerInvoice(customer, bookings, period, invoiceNo, settin
     summary: { period: period.label || '', count: summaryCount },
     fareStr: '\u00a3' + total.toFixed(2),
     dueDateStr: dueStr,
+    dueTermDays: invoiceTermDays(period),
     intro: (attached
              ? 'Please find your invoice attached, covering ' + escHtml(period.label || 'this period') + '. '
              : 'This is your invoice for ' + escHtml(period.label || 'this period') + '. ') +
@@ -1682,6 +1718,7 @@ async function sendBespokeInvoice(recipient, items, period, invoiceNo, settings,
     lines: journey ? null : (items || []).map(it => String(it.description || '')).filter(Boolean),
     fareStr: '\u00a3' + total.toFixed(2),
     dueDateStr: dueStr,
+    dueTermDays: invoiceTermDays(period),
     intro: (attached ? 'Please find your invoice attached. ' : 'This is your invoice. ') +
            invoiceTermsLine(period) +
            (attached
