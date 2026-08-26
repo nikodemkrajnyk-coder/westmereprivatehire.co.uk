@@ -6089,9 +6089,17 @@ function invOpenNew(){
   .then(function(r){return r.json();})
   .then(function(d){
     if(!d.ok||!d.customers||!d.customers.length){sel.innerHTML='<option value="">No customers yet</option>';return;}
+      /* STAFF ARE NOT INVOICE CUSTOMERS. The owner registered a customer
+         account under his own email to test the rider app, so his own name sat
+         in this list between real clients; a driver who books a ride for
+         himself would too. The server marks those rows is_staff, decided by
+         role and flag — never by name — and they are dropped here. Nothing is
+         deleted, and the Customers tab still shows them. */
+      var invoiceable=d.customers.filter(function(c){return !c.is_staff;});
+      if(!invoiceable.length){sel.innerHTML='<option value="">No customers yet</option>';return;}
     var opts=['<option value="">— Select customer —</option>'];
     var prefillOpts=['<option value="">— New recipient —</option>'];
-    d.customers.forEach(function(c){
+    invoiceable.forEach(function(c){
       opts.push('<option value="'+c.id+'">'+owEsc(c.full_name||'Unknown')+'</option>');
       prefillOpts.push('<option value="'+c.id+'">'+owEsc(c.full_name||'Unknown')+(c.email?' ('+owEsc(c.email)+')':'')+'</option>');
       _INV_CUST_IDX[c.id]=c;

@@ -1933,11 +1933,36 @@ router.get('/customers', (req, res) => {
     return res.status(403).json({ error: 'Access denied' });
   }
   const db = getDb();
+  /* IS THIS "CUSTOMER" ACTUALLY STAFF?
+     The owner has a customer account of his own — registered through the rider
+     app under his own email — so his name sat in the invoice customer dropdown
+     between real clients. A driver who books a ride for himself lands in
+     exactly the same place.
+
+     Decided by ROLE AND FLAG, never by name. A rule that reads "and not Nikodem
+     Krajnyk" fails the day a customer shares a name with a driver, and fails
+     silently the day the owner's name changes. Email is the only key the two
+     tables share, matched case- and whitespace-insensitively because one was
+     typed into a signup form and the other into a staff record.
+
+     A FLAG, NOT A FILTER. The row is still returned, so the Customers tab, the
+     directory and every screen reading this endpoint are unchanged and nothing
+     is deleted. It is the invoice picker that acts on it.
+     GUARDRAIL: server/tests/invoice-customer-picker.test.js */
   const rows = db.prepare(`
-    SELECT id, email, full_name, phone, account_type, active, verified, created_at,
-           address_line1, address_line2, postcode,
-           bank_name, bank_sort_code, bank_account_no, bank_account_name
-      FROM customers WHERE active = 1 ORDER BY created_at DESC
+    SELECT c.id, c.email, c.full_name, c.phone, c.account_type, c.active, c.verified, c.created_at,
+           c.address_line1, c.address_line2, c.postcode,
+           c.bank_name, c.bank_sort_code, c.bank_account_no, c.bank_account_name,
+           CASE WHEN EXISTS (
+             SELECT 1 FROM users u
+              WHERE u.active = 1
+                AND u.email IS NOT NULL AND TRIM(u.email) <> ''
+                AND LOWER(TRIM(u.email)) = LOWER(TRIM(c.email))
+                AND (u.role IN ('owner','admin','driver') OR u.is_default_driver = 1)
+           ) THEN 1 ELSE 0 END AS is_staff
+      FROM customers c
+     WHERE c.active = 1
+     ORDER BY c.created_at DESC
   `).all();
   res.json({ ok: true, customers: rows });
 });
