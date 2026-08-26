@@ -383,6 +383,47 @@
     });
   }
 
+  /* ── MONTHLY grouping (the "Trip History" view in both staff apps) ───────
+     The owner reads his finished work a month at a time — that is the unit a
+     tax year and an invoice run are made of, and a year of weekly headers is
+     fifty-two of them to scroll past.
+
+     Same shape as groupByWeek so the two views stay interchangeable: newest
+     month first, newest job first within it, takings per group. Undated jobs
+     fall into their own bucket at the end rather than being dropped, because a
+     job with no date is a data problem the owner should be able to see.
+
+     Dates are UK wall-clock strings and are split by hand — never parsed as an
+     instant (the timezone invariant in CLAUDE.md). */
+  var _MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
+                 'July', 'August', 'September', 'October', 'November', 'December'];
+  function groupByMonth(list) {
+    var groups = {};
+    (list || []).forEach(function (j) {
+      var key = '0000-00', label = 'Undated';
+      if (j && j.date) {
+        var p = String(j.date).split('-');
+        var y = parseInt(p[0], 10), m = parseInt(p[1], 10);
+        if (y && m >= 1 && m <= 12) {
+          key = p[0] + '-' + (m < 10 ? '0' + m : String(m));
+          label = _MONTHS[m - 1] + ' ' + y;
+        }
+      }
+      if (!groups[key]) groups[key] = { key: key, label: label, items: [] };
+      groups[key].items.push(j);
+    });
+    return Object.keys(groups).sort().reverse().map(function (k) {
+      var g = groups[k];
+      g.items.sort(function (a, b) {
+        var dc = String(a.date || '').localeCompare(String(b.date || ''));
+        if (dc !== 0) return -dc;
+        return String(b.time || '').localeCompare(String(a.time || ''));
+      });
+      g.takings = g.items.reduce(function (s, j) { return s + (Number(j.fare) || 0); }, 0);
+      return g;
+    });
+  }
+
   return {
     STATUSES: STATUSES,
     PAYMENT_METHODS: PAYMENT_METHODS,
@@ -405,6 +446,7 @@
     isoWeekStart: isoWeekStart,
     weekRangeLabel: weekRangeLabel,
     groupByWeek: groupByWeek,
+    groupByMonth: groupByMonth,
     _spec: 'estimate-first; no staff auto-confirm; payment never defaults to cash'
   };
 }));

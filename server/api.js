@@ -3003,6 +3003,72 @@ router.get('/customer-directory', (req, res) => {
   }
 });
 
+/* A message from the owner to ONE driver. Same letterhead as everything else;
+   the driver's address comes from his record, never from the request. */
+router.post('/drivers/:id/message', async (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Staff access required' });
+  }
+  const message = String((req.body && req.body.message) || '').trim();
+  const subject = String((req.body && req.body.subject) || '').trim();
+  if (!message) return res.status(400).json({ error: 'Write a message' });
+  if (message.length > 8000) return res.status(400).json({ error: 'Message is too long' });
+  try {
+    const d = getDb().prepare("SELECT id, full_name, email FROM users WHERE id = ? AND role = 'driver'")
+      .get(parseInt(req.params.id, 10));
+    if (!d) return res.status(404).json({ error: 'Driver not found' });
+    if (!d.email) return res.status(400).json({ error: 'No email address on this driver' });
+    const ok = await require('./email').sendDriverMessage(d, message, { subject: subject || undefined });
+    if (!ok) return res.status(502).json({ error: 'Email delivery failed' });
+    try {
+      getDb().prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+        .run('staff', req.auth.id || 0, 'driver_message', d.email, req.ip);
+    } catch (_) {}
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[API] driver message failed:', e.message);
+    res.status(500).json({ error: 'Could not send the message' });
+  }
+});
+
+/* SEND A LETTER TO ANYBODY — a hotel, another operator, a supplier.
+   Standalone: no booking, no customer record, nothing looked up. Staff only,
+   because this sends mail out under the company's own domain and a loose gate
+   here is somebody else's spam problem with Westmere's name on it. */
+router.post('/outreach', async (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Staff access required' });
+  }
+  const to = String((req.body && req.body.to) || '').trim();
+  const subject = String((req.body && req.body.subject) || '').trim();
+  const message = String((req.body && req.body.message) || '').trim();
+
+  /* One recipient per send, checked BEFORE the address shape. A pasted list
+     fails the address test too, but "Enter a valid email address" is the wrong
+     thing to tell somebody who has just pasted four addresses — they will fix
+     the spelling and try again. This is also the only check that catches a
+     comma INSIDE one address, which the shape test happily allows. */
+  if (/[,;]/.test(to)) return res.status(400).json({ error: 'One recipient at a time' });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) return res.status(400).json({ error: 'Enter a valid email address' });
+  if (!subject) return res.status(400).json({ error: 'Enter a subject' });
+  if (!message) return res.status(400).json({ error: 'Write a message' });
+  if (subject.length > 200) return res.status(400).json({ error: 'Subject is too long' });
+  if (message.length > 8000) return res.status(400).json({ error: 'Message is too long' });
+
+  try {
+    const ok = await require('./email').sendOutreachMessage(to, subject, message);
+    if (!ok) return res.status(502).json({ error: 'Email delivery failed' });
+    try {
+      getDb().prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+        .run('staff', req.auth.id || 0, 'outreach_sent', to + ' — ' + subject.slice(0, 120), req.ip);
+    } catch (_) {}
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[API] outreach failed:', e.message);
+    res.status(500).json({ error: 'Could not send the message' });
+  }
+});
+
 /* One saved customer's spend and every trip they have taken.
    Staff only, exactly like the rest of the directory — this is a named person's
    address, number and spending history in one response. */

@@ -200,7 +200,12 @@ async function sendEmail(to, subject, html, fromLabel, preheader, opts) {
 
   let finalHtml = html;
   if (preheader) {
-    const hidden = `<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#FFFFFF;opacity:0">${preheader}</div>`;
+    /* ESCAPED. The preheader is the one place in this file where caller text was
+       being injected into markup raw, and several callers pass text a human
+       typed — the owner's Send Message, and now the outreach letter. The BODY
+       of those emails has always been escaped; this was the hole beside it.
+       Found by server/tests/outreach.test.js. */
+    const hidden = `<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#FFFFFF;opacity:0">${escHtml(preheader)}</div>`;
     finalHtml = html.replace('<body', hidden + '<body').replace(/<body([^>]*)>/, '<body$1>' + hidden);
   }
 
@@ -614,7 +619,7 @@ function heroShell(innerHtml, opts) {
   <div style="width:60px;height:1px;background:#c8d1d9;line-height:1px;font-size:0;margin:14px auto 0">&nbsp;</div>
 </td></tr>
 
-<tr><td style="font-size:0;line-height:0;background:#FFFFFF"><img src="${HOST}/assets/westmere-email-hero.jpg" width="600" alt="Westmere car on the Sussex coast" style="display:block;width:100%;max-width:600px;height:auto;border:0;outline:none"></td></tr>
+${opts.hero === false ? '' : `<tr><td style="font-size:0;line-height:0;background:#FFFFFF"><img src="${HOST}/assets/westmere-email-hero.jpg" width="600" alt="Westmere car on the Sussex coast" style="display:block;width:100%;max-width:600px;height:auto;border:0;outline:none"></td></tr>`}
 
 ${innerHtml}
 
@@ -627,7 +632,7 @@ ${innerHtml}
 
 <tr><td style="padding:24px 30px;background:#FFFFFF;border-top:1px solid #dfe5ea;text-align:center">
   <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:12px;line-height:1.7;color:#657485"><a href="tel:+447930342593" style="color:#102a43;text-decoration:none">07930 342593</a> &middot; <a href="mailto:bookings@westmereprivatehire.co.uk" style="color:#102a43;text-decoration:none">bookings@westmereprivatehire.co.uk</a> &middot; <a href="${HOST}" style="color:#102a43;text-decoration:none">westmereprivatehire.co.uk</a></p>
-  <p style="margin:0 0 4px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:12px;line-height:1.7;color:#657485">Reply to this email or call us if anything needs adjusting.</p>
+  <p style="margin:0 0 4px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:12px;line-height:1.7;color:#657485">${escHtml(opts.footerNote || 'Reply to this email or call us if anything needs adjusting.')}</p>
   <p style="margin:0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:12px;line-height:1.7;color:#657485">Westmere Private Hire &middot; Licensed Private Hire Operator</p>
 </td></tr>
 
@@ -643,6 +648,169 @@ ${innerHtml}
 // booking pay-buttons.
 function heroEmail(bodyHtml, opts) {
   return heroShell(`<tr><td class="wm-pad" style="padding:30px 40px 14px;background:#FFFFFF">${bodyHtml}</td></tr>`, opts);
+}
+
+/* ── A LETTER, NOT A BOOKING ──────────────────────────────────────────────
+   The same shell every Westmere email uses — the typographic wordmark, the
+   gold rule, the signature block, the footer — with the coastal hero photo
+   left OFF.
+
+   The photo is right on a booking email: the customer has bought that car and
+   that road. On a letter to a hotel or another operator it is advertising in
+   the middle of an introduction, and it is what makes a first approach read as
+   a mailshot. The wordmark is already type rather than an image (see
+   heroShell), so removing the photo leaves a proper letterhead rather than a
+   gap where a logo should be.
+
+   The footer's "anything needs adjusting" line is booking language too, so it
+   is replaced with something a stranger can read.
+   GUARDRAIL: server/tests/outreach.test.js */
+function letterEmail(bodyHtml, opts) {
+  const o = opts || {};
+  return heroShell(
+    `<tr><td class="wm-pad" style="padding:34px 40px 18px;background:#FFFFFF">${bodyHtml}</td></tr>`,
+    { title: o.title, hero: false,
+      footerNote: 'Westmere Private Hire — chauffeur and airport transfers across Surrey & Sussex.' }
+  );
+}
+
+/**
+ * THE JOB OFFER, TO A DRIVER.
+ *
+ * The letterhead, not the customer hero — this is a colleague being offered
+ * work, not a passenger being sold a journey.
+ *
+ * THE MONEY IS THE POINT. A driver reads one number, and it must be the number
+ * that reaches his bank: the fare with the 10% already taken off. The split is
+ * computed by offer-routes.computeSplit() and passed in; this function does no
+ * arithmetic on it whatsoever. If it ever recomputed the fee itself there would
+ * be two commission rates in the system, and the one in the email is the one a
+ * driver would hold us to.
+ *
+ * Accept and Decline are tokenised links to a CONFIRM PAGE, never to an action
+ * — the same rule as the customer's cancel. A driver's mail client fetching
+ * every URL in the message must not accept a job on his behalf at 3am.
+ * GUARDRAIL: server/tests/dispatch-offer.test.js
+ */
+async function sendDriverJobOffer(d) {
+  const to = d && d.driver_email;
+  if (!to || !d.ref) return false;
+  const first = greetingName(d.driver_name) || 'there';
+  const dateStr = formatDate(d.date, d.time);
+  const pay = (d.driver_pay === null || d.driver_pay === undefined) ? null : Number(d.driver_pay);
+  const payStr = pay === null ? null : '£' + pay.toFixed(2);
+
+  let rows = '';
+  rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:' + INK + '">' + escHtml(d.ref) + '</span>');
+  rows += detailRow('Date & Time', escHtml(dateStr), { gold: true });
+  rows += rowDivider();
+  rows += detailRow('Pickup', dispAddr(d.pickup));
+  if (d.stop_address) rows += detailRow('Stop', dispAddr(d.stop_address));
+  rows += detailRow('Drop-off', dispAddr(d.destination));
+  const flt = dispFlight(d);
+  if (flt) rows += detailRow('Flight', escHtml(flt));
+  rows += rowDivider();
+  rows += detailRow('Passengers', String(d.passengers || 1));
+  const bagsTxt = bagsText(d.bags);
+  rows += detailRow('Luggage', escHtml(bagsTxt || 'None stated'));
+  const note = cleanOwnerNote(d.notes);
+  if (note) rows += detailRow('Notes', escHtml(note));
+  if (d.customer_note) rows += detailRow('Passenger asked for', escHtml(String(d.customer_note)));
+
+  /* The pay, on its own, larger than anything else on the page. */
+  const payBlock = payStr ? `
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${ACCENT};margin:20px 0 4px">
+    <tr><td style="padding:16px 18px;text-align:center">
+      <div style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${INK_MUTED}">Your pay for this job</div>
+      <div style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:34px;line-height:1.15;color:${INK};margin-top:4px">${escHtml(payStr)} to you</div>
+      <div style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:12px;color:${INK_MUTED};margin-top:4px">Fare £${Number(d.fare || 0).toFixed(2)} &middot; 10% commission already deducted</div>
+    </td></tr>
+  </table>` : `
+  <p style="margin:20px 0 4px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK_MUTED};text-align:center">The fare for this job is not set yet &mdash; we will confirm your pay before it runs.</p>`;
+
+  let actions = '';
+  if (d.offer_token) {
+    const base = `${HOST}/api/public/offer/${encodeURIComponent(d.ref)}`;
+    const t = `?t=${encodeURIComponent(d.offer_token)}`;
+    actions = `
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:18px">
+    ${actionBtn(base + '/accept' + t, 'Accept This Job', 'primary')}
+    ${actionBtn(base + '/decline' + t, 'Decline', 'secondary')}
+  </table>`;
+  }
+
+  const body = `
+  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">A job for you</p>
+  <p style="margin:0 0 8px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:18px;color:${INK};font-weight:400;line-height:1.4">${escHtml(first)}, there is a job going if you want it.</p>
+  <p style="margin:0 0 20px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Please check the passengers, the luggage and any special requests below before you accept &mdash; once you take it, it is yours.</p>
+  ${buildDetailsTable(rows)}
+  ${payBlock}
+  ${actions}
+  <p style="margin:22px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">You can also accept or decline in the driver app. Any questions, call 07930&nbsp;342593.</p>`;
+
+  const html = letterEmail(body, { title: 'A job for you — ' + d.ref });
+  const subject = 'Job offer' + (payStr ? ' — ' + payStr + ' to you' : '') + ' · ' + d.ref;
+  const preheader = dateStr + ' · ' + shortDisplay(d.pickup) + ' → ' + shortDisplay(d.destination) + (payStr ? ' · ' + payStr + ' to you' : '');
+  const ok = await sendEmail(to, subject, html, 'Westmere Dispatch', preheader);
+  if (ok) console.log('[EMAIL] Driver job offer sent (' + d.ref + ' → ' + to + ', ' + (payStr || 'fare TBC') + ')');
+  return ok;
+}
+
+/**
+ * A message from the owner to one driver. Same letterhead, same escaping rules
+ * as the customer and outreach messages — the owner's words, wrapped.
+ */
+async function sendDriverMessage(driver, message, opts) {
+  const o = opts || {};
+  const to = driver && driver.email;
+  const body = String(message == null ? '' : message).trim();
+  if (!to || !body) return false;
+  const first = greetingName(driver.full_name) || 'there';
+  const paras = escHtml(body).split(/\n{2,}/).map((p) =>
+    `<p style="margin:0 0 16px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};line-height:1.75">${p.replace(/\n/g, '<br>')}</p>`
+  ).join('');
+  const html = letterEmail(`
+  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">A message from Westmere</p>
+  <p style="margin:0 0 16px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};line-height:1.55">${escHtml(first)},</p>
+  ${paras}
+  <p style="margin:20px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">Reply to this email or call 07930&nbsp;342593.</p>`,
+    { title: o.subject || 'A message from Westmere' });
+  const subject = o.subject || 'A message from Westmere Private Hire';
+  const ok = await sendEmail(to, subject, html, 'Westmere Private Hire', body.replace(/\s+/g, ' ').slice(0, 90));
+  if (ok) console.log('[EMAIL] Driver message sent to ' + to);
+  return ok;
+}
+
+/**
+ * A one-off branded email to anybody at all — a hotel, another operator, a
+ * supplier. No booking, no customer record, no template beyond the letterhead.
+ *
+ * The owner's typed message is the body, escaped and with its line breaks kept.
+ * It is NEVER treated as HTML: this is a field on a form that sends mail out
+ * under the company's own domain, and the one thing it must not become is a way
+ * to put arbitrary markup in front of somebody.
+ */
+async function sendOutreachMessage(to, subject, message, opts) {
+  const o = opts || {};
+  const addr = String(to == null ? '' : to).trim();
+  const subj = String(subject == null ? '' : subject).trim();
+  const body = String(message == null ? '' : message).trim();
+  if (!addr || !subj || !body) return false;
+
+  const paras = escHtml(body).split(/\n{2,}/).map((p) =>
+    `<p style="margin:0 0 16px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};line-height:1.75">${p.replace(/\n/g, '<br>')}</p>`
+  ).join('');
+
+  const html = letterEmail(`
+  <p style="margin:0 0 18px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">${escHtml(o.eyebrow || 'A note from Westmere')}</p>
+  ${paras}`, { title: subj });
+
+  // Replies come back to Westmere, not to the void — sendEmail sets Reply-To
+  // from REPLY_TO (bookings@westmereprivatehire.co.uk).
+  const preheader = body.replace(/\s+/g, ' ').slice(0, 90);
+  const ok = await sendEmail(addr, subj, html, 'Westmere Private Hire', preheader);
+  if (ok) console.log('[EMAIL] Outreach sent to ' + addr + ' — "' + subj.slice(0, 60) + '"');
+  return ok;
 }
 
 function confirmationEmailHtml(d) {
@@ -2222,6 +2390,7 @@ async function sendCustomerMessage(booking, message, opts) {
 module.exports = {
   sendCustomerAcknowledgement, sendCustomerConfirmed, sendCustomerEstimate, sendAdminAlert,
   sendOwnerCancelledRequest, sendOwnerCustomerNote, sendOwnerChangeRequest, sendCustomerMessage,
+  sendOutreachMessage, letterEmail, sendDriverJobOffer, sendDriverMessage,
   sendCustomerJourneyReminder, airportBlockHtml, flightTrackUrl, driverBlockHtml, driverDetails, cancelLinkHtml,
   sendCustomerBookingUpdated,
   sendCustomerWelcome, sendCustomerInvoice, sendBespokeInvoice, sendInvoiceReminder,

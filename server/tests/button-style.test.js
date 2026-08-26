@@ -591,8 +591,16 @@ test('no header or footer anywhere carries a solid fill', () => {
   // include 380kB minified apps, and an unbounded rule pattern backtracks for
   // minutes on a single long line.
   const RULE = /([^{}();]{1,120})\{([^{}]{0,600})\}/g;
+  /* Comments are blanked before scanning, newlines kept so the line numbers
+     still point at the real rule. Without this the "selector" captured by RULE
+     is everything since the previous `}` — INCLUDING any comment above it — so
+     a rule whose comment merely mentions the topbar is read as a topbar rule.
+     A modal scrim explaining why it sits under the topbar was reported as a
+     filled header. The same fix is in no-fills.test.js, for the same reason. */
+  const strip = (t) => t.replace(/\/\*[\s\S]*?\*\//g,
+    (c) => c.replace(/[^\n]/g, ' '));
   for (const f of files) {
-    const src = read(f);
+    const src = strip(read(f));
     const lineAt = (idx) => src.slice(0, idx).split('\n').length;
     for (const m of src.matchAll(RULE)) {
       const sel = m[1].trim();

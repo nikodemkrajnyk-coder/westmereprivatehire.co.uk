@@ -2661,7 +2661,10 @@ function buildAdmCompleted(){
     return;
   }
   var html='';
-  WMLifecycle.groupByWeek(jobs).forEach(function(g){
+  // Month, not week — matched to the owner app, which is what the parity guard
+  // is there to keep true. Plain dividers here; the collapsing is a phone
+  // affordance and admin is a desktop screen.
+  WMLifecycle.groupByMonth(jobs).forEach(function(g){
     html+='<div style="display:flex;justify-content:space-between;align-items:baseline;gap:.6rem;padding:.7rem 1rem .5rem;background:transparent;border-bottom:1px solid rgba(27,27,26,.18)">'
       +'<span style="font-family:var(--serif);font-size:1.02rem;font-weight:500;color:var(--navy)">'+escTo(g.label)+'</span>'
       +'<span style="font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(27,27,26,.45);white-space:nowrap">'+g.items.length+(g.items.length===1?' job':' jobs')+' · £'+g.takings.toFixed(0)+'</span>'

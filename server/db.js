@@ -815,6 +815,12 @@ function migrate() {
   // get his and the customer would silently get nothing, or the reverse.
   try { db.exec(`ALTER TABLE bookings ADD COLUMN customer_reminder_sent_at TEXT`); } catch(_){}
 
+  // A per-OFFER secret, minted when a job is offered and cleared the moment it
+  // is decided or reclaimed. Gates the accept/decline links in the driver's
+  // offer email. Separate from pay_token, which is the CUSTOMER's: one secret
+  // doing two jobs means a customer's payment link would also decide offers.
+  try { db.exec(`ALTER TABLE bookings ADD COLUMN offer_token TEXT`); } catch(_){}
+
   // Set when Google REJECTS the refresh token itself (invalid_grant), which no
   // retry can fix. Lets the owner app say "reconnect Google" instead of showing
   // a healthy connection above an empty calendar. Cleared on the next

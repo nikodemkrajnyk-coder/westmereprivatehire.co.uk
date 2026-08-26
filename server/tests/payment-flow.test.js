@@ -261,7 +261,8 @@ test('buildCompleted groups jobs by ISO week rather than a flat list', () => {
   assert.ok(fn, 'buildCompleted not found');
   // The ISO-week grouping + per-week takings live in the shared lifecycle
   // module, so the admin app groups Completed identically.
-  assert.ok(/WMLifecycle\.groupByWeek\(jobs\)/.test(fn[0]), 'buildCompleted must bucket jobs by ISO week');
+  assert.ok(/WMLifecycle\.groupByMonth\(jobs\)/.test(fn[0]),
+    'buildCompleted must bucket jobs by month — never a flat list, which is what this has always guarded');
   assert.ok(/g\.label/.test(fn[0]), 'buildCompleted must render a per-week header');
   assert.ok(/g\.takings/.test(fn[0]), 'buildCompleted must show the week\'s takings');
   assert.ok(!/renderJobList/.test(fn[0]), 'buildCompleted must no longer defer to the flat renderJobList');
@@ -500,9 +501,18 @@ test('the imageless emailShell is removed and every email html uses the hero tem
   const assigns = src.match(/const html = \w+\(/g) || [];
   assert.ok(assigns.length >= 15, 'expected many html assignments, got ' + assigns.length);
   for (const a of assigns) {
-    assert.ok(/heroEmail\(|confirmationEmailHtml\(/.test(a),
-      'every email html must be built by heroEmail()/confirmationEmailHtml(), found: ' + a);
+    // letterEmail is the SAME shell with the hero photo suppressed — the
+    // letterhead used for outreach to people who have not booked anything. It
+    // is allowed here precisely because it is not a second design; the
+    // assertion below holds it to that.
+    assert.ok(/heroEmail\(|confirmationEmailHtml\(|letterEmail\(/.test(a),
+      'every email html must be built by heroEmail()/confirmationEmailHtml()/letterEmail(), found: ' + a);
   }
+  const letter = src.match(/function letterEmail[\s\S]*?\n\}/);
+  assert.ok(letter, 'letterEmail not found');
+  assert.ok(/heroShell\(/.test(letter[0]),
+    'letterEmail must build on heroShell — a separate shell is the thing this test exists to prevent');
+  assert.ok(/hero: false/.test(letter[0]), 'and it must suppress the photo by parameter, not by copying the markup');
   const shell = src.match(/function heroShell[\s\S]*?\n\}/);
   assert.ok(shell, 'heroShell (the one shared design) not found');
   assert.ok(/westmere-email-hero\.jpg/.test(shell[0]), 'heroShell must embed the hero image');

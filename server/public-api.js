@@ -871,6 +871,88 @@ router.post('/cancel/:ref', (req, res) => {
   }
 });
 
+/* ── A DRIVER DECIDING AN OFFER FROM HIS EMAIL ────────────────────────────
+   Exactly the shape of the customer cancel above, for exactly the same reason:
+   GET only ever renders a page, POST does the thing. A driver's mail client
+   prefetching every link in his inbox must not accept a 4am Gatwick run on his
+   behalf, and a stray tap in a pocket must not decline one.
+
+   Gated by the per-offer token, which is minted when the job is offered and
+   destroyed the moment it is decided or reclaimed — so the link in a
+   superseded email is already dead.
+
+   The decision itself goes through offer-routes.acceptOffer/declineOffer, the
+   same functions the driver app calls, so both channels write one way.
+   GUARDRAIL: server/tests/dispatch-offer.test.js */
+function offerFromToken(ref, token) {
+  const db = getDb();
+  const b = db.prepare('SELECT * FROM bookings WHERE ref = ?').get(String(ref || '').trim().toUpperCase());
+  if (!b || !b.offer_token || !token || b.offer_token !== token) return null;
+  return b;
+}
+
+router.get('/offer/:ref/:action', (req, res) => {
+  try {
+    const action = String(req.params.action || '');
+    if (['accept', 'decline'].indexOf(action) === -1) {
+      return res.status(404).send(actionPage('Link not available', 'This link is not valid.', null, '', 'error'));
+    }
+    const token = String(req.query.t || req.query.token || '').trim();
+    const b = offerFromToken(req.params.ref, token);
+    if (!b) {
+      return res.status(404).send(actionPage('Link not available',
+        'This offer is no longer open. It may already have been decided, or passed to somebody else.', null, '', 'error'));
+    }
+    if (b.status !== 'offered') {
+      return res.send(actionPage('Already decided',
+        'This job is no longer waiting on you. Check the driver app for your current jobs.', b.ref, '', 'ok'));
+    }
+    const pay = (b.driver_pay === null || b.driver_pay === undefined) ? null : Number(b.driver_pay);
+    const payStr = pay === null ? '' : ' — £' + pay.toFixed(2) + ' to you';
+    const form = `<form method="POST"><button type="submit" class="act ${action === 'accept' ? 'navy' : 'danger'}">${
+      action === 'accept' ? 'Confirm — Take This Job' : 'Confirm — Decline'}</button></form>`;
+    res.send(action === 'accept'
+      ? actionPage('Take this job?', 'Confirm below and the job is yours' + payStr + '. Please make sure the passengers and luggage suit your car.', b.ref, form, 'confirm')
+      : actionPage('Decline this job?', 'Confirm below and it goes back to Westmere to offer elsewhere. No hard feelings.', b.ref, form, 'confirm'));
+  } catch (err) {
+    console.error('[OFFER] page error:', err.message);
+    res.status(500).send(actionPage('Something went wrong', 'Please call us on 07930 342593.', null, '', 'error'));
+  }
+});
+
+router.post('/offer/:ref/:action', (req, res) => {
+  try {
+    const action = String(req.params.action || '');
+    if (['accept', 'decline'].indexOf(action) === -1) {
+      return res.status(404).send(actionPage('Link not available', 'This link is not valid.', null, '', 'error'));
+    }
+    const token = String(req.query.t || req.query.token || '').trim();
+    const b = offerFromToken(req.params.ref, token);
+    if (!b) {
+      return res.status(404).send(actionPage('Link not available',
+        'This offer is no longer open.', null, '', 'error'));
+    }
+    const offers = require('./offer-routes');
+    const out = action === 'accept'
+      ? offers.acceptOffer(getDb(), b.id, b.offered_to_driver_id)
+      : offers.declineOffer(getDb(), b.id, b.offered_to_driver_id, 'Declined from the offer email');
+    if (!out.ok) {
+      return res.send(actionPage('Already decided',
+        'This job is no longer waiting on you.', b.ref, '', 'ok'));
+    }
+    try {
+      getDb().prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+        .run('driver', b.offered_to_driver_id || 0, 'offer_' + action + '_by_email', b.ref, req.ip);
+    } catch (_) {}
+    res.send(action === 'accept'
+      ? actionPage('The job is yours', 'Westmere has been told. It is in your driver app now, with the full details and the navigation.', b.ref, '', 'ok')
+      : actionPage('Declined', 'Thank you for letting us know quickly — that is genuinely useful. We will offer it elsewhere.', b.ref, '', 'ok'));
+  } catch (err) {
+    console.error('[OFFER] decide error:', err.message);
+    res.status(500).send(actionPage('Something went wrong', 'Please call us on 07930 342593.', null, '', 'error'));
+  }
+});
+
 // ── Add a note / special requirement — customer link from their email ─────
 // GET shows a note form; POST saves it to customer_note and alerts the owner.
 router.get('/note/:ref', (req, res) => {

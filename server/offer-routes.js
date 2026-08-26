@@ -103,6 +103,9 @@ router.post('/bookings/:id/offer', staffOnly, (req, res) => {
     }
 
     const { driver_pay, admin_fee } = computeSplit(booking.fare);
+    /* Fresh per offer. A job that was offered, reclaimed and offered again must
+       not be decidable with the link from the first email. */
+    const offerToken = require('crypto').randomBytes(24).toString('base64url');
     const driverLabel = (driver.full_name || ('#' + driver_id)).slice(0, 120);
 
     // Update booking status — use a simpler UPDATE that avoids string-concat
@@ -113,12 +116,13 @@ router.post('/bookings/:id/offer', staffOnly, (req, res) => {
              offered_to_driver_id = ?,
              offered_at = datetime('now'),
              decided_at = NULL,
+             offer_token = ?,
              driver_pay = ?,
              admin_fee  = ?,
              needs_reassignment = 0,
              updated_at = datetime('now')
        WHERE id = ?
-    `).run(driver_id, driver_pay, admin_fee, req.params.id);
+    `).run(driver_id, offerToken, driver_pay, admin_fee, req.params.id);
 
     // Append to intake_reason separately — non-fatal if it fails
     try {
@@ -138,11 +142,14 @@ router.post('/bookings/:id/offer', staffOnly, (req, res) => {
     // (push tokens, email, WhatsApp are all optional at offer time)
     if (driver.email) {
       try {
-        email.sendDriverJobOffer && email.sendDriverJobOffer({
+        email.sendDriverJobOffer({
           driver_name: driver.full_name, driver_email: driver.email,
           ref: booking.ref, pickup: booking.pickup, destination: booking.destination,
-          date: booking.date, time: booking.time, fare: booking.fare,
-          driver_pay, passengers: booking.passengers
+          stop_address: booking.stop_address, date: booking.date, time: booking.time,
+          fare: booking.fare, driver_pay, admin_fee,
+          passengers: booking.passengers, bags: booking.bags, flight: booking.flight,
+          notes: booking.notes, customer_note: booking.customer_note,
+          offer_token: offerToken
         });
       } catch (notifyErr) {
         console.warn('[OFFER] driver email notification skipped:', notifyErr.message);
@@ -171,6 +178,7 @@ router.post('/bookings/:id/reclaim', staffOnly, (req, res) => {
        SET status = 'pending',
            offered_to_driver_id = NULL,
            offered_at = NULL,
+           offer_token = NULL,
            decided_at = datetime('now'),
            driver_pay = NULL,
            admin_fee  = NULL,
@@ -213,54 +221,55 @@ router.get('/driver/jobs', driverOnly, (req, res) => {
 });
 
 // ── Driver: accept an offer ──────────────────────────────────────────────
-router.post('/driver/offers/:id/accept', driverOnly, (req, res) => {
-  const db = getDb();
-  const b = db.prepare('SELECT * FROM bookings WHERE id = ?').get(req.params.id);
-  if (!b) return res.status(404).json({ error: 'Booking not found' });
-  if (b.status !== 'offered' || b.offered_to_driver_id !== req.auth.id) {
-    return res.status(409).json({ error: 'This offer is no longer pending your decision.' });
-  }
+/* ── DECIDING AN OFFER, ONCE ──────────────────────────────────────────────
+   A driver can now say yes from two places: the Offered screen in his app, and
+   the buttons in the offer email. Both land here rather than each writing its
+   own UPDATE — two implementations of "accept" is two ways for a job to end up
+   half-assigned, and the one that is used less is the one that rots.
 
-  const wasPending = !b.driver_id; // first-time confirmation for customer
+   Both refuse unless the booking is STILL offered to THIS driver, so a stale
+   email opened after the sweeper reclaimed the job cannot assign it. */
+function acceptOffer(db, bookingId, driverId) {
+  const b = db.prepare('SELECT * FROM bookings WHERE id = ?').get(bookingId);
+  if (!b) return { ok: false, reason: 'not_found' };
+  if (b.status !== 'offered' || b.offered_to_driver_id !== driverId) {
+    return { ok: false, reason: 'not_pending' };
+  }
+  const wasPending = !b.driver_id;
   db.prepare(`
     UPDATE bookings
        SET status = 'confirmed',
            driver_id = ?,
            offered_to_driver_id = NULL,
+           offer_token = NULL,
            decided_at = datetime('now'),
            needs_reassignment = 0,
            intake_reason = COALESCE(intake_reason, '') || ' [Accepted by driver ' || ? || ' at ' || datetime('now') || ']',
            updated_at = datetime('now')
      WHERE id = ?
-  `).run(req.auth.id, req.auth.id, req.params.id);
-
-  const row = bookingRow(req.params.id);
-  events.broadcast('job:accepted', publicSummary(row), { driverId: req.auth.id });
-
-  // First-time acceptance → send customer confirmation email
+  `).run(driverId, driverId, bookingId);
+  const row = bookingRow(bookingId);
+  events.broadcast('job:accepted', publicSummary(row), { driverId });
   if (wasPending) {
-    intake.notifyCustomerConfirmed(parseInt(req.params.id, 10))
+    intake.notifyCustomerConfirmed(parseInt(bookingId, 10))
       .catch(e => console.error('[OFFER] notifyCustomerConfirmed failed:', e.message));
   }
+  return { ok: true, row };
+}
 
-  res.json({ ok: true, booking: publicSummary(row) });
-});
-
-// ── Driver: decline an offer ─────────────────────────────────────────────
-router.post('/driver/offers/:id/decline', driverOnly, (req, res) => {
-  const reason = (req.body && typeof req.body.reason === 'string') ? req.body.reason.slice(0, 500) : '';
-  const db = getDb();
-  const b = db.prepare('SELECT * FROM bookings WHERE id = ?').get(req.params.id);
-  if (!b) return res.status(404).json({ error: 'Booking not found' });
-  if (b.status !== 'offered' || b.offered_to_driver_id !== req.auth.id) {
-    return res.status(409).json({ error: 'This offer is no longer pending your decision.' });
+function declineOffer(db, bookingId, driverId, reason) {
+  const b = db.prepare('SELECT * FROM bookings WHERE id = ?').get(bookingId);
+  if (!b) return { ok: false, reason: 'not_found' };
+  if (b.status !== 'offered' || b.offered_to_driver_id !== driverId) {
+    return { ok: false, reason: 'not_pending' };
   }
-
   db.prepare(`
     UPDATE bookings
        SET status = 'pending',
            offered_to_driver_id = NULL,
            offered_at = NULL,
+           offer_token = NULL,
+           offer_token = NULL,
            decided_at = datetime('now'),
            driver_pay = NULL,
            admin_fee  = NULL,
@@ -268,10 +277,31 @@ router.post('/driver/offers/:id/decline', driverOnly, (req, res) => {
            intake_reason = COALESCE(intake_reason, '') || ' [Declined by driver ' || ? || ': ' || ? || ' at ' || datetime('now') || ']',
            updated_at = datetime('now')
      WHERE id = ?
-  `).run(req.auth.id, reason || 'no reason given', req.params.id);
+  `).run(driverId, (reason || 'no reason given'), bookingId);
+  const row = bookingRow(bookingId);
+  events.broadcast('job:declined', publicSummary(row), { driverId });
+  return { ok: true, row };
+}
 
-  const row = bookingRow(req.params.id);
-  events.broadcast('job:declined', publicSummary(row), { driverId: req.auth.id });
+router.post('/driver/offers/:id/accept', driverOnly, (req, res) => {
+  const out = acceptOffer(getDb(), req.params.id, req.auth.id);
+  if (!out.ok) {
+    return out.reason === 'not_found'
+      ? res.status(404).json({ error: 'Booking not found' })
+      : res.status(409).json({ error: 'This offer is no longer pending your decision.' });
+  }
+  res.json({ ok: true, booking: publicSummary(out.row) });
+});
+
+// ── Driver: decline an offer ─────────────────────────────────────────────
+router.post('/driver/offers/:id/decline', driverOnly, (req, res) => {
+  const reason = (req.body && typeof req.body.reason === 'string') ? req.body.reason.slice(0, 500) : '';
+  const out = declineOffer(getDb(), req.params.id, req.auth.id, reason);
+  if (!out.ok) {
+    return out.reason === 'not_found'
+      ? res.status(404).json({ error: 'Booking not found' })
+      : res.status(409).json({ error: 'This offer is no longer pending your decision.' });
+  }
   res.json({ ok: true });
 });
 
@@ -393,4 +423,7 @@ function startOfferSweeper() {
 module.exports = router;
 module.exports.startOfferSweeper = startOfferSweeper;
 module.exports.ADMIN_FEE_PCT = ADMIN_FEE_PCT;
+module.exports.computeSplit = computeSplit;
+module.exports.acceptOffer = acceptOffer;
+module.exports.declineOffer = declineOffer;
 module.exports.OFFER_WINDOW_MS = OFFER_WINDOW_MS;

@@ -50,7 +50,8 @@ test('both apps gate their ACTIONS on the shared actionsFor()', () => {
 });
 test('both apps take luggage + weekly grouping from the shared module', () => {
   assert.ok(/WMLifecycle\.bagsText\(/.test(OWNER) && /WMLifecycle\.bagsText\(/.test(ADMIN), 'both apps must use the shared bagsText');
-  assert.ok(/WMLifecycle\.groupByWeek\(/.test(OWNER) && /WMLifecycle\.groupByWeek\(/.test(ADMIN), 'both apps must group Completed by the shared ISO week');
+  assert.ok(/WMLifecycle\.groupByMonth\(/.test(OWNER) && /WMLifecycle\.groupByMonth\(/.test(ADMIN),
+    'both apps must group Trip History by the SAME shared function — the owner reads a month at a time now, and admin must not stay on weeks');
 });
 
 // ── 2. NO staff path may auto-confirm ─────────────────────────────────────
@@ -315,7 +316,7 @@ console.log('\nAdmin has the weekly Completed ledger and the Cancelled record');
 test('admin has a Completed view grouped by week with takings', () => {
   const fn = ADMIN.match(/function buildAdmCompleted[\s\S]*?\n\}/);
   assert.ok(fn, 'buildAdmCompleted not found');
-  assert.ok(/WMLifecycle\.groupByWeek\(/.test(fn[0]), 'Completed must group by the shared ISO week');
+  assert.ok(/WMLifecycle\.groupByMonth\(/.test(fn[0]), 'Trip History must group by the shared month function');
   assert.ok(/g\.takings/.test(fn[0]), "each week must show that week's takings");
   assert.ok(/id="adm-completed-list"/.test(ADMIN), 'the Completed view needs its list container');
 });

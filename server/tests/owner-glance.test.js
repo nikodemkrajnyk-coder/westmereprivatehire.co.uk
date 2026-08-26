@@ -260,7 +260,7 @@ test('every remaining group header is a WEEK, not a day', () => {
     if (!body) continue;
     assert.ok(!/_fmtUpcomingDate|_fmtDayHeader|_admGlanceDate/.test(body),
       fn + ' prints a per-day date above its rows — the rows already show it in the glance');
-    assert.ok(/groupByWeek/.test(body), fn + ' is no longer grouping by week');
+    assert.ok(/groupBy(Week|Month)/.test(body), fn + ' is no longer grouping at all — a flat list is what this guards against');
   }
 });
 

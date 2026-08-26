@@ -38,6 +38,15 @@ nav#nav{display:none}
 .app{display:flex;flex-direction:column;height:100vh;height:100dvh;position:relative;z-index:1;overflow:hidden;max-width:100vw}
 .topbar{background:#ffffff;padding:calc(var(--safe-top) + .35rem) 1.2rem .35rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid rgba(106,106,106,.2);box-shadow:0 1px 8px rgba(0,0,0,.25);z-index:60;min-height:50px}
 .tb-left{display:flex;align-items:center;gap:.8rem}
+.tb-menu{
+  width:44px;height:44px;flex-shrink:0;margin-left:-.35rem;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  background:none;border:none;cursor:pointer;border-radius:8px;padding:0;
+  -webkit-tap-highlight-color:transparent;
+}
+.tb-menu:active{background:rgba(16,42,67,.07)}
+.tb-menu span{display:block;width:19px;height:1.5px;background:var(--westmere-navy,#102a43);border-radius:2px;transition:transform .22s,opacity .22s}
+.tb-menu:focus-visible{outline:2px solid var(--westmere-navy,#102a43);outline-offset:2px}
 .tb-crest{width:36px;height:36px;border:1px solid rgba(106,106,106,.35);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:1rem;color:var(--navy);flex-shrink:0}
 .tb-name{font-family:var(--serif);font-size:1rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#1a1a1a}
 .tb-mode-label{font-size:.63rem;letter-spacing:.2em;text-transform:uppercase;color:var(--navy)}
@@ -49,6 +58,95 @@ nav#nav{display:none}
 /* ── BOTTOM NAV ── */
 .bottom-nav{background:#ffffff;border-top:1px solid rgba(106,106,106,.2);box-shadow:0 -1px 8px rgba(0,0,0,.25);display:flex;flex-direction:column;padding-bottom:var(--safe-bottom);flex-shrink:0;z-index:60}
 .bn-row{display:flex;width:100%}
+/* ── TRIP HISTORY: a month at a time ── */
+.tm-head{display:flex;align-items:baseline;gap:.55rem;width:100%;padding:.7rem 1rem .55rem;
+  background:#ffffff;border:none;border-bottom:1px solid var(--rule);cursor:pointer;text-align:left;
+  font-family:inherit;-webkit-tap-highlight-color:transparent}
+.tm-head:active{background:rgba(16,42,67,.04)}
+.tm-head:focus-visible{outline:2px solid var(--westmere-navy,#102a43);outline-offset:-2px}
+.tm-caret{display:inline-block;font-family:var(--serif);font-size:1.05rem;line-height:1;
+  color:rgba(27,27,26,.4);transition:transform .18s;flex-shrink:0}
+.tm-caret.on{transform:rotate(90deg)}
+.tm-label{flex:1;font-family:var(--serif);font-size:1.02rem;font-weight:500;letter-spacing:.05em;color:var(--navy)}
+.tm-meta{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(27,27,26,.45);white-space:nowrap}
+.tm-body[hidden]{display:none}
+/* ── THE LEFT DRAWER ──────────────────────────────────────────────────────
+   The bottom bar had grown to nine tabs across two rows and was eating the
+   screen the owner actually works in. Two tabs stay on the bar — Confirmed and
+   Awaiting, the two he lives in — and everything else moves to a full-height
+   drawer on the left.
+
+   Variant B, the compact one the owner picked: narrow, edge to edge, the list
+   spread through the height rather than bunched at the top, Sign Out pinned at
+   the bottom. Behaviour is copied from westmere-rider.html rather than
+   reinvented, so both apps open the same way.
+   Guardrail: server/tests/owner-nav.test.js */
+.side{
+  display:flex;flex-direction:column;width:min(78vw,250px);flex-shrink:0;
+  background:#ffffff;border-right:1px solid rgba(16,42,67,.12);
+  padding:0 0 calc(.9rem + var(--safe-bottom));overflow-y:auto;
+  position:fixed;top:0;left:0;bottom:0;height:100dvh;z-index:120;
+  transform:translateX(-102%);
+  transition:transform .26s cubic-bezier(.4,0,.2,1);
+  box-shadow:0 0 40px rgba(16,42,67,.16);
+}
+.side.open{transform:translateX(0)}
+/* The scrim dims the page AND is the tap-outside-to-close target. It must sit
+   under the drawer but over everything else — the topbar is z-index 60, so
+   anything lower paints beneath it and the drawer looks broken. */
+.side-scrim{
+  position:fixed;inset:0;background:rgba(16,42,67,.42);z-index:119;
+  opacity:0;visibility:hidden;transition:opacity .26s,visibility .26s;
+}
+.side-scrim.open{opacity:1;visibility:visible}
+.side-close{
+  position:absolute;top:calc(.7rem + var(--safe-top));right:.6rem;
+  width:38px;height:38px;border:none;background:none;cursor:pointer;border-radius:8px;
+  font-family:var(--serif);font-size:1.3rem;line-height:1;color:var(--westmere-navy,#102a43);
+}
+.side-close:active{background:rgba(16,42,67,.07)}
+.side-id{
+  padding:calc(1.15rem + var(--safe-top)) 1.15rem .9rem;
+  border-bottom:1px solid rgba(16,42,67,.08);flex-shrink:0;
+}
+.side-id-name{font-family:var(--serif);font-size:1.15rem;line-height:1.15;color:var(--westmere-navy,#102a43);letter-spacing:.05em}
+.side-id-sub{font-size:.63rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(27,27,26,.42);margin-top:.25rem;line-height:1.2}
+/* flex:1 stretches the LIST into the free space; space-between then spreads its
+   three groups across it, so the column reads top-to-bottom instead of six rows
+   huddled under the header with a blank third below them. Each pair stays tight
+   at 42px — the air goes between the groups, where the separators already are,
+   not inside them. A short viewport simply runs out of slack and the groups
+   close up, which is the correct behaviour rather than a special case. */
+/* One flat run, evenly spaced. space-between was pushing GROUPS apart, which
+   is what opened the blank gaps; with no groups left there is nothing to
+   spread, so the items simply sit together and the footer stays pinned. */
+.side-list{display:flex;flex-direction:column;flex:1;padding:.5rem 0;min-height:0;overflow-y:auto}
+.side-item{
+  display:flex;align-items:center;gap:.6rem;width:100%;min-height:42px;
+  padding:.3rem 1.15rem;background:none;border:none;cursor:pointer;text-align:left;
+  font-family:var(--sans);font-size:.92rem;line-height:1.3;
+  color:var(--westmere-navy,#102a43);
+}
+.side-item:active{background:rgba(16,42,67,.06)}
+.side-item .side-mark{width:2px;height:15px;background:transparent;border-radius:2px;flex-shrink:0}
+.side-item.on{font-weight:500}
+.side-item.on .side-mark{background:var(--westmere-navy,#102a43)}
+.side-item:focus-visible{outline:2px solid var(--westmere-navy,#102a43);outline-offset:-2px}
+.side-lbl{flex:1}
+.side-dot{width:6px;height:6px;border-radius:50%;background:#8B2222;flex-shrink:0}
+/* margin-top:auto pins the footer to the bottom however few items sit above. */
+.side-foot{
+  margin-top:auto;flex-shrink:0;
+  padding:.85rem 1.15rem 0;border-top:1px solid rgba(16,42,67,.08);
+  display:flex;flex-direction:column;gap:.5rem;align-items:flex-start;
+}
+.side-out{
+  width:100%;min-height:40px;padding:.45rem .8rem;cursor:pointer;
+  background:transparent;border:1px solid rgba(16,42,67,.18);border-radius:8px;
+  font-family:var(--sans);font-size:.86rem;line-height:1.2;color:var(--westmere-navy,#102a43);
+}
+.side-out:active{background:rgba(16,42,67,.06)}
+.side-back{font-size:.78rem;color:rgba(27,27,26,.45);text-decoration:none;line-height:1.2;padding:.2rem 0}
 .bn{flex:1;display:flex;flex-direction:column;align-items:center;gap:.22rem;padding:.85rem .3rem;background:none;border:none;cursor:pointer;transition:color .2s;color:#1a1a1a;font-family:var(--sans);min-height:60px;position:relative}
 .bn.on{color:var(--navy)}
 .bn-bar{width:18px;height:1px;background:currentColor;opacity:0;transition:opacity .2s}
@@ -709,9 +807,63 @@ select:-webkit-autofill:focus{
     <div class="trip-page-body" id="trip-page-body"></div>
   </div>
 
+  <div class="side-scrim" id="side-scrim" onclick="closeSideMenu()"></div>
+
+  <aside class="side" id="side-nav" aria-label="Owner sections">
+    <button class="side-close" type="button" aria-label="Close menu" onclick="closeSideMenu()">&times;</button>
+    <div class="side-id">
+      <div class="side-id-txt">
+        <div class="side-id-name">Westmere</div>
+        <div class="side-id-sub">Owner</div>
+      </div>
+    </div>
+    <nav class="side-list">
+      <!-- ONE continuous list, at the owner's request. It was three groups with
+           dividers between them; the gaps that created were the blank space he
+           asked us to close. Evenly spaced, top to bottom, nothing separating
+           them. Sign Out stays pinned below. -->
+      <button class="side-item" id="sd-completed" onclick="goPage('completed')">
+        <span class="side-mark"></span><span class="side-lbl">Trip History</span>
+      </button>
+      <button class="side-item" id="sd-calendar" onclick="goPage('calendar')">
+        <span class="side-mark"></span><span class="side-lbl">Calendar</span>
+      </button>
+      <button class="side-item" id="sd-customers" onclick="goPage('customers')">
+        <span class="side-mark"></span><span class="side-lbl">Customers</span>
+      </button>
+      <button class="side-item" id="sd-drivers" onclick="goPage('drivers')">
+        <span class="side-mark"></span><span class="side-lbl">Drivers</span>
+        <span class="side-dot" id="drivers-dot-side" style="display:none"></span>
+      </button>
+      <button class="side-item" id="sd-compose" onclick="goPage('compose')">
+        <span class="side-mark"></span><span class="side-lbl">Messages</span>
+      </button>
+      <button class="side-item" id="sd-invoices" onclick="goPage('invoices')">
+        <span class="side-mark"></span><span class="side-lbl">Invoices</span>
+      </button>
+      <button class="side-item" id="sd-earnings" onclick="goPage('earnings')">
+        <span class="side-mark"></span><span class="side-lbl">Earnings</span>
+      </button>
+    </nav>
+
+    <!-- Pinned to the bottom by margin-top:auto, so the list above can breathe
+         into the space instead of leaving a blank third. Sign Out asks first:
+         this is a phone drawer the owner opens all day, and a mis-tap that logs
+         him out mid-shift is worse than one extra tap. -->
+    <div class="side-foot">
+      <button class="side-out" type="button" onclick="ownerSignOut()">Sign Out</button>
+      <a class="side-back" href="index.html">Back to site</a>
+    </div>
+  </aside>
+
   <div class="topbar">
     <div class="tb-left">
-      <div class="tb-crest">W</div>
+      <!-- The crest box is gone at the owner's request; the wordmark carries the
+           brand on its own, as it does on My Account. -->
+      <button class="tb-menu" id="tb-menu" type="button" aria-label="Open menu"
+              aria-controls="side-nav" aria-expanded="false" onclick="toggleSideMenu()">
+        <span></span><span></span><span></span>
+      </button>
       <div>
         <div class="tb-mode-label" id="tb-mode-label">Westmere</div>
       </div>
@@ -870,9 +1022,10 @@ select:-webkit-autofill:focus{
       <div id="toconfirm-list"></div>
     </div>
 
-    <!-- Completed Jobs (status: completed — for your records) -->
+    <!-- Trip History (status: completed — for his records). The id stays
+         `completed`: the label changed, the state machine did not. -->
     <div class="pg" id="pg-completed">
-      <div class="sec-title"><em>Completed</em> Jobs</div>
+      <div class="sec-title">Trip <em>History</em></div>
       <div class="sec-sub">Finished jobs, for your records</div>
       <div id="completed-list"></div>
 
@@ -1282,6 +1435,32 @@ select:-webkit-autofill:focus{
          — a third booking puts somebody here on their own. The home address is
          a guess (their most frequent pickup) until the owner corrects it; once
          he does, the recompute stops overwriting it. -->
+    <!-- SEND A LETTER. Not tied to a booking or a customer — this is for
+         introducing the business to a hotel, an operator, a supplier. -->
+    <div class="pg" id="pg-compose">
+      <div style="padding:.9rem 1rem 1.2rem">
+        <div style="font-family:var(--serif);font-size:1.25rem;color:var(--navy);font-style:italic;margin-bottom:.15rem">Send a message</div>
+        <div style="font-size:.8rem;color:rgba(27,27,26,.45);margin-bottom:.9rem">A branded email to anyone &mdash; replies come back to Westmere.</div>
+
+        <label style="display:block;font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.25rem">To</label>
+        <input id="cmp-to" type="email" inputmode="email" autocomplete="off" placeholder="name@company.co.uk"
+               style="width:100%;padding:.6rem .8rem;border:1px solid rgba(27,27,26,.15);border-radius:8px;font-family:inherit;font-size:.94rem;color:var(--navy);background:#fff;box-sizing:border-box;margin-bottom:.7rem">
+
+        <label style="display:block;font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.25rem">Subject</label>
+        <input id="cmp-subject" type="text" maxlength="200" autocomplete="off" placeholder="Introducing Westmere Private Hire"
+               style="width:100%;padding:.6rem .8rem;border:1px solid rgba(27,27,26,.15);border-radius:8px;font-family:inherit;font-size:.94rem;color:var(--navy);background:#fff;box-sizing:border-box;margin-bottom:.7rem">
+
+        <label style="display:block;font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.25rem">Message</label>
+        <textarea id="cmp-message" rows="9" maxlength="8000" placeholder="Write your message here…"
+               style="width:100%;padding:.6rem .8rem;border:1px solid rgba(27,27,26,.15);border-radius:8px;font-family:inherit;font-size:.94rem;line-height:1.6;color:var(--navy);background:#fff;box-sizing:border-box;resize:vertical"></textarea>
+        <div style="font-size:.72rem;color:rgba(27,27,26,.4);margin:.35rem 0 .8rem">Your words are wrapped in the Westmere letterhead &mdash; no photo, just the wordmark.</div>
+
+        <div id="cmp-status" style="font-size:.86rem;margin-bottom:.6rem;min-height:1.2em"></div>
+        <button id="cmp-send" onclick="composeSend()"
+               style="width:100%;padding:.7rem;background:transparent;border:var(--border-strong,1.5px) solid var(--westmere-navy,#102a43);border-radius:8px;font-family:inherit;font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;color:var(--westmere-navy,#102a43);cursor:pointer">Send message</button>
+      </div>
+    </div>
+
     <div class="pg" id="pg-customers">
       <div style="padding:.9rem 1rem .4rem">
         <div style="font-family:var(--serif);font-size:1.25rem;color:var(--navy);font-style:italic;margin-bottom:.15rem">Customers</div>
@@ -1296,18 +1475,12 @@ select:-webkit-autofill:focus{
   </div><!-- /page-scroll -->
 
   <!-- BOTTOM NAV -->
+  <!-- TWO tabs. Everything else lives in the drawer; these are the two views
+       the owner is in all day, and they stay one tap away. -->
   <div class="bottom-nav" id="bottom-nav">
     <div class="bn-row">
       <button class="bn on" id="bn-confirmed" onclick="goPage('confirmed',this)"><div class="bn-bar"></div><div class="bn-label">Confirmed</div></button>
-      <button class="bn" id="bn-toconfirm" onclick="goPage('toconfirm',this)"><div class="bn-bar"></div><div class="bn-label">To Confirm</div><div class="bn-dot" id="toconfirm-dot" style="display:none"></div></button>
-      <button class="bn" id="bn-completed" onclick="goPage('completed',this)"><div class="bn-bar"></div><div class="bn-label">Completed</div></button>
-      <button class="bn" id="bn-calendar" onclick="goPage('calendar',this)"><div class="bn-bar"></div><div class="bn-label">Calendar</div></button>
-    </div>
-    <div class="bn-row">
-      <button class="bn" id="bn-drivers" onclick="goPage('drivers',this)"><div class="bn-bar"></div><div class="bn-label">Drivers</div><div class="bn-dot" id="drivers-dot" style="display:none"></div></button>
-      <button class="bn" id="bn-invoices" onclick="goPage('invoices',this)"><div class="bn-bar"></div><div class="bn-label">Invoices</div></button>
-      <button class="bn" id="bn-earnings" onclick="goPage('earnings',this)"><div class="bn-bar"></div><div class="bn-label">Earnings</div></button>
-      <button class="bn" id="bn-customers" onclick="goPage('customers',this)"><div class="bn-bar"></div><div class="bn-label">Customers</div></button>
+      <button class="bn" id="bn-toconfirm" onclick="goPage('toconfirm',this)"><div class="bn-bar"></div><div class="bn-label">Awaiting</div><div class="bn-dot" id="toconfirm-dot" style="display:none"></div></button>
     </div>
   </div>
 
@@ -1756,10 +1929,62 @@ var ASSIST_BUSY = false;
 var HOME_BASE = '';
 
 // ── NAVIGATION ────────────────────────────────────────────────────────────────
+/* ── THE TOP-LEFT DRAWER ───────────────────────────────────────────────────
+   Behaviour copied from westmere-rider.html rather than reinvented, so the two
+   apps open the same way: aria-expanded tracks the real state, focus moves into
+   the drawer and comes back to the button on Escape, and the page behind cannot
+   scroll under the finger while it is open.
+   Guardrail: server/tests/owner-nav.test.js */
+// The owner app has never had a sign-out; the drawer's footer is the first place
+// it has had room for one. Confirm first — see the note on the markup.
+function ownerSignOut(){
+  if(!confirm('Sign out of the Westmere Owner app?'))return;
+  fetch('/api/auth/logout',{method:'POST',credentials:'include'})
+    .catch(function(){})
+    .then(function(){ try{location.reload();}catch(e){} });
+}
+function sideMenuOpen(){
+  var el=document.getElementById('side-nav');
+  return !!(el&&el.classList.contains('open'));
+}
+function openSideMenu(){
+  var el=document.getElementById('side-nav'),sc=document.getElementById('side-scrim'),b=document.getElementById('tb-menu');
+  if(el)el.classList.add('open');
+  if(sc)sc.classList.add('open');
+  if(b)b.setAttribute('aria-expanded','true');
+  // Stop the page behind the drawer scrolling under the finger.
+  try{document.body.style.overflow='hidden';}catch(e){}
+  // Move focus into the drawer so a keyboard or screen-reader user lands there.
+  try{var first=el&&el.querySelector('.side-item');if(first)first.focus({preventScroll:true});}catch(e){}
+}
+function closeSideMenu(){
+  var el=document.getElementById('side-nav'),sc=document.getElementById('side-scrim'),b=document.getElementById('tb-menu');
+  if(el)el.classList.remove('open');
+  if(sc)sc.classList.remove('open');
+  if(b)b.setAttribute('aria-expanded','false');
+  try{document.body.style.overflow='';}catch(e){}
+}
+function toggleSideMenu(){ sideMenuOpen()?closeSideMenu():openSideMenu(); }
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&sideMenuOpen()){
+    closeSideMenu();
+    var b=document.getElementById('tb-menu');if(b)b.focus();
+  }
+});
+
 function goPage(id,btn){
+  // A selection always dismisses the drawer — otherwise the page it has just
+  // navigated to is sitting behind a full-height panel.
+  closeSideMenu();
   document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('on');});
   document.querySelectorAll('.bn').forEach(function(b){b.classList.remove('on');});
+  document.querySelectorAll('.side-item').forEach(function(b){b.classList.remove('on');});
   var pg=document.getElementById('pg-'+id);if(pg)pg.classList.add('on');
+  /* Light whichever control OWNS this page — the tab if it has one, the drawer
+     item otherwise — keyed on the id rather than on which button was clicked,
+     so opening a page from a customer card or a deep link still marks it. */
+  var sd=document.getElementById('sd-'+id);if(sd)sd.classList.add('on');
+  var bn=document.getElementById('bn-'+id);if(bn)bn.classList.add('on');
   if(btn)btn.classList.add('on');
   document.getElementById('page-scroll').scrollTo(0,0);
   if(id==='confirmed'){CONFIRMED_WEEK_OFFSET=0;buildConfirmed();}
@@ -1948,6 +2173,9 @@ async function loadDriversList(){
     });
     el.innerHTML=drivers.map(function(drv){
       return '<div class="card" id="drv-card-'+drv.id+'">'
+        // Message him without leaving the Drivers list — same letterhead as
+        // everything else that goes out under the company name.
+        +(drv.email?('<button onclick="dispMessageDriver('+drv.id+',\''+String(drv.full_name||'').replace(/\'/g,"\\'")+'\')" style="float:right;margin:.5rem .6rem 0 0;padding:.35rem .7rem;background:transparent;border:1px solid rgba(27,27,26,.15);border-radius:7px;font-family:inherit;font-size:.76rem;color:var(--westmere-navy,#102a43);cursor:pointer">Message</button>'):'')
         +'<div class="ch" style="cursor:pointer" onclick="toggleDriverDocs('+drv.id+')">'
         +'<div style="display:flex;align-items:center;gap:.6rem">'
         +'<div style="font-family:var(--serif);font-size:1.05rem;color:var(--navy)">'+owEsc(drv.full_name||'Driver')+'</div>'
@@ -3196,6 +3424,7 @@ function jobCardHtml(j){
         +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Passengers</td><td>'+(j.pax||1)+'</td></tr>'
         +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Luggage</td><td>'+escH(_bagsLabel(j.bags))+'</td></tr>'
         +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Payment</td><td>'+wmPayBadge(j)+'</td></tr>'
+        +(dispStateRow(j))
         +(ownerNoteOf(j)?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4);vertical-align:top">Notes</td><td style="white-space:pre-line">'+escH(ownerNoteOf(j))+'</td></tr>':'')
         +(j.customer_note?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.55);vertical-align:top;font-weight:600">Special req.</td><td style="color:#1b1b1a;background:rgba(27,27,26,.04);border-left:2px solid rgba(27,27,26,.55);padding:.3rem .5rem">'+escH(j.customer_note)+'</td></tr>':'')
       +'</table>'
@@ -3254,6 +3483,15 @@ function jobCardHtml(j){
   }
   if(ACT.edit){
     html+='<button style="padding:.6rem .85rem;font-size:.79rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)" onclick="upcomingEdit('+j.id+')">Edit</button>';
+  }
+  /* DISPATCH. An offered job shows who has it and how long they have left; an
+     unassigned one offers the pick-a-driver sheet. The backend for all of this
+     has existed since the driver app was built — this is the button that was
+     missing. */
+  if(j.apiStatus==='offered'){
+    html+='<button style="padding:.6rem .85rem;font-size:.79rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;border:var(--border-hair,1px) solid var(--westmere-line-strong,#c8d1d9)" onclick="dispReclaim('+j.id+')">Reclaim</button>';
+  }else if(!j.driverId){
+    html+='<button style="padding:.6rem .85rem;font-size:.79rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;border:var(--border-strong,1.5px) solid var(--westmere-navy,#102a43);color:var(--westmere-navy,#102a43)" onclick="dispOffer('+j.id+')">Offer to driver</button>';
   }
   html+='<button style="padding:.6rem .85rem;font-size:.79rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)" onclick="upcomingDelete('+j.id+')">Delete</button>';
   // Email sent indicator
@@ -3366,10 +3604,25 @@ function buildToConfirm(){
   });
 }
 
-// Completed Jobs — finished jobs for your records (status completed), grouped
-// WEEK BY WEEK (Mon–Sun), newest week first, newest job first within a week.
-// Each week gets a header with its date range, job count and takings so the
+// Trip History — finished jobs (status completed), grouped MONTH BY MONTH,
+// newest month first, newest job first within a month. Each month gets a
+// header with its job count and takings so the
 // list reads as discrete weeks rather than one endless flat scroll.
+/* Which months are open. Kept outside buildCompleted so a rebuild — an SSE
+   event, a job marked paid — does not close a month the owner just opened. */
+var TRIP_MONTHS_OPEN={};
+function tripMonthToggle(key){
+  TRIP_MONTHS_OPEN[key]=!TRIP_MONTHS_OPEN[key];
+  var body=document.getElementById('tm-'+key);
+  var head=body&&body.previousElementSibling;
+  if(body) body.hidden=!TRIP_MONTHS_OPEN[key];
+  if(head){
+    head.setAttribute('aria-expanded',TRIP_MONTHS_OPEN[key]?'true':'false');
+    var c=head.querySelector('.tm-caret');
+    if(c) c.classList.toggle('on',TRIP_MONTHS_OPEN[key]);
+  }
+}
+
 function buildCompleted(){
   var list=document.getElementById('completed-list');
   if(!list)return;
@@ -3379,15 +3632,26 @@ function buildCompleted(){
     return;
   }
 
-  // Bucket into ISO weeks (Monday start) with per-week takings. The grouping
-  // rule is shared with the admin app — see /wm-lifecycle.js.
+  /* A MONTH at a time, newest first. Weekly headers meant fifty-two of them to
+     scroll past in a year; a month is the unit the owner actually reasons in.
+     The grouping rule is shared with the admin app — see /wm-lifecycle.js.
+
+     Every month is collapsed except the newest, so the page opens on what he
+     just did rather than on a wall of history. The state lives in TRIP_MONTHS_OPEN
+     so a rebuild (an SSE event, a status change) does not silently re-close a
+     month he opened. */
   var html='';
-  WMLifecycle.groupByWeek(jobs).forEach(function(g){
-    html+='<div style="display:flex;justify-content:space-between;align-items:baseline;gap:.6rem;padding:.7rem 1rem .5rem;background:#ffffff;border-bottom:1px solid var(--rule)">'
-      +'<span style="font-family:var(--serif);font-size:1.02rem;font-weight:500;letter-spacing:.05em;color:var(--navy)">'+escH(g.label)+'</span>'
-      +'<span style="font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(27,27,26,.45);white-space:nowrap">'+g.items.length+(g.items.length===1?' job':' jobs')+' · £'+g.takings.toFixed(0)+'</span>'
+  WMLifecycle.groupByMonth(jobs).forEach(function(g,i){
+    if(TRIP_MONTHS_OPEN[g.key]===undefined) TRIP_MONTHS_OPEN[g.key]=(i===0);
+    var open=!!TRIP_MONTHS_OPEN[g.key];
+    html+='<button type="button" class="tm-head" aria-expanded="'+(open?'true':'false')+'" aria-controls="tm-'+g.key+'" onclick="tripMonthToggle(\''+g.key+'\')">'
+      +'<span class="tm-caret'+(open?' on':'')+'" aria-hidden="true">&rsaquo;</span>'
+      +'<span class="tm-label">'+escH(g.label)+'</span>'
+      +'<span class="tm-meta">'+g.items.length+(g.items.length===1?' job':' jobs')+' &middot; £'+g.takings.toFixed(0)+'</span>'
+      +'</button>'
+      +'<div class="tm-body" id="tm-'+g.key+'"'+(open?'':' hidden')+'>'
+      +g.items.map(jobCardHtml).join('')
       +'</div>';
-    html+=g.items.map(jobCardHtml).join('');
   });
   list.innerHTML=html;
 
@@ -5329,6 +5593,112 @@ function custRenderDetail(d){
   body.innerHTML=h;
 }
 
+/* ── SEND A LETTER ───────────────────────────────────────────────────────
+   Deliberately thin: three fields and a POST. Everything that matters — the
+   letterhead, the Reply-To, the validation — lives on the server, so there is
+   one place to be right about it rather than two.
+   Guardrail: server/tests/outreach.test.js */
+/* ── DISPATCH: OFFERING A JOB ─────────────────────────────────────────────
+   Thin on purpose. /offer, /reclaim and the driver's accept/decline already
+   exist and already compute the 10% split; this adds the owner's end of them.
+   Guardrail: server/tests/dispatch-offer.test.js */
+var DISP_DRIVERS=[];
+
+function dispStateRow(j){
+  if(j.apiStatus==='offered'){
+    var who=j.offeredToName||'a driver';
+    return '<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Dispatch</td>'
+      +'<td style="color:var(--westmere-navy,#102a43)">Offered to '+escH(who)+' &middot; awaiting reply</td></tr>';
+  }
+  if(j.driverName){
+    return '<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Driver</td>'
+      +'<td style="color:var(--westmere-navy,#102a43)">'+escH(j.driverName)+' &middot; accepted'
+      +(j.driverPay!=null?(' &middot; '+fmtMoney(j.driverPay)+' to him'):'')+'</td></tr>';
+  }
+  return '';
+}
+
+async function dispLoadDrivers(){
+  try{
+    var r=await fetch('/api/drivers',{credentials:'include'});
+    var d=await r.json();
+    DISP_DRIVERS=(d.drivers||[]).filter(function(x){return !x.is_default_driver&&x.onboarding_status==='approved';});
+  }catch(e){ DISP_DRIVERS=[]; }
+  return DISP_DRIVERS;
+}
+
+async function dispOffer(id){
+  var list=await dispLoadDrivers();
+  if(!list.length){ alert('No approved drivers yet. Add and approve a driver first.'); return; }
+  // A plain prompt rather than a modal: one decision, taken quickly, on a phone.
+  var menu=list.map(function(d,i){return (i+1)+'. '+(d.full_name||('Driver '+d.id));}).join('\n');
+  var pick=prompt('Offer this job to which driver?\n\n'+menu+'\n\nEnter a number:');
+  if(pick===null)return;
+  var idx=parseInt(pick,10)-1;
+  if(!(idx>=0&&idx<list.length)){ alert('That is not one of the numbers.'); return; }
+  var drv=list[idx];
+  if(!confirm('Offer this job to '+(drv.full_name||'this driver')+'?\n\nHe will be emailed the job with his pay after commission, and can accept or decline.'))return;
+  try{
+    var r=await fetch('/api/bookings/'+id+'/offer',{method:'POST',credentials:'include',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({driver_id:drv.id})});
+    var d=await r.json();
+    if(r.ok&&d.ok){ showToast('Offered to '+(drv.full_name||'driver')); loadOwnerBookings(); }
+    else showToast(d.error||'Could not offer');
+  }catch(e){ showToast('Network error'); }
+}
+
+async function dispReclaim(id){
+  if(!confirm('Take this job back?\n\nThe offer is withdrawn and the link in the driver’s email stops working.'))return;
+  try{
+    var r=await fetch('/api/bookings/'+id+'/reclaim',{method:'POST',credentials:'include'});
+    var d=await r.json();
+    if(r.ok&&d.ok){ showToast('Reclaimed'); loadOwnerBookings(); }
+    else showToast(d.error||'Could not reclaim');
+  }catch(e){ showToast('Network error'); }
+}
+
+async function dispMessageDriver(id,name){
+  var msg=prompt('Message to '+(name||'this driver')+':');
+  if(msg===null||!msg.trim())return;
+  try{
+    var r=await fetch('/api/drivers/'+id+'/message',{method:'POST',credentials:'include',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
+    var d=await r.json();
+    showToast((r.ok&&d.ok)?'Message sent':(d.error||'Could not send'));
+  }catch(e){ showToast('Network error'); }
+}
+
+async function composeSend(){
+  var to=(document.getElementById('cmp-to')||{}).value||'';
+  var subject=(document.getElementById('cmp-subject')||{}).value||'';
+  var message=(document.getElementById('cmp-message')||{}).value||'';
+  var st=document.getElementById('cmp-status');
+  var btn=document.getElementById('cmp-send');
+  var say=function(t,bad){ if(st){st.textContent=t;st.style.color=bad?'#8B2222':'rgba(27,27,26,.55)';} };
+
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to.trim())){ say('Enter a valid email address',1); return; }
+  if(!subject.trim()){ say('Enter a subject',1); return; }
+  if(!message.trim()){ say('Write a message',1); return; }
+
+  // Sending is not undoable, so the button locks for the duration — a second
+  // tap on a slow connection is a second email to a stranger.
+  if(btn){btn.disabled=true;btn.style.opacity='.5';}
+  say('Sending…');
+  try{
+    var r=await fetch('/api/outreach',{method:'POST',credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({to:to.trim(),subject:subject.trim(),message:message})});
+    var d=await r.json();
+    if(r.ok&&d.ok){
+      say('Sent to '+to.trim());
+      document.getElementById('cmp-subject').value='';
+      document.getElementById('cmp-message').value='';
+      document.getElementById('cmp-to').value='';
+    }else{ say(d.error||'Could not send',1); }
+  }catch(e){ say('Network error',1); }
+  if(btn){btn.disabled=false;btn.style.opacity='';}
+}
+
 async function custLoad(opts){
   var quiet=!!(opts&&opts.quiet);
   var list=document.getElementById('cust-list');
@@ -5574,6 +5944,14 @@ async function loadOwnerBookings(){
         paid_at:b.paid_at||null,
         estimate_sent_at:b.estimate_sent_at||null,
         apiStatus:b.status||'',
+        // Dispatch state. The API has returned driver_name and
+        // offered_driver_name all along (server/api.js:47-48); the owner app
+        // simply never carried them through, which is why the card could not
+        // say who had a job.
+        driverId:b.driver_id||null,
+        driverName:b.driver_name||'',
+        offeredToName:b.offered_driver_name||'',
+        driverPay:(b.driver_pay==null?null:Number(b.driver_pay)),
         status:b.status==='completed'?'done':b.status==='active'?'enroute':b.status==='cancelled'?'done':'upcoming',
         note:b.notes||'',
         customer_note:b.customer_note||'',
