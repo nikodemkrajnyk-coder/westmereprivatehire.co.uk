@@ -89,7 +89,7 @@ function fmtDate(d) {
    VISIBLE design changes; nothing else needs to be cleared, and the owner's
    existing files are left alone rather than deleted.
    GUARDRAIL: server/tests/invoice-paths.test.js */
-const TEMPLATE_VERSION = 3;
+const TEMPLATE_VERSION = 4;   // 4: notes block sized to its contents
 
 /* "Mon 3 Aug 2026" — the form every other Westmere surface uses.
    The table used to print the raw ISO string, which is the one date format

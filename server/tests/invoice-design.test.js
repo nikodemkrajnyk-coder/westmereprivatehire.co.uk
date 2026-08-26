@@ -31,6 +31,7 @@ const ROOT = path.join(__dirname, '..', '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 const SRC = read('server/invoice-pdf.js');
 const { buildInvoicePdf } = require('../invoice-pdf');
+const PDF_VERSION = require('../invoice-pdf').TEMPLATE_VERSION;
 
 let passed = 0, failed = 0;
 const queue = [];
@@ -459,6 +460,39 @@ test('an invoice with NO notes is unaffected', async () => {
   const buf = await buildInvoicePdf(bespoke({ settings: BANK, notes: '', total: 250 }));
   assert.strictEqual((buf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length, 1,
     'and it must still be one page');
+});
+
+console.log('\nThe cache cannot outlive the template — again');
+
+/* A REDESIGN THAT DOES NOT BUMP TEMPLATE_VERSION SHIPS INVISIBLY.
+   Generated invoices are cached to disk under a filename carrying the template
+   version. Fix the layout, deploy, and every existing invoice keeps serving the
+   file drawn by the old code — which is what happened the first time the
+   invoice was redesigned, and happened AGAIN with the notes-overlap fix: the
+   corrected build went live and the reported invoice came back byte-identical.
+
+   So the layout is content-hashed. Change how the page is drawn and this fails,
+   with the two things to do written in the message. It cannot tell a
+   good change from a bad one; it can only refuse to let one through quietly. */
+const LAYOUT_HASH = 'd4f21bb32830';
+const LAYOUT_VERSION = 4;
+
+test('the drawing code and TEMPLATE_VERSION move together', () => {
+  const layout = SRC.slice(SRC.indexOf('function drawInvoice('))
+    .replace(/\/\*[\s\S]*?\*\//g, '')          // comments are prose, not layout
+    .replace(/(^|[^:])\/\/.*$/gm, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const hash = require('crypto').createHash('sha256').update(layout).digest('hex').slice(0, 12);
+  assert.strictEqual(PDF_VERSION, LAYOUT_VERSION,
+    'TEMPLATE_VERSION is ' + PDF_VERSION + ' but this guard expects ' + LAYOUT_VERSION);
+  assert.strictEqual(hash, LAYOUT_HASH,
+    'THE INVOICE LAYOUT CHANGED.\n' +
+    '      Two things must happen together or the fix will not reach anybody:\n' +
+    '        1. bump TEMPLATE_VERSION in server/invoice-pdf.js (cached PDFs are keyed on it,\n' +
+    '           so without this every existing invoice keeps serving the OLD drawing);\n' +
+    '        2. update LAYOUT_HASH and LAYOUT_VERSION in this file to ' + hash + ' / ' + PDF_VERSION + '.\n' +
+    '      Comments and whitespace are ignored, so prose-only edits will not trip this.');
 });
 
 console.log('\nThe brand');
