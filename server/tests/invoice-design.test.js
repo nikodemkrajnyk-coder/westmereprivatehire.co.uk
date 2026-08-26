@@ -298,10 +298,15 @@ test('a long month breaks over pages instead of printing off the paper', async (
     'every page carries the footer — it used to be written once, at the very end');
 });
 
-test('a multi-page invoice is never given slack', () => {
-  assert.ok(/if \(m\.pages > 1\) return NO_SLACK/.test(SRC),
-    'yAfterTotal on page two is a position, not room to breathe — reading it as slack ' +
-    'half-empties page one');
+test('a TABLE that broke over pages is never given slack', () => {
+  /* Narrowed deliberately. A broken TABLE moves the total onto a later page, so
+     yAfterTotal stops describing page one and reading it as slack half-empties
+     it. A broken FOOT GROUP does not move the total — suppressing slack there
+     was leaving a void above the footer for no reason. */
+  assert.ok(/if \(m\.tablePages > 1\) return NO_SLACK/.test(SRC),
+    'the suppression must be keyed on a table break, not on any page break');
+  assert.ok(/let tablePages = 1;/.test(SRC) && /tablePages\+\+;/.test(SRC),
+    'and the two kinds of break must be counted apart');
 });
 
 test('the foot group can never be pulled up over the total', () => {
@@ -313,6 +318,147 @@ test('the payment block height is COMPUTED, not estimated', () => {
   // An estimate here is what printed the bank details off the bottom.
   assert.ok(/payRowCount/.test(SRC) && /14 \+ payRowCount \* 14 \+ 10/.test(SRC),
     'the reserved height must match the height the block actually draws');
+});
+
+console.log('\nThe notes block, and what sits under it');
+
+/* WHERE THINGS ACTUALLY LAND ON THE PAGE.
+   The notes/payment collision could not be caught by asking what text was
+   drawn — every word WAS drawn, one block simply painted over another. So this
+   records the y of each drawn string, and of the filled rectangles, and checks
+   they do not occupy the same band. */
+async function geometry(data) {
+  const texts = [];
+  const rects = [];
+  const origText = PDFDocument.prototype.text;
+  const origRect = PDFDocument.prototype.rect;
+  let page = 0;
+  const origAdd = PDFDocument.prototype.addPage;
+  PDFDocument.prototype.addPage = function () { page++; return origAdd.apply(this, arguments); };
+  PDFDocument.prototype.text = function (str, x, y, opts) {
+    if (typeof x === 'number' && typeof y === 'number') {
+      /* The note is drawn as ONE call carrying newlines, so its height has to
+         be asked for rather than counted in call records — which is how the
+         first version of this check saw "2 lines" for a five-line note and
+         proved nothing. */
+      let h = 0;
+      try { h = this.heightOfString(String(str), opts && opts.width ? { width: opts.width } : undefined); }
+      catch (_) {}
+      texts.push({ s: String(str), x, y, h, page });
+    }
+    return origText.apply(this, arguments);
+  };
+  PDFDocument.prototype.rect = function (x, y, w, h) {
+    rects.push({ x, y, w, h, page });
+    return origRect.apply(this, arguments);
+  };
+  try { await buildInvoicePdf(data); }
+  finally {
+    PDFDocument.prototype.text = origText;
+    PDFDocument.prototype.rect = origRect;
+    PDFDocument.prototype.addPage = origAdd;
+  }
+  return { texts, rects };
+}
+
+const LONG_NOTES = "Passenger\nGavin O'Shea\nFinance department\nPriscilla Hancock\npri@echopointmedical.com";
+const BANK = Object.assign({}, SETTINGS, {
+  bank_name: 'monzo', account_name: 'Nikodem Krajnyk', sort_code: '040006', account_no: '11513694'
+});
+
+test('the PAYMENT DETAILS box never overlaps the notes', async () => {
+  /* THE LIVE BUG. The notes block reserved a flat 44pt however long the note
+     was, so a five-line note — passenger, finance contact, department — was
+     painted over by the bank block. Every line was on the page and two of them
+     were unreadable. */
+  const g = await geometry(bespoke({ settings: BANK, notes: LONG_NOTES, total: 250 }));
+  const note = g.texts.find(t => t.s === LONG_NOTES);
+  assert.ok(note, 'the note must be drawn');
+  assert.ok(note.h > 50, 'a five-line note is taller than one line: measured ' + note.h.toFixed(1) + 'pt');
+  const payLabel = g.texts.find(t => t.s === 'PAYMENT DETAILS');
+  assert.ok(payLabel, 'the payment block must be on the page');
+  assert.strictEqual(note.page, payLabel.page, 'both are foot matter and travel together');
+  assert.ok(payLabel.y >= note.y + note.h,
+    'the payment block must start BELOW the last line of the notes — the note runs ' +
+    note.y.toFixed(1) + '→' + (note.y + note.h).toFixed(1) + ' and the block began at ' + payLabel.y.toFixed(1));
+});
+
+test('the notes PANEL is as tall as the notes it holds', async () => {
+  const g = await geometry(bespoke({ settings: BANK, notes: LONG_NOTES, total: 250 }));
+  const note = g.texts.find(t => t.s === LONG_NOTES);
+  // The tinted panel behind it: the full-width fill that must contain the text.
+  const panel = g.rects.filter(r => r.w > 400 && r.y <= note.y && r.y + r.h >= note.y + note.h);
+  assert.ok(panel.length,
+    'no panel encloses the note — it was a fixed 36pt box with ' + note.h.toFixed(0) + 'pt of text in it');
+});
+
+test('every line of a long note is drawn, and none is clipped away', async () => {
+  const g = await geometry(bespoke({ settings: BANK, notes: LONG_NOTES, total: 250 }));
+  const note = g.texts.find(t => t.s === LONG_NOTES);
+  assert.ok(note, 'the note must reach the page');
+  for (const line of ['Passenger', "Gavin O'Shea", 'Finance department', 'Priscilla Hancock']) {
+    assert.ok(note.s.indexOf(line) !== -1, 'missing from the note: ' + line);
+  }
+  assert.ok(note.y + note.h < 842 - 52, 'and the whole of it must fall above the bottom margin');
+});
+
+test('the note WRAPS instead of running off the edge', () => {
+  const src = SRC.slice(SRC.lastIndexOf('// ── NOTES'), SRC.indexOf('// ── PAYMENT DETAILS'));
+  assert.ok(!/lineBreak: false/.test(src),
+    'a long note with no newlines used to run past the right margin and vanish');
+  assert.ok(/NOTES_W/.test(src), 'and it must be given the width it was measured against');
+});
+
+test('the reserved height is MEASURED, never a constant', () => {
+  assert.ok(!/const NOTES_H = notes \? 44 : 0/.test(SRC), 'the flat 44pt is what caused the overlap');
+  assert.ok(/doc\.heightOfString\(String\(notes\)/.test(SRC), 'it must ask pdfkit how tall the note is');
+  assert.ok(/NOTES_BOX_H = Math\.max\(36/.test(SRC), 'with a floor so a one-word note still looks deliberate');
+});
+
+test('a note too tall for the page breaks rather than colliding', async () => {
+  /* Genuinely taller than the space any tightening could free — the earlier
+     fourteen-line version turned out to FIT once the height was measured
+     properly, so it was asserting a page break that need not happen. */
+  const huge = Array.from({ length: 30 }, (_, i) =>
+    'Note line ' + (i + 1) + ' — a reasonably long line of explanatory text that will need to wrap.').join('\n');
+  const g = await geometry(bespoke({ settings: BANK, notes: huge, total: 250 }));
+  const note = g.texts.find(t => /^Note line 1 /.test(t.s));
+  assert.ok(note, 'the note must be drawn');
+  assert.strictEqual((note.s.match(/Note line /g) || []).length, 30, 'all thirty lines');
+  const payLabel = g.texts.find(t => t.s === 'PAYMENT DETAILS');
+  assert.ok(payLabel.page > note.page || payLabel.y >= note.y + note.h,
+    'the bank block must be on a later page or below the note');
+  /* Counting PAGES proves nothing here: pdfkit paginates overflowing text by
+     itself, so the count rises even with the fallback removed. What matters is
+     that no foot matter is placed BELOW the footer line — that is the failure
+     the fallback exists to prevent. */
+  const FOOTER_Y = 842 - 52 - 18;
+  assert.ok(payLabel.y < FOOTER_Y - 20,
+    'the payment block was placed at ' + payLabel.y.toFixed(1) + ', at or below the footer line ' + FOOTER_Y);
+  assert.ok(note.y < FOOTER_Y,
+    'and the note must start above it, not run off the bottom of the page');
+});
+
+test('a busy ACCOUNT invoice with notes does not collide either', async () => {
+  const many = [];
+  for (let i = 0; i < 7; i++) {
+    many.push({ ref: 'WPH-49' + i, date: '2026-08-0' + (i + 1), time: '09:00',
+      pickup: 'Brighton', destination: 'London Gatwick Airport', fare: 75, flight: 'BA275' + i });
+  }
+  const g = await geometry(account({ settings: BANK, bookings: many, total: 525, notes: LONG_NOTES }));
+  const note = g.texts.find(t => t.s === LONG_NOTES);
+  const payLabel = g.texts.find(t => t.s === 'PAYMENT DETAILS');
+  assert.ok(note && payLabel, 'both blocks must be present');
+  assert.ok(payLabel.page > note.page || payLabel.y >= note.y + note.h, 'and must not overlap');
+});
+
+test('an invoice with NO notes is unaffected', async () => {
+  const g = await geometry(bespoke({ settings: BANK, notes: '', total: 250 }));
+  const payLabel = g.texts.find(t => t.s === 'PAYMENT DETAILS');
+  assert.ok(payLabel, 'the payment block must still be drawn');
+  const buf = await buildInvoicePdf(bespoke({ settings: BANK, notes: '', total: 250 }));
+  assert.strictEqual((buf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length, 1,
+    'and it must still be one page');
 });
 
 console.log('\nThe brand');

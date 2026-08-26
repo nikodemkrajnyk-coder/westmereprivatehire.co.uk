@@ -196,27 +196,40 @@ function measureSlack(data) {
     probe.end();
     if (!m) return NO_SLACK;
 
-    /* An invoice that already broke over two pages has no spare inch to spend:
-       its `yAfterTotal` is a position on the LAST page, and reading that as
-       room to breathe would push the first page half-empty. */
-    if (m.pages > 1) return NO_SLACK;
+    /* A TABLE that broke over two pages has no spare inch to spend: its
+       `yAfterTotal` is a position on the last page, and reading that as room to
+       breathe would push the first page half-empty. A foot group that broke is
+       a different case — the total is still on page one, the measurement still
+       describes it, and suppressing slack there leaves a void above a footer
+       for no reason. */
+    if (m.tablePages > 1) return NO_SLACK;
+
+    const n = Math.max(1, ((data.bookings || data.items || []).length) || 1);
+    /* What tightening could claw back at most: four points off each row, and
+       ten off each of the three gaps. Worth knowing BEFORE trying, because the
+       answer decides which page the foot group lands on. */
+    const MAX_SQUEEZE = n * 4 + 30;
+    const over = m.yAfterTotal - m.groupMax;
 
     /* TOO MUCH CONTENT, not too little. A seven-journey month plus terms plus
        bank details does not fit A4 at a comfortable row height, so the same
        measurement runs the other way: rows tighten first, down to a floor that
-       still holds two lines of type, then the gaps give up some air. If even
-       that is not enough the foot group takes a second page rather than being
-       printed over the footer — which is what it did before this. */
-    const over = m.yAfterTotal - m.groupMax;
-    if (over > 0) {
-      const n    = Math.max(1, ((data.bookings || data.items || []).length) || 1);
+       still holds two lines of type, then the gaps give up some air. */
+    if (over > 0 && over <= MAX_SQUEEZE) {
       const row  = -Math.min(4, Math.ceil(over / n));
       const rest = over + row * n;
       const gap  = rest > 0 ? -Math.min(10, Math.ceil(rest / 3)) : 0;
       return { row, gap };
     }
 
-    const spare = m.groupPin - m.yAfterTotal;
+    /* THE FOOT GROUP IS GOING TO THE NEXT PAGE WHATEVER WE DO — a fourteen-line
+       note is taller than the space any amount of tightening could free. So
+       this page is measured as if the group were not on it: squeezing here
+       would only end the page higher up and make the void larger, which is
+       what it did. */
+    const bottom = (over > MAX_SQUEEZE) ? (m.footY - 24) : m.groupPin;
+
+    const spare = bottom - m.yAfterTotal;
     if (!(spare > 12)) return NO_SLACK;
 
     /* Rows first, up to a limit — a taller row is the least conspicuous place
@@ -234,6 +247,12 @@ function measureSlack(data) {
 function drawInvoice(doc, data, slack) {
   const SLACK = slack || { row: 0, gap: 0 };
   let pages = 1;                     // so the measuring pass can tell it broke
+  /* Breaks inside the TABLE are the ones that invalidate the measurement: they
+     move the total onto a later page, so `yAfterTotal` stops describing page
+     one. A foot-group break does not — the total is still where it was, and
+     page one still has room worth spreading. Counted separately so a long note
+     does not cost the first page its spacing. */
+  let tablePages = 1;
   const isBespoke = data.kind === 'bespoke' || !!data.bespoke;
   const s    = data.settings || {};
   const p    = data.period   || {};
@@ -486,6 +505,7 @@ function drawInvoice(doc, data, slack) {
         drawFooter(doc);
         doc.addPage();
         pages++;
+        tablePages++;
         y = M;
         bkHead();
       }
@@ -592,7 +612,32 @@ function drawInvoice(doc, data, slack) {
      invoice, and on a short one they sit together above the footer with a
      single, deliberate gap after the total. */
   const FOOT_Y  = PAGE_H - M - 18;                       // the footer line
-  const NOTES_H = notes ? 44 : 0;
+
+  /* THE NOTES BLOCK IS AS TALL AS THE NOTES.
+     This was `notes ? 44 : 0` — a constant, sized for one line — while the
+     block below it was placed 44pt down whatever the note actually said. An
+     invoice carrying a passenger name, a finance contact and a department ran
+     to five lines, and the payment-details box was painted straight over the
+     last two: the notes were on the page and unreadable.
+
+     MEASURED, with the same font, size and width the block draws with, because
+     heightOfString answers for the font that is currently set. Explicit
+     newlines count — pdfkit honours a \n even with lineBreak off, which is
+     exactly how a "single line" note became five.
+
+     And it WRAPS now. A long note with no newlines in it used to run off the
+     right-hand edge instead; a measured height is no use if the text ignores
+     the width it was measured against. */
+  const NOTES_PAD_X = 12, NOTES_PAD_Y = 9;
+  const NOTES_W = CW - NOTES_PAD_X - 10;
+  let NOTES_BOX_H = 0;
+  if (notes) {
+    doc.font(BODY).fontSize(11);
+    const h = doc.heightOfString(String(notes), { width: NOTES_W });
+    NOTES_BOX_H = Math.max(36, Math.ceil(h) + NOTES_PAD_Y * 2);
+  }
+  const NOTES_GAP = 8;                                   // air below the block
+  const NOTES_H = NOTES_BOX_H ? NOTES_BOX_H + NOTES_GAP : 0;
   /* The block's height, computed the SAME way the block itself computes it —
      an estimate here is how the account invoice ran off the bottom of the page
      the first time. Rows: Bank, Name, Sort code, Account, Reference. */
@@ -607,7 +652,8 @@ function drawInvoice(doc, data, slack) {
      foot group closes to nothing rather than the block printing off the paper. */
   const GROUP_PIN = FOOT_Y - 24 - GROUP_H;
   const GROUP_MAX = FOOT_Y - 10 - GROUP_H;               // the last position that still fits
-  const measured  = { yAfterTotal: y, groupPin: GROUP_PIN, groupMax: GROUP_MAX, pages: pages };
+  const measured  = { yAfterTotal: y, groupPin: GROUP_PIN, groupMax: GROUP_MAX,
+                      footY: FOOT_Y, pages: pages, tablePages: tablePages };
   /* Never above where the total finished — a clamp that could pull the foot
      group upward would print the terms across the one number the recipient is
      looking for. `y` is the floor; the pin can only push it down. */
@@ -629,13 +675,15 @@ function drawInvoice(doc, data, slack) {
 
   // ── NOTES ────────────────────────────────────────────────────────────────
   if (notes) {
+    // Drawn at the height it was MEASURED at, and y advances by the same
+    // amount — the two numbers disagreeing is the whole of this bug.
     doc.save()
-       .rect(M, y, 3, 36).fill(ACCENT)
-       .rect(M + 3, y, CW - 3, 36).fill('#F7F9FA')
+       .rect(M, y, 3, NOTES_BOX_H).fill(ACCENT)
+       .rect(M + 3, y, CW - 3, NOTES_BOX_H).fill('#F7F9FA')
        .restore();
     doc.font(BODY).fontSize(11).fillColor(SOFT)
-       .text(notes, M + 12, y + 9, { width: CW - 22, lineBreak: false });
-    y += 44;
+       .text(String(notes), M + NOTES_PAD_X, y + NOTES_PAD_Y, { width: NOTES_W });
+    y += NOTES_H;
   }
 
   // ── PAYMENT DETAILS ──────────────────────────────────────────────────────
