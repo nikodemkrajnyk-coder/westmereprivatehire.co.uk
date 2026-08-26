@@ -1516,6 +1516,32 @@ async function sendCustomerWelcome(customer) {
   if (ok) console.log('[EMAIL] Welcome sent to', email);
 }
 
+/* THE SUBJECT LINE ON AN INVOICE.
+   "Invoice INV-202608-0012 — August 2026" is, in an inbox, indistinguishable
+   from the invoice scam it is shaped exactly like: a bare noun, a number, and
+   no idea who sent it. The account invoice did not name the business anywhere
+   in its subject at all. The one thing that makes an unexpected invoice read as
+   genuine is that it says who it is from before it says what it wants.
+
+   So it opens the way every other Westmere subject opens — "Your estimate —",
+   "Your booking has been updated —", "Your Westmere account is ready" — with
+   the possessive, the business named in full, then the identifier and the
+   amount. No exclamation marks, no capitals, no "URGENT", no "ACTION
+   REQUIRED": each of those is a spam-filter heuristic AND a scam tell, and this
+   email carries a real attachment and needs to survive both.
+
+   Length matters. Most clients truncate a subject around 60 characters, so the
+   parts are ordered so that what survives the cut — the business name and the
+   invoice number — is the part that establishes it is real. The period an
+   account invoice covers is in the preheader instead; there is no room for it
+   here and it is on the document. */
+function invoiceSubject(invoiceNo, total) {
+  const amount = (typeof total === 'number' && isFinite(total))
+    ? ' (\u00a3' + total.toFixed(2) + ')' : '';
+  const no = String(invoiceNo || '').trim();
+  return 'Your Westmere Private Hire invoice' + (no ? ' \u2014 ' + no : '') + amount;
+}
+
 /* WHO AN INVOICE IS ADDRESSED TO.
    greetingName() is built for people: it finds a title and a surname, so
    "Mr Ben Chan" becomes "Mr Chan". Given an ORGANISATION it takes the first
@@ -1600,8 +1626,11 @@ async function sendCustomerInvoice(customer, bookings, period, invoiceNo, settin
              : ' Please reply to this email and we will send the invoice document across.')
   });
 
-  const subject = 'Invoice ' + (invoiceNo || '') + ' \u2014 ' + (period.label || '');
-  const preheader = summaryCount + ' journey' + (summaryCount === 1 ? '' : 's') + ' \u00b7 \u00a3' + total.toFixed(2) + ' total';
+  const subject = invoiceSubject(invoiceNo, total);
+  // The period moves here: it will not fit a subject that has to establish
+  // who is writing before it runs out of characters.
+  const preheader = (period.label ? period.label + ' \u00b7 ' : '') +
+    summaryCount + ' journey' + (summaryCount === 1 ? '' : 's') + ' \u00b7 \u00a3' + total.toFixed(2) + ' total';
   let attachments;
   if (pdfBuffer) {
     const buf = Buffer.isBuffer(pdfBuffer) ? pdfBuffer : Buffer.from(pdfBuffer);
@@ -1660,8 +1689,8 @@ async function sendBespokeInvoice(recipient, items, period, invoiceNo, settings,
              : ' Please reply to this email and we will send the invoice document across.')
   });
 
-  const subject = 'Invoice ' + (invoiceNo || '') + ' \u2014 Westmere Private Hire';
-  const preheader = 'Invoice \u00b7 \u00a3' + total.toFixed(2);
+  const subject = invoiceSubject(invoiceNo, total);
+  const preheader = 'Invoice ' + (invoiceNo || '') + ' \u00b7 \u00a3' + total.toFixed(2) + ' \u00b7 attached as a PDF';
   let attachments;
   if (pdfBuffer) {
     const buf = Buffer.isBuffer(pdfBuffer) ? pdfBuffer : Buffer.from(pdfBuffer);
@@ -1700,7 +1729,10 @@ async function sendInvoiceReminder(recipient, invoiceNo, total, payUrl) {
   <p style="margin:20px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">If you have any questions about this invoice, please don&rsquo;t hesitate to get in touch &mdash; we&rsquo;re always happy to help.</p>`;
 
   const html = heroEmail(body);
-  const subject = 'Payment reminder — Invoice ' + (invoiceNo || '') + ' · Westmere Private Hire';
+  /* Same reasoning as invoiceSubject: "Payment reminder — Invoice 0012" leads
+     with the demand and names the business last, which is the shape of the
+     thing it is trying not to be mistaken for. */
+  const subject = 'Your Westmere Private Hire invoice ' + (invoiceNo || '') + ' \u2014 payment reminder';
   const preheader = 'Invoice ' + (invoiceNo || '') + ' — £' + totalStr + ' outstanding';
   const ok = await sendEmail(recipient.email, subject, html, 'Westmere Private Hire', preheader);
   if (ok) console.log('[EMAIL] Invoice reminder', invoiceNo, 'sent to', recipient.email);

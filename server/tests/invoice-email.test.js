@@ -26,6 +26,11 @@
  *   for Mr Ben Chan and wrong for The Grand Hotel Brighton — and an invoice is
  *   the one email routinely addressed to a company.
  *
+ *   THE SUBJECT LINE. "Invoice INV-202608-0012 — August 2026" never named the
+ *   business at all, which is precisely the shape of the invoice scam it wants
+ *   not to be mistaken for. An unexpected invoice is judged in the inbox,
+ *   before it is opened, on whether it says who sent it.
+ *
  * Renders the REAL emails with the mailer intercepted. Nothing is sent.
  * Exit 1 on failure.
  */
@@ -243,6 +248,93 @@ test('the terms are derived from the dates, not assumed to be 14 days', async ()
     { issuedDate: '2026-08-26', dueDate: '2026-09-25' }, 'INV-1', SETTINGS, FAKE_PDF);
   assert.ok(/within 30 days/.test(captured[0].html),
     'a 30-day invoice must not be described as 14 — the owner sets the terms per invoice');
+});
+
+console.log('\nThe subject line, and the inbox');
+
+test('the subject names the business AND the invoice number', async () => {
+  for (const sent of [await accountEmail(), await bespokeEmail()]) {
+    assert.ok(/Westmere Private Hire/.test(sent.subject),
+      'the business must be named — an invoice that does not say who sent it reads as a scam: ' + sent.subject);
+    assert.ok(/INV-2026\d\d-\d{4}/.test(sent.subject),
+      'and the invoice number must be in it: ' + sent.subject);
+  }
+});
+
+test('the old bare subject is gone from both', async () => {
+  for (const sent of [await accountEmail(), await bespokeEmail()]) {
+    assert.ok(sent.subject && sent.subject.trim().length > 10, 'never blank');
+    assert.ok(!/^Invoice /.test(sent.subject),
+      'must not OPEN with the bare word Invoice — that is the scam shape: ' + sent.subject);
+    assert.ok(!/^Invoice INV-\S+ \u2014 (August|September|October) \d{4}$/.test(sent.subject),
+      'the account invoice\'s old subject named no business at all');
+  }
+});
+
+test('the amount is in the subject, and it is the real one', async () => {
+  const a = await accountEmail();
+  assert.ok(/\(\u00a3115\.00\)/.test(a.subject), 'expected the account total: ' + a.subject);
+  const b = await bespokeEmail();
+  assert.ok(/\(\u00a3250\.00\)/.test(b.subject), 'expected the bespoke total: ' + b.subject);
+});
+
+test('nothing in the subject reads as spam', async () => {
+  for (const sent of [await accountEmail(), await bespokeEmail()]) {
+    assert.ok(!/[!]/.test(sent.subject), 'no exclamation marks');
+    assert.ok(!/URGENT|ACTION REQUIRED|IMMEDIATE|FINAL NOTICE|FREE|\$\$\$/i.test(sent.subject),
+      'no spam-filter trigger words');
+    assert.ok(!/\?{2,}|\.{3,}|-{3,}/.test(sent.subject), 'no runs of punctuation');
+    /* All-caps is measured on the WORDS, not the string: "INV-202608-0012" is a
+       reference and "Hire" is not, and a naive uppercase ratio fails the first
+       while passing a genuinely shouted subject. */
+    const words = sent.subject.split(/[\s\u2014·]+/).filter(w => /^[A-Za-z]{3,}$/.test(w));
+    const shouted = words.filter(w => w === w.toUpperCase());
+    assert.deepStrictEqual(shouted, [], 'no all-caps words: ' + shouted.join(', '));
+    assert.ok(sent.subject.length <= 78,
+      'a subject past ~78 chars is truncated in most clients: ' + sent.subject.length);
+  }
+});
+
+test('it is built in ONE place, so the two shapes cannot drift apart', () => {
+  assert.ok(/function invoiceSubject\(invoiceNo, total\)/.test(SRC), 'invoiceSubject must exist');
+  const acct = SRC.slice(SRC.indexOf('async function sendCustomerInvoice'), SRC.indexOf('async function sendBespokeInvoice'));
+  assert.ok(/const subject = invoiceSubject\(invoiceNo, total\)/.test(acct), 'the account invoice must use it');
+  const besp = SRC.slice(SRC.indexOf('async function sendBespokeInvoice'));
+  assert.ok(/const subject = invoiceSubject\(invoiceNo, total\)/.test(besp), 'and so must the bespoke one');
+});
+
+test('it matches the house style of the other customer subjects', () => {
+  /* The rest of the customer emails open with the possessive — "Your estimate",
+     "Your booking has been updated", "Your Westmere account is ready". The
+     invoice was the odd one out, leading with a noun and a number. */
+  for (const known of ['Your estimate', 'Your booking has been updated', 'Your Westmere account is ready']) {
+    assert.ok(SRC.indexOf("'" + known) !== -1,
+      'the house style this is aligned to has moved: ' + known);
+  }
+  assert.ok(/return 'Your Westmere Private Hire invoice'/.test(SRC),
+    'the invoice subject must open the same way');
+});
+
+test('the payment reminder does not lead with the demand either', () => {
+  const r = SRC.slice(SRC.indexOf('async function sendInvoiceReminder'));
+  const sub = /const subject = ([^;]+);/.exec(r);
+  assert.ok(sub, 'the reminder subject is missing');
+  assert.ok(!/^ *'Payment reminder/.test(sub[1]),
+    '"Payment reminder — Invoice 0012" names the business last, which is the scam shape');
+  assert.ok(/Your Westmere Private Hire invoice/.test(sub[1]), 'it must open by saying who is writing');
+});
+
+test('the From display name and Reply-To are the business, on its own domain', () => {
+  const send = SRC.slice(SRC.indexOf('async function sendEmail('), SRC.indexOf('async function sendEmail(') + 3000);
+  assert.ok(/from: \(fromLabel \|\| 'Westmere Private Hire'\) \+ ' <bookings@westmereprivatehire\.co\.uk>'/.test(send),
+    'the From must carry the display name and the on-domain address');
+  assert.ok(/const replyTo = process\.env\.REPLY_TO \|\| 'bookings@westmereprivatehire\.co\.uk'/.test(send),
+    'Reply-To must default to the on-domain mailbox — a freemail Reply-To on a different domain ' +
+    'trips FREEMAIL_FORGED_REPLYTO, which is the largest single spam score in the mail-tester run');
+  assert.ok(/reply_to: replyTo/.test(send), 'and actually be sent');
+  const acct = SRC.slice(SRC.indexOf('async function sendCustomerInvoice'), SRC.indexOf('async function sendInvoiceReminder'));
+  assert.strictEqual((acct.match(/'Westmere Private Hire', preheader/g) || []).length, 2,
+    'both invoice senders must pass the display name rather than letting it default');
 });
 
 console.log('\nWho it is addressed to');
