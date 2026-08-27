@@ -1745,3 +1745,46 @@ nav > .navlinks { margin-left: auto; }
 @media (max-width: 620px) {
   .wm-social-nav { margin-left: var(--space-2, .5rem); }
 }
+
+/* =========================================================
+   24. TRACKED HERO TYPE IS CENTRED ON ITS INK
+   =========================================================
+   letter-spacing puts its gap AFTER every letter — the last one included. So a
+   tracked line's box ends one tracking unit past the final glyph, and
+   text-align:center centres the BOX. The visible ink lands half a tracking unit
+   to the LEFT of true centre.
+
+   It was visible because each line is tracked differently, so the stack did not
+   line up with itself. Measured on the homepage before this:
+
+       WESTMERE          -3.12px    (.09em on 69.12px)
+       PRIVATE HIRE      -2.05px    (.32em on 12.8px)
+       TRAVEL, REDEFINED -0.61px    (.10em on 12px)
+       the rule           0.00px    (no tracking — the only honest one)
+
+   Each is pulled back by ONE tracking unit on the right; the box grows by that
+   much, the centred line moves half of it, and the ink lands on the true
+   centre. In em, so it tracks every font-size and every breakpoint by itself.
+
+   THE VALUES MUST MATCH THE TRACKING, and the tracking is set in three places:
+     · h1        §3 above (.09em) and §14's mobile override (.055em)
+     · .sub      styles.css .hero .sub (.32em) — not overridden here
+     · .tag      §16.3's micro-label tier (.1em), which catches the hero's tag
+   Change one and this must change with it. server/tests/hero-centring.test.js
+   reads both files and fails if they drift apart.
+
+   margin-right, not padding-left: padding narrows the line, and WESTMERE
+   already fills 330px of a 343px measure on a phone — a few pixels less and it
+   wraps. This widens instead, and the few px of overflow fall inside the 6vw of
+   slack either side of .hero-content.
+
+   CENTRED HEROES ONLY. On .hero.left the text is flush left and the trailing
+   space sits at the far end where nobody can see it; shifting those would
+   introduce the very fault this removes. */
+.hero.center h1   { margin-right: -0.09em; }
+.hero.center .sub { margin-right: -0.32em; }
+.hero.center .tag { margin-right: -0.1em; }
+
+@media (max-width: 900px) {
+  .hero.center h1 { margin-right: -0.055em; }
+}
