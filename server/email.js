@@ -692,6 +692,268 @@ function letterEmail(bodyHtml, opts) {
  * every URL in the message must not accept a job on his behalf at 3am.
  * GUARDRAIL: server/tests/dispatch-offer.test.js
  */
+/* ── NAVIGATION AND THE CALENDAR, FOR THE TWO DRIVER JOB EMAILS ───────────
+   Both emails carry the same two affordances, so they are built once here.
+
+   WAZE, ON THE FULL ADDRESS — NOT THE DISPLAYED ONE.
+   dispAddr() SHORTENS an address for reading: "The Grand Hotel, Kings Road,
+   Brighton BN1 2FW" becomes "The Grand Hotel, BN1 2FW". That is right on the
+   page and wrong in a navigation link, where the postcode and the street are
+   what get you there. The text stays short; the link carries the whole thing.
+
+   Coordinates would be better than a string and the helper takes them, but no
+   booking column holds any today — every link is currently ?q=<address>. If
+   lat/lng are ever stored, passing them here is all that is needed. */
+function wazeUrl(address, lat, lng) {
+  if (lat != null && lng != null && !isNaN(lat) && !isNaN(lng)) {
+    return 'https://waze.com/ul?ll=' + encodeURIComponent(Number(lat) + ',' + Number(lng)) + '&navigate=yes';
+  }
+  const a = String(address == null ? '' : address).trim();
+  if (!a) return '';
+  return 'https://waze.com/ul?q=' + encodeURIComponent(a) + '&navigate=yes';
+}
+
+/** An address row: the short form to read, the full one to navigate to. */
+function navAddrRow(label, address, lat, lng) {
+  const url = wazeUrl(address, lat, lng);
+  const shown = dispAddr(address);
+  if (!url) return detailRow(label, shown);
+  return detailRow(label, shown +
+    '<div style="margin-top:5px"><a href="' + escHtml(url) + '" style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;' +
+    'font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:' + INK_MUTED + ';text-decoration:none;' +
+    'border-bottom:1px solid ' + HAIRLINE + ';padding-bottom:2px">Navigate with Waze &rarr;</a></div>');
+}
+
+/* THE CALENDAR ENTRY.
+   bookings.date and bookings.time are UK WALL-CLOCK strings (the timezone
+   invariant in CLAUDE.md), and an .ics needs an instant. Rather than write a
+   VTIMEZONE block by hand — the usual source of off-by-an-hour bugs — the
+   London wall-clock time is converted to a real UTC instant and emitted with a
+   Z. Apple, Google and Outlook all read that identically, and BST is handled
+   because the offset is MEASURED for that date rather than assumed.
+
+   ASAP IS NOT A TIME. A booking may carry time = 'ASAP', and `date + 'T' +
+   time` on that is an Invalid Date — which has shipped in this codebase before
+   and put "Invalid Date" into every ASAP booking's emails. So an ASAP job
+   becomes an ALL-DAY entry for that date instead of a guessed hour. */
+function londonToUtc(dateStr, timeStr) {
+  const d = String(dateStr || '').split('-').map(Number);
+  const t = String(timeStr || '').split(':').map(Number);
+  if (d.length !== 3 || !d[0] || isNaN(t[0]) || isNaN(t[1])) return null;
+  // Guess the instant, ask what London calls it, and correct by the difference.
+  let guess = Date.UTC(d[0], d[1] - 1, d[2], t[0], t[1]);
+  for (let i = 0; i < 2; i++) {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Europe/London', hour12: false,
+      year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+    }).formatToParts(new Date(guess)).reduce((a, p) => (a[p.type] = p.value, a), {});
+    const asLondon = Date.UTC(+parts.year, +parts.month - 1, +parts.day,
+      +(parts.hour === '24' ? '00' : parts.hour), +parts.minute);
+    const drift = asLondon - Date.UTC(d[0], d[1] - 1, d[2], t[0], t[1]);
+    if (!drift) break;
+    guess -= drift;
+  }
+  return new Date(guess);
+}
+
+const ICS_MINUTES = 90;   // a block, not a promise — see the note in the email
+
+function icsForJob(d) {
+  const pad = (n) => String(n).padStart(2, '0');
+  const stampUtc = (dt) => dt.getUTCFullYear() + pad(dt.getUTCMonth() + 1) + pad(dt.getUTCDate()) +
+    'T' + pad(dt.getUTCHours()) + pad(dt.getUTCMinutes()) + '00Z';
+  const dateOnly = (s) => String(s || '').replace(/-/g, '');
+  const esc = (v) => String(v == null ? '' : v)
+    .replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+
+  const timed = (d.time && String(d.time).toUpperCase() !== 'ASAP') ? londonToUtc(d.date, d.time) : null;
+  let when;
+  if (timed) {
+    const end = new Date(timed.getTime() + ICS_MINUTES * 60000);
+    when = 'DTSTART:' + stampUtc(timed) + '\r\nDTEND:' + stampUtc(end);
+  } else {
+    // All day: DTEND is exclusive, so it is the following day.
+    const dd = String(d.date || '').split('-').map(Number);
+    if (dd.length !== 3 || !dd[0]) return null;
+    const next = new Date(Date.UTC(dd[0], dd[1] - 1, dd[2] + 1));
+    when = 'DTSTART;VALUE=DATE:' + dateOnly(d.date) +
+      '\r\nDTEND;VALUE=DATE:' + next.getUTCFullYear() + pad(next.getUTCMonth() + 1) + pad(next.getUTCDate());
+  }
+
+  const title = 'Westmere job — ' + shortDisplay(d.pickup || '') + ' to ' + shortDisplay(d.destination || '');
+  const desc = [
+    'Reference: ' + (d.ref || ''),
+    'Pickup: ' + (d.pickup || ''),
+    d.stop_address ? 'Stop: ' + d.stop_address : '',
+    'Drop-off: ' + (d.destination || ''),
+    d.flight ? 'Flight: ' + d.flight : '',
+    'Passengers: ' + (d.passengers || 1),
+    bagsText(d.bags) ? 'Luggage: ' + bagsText(d.bags) : '',
+    d.customer_name ? 'Passenger: ' + d.customer_name : '',
+    d.customer_phone ? 'Phone: ' + d.customer_phone : '',
+    cleanOwnerNote(d.notes) ? 'Notes: ' + cleanOwnerNote(d.notes) : '',
+    'Westmere Private Hire — 07930 342593'
+  ].filter(Boolean).join('\n');
+
+  const uid = (d.ref || 'job') + '-' + (d.date || '') + '@westmereprivatehire.co.uk';
+  return [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Westmere Private Hire//Job//EN',
+    'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'BEGIN:VEVENT',
+    'UID:' + uid,
+    'DTSTAMP:' + stampUtc(new Date()),
+    when,
+    'SUMMARY:' + esc(title),
+    'LOCATION:' + esc(d.pickup || ''),
+    'DESCRIPTION:' + esc(desc),
+    'END:VEVENT', 'END:VCALENDAR'
+  ].join('\r\n') + '\r\n';
+}
+
+/* Google Calendar, as well as the file. On Android an .ics in Gmail is a
+   download-then-open dance; a template link is one tap. iPhone opens the
+   attachment directly, so both are offered and neither is required. */
+function googleCalUrl(d) {
+  const pad = (n) => String(n).padStart(2, '0');
+  const stamp = (dt) => dt.getUTCFullYear() + pad(dt.getUTCMonth() + 1) + pad(dt.getUTCDate()) +
+    'T' + pad(dt.getUTCHours()) + pad(dt.getUTCMinutes()) + '00Z';
+  const timed = (d.time && String(d.time).toUpperCase() !== 'ASAP') ? londonToUtc(d.date, d.time) : null;
+  if (!timed) return '';
+  const end = new Date(timed.getTime() + ICS_MINUTES * 60000);
+  const p = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: 'Westmere job — ' + shortDisplay(d.pickup || '') + ' to ' + shortDisplay(d.destination || ''),
+    dates: stamp(timed) + '/' + stamp(end),
+    location: d.pickup || '',
+    details: 'Reference ' + (d.ref || '') + (d.customer_phone ? ' · Passenger ' + (d.customer_name || '') + ' ' + d.customer_phone : '')
+  });
+  return 'https://calendar.google.com/calendar/render?' + p.toString();
+}
+
+/** The "put this in your calendar" block, shared by both driver emails. */
+function calendarBlock(d) {
+  const g = googleCalUrl(d);
+  const asap = !(d.time && String(d.time).toUpperCase() !== 'ASAP');
+  return `
+  <p style="margin:22px 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Add to calendar</p>
+  <p style="margin:0 0 8px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">The job is attached as a calendar file &mdash; open <strong style="color:${INK}">${escHtml((d.ref || 'job') + '.ics')}</strong> and it goes straight into your diary${asap ? ' as an all-day entry, because this one is ASAP' : ''}.${g ? ' Or add it to Google Calendar:' : ''}</p>
+  ${g ? `<p style="margin:0"><a href="${escHtml(g)}" style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:${INK_MUTED};text-decoration:none;border-bottom:1px solid ${HAIRLINE};padding-bottom:2px">Add to Google Calendar &rarr;</a></p>` : ''}`;
+}
+
+/** The .ics as a mail attachment, or undefined if the job has no usable date. */
+function icsAttachment(d) {
+  const ics = icsForJob(d);
+  if (!ics) return undefined;
+  return [{
+    filename: (d.ref || 'westmere-job') + '.ics',
+    content: Buffer.from(ics, 'utf8').toString('base64'),
+    content_type: 'text/calendar; charset=utf-8; method=PUBLISH'
+  }];
+}
+
+/* A JOB SENT TO SOMEBODY OUTSIDE THE SYSTEM.
+   The owner passes work to drivers he does not employ — another operator, a
+   friend with a car, somebody covering a Sunday. They have no account, no
+   driver app and no commission arrangement, so this is NOT sendDriverJobOffer
+   with the name swapped. Two things are deliberately different:
+
+   THE MONEY. A registered driver is shown his pay AFTER the 10% — "£67.50 to
+   you" — because that is what reaches his bank. Somebody outside the system has
+   not agreed to any commission, so quoting a net figure would be inventing a
+   term he never accepted. He is shown THE FARE, labelled "the fare for this
+   job", and the confirm page repeats the same number.
+     → If the owner would rather quote net-of-commission, it is the one line
+       marked below; the guard pins whichever is chosen.
+
+   THE PASSENGER'S NAME AND NUMBER. A registered driver gets these in the driver
+   app once he accepts. This reader has no app, so they are in the email — the
+   owner asked for exactly that, because a driver who cannot ring the passenger
+   cannot run the job. It is the reason this email must go only to an address
+   the owner typed himself, and never to a list.
+   GUARDRAIL: server/tests/adhoc-offer.test.js */
+async function sendAdhocJobOffer(d) {
+  const to = d && d.driver_email;
+  if (!to || !d.ref) return false;
+  const first = greetingName(d.driver_name) || 'there';
+  const dateStr = formatDate(d.date, d.time);
+
+  // THE FARE, not the net figure. See the note above before changing this.
+  const amount = (d.fare === null || d.fare === undefined || d.fare === '') ? null : Number(d.fare);
+  const amountStr = (amount === null || isNaN(amount)) ? null : '\u00a3' + amount.toFixed(2);
+
+  let rows = '';
+  rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:' + INK + '">' + escHtml(d.ref) + '</span>');
+  rows += detailRow('Date & Time', escHtml(dateStr), { gold: true });
+  rows += rowDivider();
+  // Each address is tappable through to Waze — on the FULL address, not the
+  // shortened one that is displayed. See navAddrRow.
+  rows += navAddrRow('Pickup', d.pickup, d.pickup_lat, d.pickup_lng);
+  if (d.stop_address) rows += navAddrRow('Stop', d.stop_address, d.stop_lat, d.stop_lng);
+  rows += navAddrRow('Drop-off', d.destination, d.dest_lat, d.dest_lng);
+  const flt = dispFlight(d);
+  if (flt) rows += detailRow('Flight', escHtml(flt));
+  rows += rowDivider();
+  rows += detailRow('Passengers', String(d.passengers || 1));
+  const bagsTxt = bagsText(d.bags);
+  rows += detailRow('Luggage', escHtml(bagsTxt || 'None stated'));
+  const note = cleanOwnerNote(d.notes);
+  if (note) rows += detailRow('Notes', escHtml(note));
+  if (d.customer_note) rows += detailRow('Passenger asked for', escHtml(String(d.customer_note)));
+
+  /* THE PASSENGER, in their own block rather than as two more rows in the trip
+     table. A driver arriving at a pickup is looking for a name and a number,
+     and they should not have to be hunted for among the addresses. */
+  const cName = String(d.customer_name || '').trim();
+  const cPhone = String(d.customer_phone || '').trim();
+  const clientBlock = (cName || cPhone) ? `
+  <p style="margin:22px 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Your passenger</p>
+  ${buildDetailsTable(
+      (cName ? detailRow('Name', escHtml(cName)) : '') +
+      (cName && cPhone ? rowDivider() : '') +
+      (cPhone ? detailRow('Phone', '<a href="tel:' + escHtml(cPhone.replace(/[^0-9+]/g, '')) + '" style="color:' + INK + ';text-decoration:none">' + escHtml(cPhone) + '</a>') : '')
+    )}` : '';
+
+  const fareBlock = amountStr ? `
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${ACCENT};margin:20px 0 4px">
+    <tr><td style="padding:16px 18px;text-align:center">
+      <div style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${INK_MUTED}">The fare for this job</div>
+      <div style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:34px;line-height:1.15;color:${INK};margin-top:4px">${escHtml(amountStr)}</div>
+      <div style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:12px;color:${INK_MUTED};margin-top:4px">The full fare as quoted to the customer</div>
+    </td></tr>
+  </table>` : `
+  <p style="margin:20px 0 4px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK_MUTED};text-align:center">The fare for this job is not set yet &mdash; we will confirm it before it runs.</p>`;
+
+  let actions = '';
+  if (d.offer_token) {
+    const base = `${HOST}/api/public/offer/${encodeURIComponent(d.ref)}`;
+    const t = `?t=${encodeURIComponent(d.offer_token)}`;
+    actions = `
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:18px">
+    ${actionBtn(base + '/accept' + t, 'Accept This Job', 'primary')}
+    ${actionBtn(base + '/decline' + t, 'Decline', 'secondary')}
+  </table>`;
+  }
+
+  const body = `
+  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">A job for you</p>
+  <p style="margin:0 0 8px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:18px;color:${INK};font-weight:400;line-height:1.4">${escHtml(first)}, there is a job going if you want it.</p>
+  <p style="margin:0 0 18px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK_SOFT};line-height:1.65">Everything you need is below, including the passenger's details. Take it or pass on it with the buttons at the bottom &mdash; whichever you choose, it tells us straight away.</p>
+  ${buildDetailsTable(rows)}
+  ${fareBlock}
+  ${clientBlock}
+  ${calendarBlock(d)}
+  ${actions}
+  <p style="margin:18px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_MUTED};line-height:1.6">If anything about the job does not suit, call 07930&nbsp;342593 rather than leaving it &mdash; we would far rather know early.</p>`;
+
+  const html = heroEmail(body, { hero: false });
+  const subject = 'A job for you' + (amountStr ? ' \u2014 ' + amountStr : '') + ' \u00b7 ' + d.ref;
+  const preheader = dateStr + ' \u00b7 ' + dispAddr(d.pickup) + ' to ' + dispAddr(d.destination);
+  const attachments = icsAttachment(d);
+  const ok = await sendEmail(to, subject, html, 'Westmere Private Hire', preheader,
+    attachments ? { attachments } : undefined);
+  if (ok) console.log('[EMAIL] Ad-hoc job offer', d.ref, 'sent to', to, attachments ? '(with .ics)' : '');
+  return ok;
+}
+
 async function sendDriverJobOffer(d) {
   const to = d && d.driver_email;
   if (!to || !d.ref) return false;
@@ -704,9 +966,11 @@ async function sendDriverJobOffer(d) {
   rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:' + INK + '">' + escHtml(d.ref) + '</span>');
   rows += detailRow('Date & Time', escHtml(dateStr), { gold: true });
   rows += rowDivider();
-  rows += detailRow('Pickup', dispAddr(d.pickup));
-  if (d.stop_address) rows += detailRow('Stop', dispAddr(d.stop_address));
-  rows += detailRow('Drop-off', dispAddr(d.destination));
+  // Each address is tappable through to Waze — on the FULL address, not the
+  // shortened one that is displayed. See navAddrRow.
+  rows += navAddrRow('Pickup', d.pickup, d.pickup_lat, d.pickup_lng);
+  if (d.stop_address) rows += navAddrRow('Stop', d.stop_address, d.stop_lat, d.stop_lng);
+  rows += navAddrRow('Drop-off', d.destination, d.dest_lat, d.dest_lng);
   const flt = dispFlight(d);
   if (flt) rows += detailRow('Flight', escHtml(flt));
   rows += rowDivider();
@@ -745,14 +1009,17 @@ async function sendDriverJobOffer(d) {
   <p style="margin:0 0 20px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Please check the passengers, the luggage and any special requests below before you accept &mdash; once you take it, it is yours.</p>
   ${buildDetailsTable(rows)}
   ${payBlock}
+  ${calendarBlock(d)}
   ${actions}
   <p style="margin:22px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">You can also accept or decline in the driver app. Any questions, call 07930&nbsp;342593.</p>`;
 
   const html = letterEmail(body, { title: 'A job for you — ' + d.ref });
   const subject = 'Job offer' + (payStr ? ' — ' + payStr + ' to you' : '') + ' · ' + d.ref;
   const preheader = dateStr + ' · ' + shortDisplay(d.pickup) + ' → ' + shortDisplay(d.destination) + (payStr ? ' · ' + payStr + ' to you' : '');
-  const ok = await sendEmail(to, subject, html, 'Westmere Dispatch', preheader);
-  if (ok) console.log('[EMAIL] Driver job offer sent (' + d.ref + ' → ' + to + ', ' + (payStr || 'fare TBC') + ')');
+  const attachments = icsAttachment(d);
+  const ok = await sendEmail(to, subject, html, 'Westmere Dispatch', preheader,
+    attachments ? { attachments } : undefined);
+  if (ok) console.log('[EMAIL] Driver job offer sent (' + d.ref + ' → ' + to + ', ' + (payStr || 'fare TBC') + (attachments ? ', with .ics' : '') + ')');
   return ok;
 }
 
@@ -2429,7 +2696,7 @@ async function sendCustomerMessage(booking, message, opts) {
 module.exports = {
   sendCustomerAcknowledgement, sendCustomerConfirmed, sendCustomerEstimate, sendAdminAlert,
   sendOwnerCancelledRequest, sendOwnerCustomerNote, sendOwnerChangeRequest, sendCustomerMessage,
-  sendOutreachMessage, letterEmail, sendDriverJobOffer, sendDriverMessage,
+  sendOutreachMessage, letterEmail, sendDriverJobOffer, sendAdhocJobOffer, sendDriverMessage,
   sendCustomerJourneyReminder, airportBlockHtml, flightTrackUrl, driverBlockHtml, driverDetails, cancelLinkHtml,
   sendCustomerBookingUpdated,
   sendCustomerWelcome, sendCustomerInvoice, sendBespokeInvoice, sendInvoiceReminder,

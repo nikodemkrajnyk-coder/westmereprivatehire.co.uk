@@ -73,10 +73,16 @@ function publicSummary(b) {
     fare: b.fare, driver_pay: b.driver_pay, admin_fee: b.admin_fee, payment: b.payment,
     status: b.status,
     offered_to_driver_id: b.offered_to_driver_id,
-    offered_driver_name: b.offered_driver_name,
+    /* For an ad-hoc offer there is no users row to read a name from, so the
+       card falls back to the name that was typed in. One field for the card to
+       show, whichever kind of offer it is. */
+    offered_driver_name: b.offered_driver_name || b.offered_to_name || null,
+    offered_to_email: b.offered_to_email || null,
+    offered_is_adhoc: !b.offered_to_driver_id && !!b.offered_to_email,
     offered_at: b.offered_at,
     driver_id: b.driver_id,
-    driver_name: b.driver_name,
+    driver_name: b.driver_name || b.assigned_to_name || null,
+    assigned_to_name: b.assigned_to_name || null,
     customer_name: b.customer_name, customer_phone: b.customer_phone,
     notes: b.notes,
     done_at: b.done_at, cancelled_at: b.cancelled_at, cancellation_reason: b.cancellation_reason
@@ -84,29 +90,65 @@ function publicSummary(b) {
 }
 
 // ── Admin: offer a booking to a specific driver ──────────────────────────
+/* TWO KINDS OF OFFER, ONE ROUTE.
+   A REGISTERED offer names a driver_id and goes to somebody with an account, a
+   driver app and a commission arrangement. An AD-HOC offer is a name and an
+   email address typed in on the spot — another operator, a friend with a car,
+   somebody covering a Sunday. There is no users row to point at.
+
+   Which kind it is, is decided ONCE here and recorded in the columns: a
+   registered offer sets offered_to_driver_id and leaves offered_to_email NULL;
+   an ad-hoc offer does the reverse. Nothing downstream infers it from anything
+   else, and nothing can be half of each. */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 router.post('/bookings/:id/offer', staffOnly, (req, res) => {
   const { driver_id } = req.body || {};
-  if (!driver_id) return res.status(400).json({ error: 'driver_id required' });
+  const adhocName  = String((req.body && req.body.name)  || '').trim();
+  const adhocEmail = String((req.body && req.body.email) || '').trim().toLowerCase();
+  const isAdhoc = !driver_id && (adhocName || adhocEmail);
+
+  if (!driver_id && !isAdhoc) return res.status(400).json({ error: 'driver_id, or a name and email, required' });
+  if (isAdhoc) {
+    if (!adhocName) return res.status(400).json({ error: 'A name is required for the driver you are sending this to' });
+    if (adhocName.length > 120) return res.status(400).json({ error: 'That name is too long' });
+    if (!adhocEmail) return res.status(400).json({ error: 'An email address is required' });
+    if (!EMAIL_RE.test(adhocEmail)) return res.status(400).json({ error: 'That email address does not look right: ' + adhocEmail });
+  }
 
   try {
     const db = getDb();
-    const driver = db.prepare(`
-      SELECT id, full_name, email, phone FROM users
-       WHERE id = ? AND role IN ('driver','owner') AND active = 1
-    `).get(driver_id);
-    if (!driver) return res.status(404).json({ error: 'Driver not found or inactive' });
+    let driver = null;
+    if (!isAdhoc) {
+      driver = db.prepare(`
+        SELECT id, full_name, email, phone FROM users
+         WHERE id = ? AND role IN ('driver','owner') AND active = 1
+      `).get(driver_id);
+      if (!driver) return res.status(404).json({ error: 'Driver not found or inactive' });
+    }
 
     const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(req.params.id);
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
     if (['completed', 'cancelled'].includes(booking.status)) {
       return res.status(409).json({ error: 'Booking is already ' + booking.status });
     }
+    /* A JOB IS ONLY PASSED ON ONCE THE CUSTOMER HAS CONFIRMED IT.
+       The owner's rule. Offering a pending quote sends a driver out on a trip
+       that may never happen — and on the ad-hoc path it hands somebody outside
+       the business a customer's name and phone number for a booking that was
+       never made. The button is hidden on unconfirmed cards; this is the half
+       that holds when the button is not the only way in. */
+    if (!['confirmed', 'active'].includes(booking.status)) {
+      return res.status(409).json({
+        error: 'This booking is ' + booking.status + '. A job can only be offered once it is confirmed.'
+      });
+    }
 
     const { driver_pay, admin_fee } = computeSplit(booking.fare);
     /* Fresh per offer. A job that was offered, reclaimed and offered again must
        not be decidable with the link from the first email. */
     const offerToken = require('crypto').randomBytes(24).toString('base64url');
-    const driverLabel = (driver.full_name || ('#' + driver_id)).slice(0, 120);
+    const driverLabel = (isAdhoc ? adhocName : (driver.full_name || ('#' + driver_id))).slice(0, 120);
 
     // Update booking status — use a simpler UPDATE that avoids string-concat
     // in SQL (which can fail if intake_reason column is missing on old DBs)
@@ -114,6 +156,8 @@ router.post('/bookings/:id/offer', staffOnly, (req, res) => {
       UPDATE bookings
          SET status = 'offered',
              offered_to_driver_id = ?,
+             offered_to_name  = ?,
+             offered_to_email = ?,
              offered_at = datetime('now'),
              decided_at = NULL,
              offer_token = ?,
@@ -122,7 +166,11 @@ router.post('/bookings/:id/offer', staffOnly, (req, res) => {
              needs_reassignment = 0,
              updated_at = datetime('now')
        WHERE id = ?
-    `).run(driver_id, offerToken, driver_pay, admin_fee, req.params.id);
+    `).run(
+      isAdhoc ? null : driver_id,
+      isAdhoc ? adhocName : null,
+      isAdhoc ? adhocEmail : null,
+      offerToken, driver_pay, admin_fee, req.params.id);
 
     // Append to intake_reason separately — non-fatal if it fails
     try {
@@ -136,11 +184,30 @@ router.post('/bookings/:id/offer', staffOnly, (req, res) => {
     const row = bookingRow(req.params.id);
 
     // Broadcast SSE (non-fatal)
-    try { events.broadcast('job:offered', publicSummary(row), { driverId: driver_id }); } catch (_) {}
+    try { events.broadcast('job:offered', publicSummary(row), { driverId: isAdhoc ? null : driver_id }); } catch (_) {}
 
     // Driver notification — skip gracefully if driver has no contact details
     // (push tokens, email, WhatsApp are all optional at offer time)
-    if (driver.email) {
+    if (isAdhoc) {
+      /* A DIFFERENT EMAIL, because the reader is different. A registered driver
+         gets his pay after commission; somebody outside the system is being
+         quoted a job, and needs the customer's name and number to run it. */
+      try {
+        email.sendAdhocJobOffer({
+          driver_name: adhocName, driver_email: adhocEmail,
+          ref: booking.ref, pickup: booking.pickup, destination: booking.destination,
+          stop_address: booking.stop_address, date: booking.date, time: booking.time,
+          fare: booking.fare, driver_pay, admin_fee,
+          passengers: booking.passengers, bags: booking.bags, flight: booking.flight,
+          notes: booking.notes, customer_note: booking.customer_note,
+          customer_name: row.customer_name || booking.passenger_name || '',
+          customer_phone: row.customer_phone || booking.passenger_phone || '',
+          offer_token: offerToken
+        });
+      } catch (notifyErr) {
+        console.warn('[OFFER] ad-hoc email skipped:', notifyErr.message);
+      }
+    } else if (driver.email) {
       try {
         email.sendDriverJobOffer({
           driver_name: driver.full_name, driver_email: driver.email,
@@ -232,6 +299,11 @@ router.get('/driver/jobs', driverOnly, (req, res) => {
 function acceptOffer(db, bookingId, driverId) {
   const b = db.prepare('SELECT * FROM bookings WHERE id = ?').get(bookingId);
   if (!b) return { ok: false, reason: 'not_found' };
+  /* driverId must BE something. On an ad-hoc offer both sides are null, and
+     `null !== null` is false — so without this line the guard below passes by
+     accident and the job is assigned to driver_id NULL, which reads everywhere
+     as unassigned. Found by the guard, not by reading it. */
+  if (driverId === null || driverId === undefined) return { ok: false, reason: 'no_driver' };
   if (b.status !== 'offered' || b.offered_to_driver_id !== driverId) {
     return { ok: false, reason: 'not_pending' };
   }
@@ -257,9 +329,79 @@ function acceptOffer(db, bookingId, driverId) {
   return { ok: true, row };
 }
 
+/* ACCEPT AND DECLINE FOR SOMEBODY WITH NO ACCOUNT.
+   Deliberately separate from acceptOffer/declineOffer rather than a flag on
+   them. Those two guard on `b.offered_to_driver_id !== driverId`, and for an
+   ad-hoc offer both sides are null — the check would PASS by accident and the
+   job would be assigned to driver_id NULL, which reads as unassigned. Two
+   functions, each with a guard that means something.
+
+   The job becomes confirmed and carries the NAME of whoever took it; driver_id
+   stays null because there is no account to point at. Everything downstream
+   that shows a driver already falls back to assigned_to_name. */
+function acceptAdhocOffer(db, bookingId) {
+  const b = db.prepare('SELECT * FROM bookings WHERE id = ?').get(bookingId);
+  if (!b) return { ok: false, reason: 'not_found' };
+  if (b.status !== 'offered' || b.offered_to_driver_id || !b.offered_to_email) {
+    return { ok: false, reason: 'not_pending' };
+  }
+  const wasPending = !b.driver_id;
+  const who = b.offered_to_name || b.offered_to_email;
+  db.prepare(`
+    UPDATE bookings
+       SET status = 'confirmed',
+           assigned_to_name = ?,
+           offered_to_driver_id = NULL,
+           offered_to_name = NULL,
+           offered_to_email = NULL,
+           offer_token = NULL,
+           decided_at = datetime('now'),
+           needs_reassignment = 0,
+           intake_reason = COALESCE(intake_reason, '') || ' [Accepted by ' || ? || ' at ' || datetime('now') || ']',
+           updated_at = datetime('now')
+     WHERE id = ?
+  `).run(who, who, bookingId);
+  const row = bookingRow(bookingId);
+  try { events.broadcast('job:accepted', publicSummary(row), {}); } catch (_) {}
+  if (wasPending) {
+    intake.notifyCustomerConfirmed(parseInt(bookingId, 10))
+      .catch(e => console.error('[OFFER] notifyCustomerConfirmed failed:', e.message));
+  }
+  return { ok: true, row };
+}
+
+function declineAdhocOffer(db, bookingId, reason) {
+  const b = db.prepare('SELECT * FROM bookings WHERE id = ?').get(bookingId);
+  if (!b) return { ok: false, reason: 'not_found' };
+  if (b.status !== 'offered' || b.offered_to_driver_id || !b.offered_to_email) {
+    return { ok: false, reason: 'not_pending' };
+  }
+  const who = b.offered_to_name || b.offered_to_email;
+  db.prepare(`
+    UPDATE bookings
+       SET status = 'pending',
+           offered_to_driver_id = NULL,
+           offered_to_name = NULL,
+           offered_to_email = NULL,
+           offered_at = NULL,
+           offer_token = NULL,
+           decided_at = datetime('now'),
+           driver_pay = NULL,
+           admin_fee  = NULL,
+           needs_reassignment = 1,
+           intake_reason = COALESCE(intake_reason, '') || ' [Declined by ' || ? || ': ' || ? || ' at ' || datetime('now') || ']',
+           updated_at = datetime('now')
+     WHERE id = ?
+  `).run(who, (reason || 'no reason given'), bookingId);
+  const row = bookingRow(bookingId);
+  try { events.broadcast('job:declined', publicSummary(row), {}); } catch (_) {}
+  return { ok: true, row };
+}
+
 function declineOffer(db, bookingId, driverId, reason) {
   const b = db.prepare('SELECT * FROM bookings WHERE id = ?').get(bookingId);
   if (!b) return { ok: false, reason: 'not_found' };
+  if (driverId === null || driverId === undefined) return { ok: false, reason: 'no_driver' };
   if (b.status !== 'offered' || b.offered_to_driver_id !== driverId) {
     return { ok: false, reason: 'not_pending' };
   }
@@ -426,4 +568,6 @@ module.exports.ADMIN_FEE_PCT = ADMIN_FEE_PCT;
 module.exports.computeSplit = computeSplit;
 module.exports.acceptOffer = acceptOffer;
 module.exports.declineOffer = declineOffer;
+module.exports.acceptAdhocOffer = acceptAdhocOffer;
+module.exports.declineAdhocOffer = declineAdhocOffer;
 module.exports.OFFER_WINDOW_MS = OFFER_WINDOW_MS;

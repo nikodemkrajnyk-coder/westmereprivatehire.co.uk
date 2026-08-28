@@ -136,7 +136,14 @@ test('an unpriced job says so instead of inventing a figure', async () => {
     pickup: b.pickup, destination: b.destination, date: b.date, time: b.time,
     fare: null, driver_pay: null, offer_token: 'tok' });
   assert.ok(/not set yet/.test(SENT[0].html), 'it must say the fare is not set');
-  assert.ok(!/to you/.test(SENT[0].html.replace(/Your pay for this job/, '')), 'and quote no pay');
+  /* What this means is "no FIGURE is quoted", and it used to test for the
+     phrase "to you" as a proxy. That broke the day the email gained the line
+     "goes straight into your diary" — which contains "to you" inside "into
+     your" and quotes nothing at all. Assert the money, not the wording. */
+  assert.deepStrictEqual(SENT[0].html.match(/£\s?\d|&pound;\s?\d/g) || [], [],
+    'no pay figure may appear on a job whose fare is not set');
+  assert.ok(!/\bto you\b/.test(SENT[0].html.replace(/Your pay for this job/, '').replace(/into your/g, '')),
+    'and nothing may read as a promise of pay');
 });
 
 test('the email is the letterhead, and carries the job', async () => {

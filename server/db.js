@@ -327,7 +327,19 @@ function migrate() {
       ['cancelled_at',         'TEXT'],
       ['cancellation_reason',  'TEXT'],
       ['driver_pay',           'REAL'],
-      ['admin_fee',            'REAL']
+      ['admin_fee',            'REAL'],
+      /* AN OFFER TO SOMEBODY WHO IS NOT ON THE SYSTEM.
+         The owner sends work to drivers he does not employ — a name and an
+         email typed in on the spot. There is no users row to point
+         offered_to_driver_id at, so the person is recorded here instead, and
+         offered_to_driver_id stays NULL. Which of the two is set is what tells
+         every downstream branch whether this is a registered offer or an ad-hoc
+         one; nothing infers it from anything else.
+         assigned_to_name is who accepted, when there is no driver account to
+         put in driver_id. */
+      ['offered_to_name',      'TEXT'],
+      ['offered_to_email',     'TEXT'],
+      ['assigned_to_name',     'TEXT']
     ];
     for (const [name, type] of newCols) {
       if (!info.find(c => c.name === name)) {

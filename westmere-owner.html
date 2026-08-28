@@ -3497,10 +3497,19 @@ function jobCardHtml(j){
   /* DISPATCH. An offered job shows who has it and how long they have left; an
      unassigned one offers the pick-a-driver sheet. The backend for all of this
      has existed since the driver app was built — this is the button that was
-     missing. */
+     missing.
+
+     ONLY ON A CONFIRMED JOB. The owner's rule: a job is not passed to anybody
+     until the customer has confirmed it. Offering a pending quote would send a
+     driver out on a trip that may never happen, and — on the ad-hoc path —
+     hand somebody outside the business a customer's name and phone number for
+     a booking that was never made. Reclaim stays available whatever the state,
+     because an offer already made must always be retractable. The route
+     refuses the same thing; this only removes the temptation. */
+  var dispCanOffer=(j.apiStatus==='confirmed'||j.apiStatus==='active');
   if(j.apiStatus==='offered'){
     html+='<button style="padding:.6rem .85rem;font-size:.79rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;border:var(--border-hair,1px) solid var(--westmere-line-strong,#c8d1d9)" onclick="dispReclaim('+j.id+')">Reclaim</button>';
-  }else if(!j.driverId){
+  }else if(!j.driverId&&dispCanOffer){
     html+='<button style="padding:.6rem .85rem;font-size:.79rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;border:var(--border-strong,1.5px) solid var(--westmere-navy,#102a43);color:var(--westmere-navy,#102a43)" onclick="dispOffer('+j.id+')">Offer to driver</button>';
   }
   html+='<button style="padding:.6rem .85rem;font-size:.79rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)" onclick="upcomingDelete('+j.id+')">Delete</button>';
@@ -5618,13 +5627,21 @@ var DISP_DRIVERS=[];
 function dispStateRow(j){
   if(j.apiStatus==='offered'){
     var who=j.offeredToName||'a driver';
+    /* An ad-hoc offer shows the ADDRESS too. The owner typed it minutes ago
+       from memory, and the card is the only place he can check it went where he
+       meant — there is no account behind the name to look up. */
+    if(j.offeredIsAdhoc&&j.offeredToEmail)who+=' ('+j.offeredToEmail+')';
     return '<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Dispatch</td>'
       +'<td style="color:var(--westmere-navy,#102a43)">Offered to '+escH(who)+' &middot; awaiting reply</td></tr>';
   }
   if(j.driverName){
+    /* Somebody outside the system took it: they were quoted the FARE, so the
+       card must not report a commission split that was never agreed. */
+    var adhoc=!j.driverId&&!!j.assignedToName;
     return '<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Driver</td>'
       +'<td style="color:var(--westmere-navy,#102a43)">'+escH(j.driverName)+' &middot; accepted'
-      +(j.driverPay!=null?(' &middot; '+fmtMoney(j.driverPay)+' to him'):'')+'</td></tr>';
+      +(adhoc?' &middot; not a registered driver'
+             :(j.driverPay!=null?(' &middot; '+fmtMoney(j.driverPay)+' to him'):''))+'</td></tr>';
   }
   return '';
 }
@@ -5640,12 +5657,20 @@ async function dispLoadDrivers(){
 
 async function dispOffer(id){
   var list=await dispLoadDrivers();
-  if(!list.length){ alert('No approved drivers yet. Add and approve a driver first.'); return; }
-  // A plain prompt rather than a modal: one decision, taken quickly, on a phone.
+  /* TWO WAYS TO SEND A JOB. The registered drivers are numbered as before; the
+     last option is somebody who is not on the system at all — another operator,
+     a friend with a car — sent by typing a name and an email. Offering to
+     nobody is no longer a dead end either: with no approved drivers this used
+     to stop with "add and approve a driver first", which is not much help at
+     six in the morning when a job needs covering. */
   var menu=list.map(function(d,i){return (i+1)+'. '+(d.full_name||('Driver '+d.id));}).join('\n');
-  var pick=prompt('Offer this job to which driver?\n\n'+menu+'\n\nEnter a number:');
+  var other=list.length+1;
+  var pick=prompt('Send this job to who?\n\n'+(menu?menu+'\n':'')+other+'. Someone else — enter their name and email\n\nEnter a number:');
   if(pick===null)return;
   var idx=parseInt(pick,10)-1;
+
+  if(idx===list.length){ return dispOfferAdhoc(id); }
+
   if(!(idx>=0&&idx<list.length)){ alert('That is not one of the numbers.'); return; }
   var drv=list[idx];
   if(!confirm('Offer this job to '+(drv.full_name||'this driver')+'?\n\nHe will be emailed the job with his pay after commission, and can accept or decline.'))return;
@@ -5655,6 +5680,34 @@ async function dispOffer(id){
     var d=await r.json();
     if(r.ok&&d.ok){ showToast('Offered to '+(drv.full_name||'driver')); loadOwnerBookings(); }
     else showToast(d.error||'Could not offer');
+  }catch(e){ showToast('Network error'); }
+}
+
+/* SEND A JOB TO SOMEBODY NOT ON THE SYSTEM.
+   Name, then email, then a confirmation that spells out what is about to leave
+   the building — the fare AND the passenger's name and number are in that
+   email, going to an address the owner has just typed. That is the intent, and
+   it is worth one clear sentence before it goes.
+   The address is checked here as well as on the server: a typo caught before
+   the send is a job that is not silently sitting in nobody's inbox. */
+async function dispOfferAdhoc(id){
+  var name=prompt('Their name?');
+  if(name===null)return;
+  name=name.trim();
+  if(!name){ alert('A name is needed — it goes on the job and on the card.'); return; }
+
+  var email=prompt('Their email address?\n\nThe job goes here, so check it.');
+  if(email===null)return;
+  email=email.trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ alert('That email address does not look right:\n\n'+email); return; }
+
+  if(!confirm('Send this job to '+name+' at '+email+'?\n\nThey will be emailed the trip details, the FARE, and the passenger\u2019s name and phone number, with Accept and Decline buttons.'))return;
+  try{
+    var r=await fetch('/api/bookings/'+id+'/offer',{method:'POST',credentials:'include',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name,email:email})});
+    var d=await r.json();
+    if(r.ok&&d.ok){ showToast('Sent to '+name); loadOwnerBookings(); }
+    else showToast(d.error||'Could not send');
   }catch(e){ showToast('Network error'); }
 }
 
@@ -5962,6 +6015,9 @@ async function loadOwnerBookings(){
         driverId:b.driver_id||null,
         driverName:b.driver_name||'',
         offeredToName:b.offered_driver_name||'',
+        offeredToEmail:b.offered_to_email||'',
+        offeredIsAdhoc:!!b.offered_is_adhoc,
+        assignedToName:b.assigned_to_name||'',
         driverPay:(b.driver_pay==null?null:Number(b.driver_pay)),
         status:b.status==='completed'?'done':b.status==='active'?'enroute':b.status==='cancelled'?'done':'upcoming',
         note:b.notes||'',

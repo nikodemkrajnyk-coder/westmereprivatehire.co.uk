@@ -907,8 +907,13 @@ router.get('/offer/:ref/:action', (req, res) => {
       return res.send(actionPage('Already decided',
         'This job is no longer waiting on you. Check the driver app for your current jobs.', b.ref, '', 'ok'));
     }
-    const pay = (b.driver_pay === null || b.driver_pay === undefined) ? null : Number(b.driver_pay);
-    const payStr = pay === null ? '' : ' — £' + pay.toFixed(2) + ' to you';
+    /* An outside driver was quoted the FARE, not a figure after commission —
+       so the confirm page must not now show him a different number. */
+    const adhoc = !b.offered_to_driver_id && !!b.offered_to_email;
+    const amount = adhoc
+      ? ((b.fare === null || b.fare === undefined) ? null : Number(b.fare))
+      : ((b.driver_pay === null || b.driver_pay === undefined) ? null : Number(b.driver_pay));
+    const payStr = amount === null ? '' : ' — £' + amount.toFixed(2) + (adhoc ? ' for the job' : ' to you');
     const form = `<form method="POST"><button type="submit" class="act ${action === 'accept' ? 'navy' : 'danger'}">${
       action === 'accept' ? 'Confirm — Take This Job' : 'Confirm — Decline'}</button></form>`;
     res.send(action === 'accept'
@@ -933,9 +938,16 @@ router.post('/offer/:ref/:action', (req, res) => {
         'This offer is no longer open.', null, '', 'error'));
     }
     const offers = require('./offer-routes');
+    /* An AD-HOC offer has no driver id. Calling acceptOffer with null on both
+       sides would pass its `!==` guard by accident and assign the job to
+       driver_id NULL — which reads everywhere as unassigned. The two kinds get
+       the two functions written for them. */
+    const adhoc = !b.offered_to_driver_id && !!b.offered_to_email;
     const out = action === 'accept'
-      ? offers.acceptOffer(getDb(), b.id, b.offered_to_driver_id)
-      : offers.declineOffer(getDb(), b.id, b.offered_to_driver_id, 'Declined from the offer email');
+      ? (adhoc ? offers.acceptAdhocOffer(getDb(), b.id)
+               : offers.acceptOffer(getDb(), b.id, b.offered_to_driver_id))
+      : (adhoc ? offers.declineAdhocOffer(getDb(), b.id, 'Declined from the offer email')
+               : offers.declineOffer(getDb(), b.id, b.offered_to_driver_id, 'Declined from the offer email'));
     if (!out.ok) {
       return res.send(actionPage('Already decided',
         'This job is no longer waiting on you.', b.ref, '', 'ok'));
