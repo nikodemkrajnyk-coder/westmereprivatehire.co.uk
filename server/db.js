@@ -339,7 +339,20 @@ function migrate() {
          put in driver_id. */
       ['offered_to_name',      'TEXT'],
       ['offered_to_email',     'TEXT'],
-      ['assigned_to_name',     'TEXT']
+      /* The car, so the CUSTOMER's reminder can say who is coming. An outside
+         driver has no users row to read a vehicle and a registration from, so
+         the owner types them when he sends the job, and accepting copies them
+         onto the booking. Without these the reminder would fall back to the
+         owner's own Tesla and tell the customer the wrong car. */
+      ['offered_to_reg',       'TEXT'],
+      ['offered_to_car',       'TEXT'],
+      ['assigned_to_name',     'TEXT'],
+      ['assigned_to_reg',      'TEXT'],
+      ['assigned_to_car',      'TEXT'],
+      /* Where the ad-hoc driver's own 12-hour reminder goes. Accepting used to
+         clear offered_to_email — correct, the offer is spent — which left no
+         address to remind them at. It is copied here instead. */
+      ['assigned_to_email',    'TEXT']
     ];
     for (const [name, type] of newCols) {
       if (!info.find(c => c.name === name)) {
@@ -876,6 +889,9 @@ function migrate() {
   // reminder_sent_at would mean one send suppressing the other — the owner would
   // get his and the customer would silently get nothing, or the reverse.
   try { db.exec(`ALTER TABLE bookings ADD COLUMN customer_reminder_sent_at TEXT`); } catch(_){}
+  /* And a THIRD, for the driver's own reminder. Same reasoning as the second:
+     three sends, three latches, none able to suppress another. */
+  try { db.exec(`ALTER TABLE bookings ADD COLUMN driver_reminder_sent_at TEXT`); } catch(_){}
 
   // A per-OFFER secret, minted when a job is offered and cleared the moment it
   // is decided or reclaimed. Gates the accept/decline links in the driver's

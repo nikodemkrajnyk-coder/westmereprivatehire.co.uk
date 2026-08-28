@@ -67,16 +67,45 @@ function flightTrackUrl(raw) {
 const DEFAULT_DRIVER  = 'Nikodem';
 const DEFAULT_VEHICLE = 'Tesla Model S';
 const DEFAULT_REG     = 'ML68 YHC';
+/* WHO IS ACTUALLY COMING, in one place.
+   Three sources, in order, and the order matters because the answer is a
+   PERSON — not three independent fields:
+
+     1. a REGISTERED driver assigned to the booking (users row via driver_id);
+     2. an AD-HOC driver who accepted it — name, car and registration typed in
+        by the owner when he sent the job;
+     3. nobody assigned yet → the owner himself, in his own car.
+
+   Resolved as a SET, never field by field. Falling back per-field would put a
+   registered driver's name against the owner's Tesla the moment his vehicle
+   column was blank, and send the customer to meet the wrong car. If a source
+   answers, its three values are used together; only a missing value INSIDE the
+   chosen source falls through to the default.
+   GUARDRAIL: server/tests/rider-reminder.test.js */
 function driverDetails(d) {
-  const pick = (v, fallback) => {
-    const t = String(v == null ? '' : v).trim();
-    return t || fallback;
-  };
-  return {
-    name: pick(d && d.driver_name, DEFAULT_DRIVER),
-    vehicle: pick(d && d.driver_vehicle, DEFAULT_VEHICLE),
-    reg: pick(d && d.driver_reg, DEFAULT_REG)
-  };
+  const t = (v) => String(v == null ? '' : v).trim();
+  const or = (v, fallback) => t(v) || fallback;
+
+  // 1. a registered driver
+  if (d && t(d.driver_name)) {
+    return {
+      name: t(d.driver_name),
+      vehicle: or(d.driver_vehicle, DEFAULT_VEHICLE),
+      reg: or(d.driver_reg, DEFAULT_REG),
+      source: 'registered'
+    };
+  }
+  // 2. an ad-hoc driver who took the job
+  if (d && t(d.assigned_to_name)) {
+    return {
+      name: t(d.assigned_to_name),
+      vehicle: or(d.assigned_to_car, DEFAULT_VEHICLE),
+      reg: or(d.assigned_to_reg, DEFAULT_REG),
+      source: 'adhoc'
+    };
+  }
+  // 3. nobody yet — the owner takes it himself
+  return { name: DEFAULT_DRIVER, vehicle: DEFAULT_VEHICLE, reg: DEFAULT_REG, source: 'default' };
 }
 
 /* ── WHO IS TURNING UP, AND IN WHAT ──────────────────────────────────────
@@ -850,6 +879,49 @@ function icsAttachment(d) {
   }];
 }
 
+/* THE JOB, as rows — the same table in all three driver emails: the offer to a
+   registered driver, the offer to somebody outside the system, and the reminder
+   that goes out the night before. It was copied twice; a third copy would have
+   guaranteed the Waze links or the flight row drifting apart between them.
+   The addresses go through navAddrRow, so each one is tappable through to Waze
+   on the FULL address rather than the shortened one displayed. */
+function jobDetailRows(d) {
+  const dateStr = formatDate(d.date, d.time);
+  let rows = '';
+  rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:' + INK + '">' + escHtml(d.ref) + '</span>');
+  rows += detailRow('Date & Time', escHtml(dateStr), { gold: true });
+  rows += rowDivider();
+  rows += navAddrRow('Pickup', d.pickup, d.pickup_lat, d.pickup_lng);
+  if (d.stop_address) rows += navAddrRow('Stop', d.stop_address, d.stop_lat, d.stop_lng);
+  rows += navAddrRow('Drop-off', d.destination, d.dest_lat, d.dest_lng);
+  const flt = dispFlight(d);
+  if (flt) rows += detailRow('Flight', escHtml(flt));
+  rows += rowDivider();
+  rows += detailRow('Passengers', String(d.passengers || 1));
+  const bagsTxt = bagsText(d.bags);
+  rows += detailRow('Luggage', escHtml(bagsTxt || 'None stated'));
+  const note = cleanOwnerNote(d.notes);
+  if (note) rows += detailRow('Notes', escHtml(note));
+  if (d.customer_note) rows += detailRow('Passenger asked for', escHtml(String(d.customer_note)));
+  return rows;
+}
+
+/* THE PASSENGER, in their own block rather than as two more rows in the trip
+   table. A driver arriving at a pickup is looking for a name and a number, and
+   they should not have to be hunted for among the addresses. */
+function passengerBlockHtml(d) {
+  const cName = String(d.customer_name || '').trim();
+  const cPhone = String(d.customer_phone || '').trim();
+  if (!cName && !cPhone) return '';
+  return `
+  <p style="margin:22px 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Your passenger</p>
+  ${buildDetailsTable(
+      (cName ? detailRow('Name', escHtml(cName)) : '') +
+      (cName && cPhone ? rowDivider() : '') +
+      (cPhone ? detailRow('Phone', '<a href="tel:' + escHtml(cPhone.replace(/[^0-9+]/g, '')) + '" style="color:' + INK + ';text-decoration:none">' + escHtml(cPhone) + '</a>') : '')
+    )}`;
+}
+
 /* A JOB SENT TO SOMEBODY OUTSIDE THE SYSTEM.
    The owner passes work to drivers he does not employ — another operator, a
    friend with a car, somebody covering a Sunday. They have no account, no
@@ -879,37 +951,18 @@ async function sendAdhocJobOffer(d) {
   const amount = (d.fare === null || d.fare === undefined || d.fare === '') ? null : Number(d.fare);
   const amountStr = (amount === null || isNaN(amount)) ? null : '\u00a3' + amount.toFixed(2);
 
-  let rows = '';
-  rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:' + INK + '">' + escHtml(d.ref) + '</span>');
-  rows += detailRow('Date & Time', escHtml(dateStr), { gold: true });
-  rows += rowDivider();
-  // Each address is tappable through to Waze — on the FULL address, not the
-  // shortened one that is displayed. See navAddrRow.
-  rows += navAddrRow('Pickup', d.pickup, d.pickup_lat, d.pickup_lng);
-  if (d.stop_address) rows += navAddrRow('Stop', d.stop_address, d.stop_lat, d.stop_lng);
-  rows += navAddrRow('Drop-off', d.destination, d.dest_lat, d.dest_lng);
-  const flt = dispFlight(d);
-  if (flt) rows += detailRow('Flight', escHtml(flt));
-  rows += rowDivider();
-  rows += detailRow('Passengers', String(d.passengers || 1));
-  const bagsTxt = bagsText(d.bags);
-  rows += detailRow('Luggage', escHtml(bagsTxt || 'None stated'));
-  const note = cleanOwnerNote(d.notes);
-  if (note) rows += detailRow('Notes', escHtml(note));
-  if (d.customer_note) rows += detailRow('Passenger asked for', escHtml(String(d.customer_note)));
+  let rows = jobDetailRows(d);
+  /* Read back what the owner typed, so a wrong plate is caught by the one
+     person who can correct it before the customer is told to look for it. */
+  if (d.driver_reg || d.driver_car) {
+    rows += rowDivider();
+    rows += detailRow('Your car', escHtml([d.driver_car, d.driver_reg].filter(Boolean).join(' \u00b7 ')));
+  }
 
   /* THE PASSENGER, in their own block rather than as two more rows in the trip
      table. A driver arriving at a pickup is looking for a name and a number,
      and they should not have to be hunted for among the addresses. */
-  const cName = String(d.customer_name || '').trim();
-  const cPhone = String(d.customer_phone || '').trim();
-  const clientBlock = (cName || cPhone) ? `
-  <p style="margin:22px 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Your passenger</p>
-  ${buildDetailsTable(
-      (cName ? detailRow('Name', escHtml(cName)) : '') +
-      (cName && cPhone ? rowDivider() : '') +
-      (cPhone ? detailRow('Phone', '<a href="tel:' + escHtml(cPhone.replace(/[^0-9+]/g, '')) + '" style="color:' + INK + ';text-decoration:none">' + escHtml(cPhone) + '</a>') : '')
-    )}` : '';
+  const clientBlock = passengerBlockHtml(d);
 
   const fareBlock = amountStr ? `
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${ACCENT};margin:20px 0 4px">
@@ -951,6 +1004,48 @@ async function sendAdhocJobOffer(d) {
   return ok;
 }
 
+/* THE NIGHT-BEFORE REMINDER TO WHOEVER IS DRIVING.
+   The same trip, in the same shape as the job email, sent again on the sweep
+   before pickup so a job agreed a fortnight ago is not forgotten. Three things
+   are deliberately NOT on it:
+
+   NO ACCEPT OR DECLINE. This job is already theirs. Buttons here would offer
+   them a decision they already made, and a stray tap the night before pickup
+   would unassign a confirmed booking. There is no offer_token in this email at
+   all, so there is nothing to press even by accident.
+
+   NO MONEY. A registered driver was quoted his pay net of commission; somebody
+   outside the system was quoted the full fare. Restating either here risks
+   contradicting what was agreed, and the number is already in the email they
+   accepted. If a figure is wanted later it must come from the SAME source the
+   offer used, not be recomputed.
+
+   NO COUNTDOWN. Twelve hours is when it is sent, never what it says — see
+   sendCustomerJourneyReminder.
+   GUARDRAIL: server/tests/driver-reminder.test.js */
+async function sendDriverJobReminder(d) {
+  const to = d && d.driver_email;
+  if (!to || !d.ref) return false;
+  const dateStr = formatDate(d.date, d.time);
+
+  const body = `
+  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Reminder</p>
+  <p style="margin:0 0 16px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:18px;color:${INK};line-height:1.4">You have a job coming up.</p>
+  ${buildDetailsTable(jobDetailRows(d))}
+  ${passengerBlockHtml(d)}
+  ${calendarBlock(d)}
+  <p style="margin:22px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">Nothing to do here &mdash; this is a reminder, not a new offer. If anything has changed, call 07930&nbsp;342593.</p>`;
+
+  const html = letterEmail(body, { title: 'Reminder — upcoming job — ' + d.ref });
+  const subject = 'Reminder — upcoming job — ' + d.ref;
+  const preheader = dateStr + ' \u00b7 ' + shortDisplay(d.pickup) + ' \u2192 ' + shortDisplay(d.destination);
+  const attachments = icsAttachment(d);
+  const ok = await sendEmail(to, subject, html, 'Westmere Dispatch', preheader,
+    attachments ? { attachments } : undefined);
+  if (ok) console.log('[EMAIL] Driver job reminder sent (' + d.ref + ' \u2192 ' + to + (attachments ? ', with .ics' : '') + ')');
+  return ok;
+}
+
 async function sendDriverJobOffer(d) {
   const to = d && d.driver_email;
   if (!to || !d.ref) return false;
@@ -958,24 +1053,7 @@ async function sendDriverJobOffer(d) {
   const pay = (d.driver_pay === null || d.driver_pay === undefined) ? null : Number(d.driver_pay);
   const payStr = pay === null ? null : '£' + pay.toFixed(2);
 
-  let rows = '';
-  rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:' + INK + '">' + escHtml(d.ref) + '</span>');
-  rows += detailRow('Date & Time', escHtml(dateStr), { gold: true });
-  rows += rowDivider();
-  // Each address is tappable through to Waze — on the FULL address, not the
-  // shortened one that is displayed. See navAddrRow.
-  rows += navAddrRow('Pickup', d.pickup, d.pickup_lat, d.pickup_lng);
-  if (d.stop_address) rows += navAddrRow('Stop', d.stop_address, d.stop_lat, d.stop_lng);
-  rows += navAddrRow('Drop-off', d.destination, d.dest_lat, d.dest_lng);
-  const flt = dispFlight(d);
-  if (flt) rows += detailRow('Flight', escHtml(flt));
-  rows += rowDivider();
-  rows += detailRow('Passengers', String(d.passengers || 1));
-  const bagsTxt = bagsText(d.bags);
-  rows += detailRow('Luggage', escHtml(bagsTxt || 'None stated'));
-  const note = cleanOwnerNote(d.notes);
-  if (note) rows += detailRow('Notes', escHtml(note));
-  if (d.customer_note) rows += detailRow('Passenger asked for', escHtml(String(d.customer_note)));
+  let rows = jobDetailRows(d);
 
   /* The pay, on its own, larger than anything else on the page. */
   const payBlock = payStr ? `
@@ -1577,9 +1655,14 @@ async function sendCustomerJourneyReminder(booking, opts) {
 
   const firstName = greetingName(name);
   const dateStr = formatDate(date, time);
-  const { gapPhrase } = require('./time-gap');
-  // The real remaining time, from the same module the owner's reminder uses.
-  const gapWords = o.gapMs == null ? 'shortly' : gapPhrase(o.gapMs);
+  /* NO COUNTDOWN. This used to open "your car is booked for in about 12 hours"
+     and put the same phrase in the subject. The owner asked for it out: a
+     customer who reads it four hours later is being told something that is no
+     longer true, and the number adds nothing they cannot see from the pickup
+     time two lines below. The trigger is unchanged — this still fires inside
+     the same 12-hour window — only the wording is general now.
+     The DATE AND TIME still show in the details, because that is the pickup,
+     not a countdown. */
 
   let rows = '';
   rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:' + INK + '">' + escHtml(ref) + '</span>');
@@ -1624,7 +1707,7 @@ async function sendCustomerJourneyReminder(booking, opts) {
 
   const body = `
   <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Your journey</p>
-  <p style="margin:0 0 8px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:18px;color:${INK};font-weight:400;line-height:1.4">Dear ${escHtml(firstName)}, your car is booked for ${escHtml(gapWords)}.</p>
+  <p style="margin:0 0 8px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:18px;color:${INK};font-weight:400;line-height:1.4">Dear ${escHtml(firstName)}, your journey with us is coming up.</p>
   <p style="margin:0 0 20px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Everything is arranged and we are looking forward to taking you. Your details are below &mdash; do check them over.</p>
   ${buildDetailsTable(rows)}
   ${driverBlockHtml(booking)}
@@ -1633,11 +1716,11 @@ async function sendCustomerJourneyReminder(booking, opts) {
   <p style="margin:22px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">If anything has changed, reply to this email or call us on <a href="tel:+447930342593" style="color:${INK};text-decoration:none">07930&nbsp;342593</a>.</p>`;
 
   const html = heroEmail(body);
-  const subject = 'Your journey ' + gapWords + ' — ' + ref;
-  const preheader = 'Your Westmere car is booked for ' + gapWords + ' — ' + shortDisplay(pickup) + ' → ' + shortDisplay(destination);
+  const subject = 'A reminder about your upcoming journey — ' + ref;
+  const preheader = 'Your car is arranged — ' + shortDisplay(pickup) + ' → ' + shortDisplay(destination) + ' · ' + dateStr;
   const to = o.testTo || email;
   const ok = await sendEmail(to, subject, html, 'Westmere Private Hire', preheader);
-  if (ok) console.log('[EMAIL] Customer journey reminder sent (' + ref + ', ' + gapWords + ') to', to);
+  if (ok) console.log('[EMAIL] Customer journey reminder sent (' + ref + ') to', to);
   return ok;
 }
 
@@ -1647,16 +1730,20 @@ async function sendCustomerJourneyReminder(booking, opts) {
 async function sendOwnerBookingReminder(booking, ownerEmail, nowMs) {
   const to = ownerEmail || process.env.ADMIN_EMAIL || process.env.GMAIL_USER;
   if (!to) return false;
-  // The REAL remaining time, worked out when the email is built rather than
-  // assumed. The sweeper fires for anything inside the next 12 hours, so this is
-  // just as often five hours or forty minutes. It passes its own sweep clock in
-  // so the window decision and this sentence come from one instant; called
-  // without it (a manual resend), we read the clock ourselves.
-  const { ukNowMs, pickupMs, gapPhrase, urgencyLine } = require('./time-gap');
-  const _now = typeof nowMs === 'number' ? nowMs : ukNowMs();
-  const _pickupAt = pickupMs(booking.date, booking.time);
-  const gapMs = _pickupAt == null ? null : _pickupAt - _now;
-  const gapWords = gapPhrase(gapMs);
+  /* NO COUNTDOWN — the last of the three.
+     This email used to open "A booking is coming up in about 12 hours", with
+     the same phrase in the preheader and a line underneath that softened as the
+     gap shrank. The owner asked for all of it out, on the same reasoning as the
+     customer's and the driver's: the sentence is true at the moment of sending
+     and wrong by the time the email is read, and the pickup time is four rows
+     below it either way.
+
+     Twelve hours is now only WHEN the sweep fires. The window logic is
+     untouched — see dueReminders in reminder.js — and `nowMs` is still accepted
+     so the signature does not change under its callers, but nothing in this
+     email is derived from it any more.
+     gapPhrase/urgencyLine stay in time-gap.js; nothing calls them now. */
+  void nowMs;
   const { ref, date, time, pickup, destination, stop_address, fare, payment,
           passengers, bags, flight, customer_name, customer_phone } = booking;
   const name  = customer_name  || booking.passenger_name  || 'Guest';
@@ -1688,15 +1775,15 @@ async function sendOwnerBookingReminder(booking, ownerEmail, nowMs) {
 
   const body = `
   <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Pickup reminder</p>
-  <p style="margin:0 0 8px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:18px;color:${INK};font-weight:400;line-height:1.4">A booking is coming up ${escHtml(gapWords)}.</p>
-  <p style="margin:0 0 22px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">${escHtml(urgencyLine(gapMs))}</p>
+  <p style="margin:0 0 8px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:18px;color:${INK};font-weight:400;line-height:1.4">A booking is coming up.</p>
+  <p style="margin:0 0 22px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Full details below.</p>
   ${buildDetailsTable(rows)}`;
 
   const html = heroEmail(body);
   const subject = 'Reminder — ' + name + ' pickup ' + (time && time !== 'ASAP' ? 'at ' + time : '') + ' · ' + ref;
-  const preheader = 'Pickup ' + gapWords + ': ' + name + ' — ' + shortDisplay(pickup) + ' → ' + shortDisplay(destination);
+  const preheader = 'Pickup ' + dateStr + ': ' + name + ' — ' + shortDisplay(pickup) + ' → ' + shortDisplay(destination);
   const ok = await sendEmail(to, subject, html, 'Westmere Bookings', preheader);
-  if (ok) console.log('[EMAIL] Owner pickup reminder sent (' + ref + ', ' + gapWords + ') to', to);
+  if (ok) console.log('[EMAIL] Owner pickup reminder sent (' + ref + ') to', to);
   return ok;
 }
 
@@ -2690,7 +2777,7 @@ async function sendCustomerMessage(booking, message, opts) {
 module.exports = {
   sendCustomerAcknowledgement, sendCustomerConfirmed, sendCustomerEstimate, sendAdminAlert,
   sendOwnerCancelledRequest, sendOwnerCustomerNote, sendOwnerChangeRequest, sendCustomerMessage,
-  sendOutreachMessage, letterEmail, sendDriverJobOffer, sendAdhocJobOffer, sendDriverMessage,
+  sendOutreachMessage, letterEmail, sendDriverJobOffer, sendAdhocJobOffer, sendDriverJobReminder, sendDriverMessage,
   sendCustomerJourneyReminder, airportBlockHtml, flightTrackUrl, driverBlockHtml, driverDetails, cancelLinkHtml,
   sendCustomerBookingUpdated,
   sendCustomerWelcome, sendCustomerInvoice, sendBespokeInvoice, sendInvoiceReminder,

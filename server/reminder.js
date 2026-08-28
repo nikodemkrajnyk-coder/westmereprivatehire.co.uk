@@ -22,9 +22,9 @@ const { ukNowMs, pickupMs } = require('./time-gap');
 function dueReminders(rows, nowMs, windowHours) {
   windowHours = windowHours || 12;
   return (rows || []).filter((r) => {
-    // BOTH latches must be set before a booking stops being due — there are two
-    // reminders now (owner and customer) and they fire independently.
-    if (r.reminder_sent_at && r.customer_reminder_sent_at) return false;
+    // ALL THREE latches must be set before a booking stops being due — the
+    // owner's, the customer's and the driver's fire independently.
+    if (r.reminder_sent_at && r.customer_reminder_sent_at && r.driver_reminder_sent_at) return false;
     const pm = pickupMs(r.date, r.time);
     if (pm == null) return false;
     const hours = (pm - nowMs) / 3600000;
@@ -43,6 +43,31 @@ function ownerReminderEmail(db) {
   return process.env.ADMIN_EMAIL || 'nikodem.krajnyk@gmail.com';
 }
 
+/* WHO IS DRIVING, and where their reminder goes. The same order the customer's
+   "Your driver and car" block resolves in (driverDetails in email.js), because
+   the person told to look for a car and the person reminded to turn up must be
+   the same person — a different order here would remind one driver about a job
+   the customer is expecting somebody else to run.
+
+   A registered driver has an account to email. An ad-hoc driver has only the
+   address the owner typed, copied onto the booking when they accepted. With
+   nobody assigned, the owner is the driver, and it goes to him. */
+function assignedDriverEmail(b, ownerEmail) {
+  const t = (v) => String(v == null ? '' : v).trim();
+  if (t(b.driver_name) && t(b.driver_account_email)) {
+    return { email: t(b.driver_account_email), source: 'registered' };
+  }
+  if (t(b.assigned_to_name) && t(b.assigned_to_email)) {
+    return { email: t(b.assigned_to_email), source: 'adhoc' };
+  }
+  /* A registered driver with no address on file, or an ad-hoc one accepted
+     before the address was kept, is NOT silently redirected to the owner — he
+     would be told to drive a job somebody else is running. Nothing is sent and
+     the latch stays open. */
+  if (t(b.driver_name) || t(b.assigned_to_name)) return { email: null, source: 'unreachable' };
+  return { email: ownerEmail, source: 'default' };
+}
+
 async function sweepDueReminders() {
   const db = getDb();
   const rows = db.prepare(`
@@ -53,7 +78,11 @@ async function sweepDueReminders() {
            -- The assigned driver and his car, when the job has been given to
            -- somebody. Left NULL when it has not, and the email falls back to
            -- the owner's own car (driverDetails in email.js).
-           d.full_name AS driver_name, d.vehicle AS driver_vehicle, d.reg AS driver_reg
+           -- b.* already carries assigned_to_name/_car/_reg, which is how an
+           -- AD-HOC driver — who has no users row to join to — reaches the same
+           -- block. driverDetails picks between them in that order.
+           d.full_name AS driver_name, d.vehicle AS driver_vehicle, d.reg AS driver_reg,
+           d.email AS driver_account_email
       FROM bookings b LEFT JOIN customers c ON b.customer_id = c.id
                       LEFT JOIN users     d ON b.driver_id   = d.id
      WHERE b.status IN ('confirmed', 'awaiting_payment', 'active')
@@ -61,27 +90,30 @@ async function sweepDueReminders() {
        -- alone; with two independent latches that would drop a booking out of the
        -- sweep the moment the OWNER's went, and the customer would never get
        -- theirs. Cancelled bookings are excluded by the status filter above.
-       AND (b.reminder_sent_at IS NULL OR b.customer_reminder_sent_at IS NULL)
+       AND (b.reminder_sent_at IS NULL OR b.customer_reminder_sent_at IS NULL
+            OR b.driver_reminder_sent_at IS NULL)
        AND b.time IS NOT NULL AND b.time != 'ASAP'
        AND b.date >= date('now', '-1 day')
   `).all();
 
   const nowMs = ukNowMs();
   const due = dueReminders(rows, nowMs, 12);
-  if (!due.length) return { checked: rows.length, sent: 0, sentCustomer: 0 };
+  if (!due.length) return { checked: rows.length, sent: 0, sentCustomer: 0, sentDriver: 0 };
 
   const ownerEmail = ownerReminderEmail(db);
-  const { sendOwnerBookingReminder, sendCustomerJourneyReminder } = require('./email');
+  const { sendOwnerBookingReminder, sendCustomerJourneyReminder, sendDriverJobReminder } = require('./email');
   const { paymentLock } = require('./pay-lock');
   const intake = require('./intake');
-  let sent = 0, sentCustomer = 0;
+  let sent = 0, sentCustomer = 0, sentDriver = 0;
   for (const b of due) {
     // ── The OWNER's reminder, latched on reminder_sent_at ──
+    let ownerToldAboutThisJob = !!b.reminder_sent_at;
     if (!b.reminder_sent_at) {
       try {
         const ok = await sendOwnerBookingReminder(b, ownerEmail, nowMs);
         if (ok) {
           db.prepare("UPDATE bookings SET reminder_sent_at = datetime('now') WHERE id = ?").run(b.id);
+          ownerToldAboutThisJob = true;
           sent++;
         }
       } catch (e) {
@@ -115,10 +147,46 @@ async function sweepDueReminders() {
         console.error('[REMINDER] customer send failed for', b.ref, '-', e.message);
       }
     }
+
+    /* ── The DRIVER's reminder, on a third latch of its own ──
+       Whoever is actually driving gets the job back, in the shape they were
+       offered it, with the Waze links and the calendar file — and with no
+       Accept or Decline, because it is already theirs.
+
+       THE OWNER IS NOT TOLD TWICE. When nobody is assigned he is the driver,
+       and he has just had the owner pickup reminder for this same booking —
+       which carries the same trip. Sending both would be two emails about one
+       job. The latch is still stamped, so it is decided once and never
+       reconsidered on the next sweep; if the owner reminder did NOT go, the
+       driver reminder is sent instead and he still hears about the job. */
+    if (!b.driver_reminder_sent_at) {
+      const who = assignedDriverEmail(b, ownerEmail);
+      /* Read from the flag set THIS pass, not from b.reminder_sent_at — the row
+         in hand was loaded before the owner reminder above was sent, so the
+         column on it is still null and the owner would be told twice. */
+      const dupeOfOwner = who.source === 'default' && ownerToldAboutThisJob;
+      if (!who.email) {
+        // Left open on purpose: an address added later still gets a reminder.
+        console.warn('[REMINDER] no address for the driver of', b.ref, '- skipped');
+      } else if (dupeOfOwner) {
+        db.prepare("UPDATE bookings SET driver_reminder_sent_at = datetime('now') WHERE id = ?").run(b.id);
+      } else {
+        try {
+          const ok = await sendDriverJobReminder(Object.assign({}, b, { driver_email: who.email }));
+          if (ok) {
+            db.prepare("UPDATE bookings SET driver_reminder_sent_at = datetime('now') WHERE id = ?").run(b.id);
+            sentDriver++;
+          }
+        } catch (e) {
+          console.error('[REMINDER] driver send failed for', b.ref, '-', e.message);
+        }
+      }
+    }
   }
   if (sent) console.log('[REMINDER] sent', sent, 'owner pickup reminder(s) to', ownerEmail);
   if (sentCustomer) console.log('[REMINDER] sent', sentCustomer, 'customer journey reminder(s)');
-  return { checked: rows.length, sent, sentCustomer };
+  if (sentDriver) console.log('[REMINDER] sent', sentDriver, 'driver job reminder(s)');
+  return { checked: rows.length, sent, sentCustomer, sentDriver };
 }
 
 function startBookingReminders() {
@@ -128,4 +196,5 @@ function startBookingReminders() {
   console.log('[REMINDER] 12h owner pickup-reminder sweeper started (every 15 min)');
 }
 
-module.exports = { startBookingReminders, sweepDueReminders, dueReminders, ukNowMs, pickupMs, ownerReminderEmail };
+module.exports = { startBookingReminders, sweepDueReminders, dueReminders, ukNowMs, pickupMs,
+                   ownerReminderEmail, assignedDriverEmail };

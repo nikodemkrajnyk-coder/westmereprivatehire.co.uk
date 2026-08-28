@@ -64,7 +64,9 @@ function makeDb() {
       status TEXT, notes TEXT, customer_note TEXT, passenger_name TEXT, passenger_phone TEXT,
       needs_reassignment INTEGER DEFAULT 0, intake_reason TEXT,
       offered_to_driver_id INTEGER, offered_to_name TEXT, offered_to_email TEXT,
-      assigned_to_name TEXT, offered_at TEXT, decided_at TEXT, done_at TEXT,
+      offered_to_reg TEXT, offered_to_car TEXT,
+      assigned_to_name TEXT, assigned_to_email TEXT, assigned_to_reg TEXT, assigned_to_car TEXT,
+      offered_at TEXT, decided_at TEXT, done_at TEXT,
       cancelled_at TEXT, cancellation_reason TEXT, driver_pay REAL, admin_fee REAL,
       offer_token TEXT, updated_at TEXT
     );
@@ -163,7 +165,7 @@ for (const status of ['confirmed', 'active']) {
     const db = makeDb();
     db.prepare('UPDATE bookings SET status = ? WHERE id = 1').run(status);
     const { offers, sent } = load(db);
-    const r = offer(offers, { name: 'Sam Cole', email: 'sam@example.com' });
+    const r = offer(offers, { name: 'Sam Cole', email: 'sam@example.com', reg: 'LT21 XYZ', car: 'Skoda Superb' });
     assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
     assert.strictEqual(sent.length, 1, 'and the email goes');
   });
@@ -220,7 +222,8 @@ console.log('\nWhat the ad-hoc driver is sent');
 test('the email carries the trip, the passenger and the fare', () => {
   const db = makeDb();
   const { offers, sent } = load(db);
-  const r = offer(offers, { name: 'Sam Cole', email: 'Sam@Example.COM' });
+  const r = offer(offers, { name: 'Sam Cole', email: 'Sam@Example.COM',
+    reg: 'LT21 XYZ', car: 'Skoda Superb, dark grey' });
   assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
   assert.strictEqual(sent.length, 1, 'exactly one email');
   assert.strictEqual(sent[0].fn, 'sendAdhocJobOffer', 'the ad-hoc sender, not the driver one');
@@ -241,6 +244,10 @@ test('the email carries the trip, the passenger and the fare', () => {
   // money
   assert.strictEqual(p.fare, 75, 'the FARE goes to an outside driver');
   assert.ok(p.offer_token && p.offer_token.length > 20, 'and a token to decide with');
+  // the car, read back to them so a typo in the plate is caught by the one
+  // person who knows it
+  assert.strictEqual(p.driver_reg, 'LT21 XYZ');
+  assert.strictEqual(p.driver_car, 'Skoda Superb, dark grey');
 });
 
 test('the rendered email SHOWS the fare, the passenger and both buttons', async () => {
@@ -323,7 +330,7 @@ console.log('\nAccepting and declining');
 test('accept assigns the job to the NAME, with no driver account', () => {
   const db = makeDb();
   const { offers } = load(db);
-  offer(offers, { name: 'Sam Cole', email: 'sam@example.com' });
+  offer(offers, { name: 'Sam Cole', email: 'sam@example.com', reg: 'LT21 XYZ', car: 'Skoda Superb' });
   const out = offers.acceptAdhocOffer(db, 1);
   assert.ok(out.ok, JSON.stringify(out));
   const b = db.prepare('SELECT * FROM bookings WHERE id=1').get();
@@ -337,7 +344,7 @@ test('accept assigns the job to the NAME, with no driver account', () => {
 test('decline puts it back and flags it for reassignment', () => {
   const db = makeDb();
   const { offers } = load(db);
-  offer(offers, { name: 'Sam Cole', email: 'sam@example.com' });
+  offer(offers, { name: 'Sam Cole', email: 'sam@example.com', reg: 'LT21 XYZ', car: 'Skoda Superb' });
   const out = offers.declineAdhocOffer(db, 1, 'busy');
   assert.ok(out.ok);
   const b = db.prepare('SELECT * FROM bookings WHERE id=1').get();
@@ -352,7 +359,7 @@ test('the REGISTERED accept path cannot swallow an ad-hoc offer', () => {
      guard passes, job assigned to driver_id NULL = unassigned. */
   const db = makeDb();
   const { offers } = load(db);
-  offer(offers, { name: 'Sam Cole', email: 'sam@example.com' });
+  offer(offers, { name: 'Sam Cole', email: 'sam@example.com', reg: 'LT21 XYZ', car: 'Skoda Superb' });
   const out = offers.acceptOffer(db, 1, null);
   assert.strictEqual(out.ok, false, 'acceptOffer must refuse an offer that has no driver id');
   assert.strictEqual(db.prepare('SELECT status FROM bookings WHERE id=1').get().status, 'offered',
@@ -420,7 +427,101 @@ test('the owner can choose "someone else" and is asked for both', () => {
     'the address is checked before the send, not only on the server');
   assert.ok(/confirm\(/.test(fn[0]) && /passenger/i.test(fn[0]),
     'the confirmation must say the passenger details are going out — that is the point to catch it');
-  assert.ok(/body:JSON\.stringify\(\{name:name,email:email\}\)/.test(fn[0]), 'and it posts both');
+  assert.ok(/body:JSON\.stringify\(\{name:name,email:email,reg:reg,car:car\}\)/.test(fn[0]),
+    'and it posts all four');
+});
+
+test('the form asks for the CAR as well — the customer has to find it', () => {
+  /* Comments stripped first. A guard that greps the source will otherwise read
+     the paragraph explaining why the owner's Tesla must not be pre-filled and
+     conclude that it is. */
+  const fn = /async function dispOfferAdhoc\(id\)\{[\s\S]*?\n\}/.exec(OWNER)[0]
+    .replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.ok(/prompt\('Their registration number/.test(fn), 'the registration is asked for');
+  assert.ok(/prompt\('Their car/.test(fn), 'and the make and model');
+
+  /* The registration is checked here because it is read out to a passenger
+     standing on a pavement. The car is NOT defaulted: a guessed make printed to
+     a customer is worse than a gap, so blank is allowed and only blank. */
+  const regBlock = fn.slice(fn.indexOf("prompt('Their registration"));
+  assert.ok(/\^\[A-Z0-9\]\[A-Z0-9 -\]\{3,11\}\$/.test(regBlock),
+    'the registration is validated in the form, not only on the server');
+  assert.ok(/A registration is needed/.test(regBlock), 'and it cannot be skipped');
+
+  const carBlock = fn.slice(fn.indexOf("prompt('Their car"));
+  assert.ok(!/A car is needed|alert\('That does not look like a car/.test(carBlock),
+    'the car must NOT be forced — blank is a legitimate answer');
+  assert.ok(!/Tesla|Model S|ML68/.test(fn),
+    'and nothing may be pre-filled with the owner\u2019s own car');
+
+  assert.ok(/If they accept, the customer is told to look for this car/.test(fn),
+    'the confirm dialog says where these details end up');
+});
+
+test('the offer stores the car, and the accept moves it onto the job', () => {
+  const db = makeDb();
+  const { offers } = load(db);
+  const r = offer(offers, { name: 'Sam Cole', email: 'sam@example.com',
+    reg: 'lt21 xyz', car: 'Skoda Superb, dark grey' });
+  assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
+
+  const offered = db.prepare('SELECT * FROM bookings WHERE id=1').get();
+  assert.strictEqual(offered.offered_to_reg, 'LT21 XYZ',
+    'a registration is upper-cased on the way in — the owner types it as it comes');
+  assert.strictEqual(offered.offered_to_car, 'Skoda Superb, dark grey');
+  assert.strictEqual(offered.assigned_to_reg, null,
+    'but nothing is ASSIGNED until they accept — an offer is not an answer');
+
+  const out = offers.acceptAdhocOffer(db, 1);
+  assert.ok(out.ok, JSON.stringify(out));
+  const b = db.prepare('SELECT * FROM bookings WHERE id=1').get();
+  assert.strictEqual(b.assigned_to_name, 'Sam Cole');
+  assert.strictEqual(b.assigned_to_email, 'sam@example.com',
+    'and the ADDRESS, or their own reminder has nowhere to go — offered_to_email is cleared below');
+  assert.strictEqual(b.assigned_to_reg, 'LT21 XYZ', 'the car moves across with the person');
+  assert.strictEqual(b.assigned_to_car, 'Skoda Superb, dark grey');
+  assert.strictEqual(b.offered_to_reg, null, 'and the offer is spent');
+  assert.strictEqual(b.offered_to_car, null);
+
+  /* The point of all of it: the customer's reminder reads the booking row and
+     names the right car. Rendered, not inferred from the source. */
+  const email = require('../email.js');
+  const rows = [];
+  email.__setTransport && email.__setTransport(null);
+  assert.ok(/LT21 XYZ/.test(email.driverBlockHtml(b)) &&
+            /Skoda Superb, dark grey/.test(email.driverBlockHtml(b)) &&
+            /Sam Cole/.test(email.driverBlockHtml(b)),
+    'the customer block names the ad-hoc driver and their car');
+  assert.ok(!/Tesla|ML68 YHC|Nikodem/.test(email.driverBlockHtml(b)),
+    'and no trace of the owner\u2019s own car is left in it');
+  void rows;
+});
+
+test('a declined offer takes the car back with it', () => {
+  const db = makeDb();
+  const { offers } = load(db);
+  offer(offers, { name: 'Sam Cole', email: 'sam@example.com', reg: 'LT21 XYZ', car: 'Skoda Superb' });
+  offers.declineAdhocOffer(db, 1, 'busy');
+  const b = db.prepare('SELECT * FROM bookings WHERE id=1').get();
+  assert.strictEqual(b.offered_to_reg, null, 'a refused car is not left on the job');
+  assert.strictEqual(b.offered_to_car, null);
+  assert.strictEqual(b.assigned_to_reg, null, 'and was never assigned');
+});
+
+test('a job cannot go out without a registration', () => {
+  const db = makeDb();
+  const { offers, sent } = load(db);
+  for (const body of [
+    { name: 'Sam Cole', email: 'sam@example.com', car: 'Skoda Superb' },
+    { name: 'Sam Cole', email: 'sam@example.com', reg: '   ', car: 'Skoda Superb' },
+    { name: 'Sam Cole', email: 'sam@example.com', reg: 'X' }
+  ]) {
+    const r = offer(offers, body);
+    assert.strictEqual(r.statusCode, 400, JSON.stringify(body) + ' → ' + r.statusCode);
+  }
+  assert.strictEqual(sent.length, 0, 'and no job email goes out on a bad one');
+  const b = db.prepare('SELECT * FROM bookings WHERE id=1').get();
+  assert.strictEqual(b.offered_to_name, null, 'nor is a half-offer written');
 });
 
 test('the card names who it went to, with the address', () => {
@@ -432,7 +533,9 @@ test('the card names who it went to, with the address', () => {
 });
 
 test('the columns exist and are additive', () => {
-  for (const c of ['offered_to_name', 'offered_to_email', 'assigned_to_name']) {
+  for (const c of ['offered_to_name', 'offered_to_email', 'assigned_to_name',
+                   'assigned_to_email', 'offered_to_reg', 'offered_to_car',
+                   'assigned_to_reg', 'assigned_to_car']) {
     assert.ok(new RegExp("\\['" + c + "'").test(DB), c + ' is not migrated in');
   }
   assert.ok(/ALTER TABLE bookings ADD COLUMN/.test(DB), 'added, never a rebuild');

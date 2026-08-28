@@ -106,16 +106,17 @@ router.post('/bookings/:id/offer', staffOnly, (req, res) => {
   const { driver_id } = req.body || {};
   const adhocName  = String((req.body && req.body.name)  || '').trim();
   const adhocEmail = String((req.body && req.body.email) || '').trim().toLowerCase();
+  /* THE CAR, so the CUSTOMER's reminder can name it. An outside driver has no
+     users row to read a vehicle from, so the owner types it. The registration
+     is normalised to upper case because it is read off a plate and typed in a
+     hurry; the make and model is left exactly as written — "Skoda Superb
+     estate, dark grey" is more use to a customer at a kerbside than anything a
+     parser would make of it. */
+  const adhocReg = String((req.body && req.body.reg) || '').trim().toUpperCase().replace(/\s+/g, ' ');
+  const adhocCar = String((req.body && req.body.car) || '').trim();
   const isAdhoc = !driver_id && (adhocName || adhocEmail);
 
   if (!driver_id && !isAdhoc) return res.status(400).json({ error: 'driver_id, or a name and email, required' });
-  if (isAdhoc) {
-    if (!adhocName) return res.status(400).json({ error: 'A name is required for the driver you are sending this to' });
-    if (adhocName.length > 120) return res.status(400).json({ error: 'That name is too long' });
-    if (!adhocEmail) return res.status(400).json({ error: 'An email address is required' });
-    if (!EMAIL_RE.test(adhocEmail)) return res.status(400).json({ error: 'That email address does not look right: ' + adhocEmail });
-  }
-
   try {
     const db = getDb();
     let driver = null;
@@ -144,6 +145,24 @@ router.post('/bookings/:id/offer', staffOnly, (req, res) => {
       });
     }
 
+    /* The shape of the ad-hoc details is checked HERE, after the status, so the
+       owner is told the real reason first. Answering "a registration is
+       required" on a booking that can never be offered sends him off to find a
+       number plate for nothing. */
+  if (isAdhoc) {
+    if (!adhocName) return res.status(400).json({ error: 'A name is required for the driver you are sending this to' });
+    if (adhocName.length > 120) return res.status(400).json({ error: 'That name is too long' });
+    if (!adhocEmail) return res.status(400).json({ error: 'An email address is required' });
+    if (!EMAIL_RE.test(adhocEmail)) return res.status(400).json({ error: 'That email address does not look right: ' + adhocEmail });
+    /* Light, on purpose. A UK plate has a shape but this also has to accept a
+       trade plate, an Irish one, or a hire car — so the rule is only that it
+       looks like a registration rather than a sentence. */
+    if (!adhocReg) return res.status(400).json({ error: 'A registration number is required — the customer is told which car to look for' });
+    if (!/^[A-Z0-9][A-Z0-9 -]{3,11}$/.test(adhocReg)) {
+      return res.status(400).json({ error: 'That does not look like a registration: ' + adhocReg });
+    }
+  }
+
     const { driver_pay, admin_fee } = computeSplit(booking.fare);
     /* Fresh per offer. A job that was offered, reclaimed and offered again must
        not be decidable with the link from the first email. */
@@ -158,6 +177,8 @@ router.post('/bookings/:id/offer', staffOnly, (req, res) => {
              offered_to_driver_id = ?,
              offered_to_name  = ?,
              offered_to_email = ?,
+             offered_to_reg   = ?,
+             offered_to_car   = ?,
              offered_at = datetime('now'),
              decided_at = NULL,
              offer_token = ?,
@@ -170,6 +191,8 @@ router.post('/bookings/:id/offer', staffOnly, (req, res) => {
       isAdhoc ? null : driver_id,
       isAdhoc ? adhocName : null,
       isAdhoc ? adhocEmail : null,
+      isAdhoc ? (adhocReg || null) : null,
+      isAdhoc ? (adhocCar || null) : null,
       offerToken, driver_pay, admin_fee, req.params.id);
 
     // Append to intake_reason separately — non-fatal if it fails
@@ -202,6 +225,7 @@ router.post('/bookings/:id/offer', staffOnly, (req, res) => {
           notes: booking.notes, customer_note: booking.customer_note,
           customer_name: row.customer_name || booking.passenger_name || '',
           customer_phone: row.customer_phone || booking.passenger_phone || '',
+          driver_reg: adhocReg, driver_car: adhocCar,
           offer_token: offerToken
         });
       } catch (notifyErr) {
@@ -347,13 +371,22 @@ function acceptAdhocOffer(db, bookingId) {
   }
   const wasPending = !b.driver_id;
   const who = b.offered_to_name || b.offered_to_email;
+  /* The car travels with the person, and so does the address. Once this is on
+     the booking the customer's reminder can say which car to look for, and the
+     driver's own reminder has somewhere to go — offered_to_email is cleared
+     below because the offer is spent, so it must be copied first. */
   db.prepare(`
     UPDATE bookings
        SET status = 'confirmed',
-           assigned_to_name = ?,
+           assigned_to_name  = ?,
+           assigned_to_email = offered_to_email,
+           assigned_to_reg   = offered_to_reg,
+           assigned_to_car   = offered_to_car,
            offered_to_driver_id = NULL,
            offered_to_name = NULL,
            offered_to_email = NULL,
+           offered_to_reg = NULL,
+           offered_to_car = NULL,
            offer_token = NULL,
            decided_at = datetime('now'),
            needs_reassignment = 0,
@@ -383,6 +416,8 @@ function declineAdhocOffer(db, bookingId, reason) {
            offered_to_driver_id = NULL,
            offered_to_name = NULL,
            offered_to_email = NULL,
+           offered_to_reg = NULL,
+           offered_to_car = NULL,
            offered_at = NULL,
            offer_token = NULL,
            decided_at = datetime('now'),

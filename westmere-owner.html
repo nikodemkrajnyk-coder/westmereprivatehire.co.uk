@@ -5701,10 +5701,26 @@ async function dispOfferAdhoc(id){
   email=email.trim();
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ alert('That email address does not look right:\n\n'+email); return; }
 
-  if(!confirm('Send this job to '+name+' at '+email+'?\n\nThey will be emailed the trip details, the FARE, and the passenger\u2019s name and phone number, with Accept and Decline buttons.'))return;
+  /* THE CAR. Asked for here because the CUSTOMER's reminder names it — "look
+     for a grey Skoda Superb, LT21 XYZ". Without it that email falls back to the
+     owner's own Tesla and sends the passenger to the wrong car.
+     The registration is required; the make and model is left blank for him to
+     type, with no default, because a guess printed to a customer is worse than
+     a gap. */
+  var reg=prompt('Their registration number?\n\nThe customer is told which car to look for.');
+  if(reg===null)return;
+  reg=reg.trim().toUpperCase().replace(/\s+/g,' ');
+  if(!reg){ alert('A registration is needed — it goes to the customer.'); return; }
+  if(!/^[A-Z0-9][A-Z0-9 -]{3,11}$/.test(reg)){ alert('That does not look like a registration:\n\n'+reg); return; }
+
+  var car=prompt('Their car — make and model?\n\ne.g. Skoda Superb, dark grey. Leave blank if you would rather not say.');
+  if(car===null)return;
+  car=car.trim();
+
+  if(!confirm('Send this job to '+name+' at '+email+'?\n\nCar: '+(car?car+' — ':'')+reg+'\n\nThey will be emailed the trip details, the FARE, and the passenger\u2019s name and phone number, with Accept and Decline buttons.\n\nIf they accept, the customer is told to look for this car.'))return;
   try{
     var r=await fetch('/api/bookings/'+id+'/offer',{method:'POST',credentials:'include',
-      headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name,email:email})});
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name,email:email,reg:reg,car:car})});
     var d=await r.json();
     if(r.ok&&d.ok){ showToast('Sent to '+name); loadOwnerBookings(); }
     else showToast(d.error||'Could not send');

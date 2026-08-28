@@ -79,8 +79,12 @@ function soonDateTime() {
   return { date: d.getUTCFullYear() + '-' + p(d.getUTCMonth() + 1) + '-' + p(d.getUTCDate()),
            time: p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) };
 }
-const riderMails = () => SENT.filter((m) => /Your journey/.test(m.subject));
-const ownerMails = () => SENT.filter((m) => /^Reminder —/.test(m.subject));
+/* Sorted by WHO it went to first, then by subject. Sorting on the subject
+   alone put the new driver reminder ("Reminder — upcoming job — REF") in the
+   owner's pile, because his starts "Reminder —" too. */
+const riderMails  = () => SENT.filter((m) => m.to === 'ben@example.com');
+const ownerMails  = () => SENT.filter((m) => m.to === 'owner@example.com' && /pickup/.test(m.subject));
+const driverMails = () => SENT.filter((m) => /^Reminder — upcoming job/.test(m.subject));
 
 console.log('\nThe customer\'s 12-hour reminder');
 
@@ -140,15 +144,22 @@ test('a booking with no customer email is skipped without breaking the sweep', a
 // ── 2. WHAT IT SAYS ──────────────────────────────────────────────────────
 console.log('\nWhat the rider reminder says');
 
+let LAST_REF = null;
 async function render(o) {
   SENT = [];
   const b = seed(Object.assign({ date: '2026-12-18', time: '09:30' }, o));
+  LAST_REF = b.ref;
   const lock = paymentLock(b);
   await email.sendCustomerJourneyReminder(
     // driver_* ride alongside the row the way the sweep's JOIN supplies them.
     Object.assign({}, b, { email: b.passenger_email,
       driver_name: o && o.driver_name, driver_vehicle: o && o.driver_vehicle,
-      driver_reg: o && o.driver_reg }),
+      driver_reg: o && o.driver_reg,
+      // The ad-hoc driver's details come off the BOOKING row, not a users join
+      // — which is the whole point of them living there.
+      assigned_to_name: o && o.assigned_to_name,
+      assigned_to_car: o && o.assigned_to_car,
+      assigned_to_reg: o && o.assigned_to_reg }),
     { gapMs: (o && o.gapMs !== undefined) ? o.gapMs : 12 * 3600 * 1000,
       pay: { payable: !!lock.payable, amountDue: lock.amountDue } });
   return SENT[0];
@@ -163,12 +174,76 @@ test('it greets properly — never "Dear Mr,"', async () => {
   }
 });
 
-test('it states the REAL remaining time, not a constant', async () => {
-  assert.ok(/booked for in about 12 hours/.test((await render({ gapMs: 12 * 3600 * 1000 })).html));
-  assert.ok(/booked for in about 5 hours/.test((await render({ gapMs: 5.4 * 3600 * 1000 })).html));
-  assert.ok(/booked for in about 45 minutes/.test((await render({ gapMs: 45 * 60 * 1000 })).html));
+test('it states NO countdown — the owner had it taken out', async () => {
+  /* This used to assert the opposite: that the email said "booked for in about
+     12 hours" and put the same phrase in the subject. The owner asked for it
+     gone. A customer who opens the email four hours later is being told
+     something that is no longer true, and the number adds nothing they cannot
+     read from the pickup time two lines below.
+
+     The TRIGGER is unchanged — reminder.js still sweeps the same 12-hour
+     window, and the tests for that window are untouched. This is about wording
+     only. */
+  for (const gapMs of [12 * 3600 * 1000, 5.4 * 3600 * 1000, 45 * 60 * 1000]) {
+    const m = await render({ gapMs });
+    const said = (m.html.match(/in about [^<.,]{1,24}|booked for [^<.]{1,24}/gi) || []);
+    assert.deepStrictEqual(said, [], 'no countdown may appear: ' + said.join(' | '));
+    assert.ok(!/hours?\b|minutes?\b/i.test(m.subject), 'nor in the subject: ' + m.subject);
+  }
   const m = await render({ gapMs: 5 * 3600 * 1000 });
-  assert.ok(/Your journey in about 5 hours/.test(m.subject), 'the subject carries it too');
+  assert.ok(/your journey with us is coming up/i.test(m.html),
+    'it opens with the general line instead');
+  assert.strictEqual(m.subject, 'A reminder about your upcoming journey — ' + LAST_REF,
+    'and the subject is a plain reminder, not a number: ' + m.subject);
+  /* The pickup time is NOT a countdown and must stay. */
+  assert.ok(/Date &amp; Time|Date & Time/.test(m.html), 'the pickup time still shows');
+});
+
+test('WHO IS COMING — registered, then ad-hoc, then the owner', async () => {
+  /* The customer's question is "which car do I look for". Three sources, in
+     order, and each answers with all three of its own values — a set, not three
+     independent fields. Falling back per-field would put a registered driver's
+     name against the owner's Tesla and send the passenger to the wrong car. */
+  const block = (h) => {
+    const m = /Your driver and car<\/p>\s*<p[^>]*>([^<]*)<\/p>\s*<p[^>]*>([^<]*)</.exec(h);
+    return m ? { line: m[1].replace(/&mdash;/g, '—').trim(), reg: m[2].trim() } : null;
+  };
+
+  const reg = block((await render({
+    driver_name: 'Dave Driver', driver_vehicle: 'Mercedes E-Class', driver_reg: 'AB12 CDE' })).html);
+  assert.deepStrictEqual(reg, { line: 'Dave Driver — Mercedes E-Class', reg: 'AB12 CDE' },
+    'a registered driver wins');
+
+  const adhoc = block((await render({
+    assigned_to_name: 'Sam Cole', assigned_to_car: 'Skoda Superb, dark grey', assigned_to_reg: 'LT21 XYZ' })).html);
+  assert.deepStrictEqual(adhoc, { line: 'Sam Cole — Skoda Superb, dark grey', reg: 'LT21 XYZ' },
+    'an ad-hoc driver who accepted comes next — off the BOOKING row, no users join');
+
+  const none = block((await render({})).html);
+  assert.deepStrictEqual(none, { line: 'Nikodem — Tesla Model S', reg: 'ML68 YHC' },
+    'and with nobody assigned it is the owner in his own car');
+
+  const both = block((await render({
+    driver_name: 'Dave Driver', driver_vehicle: 'Mercedes E-Class', driver_reg: 'AB12 CDE',
+    assigned_to_name: 'Sam Cole', assigned_to_car: 'Skoda', assigned_to_reg: 'LT21 XYZ' })).html);
+  assert.strictEqual(both.line, 'Dave Driver — Mercedes E-Class', 'registered beats ad-hoc');
+  assert.strictEqual(both.reg, 'AB12 CDE', 'and takes ITS registration, not a mix');
+});
+
+test('a source with a missing car falls back only INSIDE itself', async () => {
+  const h = (await render({ assigned_to_name: 'Sam Cole' })).html;
+  assert.ok(/Sam Cole/.test(h), 'the person who is actually coming keeps their name');
+  assert.ok(/Tesla Model S/.test(h) && /ML68 YHC/.test(h),
+    'and only the values they did not supply fall through');
+  assert.ok(!/Nikodem/.test(h), 'the name must NOT revert to the owner');
+});
+
+test('the resolution order is stated once, not copied per email', () => {
+  const src = read('server/email.js').replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.strictEqual((src.match(/function driverDetails\(/g) || []).length, 1,
+    'one place decides who is coming');
+  assert.ok(/assigned_to_name/.test(src) && /driver_name/.test(src),
+    'and it knows about both kinds of driver');
 });
 
 test('it carries the reference, the route and a contact number', async () => {
