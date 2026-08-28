@@ -873,7 +873,6 @@ function icsAttachment(d) {
 async function sendAdhocJobOffer(d) {
   const to = d && d.driver_email;
   if (!to || !d.ref) return false;
-  const first = greetingName(d.driver_name) || 'there';
   const dateStr = formatDate(d.date, d.time);
 
   // THE FARE, not the net figure. See the note above before changing this.
@@ -934,9 +933,7 @@ async function sendAdhocJobOffer(d) {
   }
 
   const body = `
-  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">A job for you</p>
-  <p style="margin:0 0 8px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:18px;color:${INK};font-weight:400;line-height:1.4">${escHtml(first)}, there is a job going if you want it.</p>
-  <p style="margin:0 0 18px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK_SOFT};line-height:1.65">Everything you need is below, including the passenger's details. Take it or pass on it with the buttons at the bottom &mdash; whichever you choose, it tells us straight away.</p>
+  <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Job Request</p>
   ${buildDetailsTable(rows)}
   ${fareBlock}
   ${clientBlock}
@@ -957,7 +954,6 @@ async function sendAdhocJobOffer(d) {
 async function sendDriverJobOffer(d) {
   const to = d && d.driver_email;
   if (!to || !d.ref) return false;
-  const first = greetingName(d.driver_name) || 'there';
   const dateStr = formatDate(d.date, d.time);
   const pay = (d.driver_pay === null || d.driver_pay === undefined) ? null : Number(d.driver_pay);
   const payStr = pay === null ? null : '£' + pay.toFixed(2);
@@ -1004,9 +1000,7 @@ async function sendDriverJobOffer(d) {
   }
 
   const body = `
-  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">A job for you</p>
-  <p style="margin:0 0 8px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:18px;color:${INK};font-weight:400;line-height:1.4">${escHtml(first)}, there is a job going if you want it.</p>
-  <p style="margin:0 0 20px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Please check the passengers, the luggage and any special requests below before you accept &mdash; once you take it, it is yours.</p>
+  <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Job Request</p>
   ${buildDetailsTable(rows)}
   ${payBlock}
   ${calendarBlock(d)}

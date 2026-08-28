@@ -162,8 +162,12 @@ test('the email is the letterhead, and carries the job', async () => {
     assert.ok(h.indexOf(bit) !== -1, 'the job must include ' + bit);
   }
   assert.ok(/Passengers/.test(h) && /Luggage/.test(h), 'passengers and luggage must be there to check');
-  assert.ok(/check the passengers, the luggage and any special requests/.test(h),
-    'and he must be told to check them before accepting');
+  /* The preamble is gone at the owner's request — the email opens on the
+     heading and goes straight to the job. What has to survive is the
+     INFORMATION he checks before accepting, not a sentence telling him to. */
+  assert.ok(/Job Request/.test(h), 'it opens on the heading');
+  assert.ok(!/there is a job going|Please check the passengers/.test(h),
+    'and carries no preamble above the details');
 });
 
 // ── 2. THE LINKS ─────────────────────────────────────────────────────────

@@ -184,6 +184,40 @@ test('a job with no usable date gets no attachment rather than a broken one', as
   assert.ok(!/Invalid Date|NaN/.test(s.html));
 });
 
+console.log('\nThe heading, and no preamble');
+
+for (const [label, fn, who] of BOTH) {
+  test(label + ': opens on JOB REQUEST, with nothing above the details', async () => {
+    /* The owner asked for the intro to go: the email opens on the heading and
+       the next thing is the job. The heading is the house eyebrow — set in
+       title case and uppercased by text-transform, so it reads JOB REQUEST. */
+    const s = await render(fn, who);
+    assert.ok(/>Job Request</.test(s.html), 'the heading must read Job Request');
+    assert.ok(/text-transform:uppercase/.test(
+      /<p[^>]*>Job Request</.exec(s.html)[0]), 'and be the house eyebrow, uppercased in CSS');
+    assert.ok(!/there is a job going/.test(s.html), 'the old greeting is gone');
+    assert.ok(!/Everything you need is below/.test(s.html), 'and the ad-hoc explanation');
+    assert.ok(!/Please check the passengers, the luggage/.test(s.html), 'and the registered one');
+
+    /* Nothing may sit between the heading and the first detail row. */
+    const between = s.html.slice(s.html.indexOf('>Job Request<'), s.html.indexOf('Reference'));
+    assert.ok(!/<p[^>]*>[^<]{25,}/.test(between),
+      'no paragraph may reappear between the heading and the trip: ' + between.replace(/\s+/g, ' ').slice(0, 120));
+  });
+}
+
+test('the greeting helper is not left behind unused', () => {
+  /* `first` was only ever used by the sentence that has gone. An orphan that
+     computes a driver's name and throws it away is the kind of thing that gets
+     re-wired to something later. */
+  const code = SRC.replace(/\/\*[\s\S]*?\*\//g, '');
+  for (const [fn, next] of [['sendAdhocJobOffer', 'sendDriverJobOffer'],
+                            ['sendDriverJobOffer', 'sendDriverMessage']]) {
+    const blk = code.slice(code.indexOf('async function ' + fn), code.indexOf('async function ' + next));
+    assert.ok(!/const first = greetingName/.test(blk), fn + ' still computes an unused greeting');
+  }
+});
+
 console.log('\nNothing else moved');
 
 test('the fare split is untouched on both paths', async () => {
