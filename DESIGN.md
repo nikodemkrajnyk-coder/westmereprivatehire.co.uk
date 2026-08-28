@@ -50,7 +50,7 @@ tag. **Adding a photo is one line in that list** — nothing else:
          style="background-image:linear-gradient(…),url('assets/tesla-london.webp')"
          data-hero-photos="assets/tesla-london.webp
                          | assets/country-car.webp
-                         | assets/home-hero.webp">   ← add here
+                         | assets/sussex-coast.webp">   ← add here
 ```
 
 Rules, all enforced by `server/tests/hero-rotate.test.js`:
