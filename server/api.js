@@ -48,6 +48,12 @@ router.get('/bookings', (req, res) => {
              COALESCE(c.email,     b.passenger_email) as customer_email,
              COALESCE(c.phone,     b.passenger_phone) as customer_phone,
              u.full_name  as driver_name,
+             /* Is the assigned driver the DEFAULT driver — the owner himself?
+                Every confirmed job is allocated to him on the way in, so
+                "has a driver" is not the same question as "is covered by
+                somebody else". The owner app needs to tell them apart to know
+                whether to offer the job on. */
+             u.is_default_driver as driver_is_default,
              od.full_name as offered_driver_name
       FROM bookings b
       LEFT JOIN customers c ON b.customer_id = c.id

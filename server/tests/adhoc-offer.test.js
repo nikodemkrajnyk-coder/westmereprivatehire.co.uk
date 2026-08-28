@@ -72,12 +72,15 @@ function makeDb() {
     );
     CREATE TABLE customers (id INTEGER PRIMARY KEY, email TEXT, full_name TEXT, phone TEXT);
     CREATE TABLE users (id INTEGER PRIMARY KEY, full_name TEXT, email TEXT, phone TEXT,
-      role TEXT, active INTEGER DEFAULT 1);
+      role TEXT, active INTEGER DEFAULT 1, is_default_driver INTEGER DEFAULT 0);
     CREATE TABLE audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, user_type TEXT, user_id INTEGER,
       action TEXT, detail TEXT, ip TEXT);
   `);
   db.prepare("INSERT INTO customers (id,email,full_name,phone) VALUES (1,'go@example.com','Gavin O''Shea','07700 900456')").run();
   db.prepare("INSERT INTO users (id,full_name,email,role,active) VALUES (7,'Dave Driver','dave@example.com','driver',1)").run();
+  // The OWNER, flagged as the default driver — every confirmed booking is
+  // allocated to him as it comes in, which is the state the button has to work in.
+  db.prepare("INSERT INTO users (id,full_name,email,role,active,is_default_driver) VALUES (2,'Nikodem','nikodem@example.com','owner',1,1)").run();
   db.prepare(`INSERT INTO bookings
     (id,ref,customer_id,pickup,destination,stop_address,date,time,passengers,bags,flight,fare,status,notes)
     VALUES (1,'WPH-7001',1,'The Grand Hotel, Brighton','London Gatwick Airport, South Terminal',
@@ -185,10 +188,13 @@ test('completed and cancelled are still refused, as before', () => {
 test('the button is drawn only on a confirmed job', () => {
   const fn = /function jobCardHtml\(j\)\{[\s\S]*?\n\}/.exec(OWNER);
   assert.ok(fn, 'jobCardHtml is missing');
-  assert.ok(/var dispCanOffer=\(j\.apiStatus==='confirmed'\|\|j\.apiStatus==='active'\);/.test(fn[0]),
+  assert.ok(/var dispCanOffer=\(j\.apiStatus==='confirmed'\|\|j\.apiStatus==='active'\)&&!dispHeldByOther;/.test(fn[0]),
     'the card must decide whether offering is allowed');
-  assert.ok(/\}else if\(!j\.driverId&&dispCanOffer\)\{/.test(fn[0]),
+  assert.ok(/\}else if\(dispCanOffer\)\{/.test(fn[0]),
     'and the Offer button must be behind it');
+  /* It used to also require an EMPTY driver_id. Every confirmed booking is
+     allocated to the default driver on the way in, so that hid the button on
+     almost every job the owner had — see the default-driver block below. */
   // Reclaim must NOT be gated — an offer already made has to stay retractable.
   const reclaim = fn[0].slice(fn[0].indexOf("if(j.apiStatus==='offered'){"), fn[0].indexOf('}else if'));
   assert.ok(/dispReclaim/.test(reclaim) && !/dispCanOffer/.test(reclaim),
@@ -522,6 +528,119 @@ test('a job cannot go out without a registration', () => {
   assert.strictEqual(sent.length, 0, 'and no job email goes out on a bad one');
   const b = db.prepare('SELECT * FROM bookings WHERE id=1').get();
   assert.strictEqual(b.offered_to_name, null, 'nor is a half-offer written');
+});
+
+console.log('\nA job on the DEFAULT driver can still be passed on');
+
+/* THE OWNER'S PROBLEM. Every confirmed booking is allocated to him the moment
+   it arrives (server/public-api.js — auto-allocate to the default driver), so
+   driver_id is set on essentially all of them. The offer button used to require
+   an EMPTY driver_id, which meant it was hidden on almost every job he had, and
+   the route below had never been asked the question at all.
+
+   The default allocation means "I will do this one myself". Offering it is him
+   saying he cannot. A job a REAL driver has taken is a different thing. */
+test('a confirmed job sitting on the DEFAULT driver can be offered', () => {
+  for (const body of [{ driver_id: 7 },
+                      { name: 'Sam Cole', email: 'sam@example.com', reg: 'LT21 XYZ', car: 'Skoda' }]) {
+    const db = makeDb();
+    db.prepare('UPDATE bookings SET driver_id = 2 WHERE id = 1').run();   // the owner
+    const { offers, sent } = load(db);
+    const r = offer(offers, body);
+    assert.strictEqual(r.statusCode, 200, JSON.stringify(body) + ' → ' + JSON.stringify(r.body));
+    assert.strictEqual(sent.length, 1, 'and the job email goes');
+    assert.strictEqual(db.prepare('SELECT status FROM bookings WHERE id=1').get().status, 'offered');
+  }
+});
+
+test('a job a REAL driver already has is refused, by NAME', () => {
+  const db = makeDb();
+  db.prepare('UPDATE bookings SET driver_id = 7 WHERE id = 1').run();
+  const { offers, sent } = load(db);
+  const r = offer(offers, { name: 'Sam Cole', email: 'sam@example.com', reg: 'LT21 XYZ', car: 'Skoda' });
+  assert.strictEqual(r.statusCode, 409, JSON.stringify(r.body));
+  assert.ok(/already with Dave Driver/.test(r.body.error),
+    'and says who has it, so the owner knows who to ring: ' + r.body.error);
+  assert.ok(/Reclaim it first/.test(r.body.error), 'and what to do about it');
+  assert.strictEqual(sent.length, 0, 'nothing is emailed over the top of a driver who has the job');
+});
+
+test('an AD-HOC driver holding it blocks a second offer too', () => {
+  const db = makeDb();
+  db.prepare("UPDATE bookings SET assigned_to_name = 'Sam Cole' WHERE id = 1").run();
+  const { offers } = load(db);
+  const r = offer(offers, { driver_id: 7 });
+  assert.strictEqual(r.statusCode, 409, JSON.stringify(r.body));
+  assert.ok(/already with Sam Cole/.test(r.body.error),
+    'they have no users row to join to, so the name on the booking is the check: ' + r.body.error);
+});
+
+test('the confirmed-only rule is untouched by any of this', () => {
+  const db = makeDb();
+  db.prepare("UPDATE bookings SET status = 'pending', driver_id = 2 WHERE id = 1").run();
+  const { offers } = load(db);
+  const r = offer(offers, { driver_id: 7 });
+  assert.strictEqual(r.statusCode, 409);
+  assert.ok(/only be offered once it is confirmed/.test(r.body.error),
+    'a pending job on the default driver is still a pending job: ' + r.body.error);
+});
+
+test('accepting takes the job OFF the default driver', () => {
+  /* The one that would have gone wrong quietly. driverDetails resolves the
+     REGISTERED branch first, so a booking left with driver_id = the owner would
+     tell the customer to look for his Tesla while somebody else drove. */
+  const db = makeDb();
+  db.prepare('UPDATE bookings SET driver_id = 2 WHERE id = 1').run();
+  const { offers } = load(db);
+  offer(offers, { name: 'Sam Cole', email: 'sam@example.com', reg: 'LT21 XYZ', car: 'Skoda Superb' });
+  assert.ok(offers.acceptAdhocOffer(db, 1).ok);
+  const b = db.prepare('SELECT * FROM bookings WHERE id=1').get();
+  assert.strictEqual(b.driver_id, null, 'the default allocation is gone');
+  assert.strictEqual(b.assigned_to_name, 'Sam Cole');
+
+  const email = require('../email.js');
+  const who = email.driverDetails(Object.assign({}, b, { driver_name: null }));
+  assert.strictEqual(who.source, 'adhoc', 'and the reminders resolve to the new driver');
+  assert.strictEqual(who.name, 'Sam Cole');
+  assert.ok(!/Nikodem|Tesla|ML68/.test(email.driverBlockHtml(b)),
+    'with no trace of the owner left in the block the customer reads');
+});
+
+test('a REGISTERED accept overrides the default too', () => {
+  const db = makeDb();
+  db.prepare('UPDATE bookings SET driver_id = 2 WHERE id = 1').run();
+  const { offers } = load(db);
+  offer(offers, { driver_id: 7 });
+  assert.ok(offers.acceptOffer(db, 1, 7).ok);
+  assert.strictEqual(db.prepare('SELECT driver_id FROM bookings WHERE id=1').get().driver_id, 7,
+    'the job moves from the owner to the driver who took it');
+});
+
+test('the BUTTON shows on a job the default driver holds, and hides once a real one does', () => {
+  const fn = /function jobCardHtml\(j\)\{[\s\S]*?\n\}/.exec(OWNER)[0].replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.ok(/dispHeldByOther\s*=\s*\(!!j\.driverId&&!j\.driverIsDefault\)\|\|!!j\.assignedToName/.test(fn),
+    'held-by-somebody-else is the test, not has-a-driver');
+  assert.ok(/dispCanOffer=\(j\.apiStatus==='confirmed'\|\|j\.apiStatus==='active'\)&&!dispHeldByOther/.test(fn),
+    'and it still requires a confirmed job');
+  assert.ok(/\}else if\(dispCanOffer\)\{[\s\S]{0,400}dispOffer\(/.test(fn),
+    'the button must no longer demand an EMPTY driver_id — that hid it on every job');
+  assert.ok(!/!j\.driverId&&dispCanOffer/.test(fn), 'the old condition is gone');
+});
+
+test('the flag reaches the card from the API, not guessed from a name', () => {
+  assert.ok(/driverIsDefault:!!b\.driver_is_default/.test(OWNER), 'the card reads the API field');
+  const api = read('server/api.js');
+  assert.ok(/u\.is_default_driver as driver_is_default/.test(api), 'and the API selects it');
+  const offerSrc = read('server/offer-routes.js').replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.ok(/is_default_driver FROM users WHERE id/.test(offerSrc),
+    'the route asks the FLAG, never matches the owner by name');
+  assert.ok(!/Nikodem/.test(offerSrc), 'no name-matching anywhere in the route');
+});
+
+test('the card stops announcing the default driver on every job', () => {
+  const fn = /function dispStateRow\(j\)\{[\s\S]*?\n\}/.exec(OWNER)[0].replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.ok(/j\.driverIsDefault&&!j\.assignedToName\)return ''/.test(fn),
+    '"Nikodem · accepted" on all of them buries the ones somebody else took');
 });
 
 test('the card names who it went to, with the address', () => {

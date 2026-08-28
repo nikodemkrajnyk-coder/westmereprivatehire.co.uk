@@ -3506,10 +3506,21 @@ function jobCardHtml(j){
      a booking that was never made. Reclaim stays available whatever the state,
      because an offer already made must always be retractable. The route
      refuses the same thing; this only removes the temptation. */
-  var dispCanOffer=(j.apiStatus==='confirmed'||j.apiStatus==='active');
+  /* WHEN THE JOB CAN BE PASSED ON.
+     Confirmed or active, AND not already with somebody else. "Not with
+     somebody else" is not the same as "has no driver": every confirmed
+     booking is allocated to the DEFAULT driver — the owner — the moment it
+     comes in, which is exactly the state he is in when he needs to hand a job
+     over. Reading a set driver_id as "taken" hid this button on almost every
+     job he had.
+
+     A real driver holding it, registered or ad-hoc, hides the button; the
+     Dispatch row names them and Reclaim is the way back. */
+  var dispHeldByOther=(!!j.driverId&&!j.driverIsDefault)||!!j.assignedToName;
+  var dispCanOffer=(j.apiStatus==='confirmed'||j.apiStatus==='active')&&!dispHeldByOther;
   if(j.apiStatus==='offered'){
     html+='<button style="padding:.6rem .85rem;font-size:.79rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;border:var(--border-hair,1px) solid var(--westmere-line-strong,#c8d1d9)" onclick="dispReclaim('+j.id+')">Reclaim</button>';
-  }else if(!j.driverId&&dispCanOffer){
+  }else if(dispCanOffer){
     html+='<button style="padding:.6rem .85rem;font-size:.79rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;border:var(--border-strong,1.5px) solid var(--westmere-navy,#102a43);color:var(--westmere-navy,#102a43)" onclick="dispOffer('+j.id+')">Offer to driver</button>';
   }
   html+='<button style="padding:.6rem .85rem;font-size:.79rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)" onclick="upcomingDelete('+j.id+')">Delete</button>';
@@ -5634,12 +5645,15 @@ function dispStateRow(j){
     return '<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Dispatch</td>'
       +'<td style="color:var(--westmere-navy,#102a43)">Offered to '+escH(who)+' &middot; awaiting reply</td></tr>';
   }
-  if(j.driverName){
+  /* The DEFAULT driver is not news — it is every job. Saying "Nikodem ·
+     accepted" on all of them buries the ones somebody else actually took. */
+  if(j.driverName&&j.driverIsDefault&&!j.assignedToName)return '';
+  if(j.driverName||j.assignedToName){
     /* Somebody outside the system took it: they were quoted the FARE, so the
        card must not report a commission split that was never agreed. */
     var adhoc=!j.driverId&&!!j.assignedToName;
     return '<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Driver</td>'
-      +'<td style="color:var(--westmere-navy,#102a43)">'+escH(j.driverName)+' &middot; accepted'
+      +'<td style="color:var(--westmere-navy,#102a43)">'+escH(j.driverName||j.assignedToName)+' &middot; accepted'
       +(adhoc?' &middot; not a registered driver'
              :(j.driverPay!=null?(' &middot; '+fmtMoney(j.driverPay)+' to him'):''))+'</td></tr>';
   }
@@ -6030,6 +6044,9 @@ async function loadOwnerBookings(){
         // say who had a job.
         driverId:b.driver_id||null,
         driverName:b.driver_name||'',
+        // Is that the DEFAULT driver — himself? Every confirmed job arrives
+        // allocated to him, so "has a driver" does not mean "covered".
+        driverIsDefault:!!b.driver_is_default,
         offeredToName:b.offered_driver_name||'',
         offeredToEmail:b.offered_to_email||'',
         offeredIsAdhoc:!!b.offered_is_adhoc,

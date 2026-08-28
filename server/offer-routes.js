@@ -102,6 +102,18 @@ function publicSummary(b) {
    else, and nothing can be half of each. */
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/* THE DEFAULT DRIVER is the owner, flagged on his users row. Asked by id rather
+   than by name — the name is a string somebody can edit, the flag is the fact.
+   A missing column on a legacy database answers "no", which fails safe: the
+   route refuses rather than passing on a job that is genuinely taken. */
+function isDefaultDriver(db, driverId) {
+  if (!driverId) return false;
+  try {
+    const u = db.prepare('SELECT is_default_driver FROM users WHERE id = ?').get(driverId);
+    return !!(u && u.is_default_driver);
+  } catch (_) { return false; }
+}
+
 router.post('/bookings/:id/offer', staffOnly, (req, res) => {
   const { driver_id } = req.body || {};
   const adhocName  = String((req.body && req.body.name)  || '').trim();
@@ -142,6 +154,30 @@ router.post('/bookings/:id/offer', staffOnly, (req, res) => {
     if (!['confirmed', 'active'].includes(booking.status)) {
       return res.status(409).json({
         error: 'This booking is ' + booking.status + '. A job can only be offered once it is confirmed.'
+      });
+    }
+
+    /* ALREADY ON THE DEFAULT DRIVER IS NOT "ALREADY TAKEN".
+       Every confirmed booking is allocated to the owner as it comes in, so
+       driver_id is set on essentially all of them. Reading that as "assigned"
+       would mean no job could ever be passed on — which is the whole point of
+       the button. The default allocation is a placeholder for "I will do this
+       one myself", and offering it is him saying he cannot.
+
+       A job a REAL driver has taken is a different thing, and is refused: he
+       has it in his diary and may be halfway to the pickup. Reclaim it first,
+       then offer it. */
+    if (booking.driver_id && !isDefaultDriver(db, booking.driver_id)) {
+      const holder = db.prepare('SELECT full_name FROM users WHERE id = ?').get(booking.driver_id);
+      return res.status(409).json({
+        error: 'This job is already with ' + ((holder && holder.full_name) || 'another driver') +
+               '. Reclaim it first if you want to pass it to somebody else.'
+      });
+    }
+    if (booking.assigned_to_name) {
+      return res.status(409).json({
+        error: 'This job is already with ' + booking.assigned_to_name +
+               '. Reclaim it first if you want to pass it to somebody else.'
       });
     }
 
@@ -378,6 +414,13 @@ function acceptAdhocOffer(db, bookingId) {
   db.prepare(`
     UPDATE bookings
        SET status = 'confirmed',
+           /* OFF THE DEFAULT DRIVER. The job was allocated to the owner when it
+              came in — that is what every confirmed booking looks like until
+              somebody else takes it. Leaving driver_id set would make
+              driverDetails resolve the REGISTERED branch first and tell the
+              customer to look for the owner's Tesla, while the person actually
+              driving is the one named two lines below. */
+           driver_id = NULL,
            assigned_to_name  = ?,
            assigned_to_email = offered_to_email,
            assigned_to_reg   = offered_to_reg,
