@@ -57,11 +57,27 @@ const { shortDisplay, flightFor } = require('../address-normalize');
 // navy, and emphasis comes from weight and scale.
 // (Guardrail: server/tests/button-style.test.js scans this file for any colour
 // in the cream/gold hue band.)
-const NAVY   = '#102a43';   // --westmere-navy
+/* CONTRAST. The owner could not comfortably read his own invoices, and the
+   measurement agreed with him: MUTED was 4.78:1 on white and 4.37:1 on the
+   zebra tint — under the 4.5 floor on exactly the rows it was used for. It
+   carries the column headings, the FROM/BILL TO lines, the reference and the
+   date on every journey row, so most of the small type on the page was the
+   weakest thing on it.
+
+   Both greys move down the same navy hue line — the palette is unchanged in
+   character, just readable. Every text colour now clears 7:1 against whatever
+   it sits on, white or tint, which is the AAA body threshold.
+
+   The TINT is deliberately NOT lightened. It was competing with the type
+   because the type was pale, not because the wash was strong; lightening it
+   would have made the banding invisible and solved the wrong half.
+   GUARDRAIL: server/tests/invoice-contrast.test.js measures the rendered
+   colours, so a pale grey introduced anywhere fails. */
+const NAVY   = '#102a43';   // --westmere-navy · 14.6:1 on white, 13.4:1 on tint
 const ACCENT = '#102a43';   // was gold; the accent is navy now
-const SOFT   = '#3B5268';   // secondary type
-const MUTED  = '#657485';   // --westmere-muted
-const HAIR   = '#dfe5ea';   // --westmere-line
+const SOFT   = '#2E4257';   // secondary type · 10.3:1 / 9.4:1  (was #3B5268)
+const MUTED  = '#42525F';   // labels, refs, small caps · 8.1:1 / 7.4:1  (was #657485)
+const HAIR   = '#dfe5ea';   // --westmere-line · a rule, never type
 const TINT   = '#F2F5F8';   // cool zebra tint (was ivory)
 
 // ── Page geometry ──────────────────────────────────────────────────────────
@@ -89,7 +105,8 @@ function fmtDate(d) {
    VISIBLE design changes; nothing else needs to be cleared, and the owner's
    existing files are left alone rather than deleted.
    GUARDRAIL: server/tests/invoice-paths.test.js */
-const TEMPLATE_VERSION = 5;   // 5: row-fit — rows and their bands grow to the wrapped text
+const TEMPLATE_VERSION = 6;   // 6: contrast — the two greys darkened to 7:1+ on white and tint
+                              // 5: row-fit — rows and their bands grow to the wrapped text
                               // 4: notes block sized to its contents
 
 /* "Mon 3 Aug 2026" — the form every other Westmere surface uses.

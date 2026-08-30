@@ -474,11 +474,19 @@ console.log('\nThe cache cannot outlive the template — again');
    So the layout is content-hashed. Change how the page is drawn and this fails,
    with the two things to do written in the message. It cannot tell a
    good change from a bad one; it can only refuse to let one through quietly. */
-const LAYOUT_HASH = '3cdd613817bf';
-const LAYOUT_VERSION = 5;   // 5: rows and their zebra bands grow to the wrapped text
+const LAYOUT_HASH = '66acc844d3ba';
+const LAYOUT_VERSION = 6;   // 6: the two greys darkened for contrast
+                            // 5: rows and their zebra bands grow to the wrapped text
 
 test('the drawing code and TEMPLATE_VERSION move together', () => {
-  const layout = SRC.slice(SRC.indexOf('function drawInvoice('))
+  /* THE PALETTE COUNTS AS LAYOUT. It was not in this hash, and it should have
+     been: darkening the two greys changed every rendered page while the hash
+     sat still, so cached PDFs would have kept serving the pale text under an
+     unchanged version number — the exact failure this guard exists to stop,
+     walking straight past it. The colour block is hashed with the drawing
+     code now. */
+  const palette = SRC.slice(SRC.indexOf('const NAVY'), SRC.indexOf('// ── Page geometry'));
+  const layout = palette + SRC.slice(SRC.indexOf('function drawInvoice('))
     .replace(/\/\*[\s\S]*?\*\//g, '')          // comments are prose, not layout
     .replace(/(^|[^:])\/\/.*$/gm, '$1')
     .replace(/\s+/g, ' ')
