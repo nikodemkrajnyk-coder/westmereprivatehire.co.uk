@@ -89,7 +89,8 @@ function fmtDate(d) {
    VISIBLE design changes; nothing else needs to be cleared, and the owner's
    existing files are left alone rather than deleted.
    GUARDRAIL: server/tests/invoice-paths.test.js */
-const TEMPLATE_VERSION = 4;   // 4: notes block sized to its contents
+const TEMPLATE_VERSION = 5;   // 5: row-fit — rows and their bands grow to the wrapped text
+                              // 4: notes block sized to its contents
 
 /* "Mon 3 Aug 2026" — the form every other Westmere surface uses.
    The table used to print the raw ISO string, which is the one date format
@@ -420,35 +421,76 @@ function drawInvoice(doc, data, slack) {
   // ── TABLE ────────────────────────────────────────────────────────────────
   const ROW_H = 24;
 
-  if (isBespoke) {
-    vbox(doc, M, y, CW, 22, '#EEF2F5');
-    // --- Bespoke: Description | Amount ---
-    doc.font(BOLD).fontSize(8).fillColor(MUTED)
-       .text('DESCRIPTION', M + 6, y + 7, { lineBreak: false });
-    doc.font(BOLD).fontSize(8).fillColor(MUTED)
-       .text('AMOUNT', M, y + 7, { width: CW - 6, align: 'right', lineBreak: false });
-    y += 22;
+  /* HOW TALL IS THIS ROW, REALLY.
+     Row heights were constants. A description is drawn into a fixed column
+     width, so PDFKit wraps it — and a wrapped second line was drawn BELOW the
+     bottom of its own row, where the next row's tinted band was then painted
+     straight over it. On a real invoice (APD, INV-202608-0003) that hid half a
+     journey behind the following row's shading.
 
+     So the row is measured before it is drawn: ask the font, at the exact
+     width the text will occupy, how tall the result is, and give the row the
+     larger of its natural height and what the text needs. One-line rows are
+     unchanged; a two- or three-line description makes its own row taller and
+     the band with it.
+
+     The measurement must be taken with the SAME font and size the text is
+     drawn in — heightOfString answers for whatever is currently selected — so
+     each caller sets the font first and passes the same width. */
+  const measuredH = (str, font, size, width, opts) => {
+    if (!str) return 0;
+    doc.font(font).fontSize(size);
+    return doc.heightOfString(String(str), Object.assign({ width }, opts || {}));
+  };
+
+  if (isBespoke) {
+    // --- Bespoke: Description | Amount ---
+
+    const items = data.items || [];
+    const DESC_W = CW - 90;          // the width the description actually gets
+    /* Same limit the account table uses: a row that no longer fits goes to the
+       next page under a repeated header. Rows can now be tall, so a bespoke
+       invoice with three long descriptions could walk off the paper — it had
+       no break at all before, because a fixed row height made the overflow
+       arithmetic predictable and nobody had a tall row to test it with. */
+    const BSP_LIMIT = PAGE_H - M - 18 - 34;
+    const bspHead = () => {
+      vbox(doc, M, y, CW, 22, '#EEF2F5');
+      doc.font(BOLD).fontSize(8).fillColor(MUTED).text('DESCRIPTION', M + 6, y + 7, { lineBreak: false });
+      doc.font(BOLD).fontSize(8).fillColor(MUTED).text('AMOUNT', M, y + 7, { width: CW - 6, align: 'right', lineBreak: false });
+      y += 22;
+    };
+    bspHead();
     hline(doc, y, ACCENT, 1.2);
     y += 1;
 
-    const items = data.items || [];
     for (let i = 0; i < items.length; i++) {
       const it = items[i];
       const hasDate = !!(it.date && String(it.date).trim());
-      const rowH = (hasDate ? ROW_H + 12 : ROW_H) + SLACK.row;
+      const descTop = hasDate ? 16 : 7;
+      /* The description drives the row. Measured at DESC_W in the font it will
+         be drawn in, then the row is whichever is taller: its natural height,
+         or the text plus the space above and below it. */
+      const descH = measuredH(it.description, BODY, 11, DESC_W);
+      const natural = hasDate ? ROW_H + 12 : ROW_H;
+      const needed  = descTop + descH + 7;
+      const rowH = Math.max(natural, needed) + SLACK.row;
+
+      if (y + rowH > BSP_LIMIT) {
+        drawFooter(doc); doc.addPage(); pages++; tablePages++; y = M; bspHead();
+        hline(doc, y, ACCENT, 1.2); y += 1;
+      }
+      /* The band is painted at the row's REAL height, so it starts below the
+         wrapped text above it rather than on top of it. */
       if (i % 2 === 1) vbox(doc, M, y, CW, rowH, TINT);
       if (hasDate) {
         doc.font(BOLD).fontSize(7.5).fillColor(MUTED)
            .text(fmtDate(it.date), M + 6, y + 5, { lineBreak: false });
-        doc.font(BODY).fontSize(11).fillColor(NAVY)
-           .text(String(it.description || ''), M + 6, y + 16, { width: CW - 90, lineBreak: false });
-      } else {
-        doc.font(BODY).fontSize(11).fillColor(NAVY)
-           .text(String(it.description || ''), M + 6, y + 7, { width: CW - 90, lineBreak: false });
       }
       doc.font(BODY).fontSize(11).fillColor(NAVY)
-         .text('£' + (+it.amount || 0).toFixed(2), M, y + (hasDate ? 16 : 7), { width: CW - 6, align: 'right', lineBreak: false });
+         .text(String(it.description || ''), M + 6, y + descTop, { width: DESC_W });
+      doc.font(BODY).fontSize(11).fillColor(NAVY)
+         .text('£' + (+it.amount || 0).toFixed(2), M, y + descTop, { width: CW - 6, align: 'right', lineBreak: false });
       y += rowH;
     }
     if (!items.length) {
@@ -501,15 +543,35 @@ function drawInvoice(doc, data, slack) {
     const BK_PAD = Math.round(SLACK.row / 2);
     for (let i = 0; i < bookings.length; i++) {
       const b = bookings[i];
-      if (y + BK_ROW_H > BK_LIMIT) {
+
+      /* THE JOURNEY DECIDES THE HEIGHT. Most addresses are shortened to a line
+         by shortDisplay, but not all of them are shortenable — a long single
+         name with no comma to cut at, or a destination carrying a note, wraps
+         inside the column. The row and its band are sized to whatever the text
+         actually needs, so the second line lands inside its own row instead of
+         under the next one's shading. */
+      const journeyStr = (shortDisplay(b.pickup) || b.pickup || '') + ' \u2192 ' + (shortDisplay(b.destination) || b.destination || '');
+      const journeyH = measuredH(journeyStr, BODY, 10, JW);
+      const fltStr = flightFor(b);
+      /* The flight tag sits under the journey rather than at a fixed offset —
+         a two-line journey used to have the flight printed straight through
+         its second line. */
+      const fltTop = 8 + BK_PAD + Math.max(13, journeyH);
+      const fltH = fltStr ? measuredH('FLIGHT ' + fltStr, BOLD, 7.5, JW, { characterSpacing: 0.8 }) : 0;
+      const needed = (fltStr ? fltTop + fltH : 8 + BK_PAD + journeyH) + 8;
+      const rowH = Math.max(BK_ROW_H, needed);
+
+      if (y + rowH > BK_LIMIT) {
         drawFooter(doc);
         doc.addPage();
         pages++;
         tablePages++;
         y = M;
         bkHead();
+        hline(doc, y, ACCENT, 1.2);
+        y += 1;
       }
-      if (i % 2 === 1) vbox(doc, M, y, CW, BK_ROW_H, TINT);
+      if (i % 2 === 1) vbox(doc, M, y, CW, rowH, TINT);
 
       doc.font(BODY).fontSize(10).fillColor(NAVY)
          .text(fmtShortDate(b.date), M + 8, y + 8 + BK_PAD, { width: DW - 10, lineBreak: false });
@@ -517,21 +579,19 @@ function drawInvoice(doc, data, slack) {
       doc.font(MONO).fontSize(7.5).fillColor(MUTED)
          .text((b.ref || '') + (timeStr ? '  ·  ' + timeStr : ''), M + 8, y + 21 + BK_PAD, { width: DW - 10, lineBreak: false });
 
-      const journey = (shortDisplay(b.pickup) || b.pickup || '') + ' → ' + (shortDisplay(b.destination) || b.destination || '');
       doc.font(BODY).fontSize(10).fillColor(NAVY)
-         .text(journey, JX, y + 8 + BK_PAD, { width: JW, lineBreak: false });
-      const flt = flightFor(b);   // airport runs only
-      if (flt) {
+         .text(journeyStr, JX, y + 8 + BK_PAD, { width: JW });
+      if (fltStr) {
         // A quiet tag on its own line, tracked and muted so it reads as a note
         // about the journey rather than a second journey.
         doc.font(BOLD).fontSize(7.5).fillColor(MUTED)
-           .text('FLIGHT ' + flt, JX, y + 21 + BK_PAD, { width: JW, characterSpacing: 0.8, lineBreak: false });
+           .text('FLIGHT ' + fltStr, JX, y + fltTop, { width: JW, characterSpacing: 0.8, lineBreak: false });
       }
 
       doc.font(BODY).fontSize(11.5).fillColor(NAVY)
          .text('£' + (+b.fare || 0).toFixed(2), FX, y + 11 + BK_PAD, { width: FW - 6, align: 'right', lineBreak: false });
 
-      y += BK_ROW_H;
+      y += rowH;
     }
     if (!bookings.length) {
       doc.font(BODY).fontSize(11).fillColor(MUTED)

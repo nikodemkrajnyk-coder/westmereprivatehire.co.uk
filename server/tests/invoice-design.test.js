@@ -474,8 +474,8 @@ console.log('\nThe cache cannot outlive the template — again');
    So the layout is content-hashed. Change how the page is drawn and this fails,
    with the two things to do written in the message. It cannot tell a
    good change from a bad one; it can only refuse to let one through quietly. */
-const LAYOUT_HASH = 'd4f21bb32830';
-const LAYOUT_VERSION = 4;
+const LAYOUT_HASH = '3cdd613817bf';
+const LAYOUT_VERSION = 5;   // 5: rows and their zebra bands grow to the wrapped text
 
 test('the drawing code and TEMPLATE_VERSION move together', () => {
   const layout = SRC.slice(SRC.indexOf('function drawInvoice('))
