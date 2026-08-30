@@ -165,11 +165,16 @@ test('a file written by an OLDER template is never served', async () => {
   const buf = await PDF.resolveInvoicePdf(fakeDb(SETTINGS_BANK), ACCOUNT_ROW);
   assert.ok(buf.length > 5000, 'a real invoice, not the 26-byte stale file: ' + buf.length);
   assert.ok(buf.toString('latin1').indexOf('OLD DESIGN') === -1, 'the stale file must not be served');
-  assert.ok(fs.existsSync(PDF.invoiceCachePath('INV-202608-0101')), 'and the new one is cached');
+  /* The cache key carries a hash of the invoice's contents now, so the path to
+     check is the one THIS row resolves to — asking for the bare name would
+     look for a file the resolver never writes. */
+  assert.ok(fs.existsSync(PDF.invoiceCachePath('INV-202608-0101', ACCOUNT_ROW)), 'and the new one is cached');
 });
 
 test('a truncated or empty cache file is rebuilt, not served', async () => {
-  const p = PDF.invoiceCachePath('INV-202608-0102');
+  // Written at the path this row actually resolves to, or the resolver would
+  // simply not find it and the test would pass without exercising anything.
+  const p = PDF.invoiceCachePath(BESPOKE_ROW.invoice_no, BESPOKE_ROW);
   fs.mkdirSync(path.dirname(p), { recursive: true });
   fs.writeFileSync(p, Buffer.alloc(0));
   const buf = await PDF.resolveInvoicePdf(fakeDb(SETTINGS_BANK), BESPOKE_ROW);

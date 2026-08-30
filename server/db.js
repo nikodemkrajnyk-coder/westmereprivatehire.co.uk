@@ -600,7 +600,17 @@ function migrate() {
     const invInfo = db.prepare("PRAGMA table_info(invoices)").all();
     const invCols = [
       ['paid',    'INTEGER NOT NULL DEFAULT 0'],
-      ['paid_at', 'TEXT']
+      ['paid_at', 'TEXT'],
+      /* A CORRECTION, not a new document. An invoice used to be immutable once
+         written: there was no update route at all, so a wrong figure meant
+         deleting it and issuing a fresh number — which is exactly what an
+         accounts department should never receive.
+           total_manual  the owner set the total by hand; the lines may not sum
+                         to it, and the auto-sum must not quietly overwrite it.
+           revised_at    when it was last corrected, for the audit trail and so
+                         the owner can see at a glance that it has been. */
+      ['total_manual', 'INTEGER NOT NULL DEFAULT 0'],
+      ['revised_at',   'TEXT']
     ];
     for (const [n, t] of invCols) {
       if (!invInfo.find(c => c.name === n)) {

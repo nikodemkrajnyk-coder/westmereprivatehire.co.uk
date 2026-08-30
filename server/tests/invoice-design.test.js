@@ -474,7 +474,7 @@ console.log('\nThe cache cannot outlive the template — again');
    So the layout is content-hashed. Change how the page is drawn and this fails,
    with the two things to do written in the message. It cannot tell a
    good change from a bad one; it can only refuse to let one through quietly. */
-const LAYOUT_HASH = '66acc844d3ba';
+const LAYOUT_HASH = '2ee233eb9397';
 const LAYOUT_VERSION = 6;   // 6: the two greys darkened for contrast
                             // 5: rows and their zebra bands grow to the wrapped text
 
@@ -486,7 +486,17 @@ test('the drawing code and TEMPLATE_VERSION move together', () => {
      walking straight past it. The colour block is hashed with the drawing
      code now. */
   const palette = SRC.slice(SRC.indexOf('const NAVY'), SRC.indexOf('// ── Page geometry'));
-  const layout = palette + SRC.slice(SRC.indexOf('function drawInvoice('))
+  /* BOUNDED AT THE END OF THE DRAWING, not at the end of the file. Everything
+     below drawInvoice is plumbing — tokens, public URLs, where the cache lives
+     and what it is keyed on — and none of it puts a mark on the page. Hashing
+     it too made this guard demand a TEMPLATE_VERSION bump for a change to a
+     filename, which is not what the version means and would have orphaned a
+     cache for nothing. The region ends at the first function past the
+     drawing. */
+  const drawStart = SRC.indexOf('function drawInvoice(');
+  const drawEnd = SRC.indexOf('function ensureInvoiceToken(', drawStart);
+  assert.ok(drawEnd > drawStart, 'the end of the drawing could not be found — re-anchor this guard');
+  const layout = palette + SRC.slice(drawStart, drawEnd)
     .replace(/\/\*[\s\S]*?\*\//g, '')          // comments are prose, not layout
     .replace(/(^|[^:])\/\/.*$/gm, '$1')
     .replace(/\s+/g, ' ')

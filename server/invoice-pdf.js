@@ -887,8 +887,38 @@ function invoiceSafeNo(invoiceNo) {
   return String(invoiceNo || '').replace(/[^A-Za-z0-9\-_]/g, '');
 }
 
-function invoiceCachePath(invoiceNo) {
-  return path.join(invoiceCacheDir(), invoiceSafeNo(invoiceNo) + '.v' + TEMPLATE_VERSION + '.pdf');
+/* WHAT THE CACHED FILE IS NAMED, AND WHY IT IS NAMED AFTER ITS CONTENTS.
+   The key was the invoice number and the template version. That is a key for a
+   document that never changes, and invoices change now — the owner can correct
+   one and keep its number. An edited invoice would have gone on serving the
+   file written before the correction, which is the same failure as the two
+   template bumps that were forgotten, arriving by a different door.
+
+   So the name carries a hash of the DATA THE PAGE IS DRAWN FROM. Nobody has to
+   remember to invalidate anything: change a line, an address, a date or the
+   total and the key changes with it. The template version stays in the name as
+   well, because it is readable and the two answer different questions — which
+   drawing, and which contents.
+
+   `row` is optional so the old one-argument form still works for callers that
+   only know a number (deletion, path listing). */
+function invoiceContentHash(row) {
+  if (!row) return null;
+  /* Only the fields that reach the page. created_at, emailed, paid and the
+     access token do not change a pixel and must not churn the cache. */
+  const material = JSON.stringify([
+    row.kind, row.invoice_no, row.recipient_name, row.recipient_email,
+    row.recipient_phone, row.recipient_addr, row.period_from, row.period_to,
+    row.period_label, row.issued_date, row.due_date, row.notes,
+    row.line_items_json, row.journey_json, row.total
+  ]);
+  return require('crypto').createHash('sha256').update(material).digest('hex').slice(0, 10);
+}
+
+function invoiceCachePath(invoiceNo, row) {
+  const h = invoiceContentHash(row);
+  return path.join(invoiceCacheDir(),
+    invoiceSafeNo(invoiceNo) + '.v' + TEMPLATE_VERSION + (h ? '.' + h : '') + '.pdf');
 }
 
 /* Every cached rendering of one invoice, whatever template drew it — the
@@ -902,7 +932,8 @@ function invoiceCachePaths(invoiceNo) {
   const out = [path.join(dir, safeNo + '.pdf')];
   try {
     for (const f of fs.readdirSync(dir)) {
-      if (new RegExp('^' + safeNo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.v\\d+\\.pdf$').test(f)) {
+      // …including the content-hashed names an edited invoice leaves behind.
+      if (new RegExp('^' + safeNo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.v\\d+(\\.[0-9a-f]{10})?\\.pdf$').test(f)) {
         out.push(path.join(dir, f));
       }
     }
@@ -912,7 +943,7 @@ function invoiceCachePaths(invoiceNo) {
 
 /** → Promise<Buffer>. Throws only if the document genuinely cannot be built. */
 async function resolveInvoicePdf(db, row) {
-  const pdfPath = invoiceCachePath(row.invoice_no);
+  const pdfPath = invoiceCachePath(row.invoice_no, row);
   try {
     if (fs.existsSync(pdfPath)) {
       const cached = fs.readFileSync(pdfPath);

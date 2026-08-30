@@ -2659,6 +2659,128 @@ router.get('/invoices/:id/pdf', async (req, res) => {
   }
 });
 
+/* CORRECT A SAVED INVOICE — same number, same row.
+   An invoice was immutable: there was no update route, so a wrong figure meant
+   deleting it and issuing a fresh number. An accounts department that has
+   already filed INV-202608-0003 should receive a corrected 0003, not a 0004
+   that silently replaces it, and the owner should not have to explain a gap in
+   his own numbering.
+
+   WHAT MAY BE CORRECTED: who it is addressed to, the line items, the dates,
+   the notes, and the total. NOT the invoice number, the kind, or who it
+   belongs to — those are the identity of the document. A correction that could
+   re-point an invoice at a different customer is a way to bill the wrong
+   person from an edit screen.
+
+   THE TOTAL. It is a stored column, and always was. Left alone it is the sum
+   of the lines and is recomputed on every save. Set by hand it is kept exactly
+   as given and total_manual is raised, so the next edit does not quietly put
+   the auto-sum back — which is the whole point of an override.
+   GUARDRAIL: server/tests/invoice-edit.test.js */
+router.patch('/invoices/:id', async (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid invoice ID' });
+  const row = db.prepare('SELECT * FROM invoices WHERE id = ?').get(id);
+  if (!row) return res.status(404).json({ error: 'Invoice not found' });
+
+  const b = req.body || {};
+  const str = (v, fallback) => (v === undefined || v === null) ? fallback : String(v).trim();
+
+  // ── The line items ──
+  let lineItems = null;
+  if (Array.isArray(b.line_items)) {
+    if (b.line_items.length > 200) return res.status(400).json({ error: 'Too many lines on one invoice' });
+    lineItems = b.line_items.map((it) => {
+      const amount = Number(it && it.amount);
+      if (row.kind === 'bespoke') {
+        return { date: str(it && it.date, '') || undefined,
+                 description: str(it && it.description, '').slice(0, 500),
+                 amount: isNaN(amount) ? 0 : Math.round(amount * 100) / 100 };
+      }
+      /* An account line is a journey. The shape is preserved exactly, because
+         the PDF reads pickup/destination/ref/time out of it — flattening it to
+         a description here would empty the journey column. */
+      return Object.assign({}, it, {
+        fare: isNaN(amount) ? (Number(it && it.fare) || 0) : Math.round(amount * 100) / 100
+      });
+    });
+    if (row.kind === 'bespoke' && lineItems.some((it) => !it.description)) {
+      return res.status(400).json({ error: 'Every line needs a description' });
+    }
+  }
+
+  const items = lineItems || (() => { try { return JSON.parse(row.line_items_json || '[]'); } catch (_) { return []; } })();
+  const autoSum = Math.round(items.reduce((s, it) =>
+    s + (Number(row.kind === 'bespoke' ? it.amount : it.fare) || 0), 0) * 100) / 100;
+
+  /* THE OVERRIDE. Three states, and they have to stay distinguishable:
+       total_override: a number  → set it, and remember that it was set;
+       total_override: null      → clear it, go back to the auto-sum;
+       total_override: absent    → leave the arrangement as it is. */
+  let total = row.total, manual = row.total_manual ? 1 : 0;
+  if (Object.prototype.hasOwnProperty.call(b, 'total_override')) {
+    if (b.total_override === null || b.total_override === '') {
+      manual = 0; total = autoSum;
+    } else {
+      const t = Number(b.total_override);
+      if (isNaN(t) || t < 0) return res.status(400).json({ error: 'That total is not a number: ' + b.total_override });
+      if (t > 1000000) return res.status(400).json({ error: 'That total looks wrong' });
+      manual = 1; total = Math.round(t * 100) / 100;
+    }
+  } else if (!manual) {
+    total = autoSum;              // no override in force — the lines decide
+  }
+
+  const email = str(b.recipient_email, row.recipient_email);
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: 'That email address does not look right: ' + email });
+  }
+  const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+  const issued = str(b.issued_date, row.issued_date);
+  const due = str(b.due_date, row.due_date);
+  if (issued && !DATE_RE.test(issued)) return res.status(400).json({ error: 'Issued date must be YYYY-MM-DD' });
+  if (due && !DATE_RE.test(due)) return res.status(400).json({ error: 'Due date must be YYYY-MM-DD' });
+
+  const before = { total: row.total, manual: row.total_manual, lines: (items || []).length };
+  db.prepare(`
+    UPDATE invoices
+       SET recipient_name  = ?, recipient_email = ?, recipient_phone = ?, recipient_addr = ?,
+           issued_date = ?, due_date = ?, period_label = ?, notes = ?,
+           line_items_json = ?, total = ?, total_manual = ?,
+           revised_at = datetime('now')
+     WHERE id = ?
+  `).run(
+    str(b.recipient_name, row.recipient_name) || row.recipient_name,
+    email || null,
+    str(b.recipient_phone, row.recipient_phone) || null,
+    str(b.recipient_addr, row.recipient_addr) || null,
+    issued || row.issued_date, due || null,
+    str(b.period_label, row.period_label) || null,
+    str(b.notes, row.notes) || null,
+    JSON.stringify(items), total, manual, id);
+
+  /* The cached PDF is keyed on a hash of these fields, so the corrected
+     document gets a new filename and the old one is simply never asked for
+     again. Nothing to invalidate, and nothing to forget to invalidate. */
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run(req.auth.type || 'user', req.auth.id, 'invoice_edited',
+           row.invoice_no + ' £' + Number(before.total || 0).toFixed(2) + ' → £' + total.toFixed(2) +
+           (manual ? ' (total set by hand)' : '') + ', ' + items.length + ' line(s)', req.ip);
+  } catch (e) { console.error('[INVOICE] edit audit failed:', e.message); }
+
+  const updated = db.prepare('SELECT * FROM invoices WHERE id = ?').get(id);
+  try { updated.line_items = JSON.parse(updated.line_items_json || '[]'); } catch (_) { updated.line_items = []; }
+  delete updated.line_items_json;
+  console.log('[INVOICE] ' + row.invoice_no + ' corrected (total £' + total.toFixed(2) +
+              (manual ? ', set by hand' : ', from the lines') + ')');
+  res.json({ ok: true, invoice: updated, autoSum });
+});
+
 // Delete invoice — removes DB row and cached PDF.
 // The :id param is either a numeric invoices.id (stored invoices) or an
 // invoice number like "INV-202604-0001" (legacy invoices that only exist as
@@ -2787,7 +2909,11 @@ router.post('/invoices/:id/send', async (req, res) => {
     dueDate: row.due_date || '',
     issuedDate: row.issued_date || '',
     notes: row.notes || '',
-    journey: storedJourney
+    journey: storedJourney,
+    /* The stored figure, so the email quotes the same number as the PDF it is
+       carrying. Recomputing from the lines here would have made a manually
+       corrected invoice contradict its own attachment. */
+    total: row.total
   };
 
   let ok = false;

@@ -1977,7 +1977,9 @@ async function sendCustomerInvoice(customer, bookings, period, invoiceNo, settin
   const firstName = invoiceGreeting(full_name);
 
   const subtotal = (bookings || []).reduce((s, b) => s + (+b.fare || 0), 0);
-  const total = subtotal;
+  // Same rule as the bespoke invoice: a total set by hand is the total.
+  const total = (period && period.total !== undefined && period.total !== null)
+    ? Number(period.total) : subtotal;
   const summaryCount = (bookings || []).length;
   const dueStr = period && period.dueDate ? formatDate(period.dueDate, null) : '';
 
@@ -2037,7 +2039,15 @@ async function sendBespokeInvoice(recipient, items, period, invoiceNo, settings,
   if (!recipient || !recipient.email) return false;
   const firstName = invoiceGreeting(recipient.name);
 
-  const total = (items || []).reduce((s, it) => s + (+it.amount || 0), 0);
+  /* THE STORED TOTAL WINS. The owner can set an invoice's total by hand, and
+     the figure he set is what the PDF and the invoice record both show. Adding
+     the lines up again here would have sent an email quoting one number with a
+     document attached quoting another — the same invoice disagreeing with
+     itself in the same message. The sum is only the fallback for a caller that
+     has no stored total to give. */
+  const total = (period && period.total !== undefined && period.total !== null)
+    ? Number(period.total)
+    : (items || []).reduce((s, it) => s + (+it.amount || 0), 0);
   const dueStr = period && period.dueDate ? formatDate(period.dueDate, null) : '';
 
   /* "Please find your invoice attached" must not be written on an email with

@@ -1324,6 +1324,12 @@ select:-webkit-autofill:focus{
           <div style="text-align:right;padding:.6rem 0;border-top:2px solid var(--navy)">
             <span style="font-size:.79rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.5);margin-right:.6rem">Total</span>
             <span id="inv-det-total" style="font-family:var(--serif);font-size:1.3rem;color:var(--navy);font-weight:700"></span>
+            <!-- SAID OUT LOUD, because the lines below it may not add up to it.
+                 A total that disagrees with its own line items is alarming to
+                 find and easy to explain — as long as it says so. -->
+            <div id="inv-det-manual" style="display:none;margin-top:.3rem;font-size:.76rem;color:var(--amber,#6a6a6a)">
+              Total set by hand &mdash; the lines may not sum to it
+            </div>
           </div>
             <!-- SEND INVOICE. The primary action on this sheet, and the one
                  that was missing entirely: an invoice could only be emailed at
@@ -1336,6 +1342,7 @@ select:-webkit-autofill:focus{
               <div id="inv-det-send-to" style="margin-top:.45rem;font-size:.78rem;color:rgba(27,27,26,.55);text-align:center"></div>
             </div>
           <div style="display:flex;gap:.5rem;margin-top:.7rem;flex-wrap:wrap">
+            <button onclick="invEditOpen()" style="flex:1;padding:.65rem;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:6px;border:1px solid rgba(27,27,26,.2);background:transparent;color:var(--navy)">Edit</button>
             <a id="inv-det-pdf-btn" href="#" download style="flex:1;padding:.65rem;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:6px;border:1px solid rgba(27,27,26,.2);background:transparent;color:var(--navy);text-align:center;text-decoration:none">Download PDF</a>
             <button onclick="invDetailPreview()" style="flex:1;padding:.65rem;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:6px;border:1px solid rgba(27,27,26,.2);background:transparent;color:var(--navy)">Print Preview</button>
             <button onclick="invDetailDelete()" style="flex:1;padding:.65rem;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:6px;border:1px solid rgba(163,51,51,.3);background:transparent;color:var(--red)">Delete</button>
@@ -1343,6 +1350,69 @@ select:-webkit-autofill:focus{
         </div>
       </div>
 
+    </div>
+
+    <!-- ── Edit / correct a saved invoice ───────────────────────────────
+         A CORRECTION, not a new invoice. The number is displayed and cannot be
+         changed: somebody may already have filed this document, and the number
+         is how they will match the corrected one to it. Kind and customer are
+         not here either — an edit screen that could re-point an invoice at
+         another customer is a way to bill the wrong person. -->
+    <div id="inv-edit-sheet" style="display:none;position:fixed;inset:0;z-index:60;background:rgba(16,42,67,.35);align-items:flex-start;justify-content:center;overflow:auto;padding:1.2rem">
+      <div style="width:100%;max-width:560px;background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(16,42,67,.3)">
+        <div style="display:flex;align-items:center;gap:.5rem;padding:.8rem 1rem;border-bottom:1px solid rgba(27,27,26,.08)">
+          <button onclick="invEditClose()" style="background:transparent;border:none;color:#1a1a1a;font-size:1.4rem;line-height:1;cursor:pointer;padding:0 .3rem 0 0">&larr;</button>
+          <div>
+            <div style="font-family:var(--serif);font-size:1.05rem;color:#1a1a1a;letter-spacing:.04em">Correct this invoice</div>
+            <div style="font-size:.78rem;color:rgba(27,27,26,.5)">Same number &mdash; <span id="inv-edit-no" style="font-family:var(--sans);letter-spacing:.06em;color:var(--navy)"></span></div>
+          </div>
+        </div>
+        <div style="padding:1rem">
+
+          <p style="margin:0 0 .3rem;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5)">Bill to</p>
+          <div style="display:grid;gap:.5rem;margin-bottom:1rem">
+            <input id="inv-edit-name"  placeholder="Name"    style="width:100%;box-sizing:border-box;padding:.55rem;font-size:.9rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:6px;background:#fff">
+            <input id="inv-edit-email" placeholder="Email"   style="width:100%;box-sizing:border-box;padding:.55rem;font-size:.9rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:6px;background:#fff">
+            <input id="inv-edit-phone" placeholder="Phone"   style="width:100%;box-sizing:border-box;padding:.55rem;font-size:.9rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:6px;background:#fff">
+            <textarea id="inv-edit-addr" rows="3" placeholder="Address" style="width:100%;box-sizing:border-box;padding:.55rem;font-size:.9rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:6px;background:#fff;resize:vertical"></textarea>
+          </div>
+
+          <div style="display:flex;gap:.6rem;margin-bottom:1rem">
+            <div style="flex:1"><label style="display:block;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5);margin:0 0 .25rem">Issued</label><input id="inv-edit-issued" type="date" style="width:100%;box-sizing:border-box;padding:.55rem;font-size:.9rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:6px;background:#fff"></div>
+            <div style="flex:1"><label style="display:block;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5);margin:0 0 .25rem">Due</label><input id="inv-edit-due" type="date" style="width:100%;box-sizing:border-box;padding:.55rem;font-size:.9rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:6px;background:#fff"></div>
+          </div>
+
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin:0 0 .3rem">
+            <p style="margin:0;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5)">Lines</p>
+            <button onclick="invEditAdd()" style="padding:.25rem .6rem;font-size:.75rem;border:1px solid rgba(27,27,26,.2);background:#fff;border-radius:5px;cursor:pointer;color:var(--navy)">+ Add line</button>
+          </div>
+          <div id="inv-edit-lines" style="margin-bottom:.8rem"></div>
+
+          <!-- THE TOTAL. Two controls on purpose: one says who decides the
+               number, the other is the number. A single editable field could
+               not tell "he typed this" from "it happens to equal the sum". -->
+          <div style="border:1px solid rgba(27,27,26,.15);border-radius:8px;padding:.7rem;margin-bottom:1rem;background:rgba(27,27,26,.02)">
+            <label style="display:flex;align-items:center;gap:.5rem;font-size:.85rem;color:var(--navy);cursor:pointer">
+              <input id="inv-edit-manual" type="checkbox" onchange="invEditSyncTotal()" style="width:16px;height:16px">
+              Set the total by hand
+            </label>
+            <div style="display:flex;align-items:center;gap:.5rem;margin-top:.55rem">
+              <span style="font-family:var(--serif);font-size:1.1rem;color:var(--navy)">&pound;</span>
+              <input id="inv-edit-total" type="number" step="0.01" style="flex:1;padding:.5rem;font-size:1rem;font-family:var(--serif);border:1px solid rgba(27,27,26,.2);border-radius:6px;text-align:right">
+            </div>
+            <div id="inv-edit-sumnote" style="margin-top:.4rem;font-size:.76rem;color:rgba(27,27,26,.5)"></div>
+          </div>
+
+          <label style="display:block;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5);margin:0 0 .25rem">Notes</label>
+          <textarea id="inv-edit-notes" rows="3" style="width:100%;box-sizing:border-box;padding:.55rem;font-size:.9rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:6px;background:#fff;resize:vertical;margin-bottom:1rem"></textarea>
+
+          <div style="display:flex;gap:.5rem">
+            <button onclick="invEditClose()" style="flex:1;padding:.7rem;font-size:.82rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:6px;border:1px solid rgba(27,27,26,.2);background:#fff;color:var(--navy)">Cancel</button>
+            <button id="inv-edit-save" onclick="invEditSave()" style="flex:2;padding:.7rem;font-size:.82rem;letter-spacing:.1em;text-transform:uppercase;font-family:var(--sans);font-weight:600;cursor:pointer;border-radius:6px;border:2px solid var(--navy);background:transparent;color:var(--navy)">Save Correction</button>
+          </div>
+          <p style="margin:.6rem 0 0;font-size:.75rem;color:rgba(27,27,26,.5);text-align:center">Saving updates this invoice. Download and Send will use the corrected version.</p>
+        </div>
+      </div>
     </div>
 
     <!-- ── New Booking Form Sheet ──────────────────── -->
@@ -6146,6 +6216,7 @@ var _INV_CUST_IDX = {};
 var _INV_SETTINGS_CACHE = null;
 var _INV_PRINT_DATA = null;
 var _INV_DETAIL_ID = null;
+var _INV_EDIT_ROW = null;
 
 function invLoad(){
   document.getElementById('inv-list-view').style.display='';
@@ -6622,6 +6693,8 @@ function invViewDetail(id){
       document.getElementById('inv-det-badge').textContent=isBespoke?'One-off Invoice':'Account Invoice';
       document.getElementById('inv-det-issued').textContent=p.issuedDate||'—';
       document.getElementById('inv-det-total').textContent='£'+(+data.total||0).toFixed(2);
+      _INV_EDIT_ROW=inv;
+      document.getElementById('inv-det-manual').style.display=inv.total_manual?'':'none';
       var recEl=document.getElementById('inv-det-recipient');
       if(isBespoke){
         var r=data.recipient||{};
@@ -6687,6 +6760,129 @@ function invDetailPreview(){invOpenPdf(_INV_DETAIL_ID);}
    the invoice is billed to. Confirms first with the address spelled out: this
    is the one control on the sheet that reaches a customer, and "which address
    did that just go to?" is not a question to be asked afterwards. */
+/* CORRECTING A SAVED INVOICE.
+   The sheet is built from the row that is already loaded, so nothing is
+   fetched again and what he edits is what he was just looking at. The invoice
+   NUMBER is shown and not editable — this is a correction to a document
+   somebody may already have filed, and the number is how they will find it.
+
+   THE TOTAL is two controls, not one: a checkbox that says who decides it, and
+   the figure. Left alone, the box is unticked and the field shows the sum of
+   the lines, greyed, updating as lines are edited. Ticked, the owner owns the
+   number and the lines stop touching it. That distinction is the feature — a
+   single editable total field could not tell "he typed this" from "it happens
+   to equal the sum today". */
+function invEditOpen(){
+  var inv=_INV_EDIT_ROW;
+  if(!inv){ showToast('Open an invoice first'); return; }
+  var bespoke=inv.kind==='bespoke';
+  var items=(inv.line_items||[]).map(function(it){
+    return bespoke
+      ? {date:it.date||'',description:it.description||'',amount:+it.amount||0}
+      : Object.assign({},it,{amount:+it.fare||0});
+  });
+  _INV_EDIT_STATE={inv:inv,bespoke:bespoke,items:items,manual:!!inv.total_manual,total:+inv.total||0};
+  document.getElementById('inv-edit-no').textContent=inv.invoice_no||'';
+  document.getElementById('inv-edit-name').value=inv.recipient_name||'';
+  document.getElementById('inv-edit-email').value=inv.recipient_email||'';
+  document.getElementById('inv-edit-phone').value=inv.recipient_phone||'';
+  document.getElementById('inv-edit-addr').value=inv.recipient_addr||'';
+  document.getElementById('inv-edit-issued').value=inv.issued_date||'';
+  document.getElementById('inv-edit-due').value=inv.due_date||'';
+  document.getElementById('inv-edit-notes').value=inv.notes||'';
+  document.getElementById('inv-edit-manual').checked=!!inv.total_manual;
+  invEditRenderLines();
+  document.getElementById('inv-edit-sheet').style.display='flex';
+}
+function invEditClose(){ document.getElementById('inv-edit-sheet').style.display='none'; }
+var _INV_EDIT_STATE=null;
+
+function invEditAutoSum(){
+  if(!_INV_EDIT_STATE)return 0;
+  return Math.round(_INV_EDIT_STATE.items.reduce(function(s,it){return s+(+it.amount||0);},0)*100)/100;
+}
+function invEditRenderLines(){
+  var st=_INV_EDIT_STATE; if(!st)return;
+  var box=document.getElementById('inv-edit-lines');
+  box.innerHTML=st.items.map(function(it,i){
+    var label=st.bespoke?(it.description||''):((it.pickup||'')+' → '+(it.destination||''));
+    var meta=st.bespoke?(it.date||''):((it.date||'')+(it.ref?'  ·  '+it.ref:''));
+    return '<div style="display:flex;gap:.4rem;align-items:flex-start;padding:.45rem 0;border-bottom:1px solid rgba(27,27,26,.06)">'
+      +'<div style="flex:1;min-width:0">'
+      +(meta?'<div style="font-size:.7rem;color:rgba(27,27,26,.45);margin-bottom:.15rem">'+owEsc(meta)+'</div>':'')
+      +(st.bespoke
+        ?'<textarea data-i="'+i+'" data-f="description" rows="3" style="width:100%;box-sizing:border-box;padding:.4rem;font-size:.85rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:5px;resize:vertical">'+owEsc(label)+'</textarea>'
+        :'<div style="font-size:.85rem;color:var(--navy);padding:.2rem 0">'+owEsc(label)+'</div>')
+      +'</div>'
+      +'<input data-i="'+i+'" data-f="amount" type="number" step="0.01" value="'+(+it.amount||0).toFixed(2)+'" style="width:88px;padding:.4rem;font-size:.85rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:5px;text-align:right">'
+      +'<button onclick="invEditRemove('+i+')" title="Remove this line" style="padding:.35rem .5rem;border:1px solid rgba(27,27,26,.18);background:#fff;border-radius:5px;cursor:pointer;color:#8a1c1c">&times;</button>'
+      +'</div>';
+  }).join('')||'<div style="padding:.8rem;text-align:center;font-size:.85rem;color:rgba(27,27,26,.4)">No lines</div>';
+  box.querySelectorAll('[data-i]').forEach(function(el){
+    el.oninput=function(){
+      var it=st.items[+el.getAttribute('data-i')]; if(!it)return;
+      var f=el.getAttribute('data-f');
+      it[f]= f==='amount' ? (+el.value||0) : el.value;
+      invEditSyncTotal();
+    };
+  });
+  invEditSyncTotal();
+}
+function invEditRemove(i){ _INV_EDIT_STATE.items.splice(i,1); invEditRenderLines(); }
+function invEditAdd(){
+  var st=_INV_EDIT_STATE;
+  if(!st.bespoke){ alert('Journeys come from the bookings on the account. Correct the amounts here, or set the total by hand.'); return; }
+  st.items.push({date:'',description:'',amount:0}); invEditRenderLines();
+}
+/* The total field mirrors the lines while it is theirs, and stops the moment
+   the owner takes it over. */
+function invEditSyncTotal(){
+  var st=_INV_EDIT_STATE; if(!st)return;
+  var manual=document.getElementById('inv-edit-manual').checked;
+  var f=document.getElementById('inv-edit-total');
+  f.disabled=!manual;
+  f.style.background=manual?'#fff':'rgba(27,27,26,.05)';
+  f.style.color=manual?'var(--navy)':'rgba(27,27,26,.45)';
+  if(!manual) f.value=invEditAutoSum().toFixed(2);
+  var note=document.getElementById('inv-edit-sumnote');
+  var sum=invEditAutoSum();
+  note.textContent=manual
+    ? ('The lines add up to £'+sum.toFixed(2)+'. This invoice will show the figure above.')
+    : ('Sum of the '+st.items.length+' line'+(st.items.length===1?'':'s')+' above.');
+  note.style.color=manual?'var(--amber,#6a6a6a)':'rgba(27,27,26,.5)';
+}
+async function invEditSave(){
+  var st=_INV_EDIT_STATE; if(!st)return;
+  var manual=document.getElementById('inv-edit-manual').checked;
+  var typed=parseFloat(document.getElementById('inv-edit-total').value);
+  if(manual&&(isNaN(typed)||typed<0)){ alert('That total is not a number.'); return; }
+  var body={
+    recipient_name:document.getElementById('inv-edit-name').value.trim(),
+    recipient_email:document.getElementById('inv-edit-email').value.trim(),
+    recipient_phone:document.getElementById('inv-edit-phone').value.trim(),
+    recipient_addr:document.getElementById('inv-edit-addr').value.trim(),
+    issued_date:document.getElementById('inv-edit-issued').value.trim(),
+    due_date:document.getElementById('inv-edit-due').value.trim(),
+    notes:document.getElementById('inv-edit-notes').value.trim(),
+    line_items:st.items,
+    total_override: manual ? typed : null
+  };
+  var btn=document.getElementById('inv-edit-save');
+  btn.disabled=true; btn.textContent='Saving…';
+  try{
+    var r=await fetch('/api/invoices/'+st.inv.id,{method:'PATCH',credentials:'include',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var d=await r.json();
+    if(r.ok&&d.ok){
+      showToast(st.inv.invoice_no+' corrected');
+      invEditClose();
+      invViewDetail(st.inv.id);      // reload the sheet from the saved row
+      if(typeof loadInvoices==='function')loadInvoices();
+    } else showToast(d.error||'Could not save');
+  }catch(e){ showToast('Network error'); }
+  btn.disabled=false; btn.textContent='Save Correction';
+}
+
 async function invDetailSend(){
   if(!_INV_DETAIL_ID){showToast('No invoice open');return;}
   var to=(_INV_PRINT_DATA&&_INV_PRINT_DATA.recipientEmail)||'';
