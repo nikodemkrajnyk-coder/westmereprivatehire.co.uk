@@ -1400,12 +1400,11 @@ select:-webkit-autofill:focus{
                journey. Blank or zero and no row appears on the invoice. -->
           <div style="border:1px solid rgba(27,27,26,.15);border-radius:8px;padding:.7rem;margin-bottom:1rem;background:rgba(27,27,26,.02)">
             <div style="display:flex;gap:.7rem;align-items:flex-end">
-              <div style="flex:1.35;min-width:0">
+              <div style="flex:1;min-width:0">
                 <label style="display:block;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5);margin:0 0 .25rem">Fees</label>
                 <div style="display:flex;gap:.4rem;align-items:center">
-                  <input id="inv-edit-fees-label" placeholder="Parking &amp; tolls" oninput="invEditSyncTotal()" style="flex:1;min-width:0;padding:.5rem;font-size:.9rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:6px;background:#fff">
-                  <span style="font-family:var(--serif);font-size:1rem;color:var(--navy)">&pound;</span>
-                  <input id="inv-edit-fees" type="number" step="0.01" placeholder="0.00" oninput="invEditSyncTotal()" style="width:82px;text-align:right;padding:.5rem;font-size:.9rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:6px;background:#fff">
+                  <span style="font-family:var(--serif);font-size:1.1rem;color:var(--navy)">&pound;</span>
+                  <input id="inv-edit-fees" type="number" step="0.01" placeholder="0.00" oninput="invEditSyncTotal()" style="flex:1;min-width:0;text-align:right;padding:.5rem;font-size:1rem;font-family:var(--serif);border:1px solid rgba(27,27,26,.2);border-radius:6px;background:#fff">
                 </div>
               </div>
               <div style="flex:1;min-width:0">
@@ -1416,6 +1415,12 @@ select:-webkit-autofill:focus{
                 </div>
               </div>
             </div>
+            <!-- THE FEE'S LABEL is words, not money, so it gets the width of the
+                 box rather than a slot between two number fields. Squeezed in
+                 beside them on a phone it showed "Park" — he could not read
+                 back what he had typed. The two AMOUNTS stay side by side,
+                 which is the part that had to sit together. -->
+            <input id="inv-edit-fees-label" placeholder="What the fee is for &mdash; e.g. Parking &amp; tolls" oninput="invEditSyncTotal()" style="width:100%;box-sizing:border-box;margin-top:.5rem;padding:.5rem;font-size:.9rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:6px;background:#fff">
             <label style="display:flex;align-items:center;gap:.5rem;font-size:.85rem;color:var(--navy);cursor:pointer;margin-top:.6rem">
               <input id="inv-edit-manual" type="checkbox" onchange="invEditSyncTotal()" style="width:16px;height:16px">
               Set the total by hand

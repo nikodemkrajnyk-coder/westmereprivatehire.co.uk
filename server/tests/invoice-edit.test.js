@@ -573,10 +573,16 @@ test('the fee field sits BESIDE the total, not in a section of its own', () => {
      tidy-up that moves the fee back into its own box undoes the thing he
      asked for and nothing else would notice. */
   const H = read('westmere-owner.html');
-  const start = H.indexOf('id="inv-edit-fees-label"');
+  /* The two AMOUNTS are what must sit together — those are the money. The
+     fee's LABEL is words and gets its own full-width line below them; it was
+     squeezed between the two number fields at first and rendered as "Park" on
+     a phone, which is no use to somebody checking what he typed. */
+  const start = H.indexOf('id="inv-edit-fees"');
   const end = H.indexOf('id="inv-edit-total"');
-  assert.ok(start > 0 && end > 0, 'both fields must exist');
-  assert.ok(end > start, 'the fee comes first, then the total');
+  assert.ok(start > 0 && end > 0, 'both amount fields must exist');
+  assert.ok(end > start, 'the fee amount comes first, then the total');
+  assert.ok(H.indexOf('id="inv-edit-fees-label"') > end,
+    'the label belongs below the amounts, with room to read it');
   const between = H.slice(start, end);
   /* Same box. A bordered <div> between them is a new panel — a bordered
      <input> is just a field, which is why this looks for the tag and not for
