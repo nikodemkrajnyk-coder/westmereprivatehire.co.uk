@@ -90,6 +90,14 @@ const ACCOUNT_ITEMS = [
   { date: '2026-08-07', ref: 'WPH-1002', time: '06:15', pickup: 'Hove Town Hall', destination: 'Heathrow T5', fare: 120 }
 ];
 const rowOf = (id) => db.prepare('SELECT * FROM invoices WHERE id = ?').get(id);
+/* A real month: five journeys, the longest route this business actually runs. */
+const BUSY_MONTH = [
+  { date: '2026-08-03', ref: 'WPH-4001', time: '09:30', pickup: 'Weppons Farm, Chanctonbury Ring Road, Wiston BN44 3DN', destination: 'London Gatwick Airport, South Terminal', flight: 'BA2751', fare: 95 },
+  { date: '2026-08-07', ref: 'WPH-4002', time: '06:15', pickup: 'Brighton Station', destination: 'Heathrow Airport, Terminal 5', fare: 120 },
+  { date: '2026-08-14', ref: 'WPH-4003', time: '14:00', pickup: 'Hove Town Hall', destination: 'London City Airport', fare: 180 },
+  { date: '2026-08-21', ref: 'WPH-4004', time: '11:45', pickup: 'Lewes, East Sussex', destination: 'Southampton Cruise Terminal', fare: 165 },
+  { date: '2026-08-27', ref: 'WPH-4005', time: '05:00', pickup: 'Steyning', destination: 'Stansted Airport', flight: 'FR1042', fare: 210 }
+];
 const itemsOf = (id) => JSON.parse(rowOf(id).line_items_json || '[]');
 
 // ── 1. THE EDIT ITSELF ───────────────────────────────────────────────────
@@ -275,6 +283,33 @@ async function drawn(row) {
   finally { PDFDocument.prototype.text = T; }
   return texts;
 }
+
+/* The same recording, plus the page count and each text's real height — for
+   the questions that are about the SHAPE of the table rather than its words. */
+async function drawnOps(row) {
+  const PDFDocument = require('pdfkit');
+  const ops = { texts: [], page: 1, docs: [] };
+  const seen = (d) => { let i = ops.docs.indexOf(d); if (i < 0) { i = ops.docs.push(d) - 1; ops.page = 1; } return i; };
+  const T = PDFDocument.prototype.text, A = PDFDocument.prototype.addPage;
+  PDFDocument.prototype.text = function (str, x, y, o) {
+    o = o || {};
+    const d = seen(this);
+    if (typeof x === 'number' && typeof y === 'number' && String(str).trim()) {
+      let h = 0;
+      try { h = this.heightOfString(String(str), { width: o.width || 300 }); } catch (_) {}
+      ops.texts.push({ s: String(str), x, y, h, page: ops.page, doc: d });
+    }
+    return T.apply(this, arguments);
+  };
+  PDFDocument.prototype.addPage = function () { ops.page++; return A.apply(this, arguments); };
+  try { await invoicePdf.buildInvoicePdf(invoicePdf.invoiceDataFromRow(row, {})); }
+  finally { PDFDocument.prototype.text = T; PDFDocument.prototype.addPage = A; }
+  // buildInvoicePdf draws twice — a measuring probe, then the real document.
+  const last = ops.docs.length - 1;
+  ops.texts = ops.texts.filter((t) => t.doc === last);
+  ops.page = ops.texts.reduce((m, t) => Math.max(m, t.page), 1);
+  return ops;
+}
 const labelFor = (texts, label) => {
   const l = texts.filter((t) => t.s === label).sort((a, b) => b.y - a.y)[0];
   if (!l) return null;
@@ -283,43 +318,117 @@ const labelFor = (texts, label) => {
   return v ? v.s : null;
 };
 
-for (const kind of ['bespoke', 'account']) {
-  const ITEMS = kind === 'bespoke' ? BESPOKE_ITEMS : ACCOUNT_ITEMS;   // both sum to 215
+/* TWO WAYS IN, ONE NUMBER OUT.
+   A BESPOKE invoice has one fee for the whole document, typed once. An ACCOUNT
+   invoice's fee is the sum of what was paid out on each trip, typed beside each
+   journey's fare — the owner wanted each trip to show what it carried. They are
+   not two mechanisms that both add to the total: on an account invoice the
+   stored `fees` is DERIVED from the rows and a directly-supplied figure is
+   ignored, so no arrangement of the two can bill the same parking twice. */
+test('BESPOKE: one fee for the document, typed once', async () => {
+  const inv = seed('bespoke', BESPOKE_ITEMS);            // lines sum to 215
+  const r = await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
+    body: { fees: 18.5, fees_label: 'Parking & tolls' } });
+  assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
+  const after = rowOf(inv.id);
+  assert.strictEqual(after.fees, 18.5);
+  assert.strictEqual(after.fees_label, 'Parking & tolls');
+  assert.strictEqual(after.total, 233.5, '215 + 18.50');
+  const texts = await drawn(after);
+  assert.strictEqual(labelFor(texts, 'Parking & tolls'), '£18.50', 'the fees row is not on the page');
+  assert.strictEqual(labelFor(texts, 'Subtotal'), null, 'and still no subtotal lead-in');
+  assert.ok(texts.some((t) => t.s === '£233.50'), 'the total is the sum of the two');
+});
 
-  test(kind + ': a fees row renders with its label and is added to the total', async () => {
-    const inv = seed(kind, ITEMS);
-    const r = await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
-      body: { fees: 18.5, fees_label: 'Parking & tolls' } });
-    assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
-    const after = rowOf(inv.id);
-    assert.strictEqual(after.fees, 18.5);
-    assert.strictEqual(after.fees_label, 'Parking & tolls');
-    assert.strictEqual(after.total, 233.5, 'the fees are part of the bill: 215 + 18.50');
-    assert.strictEqual(r.body.lineSum, 215, 'and the response separates the two');
+test('ACCOUNT: each trip shows the fee paid on it', async () => {
+  const inv = seed('account', ACCOUNT_ITEMS);            // two journeys, 95 + 120
+  const r = await call('patch', '/invoices/:id', { params: { id: String(inv.id) }, body: {
+    line_items: [Object.assign({}, ACCOUNT_ITEMS[0], { fee: 10 }),
+                 Object.assign({}, ACCOUNT_ITEMS[1], { fee: 8.5 })] }});
+  assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
+  const items = itemsOf(inv.id);
+  assert.strictEqual(items[0].fee, 10, "the fee rides on the trip it was paid on");
+  assert.strictEqual(items[1].fee, 8.5);
+  const after = rowOf(inv.id);
+  assert.strictEqual(after.fees, 18.5, 'and the invoice fee is the sum of them');
+  assert.strictEqual(after.total, 233.5, '215 of fares + 18.50 of fees');
+  assert.strictEqual(r.body.perTripFees, 18.5);
+  assert.strictEqual(r.body.feesDerived, true, 'the response says where the figure came from');
 
-    const texts = await drawn(after);
-    assert.strictEqual(labelFor(texts, 'Parking & tolls'), '£18.50', 'the fees row is not on the page');
-    /* ONE ROW, and only one. This used to require a Subtotal above the fees so
-       the total could be added up from the page. The owner asked for it gone:
-       the journeys are the table immediately above, already itemised, and a
-       third number restating their sum said nothing the page did not. */
-    assert.strictEqual(labelFor(texts, 'Subtotal'), null,
-      'there must be no Subtotal lead-in — the fees row stands alone');
-    assert.strictEqual(labelFor(texts, 'Journeys'), null, 'nor a "Journeys" line');
-    assert.ok(texts.some((t) => t.s === '£233.50'), 'and the total shows the sum of the two');
-    const above = texts.filter((t) => /^£(215|233)\.\d\d$/.test(t.s) || t.s === '£18.50');
-    assert.ok(!above.some((t) => t.s === '£215.00'),
-      'the line sum must not be printed anywhere in the totals area');
-  });
+  /* On the page: a FEE column, each row carrying its own figure. */
+  const texts = await drawn(after);
+  assert.ok(texts.some((t) => t.s === 'FEE'), 'the table needs a FEE heading');
+  assert.ok(texts.some((t) => t.s === '£10.00'), "the first trip's fee");
+  assert.ok(texts.some((t) => t.s === '£8.50'), "the second trip's fee");
+  assert.ok(texts.some((t) => t.s === '£233.50'), 'and the total includes them');
+});
 
-  test(kind + ': zero fees render nothing at all', async () => {
-    const inv = seed(kind, ITEMS);
-    const texts = await drawn(rowOf(inv.id));
-    assert.strictEqual(labelFor(texts, 'Fees'), null, 'a zero-fee invoice must not print a fees row');
-    assert.strictEqual(labelFor(texts, 'Subtotal'), null, 'and no lead-in of any kind');
-    assert.ok(texts.some((t) => t.s === '£215.00'), 'just the total');
-  });
-}
+test('ACCOUNT: NO DOUBLE COUNTING — a directly-set fee is ignored', async () => {
+  /* The failure this design exists to make impossible. If both the per-trip
+     fees and a typed invoice fee could reach the total, a month with £18.50 of
+     parking on its rows and £18.50 in the box would bill £37. */
+  const inv = seed('account', ACCOUNT_ITEMS);
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) }, body: {
+    line_items: [Object.assign({}, ACCOUNT_ITEMS[0], { fee: 10 }),
+                 Object.assign({}, ACCOUNT_ITEMS[1], { fee: 8.5 })],
+    fees: 18.5, fees_label: 'Typed as well' }});
+  const after = rowOf(inv.id);
+  assert.strictEqual(after.fees, 18.5, 'the rows decide, and they say 18.50 — not 37');
+  assert.strictEqual(after.total, 233.5, 'the parking must be charged once');
+});
+
+test('ACCOUNT: a trip with no fee shows none', async () => {
+  const inv = seed('account', ACCOUNT_ITEMS);
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) }, body: {
+    line_items: [Object.assign({}, ACCOUNT_ITEMS[0], { fee: 10 }),
+                 Object.assign({}, ACCOUNT_ITEMS[1], { fee: 0 })] }});
+  const texts = await drawn(rowOf(inv.id));
+  assert.ok(texts.some((t) => t.s === '£10.00'), 'the trip that carried one still shows it');
+  const zeros = texts.filter((t) => t.s === '£0.00');
+  assert.deepStrictEqual(zeros, [], 'a fee-free trip must print nothing, not £0.00');
+  assert.strictEqual(rowOf(inv.id).fees, 10);
+});
+
+test('ACCOUNT: no fees anywhere and the column is empty, the row absent', async () => {
+  const inv = seed('account', ACCOUNT_ITEMS);
+  const texts = await drawn(rowOf(inv.id));
+  assert.ok(texts.some((t) => t.s === 'FEE'), 'the heading stays — the column is part of the table');
+  assert.strictEqual(labelFor(texts, 'Fees (parking & tolls)'), null, 'but no totals row');
+  assert.strictEqual(labelFor(texts, 'Subtotal'), null);
+  assert.ok(texts.some((t) => t.s === '£215.00'), 'just the total');
+});
+
+test('the per-trip fee survives an unrelated edit', async () => {
+  const inv = seed('account', ACCOUNT_ITEMS);
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) }, body: {
+    line_items: [Object.assign({}, ACCOUNT_ITEMS[0], { fee: 10 }), ACCOUNT_ITEMS[1]] }});
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) }, body: { notes: 'Address corrected.' } });
+  assert.strictEqual(itemsOf(inv.id)[0].fee, 10, 'an edit that says nothing about fees must not drop them');
+  assert.strictEqual(rowOf(inv.id).fees, 10);
+});
+
+test('a manual total still wins over the per-trip fees', async () => {
+  const inv = seed('account', ACCOUNT_ITEMS);
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) }, body: {
+    line_items: [Object.assign({}, ACCOUNT_ITEMS[0], { fee: 10 }),
+                 Object.assign({}, ACCOUNT_ITEMS[1], { fee: 8.5 })],
+    total_override: 200 }});
+  const after = rowOf(inv.id);
+  assert.strictEqual(after.total, 200, 'the figure he set');
+  assert.strictEqual(after.fees, 18.5, 'and the rows still show what was paid out');
+  const texts = await drawn(after);
+  assert.ok(texts.some((t) => t.s === '£200.00'), 'the invoice shows the override');
+  assert.ok(texts.some((t) => t.s === '£10.00'), 'with the per-trip fees still on their rows');
+});
+
+test('a corrected per-trip fee does not serve a stale PDF', async () => {
+  const inv = seed('account', ACCOUNT_ITEMS);
+  const before = invoicePdf.invoiceCachePath(inv.invoice_no, rowOf(inv.id));
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) }, body: {
+    line_items: [Object.assign({}, ACCOUNT_ITEMS[0], { fee: 10 }), ACCOUNT_ITEMS[1]] }});
+  assert.notStrictEqual(before, invoicePdf.invoiceCachePath(inv.invoice_no, rowOf(inv.id)),
+    'the fee is part of the line items, which are part of the content hash');
+});
 
 test('an unlabelled fee still says what it is', async () => {
   const inv = seed('bespoke', BESPOKE_ITEMS);
@@ -602,6 +711,165 @@ test('the fee is a field on the invoice, never a line item', () => {
   const save = /async function invEditSave\(\)\{[\s\S]*?\n\}/.exec(H)[0];
   assert.ok(/fees:/.test(save) && /fees_label:/.test(save), 'the save must send both');
   assert.ok(!/line_items[\s\S]{0,200}Parking/.test(save), 'and never smuggle it into the lines');
+});
+
+test('adding the FEE column did not push the foot matter onto a second page', async () => {
+  /* It did, the first time. A fee column has to come out of somewhere, and
+     taking it all from the journey made the longest routes wrap; with rows
+     sized to their contents that grew the table enough to send the notes and
+     the bank details to page two. Caught by rendering it and counting pages,
+     not by any assertion that existed. */
+  const inv = seed('account', BUSY_MONTH);
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
+    body: { line_items: BUSY_MONTH.map((b, i) => Object.assign({}, b, { fee: [10, 7, 14.2, 0, 13.5][i] })) } });
+  const ops = await drawnOps(rowOf(inv.id));
+  assert.strictEqual(ops.page, 1,
+    'a five-journey month with fees must still fit one page — it went to ' + ops.page);
+  const journeys = ops.texts.filter((t) => /→/.test(t.s));
+  const wrapped = journeys.filter((t) => t.h > 14).map((t) => t.s);
+  assert.deepStrictEqual(wrapped, [],
+    'the journey column is too narrow — these wrapped: ' + wrapped.join(' | '));
+});
+
+// ── THE MIGRATION ────────────────────────────────────────────────────────
+console.log('\nCarrying an old lump fee onto the first trip');
+
+/* Run the boot migration against a throwaway database seeded to look like the
+   live one did before this change: account invoices with a lump fee and no
+   per-trip fees anywhere. */
+function runFeeMigration() {
+  const rows = db.prepare("SELECT id, invoice_no, fees, total, line_items_json FROM invoices WHERE kind = 'account' AND fees > 0").all();
+  let moved = 0;
+  const set = db.prepare('UPDATE invoices SET line_items_json = ? WHERE id = ?');
+  for (const r of rows) {
+    let items; try { items = JSON.parse(r.line_items_json || '[]'); } catch (_) { continue; }
+    if (!Array.isArray(items) || !items.length) continue;
+    if (items.some((it) => Number(it && it.fee) > 0)) continue;
+    items[0] = Object.assign({}, items[0], { fee: Math.round(Number(r.fees) * 100) / 100 });
+    const feeSum = Math.round(items.reduce((t, it) => t + (Number(it && it.fee) || 0), 0) * 100) / 100;
+    const fareSum = Math.round(items.reduce((t, it) => t + (Number(it && it.fare) || 0), 0) * 100) / 100;
+    if (Math.round((fareSum + feeSum) * 100) / 100 !== Math.round(Number(r.total) * 100) / 100) continue;
+    set.run(JSON.stringify(items), r.id);
+    moved++;
+  }
+  return moved;
+}
+
+test('the shipped migration and this one are the same code', () => {
+  /* A copy of a migration in a test proves the copy works. This pins the two
+     together on the parts that decide what happens: which rows are chosen, the
+     skip when a fee is already there, and the equality check before writing. */
+  const src = read('server/db.js').replace(/\/\*[\s\S]*?\*\//g, ' ');
+  assert.ok(/kind = 'account' AND fees > 0/.test(src), 'it must select only account invoices with a fee');
+  assert.ok(/items\.some\(\(it\) => Number\(it && it\.fee\) > 0\)\) continue/.test(src),
+    'and skip any invoice whose rows already carry one — that is what makes it idempotent');
+  assert.ok(/if \(derived !== Math\.round\(Number\(r\.total\) \* 100\) \/ 100\)/.test(src),
+    'and refuse to write unless the derived total matches the one already stored');
+  assert.ok(!/UPDATE invoices SET .*total/.test(src.slice(src.indexOf('THE LUMP FEE MOVES') > 0 ? 0 : 0)) ||
+            !/SET line_items_json = \?, total/.test(src),
+    'the migration must never write a total');
+});
+
+test('an old lump fee lands on the first trip, and the total does not move', () => {
+  const inv = seed('account', ACCOUNT_ITEMS);                       // fares 215
+  db.prepare("UPDATE invoices SET fees = 24.20, fees_label = 'Parking', total = 239.20 WHERE id = ?").run(inv.id);
+  const before = rowOf(inv.id);
+  assert.strictEqual(before.total, 239.2);
+
+  assert.strictEqual(runFeeMigration(), 1, 'one invoice should have been carried across');
+  const after = rowOf(inv.id);
+  assert.strictEqual(after.total, 239.2, 'THE TOTAL MUST NOT MOVE');
+  assert.strictEqual(after.fees, 24.2, 'nor the stored fee');
+  const items = itemsOf(inv.id);
+  assert.strictEqual(items[0].fee, 24.2, 'the lump now sits on the first trip');
+  assert.strictEqual(Number(items[1].fee) || 0, 0, 'and only the first');
+});
+
+test('re-saving a migrated invoice keeps the fee and the total', async () => {
+  const inv = seed('account', ACCOUNT_ITEMS);
+  db.prepare("UPDATE invoices SET fees = 24.20, total = 239.20 WHERE id = ?").run(inv.id);
+  runFeeMigration();
+  // the ordinary edit that would have dropped it to zero before the migration
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) }, body: { notes: 'Corrected address.' } });
+  const after = rowOf(inv.id);
+  assert.strictEqual(after.fees, 24.2, 'the derived figure reproduces the lump');
+  assert.strictEqual(after.total, 239.2, 'and the total is what it always was');
+});
+
+test('running it twice changes nothing', () => {
+  const inv = seed('account', ACCOUNT_ITEMS);
+  db.prepare("UPDATE invoices SET fees = 24.20, total = 239.20 WHERE id = ?").run(inv.id);
+  assert.strictEqual(runFeeMigration(), 1);
+  const once = rowOf(inv.id).line_items_json;
+  assert.strictEqual(runFeeMigration(), 0, 'the second pass must find nothing to do');
+  assert.strictEqual(rowOf(inv.id).line_items_json, once, 'and touch nothing');
+  assert.strictEqual(itemsOf(inv.id)[0].fee, 24.2, 'not 48.40 — that is the double-apply this guards');
+});
+
+test('an invoice whose figures do not add up is left alone', async () => {
+  /* The catch that stops a bill quietly changing value. This invoice's stored
+     total does not equal its fares plus its fee — an old row, or one with a
+     manual total. Moving the fee would make the next save derive a different
+     number, so it is not moved. */
+  const inv = seed('account', ACCOUNT_ITEMS);                     // fares 215
+  db.prepare("UPDATE invoices SET fees = 24.20, total = 300 WHERE id = ?").run(inv.id);
+  const moved = runFeeMigration();
+  assert.strictEqual(moved, 0, 'it must refuse: 215 + 24.20 is not 300');
+  assert.strictEqual(Number(itemsOf(inv.id)[0].fee) || 0, 0, 'the rows are untouched');
+  assert.strictEqual(rowOf(inv.id).total, 300, 'and the total is exactly what it was');
+});
+
+test('it leaves alone what it should', () => {
+  // bespoke — its fee is a single figure for the document and stays one
+  const b = seed('bespoke', BESPOKE_ITEMS);
+  db.prepare("UPDATE invoices SET fees = 18.50, total = 233.50 WHERE id = ?").run(b.id);
+  // an account invoice with no fee at all
+  const none = seed('account', ACCOUNT_ITEMS);
+  // an account invoice whose rows already carry fees
+  const already = seed('account', ACCOUNT_ITEMS.map((it, i) => Object.assign({}, it, { fee: i === 0 ? 5 : 0 })));
+  db.prepare("UPDATE invoices SET fees = 5 WHERE id = ?").run(already.id);
+
+  runFeeMigration();
+  assert.strictEqual(Number(itemsOf(b.id)[0].fee) || 0, 0, 'a bespoke invoice must not be touched');
+  assert.strictEqual(rowOf(b.id).fees, 18.5, 'and keeps its single figure');
+  assert.strictEqual(Number(itemsOf(none.id)[0].fee) || 0, 0, 'a fee-free invoice gains nothing');
+  assert.strictEqual(itemsOf(already.id)[0].fee, 5, 'and one already carried across is left as it is');
+});
+
+test('an invoice with no line items is skipped, not crashed on', () => {
+  const inv = seed('account', ACCOUNT_ITEMS);
+  db.prepare("UPDATE invoices SET fees = 10, line_items_json = '[]' WHERE id = ?").run(inv.id);
+  assert.doesNotThrow(() => runFeeMigration());
+  assert.strictEqual(rowOf(inv.id).line_items_json, '[]', 'nothing invented for it');
+  db.prepare("UPDATE invoices SET line_items_json = 'not json' WHERE id = ?").run(inv.id);
+  assert.doesNotThrow(() => runFeeMigration(), 'malformed JSON must not stop the boot');
+});
+
+test('the edit form has a fee field on every journey, beside its fare', () => {
+  const H = read('westmere-owner.html');
+  const fn = /function invEditRenderLines\(\)\{[\s\S]*?\n\}/.exec(H)[0];
+  assert.ok(/data-f="fee"/.test(fn), 'no per-journey fee input');
+  assert.ok(/data-f="amount"/.test(fn), 'and the fare is still there');
+  assert.ok(fn.indexOf('data-f="fee"') < fn.indexOf('data-f="amount"'),
+    'the fee sits beside the fare, before it in the row');
+  assert.ok(/st\.bespoke\?''/.test(fn.replace(/\s/g, '')),
+    'and only on an account invoice — a bespoke one has a single fee for the document');
+  const sync = /function invEditSyncTotal\(\)\{[\s\S]*?\n\}/.exec(H)[0];
+  assert.ok(/fbox\.disabled=true/.test(sync.replace(/\s/g, '')),
+    'the single fee box must be read-only on an account invoice, or the two figures can disagree');
+});
+
+test('the client adds the fees up the same way the server does', () => {
+  /* Two independent sums of the same money is how a screen and a document end
+     up disagreeing about what is owed. */
+  const H = read('westmere-owner.html');
+  assert.ok(/function invEditPerTripFees\(\)/.test(H), 'the client needs the per-trip sum');
+  const fees = /function invEditFees\(\)\{[\s\S]*?\n\}/.exec(H)[0];
+  assert.ok(/!st\.bespoke\)\s*return invEditPerTripFees\(\)/.test(fees.replace(/\s+/g, ' ')),
+    'an account invoice must take its fees from the trips, not the box');
+  const src = read('server/api.js').replace(/\/\*[\s\S]*?\*\//g, ' ');
+  assert.ok(/const perTripFees = /.test(src) && /if \(isAccount\) \{\s*fees = perTripFees;/.test(src),
+    'and the server must derive it the same way');
 });
 
 test('this guardrail is wired into npm test', () => {

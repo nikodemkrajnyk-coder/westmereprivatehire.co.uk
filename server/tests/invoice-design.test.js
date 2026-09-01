@@ -474,8 +474,8 @@ console.log('\nThe cache cannot outlive the template — again');
    So the layout is content-hashed. Change how the page is drawn and this fails,
    with the two things to do written in the message. It cannot tell a
    good change from a bad one; it can only refuse to let one through quietly. */
-const LAYOUT_HASH = 'bb6af0b1a783';
-const LAYOUT_VERSION = 8;   // 8: the fees row stands alone, no subtotal lead-in
+const LAYOUT_HASH = '55ff72411b12';
+const LAYOUT_VERSION = 9;   // 9: a FEE column on each journey row
                             // 6: the two greys darkened for contrast
                             // 5: rows and their zebra bands grow to the wrapped text
 

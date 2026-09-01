@@ -589,6 +589,65 @@ function migrate() {
   } catch (e) {
     console.error('[DB] invoice access_token migration failed:', e.message);
   }
+
+  /* THE LUMP FEE MOVES ONTO THE FIRST TRIP.
+     An ACCOUNT invoice's fees used to be one figure typed for the whole month;
+     they are now the sum of what was paid out on each journey, and the stored
+     figure is DERIVED from the rows. Which means an old invoice carrying a
+     lump £24.20 with no fee on any row would drop to £0 the first time the
+     owner re-saved it — his money, quietly gone, on a document somebody has
+     already filed.
+
+     So the lump is carried onto the first line item, where the new arithmetic
+     will find it. The invoice's own `fees` and `total` are NOT touched: the
+     sum of the rows now equals what the lump said, so the derived figure comes
+     out identical and the total never moves. Nothing is recalculated here —
+     the number is moved, not re-derived.
+
+     IDEMPOTENT BY ITS OWN TEST. It skips any invoice where a row already
+     carries a fee, so a second boot finds nothing to do; and it only ever
+     looks at ACCOUNT invoices with a positive fee and at least one line.
+     GUARDRAIL: server/tests/invoice-edit.test.js */
+  try {
+    const cols = db.prepare('PRAGMA table_info(invoices)').all().map((c) => c.name);
+    if (cols.includes('fees')) {
+      const rows = db.prepare(
+        "SELECT id, invoice_no, fees, total, line_items_json FROM invoices " +
+        "WHERE kind = 'account' AND fees > 0").all();
+      let moved = 0;
+      const set = db.prepare('UPDATE invoices SET line_items_json = ? WHERE id = ?');
+      for (const r of rows) {
+        let items;
+        try { items = JSON.parse(r.line_items_json || '[]'); } catch (_) { continue; }
+        if (!Array.isArray(items) || !items.length) continue;
+        // Already carried across (or the owner has since typed per-trip fees).
+        if (items.some((it) => Number(it && it.fee) > 0)) continue;
+        items[0] = Object.assign({}, items[0], { fee: Math.round(Number(r.fees) * 100) / 100 });
+        /* THE SAFETY CATCH, and it earns its place.
+           After the move this invoice's total will be derived as fares + the
+           sum of the row fees. If that does not come to the total already
+           stored — an old invoice whose figures have drifted, or one with a
+           manual total — the move would silently change what is owed the next
+           time it is saved. Those are left exactly as they are: a fee that has
+           to be re-entered by hand is a nuisance; a bill that quietly changes
+           value is not. */
+        const feeSum = Math.round(items.reduce((t, it) => t + (Number(it && it.fee) || 0), 0) * 100) / 100;
+        const fareSum = Math.round(items.reduce((t, it) => t + (Number(it && it.fare) || 0), 0) * 100) / 100;
+        const derived = Math.round((fareSum + feeSum) * 100) / 100;
+        if (derived !== Math.round(Number(r.total) * 100) / 100) {
+          console.warn('[DB] fee migration skipped ' + r.invoice_no +
+                       ' — would derive \u00a3' + derived.toFixed(2) + ' against a stored \u00a3' +
+                       Number(r.total).toFixed(2));
+          continue;
+        }
+        set.run(JSON.stringify(items), r.id);
+        moved++;
+      }
+      if (moved) console.log('[DB] Carried the lump fee onto the first trip of ' + moved + ' account invoice(s)');
+    }
+  } catch (e) {
+    console.error('[DB] per-trip fee migration failed:', e.message);
+  }
   } catch (e) {
     console.error('[DB] invoices table creation failed:', e.message);
   }

@@ -6805,7 +6805,7 @@ function invEditOpen(){
   var items=(inv.line_items||[]).map(function(it){
     return bespoke
       ? {date:it.date||'',description:it.description||'',amount:+it.amount||0}
-      : Object.assign({},it,{amount:+it.fare||0});
+      : Object.assign({},it,{amount:+it.fare||0,fee:+it.fee||0});
   });
   _INV_EDIT_STATE={inv:inv,bespoke:bespoke,items:items,manual:!!inv.total_manual,total:+inv.total||0};
   document.getElementById('inv-edit-no').textContent=inv.invoice_no||'';
@@ -6829,7 +6829,19 @@ function invEditLineSum(){
   if(!_INV_EDIT_STATE)return 0;
   return Math.round(_INV_EDIT_STATE.items.reduce(function(s,it){return s+(+it.amount||0);},0)*100)/100;
 }
+/* THE FEES, FROM ONE PLACE OR THE OTHER — never both.
+   On an ACCOUNT invoice they are the sum of what was paid out on each trip,
+   typed beside each journey's fare. On a BESPOKE one there is a single figure
+   for the whole document. The server derives the account figure the same way
+   and ignores anything sent in the single field, so no arrangement of the two
+   can charge the same parking twice. */
+function invEditPerTripFees(){
+  var st=_INV_EDIT_STATE; if(!st)return 0;
+  return Math.round(st.items.reduce(function(t,it){return t+(+it.fee||0);},0)*100)/100;
+}
 function invEditFees(){
+  var st=_INV_EDIT_STATE;
+  if(st&&!st.bespoke) return invEditPerTripFees();
   var v=parseFloat(document.getElementById('inv-edit-fees').value);
   return (isNaN(v)||v<0)?0:Math.round(v*100)/100;
 }
@@ -6841,22 +6853,33 @@ function invEditRenderLines(){
   box.innerHTML=st.items.map(function(it,i){
     var label=st.bespoke?(it.description||''):((it.pickup||'')+' → '+(it.destination||''));
     var meta=st.bespoke?(it.date||''):((it.date||'')+(it.ref?'  ·  '+it.ref:''));
-    return '<div style="display:flex;gap:.4rem;align-items:flex-start;padding:.45rem 0;border-bottom:1px solid rgba(27,27,26,.06)">'
-      +'<div style="flex:1;min-width:0">'
+    var NUM='width:100%;box-sizing:border-box;padding:.4rem;font-size:.85rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:5px;text-align:right';
+    var CAP='font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(27,27,26,.4);text-align:right;margin-bottom:.1rem';
+    /* THE JOURNEY GETS THE WIDTH. On an account invoice it is text he cannot
+       edit — it comes from the booking — so it belongs on its own line above
+       the figures, not squeezed into a column beside them. Boxed in at about
+       two hundred pixels a real route wrapped to nine lines and the row became
+       taller than the screen. The two NUMBERS are what he is here to type, and
+       they sit together on the line below. */
+    return '<div style="padding:.5rem 0;border-bottom:1px solid rgba(27,27,26,.06)">'
       +(meta?'<div style="font-size:.7rem;color:rgba(27,27,26,.45);margin-bottom:.15rem">'+owEsc(meta)+'</div>':'')
       +(st.bespoke
-        ?'<textarea data-i="'+i+'" data-f="description" rows="3" style="width:100%;box-sizing:border-box;padding:.4rem;font-size:.85rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:5px;resize:vertical">'+owEsc(label)+'</textarea>'
-        :'<div style="font-size:.85rem;color:var(--navy);padding:.2rem 0">'+owEsc(label)+'</div>')
-      +'</div>'
-      +'<input data-i="'+i+'" data-f="amount" type="number" step="0.01" value="'+(+it.amount||0).toFixed(2)+'" style="width:88px;padding:.4rem;font-size:.85rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:5px;text-align:right">'
-      +'<button onclick="invEditRemove('+i+')" title="Remove this line" style="padding:.35rem .5rem;border:1px solid rgba(27,27,26,.18);background:#fff;border-radius:5px;cursor:pointer;color:#8a1c1c">&times;</button>'
-      +'</div>';
+        ?'<textarea data-i="'+i+'" data-f="description" rows="3" style="width:100%;box-sizing:border-box;padding:.4rem;font-size:.85rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:5px;resize:vertical;margin-bottom:.4rem">'+owEsc(label)+'</textarea>'
+        :'<div style="font-size:.88rem;color:var(--navy);line-height:1.35;margin-bottom:.4rem">'+owEsc(label)+'</div>')
+      +'<div style="display:flex;gap:.4rem;align-items:flex-end;justify-content:flex-end">'
+      +(st.bespoke?''
+        :'<div style="width:86px"><div style="'+CAP+'">Fee</div>'
+         +'<input data-i="'+i+'" data-f="fee" type="number" step="0.01" placeholder="0.00" value="'+((+it.fee>0)?(+it.fee).toFixed(2):'')+'" style="'+NUM+'"></div>')
+      +'<div style="width:96px"><div style="'+CAP+'">'+(st.bespoke?'Amount':'Fare')+'</div>'
+       +'<input data-i="'+i+'" data-f="amount" type="number" step="0.01" value="'+(+it.amount||0).toFixed(2)+'" style="'+NUM+'"></div>'
+      +'<button onclick="invEditRemove('+i+')" title="Remove this line" style="padding:.4rem .55rem;border:1px solid rgba(27,27,26,.18);background:#fff;border-radius:5px;cursor:pointer;color:#8a1c1c">&times;</button>'
+      +'</div></div>';
   }).join('')||'<div style="padding:.8rem;text-align:center;font-size:.85rem;color:rgba(27,27,26,.4)">No lines</div>';
   box.querySelectorAll('[data-i]').forEach(function(el){
     el.oninput=function(){
       var it=st.items[+el.getAttribute('data-i')]; if(!it)return;
       var f=el.getAttribute('data-f');
-      it[f]= f==='amount' ? (+el.value||0) : el.value;
+      it[f]= (f==='amount'||f==='fee') ? (+el.value||0) : el.value;
       invEditSyncTotal();
     };
   });
@@ -6888,10 +6911,26 @@ function invEditSyncTotal(){
     ? ('The invoice adds up to £'+sum.toFixed(2)+' ('+breakdown+'). It will show the figure above.')
     : (breakdown+'.');
   note.style.color=manual?'var(--amber,#6a6a6a)':'rgba(27,27,26,.5)';
+  /* The single fee box belongs to a BESPOKE invoice. On an account invoice the
+     figure comes from the rows, so the box shows the sum and is not typeable —
+     two editable routes to one number is how they end up disagreeing. */
   var fnote=document.getElementById('inv-edit-feesnote');
-  fnote.textContent = fees>0
-    ? 'Shown on the invoice as a row above the total.'
-    : 'Leave blank for none — no row is printed.';
+  var fbox=document.getElementById('inv-edit-fees');
+  var flab=document.getElementById('inv-edit-fees-label');
+  if(st.bespoke){
+    fbox.disabled=false; fbox.style.background='#fff'; fbox.style.color='var(--navy)';
+    flab.style.display='';
+    fnote.textContent = fees>0 ? 'Shown on the invoice as a row above the total.'
+                               : 'Leave blank for none — no row is printed.';
+  } else {
+    fbox.disabled=true; fbox.value=fees>0?fees.toFixed(2):'';
+    fbox.style.background='rgba(27,27,26,.05)'; fbox.style.color='rgba(27,27,26,.45)';
+    flab.style.display='none';
+    var n=st.items.filter(function(it){return +it.fee>0;}).length;
+    fnote.textContent = fees>0
+      ? ('Added up from the '+n+' trip'+(n===1?'':'s')+' with a fee above.')
+      : 'Type a fee beside any trip that carried one.';
+  }
 }
 async function invEditSave(){
   var st=_INV_EDIT_STATE; if(!st)return;
@@ -6906,7 +6945,7 @@ async function invEditSave(){
     issued_date:document.getElementById('inv-edit-issued').value.trim(),
     due_date:document.getElementById('inv-edit-due').value.trim(),
     notes:document.getElementById('inv-edit-notes').value.trim(),
-    line_items:st.items,
+    line_items:st.items,          // each carries its own fee on an account invoice
     fees: invEditFees(),
     fees_label: document.getElementById('inv-edit-fees-label').value.trim(),
     total_override: manual ? typed : null

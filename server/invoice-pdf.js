@@ -105,7 +105,8 @@ function fmtDate(d) {
    VISIBLE design changes; nothing else needs to be cleared, and the owner's
    existing files are left alone rather than deleted.
    GUARDRAIL: server/tests/invoice-paths.test.js */
-const TEMPLATE_VERSION = 8;   // 8: the fees row stands alone — no subtotal lead-in
+const TEMPLATE_VERSION = 9;   // 9: a FEE column — each trip shows what was paid out on it
+                              // 8: the fees row stands alone — no subtotal lead-in
                               // 7: a fees row above the total
                               // 6: contrast — the two greys darkened to 7:1+ on white and tint
                               // 5: row-fit — rows and their bands grow to the wrapped text
@@ -525,10 +526,26 @@ function drawInvoice(doc, data, slack) {
 
   } else {
     // --- Account: Date/Ref | Journey | Fare ---
-    const DW = 132;   // date column — wider, the date is now words not digits
-    const FW = 66;    // fare column
-    const JW = CW - DW - FW - 14;
+    /* WIDTHS RE-CUT TO MAKE ROOM. A fee column has to come out of somewhere,
+       and taking it all from the journey made the longest routes wrap — which,
+       with rows now sized to their contents, grew the table enough to push the
+       notes and the bank details onto a second page. Measured rather than
+       guessed: the widest real journey on a busy month is 267pt, the date
+       needs 73 and the reference 81, so the date column gives up what it was
+       not using and the fare and fee columns are trimmed to fit two figures. */
+    const DW = 100;   // date / ref column — the reference is the wider of the two at 81pt
+    const FW = 60;    // fare column
+    /* A COLUMN OF ITS OWN FOR THE FEE.
+       The owner wants each trip to show what was paid out on it. It could have
+       been a note under the journey, like the flight tag — but a fee is money,
+       and money that is ADDED to the fare rather than included in it. Written
+       as prose beside a fare it is ambiguous ("is the £95 with or without the
+       parking?"); in a headed column beside FARE it is not. Blank when there
+       is none, so a month with no parking looks exactly as it did. */
+    const EW = 42;    // fee column
+    const JW = CW - DW - FW - EW - 20;   // 269pt — clear of the 267pt worst case
     const JX = M + DW + 7;
+    const EX = PAGE_W - M - FW - EW;
     const FX = PAGE_W - M - FW;
 
     /* A month long enough to run past the bottom of the page continues on the
@@ -541,6 +558,8 @@ function drawInvoice(doc, data, slack) {
          .text('DATE / REF', M + 8, y + 7, { characterSpacing: 0.8, lineBreak: false });
       doc.font(BOLD).fontSize(8).fillColor(MUTED)
          .text('JOURNEY', JX, y + 7, { characterSpacing: 0.8, lineBreak: false });
+      doc.font(BOLD).fontSize(8).fillColor(MUTED)
+         .text('FEE', EX, y + 7, { width: EW - 6, align: 'right', characterSpacing: 0.8, lineBreak: false });
       doc.font(BOLD).fontSize(8).fillColor(MUTED)
          .text('FARE', FX, y + 7, { width: FW - 6, align: 'right', characterSpacing: 0.8, lineBreak: false });
       y += 22;
@@ -612,6 +631,14 @@ function drawInvoice(doc, data, slack) {
            .text('FLIGHT ' + fltStr, JX, y + fltTop, { width: JW, characterSpacing: 0.8, lineBreak: false });
       }
 
+      /* Blank, not "£0.00", when nothing was paid out on this trip. A column
+         of zeros is a column of noise, and the owner is looking for the trips
+         that DID carry a charge. */
+      const tripFee = +b.fee || 0;
+      if (tripFee > 0) {
+        doc.font(BODY).fontSize(10).fillColor(SOFT)
+           .text('£' + tripFee.toFixed(2), EX, y + 12 + BK_PAD, { width: EW - 6, align: 'right', lineBreak: false });
+      }
       doc.font(BODY).fontSize(11.5).fillColor(NAVY)
          .text('£' + (+b.fare || 0).toFixed(2), FX, y + 11 + BK_PAD, { width: FW - 6, align: 'right', lineBreak: false });
 

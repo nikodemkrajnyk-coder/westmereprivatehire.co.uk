@@ -2703,9 +2703,16 @@ router.patch('/invoices/:id', async (req, res) => {
       }
       /* An account line is a journey. The shape is preserved exactly, because
          the PDF reads pickup/destination/ref/time out of it — flattening it to
-         a description here would empty the journey column. */
+         a description here would empty the journey column.
+
+         AND ITS OWN FEE. The owner types what was paid out on that particular
+         trip — the parking, the toll — beside its fare. It rides on the line
+         item rather than in a column of its own, because a journey's fee is
+         part of the journey and survives every edit that the journey does. */
+      const tripFee = Number(it && it.fee);
       return Object.assign({}, it, {
-        fare: isNaN(amount) ? (Number(it && it.fare) || 0) : Math.round(amount * 100) / 100
+        fare: isNaN(amount) ? (Number(it && it.fare) || 0) : Math.round(amount * 100) / 100,
+        fee: (!isFinite(tripFee) || tripFee <= 0) ? 0 : Math.round(tripFee * 100) / 100
       });
     });
     if (row.kind === 'bespoke' && lineItems.some((it) => !it.description)) {
@@ -2723,9 +2730,21 @@ router.patch('/invoices/:id', async (req, res) => {
        fees: absent    → leave whatever is on the invoice alone.
      They are PART of the bill, so the auto-sum includes them. An override
      still wins over the lot — that is what an override is. */
+  /* TWO WAYS IN, ONE NUMBER OUT.
+     An account invoice's fees are the SUM of what was paid out on each trip;
+     a bespoke invoice's are a single figure typed once. They are not two
+     mechanisms that both add to the total — that is how a bill ends up
+     charging the same parking twice. On an account invoice the stored `fees`
+     is DERIVED from the rows and a directly-supplied figure is ignored, so
+     there is no arrangement in which both can count. */
+  const perTripFees = Math.round(items.reduce((t, it) => t + (Number(it && it.fee) || 0), 0) * 100) / 100;
+  const isAccount = row.kind !== 'bespoke';
+
   let fees = +row.fees || 0;
   let feesLabel = row.fees_label || null;
-  if (Object.prototype.hasOwnProperty.call(b, 'fees')) {
+  if (isAccount) {
+    fees = perTripFees;
+  } else if (Object.prototype.hasOwnProperty.call(b, 'fees')) {
     if (b.fees === null || b.fees === '') { fees = 0; }
     else {
       const f = Number(b.fees);
@@ -2738,6 +2757,8 @@ router.patch('/invoices/:id', async (req, res) => {
     feesLabel = String(b.fees_label || '').trim().slice(0, 60) || null;
   }
   if (fees <= 0) { fees = 0; feesLabel = null; }   // no fees, no label to explain them
+  // The account total's fee line is the sum of the column above it, so it says so.
+  if (isAccount && fees > 0 && !feesLabel) feesLabel = 'Fees (parking & tolls)';
 
   const autoSum = Math.round((lineSum + fees) * 100) / 100;
 
@@ -2804,7 +2825,7 @@ router.patch('/invoices/:id', async (req, res) => {
   delete updated.line_items_json;
   console.log('[INVOICE] ' + row.invoice_no + ' corrected (total £' + total.toFixed(2) +
               (manual ? ', set by hand' : ', from the lines') + ')');
-  res.json({ ok: true, invoice: updated, autoSum, lineSum, fees });
+  res.json({ ok: true, invoice: updated, autoSum, lineSum, fees, perTripFees, feesDerived: isAccount });
 });
 
 // Delete invoice — removes DB row and cached PDF.
