@@ -105,7 +105,9 @@ function fmtDate(d) {
    VISIBLE design changes; nothing else needs to be cleared, and the owner's
    existing files are left alone rather than deleted.
    GUARDRAIL: server/tests/invoice-paths.test.js */
-const TEMPLATE_VERSION = 6;   // 6: contrast — the two greys darkened to 7:1+ on white and tint
+const TEMPLATE_VERSION = 8;   // 8: the fees row stands alone — no subtotal lead-in
+                              // 7: a fees row above the total
+                              // 6: contrast — the two greys darkened to 7:1+ on white and tint
                               // 5: row-fit — rows and their bands grow to the wrapped text
                               // 4: notes block sized to its contents
 
@@ -280,6 +282,11 @@ function drawInvoice(doc, data, slack) {
   const periodLabel = p.label      || data.period_label || '';
   const notes       = p.notes      || data.notes        || '';
   const total       = +data.total  || 0;
+  /* FEES. Parking, tolls, waiting time — money that is part of the bill but
+     not part of any one journey. Zero means there are none, and nothing about
+     the page changes. */
+  const fees        = +data.fees   || 0;
+  const feesLabel   = String(data.feesLabel || '').trim();
 
   // Recipient details
   const recName    = isBespoke ? ((data.recipient || {}).name    || '') : ((data.customer || {}).full_name || '');
@@ -642,20 +649,39 @@ function drawInvoice(doc, data, slack) {
   const net     = showVat ? total / (1 + vatRate / 100) : total;
   const vatAmt  = showVat ? total - net : 0;
 
+  /* WHAT LEADS UP TO THE TOTAL, as a list rather than a nest of conditions.
+     Two things can appear above it — the fees and the VAT split — and they
+     only earn their place when they explain something:
+
+       nothing but journeys      → no lead-in at all.
+       fees                      → ONE row: the fees. The owner asked for the
+                                   subtotal line to go. The journeys are the
+                                   table immediately above, already itemised
+                                   and already added up by anyone who cares to;
+                                   restating their sum between the table and
+                                   the total was a third number saying nothing
+                                   the page did not already say.
+       VAT                       → the net and the tax, as before.
+
+     With VAT the net line still appears, because that one IS a different
+     figure from anything else on the page and a VAT-registered invoice has to
+     show it. */
+  const leadIn = [];
+  if (fees > 0) leadIn.push([feesLabel || 'Fees', fees]);
   if (showVat) {
-    doc.font(BOLD).fontSize(9).fillColor(SOFT)
-       .text('Subtotal', TX, y, { width: LW, align: 'right', characterSpacing: 0.8, lineBreak: false });
-    doc.font(BODY).fontSize(11).fillColor(SOFT)
-       .text('£' + net.toFixed(2), VX, y, { width: VW, align: 'right', lineBreak: false });
-    y += 17;
-    doc.font(BOLD).fontSize(9).fillColor(SOFT)
-       .text('VAT (' + vatRate + '%)', TX, y, { width: LW, align: 'right', characterSpacing: 0.8, lineBreak: false });
-    doc.font(BODY).fontSize(11).fillColor(SOFT)
-       .text('£' + vatAmt.toFixed(2), VX, y, { width: VW, align: 'right', lineBreak: false });
-    y += 20;
+    leadIn.push(['Net of VAT', net]);
+    leadIn.push(['VAT (' + vatRate + '%)', vatAmt]);
+  }
+  if (leadIn.length) {
+    for (let i = 0; i < leadIn.length; i++) {
+      const [label, amount] = leadIn[i];
+      doc.font(BOLD).fontSize(9).fillColor(SOFT)
+         .text(String(label), TX, y, { width: LW, align: 'right', characterSpacing: 0.8, lineBreak: false });
+      doc.font(BODY).fontSize(11).fillColor(SOFT)
+         .text('£' + Number(amount).toFixed(2), VX, y, { width: VW, align: 'right', lineBreak: false });
+      y += (i === leadIn.length - 1) ? 20 : 17;
+    }
   } else {
-    /* No VAT line at all. A single "Subtotal" identical to the total is noise,
-       so on an unregistered invoice the total simply IS the figure. */
     y += 2;
   }
 
@@ -856,6 +882,8 @@ function invoiceDataFromRow(row, settings) {
     invoiceNo: row.invoice_no,
     kind: row.kind,
     total: row.total,
+    fees: +row.fees || 0,
+    feesLabel: row.fees_label || '',
     notes: row.notes || '',
     settings: settings || {},
     period: { issuedDate: row.issued_date, dueDate: row.due_date || '', label: row.period_label || '' }
@@ -910,7 +938,7 @@ function invoiceContentHash(row) {
     row.kind, row.invoice_no, row.recipient_name, row.recipient_email,
     row.recipient_phone, row.recipient_addr, row.period_from, row.period_to,
     row.period_label, row.issued_date, row.due_date, row.notes,
-    row.line_items_json, row.journey_json, row.total
+    row.line_items_json, row.journey_json, row.total, row.fees, row.fees_label
   ]);
   return require('crypto').createHash('sha256').update(material).digest('hex').slice(0, 10);
 }

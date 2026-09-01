@@ -2714,8 +2714,32 @@ router.patch('/invoices/:id', async (req, res) => {
   }
 
   const items = lineItems || (() => { try { return JSON.parse(row.line_items_json || '[]'); } catch (_) { return []; } })();
-  const autoSum = Math.round(items.reduce((s, it) =>
+  const lineSum = Math.round(items.reduce((s, it) =>
     s + (Number(row.kind === 'bespoke' ? it.amount : it.fare) || 0), 0) * 100) / 100;
+
+  /* THE FEES. Parking, tolls, waiting time — set here or cleared here.
+       fees: a number  → that is the figure;
+       fees: 0 or null → there are none, and the row does not render;
+       fees: absent    → leave whatever is on the invoice alone.
+     They are PART of the bill, so the auto-sum includes them. An override
+     still wins over the lot — that is what an override is. */
+  let fees = +row.fees || 0;
+  let feesLabel = row.fees_label || null;
+  if (Object.prototype.hasOwnProperty.call(b, 'fees')) {
+    if (b.fees === null || b.fees === '') { fees = 0; }
+    else {
+      const f = Number(b.fees);
+      if (isNaN(f) || f < 0) return res.status(400).json({ error: 'Those fees are not a number: ' + b.fees });
+      if (f > 1000000) return res.status(400).json({ error: 'Those fees look wrong' });
+      fees = Math.round(f * 100) / 100;
+    }
+  }
+  if (Object.prototype.hasOwnProperty.call(b, 'fees_label')) {
+    feesLabel = String(b.fees_label || '').trim().slice(0, 60) || null;
+  }
+  if (fees <= 0) { fees = 0; feesLabel = null; }   // no fees, no label to explain them
+
+  const autoSum = Math.round((lineSum + fees) * 100) / 100;
 
   /* THE OVERRIDE. Three states, and they have to stay distinguishable:
        total_override: a number  → set it, and remember that it was set;
@@ -2751,6 +2775,7 @@ router.patch('/invoices/:id', async (req, res) => {
        SET recipient_name  = ?, recipient_email = ?, recipient_phone = ?, recipient_addr = ?,
            issued_date = ?, due_date = ?, period_label = ?, notes = ?,
            line_items_json = ?, total = ?, total_manual = ?,
+           fees = ?, fees_label = ?,
            revised_at = datetime('now')
      WHERE id = ?
   `).run(
@@ -2761,7 +2786,7 @@ router.patch('/invoices/:id', async (req, res) => {
     issued || row.issued_date, due || null,
     str(b.period_label, row.period_label) || null,
     str(b.notes, row.notes) || null,
-    JSON.stringify(items), total, manual, id);
+    JSON.stringify(items), total, manual, fees, feesLabel, id);
 
   /* The cached PDF is keyed on a hash of these fields, so the corrected
      document gets a new filename and the old one is simply never asked for
@@ -2770,7 +2795,8 @@ router.patch('/invoices/:id', async (req, res) => {
     db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
       .run(req.auth.type || 'user', req.auth.id, 'invoice_edited',
            row.invoice_no + ' £' + Number(before.total || 0).toFixed(2) + ' → £' + total.toFixed(2) +
-           (manual ? ' (total set by hand)' : '') + ', ' + items.length + ' line(s)', req.ip);
+           (manual ? ' (total set by hand)' : '') + ', ' + items.length + ' line(s)' +
+           (fees > 0 ? ', fees £' + fees.toFixed(2) : ''), req.ip);
   } catch (e) { console.error('[INVOICE] edit audit failed:', e.message); }
 
   const updated = db.prepare('SELECT * FROM invoices WHERE id = ?').get(id);
@@ -2778,7 +2804,7 @@ router.patch('/invoices/:id', async (req, res) => {
   delete updated.line_items_json;
   console.log('[INVOICE] ' + row.invoice_no + ' corrected (total £' + total.toFixed(2) +
               (manual ? ', set by hand' : ', from the lines') + ')');
-  res.json({ ok: true, invoice: updated, autoSum });
+  res.json({ ok: true, invoice: updated, autoSum, lineSum, fees });
 });
 
 // Delete invoice — removes DB row and cached PDF.

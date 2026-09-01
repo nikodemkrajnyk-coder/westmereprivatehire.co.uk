@@ -1388,18 +1388,39 @@ select:-webkit-autofill:focus{
           </div>
           <div id="inv-edit-lines" style="margin-bottom:.8rem"></div>
 
-          <!-- THE TOTAL. Two controls on purpose: one says who decides the
-               number, the other is the number. A single editable field could
-               not tell "he typed this" from "it happens to equal the sum". -->
+          <!-- FEES BESIDE THE AMOUNT.
+               The owner asked for it "next to fare, manually added", and he is
+               right that it belongs there: fees and the total are the two money
+               figures on this sheet and they are read together — the fee is the
+               reason the total is not what the lines add up to. Split across two
+               boxes they were two separate decisions; side by side they are one.
+
+               Still its own field and NOT another line item, because a line
+               prints inside the journey table and "Parking & tolls" is not a
+               journey. Blank or zero and no row appears on the invoice. -->
           <div style="border:1px solid rgba(27,27,26,.15);border-radius:8px;padding:.7rem;margin-bottom:1rem;background:rgba(27,27,26,.02)">
-            <label style="display:flex;align-items:center;gap:.5rem;font-size:.85rem;color:var(--navy);cursor:pointer">
+            <div style="display:flex;gap:.7rem;align-items:flex-end">
+              <div style="flex:1.35;min-width:0">
+                <label style="display:block;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5);margin:0 0 .25rem">Fees</label>
+                <div style="display:flex;gap:.4rem;align-items:center">
+                  <input id="inv-edit-fees-label" placeholder="Parking &amp; tolls" oninput="invEditSyncTotal()" style="flex:1;min-width:0;padding:.5rem;font-size:.9rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:6px;background:#fff">
+                  <span style="font-family:var(--serif);font-size:1rem;color:var(--navy)">&pound;</span>
+                  <input id="inv-edit-fees" type="number" step="0.01" placeholder="0.00" oninput="invEditSyncTotal()" style="width:82px;text-align:right;padding:.5rem;font-size:.9rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:6px;background:#fff">
+                </div>
+              </div>
+              <div style="flex:1;min-width:0">
+                <label style="display:block;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5);margin:0 0 .25rem">Total</label>
+                <div style="display:flex;gap:.4rem;align-items:center">
+                  <span style="font-family:var(--serif);font-size:1.1rem;color:var(--navy)">&pound;</span>
+                  <input id="inv-edit-total" type="number" step="0.01" style="flex:1;min-width:0;padding:.5rem;font-size:1rem;font-family:var(--serif);border:1px solid rgba(27,27,26,.2);border-radius:6px;text-align:right">
+                </div>
+              </div>
+            </div>
+            <label style="display:flex;align-items:center;gap:.5rem;font-size:.85rem;color:var(--navy);cursor:pointer;margin-top:.6rem">
               <input id="inv-edit-manual" type="checkbox" onchange="invEditSyncTotal()" style="width:16px;height:16px">
               Set the total by hand
             </label>
-            <div style="display:flex;align-items:center;gap:.5rem;margin-top:.55rem">
-              <span style="font-family:var(--serif);font-size:1.1rem;color:var(--navy)">&pound;</span>
-              <input id="inv-edit-total" type="number" step="0.01" style="flex:1;padding:.5rem;font-size:1rem;font-family:var(--serif);border:1px solid rgba(27,27,26,.2);border-radius:6px;text-align:right">
-            </div>
+            <div id="inv-edit-feesnote" style="margin-top:.4rem;font-size:.76rem;color:rgba(27,27,26,.5)">Leave the fee blank for none.</div>
             <div id="inv-edit-sumnote" style="margin-top:.4rem;font-size:.76rem;color:rgba(27,27,26,.5)"></div>
           </div>
 
@@ -6791,16 +6812,24 @@ function invEditOpen(){
   document.getElementById('inv-edit-due').value=inv.due_date||'';
   document.getElementById('inv-edit-notes').value=inv.notes||'';
   document.getElementById('inv-edit-manual').checked=!!inv.total_manual;
+  document.getElementById('inv-edit-fees').value=(+inv.fees>0)?(+inv.fees).toFixed(2):'';
+  document.getElementById('inv-edit-fees-label').value=inv.fees_label||'';
   invEditRenderLines();
   document.getElementById('inv-edit-sheet').style.display='flex';
 }
 function invEditClose(){ document.getElementById('inv-edit-sheet').style.display='none'; }
 var _INV_EDIT_STATE=null;
 
-function invEditAutoSum(){
+function invEditLineSum(){
   if(!_INV_EDIT_STATE)return 0;
   return Math.round(_INV_EDIT_STATE.items.reduce(function(s,it){return s+(+it.amount||0);},0)*100)/100;
 }
+function invEditFees(){
+  var v=parseFloat(document.getElementById('inv-edit-fees').value);
+  return (isNaN(v)||v<0)?0:Math.round(v*100)/100;
+}
+/* Fees are part of the bill, so they are part of the sum the total tracks. */
+function invEditAutoSum(){ return Math.round((invEditLineSum()+invEditFees())*100)/100; }
 function invEditRenderLines(){
   var st=_INV_EDIT_STATE; if(!st)return;
   var box=document.getElementById('inv-edit-lines');
@@ -6846,10 +6875,18 @@ function invEditSyncTotal(){
   if(!manual) f.value=invEditAutoSum().toFixed(2);
   var note=document.getElementById('inv-edit-sumnote');
   var sum=invEditAutoSum();
+  var fees=invEditFees();
+  var lines=invEditLineSum();
+  var breakdown=st.items.length+' line'+(st.items.length===1?'':'s')+' £'+lines.toFixed(2)
+    +(fees>0?' + fees £'+fees.toFixed(2):'');
   note.textContent=manual
-    ? ('The lines add up to £'+sum.toFixed(2)+'. This invoice will show the figure above.')
-    : ('Sum of the '+st.items.length+' line'+(st.items.length===1?'':'s')+' above.');
+    ? ('The invoice adds up to £'+sum.toFixed(2)+' ('+breakdown+'). It will show the figure above.')
+    : (breakdown+'.');
   note.style.color=manual?'var(--amber,#6a6a6a)':'rgba(27,27,26,.5)';
+  var fnote=document.getElementById('inv-edit-feesnote');
+  fnote.textContent = fees>0
+    ? 'Shown on the invoice as a row above the total.'
+    : 'Leave blank for none — no row is printed.';
 }
 async function invEditSave(){
   var st=_INV_EDIT_STATE; if(!st)return;
@@ -6865,6 +6902,8 @@ async function invEditSave(){
     due_date:document.getElementById('inv-edit-due').value.trim(),
     notes:document.getElementById('inv-edit-notes').value.trim(),
     line_items:st.items,
+    fees: invEditFees(),
+    fees_label: document.getElementById('inv-edit-fees-label').value.trim(),
     total_override: manual ? typed : null
   };
   var btn=document.getElementById('inv-edit-save');

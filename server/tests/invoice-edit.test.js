@@ -257,6 +257,168 @@ test('the send ROUTE hands the stored total to the email', () => {
     'the send route must pass the stored total, or the email falls back to summing the lines');
 });
 
+// ── 2b. FEES ─────────────────────────────────────────────────────────────
+console.log('\nFees — parking, tolls, waiting time');
+
+/* Read the totals block back out of the drawing. The fees row is a label and a
+   figure above the total, and "the number is somewhere in the PDF" is not the
+   claim being made — the claim is that it is rendered, labelled, and added up. */
+async function drawn(row) {
+  const PDFDocument = require('pdfkit');
+  const texts = [];
+  const T = PDFDocument.prototype.text;
+  PDFDocument.prototype.text = function (str, x, y) {
+    if (typeof x === 'number' && typeof y === 'number' && String(str).trim()) texts.push({ s: String(str), x, y });
+    return T.apply(this, arguments);
+  };
+  try { await invoicePdf.buildInvoicePdf(invoicePdf.invoiceDataFromRow(row, {})); }
+  finally { PDFDocument.prototype.text = T; }
+  return texts;
+}
+const labelFor = (texts, label) => {
+  const l = texts.filter((t) => t.s === label).sort((a, b) => b.y - a.y)[0];
+  if (!l) return null;
+  // the money sits on the same baseline, to the right
+  const v = texts.filter((t) => Math.abs(t.y - l.y) < 2 && t.x > l.x && /^£/.test(t.s))[0];
+  return v ? v.s : null;
+};
+
+for (const kind of ['bespoke', 'account']) {
+  const ITEMS = kind === 'bespoke' ? BESPOKE_ITEMS : ACCOUNT_ITEMS;   // both sum to 215
+
+  test(kind + ': a fees row renders with its label and is added to the total', async () => {
+    const inv = seed(kind, ITEMS);
+    const r = await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
+      body: { fees: 18.5, fees_label: 'Parking & tolls' } });
+    assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
+    const after = rowOf(inv.id);
+    assert.strictEqual(after.fees, 18.5);
+    assert.strictEqual(after.fees_label, 'Parking & tolls');
+    assert.strictEqual(after.total, 233.5, 'the fees are part of the bill: 215 + 18.50');
+    assert.strictEqual(r.body.lineSum, 215, 'and the response separates the two');
+
+    const texts = await drawn(after);
+    assert.strictEqual(labelFor(texts, 'Parking & tolls'), '£18.50', 'the fees row is not on the page');
+    /* ONE ROW, and only one. This used to require a Subtotal above the fees so
+       the total could be added up from the page. The owner asked for it gone:
+       the journeys are the table immediately above, already itemised, and a
+       third number restating their sum said nothing the page did not. */
+    assert.strictEqual(labelFor(texts, 'Subtotal'), null,
+      'there must be no Subtotal lead-in — the fees row stands alone');
+    assert.strictEqual(labelFor(texts, 'Journeys'), null, 'nor a "Journeys" line');
+    assert.ok(texts.some((t) => t.s === '£233.50'), 'and the total shows the sum of the two');
+    const above = texts.filter((t) => /^£(215|233)\.\d\d$/.test(t.s) || t.s === '£18.50');
+    assert.ok(!above.some((t) => t.s === '£215.00'),
+      'the line sum must not be printed anywhere in the totals area');
+  });
+
+  test(kind + ': zero fees render nothing at all', async () => {
+    const inv = seed(kind, ITEMS);
+    const texts = await drawn(rowOf(inv.id));
+    assert.strictEqual(labelFor(texts, 'Fees'), null, 'a zero-fee invoice must not print a fees row');
+    assert.strictEqual(labelFor(texts, 'Subtotal'), null, 'and no lead-in of any kind');
+    assert.ok(texts.some((t) => t.s === '£215.00'), 'just the total');
+  });
+}
+
+test('an unlabelled fee still says what it is', async () => {
+  const inv = seed('bespoke', BESPOKE_ITEMS);
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) }, body: { fees: 9 } });
+  const texts = await drawn(rowOf(inv.id));
+  assert.strictEqual(labelFor(texts, 'Fees'), '£9.00', 'with no label it falls back to "Fees"');
+});
+
+test('clearing the fees takes the row away and the money with it', async () => {
+  const inv = seed('bespoke', BESPOKE_ITEMS);
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
+    body: { fees: 18.5, fees_label: 'Parking & tolls' } });
+  assert.strictEqual(rowOf(inv.id).total, 233.5);
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) }, body: { fees: 0 } });
+  const after = rowOf(inv.id);
+  assert.strictEqual(after.fees, 0);
+  assert.strictEqual(after.fees_label, null, 'a label with no fee to explain is dropped');
+  assert.strictEqual(after.total, 215, 'and the total comes back down');
+  assert.strictEqual(labelFor(await drawn(after), 'Parking & tolls'), null);
+});
+
+test('A MANUAL TOTAL STILL WINS, fees or no fees', async () => {
+  const inv = seed('bespoke', BESPOKE_ITEMS);
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
+    body: { fees: 18.5, fees_label: 'Parking & tolls', total_override: 200 } });
+  const after = rowOf(inv.id);
+  assert.strictEqual(after.total, 200, 'the override beats lines + fees (which come to 233.50)');
+  assert.strictEqual(after.total_manual, 1);
+  assert.strictEqual(after.fees, 18.5, 'and the fees are still recorded and still shown');
+  const texts = await drawn(after);
+  assert.strictEqual(labelFor(texts, 'Parking & tolls'), '£18.50');
+  assert.ok(texts.some((t) => t.s === '£200.00'), 'the total is the figure he set');
+  // and a later fee change must not quietly reinstate the sum
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) }, body: { fees: 40 } });
+  assert.strictEqual(rowOf(inv.id).total, 200, 'changing the fees under an override does not lift it');
+});
+
+test('fees survive an unrelated edit, and reach a re-send', async () => {
+  const inv = seed('bespoke', BESPOKE_ITEMS);
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
+    body: { fees: 18.5, fees_label: 'Parking & tolls' } });
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) }, body: { recipient_phone: '07700 900999' } });
+  const after = rowOf(inv.id);
+  assert.strictEqual(after.fees, 18.5, 'an address correction must not drop the fees');
+  assert.strictEqual(after.total, 233.5);
+
+  const email = require('../email');
+  SENT = [];
+  await email.sendBespokeInvoice(
+    { name: after.recipient_name, email: after.recipient_email, phone: '', address: '' },
+    JSON.parse(after.line_items_json),
+    { label: after.period_label, dueDate: after.due_date, issuedDate: after.issued_date,
+      notes: after.notes, total: after.total },
+    after.invoice_no, { company_name: 'Westmere Private Hire' }, Buffer.from('%PDF-1.3 x'));
+  assert.ok(/£233\.50/.test(SENT[0].subject), 'the re-sent email quotes the total INCLUDING fees: ' + SENT[0].subject);
+});
+
+test('a nonsense fee is refused and changes nothing', async () => {
+  const inv = seed('bespoke', BESPOKE_ITEMS);
+  for (const bad of ['abc', -1, 99999999]) {
+    const r = await call('patch', '/invoices/:id', { params: { id: String(inv.id) }, body: { fees: bad } });
+    assert.strictEqual(r.statusCode, 400, JSON.stringify(bad) + ' → ' + r.statusCode);
+  }
+  assert.strictEqual(rowOf(inv.id).fees, 0);
+  assert.strictEqual(rowOf(inv.id).total, 215);
+});
+
+test('adding fees changes the cache key — even when the TOTAL does not move', async () => {
+  /* The obvious version of this test passes for the wrong reason: adding fees
+     also changes the total, and the total was already in the hash. Pinning the
+     total by hand first isolates the fees as the only field that differs, so
+     this actually tests what it claims to. */
+  const inv = seed('bespoke', BESPOKE_ITEMS);
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) }, body: { total_override: 500 } });
+  const before = invoicePdf.invoiceCachePath(inv.invoice_no, rowOf(inv.id));
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
+    body: { fees: 18.5, fees_label: 'Parking & tolls' } });
+  const mid = rowOf(inv.id);
+  assert.strictEqual(mid.total, 500, 'the total is deliberately unchanged for this test');
+  const after = invoicePdf.invoiceCachePath(inv.invoice_no, rowOf(inv.id));
+  assert.notStrictEqual(before, after,
+    'the fees row changed the page but not the total — the cache key must still have moved');
+
+  // and the label alone must count too
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) }, body: { fees_label: 'Waiting time' } });
+  assert.notStrictEqual(after, invoicePdf.invoiceCachePath(inv.invoice_no, rowOf(inv.id)),
+    'renaming the fees row changes what is printed, so it must change the key');
+});
+
+test('the edit sheet has a fees field that feeds the total', () => {
+  const H = read('westmere-owner.html');
+  assert.ok(/id="inv-edit-fees"/.test(H) && /id="inv-edit-fees-label"/.test(H), 'no fees field');
+  const sum = /function invEditAutoSum\(\)\{[\s\S]*?\n\}/.exec(H)[0];
+  assert.ok(/invEditLineSum\(\)\+invEditFees\(\)/.test(sum),
+    'the on-screen total must include the fees, or the screen disagrees with the invoice');
+  const save = /async function invEditSave\(\)\{[\s\S]*?\n\}/.exec(H)[0];
+  assert.ok(/fees: invEditFees\(\)/.test(save) && /fees_label:/.test(save), 'the save must send them');
+});
+
 // ── 3. NO STALE PDF ──────────────────────────────────────────────────────
 console.log('\nA corrected invoice does not serve the old document');
 
@@ -396,8 +558,44 @@ test('the owner is told when a total was set by hand', () => {
   assert.ok(/id="inv-det-manual"/.test(H), 'the detail sheet has no override note');
   assert.ok(/the lines may not sum to it/i.test(H), 'and it must say why that matters');
   const sync = /function invEditSyncTotal\(\)\{[\s\S]*?\n\}/.exec(H)[0];
-  assert.ok(/The lines add up to/.test(sync), 'the edit screen names the sum he is overriding');
+  /* The wording moved when fees arrived — it now names the split (lines, then
+     fees) rather than just "the lines". What must hold is that the figure he
+     is overriding is stated, whatever it is made of. */
+  assert.ok(/The invoice adds up to/.test(sync), 'the edit screen names the sum he is overriding');
+  assert.ok(/fees £/.test(sync), 'and says how much of it is fees');
   assert.ok(/f\.disabled=!manual/.test(sync), 'and the field is locked while the lines own it');
+});
+
+test('the fee field sits BESIDE the total, not in a section of its own', () => {
+  /* The owner asked for it "next to fare". They are the two money figures on
+     the sheet and they are read together — the fee is the reason the total is
+     not what the lines add up to. A guard on the arrangement, because a later
+     tidy-up that moves the fee back into its own box undoes the thing he
+     asked for and nothing else would notice. */
+  const H = read('westmere-owner.html');
+  const start = H.indexOf('id="inv-edit-fees-label"');
+  const end = H.indexOf('id="inv-edit-total"');
+  assert.ok(start > 0 && end > 0, 'both fields must exist');
+  assert.ok(end > start, 'the fee comes first, then the total');
+  const between = H.slice(start, end);
+  /* Same box. A bordered <div> between them is a new panel — a bordered
+     <input> is just a field, which is why this looks for the tag and not for
+     the word "border". The first version of this assertion did the latter and
+     failed on the fee input's own outline. */
+  assert.ok(!/<div[^>]*border:\s*1px solid/.test(between),
+    'a panel opens between the fee and the total — they are in separate boxes again');
+  assert.ok(between.length < 1400,
+    'the two fields have drifted apart (' + between.length + ' chars between them)');
+  assert.ok(/id="inv-edit-fees"/.test(between), 'the fee amount belongs with its label');
+});
+
+test('the fee is a field on the invoice, never a line item', () => {
+  /* A line prints inside the journey table, and "Parking & tolls" is not a
+     journey. It is stored on the invoice row and drawn in the totals area. */
+  const H = read('westmere-owner.html');
+  const save = /async function invEditSave\(\)\{[\s\S]*?\n\}/.exec(H)[0];
+  assert.ok(/fees:/.test(save) && /fees_label:/.test(save), 'the save must send both');
+  assert.ok(!/line_items[\s\S]{0,200}Parking/.test(save), 'and never smuggle it into the lines');
 });
 
 test('this guardrail is wired into npm test', () => {

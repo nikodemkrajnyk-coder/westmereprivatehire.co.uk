@@ -610,7 +610,18 @@ function migrate() {
            revised_at    when it was last corrected, for the audit trail and so
                          the owner can see at a glance that it has been. */
       ['total_manual', 'INTEGER NOT NULL DEFAULT 0'],
-      ['revised_at',   'TEXT']
+      ['revised_at',   'TEXT'],
+      /* FEES — parking, tolls, waiting time. Their own columns rather than
+         another line item, because a line item would print INSIDE the journey
+         table, and on an account invoice that table has a pickup and a
+         drop-off: "Parking & tolls" there reads as a journey that never
+         happened. It belongs under the lines, with the money, which is where
+         a person looks for it.
+
+         fees defaults to 0, so every invoice written before today is a
+         zero-fee invoice and renders exactly as it did. */
+      ['fees',       'REAL NOT NULL DEFAULT 0'],
+      ['fees_label', 'TEXT']
     ];
     for (const [n, t] of invCols) {
       if (!invInfo.find(c => c.name === n)) {
