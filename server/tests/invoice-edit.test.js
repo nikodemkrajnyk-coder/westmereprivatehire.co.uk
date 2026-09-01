@@ -377,6 +377,30 @@ test('ACCOUNT: NO DOUBLE COUNTING — a directly-set fee is ignored', async () =
   assert.strictEqual(after.total, 233.5, 'the parking must be charged once');
 });
 
+test('ACCOUNT: the fee LABEL is derived too, not the caller\'s to set', async () => {
+  /* Found by posting a hostile request during the deploy check: the fee AMOUNT
+     was correctly ignored on an account invoice while a posted LABEL went
+     straight onto the customer's document. Both halves are derived now. */
+  const inv = seed('account', ACCOUNT_ITEMS);
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) }, body: {
+    line_items: [Object.assign({}, ACCOUNT_ITEMS[0], { fee: 10 }), ACCOUNT_ITEMS[1]],
+    fees: 999, fees_label: 'ANYTHING I LIKE' }});
+  const after = rowOf(inv.id);
+  assert.strictEqual(after.fees, 10, 'the amount comes from the rows');
+  assert.strictEqual(after.fees_label, 'Fees (parking & tolls)',
+    'and so does the label: ' + after.fees_label);
+  const texts = await drawn(after);
+  assert.ok(!texts.some((t) => /ANYTHING I LIKE/.test(t.s)),
+    'nothing a caller posts may appear on the customer\'s invoice');
+});
+
+test('BESPOKE: the label IS the owner\'s to set', async () => {
+  const inv = seed('bespoke', BESPOKE_ITEMS);
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
+    body: { fees: 12, fees_label: 'Waiting time' } });
+  assert.strictEqual(rowOf(inv.id).fees_label, 'Waiting time');
+});
+
 test('ACCOUNT: a trip with no fee shows none', async () => {
   const inv = seed('account', ACCOUNT_ITEMS);
   await call('patch', '/invoices/:id', { params: { id: String(inv.id) }, body: {

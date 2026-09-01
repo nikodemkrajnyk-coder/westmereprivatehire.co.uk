@@ -2753,9 +2753,15 @@ router.patch('/invoices/:id', async (req, res) => {
       fees = Math.round(f * 100) / 100;
     }
   }
-  if (Object.prototype.hasOwnProperty.call(b, 'fees_label')) {
+  /* THE LABEL FOLLOWS THE FIGURE. On an account invoice the fee is derived
+     from the rows, so its label is the standard one and is not the caller's to
+     set — a posted label was being written straight onto the customer's
+     invoice while the amount beside it was correctly ignored. Only a bespoke
+     invoice, where the fee IS typed once by hand, gets to name it. */
+  if (!isAccount && Object.prototype.hasOwnProperty.call(b, 'fees_label')) {
     feesLabel = String(b.fees_label || '').trim().slice(0, 60) || null;
   }
+  if (isAccount) feesLabel = null;   // re-set below from the derived rule
   if (fees <= 0) { fees = 0; feesLabel = null; }   // no fees, no label to explain them
   // The account total's fee line is the sum of the column above it, so it says so.
   if (isAccount && fees > 0 && !feesLabel) feesLabel = 'Fees (parking & tolls)';
