@@ -2477,8 +2477,9 @@ router.post('/invoices/bespoke', async (req, res) => {
     db.prepare(`
       INSERT INTO invoices
         (invoice_no, kind, recipient_name, recipient_email, recipient_phone, recipient_addr,
-         issued_date, due_date, notes, line_items_json, journey_json, total, emailed, created_by)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+         issued_date, due_date, notes, line_items_json, journey_json, total, fees, commission_pct,
+           emailed, created_by)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     `).run(
       invoiceNo, 'bespoke', cleanRecipient.name, cleanRecipient.email, cleanRecipient.phone, cleanRecipient.address,
       issuedDate, dueDate, notes || null,
@@ -3874,7 +3875,10 @@ router.get('/drivers', (req, res) => {
            onboarding_status, created_at
     FROM users WHERE role IN ('driver','owner') AND active = 1 ORDER BY created_at DESC
   `).all().map(sanitizeDriver);
-  res.json({ ok: true, drivers: rows });
+  // The compliance state rides along, so the list can flag an expiry without
+    // the owner opening every card.
+    const comp = require('./compliance');
+    res.json({ ok: true, drivers: rows.map(r => Object.assign({}, r, { compliance: comp.forDriver(r) })) });
 });
 
 router.get('/drivers/:id', (req, res) => {

@@ -916,6 +916,70 @@ test('the form defaults the toggle to OFF and posts the choice', () => {
   assert.ok(/commission_pct:commissionPct/.test(build.replace(/\s/g, '')), 'as commission_pct');
 });
 
+test('A CREATED INVOICE IS ACTUALLY SAVED', async () => {
+  /* SHIPPED BROKEN ONCE. The persist is wrapped in a try/catch that logs and
+     carries on, so when the INSERT's column list and its values fell out of
+     step the invoice still rendered, still emailed, and simply never appeared
+     in the list — "[INVOICE] persist bespoke failed: Too many parameter values
+     were provided" in a log nobody was reading. Every source-shape guard in
+     this file was green. Only creating one and looking for it afterwards
+     catches that. */
+  const before = db.prepare("SELECT COUNT(*) c FROM invoices").get().c;
+  const r = await call('post', '/invoices/bespoke', { body: {
+    recipient: { name: 'Harbourside Events Ltd', email: 'accounts@harbourside.example.com', phone: '07700 900321', address: '12 Marine Parade' },
+    items: [{ date: '2026-08-05', description: 'Weppons Farm → Gatwick', amount: 95, fee: 10,
+              pickup: 'Weppons Farm, Wiston, BN44 3DN, United Kingdom',
+              destination: 'Gatwick Airport, South Terminal, RH6 0NP, United Kingdom' },
+            { date: '2026-08-12', description: 'Lewes → Brighton', amount: 38 }],
+    notes: 'Thank you.', commission_pct: 0 } });
+  assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
+  const after = db.prepare("SELECT COUNT(*) c FROM invoices").get().c;
+  assert.strictEqual(after, before + 1, 'the invoice was rendered but never stored');
+
+  const row = db.prepare('SELECT * FROM invoices ORDER BY id DESC LIMIT 1').get();
+  assert.strictEqual(row.total, 143, '133 of fares + 10 of fees, no commission');
+  assert.strictEqual(row.fees, 10, 'the per-trip fee reached the row');
+  assert.strictEqual(row.commission_pct, 0, 'and no commission was set');
+  const items = JSON.parse(row.line_items_json);
+  assert.strictEqual(items[0].fee, 10);
+  assert.strictEqual(items[1].fee, 0, 'the trip with no fee kept none');
+  assert.ok(/BN44 3DN/.test(items[0].pickup || ''), 'the RESOLVED from-address was stored');
+  assert.ok(/RH6 0NP/.test(items[0].destination || ''), 'and the resolved to-address');
+});
+
+test('an OPERATOR invoice created on the form carries its rate', async () => {
+  const r = await call('post', '/invoices/bespoke', { body: {
+    recipient: { name: 'APD Private Hire', email: 'accounts@apd.example.com' },
+    items: [{ date: '2026-08-05', description: 'A → B', amount: 200, fee: 15 }],
+    commission_pct: 12.5 } });
+  assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
+  const row = db.prepare('SELECT * FROM invoices ORDER BY id DESC LIMIT 1').get();
+  assert.strictEqual(row.commission_pct, 12.5, 'the rate he typed');
+  assert.strictEqual(row.total, 190, '200 − 25 + 15');
+});
+
+test('every INSERT INTO invoices balances its columns and placeholders', () => {
+  /* The cheap half of the same lesson: a mismatch here is a silent data loss,
+     not an error anybody sees. */
+  const src = read('server/api.js');
+  const starts = [...src.matchAll(/INSERT INTO invoices/g)].map((m) => m.index);
+  assert.ok(starts.length >= 2, 'expected the account and bespoke inserts');
+  starts.forEach((i, n) => {
+    /* Bounded by the end of the statement, not by a character count — the
+       suite's own hygiene guard rejects the latter, and rightly: a window that
+       stops reaching its subject goes on reporting green. */
+    const end = src.indexOf('`).run(', i);
+    assert.ok(end > i, 'insert #' + (n + 1) + ' has no .run() — re-anchor this guard');
+    const seg = src.slice(i, end);
+    const cols = /\(([^)]*)\)\s*\n\s*VALUES/.exec(seg);
+    const qs = /VALUES \(([^)]*)\)/.exec(seg);
+    assert.ok(cols && qs, 'insert #' + (n + 1) + ' could not be parsed');
+    assert.strictEqual(cols[1].split(',').length, qs[1].split(',').length,
+      'insert #' + (n + 1) + ': ' + cols[1].split(',').length + ' columns but ' +
+      qs[1].split(',').length + ' placeholders');
+  });
+});
+
 test('a trip created on the form keeps its RESOLVED addresses', () => {
   /* The account edit path spreads the whole line item, so pickup/destination
      survive there whatever happens — which is why removing them from the
