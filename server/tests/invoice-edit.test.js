@@ -545,9 +545,13 @@ test('adding fees changes the cache key — even when the TOTAL does not move', 
 test('the edit sheet has a fees field that feeds the total', () => {
   const H = read('westmere-owner.html');
   assert.ok(/id="inv-edit-fees"/.test(H) && /id="inv-edit-fees-label"/.test(H), 'no fees field');
-  const sum = /function invEditAutoSum\(\)\{[\s\S]*?\n\}/.exec(H)[0];
-  assert.ok(/invEditLineSum\(\)\+invEditFees\(\)/.test(sum),
-    'the on-screen total must include the fees, or the screen disagrees with the invoice');
+  const sum = /function invEditAutoSum\(\)\{[\s\S]*?\n\}/.exec(H)[0].replace(/\s/g, '');
+  /* fares − commission + fees, the same arithmetic the invoice does. The fees
+     half is what this test was written for; the commission joined it when the
+     rate became adjustable, and the screen has to agree with the document on
+     both or the owner is looking at a number nobody will be billed. */
+  assert.ok(/invEditLineSum\(\)-invEditCommission\(\)\+invEditFees\(\)/.test(sum),
+    'the on-screen total must be fares − commission + fees: ' + sum);
   const save = /async function invEditSave\(\)\{[\s\S]*?\n\}/.exec(H)[0];
   assert.ok(/fees: invEditFees\(\)/.test(save) && /fees_label:/.test(save), 'the save must send them');
 });
@@ -753,6 +757,415 @@ test('adding the FEE column did not push the foot matter onto a second page', as
   const wrapped = journeys.filter((t) => t.h > 14).map((t) => t.s);
   assert.deepStrictEqual(wrapped, [],
     'the journey column is too narrow — these wrapped: ' + wrapped.join(' | '));
+});
+
+// ── THE OPERATOR COMMISSION ──────────────────────────────────────────────
+console.log('\nAn invoice to another operator, with commission deducted');
+
+/* THE ARRANGEMENT: fares − commission + fees, and the commission is ten per
+   cent of the FARES only. The owner pays the parking and the tolls at the
+   barrier; taking a tenth of those would be charging commission on his own
+   outlay. Same rule as the driver side, other end of the deal. */
+const OP_TRIPS = [
+  { date: '2026-08-04', ref: 'WPH-3001', time: '05:30', pickup: 'Weppons Farm, Wiston BN44 3DN', destination: 'Gatwick Airport', fare: 95, fee: 7 },
+  { date: '2026-08-09', ref: 'WPH-3002', time: '11:00', pickup: 'Steyning', destination: 'Heathrow Airport, Terminal 5', fare: 120, fee: 7 },
+  { date: '2026-08-15', ref: 'WPH-3003', time: '06:45', pickup: 'Lewes', destination: 'Gatwick Airport', fare: 98.50, fee: 13 }
+];   // fares 313.50, fees 27.00, commission 31.35, total 309.15
+
+test('commission is 10% of the FARES and never of the fees', async () => {
+  const inv = seed('account', OP_TRIPS);
+  const r = await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
+    body: { line_items: OP_TRIPS, commission_pct: 10 } });
+  assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
+  assert.strictEqual(r.body.lineSum, 313.50, 'the fares');
+  assert.strictEqual(r.body.fees, 27, 'the fees, from the rows');
+  assert.strictEqual(r.body.commission, 31.35, '10% of 313.50 — NOT of 340.50');
+  assert.notStrictEqual(r.body.commission, 34.05, 'that would be a tenth of the fees as well');
+});
+
+test('total = fares − commission + fees', async () => {
+  const inv = seed('account', OP_TRIPS);
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
+    body: { line_items: OP_TRIPS, commission_pct: 10 } });
+  const after = rowOf(inv.id);
+  assert.strictEqual(after.total, 309.15, '313.50 − 31.35 + 27.00');
+  assert.strictEqual(after.commission_pct, 10);
+  // the fees really are passed through whole
+  assert.strictEqual(Math.round((after.total - (313.50 - 31.35)) * 100) / 100, 27,
+    'the fees reach the operator undiminished');
+});
+
+test('THE AMOUNT RENDERS — it is never blank', async () => {
+  /* The complaint that started this: a "Less 10% commission" line with nothing
+     beside it. That one was the invoice's NOTES text, which has no amount by
+     definition. This is a real line with a real figure, computed from the
+     fares on the page. */
+  const inv = seed('account', OP_TRIPS);
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
+    body: { line_items: OP_TRIPS, commission_pct: 10 } });
+  const texts = await drawn(rowOf(inv.id));
+  const label = texts.find((t) => /^Less 10% commission$/.test(t.s));
+  assert.ok(label, 'the commission line is missing entirely');
+  const amount = texts.find((t) => Math.abs(t.y - label.y) < 2 && /\d/.test(t.s) && t !== label);
+  assert.ok(amount, 'the commission line has NO amount beside it — the original bug');
+  assert.strictEqual(amount.s, '\u2212\u00a331.35', 'and it reads as a deduction: ' + amount.s);
+});
+
+test('all four steps are named, in order', async () => {
+  const inv = seed('account', OP_TRIPS);
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
+    body: { line_items: OP_TRIPS, commission_pct: 10 } });
+  const texts = await drawn(rowOf(inv.id));
+  const at = (re) => { const t = texts.find((x) => re.test(x.s)); return t ? t.y : null; };
+  const fares = at(/^Fares \(jobs\)$/), fees = at(/^Fees \(parking & tolls\)$/),
+        comm = at(/^Less 10% commission$/), total = at(/^TOTAL DUE$/);
+  for (const [n, v] of [['Fares (jobs)', fares], ['Fees', fees], ['Less 10% commission', comm], ['TOTAL DUE', total]]) {
+    assert.ok(v !== null, n + ' is not on the page');
+  }
+  assert.ok(fares < fees && fees < comm && comm < total,
+    'an accounts team reads down: fares, fees, commission, total — got ' +
+    [fares, fees, comm, total].map((v) => v && v.toFixed(0)).join(' → '));
+  assert.ok(texts.some((t) => t.s === '£313.50'), 'the fares figure');
+  assert.ok(texts.some((t) => t.s === '£27.00'), 'the fees figure');
+  assert.ok(texts.some((t) => t.s === '£309.15'), 'and the total');
+});
+
+test('no commission set and the invoice looks exactly as it did', async () => {
+  const inv = seed('account', OP_TRIPS);
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) }, body: { line_items: OP_TRIPS } });
+  const after = rowOf(inv.id);
+  assert.strictEqual(after.commission_pct, 0);
+  assert.strictEqual(after.total, 340.50, 'fares + fees, as before');
+  const texts = await drawn(after);
+  assert.strictEqual(texts.filter((t) => /commission/i.test(t.s)).length, 0, 'no commission line');
+  assert.strictEqual(texts.filter((t) => /^Fares \(jobs\)$/.test(t.s)).length, 0,
+    'and no Fares lead-in either — with nothing deducted it says nothing new');
+});
+
+test('a manual total still wins over the whole arrangement', async () => {
+  const inv = seed('account', OP_TRIPS);
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
+    body: { line_items: OP_TRIPS, commission_pct: 10, total_override: 250 } });
+  const after = rowOf(inv.id);
+  assert.strictEqual(after.total, 250, 'the figure he set');
+  assert.strictEqual(after.commission_pct, 10, 'and the breakdown still shows');
+  const texts = await drawn(after);
+  assert.ok(texts.some((t) => t.s === '£250.00'), 'the invoice shows the override');
+  assert.ok(texts.some((t) => t.s === '\u2212\u00a331.35'), 'with the commission line still on it');
+});
+
+test('the commission comes from the ROWS, never from a hand-set total', async () => {
+  /* A percentage of whatever the owner happened to type is not a commission. */
+  const inv = seed('account', OP_TRIPS);
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
+    body: { line_items: OP_TRIPS, commission_pct: 10, total_override: 9999 } });
+  const texts = await drawn(rowOf(inv.id));
+  assert.ok(texts.some((t) => t.s === '\u2212\u00a331.35'),
+    'still a tenth of the fares, not of the 9999');
+});
+
+test('a nonsense rate is refused and nothing changes', async () => {
+  const inv = seed('account', OP_TRIPS);
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) }, body: { commission_pct: 10 } });
+  for (const bad of ['abc', -1, 100, 250]) {
+    const r = await call('patch', '/invoices/:id', { params: { id: String(inv.id) }, body: { commission_pct: bad } });
+    assert.strictEqual(r.statusCode, 400, JSON.stringify(bad) + ' → ' + r.statusCode);
+  }
+  assert.strictEqual(rowOf(inv.id).commission_pct, 10, 'the invoice is untouched by a refused edit');
+});
+
+test('a corrected commission does not serve a stale PDF', async () => {
+  const inv = seed('account', OP_TRIPS);
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) }, body: { commission_pct: 10 } });
+  const before = invoicePdf.invoiceCachePath(inv.invoice_no, rowOf(inv.id));
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) }, body: { commission_pct: 12.5 } });
+  assert.notStrictEqual(before, invoicePdf.invoiceCachePath(inv.invoice_no, rowOf(inv.id)));
+});
+
+// ── THE FORM: OPERATOR OR ORDINARY CUSTOMER ──────────────────────────────
+console.log('\nOne form, two kinds of invoice');
+
+test('commission OFF is the default, and leaves no trace anywhere', async () => {
+  /* Most invoices go to a customer, and a customer is not owed a commission.
+     Off must mean genuinely absent — not a zero line, not a Fares lead-in. */
+  const inv = seed('bespoke', BESPOKE_ITEMS);
+  const r = await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
+    body: { fees: 12, fees_label: 'Parking' } });
+  assert.strictEqual(r.statusCode, 200);
+  const after = rowOf(inv.id);
+  assert.strictEqual(after.commission_pct, 0, 'nothing is set unless it is asked for');
+  assert.strictEqual(after.total, 227, '215 fares + 12 fees — no deduction');
+  const texts = await drawn(after);
+  assert.strictEqual(texts.filter((t) => /commission/i.test(t.s)).length, 0,
+    'the word must not appear at all on a customer invoice');
+  assert.strictEqual(texts.filter((t) => /^Fares \(jobs\)$/.test(t.s)).length, 0,
+    'nor the Fares lead-in, which only earns its place above a deduction');
+  assert.ok(texts.some((t) => t.s === '£227.00'), 'just fares + fees');
+});
+
+test('the form defaults the toggle to OFF and posts the choice', () => {
+  const H = read('westmere-owner.html');
+  const box = /<input id="ni-commission"[^>]*>/.exec(H);
+  assert.ok(box, 'the toggle is missing from the create form');
+  assert.ok(!/\bchecked\b/.test(box[0]), 'it must not be ticked by default: ' + box[0]);
+  assert.ok(/Leave off for a normal customer or business invoice/.test(H),
+    'and it must say plainly what off means');
+  const build = H.slice(H.indexOf("return{url:'/api/invoices/bespoke'") - 400, H.indexOf("return{url:'/api/invoices/bespoke'") + 400);
+  assert.ok(/commissionPct=\(cb&&cb\.checked\)\?invCommissionPct\(\):0/.test(build.replace(/\s/g, '')),
+    'the choice — and the RATE he typed — must reach the request');
+  assert.ok(/commission_pct:commissionPct/.test(build.replace(/\s/g, '')), 'as commission_pct');
+});
+
+test('a trip created on the form keeps its RESOLVED addresses', () => {
+  /* The account edit path spreads the whole line item, so pickup/destination
+     survive there whatever happens — which is why removing them from the
+     CREATE path went unnoticed. This is the create path. */
+  const src = read('server/api.js').replace(/\/\*[\s\S]*?\*\//g, ' ');
+  const create = src.slice(src.indexOf("router.post('/invoices/bespoke'"));
+  const map = create.slice(create.indexOf('.map(it => ({'), create.indexOf('.filter', create.indexOf('.map(it => ({')) + 200);
+  assert.ok(/pickup: it\.pickup/.test(map), 'the resolved FROM must be stored: ' + map.slice(0, 200));
+  assert.ok(/destination: it\.destination/.test(map), 'and the resolved TO');
+  assert.ok(/fee:/.test(map), 'and the optional fee');
+});
+
+test('a FEE is optional per trip — blank is not zero', () => {
+  const H = read('westmere-owner.html');
+  const row = /function invAddItem\([\s\S]*?\n\}/.exec(H)[0];
+  assert.ok(/class="fi ni-fee"/.test(row), 'every trip row needs a fee box');
+  assert.ok(/placeholder=""/.test(row) || /placeholder=\x27\x27/.test(row),
+    'and it must start empty, not at 0.00');
+  const get = /function invGetItems\(\)\{[\s\S]*?\n\}/.exec(H)[0];
+  assert.ok(/feeRaw===''\?0:/.test(get.replace(/\s/g, '')),
+    'a blank box must not be read as a typed zero');
+  const src = read('server/api.js').replace(/\/\*[\s\S]*?\*\//g, ' ');
+  assert.ok(/fee: \(Number\(it\.fee\) > 0\) \? Math\.round/.test(src),
+    'and the server must store 0 only when there genuinely is none');
+});
+
+test('FROM and TO go through the address lookup, and the RESOLVED address is stored', () => {
+  const H = read('westmere-owner.html');
+  assert.ok(/src="\/wm-address-lookup\.js"/.test(H), 'the owner app must load the lookup');
+  const row = /function invAddItem\([\s\S]*?\n\}/.exec(H)[0];
+  assert.ok(/class="fi ni-from"/.test(row) && /class="fi ni-to"/.test(row), 'the row needs From and To');
+  assert.ok(/WMLookup\.attach\(row\.querySelector\('\.ni-from'\)\)/.test(row),
+    'and both must be wired to it');
+  assert.ok(/WMLookup\.attach\(row\.querySelector\('\.ni-to'\)\)/.test(row));
+  const get = /function invGetItems\(\)\{[\s\S]*?\n\}/.exec(H)[0];
+  assert.ok(/WMLookup\.full\(fromEl\)/.test(get) && /WMLookup\.full\(toEl\)/.test(get),
+    'the PRECISE address is what the invoice carries — the box only shows the short form');
+});
+
+test('the lookup component behaves like the booking form\'s', () => {
+  const L = read('wm-address-lookup.js');
+  assert.ok(/nominatim\.openstreetmap\.org/.test(L), 'same geocoder as the booking page');
+  assert.ok(/countrycodes=gb/.test(L), 'same country restriction');
+  assert.ok(/delete input\.dataset\.fullAddress/.test(L),
+    'typing over a picked suggestion must forget it, or the old address is sent with the new text');
+  assert.ok(/if \(seen\[key\]\) return;/.test(L),
+    'the de-duplicator must SKIP a repeat, not merely record it — /seen\[key\]/ alone still ' +
+    'matched the line that assigns the key, so removing the early return went unnoticed');
+  assert.ok(/WMAddr && window\.WMAddr\.briefDisplay/.test(L),
+    'display goes through the shared normalizer, so it reads the same as everywhere else');
+});
+
+test('an operator invoice built on the form gets the breakdown', async () => {
+  const inv = seed('bespoke', BESPOKE_ITEMS);
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
+    body: { fees: 12, fees_label: 'Parking', commission_pct: 10 } });
+  const after = rowOf(inv.id);
+  assert.strictEqual(after.total, 205.50, '215 − 21.50 + 12');
+  const texts = await drawn(after);
+  assert.ok(texts.some((t) => /^Less 10% commission$/.test(t.s)), 'the line');
+  assert.ok(texts.some((t) => t.s === '\u2212\u00a321.50'), 'with its amount');
+});
+
+test('THE RATE IS ADJUSTABLE — 10 is a default, not a constant', async () => {
+  for (const [pct, comm, total] of [[10, 21.50, 205.50], [12.5, 26.88, 200.12], [15, 32.25, 194.75], [7.5, 16.13, 210.87]]) {
+    const inv = seed('bespoke', BESPOKE_ITEMS);                      // fares 215
+    const r = await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
+      body: { fees: 12, commission_pct: pct } });
+    assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
+    assert.strictEqual(r.body.commissionPct, pct);
+    assert.strictEqual(r.body.commission, comm, pct + '% of 215 should be ' + comm);
+    assert.strictEqual(rowOf(inv.id).total, total, pct + '%: 215 − ' + comm + ' + 12');
+  }
+});
+
+test('the line NAMES the rate that was used', async () => {
+  for (const [pct, label, amount] of [[10, 'Less 10% commission', '\u2212\u00a321.50'],
+                                      [12.5, 'Less 12.5% commission', '\u2212\u00a326.88'],
+                                      [15, 'Less 15% commission', '\u2212\u00a332.25']]) {
+    const inv = seed('bespoke', BESPOKE_ITEMS);
+    await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
+      body: { fees: 12, commission_pct: pct } });
+    const texts = await drawn(rowOf(inv.id));
+    assert.ok(texts.some((t) => t.s === label), 'expected "' + label + '" on the page');
+    assert.ok(texts.some((t) => t.s === amount), 'with ' + amount);
+    assert.ok(!texts.some((t) => t.s === 'Less 10% commission' && pct !== 10),
+      'a hard-coded 10% must not survive: ' + label);
+  }
+});
+
+test('both forms expose the rate, and neither hard-codes it', () => {
+  const H = read('westmere-owner.html');
+  for (const id of ['ni-commission-pct', 'inv-edit-commission-pct']) {
+    assert.ok(new RegExp('id="' + id + '"').test(H), id + ' is missing — the rate is not editable there');
+  }
+  const create = /function invCommissionPct\(\)\{[\s\S]*?\n\}/.exec(H)[0].replace(/\s/g, '');
+  const edit = /function invEditCommissionPct\(\)\{[\s\S]*?\n\}/.exec(H)[0].replace(/\s/g, '');
+  for (const [name, fn, field] of [['create', create, 'ni-commission-pct'],
+                                   ['edit', edit, 'inv-edit-commission-pct']]) {
+    /* It must READ the field. Checking only for the "return 10" fallback let a
+       version through that ignored the input and always returned ten. */
+    assert.ok(fn.includes(field), name + ' does not read ' + field);
+    assert.ok(/parseFloat/.test(fn), name + ' must parse what was typed');
+    assert.ok(/Math\.round\(v\*100\)\/100/.test(fn), name + ' must return the typed value');
+    assert.ok(/v<0\|\|v>=100/.test(fn), name + ' must bound the rate');
+    assert.ok(/return10;/.test(fn), name + ' falls back to 10 rather than to nothing');
+  }
+  assert.ok(/less'\+pct\+'%commission/.test(H.replace(/\s/g, '')),
+    'the running total must name the rate, not print a fixed 10%');
+});
+
+test('a rate outside 0–100 is refused, and the invoice is untouched', async () => {
+  const inv = seed('bespoke', BESPOKE_ITEMS);
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) }, body: { commission_pct: 12.5 } });
+  for (const bad of [-1, 100, 150, 'abc']) {
+    const r = await call('patch', '/invoices/:id', { params: { id: String(inv.id) }, body: { commission_pct: bad } });
+    assert.strictEqual(r.statusCode, 400, JSON.stringify(bad) + ' → ' + r.statusCode);
+  }
+  assert.strictEqual(rowOf(inv.id).commission_pct, 12.5, 'a refused edit changes nothing');
+});
+
+test('EVERY variable on an invoice can be corrected', async () => {
+  /* The owner's words: all variables can be adjusted. Asserted as one list so
+     a field that quietly stops being editable is noticed here rather than by
+     him, at the point he needs to change it. */
+  const inv = seed('account', ACCOUNT_ITEMS);
+  const r = await call('patch', '/invoices/:id', { params: { id: String(inv.id) }, body: {
+    recipient_name: 'Harbourside Events Ltd', recipient_email: 'accounts@harbourside.example.com',
+    recipient_phone: '07700 900321', recipient_addr: '12 Marine Parade\nBrighton',
+    issued_date: '2026-08-29', due_date: '2026-09-19', period_label: 'August 2026',
+    notes: 'Corrected.', commission_pct: 12.5,
+    line_items: [{ date: '2026-08-05', ref: 'WPH-1001', time: '09:30',
+                   pickup: 'Weppons Farm, Wiston BN44 3DN', destination: 'Gatwick Airport',
+                   fare: 111, fee: 9 }],
+    total_override: 123.45 } });
+  assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
+  const a = rowOf(inv.id), it = itemsOf(inv.id)[0];
+  const checks = {
+    'bill-to name': [a.recipient_name, 'Harbourside Events Ltd'],
+    'bill-to email': [a.recipient_email, 'accounts@harbourside.example.com'],
+    'bill-to phone': [a.recipient_phone, '07700 900321'],
+    'bill-to address': [a.recipient_addr, '12 Marine Parade\nBrighton'],
+    'issued date': [a.issued_date, '2026-08-29'],
+    'due date': [a.due_date, '2026-09-19'],
+    'period label': [a.period_label, 'August 2026'],
+    'notes': [a.notes, 'Corrected.'],
+    'commission rate': [a.commission_pct, 12.5],
+    'trip FROM': [it.pickup, 'Weppons Farm, Wiston BN44 3DN'],
+    'trip TO': [it.destination, 'Gatwick Airport'],
+    'trip date': [it.date, '2026-08-05'],
+    'trip fare': [it.fare, 111],
+    'trip fee': [it.fee, 9],
+    'manual total': [a.total, 123.45],
+    'manual flag': [a.total_manual, 1]
+  };
+  for (const [what, [got, want]] of Object.entries(checks)) {
+    assert.strictEqual(got, want, what + ' is not adjustable: got ' + JSON.stringify(got));
+  }
+  // and the invoice number is still the one thing that cannot move
+  assert.strictEqual(a.invoice_no, inv.invoice_no);
+});
+
+// ── PAGINATION ───────────────────────────────────────────────────────────
+console.log('\nThe foot group stays on page one when it fits');
+
+/* REALISTIC SETTINGS. With an empty settings object the FROM block is one line
+   and everything fits with room to spare, so the squeeze is never called on and
+   a guard built on that fixture proves nothing — removing the squeeze entirely
+   left these tests green. The owner's real invoice settings carry a five-line
+   address and bank details, which is what makes the page tight. */
+const REAL_SETTINGS = {
+  business_name: 'Westmere Private Hire', owner_name: 'Nikodem Krajnyk',
+  address_line1: '4 Fisher Street', address_line2: 'Lewes, East Sussex', postcode: 'BN7 2DG',
+  phone: '07930 342593', email: 'bookings@westmereprivatehire.co.uk',
+  bank_name: 'Lloyds Bank', account_name: 'Westmere Private Hire',
+  sort_code: '00-00-00', account_no: '00000000'
+};
+async function pagesOf(row) {
+  const buf = await invoicePdf.buildInvoicePdf(invoicePdf.invoiceDataFromRow(row, REAL_SETTINGS));
+  const t = buf.toString('latin1');
+  return (t.split('/Type /Page').length - 1) - (t.split('/Type /Pages').length - 1);
+}
+
+test('a normal month with the full breakdown is ONE page', async () => {
+  /* Five journeys, per-trip fees, the four-line commission breakdown, a note
+     and the bank details — on the owner's real settings, which carry a
+     five-line FROM address and are what make the page tight. */
+  /* BUSY_MONTH carries two flight tags; the boundary test below records that
+     two is one too many at five journeys. This is the ordinary month: one
+     airport run with a flight number, four without. */
+  const items = BUSY_MONTH.slice(0, 5).map((b, i) => Object.assign({}, b,
+    { fee: [7, 7, 13, 11, 11][i], flight: i === 0 ? b.flight : null }));
+  const inv = seed('account', items);
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
+    body: { line_items: items, commission_pct: 10, notes: 'Thank you.' } });
+  const pages = await pagesOf(rowOf(inv.id));
+  assert.strictEqual(pages, 1,
+    'five journeys with the full breakdown must fit one page — went to ' + pages);
+});
+
+test('WHERE THE PAGE ACTUALLY ENDS, measured rather than hoped for', async () => {
+  /* The honest boundary. Flight tags are the thing that costs: a row carrying
+     one is taller than the constant, so the squeeze cannot reclaim it. Two of
+     them on a five-journey month is enough to need a second page, and no
+     amount of tightening changes that — the alternative would be shaving the
+     margins until one fixture passed, which is how a layout stops being
+     trustworthy. Recorded here so the limit is a known number rather than a
+     surprise. */
+  const mk = (n, flights) => Array.from({ length: n }, (_, i) => Object.assign({},
+    BUSY_MONTH[i % BUSY_MONTH.length],
+    { ref: 'WPH-8' + i, date: '2026-08-' + String(i + 1).padStart(2, '0'),
+      fee: [7, 7, 13, 11, 11][i % 5], flight: i < flights ? 'BA275' + i : null }));
+  const pagesFor = async (n, flights) => {
+    const items = mk(n, flights);
+    const inv = seed('account', items);
+    await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
+      body: { line_items: items, commission_pct: 10, notes: 'Thank you.' } });
+    return pagesOf(rowOf(inv.id));
+  };
+  assert.strictEqual(await pagesFor(5, 1), 1, 'five journeys, one flight tag → one page');
+  assert.strictEqual(await pagesFor(5, 2), 2, 'five journeys, TWO flight tags → two, and that is expected');
+});
+
+test('the break is MONOTONIC — more journeys never fit where fewer did not', async () => {
+  /* The symptom of a squeeze measured against a promise the drawing could not
+     keep: six journeys broke to a second page where seven did not. */
+  const seen = [];
+  for (let n = 3; n <= 8; n++) {
+    const items = Array.from({ length: n }, (_, i) => Object.assign({}, BUSY_MONTH[i % BUSY_MONTH.length],
+      { ref: 'WPH-7' + i, date: '2026-08-' + String(i + 1).padStart(2, '0'), fee: [7, 7, 13, 11, 11][i % 5] }));
+    const inv = seed('account', items);
+    await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
+      body: { line_items: items, commission_pct: 10, notes: 'Thank you.' } });
+    seen.push({ n, pages: await pagesOf(rowOf(inv.id)) });
+  }
+  for (let i = 1; i < seen.length; i++) {
+    assert.ok(seen[i].pages >= seen[i - 1].pages,
+      seen[i].n + ' journeys fit in ' + seen[i].pages + ' page(s) but ' + seen[i - 1].n +
+      ' needed ' + seen[i - 1].pages + ' — the pagination is not monotonic: ' +
+      seen.map((x) => x.n + ':' + x.pages).join(' '));
+  }
+});
+
+test('a squeeze is only used when it actually works', () => {
+  const src = read('server/invoice-pdf.js').replace(/\/\*[\s\S]*?\*\//g, ' ');
+  assert.ok(/CANDIDATES/.test(src), 'the squeeze must be searched, not computed once');
+  assert.ok(/m2\.yAfterTotal <= m2\.groupMax/.test(src),
+    'and each candidate re-measured before it is trusted');
+  assert.ok(/return NO_SLACK;\s*\}\s*$/m.test(src) || /return NO_SLACK;/.test(src),
+    'with nothing tightened when none of them fits');
 });
 
 // ── THE MIGRATION ────────────────────────────────────────────────────────

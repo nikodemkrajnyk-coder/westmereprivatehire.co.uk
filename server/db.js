@@ -680,6 +680,12 @@ function migrate() {
          fees defaults to 0, so every invoice written before today is a
          zero-fee invoice and renders exactly as it did. */
       ['fees',       'REAL NOT NULL DEFAULT 0'],
+      /* THE OPERATOR COMMISSION, per invoice. Zero on every existing row and
+         on every ordinary customer, so nothing changes for anybody until it is
+         set — this is an arrangement with a particular operator, not a global
+         rate. Stored as a percentage rather than an amount so the invoice can
+         be corrected and the deduction follows the fares. */
+      ['commission_pct', 'REAL NOT NULL DEFAULT 0'],
       ['fees_label', 'TEXT']
     ];
     for (const [n, t] of invCols) {

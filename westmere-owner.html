@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <script src="/address-normalize.js"></script>
+<script src="/wm-address-lookup.js"></script>
 <script src="/wm-lifecycle.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"/>
 <meta name="mobile-web-app-capable" content="yes">
@@ -1280,6 +1281,32 @@ select:-webkit-autofill:focus{
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem">
               <button onclick="invAddItem()" style="padding:.45rem .8rem;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);cursor:pointer;border-radius:5px;border:1px solid rgba(27,27,26,.2);background:transparent;color:var(--navy)">+ Add Item</button>
               <div style="font-size:.88rem;color:rgba(27,27,26,.5)">Total: <strong id="ni-running-total" style="color:var(--navy)">£0.00</strong></div>
+              <div id="ni-breakdown" style="display:none;font-size:.75rem;color:rgba(27,27,26,.5);margin-top:.2rem"></div>
+              <!-- WHO THIS INVOICE IS FOR.
+                   Off by default, because most invoices are to a customer and a
+                   customer is not owed a commission. Ticked, it becomes a
+                   settlement with another operator: fares, fees, ten per cent
+                   off the fares, total. The choice is per invoice — there is no
+                   global rate, because the arrangement is with a firm and not
+                   with everybody. -->
+              <label style="display:flex;align-items:center;gap:.5rem;margin-top:.7rem;font-size:.85rem;color:var(--navy);cursor:pointer">
+                <input id="ni-commission" type="checkbox" onchange="invCalcTotal()" style="width:16px;height:16px">
+                Operator invoice &mdash; deduct commission
+              </label>
+              <!-- THE RATE IS THE OWNER'S. Ten per cent is what he has always
+                   used, so it is the default and he never has to touch it — but
+                   an arrangement with one firm is not an arrangement with all of
+                   them, and a number he cannot change is a number he has to ring
+                   somebody about. -->
+              <div id="ni-commission-rate" style="display:none;align-items:center;gap:.4rem;margin-top:.45rem">
+                <span style="font-size:.8rem;color:rgba(27,27,26,.55)">Rate</span>
+                <input id="ni-commission-pct" type="number" step="0.5" min="0" max="99.9" value="10"
+                       oninput="invCalcTotal()"
+                       style="width:74px;text-align:right;padding:.4rem;font-size:.9rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:5px;background:#fff">
+                <span style="font-family:var(--serif);font-size:1rem;color:var(--navy)">%</span>
+                <span style="font-size:.75rem;color:rgba(27,27,26,.45)">of the fares &mdash; never of the fees</span>
+              </div>
+              <div style="font-size:.75rem;color:rgba(27,27,26,.5);margin-top:.15rem">Leave off for a normal customer or business invoice.</div>
             </div>
             <div style="margin-bottom:.8rem">
               <div style="font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.22rem">Notes (optional)</div>
@@ -1421,6 +1448,21 @@ select:-webkit-autofill:focus{
                  back what he had typed. The two AMOUNTS stay side by side,
                  which is the part that had to sit together. -->
             <input id="inv-edit-fees-label" placeholder="What the fee is for &mdash; e.g. Parking &amp; tolls" oninput="invEditSyncTotal()" style="width:100%;box-sizing:border-box;margin-top:.5rem;padding:.5rem;font-size:.9rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:6px;background:#fff">
+            <!-- THE SAME TWO CONTROLS AS THE CREATE FORM, so a correction can
+                 turn a customer invoice into an operator one, change the rate,
+                 or take the commission off entirely. -->
+            <label style="display:flex;align-items:center;gap:.5rem;font-size:.85rem;color:var(--navy);cursor:pointer;margin-top:.6rem">
+              <input id="inv-edit-commission" type="checkbox" onchange="invEditSyncTotal()" style="width:16px;height:16px">
+              Operator invoice &mdash; deduct commission
+            </label>
+            <div id="inv-edit-rate-wrap" style="display:none;align-items:center;gap:.4rem;margin-top:.4rem">
+              <span style="font-size:.8rem;color:rgba(27,27,26,.55)">Rate</span>
+              <input id="inv-edit-commission-pct" type="number" step="0.5" min="0" max="99.9" value="10"
+                     oninput="invEditSyncTotal()"
+                     style="width:74px;text-align:right;padding:.4rem;font-size:.9rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:5px;background:#fff">
+              <span style="font-family:var(--serif);font-size:1rem;color:var(--navy)">%</span>
+              <span style="font-size:.75rem;color:rgba(27,27,26,.45)">of the fares</span>
+            </div>
             <label style="display:flex;align-items:center;gap:.5rem;font-size:.85rem;color:var(--navy);cursor:pointer;margin-top:.6rem">
               <input id="inv-edit-manual" type="checkbox" onchange="invEditSyncTotal()" style="width:16px;height:16px">
               Set the total by hand
@@ -6326,26 +6368,84 @@ function invAddItem(date,desc,amt){
   if(!wrap)return;
   var row=document.createElement('div');
   row.className='ni-item';
-  row.style.cssText='display:grid;grid-template-columns:100px 1fr 80px 28px;gap:.3rem;align-items:center';
+  /* A TRIP, not a line of text. The owner builds these by hand for a customer
+     who is not on an account, so the row asks for what a journey actually is —
+     where from, where to, when, what it cost, and what he paid out on it.
+
+     FROM and TO go through the same address lookup the booking form uses, so
+     what lands on the invoice is a resolved place rather than whatever was
+     half-typed. The FEE is optional and blank by default: most journeys carry
+     none, and a column of £0.00 is a column of noise. */
+  row.style.cssText='padding:.5rem 0;border-bottom:1px solid rgba(27,27,26,.06)';
   var today=new Date().toISOString().slice(0,10);
-  row.innerHTML='<input class="fi ni-date" type="date" style="font-size:.9rem;padding:.4rem .35rem;box-sizing:border-box" value="'+(date||today)+'">'
-    +'<input class="fi ni-desc" placeholder="Description" style="font-size:.93rem;box-sizing:border-box" value="'+owEsc(desc||'')+'">'
-    +'<input class="fi ni-amt" type="number" step="0.01" min="0" placeholder="0.00" style="font-size:.93rem;text-align:right;box-sizing:border-box" value="'+(amt||'')+'" oninput="invCalcTotal()">'
-    +'<button onclick="invRemoveItem(this)" title="Remove" style="background:transparent;border:none;color:#c0392b;cursor:pointer;font-size:1.2rem;padding:0;line-height:1;flex-shrink:0">&times;</button>';
+  var FI='width:100%;box-sizing:border-box;padding:.4rem;font-size:.88rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:5px;background:#fff';
+  var CAP='font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(27,27,26,.4);margin-bottom:.1rem';
+  row.innerHTML=
+     '<div style="display:flex;gap:.4rem;margin-bottom:.35rem">'
+    +'<div style="flex:1;min-width:0;position:relative"><div style="'+CAP+'">From</div>'
+      +'<input class="fi ni-from" placeholder="Pickup — start typing" style="'+FI+'"></div>'
+    +'<div style="flex:1;min-width:0;position:relative"><div style="'+CAP+'">To</div>'
+      +'<input class="fi ni-to" placeholder="Drop-off — start typing" style="'+FI+'"></div>'
+    +'</div>'
+    +'<div style="display:flex;gap:.4rem;align-items:flex-end">'
+    +'<div style="flex:1;min-width:0"><div style="'+CAP+'">Date</div>'
+      +'<input class="fi ni-date" type="date" style="'+FI+'" value="'+(date||today)+'"></div>'
+    +'<div style="width:78px"><div style="'+CAP+'">Fee <span style="text-transform:none;letter-spacing:0">(opt.)</span></div>'
+      +'<input class="fi ni-fee" type="number" step="0.01" min="0" placeholder="" style="'+FI+';text-align:right" oninput="invCalcTotal()"></div>'
+    +'<div style="width:88px"><div style="'+CAP+'">Fare</div>'
+      +'<input class="fi ni-amt" type="number" step="0.01" min="0" placeholder="0.00" style="'+FI+';text-align:right" value="'+(amt||'')+'" oninput="invCalcTotal()"></div>'
+    +'<button onclick="invRemoveItem(this.closest(\'.ni-item\'))" title="Remove this trip" style="padding:.4rem .55rem;border:1px solid rgba(27,27,26,.18);background:#fff;border-radius:5px;cursor:pointer;color:#8a1c1c">&times;</button>'
+    +'</div>';
   wrap.appendChild(row);
+  /* The lookup is attached AFTER the row is in the document — it measures the
+     field to place its dropdown. */
+  if(window.WMLookup){ WMLookup.attach(row.querySelector('.ni-from')); WMLookup.attach(row.querySelector('.ni-to')); }
+  if(desc){ var f=row.querySelector('.ni-from'); if(window.WMLookup) WMLookup.set(f,desc); else f.value=desc; }
   invCalcTotal();
 }
 
-function invRemoveItem(btn){
-  if(btn&&btn.parentNode)btn.parentNode.remove();
+function invRemoveItem(el){
+  // Given the row itself now — the button sits two levels down inside it.
+  if(el&&el.remove)el.remove(); else if(el&&el.parentNode)el.parentNode.remove();
   invCalcTotal();
 }
 
+/* THE RUNNING TOTAL, showing its working when there is any.
+   fares − commission + fees, exactly as the invoice will compute it. With no
+   commission and no fees it is the sum it always was. */
+/* THE RATE, read once and bounded once. Blank or nonsense falls back to the
+   ten per cent he has always used rather than silently becoming zero — a
+   commission of nothing on an operator invoice is a bill for the wrong money. */
+function invCommissionPct(){
+  var el=document.getElementById('ni-commission-pct');
+  var v=el?parseFloat(el.value):NaN;
+  if(!isFinite(v)||v<0||v>=100) return 10;
+  return Math.round(v*100)/100;
+}
 function invCalcTotal(){
-  var total=0;
-  document.querySelectorAll('#ni-items .ni-amt').forEach(function(i){total+=parseFloat(i.value)||0;});
+  var fares=0,fees=0;
+  document.querySelectorAll('#ni-items .ni-amt').forEach(function(i){fares+=parseFloat(i.value)||0;});
+  document.querySelectorAll('#ni-items .ni-fee').forEach(function(i){fees+=parseFloat(i.value)||0;});
+  fares=Math.round(fares*100)/100; fees=Math.round(fees*100)/100;
+  var cb=document.getElementById('ni-commission');
+  var rateWrap=document.getElementById('ni-commission-rate');
+  if(rateWrap) rateWrap.style.display=(cb&&cb.checked)?'flex':'none';
+  var pct=(cb&&cb.checked)?invCommissionPct():0;
+  var comm=Math.round(fares*(pct/100)*100)/100;
+  var total=Math.round((fares-comm+fees)*100)/100;
   var el=document.getElementById('ni-running-total');
   if(el)el.textContent='£'+total.toFixed(2);
+  var bd=document.getElementById('ni-breakdown');
+  if(bd){
+    if(pct>0){
+      bd.style.display='';
+      bd.innerHTML='Fares £'+fares.toFixed(2)+(fees>0?'  ·  Fees £'+fees.toFixed(2):'')+
+        '  ·  less '+pct+'% commission −£'+comm.toFixed(2);
+    } else if(fees>0){
+      bd.style.display='';
+      bd.innerHTML='Fares £'+fares.toFixed(2)+'  ·  Fees £'+fees.toFixed(2);
+    } else bd.style.display='none';
+  }
 }
 
 function invGetItems(){
@@ -6353,13 +6453,28 @@ function invGetItems(){
   var items=[];
   rows.forEach(function(r){
     var dateEl=r.querySelector('.ni-date');
-    var descEl=r.querySelector('.ni-desc');
+    var fromEl=r.querySelector('.ni-from');
+    var toEl=r.querySelector('.ni-to');
     var amtEl=r.querySelector('.ni-amt');
-    if(!descEl||!amtEl)return;
+    var feeEl=r.querySelector('.ni-fee');
+    if(!amtEl)return;
     var date=dateEl?dateEl.value.trim():'';
-    var desc=descEl.value.trim();
+    /* THE RESOLVED ADDRESS, not what is showing in the box. The field displays
+       the short form; the precise string the geocoder returned is what the
+       invoice carries — and what it falls back to if the owner typed it by
+       hand and never picked a suggestion. */
+    var from=window.WMLookup?WMLookup.full(fromEl):((fromEl&&fromEl.value)||'').trim();
+    var to  =window.WMLookup?WMLookup.full(toEl)  :((toEl  &&toEl.value)  ||'').trim();
     var amt=parseFloat(amtEl.value)||0;
-    if(desc&&amt>0)items.push({date:date||null,description:desc,amount:amt});
+    /* BLANK IS NOT ZERO. An empty fee box means this trip carried none and no
+       fee is shown for it; it must not become a £0.00 the invoice prints. */
+    var feeRaw=feeEl?feeEl.value.trim():'';
+    var fee=feeRaw===''?0:(parseFloat(feeRaw)||0);
+    if(!from&&!to)return;
+    if(amt<=0&&fee<=0)return;
+    var desc=(from&&to)?(from+' \u2192 '+to):(from||to);
+    items.push({date:date||null,description:desc,amount:amt,
+                pickup:from||null,destination:to||null,fee:fee>0?Math.round(fee*100)/100:0});
   });
   return items;
 }
@@ -6475,7 +6590,9 @@ function invBuildRequest(sendEmail){
     var sc=document.getElementById('inv-save-customer');
     var saveCustomer=!!(sc&&sc.checked);
     if(saveCustomer&&!email){err.textContent='Add a recipient email to save them as a customer (or untick "Save this recipient as a customer").';err.style.display='';return null;}
-    return{url:'/api/invoices/bespoke',body:{recipient:{name:name,email:email,phone:phone,address:address},items:items,notes:notes,send_email:sendEmail},saveCustomer:saveCustomer,recipient:{name:name,email:email,phone:phone,address:address}};
+    var cb=document.getElementById('ni-commission');
+    var commissionPct=(cb&&cb.checked)?invCommissionPct():0;
+    return{url:'/api/invoices/bespoke',body:{recipient:{name:name,email:email,phone:phone,address:address},items:items,notes:notes,send_email:sendEmail,commission_pct:commissionPct},saveCustomer:saveCustomer,recipient:{name:name,email:email,phone:phone,address:address}};
   } else {
     var cid=document.getElementById('inv-customer').value;
     var dates=invGetDates();
@@ -6817,6 +6934,9 @@ function invEditOpen(){
   document.getElementById('inv-edit-due').value=inv.due_date||'';
   document.getElementById('inv-edit-notes').value=inv.notes||'';
   document.getElementById('inv-edit-manual').checked=!!inv.total_manual;
+  var pct=+inv.commission_pct||0;
+  document.getElementById('inv-edit-commission').checked=pct>0;
+  document.getElementById('inv-edit-commission-pct').value=pct>0?pct:10;
   document.getElementById('inv-edit-fees').value=(+inv.fees>0)?(+inv.fees).toFixed(2):'';
   document.getElementById('inv-edit-fees-label').value=inv.fees_label||'';
   invEditRenderLines();
@@ -6846,7 +6966,20 @@ function invEditFees(){
   return (isNaN(v)||v<0)?0:Math.round(v*100)/100;
 }
 /* Fees are part of the bill, so they are part of the sum the total tracks. */
-function invEditAutoSum(){ return Math.round((invEditLineSum()+invEditFees())*100)/100; }
+/* fares − commission + fees, the same arithmetic the invoice will do. */
+function invEditCommissionPct(){
+  var cb=document.getElementById('inv-edit-commission');
+  if(!cb||!cb.checked) return 0;
+  var v=parseFloat((document.getElementById('inv-edit-commission-pct')||{}).value);
+  if(!isFinite(v)||v<0||v>=100) return 10;
+  return Math.round(v*100)/100;
+}
+function invEditCommission(){
+  return Math.round(invEditLineSum()*(invEditCommissionPct()/100)*100)/100;
+}
+function invEditAutoSum(){
+  return Math.round((invEditLineSum()-invEditCommission()+invEditFees())*100)/100;
+}
 function invEditRenderLines(){
   var st=_INV_EDIT_STATE; if(!st)return;
   var box=document.getElementById('inv-edit-lines');
@@ -6905,8 +7038,13 @@ function invEditSyncTotal(){
   var sum=invEditAutoSum();
   var fees=invEditFees();
   var lines=invEditLineSum();
+  var pct=invEditCommissionPct();
+  var comm=invEditCommission();
+  var rw=document.getElementById('inv-edit-rate-wrap');
+  if(rw) rw.style.display=pct>0?'flex':'none';
   var breakdown=st.items.length+' line'+(st.items.length===1?'':'s')+' £'+lines.toFixed(2)
-    +(fees>0?' + fees £'+fees.toFixed(2):'');
+    +(fees>0?' + fees £'+fees.toFixed(2):'')
+    +(pct>0?' − '+pct+'% commission £'+comm.toFixed(2):'');
   note.textContent=manual
     ? ('The invoice adds up to £'+sum.toFixed(2)+' ('+breakdown+'). It will show the figure above.')
     : (breakdown+'.');
@@ -6946,6 +7084,7 @@ async function invEditSave(){
     due_date:document.getElementById('inv-edit-due').value.trim(),
     notes:document.getElementById('inv-edit-notes').value.trim(),
     line_items:st.items,          // each carries its own fee on an account invoice
+    commission_pct: invEditCommissionPct(),
     fees: invEditFees(),
     fees_label: document.getElementById('inv-edit-fees-label').value.trim(),
     total_override: manual ? typed : null

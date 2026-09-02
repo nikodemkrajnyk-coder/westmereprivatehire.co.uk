@@ -241,7 +241,12 @@ test('the paperwork sits BELOW the band, and says the same date once', async () 
 });
 
 test('the TOTAL is the biggest thing on the page', () => {
-  const tot = /TOTAL DUE[\s\S]{0,400}/.exec(SRC)[0];
+  /* Comments stripped first. This anchored on the literal "TOTAL DUE" and
+     found the phrase inside a comment explaining the totals block, then
+     measured four hundred characters of prose. The same trap the rest of this
+     suite already guards against. */
+  const code = SRC.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^[ \t]*\/\/.*$/gm, ' ');
+  const tot = /TOTAL DUE[\s\S]{0,400}/.exec(code)[0];
   const size = /fontSize\((\d+)\)[\s\S]{0,120}total\.toFixed/.exec(tot);
   assert.ok(size, 'the total must state its size');
   assert.ok(Number(size[1]) >= 20, 'the total must be at least 20pt, found ' + size[1]);
@@ -474,8 +479,8 @@ console.log('\nThe cache cannot outlive the template — again');
    So the layout is content-hashed. Change how the page is drawn and this fails,
    with the two things to do written in the message. It cannot tell a
    good change from a bad one; it can only refuse to let one through quietly. */
-const LAYOUT_HASH = '55ff72411b12';
-const LAYOUT_VERSION = 9;   // 9: a FEE column on each journey row
+const LAYOUT_HASH = 'd50058787016';
+const LAYOUT_VERSION = 10;  // 10: the operator commission breakdown
                             // 6: the two greys darkened for contrast
                             // 5: rows and their zebra bands grow to the wrapped text
 

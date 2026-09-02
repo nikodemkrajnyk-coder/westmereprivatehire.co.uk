@@ -105,7 +105,8 @@ function fmtDate(d) {
    VISIBLE design changes; nothing else needs to be cleared, and the owner's
    existing files are left alone rather than deleted.
    GUARDRAIL: server/tests/invoice-paths.test.js */
-const TEMPLATE_VERSION = 9;   // 9: a FEE column — each trip shows what was paid out on it
+const TEMPLATE_VERSION = 10;  // 10: the operator commission breakdown
+                              //  9: a FEE column — each trip shows what was paid out on it
                               // 8: the fees row stands alone — no subtotal lead-in
                               // 7: a fees row above the total
                               // 6: contrast — the two greys darkened to 7:1+ on white and tint
@@ -237,10 +238,34 @@ function measureSlack(data) {
        measurement runs the other way: rows tighten first, down to a floor that
        still holds two lines of type, then the gaps give up some air. */
     if (over > 0 && over <= MAX_SQUEEZE) {
-      const row  = -Math.min(4, Math.ceil(over / n));
-      const rest = over + row * n;
-      const gap  = rest > 0 ? -Math.min(10, Math.ceil(rest / 3)) : 0;
-      return { row, gap };
+      /* TIGHTEN BY THE LEAST THAT ACTUALLY WORKS.
+         This used to compute one squeeze from `over / rows` and trust it. That
+         arithmetic assumes every row can give up four points, which stopped
+         being true when rows began sizing themselves to their contents: a row
+         carrying a flight tag, or a journey that wraps, is already taller than
+         the constant, and shrinking the constant does nothing to it. So the
+         squeeze was measured against a promise the drawing could not keep —
+         the page came out cramped AND still broke, which is how an invoice
+         ended with its total on page one and its payment details alone on page
+         two under a hand's width of white. It also made the break
+         non-monotonic: six journeys broke where seven did not.
+
+         Each candidate is drawn and measured instead. The first that genuinely
+         fits is taken, so the page is tightened by as little as the job needs;
+         if none fits, nothing is tightened at all, because a roomy page that
+         breaks reads better than a cramped one that breaks anyway. */
+      const CANDIDATES = [[-1, 0], [-2, 0], [-3, 0], [-4, 0], [-4, -4], [-4, -7], [-4, -10]];
+      for (const [row, gap] of CANDIDATES) {
+        try {
+          const p2 = new PDFDocument({ size: 'A4', margins: { top: M, bottom: M, left: M, right: M } });
+          p2.on('data', () => {}); p2.on('error', () => {});
+          registerFonts(p2);
+          const m2 = drawInvoice(p2, data, { row, gap });
+          p2.end();
+          if (m2 && m2.tablePages === 1 && m2.yAfterTotal <= m2.groupMax) return { row, gap };
+        } catch (_) { return NO_SLACK; }
+      }
+      return NO_SLACK;
     }
 
     /* THE FOOT GROUP IS GOING TO THE NEXT PAGE WHATEVER WE DO — a fourteen-line
@@ -288,6 +313,24 @@ function drawInvoice(doc, data, slack) {
      the page changes. */
   const fees        = +data.fees   || 0;
   const feesLabel   = String(data.feesLabel || '').trim();
+
+  /* THE OPERATOR COMMISSION. Zero, absent or nonsense means there is none and
+     the invoice looks exactly as it did — this is an arrangement with a
+     particular operator, not something every customer sees.
+
+     The FARES are the rides and only the rides. They are taken from the line
+     items rather than from `total − fees`, because the total may have been set
+     by hand and a commission worked out from a hand-set number would be
+     charging a percentage of whatever the owner happened to type. */
+  const commissionPct = (() => {
+    const p = Number(data.commissionPct);
+    return (isFinite(p) && p > 0 && p < 100) ? p : 0;
+  })();
+  const fareSum = Math.round(((data.bookings || data.items || []).reduce(
+    (t, it) => t + (Number(it && (it.fare !== undefined ? it.fare : it.amount)) || 0), 0)) * 100) / 100;
+  const commissionAmt = Math.round(fareSum * (commissionPct / 100) * 100) / 100;
+  // "10%" not "10.00%", but 7.5% keeps its half.
+  const fmtPct = (p) => (Math.round(p * 100) / 100).toString() + '%';
 
   // Recipient details
   const recName    = isBespoke ? ((data.recipient || {}).name    || '') : ((data.customer || {}).full_name || '');
@@ -693,8 +736,33 @@ function drawInvoice(doc, data, slack) {
      With VAT the net line still appears, because that one IS a different
      figure from anything else on the page and a VAT-registered invoice has to
      show it. */
+  /* THE OPERATOR BREAKDOWN.
+     An invoice to another operator is not a bill for a number, it is a
+     settlement: their accounts team has to be able to follow it from the
+     journeys to the figure. So when a commission is set, all four steps are
+     shown and named plainly —
+
+         Fares (jobs)              the rides, and only the rides
+         Fees (parking & tolls)    laid out at the barrier, passed through whole
+         Less 10% commission       −£, and only ever on the fares
+         TOTAL DUE                 fares − commission + fees
+
+     COMMISSION IS NEVER TAKEN ON THE FEES. The owner pays the parking and the
+     tolls out of his own pocket; taking a tenth of them would be charging
+     commission on his own outlay. It is the same rule the driver side lives
+     by, applied to the other end of the arrangement.
+
+     The FARES line earns its place here, where it did not before: with a
+     deduction below it, the total can no longer be arrived at by adding what
+     is on the page unless the starting figure is on the page too. */
   const leadIn = [];
-  if (fees > 0) leadIn.push([feesLabel || 'Fees', fees]);
+  if (commissionPct > 0) {
+    leadIn.push(['Fares (jobs)', fareSum]);
+    if (fees > 0) leadIn.push([feesLabel || 'Fees (parking & tolls)', fees]);
+    leadIn.push(['Less ' + fmtPct(commissionPct) + ' commission', -commissionAmt]);
+  } else if (fees > 0) {
+    leadIn.push([feesLabel || 'Fees', fees]);
+  }
   if (showVat) {
     leadIn.push(['Net of VAT', net]);
     leadIn.push(['VAT (' + vatRate + '%)', vatAmt]);
@@ -704,8 +772,13 @@ function drawInvoice(doc, data, slack) {
       const [label, amount] = leadIn[i];
       doc.font(BOLD).fontSize(9).fillColor(SOFT)
          .text(String(label), TX, y, { width: LW, align: 'right', characterSpacing: 0.8, lineBreak: false });
+      /* A deduction is written as a negative, with the minus outside the
+         pound sign — "−£56.25", the way an accounts team expects to read one.
+         Never blank: the figure is computed here from the fares on the page. */
+      const amt = Number(amount);
+      const money = (amt < 0 ? '\u2212\u00a3' : '\u00a3') + Math.abs(amt).toFixed(2);
       doc.font(BODY).fontSize(11).fillColor(SOFT)
-         .text('£' + Number(amount).toFixed(2), VX, y, { width: VW, align: 'right', lineBreak: false });
+         .text(money, VX, y, { width: VW, align: 'right', lineBreak: false });
       y += (i === leadIn.length - 1) ? 20 : 17;
     }
   } else {
@@ -911,6 +984,7 @@ function invoiceDataFromRow(row, settings) {
     total: row.total,
     fees: +row.fees || 0,
     feesLabel: row.fees_label || '',
+    commissionPct: row.commission_pct || 0,
     notes: row.notes || '',
     settings: settings || {},
     period: { issuedDate: row.issued_date, dueDate: row.due_date || '', label: row.period_label || '' }
@@ -965,7 +1039,9 @@ function invoiceContentHash(row) {
     row.kind, row.invoice_no, row.recipient_name, row.recipient_email,
     row.recipient_phone, row.recipient_addr, row.period_from, row.period_to,
     row.period_label, row.issued_date, row.due_date, row.notes,
-    row.line_items_json, row.journey_json, row.total, row.fees, row.fees_label
+    row.line_items_json, row.journey_json, row.total, row.fees, row.fees_label,
+    // or a corrected commission would serve the PDF drawn before it
+    row.commission_pct
   ]);
   return require('crypto').createHash('sha256').update(material).digest('hex').slice(0, 10);
 }

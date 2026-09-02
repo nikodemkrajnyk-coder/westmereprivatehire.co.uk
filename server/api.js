@@ -2368,7 +2368,16 @@ router.post('/invoices/bespoke', async (req, res) => {
   }
 
   const cleanItems = items
-    .map(it => ({ description: String(it.description || '').trim(), date: it.date ? String(it.date).trim() : '', amount: +it.amount || 0 }))
+    /* The trip, and what it carried. `fee` is optional and blank means none —
+       it must not become a zero the invoice prints. pickup/destination are the
+       RESOLVED addresses from the lookup, kept alongside the description so a
+       later edit still knows where the journey went. */
+    .map(it => ({ description: String(it.description || '').trim(),
+                  date: it.date ? String(it.date).trim() : '',
+                  amount: +it.amount || 0,
+                  fee: (Number(it.fee) > 0) ? Math.round(Number(it.fee) * 100) / 100 : 0,
+                  pickup: it.pickup ? String(it.pickup).trim() : undefined,
+                  destination: it.destination ? String(it.destination).trim() : undefined }))
     .filter(it => it.description && it.amount > 0);
   if (!cleanItems.length) {
     return res.status(400).json({ error: 'Items must have description and positive amount' });
@@ -2408,7 +2417,19 @@ router.post('/invoices/bespoke', async (req, res) => {
     if (row) settings = JSON.parse(row.value);
   } catch (e) {}
 
-  const total = cleanItems.reduce((s, it) => s + it.amount, 0);
+  /* THE ARRANGEMENT, chosen per invoice on the form.
+       commission off (the default) → fares + fees, exactly as before
+       commission on               → fares − 10% of the fares + fees
+     Fees are the optional per-trip amounts, passed through whole; a trip that
+     carried none contributes nothing and prints nothing. */
+  const newFees = Math.round(cleanItems.reduce((t, it) => t + (Number(it.fee) || 0), 0) * 100) / 100;
+  const newCommissionPct = (() => {
+    const p = Number(req.body && req.body.commission_pct);
+    return (isFinite(p) && p > 0 && p < 100) ? Math.round(p * 100) / 100 : 0;
+  })();
+  const fareSum = Math.round(cleanItems.reduce((s, it) => s + it.amount, 0) * 100) / 100;
+  const newCommission = Math.round(fareSum * (newCommissionPct / 100) * 100) / 100;
+  const total = Math.round((fareSum - newCommission + newFees) * 100) / 100;
   const shouldEmail = send_email === true;
 
   const cleanRecipient = {
@@ -2464,7 +2485,7 @@ router.post('/invoices/bespoke', async (req, res) => {
       JSON.stringify(cleanItems),
       // Kept, so a send NEXT WEEK shows the same trip block as a send today.
       journeyForEmail ? JSON.stringify(journeyForEmail) : null,
-      total, shouldEmail ? 1 : 0, req.auth.id
+      total, newFees, newCommissionPct, shouldEmail ? 1 : 0, req.auth.id
     );
   } catch (e) {
     console.error('[INVOICE] persist bespoke failed:', e.message);
@@ -2766,7 +2787,28 @@ router.patch('/invoices/:id', async (req, res) => {
   // The account total's fee line is the sum of the column above it, so it says so.
   if (isAccount && fees > 0 && !feesLabel) feesLabel = 'Fees (parking & tolls)';
 
-  const autoSum = Math.round((lineSum + fees) * 100) / 100;
+  /* THE OPERATOR COMMISSION, if this invoice carries one.
+       commission_pct: a number → set it (0 clears it)
+       absent          → leave the arrangement alone
+     Ten per cent of the FARES and never of the fees: the owner lays the
+     parking and the tolls out at the barrier, and taking a tenth of them would
+     be charging commission on his own outlay. */
+  let commissionPct = Number(row.commission_pct) || 0;
+  if (Object.prototype.hasOwnProperty.call(b, 'commission_pct')) {
+    if (b.commission_pct === null || b.commission_pct === '') { commissionPct = 0; }
+    else {
+      const p = Number(b.commission_pct);
+      if (!isFinite(p) || p < 0 || p >= 100) {
+        return res.status(400).json({ error: 'That commission rate does not look right: ' + b.commission_pct });
+      }
+      commissionPct = Math.round(p * 100) / 100;
+    }
+  }
+  const commission = Math.round(lineSum * (commissionPct / 100) * 100) / 100;
+
+  /* fares − commission + fees. With no commission this is the sum it always
+     was, so nothing about an ordinary invoice moves. */
+  const autoSum = Math.round((lineSum - commission + fees) * 100) / 100;
 
   /* THE OVERRIDE. Three states, and they have to stay distinguishable:
        total_override: a number  → set it, and remember that it was set;
@@ -2802,7 +2844,7 @@ router.patch('/invoices/:id', async (req, res) => {
        SET recipient_name  = ?, recipient_email = ?, recipient_phone = ?, recipient_addr = ?,
            issued_date = ?, due_date = ?, period_label = ?, notes = ?,
            line_items_json = ?, total = ?, total_manual = ?,
-           fees = ?, fees_label = ?,
+           fees = ?, fees_label = ?, commission_pct = ?,
            revised_at = datetime('now')
      WHERE id = ?
   `).run(
@@ -2813,7 +2855,7 @@ router.patch('/invoices/:id', async (req, res) => {
     issued || row.issued_date, due || null,
     str(b.period_label, row.period_label) || null,
     str(b.notes, row.notes) || null,
-    JSON.stringify(items), total, manual, fees, feesLabel, id);
+    JSON.stringify(items), total, manual, fees, feesLabel, commissionPct, id);
 
   /* The cached PDF is keyed on a hash of these fields, so the corrected
      document gets a new filename and the old one is simply never asked for
@@ -2831,7 +2873,8 @@ router.patch('/invoices/:id', async (req, res) => {
   delete updated.line_items_json;
   console.log('[INVOICE] ' + row.invoice_no + ' corrected (total £' + total.toFixed(2) +
               (manual ? ', set by hand' : ', from the lines') + ')');
-  res.json({ ok: true, invoice: updated, autoSum, lineSum, fees, perTripFees, feesDerived: isAccount });
+  res.json({ ok: true, invoice: updated, autoSum, lineSum, fees, perTripFees,
+             feesDerived: isAccount, commissionPct, commission });
 });
 
 // Delete invoice — removes DB row and cached PDF.
