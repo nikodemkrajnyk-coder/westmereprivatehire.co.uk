@@ -105,7 +105,8 @@ function fmtDate(d) {
    VISIBLE design changes; nothing else needs to be cleared, and the owner's
    existing files are left alone rather than deleted.
    GUARDRAIL: server/tests/invoice-paths.test.js */
-const TEMPLATE_VERSION = 11;  // 11: fare/toll split, and what the driver already collected
+const TEMPLATE_VERSION = 12;  // 12: a FEE column on the one-off table too
+                              // 11: fare/toll split, and what the driver already collected
                               // 10: the operator commission breakdown
                               //  9: a FEE column — each trip shows what was paid out on it
                               // 8: the fees row stands alone — no subtotal lead-in
@@ -522,7 +523,29 @@ function drawInvoice(doc, data, slack) {
     // --- Bespoke: Description | Amount ---
 
     const items = data.items || [];
-    const DESC_W = CW - 90;          // the width the description actually gets
+    /* A COLUMN OF ITS OWN FOR THE FEE, on this table too.
+       The account invoice has had one since the owner asked that each trip show
+       what was paid out on it; a one-off invoice to an operator is the same
+       document with the journeys typed in by hand, and it was printing the
+       tolls as a single figure above the total. Seven jobs, seven different
+       tolls, one number to check them against — so the entry table asked for
+       them per trip and the document threw the detail away.
+
+       Same widths and the same rule as the account table: right-aligned beside
+       the amount, and BLANK when the trip carried nothing, because a column of
+       £0.00 is a column of noise.
+
+       AND ONLY WHEN THERE IS ONE TO SHOW. An invoice where no journey carried a
+       fee keeps the two columns it has always had — a heading over an empty
+       column is a question the reader has to answer ("was something missed?")
+       about a document that has nothing to say. */
+    const anyFee = items.some((it) => (+it.fee || 0) > 0);
+    const BSP_EW = anyFee ? 42 : 0;  // fee column
+    const BSP_AW = 62;               // amount column
+    const BSP_EX = PAGE_W - M - BSP_AW - BSP_EW;
+    const BSP_AX = anyFee ? (PAGE_W - M - BSP_AW) : M;
+    const BSP_AWIDTH = anyFee ? (BSP_AW - 6) : (CW - 6);
+    const DESC_W = anyFee ? (CW - BSP_EW - BSP_AW - 22) : (CW - 90);
     /* Same limit the account table uses: a row that no longer fits goes to the
        next page under a repeated header. Rows can now be tall, so a bespoke
        invoice with three long descriptions could walk off the paper — it had
@@ -532,7 +555,12 @@ function drawInvoice(doc, data, slack) {
     const bspHead = () => {
       vbox(doc, M, y, CW, 22, '#EEF2F5');
       doc.font(BOLD).fontSize(8).fillColor(MUTED).text('DESCRIPTION', M + 6, y + 7, { lineBreak: false });
-      doc.font(BOLD).fontSize(8).fillColor(MUTED).text('AMOUNT', M, y + 7, { width: CW - 6, align: 'right', lineBreak: false });
+      if (anyFee) {
+        doc.font(BOLD).fontSize(8).fillColor(MUTED)
+           .text('FEE', BSP_EX, y + 7, { width: BSP_EW - 6, align: 'right', characterSpacing: 0.8, lineBreak: false });
+      }
+      doc.font(BOLD).fontSize(8).fillColor(MUTED)
+         .text('AMOUNT', BSP_AX, y + 7, { width: BSP_AWIDTH, align: 'right', lineBreak: false });
       y += 22;
     };
     bspHead();
@@ -564,8 +592,18 @@ function drawInvoice(doc, data, slack) {
       }
       doc.font(BODY).fontSize(11).fillColor(NAVY)
          .text(String(it.description || ''), M + 6, y + descTop, { width: DESC_W });
+      /* Blank, not "£0.00", when nothing was paid out on this trip — the same
+         rule the account table follows. */
+      const itemFee = +it.fee || 0;
+      /* `anyFee` as well as the amount: with no column there is no width to
+         draw into, and PDFKit handed a negative width does not throw — it sits
+         there wrapping forever. */
+      if (anyFee && itemFee > 0) {
+        doc.font(BODY).fontSize(10).fillColor(SOFT)
+           .text('£' + itemFee.toFixed(2), BSP_EX, y + descTop + 1, { width: BSP_EW - 6, align: 'right', lineBreak: false });
+      }
       doc.font(BODY).fontSize(11).fillColor(NAVY)
-         .text('£' + (+it.amount || 0).toFixed(2), M, y + descTop, { width: CW - 6, align: 'right', lineBreak: false });
+         .text('£' + (+it.amount || 0).toFixed(2), BSP_AX, y + descTop, { width: BSP_AWIDTH, align: 'right', lineBreak: false });
       y += rowH;
     }
     if (!items.length) {

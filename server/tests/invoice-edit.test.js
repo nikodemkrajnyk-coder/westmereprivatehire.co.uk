@@ -1087,8 +1087,16 @@ test('both forms expose the rate, and neither hard-codes it', () => {
     assert.ok(/v<0\|\|v>=100/.test(fn), name + ' must bound the rate');
     assert.ok(/return10;/.test(fn), name + ' falls back to 10 rather than to nothing');
   }
-  assert.ok(/less'\+pct\+'%commission/.test(H.replace(/\s/g, '')),
-    'the running total must name the rate, not print a fixed 10%');
+  /* THE RATE IS NAMED WHERE IT IS SHOWN. On the edit sheet that is the one-line
+     breakdown; on the create form it moved into the job sheet's totals row when
+     the table replaced the summary line. Either way it is interpolated from
+     what was typed — a printed "10%" beside a 12.5% deduction is the whole
+     failure this guards. */
+  const flat = H.replace(/\s/g, '');
+  assert.ok(/−'\+pct\+'%commission/.test(flat),
+    'the edit sheet\'s breakdown must name the rate');
+  assert.ok(/\+m\.pct\+'%commission/.test(flat),
+    'the create form\'s totals row must name the rate, not print a fixed 10%');
 });
 
 test('a rate outside 0–100 is refused, and the invoice is untouched', async () => {

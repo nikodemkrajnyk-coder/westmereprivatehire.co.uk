@@ -2423,7 +2423,11 @@ router.post('/invoices/bespoke', async (req, res) => {
                   amount: +it.amount || 0,
                   fee: (Number(it.fee) > 0) ? Math.round(Number(it.fee) * 100) / 100 : 0,
                   pickup: it.pickup ? String(it.pickup).trim() : undefined,
-                  destination: it.destination ? String(it.destination).trim() : undefined }))
+                  destination: it.destination ? String(it.destination).trim() : undefined,
+                  /* PAID AT THE KERB — the job sheet's "Card" column. Kept on the
+                     line, so a later correction still knows which fares the
+                     driver had already taken. */
+                  collected_direct: (it.collected_direct === 1 || it.collected_direct === true) ? 1 : 0 }))
     .filter(it => it.description && it.amount > 0);
   if (!cleanItems.length) {
     return res.status(400).json({ error: 'Items must have description and positive amount' });
@@ -2475,7 +2479,19 @@ router.post('/invoices/bespoke', async (req, res) => {
   })();
   const fareSum = Math.round(cleanItems.reduce((s, it) => s + it.amount, 0) * 100) / 100;
   const newCommission = Math.round(fareSum * (newCommissionPct / 100) * 100) / 100;
-  const total = Math.round((fareSum - newCommission + newFees) * 100) / 100;
+  /* WHAT THE DRIVER ALREADY HAS. Its fare earns its commission and is then
+     deducted from the payout; its toll is still owed. The same arithmetic the
+     edit route does, because it is the same invoice either way round.
+
+     AND ONLY ON AN OPERATOR INVOICE. "The driver collected it" is a settlement
+     between two firms; a customer invoice has no such line and shows no such
+     column, so a flag arriving on one must not quietly reduce what is billed.
+     No rate, no netting. */
+  const newCollected = newCommissionPct > 0
+    ? Math.round(cleanItems.reduce((t, it) =>
+        t + (it.collected_direct ? (Number(it.amount) || 0) : 0), 0) * 100) / 100
+    : 0;
+  const total = Math.round((fareSum - newCommission + newFees - newCollected) * 100) / 100;
   const shouldEmail = send_email === true;
 
   const cleanRecipient = {
@@ -2493,6 +2509,12 @@ router.post('/invoices/bespoke', async (req, res) => {
       invoiceNo, kind: 'bespoke', total, notes: notes || '', settings,
       recipient: cleanRecipient,
       items: cleanItems,
+      /* THE WORKING, on the document from the moment it is created. Without
+         these the first PDF — the one that is cached and the one that is
+         attached to the email — printed a correct total with nothing above it
+         explaining how it got there, and only a later re-render (which reads
+         them off the stored row) showed the fees and the commission. */
+      fees: newFees, commissionPct: newCommissionPct,
       period: { issuedDate, dueDate, label: '' }
     });
     // Written under the TEMPLATE-VERSIONED name the readers look for; an
@@ -2511,7 +2533,9 @@ router.post('/invoices/bespoke', async (req, res) => {
       return res.status(400).json({ error: 'Invalid recipient email' });
     }
     const { sendBespokeInvoice } = require('./email');
-    const ok = await sendBespokeInvoice(cleanRecipient, cleanItems, { dueDate, issuedDate, notes, journey: journeyForEmail }, invoiceNo, settings, pdfBuffer);
+    /* THE TOTAL IS PASSED, never re-derived. Left to add up the lines itself the
+       email announced the FARES — £675 in the subject against a £616.50 PDF. */
+    const ok = await sendBespokeInvoice(cleanRecipient, cleanItems, { dueDate, issuedDate, notes, journey: journeyForEmail, total }, invoiceNo, settings, pdfBuffer);
     if (!ok) return res.status(502).json({ error: 'Email delivery failed' });
 
     db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
