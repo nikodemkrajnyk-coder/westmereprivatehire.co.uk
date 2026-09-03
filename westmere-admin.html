@@ -1777,6 +1777,86 @@ select:-webkit-autofill:focus{
   </div>
 </div>
 
+<!-- MODAL: CORRECT AN INVOICE ─────────────────────────────────────────────
+     A CORRECTION, not a new invoice. The number is shown and cannot be changed:
+     somebody may already have filed this document, and the number is how they
+     match the corrected one to it. Kind and customer are not here either — an
+     edit screen that could re-point an invoice at another customer is a way to
+     bill the wrong person.
+
+     Admin had no edit at all. A wrong figure meant deleting the invoice and
+     issuing a new number, which is exactly what an accounts department that has
+     already filed the first one should never receive. The owner app has had
+     this since August; this is the same correction, on the same route, through
+     the same arithmetic — so a figure corrected here and a figure corrected
+     there are the same figure. -->
+<div class="overlay" id="modal-edit-invoice">
+  <div class="modal" id="modal-edit-invoice-box" style="max-width:620px">
+    <div class="modal-hd">
+      <div>
+        <div class="modal-title">Correct this invoice</div>
+        <div style="font-size:.78rem;color:rgba(27,27,26,.66);margin-top:.2rem">Same number &mdash; <span id="ie-no" style="letter-spacing:.06em;color:var(--navy)"></span></div>
+      </div>
+      <button class="modal-x" onclick="closeModal('modal-edit-invoice')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="fg"><label class="fl">Recipient Name</label><input class="fi" id="ie-name"></div>
+      <div class="fg"><label class="fl">Recipient Email</label><input class="fi" id="ie-email" type="email"></div>
+      <div class="fg"><label class="fl">Recipient Phone</label><input class="fi" id="ie-phone"></div>
+      <div class="fg"><label class="fl">Recipient Address</label><textarea class="fi" id="ie-addr" rows="3"></textarea></div>
+      <div style="display:flex;gap:.8rem">
+        <div class="fg" style="flex:1"><label class="fl">Issued</label><input class="fi" id="ie-issued" type="date"></div>
+        <div class="fg" style="flex:1"><label class="fl">Due</label><input class="fi" id="ie-due" type="date"></div>
+      </div>
+      <div class="fg">
+        <label class="fl">Lines</label>
+        <div id="ie-head" style="display:none"></div>
+        <div id="ie-lines"></div>
+        <div id="ie-totals" style="display:none"></div>
+        <div id="ie-payout" style="display:none"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.5rem">
+          <button class="btn btn-ghost btn-sm" id="ie-add" onclick="ieAdd()" style="font-size:.8rem;padding:.4rem .8rem">+ Add line</button>
+          <div id="ie-sum-line" style="font-size:.88rem;color:rgba(27,27,26,.7)">Total: <strong id="ie-sum" style="color:var(--navy)">£0.00</strong></div>
+        </div>
+      </div>
+      <!-- THE FEE FIGURE belongs to a BESPOKE invoice, where it is typed. Where
+           the lines carry their own tolls it is their sum, shown and not typed:
+           two editable routes to one number is how they end up disagreeing. -->
+      <div class="fg">
+        <label class="fl">Fees</label>
+        <div style="display:flex;gap:.6rem;align-items:center">
+          <input class="fi" id="ie-fees" type="number" step="0.01" placeholder="0.00" oninput="ieSync()" style="width:120px;text-align:right">
+          <input class="fi" id="ie-fees-label" placeholder="What the fee is for — e.g. Parking &amp; tolls" oninput="ieSync()" style="flex:1">
+        </div>
+        <div id="ie-fees-note" style="font-size:.78rem;color:rgba(27,27,26,.6);margin-top:.3rem"></div>
+      </div>
+      <label style="display:flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--navy);cursor:pointer;margin-top:.4rem">
+        <input id="ie-commission" type="checkbox" onchange="ieRender()" style="width:16px;height:16px">
+        Operator invoice &mdash; deduct commission
+      </label>
+      <div id="ie-rate-wrap" style="display:none;align-items:center;gap:.4rem;margin-top:.45rem">
+        <span style="font-size:.82rem;color:rgba(27,27,26,.66)">Rate</span>
+        <input class="fi" id="ie-commission-pct" type="number" step="0.5" min="0" max="99.9" value="10" oninput="ieSync()" style="width:80px;text-align:right;padding:.35rem .4rem">
+        <span style="font-size:.95rem;color:var(--navy)">%</span>
+        <span style="font-size:.8rem;color:rgba(27,27,26,.6)">of the fares &mdash; never of the fees</span>
+      </div>
+      <label style="display:flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--navy);cursor:pointer;margin-top:.6rem">
+        <input id="ie-manual" type="checkbox" onchange="ieSync()" style="width:16px;height:16px">
+        Set the total by hand
+      </label>
+      <div class="fg" style="margin-top:.4rem"><label class="fl">Total</label>
+        <input class="fi" id="ie-total" type="number" step="0.01" style="width:140px;text-align:right"></div>
+      <div id="ie-note" style="font-size:.8rem;color:rgba(27,27,26,.62);margin-top:.2rem"></div>
+      <div class="fg" style="margin-top:.6rem"><label class="fl">Notes</label><textarea class="fi" id="ie-notes" rows="3"></textarea></div>
+      <div id="ie-err" style="display:none;margin-top:.6rem;padding:.55rem .8rem;background:rgba(156,40,40,.08);color:#9C2828;font-size:.88rem;border-radius:6px"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-edit-invoice')">Cancel</button>
+      <button class="btn btn-navy" id="ie-save" onclick="ieSave()">Save Correction</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: INVOICE DETAIL -->
 <div class="overlay" id="modal-invoice-detail">
   <div class="modal" style="max-width:620px">
@@ -1812,6 +1892,7 @@ select:-webkit-autofill:focus{
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-invoice-detail')">Close</button>
+      <button class="btn btn-ghost" id="mid-edit-btn" onclick="ieOpen()" style="border:1px solid rgba(27,27,26,.2)">Edit</button>
       <button class="btn btn-ghost" id="mid-pdf-btn" onclick="midDownloadPdf()" style="border:1px solid rgba(27,27,26,.2)">Download PDF</button>
       <button class="btn btn-ghost" id="mid-print-btn" onclick="midOpenPrint()" style="border:1px solid rgba(27,27,26,.2)">Print Preview</button>
     </div>
@@ -4844,6 +4925,185 @@ function admInvLeadIn(data, lines){
   box.innerHTML=html;
   box.style.display='';
 }
+/* ── CORRECTING A SAVED INVOICE ────────────────────────────────────────────
+   Same route as the owner app (PATCH /invoices/:id) and the same module, so a
+   correction made here and one made there produce the same figures. The layout
+   is admin's — flat columns — but the headings, the totals and the payout come
+   out of WMInvoiceMaths exactly as they do on the create form. */
+var _IE=null;
+function ieOpen(){
+  var d=_MID_PRINT_DATA, id=_MID_INVOICE_ID;
+  if(!d||!id){ showToast('Open an invoice first.'); return; }
+  if(d.legacy){ showToast('This invoice predates the stored records — it cannot be corrected.'); return; }
+  var bespoke=!!d.bespoke;
+  var items=(bespoke?(d.items||[]):(d.bookings||[])).map(function(it){
+    return Object.assign({},it,{
+      amount: bespoke?(+it.amount||0):(+it.fare||0),
+      fee:+it.fee||0,
+      collected_direct:+it.collected_direct||0});
+  });
+  _IE={id:id,no:d.invoiceNo,bespoke:bespoke,items:items};
+  document.getElementById('ie-no').textContent=d.invoiceNo||'';
+  var r=d.recipient||d.customer||{};
+  document.getElementById('ie-name').value=r.name||r.full_name||'';
+  document.getElementById('ie-email').value=r.email||'';
+  document.getElementById('ie-phone').value=r.phone||'';
+  document.getElementById('ie-addr').value=r.address||'';
+  document.getElementById('ie-issued').value=(d.period&&d.period.issuedDate)||'';
+  document.getElementById('ie-due').value=(d.period&&d.period.dueDate)||'';
+  document.getElementById('ie-notes').value=(d.period&&d.period.notes)||'';
+  document.getElementById('ie-fees').value=(+d.fees>0)?(+d.fees).toFixed(2):'';
+  document.getElementById('ie-fees-label').value=d.feesLabel||'';
+  document.getElementById('ie-commission').checked=(+d.commissionPct>0);
+  document.getElementById('ie-commission-pct').value=(+d.commissionPct>0)?d.commissionPct:10;
+  document.getElementById('ie-manual').checked=false;
+  document.getElementById('ie-total').value=(+d.total||0).toFixed(2);
+  document.getElementById('ie-err').style.display='none';
+  /* Journeys on an account invoice come from the bookings: the amounts are
+     correctable, the route is not inventable. */
+  document.getElementById('ie-add').style.display=bespoke?'':'none';
+  ieRender();
+  openModal('modal-edit-invoice');
+}
+function iePct(){
+  var cb=document.getElementById('ie-commission');
+  if(!cb||!cb.checked)return 0;
+  var v=parseFloat(document.getElementById('ie-commission-pct').value);
+  if(!isFinite(v)||v<0||v>=100) return 10;
+  return Math.round(v*100)/100;
+}
+function ieMaths(){
+  if(!_IE)return WMInvoiceMaths.compute([],0);
+  return WMInvoiceMaths.compute(_IE.items.map(function(it){
+    return {fare:+it.amount||0,toll:+it.fee||0,collected:!!(+it.collected_direct)};
+  }), iePct());
+}
+/* THE LUMP FEE belongs to a bespoke invoice with nothing on its lines. Where
+   the lines carry tolls, their sum is the figure and the box only reports it. */
+function ieFees(){
+  var m=ieMaths();
+  if(m.tolls>0) return m.tolls;
+  if(_IE&&!_IE.bespoke) return 0;
+  var v=parseFloat(document.getElementById('ie-fees').value);
+  return (isFinite(v)&&v>0)?Math.round(v*100)/100:0;
+}
+function ieRender(){
+  if(!_IE)return;
+  var op=iePct()>0;
+  var head=document.getElementById('ie-head');
+  if(head){ head.style.display=op?'':'none';
+            if(op) head.innerHTML=WMInvoiceMaths.headHtml(ADM_LAYOUT); }
+  var FS='font-size:.9rem;padding:.38rem .42rem';
+  document.getElementById('ie-lines').innerHTML=_IE.items.map(function(it,i){
+    var label=_IE.bespoke?(it.description||''):((it.pickup||'')+' → '+(it.destination||''));
+    var meta=(it.date||'')+(it.ref?'  ·  '+it.ref:'');
+    var kill=_IE.bespoke
+      ?'<button onclick="ieRemove('+i+')" title="Remove" style="background:transparent;border:none;color:#c0392b;cursor:pointer;font-size:1.1rem">&times;</button>'
+      :'<div></div>';
+    if(op){
+      return '<div class="ie-item" style="display:grid;grid-template-columns:'+ADM_GRID+';gap:.35rem;align-items:center;padding:.2rem 0">'
+        +'<div style="font-size:.78rem;color:rgba(27,27,26,.6)">'+escTo(it.date||'')+'</div>'
+        +'<div style="grid-column:2 / span 2;font-size:.9rem;color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escTo(label)+'">'+escTo(label)+'</div>'
+        +'<div style="text-align:center"><input data-i="'+i+'" data-f="collected" type="checkbox" '+((+it.collected_direct)?'checked':'')+' style="width:15px;height:15px;cursor:pointer"></div>'
+        +'<input class="fi" data-i="'+i+'" data-f="amount" type="number" step="0.01" style="'+FS+';text-align:right" value="'+(+it.amount||0).toFixed(2)+'">'
+        +'<div class="ie-com" style="text-align:right;font-size:.9rem;color:rgba(27,27,26,.66)">—</div>'
+        +'<input class="fi" data-i="'+i+'" data-f="fee" type="number" step="0.01" placeholder="" style="'+FS+';text-align:right" value="'+((+it.fee>0)?(+it.fee).toFixed(2):'')+'">'
+        +kill+'</div>';
+    }
+    return '<div class="ie-item" style="padding:.4rem 0;border-bottom:1px solid rgba(27,27,26,.06)">'
+      +(meta.trim()?'<div style="font-size:.76rem;color:rgba(27,27,26,.6);margin-bottom:.15rem">'+escTo(meta)+'</div>':'')
+      +(_IE.bespoke
+        ?'<textarea class="fi" data-i="'+i+'" data-f="description" rows="2" style="width:100%;font-size:.9rem;margin-bottom:.3rem">'+escTo(label)+'</textarea>'
+        :'<div style="font-size:.9rem;color:var(--navy);margin-bottom:.3rem">'+escTo(label)+'</div>')
+      +'<div style="display:flex;gap:.4rem;justify-content:flex-end;align-items:center">'
+      +'<input class="fi" data-i="'+i+'" data-f="fee" type="number" step="0.01" placeholder="Fee" style="width:96px;text-align:right;font-size:.9rem" value="'+((+it.fee>0)?(+it.fee).toFixed(2):'')+'">'
+      +'<input class="fi" data-i="'+i+'" data-f="amount" type="number" step="0.01" style="width:110px;text-align:right;font-size:.9rem" value="'+(+it.amount||0).toFixed(2)+'">'
+      +(_IE.bespoke?kill:'')
+      +'</div></div>';
+  }).join('')||'<div style="padding:.8rem;text-align:center;font-size:.88rem;color:rgba(27,27,26,.6)">No lines</div>';
+  document.querySelectorAll('#ie-lines [data-i]').forEach(function(el){
+    var h=function(){
+      var it=_IE.items[+el.getAttribute('data-i')]; if(!it)return;
+      var f=el.getAttribute('data-f');
+      if(f==='collected') it.collected_direct=el.checked?1:0;
+      else it[f]=(f==='amount'||f==='fee')?(parseFloat(el.value)||0):el.value;
+      ieSync();
+    };
+    el.oninput=h; el.onchange=h;
+  });
+  ieSync();
+}
+function ieRemove(i){ if(!_IE)return; _IE.items.splice(i,1); ieRender(); }
+function ieAdd(){ if(!_IE||!_IE.bespoke)return;
+  _IE.items.push({date:'',description:'',amount:0,fee:0,collected_direct:0}); ieRender(); }
+function ieSync(){
+  if(!_IE)return;
+  var m=ieMaths(), op=m.pct>0, fees=ieFees();
+  var rw=document.getElementById('ie-rate-wrap'); if(rw) rw.style.display=op?'flex':'none';
+  document.querySelectorAll('#ie-lines .ie-com').forEach(function(el,k){
+    el.textContent=(m.rows[k]&&m.rows[k].fare>0)?WMInvoiceMaths.money(m.rows[k].commission):'—';
+  });
+  /* fares − commission + fees − collected, the same order the invoice bills. */
+  var auto=Math.round((m.fares-m.commission+fees-m.collected)*100)/100;
+  var manual=document.getElementById('ie-manual').checked;
+  var tf=document.getElementById('ie-total');
+  tf.disabled=!manual;
+  if(!manual) tf.value=auto.toFixed(2);
+  var sum=document.getElementById('ie-sum'); if(sum) sum.textContent=WMInvoiceMaths.money(auto);
+  var sl=document.getElementById('ie-sum-line'); if(sl) sl.style.visibility=op?'hidden':'visible';
+  var t=document.getElementById('ie-totals'), p=document.getElementById('ie-payout');
+  var shown={rows:m.rows,fares:m.fares,tolls:fees,commission:m.commission,
+             collected:m.collected,pct:m.pct,total:auto};
+  if(t){ t.style.display=op?'':'none'; if(op) t.innerHTML=WMInvoiceMaths.totalsHtml(shown,ADM_LAYOUT); }
+  if(p){ p.style.display=op?'':'none'; if(op) p.innerHTML=WMInvoiceMaths.payoutHtml(shown); }
+  var fbox=document.getElementById('ie-fees'), fnote=document.getElementById('ie-fees-note');
+  var perTrip=m.tolls>0;
+  fbox.disabled=perTrip;
+  if(perTrip) fbox.value=fees>0?fees.toFixed(2):'';
+  if(fnote) fnote.textContent=perTrip
+    ? 'Added up from the tolls on the lines above.'
+    : 'Leave blank for none — no row is printed.';
+  var note=document.getElementById('ie-note');
+  if(note) note.textContent=manual
+    ? ('The lines come to '+WMInvoiceMaths.money(auto)+'. The invoice will show the figure above.')
+    : '';
+}
+async function ieSave(){
+  if(!_IE)return;
+  var err=document.getElementById('ie-err'); err.style.display='none';
+  var manual=document.getElementById('ie-manual').checked;
+  var typed=parseFloat(document.getElementById('ie-total').value);
+  if(manual&&(!isFinite(typed)||typed<0)){ err.textContent='That total is not a number.'; err.style.display=''; return; }
+  var body={
+    recipient_name:document.getElementById('ie-name').value.trim(),
+    recipient_email:document.getElementById('ie-email').value.trim(),
+    recipient_phone:document.getElementById('ie-phone').value.trim(),
+    recipient_addr:document.getElementById('ie-addr').value.trim(),
+    issued_date:document.getElementById('ie-issued').value.trim(),
+    due_date:document.getElementById('ie-due').value.trim(),
+    notes:document.getElementById('ie-notes').value.trim(),
+    line_items:_IE.items,
+    commission_pct:iePct(),
+    fees:ieFees(),
+    fees_label:document.getElementById('ie-fees-label').value.trim(),
+    total_override: manual?typed:null
+  };
+  var btn=document.getElementById('ie-save');
+  btn.disabled=true; btn.textContent='Saving…';
+  try{
+    var r=await fetch('/api/invoices/'+_IE.id,{method:'PATCH',credentials:'include',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var d=await r.json();
+    if(r.ok&&d.ok){
+      showToast(_IE.no+' corrected');
+      closeModal('modal-edit-invoice');
+      viewInvoice(_IE.id);            // reload the sheet from the saved row
+      if(typeof loadInvoiceHistory==='function')loadInvoiceHistory();
+    } else { err.textContent=d.error||'Could not save'; err.style.display=''; }
+  }catch(e){ err.textContent='Network error'; err.style.display=''; }
+  btn.disabled=false; btn.textContent='Save Correction';
+}
+
 function midOpenPrint(){
   invOpenPdf(_MID_INVOICE_ID);
 }

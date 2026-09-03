@@ -2789,9 +2789,23 @@ router.patch('/invoices/:id', async (req, res) => {
     lineItems = b.line_items.map((it) => {
       const amount = Number(it && it.amount);
       if (row.kind === 'bespoke') {
-        return { date: str(it && it.date, '') || undefined,
-                 description: str(it && it.description, '').slice(0, 500),
-                 amount: isNaN(amount) ? 0 : Math.round(amount * 100) / 100 };
+        /* THE WHOLE LINE SURVIVES THE CORRECTION, not three fields of it.
+           This used to return date/description/amount and nothing else, which
+           quietly destroyed two things every time a one-off operator invoice
+           was corrected: the per-trip TOLLS (so the FEE column emptied and the
+           fees fell back to whatever lump was stored) and the driver-COLLECTED
+           ticks (so a fare the driver already had was paid over a second time —
+           £50 on APD's August, reappearing on the correction of the very
+           invoice that was raised to stop it). The account branch below has
+           always preserved them; this one now does the same. */
+        const bespokeFee = Number(it && it.fee);
+        return Object.assign({}, it, {
+          date: str(it && it.date, '') || undefined,
+          description: str(it && it.description, '').slice(0, 500),
+          amount: isNaN(amount) ? 0 : Math.round(amount * 100) / 100,
+          fee: (!isFinite(bespokeFee) || bespokeFee <= 0) ? 0 : Math.round(bespokeFee * 100) / 100,
+          collected_direct: (it && (it.collected_direct === 1 || it.collected_direct === true)) ? 1 : 0
+        });
       }
       /* An account line is a journey. The shape is preserved exactly, because
          the PDF reads pickup/destination/ref/time out of it — flattening it to

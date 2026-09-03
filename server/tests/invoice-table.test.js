@@ -389,6 +389,102 @@ test('the changed table cannot serve a PDF drawn by the old one', () => {
     'the cache filename does not carry the template version: ' + p);
 });
 
+// ── ADMIN CAN CORRECT AN INVOICE ─────────────────────────────────────────
+console.log('\nA wrong invoice is corrected in admin, not re-issued');
+
+test('admin has a correction sheet, on the same route as the owner app', () => {
+  assert.ok(/id="modal-edit-invoice"/.test(ADMIN), 'admin has no correction sheet');
+  assert.ok(/id="mid-edit-btn"[^>]*onclick="ieOpen\(\)"/.test(ADMIN),
+    'there is no way to reach it from an invoice');
+  const save = fnBlock(ADMIN, 'ieSave').replace(/\s/g, '');
+  assert.ok(/'\/api\/invoices\/'\+_IE\.id/.test(save), 'the correction must go to /invoices/:id');
+  assert.ok(/method:'PATCH'/.test(save), 'a correction is a PATCH, not a new invoice');
+  for (const f of ['line_items', 'commission_pct', 'fees', 'fees_label', 'total_override']) {
+    assert.ok(save.indexOf(f) !== -1, 'the correction does not send ' + f);
+  }
+  /* THE NUMBER CANNOT MOVE. Somebody has already filed this document; a
+     correction that renumbered it would arrive as a second, unrelated bill. */
+  assert.ok(!/invoice_no/.test(save), 'a correction must never move the invoice number');
+});
+
+test('correcting a one-off invoice does not destroy its tolls and ticks', async () => {
+  /* THE BUG THIS FOUND, and it was live. The PATCH route rebuilt a bespoke line
+     as date/description/amount and threw the rest away — so every correction of
+     a one-off operator invoice silently emptied the FEE column and un-ticked
+     every job the driver had already been paid for. Correct the recipient's
+     name and £50 walks back onto the bill. */
+  const created = await call('post', '/invoices/bespoke', {
+    kind: 'bespoke', recipient: { name: 'APD Private Hire', email: 'accounts@apd.example.com' },
+    items: toLineItems(APD), commission_pct: 10
+  });
+  const no = created.body.invoiceNo || created.body.invoice_no;
+  const row = db.prepare('SELECT * FROM invoices WHERE invoice_no = ?').get(no);
+  /* The smallest possible correction: a typo in the name, nothing else. */
+  const l = api.stack.find((x) => x.route && x.route.path === '/invoices/:id' && x.route.methods.patch);
+  const r = res();
+  const req = { params: { id: String(row.id) }, query: {}, ip: '::1',
+                auth: { role: 'owner', id: 1, type: 'user' },
+                body: { recipient_name: 'APD Private Hire Ltd',
+                        line_items: JSON.parse(row.line_items_json) } };
+  const hs = l.route.stack.map((x) => x.handle);
+  let i = 0; const next = async () => { if (i < hs.length) await hs[i++](req, r, next); };
+  await next();
+  assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
+  const after = db.prepare('SELECT * FROM invoices WHERE id = ?').get(row.id);
+  const items = JSON.parse(after.line_items_json);
+  assert.deepStrictEqual(items.map((x) => x.fee), [7, 8, 10, 10, 7, 10, 7],
+    'the per-trip tolls did not survive the correction');
+  assert.strictEqual(items.filter((x) => x.collected_direct === 1).length, 1,
+    'the driver-collected tick did not survive the correction');
+  assert.strictEqual(after.total, 616.50,
+    'a correction that changed only the NAME must not change the money');
+});
+
+test('the correction sheet totals through the shared module, not its own sum', () => {
+  const m = fnBlock(ADMIN, 'ieMaths').replace(/\s/g, '');
+  assert.ok(/WMInvoiceMaths\.compute\(/.test(m), 'the correction sheet does its own arithmetic');
+  const sync = fnBlock(ADMIN, 'ieSync').replace(/\s/g, '');
+  assert.ok(/m\.fares-m\.commission\+fees-m\.collected/.test(sync),
+    'the corrected total must be fares − commission + fees − collected');
+  assert.ok(/WMInvoiceMaths\.totalsHtml\(/.test(sync) && /WMInvoiceMaths\.payoutHtml\(/.test(sync),
+    'the correction sheet must draw the same totals and payout as the create form');
+  assert.ok(/WMInvoiceMaths\.headHtml\(/.test(fnBlock(ADMIN, 'ieRender')),
+    'and the same column headings');
+});
+
+test('a correction reaches the route and lands on the corrected figure', async () => {
+  /* End to end: raise APD's month, then correct one fare, and the stored total
+     must follow — through PATCH, the route the sheet posts to. */
+  const created = await call('post', '/invoices/bespoke', {
+    kind: 'bespoke', recipient: { name: 'APD Private Hire', email: 'accounts@apd.example.com' },
+    items: toLineItems(APD), commission_pct: 10
+  });
+  const no = created.body.invoiceNo || created.body.invoice_no;
+  const row = db.prepare('SELECT * FROM invoices WHERE invoice_no = ?').get(no);
+  assert.strictEqual(row.total, 616.50, 'the invoice must start at £616.50');
+
+  const items = JSON.parse(row.line_items_json);
+  items[4].amount = 140;                      // the 21 August fare, £130 → £140
+  const l = api.stack.find((x) => x.route && x.route.path === '/invoices/:id' && x.route.methods.patch);
+  assert.ok(l, 'PATCH /invoices/:id is missing — admin cannot correct anything');
+  const r = res();
+  const req = { params: { id: String(row.id) }, query: {}, ip: '::1',
+                auth: { role: 'owner', id: 1, type: 'user' },
+                body: { line_items: items, commission_pct: 10, fees: 59 } };
+  const hs = l.route.stack.map((x) => x.handle);
+  let i = 0; const next = async () => { if (i < hs.length) await hs[i++](req, r, next); };
+  await next();
+  assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
+  const after = db.prepare('SELECT * FROM invoices WHERE id = ?').get(row.id);
+  /* fares 685 − 68.50 + 59 − 50 */
+  assert.strictEqual(after.total, 625.50, 'the corrected total must follow the corrected fare');
+  assert.strictEqual(after.invoice_no, no, 'and the number must not have moved');
+  /* The screen must agree with it. */
+  const onScreen = MATHS(APD.map((x, k) => k === 4 ? Object.assign({}, x, { fare: 140 }) : x), 10);
+  assert.strictEqual(onScreen.total, after.total,
+    'the correction sheet and the stored invoice must show the same figure');
+});
+
 // ── 5. THE WIRING ────────────────────────────────────────────────────────
 console.log('\nThe figures on screen come from that arithmetic, and nowhere else');
 
