@@ -581,7 +581,11 @@ async function render(fare, adjust) {
 
 test('the REFUND email promises the refund and offers nothing to pay', async () => {
   const html = await render(30, { kind: 'refund', amount: 12, paid: 42, method: 'stripe' });
-  assert.ok(/refund of <strong>£12\.00<\/strong>/.test(html), 'the refund amount is not stated');
+  /* Matched allowing ATTRIBUTES on the tag. Every element states its own
+     background now (paintBackgrounds — a customer's email had gone dark-on-dark
+     without it), so this <strong> carries a style. The fact guarded is that the
+     amount is stated, in bold, after "refund of" — not that the tag is bare. */
+  assert.ok(/refund of <strong[^>]*>£12\.00<\/strong>/.test(html), 'the refund amount is not stated');
   assert.ok(/issued to the card you paid with/i.test(html), 'it does not say where the refund goes');
   assert.ok(!/Pay Now/i.test(html), 'a customer owed money was shown a Pay Now button');
   assert.ok(!/Pay Your Driver/i.test(html), 'a paid customer was offered a payment option');

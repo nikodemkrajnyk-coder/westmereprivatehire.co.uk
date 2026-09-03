@@ -513,10 +513,15 @@ test('the imageless emailShell is removed and every email html uses the hero tem
   assert.ok(/heroShell\(/.test(letter[0]),
     'letterEmail must build on heroShell — a separate shell is the thing this test exists to prevent');
   assert.ok(/hero: false/.test(letter[0]), 'and it must suppress the photo by parameter, not by copying the markup');
-  const shell = src.match(/function heroShell[\s\S]*?\n\}/);
+  /* BOUNDED BY ITS OWN BRACES, not by the first `\n}`. The shell gained a
+     dark-mode @media block, whose closing brace sits at column 0 — so the old
+     non-greedy match stopped inside the stylesheet and the hero image, forty
+     lines further down, fell outside the window. The test went red on a change
+     that did not touch what it guards. */
+  const shell = require('./_source').fnBlock(src, 'heroShell');
   assert.ok(shell, 'heroShell (the one shared design) not found');
-  assert.ok(/westmere-email-hero\.jpg/.test(shell[0]), 'heroShell must embed the hero image');
-  assert.ok(/Westmere Private Hire/.test(shell[0]), 'heroShell must carry the "Westmere Private Hire" sign-off');
+  assert.ok(/westmere-email-hero\.jpg/.test(shell), 'heroShell must embed the hero image');
+  assert.ok(/Westmere Private Hire/.test(shell), 'heroShell must carry the "Westmere Private Hire" sign-off');
 });
 test('a representative sample across all email categories renders the hero image', async () => {
   const period = { from: '2026-08-01', to: '2026-08-07', issuedDate: '2026-08-08', dueDate: '2026-08-22', label: 'wk1' };
@@ -556,7 +561,12 @@ test('estimate email has THREE equal-size stacked buttons (Pay Now / Pay Driver 
   assert.ok(btns && btns.length === 3, 'expected exactly 3 identically-styled buttons, got ' + (btns ? btns.length : 0));
   // ...and none of them may be a filled slab: an inbox has no hover or press,
   // so the one state these have is the one the customer sees.
-  const filled = html.match(/<a\b[^>]*background(?:-color)?:\s*(?!#ffffff|transparent)[^;"]+/g);
+  /* WHITE IS NOT A FILL. Every element states its own background now (see
+     paintBackgrounds — a customer's email had gone dark-on-dark without it), so
+     these anchors legitimately carry `background-color:#FFFFFF`. The exclusion
+     was case-sensitive and the shell writes it in capitals. A COLOURED slab is
+     still a failure; the paper the button is printed on is not. */
+  const filled = html.match(/<a\b[^>]*background(?:-color)?:\s*(?!#ffffff\b|#fff\b|transparent)[^;"]+/gi);
   assert.strictEqual(filled, null, 'an estimate-email button is filled again: ' + (filled || []).join(' | '));
 });
 test('confirmation email has the same three equal-size buttons', async () => {

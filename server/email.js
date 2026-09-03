@@ -212,6 +212,115 @@ const UNSUB_MAILBOX = 'bookings@westmereprivatehire.co.uk';
 
 // opts: { attachments: [{ filename, content }], text }
 // content must be a base64 string for Resend's HTTP API.
+/* ── DARK MODE CANNOT TURN THIS EMAIL INTO A BLACK SCREEN ──────────────────
+   WHAT HAPPENED
+     A customer photographed his acknowledgement email: navy type on a near
+     black card, unreadable. Nothing was wrong with the colours as written —
+     #102a43 on #FFFFFF is 14:1. The fault was what was NOT written.
+
+   WHY
+     Every word in these emails sat on a background it INHERITED. The shell
+     paints its cells white; the paragraphs, headings and detail rows inside
+     them declared a text colour and no background at all. That is fine in a
+     browser, which inherits. It is not fine in a mail client's dark mode,
+     which recolours ELEMENT BY ELEMENT: it darkens the cell it is looking at,
+     and leaves an explicitly-declared `color` alone. Declared navy text, newly
+     dark cell, and the message is gone.
+
+     Thirty-five elements on the acknowledgement, forty-eight on the
+     confirmation, sixty-one on the booking-updated — and not one of them
+     declared both. The colour-scheme metas ask clients not to do this; Gmail
+     does it anyway, on every platform.
+
+   WHAT THIS DOES
+     Writes the inherited background down explicitly. It resolves each
+     element's background exactly as a renderer would — the nearest ancestor
+     that declares one — and states it on any element that declares a text
+     colour without one. Nothing moves and nothing changes hue: the value
+     written is the value that was already being inherited, so light mode is
+     pixel-identical. What changes is that a client recolouring one element at
+     a time can no longer separate the ink from the paper.
+
+     It runs on the finished HTML in sendEmail, so it covers every email this
+     file sends — including any written later that forgets.
+
+   GUARDRAIL: server/tests/email-dark-mode.test.js */
+function paintBackgrounds(html) {
+  if (!html || typeof html !== 'string') return html;
+  const VOID = new Set(['img', 'br', 'hr', 'meta', 'link', 'input', 'source', 'area', 'base', 'col', 'embed', 'param', 'track', 'wbr']);
+  const stack = [{ tag: 'root', bg: BG_CARD }];
+  let out = '';
+  let i = 0;
+  while (i < html.length) {
+    const lt = html.indexOf('<', i);
+    if (lt === -1) { out += html.slice(i); break; }
+    out += html.slice(i, lt);
+    /* Comments and MSO conditionals are copied through untouched — Outlook's
+       VML buttons live in there and carry their own fillcolor. */
+    if (html.startsWith('<!--', lt)) {
+      const end = html.indexOf('-->', lt);
+      const stop = end === -1 ? html.length : end + 3;
+      out += html.slice(lt, stop); i = stop; continue;
+    }
+    if (/^<(style|script|title)\b/i.test(html.slice(lt, lt + 8))) {
+      const name = /^<([a-z]+)/i.exec(html.slice(lt))[1];
+      const close = html.toLowerCase().indexOf('</' + name.toLowerCase() + '>', lt);
+      const stop = close === -1 ? html.length : close + name.length + 3;
+      out += html.slice(lt, stop); i = stop; continue;
+    }
+    const gt = html.indexOf('>', lt);
+    if (gt === -1) { out += html.slice(lt); break; }
+    let tag = html.slice(lt, gt + 1);
+    const m = /^<\s*(\/?)([a-zA-Z][a-zA-Z0-9]*)([\s\S]*?)(\/?)>$/.exec(tag);
+    if (!m) { out += tag; i = gt + 1; continue; }
+    const closing = m[1] === '/';
+    const name = m[2].toLowerCase();
+    const attrs = m[3] || '';
+    if (closing) {
+      for (let k = stack.length - 1; k > 0; k--) {
+        if (stack[k].tag === name) { stack.length = k; break; }
+      }
+      out += tag; i = gt + 1; continue;
+    }
+    const styleM = /style\s*=\s*"([^"]*)"/i.exec(attrs);
+    const style = styleM ? styleM[1] : '';
+    const ownBgStyle = /(?:^|;)\s*background(?:-color)?\s*:\s*([^;]+)/i.exec(style);
+    const ownBgAttr = /bgcolor\s*=\s*"?([#\w]+)"?/i.exec(attrs);
+    let ownBg = null;
+    if (ownBgStyle) {
+      /* `background:#FFFFFF` and `background:#FFF url(...)` both start with the
+         colour; anything that does not resolve to one is left alone. */
+      const first = ownBgStyle[1].trim().split(/\s+/)[0];
+      if (/^#[0-9a-f]{3,8}$/i.test(first) || /^rgba?\(/i.test(ownBgStyle[1].trim())) ownBg = first;
+    }
+    if (!ownBg && ownBgAttr) ownBg = ownBgAttr[1];
+    const inherited = stack[stack.length - 1].bg;
+
+    /* THE ONE EDIT: an element gets the paper it was already standing on.
+       Text-bearing elements are the ones that go dark-on-dark, but the layout
+       cells around them matter too — the 20px icon column beside each detail
+       row carries no text of its own, and a client that darkens it leaves a
+       black stripe down the middle of a white card. Both get the colour they
+       were already inheriting, so nothing moves. */
+    /* `img` too: the row icons are transparent PNGs, so whatever is behind them
+       shows through. On a client that darkens the image element they became six
+       black squares down the side of a white card. */
+    const PAINTABLE = 'td th tr table div p span a h1 h2 h3 h4 h5 h6 center strong em b i li ul ol img';
+    if (!ownBg && inherited && PAINTABLE.split(' ').indexOf(name) !== -1) {
+      if (styleM) {
+        const painted = style.replace(/\s*;?\s*$/, '') + ';background-color:' + inherited;
+        tag = tag.replace(styleM[0], 'style="' + painted + '"');
+      } else {
+        tag = tag.replace(/\s*(\/?)>$/, ' style="background-color:' + inherited + '"$1>');
+      }
+    }
+    if (!VOID.has(name) && !m[4]) stack.push({ tag: name, bg: ownBg || inherited });
+    out += tag;
+    i = gt + 1;
+  }
+  return out;
+}
+
 async function sendEmail(to, subject, html, fromLabel, preheader, opts) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -237,6 +346,11 @@ async function sendEmail(to, subject, html, fromLabel, preheader, opts) {
     const hidden = `<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#FFFFFF;opacity:0">${escHtml(preheader)}</div>`;
     finalHtml = html.replace('<body', hidden + '<body').replace(/<body([^>]*)>/, '<body$1>' + hidden);
   }
+
+  /* THE PAPER, WRITTEN DOWN. Last thing before it goes, so every email — this
+     file's and any added later — leaves with its backgrounds stated rather
+     than inherited. See paintBackgrounds(). */
+  finalHtml = paintBackgrounds(finalHtml);
 
   // Plain-text alternative part (preheader first, then the body text).
   const bodyText = (opts && opts.text) || htmlToText(html);
@@ -482,7 +596,7 @@ async function sendCustomerConfirmed(booking) {
   const html = confirmationEmailHtml({
     ref, firstName, pickup, stop_address, destination, dateStr, flight, passengers, bags,
     fareStr, alreadyPaid: noPayButtons, payment, paymentLabel, pay_token, notes,
-    driver_name, driver_vehicle, driver_reg,
+    driver_name, driver_vehicle, driver_reg, vehicle_category: booking.vehicle_category,
     eyebrow: 'Booking confirmed', intro
   });
   const ok = await sendEmail(email, subject, html, 'Westmere Private Hire', preheader);
@@ -561,9 +675,14 @@ function emailBtn(href, text, kind, block) {
   const padV = block ? 17 : 15, padH = block ? 16 : 34;
   const radius = 10;
   const font = 'Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif';
+  /* The button's own paper, stated. Everywhere else this is written in for
+     free by paintBackgrounds() — but this label is also used inside the MSO
+     conditional, which that pass copies through untouched (Outlook's VML lives
+     in there and must not be rewritten). So it says it itself. */
   const label =
     `font-family:${font};font-size:${b.size}px;font-weight:${b.weight};` +
-    `letter-spacing:${b.track};text-transform:uppercase;color:${b.ink};text-decoration:none`;
+    `letter-spacing:${b.track};text-transform:uppercase;color:${b.ink};` +
+    `background-color:#ffffff;text-decoration:none`;
   // Outlook: a VML frame at the same radius, white fill, navy stroke.
   const vml =
     `<!--[if mso]>` +
@@ -630,16 +749,45 @@ function heroShell(innerHtml, opts) {
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta name="color-scheme" content="light only">
 <meta name="supported-color-schemes" content="light only">
+<meta name="format-detection" content="telephone=no,date=no,address=no,email=no">
 <title>${escHtml(title)}</title>
 <!--[if mso]><style>table,td,a{font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif}</style><![endif]-->
 <style>:root{color-scheme:light only;supported-color-schemes:light only}
+/* ── DARK MODE, ASKED AND THEN INSISTED ON ────────────────────────────────
+   The metas above ASK the client not to recolour this message. Apple Mail
+   honours that; Gmail does not, on any platform, and a customer photographed
+   the result — navy type on a near-black card, unreadable.
+
+   Two answers, because no single one covers every client:
+
+   1. EVERY ELEMENT STATES ITS OWN BACKGROUND. Done in code, on the finished
+      HTML, by paintBackgrounds() — a client recolouring one element at a time
+      can no longer darken the paper and keep the ink. That is the fix that
+      does the work.
+
+   2. THESE RULES, for the clients that read a media query anyway. Apple Mail
+      and Outlook.com apply their own dark palette to what they think is
+      unstyled; !important puts the light one back. [data-ogsc]/[data-ogsb] are
+      the attributes Outlook.com stamps on elements it has recoloured. */
+@media (prefers-color-scheme: dark){
+  body,.wm-body{background:#EEF2F5!important}
+  .wm-card,.wm-pad,.wm-cell{background-color:#FFFFFF!important}
+  .wm-ink,.wm-ink a{color:#102a43!important}
+  .wm-muted{color:#657485!important}
+}
+[data-ogsc] body,[data-ogsb] body{background:#EEF2F5!important}
+[data-ogsc] .wm-card,[data-ogsb] .wm-card,
+[data-ogsc] .wm-pad,[data-ogsb] .wm-pad,
+[data-ogsc] .wm-cell,[data-ogsb] .wm-cell{background-color:#FFFFFF!important}
+[data-ogsc] .wm-ink,[data-ogsb] .wm-ink{color:#102a43!important}
+[data-ogsc] .wm-muted,[data-ogsb] .wm-muted{color:#657485!important}
 @media(max-width:600px){.wm-pad{padding-left:22px!important;padding-right:22px!important}.wm-copy{display:block!important;width:100%!important}.wm-badge{display:block!important;width:100%!important;max-width:100%!important;text-align:left!important;padding:14px 0 0 0!important}.wm-badge p{letter-spacing:1.2px!important}}</style>
 </head>
-<body style="margin:0;padding:0;background:#EEF2F5;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#EEF2F5" style="background:#EEF2F5">
+<body class="wm-body" bgcolor="#EEF2F5" style="margin:0;padding:0;background:#EEF2F5;background-color:#EEF2F5;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#EEF2F5" style="background:#EEF2F5;background-color:#EEF2F5">
 <tr><td align="center" style="padding:26px 14px">
 
-<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFFFFF" style="width:600px;max-width:600px;background:#FFFFFF;border:1px solid #dfe5ea;border-radius:16px;overflow:hidden">
+<table role="presentation" class="wm-card" width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFFFFF" style="width:600px;max-width:600px;background:#FFFFFF;background-color:#FFFFFF;border:1px solid #dfe5ea;border-radius:16px;overflow:hidden">
 
 <tr><td align="center" style="padding:28px 20px 18px;background:#FFFFFF">
   <div style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:22px;color:#102a43;letter-spacing:1px;line-height:1">W</div>
@@ -1170,6 +1318,13 @@ function tripRows(d, fareLabel) {
   if (d.passengers) rows += confRow('ic-travellers', 'Travellers', Number(d.passengers) + ' passenger' + (Number(d.passengers) === 1 ? '' : 's'));
   const bagsTxt = bagsText(d.bags);
   if (bagsTxt) rows += confRow('ic-travellers', 'Luggage', escHtml(bagsTxt));
+  /* The car they asked for — shown only when it is not the saloon. A line
+     saying "Standard Saloon" on every confirmation is a line nobody reads. */
+  const vehCat = String(d.vehicle_category || 'standard');
+  if (vehCat && vehCat !== 'standard') {
+    const VEH = { estate: 'Estate Plus', mpv: 'MPV', executive: 'Executive Class' };
+    if (VEH[vehCat]) rows += confRow('ic-travellers', 'Vehicle', escHtml(VEH[vehCat]));
+  }
   if (d.fareStr) rows += confRow('ic-fare', fareLabel, escHtml(d.fareStr), { fare: true });
   // A re-priced prepaid trip. What they already paid, then ONLY the difference —
   // never the whole new fare, which is the number that would take their money
@@ -2797,6 +2952,10 @@ module.exports = {
   sendOwnerBookingReminder,
   // Exposed for local template previews / potential reuse.
   confirmationEmailHtml,
+  /* Exported so the guard can drive it directly with fixtures. Asserting the
+     pass's behaviour by diffing its own output against itself proves nothing —
+     it has to be run on markup whose correct result is known. */
+  paintBackgrounds,
   // Exposed for the timezone/day-of-week guardrail test.
   formatDate
 };
