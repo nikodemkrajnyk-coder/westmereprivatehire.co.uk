@@ -179,6 +179,33 @@ router.post('/bookings', (req, res) => {
       .run(req.auth.type, req.auth.id, 'booking_created', ref, req.ip);
   } catch (e) { /* audit failure must not block the response */ }
 
+  /* THE FARE, IN ITS PARTS — the staff path.
+     The owner types the fare himself, so the engine's total is not authority
+     here; its PASS-THROUGHS are. A Dartford toll and a Heathrow terminal
+     charge are outlays that happen whatever the owner decides to charge, so
+     they are stored as the engine reports them and the ride is the remainder:
+         base_fare = charged fare − terminal charge − toll
+     which adds back to exactly what the customer is billed. Nothing is stored
+     unless the parts fit inside the fare — a negative ride is not a split, it
+     is a guess. Background and non-blocking: the booking is already saved, and
+     a geocoding hiccup must cost the split, not the job.
+     GUARDRAIL: server/tests/invoice-edit.test.js */
+  (async () => {
+    try {
+      const { computeSuggestedFare } = require('./fare-engine');
+      const sf = await computeSuggestedFare(pickup, destination, time);
+      if (!sf) return;
+      const r2 = (n) => Math.round(Number(n) * 100) / 100;
+      const af = r2(sf.airport_fee || 0), tl = r2(sf.toll_fee || 0);
+      const charged = (fare == null || fare === '') ? null : Number(fare);
+      const total = (charged != null && isFinite(charged)) ? charged : r2(sf.fare);
+      const base = r2(total - af - tl);
+      if (!isFinite(base) || base < 0) return;
+      db.prepare('UPDATE bookings SET base_fare = ?, airport_fee = ?, toll_fee = ? WHERE id = ?')
+        .run(base, af, tl, result.lastInsertRowid);
+    } catch (e) { console.error('[API] fare split failed (non-blocking):', e.message); }
+  })();
+
   // Calculate trip miles in background (for mileage tracking)
   (async () => {
     try {
@@ -2255,7 +2282,8 @@ router.post('/customers/:id/invoice', async (req, res) => {
   if (!customer) return res.status(404).json({ error: 'Customer not found' });
 
   const bookings = db.prepare(`
-    SELECT ref, date, time, pickup, destination, fare, flight, passengers, status
+    SELECT ref, date, time, pickup, destination, fare, flight, passengers, status,
+           base_fare, airport_fee, toll_fee, payment
       FROM bookings
      WHERE customer_id = ?
        AND date >= ?
@@ -2317,11 +2345,29 @@ router.post('/customers/:id/invoice', async (req, res) => {
 
   // Persist the invoice record so it can be looked up later.
   try {
-    const lineItems = bookings.map(b => ({
-      date: b.date, time: b.time, ref: b.ref,
-      pickup: b.pickup, destination: b.destination,
-      flight: b.flight, passengers: b.passengers, fare: b.fare
-    }));
+    /* THE RIDE IN THE FARE COLUMN, THE TOLL IN THE FEE COLUMN.
+       A booking's `fare` is all-in — base + terminal charge + toll. Billing
+       that as the fare charged commission on the toll and then counted the
+       toll a second time as a fee: an August invoice to APD came out £39.10
+       over. Where the parts were kept the invoice splits them itself; where
+       they were not — anything booked before those columns existed — it falls
+       back to the all-in figure with no fee, and the toll is typed into the
+       Fee box by hand. */
+    const lineItems = bookings.map(b => {
+      const split = (b.base_fare != null);
+      const passThrough = Math.round(((+b.airport_fee || 0) + (+b.toll_fee || 0)) * 100) / 100;
+      return {
+        date: b.date, time: b.time, ref: b.ref,
+        pickup: b.pickup, destination: b.destination,
+        flight: b.flight, passengers: b.passengers,
+        fare: split ? Math.round(Number(b.base_fare) * 100) / 100 : b.fare,
+        fee: split ? passThrough : 0,
+        /* A job the driver was paid for at the kerb. The operator still takes
+           commission on the fare, but does not pay the fare over — the driver
+           already has it. Card and cash are both "already collected". */
+        collected_direct: (b.payment === 'card' || b.payment === 'cash') ? 1 : 0
+      };
+    });
     db.prepare(`
       INSERT INTO invoices
         (invoice_no, kind, customer_id, recipient_name, recipient_email, recipient_phone,
@@ -2734,7 +2780,8 @@ router.patch('/invoices/:id', async (req, res) => {
       const tripFee = Number(it && it.fee);
       return Object.assign({}, it, {
         fare: isNaN(amount) ? (Number(it && it.fare) || 0) : Math.round(amount * 100) / 100,
-        fee: (!isFinite(tripFee) || tripFee <= 0) ? 0 : Math.round(tripFee * 100) / 100
+        fee: (!isFinite(tripFee) || tripFee <= 0) ? 0 : Math.round(tripFee * 100) / 100,
+        collected_direct: (it && (it.collected_direct === 1 || it.collected_direct === true)) ? 1 : 0
       });
     });
     if (row.kind === 'bespoke' && lineItems.some((it) => !it.description)) {
@@ -2807,9 +2854,20 @@ router.patch('/invoices/:id', async (req, res) => {
   }
   const commission = Math.round(lineSum * (commissionPct / 100) * 100) / 100;
 
+  /* WHAT THE DRIVER ALREADY HAS.
+     A job paid at the kerb by card or cash is still the operator's job — they
+     take their commission on its fare — but they do not pay that fare over,
+     because the driver took it. So the fare counts toward the commission base
+     and is then deducted from the payout. Its TOLL is still owed: the driver
+     laid that out at the barrier whoever paid the fare.
+       payout = fares − commission + fees − collected */
+  const collectedDirect = Math.round(items.reduce((t, it) =>
+    t + ((it && (it.collected_direct === 1 || it.collected_direct === true))
+          ? (Number(row.kind === 'bespoke' ? it.amount : it.fare) || 0) : 0), 0) * 100) / 100;
+
   /* fares − commission + fees. With no commission this is the sum it always
      was, so nothing about an ordinary invoice moves. */
-  const autoSum = Math.round((lineSum - commission + fees) * 100) / 100;
+  const autoSum = Math.round((lineSum - commission + fees - collectedDirect) * 100) / 100;
 
   /* THE OVERRIDE. Three states, and they have to stay distinguishable:
        total_override: a number  → set it, and remember that it was set;
@@ -2875,7 +2933,7 @@ router.patch('/invoices/:id', async (req, res) => {
   console.log('[INVOICE] ' + row.invoice_no + ' corrected (total £' + total.toFixed(2) +
               (manual ? ', set by hand' : ', from the lines') + ')');
   res.json({ ok: true, invoice: updated, autoSum, lineSum, fees, perTripFees,
-             feesDerived: isAccount, commissionPct, commission });
+             feesDerived: isAccount, commissionPct, commission, collectedDirect });
 });
 
 // Delete invoice — removes DB row and cached PDF.

@@ -1142,6 +1142,127 @@ test('EVERY variable on an invoice can be corrected', async () => {
   assert.strictEqual(a.invoice_no, inv.invoice_no);
 });
 
+// ── THE APD MONTH ────────────────────────────────────────────────────────
+console.log('\nThe operator invoice reconciles to the operator\'s own sheet');
+
+/* GROUND TRUTH, from APD's job sheet for August 2026. Seven jobs; the 28/08
+   was paid by card at the kerb, so the driver already has that £50.
+
+     account fares 625 · all fares 675 · tolls 59
+     commission 10% of 675 = 67.50
+     payout 625 − 67.50 + 59 = £616.50
+
+   Our invoice made it £655.60 — £39.10 over — three ways at once: the tolls
+   were inside the line fares AND on a separate "Airport charges £49" line, the
+   commission was taken on fares+tolls, and the card job was missing. This is
+   the number that fails if any of them comes back. */
+const APD_AUGUST = [
+  { date: '2026-08-03', ref: 'WPH-9001', time: '05:00', pickup: 'Billingshurst', destination: 'Heathrow Terminal 2', fare: 115, fee: 7 },
+  { date: '2026-08-05', ref: 'WPH-9002', time: '14:00', pickup: 'Heathrow Terminal 2', destination: 'Billingshurst', fare: 115, fee: 8 },
+  { date: '2026-08-13', ref: 'WPH-9003', time: '06:30', pickup: 'Wiston', destination: 'Gatwick Airport', fare: 75, fee: 10 },
+  { date: '2026-08-19', ref: 'WPH-9004', time: '11:15', pickup: 'Gatwick Airport North', destination: 'Wiston', fare: 75, fee: 10 },
+  { date: '2026-08-21', ref: 'WPH-9005', time: '04:45', pickup: 'Pulborough', destination: 'Heathrow', fare: 130, fee: 7 },
+  { date: '2026-08-28', ref: 'WPH-9006', time: '16:00', pickup: 'Gatwick Airport North', destination: 'Horsham', fare: 50, fee: 10, collected_direct: 1 },
+  { date: '2026-08-29', ref: 'WPH-9007', time: '07:30', pickup: 'Ashington', destination: 'Heathrow Terminal 4', fare: 115, fee: 7 }
+];
+
+test('THE APD AUGUST INVOICE COMES TO £616.50', async () => {
+  const inv = seed('account', APD_AUGUST);
+  const r = await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
+    body: { line_items: APD_AUGUST, commission_pct: 10 } });
+  assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
+  assert.strictEqual(r.body.lineSum, 675, 'fares, all seven, EXCLUDING tolls');
+  assert.strictEqual(r.body.fees, 59, 'tolls, from the rows');
+  assert.strictEqual(r.body.commission, 67.50, '10% of 675 — not of 734, and not of 625');
+  assert.strictEqual(r.body.collectedDirect, 50, 'the card job the driver was paid for');
+  assert.strictEqual(rowOf(inv.id).total, 616.50,
+    '625 − 67.50 + 59. Got ' + rowOf(inv.id).total);
+});
+
+test('and the page shows the four steps that get there', async () => {
+  const inv = seed('account', APD_AUGUST);
+  await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
+    body: { line_items: APD_AUGUST, commission_pct: 10 } });
+  const texts = await drawn(rowOf(inv.id));
+  const want = [['Fares (jobs)', '£675.00'], ['Fees (parking & tolls)', '£59.00'],
+                ['Less 10% commission', '\u2212\u00a367.50'], ['Less collected by driver', '\u2212\u00a350.00']];
+  for (const [label, amount] of want) {
+    assert.ok(texts.some((t) => t.s === label), 'missing line: ' + label);
+    assert.ok(texts.some((t) => t.s === amount), label + ' has no ' + amount);
+  }
+  assert.ok(texts.some((t) => t.s === '£616.50'), 'and the total');
+  assert.strictEqual(texts.filter((t) => /Airport charges/.test(t.s)).length, 0,
+    'the lump line is gone — the per-trip fees replace it');
+  assert.strictEqual(texts.filter((t) => t.s === '£734.00').length, 0,
+    'fares+tolls must appear nowhere');
+});
+
+test('commission counts the collected fare, the payout does not', async () => {
+  /* The netting rule on its own. Drop the flag and the total is £50 too high;
+     leave the fare out of the commission base and it is £5 too high. */
+  const inv = seed('account', APD_AUGUST);
+  const r = await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
+    body: { line_items: APD_AUGUST, commission_pct: 10 } });
+  assert.strictEqual(r.body.commission, 67.50, 'the £50 fare IS in the base (10% of 675)');
+  assert.notStrictEqual(r.body.commission, 62.50, 'not 10% of 625 — that excludes it');
+  assert.strictEqual(rowOf(inv.id).total, 616.50, 'and the £50 is OUT of the payout');
+  assert.notStrictEqual(rowOf(inv.id).total, 666.50, 'which it would be if it were paid over');
+});
+
+test('an ALL-IN fare from a real booking is split, not billed whole', async () => {
+  /* The root cause. The engine returns base + terminal charge + toll as one
+     number; a £122 Heathrow run is £115 of driving and £7 of Dartford. The
+     invoice must show £115. */
+  const src = read('server/api.js').replace(/\/\*[\s\S]*?\*\//g, ' ');
+  const map = src.slice(src.indexOf('const lineItems = bookings.map'), src.indexOf('db.prepare(', src.indexOf('const lineItems = bookings.map')));
+  assert.ok(/fare: split \? Math\.round\(Number\(b\.base_fare\)/.test(map),
+    'the line fare must be the BASE fare when the split was kept');
+  assert.ok(/airport_fee \|\| 0\) \+ \(\+b\.toll_fee/.test(map),
+    'and the fee must be the terminal charge plus the toll');
+  /* …and that value must actually be USED. Checking only that passThrough is
+     computed let a version through where the fee was hard-wired to 0 and the
+     toll silently disappeared off the invoice. */
+  assert.ok(/fee: split \? passThrough : 0/.test(map),
+    'the computed pass-through must be what lands in the fee column');
+  assert.ok(/b\.base_fare != null/.test(map),
+    'with a fallback for bookings taken before the parts were stored');
+
+  // and end to end: a booking that WAS split bills at 115, not 122
+  const items = [{ date: '2026-08-03', ref: 'WPH-9001', pickup: 'Billingshurst',
+                   destination: 'Heathrow Terminal 2', fare: 115, fee: 7 }];
+  const inv = seed('account', items);
+  const r = await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
+    body: { line_items: items, commission_pct: 10 } });
+  assert.strictEqual(r.body.lineSum, 115, 'the fare column is the ride: £115, not £122');
+  assert.strictEqual(r.body.fees, 7, 'the toll is the fee');
+  assert.strictEqual(r.body.commission, 11.50, '10% of 115 — never of 122');
+});
+
+test('the engine\'s split is STORED, on both booking paths', () => {
+  const cols = db.prepare('PRAGMA table_info(bookings)').all().map((c) => c.name);
+  for (const c of ['base_fare', 'airport_fee', 'toll_fee']) {
+    assert.ok(cols.includes(c), c + ' is not a column — the split cannot be kept');
+  }
+  const pub = read('server/public-api.js').replace(/\/\*[\s\S]*?\*\//g, ' ');
+  assert.ok(/baseFare\s*=/.test(pub) && /tollFee\s*=/.test(pub), 'the public /book path must keep them');
+  assert.ok(/base_fare, airport_fee, toll_fee/.test(pub), 'and write them');
+  /* And the STAFF path. The owner types his own fare, so what is kept there is
+     the engine's pass-throughs with the ride as the remainder — the test asserts
+     the subtraction, because storing the engine's own base against a hand-typed
+     fare would put a figure in the fare column the customer was never charged. */
+  const staff = read('server/api.js').replace(/\/\*[\s\S]*?\*\//g, ' ');
+  assert.ok(/SET base_fare = \?, airport_fee = \?, toll_fee = \?/.test(staff),
+    'a staff-created booking must keep the split too');
+  assert.ok(/const base = r2\(total - af - tl\)/.test(staff),
+    'the ride is the charged fare less the pass-throughs, not the engine\'s own base');
+  assert.ok(/base < 0\) return/.test(staff),
+    'a fare too small to cover its tolls must store no split at all');
+  /* The fare engine is READ. FARE_CF is pinned elsewhere; this changes who the
+     money belongs to, never what the customer is charged. */
+  const engine = read('server/fare-engine.js');
+  assert.ok(!/collected_direct|commission_pct/.test(engine), 'the split has leaked into the engine');
+});
+
 // ── PAGINATION ───────────────────────────────────────────────────────────
 console.log('\nThe foot group stays on page one when it fits');
 

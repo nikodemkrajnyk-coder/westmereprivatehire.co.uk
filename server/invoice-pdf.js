@@ -105,7 +105,8 @@ function fmtDate(d) {
    VISIBLE design changes; nothing else needs to be cleared, and the owner's
    existing files are left alone rather than deleted.
    GUARDRAIL: server/tests/invoice-paths.test.js */
-const TEMPLATE_VERSION = 10;  // 10: the operator commission breakdown
+const TEMPLATE_VERSION = 11;  // 11: fare/toll split, and what the driver already collected
+                              // 10: the operator commission breakdown
                               //  9: a FEE column — each trip shows what was paid out on it
                               // 8: the fees row stands alone — no subtotal lead-in
                               // 7: a fees row above the total
@@ -329,6 +330,12 @@ function drawInvoice(doc, data, slack) {
   const fareSum = Math.round(((data.bookings || data.items || []).reduce(
     (t, it) => t + (Number(it && (it.fare !== undefined ? it.fare : it.amount)) || 0), 0)) * 100) / 100;
   const commissionAmt = Math.round(fareSum * (commissionPct / 100) * 100) / 100;
+  /* Jobs the driver was already paid for. Their fare is in the commission base
+     above and is deducted from the payout below — the operator owes the toll
+     on them, not the fare. */
+  const collectedAmt = Math.round(((data.bookings || data.items || []).reduce(
+    (t, it) => t + ((it && (it.collected_direct === 1 || it.collected_direct === true))
+      ? (Number(it.fare !== undefined ? it.fare : it.amount) || 0) : 0), 0)) * 100) / 100;
   // "10%" not "10.00%", but 7.5% keeps its half.
   const fmtPct = (p) => (Math.round(p * 100) / 100).toString() + '%';
 
@@ -760,6 +767,7 @@ function drawInvoice(doc, data, slack) {
     leadIn.push(['Fares (jobs)', fareSum]);
     if (fees > 0) leadIn.push([feesLabel || 'Fees (parking & tolls)', fees]);
     leadIn.push(['Less ' + fmtPct(commissionPct) + ' commission', -commissionAmt]);
+    if (collectedAmt > 0) leadIn.push(['Less collected by driver', -collectedAmt]);
   } else if (fees > 0) {
     leadIn.push([feesLabel || 'Fees', fees]);
   }

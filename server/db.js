@@ -856,7 +856,20 @@ function migrate() {
   // is created so the owner/admin can confirm at the suggested price or adjust.
   try {
     const dmInfo = db.prepare("PRAGMA table_info(bookings)").all();
-    for (const [n, t] of [['dead_miles_fee', 'REAL DEFAULT 0'], ['dead_miles_km', 'REAL DEFAULT 0'], ['suggested_fare', 'REAL']]) {
+    /* THE FARE, IN ITS PARTS. The engine works out a base fare, an airport
+       terminal charge and a road toll, adds them together and returns one
+       number — and the two components were thrown away. That is why an
+       operator invoice could not tell the ride from the toll: a £122 Heathrow
+       run is £115 of driving and £7 of Dartford, and the booking remembered
+       only the £122. Commission was then charged on the toll, and the toll was
+       counted a second time as a fee.
+
+       Kept now, so an account invoice can put the ride in the fare column and
+       the toll in the fee column by itself. Nullable: a booking taken before
+       today cannot be split retroactively and its toll is typed in by hand. */
+    for (const [n, t] of [['dead_miles_fee', 'REAL DEFAULT 0'], ['dead_miles_km', 'REAL DEFAULT 0'],
+                          ['suggested_fare', 'REAL'],
+                          ['base_fare', 'REAL'], ['airport_fee', 'REAL'], ['toll_fee', 'REAL']]) {
       if (!dmInfo.find(c => c.name === n)) {
         db.exec(`ALTER TABLE bookings ADD COLUMN ${n} ${t}`);
         console.log('[DB] Added ' + n + ' column to bookings');

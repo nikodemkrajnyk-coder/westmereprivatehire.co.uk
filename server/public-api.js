@@ -206,9 +206,18 @@ router.post('/book', async (req, res) => {
     // recommended all-in price on the Job Request and can confirm or adjust it.
     // Best-effort: a routing/geocode failure just leaves it null (price TBC).
     let suggestedFare = null;
+    let baseFare = null, airportFee = null, tollFee = null;
     try {
       const sf = await computeSuggestedFare(pickup, destination, time);
       if (sf && sf.fare) suggestedFare = sf.fare;
+      /* THE PARTS, KEPT. The engine has always separated them; only the sum
+         was stored. Without this an account invoice cannot tell the ride from
+         the toll, and both the commission and the fee line come out wrong. */
+      if (sf) {
+        baseFare   = (sf.base_fare   != null) ? Math.round(Number(sf.base_fare)   * 100) / 100 : null;
+        airportFee = (sf.airport_fee != null) ? Math.round(Number(sf.airport_fee) * 100) / 100 : null;
+        tollFee    = (sf.toll_fee    != null) ? Math.round(Number(sf.toll_fee)    * 100) / 100 : null;
+      }
     } catch (sfErr) {
       console.error('[BOOK] suggested fare failed (non-blocking):', sfErr.message);
     }
@@ -221,8 +230,9 @@ router.post('/book', async (req, res) => {
     const result = db.prepare(`
       INSERT INTO bookings (ref, customer_id, driver_id, pickup, destination, date, time,
                             passengers, bags, trip_type, flight, fare, payment, notes, status,
-                            passenger_name, passenger_phone, passenger_email, suggested_fare, stop_address)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            passenger_name, passenger_phone, passenger_email, suggested_fare, stop_address,
+                            base_fare, airport_fee, toll_fee)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       ref, customerId, finalDriverId,
       pickup, destination, bookingDate, storedTime,
@@ -234,7 +244,8 @@ router.post('/book', async (req, res) => {
       (phone || '').trim() || null,
       (email || '').trim().toLowerCase() || null,
       suggestedFare,
-      (stop_address || '').trim() || null
+      (stop_address || '').trim() || null,
+      baseFare, airportFee, tollFee
     );
 
     // Verify stored time matches input

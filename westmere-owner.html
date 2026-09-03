@@ -6922,7 +6922,7 @@ function invEditOpen(){
   var items=(inv.line_items||[]).map(function(it){
     return bespoke
       ? {date:it.date||'',description:it.description||'',amount:+it.amount||0}
-      : Object.assign({},it,{amount:+it.fare||0,fee:+it.fee||0});
+      : Object.assign({},it,{amount:+it.fare||0,fee:+it.fee||0,collected_direct:+it.collected_direct||0});
   });
   _INV_EDIT_STATE={inv:inv,bespoke:bespoke,items:items,manual:!!inv.total_manual,total:+inv.total||0};
   document.getElementById('inv-edit-no').textContent=inv.invoice_no||'';
@@ -6977,8 +6977,14 @@ function invEditCommissionPct(){
 function invEditCommission(){
   return Math.round(invEditLineSum()*(invEditCommissionPct()/100)*100)/100;
 }
+/* What the driver already took: in the commission base, out of the payout. */
+function invEditCollected(){
+  var st=_INV_EDIT_STATE; if(!st)return 0;
+  return Math.round(st.items.reduce(function(t,it){
+    return t+((+it.collected_direct)?(+it.amount||0):0);},0)*100)/100;
+}
 function invEditAutoSum(){
-  return Math.round((invEditLineSum()-invEditCommission()+invEditFees())*100)/100;
+  return Math.round((invEditLineSum()-invEditCommission()+invEditFees()-invEditCollected())*100)/100;
 }
 function invEditRenderLines(){
   var st=_INV_EDIT_STATE; if(!st)return;
@@ -7006,13 +7012,22 @@ function invEditRenderLines(){
       +'<div style="width:96px"><div style="'+CAP+'">'+(st.bespoke?'Amount':'Fare')+'</div>'
        +'<input data-i="'+i+'" data-f="amount" type="number" step="0.01" value="'+(+it.amount||0).toFixed(2)+'" style="'+NUM+'"></div>'
       +'<button onclick="invEditRemove('+i+')" title="Remove this line" style="padding:.4rem .55rem;border:1px solid rgba(27,27,26,.18);background:#fff;border-radius:5px;cursor:pointer;color:#8a1c1c">&times;</button>'
-      +'</div></div>';
+      +'</div>'
+      /* PAID AT THE KERB. The operator still takes commission on this fare but
+         does not pay it over — the driver has it already. Its toll is still
+         owed. Only meaningful on an operator invoice. */
+      +(st.bespoke?''
+        :'<label style="display:flex;align-items:center;gap:.4rem;margin-top:.35rem;font-size:.78rem;color:rgba(27,27,26,.55);cursor:pointer">'
+         +'<input data-i="'+i+'" data-f="collected" type="checkbox" '+((+it.collected_direct)?'checked':'')+' style="width:14px;height:14px">'
+         +'Driver collected this fare (card / cash)</label>')
+      +'</div>';
   }).join('')||'<div style="padding:.8rem;text-align:center;font-size:.85rem;color:rgba(27,27,26,.4)">No lines</div>';
   box.querySelectorAll('[data-i]').forEach(function(el){
     el.oninput=function(){
       var it=st.items[+el.getAttribute('data-i')]; if(!it)return;
       var f=el.getAttribute('data-f');
-      it[f]= (f==='amount'||f==='fee') ? (+el.value||0) : el.value;
+      if(f==='collected') it.collected_direct = el.checked ? 1 : 0;
+      else it[f]= (f==='amount'||f==='fee') ? (+el.value||0) : el.value;
       invEditSyncTotal();
     };
   });
