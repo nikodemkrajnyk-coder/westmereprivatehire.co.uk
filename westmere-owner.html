@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <script src="/address-normalize.js"></script>
 <script src="/wm-address-lookup.js"></script>
+<script src="/wm-invoice-maths.js"></script>
 <script src="/wm-lifecycle.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"/>
 <meta name="mobile-web-app-capable" content="yes">
@@ -6412,40 +6413,11 @@ function invOperatorMode(){
   var cb=document.getElementById('ni-commission');
   return !!(cb&&cb.checked);
 }
-/* THE JOB SHEET'S ARITHMETIC, and the invoice's, in one function.
-   Two things about it are deliberate:
-
-   THE TOLL NEVER TOUCHES THE COMMISSION. It is a barrier charge the driver
-   laid out, not money he earned; charging ten per cent of it and then counting
-   it again as a fee is what put APD's August £39.10 over.
-
-   THE ROW COMMISSIONS ARE FOR READING, THE TOTAL IS FOR BILLING. Each row
-   shows its own ten per cent the way an operator's sheet does — but the total
-   is ten per cent of the fares, computed once, because that is what the server
-   writes onto the invoice. Adding up seven rounded rows instead can land a
-   penny away from the document, and a screen that disagrees with the bill is
-   the whole reason this screen exists.
-   GUARDRAIL: server/tests/invoice-table.test.js */
-function invOperatorMaths(rows,pct){
-  var r2=function(n){return Math.round(n*100)/100;};
-  var rate=(isFinite(+pct)&&+pct>0)?+pct:0;
-  var out={rows:[],fares:0,tolls:0,commission:0,collected:0,total:0,pct:rate};
-  (rows||[]).forEach(function(r){
-    var fare=(+r.fare)||0, toll=(+r.toll)||0;
-    out.rows.push({fare:r2(fare),toll:r2(toll),
-                   commission:r2(fare*(rate/100)),collected:!!r.collected});
-    out.fares=r2(out.fares+fare);
-    out.tolls=r2(out.tolls+toll);
-    /* NETTED ONLY UNDER AN ARRANGEMENT. No rate means no operator and no
-       settlement — it is a plain invoice, which has no Card column and must not
-       have money taken off it by a flag left over from one. The server applies
-       the same rule, so the screen and the document can never disagree. */
-    if(r.collected&&rate>0) out.collected=r2(out.collected+fare);
-  });
-  out.commission=r2(out.fares*(rate/100));
-  out.total=r2(out.fares-out.commission+out.tolls-out.collected);
-  return out;
-}
+/* THE ARITHMETIC LIVES IN wm-invoice-maths.js, with the admin app.
+   Two screens working the same settlement out separately is how they come to
+   disagree — and the disagreement shows up in somebody's accounts department,
+   not here. GUARDRAIL: server/tests/invoice-table.test.js */
+function invOperatorMaths(rows,pct){ return WMInvoiceMaths.compute(rows,pct); }
 function invAddItem(date,desc,amt,to,toll,collected){
   var wrap=document.getElementById('ni-items');
   if(!wrap)return;
@@ -6566,55 +6538,15 @@ function invRelayout(){
   rows.forEach(function(r){ invAddItem(r.date,r.from,r.fare,r.to,r.toll,r.collected); });
   invCalcTotal();
 }
-function invOpHeadHtml(){
-  var C='font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;color:rgba(27,27,26,.4)';
-  var R=C+';text-align:right'; var M=C+';text-align:center';
-  return '<div style="display:flex;gap:.3rem;margin-bottom:.15rem">'
-    +'<div style="'+C+';width:'+NI_TRIP+';flex:0 0 '+NI_TRIP+'">Date</div>'
-    +'<div style="'+C+';flex:1">From</div><div style="'+C+';flex:1">To</div>'
-    +'</div>'
-    +'<div style="display:grid;grid-template-columns:'+NI_MONEY+';gap:.25rem;justify-content:end;padding-bottom:.25rem;border-bottom:1px solid rgba(27,27,26,.15);margin-bottom:.3rem">'
-    +'<div style="'+M+'" title="The driver was paid this fare directly">Card</div>'
-    +'<div style="'+R+'">Fare</div><div style="'+R+'">Com.</div><div style="'+R+'">Toll</div><div></div>'
-    +'</div>';
-}
-/* THE TOTALS, under their own columns. Each figure sits beneath the column it
-   adds up, the way it does on the sheet the owner is checking against — a
-   totals line that floats free of its columns has to be read twice. */
-function invOpTotalsHtml(m){
-  var C='font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;color:rgba(27,27,26,.45)';
-  var V='font-family:var(--serif);font-size:.92rem;color:var(--navy);text-align:right';
-  return '<div style="padding-top:.45rem;margin-top:.35rem;border-top:1px solid rgba(27,27,26,.25)">'
-    +'<div style="display:grid;grid-template-columns:'+NI_MONEY+';gap:.25rem;justify-content:end;align-items:baseline">'
-    /* −£50.00 is wider than the Card column. Right-aligned and unwrapped it
-       overflows to the LEFT, into empty space, instead of folding onto a second
-       line and pushing the other three totals out of line with their columns. */
-    +'<div id="ni-t-collected" style="'+V+';font-size:.78rem;white-space:nowrap;overflow:visible">'
-    +(m.collected>0?('&minus;£'+m.collected.toFixed(2)):'&mdash;')+'</div>'
-    +'<div id="ni-t-fares" style="'+V+'">£'+m.fares.toFixed(2)+'</div>'
-    +'<div id="ni-t-com" style="'+V+'">£'+m.commission.toFixed(2)+'</div>'
-    +'<div id="ni-t-tolls" style="'+V+'">£'+m.tolls.toFixed(2)+'</div><div></div>'
-    +'</div>'
-    +'<div style="display:grid;grid-template-columns:'+NI_MONEY+';gap:.25rem;justify-content:end;margin-top:.1rem">'
-    +'<div style="'+C+';text-align:center">Card</div><div style="'+C+';text-align:right">Fares</div>'
-    +'<div style="'+C+';text-align:right">Com.</div><div style="'+C+';text-align:right">Tolls</div><div></div>'
-    +'</div></div>';
-}
-/* THE FIGURE HE IS HERE FOR, and the four steps that produce it — written out
-   in words underneath, because a column of totals off the right-hand edge of a
-   phone is not an explanation. */
-function invOpPayoutHtml(m){
-  return '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:.7rem;margin-top:.6rem;padding-top:.55rem;border-top:2px solid var(--navy)">'
-    +'<span style="font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.5)">Pay out</span>'
-    +'<span id="ni-payout" style="font-family:var(--serif);font-size:1.4rem;color:var(--navy)">£'+m.total.toFixed(2)+'</span>'
-    +'</div>'
-    +'<div style="text-align:right;font-size:.74rem;color:rgba(27,27,26,.5);margin-top:.15rem;line-height:1.5">'
-    +'Fares £'+m.fares.toFixed(2)
-    +' &minus; '+m.pct+'% commission £'+m.commission.toFixed(2)
-    +' + tolls £'+m.tolls.toFixed(2)
-    +(m.collected>0?(' &minus; collected by driver £'+m.collected.toFixed(2)):'')
-    +'</div>';
-}
+/* THE COLUMNS AND THE TOTALS come from the shared module too — the headings,
+   their order and the four figures are one decision, made once, so the owner
+   app and the admin app cannot label the same column differently. Only the
+   WIDTHS are the page's own: a phone and a desktop modal are not the same
+   shape, and that is the part that is allowed to differ. */
+var NI_LAYOUT={mode:'stacked',money:NI_MONEY,trip:NI_TRIP};
+function invOpHeadHtml(){ return WMInvoiceMaths.headHtml(NI_LAYOUT); }
+function invOpTotalsHtml(m){ return WMInvoiceMaths.totalsHtml(m,NI_LAYOUT); }
+function invOpPayoutHtml(m){ return WMInvoiceMaths.payoutHtml(m); }
 
 function invRemoveItem(el){
   // Given the row itself now — the button sits two levels down inside it.

@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8"/>
 <script src="/address-normalize.js"></script>
+<script src="/wm-address-lookup.js"></script>
+<script src="/wm-invoice-maths.js"></script>
 <script src="/wm-lifecycle.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
 <meta name="mobile-web-app-capable" content="yes">
@@ -1667,7 +1669,11 @@ select:-webkit-autofill:focus{
 
 <!-- MODAL: NEW INVOICE -->
 <div class="overlay" id="modal-new-invoice">
-  <div class="modal" style="max-width:560px">
+  <!-- WIDER THAN THE REST. An operator's job sheet is seven columns
+       across and this is a desktop screen, so here it is laid out the way
+       they actually write it — one row a job — rather than folded in two
+       the way the phone has to. -->
+  <div class="modal" id="ni-modal" style="max-width:560px">
     <div class="modal-hd">
       <div class="modal-title">New Invoice</div>
       <button class="modal-x" onclick="closeModal('modal-new-invoice')">&times;</button>
@@ -1723,17 +1729,40 @@ select:-webkit-autofill:focus{
         <div class="fg"><label class="fl">Recipient Address</label><textarea class="fi" id="ni-rec-address" rows="3" placeholder="Street, Town, Postcode" style="resize:vertical;min-height:70px"></textarea></div>
         <div class="fg">
           <label class="fl">Line Items *</label>
-          <div style="display:grid;grid-template-columns:110px 1fr 100px 28px;gap:.35rem;margin-bottom:.25rem">
+          <!-- The simple heading, for a plain customer invoice. The job sheet
+               brings its own, built from the shared column definition. -->
+          <div id="ni-head-simple" style="display:grid;grid-template-columns:110px 1fr 84px 100px 28px;gap:.35rem;margin-bottom:.25rem">
             <div style="font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.66)">Date</div>
             <div style="font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.66)">Description</div>
+            <div style="font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.66);text-align:right">Fee £</div>
             <div style="font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.66);text-align:right">Amount £</div>
             <div></div>
           </div>
+          <div id="ni-op-head" style="display:none"></div>
           <div id="ni-items" style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:.5rem"></div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.2rem">
+          <div id="ni-op-totals" style="display:none"></div>
+          <div id="ni-op-payout" style="display:none"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.4rem">
             <button class="btn btn-ghost btn-sm" onclick="addBespokeItem()" style="font-size:.8rem;padding:.4rem .8rem">+ Add Line Item</button>
-            <div style="font-size:.88rem;color:rgba(27,27,26,.7)">Total: <strong id="ni-running-total" style="color:var(--navy)">£0.00</strong></div>
+            <div id="ni-total-line" style="font-size:.88rem;color:rgba(27,27,26,.7)">Total: <strong id="ni-running-total" style="color:var(--navy)">£0.00</strong></div>
           </div>
+          <!-- WHO THIS INVOICE IS FOR. Off by default — most invoices are to a
+               customer, and a customer is not owed a commission. Ticked, it
+               becomes a settlement with another operator and the lines become
+               the job sheet: the toll in its own column, ten per cent of the
+               fares, and a fare the driver already took netted off the payout. -->
+          <label style="display:flex;align-items:center;gap:.5rem;margin-top:.8rem;font-size:.88rem;color:var(--navy);cursor:pointer">
+            <input id="ni-commission" type="checkbox" onchange="admInvRelayout()" style="width:16px;height:16px">
+            Operator invoice &mdash; deduct commission
+          </label>
+          <div id="ni-commission-rate" style="display:none;align-items:center;gap:.4rem;margin-top:.45rem">
+            <span style="font-size:.82rem;color:rgba(27,27,26,.66)">Rate</span>
+            <input class="fi" id="ni-commission-pct" type="number" step="0.5" min="0" max="99.9" value="10"
+                   oninput="updateBespokeTotal()" style="width:82px;text-align:right;font-size:.9rem;padding:.35rem">
+            <span style="font-family:var(--serif);font-size:1rem;color:var(--navy)">%</span>
+            <span style="font-size:.78rem;color:rgba(27,27,26,.55)">of the fares &mdash; never of the fees</span>
+          </div>
+          <div style="font-size:.78rem;color:rgba(27,27,26,.55);margin-top:.25rem">Leave off for a normal customer or business invoice.</div>
         </div>
 <div class="fg"><label class="fl">Notes (optional)</label><textarea class="fi" id="ni-notes" rows="2" placeholder="Additional notes shown on the invoice" style="resize:vertical;min-height:60px"></textarea></div>
       </div>
@@ -1774,6 +1803,7 @@ select:-webkit-autofill:focus{
           <tbody id="mid-items-body"></tbody>
         </table>
       </div>
+      <div id="mid-leadin" style="display:none;margin:.4rem 0 .2rem;font-size:.9rem"></div>
       <div style="text-align:right;padding:.6rem 0;border-top:2px solid var(--navy)">
         <span style="font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.7);margin-right:.8rem">Total</span>
         <span id="mid-total" style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:1.3rem;color:var(--navy);font-weight:700"></span>
@@ -2037,7 +2067,19 @@ function aaShowInvoiceCard(inv){
 async function aaCreateInvoice(invJson){
   var inv;try{inv=JSON.parse(invJson);}catch(e){aaAddBot('Invalid invoice data.');return;}
   var r=inv.recipient||{};
-  var body={recipient:{name:r.name||'',email:r.email||null,address:r.address||null},items:inv.items||[],notes:inv.notes||null};
+  /* WHAT THE CARD WAS GIVEN, passed on whole. Rebuilt field by field it dropped
+     the toll, the driver-collected tick and the rate, and the invoice came out
+     at the fares with no settlement applied. */
+  var body={recipient:{name:r.name||'',email:r.email||null,address:r.address||null},
+            items:(inv.items||[]).map(function(it){
+              return {date:it.date||null,description:it.description||'',
+                      amount:+it.amount||0,
+                      pickup:it.pickup||undefined,destination:it.destination||undefined,
+                      fee:(+it.fee>0)?Math.round(+it.fee*100)/100:0,
+                      collected_direct:(it.collected_direct===1||it.collected_direct===true)?1:0};
+            }),
+            notes:inv.notes||null};
+  if(+inv.commission_pct>0) body.commission_pct=Math.round(+inv.commission_pct*100)/100;
   var thinking=aaAddBot('Creating invoice…',{thinking:true});
   try{
     var res=await fetch('/api/invoices/bespoke',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -4037,7 +4079,7 @@ function setInvoiceMode(mode){
     bsBtn.style.background='var(--navy)';bsBtn.style.color='#fff';
     accFields.style.display='none';
     bsFields.style.display='';
-    if(!document.querySelectorAll('#ni-items .ni-item').length)addBespokeItem();
+    admInvRelayout();
     loadSavedRecipients();
   } else {
     bsBtn.style.background='';bsBtn.style.color='';
@@ -4047,35 +4089,190 @@ function setInvoiceMode(mode){
   }
 }
 
-function addBespokeItem(date,desc,amt){
+/* ── THE OPERATOR'S JOB SHEET, LAID OUT FLAT ──────────────────────────────
+   The owner app folds each job into two lines because it is a phone. This is a
+   desktop modal, so the columns run across the way APD actually write them:
+   Date, From, To, Card, Fare, Com., Toll. The headings, the totals and the
+   arithmetic all come from wm-invoice-maths.js — the same file the owner app
+   reads — so the two screens cannot drift apart on what a column means or what
+   the settlement comes to.
+   GUARDRAIL: server/tests/invoice-table.test.js */
+var ADM_GRID='118px minmax(150px,1fr) minmax(150px,1fr) 46px 92px 78px 84px 30px';
+var ADM_LAYOUT={mode:'flat',grid:ADM_GRID};
+function admOperatorMode(){
+  var cb=document.getElementById('ni-commission');
+  return !!(cb&&cb.checked);
+}
+/* THE RATE, read once and bounded once. Blank or nonsense falls back to the ten
+   per cent he has always used rather than silently becoming zero — a commission
+   of nothing on an operator invoice is a bill for the wrong money. */
+function admCommissionPct(){
+  var el=document.getElementById('ni-commission-pct');
+  var v=el?parseFloat(el.value):NaN;
+  if(!isFinite(v)||v<0||v>=100) return 10;
+  return Math.round(v*100)/100;
+}
+
+function addBespokeItem(date,desc,amt,to,toll,collected){
   var wrap=document.getElementById('ni-items');
   var row=document.createElement('div');
   row.className='ni-item';
-  row.style.cssText='display:grid;grid-template-columns:110px 1fr 100px 28px;gap:.35rem;align-items:center';
   var today=new Date().toISOString().slice(0,10);
-  row.innerHTML='<input class="fi ni-date" type="date" style="font-size:.92rem;padding:.45rem .4rem" value="'+(date||today)+'">'
-    +'<input class="fi ni-desc" placeholder="e.g. Horsham → Gatwick" style="font-size:.95rem" value="'+escTo(desc||'')+'">'
-    +'<input class="fi ni-amt" type="number" step="0.01" min="0" placeholder="0.00" style="font-size:.95rem;text-align:right" value="'+(amt||'')+'" oninput="updateBespokeTotal()">'
-    +'<button onclick="this.parentNode.remove();updateBespokeTotal()" title="Remove" style="background:transparent;border:none;color:#c0392b;cursor:pointer;font-size:1.2rem;padding:0;line-height:1;opacity:.7" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.7">&times;</button>';
+  if(admOperatorMode()){
+    var FS='font-size:.9rem;padding:.4rem';
+    row.style.cssText='display:grid;grid-template-columns:'+ADM_GRID+';gap:.35rem;align-items:center';
+    row.innerHTML=
+       '<input class="fi ni-date" type="date" style="'+FS+'" value="'+(date||today)+'">'
+      +'<div style="position:relative"><input class="fi ni-from" placeholder="From" style="'+FS+'"></div>'
+      +'<div style="position:relative"><input class="fi ni-to" placeholder="To" style="'+FS+'"></div>'
+      +'<div style="text-align:center"><input class="ni-collected" type="checkbox" '+(collected?'checked':'')
+        +' onchange="admSetCollected(this)" title="The driver was paid this fare directly (card or cash)" style="width:15px;height:15px;cursor:pointer"></div>'
+      +'<input class="fi ni-amt" type="number" step="0.01" min="0" placeholder="0.00" style="'+FS+';text-align:right" value="'+((amt||amt===0)?amt:'')+'" oninput="updateBespokeTotal()">'
+      +'<div class="ni-com" style="text-align:right;font-family:var(--serif);font-size:.9rem;color:rgba(27,27,26,.6)">&mdash;</div>'
+      +'<input class="fi ni-fee" type="number" step="0.01" min="0" placeholder="" style="'+FS+';text-align:right" value="'+(((toll||toll===0)&&+toll>0)?toll:'')+'" oninput="updateBespokeTotal()">'
+      +'<button onclick="admRemoveItem(this)" title="Remove" style="background:transparent;border:none;color:#c0392b;cursor:pointer;font-size:1.1rem;line-height:1">&times;</button>';
+    if(collected) row.dataset.collected='1';
+  } else {
+    /* THE FEE BOX IS HERE TOO, the way it is on the owner app's plain form.
+       Without it the simple layout had nowhere to hold a toll, so switching the
+       operator toggle off and on again silently threw every one of them away —
+       £59 of barrier charges, and a payout £59 short, with nothing on screen to
+       say where they went. */
+    row.style.cssText='display:grid;grid-template-columns:110px 1fr 84px 100px 28px;gap:.35rem;align-items:center';
+    row.innerHTML='<input class="fi ni-date" type="date" style="font-size:.92rem;padding:.45rem .4rem" value="'+(date||today)+'">'
+      +'<input class="fi ni-desc" placeholder="e.g. Horsham → Gatwick" style="font-size:.95rem" value="'+escTo(desc||'')+'">'
+      +'<input class="fi ni-fee" type="number" step="0.01" min="0" placeholder="Fee" title="Fee or toll paid out on this trip (optional)" style="font-size:.95rem;text-align:right" value="'+(((toll||toll===0)&&+toll>0)?toll:'')+'" oninput="updateBespokeTotal()">'
+      +'<input class="fi ni-amt" type="number" step="0.01" min="0" placeholder="0.00" style="font-size:.95rem;text-align:right" value="'+((amt||amt===0)?amt:'')+'" oninput="updateBespokeTotal()">'
+      +'<button onclick="admRemoveItem(this)" title="Remove" style="background:transparent;border:none;color:#c0392b;cursor:pointer;font-size:1.1rem;line-height:1">&times;</button>';
+    if(collected) row.dataset.collected='1';
+  }
   wrap.appendChild(row);
+  /* The lookup is attached after the row is in the document — it measures the
+     field to place its dropdown. */
+  var fr=row.querySelector('.ni-from'), tt=row.querySelector('.ni-to');
+  if(window.WMLookup&&fr){ WMLookup.attach(fr); WMLookup.attach(tt); }
+  if(desc&&fr){ if(window.WMLookup) WMLookup.set(fr,desc); else fr.value=desc; }
+  if(to&&tt){ if(window.WMLookup) WMLookup.set(tt,to); else tt.value=to; }
+  updateBespokeTotal();
+}
+function admRemoveItem(btn){
+  var row=btn.closest('.ni-item');
+  if(row&&row.remove)row.remove(); else if(row&&row.parentNode)row.parentNode.removeChild(row);
+  updateBespokeTotal();
+}
+/* THE TICK IS KEPT ON THE ROW, not only in the checkbox. The simple layout has
+   no Card column, so reading it back off the box lost every tick the moment the
+   toggle was switched — and a fare the driver already had would have been paid
+   over a second time, in silence. */
+function admSetCollected(el){
+  var row=el.closest('.ni-item');
+  if(row){ if(el.checked) row.dataset.collected='1'; else delete row.dataset.collected; }
+  updateBespokeTotal();
+}
+function admRowCollected(r){
+  var c=r.querySelector('.ni-collected');
+  return c?!!c.checked:(r.dataset.collected==='1');
+}
+/* WHAT IS ON SCREEN, as plain objects — so the rows survive being redrawn in
+   the other layout. */
+function admRowsFromDom(){
+  var out=[];
+  document.querySelectorAll('#ni-items .ni-item').forEach(function(r){
+    var d=r.querySelector('.ni-date'), fr=r.querySelector('.ni-from'), to=r.querySelector('.ni-to');
+    var de=r.querySelector('.ni-desc'), a=r.querySelector('.ni-amt'), fe=r.querySelector('.ni-fee');
+    out.push({
+      date:d?d.value:'',
+      from:fr?(window.WMLookup?WMLookup.full(fr):fr.value):(de?de.value:''),
+      to:  to?(window.WMLookup?WMLookup.full(to):to.value):'',
+      fare:a?a.value:'', toll:fe?fe.value:'',
+      collected:admRowCollected(r)
+    });
+  });
+  return out;
+}
+/* Ticking the toggle turns the list of lines into the job sheet and back. The
+   rows are read out first and typed back in after, so nothing already entered
+   is lost on the way. */
+function admInvRelayout(){
+  var rows=admRowsFromDom();
+  var op=admOperatorMode();
+  var hs=document.getElementById('ni-head-simple');
+  var oh=document.getElementById('ni-op-head');
+  var ot=document.getElementById('ni-op-totals');
+  var pay=document.getElementById('ni-op-payout');
+  var modal=document.getElementById('ni-modal');
+  if(hs) hs.style.display=op?'none':'grid';
+  if(oh){ oh.style.display=op?'':'none'; if(op) oh.innerHTML=WMInvoiceMaths.headHtml(ADM_LAYOUT); }
+  if(ot) ot.style.display=op?'':'none';
+  if(pay) pay.style.display=op?'':'none';
+  /* The sheet needs the width; a plain invoice does not, and the rest of the
+     modal is written for 560. */
+  if(modal) modal.style.maxWidth=op?'860px':'560px';
+  var wrap=document.getElementById('ni-items');
+  if(wrap) wrap.innerHTML='';
+  if(!rows.length) rows=[{}];
+  rows.forEach(function(r){ addBespokeItem(r.date,r.from,r.fare,r.to,r.toll,r.collected); });
   updateBespokeTotal();
 }
 
 function updateBespokeTotal(){
-  var total=0;
-  document.querySelectorAll('#ni-items .ni-amt').forEach(function(i){total+=parseFloat(i.value)||0;});
+  var op=admOperatorMode();
+  var rateWrap=document.getElementById('ni-commission-rate');
+  if(rateWrap) rateWrap.style.display=op?'flex':'none';
+  var pct=op?admCommissionPct():0;
+  var rows=[];
+  document.querySelectorAll('#ni-items .ni-item').forEach(function(r){
+    var a=r.querySelector('.ni-amt'), fe=r.querySelector('.ni-fee');
+    rows.push({fare:a?(parseFloat(a.value)||0):0,
+               toll:fe?(parseFloat(fe.value)||0):0,
+               collected:admRowCollected(r)});
+  });
+  var m=WMInvoiceMaths.compute(rows,pct);
+  var cells=document.querySelectorAll('#ni-items .ni-com');
+  cells.forEach(function(el,k){
+    el.textContent=(m.rows[k]&&m.rows[k].fare>0)?WMInvoiceMaths.money(m.rows[k].commission):'—';
+  });
   var el=document.getElementById('ni-running-total');
-  if(el)el.textContent='£'+total.toFixed(2);
+  if(el)el.textContent=WMInvoiceMaths.money(m.total);
+  var ot=document.getElementById('ni-op-totals');
+  if(ot&&op) ot.innerHTML=WMInvoiceMaths.totalsHtml(m,ADM_LAYOUT);
+  var pay=document.getElementById('ni-op-payout');
+  if(pay&&op) pay.innerHTML=WMInvoiceMaths.payoutHtml(m);
+  /* One total, in one place: on the job sheet PAY OUT is the figure, and
+     repeating it in small print invites the reading that they are two. */
+  var tl=document.getElementById('ni-total-line');
+  if(tl) tl.style.visibility=op?'hidden':'visible';
 }
 
 function getBespokeItems(){
   var rows=document.querySelectorAll('#ni-items .ni-item');
+  var op=admOperatorMode();
   var items=[];
   rows.forEach(function(r){
-    var date=r.querySelector('.ni-date')?r.querySelector('.ni-date').value.trim():'';
-    var desc=r.querySelector('.ni-desc').value.trim();
-    var amt=+r.querySelector('.ni-amt').value;
-    if(desc&&amt>0)items.push({date:date||null,description:desc,amount:amt});
+    var dateEl=r.querySelector('.ni-date');
+    var date=dateEl?dateEl.value.trim():'';
+    var fromEl=r.querySelector('.ni-from'), toEl=r.querySelector('.ni-to');
+    var descEl=r.querySelector('.ni-desc');
+    /* THE RESOLVED ADDRESS, not what is showing in the box — the field displays
+       the short form, the invoice carries what the geocoder returned. */
+    var from=fromEl?(window.WMLookup?WMLookup.full(fromEl):fromEl.value.trim()):'';
+    var to  =toEl  ?(window.WMLookup?WMLookup.full(toEl)  :toEl.value.trim())  :'';
+    var desc=descEl?descEl.value.trim():((from&&to)?(from+' → '+to):(from||to));
+    var amtEl=r.querySelector('.ni-amt');
+    var amt=amtEl?(parseFloat(amtEl.value)||0):0;
+    /* BLANK IS NOT ZERO. An empty toll box means this trip carried none, and it
+       must not become a £0.00 the invoice prints. */
+    var feeEl=r.querySelector('.ni-fee');
+    var feeRaw=feeEl?feeEl.value.trim():'';
+    var fee=feeRaw===''?0:(parseFloat(feeRaw)||0);
+    if(!desc)return;
+    if(amt<=0&&fee<=0)return;
+    items.push({date:date||null,description:desc,amount:amt,
+                pickup:from||null,destination:to||null,
+                fee:fee>0?Math.round(fee*100)/100:0,
+                /* Only meaningful under an arrangement: a customer invoice has
+                   no Card column and must not carry the flag. */
+                collected_direct:(op&&admRowCollected(r))?1:0});
   });
   return items;
 }
@@ -4116,7 +4313,9 @@ function openNewInvoice(){
   var rt=document.getElementById('ni-running-total');if(rt)rt.textContent='£0.00';
   var sri=document.getElementById('ni-saved-recipient-input');if(sri)sri.value='';
   var srl=document.getElementById('ni-saved-recipient-list');if(srl)srl.style.display='none';
-  addBespokeItem();
+  /* Redrawn rather than simply added to: the layout has to match the toggle,
+     which keeps its setting from the last invoice raised. */
+  admInvRelayout();
   openModal('modal-new-invoice');
   window._BESPOKE_CUST_INDEX={};
   fetch('/api/customers',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
@@ -4249,10 +4448,15 @@ function buildInvoiceRequest(sendEmail){
     if(!name){err.textContent='Recipient name is required.';err.style.display='';return null;}
     if(!items.length){err.textContent='Add at least one line item with description and amount.';err.style.display='';return null;}
     if(sendEmail&&!email){err.textContent='Email required to send. Add an email or use Preview / Download.';err.style.display='';return null;}
-    return{
-      url:'/api/invoices/bespoke',
-      body:{recipient:{name:name,email:email,phone:phone,address:address},items:items,notes:notes,send_email:sendEmail}
-    };
+    /* THE ARRANGEMENT GOES WITH THE LINES. Without commission_pct the server
+       treats an operator settlement as a plain invoice: no commission taken,
+       no fare netted for what the driver collected, and the tolls billed as
+       part of the fare. Seven jobs came to £675 through this door and £616.50
+       through the owner app's. */
+    var body={recipient:{name:name,email:email,phone:phone,address:address},
+              items:items,notes:notes,send_email:sendEmail};
+    if(admOperatorMode()) body.commission_pct=admCommissionPct();
+    return{ url:'/api/invoices/bespoke', body:body };
   } else {
     var cid=document.getElementById('ni-customer').value;
     var dates=getInvoiceDates();
@@ -4469,6 +4673,12 @@ function viewInvoice(id){
         total:inv.total,
         bespoke:inv.kind==='bespoke',
         settings:settings||{},
+        /* THE WORKING, so this screen can show what the PDF shows. Without the
+           rate and the fees it could only print a total, and an operator ringing
+           up about £616.50 was being read a page that explained none of it. */
+        fees:+inv.fees||0,
+        feesLabel:inv.fees_label||'',
+        commissionPct:+inv.commission_pct||0,
         period:{issuedDate:inv.issued_date,dueDate:inv.due_date||'',label:inv.period_label||'',notes:inv.notes||''}
       };
       if(inv.kind==='bespoke'){
@@ -4563,31 +4773,77 @@ function openInvoiceDetailModal(data){
   // Line items table
   var head=document.getElementById('mid-items-head');
   var body=document.getElementById('mid-items-body');
+  /* THE FEE PER TRIP, exactly as the document prints it. A toll shown only as a
+     lump above the total is a figure nobody can check a line against — this
+     screen used to have no column for it at all, so admin's preview and the PDF
+     disagreed about what was on the invoice. Blank where a trip carried none. */
+  var lines=(isBespoke?(data.items||[]):(data.bookings||[]));
+  var anyFee=lines.some(function(x){return (+x.fee||0)>0;});
+  var SER='font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif';
+  var feeCell=function(x){
+    return anyFee
+      ? '<td style="text-align:right;'+SER+';color:rgba(27,27,26,.7);white-space:nowrap">'
+        +((+x.fee||0)>0?('£'+(+x.fee).toFixed(2)):'')+'</td>'
+      : '';
+  };
+  var feeHead=anyFee?'<th style="text-align:right">Fee</th>':'';
   if(isBespoke){
-    head.innerHTML='<tr><th>Description</th><th style="text-align:right">Amount</th></tr>';
+    head.innerHTML='<tr><th>Description</th>'+feeHead+'<th style="text-align:right">Amount</th></tr>';
     var items=data.items||[];
     body.innerHTML=items.length
       ? items.map(function(it){
-          return '<tr><td>'+escTo(it.description||'')+'</td>'
-            +'<td style="text-align:right;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif">£'+(+it.amount||0).toFixed(2)+'</td></tr>';
+          return '<tr><td>'+escTo(it.description||'')+'</td>'+feeCell(it)
+            +'<td style="text-align:right;'+SER+'">£'+(+it.amount||0).toFixed(2)+'</td></tr>';
         }).join('')
-      : '<tr><td colspan="2" style="text-align:center;padding:1.2rem;color:rgba(27,27,26,.64)">No items</td></tr>';
+      : '<tr><td colspan="'+(anyFee?3:2)+'" style="text-align:center;padding:1.2rem;color:rgba(27,27,26,.64)">No items</td></tr>';
   } else {
-    head.innerHTML='<tr><th>Date / Ref</th><th>Journey</th><th style="text-align:right">Fare</th></tr>';
+    head.innerHTML='<tr><th>Date / Ref</th><th>Journey</th>'+feeHead+'<th style="text-align:right">Fare</th></tr>';
     var bks=data.bookings||[];
     body.innerHTML=bks.length
       ? bks.map(function(b){
           var ref=b.ref?'<br><span style="font-family:var(--sans);font-size:.82rem;color:rgba(27,27,26,.66)">'+escTo(b.ref)+'</span>':'';
           var route=escTo(b.pickup||'')+(b.destination?' → '+escTo(b.destination):'');
           return '<tr><td>'+escTo(_admGlanceDate(b.date))+(b.time&&b.time!=='ASAP'?' '+escTo(b.time):'')+ref+'</td>'
-            +'<td>'+route+'</td>'
-            +'<td style="text-align:right;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;white-space:nowrap">£'+(+b.fare||0).toFixed(2)+'</td></tr>';
+            +'<td>'+route+'</td>'+feeCell(b)
+            +'<td style="text-align:right;'+SER+';white-space:nowrap">£'+(+b.fare||0).toFixed(2)+'</td></tr>';
         }).join('')
-      : '<tr><td colspan="3" style="text-align:center;padding:1.2rem;color:rgba(27,27,26,.64)">No journeys in period</td></tr>';
+      : '<tr><td colspan="'+(anyFee?4:3)+'" style="text-align:center;padding:1.2rem;color:rgba(27,27,26,.64)">No journeys in period</td></tr>';
   }
+  /* THE FOUR STEPS ABOVE THE TOTAL, the same four the invoice prints. An
+     operator settlement cannot be followed from a single figure, and this
+     screen is where the owner checks it before sending. */
+  admInvLeadIn(data, lines);
   openModal('modal-invoice-detail');
 }
 
+/* Fares · Fees · Less commission · Less collected by driver — computed from the
+   stored lines by the SHARED module, so this preview and the document cannot
+   arrive at different numbers from the same invoice. */
+function admInvLeadIn(data, lines){
+  var box=document.getElementById('mid-leadin');
+  if(!box)return;
+  var pct=+data.commissionPct||0;
+  if(!(pct>0)){ box.style.display='none'; box.innerHTML=''; return; }
+  var rows=(lines||[]).map(function(x){
+    return {fare:(x.fare!==undefined?+x.fare:+x.amount)||0,
+            toll:+x.fee||0,
+            collected:(x.collected_direct===1||x.collected_direct===true)};
+  });
+  var m=WMInvoiceMaths.compute(rows,pct);
+  var fees=(+data.fees>0)?+data.fees:m.tolls;
+  var line=function(label,amount,neg){
+    return '<div style="display:flex;justify-content:space-between;gap:1rem;padding:.18rem 0">'
+      +'<span style="color:rgba(27,27,26,.7)">'+label+'</span>'
+      +'<span style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;color:var(--navy)">'
+      +(neg?'−':'')+'£'+Math.abs(amount).toFixed(2)+'</span></div>';
+  };
+  var html=line('Fares (jobs)',m.fares,false);
+  if(fees>0) html+=line(data.feesLabel||'Fees (parking &amp; tolls)',fees,false);
+  html+=line('Less '+pct+'% commission',m.commission,true);
+  if(m.collected>0) html+=line('Less collected by driver',m.collected,true);
+  box.innerHTML=html;
+  box.style.display='';
+}
 function midOpenPrint(){
   invOpenPdf(_MID_INVOICE_ID);
 }

@@ -1095,8 +1095,13 @@ test('both forms expose the rate, and neither hard-codes it', () => {
   const flat = H.replace(/\s/g, '');
   assert.ok(/−'\+pct\+'%commission/.test(flat),
     'the edit sheet\'s breakdown must name the rate');
-  assert.ok(/\+m\.pct\+'%commission/.test(flat),
-    'the create form\'s totals row must name the rate, not print a fixed 10%');
+  /* The job sheet's pay-out line moved into wm-invoice-maths.js when the admin
+     app started sharing it. Same fact, one file along: the rate is written from
+     what was typed, never printed as a literal ten per cent. */
+  const maths = read('wm-invoice-maths.js').replace(/\s/g, '');
+  assert.ok(/\+m\.pct\+'%commission/.test(maths),
+    'the shared pay-out line must name the rate, not print a fixed 10%');
+  assert.ok(!/'10%commission/.test(maths), 'the rate has been hard-coded in the module');
 });
 
 test('a rate outside 0–100 is refused, and the invoice is untouched', async () => {

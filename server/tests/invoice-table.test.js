@@ -38,6 +38,7 @@ const ROOT = path.join(__dirname, '..', '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 const { fnBlock } = require('./_source');
 const OWNER = read('westmere-owner.html');
+const ADMIN = read('westmere-admin.html');
 
 let passed = 0, failed = 0;
 const queue = [];
@@ -49,11 +50,14 @@ const db = getDb();
 let SENT = [];
 global.fetch = async (u, o) => { SENT.push(JSON.parse(o.body)); return { ok: true, status: 200, json: async () => ({ id: 'x' }) }; };
 
-// ── The page's own arithmetic, lifted out and executed ───────────────────
-const MATHS = (() => {
-  const src = fnBlock(OWNER, 'invOperatorMaths');
-  return new Function(src + '; return invOperatorMaths;')();
-})();
+/* ── THE ARITHMETIC, REQUIRED RATHER THAN LIFTED ──────────────────────────
+   It used to be pulled out of the owner page with a regular expression,
+   because that was the only copy. There are two screens now — the owner's and
+   admin's — so the sum lives in wm-invoice-maths.js and both of them ask it.
+   This file runs the module itself, and then checks that neither page has
+   quietly grown a second copy. */
+const WM = require('../../wm-invoice-maths.js');
+const MATHS = WM.compute;
 
 // ── The route, driven directly ───────────────────────────────────────────
 function res() {
@@ -146,9 +150,16 @@ test('the toll is never counted twice', () => {
 });
 
 test('the screen has a Toll column of its own, beside Fare and Com.', () => {
-  const head = fnBlock(OWNER, 'invOpHeadHtml');
-  for (const col of ['Date', 'From', 'To', 'Card', 'Fare', 'Com.', 'Toll']) {
-    assert.ok(head.indexOf('>' + col + '<') !== -1, 'the sheet has no ' + col + ' column');
+  /* Both shapes, from the one definition: the owner's phone folds the row in
+     two, admin's modal lays it flat — but the columns and their headings are
+     the same decision, made once. */
+  for (const opts of [{ mode: 'stacked', money: '1fr', trip: '90px' },
+                      { mode: 'flat', grid: '1fr' }]) {
+    const head = WM.headHtml(opts);
+    for (const col of ['Date', 'From', 'To', 'Card', 'Fare', 'Com.', 'Toll']) {
+      assert.ok(head.indexOf('>' + col + '<') !== -1,
+        opts.mode + ' sheet has no ' + col + ' column');
+    }
   }
   /* And a box to type it into, distinct from the fare box. */
   const row = fnBlock(OWNER, 'invAddItem');
@@ -381,7 +392,7 @@ test('the changed table cannot serve a PDF drawn by the old one', () => {
 // ── 5. THE WIRING ────────────────────────────────────────────────────────
 console.log('\nThe figures on screen come from that arithmetic, and nowhere else');
 
-test('invCalcTotal computes through invOperatorMaths and shows what it returns', () => {
+test('invCalcTotal computes through the shared maths and shows what it returns', () => {
   const calc = fnBlock(OWNER, 'invCalcTotal');
   assert.ok(/invOperatorMaths\(rows\s*,\s*pct\)/.test(calc),
     'the totals must be computed by the same function this file tests');
@@ -395,19 +406,23 @@ test('invCalcTotal computes through invOperatorMaths and shows what it returns',
 });
 
 test('the totals row names all four figures, and the pay-out line the fifth', () => {
-  const t = fnBlock(OWNER, 'invOpTotalsHtml');
-  for (const bit of ['m.fares.toFixed(2)', 'm.tolls.toFixed(2)',
-                     'm.commission.toFixed(2)', 'm.collected.toFixed(2)']) {
-    assert.ok(t.indexOf(bit) !== -1, 'the totals row never shows ' + bit);
+  /* RENDERED, not read. The figures must reach the markup — a totals builder
+     that computes them and prints the wrong ones would pass a source check. */
+  const m = MATHS(APD, 10);
+  for (const opts of [{ mode: 'stacked', money: '1fr' }, { mode: 'flat', grid: '1fr' }]) {
+    const t = WM.totalsHtml(m, opts);
+    for (const fig of ['£675.00', '£67.50', '£59.00', '£50.00']) {
+      assert.ok(t.indexOf(fig) !== -1, opts.mode + ' totals row never shows ' + fig);
+    }
+    assert.ok(/&minus;£50\.00/.test(t), 'what the driver collected must read as a deduction');
   }
-  const p = fnBlock(OWNER, 'invOpPayoutHtml');
-  assert.ok(p.indexOf('m.total.toFixed(2)') !== -1, 'the pay-out never shows the total');
+  const p = WM.payoutHtml(m);
+  assert.ok(p.indexOf('£616.50') !== -1, 'the pay-out never shows the total');
   assert.ok(/Pay out/i.test(p), 'the sheet\'s "pay out" line is missing');
   /* And the four steps written out, so the figure explains itself where it is
      read — the column totals are off to the right on a phone. */
-  for (const bit of ['m.fares.toFixed(2)', 'm.pct', 'm.commission.toFixed(2)',
-                     'm.tolls.toFixed(2)', 'm.collected.toFixed(2)']) {
-    assert.ok(p.indexOf(bit) !== -1, 'the pay-out line does not show its working: ' + bit);
+  for (const fig of ['£675.00', '10%', '£67.50', '£59.00', '£50.00']) {
+    assert.ok(p.indexOf(fig) !== -1, 'the pay-out line does not show its working: ' + fig);
   }
 });
 
@@ -460,6 +475,156 @@ test('the entered rows reach the route with their tick', () => {
   const get = fnBlock(OWNER, 'invGetItems');
   assert.ok(/collected_direct:\s*collected/.test(get), 'the tick is dropped before sending');
   assert.ok(/fee:\s*fee>0/.test(get), 'the toll is dropped before sending');
+});
+
+// ── 5b. ONE SUM, TWO SCREENS ─────────────────────────────────────────────
+console.log('\nThe owner app and the admin app cannot drift apart');
+
+test('both pages load the shared arithmetic', () => {
+  for (const [name, src] of [['owner', OWNER], ['admin', ADMIN]]) {
+    assert.ok(/<script src="\/wm-invoice-maths\.js"><\/script>/.test(src),
+      name + ' does not load wm-invoice-maths.js');
+  }
+});
+
+test('neither page keeps a second copy of the settlement', () => {
+  /* THE TELL. The one line that decides what is owed:
+         fares − commission + tolls − collected
+     If it appears in a page as well as in the module, there are two answers to
+     the same question and only one of them is being tested. This is exactly how
+     admin came to bill £675 where the owner app billed £616.50 — the arithmetic
+     was not shared, so only one screen was ever fixed. */
+  const settlement = /fares\s*-\s*[\w.]*[cC]ommission\s*\+\s*[\w.]*[tT]olls?\s*-\s*[\w.]*[cC]ollected/;
+  const commissionOnFares = /[\w.]*fares\s*\*\s*\(\s*rate\s*\/\s*100\s*\)/;
+  const strip = (t) => t.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
+  for (const [name, src] of [['owner', OWNER], ['admin', ADMIN]]) {
+    const code = strip(src);
+    assert.ok(!settlement.test(code),
+      name + ' has its own copy of the payout sum — it must call WMInvoiceMaths.compute');
+    assert.ok(!commissionOnFares.test(code),
+      name + ' works the commission out for itself instead of asking the module');
+  }
+  const mod = strip(read('wm-invoice-maths.js'));
+  assert.ok(settlement.test(mod), 'the module has stopped doing the sum');
+  assert.ok(commissionOnFares.test(mod), 'the module has stopped taking the commission');
+});
+
+/* ONE HOP OUT. A page may call the module directly or through a one-line
+   wrapper of its own — the owner app does the latter, because its widths differ
+   from admin's. So the search follows every same-page function the calculator
+   names, once. What it must NOT find is a page that renders totals it worked
+   out itself. */
+function reachable(src, fnName) {
+  let body = fnBlock(src, fnName);
+  const called = new Set((body.match(/\b([A-Za-z_$][\w$]*)\s*\(/g) || [])
+    .map((m) => m.replace(/\s*\($/, '')));
+  for (const name of called) {
+    if (name === fnName) continue;
+    try { body += '\n' + fnBlock(src, name); } catch (_) { /* not a page function */ }
+  }
+  return body;
+}
+
+test('both pages ask the module for their totals and their columns', () => {
+  for (const [name, src, fn] of [['owner', OWNER, 'invCalcTotal'],
+                                 ['admin', ADMIN, 'updateBespokeTotal']]) {
+    const calc = reachable(src, fn);
+    assert.ok(/WMInvoiceMaths\.compute\(/.test(calc),
+      name + ': ' + fn + ' must compute through the shared module');
+    assert.ok(/WMInvoiceMaths\.totalsHtml\(/.test(calc), name + ' draws its own totals row');
+    assert.ok(/WMInvoiceMaths\.payoutHtml\(/.test(calc), name + ' draws its own pay-out line');
+  }
+  /* The owner's wrapper is one line and must stay one line. */
+  const wrap = fnBlock(OWNER, 'invOperatorMaths');
+  assert.ok(/return WMInvoiceMaths\.compute\(rows,pct\);/.test(wrap.replace(/\s+/g, ' ').replace(/ ,/g, ',')),
+    'the owner wrapper must forward to the module and do nothing else: ' + wrap);
+  for (const [name, src, fn] of [['owner', OWNER, 'invOpHeadHtml'], ['admin', ADMIN, 'admInvRelayout']]) {
+    assert.ok(/WMInvoiceMaths\.headHtml\(/.test(reachable(src, fn)),
+      name + ' builds its own column headings');
+  }
+});
+
+// ── 5c. ADMIN RAISES THE SAME INVOICE ────────────────────────────────────
+console.log('\nAdmin raises the operator invoice the same way the owner app does');
+
+test('admin has the toggle, the rate and the seven columns', () => {
+  assert.ok(/id="ni-commission"[^>]*onchange="admInvRelayout\(\)"/.test(ADMIN),
+    'admin has no operator toggle, or it does not redraw the sheet');
+  assert.ok(/id="ni-commission-pct"[^>]*oninput="updateBespokeTotal\(\)"/.test(ADMIN),
+    'admin has no adjustable rate, or it is not live');
+  const row = fnBlock(ADMIN, 'addBespokeItem');
+  for (const cls of ['ni-date', 'ni-from', 'ni-to', 'ni-collected', 'ni-amt', 'ni-com', 'ni-fee']) {
+    assert.ok(row.indexOf(cls) !== -1, 'admin\'s job-sheet row has no ' + cls);
+  }
+  /* Flat, not folded: this is a desktop modal and the sheet is landscape. */
+  assert.ok(/ADM_GRID/.test(row) && /mode:'flat'/.test(ADMIN),
+    'admin must lay the columns across one row per job');
+  assert.ok(/WMLookup\.attach/.test(row), 'From and To must use the same address lookup');
+});
+
+test('a toll survives the toggle in admin too', () => {
+  /* Switching the operator toggle off redraws every row in the plain layout.
+     That layout had no fee box, so `admRowsFromDom` read every toll back as
+     blank and £59 of barrier charges disappeared on the way — the payout came
+     out £59 short with nothing on screen to say why. Both layouts carry the
+     box, exactly as the owner app's two do. */
+  const row = fnBlock(ADMIN, 'addBespokeItem');
+  const simple = row.slice(row.indexOf('} else {'));
+  assert.ok(/class="fi ni-fee"/.test(simple),
+    'the plain admin row has nowhere to keep a toll — it will be lost on the toggle');
+  assert.ok(/Fee £/.test(ADMIN), 'and the plain heading must name the column');
+  const rows = fnBlock(ADMIN, 'admRowsFromDom');
+  assert.ok(/\.ni-fee/.test(rows) && /toll:fe\?fe\.value/.test(rows),
+    'the redraw must read the toll back off the row');
+});
+
+test('admin sends the rate, the toll and the tick — not just an amount', () => {
+  const get = fnBlock(ADMIN, 'getBespokeItems');
+  assert.ok(/fee:\s*fee>0/.test(get), 'admin drops the toll before sending');
+  assert.ok(/collected_direct:\(op&&admRowCollected\(r\)\)\?1:0/.test(get),
+    'admin drops the driver-collected tick before sending');
+  const build = fnBlock(ADMIN, 'buildInvoiceRequest');
+  assert.ok(/body\.commission_pct\s*=\s*admCommissionPct\(\)/.test(build),
+    'admin never tells the server there is an arrangement — the invoice bills the fares');
+  /* And the assistant's card, which posts the same route by another door. */
+  const aa = fnBlock(ADMIN, 'aaCreateInvoice');
+  for (const f of ['fee:', 'collected_direct:', 'commission_pct']) {
+    assert.ok(aa.indexOf(f) !== -1, 'the assistant\'s Create Invoice drops ' + f);
+  }
+});
+
+test('admin\'s seven rows land on £616.50, the same as the owner\'s', async () => {
+  /* The page collects rows; the route bills them. This drives the route with
+     exactly what admin's getBespokeItems produces from APD's month. */
+  const r = await call('post', '/invoices/bespoke', {
+    kind: 'bespoke',
+    recipient: { name: 'APD Private Hire', email: 'accounts@apd.example.com' },
+    items: toLineItems(APD),
+    commission_pct: 10
+  });
+  assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
+  const row = db.prepare('SELECT * FROM invoices WHERE invoice_no = ?').get(r.body.invoiceNo || r.body.invoice_no);
+  assert.strictEqual(row.total, 616.50, 'admin must arrive where the owner app arrives');
+  assert.strictEqual(MATHS(APD, 10).total, row.total, 'and the screen must agree with it');
+});
+
+test('admin\'s preview shows the fee per trip and the four steps', () => {
+  const modal = fnBlock(ADMIN, 'openInvoiceDetailModal');
+  assert.ok(/anyFee/.test(modal) && /Fee<\/th>/.test(modal),
+    'admin\'s preview has no FEE column — it disagrees with the PDF it is previewing');
+  assert.ok(/admInvLeadIn\(/.test(modal), 'the preview never draws the lead-in lines');
+  const lead = fnBlock(ADMIN, 'admInvLeadIn');
+  for (const line of ['Fares (jobs)', 'Fees (parking', 'commission', 'Less collected by driver']) {
+    assert.ok(lead.indexOf(line) !== -1, 'the preview never says "' + line + '"');
+  }
+  assert.ok(/WMInvoiceMaths\.compute\(rows,pct\)/.test(lead),
+    'the preview must total the stored lines with the shared module, not its own sum');
+  /* And the figures have to reach it: the route returns the whole row, so the
+     rate and the fees must be carried into the preview's data. */
+  const view = fnBlock(ADMIN, 'viewInvoice');
+  for (const f of ['commissionPct:', 'fees:', 'feesLabel:']) {
+    assert.ok(view.indexOf(f) !== -1, 'viewInvoice never passes ' + f + ' to the preview');
+  }
 });
 
 // ── 6. THE PLAIN INVOICE IS UNTOUCHED ────────────────────────────────────
