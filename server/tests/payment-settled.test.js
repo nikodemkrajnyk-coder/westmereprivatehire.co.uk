@@ -284,30 +284,107 @@ test('the app reads it instead of re-deriving it', () => {
 // ── 5. NO CUSTOMER PAGE GOES BLACK ───────────────────────────────────────
 console.log('\nNo customer-facing page is left for the phone to recolour');
 
-test('every customer-facing page declares a light colour scheme', () => {
+test('every customer-facing page opts OUT of forced dark, not merely INTO light', () => {
   const ROOT = path.join(__dirname, '..', '..');
-  const pages = ['westmere-pay.html', 'westmere-rider.html', 'book.html'];
-  for (const f of pages) {
+
+  /* WHY `only` AND NOT `light`.
+     `color-scheme: light` says "I can be rendered light". That is exactly the
+     page Android Chrome's Auto Dark Theme exists to repaint — it targets sites
+     that only know how to be light and recolours them itself. The opt-out is
+     the `only` keyword, which forbids the user agent overriding the scheme at
+     all (Chrome's Auto Dark Theme docs; CSS Color Adjust §2.1 `only`).
+
+     The first fix for the black screen shipped the plain form and therefore did
+     not close it. This guard refuses the plain form on every surface a customer
+     can land on, so the next tidy-up cannot quietly reopen it.
+
+     Both orderings parse — `only light` and `light only` — so both are accepted;
+     what is not accepted is the keyword being absent. */
+  const OPTS_OUT = /(?:only\s+light|light\s+only)/i;
+  const PAGES = ['westmere-pay.html', 'westmere-rider.html', 'book.html'];
+
+  // 1. Every color-scheme META on every customer page, read out of the markup
+  //    rather than matched against a fixed string — a page may carry more than
+  //    one, and every one of them has to opt out.
+  for (const f of PAGES) {
     const html = fs.readFileSync(path.join(ROOT, f), 'utf8');
-    /* BOTH HALVES. A bare /color-scheme/ match passed on a page whose META had
-       been deleted, because the CSS half was still there — and it is the meta
-       the browser reads when deciding whether to auto-darken the page. */
-    assert.ok(/<meta name="color-scheme" content="light"/.test(html),
-      f + ' has no color-scheme META — a phone forcing dark mode will recolour '
-      + 'it, which is what turned the last screen black');
-    assert.ok(/color-scheme\s*:\s*light/.test(html),
-      f + ' has no color-scheme CSS — form controls stay dark without it');
+    const metas = html.match(/<meta[^>]+name="(?:supported-)?color-schemes?"[^>]*>/gi) || [];
+    /* THE BROWSER-FACING ONE SPECIFICALLY. `supported-color-schemes` is a mail
+       client convention and does nothing in Chrome, so counting metas is not
+       enough: deleting the real one and leaving that behind passed an earlier
+       draft of this guard. */
+    assert.ok(/<meta[^>]+name="color-scheme"[^>]*>/i.test(html),
+      f + ' has no name="color-scheme" meta — a phone forcing dark mode will '
+      + 'recolour it, which is what turned Ben\'s screen black');
+    assert.ok(metas.length, f + ' declares no colour scheme at all');
+    metas.forEach((m) => {
+      const content = (/content="([^"]*)"/i.exec(m) || [])[1] || '';
+      assert.ok(OPTS_OUT.test(content), f + ' declares color-scheme "' + content
+        + '" — that INVITES Android\'s auto-dark rather than refusing it. Needs the `only` keyword.');
+    });
   }
-  /* The server-rendered ones: the cash confirmation and the cancel/note pages. */
+
+  // 2. The server-rendered pages: the cash confirmation and the cancel/note
+  //    screens, which is where the customer ends up after choosing.
   const pub = fs.readFileSync(path.join(__dirname, '..', 'public-api.js'), 'utf8');
-  const heads = pub.match(/<meta name="viewport"[\s\S]*?robots/g) || [];
-  assert.ok(heads.length >= 2, 'expected the cash and action pages, found ' + heads.length);
-  heads.forEach((h, i) => {
-    assert.ok(/name="color-scheme" content="light"/.test(h),
-      'server-rendered page ' + (i + 1) + ' declares no colour scheme');
+  const pubMetas = pub.match(/<meta[^>]+name="(?:supported-)?color-schemes?"[^>]*>/gi) || [];
+  assert.ok(pubMetas.length >= 4,
+    'expected a colour-scheme pair on both server-rendered pages, found ' + pubMetas.length);
+  assert.strictEqual((pub.match(/<meta[^>]+name="color-scheme"[^>]*>/gi) || []).length, 2,
+    'both server-rendered pages need their own name="color-scheme" meta — the '
+    + 'supported-color-schemes one beside it is a mail-client convention Chrome ignores');
+  pubMetas.forEach((m, i) => {
+    const content = (/content="([^"]*)"/i.exec(m) || [])[1] || '';
+    assert.ok(OPTS_OUT.test(content),
+      'server-rendered page meta ' + (i + 1) + ' declares "' + content + '" — needs `only`');
   });
-  assert.ok((pub.match(/color-scheme:light/g) || []).length >= 2,
-    'and the CSS half is missing — the meta alone leaves form controls dark');
+
+  /* 3+4. Every DOCUMENT-level rule, wherever it lives.
+     Element-level declarations (.fi, .cal-drop, inputs) are a different job —
+     they keep native controls readable — and are deliberately not covered.
+
+     Selectors are read by splitting real rule blocks rather than by matching a
+     hand-written string, because the one that actually decides the outcome sits
+     in the token layer behind a comment banner, where an anchored regex missed
+     it on the first attempt. */
+  const docLevel = (src) => {
+    const out = [];
+    const rule = /([^{}]+)\{([^{}]*)\}/g;
+    let m;
+    while ((m = rule.exec(src))) {
+      const selectors = m[1].replace(/\/\*[\s\S]*?\*\//g, '').split(',').map((x) => x.trim());
+      if (!selectors.some((sel) => sel === 'html' || sel === ':root')) continue;
+      const d = /color-scheme\s*:\s*([^;!}]+)/.exec(m[2]);
+      if (d) out.push({ sel: selectors.join(','), decl: d[1].trim(), important: /color-scheme[^;]*!important/.test(m[2]) });
+    }
+    return out;
+  };
+
+  for (const f of PAGES.concat(['server/public-api.js'])) {
+    docLevel(fs.readFileSync(path.join(ROOT, f), 'utf8')).forEach((r) => {
+      assert.ok(OPTS_OUT.test(r.decl),
+        f + ' has a document-level `' + r.sel + ' { color-scheme: ' + r.decl + ' }` — needs `only`');
+    });
+  }
+
+  /* THE ONE THAT ACTUALLY DECIDES IT.
+     The token layer sets `html { color-scheme: … !important }`, and every
+     customer page loads it. Because it carries !important it BEATS the page's
+     own :root rule — measured in a real browser: with this line on plain
+     `light`, a pay page declaring `only light` still computed to `light`, and
+     stayed exposed to auto-dark. Fixing the pages and leaving this behind
+     fixes nothing, which is why the assertion is separate and says so. */
+  const themeRules = docLevel(fs.readFileSync(path.join(ROOT, 'westmere-theme.css'), 'utf8'));
+  assert.ok(themeRules.length,
+    'westmere-theme.css no longer sets a document-level colour scheme — the pages were relying on it');
+  assert.ok(themeRules.some((r) => r.important),
+    'the token layer\'s !important colour scheme is gone — check what now wins the cascade');
+  themeRules.forEach((r) => {
+    assert.ok(OPTS_OUT.test(r.decl),
+      'westmere-theme.css sets `' + r.sel + ' { color-scheme: ' + r.decl
+      + (r.important ? ' !important' : '') + ' }` — that overrides every page\'s own opt-out, '
+      + 'so the whole site is still exposed to Android auto-dark. It needs `only`.');
+  });
 });
 
 // ── run ──────────────────────────────────────────────────────────────────

@@ -55,15 +55,15 @@ function cashPage(state, message, ref) {
      it comes out near-black, which is what a customer meant when he said the
      last screen was a black screen. The rider app and the booking form have
      always declared it; these pages never did. -->
-<meta name="color-scheme" content="light">
-<meta name="supported-color-schemes" content="light">
+<meta name="color-scheme" content="only light">
+<meta name="supported-color-schemes" content="only light">
 <meta name="theme-color" content="#EEF2F5"><meta name="robots" content="noindex,nofollow">
 <title>Your journey | Westmere Private Hire</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{color-scheme:light;--navy:#102a43;--text:#102a43;--muted:#657485;--border:#dfe5ea;--serif:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;--sans:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif}
+:root{color-scheme:only light;--navy:#102a43;--text:#102a43;--muted:#657485;--border:#dfe5ea;--serif:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;--sans:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif}
 html{font-size:16px}
 body{font-family:var(--sans);font-weight:400;color:var(--text);background:#EEF2F5;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
 .card{width:100%;max-width:440px;background:#fff;border-radius:14px;overflow:hidden;border:1px solid var(--border)}
@@ -787,15 +787,15 @@ function actionPage(heading, message, ref, bodyHtml, state) {
      it comes out near-black, which is what a customer meant when he said the
      last screen was a black screen. The rider app and the booking form have
      always declared it; these pages never did. -->
-<meta name="color-scheme" content="light">
-<meta name="supported-color-schemes" content="light">
+<meta name="color-scheme" content="only light">
+<meta name="supported-color-schemes" content="only light">
 <meta name="theme-color" content="#EEF2F5"><meta name="robots" content="noindex,nofollow">
 <title>Your journey | Westmere Private Hire</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{color-scheme:light;--navy:#102a43;--text:#102a43;--muted:#657485;--border:#dfe5ea;--serif:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;--sans:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif}
+:root{color-scheme:only light;--navy:#102a43;--text:#102a43;--muted:#657485;--border:#dfe5ea;--serif:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;--sans:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif}
 html{font-size:16px}
 body{font-family:var(--sans);font-weight:400;color:var(--text);background:#EEF2F5;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
 .card{width:100%;max-width:440px;background:#fff;border-radius:14px;overflow:hidden;border:1px solid var(--border)}

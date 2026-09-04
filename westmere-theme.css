@@ -146,7 +146,7 @@
   --serif: var(--westmere-type);
   --sans:  var(--westmere-type);
 
-  color-scheme: light;
+  color-scheme: only light;
 }
 
 /* =========================================================
@@ -154,7 +154,7 @@
    ========================================================= */
 html {
   background: var(--westmere-white) !important;
-  color-scheme: light !important;
+  color-scheme: only light !important;
 }
 
 body {

@@ -78,7 +78,8 @@ test('CACHE version matches the current westmere-rider.html (bump on every edit)
 // ── Items 1 & 2: My Account readability + desktop layout ─────────────────
 const riderHtml = read('westmere-rider.html');
 test('rider My Account pickers/inputs are light + readable (color-scheme light)', () => {
-  assert.ok(/<meta name="color-scheme" content="light"/.test(riderHtml), 'must declare a light color-scheme (readable date/time pickers)');
+  assert.ok(/<meta name="color-scheme" content="only light"/.test(riderHtml),
+    "must declare color-scheme 'only light' — plain 'light' still lets Android auto-dark repaint the page (see payment-settled.test.js)");
   // The custom date/time/pick dropdowns + form inputs force a light scheme so
   // native controls and text render dark-on-light (the dark/unreadable picker bug).
   for (const cls of ['.cal-drop', '.time-drop', '.pick-drop', '.fi']) {
