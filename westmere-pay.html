@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<!-- LIGHT, AND SAID SO — see the note in server/public-api.js. A phone forcing
+     dark mode turned this page 98.6% near-black, on the one screen where a
+     customer is being asked for money. -->
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
 <meta name="theme-color" content="#ffffff">
 <title>Pay for your journey | Westmere Private Hire</title>
 <meta name="robots" content="noindex,nofollow">
@@ -15,7 +20,7 @@
 /* The page's own tokens. --navy is the BRAND navy, not the old charcoal:
    this page had kept #1b1b1a, so its buttons and headings were a different
    colour from every other surface. */
-:root{--navy:#102a43;--navy2:#173b5e;--text:#173b5e;--muted:#657485;--border:#c8d1d9}
+:root{color-scheme:light;--navy:#102a43;--navy2:#173b5e;--text:#173b5e;--muted:#657485;--border:#c8d1d9}
 /* These layout declarations had ended up inside the :root block above, which
    applied them to the html element — so `background:var(--navy)` painted the
    whole page charcoal behind the card. They belong on body, and the canvas is

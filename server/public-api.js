@@ -50,13 +50,20 @@ function cashPage(state, message, ref) {
   const refLine = ref ? `<p style="margin-top:12px" class="muted-ref">Ref: ${String(ref).replace(/[<>&"]/g, '')}</p>` : '';
   return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
-<meta name="theme-color" content="#111D2C"><meta name="robots" content="noindex,nofollow">
+<!-- LIGHT, AND SAID SO. Without this a phone with dark mode forcing (Android
+     Chrome Auto Dark Theme, Samsung Internet) recolours the whole page: 98% of
+     it comes out near-black, which is what a customer meant when he said the
+     last screen was a black screen. The rider app and the booking form have
+     always declared it; these pages never did. -->
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<meta name="theme-color" content="#EEF2F5"><meta name="robots" content="noindex,nofollow">
 <title>Your journey | Westmere Private Hire</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--navy:#102a43;--text:#102a43;--muted:#657485;--border:#dfe5ea;--serif:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;--sans:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif}
+:root{color-scheme:light;--navy:#102a43;--text:#102a43;--muted:#657485;--border:#dfe5ea;--serif:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;--sans:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif}
 html{font-size:16px}
 body{font-family:var(--sans);font-weight:400;color:var(--text);background:#EEF2F5;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
 .card{width:100%;max-width:440px;background:#fff;border-radius:14px;overflow:hidden;border:1px solid var(--border)}
@@ -678,7 +685,11 @@ router.get('/pay/:ref/cash', (req, res) => {
     if (b.status === 'cancelled') {
       return res.status(409).send(cashPage('error', 'This booking has been cancelled. Please call us if you need to rebook.'));
     }
-    if (b.paid_at || b.payment === 'card') {
+    /* paid_at ONLY. Asking the METHOD here shut the cash door as well as the
+       card one: a booking merely marked card told the customer his journey
+       "has already been paid online", so neither link worked and he had no way
+       to settle at all. */
+    if (b.paid_at) {
       return res.send(cashPage('paid', 'This journey has already been paid online — there is nothing further to do.', b.ref));
     }
     if (b.payment === 'cash') {
@@ -764,13 +775,20 @@ function actionPage(heading, message, ref, bodyHtml, state) {
   const refLine = ref ? `<p style="margin-top:12px" class="muted-ref">Ref: ${String(ref).replace(/[<>&"]/g, '')}</p>` : '';
   return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
-<meta name="theme-color" content="#111D2C"><meta name="robots" content="noindex,nofollow">
+<!-- LIGHT, AND SAID SO. Without this a phone with dark mode forcing (Android
+     Chrome Auto Dark Theme, Samsung Internet) recolours the whole page: 98% of
+     it comes out near-black, which is what a customer meant when he said the
+     last screen was a black screen. The rider app and the booking form have
+     always declared it; these pages never did. -->
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<meta name="theme-color" content="#EEF2F5"><meta name="robots" content="noindex,nofollow">
 <title>Your journey | Westmere Private Hire</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--navy:#102a43;--text:#102a43;--muted:#657485;--border:#dfe5ea;--serif:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;--sans:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif}
+:root{color-scheme:light;--navy:#102a43;--text:#102a43;--muted:#657485;--border:#dfe5ea;--serif:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;--sans:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif}
 html{font-size:16px}
 body{font-family:var(--sans);font-weight:400;color:var(--text);background:#EEF2F5;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
 .card{width:100%;max-width:440px;background:#fff;border-radius:14px;overflow:hidden;border:1px solid var(--border)}

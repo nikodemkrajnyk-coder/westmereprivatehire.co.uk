@@ -562,8 +562,18 @@ async function executeCalendarTool(name, input, req) {
 
       const status = ['pending', 'confirmed', 'completed', 'active', 'cancelled'].includes((input.status || '').toLowerCase())
         ? input.status.toLowerCase() : 'pending';
-      const payment = ['cash', 'card', 'account', 'invoice'].includes((input.payment || '').toLowerCase())
-        ? input.payment.toLowerCase() : 'pending';
+      /* CARD IS NOT ON OFFER HERE EITHER. The assistant creates bookings from
+         free text, and "he pays by card" is the most natural thing in the world
+         to say — but writing it would tell the whole system the money had
+         already arrived and shut the customer out of paying. It falls back to
+         pending, which is what "no choice yet" means. A card payment taken by
+         hand is recorded with POST /bookings/:id/mark-paid. */
+      const wanted = (input.payment || '').toLowerCase();
+      const payment = ['cash', 'account', 'invoice'].includes(wanted) ? wanted : 'pending';
+      if (wanted === 'card') {
+        console.warn('[ASSISTANT] refused to create ' + ref + ' as card — recorded as pending; '
+                   + 'a card payment is stamped by Stripe or by Mark Paid');
+      }
       const fare = (input.fare != null && input.fare !== '') ? Number(input.fare) : null;
       const passengers = input.passengers ? (parseInt(input.passengers, 10) || 1) : 1;
 

@@ -105,6 +105,29 @@ router.get('/bookings', (req, res) => {
     return res.status(403).json({ error: 'Access denied' });
   }
 
+  /* THE SERVER'S OWN ANSWER, CARRIED ON THE ROW.
+     The customer app used to decide for itself whether a trip was payable, with
+     a hand-copied version of paymentLock() called _payState(). The copy drifted:
+     it treated every CONFIRMED booking as nothing-to-pay while the server still
+     considered it payable, so the moment a booking was confirmed the customer
+     was offered no way to pay at all. Two screens working the same rule out
+     separately is how they come to disagree.
+
+     The rule is asked once, here, and travels with the booking. The app reads
+     `payState` and draws it. */
+  try {
+    const { paymentLock } = require('./pay-lock');
+    for (const r of rows) {
+      const lock = paymentLock(r);
+      r.payState = lock.payable ? 'payable'
+                 : (lock.reason === 'paid' ? 'paid'
+                 : (lock.reason === 'cash_chosen' ? 'cash' : 'none'));
+      r.payMessage = lock.message || '';
+      r.amountDue = lock.amountDue;
+    }
+  } catch (e) {
+    console.error('[API] payState decoration failed:', e.message);
+  }
   res.json({ ok: true, bookings: rows });
 });
 
@@ -322,6 +345,25 @@ router.patch('/bookings/:id', async (req, res) => {
       return res.status(400).json({ error: 'Invalid payment method' });
     }
     req.body.payment = String(req.body.payment).toLowerCase();
+    /* CARD IS NOT SOMETHING YOU CAN TYPE. CLAUDE.md §1 has always said
+       payment='card' is written only by a genuine card payment — but this route
+       accepted it as an ordinary field edit, and the moment it was set the
+       system believed the money had arrived: the confirmation email dropped its
+       Pay buttons, the pay page said "already paid", My Account said the same,
+       and the customer could not settle at all. It happened to a customer whose
+       last thirty-five journeys were card, and it cost him two days.
+
+       Recording a card payment taken by hand is a different act with its own
+       door: POST /bookings/:id/mark-paid, which stamps WHEN the money arrived
+       alongside HOW. The fact and the method are written together, or not at
+       all. */
+    if (req.body.payment === 'card') {
+      return res.status(400).json({
+        error: 'A booking cannot be set to card here — that is what a card payment does. '
+             + 'To record a card payment you took yourself, use Mark Paid.',
+        use: 'POST /api/bookings/' + req.params.id + '/mark-paid { method: "card" }'
+      });
+    }
   }
 
   const allowed = ['status', 'driver_id', 'fare', 'notes', 'payment', 'passenger_name', 'passenger_phone', 'passenger_email', 'pickup', 'destination', 'stop_address', 'date', 'time', 'passengers', 'bags', 'flight', 'customer_id', 'paid_at', 'trip_miles'];
@@ -1305,8 +1347,10 @@ router.post('/bookings/:id/change-request/accept', async (req, res) => {
 // never re-pricing a journey without seeing what has already been collected.
 function settledPaymentOf(b) {
   if (!b) return null;
-  const paid = !!b.paid_at || String(b.payment || '').toLowerCase() === 'card';
-  if (!paid) return null;
+  /* Nothing has been collected until paid_at says so. A phantom "already paid"
+     here told the owner's own re-pricing screen that money had come in which
+     never had. */
+  if (!b.paid_at) return null;
   return {
     amount: b.fare == null ? null : Number(b.fare),
     method: String(b.payment || '').toLowerCase() || 'card',
@@ -3400,12 +3444,21 @@ router.post('/bookings/:id/mark-paid', (req, res) => {
       } catch (_) {}
     }
   } else {
+    /* THE METHOD TRAVELS WITH THE FACT. This stamped WHEN the money arrived and
+       left HOW it arrived untouched, so staff who had taken a card payment by
+       hand had nowhere to say so — and reached for the booking's payment field
+       instead, which is the shortcut that locked the customer out. `method` is
+       optional and validated; without one, the recorded method is left exactly
+       as it was. */
+    const wantMethod = String((req.body && req.body.method) || '').toLowerCase();
+    const settleMethod = (wantMethod === 'card' || wantMethod === 'cash') ? wantMethod : null;
     db.prepare(`UPDATE bookings
                    SET paid_at = COALESCE(paid_at, datetime('now')),
                        paid_amount = COALESCE(paid_amount, fare),
+                       payment = COALESCE(?, payment),
                        status = CASE WHEN status IN ('pending','offered','awaiting_payment') THEN 'confirmed' ELSE status END,
                        updated_at = datetime('now')
-                 WHERE id = ?`).run(id);
+                 WHERE id = ?`).run(settleMethod, id);
   }
 
   try {

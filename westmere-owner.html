@@ -4420,11 +4420,20 @@ async function ownerMarkCompleted(bookingId){
 // owner/driver action that moves a booking into confirmed — cash is never
 // auto-confirmed when the customer merely chooses it.
 async function ownerMarkPaid(bookingId){
-  if(!confirm('Mark this booking as paid? This confirms the ride.'))return;
+  /* HOW, AS WELL AS WHETHER. The booking's payment field used to be the only
+     way to record "he paid me by card" — and writing it there told the whole
+     system the money had already arrived through Stripe, which shut every
+     payment door on the customer. Settling is one act now: the method is sent
+     with the fact, and the server stamps them together.
+     Cancel = don't settle at all; the two buttons are the two methods. */
+  var method = confirm('Mark this booking as paid.\n\nOK = paid by CARD (you took it yourself)\nCancel = choose cash instead')
+    ? 'card'
+    : (confirm('Paid in CASH to the driver?\n\nOK = record as cash\nCancel = do nothing') ? 'cash' : null);
+  if(!method) return;
   try{
-    var r=await fetch('/api/bookings/'+bookingId+'/mark-paid',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}});
+    var r=await fetch('/api/bookings/'+bookingId+'/mark-paid',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({method:method})});
     var d=await r.json();
-    if(r.ok&&d.ok){showToast('Payment received — booking confirmed');loadOwnerBookings();}
+    if(r.ok&&d.ok){showToast('Payment received ('+method+') — booking confirmed');loadOwnerBookings();}
     else showToast(d.error||('Failed ('+r.status+')'));
   }catch(e){showToast('Network error');console.error('[ownerMarkPaid]',e);}
 }

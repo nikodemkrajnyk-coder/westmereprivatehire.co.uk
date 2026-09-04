@@ -65,7 +65,7 @@ async function sendMessage(to, text) {
 // Customer-facing payment label. No fixed "pay driver" default any more — the
 // customer chooses Pay now / Pay on the day from the confirmation email.
 function custPayLabel(b) {
-  if (b.payment === 'card' || b.paid_at) return 'Paid online';
+  if (b.paid_at) return 'Paid online';   // the fact, not the method
   if (b.payment === 'cash') return 'Cash on the day';
   return 'Pay online or on the day';
 }

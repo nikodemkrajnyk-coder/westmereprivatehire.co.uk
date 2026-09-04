@@ -567,7 +567,13 @@ async function sendCustomerConfirmed(booking) {
   //   • CARD — the Stripe charge succeeded → genuinely PAID (a receipt).
   //   • CASH — the customer chose "pay your driver on the day" → booking is
   //            CONFIRMED but payment is PENDING (nothing collected yet).
-  const isCard = payment === 'card';
+  /* CARD IS A METHOD; paid_at IS THE FACT. This read `payment === 'card'`, so a
+     booking merely MARKED card — by staff, by the assistant, by a copied
+     journey — was treated as a receipt and every Pay button was withheld. A
+     customer with thirty-five card journeys behind him got exactly that and had
+     no way to pay for two days. A card booking is a receipt only once the money
+     has actually landed. */
+  const isCard = payment === 'card' && (!!booking.paid_at || !!paid);
   const isCash = payment === 'cash';
 
   let paymentLabel, intro, subject, preheader;
@@ -1665,7 +1671,8 @@ async function sendCustomerBookingUpdated(booking, changes, adjust) {
   // Settled = a real card payment or a stamped paid_at. A booking still owing
   // money keeps its Pay Now / Pay-driver / Cancel actions (same rule, same
   // tokens, as the estimate and the confirmation).
-  const alreadyPaid = !!booking.paid_at || booking.payment === 'card';
+  /* paid_at, not the method — see sendCustomerConfirmed. */
+  const alreadyPaid = !!booking.paid_at;
 
   // ── What the money did ──
   const kind = adjust && adjust.amount > 0 ? String(adjust.kind || '') : '';
@@ -1835,7 +1842,7 @@ async function sendCustomerJourneyReminder(booking, opts) {
   const fareStr = (fare || fare === 0) ? ('£' + Number(fare).toFixed(2)) : null;
   if (fareStr) rows += detailRow('Fare', fareStr);
   // Never "paid" unless it genuinely is — see the payment invariants.
-  const payLabel = paid_at || payment === 'card' ? 'Paid ✓'
+  const payLabel = paid_at ? 'Paid ✓'
     : payment === 'cash' ? 'Pay your driver on the day'
     : payment === 'account' || payment === 'invoice' ? 'On account'
     : 'To be arranged';

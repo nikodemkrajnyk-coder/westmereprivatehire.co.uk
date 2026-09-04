@@ -40,9 +40,25 @@
 const { assertPaymentMethod } = require('./payment-methods');
 
 // Has real money been collected for this booking?
+/* MONEY ARRIVING IS A FACT, NOT A METHOD.
+   This used to read `paid_at || payment === 'card'`, so the WORD "card" on a
+   booking was treated as proof the money had landed. It is not. A booking can
+   be marked card by staff, by the assistant, or by a copied journey without a
+   penny moving — and the moment it is, every door shuts on the customer: the
+   confirmation email drops its Pay buttons, the pay page says "This trip has
+   already been paid", and My Account says "Paid — thank you".
+
+   That is what happened to a customer whose previous thirty-five journeys were
+   all card. His next one was marked card, nobody had paid, and he had no way to
+   pay online for two days — so he settled in cash on the day.
+
+   The Stripe webhook has always stamped paid_at alongside payment='card', and
+   the staff settle action (POST /bookings/:id/mark-paid) stamps it too. So
+   paid_at is the fact, and it is the only thing asked here.
+   GUARDRAIL: server/tests/payment-settled.test.js */
 function isSettled(b) {
   if (!b) return false;
-  return !!b.paid_at || String(b.payment || '').toLowerCase() === 'card';
+  return !!b.paid_at;
 }
 
 // Has the customer already committed to a method that rules out a card charge?

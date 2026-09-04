@@ -75,7 +75,11 @@ const { _tripStatus, _tripActions, _payState } = sandbox;
 // Pulled out of loadServerTrips() so a column dropped from the mapping fails
 // here rather than silently showing the customer the wrong status.
 const MAPPING = (() => {
-  const i = RIDER.indexOf('return{id:b.id,ref:b.ref,from:b.pickup');
+  /* ANCHORED ON WHAT CANNOT MOVE. This matched the first three fields in order
+     — id, ref, from — so ADDING a field between them broke a guard that has no
+     opinion about added fields; it exists to catch a column being DROPPED. The
+     assertions below still check every field it cares about. */
+  const i = RIDER.indexOf('return{id:b.id,ref:b.ref');
   assert.ok(i !== -1, 'loadServerTrips no longer maps server rows the expected way');
   const end = RIDER.indexOf('};', i);
   return RIDER.slice(i, end + 1);

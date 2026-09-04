@@ -590,6 +590,42 @@ function migrate() {
     console.error('[DB] invoice access_token migration failed:', e.message);
   }
 
+    /* ── HISTORY KEEPS THE ANSWER IT HAD ──────────────────────────────────
+       "Settled" now means paid_at, not the word "card" (isSettled, pay-lock.js).
+       Every journey ALREADY TRAVELLED that was marked card would otherwise
+       reappear as unpaid: My Account would offer to take money for a trip
+       finished weeks ago, and a payment reminder could reach somebody who had
+       paid at the time.
+
+       So the past is stamped, once. A card booking that is completed, or whose
+       date has been and gone, is treated exactly as it was yesterday — paid.
+       Only LIVE and FUTURE journeys re-open, which is the entire point: those
+       are the ones where the money genuinely has not arrived.
+
+       Guarded three ways and safe on every boot —
+         • payment='card' AND paid_at IS NULL only;
+         • completed, or dated before today (Europe/London wall clock — never
+           toISOString, which is still yesterday at 00:30 BST);
+         • idempotent: the second run matches no rows.
+       GUARDRAIL: server/tests/payment-settled.test.js */
+    try {
+      const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/London' });
+      const info = db.prepare(`
+        UPDATE bookings
+           SET paid_at = COALESCE(paid_at, datetime('now')),
+               updated_at = datetime('now')
+         WHERE payment = 'card'
+           AND paid_at IS NULL
+           AND (status = 'completed' OR date < ?)
+      `).run(today);
+      if (info.changes > 0) {
+        console.log('[DB] Stamped paid_at on ' + info.changes + ' past card booking(s) — '
+                  + 'history keeps the answer it had before settled meant paid_at');
+      }
+    } catch (e) {
+      console.error('[DB] card paid_at backfill failed:', e.message);
+    }
+
   /* THE LUMP FEE MOVES ONTO THE FIRST TRIP.
      An ACCOUNT invoice's fees used to be one figure typed for the whole month;
      they are now the sum of what was paid out on each journey, and the stored

@@ -3058,19 +3058,29 @@ function _tripActions(b,todayStr){
 // authority; this just decides what to draw.
 function _payState(b){
   if(!b)return 'none';
+  /* THE SERVER'S ANSWER, NOT A SECOND OPINION. This used to be a hand-copied
+     paymentLock() — and it had drifted: it called every CONFIRMED booking
+     "nothing to pay" while the server still held it payable, so a customer whose
+     booking had just been confirmed was offered no way to pay at all, in the one
+     screen whose job at that moment is to take his money.
+
+     paymentLock travels on the booking now as `payState` (see GET /bookings).
+     The fallback below is only for a page cached before that shipped, and it is
+     deliberately the PERMISSIVE reading: offering a settled trip a pay button is
+     a mistake the server refuses on the next click, but hiding the button from
+     somebody who owes money is the mistake that cost a customer two days. */
+  if(b.payState) return b.payState;
   var st=String(b.status||'');
   var method=String(b.payment||'pending').toLowerCase();
   if(st==='cancelled')return 'none';
-  if(b.paidAt||method==='card')return 'paid';
+  if(b.paidAt)return 'paid';
   if(method==='cash')return 'cash';
-  if(st==='completed')return 'none';
   var fare=parseFloat(b.fare);
   if(!isFinite(fare)||fare<=0)return 'none';
-  if(st==='pending'||st==='offered'||st==='awaiting_payment')return 'payable';
-  return 'none';
+  return 'payable';
 }
 
-function _payPanel(b){
+  function _payPanel(b){
   try{
     var state=_payState(b);
     if(state==='none')return '';
@@ -3508,7 +3518,7 @@ async function loadServerTrips(){
       // not agree with: status/payment/paidAt decide paid-vs-unpaid,
       // changeRequestedAt shows an outstanding ask, reEstimatedAt names an
       // accepted change. See _tripStatus / _tripActions.
-      return{id:b.id,ref:b.ref,from:b.pickup,dest:b.destination,stop:b.stop_address||'',date:b.date,time:b.time,flight:b.flight||'',pax:b.passengers||1,bags:b.bags||'',vehicle:b.driver_vehicle||'',fare:b.fare||0,status:b.status,created:b.created_at,driverName:b.driver_name||'',driverReg:b.driver_reg||'',payment:b.payment||'pending',paidAt:b.paid_at||'',reEstimatedAt:b.re_estimated_at||'',changeRequestedAt:b.change_requested_at||''};
+      return{id:b.id,ref:b.ref,payState:b.payState,payMessage:b.payMessage,amountDue:b.amountDue,from:b.pickup,dest:b.destination,stop:b.stop_address||'',date:b.date,time:b.time,flight:b.flight||'',pax:b.passengers||1,bags:b.bags||'',vehicle:b.driver_vehicle||'',fare:b.fare||0,status:b.status,created:b.created_at,driverName:b.driver_name||'',driverReg:b.driver_reg||'',payment:b.payment||'pending',paidAt:b.paid_at||'',reEstimatedAt:b.re_estimated_at||'',changeRequestedAt:b.change_requested_at||''};
     });
     // RECONCILE REMOVALS, NOT JUST STATUSES.
     //

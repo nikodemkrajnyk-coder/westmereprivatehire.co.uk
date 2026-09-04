@@ -217,13 +217,34 @@ test('an unpaid, priced estimate is payable', () => {
 });
 
 test('a card payment locks everything', () => {
-  for (const b of [{ status: 'confirmed', payment: 'card', fare: 137 },
+  /* THE FIXTURE GAINED ITS paid_at, and it should always have had one. This
+     read `{ payment: 'card' }` with no stamp and asserted "paid" — encoding the
+     idea that the WORD card proves money arrived. It does not, and a customer
+     paid the price: his next booking was marked card before he had paid, every
+     payment route closed against him, and he settled in cash on the day.
+
+     A genuine card payment always carries paid_at — the Stripe webhook writes
+     both in one statement — so this fixture is what a real one looks like. The
+     fact guarded here is unchanged: money that HAS arrived cannot be taken
+     twice. What moved is the definition of "arrived", and the case below pins
+     the other half of it.
+     See server/tests/payment-settled.test.js. */
+  for (const b of [{ status: 'confirmed', payment: 'card', fare: 137, paid_at: '2026-08-13 10:00:00' },
                    { status: 'confirmed', payment: 'pending', fare: 137, paid_at: '2026-08-13 10:00' }]) {
     const l = paymentLock(b);
     assert.strictEqual(l.reason, 'paid');
     assert.ok(l.locked && !l.payable);
     assert.ok(/already been paid/i.test(l.message), 'the wording must tell the customer it is already paid');
   }
+});
+
+test('a booking merely MARKED card, with nothing collected, is NOT locked', () => {
+  /* The other half of the rule above, and the whole of the customer's problem:
+     staff marked the method before the money moved, and the system treated it
+     as a receipt. */
+  const l = paymentLock({ status: 'confirmed', payment: 'card', fare: 137, paid_at: null });
+  assert.strictEqual(l.payable, true, 'he must still be able to pay');
+  assert.notStrictEqual(l.reason, 'paid', 'nothing has been collected');
 });
 
 test('choosing cash locks card payment — and does NOT claim to be paid', () => {
