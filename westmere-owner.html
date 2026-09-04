@@ -964,6 +964,12 @@ select:-webkit-autofill:focus{
         </div>
         <div style="display:flex;justify-content:flex-end;padding:.25rem 0 0">
           <a href="#" id="gcal-sync-link" onclick="syncGoogleCalendar(event)" style="display:none;font-size:.8rem;color:var(--navy);text-decoration:none;letter-spacing:.08em;text-transform:uppercase">Sync now &rarr;</a>
+          <!-- SYNC PULLS FROM GOOGLE. It always has — it is how a change made in
+               the calendar reaches a booking. Nothing has ever pushed the other
+               way, which is why a job missing from the calendar stayed missing
+               however many times the account was reconnected. This is the push. -->
+          <a href="#" id="gcal-push-link" onclick="event.preventDefault();ownerCalendarBackfill()" style="display:none;font-size:.8rem;color:var(--navy);text-decoration:none;border-bottom:1px solid rgba(16,42,67,.28);margin-left:1rem">Put missing jobs on the calendar</a>
+          <div id="gcal-missing" style="display:none;font-size:.78rem;color:#8B2222;margin-top:.5rem"></div>
         </div>
       </div>
 
@@ -1975,6 +1981,7 @@ async function checkGoogleCalendarStatus(){
   var btn=document.getElementById('gcal-connect-btn');
   var statusEl=document.getElementById('gcal-status');
   var syncLink=document.getElementById('gcal-sync-link');
+  var pushLink=document.getElementById('gcal-push-link');
   if(!btn)return;
   try{
     var res=await fetch('/api/google/status');
@@ -1992,6 +1999,7 @@ async function checkGoogleCalendarStatus(){
       btn.style.border='none';
       if(statusEl)statusEl.innerHTML='Google has signed you out &mdash; reconnect to restore your calendar';
       if(syncLink)syncLink.style.display='none';
+      if(pushLink)pushLink.style.display='none';
       return;
     }
     if(res.ok&&data.ok&&data.connected){
@@ -2002,6 +2010,7 @@ async function checkGoogleCalendarStatus(){
       btn.style.border='1px solid rgba(27,27,26,.2)';
       if(statusEl)statusEl.innerHTML='Connected as <span style="color:var(--navy)">'+(data.email||'your Google account')+'</span>';
       if(syncLink)syncLink.style.display='';
+      if(pushLink)pushLink.style.display='';
     } else {
       btn.textContent='Connect';
       btn.onclick=connectGoogleCalendar;
@@ -2010,6 +2019,7 @@ async function checkGoogleCalendarStatus(){
       btn.style.border='none';
       if(statusEl)statusEl.textContent='Two-way sync with your calendar';
       if(syncLink)syncLink.style.display='none';
+      if(pushLink)pushLink.style.display='none';
     }
   }catch(e){
     if(statusEl)statusEl.textContent='Status unavailable';
@@ -3636,6 +3646,20 @@ function jobCardHtml(j){
       ? '<button disabled style="flex:1;padding:.6rem;font-size:.8rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;min-height:40px;background:transparent;border:var(--border-hairline, 1px) solid rgba(27,27,26,.15);color:rgba(27,27,26,.4);cursor:default">On your list &#10003;</button>'
       : '<button style="flex:1;padding:.6rem;font-size:.8rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;background:transparent;border:var(--border-hairline, 1px) solid rgba(27,27,26,.25);color:var(--westmere-navy,#102a43)" onclick="ownerAddCustomer('+j.id+',this)">Add to list</button>';
   }
+  /* NOT ON THE CALENDAR. Every calendar write is fire-and-forget, so a job
+     whose event never landed looks exactly like one whose event did — and
+     reconnecting Google does not bring it across, because that re-authorises
+     the account and pushes nothing. This is the retry, and it says whether it
+     worked. Shown only where there is no event and the job is still live. */
+  var _noCal = !j.calendar_event_id && String(j.status||'')!=='cancelled';
+  if(_noCal){
+    var _calFailed = !!j.calendar_sync_failed_at;
+    html+='<button style="flex:1;padding:.6rem;font-size:.8rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);cursor:pointer;border-radius:7px;'
+      +(_calFailed?'background:rgba(139,34,34,.10);color:#8B2222;border:1.5px solid rgba(139,34,34,.28)'
+                  :'background:rgba(106,106,106,.08);color:var(--navy);border:1px solid rgba(27,27,26,.18)')
+      +'" onclick="ownerAddToCalendar('+j.id+')">'
+      +(_calFailed?'Calendar failed — retry':'Add to calendar')+'</button>';
+  }
   var _isPaid=!!(j.paid_at);
   if(ACT.togglePaid){
     html+='<button style="flex:1;padding:.6rem;font-size:.8rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;'
@@ -4419,6 +4443,36 @@ async function ownerMarkCompleted(bookingId){
 // CONFIRMS the ride (server: POST /bookings/:id/mark-paid). This is the only
 // owner/driver action that moves a booking into confirmed — cash is never
 // auto-confirmed when the customer merely chooses it.
+/* ADD THIS JOB TO THE CALENDAR, and say what happened. Every other calendar
+   call in this system is fire-and-forget; this one is not, because it exists
+   precisely for the jobs those calls lost. */
+async function ownerAddToCalendar(bookingId){
+  try{
+    var r=await fetch('/api/bookings/'+bookingId+'/calendar',{method:'POST',credentials:'include'});
+    var d=await r.json();
+    if(r.ok&&d.ok){
+      showToast(d.already?'Already on your calendar':'Added to your Google Calendar');
+      loadOwnerBookings();
+    } else showToast(d.error||('Could not add it ('+r.status+')'));
+  }catch(e){ showToast('Network error'); console.error('[ownerAddToCalendar]',e); }
+}
+
+/* EVERY UPCOMING JOB THAT NEVER MADE IT. It reports what it did — a repair that
+   logs into the void is how the misses went unnoticed in the first place. */
+async function ownerCalendarBackfill(){
+  if(!confirm('Put every upcoming job that is missing from your Google Calendar onto it?'))return;
+  showToast('Checking…');
+  try{
+    var r=await fetch('/api/calendar/backfill',{method:'POST',credentials:'include'});
+    var d=await r.json();
+    if(r.ok&&d.ok){
+      showToast(d.considered===0 ? 'Nothing missing — every upcoming job is on your calendar'
+        : ('Added '+d.added+' of '+d.considered+(d.failed?(' · '+d.failed+' still failing'):'')));
+      loadOwnerBookings();
+    } else showToast(d.error||('Backfill failed ('+r.status+')'));
+  }catch(e){ showToast('Network error'); console.error('[ownerCalendarBackfill]',e); }
+}
+
 async function ownerMarkPaid(bookingId){
   /* HOW, AS WELL AS WHETHER. The booking's payment field used to be the only
      way to record "he paid me by card" — and writing it there told the whole

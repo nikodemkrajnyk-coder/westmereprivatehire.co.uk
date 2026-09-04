@@ -376,9 +376,16 @@ router.post('/book', async (req, res) => {
       customer_name: name, customer_phone: phone,
       status: 'pending'
     }).then(eventId => {
-      if (eventId) {
-        try { db.prepare('UPDATE bookings SET calendar_event_id = ? WHERE id = ?').run(eventId, result.lastInsertRowid); } catch (e) {}
-      }
+      /* A MISS THAT SAYS SO — see the same stamp on the staff path. */
+      try {
+        if (eventId) {
+          db.prepare("UPDATE bookings SET calendar_event_id = ?, calendar_sync_failed_at = NULL WHERE id = ?")
+            .run(eventId, result.lastInsertRowid);
+        } else {
+          db.prepare("UPDATE bookings SET calendar_sync_failed_at = datetime('now') WHERE id = ?")
+            .run(result.lastInsertRowid);
+        }
+      } catch (e) {}
     }).catch(() => {});
 
     // Smart intake (auto-confirm) is intentionally NOT run for public quote

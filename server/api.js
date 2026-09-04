@@ -274,12 +274,19 @@ router.post('/bookings', (req, res) => {
     status: 'pending'
   };
   gcal.createEvent(bookingForCal).then(eventId => {
-    if (eventId) {
-      try {
-        getDb().prepare('UPDATE bookings SET calendar_event_id = ? WHERE id = ?')
+    try {
+      if (eventId) {
+        getDb().prepare("UPDATE bookings SET calendar_event_id = ?, calendar_sync_failed_at = NULL WHERE id = ?")
           .run(eventId, result.lastInsertRowid);
-      } catch (e) {}
-    }
+      } else {
+        /* A MISS THAT SAYS SO. createEvent returns null on every failure and
+           this used to be swallowed whole, so a booking with no event looked
+           identical to one that synced. The stamp is what puts it in front of
+           the owner the same day. */
+        getDb().prepare("UPDATE bookings SET calendar_sync_failed_at = datetime('now') WHERE id = ?")
+          .run(result.lastInsertRowid);
+      }
+    } catch (e) {}
   }).catch(() => {});
 
   // Auto-file (non-blocking)
@@ -3398,6 +3405,145 @@ router.post('/bookings/:id/send-message', async (req, res) => {
 // the customer chooses it (see CLAUDE.md invariant #3). Idempotent: stamps
 // paid_at once and fires the customer "confirmed" email only on the edge into
 // confirmed. Drivers may only mark their own assigned jobs.
+/* ONE SHAPE FOR A CALENDAR EVENT, from a booking row.
+   The three create paths each hand-built this object with a slightly different
+   set of fields, which is why an event's description depended on which door the
+   booking came in through. The re-sync below and the backfill use this, so a
+   job put on the calendar late looks exactly like one put on at the time. */
+function calendarPayload(b) {
+  return {
+    id: b.id, ref: b.ref,
+    pickup: b.pickup, destination: b.destination, stop_address: b.stop_address,
+    date: b.date, time: b.time || 'ASAP',
+    passengers: b.passengers, bags: b.bags, flight: b.flight,
+    fare: b.fare, payment: b.payment, notes: b.notes,
+    customer_name: b.customer_name || b.passenger_name || '',
+    customer_phone: b.customer_phone || b.passenger_phone || '',
+    status: b.status
+  };
+}
+
+/* ── PUT THIS JOB ON THE CALENDAR ─────────────────────────────────────────
+   Every calendar write in this system is fire-and-forget: createEvent returns
+   null on any failure and the .catch() swallows it, so a booking whose event
+   never landed looks exactly like one whose event did. There was no way to
+   retry it — and disconnecting and reconnecting Google does not help, because
+   that re-authorises the account and pushes nothing. A customer's job sat in
+   the system for days with nothing on the owner's calendar.
+
+   This is the retry, and unlike every other calendar call it is SYNCHRONOUS and
+   it TELLS YOU: a real success or a real failure with the reason, so pressing
+   the button either fixes it or says why it cannot.
+
+   Deliberately not restricted to upcoming journeys. The job that sent me here
+   was three days in the past by the time anybody noticed, and a calendar is a
+   record as much as a plan.
+   GUARDRAIL: server/tests/calendar-resync.test.js */
+router.post('/bookings/:id/calendar', async (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+  const b = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+  if (!b) return res.status(404).json({ error: 'Booking not found' });
+  if (String(b.status || '') === 'cancelled') {
+    return res.status(409).json({ error: 'This booking is cancelled — there is nothing to put on the calendar.' });
+  }
+  /* ALREADY THERE. Saying so is not a failure, and creating a second event
+     would be worse than doing nothing. */
+  if (b.calendar_event_id) {
+    return res.json({ ok: true, already: true, eventId: b.calendar_event_id,
+                      message: 'This job is already on the calendar.' });
+  }
+  const status = gcal.getStatus();
+  if (!status.configured) {
+    return res.status(503).json({ error: 'Google Calendar is not set up on this server.' });
+  }
+  if (!status.connected) {
+    return res.status(409).json({
+      error: status.needsReconnect
+        ? 'Google has signed you out — reconnect your calendar, then try again.'
+        : 'Google Calendar is not connected.'
+    });
+  }
+  let eventId = null;
+  try {
+    eventId = await gcal.createEvent(calendarPayload(b));
+  } catch (e) {
+    console.error('[API] calendar re-sync threw for', b.ref, '-', e.message);
+  }
+  if (!eventId) {
+    try {
+      db.prepare("UPDATE bookings SET calendar_sync_failed_at = datetime('now') WHERE id = ?").run(id);
+    } catch (_) {}
+    return res.status(502).json({ error: 'Google would not accept the event. It has been flagged; try again shortly.' });
+  }
+  db.prepare("UPDATE bookings SET calendar_event_id = ?, calendar_sync_failed_at = NULL WHERE id = ?")
+    .run(eventId, id);
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run(req.auth.type || 'user', req.auth.id, 'calendar_resync', b.ref, req.ip);
+  } catch (_) {}
+  res.json({ ok: true, eventId, ref: b.ref });
+});
+
+/* ── EVERY JOB THAT NEVER MADE IT ─────────────────────────────────────────
+   The same repair, over the bookings that are missing an event. Upcoming and
+   not cancelled: a calendar full of back-filled history is noise, and the
+   journeys that matter are the ones still to drive. A single job in the past —
+   the case that started this — is put on by its own button above.
+
+   Idempotent by construction: it selects on calendar_event_id IS NULL, so a
+   second run finds the ones that failed again and nothing else. It reports what
+   it did rather than logging into the void. */
+router.post('/calendar/backfill', async (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const status = gcal.getStatus();
+  if (!status.configured || !status.connected) {
+    return res.status(409).json({
+      error: status.needsReconnect
+        ? 'Google has signed you out — reconnect your calendar, then try again.'
+        : 'Google Calendar is not connected.'
+    });
+  }
+  const today = ukNow().dateStr;
+  const rows = db.prepare(`
+    SELECT * FROM bookings
+     WHERE calendar_event_id IS NULL
+       AND COALESCE(status,'') <> 'cancelled'
+       AND date >= ?
+     ORDER BY date, time
+  `).all(today);
+
+  let added = 0;
+  const failed = [];
+  for (const b of rows) {
+    let eventId = null;
+    try {
+      eventId = await gcal.createEvent(calendarPayload(b));
+    } catch (e) {
+      console.error('[API] backfill threw for', b.ref, '-', e.message);
+    }
+    if (eventId) {
+      db.prepare("UPDATE bookings SET calendar_event_id = ?, calendar_sync_failed_at = NULL WHERE id = ?")
+        .run(eventId, b.id);
+      added++;
+    } else {
+      try {
+        db.prepare("UPDATE bookings SET calendar_sync_failed_at = datetime('now') WHERE id = ?").run(b.id);
+      } catch (_) {}
+      failed.push(b.ref);
+    }
+  }
+  console.log('[GCAL] backfill: ' + added + ' added, ' + failed.length + ' failed of ' + rows.length + ' missing');
+  res.json({ ok: true, considered: rows.length, added, failed: failed.length, failedRefs: failed });
+});
+
 router.post('/bookings/:id/mark-paid', (req, res) => {
   if (!['admin', 'owner', 'driver'].includes(req.auth.role)) {
     return res.status(403).json({ error: 'Access denied' });

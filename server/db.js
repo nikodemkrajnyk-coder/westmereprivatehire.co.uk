@@ -194,6 +194,20 @@ function migrate() {
       console.log('[DB] Added calendar_event_id column to bookings');
     }
     // Per-driver calendar event ID — so assigned jobs appear on each driver's personal calendar
+    /* WHEN THE CALENDAR WRITE FAILED, AND NOBODY KNEW.
+       Every push to Google is fire-and-forget: createEvent returns null on any
+       failure and the .catch() swallows it. The booking keeps a null
+       calendar_event_id and looks completely normal — which is how a customer's
+       job sat in the system for days with no event on the owner's calendar, and
+       why disconnecting and reconnecting Google did not bring it across (that
+       re-authorises; it pushes nothing).
+
+       A stamp here is the difference between a miss nobody sees and a miss the
+       owner is told about the same day. Cleared the moment a write succeeds. */
+    if (!info.find(c => c.name === 'calendar_sync_failed_at')) {
+      db.exec(`ALTER TABLE bookings ADD COLUMN calendar_sync_failed_at TEXT`);
+      console.log('[DB] Added calendar_sync_failed_at column to bookings');
+    }
     if (!info.find(c => c.name === 'driver_calendar_event_id')) {
       db.exec(`ALTER TABLE bookings ADD COLUMN driver_calendar_event_id TEXT`);
       console.log('[DB] Added driver_calendar_event_id column to bookings');
