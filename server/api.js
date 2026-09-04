@@ -2305,22 +2305,64 @@ router.post('/customers/:id/invoice', async (req, res) => {
     if (row) settings = JSON.parse(row.value);
   } catch (e) {}
 
+  /* THE RIDE IN THE FARE COLUMN, THE TOLL IN THE FEE COLUMN.
+     A booking's `fare` is all-in — base + terminal charge + toll. Billing
+     that as the fare charged commission on the toll and then counted the
+     toll a second time as a fee: an August invoice to APD came out £39.10
+     over. Where the parts were kept the invoice splits them itself; where
+     they were not — anything booked before those columns existed — it falls
+     back to the all-in figure with no fee, and the toll is typed into the
+     Fee box by hand. */
+  const lineItems = bookings.map(b => {
+    const split = (b.base_fare != null);
+    const passThrough = Math.round(((+b.airport_fee || 0) + (+b.toll_fee || 0)) * 100) / 100;
+    return {
+      date: b.date, time: b.time, ref: b.ref,
+      pickup: b.pickup, destination: b.destination,
+      flight: b.flight, passengers: b.passengers,
+      fare: split ? Math.round(Number(b.base_fare) * 100) / 100 : b.fare,
+      fee: split ? passThrough : 0,
+      /* A job the driver was paid for at the kerb. The operator still takes
+         commission on the fare, but does not pay the fare over — the driver
+         already has it. Card and cash are both "already collected". */
+      collected_direct: (b.payment === 'card' || b.payment === 'cash') ? 1 : 0
+    };
+  });
+
+  /* ONE MAPPING, ONE DOCUMENT. There used to be a second one — `lineItemsForPdf`
+     — built a few lines below with `{date, time, ref, pickup, destination,
+     flight, fare}` and nothing else. That is what was handed to the renderer, so
+     the PDF created here (the one cached, the one EMAILED to the customer and
+     the one filed) printed an empty FEE column and the all-in £122 where the
+     split says £115 + £7. Only a later re-render, which reads the STORED lines,
+     showed it correctly — so the document on file and the document the customer
+     received disagreed with the one the owner downloaded.
+     GUARDRAIL: server/tests/invoice-account-fees.test.js */
+  const invFees = Math.round(lineItems.reduce((t, it) => t + (+it.fee || 0), 0) * 100) / 100;
+
+  /* THE MONEY DOES NOT MOVE. Splitting a £122 all-in fare into a £115 ride and
+     a £7 toll re-labels it; it does not re-price it. fares + fees is the same
+     figure the total has always been, and the assertion below says so out loud
+     rather than trusting it — a split that changed what an account customer is
+     billed would be a far worse bug than the one being fixed. */
   const total = bookings.reduce((s, b) => s + (+b.fare || 0), 0);
+  const fareSum = Math.round(lineItems.reduce((t, it) => t + (+it.fare || 0), 0) * 100) / 100;
+  if (Math.abs(Math.round((fareSum + invFees) * 100) / 100 - Math.round(total * 100) / 100) > 0.005) {
+    console.error('[INVOICE] split does not reconcile for ' + invoiceNo +
+                  ': fares ' + fareSum + ' + fees ' + invFees + ' != total ' + total);
+  }
   const shouldEmail = send_email !== false;
 
   // ── Generate PDF ─────────────────────────────────────────────────────────
   let pdfBuffer = null;
   try {
     const { buildInvoicePdf } = require('./invoice-pdf');
-    const lineItemsForPdf = bookings.map(b => ({
-      date: b.date, time: b.time, ref: b.ref,
-      pickup: b.pickup, destination: b.destination,
-      flight: b.flight, fare: b.fare
-    }));
     pdfBuffer = await buildInvoicePdf({
       invoiceNo, kind: 'account', total, settings,
       customer: { full_name: customer.full_name, email: customer.email, phone: customer.phone },
-      bookings: lineItemsForPdf,
+      bookings: lineItems,
+      /* So the document names the pass-throughs it is showing per trip. */
+      fees: invFees,
       period: { issuedDate, dueDate, label: periodLabel }
     });
     // Written under the TEMPLATE-VERSIONED name the readers look for; an
@@ -2345,40 +2387,20 @@ router.post('/customers/:id/invoice', async (req, res) => {
 
   // Persist the invoice record so it can be looked up later.
   try {
-    /* THE RIDE IN THE FARE COLUMN, THE TOLL IN THE FEE COLUMN.
-       A booking's `fare` is all-in — base + terminal charge + toll. Billing
-       that as the fare charged commission on the toll and then counted the
-       toll a second time as a fee: an August invoice to APD came out £39.10
-       over. Where the parts were kept the invoice splits them itself; where
-       they were not — anything booked before those columns existed — it falls
-       back to the all-in figure with no fee, and the toll is typed into the
-       Fee box by hand. */
-    const lineItems = bookings.map(b => {
-      const split = (b.base_fare != null);
-      const passThrough = Math.round(((+b.airport_fee || 0) + (+b.toll_fee || 0)) * 100) / 100;
-      return {
-        date: b.date, time: b.time, ref: b.ref,
-        pickup: b.pickup, destination: b.destination,
-        flight: b.flight, passengers: b.passengers,
-        fare: split ? Math.round(Number(b.base_fare) * 100) / 100 : b.fare,
-        fee: split ? passThrough : 0,
-        /* A job the driver was paid for at the kerb. The operator still takes
-           commission on the fare, but does not pay the fare over — the driver
-           already has it. Card and cash are both "already collected". */
-        collected_direct: (b.payment === 'card' || b.payment === 'cash') ? 1 : 0
-      };
-    });
     db.prepare(`
       INSERT INTO invoices
         (invoice_no, kind, customer_id, recipient_name, recipient_email, recipient_phone,
          period_from, period_to, period_label, issued_date, due_date,
-         line_items_json, booking_ids_json, total, emailed, created_by)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+         line_items_json, booking_ids_json, total, fees, emailed, created_by)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     `).run(
       invoiceNo, 'account', customer.id, customer.full_name, customer.email, customer.phone,
       dateFrom, dateTo, periodLabel, issuedDate, dueDate,
       JSON.stringify(lineItems), JSON.stringify(bookings.map(b => b.ref)),
-      total, shouldEmail ? 1 : 0, req.auth.id
+      /* `fees` was never written on an account invoice, so the "Fees (parking &
+         tolls)" line could not print on ANY re-render however many tolls the
+         trips carried. */
+      total, invFees, shouldEmail ? 1 : 0, req.auth.id
     );
   } catch (e) {
     console.error('[INVOICE] persist failed:', e.message);
