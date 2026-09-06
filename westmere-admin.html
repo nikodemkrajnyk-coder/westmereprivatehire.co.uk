@@ -4612,9 +4612,73 @@ function _invPdfUrl(invoiceId, inline){
 }
 function invOpenPdf(invoiceId){
   if(!invoiceId&&invoiceId!==0){showToast('No invoice id for this document');return;}
-  var w=window.open(_invPdfUrl(invoiceId,true),'_blank');
-  if(!w)showToast('Pop-up blocked — please allow pop-ups for this site.');
+  invPreviewOpen(_invPdfUrl(invoiceId,true),'Invoice preview');
 }
+/* ── THE PREVIEW IS NOT A ONE-WAY DOOR ────────────────────────────────────
+   Preview used to be `window.open(pdfUrl, '_blank')`. That hands the raw PDF
+   to the browser's own viewer in a NEW browsing context, and a new context has
+   no history — so the Back button is greyed out, there is no app chrome to
+   press, and on a phone (or an installed app window) there is often no visible
+   tab strip either. The owner opened a preview and could not get out of it.
+
+   The PDF still comes from the same authenticated route; it is simply shown
+   INSIDE the app, over the page he was on, with three ways back:
+     · a Back control he can see,
+     · the device/browser Back button — a history entry is pushed, so Back
+       closes the overlay instead of leaving the app,
+     · Escape, on a keyboard.
+
+   A phone browser will not render a PDF in an iframe — it offers to download
+   it instead — so the overlay also carries a plain "Open the PDF" link, which
+   is the native viewer he had before, now reached deliberately rather than
+   landed in. GUARDRAIL: server/tests/invoice-preview-back.test.js */
+var _PDF_PREVIEW_POPPED = false;
+function invPreviewClose(fromPop){
+  var el = document.getElementById('pdf-preview-overlay');
+  if (!el) return;
+  el.remove();
+  document.body.style.overflow = '';
+  document.removeEventListener('keydown', _invPreviewKey);
+  /* Only unwind the history entry we pushed, and only when the close did not
+     COME from the back button — otherwise we would go back twice and leave the
+     page he was trying to return to. */
+  if (!fromPop && _PDF_PREVIEW_POPPED) { _PDF_PREVIEW_POPPED = false; history.back(); }
+  _PDF_PREVIEW_POPPED = false;
+}
+function _invPreviewKey(e){ if (e.key === 'Escape') invPreviewClose(); }
+function invPreviewOpen(url, title){
+  invPreviewClose();
+  var o = document.createElement('div');
+  o.id = 'pdf-preview-overlay';
+  o.setAttribute('role', 'dialog');
+  o.setAttribute('aria-label', title || 'Invoice preview');
+  o.style.cssText = 'position:fixed;inset:0;z-index:4000;background:var(--westmere-white,#ffffff);display:flex;flex-direction:column';
+  o.innerHTML =
+    '<div style="display:flex;align-items:center;gap:.75rem;padding:.7rem 1rem;background:#fff;' +
+      'border-bottom:1px solid rgba(27,27,26,.12);flex:0 0 auto">' +
+      '<button id="pdf-preview-back" style="display:flex;align-items:center;gap:.4rem;background:transparent;' +
+        'border:1px solid rgba(27,27,26,.25);border-radius:7px;padding:.5rem .9rem;cursor:pointer;' +
+        'font-family:var(--sans);font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--navy,#102a43)">' +
+        '← Back</button>' +
+      '<div style="flex:1;font-family:var(--serif);font-size:.98rem;color:#1a1a1a">' + (title || 'Preview') + '</div>' +
+      '<a id="pdf-preview-open" href="' + url + '" target="_blank" rel="noopener" ' +
+        'style="font-family:var(--sans);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;' +
+        'color:var(--navy,#102a43);text-decoration:none;border-bottom:1px solid rgba(16,42,67,.3)">Open the PDF</a>' +
+    '</div>' +
+    '<iframe id="pdf-preview-frame" src="' + url + '" title="' + (title || 'Invoice preview') + '" ' +
+      'style="flex:1 1 auto;width:100%;border:none;background:var(--westmere-white,#ffffff)"></iframe>' +
+    '<noscript></noscript>';
+  document.body.appendChild(o);
+  document.body.style.overflow = 'hidden';
+  document.getElementById('pdf-preview-back').onclick = function(){ invPreviewClose(); };
+  document.addEventListener('keydown', _invPreviewKey);
+  /* The device Back button closes the preview rather than leaving the app. */
+  try { history.pushState({ pdfPreview: true }, '', location.href); _PDF_PREVIEW_POPPED = true; } catch (e) {}
+}
+window.addEventListener('popstate', function(){
+  if (document.getElementById('pdf-preview-overlay')) invPreviewClose(true);
+});
+
 
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
