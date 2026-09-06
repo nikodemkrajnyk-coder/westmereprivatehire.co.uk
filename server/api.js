@@ -4192,10 +4192,31 @@ router.get('/drivers', (req, res) => {
            onboarding_status, created_at
     FROM users WHERE role IN ('driver','owner') AND active = 1 ORDER BY created_at DESC
   `).all().map(sanitizeDriver);
-  // The compliance state rides along, so the list can flag an expiry without
-    // the owner opening every card.
-    const comp = require('./compliance');
-    res.json({ ok: true, drivers: rows.map(r => Object.assign({}, r, { compliance: comp.forDriver(r) })) });
+  /* THE COMPLIANCE STATE RIDES ALONG — WHEN THERE IS ONE.
+     It lets the list flag an expiring licence without the owner opening every
+     card. But server/compliance.js belongs to a batch that is deliberately held
+     back, and this route shipped without it: on production the require threw
+     MODULE_NOT_FOUND and every authenticated call to the drivers list answered
+     500. The owner's Drivers section has been dead, and the failure was total
+     rather than partial — a missing module takes the whole response with it.
+
+     A decoration is not the answer to "who are my drivers". It is added if the
+     module is there and left out if it is not, so shipping or holding that
+     batch changes what the list SAYS, never whether it loads. */
+    let comp = null;
+    try { comp = require('./compliance'); } catch (e) { comp = null; }
+    res.json({
+      ok: true,
+      drivers: rows.map((r) => {
+        if (!comp || typeof comp.forDriver !== 'function') return r;
+        /* One bad row must not take the list with it either. */
+        try { return Object.assign({}, r, { compliance: comp.forDriver(r) }); }
+        catch (e) {
+          console.error('[DRIVERS] compliance failed for driver', r && r.id, '-', e.message);
+          return r;
+        }
+      })
+    });
 });
 
 router.get('/drivers/:id', (req, res) => {
