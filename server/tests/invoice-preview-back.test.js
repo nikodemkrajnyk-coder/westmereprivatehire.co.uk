@@ -32,6 +32,7 @@ const APPS = [
   ['westmere-admin.html', 'the admin app']
 ];
 const src = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
+const src_ = src;
 /* The function body, bounded at its own closing brace in column 0 — the same
    way the rest of the suite reads a shipped handler. */
 function fnBody(code, name) {
@@ -103,6 +104,46 @@ for (const [file, label] of APPS) {
     const code = src(file);
     assert.ok(/invOpenPdf\(/.test(code.replace(/function invOpenPdf\(/g, '')),
       label + ': nothing calls invOpenPdf any more — the Preview button is dead');
+  });
+}
+
+for (const [file, label] of APPS) {
+  test(label + ': a home-screen app is never navigated away from the overlay', () => {
+    /* WHAT ACTUALLY TRAPPED HIM. Both apps ship display:standalone manifests
+       and apple-mobile-web-app-capable, so the owner runs this from his home
+       screen. In an iOS home-screen app there is no browser chrome — no back
+       button, no tab bar, no swipe-back — and target="_blank" therefore does
+       not open a tab. It navigates the one webview to the PDF, which has no
+       chrome either, so the only way back is to kill the app and restart it.
+       That is what he reported, with the back overlay already deployed.
+
+       The escape hatch on the overlay must not be the thing that traps him. */
+    const src = fnBody(src_(file), 'invPreviewOpen');
+    assert.ok(/_wmStandalone\(\)/.test(src),
+      label + ': the overlay does not know whether it is running as an installed app, '
+      + 'so it offers target="_blank" — which in a home-screen app navigates away with no way back');
+    assert.ok(/_wmStandalone\(\)\s*\?\s*' download'/.test(src),
+      label + ': a home-screen app must SAVE the PDF (the share sheet opens over the page) '
+      + 'rather than navigate to it');
+    assert.ok(/:\s*' target="_blank" rel="noopener"'/.test(src),
+      label + ': a real browser should still open the PDF in a new tab');
+  });
+
+  test(label + ': the Back control stays on screen', () => {
+    const src = fnBody(src_(file), 'invPreviewOpen');
+    assert.ok(/position:sticky/.test(src),
+      label + ': the header can scroll away — in a home-screen app the Back control on it '
+      + 'is the only way out, so it must stay put');
+  });
+
+  test(label + ': it can tell a home-screen app from a browser', () => {
+    const code = src_(file);
+    assert.ok(/function _wmStandalone/.test(code), label + ': the check is missing');
+    const fn = fnBody(code, '_wmStandalone');
+    assert.ok(/navigator\.standalone/.test(fn),
+      label + ': iOS reports a home-screen app through navigator.standalone and nothing else');
+    assert.ok(/display-mode: standalone/.test(fn),
+      label + ': other platforms report it through the display-mode media query');
   });
 }
 

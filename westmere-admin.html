@@ -4633,6 +4633,31 @@ function invOpenPdf(invoiceId){
    is the native viewer he had before, now reached deliberately rather than
    landed in. GUARDRAIL: server/tests/invoice-preview-back.test.js */
 var _PDF_PREVIEW_POPPED = false;
+/* ── INSTALLED ON THE HOME SCREEN? ────────────────────────────────────────
+   It matters more than it looks. In an iOS home-screen app there is no browser
+   chrome at all: no back button, no tab bar, no address bar, and no swipe-back
+   gesture. Two things follow.
+
+   First, "press the device Back button" is advice about a control that does not
+   exist for him, so the Back control drawn on the overlay is not a convenience
+   there — it is the ONLY way out, and it has to be unmissable.
+
+   Second, and this is what actually trapped him: target="_blank" does not open
+   a new tab, because there are no tabs. It navigates the single webview to the
+   PDF, which has no chrome either — so the app is gone and the only way back is
+   to kill it and start again. That is exactly what he described, with the back
+   overlay already deployed and working: he never reached it, because one tap
+   had already left the page.
+
+   So on a home-screen app the link SAVES the file (the iOS share sheet opens
+   over the page and leaves it standing) instead of navigating to it. In a real
+   browser, where a new tab is a new tab, it opens as before. */
+function _wmStandalone() {
+  try {
+    return (window.navigator && window.navigator.standalone === true)
+        || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  } catch (e) { return false; }
+}
 function invPreviewClose(fromPop){
   var el = document.getElementById('pdf-preview-overlay');
   if (!el) return;
@@ -4655,15 +4680,16 @@ function invPreviewOpen(url, title){
   o.style.cssText = 'position:fixed;inset:0;z-index:4000;background:var(--westmere-white,#ffffff);display:flex;flex-direction:column';
   o.innerHTML =
     '<div style="display:flex;align-items:center;gap:.75rem;padding:.7rem 1rem;background:#fff;' +
-      'border-bottom:1px solid rgba(27,27,26,.12);flex:0 0 auto">' +
+      'border-bottom:1px solid rgba(27,27,26,.12);flex:0 0 auto;position:sticky;top:0;z-index:2">' +
       '<button id="pdf-preview-back" style="display:flex;align-items:center;gap:.4rem;background:transparent;' +
         'border:1px solid rgba(27,27,26,.25);border-radius:7px;padding:.5rem .9rem;cursor:pointer;' +
         'font-family:var(--sans);font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--navy,#102a43)">' +
         '← Back</button>' +
       '<div style="flex:1;font-family:var(--serif);font-size:.98rem;color:#1a1a1a">' + (title || 'Preview') + '</div>' +
-      '<a id="pdf-preview-open" href="' + url + '" target="_blank" rel="noopener" ' +
+      '<a id="pdf-preview-open" href="' + url + '"' + (_wmStandalone() ? ' download' : ' target="_blank" rel="noopener"') + ' ' +
         'style="font-family:var(--sans);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;' +
-        'color:var(--navy,#102a43);text-decoration:none;border-bottom:1px solid rgba(16,42,67,.3)">Open the PDF</a>' +
+        'color:var(--navy,#102a43);text-decoration:none;border-bottom:1px solid rgba(16,42,67,.3)">'
+        + (_wmStandalone() ? 'Save the PDF' : 'Open the PDF') + '</a>' +
     '</div>' +
     '<iframe id="pdf-preview-frame" src="' + url + '" title="' + (title || 'Invoice preview') + '" ' +
       'style="flex:1 1 auto;width:100%;border:none;background:var(--westmere-white,#ffffff)"></iframe>' +
