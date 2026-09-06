@@ -271,7 +271,12 @@ function recorder() {
   PDFDocument.prototype.text = function (str, x, y, o) {
     const d = seen(this);
     if (typeof x === 'number' && typeof y === 'number') {
-      ops.texts.push({ s: String(str), x, y, w: (o && o.width) || 0, page: ops.page, doc: d });
+      /* `align` is recorded because where a run's INK lands depends on it: a
+         right-aligned figure sits at the far edge of its box, not at its
+         origin. Checking boxes alone missed an amount printed on top of a
+         description. */
+      ops.texts.push({ s: String(str), x, y, w: (o && o.width) || 0,
+                       right: !!(o && o.align === 'right'), page: ops.page, doc: d });
     }
     return T.apply(this, arguments);
   };
@@ -370,10 +375,22 @@ test('an invoice where nothing was paid out keeps the two columns it had', async
   const amt = ops.texts.find((t) => t.s === 'AMOUNT');
   const fig = ops.texts.find((t) => t.s === '£95.00');
   assert.ok(amt && fig, 'the amount column is gone');
-  /* Right-aligned across the full column, the way it was before the fee column
-     existed — not shifted left to make room for one that is not there. */
+  /* Right-aligned at the table's right edge, the way it was before the fee
+     column existed — not shifted left to make room for one that is not there.
+
+     THE INK, NOT THE BOX. This used to assert the box ORIGIN sat at the left
+     margin, which is how the layout happened to be expressed, not what it had
+     to look like. That pinned a fragile pairing: a full-width box starting at
+     the margin, saved only by right-alignment. Narrowing the box while leaving
+     the origin printed the amount on top of the description on a real invoice.
+     What must hold is that heading and figures share a column and the figures
+     land at the right edge. */
   assert.ok(Math.abs(amt.x - fig.x) < 1, 'the heading and the figures must share a column');
-  assert.ok(amt.x < 100, 'the amount is right-aligned across the table: x=' + amt.x);
+  const rightEdge = 595.28 - 52;
+  const inkAt = (t) => (t.w ? t.x + t.w : t.x);
+  assert.ok(Math.abs(inkAt(fig) - rightEdge) < 8,
+    'the amount no longer lands at the table\'s right edge: ink at '
+    + Math.round(inkAt(fig)) + ', edge ' + Math.round(rightEdge));
 });
 
 test('the totals still walk from the fares to £616.50', async () => {
@@ -943,6 +960,65 @@ test('the fee column is subtotalled too', async () => {
   const feeSub = ops.texts.find((t) => Math.abs(t.x - feeX) < 1 && Math.abs(t.y - sub.y) < 9);
   assert.ok(feeSub && Number(String(feeSub.s).replace(/[^0-9.]/g, '')) === 59,
     'the tolls do not add up on the page: ' + (feeSub ? feeSub.s : 'no subtotal'));
+});
+
+test('no two columns are ever drawn on top of each other', async () => {
+  /* THE BUG THIS EXISTS FOR. The amount was drawn into a box pinned at the
+     LEFT MARGIN — harmless while that box also spanned the full row, because
+     right-aligned glyphs then landed at the far edge. Narrowing the box to a
+     column width while leaving its origin at the margin put the figure 50pt in,
+     printing it ON TOP of the description: "12 Pu£105.00ttock Way" on the
+     owner's phone.
+
+     An invoice whose lines predate the fee column is the case that showed it —
+     nothing in the suite drew one. So this measures where the GLYPHS land, not
+     where the box starts, and asserts the boxes on a row do not intersect. */
+  const PDFDocument = require('pdfkit');
+  const probe = new PDFDocument({ autoFirstPage: false });
+  let bold = 'Helvetica-Bold', body = 'Helvetica';
+  try {
+    probe.registerFont('B', path.join(__dirname, '..', '..', 'assets', 'fonts', 'Cormorant-SemiBold.ttf'));
+    probe.registerFont('R', path.join(__dirname, '..', '..', 'assets', 'fonts', 'Cormorant-Regular.ttf'));
+    bold = 'B'; body = 'R';
+  } catch (e) { /* fall back to the metric-similar built-ins */ }
+
+  /* Both shapes: lines that carry a fee, and OLD lines that do not. */
+  const withFee = toLineItems(APD);
+  const noFee = APD.map((r) => ({
+    date: r.date,
+    description: r.from + ' → ' + r.to + ' (parking £' + r.toll + ')',
+    amount: r.fare
+  }));
+
+  for (const [label, items] of [['lines with a fee', withFee], ['old lines with no fee column', noFee]]) {
+    const ops = await draw(bespokeDoc(items, { commissionPct: 10, fees: 59, total: 616.50 }));
+    /* Group by row, then compare the drawn EXTENT of each piece of text. */
+    const byRow = {};
+    for (const t of ops.texts) {
+      if (!t.s || !/\S/.test(t.s)) continue;
+      const key = Math.round(t.y / 6);
+      (byRow[key] = byRow[key] || []).push(t);
+    }
+    for (const key of Object.keys(byRow)) {
+      const row = byRow[key];
+      if (row.length < 2) continue;
+      const spans = row.map((t) => {
+        probe.font(/^£/.test(t.s) ? body : body).fontSize(11);
+        const textW = Math.min(probe.widthOfString(t.s), t.w || probe.widthOfString(t.s));
+        /* A right-aligned run sits at the RIGHT of its box; a left-aligned one
+           at the left. The box alone says nothing about where the ink is. */
+        const left = (t.w && t.right) ? (t.x + t.w - textW) : t.x;
+        return { s: t.s, left, right: left + textW };
+      }).sort((a, b) => a.left - b.left);
+      for (let i = 1; i < spans.length; i++) {
+        const prev = spans[i - 1], cur = spans[i];
+        assert.ok(cur.left >= prev.right - 1.5,
+          label + ': ' + JSON.stringify(prev.s.slice(0, 28)) + ' (ends ' + Math.round(prev.right)
+          + ') and ' + JSON.stringify(cur.s.slice(0, 28)) + ' (starts ' + Math.round(cur.left)
+          + ') are printed on top of each other');
+      }
+    }
+  }
 });
 
 // ── run ──────────────────────────────────────────────────────────────────

@@ -484,8 +484,8 @@ console.log('\nThe cache cannot outlive the template — again');
    So the layout is content-hashed. Change how the page is drawn and this fails,
    with the two things to do written in the message. It cannot tell a
    good change from a bad one; it can only refuse to let one through quietly. */
-const LAYOUT_HASH = '3dce95f2b626';
-const LAYOUT_VERSION = 13;  // 13: the total names who it is payable to
+const LAYOUT_HASH = '8fad1ff74f5e';
+const LAYOUT_VERSION = 14;  // 14: the amount always has a column of its own  // 13: the total names who it is payable to
                             // 12: a FEE column on the one-off table
                             // 11: the driver-collected line
                             // 6: the two greys darkened for contrast

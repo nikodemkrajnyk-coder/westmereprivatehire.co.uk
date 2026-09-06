@@ -105,7 +105,8 @@ function fmtDate(d) {
    VISIBLE design changes; nothing else needs to be cleared, and the owner's
    existing files are left alone rather than deleted.
    GUARDRAIL: server/tests/invoice-paths.test.js */
-const TEMPLATE_VERSION = 13;  // 13: the total names who it is payable to
+const TEMPLATE_VERSION = 14;  // 14: the amount always has a column of its own
+                              // 13: the total names who it is payable to
                               // 12: a FEE column on the one-off table too
                               // 11: fare/toll split, and what the driver already collected
                               // 10: the operator commission breakdown
@@ -568,10 +569,21 @@ function drawInvoice(doc, data, slack) {
     const BSP_DW = anyDirect ? 66 : 0;    // card/cash column
     const BSP_CX = PAGE_W - M - BSP_CW;
     const BSP_DX = PAGE_W - M - BSP_CW - BSP_DW;
-    const BSP_AX = anyFee ? (PAGE_W - M - BSP_CW - BSP_DW - BSP_AW) : M;
-    const BSP_EX = PAGE_W - M - BSP_CW - BSP_DW - BSP_AW - BSP_EW;
-    const BSP_AWIDTH = anyFee ? (BSP_AW - 6) : (CW - 6);
-    const DESC_W = anyFee ? (CW - BSP_EW - BSP_AW - BSP_DW - BSP_CW - 22) : (CW - 90);
+    /* THE AMOUNT ALWAYS HAS A COLUMN OF ITS OWN.
+       With no fee column this used to draw the amount into a box starting at
+       the LEFT MARGIN and spanning the whole row, right-aligned — so the
+       amount's box sat directly on top of the description's. A desktop viewer
+       hides it, because right-aligned glyphs land at the far edge; a phone PDF
+       viewer reflows the page by box, and the two interleave —
+       "12 Pu£105.00ttock Way". An old invoice whose lines predate the fee
+       column has anyFee false, which is exactly the case that overlapped.
+
+       Columns are computed the same way whether or not there is a fee to show;
+       only the fee column's WIDTH goes to zero. Nothing shares a box. */
+    const BSP_AX = PAGE_W - M - BSP_CW - BSP_DW - BSP_AW;
+    const BSP_EX = BSP_AX - BSP_EW;
+    const BSP_AWIDTH = BSP_AW - 6;
+    const DESC_W = CW - BSP_EW - BSP_AW - BSP_DW - BSP_CW - 22;
     /* Same limit the account table uses: a row that no longer fits goes to the
        next page under a repeated header. Rows can now be tall, so a bespoke
        invoice with three long descriptions could walk off the paper — it had
