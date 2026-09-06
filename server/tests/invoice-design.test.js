@@ -246,7 +246,12 @@ test('the TOTAL is the biggest thing on the page', () => {
      measured four hundred characters of prose. The same trap the rest of this
      suite already guards against. */
   const code = SRC.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^[ \t]*\/\/.*$/gm, ' ');
-  const tot = /TOTAL DUE[\s\S]{0,400}/.exec(code)[0];
+  /* Anchored on the totals BLOCK rather than one label. The label is no longer
+     a single literal — an operator settlement names who the money is due to, so
+     "TOTAL DUE" appears only on a plain customer invoice. What must stay true is
+     that whatever the box is called, the figure in it is the biggest thing on
+     the page. */
+  const tot = /const totalLabel[\s\S]{0,700}/.exec(code)[0];
   const size = /fontSize\((\d+)\)[\s\S]{0,120}total\.toFixed/.exec(tot);
   assert.ok(size, 'the total must state its size');
   assert.ok(Number(size[1]) >= 20, 'the total must be at least 20pt, found ' + size[1]);
@@ -479,8 +484,9 @@ console.log('\nThe cache cannot outlive the template — again');
    So the layout is content-hashed. Change how the page is drawn and this fails,
    with the two things to do written in the message. It cannot tell a
    good change from a bad one; it can only refuse to let one through quietly. */
-const LAYOUT_HASH = '8e667b2292bd';
-const LAYOUT_VERSION = 12;  // 12: a FEE column on the one-off table
+const LAYOUT_HASH = '3dce95f2b626';
+const LAYOUT_VERSION = 13;  // 13: the total names who it is payable to
+                            // 12: a FEE column on the one-off table
                             // 11: the driver-collected line
                             // 6: the two greys darkened for contrast
                             // 5: rows and their zebra bands grow to the wrapped text

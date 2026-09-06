@@ -310,13 +310,25 @@ test('every journey prints its own fee, in a column of its own', async () => {
   const ops = await draw(bespokeDoc(toLineItems(APD), {
     commissionPct: 10, fees: 59, total: 616.50
   }));
-  const feeX = colX(ops, 'FEE'), amtX = colX(ops, 'AMOUNT');
-  assert.ok(feeX < amtX, 'the fee column must sit to the LEFT of the amount, not inside it');
+  /* The fare column is headed ACCOUNT once a settlement splits account jobs
+     from ones paid in the car, and AMOUNT when there is nothing to split. Ask
+     for whichever this invoice has: what must hold is that the fee sits in a
+     column of its OWN, to the left of the fare — a fee inside the fare column
+     is the toll folded into the fare all over again. */
+  const fareHead = ops.texts.some((t) => t.s === 'ACCOUNT') ? 'ACCOUNT' : 'AMOUNT';
+  const feeX = colX(ops, 'FEE'), amtX = colX(ops, fareHead);
+  assert.ok(feeX < amtX, 'the fee column must sit to the LEFT of the fare, not inside it');
 
   for (let i = 0; i < APD.length; i++) {
     const fee = ops.texts.find((t) => Math.abs(t.x - feeX) < 1 && t.s === '£' + tolls[i].toFixed(2));
     assert.ok(fee, 'the ' + APD[i].date + ' job does not show its £' + tolls[i].toFixed(2) + ' toll on its own line');
-    const amt = ops.texts.find((t) => Math.abs(t.x - amtX) < 1 && t.s === '£' + fares[i].toFixed(2));
+    /* The fare sits in the settlement column that applies to it — ACCOUNT, or
+       CARD/CASH when the passenger paid in the car. WHICH column is the subject
+       of its own test below; here it only has to be on the page, in one of them,
+       so that "the fee is in its own column" is measured against a real fare. */
+    const ccX = ops.texts.some((t) => t.s === 'CARD/CASH') ? colX(ops, 'CARD/CASH') : amtX;
+    const wantX = APD[i].collected ? ccX : amtX;
+    const amt = ops.texts.find((t) => Math.abs(t.x - wantX) < 1 && t.s === '£' + fares[i].toFixed(2));
     assert.ok(amt, 'the ' + APD[i].date + ' fare is missing from the amount column');
     /* THE POINT OF THE WHOLE CHANGE: two figures, two columns. The fee must
        not have been drawn in the amount column, and the amount must not be the
@@ -327,8 +339,11 @@ test('every journey prints its own fee, in a column of its own', async () => {
     assert.notStrictEqual(amt.s, '£' + (fares[i] + tolls[i]).toFixed(2),
       'the amount is the fare plus the toll — they have been folded together again');
   }
-  /* Seven fees drawn, not one lump. */
-  const drawnFees = ops.texts.filter((t) => Math.abs(t.x - feeX) < 1 && /^£/.test(t.s));
+  /* Seven fees drawn, not one lump — counted ABOVE the subtotal row, which now
+     totals the fee column too and would otherwise read as an eighth trip. */
+  const subRow = ops.texts.find((t) => /SUBTOTAL/.test(t.s));
+  const drawnFees = ops.texts.filter((t) => Math.abs(t.x - feeX) < 1 && /^£/.test(t.s)
+    && (!subRow || t.y < subRow.y - 2));
   assert.strictEqual(drawnFees.length, 7, 'expected seven per-trip fees, got ' + drawnFees.length);
 });
 
@@ -366,11 +381,38 @@ test('the totals still walk from the fares to £616.50', async () => {
     commissionPct: 10, fees: 59, total: 616.50
   }));
   const said = ops.texts.map((t) => t.s);
-  for (const line of ['Fares (jobs)', 'Fees (parking & tolls)',
-                      'Less 10% commission', 'Less collected by driver', 'TOTAL DUE']) {
-    assert.ok(said.indexOf(line) !== -1, 'the invoice never says "' + line + '"');
-  }
-  for (const fig of ['£675.00', '£59.00', '-£67.50', '-£50.00', '£616.50']) {
+  assert.ok(said.some((x) => x === 'Fees (parking & tolls)'), 'the invoice never says the fees line');
+  /* The walk STARTS at what is actually being billed. With jobs settled in the
+     car the opening figure is the account column, not all the fares — quoting
+     £675 to an operator who owes £625 made them read a number they do not owe
+     before reaching one they do. Either opening is accepted; what must hold is
+     that a named opening line exists and the rate is on the commission line. */
+  assert.ok(said.some((x) => /^Fares \(jobs\)$|^Account \(jobs prepaid to /.test(x)),
+    'the walk has no opening line: ' + JSON.stringify(said.filter((x) => /^(Fares|Account)/.test(x))));
+  assert.ok(said.some((x) => /^Less .*10%.*commission|^Less commission \(10%\)$/.test(x)),
+    'the commission line does not name the rate: ' + JSON.stringify(said.filter((x) => /commission/i.test(x))));
+  /* The direct-settlement line NAMES the journey when there is a single one to
+     name — "Less collected by driver" told an operator a sum was coming off and
+     nothing about which trip or why. Asked for by shape, so the wording can
+     improve again without this failing for the wrong reason. */
+  /* AND NOTHING IS DEDUCTED FOR IT. The fares settled in the car never enter
+     the billed figure, so taking them off again would be double-counting — they
+     stand in their own subtotalled column instead. */
+  assert.ok(!said.some((x) => /paid direct|collected/i.test(x)),
+    'a directly-settled fare is still being deducted as well as excluded: '
+    + JSON.stringify(said.filter((x) => /^Less /.test(x))));
+  /* And it ENDS in a named total. On an operator settlement that names the
+     payee — "TOTAL DUE" beside four inter-company adjustments does not say
+     which way the money goes — so this asks for the shape, not one literal. */
+  assert.ok(said.some((x) => /^(?:AMOUNT DUE TO .+|TOTAL TO PAY|TOTAL DUE)$/.test(x)),
+    'the walk never reaches a named total: ' + JSON.stringify(said.slice(-8)));
+  /* £675 and −£50 are deliberately absent: the walk starts at the account
+     column (£625) and the directly-settled fares are excluded rather than added
+     and taken off again. Their subtotals are on the page in their own columns,
+     which is where the £675 can still be arrived at by anyone who wants it. */
+  assert.ok(!said.some((x) => x === '£675.00'),
+    'the all-fares figure is back in the walk — the operator is being shown a total they do not owe');
+  for (const fig of ['£625.00', '£50.00', '£59.00', '-£67.50', '£616.50']) {
     assert.ok(said.some((x) => x === fig || x === fig.replace('-', '\u2212')),
       'the invoice never shows ' + fig + ' — ' + JSON.stringify(said.filter((x) => /^[-\u2212]?£/.test(x))));
   }
@@ -787,6 +829,120 @@ test('a plain invoice through the route is fares + fees, with no deduction', asy
   const row = db.prepare('SELECT * FROM invoices WHERE invoice_no = ?').get(r.body.invoiceNo || r.body.invoice_no);
   assert.strictEqual(row.total, 165, '80 + 80 + 5, no commission');
   assert.strictEqual(row.commission_pct, 0, 'a customer invoice carries no rate');
+});
+
+test('account jobs and jobs paid in the car are in SEPARATE columns', async () => {
+  /* The operator owes on the jobs their customer prepaid to THEM; the ones the
+     passenger paid in the car are already collected and net out at the bottom.
+     One AMOUNT column made an accounts team work out which deduction belonged
+     to which trip. */
+  const ops = await draw(bespokeDoc(toLineItems(APD), { commissionPct: 10, fees: 59, total: 616.50 }));
+  const accX = colX(ops, 'ACCOUNT'), ccX = colX(ops, 'CARD/CASH');
+  assert.ok(accX < ccX, 'CARD/CASH must sit to the right of ACCOUNT');
+  const at = (x, s) => ops.texts.some((t) => Math.abs(t.x - x) < 1 && t.s === s);
+  for (const r of APD) {
+    const money = '£' + r.fare.toFixed(2);
+    if (r.collected) {
+      assert.ok(at(ccX, money) && !at(accX, money),
+        r.date + ' was paid in the car but its fare is not in CARD/CASH alone');
+    } else {
+      assert.ok(at(accX, money),
+        r.date + ' was on account but its fare is not in the ACCOUNT column');
+    }
+  }
+});
+
+test('each column is subtotalled, and the two add up to the fares', async () => {
+  const ops = await draw(bespokeDoc(toLineItems(APD), { commissionPct: 10, fees: 59, total: 616.50 }));
+  const sub = ops.texts.find((t) => /SUBTOTAL/.test(t.s));
+  assert.ok(sub, 'the columns are not subtotalled — the split is left for the reader to add up');
+  const accX = colX(ops, 'ACCOUNT'), ccX = colX(ops, 'CARD/CASH');
+  const onRow = (x) => ops.texts.find((t) => Math.abs(t.x - x) < 1 && Math.abs(t.y - sub.y) < 8);
+  const acc = onRow(accX), cc = onRow(ccX);
+  assert.ok(acc && cc, 'a subtotal is missing from one of the columns');
+  const n = (t) => Number(String(t.s).replace(/[^0-9.]/g, ''));
+  assert.strictEqual(n(acc), 625, 'account subtotal should be £625.00, got ' + acc.s);
+  assert.strictEqual(n(cc), 50, 'card/cash subtotal should be £50.00, got ' + cc.s);
+  assert.strictEqual(n(acc) + n(cc), APD.reduce((t, r) => t + r.fare, 0),
+    'the two subtotals must add up to the fares on the page');
+});
+
+test('an operator invoice with nothing paid in the car keeps ONE fare column', async () => {
+  /* A CARD/CASH heading over seven blanks is a question about a document with
+     nothing to say — the same rule the fee column follows. */
+  const allAccount = APD.map((r) => Object.assign({}, r, { collected: false }));
+  const ops = await draw(bespokeDoc(toLineItems(allAccount), { commissionPct: 10, fees: 59, total: 666.50 }));
+  assert.ok(!ops.texts.some((t) => t.s === 'CARD/CASH'),
+    'an empty CARD/CASH column is being drawn');
+  assert.ok(ops.texts.some((t) => t.s === 'AMOUNT'), 'the single fare column lost its heading');
+});
+
+test('no column heading is drawn into a space too small for it', async () => {
+  /* A heading squeezed into a column narrower than itself does not throw and
+     does not wrap — PDFKit simply clips it, so "CARD/CASH" becomes "CARD/CA"
+     on a document already in a customer's hands. Caught nothing before: a
+     mutation setting the heading width to 4pt passed the whole suite.
+     Measured in the FONT IT IS DRAWN IN, not estimated. */
+  const PDFDocument = require('pdfkit');
+  const pdfSrc = fs.readFileSync(path.join(__dirname, '..', 'invoice-pdf.js'), 'utf8');
+  const dir = /const FONT_DIR = ([^;]+);/.exec(pdfSrc);
+  assert.ok(dir, 'the font directory moved — this guard cannot measure any more');
+  const probe = new PDFDocument({ autoFirstPage: false });
+  /* Same place invoice-pdf.js looks: repo-root/assets/fonts. */
+  const fontPath = (f) => path.join(__dirname, '..', '..', 'assets', 'fonts', f);
+  let bold;
+  try { probe.registerFont('B', fontPath('Cormorant-SemiBold.ttf')); bold = 'B'; }
+  catch (e) { bold = 'Helvetica-Bold'; }
+
+  const ops = await draw(bespokeDoc(toLineItems(APD), { commissionPct: 10, fees: 59, total: 616.50 }));
+  const HEADINGS = ['DESCRIPTION', 'FEE', 'ACCOUNT', 'CARD/CASH', 'AMOUNT'];
+  let checked = 0;
+  for (const t of ops.texts) {
+    if (HEADINGS.indexOf(t.s) === -1 || !t.w) continue;
+    probe.font(bold).fontSize(8);
+    const need = probe.widthOfString(t.s);
+    assert.ok(need <= t.w + 0.5,
+      'the "' + t.s + '" heading needs ' + Math.ceil(need) + 'pt but is drawn into '
+      + t.w + 'pt — it will be clipped on the printed invoice');
+    checked++;
+  }
+  assert.ok(checked >= 2, 'no headings were measured — the recorder stopped capturing widths');
+});
+
+test('each trip shows its own commission, and the column adds up to the deduction', async () => {
+  /* One deduction at the foot of the page is correct and uncheckable — the
+     operator needs their own job sheet and a calculator to agree with it. Per
+     trip it is arithmetic they can follow down the page. */
+  const ops = await draw(bespokeDoc(toLineItems(APD), { commissionPct: 10, fees: 59, total: 616.50 }));
+  const commX = colX(ops, 'COMMISSION');
+  const accX = colX(ops, 'ACCOUNT');
+  assert.ok(accX < commX, 'COMMISSION must sit right of the fare columns');
+  for (const r of APD) {
+    const want = '£' + (Math.round(r.fare * 10) / 100).toFixed(2);
+    assert.ok(ops.texts.some((t) => Math.abs(t.x - commX) < 1 && t.s === want),
+      r.date + ' (£' + r.fare + ') does not show its own ' + want + ' commission');
+  }
+  /* INCLUDING THE JOB PAID IN THE CAR. The operator's commission is earned on
+     the journey, not on who handed over the money — which is why this column
+     comes to more than a tenth of the ACCOUNT column alone, and why it is shown
+     per trip rather than left to be inferred. */
+  const sub = ops.texts.find((t) => /SUBTOTAL/.test(t.s));
+  const commSub = ops.texts.find((t) => Math.abs(t.x - commX) < 1 && Math.abs(t.y - sub.y) < 9);
+  assert.ok(commSub, 'the commission column is not subtotalled');
+  const n = (t) => Number(String(t.s).replace(/[^0-9.]/g, ''));
+  assert.strictEqual(n(commSub), 67.50,
+    'the commission subtotal should be £67.50 — a tenth of ALL the fares — got ' + commSub.s);
+  assert.ok(ops.texts.some((t) => t.s === '\u2212\u00a367.50'),
+    'the column subtotal and the deduction at the foot must be the same figure');
+});
+
+test('the fee column is subtotalled too', async () => {
+  const ops = await draw(bespokeDoc(toLineItems(APD), { commissionPct: 10, fees: 59, total: 616.50 }));
+  const sub = ops.texts.find((t) => /SUBTOTAL/.test(t.s));
+  const feeX = colX(ops, 'FEE');
+  const feeSub = ops.texts.find((t) => Math.abs(t.x - feeX) < 1 && Math.abs(t.y - sub.y) < 9);
+  assert.ok(feeSub && Number(String(feeSub.s).replace(/[^0-9.]/g, '')) === 59,
+    'the tolls do not add up on the page: ' + (feeSub ? feeSub.s : 'no subtotal'));
 });
 
 // ── run ──────────────────────────────────────────────────────────────────

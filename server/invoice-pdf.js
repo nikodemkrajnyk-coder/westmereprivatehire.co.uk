@@ -105,7 +105,8 @@ function fmtDate(d) {
    VISIBLE design changes; nothing else needs to be cleared, and the owner's
    existing files are left alone rather than deleted.
    GUARDRAIL: server/tests/invoice-paths.test.js */
-const TEMPLATE_VERSION = 12;  // 12: a FEE column on the one-off table too
+const TEMPLATE_VERSION = 13;  // 13: the total names who it is payable to
+                              // 12: a FEE column on the one-off table too
                               // 11: fare/toll split, and what the driver already collected
                               // 10: the operator commission breakdown
                               //  9: a FEE column — each trip shows what was paid out on it
@@ -540,12 +541,37 @@ function drawInvoice(doc, data, slack) {
        column is a question the reader has to answer ("was something missed?")
        about a document that has nothing to say. */
     const anyFee = items.some((it) => (+it.fee || 0) > 0);
+    /* ── HOW EACH JOB WAS SETTLED, IN A COLUMN OF ITS OWN ──────────────────
+       On a settlement with another operator two quite different things sit in
+       the amount column: jobs their customer prepaid to THEM, which they owe
+       on, and jobs the passenger paid in the car, which are already collected
+       and get netted out at the bottom. Reading one figure and a deduction, an
+       accounts team has to work out for themselves which trip the deduction
+       belongs to — so the fare goes in ACCOUNT or in CARD/CASH, never both, and
+       the columns are subtotalled.
+
+       Only when there is something to split. An invoice where every job was on
+       account keeps the single AMOUNT column it has always had: a CARD/CASH
+       heading over seven blanks is a question about a document with nothing to
+       say, the same rule the fee column follows. */
+    const anyDirect = commissionPct > 0 && items.some((it) => Number(it.collected_direct));
+    /* ── AND WHAT THE COMMISSION WAS, TRIP BY TRIP ────────────────────────
+       The commission used to be one deduction at the foot of the page: correct,
+       and impossible to check without a calculator and the operator's own job
+       sheet. In a column beside the fare it is arithmetic anyone can follow
+       down the page, and the column adds up to the figure being deducted.
+       Only on a settlement — there is no commission on a plain invoice. */
+    const anyComm = commissionPct > 0;
     const BSP_EW = anyFee ? 42 : 0;  // fee column
-    const BSP_AW = 62;               // amount column
-    const BSP_EX = PAGE_W - M - BSP_AW - BSP_EW;
-    const BSP_AX = anyFee ? (PAGE_W - M - BSP_AW) : M;
+    const BSP_CW = anyComm ? 66 : 0;      // commission column
+    const BSP_AW = anyDirect ? 66 : 62;   // account (or the single amount) column
+    const BSP_DW = anyDirect ? 66 : 0;    // card/cash column
+    const BSP_CX = PAGE_W - M - BSP_CW;
+    const BSP_DX = PAGE_W - M - BSP_CW - BSP_DW;
+    const BSP_AX = anyFee ? (PAGE_W - M - BSP_CW - BSP_DW - BSP_AW) : M;
+    const BSP_EX = PAGE_W - M - BSP_CW - BSP_DW - BSP_AW - BSP_EW;
     const BSP_AWIDTH = anyFee ? (BSP_AW - 6) : (CW - 6);
-    const DESC_W = anyFee ? (CW - BSP_EW - BSP_AW - 22) : (CW - 90);
+    const DESC_W = anyFee ? (CW - BSP_EW - BSP_AW - BSP_DW - BSP_CW - 22) : (CW - 90);
     /* Same limit the account table uses: a row that no longer fits goes to the
        next page under a repeated header. Rows can now be tall, so a bespoke
        invoice with three long descriptions could walk off the paper — it had
@@ -560,7 +586,16 @@ function drawInvoice(doc, data, slack) {
            .text('FEE', BSP_EX, y + 7, { width: BSP_EW - 6, align: 'right', characterSpacing: 0.8, lineBreak: false });
       }
       doc.font(BOLD).fontSize(8).fillColor(MUTED)
-         .text('AMOUNT', BSP_AX, y + 7, { width: BSP_AWIDTH, align: 'right', lineBreak: false });
+         .text(anyDirect ? 'ACCOUNT' : 'AMOUNT', BSP_AX, y + 7,
+               { width: BSP_AWIDTH, align: 'right', lineBreak: false });
+      if (anyDirect) {
+        doc.font(BOLD).fontSize(8).fillColor(MUTED)
+           .text('CARD/CASH', BSP_DX, y + 7, { width: BSP_DW - 6, align: 'right', lineBreak: false });
+      }
+      if (anyComm) {
+        doc.font(BOLD).fontSize(8).fillColor(MUTED)
+           .text('COMMISSION', BSP_CX, y + 7, { width: BSP_CW - 6, align: 'right', lineBreak: false });
+      }
       y += 22;
     };
     bspHead();
@@ -602,9 +637,50 @@ function drawInvoice(doc, data, slack) {
         doc.font(BODY).fontSize(10).fillColor(SOFT)
            .text('£' + itemFee.toFixed(2), BSP_EX, y + descTop + 1, { width: BSP_EW - 6, align: 'right', lineBreak: false });
       }
-      doc.font(BODY).fontSize(11).fillColor(NAVY)
-         .text('£' + (+it.amount || 0).toFixed(2), BSP_AX, y + descTop, { width: BSP_AWIDTH, align: 'right', lineBreak: false });
+      /* ONE COLUMN OR THE OTHER, never both — a fare that appeared twice would
+         be read as two fares, and the subtotals below would not add up. */
+      const paidDirect = anyDirect && Number(it.collected_direct);
+      doc.font(BODY).fontSize(11).fillColor(paidDirect ? SOFT : NAVY)
+         .text('£' + (+it.amount || 0).toFixed(2),
+               paidDirect ? BSP_DX : BSP_AX, y + descTop,
+               { width: (paidDirect ? BSP_DW : BSP_AW) - 6, align: 'right', lineBreak: false });
+      /* This trip's share of the commission. Taken on the fare whichever column
+         it sits in — a job settled in the car still earned the operator's
+         commission, which is why the column adds up to more than a tenth of the
+         ACCOUNT column alone. */
+      if (anyComm) {
+        const itemComm = Math.round((+it.amount || 0) * (commissionPct / 100) * 100) / 100;
+        doc.font(BODY).fontSize(10).fillColor(SOFT)
+           .text('£' + itemComm.toFixed(2), BSP_CX, y + descTop + 1,
+                 { width: BSP_CW - 6, align: 'right', lineBreak: false });
+      }
       y += rowH;
+    }
+    /* WHAT EACH COLUMN COMES TO. Without this the split is a pattern the reader
+       has to add up by eye to check against the deduction at the bottom. */
+    if (anyDirect && items.length) {
+      const accSum = items.reduce((n, it) => n + (Number(it.collected_direct) ? 0 : (+it.amount || 0)), 0);
+      const dirSum = items.reduce((n, it) => n + (Number(it.collected_direct) ? (+it.amount || 0) : 0), 0);
+      hline(doc, y, ACCENT, 0.8);
+      y += 5;
+      doc.font(BOLD).fontSize(7.5).fillColor(MUTED)
+         .text('SUBTOTAL', M + 6, y + 3, { characterSpacing: 0.8, lineBreak: false });
+      doc.font(BOLD).fontSize(10.5).fillColor(NAVY)
+         .text('£' + accSum.toFixed(2), BSP_AX, y, { width: BSP_AW - 6, align: 'right', lineBreak: false });
+      doc.font(BOLD).fontSize(10.5).fillColor(SOFT)
+         .text('£' + dirSum.toFixed(2), BSP_DX, y, { width: BSP_DW - 6, align: 'right', lineBreak: false });
+      if (anyFee) {
+        const feeSum = items.reduce((n, it) => n + (+it.fee || 0), 0);
+        doc.font(BOLD).fontSize(10).fillColor(SOFT)
+           .text('£' + feeSum.toFixed(2), BSP_EX, y + 1, { width: BSP_EW - 6, align: 'right', lineBreak: false });
+      }
+      if (anyComm) {
+        const commSum = items.reduce(
+          (n, it) => n + Math.round((+it.amount || 0) * (commissionPct / 100) * 100) / 100, 0);
+        doc.font(BOLD).fontSize(10.5).fillColor(SOFT)
+           .text('£' + commSum.toFixed(2), BSP_CX, y, { width: BSP_CW - 6, align: 'right', lineBreak: false });
+      }
+      y += 20;
     }
     if (!items.length) {
       doc.font(BODY).fontSize(11).fillColor(MUTED)
@@ -744,8 +820,14 @@ function drawInvoice(doc, data, slack) {
   y += 14 + SLACK.gap;
 
   // ── TOTALS ───────────────────────────────────────────────────────────────
-  const TX   = PAGE_W - M - 220;     // label column start
-  const LW   = 140;                   // label column width
+  /* THE LABEL COLUMN CARRIES A SENTENCE NOW, not a stock phrase.
+     "Less collected by driver" fitted 140pt. Naming the journey that was
+     settled directly does not — and a clipped label on the one line an
+     operator's accounts team will query is worse than no explanation at all.
+     The width comes out of empty page to the left of the summary; the figures
+     column is untouched. */
+  const TX   = PAGE_W - M - 300;     // label column start
+  const LW   = 220;                   // label column width
   const VX   = TX + LW + 6;
   const VW   = PAGE_W - M - VX;
 
@@ -800,12 +882,34 @@ function drawInvoice(doc, data, slack) {
      The FARES line earns its place here, where it did not before: with a
      deduction below it, the total can no longer be arrived at by adding what
      is on the page unless the starting figure is on the page too. */
+  /* collectedAmt above already knows both row shapes — an account row calls the
+     figure `fare`, a typed one calls it `amount`. Recomputing it here got that
+     wrong and silently billed an operator the full £675: the account invoice
+     path returned zero directly-settled fares because it looked only for
+     `amount`. One sum, asked once. */
+  const anyDirectTotal = commissionPct > 0 && collectedAmt > 0;
   const leadIn = [];
   if (commissionPct > 0) {
-    leadIn.push(['Fares (jobs)', fareSum]);
+    /* ── WHAT IS ACTUALLY BEING BILLED ────────────────────────────────────
+       The walk used to start at ALL the fares and then take the directly
+       settled ones back off at the bottom — arithmetically right, and it made
+       the operator read a number they do not owe (£675) before arriving at one
+       they do. It now starts where the money starts: the jobs their customer
+       prepaid to them.
+
+       The fares settled in the car never enter this column. They are on the
+       page, in CARD/CASH, subtotalled — his money, already collected — so
+       nothing is hidden and nothing has to be deducted again. */
+    const accountSum = Math.round((fareSum - collectedAmt) * 100) / 100;
+    /* Named for the operator being billed where the name is short enough to sit
+       in the column; the generic wording otherwise, never a clipped one. */
+    const recShort = String(recName || '').trim().split(/\s+/)[0];
+    const billed = (recShort && recShort.length <= 12)
+      ? ('Account (jobs prepaid to ' + recShort + ')')
+      : 'Account (jobs prepaid to the operator)';
+    leadIn.push([anyDirectTotal ? billed : 'Fares (jobs)', anyDirectTotal ? accountSum : fareSum]);
     if (fees > 0) leadIn.push([feesLabel || 'Fees (parking & tolls)', fees]);
-    leadIn.push(['Less ' + fmtPct(commissionPct) + ' commission', -commissionAmt]);
-    if (collectedAmt > 0) leadIn.push(['Less collected by driver', -collectedAmt]);
+    leadIn.push(['Less commission (' + fmtPct(commissionPct) + ')', -commissionAmt]);
   } else if (fees > 0) {
     leadIn.push([feesLabel || 'Fees', fees]);
   }
@@ -836,14 +940,36 @@ function drawInvoice(doc, data, slack) {
      with "VAT (0%)" drawing equal attention immediately above it. It is now
      framed, on its own, at a size nothing else on the page competes with —
      because it is the one number the recipient is looking for. */
+  /* WHO IS PAYING WHOM.
+     On a settlement with another operator the four lines above are all
+     deductions and additions between two firms, and "TOTAL DUE" beside them
+     does not say in which direction the money goes — their accounts team has to
+     infer it from the letterhead. It is the one thing the document exists to
+     say, so it is said: the amount is named as due TO the company sending the
+     invoice, taken from the company name rather than written in, and it sits on
+     its own line above the figure so neither has to be shrunk to fit beside the
+     other.
+
+     A plain customer invoice keeps TOTAL DUE. There is only one party on it and
+     nothing to disambiguate. */
+  const payee = String((s.company_name || '')).trim().split(/\s+/)[0].toUpperCase();
+  const totalLabel = (commissionPct > 0 && payee) ? ('AMOUNT DUE TO ' + payee)
+                   : (commissionPct > 0 ? 'TOTAL TO PAY' : 'TOTAL DUE');
+
+  /* THE HEIGHT IS NOT NEGOTIABLE.
+     The first attempt at this stacked the label above the figure in a box 16pt
+     taller, which read beautifully and pushed an ordinary five-journey month
+     onto a SECOND PAGE — caught by the one-page guard in invoice-edit.test.js.
+     The longer label is bought with width, which the page has spare, not with
+     height, which it does not. */
   const TOT_H = 42;
-  const TOT_X = PAGE_W - M - 236;
-  const TOT_W = 236;
+  const TOT_W = 300;
+  const TOT_X = PAGE_W - M - TOT_W;
   vbox(doc, TOT_X, y, TOT_W, TOT_H, null, NAVY);
-  doc.font(BOLD).fontSize(9).fillColor(SOFT)
-     .text('TOTAL DUE', TOT_X + 14, y + 16, { characterSpacing: 1.6, lineBreak: false });
-  doc.font(BOLD).fontSize(20).fillColor(NAVY)
-     .text('£' + total.toFixed(2), TOT_X, y + 11, { width: TOT_W - 14, align: 'right', lineBreak: false });
+  doc.font(BOLD).fontSize(8.5).fillColor(SOFT)
+     .text(totalLabel, TOT_X + 14, y + 17, { characterSpacing: 1.6, lineBreak: false });
+  doc.font(BOLD).fontSize(22).fillColor(NAVY)
+     .text('£' + total.toFixed(2), TOT_X, y + 10, { width: TOT_W - 14, align: 'right', lineBreak: false });
   y += TOT_H + 8;
 
   if (showVat) {

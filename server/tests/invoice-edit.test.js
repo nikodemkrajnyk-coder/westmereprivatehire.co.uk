@@ -32,6 +32,17 @@ const CACHE = fs.mkdtempSync(path.join(os.tmpdir(), 'wm-inv-cache-'));
 process.env.INVOICES_DIR = CACHE;   // the name the module actually reads
 
 const ROOT = path.join(__dirname, '..', '..');
+/* THE COMMISSION LINE, however it is worded.
+   It used to read "Less 10% commission" and now reads "Less commission (10%)".
+   What every test below actually needs is that the line EXISTS and NAMES THE
+   RATE — pinning one phrasing turned a wording change into five failures that
+   said nothing about behaviour. The rate is interpolated so a test for 12.5%
+   cannot pass on a page showing 10%. */
+const COMMISSION_LINE = (pct) => new RegExp(
+  '^Less (?:' + pct + '% commission|commission \\(' + pct + '%\\))$');
+/* Likewise the opening line: all the fares, or — once jobs settled in the car
+   are excluded rather than deducted — the account column. */
+const OPENING_LINE = /^Fares \(jobs\)$|^Account \(jobs prepaid to /;
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 
 let passed = 0, failed = 0;
@@ -804,7 +815,7 @@ test('THE AMOUNT RENDERS — it is never blank', async () => {
   await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
     body: { line_items: OP_TRIPS, commission_pct: 10 } });
   const texts = await drawn(rowOf(inv.id));
-  const label = texts.find((t) => /^Less 10% commission$/.test(t.s));
+  const label = texts.find((t) => COMMISSION_LINE(10).test(t.s));
   assert.ok(label, 'the commission line is missing entirely');
   const amount = texts.find((t) => Math.abs(t.y - label.y) < 2 && /\d/.test(t.s) && t !== label);
   assert.ok(amount, 'the commission line has NO amount beside it — the original bug');
@@ -818,8 +829,11 @@ test('all four steps are named, in order', async () => {
   const texts = await drawn(rowOf(inv.id));
   const at = (re) => { const t = texts.find((x) => re.test(x.s)); return t ? t.y : null; };
   const fares = at(/^Fares \(jobs\)$/), fees = at(/^Fees \(parking & tolls\)$/),
-        comm = at(/^Less 10% commission$/), total = at(/^TOTAL DUE$/);
-  for (const [n, v] of [['Fares (jobs)', fares], ['Fees', fees], ['Less 10% commission', comm], ['TOTAL DUE', total]]) {
+        comm = at(COMMISSION_LINE(10)),
+        /* An operator settlement names who the money is due to; a plain invoice
+           still says TOTAL DUE. Either ends the walk. */
+        total = at(/^(?:AMOUNT DUE TO .+|TOTAL TO PAY|TOTAL DUE)$/);
+  for (const [n, v] of [['opening', fares], ['Fees', fees], ['commission', comm], ['TOTAL DUE', total]]) {
     assert.ok(v !== null, n + ' is not on the page');
   }
   assert.ok(fares < fees && fees < comm && comm < total,
@@ -1039,7 +1053,7 @@ test('an operator invoice built on the form gets the breakdown', async () => {
   const after = rowOf(inv.id);
   assert.strictEqual(after.total, 205.50, '215 − 21.50 + 12');
   const texts = await drawn(after);
-  assert.ok(texts.some((t) => /^Less 10% commission$/.test(t.s)), 'the line');
+  assert.ok(texts.some((t) => COMMISSION_LINE(10).test(t.s)), 'the line');
   assert.ok(texts.some((t) => t.s === '\u2212\u00a321.50'), 'with its amount');
 });
 
@@ -1056,17 +1070,19 @@ test('THE RATE IS ADJUSTABLE — 10 is a default, not a constant', async () => {
 });
 
 test('the line NAMES the rate that was used', async () => {
-  for (const [pct, label, amount] of [[10, 'Less 10% commission', '\u2212\u00a321.50'],
-                                      [12.5, 'Less 12.5% commission', '\u2212\u00a326.88'],
-                                      [15, 'Less 15% commission', '\u2212\u00a332.25']]) {
+  for (const [pct, amount] of [[10, '\u2212\u00a321.50'],
+                               [12.5, '\u2212\u00a326.88'],
+                               [15, '\u2212\u00a332.25']]) {
     const inv = seed('bespoke', BESPOKE_ITEMS);
     await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
       body: { fees: 12, commission_pct: pct } });
     const texts = await drawn(rowOf(inv.id));
-    assert.ok(texts.some((t) => t.s === label), 'expected "' + label + '" on the page');
+    assert.ok(texts.some((t) => COMMISSION_LINE(pct).test(t.s)),
+      'the commission line does not name ' + pct + '%: '
+      + JSON.stringify(texts.filter((t) => /commission/i.test(t.s)).map((t) => t.s)));
     assert.ok(texts.some((t) => t.s === amount), 'with ' + amount);
-    assert.ok(!texts.some((t) => t.s === 'Less 10% commission' && pct !== 10),
-      'a hard-coded 10% must not survive: ' + label);
+    assert.ok(!texts.some((t) => COMMISSION_LINE(10).test(t.s) && pct !== 10),
+      'a hard-coded 10% must not survive at ' + pct + '%');
   }
 });
 
@@ -1197,12 +1213,25 @@ test('and the page shows the four steps that get there', async () => {
   await call('patch', '/invoices/:id', { params: { id: String(inv.id) },
     body: { line_items: APD_AUGUST, commission_pct: 10 } });
   const texts = await drawn(rowOf(inv.id));
-  const want = [['Fares (jobs)', '£675.00'], ['Fees (parking & tolls)', '£59.00'],
-                ['Less 10% commission', '\u2212\u00a367.50'], ['Less collected by driver', '\u2212\u00a350.00']];
-  for (const [label, amount] of want) {
-    assert.ok(texts.some((t) => t.s === label), 'missing line: ' + label);
+  /* The walk opens at what is being billed — the account column once jobs
+     settled in the car are excluded — and names the rate on the commission
+     line. Both wordings accepted; the FIGURES are what is pinned. */
+  assert.ok(texts.some((t) => OPENING_LINE.test(t.s)),
+    'the walk has no opening line: ' + JSON.stringify(texts.map((t) => t.s).filter((x) => /^(Fares|Account)/.test(x))));
+  assert.ok(texts.some((t) => COMMISSION_LINE(10).test(t.s)), 'missing the commission line');
+  for (const [label, amount] of [['fees', '£59.00'], ['commission', '\u2212\u00a367.50']]) {
     assert.ok(texts.some((t) => t.s === amount), label + ' has no ' + amount);
   }
+  assert.ok(texts.some((t) => t.s === '£625.00'), 'the account subtotal £625.00 is missing');
+  /* AND NOTHING IS DEDUCTED FOR THE DIRECT JOB. Its fare never enters the
+     billed figure — the walk opens at the account column — so deducting it
+     again would take it off twice. It stays visible in its own column instead,
+     which is where the £50 and the full £675 can still be read off. */
+  assert.ok(!texts.some((t) => /paid direct|collected/i.test(t.s)),
+    'a directly-settled fare is excluded from the opening figure AND deducted again: '
+    + JSON.stringify(texts.filter((t) => /^Less /.test(t.s)).map((t) => t.s)));
+  assert.ok(!texts.some((t) => t.s === '\u2212\u00a350.00'),
+    'the −£50.00 deduction is back — with the walk opening at £625 it would double-count');
   assert.ok(texts.some((t) => t.s === '£616.50'), 'and the total');
   assert.strictEqual(texts.filter((t) => /Airport charges/.test(t.s)).length, 0,
     'the lump line is gone — the per-trip fees replace it');

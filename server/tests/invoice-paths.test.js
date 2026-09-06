@@ -132,8 +132,13 @@ test('the only window.open asks for the document INLINE', () => {
      Content-Disposition: attachment leaves an empty tab behind. Downloading is
      the anchor's job (below); window.open is for viewing, and a viewable
      response must be inline. */
+  /* VIEWING, however it is shown. The preview is no longer thrown into a blank
+     tab — window.open gave the PDF a browsing context with no history, which is
+     how the owner got stuck in it (invoice-preview-back.test.js) — so the check
+     is on every call that opens the document to LOOK at, whichever viewer shows
+     it. The requirement is unchanged: a viewable response must be inline. */
   for (const [name, src] of [['owner', OWNER], ['admin', ADMIN]]) {
-    const opens = src.match(/window\.open\(_invPdfUrl\([^)]*\)/g) || [];
+    const opens = src.match(/(?:window\.open|invPreviewOpen)\(_invPdfUrl\([^)]*\)/g) || [];
     assert.ok(opens.length >= 1, name + ': invOpenPdf must open the PDF');
     for (const o of opens) {
       assert.ok(/,\s*true\)/.test(o), name + ': opened without inline — ' + o);
