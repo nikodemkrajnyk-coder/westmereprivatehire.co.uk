@@ -275,7 +275,12 @@ function recorder() {
          right-aligned figure sits at the far edge of its box, not at its
          origin. Checking boxes alone missed an amount printed on top of a
          description. */
+      /* characterSpacing too: a heading is drawn letterspaced, and measuring the
+         bare string under-reports its width by nearly 5pt on a seven-letter
+         word — which is exactly the margin by which ACCOUNT clipped while a
+         guard that ignored it reported the column as fitting. */
       ops.texts.push({ s: String(str), x, y, w: (o && o.width) || 0,
+                       cs: (o && o.characterSpacing) || 0,
                        right: !!(o && o.align === 'right'), page: ops.page, doc: d });
     }
     return T.apply(this, arguments);
@@ -1019,6 +1024,72 @@ test('no two columns are ever drawn on top of each other', async () => {
       }
     }
   }
+});
+
+test('no heading clips on the BOOKING-GENERATED invoice either', async () => {
+  /* The account table has its own geometry and its own headings, and the
+     clipping guard above only ever drew the typed invoice. "ACCOUNT" needs 40pt;
+     the column was given exactly 40 inside, and the T wrapped onto a second
+     line on a real rendering. Measured in the font it is drawn in. */
+  const PDFDocument = require('pdfkit');
+  const probe = new PDFDocument({ autoFirstPage: false });
+  let bold = 'Helvetica-Bold';
+  try { probe.registerFont('B', path.join(__dirname, '..', '..', 'assets', 'fonts', 'Cormorant-SemiBold.ttf')); bold = 'B'; }
+  catch (e) { /* built-in fallback */ }
+
+  const bookings = APD.map((r, i) => ({
+    date: r.date, ref: 'WPH-90' + i, time: '07:00',
+    pickup: r.from, destination: r.to, fare: r.fare, fee: r.toll,
+    collected_direct: r.collected ? 1 : 0
+  }));
+  const ops = await draw({
+    invoiceNo: 'INV-ACCT-GUARD', kind: 'account',
+    customer: { full_name: 'APD Private Hire', email: 'a@b.c' },
+    settings: { company_name: 'Westmere Private Hire' },
+    period: { issuedDate: '2026-08-31', dueDate: '2026-09-14' },
+    bookings, fees: 59, commissionPct: 10, total: 616.50
+  });
+  const HEADINGS = ['DATE / REF', 'JOURNEY', 'FEE', 'FARE', 'ACCOUNT', 'CARD'];
+  let checked = 0;
+  for (const t of ops.texts) {
+    if (HEADINGS.indexOf(t.s) === -1 || !t.w) continue;
+    probe.font(bold).fontSize(8);
+    const need = probe.widthOfString(t.s, { characterSpacing: t.cs || 0 });
+    assert.ok(need <= t.w + 0.5,
+      'the "' + t.s + '" heading needs ' + Math.ceil(need) + 'pt (letterspaced '
+      + (t.cs || 0) + ') but is drawn into ' + t.w + 'pt — it wraps or clips on the printed invoice');
+    checked++;
+  }
+  assert.ok(checked >= 2, 'no headings were measured on the account table');
+});
+
+test('the account invoice splits ACCOUNT from CARD, and only when it applies', async () => {
+  const mk = (collectedFlags) => ({
+    invoiceNo: 'INV-ACCT-SPLIT', kind: 'account',
+    customer: { full_name: 'APD Private Hire', email: 'a@b.c' },
+    settings: { company_name: 'Westmere Private Hire' },
+    period: { issuedDate: '2026-08-31', dueDate: '2026-09-14' },
+    bookings: APD.map((r, i) => ({ date: r.date, ref: 'WPH-90' + i, time: '07:00',
+      pickup: r.from, destination: r.to, fare: r.fare, fee: r.toll,
+      collected_direct: collectedFlags[i] ? 1 : 0 })),
+    fees: 59, commissionPct: 10, total: 616.50
+  });
+
+  const split = await draw(mk(APD.map((r) => r.collected)));
+  const accX = colX(split, 'ACCOUNT'), cardX = colX(split, 'CARD');
+  assert.ok(accX < cardX, 'CARD must sit to the right of ACCOUNT');
+  const at = (x, s) => split.texts.some((t) => Math.abs(t.x - x) < 1 && t.s === s);
+  APD.forEach((r) => {
+    const money = '£' + r.fare.toFixed(2);
+    if (r.collected) assert.ok(at(cardX, money) && !at(accX, money),
+      r.date + ' was paid in the car but is not in CARD alone');
+    else assert.ok(at(accX, money), r.date + ' was on account but is not in ACCOUNT');
+  });
+
+  /* NOTHING PAID IN THE CAR → the layout it has always had. */
+  const plain = await draw(mk(APD.map(() => false)));
+  assert.ok(!plain.texts.some((t) => t.s === 'CARD'), 'an empty CARD column is being drawn');
+  assert.ok(plain.texts.some((t) => t.s === 'FARE'), 'the single fare column lost its heading');
 });
 
 // ── run ──────────────────────────────────────────────────────────────────

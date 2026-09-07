@@ -105,7 +105,7 @@ function fmtDate(d) {
    VISIBLE design changes; nothing else needs to be cleared, and the owner's
    existing files are left alone rather than deleted.
    GUARDRAIL: server/tests/invoice-paths.test.js */
-const TEMPLATE_VERSION = 14;  // 14: the amount always has a column of its own
+const TEMPLATE_VERSION = 15;  // 15: ACCOUNT/CARD on the booking-generated invoice  // 14: the amount always has a column of its own
                               // 13: the total names who it is payable to
                               // 12: a FEE column on the one-off table too
                               // 11: fare/toll split, and what the driver already collected
@@ -709,8 +709,40 @@ function drawInvoice(doc, data, slack) {
        guessed: the widest real journey on a busy month is 267pt, the date
        needs 73 and the reference 81, so the date column gives up what it was
        not using and the fare and fee columns are trimmed to fit two figures. */
-    const DW = 100;   // date / ref column — the reference is the wider of the two at 81pt
-    const FW = 60;    // fare column
+    const bookingRows = data.bookings || [];
+    /* THE SAME RULE THE TYPED INVOICE FOLLOWS. Only split when there is
+       something to split, and only on a settlement — a plain single-payment
+       invoice keeps the layout it has always had, because a CARD heading over a
+       column of blanks is a question about a document with nothing to say. */
+    const anyDirectRow = commissionPct > 0 && bookingRows.some((b) => Number(b.collected_direct));
+
+    /* ── ACCOUNT AND CARD/CASH, ON THE BOOKING-GENERATED INVOICE TOO ───────
+       The same split the typed invoice carries: the fare sits in ACCOUNT when
+       the operator owes it, or in CARD when the passenger paid the driver and
+       it is already collected. Driven by the same collected_direct flag, which
+       the server derives from the booking's payment method.
+
+       THE WIDTH, HONESTLY. The journey column was cut to 269pt against a
+       measured worst case of 267 — no slack at all. A fourth money column has
+       to come from somewhere, and the arithmetic does not lie: the date/ref
+       column needs 89 for the reference in the mono face, and each money column
+       needs about 43 for "£1,150.00". Trimming every one of them to its content
+       frees 28pt, and the column needs 40.
+
+       So the journey column comes down to 247pt and the longest few routes of a
+       busy month wrap to a second line. That is the trade — measured, not
+       guessed — and it is a line of text, not a lost page: the one-page guard
+       below is run against a month of worst-case journeys.
+
+       The heading is what costs the most. "CARD/CASH" needs 46pt of the 40 the
+       column has; "CARD" needs 23 and says the same thing beside a figure that
+       is plainly not on account. */
+    const DW = 92;    // date / ref — the reference in mono is the wider of the two at 81pt
+    /* 50, not 46. "ACCOUNT" needs 40pt and 46 leaves exactly 40 inside — which
+       wrapped the T onto a second line on a real invoice. A heading that fits
+       to the point is a heading that clips. */
+    const FW = 50;    // account (or the single fare) column
+    const PW = anyDirectRow ? 40 : 0;   // card/cash column
     /* A COLUMN OF ITS OWN FOR THE FEE.
        The owner wants each trip to show what was paid out on it. It could have
        been a note under the journey, like the flight tag — but a fee is money,
@@ -718,11 +750,17 @@ function drawInvoice(doc, data, slack) {
        as prose beside a fare it is ambiguous ("is the £95 with or without the
        parking?"); in a headed column beside FARE it is not. Blank when there
        is none, so a month with no parking looks exactly as it did. */
-    const EW = 42;    // fee column
-    const JW = CW - DW - FW - EW - 20;   // 269pt — clear of the 267pt worst case
+    /* THE FEE COLUMN IS PART OF THIS TABLE, always — unlike the typed invoice,
+       which hides it when nothing was paid out. Two guards pin that: on an
+       account invoice the heading stays and the cells are simply blank, so a
+       month with no parking looks like a month with no parking rather than a
+       different document. Making it conditional cost nothing and broke both. */
+    const EW = 40;    // fee column
+    const JW = CW - DW - FW - EW - PW - 20;
     const JX = M + DW + 7;
-    const EX = PAGE_W - M - FW - EW;
-    const FX = PAGE_W - M - FW;
+    const PX = PAGE_W - M - PW;
+    const FX = PAGE_W - M - PW - FW;
+    const EX = FX - EW;
 
     /* A month long enough to run past the bottom of the page continues on the
        next one, under a repeated column header. Rows used to simply keep
@@ -737,7 +775,12 @@ function drawInvoice(doc, data, slack) {
       doc.font(BOLD).fontSize(8).fillColor(MUTED)
          .text('FEE', EX, y + 7, { width: EW - 6, align: 'right', characterSpacing: 0.8, lineBreak: false });
       doc.font(BOLD).fontSize(8).fillColor(MUTED)
-         .text('FARE', FX, y + 7, { width: FW - 6, align: 'right', characterSpacing: 0.8, lineBreak: false });
+         .text(anyDirectRow ? 'ACCOUNT' : 'FARE', FX, y + 7,
+               { width: FW - 6, align: 'right', characterSpacing: 0.8, lineBreak: false });
+      if (anyDirectRow) {
+        doc.font(BOLD).fontSize(8).fillColor(MUTED)
+           .text('CARD', PX, y + 7, { width: PW - 6, align: 'right', characterSpacing: 0.8, lineBreak: false });
+      }
       y += 22;
     };
     bkHead();
@@ -816,7 +859,12 @@ function drawInvoice(doc, data, slack) {
            .text('£' + tripFee.toFixed(2), EX, y + 12 + BK_PAD, { width: EW - 6, align: 'right', lineBreak: false });
       }
       doc.font(BODY).fontSize(11.5).fillColor(NAVY)
-         .text('£' + (+b.fare || 0).toFixed(2), FX, y + 11 + BK_PAD, { width: FW - 6, align: 'right', lineBreak: false });
+         /* ONE COLUMN OR THE OTHER, never both — a fare printed twice reads as
+           two fares and the subtotals stop adding up. */
+        .text('£' + (+b.fare || 0).toFixed(2),
+              (anyDirectRow && Number(b.collected_direct)) ? PX : FX, y + 11 + BK_PAD,
+              { width: ((anyDirectRow && Number(b.collected_direct)) ? PW : FW) - 6,
+                align: 'right', lineBreak: false });
 
       y += rowH;
     }
