@@ -974,6 +974,26 @@ select:-webkit-autofill:focus{
       </div>
 
 
+      <!-- ── HOW CUSTOMERS PAY YOU ────────────────────────────────────────────
+           These four values print as the payment line at the foot of every
+           invoice. They were enterable only in the admin app, which is not where
+           he works — he runs the owner app on his phone — so the details stayed
+           blank and the invoices went out with no way to pay them.
+
+           Same store, same route as admin (PUT /api/settings/invoice). One
+           authority: whichever app he opens, he is editing the figures the
+           invoice reads. GUARDRAIL: server/tests/invoice-settings-owner.test.js -->
+      <div style="background:transparent;border-radius:12px;padding:1.1rem 1rem;margin-top:1rem">
+        <div style="font-size:.8rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(27,27,26,.5);margin-bottom:.6rem">Payment Details On Invoices</div>
+        <div style="font-size:.85rem;color:rgba(27,27,26,.5);line-height:1.5;margin-bottom:.8rem">Printed at the foot of every invoice, with the invoice number as the reference. Leave blank and no payment line is shown.</div>
+        <div class="fg" style="margin-bottom:.6rem"><input id="is-bank-name" class="fi" placeholder="Bank name" autocomplete="off"></div>
+        <div class="fg" style="margin-bottom:.6rem"><input id="is-account-name" class="fi" placeholder="Account name" autocomplete="off"></div>
+        <div class="fg" style="margin-bottom:.6rem"><input id="is-sort-code" class="fi" placeholder="Sort code" inputmode="numeric" autocomplete="off"></div>
+        <div class="fg" style="margin-bottom:.6rem"><input id="is-account-no" class="fi" placeholder="Account number" inputmode="numeric" autocomplete="off"></div>
+        <p id="is-msg" style="display:none;margin:.2rem 0 .6rem;font-size:.84rem"></p>
+        <button id="is-save-btn" onclick="ownerSaveInvoiceSettings()" style="width:100%;padding:.75rem;background:transparent;border:var(--border-strong,1.5px) solid var(--westmere-navy,#102a43);color:var(--westmere-navy,#102a43);border-radius:8px;font-size:.82rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer">Save payment details</button>
+      </div>
+
       <div style="background:transparent;border-radius:12px;padding:1.1rem 1rem;margin-top:1rem">
         <div style="font-size:.8rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(27,27,26,.5);margin-bottom:.6rem">Download All Data</div>
         <div style="font-size:.85rem;color:rgba(27,27,26,.5);line-height:1.5;margin-bottom:.8rem">Exports all bookings, customers, invoices, driver profiles, documents and earnings as a ZIP archive. Save to iCloud Drive for automatic backup to all your Apple devices.</div>
@@ -1748,6 +1768,9 @@ function openSettings(){
   checkGoogleCalendarStatus();
   loadOwnerProfile();
   loadOwnerDocs();
+  /* Pre-fill the payment details from the stored settings each time the
+     sheet opens, so what is on screen is what the invoice will print. */
+  try { ownerLoadInvoiceSettings(); } catch (e) {}
 }
 
 async function loadOwnerProfile(){
@@ -7217,6 +7240,69 @@ function invViewDetail(id){
     _INV_SETTINGS_CACHE=d.settings||{};
     doOpen(_INV_SETTINGS_CACHE);
   }).catch(function(){doOpen({});});
+}
+
+/* ── THE PAYMENT DETAILS HE PUTS ON HIS OWN INVOICES ───────────────────────
+   Read from and written to the SAME store the admin app uses and the invoice
+   reads — PUT /api/settings/invoice. Two screens editing one set of figures is
+   fine; two screens each keeping their own would be the bug.
+
+   THE ACCOUNT NUMBER IS SHOWN MASKED once it is saved. A phone gets held up in
+   a car park and handed across a desk, and the number is not needed on screen
+   to be on the invoice. Typing over the mask replaces it; leaving it alone
+   leaves the stored value untouched, so a save that only changes the sort code
+   cannot blank the account by omission.
+   GUARDRAIL: server/tests/invoice-settings-owner.test.js */
+var _IS_ACC_MASK = '';
+function ownerLoadInvoiceSettings(){
+  fetch('/api/settings/invoice',{credentials:'include'})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      var s=d.settings||{};
+      _INV_SETTINGS_CACHE=s;
+      var set=function(id,v){var el=document.getElementById(id); if(el)el.value=v||'';};
+      set('is-bank-name',s.bank_name);
+      set('is-account-name',s.account_name);
+      set('is-sort-code',s.sort_code);
+      var acc=String(s.account_no||'');
+      _IS_ACC_MASK = acc ? ('••••' + acc.slice(-4)) : '';
+      set('is-account-no',_IS_ACC_MASK);
+    }).catch(function(){});
+}
+
+async function ownerSaveInvoiceSettings(){
+  var v=function(id){var el=document.getElementById(id);return el?el.value.trim():'';};
+  var msg=document.getElementById('is-msg');
+  var btn=document.getElementById('is-save-btn');
+  var acc=v('is-account-no');
+  var body={
+    bank_name:v('is-bank-name'),
+    account_name:v('is-account-name'),
+    sort_code:v('is-sort-code')
+  };
+  /* Untouched mask means "leave it as it is" — the field is omitted entirely
+     rather than sent back with bullets in it. */
+  if(acc && acc!==_IS_ACC_MASK) body.account_no=acc;
+  msg.style.display='none';
+  btn.disabled=true; btn.textContent='Saving…';
+  try{
+    var r=await fetch('/api/settings/invoice',{method:'PUT',credentials:'include',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var d=await r.json();
+    if(r.ok&&d.ok){
+      _INV_SETTINGS_CACHE=null;
+      msg.textContent='Saved — this prints on every invoice from now on.';
+      msg.style.color='var(--navy,#102a43)'; msg.style.display='block';
+      ownerLoadInvoiceSettings();
+    } else {
+      msg.textContent=d.error||('Could not save ('+r.status+')');
+      msg.style.color='#8B2222'; msg.style.display='block';
+    }
+  }catch(e){
+    msg.textContent='Network error — nothing was saved.';
+    msg.style.color='#8B2222'; msg.style.display='block';
+  }
+  btn.disabled=false; btn.textContent='Save payment details';
 }
 
 function invDetailPreview(){invOpenPdf(_INV_DETAIL_ID);}

@@ -1363,7 +1363,17 @@ test('WHERE THE PAGE ACTUALLY ENDS, measured rather than hoped for', async () =>
     return pagesOf(rowOf(inv.id));
   };
   assert.strictEqual(await pagesFor(5, 1), 1, 'five journeys, one flight tag → one page');
-  assert.strictEqual(await pagesFor(5, 2), 2, 'five journeys, TWO flight tags → two, and that is expected');
+  /* THE BOUNDARY MOVED, AND IT MOVED THE RIGHT WAY. Five journeys with two
+     flight tags used to need a second page; the payment details left the body
+     for the footer band and gave that page back. The guard is not about the
+     number five — it is that the break point is MEASURED and that content does
+     eventually break rather than printing off the paper, so the boundary is
+     re-pinned where it now falls instead of being deleted. */
+  assert.strictEqual(await pagesFor(5, 2), 1,
+    'five journeys with two flight tags now fits — the payment box left the body');
+  const long = await pagesFor(14, 2);
+  assert.ok(long >= 2,
+    'a month long enough must still break rather than running off the page — got ' + long);
 });
 
 test('the break is MONOTONIC — more journeys never fit where fewer did not', async () => {

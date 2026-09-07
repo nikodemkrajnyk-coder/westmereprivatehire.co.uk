@@ -105,7 +105,7 @@ function fmtDate(d) {
    VISIBLE design changes; nothing else needs to be cleared, and the owner's
    existing files are left alone rather than deleted.
    GUARDRAIL: server/tests/invoice-paths.test.js */
-const TEMPLATE_VERSION = 15;  // 15: ACCOUNT/CARD on the booking-generated invoice  // 14: the amount always has a column of its own
+const TEMPLATE_VERSION = 16;  // 16: payment details move to the footer band  // 15: ACCOUNT/CARD on the booking-generated invoice  // 14: the amount always has a column of its own
                               // 13: the total names who it is payable to
                               // 12: a FEE column on the one-off table too
                               // 11: fare/toll split, and what the driver already collected
@@ -183,13 +183,51 @@ function buildInvoicePdf(data) {
 
 /* The footer rule and line, drawn on EVERY page. It used to be written once at
    the end of the draw, which was fine while an invoice was always one page. */
-function drawFooter(doc) {
-  const footerY = PAGE_H - M - 18;
+/* ── HOW TO PAY ────────────────────────────────────────────────────────────
+   The bank details used to print in the body, in a tinted box with a gold rule
+   under the notes. It read well and it did not fit: with the account details
+   filled in, a seven-journey settlement pushed the block onto a SECOND page —
+   the one place an invoice's payment instructions must never be, because the
+   recipient may never scroll to it. Moving it beside the FROM address only
+   moved the problem: anything in the flow pushes the table down, and on a busy
+   month the page has nothing left to give.
+
+   It prints in the footer band instead, at a fixed height like the licence line
+   beneath it. Out of the flow, it cannot push anything over — measured at five,
+   seven, nine, ten and twelve journeys, the page count is identical with it and
+   without — and on a settlement that genuinely does run to two pages it appears
+   on both.
+
+   NOTHING IS HARDCODED. Every value comes from the stored invoice settings, and
+   the line does not appear at all until a sort code and an account number are
+   saved there: an invoice quoting an account nobody entered would be worse than
+   one quoting none. The invoice number rides along as the payment reference, so
+   a transfer can be matched to the document without a covering email.
+   GUARDRAIL: server/tests/invoice-design.test.js */
+function paymentLine(s, invoiceNo) {
+  if (!s || !s.sort_code || !s.account_no) return '';
+  return ['Pay by transfer',
+          s.account_name || s.bank_name || null,
+          'Sort code ' + s.sort_code,
+          'Account ' + s.account_no,
+          'Reference ' + invoiceNo]
+    .filter(Boolean).join('  ·  ');
+}
+
+function drawFooter(doc, s, invoiceNo) {
+  const pay = paymentLine(s, invoiceNo);
+  const footerY = PAGE_H - M - (pay ? 30 : 18);
   hline(doc, footerY, HAIR, 0.3);
+  let fy = footerY + 6;
+  if (pay) {
+    doc.font(BODY).fontSize(8.5).fillColor(NAVY)
+       .text(pay, M, fy, { width: CW, align: 'center', lineBreak: false });
+    fy += 12;
+  }
   doc.font(BOLD).fontSize(8).fillColor(MUTED)
      .text(
        'Westmere Private Hire  ·  Licensed by Lewes District Council  ·  westmereprivatehire.co.uk',
-       M, footerY + 6, { width: CW, align: 'center', lineBreak: false }
+       M, fy, { width: CW, align: 'center', lineBreak: false }
      );
 }
 
@@ -627,7 +665,7 @@ function drawInvoice(doc, data, slack) {
       const rowH = Math.max(natural, needed) + SLACK.row;
 
       if (y + rowH > BSP_LIMIT) {
-        drawFooter(doc); doc.addPage(); pages++; tablePages++; y = M; bspHead();
+        drawFooter(doc, s, invoiceNo); doc.addPage(); pages++; tablePages++; y = M; bspHead();
         hline(doc, y, ACCENT, 1.2); y += 1;
       }
       /* The band is painted at the row's REAL height, so it starts below the
@@ -824,7 +862,7 @@ function drawInvoice(doc, data, slack) {
       const rowH = Math.max(BK_ROW_H, needed);
 
       if (y + rowH > BK_LIMIT) {
-        drawFooter(doc);
+        drawFooter(doc, s, invoiceNo);
         doc.addPage();
         pages++;
         tablePages++;
@@ -1076,8 +1114,9 @@ function drawInvoice(doc, data, slack) {
   /* The block's height, computed the SAME way the block itself computes it —
      an estimate here is how the account invoice ran off the bottom of the page
      the first time. Rows: Bank, Name, Sort code, Account, Reference. */
-  const payRowCount = (s.sort_code && s.account_no)
-    ? [s.bank_name, s.account_name, 1, 1, 1].filter(Boolean).length : 0;
+  /* No height is reserved in the body any more: the payment details moved to
+     the footer band, where they cost the flow nothing. */
+  const payRowCount = 0;
   const PAY_H   = payRowCount ? (14 + payRowCount * 14 + 10) : 0;
   const GROUP_H = NOTES_H + (NOTES_H && PAY_H ? 10 : 0) + PAY_H;
 
@@ -1097,7 +1136,7 @@ function drawInvoice(doc, data, slack) {
      the footer. Overlapping type on the one document that gets filed by
      somebody else's accounts department is not an acceptable failure. */
   if (y > GROUP_MAX) {
-    drawFooter(doc);
+    drawFooter(doc, s, invoiceNo);
     doc.addPage();
     pages++;
     y = M;
@@ -1121,44 +1160,13 @@ function drawInvoice(doc, data, slack) {
     y += NOTES_H;
   }
 
-  // ── PAYMENT DETAILS ──────────────────────────────────────────────────────
-  if (s.sort_code && s.account_no) {
-    y += 10;
-
-    const bankRows = [
-      s.bank_name    ? ['Bank',       s.bank_name]    : null,
-      s.account_name ? ['Name',       s.account_name] : null,
-                       ['Sort code',  s.sort_code],
-                       ['Account',    s.account_no],
-                       ['Reference',  invoiceNo]
-    ].filter(Boolean);
-
-    const BH = 14 + bankRows.length * 14 + 10;
-
-    vbox(doc, M, y, CW, BH, TINT, HAIR);
-    // Gold left accent bar
-    doc.save().rect(M, y, 3, BH).fill(ACCENT).restore();
-
-    let by = y + 10;
-    doc.font(BOLD).fontSize(7.5).fillColor(ACCENT)
-       .text('PAYMENT DETAILS', M + 10, by, { lineBreak: false });
-    by += 14;
-
-    const LBW = 76;
-    for (const [lbl, val] of bankRows) {
-      const isMono = lbl === 'Sort code' || lbl === 'Account' || lbl === 'Reference';
-      doc.font(BOLD).fontSize(8).fillColor(MUTED)
-         .text(lbl.toUpperCase(), M + 10, by, { width: LBW, lineBreak: false });
-      doc.font(isMono ? MONO : BODY).fontSize(10).fillColor(NAVY)
-         .text(String(val), M + 10 + LBW + 4, by, { lineBreak: false });
-      by += 14;
-    }
-
-    y += BH + 10;
-  }
+  /* The payment details used to print here, under the notes, in a tinted box
+     with a gold rule. It read well and it did not fit: with the bank fields
+     filled in, a seven-journey settlement pushed the block onto a second
+     page. They are drawn in the footer band now — see drawFooter. */
 
   // ── FOOTER ───────────────────────────────────────────────────────────────
-  drawFooter(doc);
+  drawFooter(doc, s, invoiceNo);
 
   return measured;
 }

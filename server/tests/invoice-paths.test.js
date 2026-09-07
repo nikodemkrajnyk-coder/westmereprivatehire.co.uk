@@ -258,9 +258,18 @@ for (const [label, row, settings] of [
     assert.ok(!/VAT \(/.test(t), 'no VAT line');
     assert.ok(!/\d{4}-\d{2}-\d{2}/.test(t), 'no raw ISO date reaches the page');
     if (row.kind === 'account') assert.ok(/Mon 3 Aug 2026/.test(t), 'human dates');
+    /* The payment details print as a line in the footer band now rather than a
+       box in the body — it kept them on page one of a busy settlement. What is
+       being pinned here is unchanged: they appear when an account is stored and
+       never when one is not. */
     const wantsBank = !!(settings.sort_code && settings.account_no);
-    assert.strictEqual(/PAYMENT DETAILS/.test(t), wantsBank,
-      wantsBank ? 'the bank block must appear when configured' : 'and must not when it is not');
+    assert.strictEqual(/Pay by transfer/.test(t), wantsBank,
+      wantsBank ? 'the payment details must appear when configured' : 'and must not when they are not');
+    if (wantsBank) {
+      assert.ok(t.indexOf(settings.sort_code) !== -1, 'the stored sort code must be the one printed');
+      assert.ok(t.indexOf(settings.account_no) !== -1, 'and the stored account number');
+      assert.ok(/Reference /.test(t), 'and the invoice number as the payment reference');
+    }
   });
 }
 

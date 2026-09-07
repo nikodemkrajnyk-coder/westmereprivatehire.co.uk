@@ -27,6 +27,23 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 
+/* ── THE PAYMENT DETAILS, WHEREVER THEY LIVE ───────────────────────────────
+   They used to be a tinted box in the body, under the notes. With the account
+   fields filled in, that box pushed a seven-journey settlement onto a SECOND
+   page — an invoice whose payment instructions sit on a sheet the recipient may
+   never scroll to. They print in the footer band now: out of the flow, so they
+   cost the page nothing and cannot collide with anything.
+
+   What every test below actually needs is unchanged — the details are ON the
+   page, they are drawn only when a sort code and an account number are stored,
+   and they carry the invoice number as the payment reference. Pinning the old
+   box's label turned a layout move into six failures that said nothing about
+   whether the details reach the customer. */
+const PAY_LINE = /Pay by transfer/;
+const payText = (t) => PAY_LINE.test(t);
+const payRun  = (g) => g.texts.find((x) => PAY_LINE.test(x.s));
+
+
 const ROOT = path.join(__dirname, '..', '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 const SRC = read('server/invoice-pdf.js');
@@ -275,7 +292,7 @@ test('notes and bank details survive a BUSY invoice', async () => {
   }
   const t = await drawnText(account({ bookings: many, total: 525 }));
   assert.ok(/Account terms/.test(t), 'the terms must still be on the page');
-  assert.ok(/PAYMENT DETAILS/.test(t), 'and so must the bank block');
+  assert.ok(payText(t), 'and so must the payment details');
   assert.ok(/40318822/.test(t), 'including the account number, which was running off the paper');
   assert.ok(/Licensed by/.test(t), 'and the footer must not be pushed off');
 });
@@ -303,7 +320,7 @@ test('a long month breaks over pages instead of printing off the paper', async (
   const pages = (buf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length;
   assert.strictEqual(pages, 2, 'eighteen journeys must not be crammed onto one A4 page');
   const t = await drawnText(account({ bookings: many, total: 1200 }));
-  assert.ok(/PAYMENT DETAILS/.test(t) && /Account terms/.test(t),
+  assert.ok(payText(t) && /Account terms/.test(t),
     'and the foot matter must survive the break');
   assert.ok((t.match(/Licensed by/g) || []).length >= 2,
     'every page carries the footer — it used to be written once, at the very end');
@@ -374,6 +391,7 @@ async function geometry(data) {
 
 const LONG_NOTES = "Passenger\nGavin O'Shea\nFinance department\nPriscilla Hancock\npri@echopointmedical.com";
 const BANK = Object.assign({}, SETTINGS, {
+
   bank_name: 'monzo', account_name: 'Nikodem Krajnyk', sort_code: '040006', account_no: '11513694'
 });
 
@@ -386,8 +404,8 @@ test('the PAYMENT DETAILS box never overlaps the notes', async () => {
   const note = g.texts.find(t => t.s === LONG_NOTES);
   assert.ok(note, 'the note must be drawn');
   assert.ok(note.h > 50, 'a five-line note is taller than one line: measured ' + note.h.toFixed(1) + 'pt');
-  const payLabel = g.texts.find(t => t.s === 'PAYMENT DETAILS');
-  assert.ok(payLabel, 'the payment block must be on the page');
+  const payLabel = payRun(g);
+  assert.ok(payLabel, 'the payment details must be on the page');
   assert.strictEqual(note.page, payLabel.page, 'both are foot matter and travel together');
   assert.ok(payLabel.y >= note.y + note.h,
     'the payment block must start BELOW the last line of the notes — the note runs ' +
@@ -436,17 +454,29 @@ test('a note too tall for the page breaks rather than colliding', async () => {
   const note = g.texts.find(t => /^Note line 1 /.test(t.s));
   assert.ok(note, 'the note must be drawn');
   assert.strictEqual((note.s.match(/Note line /g) || []).length, 30, 'all thirty lines');
-  const payLabel = g.texts.find(t => t.s === 'PAYMENT DETAILS');
+  const payLabel = payRun(g);
+  assert.ok(payLabel, 'the payment details must be drawn even under a thirty-line note');
   assert.ok(payLabel.page > note.page || payLabel.y >= note.y + note.h,
-    'the bank block must be on a later page or below the note');
+    'the payment details must be on a later page or below the note');
   /* Counting PAGES proves nothing here: pdfkit paginates overflowing text by
      itself, so the count rises even with the fallback removed. What matters is
-     that no foot matter is placed BELOW the footer line — that is the failure
-     the fallback exists to prevent. */
-  const FOOTER_Y = 842 - 52 - 18;
-  assert.ok(payLabel.y < FOOTER_Y - 20,
-    'the payment block was placed at ' + payLabel.y.toFixed(1) + ', at or below the footer line ' + FOOTER_Y);
-  assert.ok(note.y < FOOTER_Y,
+     that nothing is placed BELOW the licence line — that is the failure the
+     fallback exists to prevent.
+
+     THE RULE MOVES. The payment details now print inside the footer band, and
+     the band opens higher when they are there (PAGE_H − M − 30 rather than
+     − 18) to make room. Measuring against the old fixed 772 read a line that is
+     correctly inside the band as though it had fallen off the bottom. What must
+     hold is that the licence line is still the last thing on the page. */
+  const LICENCE_Y = 842 - 52 - 30 + 18;   // footer band opens at −30, licence sits 18 below
+  assert.ok(payLabel.y <= LICENCE_Y,
+    'the payment details were placed at ' + payLabel.y.toFixed(1)
+    + ', below the licence line at ' + LICENCE_Y);
+  const licence = g.texts.find((t) => /Licensed by Lewes District Council/.test(t.s));
+  assert.ok(licence, 'the licence line is missing');
+  assert.ok(licence.y >= payLabel.y,
+    'the payment details printed BELOW the licence line — the footer band is upside down');
+  assert.ok(note.y < LICENCE_Y,
     'and the note must start above it, not run off the bottom of the page');
 });
 
@@ -458,15 +488,15 @@ test('a busy ACCOUNT invoice with notes does not collide either', async () => {
   }
   const g = await geometry(account({ settings: BANK, bookings: many, total: 525, notes: LONG_NOTES }));
   const note = g.texts.find(t => t.s === LONG_NOTES);
-  const payLabel = g.texts.find(t => t.s === 'PAYMENT DETAILS');
-  assert.ok(note && payLabel, 'both blocks must be present');
+  const payLabel = payRun(g);
+  assert.ok(note && payLabel, 'both the note and the payment details must be present');
   assert.ok(payLabel.page > note.page || payLabel.y >= note.y + note.h, 'and must not overlap');
 });
 
 test('an invoice with NO notes is unaffected', async () => {
   const g = await geometry(bespoke({ settings: BANK, notes: '', total: 250 }));
-  const payLabel = g.texts.find(t => t.s === 'PAYMENT DETAILS');
-  assert.ok(payLabel, 'the payment block must still be drawn');
+  const payLabel = payRun(g);
+  assert.ok(payLabel, 'the payment details must still be drawn');
   const buf = await buildInvoicePdf(bespoke({ settings: BANK, notes: '', total: 250 }));
   assert.strictEqual((buf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length, 1,
     'and it must still be one page');
@@ -484,8 +514,8 @@ console.log('\nThe cache cannot outlive the template — again');
    So the layout is content-hashed. Change how the page is drawn and this fails,
    with the two things to do written in the message. It cannot tell a
    good change from a bad one; it can only refuse to let one through quietly. */
-const LAYOUT_HASH = 'f703266c3e76';
-const LAYOUT_VERSION = 15;  // 15: ACCOUNT/CARD on the booking-generated invoice  // 14: the amount always has a column of its own  // 13: the total names who it is payable to
+const LAYOUT_HASH = 'cb4347abe022';
+const LAYOUT_VERSION = 16;  // 16: payment details move to the footer band  // 15: ACCOUNT/CARD on the booking-generated invoice  // 14: the amount always has a column of its own  // 13: the total names who it is payable to
                             // 12: a FEE column on the one-off table
                             // 11: the driver-collected line
                             // 6: the two greys darkened for contrast

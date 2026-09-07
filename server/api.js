@@ -4101,7 +4101,20 @@ router.put('/settings/invoice', (req, res) => {
   const settings = req.body || {};
   const allowed = ['business_name', 'owner_name', 'address_line1', 'address_line2', 'postcode',
     'phone', 'email', 'bank_name', 'sort_code', 'account_no', 'account_name'];
-  const clean = {};
+  /* MERGED, NOT REPLACED.
+     This wrote only the keys the request happened to carry, so a save that did
+     not mention the account number ERASED it. Not hypothetical: the owner's
+     settings sheet deliberately omits the account when the masked value has not
+     been touched, which is precisely the case that would have wiped it — and
+     any future screen editing one field would have blanked the rest.
+
+     A PUT of some settings means "change these"; the ones it is silent about
+     keep their values. GUARDRAIL: server/tests/invoice-settings-owner.test.js */
+  let clean = {};
+  try {
+    const existing = db.prepare("SELECT value FROM integrations WHERE key = 'invoice_settings'").get();
+    if (existing && existing.value) clean = JSON.parse(existing.value) || {};
+  } catch (e) { clean = {}; }
   for (const k of allowed) {
     if (settings[k] !== undefined) clean[k] = String(settings[k]).trim();
   }
