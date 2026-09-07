@@ -405,6 +405,15 @@ app.listen(PORT, () => {
     }, 5 * 60 * 1000);
   }
 
+  /* Background: put any upcoming job that has no calendar event on the calendar.
+     Every push to Google is fire-and-forget, so a booking whose event never
+     landed looks exactly like one whose event did — and the jobs that go missing
+     are the ones nobody is looking at, which is why this is a sweep and not a
+     button. Boot, then every 15 minutes. */
+  if (gcalOk) {
+    require('./calendar-sync').startCalendarSweeper();
+  }
+
   // Background: reclaim stale driver offers (10 min window)
   offerRouter.startOfferSweeper();
 

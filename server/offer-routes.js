@@ -381,6 +381,8 @@ function acceptOffer(db, bookingId, driverId) {
      WHERE id = ?
   `).run(driverId, driverId, bookingId);
   const row = bookingRow(bookingId);
+  // A driver accepting is a confirmed job — server/calendar-sync.js decides.
+  try { require('./calendar-sync').syncBookingSoon(bookingId); } catch (_) {}
   events.broadcast('job:accepted', publicSummary(row), { driverId });
   if (wasPending) {
     intake.notifyCustomerConfirmed(parseInt(bookingId, 10))
@@ -438,6 +440,8 @@ function acceptAdhocOffer(db, bookingId) {
      WHERE id = ?
   `).run(who, who, bookingId);
   const row = bookingRow(bookingId);
+  // A driver accepting is a confirmed job — server/calendar-sync.js decides.
+  try { require('./calendar-sync').syncBookingSoon(bookingId); } catch (_) {}
   try { events.broadcast('job:accepted', publicSummary(row), {}); } catch (_) {}
   if (wasPending) {
     intake.notifyCustomerConfirmed(parseInt(bookingId, 10))

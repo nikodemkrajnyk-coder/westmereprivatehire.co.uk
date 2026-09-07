@@ -84,7 +84,7 @@ const CUSTOMER_FIELDS = new Function(fieldsDecl[0] + '; return CUSTOMER_FIELDS;'
 
 const runPatch = new Function(
   'req', 'res', 'getDb', 'events', 'require', 'console', 'autoFile', 'gcal',
-  'sendCustomerCancellation', 'CUSTOMER_FIELDS',
+  'calendarSync', 'sendCustomerCancellation', 'CUSTOMER_FIELDS',
   extractFn('sameCustomerValue') + '\nreturn (async () => {' + handler('patch', '/bookings/:id') + '})();'
 );
 const runRefund = new Function(
@@ -92,7 +92,7 @@ const runRefund = new Function(
   'return (async () => {' + handler('post', '/bookings/:id/fare-refund') + '})();'
 );
 const runMarkPaid = new Function(
-  'req', 'res', 'getDb', 'events', 'require', 'console',
+  'req', 'res', 'getDb', 'events', 'require', 'console', 'calendarSync',
   'return (async () => {' + handler('post', '/bookings/:id/mark-paid') + '})();'
 );
 
@@ -185,6 +185,9 @@ const inject = (m) => {
 const noopAutoFile = { fileBooking() {}, updateEarnings() {} };
 const noopGcal = { createEvent: () => Promise.resolve(null), updateEvent: () => Promise.resolve(true),
                    deleteEvent: () => Promise.resolve(true) };
+/* PATCH hands the booking to the calendar authority instead of pushing an
+   event itself — see server/calendar-sync.js. */
+const noopCalendarSync = { syncBookingSoon() {} };
 const OWNER_AUTH = { role: 'owner', type: 'user', id: 7 };
 
 function reply() {
@@ -196,7 +199,7 @@ function callPatch(db, body) {
   const { out, res } = reply();
   const req = { auth: OWNER_AUTH, params: { id: '10' }, body, ip: '127.0.0.1' };
   return runPatch(req, res, () => db, { broadcast() {} }, inject, console,
-    noopAutoFile, noopGcal, () => Promise.resolve(true), CUSTOMER_FIELDS).then(() => out);
+    noopAutoFile, noopGcal, noopCalendarSync, () => Promise.resolve(true), CUSTOMER_FIELDS).then(() => out);
 }
 function callRefund(db, auth) {
   const { out, res } = reply();
@@ -206,7 +209,8 @@ function callRefund(db, auth) {
 function callMarkPaid(db) {
   const { out, res } = reply();
   const req = { auth: OWNER_AUTH, params: { id: '10' }, body: {}, ip: '127.0.0.1' };
-  return Promise.resolve(runMarkPaid(req, res, () => db, { broadcast() {} }, inject, console)).then(() => out);
+  return Promise.resolve(runMarkPaid(req, res, () => db, { broadcast() {} }, inject, console,
+    noopCalendarSync)).then(() => out);
 }
 const row = (db) => db.prepare('SELECT * FROM bookings WHERE id = 10').get();
 const updateEmail = () => sent.find(m => /booking has been updated/i.test(m.subject || ''));

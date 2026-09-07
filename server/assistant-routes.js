@@ -1,6 +1,7 @@
 const express = require('express');
 const { getDb } = require('./db');
 const gcal = require('./google-calendar');
+const calendarSync = require('./calendar-sync');
 const { deadMilesFee } = require('./dead-miles');
 // Display rule, same single source of truth as every other surface. DISPLAY
 // ONLY: the booking row keeps the full address, calculate_fare still geocodes
@@ -605,23 +606,11 @@ async function executeCalendarTool(name, input, req) {
         }
       } catch (e) { /* non-fatal */ }
 
-      // Push genuinely upcoming bookings to Google Calendar; skip past records
-      // and completed/cancelled jobs so the calendar isn't cluttered.
-      if (status !== 'completed' && status !== 'cancelled' && date >= todayStr) {
-        try {
-          gcal.createEvent({
-            id: result.lastInsertRowid, ref, pickup, destination, date, time,
-            passengers, fare, payment, notes: input.notes || '',
-            customer_name: input.passenger_name || 'Guest',
-            customer_phone: input.passenger_phone || '',
-            status
-          }).then(eventId => {
-            if (eventId) {
-              try { getDb().prepare('UPDATE bookings SET calendar_event_id = ? WHERE id = ?').run(eventId, result.lastInsertRowid); } catch (_) {}
-            }
-          }).catch(() => {});
-        } catch (_) {}
-      }
+      /* The calendar decides (server/calendar-sync.js): a booking the assistant
+         records as confirmed goes on it, an enquiry waits until it is. This path
+         also never stamped a failed write, so a miss here was invisible; the
+         sweep behind it now covers that either way. */
+      calendarSync.syncBookingSoon(result.lastInsertRowid);
 
       return `Booking ${ref} created — ${date} ${time} | ${shortAddr(pickup)} → ${shortAddr(destination)} | ${passengers} passenger(s)` +
         (fare != null ? ` | £${fare.toFixed(2)}` : '') +

@@ -205,6 +205,9 @@ async function evaluate(bookingId) {
       .run(reasonNote, bookingId);
     notifyCustomerConfirmed(bookingId).catch(e =>
       console.error('[INTAKE] notifyCustomerConfirmed failed:', e.message));
+    // Confirmed is what puts a booking on the owner's calendar — one authority
+    // decides, see server/calendar-sync.js.
+    try { require('./calendar-sync').syncBookingSoon(bookingId); } catch (_) {}
     events.broadcast('booking:confirmed', {
       id: bookingId, ref: booking.ref, reason: reasonNote
     });

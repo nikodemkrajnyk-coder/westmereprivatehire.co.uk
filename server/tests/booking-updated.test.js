@@ -78,7 +78,7 @@ const CUSTOMER_FIELDS = new Function(fieldsDecl[0] + '; return CUSTOMER_FIELDS;'
 // exactly as it ships against a throwaway DB.
 const runPatch = new Function(
   'req', 'res', 'getDb', 'events', 'require', 'console', 'autoFile', 'gcal',
-  'sendCustomerCancellation', 'CUSTOMER_FIELDS',
+  'calendarSync', 'sendCustomerCancellation', 'CUSTOMER_FIELDS',
   extractFn('sameCustomerValue') + '\nreturn (async () => {' + PATCH_BODY + '})();'
 );
 
@@ -157,6 +157,11 @@ const noopGcal = {
   createEvent: () => Promise.resolve(null), updateEvent: () => Promise.resolve(true),
   deleteEvent: () => Promise.resolve(true)
 };
+/* PATCH no longer decides for itself what the calendar should show — it hands
+   the booking to the one authority that does (server/calendar-sync.js), which
+   is what keeps enquiries off the calendar and cancellations off it too. */
+const syncedIds = [];
+const noopCalendarSync = { syncBookingSoon: (id) => { syncedIds.push(id); } };
 
 function callPatch(db, body, auth) {
   sent = [];
@@ -170,7 +175,7 @@ function callPatch(db, body, auth) {
     params: { id: '10' }, body: body, ip: '127.0.0.1'
   };
   return runPatch(req, res, () => db, { broadcast() {} }, inject, console,
-    noopAutoFile, noopGcal, () => Promise.resolve(true), CUSTOMER_FIELDS)
+    noopAutoFile, noopGcal, noopCalendarSync, () => Promise.resolve(true), CUSTOMER_FIELDS)
     .then(() => out);
 }
 

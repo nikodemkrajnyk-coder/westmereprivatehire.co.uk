@@ -99,7 +99,7 @@ const staffHelpers = extractFn('staffBooking') + '\n' + extractFn('closeChangeRe
 function makeRunner(body, withStaffHelpers) {
   return new Function(
     'req', 'res', 'getDb', 'events', 'require', 'ukNow', 'crNorm', 'CHANGE_REQUEST_FIELDS', 'console',
-    'autoFile', 'gcal',
+    'autoFile', 'gcal', 'calendarSync',
     (withStaffHelpers ? staffHelpers : '') + 'return (async () => {' + body + '})();'
   );
 }
@@ -209,6 +209,11 @@ const inject = (m) => {
 };
 const noopAutoFile = { fileBooking() {} };
 const noopGcal = { updateEvent: () => Promise.resolve(true) };
+/* The handler hands the edited booking to the calendar authority rather than
+   pushing an update itself — one place decides what reaches the calendar
+   (server/calendar-sync.js). Recorded here so a test can see it was called. */
+const calls = [];
+const noopCalendarSync = { syncBookingSoon: (id) => { calls.push(id); } };
 
 function callChange(db, body, auth) {
   sent = [];
@@ -220,7 +225,7 @@ function callChange(db, body, auth) {
   const req = { auth: auth || { role: 'customer', type: 'customer', id: 1 }, params: { id: '10' }, body: body, ip: '127.0.0.1' };
   return runChange(req, res, () => db, { broadcast() {} }, inject,
     helpers.ukNow, helpers.crNorm, helpers.CHANGE_REQUEST_FIELDS, console,
-    noopAutoFile, noopGcal)
+    noopAutoFile, noopGcal, noopCalendarSync)
     .then(() => out);
 }
 
@@ -235,7 +240,7 @@ function callStaff(runner, db, auth, id) {
   return Promise.resolve(
     runner(req, res, () => db, { broadcast() {} }, inject,
       helpers.ukNow, helpers.crNorm, helpers.CHANGE_REQUEST_FIELDS, console,
-      noopAutoFile, noopGcal)
+      noopAutoFile, noopGcal, noopCalendarSync)
   ).then(() => out);
 }
 

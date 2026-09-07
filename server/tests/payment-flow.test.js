@@ -1007,9 +1007,29 @@ test('cancelling a booking deletes its Google Calendar event on both cancel path
   assert.ok(/deleteEvent\(b\.calendar_event_id\)/.test(custBlock),
     'the customer cancel link must delete the calendar event');
 
-  // 2) Owner cancel — PATCH status:cancelled deletes on the cancelled edge…
-  assert.ok(/updated\.status === 'cancelled' && updated\.calendar_event_id\)[\s\S]{0,120}gcal\.deleteEvent\(updated\.calendar_event_id\)/.test(api),
-    'owner PATCH cancel must delete the calendar event');
+  /* 2) Owner cancel — PATCH status:cancelled deletes on the cancelled edge.
+     The three hand-rolled branches this used to name (cancelled→delete,
+     has-event→update, otherwise→create) are gone: every calendar decision is
+     made once, in server/calendar-sync.js, because deciding it per-path is how
+     enquiries reached the calendar and how missed writes went unnoticed. The
+     requirement is unchanged — cancelling still removes the event — so this
+     asserts the PATCH path hands the booking to that authority, and that the
+     authority deletes on cancellation. It is proved end-to-end, against a fake
+     Google, in server/tests/calendar-auto-sync.test.js. */
+  /* Bounded to the PATCH handler. api.js hands bookings to the authority from
+     four places, so a bare search for the call passed even with this one cut. */
+  const patchStart = api.indexOf("router.patch('/bookings/:id'");
+  assert.ok(patchStart !== -1, 'the owner PATCH route is gone');
+  const patchEnd = api.indexOf('\nrouter.', patchStart + 10);
+  const patchBlock = api.slice(patchStart, patchEnd === -1 ? api.length : patchEnd);
+  assert.ok(/calendarSync\.syncBookingSoon\(updated\.id\)/.test(patchBlock),
+    'owner PATCH (the Confirm and Cancel path) no longer hands the booking to the '
+    + 'calendar authority — cancelling would leave the event on the calendar');
+  const calSync = read('server/calendar-sync.js');
+  assert.ok(/isCancelled\(b\)[\s\S]{0,600}gcal\.deleteEvent\(b\.calendar_event_id\)/.test(calSync),
+    'calendar-sync no longer deletes the event when a booking is cancelled');
+  assert.ok(/UPDATE bookings SET calendar_event_id = NULL/.test(calSync),
+    'the stale event id is not cleared after a successful delete');
   // …the owner /bookings/:id/cancel route…
   const ocStart = api.indexOf("router.post('/bookings/:id/cancel'");
   const ocEnd = api.indexOf('\nrouter.', ocStart + 10);

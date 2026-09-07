@@ -14,6 +14,7 @@ const { createPaymentIntent, isConfigured: stripeConfigured,
 const { computeSuggestedFare } = require('./fare-engine');
 const gcal = require('./google-calendar');
 const confirmToken = require('./confirm-token');
+const calendarSync = require('./calendar-sync');
 const intake = require('./intake');
 const events = require('./events');
 let autoFile;
@@ -350,12 +351,9 @@ router.post('/book', async (req, res) => {
             passengers, bags, flight: returnTrip.flight,
             fare: returnTrip.fare, payment, notes: `Return leg (outbound: ${ref})` })
         ]).catch(() => {});
-        // Calendar + intake for return leg
-        gcal.createEvent({ id: returnBookingId, ref: returnRef, pickup: destination, destination: pickup,
-          date: returnTrip.date, time: returnTrip.time || 'ASAP',
-          passengers, bags, flight: returnTrip.flight, fare: returnTrip.fare, payment,
-          notes: `Return leg (outbound: ${ref})`, customer_name: name, customer_phone: phone, status: finalStatus
-        }).then(eid => { if (eid) { try { db.prepare('UPDATE bookings SET calendar_event_id = ? WHERE id = ?').run(eid, returnBookingId); } catch (_) {} } }).catch(() => {});
+        // Calendar: the return leg reaches it the same way the outbound does —
+      // when it is confirmed, decided by server/calendar-sync.js.
+      calendarSync.syncBookingSoon(returnBookingId);
         // (intake auto-confirm intentionally skipped — see note on the outbound leg)
         events.broadcast('booking:created', { id: returnBookingId, ref: returnRef, name,
           pickup: destination, destination: pickup,
@@ -408,24 +406,10 @@ router.post('/book', async (req, res) => {
     });
 
     // Push to Google Calendar in background
-    gcal.createEvent({
-      id: result.lastInsertRowid, ref, pickup, destination,
-      date: bookingDate, time: time || 'ASAP',
-      passengers, bags, flight, fare, payment, notes, stop_address,
-      customer_name: name, customer_phone: phone,
-      status: 'pending'
-    }).then(eventId => {
-      /* A MISS THAT SAYS SO — see the same stamp on the staff path. */
-      try {
-        if (eventId) {
-          db.prepare("UPDATE bookings SET calendar_event_id = ?, calendar_sync_failed_at = NULL WHERE id = ?")
-            .run(eventId, result.lastInsertRowid);
-        } else {
-          db.prepare("UPDATE bookings SET calendar_sync_failed_at = datetime('now') WHERE id = ?")
-            .run(result.lastInsertRowid);
-        }
-      } catch (e) {}
-    }).catch(() => {});
+    /* The calendar decides for itself whether this belongs on it yet — a
+       public enquiry does not, a booking that arrives confirmed does
+       (server/calendar-sync.js). */
+    calendarSync.syncBookingSoon(result.lastInsertRowid);
 
     // Smart intake (auto-confirm) is intentionally NOT run for public quote
     // requests. Auto-confirming would email the customer a "Booking confirmed"
@@ -832,6 +816,12 @@ router.post('/pay/:ref/cash', (req, res) => {
       } catch (e) { console.error('[PAY] notifyCustomerConfirmed (cash) threw:', e.message); }
     }
 
+    /* THE TRIP IS NOW REAL. Choosing to pay the driver is the customer
+       accepting the journey — they are sent the confirmation email in the same
+       breath — so it goes on the owner's calendar now, not when money changes
+       hands on the day. */
+    calendarSync.syncBookingSoon(b.id);
+
     console.log('[PAY] Cash on the day chosen for', b.ref, wasChosen ? '(pending→awaiting_payment, cash confirmation sent)' : '');
     res.send(cashPage('ok', "You're all set — please settle the fare with your driver on the day, by cash or card. We look forward to welcoming you.", b.ref));
   } catch (err) {
@@ -1216,6 +1206,8 @@ router.post('/stripe-webhook', express.raw({ type: 'application/json' }), (req, 
                          updated_at = datetime('now')
                    WHERE ref = ?`).run(intent.amount / 100, intent.id, ref);
       console.log('[STRIPE] Payment confirmed for', ref);
+      // Paid is as confirmed as a booking gets — onto the calendar.
+      if (row && row.id) calendarSync.syncBookingSoon(row.id);
       // Tell the owner the customer paid online (amount in pounds for the toast).
       events.broadcast('booking:payment', {
         id: row?.id, ref, mode: 'online',
