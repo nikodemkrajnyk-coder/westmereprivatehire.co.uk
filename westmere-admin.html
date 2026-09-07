@@ -2582,11 +2582,52 @@ function _jdField(label,val){
    coming. GUARDRAIL: server/tests/driver-dispatch.test.js */
 var _DISPATCH = { bookingId: null, drivers: [] };
 
-function dispClose() {
+/* Take the sheet off the screen. NO history — dispOpen() calls this to replace
+   an already-open sheet, and unwinding there would fight the entry it is about
+   to push. */
+function dispRemove() {
   var el = document.getElementById('dispatch-sheet');
   if (el) el.remove();
   document.body.style.overflow = '';
+  document.removeEventListener('keydown', _dispKey);
 }
+function _dispKey(e) { if (e.key === 'Escape') dispClose(); }
+
+/* ── THE BACK BUTTON ──────────────────────────────────────────────────────────
+   The sheet used to push NOTHING onto the history. The owner app is one page —
+   goPage() swaps `.pg` sections and never touches history — so with the sheet
+   open the device Back button had no entry of its own to unwind and left the
+   app instead, which on a home-screen install is the blank page he reported
+   after "backing out". Exactly the invoice-preview bug, in a second overlay:
+   see invPreviewOpen/invPreviewClose, which this follows.
+
+   ONE ENTRY PER STEP, so Back off the confirm screen returns to the FORM with
+   what he typed still in it, rather than throwing the whole thing away.
+   GUARDRAIL: server/tests/driver-dispatch.test.js */
+var _DISP_DEPTH = 0;
+function dispPush() {
+  try { history.pushState({ dispatch: true }, '', location.href); _DISP_DEPTH++; } catch (e) {}
+}
+function dispClose(fromPop) {
+  var open = !!document.getElementById('dispatch-sheet');
+  dispRemove();
+  var n = _DISP_DEPTH;
+  _DISP_DEPTH = 0;
+  /* Only unwind what WE pushed, and only when the close did not come from the
+     back button — otherwise we go back twice and take the page he was
+     returning to with us. */
+  if (!fromPop && open && n > 0) { try { history.go(-n); } catch (e) {} }
+}
+window.addEventListener('popstate', function () {
+  if (!document.getElementById('dispatch-sheet')) return;
+  if (_DISP_DEPTH > 1) {
+    // Back off the confirm step → the form, with its values intact.
+    _DISP_DEPTH--;
+    dispOpen(_DISPATCH.bookingId, _DISPATCH.job, { keepHistory: true });
+  } else {
+    dispClose(true);
+  }
+});
 
 /* The call sites pass an id only — the job is fetched here rather than
    serialised into an onclick attribute, where a quote in an address would
@@ -2597,11 +2638,16 @@ async function dispOffer(bookingId) {
     var jr = await fetch('/api/bookings/' + bookingId, { credentials: 'include' });
     var jd = await jr.json();
     job = jd.booking || jd;
+    /* THE MONEY COMES FROM THE SERVER, worked out by the same computeSplit the
+       dispatch route stores. The confirm step used to derive it in the browser
+       from `job.fare` — and this fetch was hitting a route that did not exist,
+       so job was {} and every job was offered at £0.00. */
+    if (job) job._split = jd.split || null;
   } catch (e) { job = {}; }
   return dispOpen(bookingId, job);
 }
 
-async function dispOpen(bookingId, job) {
+async function dispOpen(bookingId, job, opts) {
   _DISPATCH.bookingId = bookingId;
   _DISPATCH.job = job || {};
   try {
@@ -2609,7 +2655,7 @@ async function dispOpen(bookingId, job) {
     var d = await r.json();
     _DISPATCH.drivers = (d.drivers || []).filter(function (x) { return !x.is_default_driver; });
   } catch (e) { _DISPATCH.drivers = []; }
-  dispClose();
+  dispRemove();
 
   var opts = ['<option value="">— someone new —</option>'].concat(
     _DISPATCH.drivers.map(function (d) {
@@ -2640,8 +2686,16 @@ async function dispOpen(bookingId, job) {
         '<div style="flex:1"><label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.55);margin:.9rem 0 .25rem">Car</label>' +
         '<input id="disp-car" autocomplete="off" placeholder="Skoda Superb, grey" style="width:100%;padding:.6rem;font-size:.95rem;border:1px solid rgba(27,27,26,.2);border-radius:7px"></div>' +
       '</div>' +
-      '<label style="display:flex;align-items:center;gap:.55rem;margin:1rem 0 .2rem;font-size:.9rem;color:var(--navy,#102a43);cursor:pointer">' +
-        '<input id="disp-save" type="checkbox" style="width:17px;height:17px">Save this driver for future work</label>' +
+      /* LITERAL INK, NOT var(--navy). The white-surfaces restyle sets
+         --navy:#ffffff !important, and forces text black only for `#scr-app *`
+         — and this sheet is appended to document.body, outside #scr-app. So the
+         label rendered white on white: the words were in the DOM the whole
+         time, and the owner saw a bare tick box. Every other line in this sheet
+         already uses a literal colour, which is why only this one vanished.
+         GUARDRAIL: server/tests/driver-dispatch.test.js */
+      '<label for="disp-save" style="display:flex;align-items:center;gap:.55rem;margin:1rem 0 .2rem;font-size:.9rem;color:#1a1a1a;cursor:pointer">' +
+        '<input id="disp-save" type="checkbox" style="width:17px;height:17px;flex:0 0 auto">' +
+        '<span>Save this driver for future work</span></label>' +
       '<p id="disp-err" style="display:none;margin:.7rem 0 0;font-size:.85rem;color:#8B2222"></p>' +
       '<div style="display:flex;gap:.6rem;margin-top:1.1rem">' +
         '<button type="button" id="disp-cancel" style="flex:1;padding:.75rem;border:1px solid rgba(27,27,26,.25);background:transparent;border-radius:8px;font-size:.85rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer">Cancel</button>' +
@@ -2650,9 +2704,11 @@ async function dispOpen(bookingId, job) {
     '</div>';
   document.body.appendChild(el);
   document.body.style.overflow = 'hidden';
+  document.addEventListener('keydown', _dispKey);
+  if (!(opts && opts.keepHistory)) dispPush();
 
-  document.getElementById('disp-x').onclick = dispClose;
-  document.getElementById('disp-cancel').onclick = dispClose;
+  document.getElementById('disp-x').onclick = function () { dispClose(); };
+  document.getElementById('disp-cancel').onclick = function () { dispClose(); };
   /* Picking a saved driver FILLS THE FORM rather than replacing it, so what is
      about to be sent is on screen and can still be corrected — a driver in a
      different car today should not go out under yesterday's plate. */
@@ -2679,11 +2735,18 @@ function dispReview() {
     err.textContent = 'That email address does not look right.'; err.style.display = 'block'; return;
   }
   var job = _DISPATCH.job || {};
-  var fare = Number(job.fare) || 0;
-  var commission = Math.round(fare * 0.10 * 100) / 100;
-  var payout = Math.round((fare - commission) * 100) / 100;
+  /* THE SERVER'S FIGURES, not the browser's. `_split` is what GET
+     /api/bookings/:id computed with the same function the dispatch route uses
+     to store the split, so this screen and the driver's email cannot disagree.
+     A missing split means the fare is genuinely unknown — say so rather than
+     print £0.00, which reads as a real number and a free job. */
+  var sp = job._split || {};
+  var known = sp.fare !== null && sp.fare !== undefined && !isNaN(sp.fare);
+  var fare = known ? Number(sp.fare) : null;
+  var commission = known ? Number(sp.commission) : null;
+  var payout = known ? Number(sp.payout) : null;
   var cash = String(job.payment || '').toLowerCase() === 'cash';
-  var m = function (n) { return '£' + Number(n).toFixed(2); };
+  var m = function (n) { return (n === null || n === undefined || isNaN(n)) ? 'not set yet' : '£' + Number(n).toFixed(2); };
 
   /* WHAT IS ABOUT TO LEAVE THE BUILDING, spelled out: the job, the address it
      is going to, and the money. The commission is shown because the driver's
@@ -2710,8 +2773,9 @@ function dispReview() {
       '<div style="display:flex;justify-content:space-between;padding:.15rem 0"><span style="color:rgba(27,27,26,.65)">Your commission (10%)</span><span>' + m(commission) + '</span></div>' +
       '<div style="display:flex;justify-content:space-between;padding:.35rem 0 0;border-top:1px solid rgba(27,27,26,.12);margin-top:.35rem;font-weight:500"><span>Driver payout</span><span>' + m(payout) + '</span></div>' +
       '<div style="margin-top:.6rem;font-size:.84rem;color:rgba(27,27,26,.6);line-height:1.6">' +
-        (cash ? 'CASH — he collects ' + m(fare) + ' in the car and keeps it; your ' + m(commission) + ' nets off his next payout.'
-              : 'PREPAID — the customer has already paid you; you owe him ' + m(payout) + '.') +
+        (!known ? 'THIS JOB HAS NO FARE YET. Price it before you send it, or he is being asked to drive for nothing.'
+          : cash ? 'CASH — he collects ' + m(fare) + ' in the car and keeps it; your ' + m(commission) + ' nets off his next payout.'
+                 : 'PREPAID — the customer has already paid you; you owe him ' + m(payout) + '.') +
       '</div>' +
     '</div>' +
     '<p style="margin:.8rem 0 0;font-size:.85rem;color:rgba(27,27,26,.6);line-height:1.6">He is emailed the trip, the passenger’s name and number, and the payout. The customer is told who is picking them up.</p>' +
@@ -2720,7 +2784,11 @@ function dispReview() {
       '<button type="button" id="disp-back" style="flex:1;padding:.75rem;border:1px solid rgba(27,27,26,.25);background:transparent;border-radius:8px;font-size:.85rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer">Back</button>' +
       '<button type="button" id="disp-send" style="flex:2;padding:.75rem;border:var(--border-strong,1.5px) solid var(--westmere-navy,#102a43);background:transparent;color:var(--westmere-navy,#102a43);border-radius:8px;font-size:.85rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer">Confirm &amp; send</button>' +
     '</div>';
-  document.getElementById('disp-back').onclick = function () { dispOpen(_DISPATCH.bookingId, _DISPATCH.job); };
+  /* One more entry, so the DEVICE back button off this step lands on the form
+     rather than closing everything he typed. The visible Back goes through the
+     same door, so both routes behave identically. */
+  dispPush();
+  document.getElementById('disp-back').onclick = function () { history.back(); };
   document.getElementById('disp-send').onclick = dispSend;
 }
 

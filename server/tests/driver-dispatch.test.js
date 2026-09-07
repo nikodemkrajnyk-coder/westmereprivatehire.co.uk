@@ -35,8 +35,13 @@ let passed = 0, failed = 0;
 const queue = [];
 function test(name, fn) { queue.push({ name, fn }); }
 
+/* RESEND ONLY. Some tests below drive the real routes over a real socket, and a
+   stub that swallowed every fetch answered those with {id:'x'} — which has no
+   .text(), so the test failed on the stub rather than on the code. */
 const SENT = [];
+const realFetch = global.fetch;
 global.fetch = async (u, o) => {
+  if (!/resend\.com/.test(String(u))) return realFetch(u, o);
   try { SENT.push(JSON.parse(o.body)); } catch (e) {}
   return { ok: true, status: 200, json: async () => ({ id: 'x' }) };
 };
@@ -49,6 +54,18 @@ const router = require('../offer-routes');
 const ROOT = path.join(__dirname, '..', '..');
 const APPS = [['westmere-owner.html', 'the owner app'], ['westmere-admin.html', 'the admin app']];
 const app = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
+/* Comments are prose, not behaviour: a guard that finds the thing it forbids
+   inside the comment explaining why it is forbidden has proved nothing. */
+const strip = (c) => c.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1');
+/* One shipped function, bounded at its own closing brace in column 0 — the way
+   the rest of the suite reads a handler out of an app. */
+function fnBody(code, name) {
+  const i = code.indexOf('function ' + name + '(');
+  assert.ok(i > -1, name + ' is gone');
+  const end = code.indexOf('\n}', i);
+  assert.ok(end > i, name + ' has no closing brace');
+  return code.slice(i, end);
+}
 
 function res() {
   return { statusCode: 200, body: null,
@@ -392,6 +409,271 @@ test('the full split is still STORED, whatever the email shows', async () => {
   assert.strictEqual(ledger.westmereIncome(row), 9.60,
     'the income rule no longer sees the commission');
 });
+
+/* ══ THE THREE LIVE BUGS ON WM-PW1GVo ══════════════════════════════════════════
+   Reported by the owner on the deployed flow (c175815):
+     A. the confirm step showed a fare and commission of £0.00;
+     B. backing out of the sheet blanked the booking behind it;
+     C. the "save this driver" checkbox had no visible label.
+   Three different causes, one screen. ══════════════════════════════════════ */
+
+console.log('\nBUG A — the confirm step showed £0.00');
+
+test('GET /api/bookings/:id exists at all', async () => {
+  /* THE WHOLE CAUSE. dispOffer fetched this route to find the fare; it had
+     never been written. Express answered with its HTML 404 page, .json() threw,
+     the catch swallowed it into an empty job, and every figure on the confirm
+     screen was Number(undefined) || 0. */
+  const express = require('express');
+  const b = seedBooking({ fare: 72 });
+  const app = express();
+  app.use(express.json());
+  app.use((q, _r, n) => { q.auth = { id: 1, role: 'owner', type: 'user' }; n(); });
+  app.use('/api', require('../api'));
+  const srv = app.listen(0);
+  try {
+    const r = await fetch('http://127.0.0.1:' + srv.address().port + '/api/bookings/' + b.id);
+    const text = await r.text();
+    assert.strictEqual(r.status, 200,
+      'GET /api/bookings/:id answered ' + r.status + ' — the confirm step gets no fare and shows £0.00');
+    let j = null;
+    try { j = JSON.parse(text); } catch (_) {}
+    assert.ok(j, 'it answered, but not with JSON: ' + text.slice(0, 60)
+      + ' — .json() throws and the caller falls back to an empty job');
+    assert.strictEqual(j.booking.fare, 72, 'the booking must carry its fare');
+    assert.deepStrictEqual(j.split, { fare: 72, commission: 7.2, payout: 64.8 },
+      'the server must send the split — the browser must not work the money out itself');
+  } finally { srv.close(); }
+});
+
+test('the confirm figures are the ones the dispatch route then stores', async () => {
+  /* The confirm screen is the last chance to notice a wrong number, so what it
+     shows and what is recorded have to come from the same arithmetic. */
+  const express = require('express');
+  const b = seedBooking({ fare: 137.5 });
+  const app = express();
+  app.use(express.json());
+  app.use((q, _r, n) => { q.auth = { id: 1, role: 'owner', type: 'user' }; n(); });
+  app.use('/api', require('../api'));
+  const srv = app.listen(0);
+  let shown;
+  try {
+    const r = await fetch('http://127.0.0.1:' + srv.address().port + '/api/bookings/' + b.id);
+    shown = (await r.json()).split;
+  } finally { srv.close(); }
+
+  SENT.length = 0;
+  await dispatch(b.id, { name: 'Marek Nowak', email: 'marek@example.com' });
+  const row = db.prepare('SELECT fare, admin_fee, driver_pay FROM bookings WHERE id = ?').get(b.id);
+  assert.strictEqual(shown.commission, row.admin_fee,
+    'the confirm screen said ' + shown.commission + ' and ' + row.admin_fee + ' was stored');
+  assert.strictEqual(shown.payout, row.driver_pay,
+    'the confirm screen said ' + shown.payout + ' and ' + row.driver_pay + ' was stored');
+  assert.ok(row.admin_fee > 0 && row.driver_pay > 0,
+    'a booking with a fare must never store a split of zero');
+});
+
+test('an unpriced job says so instead of printing £0.00', async () => {
+  const express = require('express');
+  const b = seedBooking({ fare: null });
+  const app = express();
+  app.use(express.json());
+  app.use((q, _r, n) => { q.auth = { id: 1, role: 'owner', type: 'user' }; n(); });
+  app.use('/api', require('../api'));
+  const srv = app.listen(0);
+  try {
+    const r = await fetch('http://127.0.0.1:' + srv.address().port + '/api/bookings/' + b.id);
+    const j = await r.json();
+    assert.deepStrictEqual(j.split, { fare: null, commission: null, payout: null },
+      'an unpriced job must report null throughout, not 0 — £0.00 reads as a real number '
+      + 'and a free job, and it is what the owner saw. Got ' + JSON.stringify(j.split));
+  } finally { srv.close(); }
+});
+
+for (const [file, label] of APPS) {
+  test(label + ': the confirm step does not work the money out in the browser', () => {
+    const code = strip(app(file));
+    const review = fnBody(code, 'dispReview');
+    assert.ok(!/\*\s*0\.1/.test(review) && !/\*\s*\.1/.test(review),
+      label + ' computes the commission in the browser again — the confirm screen and the '
+      + "driver's email are then free to disagree, and the email is the one he holds us to");
+    assert.ok(/_split/.test(review),
+      label + ' does not read the split the server sent');
+    assert.ok(/Number\(job\.fare\)\s*\|\|\s*0/.test(review) === false,
+      label + ' still falls back to a fare of 0 — that is the £0.00 the owner saw');
+  });
+
+  test(label + ': the fare is fetched with the booking', () => {
+    const offer = fnBody(strip(app(file)), 'dispOffer');
+    assert.ok(/_split\s*=\s*jd\.split/.test(offer),
+      label + ' fetches the booking but throws the split away');
+  });
+}
+
+console.log('\nBUG B — backing out blanked the page behind');
+
+/* EXECUTED, NOT GREPPED. The bug was in what the history calls DO, not in
+   whether they appear, so the shipped functions are run here against a stub
+   window: a source scan for "pushState" would have passed on a version that
+   pushed once and unwound twice. */
+function historyHarness(file) {
+  const code = app(file);
+  const a = code.indexOf('function dispRemove()');
+  const b = code.indexOf("window.addEventListener('popstate', function () {", a);
+  assert.ok(a > -1 && b > a, file + ': the dispatch history block could not be found');
+  /* Bounded at a `});` in COLUMN ZERO. The handler's own body contains
+     `dispOpen(..., { keepHistory: true });`, so the first `});` in the string
+     lands mid-function and the slice would not parse. */
+  const end = code.indexOf('\n});', b) + 4;
+  assert.ok(end > b, file + ': the popstate handler has no closing brace at column 0');
+  const block = code.slice(a, end);
+
+  const log = [];
+  const sheet = { present: true, remove() { this.present = false; } };
+  const listeners = {};
+  const sandbox = {
+    _DISPATCH: { bookingId: 7, job: { fare: 72 } },
+    document: {
+      getElementById: (id) => (id === 'dispatch-sheet' && sheet.present ? sheet : null),
+      body: { style: {} },
+      addEventListener() {}, removeEventListener() {}
+    },
+    history: {
+      pushState() { log.push('push'); },
+      go(n) { log.push('go' + n); },
+      back() { log.push('back'); }
+    },
+    window: { addEventListener(ev, fn) { listeners[ev] = fn; } },
+    location: { href: 'https://westmereprivatehire.co.uk/westmere-owner.html' },
+    // dispOpen is not part of the block; record that a re-render was asked for.
+    dispOpen(id, job, opts) { log.push('reopen' + (opts && opts.keepHistory ? ':keep' : ':push')); sheet.present = true; }
+  };
+  const vm = require('vm');
+  vm.createContext(sandbox);
+  vm.runInContext(block, sandbox);
+  return { sandbox, log, sheet, pop: () => listeners.popstate && listeners.popstate() };
+}
+
+for (const [file, label] of APPS) {
+  test(label + ': opening the sheet pushes an entry, so Back has something to unwind', () => {
+    /* THE WIRING FIRST. The harness below drives dispPush directly, which tests
+       what it does but not that anybody calls it — and "nobody calls it" is the
+       live bug exactly. dispOpen and dispReview are read for the call. */
+    const code = strip(app(file));
+    const open = fnBody(code, 'dispOpen');
+    assert.ok(/dispPush\(\)/.test(open),
+      label + ': dispOpen pushes no history entry — the device Back button leaves the app '
+      + 'and takes the booking behind it, which is the blank page the owner saw');
+    assert.ok(/keepHistory/.test(open),
+      label + ': dispOpen pushes unconditionally — re-rendering the form after a Back '
+      + 'would push a second entry and Back would stop working');
+    const review = fnBody(code, 'dispReview');
+    assert.ok(/dispPush\(\)/.test(review),
+      label + ': the confirm step pushes no entry of its own, so Back off it closes the '
+      + 'whole sheet and throws away everything he typed');
+    assert.ok(/history\.back\(\)/.test(review),
+      label + ': the visible Back button does not go through the history, so it and the '
+      + 'device Back button can behave differently');
+
+    const h = historyHarness(file);
+    h.sandbox.dispPush();
+    assert.deepStrictEqual(h.log, ['push'],
+      label + ': the sheet pushes no history entry — the device Back button leaves the app '
+      + 'and the booking behind it goes with it. That is the blank page.');
+    assert.strictEqual(h.sandbox._DISP_DEPTH, 1, 'the depth must be counted');
+  });
+
+  test(label + ': Back off the confirm step returns to the FORM, not out of the sheet', () => {
+    const h = historyHarness(file);
+    h.sandbox.dispPush();            // dispOpen
+    h.sandbox.dispPush();            // dispReview
+    assert.strictEqual(h.sandbox._DISP_DEPTH, 2, 'the confirm step must have its own entry');
+    h.pop();
+    assert.ok(h.sheet.present,
+      label + ': backing off the confirm step closed the whole sheet and lost what he typed');
+    assert.ok(h.log.indexOf('reopen:keep') !== -1,
+      label + ': the form was not re-rendered, or it was re-rendered while pushing ANOTHER entry');
+    assert.strictEqual(h.sandbox._DISP_DEPTH, 1, 'the depth must come back down');
+  });
+
+  test(label + ': Cancel unwinds exactly what was pushed — no more, no less', () => {
+    const h = historyHarness(file);
+    h.sandbox.dispPush();
+    h.sandbox.dispPush();
+    h.log.length = 0;
+    h.sandbox.dispClose();
+    assert.deepStrictEqual(h.log, ['go-2'],
+      label + ': closing from the button unwound ' + JSON.stringify(h.log)
+      + ' — one too few leaves a dead entry, one too many takes the page behind it away');
+    assert.strictEqual(h.sheet.present, false, 'the sheet must actually close');
+    assert.strictEqual(h.sandbox._DISP_DEPTH, 0);
+  });
+
+  test(label + ': closing FROM Back does not go back a second time', () => {
+    /* The invoice preview's own lesson, and the one that produces the reported
+       symptom: unwinding again from inside a popstate handler takes the page
+       he was returning to with it. */
+    const h = historyHarness(file);
+    h.sandbox.dispPush();
+    h.log.length = 0;
+    h.pop();
+    assert.strictEqual(h.sheet.present, false, label + ': Back did not close the sheet');
+    assert.deepStrictEqual(h.log.filter((x) => /^go|^back/.test(x)), [],
+      label + ': closing from the back button unwound the history AGAIN (' + JSON.stringify(h.log)
+      + ') — that is the booking detail disappearing');
+  });
+
+  test(label + ': a stray popstate with no sheet open changes nothing', () => {
+    const h = historyHarness(file);
+    h.sheet.present = false;
+    h.pop();
+    assert.deepStrictEqual(h.log, [],
+      label + ': the handler acts even with no sheet open — it would hijack every Back in the app');
+  });
+
+  test(label + ': Escape closes the sheet', () => {
+    const h = historyHarness(file);
+    h.sandbox.dispPush();
+    h.sandbox._dispKey({ key: 'Escape' });
+    assert.strictEqual(h.sheet.present, false, label + ': Escape does not close the sheet');
+  });
+}
+
+console.log('\nBUG C — the checkbox label was invisible');
+
+for (const [file, label] of APPS) {
+  test(label + ': the "save this driver" label is rendered AND has visible ink', () => {
+    const code = app(file);
+    const open = fnBody(code, 'dispOpen');
+    assert.ok(/Save this driver for future work/.test(open),
+      label + ': the label text is gone');
+    /* THE CAUSE, not the symptom. The white-surfaces restyle sets --navy to
+       #ffffff, and forces text black only inside #scr-app — and this sheet is
+       appended to document.body. Anything in it that colours itself with a
+       whitened variable is invisible. Every var used for colour in the sheet is
+       checked, so the next element to reach for one is caught too. */
+    const whitened = [];
+    const re = /--([a-z0-9-]+)\s*:\s*#(fff|ffffff)\s*!important/gi;
+    let m;
+    while ((m = re.exec(code)) !== null) whitened.push('--' + m[1]);
+    assert.ok(whitened.length, 'the white-theme block could not be found — re-anchor this guard');
+    const used = [];
+    const cre = /color:\s*var\((--[a-z0-9-]+)/gi;
+    while ((m = cre.exec(open)) !== null) used.push(m[1]);
+    for (const v of used) {
+      assert.ok(whitened.indexOf(v) === -1,
+        label + ': the dispatch sheet colours text with ' + v + ', which the white-surfaces '
+        + 'restyle sets to #ffffff. The sheet lives outside #scr-app, so that rule does not '
+        + 'reach it — the text renders white on white, exactly as the checkbox label did.');
+    }
+  });
+
+  test(label + ': the label is clickable, and tied to the box', () => {
+    const open = fnBody(app(file), 'dispOpen');
+    assert.ok(/for="disp-save"/.test(open),
+      label + ': the label is not bound to the checkbox — tapping the words does nothing');
+  });
+}
 
 test('this guardrail is wired into npm test', () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));

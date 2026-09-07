@@ -1354,6 +1354,50 @@ async function suggestFareFor(b) {
 // Owner/admin: what should this journey cost, and what has already been paid?
 // Backs the fare box on a job flagged for fare review — including after a page
 // reload, when the figure returned by Accept is long gone.
+/* ── ONE BOOKING, WITH ITS MONEY ──────────────────────────────────────────────
+   This route did not exist. The dispatch form asked for it anyway — the confirm
+   step fetched GET /api/bookings/:id to find the fare — and got Express's HTML
+   404 page, which threw in .json(), which the caller swallowed into an empty
+   job. So the confirm screen offered every job at a fare of £0.00 and a
+   commission of £0.00.
+
+   NOTHING WAS ACTUALLY MIS-SENT: the dispatch route reads the booking from the
+   database itself and splits the stored fare, so the money that was recorded
+   and emailed was always right. It was the screen the owner checks BEFORE
+   sending that was wrong, which is the worst place for it — that screen exists
+   to be the last chance to notice.
+
+   The split is computed HERE, by the same computeSplit the dispatch route uses,
+   and sent with the booking. The browser must not work out money: a second
+   implementation in JavaScript is exactly how a confirm screen and a driver's
+   email come to disagree.
+   GUARDRAIL: server/tests/driver-dispatch.test.js */
+router.get('/bookings/:id', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+  const booking = getDb().prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+  if (!booking) return res.status(404).json({ error: 'Booking not found' });
+
+  const { computeSplit } = require('./offer-routes');
+  const split = computeSplit(booking.fare);
+  res.json({
+    ok: true,
+    booking,
+    /* null, not zero, when the job has no fare yet. A confirm screen that says
+       £0.00 reads as a real number and a free job; one that says the fare is
+       not set says what is actually true. */
+    split: {
+      fare: (booking.fare === null || booking.fare === undefined || booking.fare === '')
+        ? null : Number(booking.fare),
+      commission: split.admin_fee,
+      payout: split.driver_pay
+    }
+  });
+});
+
 router.get('/bookings/:id/suggested-fare', async (req, res) => {
   const booking = staffBooking(req, res);
   if (!booking) return;
