@@ -13,6 +13,7 @@ const { createPaymentIntent, isConfigured: stripeConfigured,
         findPaymentIntentByRef, findOpenPaymentIntentByRef, findIntentByAdjustKey } = require('./stripe');
 const { computeSuggestedFare } = require('./fare-engine');
 const gcal = require('./google-calendar');
+const confirmToken = require('./confirm-token');
 const intake = require('./intake');
 const events = require('./events');
 let autoFile;
@@ -39,12 +40,15 @@ const router = express.Router();
 // ── Branded standalone page for the "Pay on the day" link ────────────────
 // Self-contained HTML (no build step) matching the westmere-pay.html styling.
 // state: 'ok' | 'paid' | 'error'
-function cashPage(state, message, ref) {
+function cashPage(state, message, ref, choice) {
+  /* Defensive: the confirm state needs its click token and card link. Rendering
+     it without them would put a dead button in front of a customer. */
+  choice = choice || {};
   const okIcon   = '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 6L9 17l-5-5"/></svg>';
   const infoIcon = '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>';
   const isConfirm = state === 'confirm';
   const isErr = state === 'error';
-  const heading = state === 'ok' ? 'Thank you' : (state === 'paid' ? 'Already paid' : (isConfirm ? 'Pay on the day' : 'Link not available'));
+  const heading = state === 'ok' ? 'Thank you' : (state === 'paid' ? 'Already paid' : (isConfirm ? 'How would you like to pay?' : 'Link not available'));
   const icoCls = (isErr || isConfirm) ? 'info' : 'ok';
   const ico = (isErr || isConfirm) ? infoIcon : okIcon;
   const refLine = ref ? `<p style="margin-top:12px" class="muted-ref">Ref: ${String(ref).replace(/[<>&"]/g, '')}</p>` : '';
@@ -87,7 +91,42 @@ a.link{color:var(--navy);text-decoration:none;border-bottom:1px solid rgba(16,42
     <h2>${heading}</h2>
     <p>${message}</p>
     ${refLine}
-    ${isConfirm ? `<form method="POST" style="margin-top:20px"><button type="submit" style="width:100%;padding:14px;background:var(--navy);color:#fff;border:none;border-radius:6px;font-family:var(--sans);font-size:13px;font-weight:500;letter-spacing:2px;text-transform:uppercase;cursor:pointer">Confirm — Pay on the Day</button></form>` : ''}
+    ${isConfirm && choice.nonce ? `
+      <!-- NO FORM, DELIBERATELY. The page this replaces posted itself back to
+           the same URL with the token already in it, so anything that fetched
+           the page and submitted its form chose cash for the customer — which
+           is what a corporate mail scanner does to every link it is sent, and
+           what flipped a live booking to cash twice in one day. The choice now
+           travels on a fetch() that only a real click makes, carrying a token
+           this server signed when it rendered the page. -->
+      <div style="margin-top:22px;text-align:left">
+        <a href="${choice.payUrl}" style="display:block;text-align:center;padding:14px;background:var(--navy);color:#fff;border-radius:6px;font-family:var(--sans);font-size:13px;font-weight:500;letter-spacing:2px;text-transform:uppercase;text-decoration:none">Pay ${choice.fareStr ? choice.fareStr + ' ' : ''}by card now</a>
+        <div style="display:flex;align-items:center;gap:12px;margin:18px 0"><span style="flex:1;height:1px;background:var(--border)"></span><span style="font-family:var(--sans);font-size:11px;letter-spacing:2px;color:var(--muted)">OR</span><span style="flex:1;height:1px;background:var(--border)"></span></div>
+        <button type="button" id="cash-confirm" style="width:100%;padding:14px;background:transparent;color:var(--navy);border:1px solid var(--border);border-radius:6px;font-family:var(--sans);font-size:13px;font-weight:500;letter-spacing:2px;text-transform:uppercase;cursor:pointer">Pay the driver on the day</button>
+        <p id="cash-err" style="margin-top:12px;font-size:13px;color:#8B2222;display:none"></p>
+        <noscript><p style="margin-top:12px;font-size:13px">To settle with your driver instead, please call us on <a class="link" href="tel:+447930342593">07930&nbsp;342593</a> and we will note it on your booking.</p></noscript>
+      </div>
+      <script>
+      (function(){
+        var b = document.getElementById('cash-confirm');
+        if (!b) return;
+        b.addEventListener('click', function(){
+          b.disabled = true; b.textContent = 'One moment…';
+          fetch(location.pathname + location.search, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ confirm: ${JSON.stringify(choice.nonce)} })
+          }).then(function(r){ return r.text(); }).then(function(html){
+            document.open(); document.write(html); document.close();
+          }).catch(function(){
+            b.disabled = false; b.textContent = 'Pay the driver on the day';
+            var e = document.getElementById('cash-err');
+            e.style.display = 'block';
+            e.textContent = 'We could not save that just now. Please try again, or call us on 07930 342593.';
+          });
+        });
+      })();
+      <\/script>` : ''}
     <p style="margin-top:16px;font-size:13px">Questions? Call us on <a class="link" href="tel:+447930342593">07930&nbsp;342593</a>.</p>
   </div></div>
 </div></body></html>`;
@@ -703,10 +742,21 @@ router.get('/pay/:ref/cash', (req, res) => {
       return res.send(cashPage('ok', "You're all set — please settle the fare with your driver on the day, by cash or card. We look forward to welcoming you.", b.ref));
     }
 
-    // Show confirmation page — the customer must click the button to confirm
+    /* THE CHOICE, NOT A CONFIRMATION OF ONE ALREADY MADE.
+       Opening this link used to say "you have chosen to pay your driver" and
+       offer one button to agree with. It was reached from an email that also
+       offered a card link, so a customer who wanted to pay by card and opened
+       the wrong one was told he had decided something he had not. Both ways
+       out are on the page now, and neither happens until he picks one. */
     const fareStr = b.fare ? '£' + Number(b.fare).toFixed(2) : '';
-    res.send(cashPage('confirm', 'You have chosen to settle the fare' + (fareStr ? ' of ' + fareStr : '') + ' with your driver on the day, by cash or card. Please confirm below.', b.ref));
-  } catch (err) {
+    const choice = {
+      fareStr,
+      payUrl: '/westmere-pay.html?ref=' + encodeURIComponent(b.ref) + '&t=' + encodeURIComponent(token),
+      nonce: confirmToken.mint(b.ref)
+    };
+    res.send(cashPage('confirm', 'Settle the fare' + (fareStr ? ' of ' + fareStr : '')
+      + ' by card now, or with your driver on the day. Nothing is decided until you choose.',
+      b.ref, choice));  } catch (err) {
     console.error('[PAY] cash page error:', err.message);
     res.status(500).send(cashPage('error', 'Something went wrong. Please call us on 07930 342593 and we will sort it out.'));
   }
@@ -726,6 +776,26 @@ router.post('/pay/:ref/cash', (req, res) => {
     if (!b || !b.pay_token || b.pay_token !== token) {
       return res.status(404).send(cashPage('error', "We couldn't find this booking."));
     }
+
+    /* ── A CLICK, NOT A FETCH ────────────────────────────────────────────
+       The pay_token in the URL says WHICH booking; it does not say that a
+       person decided anything. It sits in an email, and anything that reads
+       that email can replay it — which is exactly what happened: this booking
+       flipped to cash twice in one day from "email link", user_id 0, each time
+       undoing the card option the owner had just restored.
+
+       This token is different. It is minted when the choice page is rendered,
+       signed by this server, expires within the hour, and is sent by script on
+       a click — so it cannot be lifted out of an email, and there is no form
+       for a scanner to submit. Without it nothing is written and nothing is
+       audited: a machine following the link leaves no mark at all. */
+    if (!confirmToken.verify(b.ref, req.body && req.body.confirm)) {
+      console.warn('[PAY] cash POST for', b.ref, 'without a valid click token — ignored (ip ' + req.ip + ')');
+      return res.status(400).send(cashPage('error',
+        'Please choose from the payment page rather than following a saved link — '
+        + 'open the link in your confirmation email again and pick an option.', b.ref));
+    }
+
     // Choosing "pay your driver" is the customer's explicit method choice, and
     // it is the SAME act however they reach it — this tokenised link, or the
     // button in My Account. Both go through applyCashChoice (server/pay-lock.js)
