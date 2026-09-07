@@ -114,6 +114,151 @@ function isDefaultDriver(db, driverId) {
   } catch (_) { return false; }
 }
 
+/* ── SEND THIS JOB TO A DRIVER ─────────────────────────────────────────────
+   A DISPATCH, not an offer. The route below OFFERS a job — the driver gets
+   accept and decline buttons and the work is not his until he presses one.
+   This one gives it to him: he is told it is his, what it pays, and the
+   customer is told who is coming. There is nothing to accept.
+
+   ONE ACT, FOUR CONSEQUENCES, so they cannot come apart:
+     · the booking is assigned and STAMPED as passed on (passed_at), which is
+       what separates work Westmere did from work it subcontracted — driver_id
+       alone cannot say it, because the owner is a driver too and his own jobs
+       carry his id;
+     · the driver is emailed the job and what he will be paid for it;
+     · the customer is emailed who is picking them up and in what;
+     · the driver is saved for next time, if the owner asked for that.
+
+   THE SPLIT IS COMPUTED HERE AND STORED. Quoting a payout in an email and
+   recomputing it later is how a driver and an operator come to disagree about
+   what a job was worth; the figures the driver was shown are the figures on
+   the row. GUARDRAIL: server/tests/driver-dispatch.test.js */
+router.post('/bookings/:id/dispatch', staffOnly, async (req, res) => {
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+
+  const b = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+  if (!b) return res.status(404).json({ error: 'Booking not found' });
+  if (String(b.status || '') === 'cancelled') {
+    return res.status(409).json({ error: 'This booking is cancelled — there is nothing to send.' });
+  }
+
+  const body = req.body || {};
+  const savedId = body.driver_id ? parseInt(body.driver_id, 10) : null;
+  let name  = String(body.name  || '').trim();
+  let email = String(body.email || '').trim().toLowerCase();
+  let phone = String(body.phone || '').trim();
+  let reg   = String(body.reg   || '').trim().toUpperCase().replace(/\s+/g, ' ');
+  let car   = String(body.car   || '').trim();
+  const saveDriver = !!body.save_driver;
+
+  /* A SAVED DRIVER FILLS THE FORM IN. Anything typed alongside still wins, so
+     a driver in a different car today is not sent out under yesterday's plate. */
+  let driverRow = null;
+  if (savedId) {
+    driverRow = db.prepare(`SELECT id, full_name, email, phone, vehicle, reg FROM users
+                             WHERE id = ? AND role IN ('driver','owner') AND active = 1`).get(savedId);
+    if (!driverRow) return res.status(404).json({ error: 'Driver not found or inactive' });
+    name  = name  || String(driverRow.full_name || '').trim();
+    email = email || String(driverRow.email || '').trim().toLowerCase();
+    phone = phone || String(driverRow.phone || '').trim();
+    reg   = reg   || String(driverRow.reg || '').trim().toUpperCase();
+    car   = car   || String(driverRow.vehicle || '').trim();
+  }
+
+  if (!name)  return res.status(400).json({ error: 'A name is needed — it goes to the customer.' });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: 'That email address does not look right: ' + email });
+  }
+
+  /* WHAT HE IS PAID, worked out once and written down. */
+  const split = computeSplit(b.fare);
+
+  /* SAVE HIM FOR NEXT TIME, if asked. A driver record is internal data — no
+     login, no welcome email, nothing lands in his inbox because of this tick.
+     Matched on email so ticking it twice updates rather than duplicates. */
+  let savedDriverId = driverRow ? driverRow.id : null;
+  if (saveDriver && !savedDriverId) {
+    try {
+      const existing = db.prepare("SELECT id FROM users WHERE LOWER(email) = ? AND role IN ('driver','owner')").get(email);
+      if (existing) {
+        savedDriverId = existing.id;
+        db.prepare(`UPDATE users SET full_name = COALESCE(NULLIF(?,''), full_name),
+                                     phone = COALESCE(NULLIF(?,''), phone),
+                                     reg = COALESCE(NULLIF(?,''), reg),
+                                     vehicle = COALESCE(NULLIF(?,''), vehicle),
+                                     updated_at = datetime('now')
+                     WHERE id = ?`).run(name, phone, reg, car, existing.id);
+      } else {
+        const info = db.prepare(`INSERT INTO users (username, password, role, full_name, email, phone,
+                                                    reg, vehicle, active, has_login, onboarding_status)
+                                 VALUES (?, '', 'driver', ?, ?, ?, ?, ?, 1, 0, 'approved')`)
+          .run('__nolgn_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+               name, email, phone, reg, car);
+        savedDriverId = info.lastInsertRowid;
+      }
+    } catch (e) {
+      console.error('[DISPATCH] could not save driver:', e.message);
+    }
+  }
+
+  db.prepare(`UPDATE bookings
+                 SET driver_id = ?, assigned_to_name = ?, assigned_to_email = ?,
+                     assigned_to_reg = ?, assigned_to_car = ?,
+                     driver_pay = ?, admin_fee = ?,
+                     passed_at = COALESCE(passed_at, datetime('now')),
+                     updated_at = datetime('now')
+               WHERE id = ?`)
+    .run(savedDriverId, name, email, reg || null, car || null,
+         split.driver_pay, split.admin_fee, id);
+
+  /* The customer's address lives on the CUSTOMER, not always on the booking —
+     a raw bookings row has passenger_email only when one was typed. Read it the
+     way every other customer email does, or the "who is picking you up" notice
+     silently goes nowhere. */
+  const updated = db.prepare(`
+    SELECT b.*,
+           COALESCE(c.email, b.passenger_email)         AS customer_email,
+           COALESCE(c.full_name, b.passenger_name)      AS customer_name,
+           COALESCE(c.phone, b.passenger_phone)         AS customer_phone
+      FROM bookings b LEFT JOIN customers c ON b.customer_id = c.id
+     WHERE b.id = ?`).get(id);
+  const email_ = require('./email');
+
+  /* THE DRIVER, and the CUSTOMER, from one action. Both are attempted; a
+     failure on either is reported rather than swallowed, because "did that
+     go?" is not a question to answer by looking in a log. */
+  const sent = { driver: false, customer: false };
+  try {
+    sent.driver = await email_.sendDriverDispatch(Object.assign({}, updated, {
+      driver_email: email, driver_name: name, driver_car: car, driver_reg: reg
+    }));
+  } catch (e) { console.error('[DISPATCH] driver email failed:', e.message); }
+
+  try {
+    if (email_.sendCustomerDriverAssigned) {
+      sent.customer = await email_.sendCustomerDriverAssigned(updated);
+    }
+  } catch (e) { console.error('[DISPATCH] customer email failed:', e.message); }
+
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run(req.auth.type || 'user', req.auth.id, 'job_dispatched',
+           updated.ref + ' → ' + name + ' (' + email + ')', req.ip);
+  } catch (_) {}
+
+  try { events.broadcast('booking:updated', { id, ref: updated.ref, reason: 'Sent to ' + name }); } catch (_) {}
+
+  res.json({
+    ok: true, ref: updated.ref, driver: { id: savedDriverId, name, email, phone, reg, car },
+    saved: !!(saveDriver && savedDriverId),
+    fare: Number(updated.fare) || 0, commission: split.admin_fee, payout: split.driver_pay,
+    paymentType: String(updated.payment || '').toLowerCase() === 'cash' ? 'cash' : 'prepaid',
+    sent
+  });
+});
+
 router.post('/bookings/:id/offer', staffOnly, (req, res) => {
   const { driver_id } = req.body || {};
   const adhocName  = String((req.body && req.body.name)  || '').trim();

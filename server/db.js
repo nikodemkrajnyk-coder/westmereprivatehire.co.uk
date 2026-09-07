@@ -204,6 +204,15 @@ function migrate() {
 
        A stamp here is the difference between a miss nobody sees and a miss the
        owner is told about the same day. Cleared the moment a write succeeds. */
+    /* PASSED TO A SUBCONTRACTED DRIVER, and when.
+       driver_id alone cannot say it: the owner is a driver too, and his own
+       jobs carry his id. The stamp is what separates work Westmere did from
+       work it passed on — which decides both the driver's running balance and
+       whether the fare or only the commission is Westmere's turnover. */
+    if (!info.find(c => c.name === 'passed_at')) {
+      db.exec(`ALTER TABLE bookings ADD COLUMN passed_at TEXT`);
+      console.log('[DB] Added passed_at column to bookings');
+    }
     if (!info.find(c => c.name === 'calendar_sync_failed_at')) {
       db.exec(`ALTER TABLE bookings ADD COLUMN calendar_sync_failed_at TEXT`);
       console.log('[DB] Added calendar_sync_failed_at column to bookings');

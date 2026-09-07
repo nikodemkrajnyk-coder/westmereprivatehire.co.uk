@@ -2565,6 +2565,192 @@ function _jdField(label,val){
 
 // The marker in the STATUS column: quiet at the early stage, loud once the
 // journey is committed and the owner actually has a decision to make.
+
+/* ── SEND A JOB TO A DRIVER: ONE FORM, ONE CONFIRMATION ────────────────────
+   This replaced a chain of five native prompt() boxes — who, name, email,
+   registration, car — each one a modal the owner could not go back from, with
+   no way to see what he had already typed and nothing on screen to check
+   against. A phone showed them as "Enter a number:".
+
+   One sheet now: pick a saved driver or type a new one, everything visible at
+   once. Then a confirmation that shows the job and the money — the fare, the
+   commission and what the driver takes — because the send puts a figure in
+   somebody else's inbox and a payout is not a thing to discover afterwards.
+
+   It is a DISPATCH. The job is given, not offered: no accept, no decline. The
+   driver is told it is his and what it pays, and the customer is told who is
+   coming. GUARDRAIL: server/tests/driver-dispatch.test.js */
+var _DISPATCH = { bookingId: null, drivers: [] };
+
+function dispClose() {
+  var el = document.getElementById('dispatch-sheet');
+  if (el) el.remove();
+  document.body.style.overflow = '';
+}
+
+/* The call sites pass an id only — the job is fetched here rather than
+   serialised into an onclick attribute, where a quote in an address would
+   break the handler. */
+async function dispOffer(bookingId) {
+  var job = null;
+  try {
+    var jr = await fetch('/api/bookings/' + bookingId, { credentials: 'include' });
+    var jd = await jr.json();
+    job = jd.booking || jd;
+  } catch (e) { job = {}; }
+  return dispOpen(bookingId, job);
+}
+
+async function dispOpen(bookingId, job) {
+  _DISPATCH.bookingId = bookingId;
+  _DISPATCH.job = job || {};
+  try {
+    var r = await fetch('/api/drivers', { credentials: 'include' });
+    var d = await r.json();
+    _DISPATCH.drivers = (d.drivers || []).filter(function (x) { return !x.is_default_driver; });
+  } catch (e) { _DISPATCH.drivers = []; }
+  dispClose();
+
+  var opts = ['<option value="">— someone new —</option>'].concat(
+    _DISPATCH.drivers.map(function (d) {
+      return '<option value="' + d.id + '">' + (d.full_name || ('Driver ' + d.id))
+           + (d.reg ? ' · ' + d.reg : '') + '</option>';
+    })).join('');
+
+  var el = document.createElement('div');
+  el.id = 'dispatch-sheet';
+  el.style.cssText = 'position:fixed;inset:0;z-index:4200;background:rgba(16,26,36,.45);display:flex;align-items:flex-end;justify-content:center';
+  el.innerHTML =
+    '<div style="background:var(--westmere-white,#fff);width:100%;max-width:32rem;max-height:92vh;overflow:auto;border-radius:14px 14px 0 0;padding:1.1rem 1.1rem 1.4rem">' +
+      '<div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.9rem">' +
+        '<div style="flex:1;font-family:var(--serif);font-size:1.06rem;color:#1a1a1a">Send this job to a driver</div>' +
+        '<button type="button" id="disp-x" style="background:transparent;border:none;font-size:1.5rem;line-height:1;cursor:pointer;color:#1a1a1a">&times;</button>' +
+      '</div>' +
+      '<label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.55);margin:.5rem 0 .25rem">Saved driver</label>' +
+      '<select id="disp-saved" style="width:100%;padding:.6rem;font-size:.95rem;border:1px solid rgba(27,27,26,.2);border-radius:7px;background:#fff">' + opts + '</select>' +
+      '<label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.55);margin:.9rem 0 .25rem">Name *</label>' +
+      '<input id="disp-name" autocomplete="off" style="width:100%;padding:.6rem;font-size:.95rem;border:1px solid rgba(27,27,26,.2);border-radius:7px">' +
+      '<label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.55);margin:.9rem 0 .25rem">Email *</label>' +
+      '<input id="disp-email" type="email" autocomplete="off" style="width:100%;padding:.6rem;font-size:.95rem;border:1px solid rgba(27,27,26,.2);border-radius:7px">' +
+      '<label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.55);margin:.9rem 0 .25rem">Phone number</label>' +
+      '<input id="disp-phone" type="tel" autocomplete="off" style="width:100%;padding:.6rem;font-size:.95rem;border:1px solid rgba(27,27,26,.2);border-radius:7px">' +
+      '<div style="display:flex;gap:.6rem">' +
+        '<div style="flex:1"><label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.55);margin:.9rem 0 .25rem">Registration</label>' +
+        '<input id="disp-reg" autocomplete="off" style="width:100%;padding:.6rem;font-size:.95rem;border:1px solid rgba(27,27,26,.2);border-radius:7px;text-transform:uppercase"></div>' +
+        '<div style="flex:1"><label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.55);margin:.9rem 0 .25rem">Car</label>' +
+        '<input id="disp-car" autocomplete="off" placeholder="Skoda Superb, grey" style="width:100%;padding:.6rem;font-size:.95rem;border:1px solid rgba(27,27,26,.2);border-radius:7px"></div>' +
+      '</div>' +
+      '<label style="display:flex;align-items:center;gap:.55rem;margin:1rem 0 .2rem;font-size:.9rem;color:var(--navy,#102a43);cursor:pointer">' +
+        '<input id="disp-save" type="checkbox" style="width:17px;height:17px">Save this driver for future work</label>' +
+      '<p id="disp-err" style="display:none;margin:.7rem 0 0;font-size:.85rem;color:#8B2222"></p>' +
+      '<div style="display:flex;gap:.6rem;margin-top:1.1rem">' +
+        '<button type="button" id="disp-cancel" style="flex:1;padding:.75rem;border:1px solid rgba(27,27,26,.25);background:transparent;border-radius:8px;font-size:.85rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer">Cancel</button>' +
+        '<button type="button" id="disp-next" style="flex:2;padding:.75rem;border:var(--border-strong,1.5px) solid var(--westmere-navy,#102a43);background:transparent;color:var(--westmere-navy,#102a43);border-radius:8px;font-size:.85rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer">Review &amp; send</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(el);
+  document.body.style.overflow = 'hidden';
+
+  document.getElementById('disp-x').onclick = dispClose;
+  document.getElementById('disp-cancel').onclick = dispClose;
+  /* Picking a saved driver FILLS THE FORM rather than replacing it, so what is
+     about to be sent is on screen and can still be corrected — a driver in a
+     different car today should not go out under yesterday's plate. */
+  document.getElementById('disp-saved').onchange = function () {
+    var d = _DISPATCH.drivers.filter(function (x) { return String(x.id) === this.value; }.bind(this))[0];
+    if (!d) return;
+    document.getElementById('disp-name').value  = d.full_name || '';
+    document.getElementById('disp-email').value = d.email || '';
+    document.getElementById('disp-phone').value = d.phone || '';
+    document.getElementById('disp-reg').value   = d.reg || '';
+    document.getElementById('disp-car').value   = d.vehicle || '';
+    document.getElementById('disp-save').checked = false;
+  };
+  document.getElementById('disp-next').onclick = dispReview;
+}
+
+function dispReview() {
+  var v = function (id) { return (document.getElementById(id).value || '').trim(); };
+  var err = document.getElementById('disp-err');
+  var name = v('disp-name'), email = v('disp-email');
+  err.style.display = 'none';
+  if (!name)  { err.textContent = 'A name is needed — it goes to the customer.'; err.style.display = 'block'; return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    err.textContent = 'That email address does not look right.'; err.style.display = 'block'; return;
+  }
+  var job = _DISPATCH.job || {};
+  var fare = Number(job.fare) || 0;
+  var commission = Math.round(fare * 0.10 * 100) / 100;
+  var payout = Math.round((fare - commission) * 100) / 100;
+  var cash = String(job.payment || '').toLowerCase() === 'cash';
+  var m = function (n) { return '£' + Number(n).toFixed(2); };
+
+  /* WHAT IS ABOUT TO LEAVE THE BUILDING, spelled out: the job, the address it
+     is going to, and the money. The commission is shown because the driver's
+     email shows it — the two should not be the first place they disagree. */
+  var sel = _DISPATCH.drivers.filter(function (x) { return String(x.id) === document.getElementById('disp-saved').value; })[0];
+  _DISPATCH.payload = {
+    driver_id: sel ? sel.id : null,
+    name: name, email: email, phone: v('disp-phone'),
+    reg: v('disp-reg').toUpperCase(), car: v('disp-car'),
+    save_driver: document.getElementById('disp-save').checked
+  };
+
+  var el = document.getElementById('dispatch-sheet');
+  el.querySelector('div').innerHTML =
+    '<div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.9rem">' +
+      '<div style="flex:1;font-family:var(--serif);font-size:1.06rem;color:#1a1a1a">Send to ' + name + '?</div></div>' +
+    '<div style="border:1px solid rgba(27,27,26,.15);border-radius:9px;padding:.85rem 1rem;font-size:.92rem;color:#1a1a1a;line-height:1.7">' +
+      '<div>' + (job.date || '') + (job.time ? ' · ' + job.time : '') + '</div>' +
+      '<div style="color:rgba(27,27,26,.65)">' + (job.pickup || '') + ' → ' + (job.destination || '') + '</div>' +
+      '<div style="margin-top:.5rem;font-size:.85rem;color:rgba(27,27,26,.6)">' + email + (v('disp-phone') ? ' · ' + v('disp-phone') : '') + '</div>' +
+    '</div>' +
+    '<div style="border:1px solid rgba(27,27,26,.15);border-radius:9px;padding:.85rem 1rem;margin-top:.7rem;font-size:.95rem">' +
+      '<div style="display:flex;justify-content:space-between;padding:.15rem 0"><span style="color:rgba(27,27,26,.65)">Fare</span><span>' + m(fare) + '</span></div>' +
+      '<div style="display:flex;justify-content:space-between;padding:.15rem 0"><span style="color:rgba(27,27,26,.65)">Your commission (10%)</span><span>' + m(commission) + '</span></div>' +
+      '<div style="display:flex;justify-content:space-between;padding:.35rem 0 0;border-top:1px solid rgba(27,27,26,.12);margin-top:.35rem;font-weight:500"><span>Driver payout</span><span>' + m(payout) + '</span></div>' +
+      '<div style="margin-top:.6rem;font-size:.84rem;color:rgba(27,27,26,.6);line-height:1.6">' +
+        (cash ? 'CASH — he collects ' + m(fare) + ' in the car and keeps it; your ' + m(commission) + ' nets off his next payout.'
+              : 'PREPAID — the customer has already paid you; you owe him ' + m(payout) + '.') +
+      '</div>' +
+    '</div>' +
+    '<p style="margin:.8rem 0 0;font-size:.85rem;color:rgba(27,27,26,.6);line-height:1.6">He is emailed the trip, the passenger’s name and number, and the payout. The customer is told who is picking them up.</p>' +
+    '<p id="disp-err2" style="display:none;margin:.7rem 0 0;font-size:.85rem;color:#8B2222"></p>' +
+    '<div style="display:flex;gap:.6rem;margin-top:1.1rem">' +
+      '<button type="button" id="disp-back" style="flex:1;padding:.75rem;border:1px solid rgba(27,27,26,.25);background:transparent;border-radius:8px;font-size:.85rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer">Back</button>' +
+      '<button type="button" id="disp-send" style="flex:2;padding:.75rem;border:var(--border-strong,1.5px) solid var(--westmere-navy,#102a43);background:transparent;color:var(--westmere-navy,#102a43);border-radius:8px;font-size:.85rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer">Confirm &amp; send</button>' +
+    '</div>';
+  document.getElementById('disp-back').onclick = function () { dispOpen(_DISPATCH.bookingId, _DISPATCH.job); };
+  document.getElementById('disp-send').onclick = dispSend;
+}
+
+async function dispSend() {
+  var btn = document.getElementById('disp-send');
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    var r = await fetch('/api/bookings/' + _DISPATCH.bookingId + '/dispatch', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(_DISPATCH.payload)
+    });
+    var d = await r.json();
+    if (r.ok && d.ok) {
+      dispClose();
+      showToast('Sent to ' + d.driver.name + (d.saved ? ' · saved' : ''));
+      if (typeof loadOwnerBookings === 'function') loadOwnerBookings();
+      else if (typeof loadBookings === 'function') loadBookings();
+    } else {
+      var e = document.getElementById('disp-err2');
+      e.textContent = d.error || ('Could not send (' + r.status + ')'); e.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Confirm & send';
+    }
+  } catch (e) {
+    var e2 = document.getElementById('disp-err2');
+    e2.textContent = 'Network error — nothing was sent.'; e2.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Confirm & send';
+  }
+}
+
 function admChangeMark(b){
   try{
     var stage=WMLifecycle.changeRequestStage(b);
@@ -2941,6 +3127,12 @@ function loadLiveBookings(){
           if(ACT.acceptChange){
             actionBtns+='<button class="btn btn-navy btn-sm" onclick="admAcceptChange('+b.id+')">Accept change</button> ';
             actionBtns+='<button class="btn btn-cancel-trip btn-sm" onclick="admDeclineChange('+b.id+')">Decline</button> ';
+          }
+          /* SEND THIS JOB TO A DRIVER — the same dispatch sheet the owner app
+             opens, on the same kind of booking, so the two apps cannot
+             disagree about who may pass work on. */
+          if(!isCancelled && (b.status==='confirmed'||b.status==='active')){
+            actionBtns+='<button class="btn btn-ghost btn-sm" style="color:#1b1b1a;border-color:rgba(27,27,26,.28)" onclick="dispOffer('+b.id+')">Send to driver</button> ';
           }
           if(ACT.reviewChange){
             actionBtns+='<button class="btn btn-ghost btn-sm" style="color:#1b1b1a;border-color:rgba(27,27,26,.28)" onclick="admReviewChange('+b.id+')">Reviewed</button> ';

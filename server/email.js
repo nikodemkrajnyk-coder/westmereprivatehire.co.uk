@@ -1013,9 +1013,21 @@ function googleCalUrl(d) {
 }
 
 /** The "put this in your calendar" block, shared by both driver emails. */
-function calendarBlock(d) {
+function calendarBlock(d, opts) {
   const g = googleCalUrl(d);
   const asap = !(d.time && String(d.time).toUpperCase() !== 'ASAP');
+  /* MINIMAL: the link and nothing else.
+     The full block explains that the job is attached as a .ics and what to do
+     with it — useful in an offer a driver may be reading for the first time,
+     and two sentences of furniture in a dispatch he has already been given.
+     The .ics is still attached either way; the email simply stops narrating it.
+
+     One renderer, a flag — not a second copy. Two calendar blocks would be free
+     to drift, and the offer emails would keep whichever one nobody edited. */
+  if (opts && opts.minimal) {
+    return g ? `
+  <p style="margin:22px 0 0"><a href="${escHtml(g)}" style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:${INK};text-decoration:none;border-bottom:1px solid ${ACCENT}">Add to calendar &rarr;</a></p>` : '';
+  }
   return `
   <p style="margin:22px 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Add to calendar</p>
   <p style="margin:0 0 8px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">The job is attached as a calendar file &mdash; open <strong style="color:${INK}">${escHtml((d.ref || 'job') + '.ics')}</strong> and it goes straight into your diary${asap ? ' as an all-day entry, because this one is ASAP' : ''}.${g ? ' Or add it to Google Calendar:' : ''}</p>
@@ -1177,6 +1189,125 @@ async function sendAdhocJobOffer(d) {
    NO COUNTDOWN. Twelve hours is when it is sent, never what it says — see
    sendCustomerJourneyReminder.
    GUARDRAIL: server/tests/driver-reminder.test.js */
+/* ── WHO IS PICKING YOU UP ─────────────────────────────────────────────────
+   Sent the moment a job is passed to a driver. The customer booked with
+   Westmere and is about to be collected by somebody else's car: the name and
+   the plate are the difference between a stranger at the kerb and the car they
+   were told to look for.
+
+   It renders the SAME driver strip the confirmation and the 12-hour reminder
+   use (driverBlockHtml), so the three emails cannot disagree about which car
+   is coming — that renderer already reads assigned_to_* first, which is what
+   the dispatch writes.
+
+   No money in it. What the operator pays a subcontractor is not the
+   passenger's business, and the fare they agreed has not changed.
+   GUARDRAIL: server/tests/driver-dispatch.test.js */
+async function sendCustomerDriverAssigned(booking) {
+  const to = String(booking.customer_email || booking.passenger_email || booking.email || '').trim();
+  if (!to) return false;
+  const when = formatDate(booking.date) + (booking.time && booking.time !== 'ASAP' ? ' at ' + booking.time : '');
+  const body = `
+  <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${INK_MUTED}">Your driver · ${escHtml(booking.ref || '')}</p>
+  <p style="margin:0 0 16px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:16px;color:${INK};line-height:1.6">Your car for ${escHtml(when)} is arranged. Here is who will be collecting you.</p>
+  ${driverBlockHtml(booking)}
+  ${buildDetailsTable(jobDetailRows(booking))}
+  <p style="margin:18px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_MUTED};line-height:1.6">Nothing else to do — your driver has the details. If anything changes, call us on 07930&nbsp;342593.</p>`;
+  const html = heroEmail(body, { hero: false });
+  const subject = 'Your driver for ' + formatDate(booking.date) + ' · ' + booking.ref;
+  const ok = await sendEmail(to, subject, html, 'Westmere Private Hire',
+    'Your driver has been assigned. We look forward to seeing you.');
+  if (ok) console.log('[EMAIL] Driver-assigned notice', booking.ref, 'sent to', to);
+  return ok;
+}
+
+/* ── THE JOB IS YOURS, HERE IS WHAT IT PAYS ────────────────────────────────
+   A DISPATCH, not an offer. The offer email above asks a driver to accept or
+   decline; this one tells him a job has been assigned to him and what he will
+   be paid for it. Same trip table, same passenger block, same Waze links and
+   the same calendar attachment — a driver should not have to learn two layouts
+   because the office changed its mind about who decides.
+
+   WHAT IT ADDS is the money, in full: the fare, the commission, and what
+   reaches him. A payout quoted as one number invites the question the operator
+   then has to answer by phone; the arithmetic shown is the answer.
+
+   AND WHO HOLDS IT. On a prepaid job Westmere has the fare and owes him the
+   payout. On a cash job he takes the fare at the kerb and owes Westmere the
+   commission. Same trip, opposite direction of travel for the money, and the
+   difference decides what he does when the passenger gets out — so it is said
+   in words, not left to be worked out from the payment method.
+   GUARDRAIL: server/tests/driver-dispatch.test.js */
+async function sendDriverDispatch(d) {
+  const to = String(d.driver_email || '').trim();
+  if (!to) return false;
+
+  const fare = (d.fare === null || d.fare === undefined || d.fare === '') ? null : Number(d.fare);
+  const money = (n) => '£' + Number(n).toFixed(2);
+  const cash = String(d.payment || '').toLowerCase() === 'cash';
+  const commission = (d.admin_fee != null) ? Number(d.admin_fee) : null;
+  const payout = (d.driver_pay != null) ? Number(d.driver_pay) : null;
+
+  let rows = jobDetailRows(d);
+  if (d.driver_reg || d.driver_car) {
+    rows += rowDivider();
+    rows += detailRow('Your car', escHtml([d.driver_car, d.driver_reg].filter(Boolean).join(' · ')));
+  }
+
+  /* ── WHAT THE DRIVER GETS PAID ────────────────────────────────────────────
+     Three figures and a word. Fare, the ten per cent, what reaches him — the
+     arithmetic he can check — and then whether the money is already collected
+     or he is collecting it.
+
+     NO PARAGRAPH. An earlier version explained each case in a sentence and a
+     half; a driver reading a job at six in the morning wants the number and the
+     word, not the reasoning. The cash line names the amount to collect, because
+     he cannot ask the passenger for it otherwise, and says the fee carries —
+     his ten per cent on a cash job is netted against his next payout rather
+     than handed over at the kerb (server/driver-ledger.js).
+     GUARDRAIL: server/tests/driver-dispatch.test.js */
+  const payRow = (label, value, strong) => `
+    <tr>
+      <td style="padding:4px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:${strong ? 15 : 14}px;color:${strong ? INK : INK_MUTED}">${escHtml(label)}</td>
+      <td align="right" style="padding:4px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:${strong ? 18 : 14}px;color:${strong ? INK : INK_MUTED}">${escHtml(value)}</td>
+    </tr>`;
+
+  const statusLine = cash
+    ? 'Cash — collect ' + (fare === null || isNaN(fare) ? 'the fare' : money(fare))
+      + '. Your ' + (commission == null ? 'fee' : money(commission)) + ' fee carries to your next payout.'
+    : 'Prepaid';
+
+  const payBlock = (payout === null || isNaN(payout)) ? '' : `
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${ACCENT};margin:20px 0 4px">
+    <tr><td style="padding:16px 18px">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        ${fare === null || isNaN(fare) ? '' : payRow('Fare', money(fare))}
+        ${commission == null ? '' : payRow('Commission (10%)', '−' + money(commission))}
+        ${payRow('Total', money(payout), true)}
+      </table>
+      <p style="margin:12px 0 0;padding-top:10px;border-top:1px solid ${ACCENT};font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_MUTED};line-height:1.5">${escHtml(statusLine)}</p>
+    </td></tr>
+  </table>`;
+
+  const body = `
+  <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${INK_MUTED}">Your job · ${escHtml(d.ref || '')}</p>
+  ${buildDetailsTable(rows)}
+  ${payBlock}
+  ${passengerBlockHtml(d)}
+  ${calendarBlock(d, { minimal: true })}
+  <p style="margin:18px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_MUTED};line-height:1.6">If anything about this does not look right, call 07930&nbsp;342593 before the pickup.</p>`;
+
+  const html = heroEmail(body, { hero: false });
+  const payStr = (payout === null || isNaN(payout)) ? null : money(payout);
+  const subject = 'Your job' + (payStr ? ' — ' + payStr + ' to you' : '') + ' · ' + d.ref;
+  const preheader = formatDate(d.date) + ' · ' + dispAddr(d.pickup) + ' to ' + dispAddr(d.destination);
+  const attachments = icsAttachment(d);
+  const ok = await sendEmail(to, subject, html, 'Westmere Private Hire', preheader,
+    attachments ? { attachments } : undefined);
+  if (ok) console.log('[EMAIL] Dispatch', d.ref, 'sent to', to, attachments ? '(with .ics)' : '');
+  return ok;
+}
+
 async function sendDriverJobReminder(d) {
   const to = d && d.driver_email;
   if (!to || !d.ref) return false;
@@ -2950,6 +3081,8 @@ module.exports = {
   sendCustomerAcknowledgement, sendCustomerConfirmed, sendCustomerEstimate, sendAdminAlert,
   sendOwnerCancelledRequest, sendOwnerCustomerNote, sendOwnerChangeRequest, sendCustomerMessage,
   sendOutreachMessage, letterEmail, sendDriverJobOffer, sendAdhocJobOffer, sendDriverJobReminder, sendDriverMessage,
+  sendDriverDispatch,
+  sendCustomerDriverAssigned,
   sendCustomerJourneyReminder, airportBlockHtml, flightTrackUrl, driverBlockHtml, driverDetails, cancelLinkHtml,
   sendCustomerBookingUpdated,
   sendCustomerWelcome, sendCustomerInvoice, sendBespokeInvoice, sendInvoiceReminder,
