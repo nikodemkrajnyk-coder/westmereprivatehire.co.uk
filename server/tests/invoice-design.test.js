@@ -234,16 +234,22 @@ test('the wordmark is CENTRED at a moderate width, not justified to the margins'
 });
 
 test('the tracking is the EMAIL\'s proportion, tied to the type size', () => {
-  const fn = /function centredWide\([\s\S]*?\n  \}/.exec(SRC);
+  /* centredWide moved to module scope when the letterhead was lifted out of
+     drawInvoice for the driver statement to share (server/driver-statement-pdf.js),
+     so it de-indented by two spaces — and the two assertions below failed on the
+     WHITESPACE while the rule they exist to protect was untouched. Matched
+     whitespace-insensitively now: the requirement is that the tracking derives
+     from the size, not that it is indented a particular way. */
+  const fn = /function centredWide\([\s\S]*?\n\}/.exec(SRC);
   assert.ok(fn, 'centredWide is missing');
   assert.ok(/const EMAIL_TRACK = 11 \/ 29;/.test(SRC),
     'the ratio must be written as the fraction it came from — 11px on 29px in heroShell()');
-  assert.ok(/const track   = size \* ratio;/.test(fn[0]),
+  assert.ok(/const\s+track\s*=\s*size\s*\*\s*ratio;/.test(fn[0]),
     'tracking must follow the size, not be a number typed in beside it');
   const email = read('server/email.js');
   assert.ok(/font-size:29px;letter-spacing:11px/.test(email),
     'if the email changes its wordmark proportions, this invoice must be changed with it');
-  assert.ok(/const gaps    = Math\.max\(1, str\.length - 1\)/.test(fn[0]),
+  assert.ok(/const\s+gaps\s*=\s*Math\.max\(1, str\.length - 1\)/.test(fn[0]),
     'width counts the GAPS, not the letters — pdfkit does not track after the last glyph');
 });
 
@@ -514,7 +520,16 @@ console.log('\nThe cache cannot outlive the template — again');
    So the layout is content-hashed. Change how the page is drawn and this fails,
    with the two things to do written in the message. It cannot tell a
    good change from a bad one; it can only refuse to let one through quietly. */
-const LAYOUT_HASH = 'cb4347abe022';
+/* 96d3c0798646 — the letterhead lifted out of drawInvoice into module-scope
+   drawMasthead/centredWide, so the driver statement could print on the same
+   paper. THE HASH MOVED AND THE VERSION DID NOT, deliberately: this is code
+   motion, and the drawing is byte-for-byte what it was. Measured, not assumed —
+   the same invoice rendered before and after produced identical content
+   streams, 30,399 bytes of drawing operators with the same SHA. Bumping
+   TEMPLATE_VERSION would have orphaned every cached PDF to regenerate an
+   identical page. Same reasoning as the cache-plumbing carve-out below.
+   A change that actually moves ink still has to do both. */
+const LAYOUT_HASH = '96d3c0798646';
 const LAYOUT_VERSION = 16;  // 16: payment details move to the footer band  // 15: ACCOUNT/CARD on the booking-generated invoice  // 14: the amount always has a column of its own  // 13: the total names who it is payable to
                             // 12: a FEE column on the one-off table
                             // 11: the driver-collected line
@@ -536,9 +551,18 @@ test('the drawing code and TEMPLATE_VERSION move together', () => {
      filename, which is not what the version means and would have orphaned a
      cache for nothing. The region ends at the first function past the
      drawing. */
-  const drawStart = SRC.indexOf('function drawInvoice(');
+  /* THE LETTERHEAD IS INSIDE THE REGION. It was lifted out of drawInvoice into
+     module-scope drawMasthead/centredWide so the driver statement could print on
+     the same paper — and that carried the wordmark OUT of this hash, which would
+     have let a change to the masthead reach every invoice without tripping this
+     guard. The region starts at the letterhead now. */
+  const drawStart = SRC.indexOf('const EMAIL_TRACK');
   const drawEnd = SRC.indexOf('function ensureInvoiceToken(', drawStart);
+  assert.ok(drawStart > 0, 'the letterhead could not be found — re-anchor this guard');
   assert.ok(drawEnd > drawStart, 'the end of the drawing could not be found — re-anchor this guard');
+  assert.ok(SRC.indexOf('function drawInvoice(') > drawStart
+         && SRC.indexOf('function drawInvoice(') < drawEnd,
+    'drawInvoice has moved outside the hashed region');
   const layout = palette + SRC.slice(drawStart, drawEnd)
     .replace(/\/\*[\s\S]*?\*\//g, '')          // comments are prose, not layout
     .replace(/(^|[^:])\/\/.*$/gm, '$1')

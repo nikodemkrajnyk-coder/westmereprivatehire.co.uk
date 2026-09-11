@@ -1116,6 +1116,35 @@ function migrate() {
     `);
   } catch (e) { console.error('[DB] change_requests table failed:', e.message); }
 
+  // ── WHAT HAS ACTUALLY BEEN PAID TO A DRIVER ────────────────────────────────
+  // The job history says what is OWED and is derived from the bookings; it can
+  // be recomputed from scratch at any time. A PAYMENT cannot — it is an event
+  // that happened in the world, so it is the one part of the ledger that gets
+  // stored (server/driver-ledger.js).
+  //
+  // ONE SIGNED AMOUNT, not a paid/received pair: money moving from Westmere to
+  // the driver is positive, cash he hands back to cover a commission he owes is
+  // negative. Two columns would need a rule for which one a correction belongs
+  // in, and that rule is where an operator and a subcontractor fall out.
+  //
+  // paid_on is a UK wall-clock date (YYYY-MM-DD), like bookings.date — see the
+  // timezone invariant in CLAUDE.md. created_at is a real instant, for audit.
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS driver_settlements (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        driver_id  INTEGER NOT NULL REFERENCES users(id),
+        amount     REAL    NOT NULL,
+        method     TEXT,
+        note       TEXT,
+        paid_on    TEXT    NOT NULL,
+        created_at TEXT    NOT NULL DEFAULT (datetime('now')),
+        created_by INTEGER REFERENCES users(id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_driver_settlements_driver ON driver_settlements(driver_id, paid_on);
+    `);
+  } catch (e) { console.error('[DB] driver_settlements table failed:', e.message); }
+
   // Denormalised flag + human-readable summary of the LATEST open change
   // request, carried on the booking row itself. Deliberate duplication: the
   // owner and admin lists both read `SELECT b.*`, so the "Change requested"

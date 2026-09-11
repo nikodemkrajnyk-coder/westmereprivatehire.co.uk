@@ -35,9 +35,22 @@
 
 const { getDb } = require('./db');
 
-/* The one rate, shared with the offer flow (server/offer-routes.js) so a job
-   cannot be worth one thing when it is offered and another when it is paid. */
-const { ADMIN_FEE_PCT, computeSplit } = require('./offer-routes');
+/* THE RATE. Ten per cent, defined once, here. offer-routes.js re-exports it and
+   computeSplit so its callers and guards read unchanged; the SQL expressions
+   below interpolate it so a rate change reaches the database too. It used to be
+   the other way round — this module imported from a routes file, which put the
+   money arithmetic downstream of an Express router and left api.js free to write
+   its own copy. It wrote three. */
+const ADMIN_FEE_PCT = 0.10;
+
+/** The split of a fare into what Westmere keeps and what the driver is paid. */
+function computeSplit(fare) {
+  if (fare == null || isNaN(fare)) return { driver_pay: null, admin_fee: null };
+  const f = Number(fare);
+  const fee = Math.round(f * ADMIN_FEE_PCT * 100) / 100;
+  const pay = Math.round((f - fee) * 100) / 100;
+  return { driver_pay: pay, admin_fee: fee };
+}
 
 /** Did the driver take the money at the kerb? */
 function isCashJob(b) {
@@ -106,6 +119,37 @@ function historyRow(b) {
   };
 }
 
+
+/* ── THE SAME ARITHMETIC, IN SQL ──────────────────────────────────────────────
+   Turnover is summed over tens of thousands of rows; pulling every booking into
+   Node to add it up in JavaScript would be a page of code and a lot of memory to
+   answer "what did we take this month".
+
+   So the sums stay in SQL — but the EXPRESSION is generated here, from the same
+   ADMIN_FEE_PCT the JavaScript uses, and never written out at the call site.
+   That is what keeps one authority across two languages. A guard sums the same
+   bookings both ways and requires the answers to agree to the penny
+   (server/tests/driver-ledger.test.js), so the two halves cannot drift.
+
+   `p` prefixes the columns when the bookings table is aliased ('b.'). */
+
+/** SQL for the commission on one row — the stored admin_fee wins, as in jobSplit. */
+function commissionSql(p) {
+  const q = p || '';
+  return `ROUND(COALESCE(${q}admin_fee, ${q}fare * ${ADMIN_FEE_PCT}), 2)`;
+}
+
+/**
+ * SQL for Westmere's income from one row: a passed job earns the commission
+ * only, an unpassed one the whole fare. The JavaScript twin is westmereIncome().
+ */
+function incomeSql(p) {
+  const q = p || '';
+  return `(CASE WHEN ${q}passed_at IS NOT NULL`
+    + ` THEN ${commissionSql(p)}`
+    + ` ELSE COALESCE(${q}fare, 0) END)`;
+}
+
 /**
  * Every job passed to this driver, oldest first, each with the running balance
  * as it stood after that job. Optionally bounded to a period for a statement.
@@ -139,13 +183,69 @@ function driverHistory(driverId, opts) {
   return { items, totals };
 }
 
-/** The single running figure for a driver, across everything. */
+
+/* ── SETTLEMENTS ──────────────────────────────────────────────────────────────
+   The jobs alone only ever say what is OWED. Paying a driver has to move the
+   balance too, or the cash email's promise — "your fee carries to your next
+   payout" — is a figure that only ever grows.
+
+   ONE SIGNED COLUMN, not a paid/received pair. `amount` is money moving from
+   Westmere to the driver: positive when we pay him, negative when he hands cash
+   back to cover what he owes. Two columns would need a rule about which one a
+   correction goes in, and the rule is where the disagreement lives.
+
+   Settlements ARE stored, unlike the history — a payment is an event that
+   happened, not a fact derivable from the bookings. */
+
+/** What has already been paid across (or collected back), oldest first. */
+function driverSettlements(driverId, opts) {
+  const o = opts || {};
+  const db = getDb();
+  const params = [driverId];
+  let where = 'driver_id = ?';
+  if (o.from) { where += ' AND paid_on >= ?'; params.push(o.from); }
+  if (o.to)   { where += ' AND paid_on <= ?'; params.push(o.to); }
+  return db.prepare(
+    `SELECT id, driver_id, amount, method, note, paid_on, created_at
+       FROM driver_settlements WHERE ${where} ORDER BY paid_on, id`
+  ).all(...params).map((r) => Object.assign({}, r, { amount: Math.round(Number(r.amount) * 100) / 100 }));
+}
+
+/** Record one. Returns the row as stored. */
+function recordSettlement(driverId, amount, opts) {
+  const o = opts || {};
+  const amt = Math.round(Number(amount) * 100) / 100;
+  if (!isFinite(amt) || amt === 0) throw new Error('A settlement needs a non-zero amount');
+  const db = getDb();
+  const paidOn = o.paid_on || new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/London' });
+  const info = db.prepare(
+    `INSERT INTO driver_settlements (driver_id, amount, method, note, paid_on, created_by)
+     VALUES (?,?,?,?,?,?)`
+  ).run(driverId, amt, o.method || null, o.note || null, paidOn, o.created_by || null);
+  return db.prepare('SELECT * FROM driver_settlements WHERE id = ?').get(info.lastInsertRowid);
+}
+
+/**
+ * The single running figure for a driver, across everything: what the jobs owe
+ * him, less what has already been handed over.
+ *
+ *   positive → Westmere owes the driver
+ *   negative → the driver owes Westmere
+ */
 function driverBalance(driverId) {
-  return driverHistory(driverId).totals.balance;
+  const jobs = driverHistory(driverId).totals.balance;
+  const paid = driverSettlements(driverId)
+    .reduce((t, s) => Math.round((t + s.amount) * 100) / 100, 0);
+  return Math.round((jobs - paid) * 100) / 100;
 }
 
 module.exports = {
   ADMIN_FEE_PCT,
+  computeSplit,
+  commissionSql,
+  incomeSql,
+  driverSettlements,
+  recordSettlement,
   isCashJob,
   isPassed,
   jobSplit,

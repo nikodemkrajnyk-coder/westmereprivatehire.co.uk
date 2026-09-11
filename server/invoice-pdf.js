@@ -152,6 +152,59 @@ function vbox(doc, x, y, w, h, fillColor, strokeColor) {
 /**
  * Generate a PDF for an invoice and return it as a Buffer.
  */
+/* ── THE LETTERHEAD ───────────────────────────────────────────────────────────
+   Lifted out of drawInvoice so the driver statement (server/driver-statement-pdf.js)
+   prints on the same paper rather than on a copy of it. A second implementation
+   would look identical on the day it was written and drift on the first change
+   to the wordmark — which is exactly how a company ends up with two logos.
+
+   Returns the y it has drawn down to. */
+const EMAIL_TRACK = 11 / 29;      // heroShell() in server/email.js
+
+/* Tracked to a FIXED PROPORTION of the type size and centred — not justified to
+   the margins. Placed by hand rather than with { width, align: 'center' }:
+   pdfkit decides whether a line fits using the advance INCLUDING the spacing it
+   adds after the final glyph, so a centred, tracked line can measure one gap too
+   wide and wrap — which is what put the last E of WESTMERE on a line of its own. */
+function centredWide(doc, str, size, font, ratio, atY, color) {
+  doc.font(font).fontSize(size);
+  const track = size * ratio;
+  // Between the GAPS, one fewer than the letters — pdfkit does not track after
+  // the last glyph, and its own widthOfString agrees.
+  const gaps  = Math.max(1, str.length - 1);
+  const width = doc.widthOfString(str, { characterSpacing: 0 }) + gaps * track;
+  doc.fillColor(color).text(str, M + (CW - width) / 2, atY, {
+    characterSpacing: track, lineBreak: false
+  });
+  return width;
+}
+
+/* THE MASTHEAD — the confirmation email's header, on paper. A centred W, the
+   wordmark, the strapline and a short centred rule: the same five elements, in
+   the same order, as heroShell() in server/email.js.
+
+   SET IN TYPE, NOT PLACED AS AN IMAGE. The only wordmark artwork in the repo is
+   a 512px square crest, and blowing a bitmap up to full page width would land
+   soft on paper — the one surface that gets printed and photocopied. Cormorant
+   is embedded, so the wordmark draws as vector outlines: crisp at any size,
+   selectable, searchable. */
+function drawMasthead(doc, y) {
+  // The small W above the wordmark, exactly as the email opens.
+  doc.font(BODY).fontSize(15).fillColor(NAVY)
+     .text('W', M, y, { width: CW, align: 'center', characterSpacing: 1, lineBreak: false });
+  y += 20;
+  centredWide(doc, 'WESTMERE', 30, BODY, EMAIL_TRACK, y, NAVY);
+  y += 34;
+  // The strapline — the email tracks this one harder, 5px on 10px.
+  centredWide(doc, 'PRIVATE HIRE · SUSSEX', 8, BOLD, 5 / 10, y, ACCENT);
+  y += 16;
+  // The short centred hairline the email closes its header with.
+  doc.save()
+     .moveTo(M + CW / 2 - 30, y).lineTo(M + CW / 2 + 30, y)
+     .lineWidth(0.6).strokeColor(HAIR).stroke().restore();
+  return y + 26;
+}
+
 function buildInvoicePdf(data) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
@@ -399,25 +452,7 @@ function drawInvoice(doc, data, slack) {
   // ── HEADER ─────────────────────────────────────────────────────────────
   let y = M;
 
-  /* THE MASTHEAD — the confirmation email's header, on paper.
-     A centred W, the wordmark stretched the full width of the page, the
-     strapline beneath it and a short centred rule: the same five elements, in
-     the same order, as heroShell() in server/email.js. A customer who has just
-     read the confirmation should recognise the invoice as the same company
-     without being told.
-
-     SET IN TYPE, NOT PLACED AS AN IMAGE. The obvious reading of "stretched
-     logo" is a raster scaled to 491pt wide, and it is the wrong one here: the
-     only wordmark artwork in the repo is a 512px square crest, and blowing a
-     bitmap up to full page width would land soft on paper — the one surface
-     that gets printed and photocopied. Cormorant is already embedded, so the
-     wordmark draws as vector outlines: crisp at any size, selectable, and
-     searchable in a PDF reader.
-
-     The tracking is COMPUTED rather than guessed. widthOfString measures the
-     letters at the chosen size, and the leftover space is divided between the
-     gaps, so the word spans the measure exactly whatever the font metrics turn
-     out to be. */
+  /* The letterhead — see drawMasthead(). */
   /* Tracked to a FIXED PROPORTION of the type size and centred — not justified
      to the margins. Spanning the full measure was the first reading of "a
      stretched logo" and it overdid it: at 42pt of tracking the wordmark stopped
@@ -430,39 +465,7 @@ function drawInvoice(doc, data, slack) {
      whether a line fits using the advance INCLUDING the spacing it adds after
      the final glyph, so a centred, tracked line can measure one gap too wide
      and wrap — which is what put the last E of WESTMERE on a line of its own. */
-  const EMAIL_TRACK = 11 / 29;      // heroShell() in server/email.js
-
-  function centredWide(str, size, font, ratio, atY, color) {
-    doc.font(font).fontSize(size);
-    const track   = size * ratio;
-    // Between the GAPS, one fewer than the letters — pdfkit does not track
-    // after the last glyph, and its own widthOfString agrees.
-    const gaps    = Math.max(1, str.length - 1);
-    const width   = doc.widthOfString(str, { characterSpacing: 0 }) + gaps * track;
-    doc.fillColor(color).text(str, M + (CW - width) / 2, atY, {
-      characterSpacing: track, lineBreak: false
-    });
-    return width;
-  }
-
-  // The small W above the wordmark, exactly as the email opens.
-  doc.font(BODY).fontSize(15).fillColor(NAVY)
-     .text('W', M, y, { width: CW, align: 'center', characterSpacing: 1, lineBreak: false });
-  y += 20;
-
-  // The wordmark, at the email's proportions.
-  centredWide('WESTMERE', 30, BODY, EMAIL_TRACK, y, NAVY);
-  y += 34;
-
-  // The strapline beneath it — the email tracks this one harder, 5px on 10px.
-  centredWide('PRIVATE HIRE · SUSSEX', 8, BOLD, 5 / 10, y, ACCENT);
-  y += 16;
-
-  // The short centred hairline the email closes its header with.
-  doc.save()
-     .moveTo(M + CW / 2 - 30, y).lineTo(M + CW / 2 + 30, y)
-     .lineWidth(0.6).strokeColor(HAIR).stroke().restore();
-  y += 26;
+  y = drawMasthead(doc, y);
 
   /* THE PAPERWORK ROW, BELOW THE BAND.
      Number, issue date, due date and period, as four labelled cells across the
@@ -1348,4 +1351,12 @@ module.exports = {
   buildInvoicePdf, TEMPLATE_VERSION, resolveInvoicePdf,
   invoiceDataFromRow, invoiceCacheDir, invoiceCachePath, invoiceCachePaths,
   ensureInvoiceToken, invoicePublicUrl
+};
+
+/* The shared furniture, so a second document type prints on the same paper. */
+module.exports.sheet = {
+  PAGE_W, PAGE_H, M, CW,
+  NAVY, ACCENT, SOFT, MUTED, HAIR, TINT,
+  BODY, BOLD, MONO,
+  registerFonts, drawMasthead, hline, vbox, fmtDate, fmtShortDate
 };

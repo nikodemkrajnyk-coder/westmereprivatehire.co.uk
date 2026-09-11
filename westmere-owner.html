@@ -2356,6 +2356,18 @@ async function loadDriversList(){
     var r=await fetch('/api/drivers',{credentials:'include'});
     var data=await r.json();
     if(!data.ok){el.innerHTML='<div style="padding:1rem;color:var(--red);font-size:.9rem">'+owEsc(data.error||'Failed to load')+'</div>';return;}
+    /* WHAT EACH DRIVER IS OWED, on the list itself. Fetched alongside rather
+       than per card — one request for the screen, not one per driver — and
+       tolerated if it fails: the drivers list worked before there were balances
+       and must still draw without them. Every figure is
+       server/driver-ledger.js's; nothing here does arithmetic.
+       GUARDRAIL: server/tests/driver-ledger.test.js */
+    var BAL={};
+    try{
+      var rb=await fetch('/api/drivers/balances',{credentials:'include'});
+      var db2=await rb.json();
+      if(rb.ok&&db2.ok)(db2.drivers||[]).forEach(function(x){BAL[x.id]=x;});
+    }catch(e){}
     // Exclude the owner/default driver — Nikodem manages jobs but isn't an external hired driver
     var drivers=(data.drivers||[]).filter(function(d){return !d.is_default_driver;});
     // Update badge
@@ -2379,8 +2391,10 @@ async function loadDriversList(){
         +'<div style="display:flex;align-items:center;gap:.6rem">'
         +'<div style="font-family:var(--serif);font-size:1.05rem;color:var(--navy)">'+owEsc(drv.full_name||'Driver')+'</div>'
         +_obadge(drv.onboarding_status)
+        +_obal(BAL[drv.id])
         +'</div>'
         +'<div style="display:flex;align-items:center;gap:.5rem">'
+        +'<button onclick="event.stopPropagation();owLedger('+drv.id+',\''+owEsc(drv.full_name||'this driver')+'\')" style="padding:.25rem .65rem;background:transparent;border:1px solid rgba(27,27,26,.15);color:var(--westmere-navy,#102a43);font-family:var(--sans);font-size:.76rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:5px">Ledger</button>'
         +'<button onclick="event.stopPropagation();deleteDriver('+drv.id+',\''+owEsc(drv.full_name||'this driver')+'\')" style="padding:.25rem .65rem;background:transparent;border:1px solid rgba(180,30,30,.4);color:#b41e1e;font-family:var(--sans);font-size:.76rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:5px">Remove</button>'
         +'<span id="drv-toggle-'+drv.id+'" style="font-size:.87rem;color:rgba(27,27,26,.4)">▾</span>'
         +'</div>'
@@ -2389,6 +2403,118 @@ async function loadDriversList(){
         +'</div>';
     }).join('');
   }catch(e){el.innerHTML='<div style="padding:1rem;color:var(--red);font-size:.9rem">Network error</div>';}
+}
+
+/* INK THAT DOES NOT RELY ON A STRING MATCH. The white-surfaces restyle sets
+   --navy to #ffffff and rescues text only through [style*="color:var(--navy)"]
+   selectors, which match the exact inline string. Written that way the text is
+   visible; written var(--navy,#102a43) it is white on white — which is how the
+   dispatch sheet's save-tick label vanished. Every colour below uses
+   --westmere-navy, which the restyle leaves alone.
+   GUARDRAIL: server/tests/driver-ledger.test.js */
+/* ── THE BALANCE, ON THE CARD ────────────────────────────────────────────────
+   One figure, and which way it points. Positive is money we owe him; negative
+   is money he owes us, which is what a cash job leaves behind until it is netted
+   off his next payout. Nothing is computed here — `b` is the row the ledger
+   endpoint returned. */
+function _obal(b){
+  if(!b||b.balance===null||b.balance===undefined)return '';
+  var n=Number(b.balance);
+  var owed=n>=0;
+  var txt=(owed?'':'−')+'£'+Math.abs(n).toFixed(2);
+  return '<span title="'+(owed?'You owe this driver':'This driver owes you')+'" style="padding:.12rem .5rem;border-radius:20px;font-family:var(--sans);font-size:.74rem;letter-spacing:.06em;'
+    +(owed?'background:rgba(16,42,67,.08);color:var(--westmere-navy,#102a43)':'background:rgba(156,40,40,.09);color:#9C2828')
+    +'">'+txt+'</span>';
+}
+
+/* THE LEDGER, for one driver: every passed job, the running balance, what has
+   been paid, and a way to record a payment. Opened over the list rather than in
+   a new page — the owner is on a phone and a new tab is a trip he cannot get
+   back from (the same reason the invoice preview stopped opening one). */
+var _OWLEDGER=null;
+async function owLedger(id,name){
+  _OWLEDGER=id;
+  var ov=document.getElementById('ow-ledger');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='ow-ledger';
+    ov.style.cssText='position:fixed;inset:0;z-index:9000;background:var(--westmere-paper,#fbfaf8);overflow-y:auto;-webkit-overflow-scrolling:touch';
+    document.body.appendChild(ov);
+  }
+  ov.style.display='';
+  ov.innerHTML='<div style="max-width:720px;margin:0 auto;padding:1.2rem 1rem 3rem">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">'
+    +'<button onclick="owLedgerClose()" style="padding:.4rem .8rem;background:transparent;border:1px solid rgba(27,27,26,.18);border-radius:6px;font-family:inherit;font-size:.82rem;cursor:pointer">‹ Back</button>'
+    +'<div style="font-family:var(--serif);font-size:1.1rem;color:var(--westmere-navy,#102a43)">'+owEsc(name||'Driver')+'</div>'
+    +'<a href="/api/drivers/'+id+'/statement.pdf" target="_blank" rel="noopener" style="padding:.4rem .8rem;border:1px solid rgba(27,27,26,.18);border-radius:6px;font-size:.82rem;text-decoration:none;color:var(--westmere-navy,#102a43)">Statement</a>'
+    +'</div><div id="ow-ledger-body">Loading…</div></div>';
+  owLedgerLoad();
+}
+function owLedgerClose(){
+  var ov=document.getElementById('ow-ledger');
+  if(ov)ov.style.display='none';
+  _OWLEDGER=null;
+  loadDriversList();
+}
+async function owLedgerLoad(){
+  var body=document.getElementById('ow-ledger-body');
+  if(!body||!_OWLEDGER)return;
+  try{
+    var r=await fetch('/api/drivers/'+_OWLEDGER+'/ledger',{credentials:'include'});
+    var d=await r.json();
+    if(!r.ok||!d.ok){body.innerHTML='<div style="color:var(--red)">'+owEsc(d.error||'Could not load the ledger')+'</div>';return;}
+    var owed=Number(d.balance)>=0;
+    var m=function(n){return '£'+Math.abs(Number(n)||0).toFixed(2);};
+    var rows=(d.items||[]).map(function(it){
+      return '<div style="display:flex;justify-content:space-between;gap:.6rem;padding:.55rem 0;border-bottom:1px solid rgba(27,27,26,.06)">'
+        +'<div style="min-width:0"><div style="font-size:.92rem;color:var(--westmere-navy,#102a43);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+owEsc(it.route)+'</div>'
+        +'<div style="font-size:.76rem;color:rgba(27,27,26,.55)">'+owEsc(it.date)+' · '+owEsc(it.ref)+' · '+(it.paymentType==='cash'?'cash':'prepaid')+'</div></div>'
+        +'<div style="text-align:right;white-space:nowrap"><div style="font-size:.86rem;color:rgba(27,27,26,.6)">'+(Number(it.delta)<0?'−':'+')+m(it.delta)+'</div>'
+        +'<div style="font-size:.86rem;color:var(--westmere-navy,#102a43)">'+(Number(it.balanceAfter)<0?'−':'')+m(it.balanceAfter)+'</div></div></div>';
+    });
+    (d.settlements||[]).forEach(function(st){
+      rows.push('<div style="display:flex;justify-content:space-between;gap:.6rem;padding:.55rem 0;border-bottom:1px solid rgba(27,27,26,.06);background:rgba(16,42,67,.03)">'
+        +'<div><div style="font-size:.92rem;color:var(--westmere-navy,#102a43)">Paid'+(st.method?' · '+owEsc(st.method):'')+'</div>'
+        +'<div style="font-size:.76rem;color:rgba(27,27,26,.55)">'+owEsc(st.paid_on)+'</div></div>'
+        +'<div style="text-align:right;white-space:nowrap"><div style="font-size:.86rem;color:rgba(27,27,26,.6)">'+(Number(st.amount)<0?'+':'−')+m(st.amount)+'</div>'
+        +'<button onclick="owUndoSettlement('+st.id+')" style="background:none;border:none;color:#b41e1e;font-family:inherit;font-size:.78rem;cursor:pointer;padding:0">undo</button></div></div>');
+    });
+    body.innerHTML='<div style="border:1px solid rgba(16,42,67,.25);border-radius:8px;padding:.9rem 1rem;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:baseline">'
+      +'<div style="font-family:var(--sans);font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.6)">'+(owed?'You owe this driver':'This driver owes you')+'</div>'
+      +'<div style="font-family:var(--serif);font-size:1.6rem;color:'+(owed?'var(--navy)':'#b41e1e')+'">'+m(d.balance)+'</div></div>'
+      +(rows.join('')||'<div style="color:rgba(27,27,26,.45);padding:.6rem 0">No passed jobs yet.</div>')
+      +'<div style="margin-top:1.2rem;padding-top:1rem;border-top:1px solid rgba(27,27,26,.1)">'
+      +'<div style="font-family:var(--sans);font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.6);margin-bottom:.5rem">Record a payment</div>'
+      +'<div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">'
+      +'<input id="ow-settle-amt" type="number" step="0.01" inputmode="decimal" placeholder="Amount" style="width:120px;padding:.5rem .6rem;font-family:inherit;font-size:.9rem;border:1px solid rgba(27,27,26,.2);border-radius:6px">'
+      +'<input id="ow-settle-method" type="text" placeholder="Bank transfer" style="flex:1;min-width:140px;padding:.5rem .6rem;font-family:inherit;font-size:.9rem;border:1px solid rgba(27,27,26,.2);border-radius:6px">'
+      +'<button onclick="owRecordSettlement()" style="padding:.5rem .9rem;background:transparent;color:var(--westmere-navy,#102a43);border:var(--border-strong,1.5px) solid var(--westmere-navy,#102a43);border-radius:6px;font-family:inherit;font-size:.85rem;cursor:pointer">Record</button>'
+      +'</div><div style="margin-top:.45rem;font-size:.76rem;color:rgba(27,27,26,.55)">A payment to the driver is a positive amount; cash he hands back is negative.</div></div>';
+  }catch(e){body.innerHTML='<div style="color:var(--red)">Network error</div>';}
+}
+async function owRecordSettlement(){
+  if(!_OWLEDGER)return;
+  var amt=parseFloat(document.getElementById('ow-settle-amt').value);
+  if(!isFinite(amt)||amt===0){showToast('Enter the amount you paid');return;}
+  var method=(document.getElementById('ow-settle-method').value||'').trim();
+  if(!confirm('Record £'+Math.abs(amt).toFixed(2)+(amt<0?' received from':' paid to')+' this driver?'))return;
+  try{
+    var r=await fetch('/api/drivers/'+_OWLEDGER+'/settlements',{method:'POST',credentials:'include',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:amt,method:method||null})});
+    var d=await r.json();
+    if(r.ok&&d.ok){showToast('Recorded');owLedgerLoad();}
+    else showToast(d.error||'Could not record it');
+  }catch(e){showToast('Network error');}
+}
+async function owUndoSettlement(sid){
+  if(!_OWLEDGER)return;
+  if(!confirm('Remove this payment? The balance goes back up by that amount.'))return;
+  try{
+    var r=await fetch('/api/drivers/'+_OWLEDGER+'/settlements/'+sid,{method:'DELETE',credentials:'include'});
+    var d=await r.json();
+    if(r.ok&&d.ok){showToast('Removed');owLedgerLoad();}
+    else showToast(d.error||'Could not remove it');
+  }catch(e){showToast('Network error');}
 }
 
 var _drvDocsOpen={};

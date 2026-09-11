@@ -2598,7 +2598,12 @@ async function sendCustomerCancellation(booking) {
 // ── Weekly driver statement ─────────────────────────────────────────────
 // Plain-text-ish HTML summary of a driver's earnings for a date range.
 // Triggered manually via admin UI, or automatically by a weekly cron.
-async function sendDriverStatement(driver, period, totals, items) {
+/* `pdf` is the statement as a Buffer — the same document the owner previews at
+   /api/drivers/:id/statement.pdf, attached so the driver keeps a copy he can
+   file rather than an email he has to scroll. Optional: if rendering it failed,
+   the summary still goes out, because a missing attachment is a worse reason to
+   send nothing than to send the figures. */
+async function sendDriverStatement(driver, period, totals, items, pdf) {
   if (!driver || !driver.email) return false;
   const rows = (items || []).map(it => `
     <tr>
@@ -2629,7 +2634,17 @@ async function sendDriverStatement(driver, period, totals, items) {
     <tbody>${rows || '<tr><td colspan="5" style="padding:16px;text-align:center;color:#999;font-size:12px">No jobs this period.</td></tr>'}</tbody>
   </table>`;
   const html = heroEmail(body, { title: 'Westmere — Driver Statement' });
-  return sendEmail(driver.email, `Westmere — Weekly statement (${period.from} to ${period.to})`, html, 'Westmere Payroll', `Your earnings summary: £${(+totals.net||0).toFixed(2)} net`);
+  /* Either a raw Buffer or { content, filename }. Tested for its CONTENT, not
+     its .length — an object carrying a filename has no length, and the first
+     version of this line silently sent every statement without its attachment. */
+  const pdfBuf = Buffer.isBuffer(pdf) ? pdf : (pdf && pdf.content) || null;
+  const attachments = (pdfBuf && pdfBuf.length) ? [{
+    filename: (pdf && pdf.filename) || 'westmere-statement.pdf',
+    content: Buffer.from(pdfBuf).toString('base64'),
+    content_type: 'application/pdf'
+  }] : undefined;
+  return sendEmail(driver.email, `Westmere — Weekly statement (${period.from} to ${period.to})`, html, 'Westmere Payroll', `Your earnings summary: £${(+totals.net||0).toFixed(2)} net`,
+    attachments ? { attachments } : undefined);
 }
 
 // ── Driver welcome email (sent when admin creates a driver account) ─────────

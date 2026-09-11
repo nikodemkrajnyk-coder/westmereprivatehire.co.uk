@@ -25,7 +25,13 @@ const intake = require('./intake');
 
 const router = express.Router();
 
-const ADMIN_FEE_PCT = 0.10;            // fixed 10% admin fee
+/* THE RATE AND THE SPLIT LIVE IN THE LEDGER (server/driver-ledger.js), which is
+   the one module allowed to say what a job is worth. They are re-exported at the
+   bottom of this file because callers and guards have always asked this module
+   for them — a re-export is a second name, not a second definition. It was a
+   second definition once: the same `(admin_fee ?? fare * 0.10)` was written out
+   in five places, and a rate change would have had to find all five. */
+const { ADMIN_FEE_PCT, computeSplit } = require('./driver-ledger');
 const OFFER_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 const SWEEP_INTERVAL_MS = 60 * 1000;    // every minute
 
@@ -39,14 +45,6 @@ function driverOnly(req, res, next) {
   const role = req.auth && req.auth.role;
   if (!['driver', 'owner'].includes(role)) return res.status(403).json({ error: 'Driver access required' });
   next();
-}
-
-function computeSplit(fare) {
-  if (fare == null || isNaN(fare)) return { driver_pay: null, admin_fee: null };
-  const f = Number(fare);
-  const fee = Math.round(f * ADMIN_FEE_PCT * 100) / 100;
-  const pay = Math.round((f - fee) * 100) / 100;
-  return { driver_pay: pay, admin_fee: fee };
 }
 
 function bookingRow(id) {

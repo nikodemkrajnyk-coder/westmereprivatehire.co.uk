@@ -1623,6 +1623,30 @@ select:-webkit-autofill:focus{
         </div>
       </div>
 
+      <!-- ── THE RUNNING BALANCE ──────────────────────────────────────────
+           The earnings box above is a PERIOD: what he did this week. This is
+           the RELATIONSHIP: everything owed, less everything paid, as one
+           figure. They are different questions and the answer to the second was
+           nowhere on this screen — which is why the cash email could promise a
+           fee "carries to your next payout" with nothing to carry it.
+           Every figure comes from /api/drivers/:id/ledger, which is
+           server/driver-ledger.js. Nothing is worked out in the browser.
+           GUARDRAIL: server/tests/driver-ledger.test.js -->
+      <div id="dm-ledger" style="display:none;margin-top:1.3rem;padding:1rem 1.1rem;border:1px solid rgba(16,42,67,.25);border-radius:6px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.7rem">
+          <div style="font-size:.8rem;letter-spacing:.18em;text-transform:uppercase;color:var(--navy);font-weight:600" id="dm-bal-label">Balance</div>
+          <div style="font-family:var(--serif);font-size:1.5rem;color:var(--navy)" id="dm-bal-figure">—</div>
+        </div>
+        <div id="dm-bal-list" style="max-height:200px;overflow-y:auto;border-top:1px solid rgba(27,27,26,.08);padding-top:.6rem;font-size:.86rem"></div>
+        <div style="display:flex;gap:.5rem;margin-top:.8rem;flex-wrap:wrap;align-items:center">
+          <input id="dm-settle-amt" type="number" step="0.01" placeholder="Amount paid" style="width:130px;padding:.4rem .6rem;font-family:inherit;font-size:.86rem;border:1px solid rgba(27,27,26,.2);border-radius:5px">
+          <input id="dm-settle-method" type="text" placeholder="Bank transfer" style="width:150px;padding:.4rem .6rem;font-family:inherit;font-size:.86rem;border:1px solid rgba(27,27,26,.2);border-radius:5px">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="dmRecordSettlement()" style="font-size:.78rem;padding:.4rem .8rem">Record payment</button>
+          <a id="dm-stmt-pdf" href="#" target="_blank" rel="noopener" class="btn btn-ghost btn-sm" style="font-size:.78rem;padding:.4rem .8rem;text-decoration:none">Statement PDF</a>
+        </div>
+        <div style="margin-top:.5rem;font-size:.78rem;color:rgba(27,27,26,.6)">A payment TO the driver is a positive amount; cash he hands back is negative.</div>
+      </div>
+
       <div id="dm-err" style="display:none;margin-top:.8rem;padding:.6rem .8rem;background:rgba(156,40,40,.08);color:#9C2828;font-size:.88rem;border-radius:6px"></div>
     </div>
     <div class="modal-foot">
@@ -3369,9 +3393,21 @@ function loadLiveBookings(){
     if(dt)dt.textContent=d.drivers.length;
     DRIVERS=d.drivers.map(function(x){
       return{id:x.id,initials:(x.full_name||'?')[0].toUpperCase(),name:x.full_name||x.username,role:x.role||'driver',
-        mobile:x.phone||'',email:x.email||'',status:x.active?'active':'inactive',jobs:0};
+        mobile:x.phone||'',email:x.email||'',status:x.active?'active':'inactive',jobs:0,balance:null};
     });
     buildDrivers();
+    /* WHAT EACH ONE IS OWED, from server/driver-ledger.js. A second request
+       rather than a field on /api/drivers: the balance needs every passed job
+       for every driver, and the drivers list is drawn on screens that do not
+       care about money. Drawn once without it and again with it, so a slow or
+       failed ledger cannot leave the page empty.
+       GUARDRAIL: server/tests/driver-ledger.test.js */
+    fetch('/api/drivers/balances',{credentials:'include'}).then(function(r){return r.json();}).then(function(b){
+      if(!b||!b.ok)return;
+      var by={};(b.drivers||[]).forEach(function(x){by[x.id]=x.balance;});
+      DRIVERS.forEach(function(x){if(by[x.id]!==undefined)x.balance=by[x.id];});
+      buildDrivers();
+    }).catch(function(){});
   }).catch(function(){});
 }
 
@@ -3816,6 +3852,7 @@ async function dmLoadEarnings(which){
     document.getElementById('dm-earn-gross').textContent='£'+d.totals.gross.toFixed(2);
     document.getElementById('dm-earn-comm').textContent='£'+d.totals.commission.toFixed(2);
     document.getElementById('dm-earn-net').textContent='£'+d.totals.net.toFixed(2);
+    dmLoadLedger();   // the period, and then the relationship
     var list=document.getElementById('dm-earn-list');
     if(!d.items.length){list.innerHTML='<div style="color:rgba(27,27,26,.68);padding:.4rem 0">No jobs in this period.</div>';return;}
     list.innerHTML=d.items.map(function(it){
@@ -3826,6 +3863,86 @@ async function dmLoadEarnings(which){
       +'</div>';
     }).join('');
   }catch(e){showToast('Network error loading earnings');}
+}
+
+/* ── THE LEDGER PANEL ────────────────────────────────────────────────────────
+   Reads /api/drivers/:id/ledger and prints it. The browser does no arithmetic:
+   the balance, the per-job figures and the running total all arrive computed by
+   server/driver-ledger.js, so this screen and the statement PDF cannot disagree.
+   GUARDRAIL: server/tests/driver-ledger.test.js */
+function dmMoney(n){return '£'+Math.abs(Number(n)||0).toFixed(2);}
+
+async function dmLoadLedger(){
+  if(!DRIVER_EDIT_ID)return;
+  var box=document.getElementById('dm-ledger');if(!box)return;
+  box.style.display='';
+  var pdf=document.getElementById('dm-stmt-pdf');
+  if(pdf)pdf.href='/api/drivers/'+DRIVER_EDIT_ID+'/statement.pdf';
+  var list=document.getElementById('dm-bal-list');
+  list.innerHTML='<div style="color:rgba(27,27,26,.5);padding:.4rem 0">Loading…</div>';
+  try{
+    var r=await fetch('/api/drivers/'+DRIVER_EDIT_ID+'/ledger',{credentials:'include'});
+    var d=await r.json();
+    if(!r.ok||!d.ok){list.innerHTML='<div style="color:#9C2828;padding:.4rem 0">'+escTo(d.error||'Could not load the ledger')+'</div>';return;}
+    /* WHO OWES WHOM, IN WORDS. A minus sign in a column of pounds is easy to
+       miss, and it is the one thing on this panel that decides which way the
+       money goes. */
+    var owed=Number(d.balance)>=0;
+    document.getElementById('dm-bal-label').textContent=owed?'You owe this driver':'This driver owes you';
+    var fig=document.getElementById('dm-bal-figure');
+    fig.textContent=dmMoney(d.balance);
+    fig.style.color=owed?'var(--navy)':'#9C2828';
+
+    var rows=(d.items||[]).map(function(it){
+      return '<div style="display:grid;grid-template-columns:76px 1fr auto;gap:.5rem;padding:.45rem 0;border-bottom:1px solid rgba(27,27,26,.05)">'
+        +'<div style="color:rgba(27,27,26,.72);font-size:.82rem">'+escTo(it.date)+'</div>'
+        +'<div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escTo(it.route)+'">'+escTo(it.ref)+' · '+escTo(it.route)
+        +'<span style="color:rgba(27,27,26,.55)"> · '+(it.paymentType==='cash'?'cash':'prepaid')+'</span></div>'
+        +'<div style="text-align:right;white-space:nowrap;font-size:.84rem">'
+        +'<span style="color:rgba(27,27,26,.6)">'+(Number(it.delta)<0?'−':'+')+dmMoney(it.delta)+'</span>'
+        +' <span style="color:var(--navy);font-weight:500">'+(Number(it.balanceAfter)<0?'−':'')+dmMoney(it.balanceAfter)+'</span></div>'
+      +'</div>';
+    });
+    (d.settlements||[]).forEach(function(st){
+      rows.push('<div style="display:grid;grid-template-columns:76px 1fr auto;gap:.5rem;padding:.45rem 0;border-bottom:1px solid rgba(27,27,26,.05);background:rgba(16,42,67,.04)">'
+        +'<div style="color:rgba(27,27,26,.72);font-size:.82rem">'+escTo(st.paid_on)+'</div>'
+        +'<div>Paid'+(st.method?' · '+escTo(st.method):'')+(st.note?' · '+escTo(st.note):'')+'</div>'
+        +'<div style="text-align:right;white-space:nowrap;font-size:.84rem">'
+        +'<span style="color:rgba(27,27,26,.6)">'+(Number(st.amount)<0?'+':'−')+dmMoney(st.amount)+'</span> '
+        +'<button type="button" onclick="dmUndoSettlement('+st.id+')" style="background:none;border:none;color:#9C2828;cursor:pointer;font-size:.78rem;font-family:inherit">undo</button></div>'
+      +'</div>');
+    });
+    list.innerHTML=rows.join('')||'<div style="color:rgba(27,27,26,.5);padding:.4rem 0">No passed jobs yet.</div>';
+  }catch(e){list.innerHTML='<div style="color:#9C2828;padding:.4rem 0">Network error</div>';}
+}
+
+async function dmRecordSettlement(){
+  if(!DRIVER_EDIT_ID)return;
+  var amt=parseFloat(document.getElementById('dm-settle-amt').value);
+  if(!isFinite(amt)||amt===0){showToast('Enter the amount you paid');return;}
+  var method=(document.getElementById('dm-settle-method').value||'').trim();
+  if(!confirm('Record '+dmMoney(amt)+(amt<0?' received from':' paid to')+' this driver?'))return;
+  try{
+    var r=await fetch('/api/drivers/'+DRIVER_EDIT_ID+'/settlements',{method:'POST',credentials:'include',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:amt,method:method||null})});
+    var d=await r.json();
+    if(r.ok&&d.ok){
+      document.getElementById('dm-settle-amt').value='';
+      showToast('Recorded — balance now '+dmMoney(d.balance));
+      dmLoadLedger();
+    } else showToast(d.error||'Could not record it');
+  }catch(e){showToast('Network error');}
+}
+
+async function dmUndoSettlement(sid){
+  if(!DRIVER_EDIT_ID)return;
+  if(!confirm('Remove this payment? The balance goes back up by that amount.'))return;
+  try{
+    var r=await fetch('/api/drivers/'+DRIVER_EDIT_ID+'/settlements/'+sid,{method:'DELETE',credentials:'include'});
+    var d=await r.json();
+    if(r.ok&&d.ok){showToast('Removed — balance now '+dmMoney(d.balance));dmLoadLedger();}
+    else showToast(d.error||'Could not remove it');
+  }catch(e){showToast('Network error');}
 }
 
 async function dmSendStatement(){
@@ -3951,6 +4068,17 @@ function reloadDrivers(){
   }).catch(function(){});
 }
 
+/* The running balance as a chip: positive is money owed TO the driver, negative
+   is money he owes us — which is what a cash job leaves until it is netted off
+   his next payout. The figure is the ledger's; this only decides the colour. */
+function admBalChip(bal){
+  if(bal===null||bal===undefined)return '';
+  var n=Number(bal),owed=n>=0;
+  return '<div style="margin-top:.45rem;font-family:var(--sans);font-size:.78rem;color:'
+    +(owed?'var(--navy)':'#9C2828')+'" title="'+(owed?'You owe this driver':'This driver owes you')+'">'
+    +(owed?'':'−')+'£'+Math.abs(n).toFixed(2)+' <span style="color:rgba(27,27,26,.55)">'+(owed?'owed to him':'he owes you')+'</span></div>';
+}
+
 function buildDrivers(){
   var grid=document.getElementById('driver-grid');
   if(!grid)return;
@@ -3983,6 +4111,7 @@ function buildDrivers(){
       +'<div class="dc-status '+(d.status==='active'?'on':'off')+'">'
         +'<div class="dc-dot"></div>'+(d.status==='active'?'Active':'Inactive')
       +'</div>'
+      +admBalChip(d.balance)
       +'<div style="display:flex;gap:.4rem;margin-top:.7rem">'
       +'<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEditDriver('+d.id+')" style="flex:1;font-size:.78rem;padding:.45rem .8rem">Edit</button>'
       +'<button class="btn btn-sm" onclick="event.stopPropagation();deleteDriver('+d.id+',\''+escTo(d.name)+'\')" style="flex:0 0 auto;font-size:.78rem;padding:.45rem .8rem;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)">Delete</button>'

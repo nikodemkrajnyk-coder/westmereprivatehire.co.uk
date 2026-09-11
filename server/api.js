@@ -7,6 +7,11 @@ const { sendAdminBookingWhatsApp } = require('./whatsapp');
 const gcal = require('./google-calendar');
 const calendarSync = require('./calendar-sync');
 const events = require('./events');
+/* THE MONEY. What a job is worth to Westmere and to the driver is defined once,
+   in server/driver-ledger.js, and asked for here — never re-derived. This file
+   used to carry three copies of `(admin_fee ?? fare * 0.10)` and its own
+   COMMISSION_RATE. GUARDRAIL: server/tests/driver-ledger.test.js */
+const ledger = require('./driver-ledger');
 
 /* Invoices live wherever server/invoice-pdf.js says they do — this file used
    to derive its own answer from the database directory, which agreed with the
@@ -4112,6 +4117,42 @@ router.get('/drivers', (req, res) => {
     });
 });
 
+/* ── THE DRIVER LEDGER ────────────────────────────────────────────────────────
+   What a driver has done, what it came to, and the one running figure that says
+   who owes whom. Every number is server/driver-ledger.js's; nothing here does
+   arithmetic. GUARDRAIL: server/tests/driver-ledger.test.js
+
+   REGISTERED BEFORE '/drivers/:id'. Express matches in order, so '/balances'
+   has to be declared above the parameterised route or it arrives as a driver
+   whose id is the word "balances".  */
+router.get('/drivers/balances', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const db = getDb();
+  const rows = db.prepare(
+    "SELECT id, full_name, email, phone, has_login FROM users WHERE role IN ('driver','owner') AND active = 1 ORDER BY full_name"
+  ).all();
+  const drivers = rows.map((r) => {
+    /* One bad row must not take the whole screen down — the same lesson as the
+       /drivers 500. A driver whose history cannot be read still appears, with
+       his balance unknown rather than the page blank. */
+    try {
+      const h = ledger.driverHistory(r.id);
+      return Object.assign({}, r, {
+        balance: ledger.driverBalance(r.id),
+        jobs: h.totals.jobs,
+        fares: h.totals.fares,
+        commission: h.totals.commission
+      });
+    } catch (e) {
+      console.error('[LEDGER] balance failed for driver', r.id, e.message);
+      return Object.assign({}, r, { balance: null, jobs: null, error: true });
+    }
+  });
+  res.json({ ok: true, drivers });
+});
+
 router.get('/drivers/:id', (req, res) => {
   if (!['admin', 'owner'].includes(req.auth.role)) {
     return res.status(403).json({ error: 'Access denied' });
@@ -4383,7 +4424,117 @@ router.post('/drivers/:id/set-credentials', (req, res) => {
 // Earnings summary for a driver over a period. Used by admin driver
 // detail / weekly statements. Commission is 10% on the fare by default;
 // if driver_pay / admin_fee are set on a booking those override.
-const COMMISSION_RATE = 0.10;
+const COMMISSION_RATE = ledger.ADMIN_FEE_PCT;   // the ledger's rate, not a second one
+/** One driver's history, settlements and net balance. */
+router.get('/drivers/:id/ledger', (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid driver ID' });
+  // Staff see anyone; a driver sees only himself.
+  const isStaff = ['admin', 'owner'].includes(req.auth.role);
+  if (!isStaff && req.auth.id !== id) return res.status(403).json({ error: 'Forbidden' });
+
+  const db = getDb();
+  const driver = db.prepare("SELECT id, full_name, email, phone FROM users WHERE id = ?").get(id);
+  if (!driver) return res.status(404).json({ error: 'Driver not found' });
+
+  const { from, to } = req.query;
+  for (const v of [from, to]) {
+    if (v && !/^\d{4}-\d{2}-\d{2}$/.test(v)) return res.status(400).json({ error: 'from/to must be YYYY-MM-DD' });
+  }
+  const { items, totals } = ledger.driverHistory(id, { from, to });
+  res.json({
+    ok: true,
+    driver,
+    period: { from: from || null, to: to || null },
+    commission_rate: ledger.ADMIN_FEE_PCT,
+    items,
+    totals,
+    settlements: ledger.driverSettlements(id, { from, to }),
+    /* The WHOLE balance, not the period's — a week's statement that closed at
+       "we owe you £86.40" while £400 was outstanding would be a true number and
+       a misleading screen. */
+    balance: ledger.driverBalance(id)
+  });
+});
+
+/** Record a payment to a driver (or cash he hands back). Body: { amount, method, note, paid_on }. */
+router.post('/drivers/:id/settlements', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid driver ID' });
+  const db = getDb();
+  const driver = db.prepare("SELECT id, full_name FROM users WHERE id = ?").get(id);
+  if (!driver) return res.status(404).json({ error: 'Driver not found' });
+
+  const { amount, method, note, paid_on } = req.body || {};
+  const amt = Number(amount);
+  /* A settlement of zero is not a payment, and NaN is a typo. Neither may reach
+     the ledger: a row that moves the balance by nothing is noise in a document
+     the driver reads, and a row that moves it by NaN destroys the balance. */
+  if (!isFinite(amt) || amt === 0) return res.status(400).json({ error: 'A non-zero amount is required' });
+  if (Math.abs(amt) > 100000) return res.status(400).json({ error: 'That amount looks wrong' });
+  if (paid_on && !/^\d{4}-\d{2}-\d{2}$/.test(paid_on)) {
+    return res.status(400).json({ error: 'paid_on must be YYYY-MM-DD' });
+  }
+
+  const row = ledger.recordSettlement(id, amt, {
+    method: method ? String(method).slice(0, 60) : null,
+    note: note ? String(note).slice(0, 200) : null,
+    paid_on: paid_on || undefined,
+    created_by: req.auth.id
+  });
+  db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+    .run(req.auth.type || 'user', req.auth.id, 'driver_settlement',
+         driver.full_name + ' ' + amt.toFixed(2), req.ip);
+  res.json({ ok: true, settlement: row, balance: ledger.driverBalance(id) });
+});
+
+/** Undo one. A mistyped payment is worse than no payment — it silently clears
+    a balance the driver is still owed, so it has to be reversible. */
+router.delete('/drivers/:id/settlements/:sid', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const id = parseInt(req.params.id, 10);
+  const sid = parseInt(req.params.sid, 10);
+  if (isNaN(id) || isNaN(sid)) return res.status(400).json({ error: 'Invalid ID' });
+  const db = getDb();
+  const row = db.prepare('SELECT * FROM driver_settlements WHERE id = ? AND driver_id = ?').get(sid, id);
+  if (!row) return res.status(404).json({ error: 'Settlement not found' });
+  db.prepare('DELETE FROM driver_settlements WHERE id = ?').run(sid);
+  db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+    .run(req.auth.type || 'user', req.auth.id, 'driver_settlement_deleted',
+         'driver ' + id + ' ' + Number(row.amount).toFixed(2), req.ip);
+  res.json({ ok: true, balance: ledger.driverBalance(id) });
+});
+
+/** The statement, as a PDF. */
+router.get('/drivers/:id/statement.pdf', async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid driver ID' });
+  const isStaff = ['admin', 'owner'].includes(req.auth.role);
+  if (!isStaff && req.auth.id !== id) return res.status(403).json({ error: 'Forbidden' });
+  const { from, to } = req.query;
+  for (const v of [from, to]) {
+    if (v && !/^\d{4}-\d{2}-\d{2}$/.test(v)) return res.status(400).json({ error: 'from/to must be YYYY-MM-DD' });
+  }
+  try {
+    const stmt = require('./driver-statement-pdf');
+    const data = stmt.statementData(id, { from, to });
+    if (!data) return res.status(404).json({ error: 'Driver not found' });
+    const buf = await stmt.buildDriverStatementPdf(id, { from, to });
+    res.setHeader('Content-Type', 'application/pdf');
+    // inline: the owner previews it on his phone before it is sent to anyone.
+    res.setHeader('Content-Disposition', 'inline; filename="' + stmt.statementFilename(data) + '"');
+    res.send(buf);
+  } catch (e) {
+    console.error('[STATEMENT] pdf failed for driver', id, e.message);
+    res.status(500).json({ error: 'Could not render the statement' });
+  }
+});
+
 router.get('/drivers/:id/earnings', (req, res) => {
   const db = getDb();
   const id = parseInt(req.params.id, 10);
@@ -4421,10 +4572,8 @@ router.get('/drivers/:id/earnings', (req, res) => {
 
   let gross = 0, commission = 0, net = 0;
   const items = bookings.map(b => {
-    const fare = +b.fare || 0;
-    // If admin set explicit payouts use those; otherwise derive from commission rate.
-    const itemCommission = (b.admin_fee != null) ? (+b.admin_fee || 0) : +(fare * COMMISSION_RATE).toFixed(2);
-    const itemNet = (b.driver_pay != null) ? (+b.driver_pay || 0) : +(fare - itemCommission).toFixed(2);
+    // The stored figures win, and the fallback is the ledger's — not a local copy.
+    const { fare, commission: itemCommission, payout: itemNet } = ledger.jobSplit(b);
     gross += fare; commission += itemCommission; net += itemNet;
     return {
       id: b.id, ref: b.ref, date: b.date, time: b.time,
@@ -4476,9 +4625,7 @@ router.get('/me/earnings', (req, res) => {
   `).all(req.auth.id, from, to);
   let gross = 0, commission = 0, net = 0;
   const items = bookings.map(b => {
-    const fare = +b.fare || 0;
-    const c = (b.admin_fee != null) ? (+b.admin_fee || 0) : +(fare * COMMISSION_RATE).toFixed(2);
-    const n = (b.driver_pay != null) ? (+b.driver_pay || 0) : +(fare - c).toFixed(2);
+    const { fare, commission: c, payout: n } = ledger.jobSplit(b);
     gross += fare; commission += c; net += n;
     return {
       id: b.id, ref: b.ref, date: b.date, time: b.time,
@@ -4520,16 +4667,25 @@ router.post('/drivers/:id/statement', async (req, res) => {
   `).all(id, from, to);
   let gross = 0, commission = 0, net = 0;
   const items = bookings.map(b => {
-    const fare = +b.fare || 0;
-    const c = (b.admin_fee != null) ? (+b.admin_fee || 0) : +(fare * 0.10).toFixed(2);
-    const n = (b.driver_pay != null) ? (+b.driver_pay || 0) : +(fare - c).toFixed(2);
+    const { fare, commission: c, payout: n } = ledger.jobSplit(b);
     gross += fare; commission += c; net += n;
     return { date: b.date, time: b.time, ref: b.ref, pickup: b.pickup, destination: b.destination, fare, commission: c, net: n };
   });
   const totals = { jobs: items.length, gross: +gross.toFixed(2), commission: +commission.toFixed(2), net: +net.toFixed(2) };
 
+  /* The PDF rides along. Rendering it must not be able to stop the statement
+     going out — a driver waiting on his figures is not helped by a page-layout
+     error — so a failure here is logged and the email goes without it. */
+  let pdf = null;
+  try {
+    const stmt = require('./driver-statement-pdf');
+    const data = stmt.statementData(id, { from, to });
+    const buf = await stmt.buildDriverStatementPdf(id, { from, to });
+    if (buf) pdf = { content: buf, filename: stmt.statementFilename(data) };
+  } catch (e) { console.error('[STATEMENT] pdf failed, sending summary only:', e.message); }
+
   const { sendDriverStatement } = require('./email');
-  const ok = await sendDriverStatement({ name: driver.full_name, email: driver.email }, { from, to }, totals, items);
+  const ok = await sendDriverStatement({ name: driver.full_name, email: driver.email }, { from, to }, totals, items, pdf);
   if (!ok) return res.status(502).json({ error: 'Email delivery failed (check RESEND_API_KEY)' });
   db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
     .run(req.auth.type || 'user', req.auth.id, 'driver_statement_sent', driver.full_name + ' ' + from + '→' + to, req.ip);
@@ -4594,7 +4750,15 @@ router.get('/stats', (req, res) => {
   // unpaid account/invoice bookings are NOT counted (invoice income is tracked
   // via the paid flag on invoices).
   const RECEIVED = "((LOWER(payment)='cash' AND status='completed') OR paid_at IS NOT NULL)";
-  const totalRevenue = db.prepare(`SELECT COALESCE(SUM(fare),0) as total FROM bookings WHERE ${RECEIVED}`).get().total;
+  /* TURNOVER IS NOT THE SUM OF THE FARES. On a job passed to another driver the
+     fare is collected on his behalf and paid straight back out; only the ten per
+     cent is ours. Summing fares overstated turnover by every payout we have ever
+     made, which matters at the point somebody files a return.
+     ledger.incomeSql() is the same rule as ledger.westmereIncome(), in SQL.
+     GUARDRAIL: server/tests/driver-ledger.test.js */
+  const totalRevenue = db.prepare(
+    `SELECT COALESCE(SUM(${ledger.incomeSql()}),0) as total FROM bookings WHERE ${RECEIVED}`
+  ).get().total;
 
   res.json({
     ok: true,
@@ -4699,11 +4863,13 @@ router.get('/analytics', (req, res) => {
   // bookings table is aliased (e.g. 'b.').
   const recv = (p='') => `((LOWER(${p}payment)='cash' AND ${p}status='completed') OR ${p}paid_at IS NOT NULL)`;
 
-  // Revenue overview
-  const revToday   = db.prepare(`SELECT COALESCE(SUM(fare),0) as t FROM bookings WHERE date=? AND ${recv()}`).get(today).t;
-  const revWeek    = db.prepare(`SELECT COALESCE(SUM(fare),0) as t FROM bookings WHERE date>=? AND date<=? AND ${recv()}`).get(weekStartStr, today).t;
-  const revMonth   = db.prepare(`SELECT COALESCE(SUM(fare),0) as t FROM bookings WHERE date>=? AND ${recv()}`).get(monthStart).t;
-  const revAllTime = db.prepare(`SELECT COALESCE(SUM(fare),0) as t FROM bookings WHERE ${recv()}`).get().t;
+  // Revenue overview. INCOME, not fares — a passed job contributes its
+  // commission only (server/driver-ledger.js). See the note on /stats.
+  const INCOME = ledger.incomeSql();
+  const revToday   = db.prepare(`SELECT COALESCE(SUM(${INCOME}),0) as t FROM bookings WHERE date=? AND ${recv()}`).get(today).t;
+  const revWeek    = db.prepare(`SELECT COALESCE(SUM(${INCOME}),0) as t FROM bookings WHERE date>=? AND date<=? AND ${recv()}`).get(weekStartStr, today).t;
+  const revMonth   = db.prepare(`SELECT COALESCE(SUM(${INCOME}),0) as t FROM bookings WHERE date>=? AND ${recv()}`).get(monthStart).t;
+  const revAllTime = db.prepare(`SELECT COALESCE(SUM(${INCOME}),0) as t FROM bookings WHERE ${recv()}`).get().t;
 
   // Weekly trend — last 12 weeks (oldest first)
   const weeklyTrend = [];
@@ -4712,7 +4878,7 @@ router.get('/analytics', (req, res) => {
     const we = new Date(ws);        we.setDate(we.getDate() + 6);
     const wsStr = ws.toISOString().split('T')[0];
     const weStr = we.toISOString().split('T')[0];
-    const row = db.prepare(`SELECT COALESCE(SUM(fare),0) as total, COUNT(*) as jobs FROM bookings WHERE date>=? AND date<=? AND ${recv()}`).get(wsStr, weStr);
+    const row = db.prepare(`SELECT COALESCE(SUM(${INCOME}),0) as total, COUNT(*) as jobs FROM bookings WHERE date>=? AND date<=? AND ${recv()}`).get(wsStr, weStr);
     weeklyTrend.push({ weekStart: wsStr, total: row.total, jobs: row.jobs });
   }
 
