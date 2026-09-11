@@ -158,7 +158,12 @@ test('it is the branded invoice email we built, not a bare note', async () => {
   const db = makeDb();
   const { sent } = await send(db);
   const html = sent[0].html;
-  assert.ok(/westmere-email-hero\.jpg/.test(html), 'the branded shell');
+  /* "The branded shell" used to mean the hero photograph. The photograph was
+     removed from every customer email; the wordmark is what says this went out
+     on the house letterhead rather than as a bare note. */
+  assert.ok(/letter-spacing:11px[^>]*>WESTMERE</.test(html), 'the branded shell — the wordmark header');
+  assert.ok(!/westmere-email-hero\.jpg|westmere-email-thumb\.jpg/.test(html),
+    'a car image is back on an invoice email');
   assert.ok(/Payment method<\/td>[\s\S]{0,400}?>Invoice</.test(html), '"Payment method — Invoice"');
   assert.ok(!/westmere-pay\.html|\/api\/public\/pay\/|Pay Now/i.test(html), 'and no pay buttons');
   assert.ok(/Your Westmere Private Hire invoice/.test(sent[0].subject),

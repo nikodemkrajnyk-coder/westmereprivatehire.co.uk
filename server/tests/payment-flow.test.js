@@ -423,14 +423,26 @@ test('Apple Pay domain-association is served by an explicit route (static ignore
 });
 
 // ── 10. Branded hero-image email template (the missing-image bug) ────────
-// Two root causes made the hero image vanish from customer emails:
-//   (a) the ESTIMATE + ACKNOWLEDGEMENT used the old imageless `emailShell`;
-//       only the CONFIRMATION used the hero template.
-//   (b) the hosted hero JPEG was served Cross-Origin-Resource-Policy:
-//       same-origin, so mail clients (Gmail proxy, Apple Mail) refused it.
-// Guardrails: all three customer booking emails MUST render the hosted hero
-// image and MUST NOT fall back to emailShell; image assets MUST be cross-origin.
-console.log('\nBranded hero-image email (missing image bug)');
+// ── ONE SHELL, AND NO CAR IN IT ─────────────────────────────────────────────
+// This section began as the guard for a missing image. Two root causes made the
+// hero photograph vanish from customer emails: the estimate and acknowledgement
+// used an old imageless `emailShell` while only the confirmation used the hero
+// template, and the hosted JPEG was served Cross-Origin-Resource-Policy:
+// same-origin, so Gmail's proxy and Apple Mail refused it.
+//
+// THE PHOTOGRAPH IS NOW GONE BY DECISION, everywhere. The owner asked for the
+// header to be the Westmere wordmark on every customer email — his Tesla above
+// "Marek Nowak — Mercedes E-Class" was the case that prompted it, and rather
+// than a rule about which car is coming he chose no car at all. The signature
+// thumbnail went with it, for the same reason.
+//
+// WHAT THESE GUARDS PROTECT IS UNCHANGED: there is ONE email design, nothing
+// builds email html any other way, and the old imageless shell stays retired.
+// Only the fact about the photograph moved — so "must embed the hero" became
+// "must show the wordmark and no car", and the assertions still bite in both
+// directions. The cross-origin header still matters: the detail-row icons are
+// images too.
+console.log('\nOne email shell, wordmark header, no car imagery');
 async function renderEmail(fn, booking) {
   process.env.RESEND_API_KEY = 'test_fake_key';
   let html = '';
@@ -441,6 +453,9 @@ async function renderEmail(fn, booking) {
   return html;
 }
 const HERO_IMG = '/assets/westmere-email-hero.jpg';
+const THUMB_IMG = '/assets/westmere-email-thumb.jpg';
+/* The wordmark, as heroShell sets it: the tracked WESTMERE and the strapline. */
+const WORDMARK = /letter-spacing:11px[^>]*>WESTMERE</;
 const OLD_SHELL_SIG = 'letter-spacing:8px';   // the imageless emailShell wordmark header
 const emailFixture = {
   ref: 'WM-HEROTEST', name: 'Ben', email: 'ben@example.com',
@@ -449,21 +464,25 @@ const emailFixture = {
   date: '2026-08-20', time: '09:30', fare: 96, estimated_fare: 96,
   pay_token: 'deadbeefdeadbeefdeadbeef', passengers: 2
 };
-test('estimate email renders the hosted hero image (not the imageless shell)', async () => {
-  const html = await renderEmail('sendCustomerEstimate', { ...emailFixture });
-  assert.ok(html.includes(HERO_IMG), 'estimate email must embed the hero image');
-  assert.ok(!html.includes(OLD_SHELL_SIG), 'estimate email must NOT use the old imageless emailShell header');
-});
-test('confirmation email renders the hosted hero image', async () => {
-  const html = await renderEmail('sendCustomerConfirmed', { ...emailFixture, paid: false, payment: 'pending' });
-  assert.ok(html.includes(HERO_IMG), 'confirmation email must embed the hero image');
-  assert.ok(!html.includes(OLD_SHELL_SIG), 'confirmation email must NOT use the old imageless emailShell header');
-});
-test('acknowledgement email renders the hosted hero image', async () => {
-  const html = await renderEmail('sendCustomerAcknowledgement', { ...emailFixture, pay_token: null });
-  assert.ok(html.includes(HERO_IMG), 'acknowledgement email must embed the hero image');
-  assert.ok(!html.includes(OLD_SHELL_SIG), 'acknowledgement email must NOT use the old imageless emailShell header');
-});
+const CUSTOMER_EMAILS = [
+  ['estimate',        'sendCustomerEstimate',        { ...emailFixture }],
+  ['confirmation',    'sendCustomerConfirmed',       { ...emailFixture, paid: false, payment: 'pending' }],
+  ['acknowledgement', 'sendCustomerAcknowledgement', { ...emailFixture, pay_token: null }]
+];
+for (const [label, fn, fixture] of CUSTOMER_EMAILS) {
+  test(label + ' email: wordmark header, no car photograph', async () => {
+    const html = await renderEmail(fn, fixture);
+    assert.ok(!html.includes(HERO_IMG),
+      label + ' email still carries the Tesla hero photograph');
+    assert.ok(!html.includes(THUMB_IMG),
+      label + ' email still carries the Tesla thumbnail in the signature');
+    assert.ok(WORDMARK.test(html),
+      label + ' email lost the wordmark — removing the photo must leave a letterhead, not a gap');
+    assert.ok(/Westmere Private Hire/.test(html), label + ' email lost the sign-off');
+    assert.ok(!html.includes(OLD_SHELL_SIG),
+      label + ' email must NOT use the old imageless emailShell header');
+  });
+}
 test('the three customer booking emails never call the imageless emailShell()', () => {
   const src = read('server/email.js');
   for (const fn of ['sendCustomerEstimate', 'sendCustomerConfirmed', 'sendCustomerAcknowledgement']) {
@@ -512,7 +531,11 @@ test('the imageless emailShell is removed and every email html uses the hero tem
   assert.ok(letter, 'letterEmail not found');
   assert.ok(/heroShell\(/.test(letter[0]),
     'letterEmail must build on heroShell — a separate shell is the thing this test exists to prevent');
-  assert.ok(/hero: false/.test(letter[0]), 'and it must suppress the photo by parameter, not by copying the markup');
+  /* letterEmail used to pass `hero: false` to suppress the photograph. There is
+     no photograph to suppress now, so what matters is only that it goes through
+     the same shell rather than building a second one. */
+  assert.ok(/heroShell\(/.test(letter[0]),
+    'letterEmail must render through the one shared shell, not copy its markup');
   /* BOUNDED BY ITS OWN BRACES, not by the first `\n}`. The shell gained a
      dark-mode @media block, whose closing brace sits at column 0 — so the old
      non-greedy match stopped inside the stylesheet and the hero image, forty
@@ -520,10 +543,14 @@ test('the imageless emailShell is removed and every email html uses the hero tem
      that did not touch what it guards. */
   const shell = require('./_source').fnBlock(src, 'heroShell');
   assert.ok(shell, 'heroShell (the one shared design) not found');
-  assert.ok(/westmere-email-hero\.jpg/.test(shell), 'heroShell must embed the hero image');
+  assert.ok(!/westmere-email-hero\.jpg/.test(shell),
+    'the hero photograph is back in heroShell — no customer email carries a car image');
+  assert.ok(!/westmere-email-thumb\.jpg/.test(shell),
+    'the Tesla thumbnail is back in the signature block');
+  assert.ok(WORDMARK.test(shell), 'heroShell must set the wordmark — that IS the header now');
   assert.ok(/Westmere Private Hire/.test(shell), 'heroShell must carry the "Westmere Private Hire" sign-off');
 });
-test('a representative sample across all email categories renders the hero image', async () => {
+test('a representative sample across all email categories: wordmark, never a car', async () => {
   const period = { from: '2026-08-01', to: '2026-08-07', issuedDate: '2026-08-08', dueDate: '2026-08-22', label: 'wk1' };
   const cases = [
     ['sendCustomerWelcome',       [{ email: 'x@e.com', full_name: 'Ben Carter' }]],
@@ -538,7 +565,9 @@ test('a representative sample across all email categories renders the hero image
   ];
   for (const [fn, args] of cases) {
     const html = await renderEmailArgs(fn, args);
-    assert.ok(html.includes('/assets/westmere-email-hero.jpg'), fn + ' must embed the hero image');
+    assert.ok(!html.includes(HERO_IMG), fn + ' still carries the Tesla hero photograph');
+    assert.ok(!html.includes(THUMB_IMG), fn + ' still carries the Tesla thumbnail');
+    assert.ok(WORDMARK.test(html), fn + ' lost the wordmark header');
     assert.ok(!html.includes('letter-spacing:8px'), fn + ' must not use the old imageless shell');
     assert.ok(/Westmere Private Hire/.test(html), fn + ' must keep the Westmere sign-off');
   }

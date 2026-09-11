@@ -84,28 +84,62 @@ const DEFAULT_REG     = 'ML68 YHC';
    GUARDRAIL: server/tests/rider-reminder.test.js */
 function driverDetails(d) {
   const t = (v) => String(v == null ? '' : v).trim();
-  const or = (v, fallback) => t(v) || fallback;
+
+  /* ── THE CAR IS THE JOB'S, NOT THE DRIVER'S ────────────────────────────────
+     assigned_to_car / assigned_to_reg are what was recorded for THIS trip — by
+     the send-to-driver form, or copied from the offer when a driver accepted
+     one (offer-routes.js). The users row is only what he usually drives.
+
+     The job wins, and it has to. This read the users row first, and the
+     consequences reached the customer twice over:
+
+       · a saved driver sent out in a different car today was announced under
+         yesterday's plate — the exact thing the dispatch form exists to let the
+         owner correct;
+       · a driver with no car on file — which is every driver added by "save
+         this driver for future work" without one — fell all the way through to
+         DEFAULT_VEHICLE, so a job subcontracted to Sam told the customer to
+         look for the OWNER'S Tesla. The dispatch-time confirmation said the
+         Mercedes. The 12-hour reminder said the Tesla. The customer stands on a
+         kerb at five in the morning holding the second one.
+
+     GUARDRAIL: server/tests/rider-reminder.test.js */
+  /* ONLY IF IT IS THE SAME PERSON. Every write path sets assigned_to_* and
+     driver_id in one action, so they always describe one driver — but a row
+     that named two different people must not be answered with one man's name
+     and another man's plate. When they disagree, the registered set stays
+     whole, which is what it meant before. */
+  const jobCar = d ? t(d.assigned_to_car) : '';
+  const jobReg = d ? t(d.assigned_to_reg) : '';
+  const sameName = (a, b) => t(a).toLowerCase() === t(b).toLowerCase();
 
   // 1. a registered driver
   if (d && t(d.driver_name)) {
-    return {
-      name: t(d.driver_name),
-      vehicle: or(d.driver_vehicle, DEFAULT_VEHICLE),
-      reg: or(d.driver_reg, DEFAULT_REG),
-      source: 'registered'
-    };
+    const thisJob = !t(d.assigned_to_name) || sameName(d.assigned_to_name, d.driver_name);
+    return withCar(
+      t(d.driver_name),
+      (thisJob && jobCar) || t(d.driver_vehicle),
+      (thisJob && jobReg) || t(d.driver_reg),
+      'registered'
+    );
   }
   // 2. an ad-hoc driver who took the job
   if (d && t(d.assigned_to_name)) {
-    return {
-      name: t(d.assigned_to_name),
-      vehicle: or(d.assigned_to_car, DEFAULT_VEHICLE),
-      reg: or(d.assigned_to_reg, DEFAULT_REG),
-      source: 'adhoc'
-    };
+    return withCar(t(d.assigned_to_name), jobCar, jobReg, 'adhoc');
   }
   // 3. nobody yet — the owner takes it himself
-  return { name: DEFAULT_DRIVER, vehicle: DEFAULT_VEHICLE, reg: DEFAULT_REG, source: 'default' };
+  return { name: DEFAULT_DRIVER, vehicle: DEFAULT_VEHICLE, reg: DEFAULT_REG, source: 'default', known: true };
+}
+
+/* THE OWNER'S CAR IS NOT A FALLBACK FOR SOMEBODY ELSE'S JOB. When the job has
+   been given away and no car was recorded anywhere, the honest answer is that we
+   do not know it yet — naming the Tesla would send the customer to a car that is
+   not coming. `known:false` lets the block say so instead of inventing a plate. */
+function withCar(name, vehicle, reg, source) {
+  const v = String(vehicle || '').trim();
+  const r = String(reg || '').trim();
+  if (!v && !r) return { name: name, vehicle: '', reg: '', source: source, known: false };
+  return { name: name, vehicle: v, reg: r, source: source, known: true };
 }
 
 /* ── WHO IS TURNING UP, AND IN WHAT ──────────────────────────────────────
@@ -145,8 +179,10 @@ function driverBlockHtml(d) {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #dfe5ea;margin-top:2px">
   <tr><td style="padding:14px 0 0">
     <p style="margin:0 0 4px;font-family:${serif};font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Your driver and car</p>
-    <p style="margin:0;font-family:${serif};font-size:15px;color:${INK};line-height:1.5">${escHtml(dv.name)} &mdash; ${escHtml(dv.vehicle)}</p>
-    <p style="margin:2px 0 0;font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:1px;color:${INK_MUTED}">${escHtml(dv.reg)}</p>
+    <p style="margin:0;font-family:${serif};font-size:15px;color:${INK};line-height:1.5">${escHtml(dv.name)}${dv.vehicle ? ' &mdash; ' + escHtml(dv.vehicle) : ''}</p>
+    ${dv.known
+      ? (dv.reg ? `<p style="margin:2px 0 0;font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:1px;color:${INK_MUTED}">${escHtml(dv.reg)}</p>` : '')
+      : `<p style="margin:2px 0 0;font-family:${serif};font-size:14px;color:${INK_MUTED};line-height:1.5">We will confirm the car and registration before your pickup.</p>`}
   </td></tr>
 </table>`;
 }
@@ -525,7 +561,7 @@ async function sendCustomerAcknowledgement(booking) {
   const estStr = hasEst ? ('~\u00a3' + money(estNum)) : null;
 
   const dateStr = formatDate(date, time);
-  const firstName = greetingName(name);
+  const firstName = greetingName(customerNameOf(booking));
 
   // Acknowledgement now uses the SAME branded hero-image template
   // (variant:'ack'). No fare is locked in and there is no pay_token yet, so it
@@ -560,7 +596,7 @@ async function sendCustomerConfirmed(booking) {
   const dateStr = formatDate(date, time);
   const fareNum = typeof fare === 'number' ? fare : parseFloat(fare);
   const fareStr = (fareNum && !isNaN(fareNum)) ? ('£' + fareNum.toFixed(2)) : null;
-  const firstName = greetingName(name);
+  const firstName = greetingName(customerNameOf(booking));
 
   // This email is only ever sent in two genuine states, and it NEVER labels an
   // uncollected cash booking as "paid":
@@ -802,15 +838,11 @@ function heroShell(innerHtml, opts) {
   <div style="width:60px;height:1px;background:#c8d1d9;line-height:1px;font-size:0;margin:14px auto 0">&nbsp;</div>
 </td></tr>
 
-${opts.hero === false ? '' : `<tr><td style="font-size:0;line-height:0;background:#FFFFFF"><img src="${HOST}/assets/westmere-email-hero.jpg" width="600" alt="Westmere car on the Sussex coast" style="display:block;width:100%;max-width:600px;height:auto;border:0;outline:none"></td></tr>`}
 
 ${innerHtml}
 
 <tr><td style="padding:22px 40px;background:#FFFFFF;border-top:1px solid #dfe5ea">
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-    <td width="60" valign="middle"><img src="${HOST}/assets/westmere-email-thumb.jpg" width="60" height="60" alt="Westmere Private Hire" style="display:block;width:60px;height:60px;border-radius:50%;border:1px solid #c8d1d9"></td>
-    <td valign="middle" style="padding-left:16px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:16px;line-height:1.55;color:#102a43">With kind regards,<br><strong style="font-size:18px;color:#102a43">Westmere Private Hire</strong></td>
-  </tr></table>
+  <p style="margin:0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:16px;line-height:1.55;color:#102a43">With kind regards,<br><strong style="font-size:18px;color:#102a43">Westmere Private Hire</strong></p>
 </td></tr>
 
 <tr><td style="padding:24px 30px;background:#FFFFFF;border-top:1px solid #dfe5ea;text-align:center">
@@ -852,7 +884,7 @@ function letterEmail(bodyHtml, opts) {
   const o = opts || {};
   return heroShell(
     `<tr><td class="wm-pad" style="padding:34px 40px 18px;background:#FFFFFF">${bodyHtml}</td></tr>`,
-    { title: o.title, hero: false,
+    { title: o.title,
       footerNote: 'Westmere Private Hire — chauffeur and airport transfers across Surrey & Sussex.' }
   );
 }
@@ -1160,7 +1192,7 @@ async function sendAdhocJobOffer(d) {
   ${actions}
   <p style="margin:18px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_MUTED};line-height:1.6">If anything about the job does not suit, call 07930&nbsp;342593 rather than leaving it &mdash; we would far rather know early.</p>`;
 
-  const html = heroEmail(body, { hero: false });
+  const html = heroEmail(body);
   const subject = 'A job for you' + (amountStr ? ' \u2014 ' + amountStr : '') + ' \u00b7 ' + d.ref;
   const preheader = dateStr + ' \u00b7 ' + dispAddr(d.pickup) + ' to ' + dispAddr(d.destination);
   const attachments = icsAttachment(d);
@@ -1213,7 +1245,7 @@ async function sendCustomerDriverAssigned(booking) {
   ${driverBlockHtml(booking)}
   ${buildDetailsTable(jobDetailRows(booking))}
   <p style="margin:18px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_MUTED};line-height:1.6">Nothing else to do — your driver has the details. If anything changes, call us on 07930&nbsp;342593.</p>`;
-  const html = heroEmail(body, { hero: false });
+  const html = heroEmail(body);
   const subject = 'Your driver for ' + formatDate(booking.date) + ' · ' + booking.ref;
   const ok = await sendEmail(to, subject, html, 'Westmere Private Hire',
     'Your driver has been assigned. We look forward to seeing you.');
@@ -1297,7 +1329,7 @@ async function sendDriverDispatch(d) {
   ${calendarBlock(d, { minimal: true })}
   <p style="margin:18px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_MUTED};line-height:1.6">If anything about this does not look right, call 07930&nbsp;342593 before the pickup.</p>`;
 
-  const html = heroEmail(body, { hero: false });
+  const html = heroEmail(body);
   const payStr = (payout === null || isNaN(payout)) ? null : money(payout);
   const subject = 'Your job' + (payStr ? ' — ' + payStr + ' to you' : '') + ' · ' + d.ref;
   const preheader = formatDate(d.date) + ' · ' + dispAddr(d.pickup) + ' to ' + dispAddr(d.destination);
@@ -1738,7 +1770,7 @@ async function sendCustomerEstimate(booking) {
   const fareStr = '£' + fareNum.toFixed(2);
 
   const dateStr = formatDate(date, time);
-  const firstName = greetingName(name);
+  const firstName = greetingName(customerNameOf(booking));
 
   // Estimate now renders with the SAME branded hero-image template as the
   // confirmation (variant:'estimate'). The tokenised Pay Now / Pay-driver /
@@ -1795,7 +1827,7 @@ async function sendCustomerBookingUpdated(booking, changes, adjust) {
   const list = (changes || []).filter(c => c && known.includes(c.key));
   if (!list.length) return false;   // nothing customer-facing moved — say nothing
 
-  const firstName = greetingName(name);
+  const firstName = greetingName(customerNameOf(booking));
   const fareNum = typeof booking.fare === 'number' ? booking.fare : parseFloat(booking.fare);
   const fareStr = (!fareNum || isNaN(fareNum)) ? '' : '£' + fareNum.toFixed(2);
   const fareMoved = list.some(c => c.key === 'fare');
@@ -1946,7 +1978,7 @@ async function sendCustomerJourneyReminder(booking, opts) {
           fare, payment, paid_at, flight, passengers, bags, pay_token } = booking;
   if (!email) return false;
 
-  const firstName = greetingName(name);
+  const firstName = greetingName(customerNameOf(booking));
   const dateStr = formatDate(date, time);
   /* NO COUNTDOWN. This used to open "your car is booked for in about 12 hours"
      and put the same phrase in the subject. The owner asked for it out: a
@@ -2133,6 +2165,31 @@ function formatDate(date, time) {
    Formal where they were formal, familiar where they were familiar — and never
    a title on its own. GUARDRAIL: server/tests/greeting.test.js */
 const TITLES = /^(mr|mrs|ms|miss|mx|dr|prof|professor|sir|dame|lord|lady|rev|reverend|capt|captain)\.?$/i;
+
+/* ── WHOSE NAME IS IT ─────────────────────────────────────────────────────
+   The customer's name reaches these emails under four different keys, because
+   four different queries built the row: `name` when a caller assembled the
+   payload by hand, `customer_name` from the reminder sweeper's
+   COALESCE(c.full_name, b.passenger_name) alias, `passenger_name` straight off
+   a SELECT b.*, and `full_name` from a customers row.
+
+   THERE IS NO `name` COLUMN ON bookings. Five customer emails destructured one
+   anyway and greeted every reader "Dear there" — live, on every journey
+   reminder, for as long as the sweeper has been running. The email should not
+   have to know which query produced its row.
+
+   NO TITLE IS STORED ANYWHERE. Neither customers nor bookings has a title or
+   salutation column and no form collects one, so "Mr"/"Mrs"/"Miss" can only
+   come from what the customer typed into their own name — which greetingName()
+   already reads: "Mr J Whitfield" greets "Dear Mr Whitfield". Without one it
+   uses their first name. It does not guess a title from a name, and must not:
+   a wrong Mrs is worse than a plain first name.
+   GUARDRAIL: server/tests/greeting.test.js */
+function customerNameOf(d) {
+  const t = (v) => String(v == null ? '' : v).trim();
+  if (!d) return '';
+  return t(d.name) || t(d.customer_name) || t(d.passenger_name) || t(d.full_name);
+}
 
 function greetingName(full, fallback) {
   const parts = String(full == null ? '' : full).trim().split(/\s+/).filter(Boolean);
@@ -2505,7 +2562,7 @@ async function sendCustomerCancellation(booking) {
 
   const dateStr = formatDate(date, time);
   const fareStr = fare ? ('\u00a3' + (typeof fare === 'number' ? fare.toFixed(2) : fare)) : null;
-  const firstName = greetingName(name);
+  const firstName = greetingName(customerNameOf(booking));
 
   let rows = '';
   rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:'+INK+'">' + ref + '</span>');
@@ -2668,7 +2725,7 @@ async function sendRecommendation(recipientEmail) {
 async function sendPaymentReminder(booking) {
   const { email, name, ref, fare, pickup, destination, date, time, pay_token } = booking;
   if (!email) return false;
-  const firstName = greetingName(name);
+  const firstName = greetingName(customerNameOf(booking));
   // What the pay page will actually take. Normally the fare; on a re-priced
   // prepaid trip the caller passes the balance, and naming the fare here would
   // promise a bigger charge than the button makes.
@@ -3042,7 +3099,7 @@ async function sendCustomerMessage(booking, message, opts) {
   const o = opts || {};
   const { ref, name, email, pay_token } = booking;
   if (!email || !message) return false;
-  const firstName = greetingName(name);
+  const firstName = greetingName(customerNameOf(booking));
 
   let payBlock = '';
   if (o.pay && o.pay.payable && pay_token && o.pay.amountDue > 0) {

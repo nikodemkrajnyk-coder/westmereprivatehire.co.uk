@@ -113,7 +113,15 @@ console.log('\nIt is the branded email');
 
 test('both invoice emails use the confirmation template, not a bare note', async () => {
   for (const sent of [await accountEmail(), await bespokeEmail()]) {
-    assert.ok(/westmere-email-hero\.jpg/.test(sent.html), 'the hero image must be there, as on every other email');
+    /* The hero photograph was removed from every customer email — the header is
+       the wordmark now. What this test is for is unchanged: an invoice must go
+       out on the house letterhead and not as a bare note, so the checks below
+       are what carry it, and the photograph's ABSENCE is asserted rather than
+       its presence. */
+    assert.ok(!/westmere-email-hero\.jpg/.test(sent.html),
+      'the hero photograph is back — no customer email carries a car image');
+    assert.ok(!/westmere-email-thumb\.jpg/.test(sent.html),
+      'the Tesla thumbnail is back in the signature block');
     assert.ok(/WESTMERE<\/div>/.test(sent.html) || /WESTMERE/.test(sent.html), 'the wordmark header');
     assert.ok(/Private Hire &middot; Sussex/.test(sent.html), 'and the strapline');
     assert.ok(/Cormorant/.test(sent.html), 'set in the brand face');

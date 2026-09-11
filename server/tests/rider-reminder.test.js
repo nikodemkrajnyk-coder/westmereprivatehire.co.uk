@@ -230,12 +230,177 @@ test('WHO IS COMING — registered, then ad-hoc, then the owner', async () => {
   assert.strictEqual(both.reg, 'AB12 CDE', 'and takes ITS registration, not a mix');
 });
 
-test('a source with a missing car falls back only INSIDE itself', async () => {
+test("a driver with no car recorded is never given the OWNER's car", async () => {
+  /* THIS GUARD USED TO REQUIRE THE OPPOSITE. It asserted that an ad-hoc driver
+     with no car fell through to "Sam Cole — Tesla Model S · ML68 YHC", on the
+     reasoning that only the values he did not supply should fall back.
+
+     That reasoning does not survive contact with the kerb. The customer reads
+     this block to find a car at five in the morning; naming the owner's Tesla
+     for a job somebody else is driving does not give them a partial answer, it
+     gives them a wrong one. The repo already said so in
+     server/tests/adhoc-offer.test.js — "with no trace of the owner left in the
+     block the customer reads" — and the two guards contradicted each other.
+     This one was wrong, and it is the one that changed.
+
+     The honest answer is that we do not know the car yet, and the block says
+     so. GUARDRAIL for the fix: driverDetails() in server/email.js. */
   const h = (await render({ assigned_to_name: 'Sam Cole' })).html;
   assert.ok(/Sam Cole/.test(h), 'the person who is actually coming keeps their name');
-  assert.ok(/Tesla Model S/.test(h) && /ML68 YHC/.test(h),
-    'and only the values they did not supply fall through');
-  assert.ok(!/Nikodem/.test(h), 'the name must NOT revert to the owner');
+  assert.ok(!/Tesla Model S/.test(h) && !/ML68 YHC/.test(h),
+    "a named driver must never be paired with the owner's car — the customer would "
+    + 'be sent to a car that is not coming');
+  assert.ok(!/Nikodem/.test(h), 'and the name must not revert to the owner either');
+  assert.ok(/confirm the car and registration/i.test(h),
+    'with no car known the block must SAY so, not simply go quiet — a blank where the '
+    + 'car should be reads as an oversight');
+});
+
+test("the JOB's car wins over the driver's usual one", async () => {
+  /* The bug the owner found on the 12-hour reminder. assigned_to_car/_reg are
+     what was recorded for THIS trip — by the send-to-driver form, or copied
+     from the offer he accepted. The users row is only what he usually drives.
+
+     Before this, a saved driver sent out in a different car today was announced
+     under yesterday's plate, and a saved driver with NO car on file fell all the
+     way through to the owner's Tesla — while the dispatch-time confirmation,
+     which reads the booking directly, correctly said the Mercedes. The two
+     emails told the customer two different cars. */
+  const block = (h) => {
+    const m = /Your driver and car<\/p>\s*<p[^>]*>([^<]*)<\/p>\s*<p[^>]*>([^<]*)</.exec(h);
+    return m ? { line: m[1].replace(/&mdash;/g, '—').trim(), reg: m[2].trim() } : null;
+  };
+
+  const swapped = block((await render({
+    driver_name: 'Marek Nowak', driver_vehicle: 'Skoda Superb, grey', driver_reg: 'LT21 XYZ',
+    assigned_to_name: 'Marek Nowak', assigned_to_car: 'Mercedes E-Class, black', assigned_to_reg: 'BD70 KLM'
+  })).html);
+  assert.deepStrictEqual(swapped, { line: 'Marek Nowak — Mercedes E-Class, black', reg: 'BD70 KLM' },
+    "the car he is driving TODAY must win over the one on his record — that is what the "
+    + 'send-to-driver form exists to let the owner correct');
+
+  const noCarOnFile = block((await render({
+    driver_name: 'Sam Cole',
+    assigned_to_name: 'Sam Cole', assigned_to_car: 'Mercedes E-Class, black', assigned_to_reg: 'BD70 KLM'
+  })).html);
+  assert.deepStrictEqual(noCarOnFile, { line: 'Sam Cole — Mercedes E-Class, black', reg: 'BD70 KLM' },
+    "a driver with no car on his record must take the JOB's car, not the owner's Tesla");
+
+  // And the driver's own car is still the answer when the job did not record one.
+  const usual = block((await render({
+    driver_name: 'Dave Driver', driver_vehicle: 'Mercedes E-Class', driver_reg: 'AB12 CDE'
+  })).html);
+  assert.deepStrictEqual(usual, { line: 'Dave Driver — Mercedes E-Class', reg: 'AB12 CDE' },
+    'with nothing recorded for the job, what he usually drives is still right');
+});
+
+test('the greeting uses the name on the row, never "Dear there"', async () => {
+  /* THE BUG, AND WHY IT SURVIVED SO LONG. bookings has no `name` column. Five
+     customer emails destructured one anyway, so greetingName() was handed
+     undefined and every journey reminder opened "Dear there" — live, for as
+     long as the sweeper has been running, on an email that otherwise looked
+     perfect. The name arrives under four different keys depending on which
+     query built the row; customerNameOf() knows all four so the email does not
+     have to. */
+  /* Called directly rather than through render(), which seeds a fixed
+     passenger_name and forwards only the driver_* keys — the point here is
+     which ALIAS the name arrives under, so the row has to be built exactly as
+     each query would produce it. */
+  const greetOf = async (row) => {
+    SENT = [];
+    await email.sendCustomerJourneyReminder(Object.assign({
+      ref: 'WPH-G1', date: '2026-12-18', time: '09:30', pickup: 'A Street', destination: 'Gatwick',
+      fare: 72, payment: 'card', paid_at: '2026-12-01', email: 'ben@example.com'
+    }, row));
+    const h = SENT[0].html;
+    return { greeting: (/Dear[^<,]*/.exec(h.replace(/<[^>]+>/g, '')) || ['(none)'])[0].trim(), html: h };
+  };
+
+  for (const [row, want] of [
+    [{ passenger_name: 'Mr Ben Chan' },          'Dear Mr Chan'],
+    [{ customer_name: 'Mrs Eleanor Whitfield' }, 'Dear Mrs Whitfield'],
+    [{ name: 'Ben Chan' },                       'Dear Ben'],
+    [{ passenger_name: 'Miss A Patel' },         'Dear Miss Patel'],
+    /* `name` is what a hand-built payload sets and wins over the raw passenger
+       name, which may be whoever is travelling rather than the account holder. */
+    [{ name: 'Ben Chan', passenger_name: 'Someone Else' }, 'Dear Ben']
+  ]) {
+    const r = await greetOf(row);
+    assert.strictEqual(r.greeting, want, JSON.stringify(row) + ' greeted "' + r.greeting + '"');
+    assert.ok(!/Dear there/.test(r.html), 'a row WITH a name still greeted "Dear there"');
+  }
+
+  /* And the case that proves it is not simply hard-coded: nothing to go on. */
+  const blank = await greetOf({});
+  assert.strictEqual(blank.greeting, 'Dear there',
+    'with no name anywhere the fallback is still the only honest greeting');
+});
+
+test('a title is used when the customer gave one, and never invented', async () => {
+  /* No title or salutation column exists on customers or bookings, and no form
+     collects one — so Mr/Mrs/Miss can only come from what the customer typed
+     into their own name. Guessing one from a first name would address people
+     wrongly, which is worse than a plain first name. */
+  const h = (await render({ name: 'Eleanor Whitfield' })).html;
+  const text = h.replace(/<[^>]+>/g, '');
+  assert.ok(/Dear Eleanor,/.test(text), 'with no title given, the first name is the greeting');
+  assert.ok(!/Dear (Mr|Mrs|Miss|Ms)\b/.test(text),
+    'a title was invented for a name that did not carry one');
+});
+
+console.log('\nNo car imagery, on any job');
+
+/* THE RULE CHANGED, AND SO DID THIS. For one round the header carried the Tesla
+   photograph on the owner's own jobs and dropped it only when the job had been
+   passed to somebody in a different car. The owner then took the simpler
+   decision: no car photograph on any customer email, ever, his own jobs
+   included — so the conditional and the isOwnersCar() helper behind it are gone
+   rather than left switched permanently off.
+
+   These guards pin the plain rule in both directions: no photograph, and a
+   wordmark where it used to be. A blank header would satisfy "no car" and be a
+   worse email than the one we started with. */
+const HERO_IMG = '/assets/westmere-email-hero.jpg';
+const THUMB_IMG = '/assets/westmere-email-thumb.jpg';
+const WORDMARK = /letter-spacing:11px[^>]*>WESTMERE</;
+
+test('the reminder carries no car photograph, whoever is driving', async () => {
+  const cases = [
+    ['the owner\'s own job, nobody assigned', {}],
+    ['the owner assigned to his own Tesla',
+      { assigned_to_name: 'Nikodem', assigned_to_car: 'Tesla Model S', assigned_to_reg: 'ML68 YHC' }],
+    ['dispatched to another driver',
+      { driver_name: 'Marek Nowak', assigned_to_name: 'Marek Nowak',
+        assigned_to_car: 'Mercedes E-Class, black', assigned_to_reg: 'BD70 KLM' }]
+  ];
+  for (const [label, row] of cases) {
+    const h = (await render(row)).html;
+    assert.ok(!h.includes(HERO_IMG), label + ': the hero photograph is back');
+    assert.ok(!h.includes(THUMB_IMG), label + ': the Tesla thumbnail is back in the signature');
+    assert.ok(WORDMARK.test(h), label + ': the wordmark is missing — the header must be a '
+      + 'letterhead, not an empty band');
+    assert.ok(/Westmere Private Hire/.test(h), label + ': the sign-off is missing');
+  }
+});
+
+test('the conditional that used to pick between them is gone, not merely off', () => {
+  const src = read('server/email.js');
+  assert.ok(!/isOwnersCar/.test(src),
+    'isOwnersCar is still in the file — a switch nobody can reach is a thing to '
+    + 'misread later, and the rule it implemented no longer exists');
+  assert.ok(!/westmere-email-hero|westmere-email-thumb/.test(src),
+    'a car image is still referenced somewhere in the email module');
+  assert.ok(!/opts\.hero|hero:\s*(true|false)/.test(src),
+    'the hero switch survives in the shell or its callers');
+});
+
+test('the driver and car are still NAMED — the photo went, the facts did not', async () => {
+  const h = (await render({
+    driver_name: 'Marek Nowak', assigned_to_name: 'Marek Nowak',
+    assigned_to_car: 'Mercedes E-Class, black', assigned_to_reg: 'BD70 KLM'
+  })).html;
+  assert.ok(/Marek Nowak/.test(h) && /Mercedes E-Class, black/.test(h) && /BD70 KLM/.test(h),
+    'dropping the photograph must not take the driver-and-car block with it');
 });
 
 test('the resolution order is stated once, not copied per email', () => {

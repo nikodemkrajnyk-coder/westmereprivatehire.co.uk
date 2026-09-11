@@ -675,6 +675,109 @@ for (const [file, label] of APPS) {
   });
 }
 
+console.log('\nWho is picking the customer up');
+
+/* THE WHOLE CHAIN, not the pieces. The dispatch route, the sweeper's join and
+   driverDetails each looked right on their own; the customer still got the
+   owner's Tesla twelve hours before a job somebody else was driving, because
+   the join filled driver_vehicle from the users row and driverDetails preferred
+   it over the car recorded for the trip. So this drives the real dispatch and
+   then the real sweeper, and reads what actually reached the passenger. */
+async function dispatchThenSweep(bookingId, body) {
+  await dispatch(bookingId, body);
+  const confirmation = SENT.filter((m) => /Your driver/.test(m.subject || '')).pop();
+  /* The sweeper only looks at jobs inside the window, so the booking is moved
+     to eleven hours out — wall-clock strings, as CLAUDE.md requires. */
+  const at = new Date(Date.now() + 11 * 3600 * 1000);
+  const pad = (n) => String(n).padStart(2, '0');
+  db.prepare('UPDATE bookings SET date = ?, time = ?, paid_at = datetime(\'now\'), status = \'confirmed\' WHERE id = ?')
+    .run(at.getFullYear() + '-' + pad(at.getMonth() + 1) + '-' + pad(at.getDate()),
+         pad(at.getHours()) + ':' + pad(at.getMinutes()), bookingId);
+  SENT.length = 0;
+  await require('../reminder').sweepDueReminders();
+  const reminder = SENT.filter((m) => /reminder about your upcoming journey/i.test(m.subject || ''))[0];
+  const who = (html) => {
+    const m = /Your driver and car<\/p>\s*<p[^>]*>([^<]*)<\/p>\s*<p[^>]*>([^<]*)</.exec(html || '');
+    return m ? (m[1].replace(/&mdash;/g, '—').trim() + ' · ' + m[2].trim()) : null;
+  };
+  return { confirmation: who(confirmation && confirmation.html), reminder: who(reminder && reminder.html),
+           reminderHtml: reminder && reminder.html };
+}
+
+test('the 12h reminder names the DISPATCHED driver and his car', async () => {
+  SENT.length = 0;
+  const b = seedBooking({ fare: 72 });
+  const r = await dispatchThenSweep(b.id, {
+    name: 'Marek Nowak', email: 'marek@example.com', phone: '07700 900412',
+    reg: 'BD70 KLM', car: 'Mercedes E-Class, black', save_driver: true
+  });
+  assert.ok(r.reminder, 'no customer reminder was sent for a dispatched job');
+  assert.ok(/Marek Nowak/.test(r.reminder),
+    'the reminder does not name the driver the job was sent to: ' + r.reminder);
+  assert.ok(/Mercedes E-Class, black/.test(r.reminder) && /BD70 KLM/.test(r.reminder),
+    'the reminder names the wrong car: ' + r.reminder);
+  assert.ok(!/Nikodem|Tesla|ML68 YHC/.test(r.reminderHtml),
+    'the OWNER is still in the reminder for a job he is not driving — the customer would '
+    + 'be looking for the wrong car on the kerb');
+});
+
+test('the dispatch-time confirmation and the 12h reminder say the SAME thing', async () => {
+  /* They disagreed. The confirmation reads the booking, the reminder read the
+     users row, and a driver saved without a car on file made the difference
+     visible: "Mercedes E-Class, black · BD70 KLM" at dispatch, "Tesla Model S ·
+     ML68 YHC" twelve hours before pickup. */
+  SENT.length = 0;
+  const b = seedBooking({ fare: 96 });
+  const r = await dispatchThenSweep(b.id, {
+    name: 'Sam Cole', email: 'sam@example.com', reg: 'BD70 KLM', car: 'Mercedes E-Class, black',
+    save_driver: true
+  });
+  assert.ok(r.confirmation && r.reminder, 'both emails must exist to be compared');
+  assert.strictEqual(r.reminder, r.confirmation,
+    'the two customer emails name different cars — confirmation said "' + r.confirmation
+    + '", the reminder said "' + r.reminder + '"');
+});
+
+test("a driver sent out in a DIFFERENT car today is not announced under yesterday's plate", async () => {
+  SENT.length = 0;
+  /* Saved once in a Skoda, sent out today in a Mercedes — the case the
+     send-to-driver form exists to allow. */
+  const first = seedBooking({ fare: 60 });
+  await dispatch(first.id, { name: 'Ola Kowalska', email: 'ola@example.com',
+    reg: 'LT21 XYZ', car: 'Skoda Superb, grey', save_driver: true });
+  const saved = db.prepare("SELECT id FROM users WHERE email = 'ola@example.com'").get();
+  assert.ok(saved, 'the driver was not saved — the fixture proves nothing');
+
+  const b = seedBooking({ fare: 60 });
+  const r = await dispatchThenSweep(b.id, { driver_id: saved.id,
+    name: 'Ola Kowalska', email: 'ola@example.com',
+    reg: 'BD70 KLM', car: 'Mercedes E-Class, black' });
+  assert.ok(/BD70 KLM/.test(r.reminder) && /Mercedes/.test(r.reminder),
+    "the reminder used the car on her record instead of the one she is driving today: " + r.reminder);
+  assert.ok(!/LT21 XYZ|Skoda/.test(r.reminder), "yesterday's plate reached the customer: " + r.reminder);
+});
+
+test('the reminder still fires for a job booked LESS than 12 hours out', async () => {
+  /* The owner's earlier instruction: a late booking gets its reminder anyway,
+     and nothing in the email hard-codes "12 hours" — the window is how often we
+     look, not something the customer is told. */
+  SENT.length = 0;
+  const b = seedBooking({ fare: 50 });
+  await dispatch(b.id, { name: 'Marek Nowak', email: 'marek@example.com', reg: 'BD70 KLM', car: 'Mercedes' });
+  const at = new Date(Date.now() + 2 * 3600 * 1000);
+  const pad = (n) => String(n).padStart(2, '0');
+  db.prepare("UPDATE bookings SET date = ?, time = ?, paid_at = datetime('now'), status = 'confirmed' WHERE id = ?")
+    .run(at.getFullYear() + '-' + pad(at.getMonth() + 1) + '-' + pad(at.getDate()),
+         pad(at.getHours()) + ':' + pad(at.getMinutes()), b.id);
+  SENT.length = 0;
+  await require('../reminder').sweepDueReminders();
+  const m = SENT.filter((x) => /reminder about your upcoming journey/i.test(x.subject || ''))[0];
+  assert.ok(m, 'a booking made inside the window got no reminder at all');
+  assert.ok(!/12 hours|twelve hours/i.test(m.html),
+    'the email hard-codes the window — it must not tell the customer a number that is '
+    + 'wrong for a late booking');
+});
+
 test('this guardrail is wired into npm test', () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
   assert.ok(pkg.scripts.test.includes('driver-dispatch.test.js'),

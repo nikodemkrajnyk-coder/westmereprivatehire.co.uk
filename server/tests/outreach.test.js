@@ -80,7 +80,14 @@ test('it is the SAME shell, not a second design', () => {
   const letter = /function letterEmail[\s\S]*?\n\}/.exec(src);
   assert.ok(letter, 'letterEmail is missing');
   assert.ok(/heroShell\(/.test(letter[0]), 'it must build on heroShell');
-  assert.ok(/hero: false/.test(letter[0]), 'suppressing the photo by parameter, not by copying markup');
+  /* It used to pass `hero: false` to suppress the coastal photograph. There is
+     no photograph in the shell any more — the owner had it removed from every
+     customer email — so the only thing left to hold letterEmail to is that it
+     builds on the shared shell rather than a second one, which the line above
+     does. The assertion that the letter carries no hero image still stands
+     further up this file and now passes for a different reason. */
+  assert.ok(!/emailShell\(|<table[\s\S]{0,200}WESTMERE/.test(letter[0]),
+    'letterEmail is assembling its own letterhead instead of using heroShell');
 });
 
 test('the typed message survives intact, paragraphs and all', async () => {
