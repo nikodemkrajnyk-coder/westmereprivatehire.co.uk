@@ -46,7 +46,11 @@ const SURFACES = [
   // field shows as a cream patch on a white form.
   { file: 'styles.css',          bg: '#ffffff', fg: '#1b1b1a', note: 'public pages (fields are transparent over --paper)' },
   { file: 'westmere-rider.html', bg: '#ffffff', fg: '#1b1b1a', note: 'My Account (fields sit on white cards)' },
-  { file: 'westmere-owner.html', bg: '#ffffff', fg: '#111111', note: 'owner app (inputs are explicitly white)' },
+  /* The owner app's ink was #111111 while the all-white restyle forced every
+     word black. That block is gone and the palette is the theme's again, so the
+     field ink is the house navy. The rule this test enforces is unchanged: the
+     override must match the colours the fields actually use. */
+  { file: 'westmere-owner.html', bg: '#ffffff', fg: '#102a43', note: 'owner app (white fields, navy ink)' },
   { file: 'westmere-admin.html', bg: '#f7f7f7', fg: '#1b1b1a', note: 'admin app (.fi is a 3% tint over white)' },
   { file: 'westmere-pay.html',   bg: '#ffffff', fg: '#1b1b1a', note: 'pay page (Stripe iframe today, covered for later)' },
 ];

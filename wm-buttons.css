@@ -83,6 +83,13 @@
   --wmb-radius:       var(--radius-lg, 12px);
   --wmb-border:       var(--border-hair, 1px);
   --wmb-ease:         var(--ease-ui, .18s cubic-bezier(.4, 0, .2, 1));
+
+  /* The primary action's fill. Kept here with the other --wmb-* tokens so the
+     rules below stay literal-free: this file is served to pages that do not
+     load the theme, which is why the fallbacks sit in the token layer. */
+  --wmb-primary-fill: var(--westmere-navy, #102a43);
+  --wmb-primary-fill-hover: var(--westmere-navy-deep, #0c2237);
+  --wmb-primary-ink: var(--westmere-white, #ffffff);
 }
 
 /* ── Base ──────────────────────────────────────────────────────────────── */
@@ -322,3 +329,23 @@
 .tc-change, .tc-cancel, .tc-again { color: var(--wmb-ink-soft) !important; }
 .tc-change:hover, .tc-cancel:hover, .tc-again:hover { color: var(--wmb-ink) !important; }
 .tc-change:active, .tc-cancel:active, .tc-again:active, .side-out:active { opacity: .55; }
+
+/* ── THE PRIMARY ACTION, FILLED ──────────────────────────────────────────────
+   Every other button in this system is a frame on white, and stays one. The
+   owner asked for the single strongest action on a screen to be solid navy with
+   white type: at a glance across a phone in daylight, a frame and a heavier
+   frame read the same, and he was missing the one that mattered.
+   One class, so "which button is primary" stays a decision rather than a habit.
+   GUARDRAIL: server/tests/no-fills.test.js */
+.btn-primary,
+.btn.btn-primary{
+  background: var(--wmb-primary-fill);
+  color: var(--wmb-primary-ink);
+  -webkit-text-fill-color: var(--wmb-primary-ink);
+  border: var(--border-strong, 1.5px) solid var(--wmb-primary-fill);
+}
+.btn-primary:hover,
+.btn.btn-primary:hover{
+  background: var(--wmb-primary-fill-hover);
+  border-color: var(--wmb-primary-fill-hover);
+}

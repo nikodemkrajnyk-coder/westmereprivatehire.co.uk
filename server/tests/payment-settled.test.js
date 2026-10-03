@@ -63,6 +63,14 @@ async function call(router, method, routePath, opts) {
   return r;
 }
 
+/* FIXTURE DATES MUST NOT DRIFT INTO THE PAST.
+   These three were written as 2026-09-20/21, comfortably ahead of the day they
+   were written on. Three weeks later the calendar passed them, the card
+   backfill below — which stamps anything already travelled — started matching
+   them too, and the idempotency test failed with 2 !== 1 on code nobody had
+   touched. A fixture whose meaning depends on the date the suite is run is a
+   test that fails by appointment, so these sit far enough out to stay future
+   for good. The ONE fixture that is deliberately in the past is WM-OLD. */
 // ── 1. THE MATRIX ────────────────────────────────────────────────────────
 console.log('\nOnly money that has arrived counts as paid');
 
@@ -94,17 +102,9 @@ test('no unpaid booking is ever locked as "paid"', () => {
   assert.deepStrictEqual(bad, []);
 });
 
-/* A DATE THAT IS STILL IN FRONT OF US, and will be. This booking was written
-   with a date a few weeks ahead; the weeks passed, the date became the past,
-   and the card backfill further down — which stamps card bookings that have
-   already travelled — started matching this row too and reporting two changes
-   where the test demanded one. A fixture whose meaning depends on the day it
-   is run is a test that fails by appointment. */
-const FUTURE = '2099-03-01';
-
 test('an unpaid CARD booking is payable on every surface', async () => {
   const b = { ref: 'WM-UNPAID', name: 'Lap Shing Chan', email: 'b@e.com',
-              pickup: 'Morden', destination: 'Bolney', date: FUTURE, time: '07:00',
+              pickup: 'Morden', destination: 'Bolney', date: '2026-09-20', time: '07:00',
               passengers: 1, fare: 96, payment: 'card', paid_at: null,
               status: 'confirmed', pay_token: 'tok9' };
 
@@ -123,7 +123,7 @@ test('an unpaid CARD booking is payable on every surface', async () => {
   const pub = require('../public-api');
   db.prepare(`INSERT INTO bookings (ref,pickup,destination,date,time,passengers,fare,payment,status,pay_token)
               VALUES (?,?,?,?,?,?,?,?,?,?)`)
-    .run('WM-UNPAID', 'Morden', 'Bolney', FUTURE, '07:00', 1, 96, 'card', 'confirmed', 'tok9');
+    .run('WM-UNPAID', 'Morden', 'Bolney', '2099-03-01', '07:00', 1, 96, 'card', 'confirmed', 'tok9');
   const r = await call(pub, 'get', '/pay/:ref/cash', { params: { ref: 'WM-UNPAID' }, query: { t: 'tok9' } });
   assert.ok(!/already been paid/i.test(String(r.body || '')),
     'the cash link still tells him the journey is paid: ' + String(r.body || '').slice(0, 120));
@@ -146,7 +146,7 @@ console.log('\n"Card" is what a payment does, not a field you fill in');
 let BID = null;
 test('PATCH cannot set payment=card', async () => {
   db.prepare(`INSERT INTO bookings (ref,pickup,destination,date,time,passengers,fare,payment,status,pay_token)
-              VALUES ('WM-PATCH','A','B','2026-09-20','07:00',1,96,'pending','confirmed','tok')`).run();
+              VALUES ('WM-PATCH','A','B','2099-03-01','07:00',1,96,'pending','confirmed','tok')`).run();
   BID = db.prepare("SELECT id FROM bookings WHERE ref='WM-PATCH'").get().id;
   const r = await call(api, 'patch', '/bookings/:id',
     { params: { id: String(BID) }, body: { payment: 'card' } });
@@ -180,7 +180,7 @@ test('Mark Paid records the fact AND the method, together', async () => {
 
 test('Mark Paid without a method leaves the method alone', async () => {
   db.prepare(`INSERT INTO bookings (ref,pickup,destination,date,time,passengers,fare,payment,status)
-              VALUES ('WM-NOM','A','B','2026-09-21','07:00',1,50,'pending','confirmed')`).run();
+              VALUES ('WM-NOM','A','B','2099-03-01','07:00',1,50,'pending','confirmed')`).run();
   const id = db.prepare("SELECT id FROM bookings WHERE ref='WM-NOM'").get().id;
   await call(api, 'post', '/bookings/:id/mark-paid', { params: { id: String(id) }, body: {} });
   const row = db.prepare('SELECT payment, paid_at FROM bookings WHERE id = ?').get(id);
@@ -190,7 +190,7 @@ test('Mark Paid without a method leaves the method alone', async () => {
 
 test('a nonsense method is ignored, not written', async () => {
   db.prepare(`INSERT INTO bookings (ref,pickup,destination,date,time,passengers,fare,payment,status)
-              VALUES ('WM-JUNK','A','B','2026-09-21','07:00',1,50,'pending','confirmed')`).run();
+              VALUES ('WM-JUNK','A','B','2099-03-01','07:00',1,50,'pending','confirmed')`).run();
   const id = db.prepare("SELECT id FROM bookings WHERE ref='WM-JUNK'").get().id;
   await call(api, 'post', '/bookings/:id/mark-paid',
     { params: { id: String(id) }, body: { method: 'bitcoin' } });

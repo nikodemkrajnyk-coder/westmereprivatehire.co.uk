@@ -1279,6 +1279,17 @@ async function sendDriverDispatch(d) {
   const cash = String(d.payment || '').toLowerCase() === 'cash';
   const commission = (d.admin_fee != null) ? Number(d.admin_fee) : null;
   const payout = (d.driver_pay != null) ? Number(d.driver_pay) : null;
+  /* ANOTHER FIRM, NOT ONE OF OUR DRIVERS. The job and the road are identical;
+     the money is not. An operator has no commission and no payout — the two
+     firms settle on an invoice — so the block states the fare and says so,
+     rather than announcing a figure "to you" that nobody will pay them. */
+  const asOperator = !!d.as_operator;
+  /* THE RATE THAT WAS CHARGED. Printed from the job rather than written into
+     the template: this said "Commission (10%)" beside whatever had actually
+     been deducted, so a driver on a different rate — or a cover job at nothing
+     — read a percentage that was not his. */
+  const commPct = (d.commission_pct === null || d.commission_pct === undefined || isNaN(d.commission_pct))
+    ? null : Number(d.commission_pct);
 
   let rows = jobDetailRows(d);
   if (d.driver_reg || d.driver_car) {
@@ -1304,25 +1315,31 @@ async function sendDriverDispatch(d) {
       <td align="right" style="padding:4px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:${strong ? 18 : 14}px;color:${strong ? INK : INK_MUTED}">${escHtml(value)}</td>
     </tr>`;
 
-  const statusLine = cash
+  const statusLine = asOperator
+    ? (cash
+        ? 'Cash — collect ' + (fare === null || isNaN(fare) ? 'the fare' : money(fare))
+          + ' from the passenger. Settled on the invoice, not against a balance.'
+        : 'Prepaid. Settled by invoice — no commission is taken on this job.')
+    : cash
     ? 'Cash — collect ' + (fare === null || isNaN(fare) ? 'the fare' : money(fare))
-      + '. Your ' + (commission == null ? 'fee' : money(commission)) + ' fee carries to your next payout.'
+      + '.' + (commission ? (' Your ' + money(commission) + ' fee carries to your next payout.') : '')
     : 'Prepaid';
 
-  const payBlock = (payout === null || isNaN(payout)) ? '' : `
+  const payBlock = ((asOperator ? (fare === null || isNaN(fare)) : (payout === null || isNaN(payout)))) ? '' : `
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${ACCENT};margin:20px 0 4px">
     <tr><td style="padding:16px 18px">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        ${asOperator ? payRow('Fare', money(fare), true) : `
         ${fare === null || isNaN(fare) ? '' : payRow('Fare', money(fare))}
-        ${commission == null ? '' : payRow('Commission (10%)', '−' + money(commission))}
-        ${payRow('Total', money(payout), true)}
+        ${(commission == null || !commission) ? '' : payRow('Commission' + (commPct ? ' (' + commPct + '%)' : ''), '−' + money(commission))}
+        ${payRow('Total', money(payout), true)}`}
       </table>
       <p style="margin:12px 0 0;padding-top:10px;border-top:1px solid ${ACCENT};font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_MUTED};line-height:1.5">${escHtml(statusLine)}</p>
     </td></tr>
   </table>`;
 
   const body = `
-  <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${INK_MUTED}">Your job · ${escHtml(d.ref || '')}</p>
+  <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${INK_MUTED}">${asOperator ? 'Job request' : 'Your job'} · ${escHtml(d.ref || '')}</p>
   ${buildDetailsTable(rows)}
   ${payBlock}
   ${passengerBlockHtml(d)}
@@ -1331,7 +1348,9 @@ async function sendDriverDispatch(d) {
 
   const html = heroEmail(body);
   const payStr = (payout === null || isNaN(payout)) ? null : money(payout);
-  const subject = 'Your job' + (payStr ? ' — ' + payStr + ' to you' : '') + ' · ' + d.ref;
+  const subject = asOperator
+    ? ('Job request' + (fare === null || isNaN(fare) ? '' : ' — ' + money(fare)) + ' · ' + d.ref)
+    : 'Your job' + (payStr ? ' — ' + payStr + ' to you' : '') + ' · ' + d.ref;
   const preheader = formatDate(d.date) + ' · ' + dispAddr(d.pickup) + ' to ' + dispAddr(d.destination);
   const attachments = icsAttachment(d);
   const ok = await sendEmail(to, subject, html, 'Westmere Private Hire', preheader,

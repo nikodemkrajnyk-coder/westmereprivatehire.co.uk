@@ -43,11 +43,30 @@ function test(name, fn) {
 const NOT_A_FILL = /^(transparent|none|inherit|initial|unset|currentcolor|#fff|#ffffff|white|rgba?\(\s*255,\s*255,\s*255\s*(,\s*[\d.]+)?\s*\)|var\(--westmere-white[^)]*\)|var\(--wmb-surface[^)]*\))$/i;
 
 // Pull `background` / `background-color` out of a declaration list.
+/* THE ONE FILL THE OWNER ASKED BACK. The rule above was absolute: emphasis is a
+   frame, never a slab. He reversed exactly one part of it — the navy-on-white
+   look was too faint for him to pick out at a glance, and he asked for blue,
+   gold and white with filled navy primaries.
+
+   So the rule narrows rather than lifts. A fill is allowed when it is the HOUSE
+   NAVY and the same declaration sets WHITE ink on it: that pair is the primary
+   action and the selected segment, and nothing else. Every family this guard was
+   written for — chips, headers, footers, pickers, filter tabs — is still caught,
+   because none of them may fill in any other colour, and a navy slab with dark
+   text (the unreadable case) still fails.
+
+   White on #102a43 measures 12.6:1, asserted below so the pairing cannot quietly
+   become navy-on-navy. */
+const HOUSE_NAVY = /^(var\(--westmere-navy[^)]*\)|#102a43)$/i;
+const WHITE_INK = /(?:^|;)\s*(?:-webkit-text-fill-)?color\s*:\s*(#fff(?:fff)?|white|var\(--westmere-white[^)]*\))/i;
+
 function fillIn(style) {
   const m = /(?:^|;)\s*background(?:-color)?\s*:\s*([^;!]+)/i.exec(style);
   if (!m) return null;
   const v = m[1].trim().replace(/\s+/g, ' ');
-  return NOT_A_FILL.test(v) ? null : v;
+  if (NOT_A_FILL.test(v)) return null;
+  if (HOUSE_NAVY.test(v) && WHITE_INK.test(style)) return null;   // the primary action
+  return v;
 }
 
 // Every surface that builds UI — the four apps AND the shared scripts that
@@ -59,6 +78,27 @@ const APPS = ['westmere-owner.html', 'westmere-admin.html', 'westmere-rider.html
               'wm-realtime.js', 'wm-lifecycle.js', 'booking-app.js', 'wm-picker.js'];
 
 console.log('\nNothing highlights by filling');
+
+test('the one permitted fill is legible — white on the house navy', () => {
+  /* Measured, not taken on trust: the moment this pairing stops clearing 4.5:1
+     the "too faint to read" complaint comes back wearing the opposite colours. */
+  const lum = (hex) => {
+    const c = [1, 3, 5].map((i) => parseInt(hex.substr(i, 2), 16) / 255)
+      .map((v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)));
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  };
+  const theme = read('westmere-theme.css');
+  const navy = /--westmere-navy:\s*(#[0-9a-fA-F]{6})/.exec(theme);
+  assert.ok(navy, 'the house navy token is gone');
+  const ratio = 1.05 / (lum(navy[1]) + 0.05);
+  assert.ok(ratio >= 4.5, 'white on the primary fill measures ' + ratio.toFixed(2) + ':1');
+  /* And the pairing is only waived together: a navy fill with dark ink is still
+     an offender, which is what keeps this from becoming "navy may fill". */
+  assert.ok(fillIn('background:var(--westmere-navy);color:#102a43') !== null,
+    'a navy fill with dark ink must still be caught');
+  assert.ok(fillIn('background:var(--westmere-navy);color:#fff') === null,
+    'a navy fill with white ink is the permitted primary');
+});
 
 // ── 1. BUTTONS ──────────────────────────────────────────────────────────
 test('no button in any app ships with a filled background', () => {

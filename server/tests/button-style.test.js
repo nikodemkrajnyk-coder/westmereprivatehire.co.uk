@@ -329,20 +329,33 @@ test('the Instagram exemption is NARROW — gold elsewhere on the page still fai
     hits.map(c => c.value).join(', '));
 });
 
-test('NO cream or gold value exists anywhere in the code', () => {
+test('cream is still gone, and every gold comes from the token layer', () => {
+  /* THE RULE CHANGED, AND THIS WITH IT. The palette was taken to navy-only, and
+     this test forbade every warm value in the code. The owner reversed that: he
+     found the result too faint to read at a glance and asked for blue, gold and
+     white back.
+
+     What has NOT changed is why the test exists. Cream surfaces are still gone —
+     white is the paper. And a colour still may not be typed into a rule: gold
+     lives in westmere-theme.css as --westmere-gold and --westmere-gold-ink, and
+     everywhere else reaches for it through var(). A hex typed into a page is how
+     a palette comes to have five golds, which is the state this test was written
+     to prevent in the first place. */
+  const GOLD_TOKEN_LINE = /--westmere-gold(-ink)?\s*:/;
   const found = [];
   for (const f of PAGES_AND_CSS) {
+    const lines = read(f).split('\n');
     for (const c of coloursIn(withoutInstagramGradient(read(f)))) {
       const hue = warmHue(c.r, c.g, c.b);
-      if (hue !== null) {
-        const kind = (c.r > 0xdf && c.g > 0xdf && c.b > 0xdf) ? 'cream' : 'gold';
-        found.push(f + ':' + c.line + '  ' + c.value + '  (' + kind + ', hue ' + hue.toFixed(0) + '°)');
-      }
+      if (hue === null) continue;
+      const cream = (c.r > 0xdf && c.g > 0xdf && c.b > 0xdf);
+      if (cream) { found.push(f + ':' + c.line + '  ' + c.value + '  (cream — the paper is white)'); continue; }
+      const declaring = f === 'westmere-theme.css' && GOLD_TOKEN_LINE.test(lines[c.line - 1] || '');
+      if (!declaring) found.push(f + ':' + c.line + '  ' + c.value + '  (gold typed in — use var(--westmere-gold))');
     }
   }
   assert.deepStrictEqual(found, [],
-    'cream/gold must not exist in the code — cream surfaces are white, gold accents are navy:\n      ' +
-    found.slice(0, 20).join('\n      '));
+    'cream must not exist, and gold belongs in the token layer:\n      ' + found.slice(0, 20).join('\n      '));
 });
 
 // The sweep above walks the pages and stylesheets at the repo root, so for a
@@ -902,17 +915,43 @@ test("My Account's canvas is white, not a photographic cream veil", () => {
     'the fixed backdrop behind the sheet must stay — it is the app\'s sense of place');
 });
 
-test('NO --cream or --gold token is defined or referenced', () => {
-  // Re-pointing the tokens at navy was not enough: the owner wants them gone, so
-  // that no future rule can reach for one and no page can degrade back to gold
-  // if the theme fails to load.
+test('gold has exactly two tokens, and the one used for type is legible', () => {
+  /* Gold is permitted again; sprawl is not. Two tokens, because one gold cannot
+     do both jobs: the ACCENT carries rules, rings and underlines against white,
+     and does not clear text contrast — measured below at about 2.4:1. The INK is
+     the darker one that type uses. So the accent may never be a colour: a gold
+     label set in --westmere-gold is the "too faint to read" complaint arriving
+     by another door. Cream stays gone. */
+  const ALLOWED = ['--westmere-gold', '--westmere-gold-ink'];
   for (const f of PAGES_AND_CSS) {
     read(f).split('\n').forEach((text, i) => {
-      const m = text.match(/--[a-z0-9-]*(?:gold|cream)[a-z0-9-]*/i);
-      assert.ok(!m, f + ':' + (i + 1) + ' still carries the token ' + (m || [''])[0] +
-        ' — cream and gold should not exist in the code');
+      const cream = text.match(/--[a-z0-9-]*cream[a-z0-9-]*/i);
+      assert.ok(!cream, f + ':' + (i + 1) + ' still carries ' + (cream || [''])[0] + ' — the paper is white');
+      const gold = text.match(/--[a-z0-9-]*gold[a-z0-9-]*/i);
+      if (gold) assert.ok(ALLOWED.indexOf(gold[0]) !== -1,
+        f + ':' + (i + 1) + ' invents the token ' + gold[0] + ' — there are two golds, no more');
+      /* Anchored on a property boundary: the first version matched the "color:" inside
+         "border-bottom-color:", and flagged the gold underline on the active tab —
+         which is a rule, not type. */
+      assert.ok(!/(?:^|[;{\s])color:\s*var\(--westmere-gold\)/.test(text),
+        f + ':' + (i + 1) + ' sets TYPE in the accent gold, which does not clear 4.5:1 on white — '
+        + 'use var(--westmere-gold-ink)');
     });
   }
+
+  /* The ink's contrast is measured, not asserted by eye. */
+  const theme = read('westmere-theme.css');
+  const ink = /--westmere-gold-ink:\s*(#[0-9a-fA-F]{6})/.exec(theme);
+  assert.ok(ink, 'the gold used for type is gone');
+  const lum = (hex) => {
+    const c = [1, 3, 5].map((i) => parseInt(hex.substr(i, 2), 16) / 255)
+      .map((v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)));
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  };
+  const ratio = 1.05 / (lum(ink[1]) + 0.05);
+  assert.ok(ratio >= 4.5,
+    'the gold used for type measures ' + ratio.toFixed(2) + ':1 on white — under 4.5:1 it is '
+    + 'the faint palette the owner asked us to leave behind');
 });
 
 // ── The one typeface is Cormorant ────────────────────────────────────────

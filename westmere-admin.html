@@ -468,92 +468,21 @@ if ('serviceWorker' in navigator) {
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Westmere Admin">
 <meta name="twitter:description" content="Westmere operations dashboard.">
-<style id="wm-white-theme">
-/* ============================================================
-   ADMIN APP — ALL-WHITE SURFACES, ALL-BLACK TEXT (restyle only)
-   Erases every dark/charcoal/grey background (toast, modal scrim,
-   filled buttons, badges, calendar pills), converts dark-filled
-   buttons to a white outline style, and sets body/label text to a
-   solid black. Functionality is
-   untouched. Server-side emails are unaffected (only the in-app
-   preview is restyled). ============================================ */
-/* 0) Palette: neutralise the dark/grey accent vars */
-:root{
-  --card:#ffffff !important;--paper:#ffffff !important;
-  --amber:#000000 !important;--amber-bg:rgba(0,0,0,.05) !important;--rule:rgba(0,0,0,.1) !important;
-}
-/* 1) Core surfaces white */
-html,body{background:#ffffff !important}
-.sidebar,.topbar,.main,.content,.card,.stat,.modal,.modal-hd,.al-box,.al-hd{background:#ffffff !important}
-/* 2) ALL text solid black (semantic status chips restored in step 5) */
-body *{color:#000000 !important;-webkit-text-fill-color:#000000 !important}
-/* 3) Dark/charcoal-filled buttons -> white with a blue outline */
-.btn-main,.btn-new,.btn-gold,.btn-navy,.aa-send,.abc-btn{background:#ffffff !important;color:#000000 !important;-webkit-text-fill-color:#000000 !important;border:1px solid #000000 !important;letter-spacing:.14em}
-.btn-main:hover,.btn-new:hover,.btn-gold:hover,.btn-navy:hover,.aa-send:hover,.abc-btn:hover{color:#000000 !important;-webkit-text-fill-color:#000000 !important;border-color:#000000 !important;background:var(--westmere-hover,rgba(16,42,67,.025))}
-.sb-badge{border:var(--border-hair,1px) solid var(--westmere-navy,#102a43) !important}
-.notify-opt.on .no-chk{background:#000000 !important;color:#ffffff !important;-webkit-text-fill-color:#ffffff !important;border-color:#000000 !important}
-/* 4) Dark surfaces that aren't buttons -> light */
-.toast{background:#ffffff !important;color:#000000 !important;-webkit-text-fill-color:#000000 !important;border:1px solid #000000 !important}
-.toast .ti{color:#000000 !important}
-.overlay{background:rgba(255,255,255,.62) !important;backdrop-filter:blur(3px) !important}
-.adm-cal-pill.warn{background:#eef1f6 !important}
-.adm-cal-pill.off{background:#FCE4E4 !important;color:#9C2828 !important;-webkit-text-fill-color:#9C2828 !important}
-/* 5) Preserve semantic status colours (chips keep their light tint + coloured text) */
-.tag-done,.tag-prepaid,.inv-status.paid,.adm-cal-status.confirmed,.adm-cal-status.completed,.dc-status.on{color:#1E6B33 !important;-webkit-text-fill-color:#1E6B33 !important}
-.tag-cancel,.inv-status.overdue,.adm-cal-status.cancelled,.sb-badge.red{color:#9C2828 !important;-webkit-text-fill-color:#9C2828 !important}
-.sb-badge.red{border:var(--border-hair,1px) solid var(--westmere-navy,#102a43) !important}
-/* 6) Shared realtime notification pill/toast (wm-realtime.js) as rendered on THIS page only:
-   force it light — dark inline bg serializes to rgb(26,26,26); target its high z-index. */
-[style*="z-index:99998"],[style*="z-index: 99998"],[style*="z-index:99999"],[style*="z-index: 99999"],
-[style*="rgb(26, 26, 26)"],[style*="#1a1a1a"],[style*="rgb(13, 37, 69)"],[style*="#0D2545"]{
-  background:#ffffff !important;border:1px solid #000000 !important}
-[style*="z-index:99998"] *,[style*="z-index: 99998"] *,[style*="z-index:99999"] *,[style*="z-index: 99999"] *{
-  color:#000000 !important;-webkit-text-fill-color:#000000 !important}
-/* ============================================================
-   7) FIELD-VISIBILITY FIX (appended last so it wins)
-   Every input/textarea/select/contenteditable -> dark #111 text on
-   white, a visible border and a legible placeholder. Restyle only.
-   ============================================================ */
-input,textarea,select,[contenteditable="true"],[contenteditable=""]{
-  color:#111111 !important;-webkit-text-fill-color:#111111 !important;caret-color:#111111 !important;
-  background-color:#ffffff !important;background-image:none !important;opacity:1 !important;
-  border:1px solid #c9c9c9 !important;border-radius:8px;font-family:var(--sans);
-}
-input:focus,textarea:focus,select:focus,[contenteditable]:focus{border-color:#111111 !important;outline:none}
-input::placeholder,textarea::placeholder{color:#8a8a8a !important;-webkit-text-fill-color:#8a8a8a !important;opacity:1 !important}
-select,select option{color:#111111 !important;-webkit-text-fill-color:#111111 !important;background-color:#ffffff !important}
-input[type=checkbox],input[type=radio],input[type=range],input[type=file],input[type=color]{
-  -webkit-text-fill-color:initial !important;background:transparent !important;border:none !important;border-radius:0 !important;
-}
-input[type=checkbox],input[type=radio]{accent-color:#111111 !important}
-[style*="color:var(--navy)"],[style*="color: var(--navy)"],
-[style*="color:var(--navy)"],[style*="color: var(--navy)"]{color:#111111 !important;-webkit-text-fill-color:#111111 !important}
-[style*="border:1px solid var(--navy)"],[style*="border: 1px solid var(--navy)"],
-[style*="border-color:var(--navy)"],[style*="border-color: var(--navy)"]{border-color:#111111 !important}
-/* No beige — neutralise leftover cream/beige surfaces to white / light grey. */
-#admin-login{background:rgba(255,255,255,.97) !important}
-.adm-cal-hd{background:#f4f4f4 !important}
-.adm-cal-status.pending,.adm-cal-status.flagged{}
-.adm-cal-day.flagged{box-shadow:inset 0 0 0 2px #cbcbcb !important}
-/* REMOVED: the same pre-redesign [style*="#ffffff"] grey repaint the owner app
-   carried. It greyed anything whose inline style merely mentioned white, which
-   is unfixable from the markup end. White is the design now.
-   GUARDRAIL: server/tests/no-fills.test.js */
-[style*="#c8d1d9"],[style*="#c8d1d9"]{border-color:#d9d9d9 !important}
-
-/* ── BROWSER AUTOFILL ──
-   Chrome/Safari paint an autofilled field with their own yellow background,
-   which is what turned the admin app fields yellow. An autofilled control's
-   background cannot be set directly, so cover it with an inset box-shadow and
-   set the text with -webkit-text-fill-color (plain colour is ignored while a
-   field is autofilled). The 9999s transition stops the yellow flashing in
-   before the shadow paints. Colours match this surface's real field
-   background (#f7f7f7) and text (#1b1b1a) so it is seamless.
-   NB: this must live in the page's OWN head stylesheet. The final closing
-   style tag in this file belongs to a print window built inside a JS string,
-   and never write a literal closing style tag in here — the HTML tokenizer
-   does not read CSS comments and would end the stylesheet right there.
-   GUARDRAIL: server/tests/autofill.test.js */
+<!-- The all-white restyle has been removed. It forced every surface white and
+     every word black, then rescued inline colours with 68 [style*="color:var(--navy)"]
+     selectors that matched the STRING rather than the colour — which is how the
+     dispatch sheet's save-tick label came to render white on white. The palette is
+     the token layer's again: navy, gold and white, from westmere-theme.css.
+     GUARDRAIL: server/tests/button-style.test.js -->
+<!-- AUTOFILL, KEPT WHEN THE ALL-WHITE RESTYLE WENT. Chrome paints a saved field
+     yellow and ignores background-color; a 1000px inset shadow is the only thing
+     that covers it, and the hover/focus variants matter because the yellow comes
+     back on both. This lived inside the removed block and has to outlive it: the
+     fields are still white, only the ink changed with the palette.
+     Never write a literal closing style tag in a CSS comment here — the HTML
+     tokenizer does not read CSS comments and would end the stylesheet.
+     GUARDRAIL: server/tests/autofill.test.js -->
+<style id="wm-autofill">
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
@@ -570,36 +499,6 @@ select:-webkit-autofill:focus{
   caret-color:#1b1b1a;
   transition:background-color 9999s ease-in-out 0s;
 }
-
-/* ── CUSTOMER SPEND ─────────────────────────────────────────────────────
-   Navy on white, Cormorant, frames not fills — the house style. Colours and
-   radii come from the theme tokens (see DESIGN.md), so a re-skin carries it. */
-.sp-totals{display:flex;gap:.9rem;flex-wrap:wrap;margin:0 0 1.1rem}
-.sp-tot{flex:1;min-width:9rem;border:var(--border-hair,1px) solid var(--westmere-line,#dfe5ea);
-  border-radius:var(--radius-lg,12px);padding:.85rem 1rem;background:var(--westmere-white,#fff)}
-.sp-tot-k{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--westmere-muted,#657485)}
-.sp-tot-v{font-family:var(--serif);font-size:1.6rem;color:var(--westmere-navy,#102a43);margin-top:.2rem}
-.sp-chart-wrap{border:var(--border-hair,1px) solid var(--westmere-line,#dfe5ea);
-  border-radius:var(--radius-lg,12px);padding:1rem 1.1rem 1.2rem;margin-bottom:1.1rem;
-  background:var(--westmere-white,#fff);overflow-x:auto}
-.sp-chart-hd{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--westmere-muted,#657485);margin-bottom:.8rem}
-.sp-bar-row{display:grid;grid-template-columns:minmax(6rem,10rem) 1fr auto;align-items:center;gap:.7rem;margin-bottom:.55rem}
-.sp-bar-name{font-size:.86rem;color:var(--westmere-navy,#102a43);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sp-bar-track{height:16px;background:rgba(16,42,67,.06);border-radius:var(--radius-pill,999px);overflow:hidden}
-.sp-bar-fill{height:100%;background:var(--westmere-navy,#102a43);border-radius:var(--radius-pill,999px)}
-.sp-bar-val{font-size:.86rem;color:var(--westmere-navy,#102a43);font-weight:500;white-space:nowrap}
-.sp-table-wrap{overflow-x:auto;border:var(--border-hair,1px) solid var(--westmere-line,#dfe5ea);
-  border-radius:var(--radius-lg,12px);background:var(--westmere-white,#fff)}
-.sp-table{width:100%;border-collapse:collapse;font-size:.86rem;color:var(--westmere-navy,#102a43)}
-.sp-table th{text-align:left;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;
-  color:var(--westmere-muted,#657485);font-weight:600;padding:.7rem .8rem;border-bottom:var(--border-hair,1px) solid var(--westmere-line,#dfe5ea)}
-.sp-table td{padding:.7rem .8rem;border-bottom:var(--border-hair,1px) solid rgba(16,42,67,.06)}
-.sp-table tr:last-child td{border-bottom:none}
-.sp-rank{color:var(--westmere-muted,#657485);width:2.2rem}
-.sp-money{font-weight:600;white-space:nowrap}
-.sp-quoted{color:var(--westmere-muted,#657485);white-space:nowrap}
-.sp-note{margin-top:.9rem;font-size:.78rem;line-height:1.6;color:var(--westmere-muted,#657485)}
-.sp-empty{padding:1.4rem;text-align:center;color:var(--westmere-muted,#657485);font-size:.86rem}
 </style><link rel="stylesheet" href="/wm-buttons.css">
 <link rel="stylesheet" href="/westmere-theme.css">
 <link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"></head>
@@ -2749,7 +2648,69 @@ async function dispOpen(bookingId, job, opts) {
   document.getElementById('disp-next').onclick = dispReview;
 }
 
-function dispReview() {
+/* ── THE PER-JOB COMMISSION CHOICE ───────────────────────────────────────────
+   A cover job — a favour, or one the owner could have driven himself — goes out
+   at nothing. A commission job charges the rate. The driver's own default is
+   only what this opens on; the choice belongs to the JOB and is recorded with
+   it, so his statement, his balance and the turnover all follow from it.
+   Every figure shown here was worked out by the server.
+   GUARDRAIL: server/tests/driver-ledger.test.js */
+function dispMoney(n) {
+  return (n === null || n === undefined || isNaN(n)) ? 'not set yet' : '£' + Number(n).toFixed(2);
+}
+function dispCommHtml() {
+  var s = _DISPATCH.splits || {};
+  var pct = (s.pct === null || s.pct === undefined) ? 10 : s.pct;
+  var on = 'border:var(--border-strong,1.5px) solid var(--westmere-navy,#102a43);background:#F6F8FA';
+  var off = 'border:1px solid rgba(27,27,26,.18)';
+  var opt = function (id, sel, title, note) {
+    return '<div id="' + id + '" style="' + (sel ? on : off) + ';border-radius:9px;padding:.7rem .8rem;margin-bottom:.5rem;cursor:pointer">'
+      + '<div style="display:flex;align-items:flex-start;gap:.6rem">'
+      + '<span style="width:15px;height:15px;border-radius:50%;flex:0 0 auto;margin-top:.18rem;'
+      + (sel ? 'border:5px solid var(--westmere-navy,#102a43)' : 'border:1.5px solid rgba(27,27,26,.3)') + '"></span>'
+      + '<div style="flex:1"><div style="font-size:.95rem;color:var(--westmere-navy,#102a43)">' + title + '</div>'
+      + '<div style="margin-top:.2rem;font-size:.8rem;color:rgba(27,27,26,.6);line-height:1.5">' + note + '</div></div></div></div>';
+  };
+  var ch = s.charge || {}, no = s.none || {};
+  return opt('disp-comm-yes', !!_DISPATCH.charge, 'Charge commission &mdash; ' + pct + '%',
+             dispMoney(ch.commission) + ' to you, ' + dispMoney(ch.payout) + ' to him.')
+       + opt('disp-comm-no', !_DISPATCH.charge, 'No commission &mdash; cover job',
+             'Nothing to you, the full ' + dispMoney(no.payout) + ' to him.');
+}
+function dispMoneyHtml() {
+  var s = _DISPATCH.splits || {};
+  var sp = _DISPATCH.charge ? (s.charge || {}) : (s.none || {});
+  var job = _DISPATCH.job || {};
+  var cash = String(job.payment || '').toLowerCase() === 'cash';
+  var known = sp.fare !== null && sp.fare !== undefined && !isNaN(sp.fare);
+  var row = function (label, value, strong) {
+    return '<div style="display:flex;justify-content:space-between;padding:.15rem 0' + (strong ? ';border-top:1px solid rgba(27,27,26,.12);margin-top:.35rem;padding-top:.35rem;font-weight:500' : '') + '">'
+      + '<span style="color:' + (strong ? 'var(--westmere-navy,#102a43)' : 'rgba(27,27,26,.65)') + '">' + label + '</span><span>' + value + '</span></div>';
+  };
+  return '<div style="border:1px solid rgba(27,27,26,.15);border-radius:9px;padding:.85rem 1rem;margin-top:.5rem;font-size:.95rem">'
+    + row('Fare', dispMoney(sp.fare))
+    + row(_DISPATCH.charge ? 'Your commission' : 'Commission &mdash; cover job', dispMoney(sp.commission))
+    + row('He receives', dispMoney(sp.payout), true)
+    + '<div style="margin-top:.6rem;font-size:.84rem;color:rgba(27,27,26,.6);line-height:1.6">'
+    + (!known ? 'THIS JOB HAS NO FARE YET. Price it before you send it, or he is being asked to drive for nothing.'
+       : !_DISPATCH.charge ? 'A cover job — recorded against this job, so his statement and your turnover both show it. His default is untouched.'
+       : cash ? 'CASH — he collects ' + dispMoney(sp.fare) + ' in the car and keeps it; your ' + dispMoney(sp.commission) + ' nets off his next payout.'
+              : 'PREPAID — the customer has already paid you; you owe him ' + dispMoney(sp.payout) + '.')
+    + '</div></div>';
+}
+function dispSetComm(charge) {
+  _DISPATCH.charge = !!charge;
+  var c = document.getElementById('disp-comm'); if (c) c.innerHTML = dispCommHtml();
+  var m = document.getElementById('disp-money'); if (m) m.innerHTML = dispMoneyHtml();
+  dispBindComm();
+}
+function dispBindComm() {
+  var y = document.getElementById('disp-comm-yes'), n = document.getElementById('disp-comm-no');
+  if (y) y.onclick = function () { dispSetComm(true); };
+  if (n) n.onclick = function () { dispSetComm(false); };
+}
+
+async function dispReview() {
   var v = function (id) { return (document.getElementById(id).value || '').trim(); };
   var err = document.getElementById('disp-err');
   var name = v('disp-name'), email = v('disp-email');
@@ -2764,23 +2725,36 @@ function dispReview() {
      to store the split, so this screen and the driver's email cannot disagree.
      A missing split means the fare is genuinely unknown — say so rather than
      print £0.00, which reads as a real number and a free job. */
-  var sp = job._split || {};
-  var known = sp.fare !== null && sp.fare !== undefined && !isNaN(sp.fare);
-  var fare = known ? Number(sp.fare) : null;
-  var commission = known ? Number(sp.commission) : null;
-  var payout = known ? Number(sp.payout) : null;
-  var cash = String(job.payment || '').toLowerCase() === 'cash';
-  var m = function (n) { return (n === null || n === undefined || isNaN(n)) ? 'not set yet' : '£' + Number(n).toFixed(2); };
+  var sel = _DISPATCH.drivers.filter(function (x) { return String(x.id) === document.getElementById('disp-saved').value; })[0];
+
+  /* ── WHAT THIS JOB IS WORTH, BOTH WAYS ────────────────────────────────────
+     Commission is decided per job, so the screen has to show the two answers
+     side by side: charged at the rate on offer, or nothing at all because it is
+     a cover job. BOTH COME FROM THE SERVER. The browser does no arithmetic here
+     — that is how the confirm screen and the books come to disagree — so it asks
+     for the job once and then only chooses between the figures it was given. */
+  var q = '/api/bookings/' + _DISPATCH.bookingId + (sel ? ('?driver_id=' + sel.id) : '');
+  try {
+    var sr = await fetch(q, { credentials: 'include' });
+    var sd = await sr.json();
+    _DISPATCH.splits = { charge: sd.split || {}, none: sd.split_none || {}, pct: sd.commission_pct };
+  } catch (e) { _DISPATCH.splits = { charge: job._split || {}, none: {}, pct: 10 }; }
+  /* A driver we take nothing from opens on the cover-job answer, so the screen
+     never offers "charge 0%" as though it were a choice. */
+  _DISPATCH.charge = Number(_DISPATCH.splits.pct) > 0;
 
   /* WHAT IS ABOUT TO LEAVE THE BUILDING, spelled out: the job, the address it
      is going to, and the money. The commission is shown because the driver's
      email shows it — the two should not be the first place they disagree. */
-  var sel = _DISPATCH.drivers.filter(function (x) { return String(x.id) === document.getElementById('disp-saved').value; })[0];
   _DISPATCH.payload = {
     driver_id: sel ? sel.id : null,
     name: name, email: email, phone: v('disp-phone'),
     reg: v('disp-reg').toUpperCase(), car: v('disp-car'),
-    save_driver: document.getElementById('disp-save').checked
+    save_driver: document.getElementById('disp-save').checked,
+    /* The job carries its own answer. `charge_commission:false` says cover job
+       without naming a number; the rate rides along when we are charging. */
+    charge_commission: !!_DISPATCH.charge,
+    commission_pct: _DISPATCH.charge ? ((_DISPATCH.splits || {}).pct) : 0
   };
 
   var el = document.getElementById('dispatch-sheet');
@@ -2792,16 +2766,9 @@ function dispReview() {
       '<div style="color:rgba(27,27,26,.65)">' + (job.pickup || '') + ' → ' + (job.destination || '') + '</div>' +
       '<div style="margin-top:.5rem;font-size:.85rem;color:rgba(27,27,26,.6)">' + email + (v('disp-phone') ? ' · ' + v('disp-phone') : '') + '</div>' +
     '</div>' +
-    '<div style="border:1px solid rgba(27,27,26,.15);border-radius:9px;padding:.85rem 1rem;margin-top:.7rem;font-size:.95rem">' +
-      '<div style="display:flex;justify-content:space-between;padding:.15rem 0"><span style="color:rgba(27,27,26,.65)">Fare</span><span>' + m(fare) + '</span></div>' +
-      '<div style="display:flex;justify-content:space-between;padding:.15rem 0"><span style="color:rgba(27,27,26,.65)">Your commission (10%)</span><span>' + m(commission) + '</span></div>' +
-      '<div style="display:flex;justify-content:space-between;padding:.35rem 0 0;border-top:1px solid rgba(27,27,26,.12);margin-top:.35rem;font-weight:500"><span>Driver payout</span><span>' + m(payout) + '</span></div>' +
-      '<div style="margin-top:.6rem;font-size:.84rem;color:rgba(27,27,26,.6);line-height:1.6">' +
-        (!known ? 'THIS JOB HAS NO FARE YET. Price it before you send it, or he is being asked to drive for nothing.'
-          : cash ? 'CASH — he collects ' + m(fare) + ' in the car and keeps it; your ' + m(commission) + ' nets off his next payout.'
-                 : 'PREPAID — the customer has already paid you; you owe him ' + m(payout) + '.') +
-      '</div>' +
-    '</div>' +
+    '<p class="wm-lab" style="margin:1rem 0 .4rem">Commission on this job</p><div class="wm-rule"></div>' +
+    '<div id="disp-comm">' + dispCommHtml() + '</div>' +
+    '<div id="disp-money">' + dispMoneyHtml() + '</div>' +
     '<p style="margin:.8rem 0 0;font-size:.85rem;color:rgba(27,27,26,.6);line-height:1.6">He is emailed the trip, the passenger’s name and number, and the payout. The customer is told who is picking them up.</p>' +
     '<p id="disp-err2" style="display:none;margin:.7rem 0 0;font-size:.85rem;color:#8B2222"></p>' +
     '<div style="display:flex;gap:.6rem;margin-top:1.1rem">' +
@@ -2813,6 +2780,7 @@ function dispReview() {
      same door, so both routes behave identically. */
   dispPush();
   document.getElementById('disp-back').onclick = function () { history.back(); };
+  dispBindComm();
   document.getElementById('disp-send').onclick = dispSend;
 }
 

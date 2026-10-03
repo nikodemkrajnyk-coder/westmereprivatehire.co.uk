@@ -243,8 +243,15 @@ test('the created PDF carries the working, not just the total', async () => {
      no fees and no commission at all, so it showed the right total above an
      empty explanation. */
   const src = require('./_source').routeBlock(read('server/api.js'), "router.post('/invoices/bespoke'");
-  assert.ok(/fees:\s*newFees,\s*commissionPct:\s*newCommissionPct/.test(src),
+  assert.ok(/fees:\s*newFees,/.test(src) && /commissionPct:\s*newCommissionPct/.test(src),
     'the create-time PDF must be given the fees and the rate');
+  /* AND WHAT THE FEE IS CALLED. A one-off invoice may name a single figure for
+     the whole document — "Meet & greet" — and the create route takes one now,
+     the way the correction route always has. Rendered without the label the
+     first PDF printed the figure under a generic heading and only a later
+     re-render, which reads it off the stored row, said what it was for. */
+  assert.ok(/feesLabel:\s*newFeesLabel/.test(src),
+    'and the label that explains it');
 });
 
 test('the email is told the total instead of adding the fares up itself', () => {
@@ -821,7 +828,15 @@ test('the simple layout keeps its stacked row and gains no columns', () => {
   assert.ok(/Pickup — start typing/.test(simple), 'the simple row lost its labelled fields');
   assert.ok(!/ni-collected/.test(simple), 'a customer invoice must not ask who collected the fare');
   assert.ok(!/ni-com/.test(simple), 'a customer invoice must not show a commission column');
-  assert.ok(/id="ni-head-simple"/.test(OWNER), 'the simple heading strip is gone');
+  /* AND NO HEADING STRIP ABOVE IT. There was one — DATE · DESCRIPTION · AMT £ —
+     from when a line was three boxes on one row. The row is a journey now and
+     every box carries its own caption, so the strip named three columns that
+     were not there and sat left of the ones that were. The job sheet's heading
+     is a different thing: it labels a real grid, and is still asserted above. */
+  assert.ok(!/id="ni-head-simple"/.test(OWNER),
+    'the stacked row has a column strip above it again — it cannot line up with captioned fields');
+  assert.ok(/From</.test(simple) && /To</.test(simple) && /Fare</.test(simple),
+    'the row must carry its own captions, since nothing above it does');
 });
 
 test('a stray tick cannot take money off a customer invoice', async () => {

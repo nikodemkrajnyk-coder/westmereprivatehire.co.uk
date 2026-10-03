@@ -153,9 +153,30 @@ router.post('/bookings/:id/dispatch', staffOnly, async (req, res) => {
 
   /* A SAVED DRIVER FILLS THE FORM IN. Anything typed alongside still wins, so
      a driver in a different car today is not sent out under yesterday's plate. */
+  /* ── OR ANOTHER FIRM ──────────────────────────────────────────────────────
+     The same job, the same email, the same calendar invitation — sent to an
+     operator instead of a driver. What differs is the money: there is no
+     commission on it at all, because the two firms settle by invoice and not
+     by netting ten per cent off a balance that an operator does not have. So
+     this is NOT a driver dispatch with the rate set to zero: driver_id stays
+     empty, nothing is written into any ledger, and the job is stamped with the
+     operator so the invoice can find it afterwards.
+     GUARDRAIL: server/tests/operator-dispatch.test.js */
+  const operatorId = body.operator_id ? parseInt(body.operator_id, 10) : null;
+  let operatorRow = null;
+  if (operatorId) {
+    if (savedId) return res.status(400).json({ error: 'A job goes to a driver or to an operator, not both' });
+    operatorRow = db.prepare(`SELECT id, full_name, company, email, phone FROM customers
+                               WHERE id = ? AND is_operator = 1 AND active = 1`).get(operatorId);
+    if (!operatorRow) return res.status(404).json({ error: 'Operator not found or inactive' });
+    name  = name  || String(operatorRow.company || operatorRow.full_name || '').trim();
+    email = email || String(operatorRow.email || '').trim().toLowerCase();
+    phone = phone || String(operatorRow.phone || '').trim();
+  }
+
   let driverRow = null;
   if (savedId) {
-    driverRow = db.prepare(`SELECT id, full_name, email, phone, vehicle, reg FROM users
+    driverRow = db.prepare(`SELECT id, full_name, email, phone, vehicle, reg, commission_pct FROM users
                              WHERE id = ? AND role IN ('driver','owner') AND active = 1`).get(savedId);
     if (!driverRow) return res.status(404).json({ error: 'Driver not found or inactive' });
     name  = name  || String(driverRow.full_name || '').trim();
@@ -170,14 +191,50 @@ router.post('/bookings/:id/dispatch', staffOnly, async (req, res) => {
     return res.status(400).json({ error: 'That email address does not look right: ' + email });
   }
 
-  /* WHAT HE IS PAID, worked out once and written down. */
-  const split = computeSplit(b.fare);
+  /* ── WHAT HE IS PAID, AND WHETHER WE TAKE ANYTHING ────────────────────────
+     The commission is decided HERE, per job, not by who the driver is. A cover
+     job — a favour, or one the owner could have driven himself — goes out at
+     nothing; a commission job charges the rate. The driver's own default is only
+     what the send sheet offered first.
+
+     Sent as a PERCENTAGE (0-100) because that is what the screen shows; the
+     ledger works in fractions. `charge_commission: false` is the same thing said
+     plainly, so the caller can express a cover job without naming a number.
+
+     Whatever is chosen is written into admin_fee and driver_pay, and the ledger
+     prefers stored figures over derived ones — so his balance, his statement and
+     the turnover all follow from this one decision without being told twice.
+     GUARDRAIL: server/tests/driver-ledger.test.js */
+  const ledger = require('./driver-ledger');
+  let rate = ledger.rateForDriver(driverRow);
+  if (operatorRow) {
+    /* NO COMMISSION ON AN OPERATOR JOB, and no quiet way to ask for one. A
+       percentage arriving here would be a request to run the same job through
+       two settlement mechanisms at once — a tenth netted off now and the whole
+       fare invoiced later. Refused rather than ignored, so a caller that meant
+       it finds out. */
+    if (body.charge_commission === true ||
+        (body.commission_pct !== undefined && body.commission_pct !== null &&
+         body.commission_pct !== '' && Number(body.commission_pct) > 0)) {
+      return res.status(400).json({ error: 'Operators are settled by invoice — there is no commission on an operator job' });
+    }
+    rate = 0;
+  } else if (body.charge_commission === false) {
+    rate = 0;
+  } else if (body.commission_pct !== undefined && body.commission_pct !== null && body.commission_pct !== '') {
+    const pct = Number(body.commission_pct);
+    if (isNaN(pct) || pct < 0 || pct > 100) {
+      return res.status(400).json({ error: 'Commission must be a percentage between 0 and 100' });
+    }
+    rate = pct / 100;
+  }
+  const split = computeSplit(b.fare, rate);
 
   /* SAVE HIM FOR NEXT TIME, if asked. A driver record is internal data — no
      login, no welcome email, nothing lands in his inbox because of this tick.
      Matched on email so ticking it twice updates rather than duplicates. */
   let savedDriverId = driverRow ? driverRow.id : null;
-  if (saveDriver && !savedDriverId) {
+  if (saveDriver && !savedDriverId && !operatorRow) {
     try {
       const existing = db.prepare("SELECT id FROM users WHERE LOWER(email) = ? AND role IN ('driver','owner')").get(email);
       if (existing) {
@@ -202,13 +259,14 @@ router.post('/bookings/:id/dispatch', staffOnly, async (req, res) => {
   }
 
   db.prepare(`UPDATE bookings
-                 SET driver_id = ?, assigned_to_name = ?, assigned_to_email = ?,
+                 SET driver_id = ?, operator_id = ?, assigned_to_name = ?, assigned_to_email = ?,
                      assigned_to_reg = ?, assigned_to_car = ?,
                      driver_pay = ?, admin_fee = ?,
                      passed_at = COALESCE(passed_at, datetime('now')),
                      updated_at = datetime('now')
                WHERE id = ?`)
-    .run(savedDriverId, name, email, reg || null, car || null,
+    .run(savedDriverId, operatorRow ? operatorRow.id : null,
+         name, email, reg || null, car || null,
          split.driver_pay, split.admin_fee, id);
 
   /* The customer's address lives on the CUSTOMER, not always on the booking —
@@ -230,7 +288,13 @@ router.post('/bookings/:id/dispatch', staffOnly, async (req, res) => {
   const sent = { driver: false, customer: false };
   try {
     sent.driver = await email_.sendDriverDispatch(Object.assign({}, updated, {
-      driver_email: email, driver_name: name, driver_car: car, driver_reg: reg
+      driver_email: email, driver_name: name, driver_car: car, driver_reg: reg,
+      /* THE RATE THAT WAS ACTUALLY CHARGED, so the email names it instead of
+         printing a hard-coded ten per cent beside some other number — and
+         `as_operator`, which replaces the payout block with the fare and says
+         the job is settled on an invoice. */
+      commission_pct: Math.round(rate * 1000) / 10,
+      as_operator: !!operatorRow
     }));
   } catch (e) { console.error('[DISPATCH] driver email failed:', e.message); }
 
@@ -242,14 +306,19 @@ router.post('/bookings/:id/dispatch', staffOnly, async (req, res) => {
 
   try {
     db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
-      .run(req.auth.type || 'user', req.auth.id, 'job_dispatched',
-           updated.ref + ' → ' + name + ' (' + email + ')', req.ip);
+      .run(req.auth.type || 'user', req.auth.id,
+           operatorRow ? 'job_dispatched_operator' : 'job_dispatched',
+           updated.ref + ' → ' + name + ' (' + email + ')'
+             + (operatorRow ? ' — operator, no commission' : ''), req.ip);
   } catch (_) {}
 
   try { events.broadcast('booking:updated', { id, ref: updated.ref, reason: 'Sent to ' + name }); } catch (_) {}
 
   res.json({
     ok: true, ref: updated.ref, driver: { id: savedDriverId, name, email, phone, reg, car },
+    /* WHO IT WENT TO, named as what it is — the owner app offers "Create
+       invoice" off the back of an operator send and nothing else. */
+    operator: operatorRow ? { id: operatorRow.id, name, email, phone } : null,
     saved: !!(saveDriver && savedDriverId),
     fare: Number(updated.fare) || 0, commission: split.admin_fee, payout: split.driver_pay,
     paymentType: String(updated.payment || '').toLowerCase() === 'cash' ? 'cash' : 'prepaid',

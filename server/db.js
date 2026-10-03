@@ -1151,6 +1151,24 @@ function migrate() {
   // badge costs no join and no second fetch, and cannot be dropped by a query
   // that forgets about it. Neither column is a core booking field — writing
   // them never alters the journey, the fare or the status.
+  /* HIS DEFAULT SHARE, as a percentage. NULL means "the house rate" rather than
+     zero — a driver added before this column existed must not silently become a
+     driver we take nothing from. 0 is a real, deliberate value: a driver we
+     charge nothing. The per-JOB choice overrides this at send time; this is only
+     what the send sheet offers first.
+     GUARDRAIL: server/tests/driver-ledger.test.js */
+  /* AN OPERATOR IS A CUSTOMER WE ALSO SEND WORK TO. Another firm — APD and the
+     like — already exists here as an account customer, because that is who the
+     invoice is addressed to and who the account invoices hang off. A separate
+     operators table would duplicate the name, the address and the invoice
+     linkage, and then have to be kept in step with them.
+     So it is a flag, not a table. account_type keeps its own meaning
+     (business/personal); this says whether we pass work to them.
+     GUARDRAIL: server/tests/operators.test.js */
+  try { db.exec(`ALTER TABLE customers ADD COLUMN is_operator INTEGER DEFAULT 0`); } catch(_){}
+
+  try { db.exec(`ALTER TABLE users ADD COLUMN commission_pct REAL`); } catch(_){}
+
   try { db.exec(`ALTER TABLE bookings ADD COLUMN change_requested_at TEXT`); } catch(_){}
   try { db.exec(`ALTER TABLE bookings ADD COLUMN change_request_summary TEXT`); } catch(_){}
   // The same request in the shape the staff apps RENDER: a compact
@@ -1188,6 +1206,18 @@ function migrate() {
   // pay" rather than the generic "your estimate is ready", so the customer
   // recognises the quote as the answer to the change THEY asked for.
   try { db.exec(`ALTER TABLE bookings ADD COLUMN re_estimated_at TEXT`); } catch(_){}
+
+  // ── WORK PASSED TO ANOTHER FIRM ──────────────────────────────────────────
+  // A job can go to one of our drivers or to another operator, and the two are
+  // settled differently: a driver's commission is netted against his balance,
+  // an operator is invoiced. So an operator job is NOT a driver job with a
+  // zero rate — driver_id stays empty, nothing lands in any ledger, and this
+  // is how the job is found again when the invoice is raised.
+  // (An operator is a `customers` row flagged is_operator, not a table of its
+  // own — see server/tests/operators.test.js.)
+  try { db.exec(`ALTER TABLE bookings ADD COLUMN operator_id INTEGER`); } catch(_){}
+  // The invoice that finally billed it, so the same job is not invoiced twice.
+  try { db.exec(`ALTER TABLE bookings ADD COLUMN operator_invoice_id INTEGER`); } catch(_){}
 }
 
 function seedDefaults() {

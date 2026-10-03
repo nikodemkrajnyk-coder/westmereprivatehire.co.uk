@@ -625,119 +625,21 @@ h1,h2,h3,h4{font-family:var(--serif);color:var(--navy)}
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Westmere Owner">
 <meta name="twitter:description" content="Westmere owner dashboard — fleet and operations overview.">
-<style id="wm-white-theme">
-/* ============================================================
-   OWNER APP — ALL-WHITE SURFACES, ALL-BLACK TEXT (restyle only)
-   Removes every dark/charcoal/black background and every grey/muted
-   font; body/label text is solid black; dark-filled buttons become
-   white with a dark outline.
-   ============================================================ */
-:root{
-  /* surfaces -> white */
-  --card:#ffffff !important;--paper:#ffffff !important;--amber-bg:#ffffff !important;
-  /* accent vars that were used as DARK BACKGROUNDS -> white (text forced black below) */
---navy:#ffffff !important;--navy2:#ffffff !important;--white:#ffffff !important;
-  /* text/rule vars -> black / light hairline */
-  --text:#000000 !important;--amber:#000000 !important;--muted:#000000 !important;
---rule:rgba(0,0,0,.15) !important;
-}
-/* 1) Core surfaces white; kill the dark login texture */
-html,body{background:#ffffff !important;background-image:none !important}
-.app,#scr-app,#login-screen,.ls-inner,.ls-body,.ls-hd,.ls-foot,.topbar,.bottom-nav,.card,.scorecard,#toast,.nav-popup,.sug-drop{background:#ffffff !important;background-image:none !important}
-/* 2) ALL text solid black */
-#scr-app,#scr-app *,#login-screen,#login-screen *{color:#000000 !important;-webkit-text-fill-color:#000000 !important}
-.bn,.bn.active{color:#000000 !important}
-/* 3) Any element given a dark background inline / via JS -> white surface, black text, outline */
-[style*="background:var(--navy)"],[style*="background: var(--navy)"],[style*="background:var(--navy2)"],
-[style*="background:var(--navy)"],[style*="background: var(--navy)"],[style*="background:var(--navy2)"],
-[style*="background:var(--red)"],[style*="background:var(--green)"],
-[style*="background:#1a1a1a"],[style*="background:#1b1b1a"],[style*="background:#0a1420"],[style*="background:#0a"],
-[style*="background:#111"],[style*="background:#000"],[style*="background:#222"],[style*="background:#333"],
-[style*="background:#444"],[style*="background:#555"],[style*="background:#666"],[style*="background:#6a6a6a"],
-[style*="background:#3B82F6"],[style*="background:#3b82f6"]{
-  background:#ffffff !important;border:1px solid #1a1a1a !important}
-[style*="background:var(--navy)"] svg,[style*="background:#1a1a1a"] svg{stroke:#000000 !important}
-/* 4) Class-based charcoal buttons / pills / active / badges -> white + (buttons) outline */
-.sbt-enroute,.sbt-onboard,.ts-enroute,.jc2-bd-enroute,.jc2-bd-atpickup,.jc2-ab.ab-enroute,.jc2-ab.ab-atpickup,
-.jc2-ab.ab-onboard,.jc2-ab.ab-dropoff,.jc2-pin.pu,.jc2-prog-dot.pd-active,.notif-badge-num,
-.nav-popup-btns a:first-child,.nav-popup-btns a:last-child,.btn-accept,.ma-accept,.mba-confirm,.btn-send,.btn-cam,
-.ibtn-primary,.ibtn-sm,.ls-btn,.btn-main,.btn-new,.btn-gold,.sb-badge,.email-btn-gold,.pill-flag,.msg-conflict,
-.msg-user div,.msg-w div,.cal-day.today,.cal-day.selected,.ws-day.ws-today,.ws-dot-job,.ws-alt-type-job,
-.job-card.active-job .jc-bar,.earn-stat-card.esk-accent,.assist-input,.fp-delayed{
-  background:#ffffff !important;color:#000000 !important}
-.sbt-enroute,.btn-accept,.ma-accept,.mba-confirm,.btn-send,.btn-cam,.ibtn-primary,.ls-btn,.btn-main,.btn-new,
-.btn-gold,.email-btn-gold,.nav-popup-btns a:first-child,.nav-popup-btns a:last-child,.notif-badge-num,.sb-badge{
-  border:1px solid #1a1a1a !important}
-/* 5) Hover / selected / active -> light grey tint, never dark */
-.sbt-enroute:hover,.btn-accept:hover,.ma-accept:hover,.mba-confirm:hover,.btn-send:hover,.btn-cam:hover,
-.btn-cam:active,.ibtn-primary:hover,.ibtn-sm:hover,.ls-btn:hover,.jcc:hover,.jcc:active,.jc2-cc:active,
-.sug-drop div:hover,.sug-drop div:active,.cal-day.selected,.ws-day.ws-selected{
-  background:var(--westmere-hover,rgba(16,42,67,.025)) !important;
-  color:var(--westmere-navy,#102a43) !important;
-  border-color:var(--westmere-navy,#102a43) !important}
-/* 6) hairline rules light */
-.gold-rule,hr{background:rgba(0,0,0,.15) !important;border-color:rgba(0,0,0,.15) !important}
-/* 7) modal backdrops: light frosted veil instead of a dark scrim */
-[style*="rgba(10,14,20"],[style*="rgba(10, 14, 20"]{background:rgba(255,255,255,.6) !important}
-/* 8) shared realtime notification pill/toast (wm-realtime.js) as rendered on THIS page only:
-   force it light — dark bg serializes to rgb(26,26,26); target its high z-index instead. */
-[style*="z-index:99998"],[style*="z-index: 99998"],[style*="z-index:99999"],[style*="z-index: 99999"],
-[style*="rgb(26, 26, 26)"],[style*="rgb(13, 37, 69)"]{background:#ffffff !important;border:1px solid #1a1a1a !important}
-[style*="z-index:99998"] *,[style*="z-index: 99998"] *,[style*="z-index:99999"] *,[style*="z-index: 99999"] *{color:#000000 !important}
-/* ============================================================
-   9) FIELD-VISIBILITY FIX (appended last so it wins)
-   Every input/textarea/select/contenteditable — including modals
-   mounted on document.body OUTSIDE #scr-app (e.g. #edit-booking-overlay)
-   where var(--navy)/var(--navy) resolve to WHITE and text was invisible.
-   Force dark #111 text on white, a visible border and a legible
-   placeholder. Restyle only — no markup/logic change.
-   ============================================================ */
-input,textarea,select,[contenteditable="true"],[contenteditable=""]{
-  color:#111111 !important;-webkit-text-fill-color:#111111 !important;caret-color:#111111 !important;
-  background-color:#ffffff !important;background-image:none !important;opacity:1 !important;
-  border:1px solid #c9c9c9 !important;border-radius:8px;font-family:var(--sans);
-}
-input:focus,textarea:focus,select:focus,[contenteditable]:focus{border-color:#111111 !important;outline:none}
-input::placeholder,textarea::placeholder{color:#8a8a8a !important;-webkit-text-fill-color:#8a8a8a !important;opacity:1 !important}
-select,select option{color:#111111 !important;-webkit-text-fill-color:#111111 !important;background-color:#ffffff !important}
-/* Native controls keep their own look (don't box checkboxes/sliders/etc.) */
-input[type=checkbox],input[type=radio],input[type=range],input[type=file],input[type=color]{
-  -webkit-text-fill-color:initial !important;background:transparent !important;border:none !important;border-radius:0 !important;
-}
-input[type=checkbox],input[type=radio]{accent-color:#111111 !important}
-/* Inline gold/navy text (remapped to white by the theme) -> readable dark,
-   incl. body-level modal titles, accent buttons and their borders. */
-[style*="color:var(--navy)"],[style*="color: var(--navy)"],
-[style*="color:var(--navy)"],[style*="color: var(--navy)"]{color:#111111 !important;-webkit-text-fill-color:#111111 !important}
-[style*="border:1px solid var(--navy)"],[style*="border: 1px solid var(--navy)"],
-[style*="border-color:var(--navy)"],[style*="border-color: var(--navy)"]{border-color:#111111 !important}
-/* Primary action in the body-level edit modal lost its fill under the white
-   theme and read as plain text — give it a clear outlined-primary affordance. */
-#edit-booking-overlay button[onclick*="upcomingSave"]{border:1px solid #111111 !important;border-radius:10px;font-weight:600}
-/* No beige — neutralise leftover cream/beige surfaces to white / light grey. */
-.assist-panel,.nb-overlay{background:rgba(255,255,255,.97) !important}
-/* .cal-hd keeps the page's own white — a grey band is a filled header. */
-.notif-badge-num{border-color:var(--westmere-navy,#102a43) !important}
-/* REMOVED: [style*="#ffffff"]{background:#f1f1f1 !important} — a pre-redesign
-   hack that repainted ANY element whose inline style so much as MENTIONED
-   #ffffff. It is what turned CALL, NAVIGATE, PICKUP and DROP-OFF into grey
-   slabs while their own markup said white, and no amount of editing that
-   markup could win against it. White surfaces are the design now; the rule has
-   nothing left to correct. GUARDRAIL: server/tests/no-fills.test.js */
-
-/* ── BROWSER AUTOFILL ──
-   Chrome/Safari paint an autofilled field with their own yellow background,
-   which is what turned the owner app fields yellow. An autofilled control's
-   background cannot be set directly, so cover it with an inset box-shadow and
-   set the text with -webkit-text-fill-color (plain colour is ignored while a
-   field is autofilled). The 9999s transition stops the yellow flashing in
-   before the shadow paints. Colours match this surface's real field
-   background (#ffffff) and text (#111111) so it is seamless.
-   NB: this must live in the page's OWN head stylesheet. The final closing
-   style tag in this file belongs to a print window built inside a JS string,
-   and never write a literal closing style tag in here — the HTML tokenizer
-   does not read CSS comments and would end the stylesheet right there.
-   GUARDRAIL: server/tests/autofill.test.js */
+<!-- The all-white restyle has been removed. It forced every surface white and
+     every word black, then rescued inline colours with 68 [style*="color:var(--navy)"]
+     selectors that matched the STRING rather than the colour — which is how the
+     dispatch sheet's save-tick label came to render white on white. The palette is
+     the token layer's again: navy, gold and white, from westmere-theme.css.
+     GUARDRAIL: server/tests/button-style.test.js -->
+<!-- AUTOFILL, KEPT WHEN THE ALL-WHITE RESTYLE WENT. Chrome paints a saved field
+     yellow and ignores background-color; a 1000px inset shadow is the only thing
+     that covers it, and the hover/focus variants matter because the yellow comes
+     back on both. This lived inside the removed block and has to outlive it: the
+     fields are still white, only the ink changed with the palette.
+     Never write a literal closing style tag in a CSS comment here — the HTML
+     tokenizer does not read CSS comments and would end the stylesheet.
+     GUARDRAIL: server/tests/autofill.test.js -->
+<style id="wm-autofill">
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
@@ -750,8 +652,8 @@ select:-webkit-autofill:hover,
 select:-webkit-autofill:focus{
   -webkit-box-shadow:0 0 0 1000px #ffffff inset;
   box-shadow:0 0 0 1000px #ffffff inset;
-  -webkit-text-fill-color:#111111;
-  caret-color:#111111;
+  -webkit-text-fill-color:#102a43;
+  caret-color:#102a43;
   transition:background-color 9999s ease-in-out 0s;
 }
 </style><link rel="stylesheet" href="/wm-buttons.css">
@@ -1156,7 +1058,7 @@ select:-webkit-autofill:focus{
     <!-- Drivers -->
     <div class="pg" id="pg-drivers">
       <div class="sec-title"><em>Drivers</em></div>
-      <div class="sec-sub">Onboarding &amp; document review</div>
+      <div class="sec-sub" id="people-sub">Onboarding &amp; document review</div>
 
       <!-- Add Driver form -->
       <div class="card" id="add-driver-card">
@@ -1185,10 +1087,26 @@ select:-webkit-autofill:focus{
         </div>
       </div>
 
+      <!-- ── DRIVERS AND OPERATORS ───────────────────────────────────────────
+           Two different relationships, so two lists rather than one with a
+           badge: a DRIVER works for him and carries a running balance; an
+           OPERATOR is another firm, settled by invoice. The tab bar is the
+           house component (.wm-tab) so the gold underline is not reinvented.
+           GUARDRAIL: server/tests/driver-ledger.test.js -->
+      <div style="display:flex;gap:1.4rem;padding:0 .1rem;border-bottom:1px solid var(--westmere-line,#dfe5ea);margin-bottom:.2rem">
+        <div class="wm-tab on" id="tab-drivers" onclick="owSetPeopleTab('drivers')" style="color:var(--westmere-navy,#102a43);cursor:pointer">Drivers</div>
+        <div class="wm-tab" id="tab-operators" onclick="owSetPeopleTab('operators')" style="color:rgba(27,27,26,.45);cursor:pointer">Operators</div>
+      </div>
+      <div id="drivers-pane">
+      <input id="drv-search" type="search" placeholder="Search drivers…" oninput="loadDriversList()"
+             style="width:100%;margin:.75rem 0 .2rem;padding:.6rem .7rem;font-family:inherit;font-size:.95rem;border:1px solid var(--westmere-line-strong,#c8d1d9);border-radius:7px">
+      <div id="drv-count" class="wm-lab" style="margin:.5rem .1rem .2rem"></div>
       <!-- Driver list -->
       <div id="drivers-list">
         <div style="padding:1rem;text-align:center;font-size:.88rem;color:rgba(27,27,26,.4)">Loading…</div>
       </div>
+      </div><!-- /drivers-pane -->
+      <div id="operators-pane" style="display:none"></div>
     </div>
 
 
@@ -1223,14 +1141,20 @@ select:-webkit-autofill:focus{
       <div id="inv-sheet" style="display:none">
         <div style="display:flex;align-items:center;gap:.5rem;padding:.75rem 1rem;background:#ffffff">
           <button onclick="invCloseSheet()" style="background:transparent;border:none;color:#1a1a1a;font-size:1.4rem;line-height:1;cursor:pointer;padding:0 .3rem 0 0">←</button>
-          <span style="font-family:var(--serif);font-size:1.05rem;color:#1a1a1a;font-weight:300;letter-spacing:.04em">New Invoice</span>
+          <div>
+            <div id="inv-sheet-title" style="font-family:var(--serif);font-size:1.05rem;color:#1a1a1a;font-weight:300;letter-spacing:.04em">New Invoice</div>
+            <!-- ONE FORM, TWO ERRANDS. Raising an invoice and correcting one ask
+                 for the same things, so they are the same screen; the only
+                 difference worth showing is that a correction keeps its number. -->
+            <div id="inv-sheet-no-line" style="display:none;font-size:.78rem;color:rgba(27,27,26,.5)">Same number — <span id="inv-edit-no" style="font-family:var(--sans);letter-spacing:.06em;color:var(--navy)"></span></div>
+          </div>
         </div>
         <div style="padding:1rem">
 
           <!-- Mode toggle -->
           <div style="display:flex;gap:.4rem;margin-bottom:1rem;border-bottom:1px solid rgba(27,27,26,.1);padding-bottom:.75rem">
-            <button id="inv-mode-account" onclick="invSetMode('account')" style="flex:1;padding:.55rem;font-size:.82rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:5px;border:1px solid rgba(27,27,26,.2);background:#ffffff;color:#1a1a1a">Account Customer</button>
-            <button id="inv-mode-bespoke" onclick="invSetMode('bespoke')" style="flex:1;padding:.55rem;font-size:.82rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:5px;border:1px solid rgba(27,27,26,.2);background:transparent;color:var(--navy)">One-off Invoice</button>
+            <button id="inv-mode-account" class="wm-seg on" onclick="invSetMode('account')" style="flex:1;padding:.55rem;font-size:.82rem;font-weight:500">Account Customer</button>
+            <button id="inv-mode-bespoke" class="wm-seg" onclick="invSetMode('bespoke')" style="flex:1;padding:.55rem;font-size:.82rem;font-weight:500">One-off Invoice</button>
           </div>
 
           <!-- Account customer mode -->
@@ -1242,8 +1166,8 @@ select:-webkit-autofill:focus{
             <div style="margin-bottom:.7rem">
               <div style="font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.4rem">Period</div>
               <div style="display:flex;gap:.4rem;margin-bottom:.5rem">
-                <button id="inv-btn-week" onclick="invSetPeriod('week')" style="flex:1;padding:.45rem;font-size:.79rem;letter-spacing:.06em;text-transform:uppercase;font-family:var(--sans);cursor:pointer;border-radius:5px;border:1px solid rgba(27,27,26,.2);background:transparent;color:var(--navy)">Last Week</button>
-                <button id="inv-btn-month" onclick="invSetPeriod('month')" style="flex:1;padding:.45rem;font-size:.79rem;letter-spacing:.06em;text-transform:uppercase;font-family:var(--sans);cursor:pointer;border-radius:5px;border:1px solid rgba(27,27,26,.2);background:transparent;color:var(--navy)">Last Month</button>
+                <button id="inv-btn-week" class="wm-seg" onclick="invSetPeriod('week')" style="flex:1;padding:.45rem;font-size:.79rem">Last Week</button>
+                <button id="inv-btn-month" class="wm-seg" onclick="invSetPeriod('month')" style="flex:1;padding:.45rem;font-size:.79rem">Last Month</button>
               </div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem">
                 <div>
@@ -1291,13 +1215,25 @@ select:-webkit-autofill:focus{
               <input id="inv-save-customer" type="checkbox" style="width:16px;height:16px;margin-top:.05rem;accent-color:var(--navy);cursor:pointer;flex-shrink:0">
               <span>Save this recipient as a customer for future bookings &amp; invoices <span style="color:rgba(27,27,26,.45)">(requires an email)</span></span>
             </label>
+          </div>
+
+          <!-- ── THE TRIPS ───────────────────────────────────────────────
+               Raising an ACCOUNT invoice does not list them: the customer and
+               the month are chosen above and the server gathers the bookings
+               itself. CORRECTING one does — the journeys exist by then, and
+               they are what a correction is usually about. So this block is
+               not part of either mode; it belongs to whether there is an
+               invoice yet. It sat inside the one-off branch, which is why
+               correcting an account invoice in this form would have shown a
+               customer, a month, and nothing to fix. -->
+          <div id="inv-lines-block">
             <div id="ni-items-cap" style="font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.3rem">Line Items *</div>
-            <div id="ni-head-simple" style="display:grid;grid-template-columns:100px 1fr 80px 28px;gap:.3rem;margin-bottom:.2rem">
-              <div style="font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.35)">Date</div>
-              <div style="font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.35)">Description</div>
-              <div style="font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.35);text-align:right">Amt £</div>
-              <div></div>
-            </div>
+            <!-- DATE · DESCRIPTION · AMT £ was the heading for a row of three
+                 boxes. A line is a JOURNEY now — from, to, date, fee, fare —
+                 and each box carries its own caption, so the strip labelled
+                 three columns that are not there and sat a hundred pixels left
+                 of the ones that are. The job sheet's heading (#ni-op-head)
+                 belongs to a real grid and stays. -->
             <!-- ── THE JOB SHEET ──────────────────────────────────────────
                  An operator sends a sheet with a row per job and a column for
                  every figure that moves the money: the fare, the toll, what the
@@ -1362,10 +1298,54 @@ select:-webkit-autofill:focus{
             </div>
           </div>
 
+          <!-- ── ADJUSTMENTS ─────────────────────────────────────────────
+               Everything here has a right answer the screen already knows: the
+               invoice is issued today, due in fourteen days, and comes to what
+               the lines add up to. Nine invoices in ten are sent without any of
+               it being touched — so it is folded away, and the trips, which are
+               the part he is actually typing, are what the form opens on.
+
+               FEES AND THE TOTAL are the two money figures and they sit side by
+               side: the fee is the reason the total is not the sum of the lines.
+               The fee's LABEL is words, and gets the width of the box.      -->
+          <details id="inv-adjust" style="margin-bottom:.9rem;border:1px solid rgba(27,27,26,.15);border-radius:8px;background:rgba(27,27,26,.02)">
+            <summary style="padding:.6rem .7rem;cursor:pointer;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.55);font-family:var(--sans)">Adjustments <span id="inv-adjust-hint" style="text-transform:none;letter-spacing:0;color:rgba(27,27,26,.4)"></span></summary>
+            <div style="padding:0 .7rem .7rem">
+              <div style="display:flex;gap:.6rem;margin-bottom:.8rem">
+                <div style="flex:1"><label style="display:block;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5);margin:0 0 .25rem">Issued</label><input id="inv-edit-issued" type="date" style="width:100%;box-sizing:border-box;padding:.55rem;font-size:.9rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:6px;background:#fff"></div>
+                <div style="flex:1"><label style="display:block;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5);margin:0 0 .25rem">Due</label><input id="inv-edit-due" type="date" style="width:100%;box-sizing:border-box;padding:.55rem;font-size:.9rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:6px;background:#fff"></div>
+              </div>
+              <div style="display:flex;gap:.7rem;align-items:flex-end">
+                <div style="flex:1;min-width:0">
+                  <label style="display:block;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5);margin:0 0 .25rem">Fees</label>
+                  <div style="display:flex;gap:.4rem;align-items:center">
+                    <span style="font-family:var(--serif);font-size:1.1rem;color:var(--navy)">&pound;</span>
+                    <input id="inv-edit-fees" type="number" step="0.01" placeholder="0.00" oninput="invSyncTotal()" style="flex:1;min-width:0;text-align:right;padding:.5rem;font-size:1rem;font-family:var(--serif);border:1px solid rgba(27,27,26,.2);border-radius:6px;background:#fff">
+                  </div>
+                </div>
+                <div style="flex:1;min-width:0">
+                  <label style="display:block;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5);margin:0 0 .25rem">Total</label>
+                  <div style="display:flex;gap:.4rem;align-items:center">
+                    <span style="font-family:var(--serif);font-size:1.1rem;color:var(--navy)">&pound;</span>
+                    <input id="inv-edit-total" type="number" step="0.01" style="flex:1;min-width:0;padding:.5rem;font-size:1rem;font-family:var(--serif);border:1px solid rgba(27,27,26,.2);border-radius:6px;text-align:right">
+                  </div>
+                </div>
+              </div>
+              <input id="inv-edit-fees-label" placeholder="What the fee is for &mdash; e.g. Parking &amp; tolls" oninput="invSyncTotal()" style="width:100%;box-sizing:border-box;margin-top:.5rem;padding:.5rem;font-size:.9rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:6px;background:#fff">
+              <label style="display:flex;align-items:center;gap:.5rem;font-size:.85rem;color:var(--navy);cursor:pointer;margin-top:.6rem">
+                <input id="inv-edit-manual" type="checkbox" onchange="invSyncTotal()" style="width:16px;height:16px">
+                Set the total by hand
+              </label>
+              <div id="inv-edit-feesnote" style="margin-top:.4rem;font-size:.76rem;color:rgba(27,27,26,.5)">Leave the fee blank for none.</div>
+              <div id="inv-edit-sumnote" style="margin-top:.4rem;font-size:.76rem;color:rgba(27,27,26,.5)"></div>
+            </div>
+          </details>
+
           <div id="inv-err" style="display:none;padding:.55rem .8rem;background:rgba(156,40,40,.08);color:#9C2828;font-size:.88rem;border-radius:6px;margin-bottom:.6rem"></div>
           <div style="display:flex;gap:.5rem">
             <button id="inv-preview-btn" onclick="invPreview()" style="flex:1;padding:.7rem;font-size:.82rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:6px;border:1px solid rgba(27,27,26,.2);background:transparent;color:var(--navy)">Preview / Download</button>
             <button onclick="invSend()" id="inv-send-btn" style="flex:1;padding:.7rem;background:#ffffff;color:#102a43;border:1px solid #102a43;font-family:var(--sans);font-size:.82rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:6px">Send to Email</button>
+            <button onclick="invEditSave()" id="inv-edit-save" style="display:none;flex:1;padding:.7rem;background:#ffffff;color:#102a43;border:1px solid #102a43;font-family:var(--sans);font-size:.82rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:6px">Save Correction</button>
           </div>
         </div>
       </div>
@@ -1433,103 +1413,13 @@ select:-webkit-autofill:focus{
          is how they will match the corrected one to it. Kind and customer are
          not here either — an edit screen that could re-point an invoice at
          another customer is a way to bill the wrong person. -->
-    <div id="inv-edit-sheet" style="display:none;position:fixed;inset:0;z-index:60;background:rgba(16,42,67,.35);align-items:flex-start;justify-content:center;overflow:auto;padding:1.2rem">
-      <div style="width:100%;max-width:560px;background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(16,42,67,.3)">
-        <div style="display:flex;align-items:center;gap:.5rem;padding:.8rem 1rem;border-bottom:1px solid rgba(27,27,26,.08)">
-          <button onclick="invEditClose()" style="background:transparent;border:none;color:#1a1a1a;font-size:1.4rem;line-height:1;cursor:pointer;padding:0 .3rem 0 0">&larr;</button>
-          <div>
-            <div style="font-family:var(--serif);font-size:1.05rem;color:#1a1a1a;letter-spacing:.04em">Correct this invoice</div>
-            <div style="font-size:.78rem;color:rgba(27,27,26,.5)">Same number &mdash; <span id="inv-edit-no" style="font-family:var(--sans);letter-spacing:.06em;color:var(--navy)"></span></div>
-          </div>
-        </div>
-        <div style="padding:1rem">
-
-          <p style="margin:0 0 .3rem;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5)">Bill to</p>
-          <div style="display:grid;gap:.5rem;margin-bottom:1rem">
-            <input id="inv-edit-name"  placeholder="Name"    style="width:100%;box-sizing:border-box;padding:.55rem;font-size:.9rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:6px;background:#fff">
-            <input id="inv-edit-email" placeholder="Email"   style="width:100%;box-sizing:border-box;padding:.55rem;font-size:.9rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:6px;background:#fff">
-            <input id="inv-edit-phone" placeholder="Phone"   style="width:100%;box-sizing:border-box;padding:.55rem;font-size:.9rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:6px;background:#fff">
-            <textarea id="inv-edit-addr" rows="3" placeholder="Address" style="width:100%;box-sizing:border-box;padding:.55rem;font-size:.9rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:6px;background:#fff;resize:vertical"></textarea>
-          </div>
-
-          <div style="display:flex;gap:.6rem;margin-bottom:1rem">
-            <div style="flex:1"><label style="display:block;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5);margin:0 0 .25rem">Issued</label><input id="inv-edit-issued" type="date" style="width:100%;box-sizing:border-box;padding:.55rem;font-size:.9rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:6px;background:#fff"></div>
-            <div style="flex:1"><label style="display:block;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5);margin:0 0 .25rem">Due</label><input id="inv-edit-due" type="date" style="width:100%;box-sizing:border-box;padding:.55rem;font-size:.9rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:6px;background:#fff"></div>
-          </div>
-
-          <div style="display:flex;align-items:baseline;justify-content:space-between;margin:0 0 .3rem">
-            <p style="margin:0;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5)">Lines</p>
-            <button onclick="invEditAdd()" style="padding:.25rem .6rem;font-size:.75rem;border:1px solid rgba(27,27,26,.2);background:#fff;border-radius:5px;cursor:pointer;color:var(--navy)">+ Add line</button>
-          </div>
-          <div id="inv-edit-lines" style="margin-bottom:.8rem"></div>
-
-          <!-- FEES BESIDE THE AMOUNT.
-               The owner asked for it "next to fare, manually added", and he is
-               right that it belongs there: fees and the total are the two money
-               figures on this sheet and they are read together — the fee is the
-               reason the total is not what the lines add up to. Split across two
-               boxes they were two separate decisions; side by side they are one.
-
-               Still its own field and NOT another line item, because a line
-               prints inside the journey table and "Parking & tolls" is not a
-               journey. Blank or zero and no row appears on the invoice. -->
-          <div style="border:1px solid rgba(27,27,26,.15);border-radius:8px;padding:.7rem;margin-bottom:1rem;background:rgba(27,27,26,.02)">
-            <div style="display:flex;gap:.7rem;align-items:flex-end">
-              <div style="flex:1;min-width:0">
-                <label style="display:block;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5);margin:0 0 .25rem">Fees</label>
-                <div style="display:flex;gap:.4rem;align-items:center">
-                  <span style="font-family:var(--serif);font-size:1.1rem;color:var(--navy)">&pound;</span>
-                  <input id="inv-edit-fees" type="number" step="0.01" placeholder="0.00" oninput="invEditSyncTotal()" style="flex:1;min-width:0;text-align:right;padding:.5rem;font-size:1rem;font-family:var(--serif);border:1px solid rgba(27,27,26,.2);border-radius:6px;background:#fff">
-                </div>
-              </div>
-              <div style="flex:1;min-width:0">
-                <label style="display:block;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5);margin:0 0 .25rem">Total</label>
-                <div style="display:flex;gap:.4rem;align-items:center">
-                  <span style="font-family:var(--serif);font-size:1.1rem;color:var(--navy)">&pound;</span>
-                  <input id="inv-edit-total" type="number" step="0.01" style="flex:1;min-width:0;padding:.5rem;font-size:1rem;font-family:var(--serif);border:1px solid rgba(27,27,26,.2);border-radius:6px;text-align:right">
-                </div>
-              </div>
-            </div>
-            <!-- THE FEE'S LABEL is words, not money, so it gets the width of the
-                 box rather than a slot between two number fields. Squeezed in
-                 beside them on a phone it showed "Park" — he could not read
-                 back what he had typed. The two AMOUNTS stay side by side,
-                 which is the part that had to sit together. -->
-            <input id="inv-edit-fees-label" placeholder="What the fee is for &mdash; e.g. Parking &amp; tolls" oninput="invEditSyncTotal()" style="width:100%;box-sizing:border-box;margin-top:.5rem;padding:.5rem;font-size:.9rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:6px;background:#fff">
-            <!-- THE SAME TWO CONTROLS AS THE CREATE FORM, so a correction can
-                 turn a customer invoice into an operator one, change the rate,
-                 or take the commission off entirely. -->
-            <label style="display:flex;align-items:center;gap:.5rem;font-size:.85rem;color:var(--navy);cursor:pointer;margin-top:.6rem">
-              <input id="inv-edit-commission" type="checkbox" onchange="invEditSyncTotal()" style="width:16px;height:16px">
-              Operator invoice &mdash; deduct commission
-            </label>
-            <div id="inv-edit-rate-wrap" style="display:none;align-items:center;gap:.4rem;margin-top:.4rem">
-              <span style="font-size:.8rem;color:rgba(27,27,26,.55)">Rate</span>
-              <input id="inv-edit-commission-pct" type="number" step="0.5" min="0" max="99.9" value="10"
-                     oninput="invEditSyncTotal()"
-                     style="width:74px;text-align:right;padding:.4rem;font-size:.9rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:5px;background:#fff">
-              <span style="font-family:var(--serif);font-size:1rem;color:var(--navy)">%</span>
-              <span style="font-size:.75rem;color:rgba(27,27,26,.45)">of the fares</span>
-            </div>
-            <label style="display:flex;align-items:center;gap:.5rem;font-size:.85rem;color:var(--navy);cursor:pointer;margin-top:.6rem">
-              <input id="inv-edit-manual" type="checkbox" onchange="invEditSyncTotal()" style="width:16px;height:16px">
-              Set the total by hand
-            </label>
-            <div id="inv-edit-feesnote" style="margin-top:.4rem;font-size:.76rem;color:rgba(27,27,26,.5)">Leave the fee blank for none.</div>
-            <div id="inv-edit-sumnote" style="margin-top:.4rem;font-size:.76rem;color:rgba(27,27,26,.5)"></div>
-          </div>
-
-          <label style="display:block;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.5);margin:0 0 .25rem">Notes</label>
-          <textarea id="inv-edit-notes" rows="3" style="width:100%;box-sizing:border-box;padding:.55rem;font-size:.9rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:6px;background:#fff;resize:vertical;margin-bottom:1rem"></textarea>
-
-          <div style="display:flex;gap:.5rem">
-            <button onclick="invEditClose()" style="flex:1;padding:.7rem;font-size:.82rem;letter-spacing:.08em;text-transform:uppercase;font-family:var(--sans);font-weight:500;cursor:pointer;border-radius:6px;border:1px solid rgba(27,27,26,.2);background:#fff;color:var(--navy)">Cancel</button>
-            <button id="inv-edit-save" onclick="invEditSave()" style="flex:2;padding:.7rem;font-size:.82rem;letter-spacing:.1em;text-transform:uppercase;font-family:var(--sans);font-weight:600;cursor:pointer;border-radius:6px;border:2px solid var(--navy);background:transparent;color:var(--navy)">Save Correction</button>
-          </div>
-          <p style="margin:.6rem 0 0;font-size:.75rem;color:rgba(27,27,26,.5);text-align:center">Saving updates this invoice. Download and Send will use the corrected version.</p>
-        </div>
-      </div>
-    </div>
+    <!-- The invoice EDIT sheet was here: a second form, with its own lines
+         renderer, its own arithmetic and its own fee rules, for the same
+         four things the create form already asks for. The two drifted — the
+         create form grew the address lookup and the job-sheet layout and the
+         edit form never got either, so a corrected journey was typed by hand
+         into a plain box. There is one form now (#inv-sheet); invEditOpen()
+         fills it from the saved invoice and the Save button PATCHes. -->
 
     <!-- ── New Booking Form Sheet ──────────────────── -->
     <div id="new-booking-sheet" style="display:none">
@@ -2382,26 +2272,53 @@ async function loadDriversList(){
       if(oa!==ob)return oa-ob;
       return (a.full_name||'').localeCompare(b.full_name||'');
     });
-    el.innerHTML=drivers.map(function(drv){
-      return '<div class="card" id="drv-card-'+drv.id+'">'
-        // Message him without leaving the Drivers list — same letterhead as
-        // everything else that goes out under the company name.
-        +(drv.email?('<button onclick="dispMessageDriver('+drv.id+',\''+String(drv.full_name||'').replace(/\'/g,"\\'")+'\')" style="float:right;margin:.5rem .6rem 0 0;padding:.35rem .7rem;background:transparent;border:1px solid rgba(27,27,26,.15);border-radius:7px;font-family:inherit;font-size:.76rem;color:var(--westmere-navy,#102a43);cursor:pointer">Message</button>'):'')
-        +'<div class="ch" style="cursor:pointer" onclick="toggleDriverDocs('+drv.id+')">'
-        +'<div style="display:flex;align-items:center;gap:.6rem">'
-        +'<div style="font-family:var(--serif);font-size:1.05rem;color:var(--navy)">'+owEsc(drv.full_name||'Driver')+'</div>'
-        +_obadge(drv.onboarding_status)
-        +_obal(BAL[drv.id])
-        +'</div>'
-        +'<div style="display:flex;align-items:center;gap:.5rem">'
-        +'<button onclick="event.stopPropagation();owLedger('+drv.id+',\''+owEsc(drv.full_name||'this driver')+'\')" style="padding:.25rem .65rem;background:transparent;border:1px solid rgba(27,27,26,.15);color:var(--westmere-navy,#102a43);font-family:var(--sans);font-size:.76rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:5px">Ledger</button>'
-        +'<button onclick="event.stopPropagation();deleteDriver('+drv.id+',\''+owEsc(drv.full_name||'this driver')+'\')" style="padding:.25rem .65rem;background:transparent;border:1px solid rgba(180,30,30,.4);color:#b41e1e;font-family:var(--sans);font-size:.76rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:5px">Remove</button>'
-        +'<span id="drv-toggle-'+drv.id+'" style="font-size:.87rem;color:rgba(27,27,26,.4)">▾</span>'
-        +'</div>'
-        +'</div>'
-        +'<div id="drv-docs-'+drv.id+'" style="display:none"></div>'
-        +'</div>';
-    }).join('');
+    /* ── THE LIST, BUILT TO GROW ─────────────────────────────────────────────
+       One row per driver: who, what he drives, what he is on, and what he is
+       owed. It opens his page — the whole row, not a button, because on a phone
+       a 40px target beside four others is how the wrong driver gets opened.
+
+       Only the first eight are drawn. The owner has twelve today and will have
+       more; a list that renders everything is fine until the day it is not, and
+       the search box above is the answer for the rest.
+       GUARDRAIL: server/tests/driver-ledger.test.js */
+    var q = ((document.getElementById('drv-search')||{}).value||'').trim().toLowerCase();
+    var all = drivers;
+    if (q) drivers = drivers.filter(function(d){
+      return ((d.full_name||'')+' '+(d.reg||'')+' '+(d.vehicle||'')+' '+(d.email||'')).toLowerCase().indexOf(q) !== -1;
+    });
+    /* ORDERED BY WHAT HE OWES. The question this screen answers is "who am I
+       behind with", so the money leads and drivers at zero fall to the bottom in
+       name order. Sorted by name, the one that matters is the hardest to find on
+       a list built to grow. */
+    drivers.sort(function (a, b) {
+      var ba = Number((BAL[a.id] || {}).balance || 0), bb = Number((BAL[b.id] || {}).balance || 0);
+      if (ba !== bb) return bb - ba;
+      return (a.full_name || '').localeCompare(b.full_name || '');
+    });
+    var shown = drivers.slice(0, _OW_DRV_ALL ? drivers.length : 8);
+    var cnt = document.getElementById('drv-count');
+    if (cnt) cnt.textContent = all.length + (all.length === 1 ? ' driver' : ' drivers')
+      + (q ? ' · ' + drivers.length + ' matching' : '');
+    el.innerHTML = shown.map(function (drv) {
+      var b = BAL[drv.id] || {};
+      var owed = b.balance === null || b.balance === undefined ? null : Number(b.balance);
+      var pct = (drv.commission_pct === null || drv.commission_pct === undefined) ? 10 : Number(drv.commission_pct);
+      var initials = (drv.full_name||'?').split(/\s+/).map(function(x){return x.charAt(0);}).join('').slice(0,2).toUpperCase();
+      var pill = owed === null ? ''
+        : '<span class="wm-pill' + (owed > 0 ? ' owed' : '') + '">'
+          + (owed < 0 ? '−' : '') + '£' + Math.abs(owed).toFixed(2) + '</span>';
+      return '<div onclick="owDriverOpen(' + drv.id + ')" style="display:flex;align-items:center;gap:.7rem;padding:.75rem .2rem;border-bottom:1px solid var(--westmere-line,#dfe5ea);cursor:pointer">'
+        + '<div class="wm-ring" style="width:36px;height:36px;font-family:var(--serif);font-size:.85rem">' + owEsc(initials) + '</div>'
+        + '<div style="flex:1;min-width:0">'
+          + '<div style="font-family:var(--serif);font-size:1.02rem;color:var(--westmere-navy,#102a43);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + owEsc(drv.full_name || 'Driver') + '</div>'
+          + '<div style="font-family:var(--sans);font-size:.76rem;color:rgba(27,27,26,.55);margin-top:.12rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'
+            + owEsc([drv.vehicle, drv.reg].filter(Boolean).join(' · ') || 'No car on file') + ' · ' + pct + '%</div>'
+        + '</div>' + pill
+        + '<span style="color:rgba(27,27,26,.35);font-size:1.05rem">›</span>'
+        + '</div>';
+    }).join('') + (drivers.length > shown.length
+      ? '<div onclick="_OW_DRV_ALL=true;loadDriversList()" style="padding:.8rem;text-align:center;font-family:var(--sans);font-size:.8rem;color:var(--westmere-navy,#102a43);cursor:pointer">Showing ' + shown.length + ' of ' + drivers.length + ' · Show all</div>'
+      : '');
   }catch(e){el.innerHTML='<div style="padding:1rem;color:var(--red);font-size:.9rem">Network error</div>';}
 }
 
@@ -2412,109 +2329,510 @@ async function loadDriversList(){
    dispatch sheet's save-tick label vanished. Every colour below uses
    --westmere-navy, which the restyle leaves alone.
    GUARDRAIL: server/tests/driver-ledger.test.js */
-/* ── THE BALANCE, ON THE CARD ────────────────────────────────────────────────
-   One figure, and which way it points. Positive is money we owe him; negative
-   is money he owes us, which is what a cash job leaves behind until it is netted
-   off his next payout. Nothing is computed here — `b` is the row the ledger
-   endpoint returned. */
-function _obal(b){
-  if(!b||b.balance===null||b.balance===undefined)return '';
-  var n=Number(b.balance);
-  var owed=n>=0;
-  var txt=(owed?'':'−')+'£'+Math.abs(n).toFixed(2);
-  return '<span title="'+(owed?'You owe this driver':'This driver owes you')+'" style="padding:.12rem .5rem;border-radius:20px;font-family:var(--sans);font-size:.74rem;letter-spacing:.06em;'
-    +(owed?'background:rgba(16,42,67,.08);color:var(--westmere-navy,#102a43)':'background:rgba(156,40,40,.09);color:#9C2828')
-    +'">'+txt+'</span>';
+/* ── THE BALANCE, ON THE CARD, AND THE DRIVER'S OWN PAGE ─────────────────────
+   One screen per driver: who he is and what he drives, his documents, what he
+   is on, what he is owed, every job behind that figure, and the two things the
+   owner actually does — send him a statement and record what he has been paid.
+
+   It is a full-screen layer over the list rather than a route, for the same
+   reason the dispatch sheet is: this app is one page, and a layer can be closed
+   without the device back button leaving the app. It pushes a history entry so
+   Back closes it.
+
+   EVERY FIGURE COMES FROM THE SERVER (/api/drivers/:id/ledger, which is
+   server/driver-ledger.js). Nothing here does money arithmetic: the screen and
+   the statement must not be able to disagree.
+   GUARDRAIL: server/tests/driver-ledger.test.js */
+var _OWDRV = null;          // whose page is open
+var _OWDRV_PERIOD = 'last-week';
+
+function owMoney(n) { return '£' + Math.abs(Number(n) || 0).toFixed(2); }
+
+/* Mon-Sun weeks and calendar months, worked out from the UK wall-clock date —
+   dates, not money, so this belongs in the browser (CLAUDE.md timezone rule:
+   build from literal components, never parse a date string as an instant). */
+function owPeriodRange(which) {
+  var today = new Date(new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/London' }) + 'T12:00:00');
+  var fmt = function (d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  };
+  var mon = new Date(today); mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7));
+  if (which === 'this-week') { var sun = new Date(mon); sun.setDate(mon.getDate() + 6); return { from: fmt(mon), to: fmt(sun) }; }
+  if (which === 'last-week') {
+    var lm = new Date(mon); lm.setDate(mon.getDate() - 7);
+    var ls = new Date(lm); ls.setDate(lm.getDate() + 6);
+    return { from: fmt(lm), to: fmt(ls) };
+  }
+  if (which === 'this-month') {
+    var first = new Date(today.getFullYear(), today.getMonth(), 1);
+    var last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    return { from: fmt(first), to: fmt(last) };
+  }
+  return { from: '', to: '' };                     // custom / all time
 }
 
-/* THE LEDGER, for one driver: every passed job, the running balance, what has
-   been paid, and a way to record a payment. Opened over the list rather than in
-   a new page — the owner is on a phone and a new tab is a trip he cannot get
-   back from (the same reason the invoice preview stopped opening one). */
-var _OWLEDGER=null;
-async function owLedger(id,name){
-  _OWLEDGER=id;
-  var ov=document.getElementById('ow-ledger');
-  if(!ov){
-    ov=document.createElement('div');
-    ov.id='ow-ledger';
-    ov.style.cssText='position:fixed;inset:0;z-index:9000;background:var(--westmere-paper,#fbfaf8);overflow-y:auto;-webkit-overflow-scrolling:touch';
+async function owDriverOpen(id) {
+  _OWDRV = id;
+  var ov = document.getElementById('ow-driver');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'ow-driver';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:9000;background:var(--westmere-white,#fff);overflow-y:auto;-webkit-overflow-scrolling:touch';
     document.body.appendChild(ov);
   }
-  ov.style.display='';
-  ov.innerHTML='<div style="max-width:720px;margin:0 auto;padding:1.2rem 1rem 3rem">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">'
-    +'<button onclick="owLedgerClose()" style="padding:.4rem .8rem;background:transparent;border:1px solid rgba(27,27,26,.18);border-radius:6px;font-family:inherit;font-size:.82rem;cursor:pointer">‹ Back</button>'
-    +'<div style="font-family:var(--serif);font-size:1.1rem;color:var(--westmere-navy,#102a43)">'+owEsc(name||'Driver')+'</div>'
-    +'<a href="/api/drivers/'+id+'/statement.pdf" target="_blank" rel="noopener" style="padding:.4rem .8rem;border:1px solid rgba(27,27,26,.18);border-radius:6px;font-size:.82rem;text-decoration:none;color:var(--westmere-navy,#102a43)">Statement</a>'
-    +'</div><div id="ow-ledger-body">Loading…</div></div>';
-  owLedgerLoad();
+  ov.style.display = '';
+  document.body.style.overflow = 'hidden';
+  ov.innerHTML = '<div style="max-width:720px;margin:0 auto;padding:1rem 1rem 3rem"><div id="ow-driver-body">Loading…</div></div>';
+  try { history.pushState({ driver: true }, '', location.href); _OWDRV_POPPED = true; } catch (e) {}
+  owDriverLoad();
 }
-function owLedgerClose(){
-  var ov=document.getElementById('ow-ledger');
-  if(ov)ov.style.display='none';
-  _OWLEDGER=null;
+var _OWDRV_POPPED = false;
+function owDriverClose(fromPop) {
+  var ov = document.getElementById('ow-driver');
+  if (ov) ov.style.display = 'none';
+  document.body.style.overflow = '';
+  _OWDRV = null;
+  if (!fromPop && _OWDRV_POPPED) { _OWDRV_POPPED = false; try { history.back(); } catch (e) {} }
+  _OWDRV_POPPED = false;
   loadDriversList();
 }
-async function owLedgerLoad(){
-  var body=document.getElementById('ow-ledger-body');
-  if(!body||!_OWLEDGER)return;
-  try{
-    var r=await fetch('/api/drivers/'+_OWLEDGER+'/ledger',{credentials:'include'});
-    var d=await r.json();
-    if(!r.ok||!d.ok){body.innerHTML='<div style="color:var(--red)">'+owEsc(d.error||'Could not load the ledger')+'</div>';return;}
-    var owed=Number(d.balance)>=0;
-    var m=function(n){return '£'+Math.abs(Number(n)||0).toFixed(2);};
-    var rows=(d.items||[]).map(function(it){
-      return '<div style="display:flex;justify-content:space-between;gap:.6rem;padding:.55rem 0;border-bottom:1px solid rgba(27,27,26,.06)">'
-        +'<div style="min-width:0"><div style="font-size:.92rem;color:var(--westmere-navy,#102a43);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+owEsc(it.route)+'</div>'
-        +'<div style="font-size:.76rem;color:rgba(27,27,26,.55)">'+owEsc(it.date)+' · '+owEsc(it.ref)+' · '+(it.paymentType==='cash'?'cash':'prepaid')+'</div></div>'
-        +'<div style="text-align:right;white-space:nowrap"><div style="font-size:.86rem;color:rgba(27,27,26,.6)">'+(Number(it.delta)<0?'−':'+')+m(it.delta)+'</div>'
-        +'<div style="font-size:.86rem;color:var(--westmere-navy,#102a43)">'+(Number(it.balanceAfter)<0?'−':'')+m(it.balanceAfter)+'</div></div></div>';
-    });
-    (d.settlements||[]).forEach(function(st){
-      rows.push('<div style="display:flex;justify-content:space-between;gap:.6rem;padding:.55rem 0;border-bottom:1px solid rgba(27,27,26,.06);background:rgba(16,42,67,.03)">'
-        +'<div><div style="font-size:.92rem;color:var(--westmere-navy,#102a43)">Paid'+(st.method?' · '+owEsc(st.method):'')+'</div>'
-        +'<div style="font-size:.76rem;color:rgba(27,27,26,.55)">'+owEsc(st.paid_on)+'</div></div>'
-        +'<div style="text-align:right;white-space:nowrap"><div style="font-size:.86rem;color:rgba(27,27,26,.6)">'+(Number(st.amount)<0?'+':'−')+m(st.amount)+'</div>'
-        +'<button onclick="owUndoSettlement('+st.id+')" style="background:none;border:none;color:#b41e1e;font-family:inherit;font-size:.78rem;cursor:pointer;padding:0">undo</button></div></div>');
-    });
-    body.innerHTML='<div style="border:1px solid rgba(16,42,67,.25);border-radius:8px;padding:.9rem 1rem;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:baseline">'
-      +'<div style="font-family:var(--sans);font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.6)">'+(owed?'You owe this driver':'This driver owes you')+'</div>'
-      +'<div style="font-family:var(--serif);font-size:1.6rem;color:'+(owed?'var(--navy)':'#b41e1e')+'">'+m(d.balance)+'</div></div>'
-      +(rows.join('')||'<div style="color:rgba(27,27,26,.45);padding:.6rem 0">No passed jobs yet.</div>')
-      +'<div style="margin-top:1.2rem;padding-top:1rem;border-top:1px solid rgba(27,27,26,.1)">'
-      +'<div style="font-family:var(--sans);font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.6);margin-bottom:.5rem">Record a payment</div>'
-      +'<div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">'
-      +'<input id="ow-settle-amt" type="number" step="0.01" inputmode="decimal" placeholder="Amount" style="width:120px;padding:.5rem .6rem;font-family:inherit;font-size:.9rem;border:1px solid rgba(27,27,26,.2);border-radius:6px">'
-      +'<input id="ow-settle-method" type="text" placeholder="Bank transfer" style="flex:1;min-width:140px;padding:.5rem .6rem;font-family:inherit;font-size:.9rem;border:1px solid rgba(27,27,26,.2);border-radius:6px">'
-      +'<button onclick="owRecordSettlement()" style="padding:.5rem .9rem;background:transparent;color:var(--westmere-navy,#102a43);border:var(--border-strong,1.5px) solid var(--westmere-navy,#102a43);border-radius:6px;font-family:inherit;font-size:.85rem;cursor:pointer">Record</button>'
-      +'</div><div style="margin-top:.45rem;font-size:.76rem;color:rgba(27,27,26,.55)">A payment to the driver is a positive amount; cash he hands back is negative.</div></div>';
-  }catch(e){body.innerHTML='<div style="color:var(--red)">Network error</div>';}
+window.addEventListener('popstate', function () {
+  if (document.getElementById('ow-driver') && document.getElementById('ow-driver').style.display !== 'none') owDriverClose(true);
+});
+
+async function owDriverLoad() {
+  var body = document.getElementById('ow-driver-body');
+  if (!body || !_OWDRV) return;
+  var drv = {}, led = {};
+  try {
+    var dr = await fetch('/api/drivers/' + _OWDRV, { credentials: 'include' });
+    var dd = await dr.json();
+    drv = dd.driver || dd || {};
+    var lr = await fetch('/api/drivers/' + _OWDRV + '/ledger', { credentials: 'include' });
+    led = await lr.json();
+    if (!lr.ok || !led.ok) throw new Error(led.error || 'Could not load the ledger');
+  } catch (e) {
+    body.innerHTML = '<div style="color:var(--red,#8B2222)">' + owEsc(e.message || 'Network error') + '</div>';
+    return;
+  }
+
+  var owed = Number(led.balance) >= 0;
+  var pct = (drv.commission_pct === null || drv.commission_pct === undefined) ? 10 : Number(drv.commission_pct);
+  var row = function (k, v, mono) {
+    return '<div style="display:flex;gap:.6rem;padding:.5rem 0;border-top:1px solid var(--westmere-line,#dfe5ea)">'
+      + '<div class="wm-lab" style="margin:0;width:104px;flex:0 0 auto">' + k + '</div>'
+      + '<div class="' + (mono ? 'wm-plate' : '') + '" style="flex:1;font-size:.95rem;color:var(--westmere-navy,#102a43)">' + v + '</div></div>';
+  };
+  var seg = function (id, label, on) {
+    return '<span onclick="owSetPeriod(\'' + id + '\')" style="flex:1;text-align:center;padding:.5rem .2rem;border-radius:7px;cursor:pointer;font-family:var(--sans);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;'
+      + (on ? 'border:var(--border-strong,1.5px) solid var(--westmere-navy,#102a43);background:var(--westmere-navy,#102a43);color:#fff'
+            : 'border:1px solid var(--westmere-line-strong,#c8d1d9);color:var(--westmere-navy,#102a43)') + '">' + label + '</span>';
+  };
+
+  var hist = (led.items || []).map(function (it) {
+    var neg = Number(it.delta) < 0;
+    var cover = Number(it.commission) === 0;
+    return '<div style="display:flex;gap:.6rem;padding:.6rem 0;border-top:1px solid var(--westmere-line,#dfe5ea)">'
+      + '<div style="flex:1;min-width:0"><div style="font-size:.93rem;color:var(--westmere-navy,#102a43);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + owEsc(it.route) + '</div>'
+      + '<div class="wm-lab" style="margin:.15rem 0 0;color:rgba(27,27,26,.5)">' + owEsc(it.date) + ' · ' + (it.paymentType === 'cash' ? 'cash' : 'prepaid') + (cover ? ' · cover job' : '') + '</div></div>'
+      + '<div style="text-align:right;white-space:nowrap"><div style="font-family:var(--sans);font-size:.76rem;' + (neg ? 'color:#9b1c1c' : 'color:rgba(27,27,26,.55)') + '">' + (neg ? '−' : '+') + owMoney(it.delta) + '</div>'
+      + '<div style="font-size:.9rem;color:var(--westmere-navy,#102a43)">' + (Number(it.balanceAfter) < 0 ? '−' : '') + owMoney(it.balanceAfter) + '</div></div></div>';
+  }).join('');
+
+  var paid = (led.settlements || []).map(function (st) {
+    return '<div style="display:flex;gap:.6rem;padding:.6rem 0;border-top:1px solid var(--westmere-line,#dfe5ea);background:#F6F8FA">'
+      + '<div style="flex:1"><div style="font-size:.93rem;color:var(--westmere-navy,#102a43)">Paid' + (st.method ? ' · ' + owEsc(st.method) : '') + '</div>'
+      + '<div class="wm-lab" style="margin:.15rem 0 0;color:rgba(27,27,26,.5)">' + owEsc(st.paid_on) + '</div></div>'
+      + '<div style="text-align:right"><div style="font-family:var(--sans);font-size:.76rem;color:#9b1c1c">−' + owMoney(st.amount) + '</div>'
+      + '<div onclick="owUndoSettlement(' + st.id + ')" style="font-family:var(--sans);font-size:.74rem;color:#9b1c1c;text-decoration:underline;cursor:pointer">undo</div></div></div>';
+  }).join('');
+
+  body.innerHTML =
+    '<div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.8rem">'
+      + '<div onclick="owDriverClose()" style="padding:.45rem .8rem;border:1px solid var(--westmere-line-strong,#c8d1d9);border-radius:7px;font-family:var(--sans);font-size:.76rem;letter-spacing:.1em;text-transform:uppercase;color:var(--westmere-navy,#102a43);cursor:pointer">‹ Drivers</div>'
+      + '<div style="flex:1;text-align:center;font-family:var(--serif);font-size:1.25rem;color:var(--westmere-navy,#102a43)">' + owEsc(drv.full_name || 'Driver') + '</div>'
+      + '<div style="width:5.4rem"></div></div>'
+    + '<div style="border:1px solid var(--westmere-line,#dfe5ea);border-radius:9px;padding:.2rem .8rem .6rem">'
+      + row('Phone', owEsc(drv.phone || '—')) + row('Email', owEsc(drv.email || '—'))
+      + row('Car', owEsc(drv.vehicle || 'Not on file')) + row('Registration', owEsc(drv.reg || '—'), true)
+    + '</div>'
+    + '<div onclick="toggleDriverDocs(' + _OWDRV + ')" style="margin-top:.6rem;border:1px solid var(--westmere-line,#dfe5ea);border-radius:9px;padding:.7rem .8rem;display:flex;align-items:center;gap:.6rem;cursor:pointer;background:#F6F8FA">'
+      + '<div style="flex:1"><div class="wm-lab" style="margin:0">Documents</div>'
+      + '<div style="font-family:var(--sans);font-size:.78rem;color:rgba(27,27,26,.55);margin-top:.2rem">Licence, insurance and PHV — tap to review</div></div>'
+      + '<span style="color:rgba(27,27,26,.35);font-size:1.05rem">›</span></div>'
+    + '<div id="drv-docs-' + _OWDRV + '" style="display:none"></div>'
+
+    + '<p class="wm-lab">Default commission</p><div class="wm-rule"></div>'
+    + '<div style="border:1px solid var(--westmere-line,#dfe5ea);border-radius:9px;padding:.8rem">'
+      + '<div style="display:flex;gap:.5rem">'
+        + '<span onclick="owSetCommission(10)" style="flex:1;text-align:center;padding:.55rem .2rem;border-radius:7px;cursor:pointer;font-family:var(--sans);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;'
+          + (pct > 0 ? 'border:var(--border-strong,1.5px) solid var(--westmere-navy,#102a43);background:var(--westmere-navy,#102a43);color:#fff' : 'border:1px solid var(--westmere-line-strong,#c8d1d9);color:var(--westmere-navy,#102a43)') + '">Charge ' + (pct > 0 ? pct : 10) + '%</span>'
+        + '<span onclick="owSetCommission(0)" style="flex:1;text-align:center;padding:.55rem .2rem;border-radius:7px;cursor:pointer;font-family:var(--sans);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;'
+          + (pct === 0 ? 'border:var(--border-strong,1.5px) solid var(--westmere-navy,#102a43);background:var(--westmere-navy,#102a43);color:#fff' : 'border:1px solid var(--westmere-line-strong,#c8d1d9);color:var(--westmere-navy,#102a43)') + '">No commission</span>'
+      + '</div>'
+      + '<div style="font-family:var(--sans);font-size:.76rem;color:rgba(27,27,26,.55);line-height:1.5;margin-top:.55rem">His default only. Every job asks again when you send it, so a cover job can go out at nothing without changing this.</div>'
+    + '</div>'
+
+    + '<p class="wm-lab">Balance</p><div class="wm-rule"></div>'
+    + '<div style="border:1px solid var(--westmere-line,#dfe5ea);border-radius:9px;padding:.8rem 1rem;display:flex;align-items:baseline;gap:.6rem">'
+      + '<div class="wm-lab" style="margin:0;flex:1">' + (owed ? 'You owe this driver' : 'This driver owes you') + '</div>'
+      + '<div style="font-family:var(--serif);font-size:1.6rem;color:' + (owed ? 'var(--westmere-navy,#102a43)' : '#9b1c1c') + '">' + owMoney(led.balance) + '</div></div>'
+
+    + '<p class="wm-lab">Work history</p><div class="wm-rule"></div>'
+    + (hist || '<div style="font-family:var(--sans);font-size:.8rem;color:rgba(27,27,26,.45);padding:.6rem 0">No jobs passed to him yet.</div>') + paid
+
+    + '<p class="wm-lab">Weekly statement</p><div class="wm-rule"></div>'
+    + '<div style="display:flex;gap:.4rem">'
+      + seg('this-week', 'This week', _OWDRV_PERIOD === 'this-week')
+      + seg('last-week', 'Last week', _OWDRV_PERIOD === 'last-week')
+      + seg('this-month', 'This month', _OWDRV_PERIOD === 'this-month')
+      + seg('all', 'All', _OWDRV_PERIOD === 'all')
+    + '</div>'
+    + '<div style="display:flex;gap:.5rem;margin-top:.6rem">'
+      + '<a id="ow-stmt-pdf" href="#" target="_blank" rel="noopener" style="flex:1;text-align:center;padding:.6rem;border:1px solid var(--westmere-navy,#102a43);border-radius:7px;font-family:var(--sans);font-size:.76rem;letter-spacing:.1em;text-transform:uppercase;color:var(--westmere-navy,#102a43);text-decoration:none">Preview PDF</a>'
+      + '<div onclick="owEmailStatement()" class="btn-primary" style="flex:1;text-align:center;padding:.6rem;border-radius:7px;font-family:var(--sans);font-size:.76rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Email to driver</div>'
+    + '</div>'
+
+    + '<p class="wm-lab">Record a payment</p><div class="wm-rule"></div>'
+    + '<div style="display:flex;gap:.5rem"><input id="ow-settle-amt" type="number" step="0.01" inputmode="decimal" placeholder="Amount" style="width:120px;padding:.55rem .6rem;font-family:inherit;font-size:.95rem;border:1px solid var(--westmere-line-strong,#c8d1d9);border-radius:7px">'
+      + '<input id="ow-settle-method" type="text" placeholder="Bank transfer" style="flex:1;min-width:120px;padding:.55rem .6rem;font-family:inherit;font-size:.95rem;border:1px solid var(--westmere-line-strong,#c8d1d9);border-radius:7px"></div>'
+    + '<div onclick="owRecordSettlement()" class="btn-primary" style="display:inline-block;margin-top:.55rem;padding:.6rem 1rem;border-radius:7px;font-family:var(--sans);font-size:.76rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Record</div>'
+    + '<div style="font-family:var(--sans);font-size:.76rem;color:rgba(27,27,26,.55);margin-top:.5rem">A payment to the driver is a positive amount; cash he hands back is negative.</div>';
+
+  owSetPeriod(_OWDRV_PERIOD, true);
 }
-async function owRecordSettlement(){
-  if(!_OWLEDGER)return;
-  var amt=parseFloat(document.getElementById('ow-settle-amt').value);
-  if(!isFinite(amt)||amt===0){showToast('Enter the amount you paid');return;}
-  var method=(document.getElementById('ow-settle-method').value||'').trim();
-  if(!confirm('Record £'+Math.abs(amt).toFixed(2)+(amt<0?' received from':' paid to')+' this driver?'))return;
-  try{
-    var r=await fetch('/api/drivers/'+_OWLEDGER+'/settlements',{method:'POST',credentials:'include',
-      headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:amt,method:method||null})});
-    var d=await r.json();
-    if(r.ok&&d.ok){showToast('Recorded');owLedgerLoad();}
-    else showToast(d.error||'Could not record it');
-  }catch(e){showToast('Network error');}
+
+/* The period only ever changes a LINK and a label — the figures on the page are
+   the whole relationship, not the period, and must not appear to move with it. */
+function owSetPeriod(which, quiet) {
+  _OWDRV_PERIOD = which;
+  var r = owPeriodRange(which);
+  var a = document.getElementById('ow-stmt-pdf');
+  if (a) a.href = '/api/drivers/' + _OWDRV + '/statement.pdf' + (r.from ? '?from=' + r.from + '&to=' + r.to : '');
+  if (!quiet) owDriverLoad();
 }
-async function owUndoSettlement(sid){
-  if(!_OWLEDGER)return;
-  if(!confirm('Remove this payment? The balance goes back up by that amount.'))return;
-  try{
-    var r=await fetch('/api/drivers/'+_OWLEDGER+'/settlements/'+sid,{method:'DELETE',credentials:'include'});
-    var d=await r.json();
-    if(r.ok&&d.ok){showToast('Removed');owLedgerLoad();}
-    else showToast(d.error||'Could not remove it');
-  }catch(e){showToast('Network error');}
+
+async function owEmailStatement() {
+  if (!_OWDRV) return;
+  var r = owPeriodRange(_OWDRV_PERIOD);
+  if (!r.from) { showToast('Choose a week or a month first'); return; }
+  if (!confirm('Email this statement to the driver for ' + r.from + ' → ' + r.to + '?')) return;
+  try {
+    var res = await fetch('/api/drivers/' + _OWDRV + '/statement', { method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ from: r.from, to: r.to }) });
+    var d = await res.json();
+    if (res.ok && d.ok) showToast('Statement emailed to ' + (d.sent_to || 'the driver'));
+    else showToast(d.error || 'Could not send it');
+  } catch (e) { showToast('Network error'); }
+}
+
+async function owSetCommission(pct) {
+  if (!_OWDRV) return;
+  try {
+    var r = await fetch('/api/drivers/' + _OWDRV, { method: 'PATCH', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ commission_pct: pct }) });
+    var d = await r.json();
+    if (r.ok && d.ok !== false) { showToast(pct ? 'Default set to ' + pct + '%' : 'No commission by default'); owDriverLoad(); }
+    else showToast(d.error || 'Could not change it');
+  } catch (e) { showToast('Network error'); }
+}
+
+async function owRecordSettlement() {
+  if (!_OWDRV) return;
+  var amt = parseFloat(document.getElementById('ow-settle-amt').value);
+  if (!isFinite(amt) || amt === 0) { showToast('Enter the amount you paid'); return; }
+  var method = (document.getElementById('ow-settle-method').value || '').trim();
+  if (!confirm('Record ' + owMoney(amt) + (amt < 0 ? ' received from' : ' paid to') + ' this driver?')) return;
+  try {
+    var r = await fetch('/api/drivers/' + _OWDRV + '/settlements', { method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: amt, method: method || null }) });
+    var d = await r.json();
+    if (r.ok && d.ok) { showToast('Recorded'); owDriverLoad(); } else showToast(d.error || 'Could not record it');
+  } catch (e) { showToast('Network error'); }
+}
+
+async function owUndoSettlement(sid) {
+  if (!_OWDRV) return;
+  if (!confirm('Remove this payment? The balance goes back up by that amount.')) return;
+  try {
+    var r = await fetch('/api/drivers/' + _OWDRV + '/settlements/' + sid, { method: 'DELETE', credentials: 'include' });
+    var d = await r.json();
+    if (r.ok && d.ok) { showToast('Removed'); owDriverLoad(); } else showToast(d.error || 'Could not remove it');
+  } catch (e) { showToast('Network error'); }
+}
+
+/* ── OPERATORS ───────────────────────────────────────────────────────────────
+   The other half of the people page. An operator is a customer we also pass work
+   to, so everything here hangs off the invoice we already raise: what they owe is
+   the total of their unpaid invoices, and marking one paid is what changes it.
+   No running balance, nothing netted, nothing to reconcile.
+   GUARDRAIL: server/tests/operators.test.js */
+var _OWOP = null;
+
+async function owLoadOperators() {
+  var pane = document.getElementById('operators-pane');
+  if (!pane) return;
+  pane.innerHTML = '<div style="padding:1rem;text-align:center;font-size:.88rem;color:rgba(27,27,26,.4)">Loading…</div>';
+  var ops = [];
+  try {
+    var r = await fetch('/api/operators', { credentials: 'include' });
+    var d = await r.json();
+    if (!r.ok || !d.ok) throw new Error(d.error || 'Could not load the operators');
+    ops = d.operators || [];
+  } catch (e) {
+    pane.innerHTML = '<div style="padding:1rem;color:var(--red,#8B2222);font-size:.9rem">' + owEsc(e.message) + '</div>';
+    return;
+  }
+  if (!ops.length) {
+    pane.innerHTML = '<div style="padding:1.6rem 1rem;text-align:center">'
+      + '<div style="font-family:var(--serif);font-size:1.05rem;color:var(--westmere-navy,#102a43)">No operators yet</div>'
+      + '<div style="font-family:var(--sans);font-size:.82rem;color:rgba(27,27,26,.55);margin-top:.4rem;line-height:1.6">'
+      + 'An operator is a firm you pass work to and settle by invoice. Open a customer and tick '
+      + '&ldquo;they are an operator&rdquo; to list them here.</div></div>';
+    return;
+  }
+  /* Ordered by what is outstanding — the same question as the drivers list, and
+     the same answer: the money leads. */
+  ops.sort(function (a, b) { return Number(b.owed || 0) - Number(a.owed || 0); });
+  pane.innerHTML = '<div class="wm-lab" style="margin:.9rem .1rem .3rem">' + ops.length
+      + (ops.length === 1 ? ' operator' : ' operators') + ' · settled by invoice</div>'
+    + ops.map(function (op) {
+      var name = op.company || op.full_name || 'Operator';
+      var initials = name.split(/\s+/).map(function (x) { return x.charAt(0); }).join('').slice(0, 2).toUpperCase();
+      var owed = Number(op.owed || 0);
+      return '<div onclick="owOperatorOpen(' + op.id + ')" style="display:flex;align-items:center;gap:.7rem;padding:.75rem .2rem;border-bottom:1px solid var(--westmere-line,#dfe5ea);cursor:pointer">'
+        + '<div class="wm-ring" style="width:36px;height:36px;font-family:var(--serif);font-size:.85rem">' + owEsc(initials) + '</div>'
+        + '<div style="flex:1;min-width:0"><div style="font-family:var(--serif);font-size:1.02rem;color:var(--westmere-navy,#102a43);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + owEsc(name) + '</div>'
+        + '<div style="font-family:var(--sans);font-size:.76rem;color:rgba(27,27,26,.55);margin-top:.12rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'
+        + owEsc(op.full_name && op.company ? op.full_name : (op.email || '')) + ' · ' + op.invoices + (op.invoices === 1 ? ' invoice' : ' invoices')
+        + (op.unpaid ? ' · ' + op.unpaid + ' unpaid' : '') + '</div></div>'
+        + (owed > 0 ? '<span class="wm-pill owed">£' + owed.toFixed(2) + '</span>' : '<span class="wm-pill">Settled</span>')
+        + '<span style="color:rgba(27,27,26,.35);font-size:1.05rem">›</span></div>';
+    }).join('');
+}
+
+async function owOperatorOpen(id) {
+  _OWOP = id;
+  var ov = document.getElementById('ow-operator');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'ow-operator';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:9000;background:var(--westmere-white,#fff);overflow-y:auto;-webkit-overflow-scrolling:touch';
+    document.body.appendChild(ov);
+  }
+  ov.style.display = '';
+  document.body.style.overflow = 'hidden';
+  ov.innerHTML = '<div style="max-width:720px;margin:0 auto;padding:1rem 1rem 3rem"><div id="ow-operator-body">Loading…</div></div>';
+  try { history.pushState({ operator: true }, '', location.href); _OWOP_POPPED = true; } catch (e) {}
+  owOperatorLoad();
+}
+var _OWOP_POPPED = false;
+function owOperatorClose(fromPop) {
+  var ov = document.getElementById('ow-operator');
+  if (ov) ov.style.display = 'none';
+  document.body.style.overflow = '';
+  _OWOP = null;
+  if (!fromPop && _OWOP_POPPED) { _OWOP_POPPED = false; try { history.back(); } catch (e) {} }
+  _OWOP_POPPED = false;
+  owLoadOperators();
+}
+window.addEventListener('popstate', function () {
+  var ov = document.getElementById('ow-operator');
+  if (ov && ov.style.display !== 'none') owOperatorClose(true);
+});
+
+async function owOperatorLoad() {
+  var body = document.getElementById('ow-operator-body');
+  if (!body || !_OWOP) return;
+  var d = {};
+  try {
+    var r = await fetch('/api/operators/' + _OWOP, { credentials: 'include' });
+    d = await r.json();
+    if (!r.ok || !d.ok) throw new Error(d.error || 'Could not load this operator');
+  } catch (e) {
+    body.innerHTML = '<div style="color:var(--red,#8B2222)">' + owEsc(e.message) + '</div>';
+    return;
+  }
+  var op = d.operator || {};
+  var name = op.company || op.full_name || 'Operator';
+  var row = function (k, v) {
+    return '<div style="display:flex;gap:.6rem;padding:.5rem 0;border-top:1px solid var(--westmere-line,#dfe5ea)">'
+      + '<div class="wm-lab" style="margin:0;width:104px;flex:0 0 auto">' + k + '</div>'
+      + '<div style="flex:1;font-size:.95rem;color:var(--westmere-navy,#102a43)">' + v + '</div></div>';
+  };
+  /* WHAT WE HAVE PASSED THEM, and whether it has been billed. An un-billed job
+     is the thing that needs doing, so it says so rather than looking like any
+     other row. */
+  var jobs = (d.jobs || []).map(function (j) {
+    var billed = !!j.invoiced;
+    return '<div style="display:flex;gap:.6rem;align-items:center;padding:.6rem 0;border-top:1px solid var(--westmere-line,#dfe5ea)">'
+      + '<div style="flex:1;min-width:0"><div style="font-size:.93rem;color:var(--westmere-navy,#102a43);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'
+      + owEsc(_shortAddr(j.pickup || '')) + ' → '
+      + owEsc(_shortAddr(j.destination || '')) + '</div>'
+      + '<div class="wm-lab" style="margin:.15rem 0 0;color:rgba(27,27,26,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + owEsc((j.date || '') + (j.time ? ' · ' + j.time : '') + ' · ' + (j.ref || '')) + '</div></div>'
+      + '<span class="wm-pill' + (billed ? '' : ' owed') + '">' + (billed ? 'Invoiced' : 'To invoice') + '</span>'
+      + '<div style="width:4.6rem;text-align:right;font-size:.95rem;color:var(--westmere-navy,#102a43)">£' + (Number(j.fare) || 0).toFixed(2) + '</div></div>';
+  }).join('');
+  var invoices = (d.invoices || []).map(function (i) {
+    var paid = !!Number(i.paid);
+    return '<div style="display:flex;gap:.6rem;align-items:center;padding:.6rem 0;border-top:1px solid var(--westmere-line,#dfe5ea)">'
+      + '<div style="flex:1;min-width:0"><div style="font-size:.93rem;color:var(--westmere-navy,#102a43)">' + owEsc(i.invoice_no || '—') + '</div>'
+      + '<div class="wm-lab" style="margin:.15rem 0 0;color:rgba(27,27,26,.5)">' + owEsc(i.period_label || i.issued_date || '') + '</div></div>'
+      + '<span class="wm-pill' + (paid ? '' : ' owed') + '">' + (paid ? 'Paid' : 'Unpaid') + '</span>'
+      + '<div style="width:5.2rem;text-align:right;font-size:.95rem;color:var(--westmere-navy,#102a43)">£' + (Number(i.total) || 0).toFixed(2) + '</div></div>';
+  }).join('');
+
+  body.innerHTML =
+    '<div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.8rem">'
+      + '<div onclick="owOperatorClose()" style="flex:0 0 auto;padding:.45rem .8rem;border:1px solid var(--westmere-line-strong,#c8d1d9);border-radius:7px;font-family:var(--sans);font-size:.76rem;letter-spacing:.1em;text-transform:uppercase;color:var(--westmere-navy,#102a43);cursor:pointer">‹ Operators</div>'
+      /* NO CENTRING SPACER. A firm's name is not a driver's name — "Harding
+         Executive Travel" between a back button and six rems of nothing came
+         out as three lines stacked behind the button. It takes the width that
+         is left and sets on one line. */
+      + '<div style="flex:1;min-width:0;font-family:var(--serif);font-size:1.15rem;line-height:1.25;color:var(--westmere-navy,#102a43);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + owEsc(name) + '</div></div>'
+    + '<div style="border:1px solid var(--westmere-line,#dfe5ea);border-radius:9px;padding:.2rem .8rem .6rem">'
+      + row('Contact', owEsc(op.full_name || '—')) + row('Phone', owEsc(op.phone || '—'))
+      + row('Email', owEsc(op.email || '—'))
+      + row('Address', owEsc([op.address_line1, op.address_line2, op.postcode].filter(Boolean).join(', ') || '—'))
+    + '</div>'
+    + '<p class="wm-lab">What they owe</p><div class="wm-rule"></div>'
+    + '<div style="border:1px solid var(--westmere-line,#dfe5ea);border-radius:9px;padding:.8rem 1rem;display:flex;align-items:baseline;gap:.6rem">'
+      + '<div class="wm-lab" style="margin:0;flex:1">' + (d.unpaid ? d.unpaid + (d.unpaid === 1 ? ' unpaid invoice' : ' unpaid invoices') : 'All settled') + '</div>'
+      + '<div class="' + (Number(d.owed) > 0 ? 'wm-owing' : '') + '" style="font-family:var(--serif);font-size:1.6rem;color:var(--westmere-navy,#102a43)">£' + (Number(d.owed) || 0).toFixed(2) + '</div></div>'
+    + '<div style="font-family:var(--sans);font-size:.76rem;color:rgba(27,27,26,.55);margin-top:.45rem;line-height:1.5">Work passed to an operator is settled by invoice, not netted off a balance — so this is simply the invoices they have not paid.</div>'
+    + '<p class="wm-lab">Jobs passed to them</p><div class="wm-rule"></div>'
+    + (jobs || '<div style="font-family:var(--sans);font-size:.8rem;color:rgba(27,27,26,.45);padding:.6rem 0">No jobs sent yet.</div>')
+    + (Number(d.uninvoiced) ? '<div style="font-family:var(--sans);font-size:.76rem;color:rgba(27,27,26,.55);margin-top:.45rem;line-height:1.5">'
+        + d.uninvoiced + (d.uninvoiced === 1 ? ' job has' : ' jobs have') + ' not been invoiced yet — Create invoice below fills the form with them.</div>' : '')
+    + '<p class="wm-lab">Invoices</p><div class="wm-rule"></div>'
+    + (invoices || '<div style="font-family:var(--sans);font-size:.8rem;color:rgba(27,27,26,.45);padding:.6rem 0">No invoices raised yet.</div>')
+    + '<p class="wm-lab">Actions</p><div class="wm-rule"></div>'
+    + '<div style="display:flex;gap:.5rem">'
+      + '<div onclick="owOperatorSendJob()" class="btn-primary" style="flex:1;text-align:center;padding:.6rem;border-radius:7px;font-family:var(--sans);font-size:.76rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Send a job</div>'
+      + '<div onclick="owOperatorInvoice()" style="flex:1;text-align:center;padding:.6rem;border:1px solid var(--westmere-navy,#102a43);border-radius:7px;font-family:var(--sans);font-size:.76rem;letter-spacing:.1em;text-transform:uppercase;color:var(--westmere-navy,#102a43);cursor:pointer">Create invoice</div>'
+    + '</div>';
+}
+
+/* ── PASSING A JOB FROM HERE ──────────────────────────────────────────────
+   The same sheet the job cards open, with this operator already chosen. It
+   used to be a message telling the owner to go and find the job himself,
+   which is the kind of instruction a screen gives instead of doing the work.
+   Only jobs that have not already been sent are offered, newest first. */
+async function owOperatorSendJob() {
+  var opId = _OWOP;
+  if (!opId) return;
+  var list = [];
+  try {
+    var r = await fetch('/api/bookings', { credentials: 'include' });
+    var d = await r.json();
+    var today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/London' });
+    list = (d.bookings || []).filter(function (b) {
+      return String(b.status || '') !== 'cancelled' && !b.driver_id && !b.operator_id
+             && String(b.date || '') >= today;
+    }).sort(function (a, b) { return String(a.date).localeCompare(String(b.date)); }).slice(0, 25);
+  } catch (e) { showToast('Could not load the diary'); return; }
+  if (!list.length) { showToast('No upcoming jobs are waiting to be passed on'); return; }
+  var el = document.createElement('div');
+  el.id = 'ow-op-pick';
+  el.style.cssText = 'position:fixed;inset:0;z-index:9400;background:rgba(16,26,36,.45);display:flex;align-items:flex-end;justify-content:center';
+  el.innerHTML = '<div style="background:var(--westmere-white,#fff);width:100%;max-width:32rem;max-height:84vh;overflow:auto;border-radius:14px 14px 0 0;padding:1.1rem">'
+    + '<div style="font-family:var(--serif);font-size:1.06rem;color:#1a1a1a;margin-bottom:.2rem">Which job?</div>'
+    + '<div class="wm-lab" style="margin:0 0 .6rem">Upcoming jobs nobody has been sent yet</div>'
+    + list.map(function (b) {
+        return '<div data-id="' + b.id + '" style="display:flex;gap:.6rem;align-items:center;padding:.6rem 0;border-top:1px solid var(--westmere-line,#dfe5ea);cursor:pointer">'
+          + '<div style="flex:1;min-width:0"><div style="font-size:.93rem;color:var(--westmere-navy,#102a43);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'
+          + owEsc(_shortAddr(b.pickup || '')) + ' → '
+          + owEsc(_shortAddr(b.destination || '')) + '</div>'
+          + '<div class="wm-lab" style="margin:.15rem 0 0;color:rgba(27,27,26,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + owEsc((b.date || '') + (b.time ? ' · ' + b.time : '') + ' · ' + (b.ref || '')) + '</div></div>'
+          + '<div style="width:4.6rem;text-align:right;font-size:.95rem;color:var(--westmere-navy,#102a43)">£' + (Number(b.fare) || 0).toFixed(2) + '</div></div>';
+      }).join('')
+    + '<button type="button" id="ow-op-pick-x" style="width:100%;margin-top:1rem;padding:.75rem;border:1px solid rgba(27,27,26,.25);background:transparent;border-radius:8px;font-size:.85rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer">Cancel</button>'
+    + '</div>';
+  document.body.appendChild(el);
+  var shut = function () { try { el.remove(); } catch (e) {} };
+  document.getElementById('ow-op-pick-x').onclick = shut;
+  el.onclick = function (ev) { if (ev.target === el) shut(); };
+  el.querySelectorAll('[data-id]').forEach(function (row) {
+    row.onclick = async function () {
+      var id = parseInt(row.getAttribute('data-id'), 10);
+      var job = list.filter(function (b) { return b.id === id; })[0] || {};
+      shut();
+      owOperatorClose();
+      await dispOpen(id, job);
+      /* Chosen for him, because he started from the operator's page. */
+      dispSetKind('operator');
+      var sel = document.getElementById('disp-operator');
+      if (sel) { sel.value = String(opId); sel.onchange(); }
+    };
+  });
+}
+
+/* ── BILLING WHAT WAS PASSED ──────────────────────────────────────────────
+   The jobs are already in the system — the date, the road and the fare — so
+   the invoice form opens with them in it rather than asking the owner to type
+   a month's work back in by hand. Only the ones not already invoiced, and the
+   booking ids ride along so the invoice stamps them when it is raised. */
+function owOperatorInvoice() { owOperatorInvoiceFor(_OWOP); }
+
+async function owOperatorInvoiceFor(id) {
+  if (!id) return;
+  var d = {};
+  try {
+    var r = await fetch('/api/operators/' + id, { credentials: 'include' });
+    d = await r.json();
+    if (!r.ok || !d.ok) throw new Error(d.error || 'Could not load this operator');
+  } catch (e) { showToast(e.message); return; }
+  var op = d.operator || {};
+  var jobs = (d.jobs || []).filter(function (j) { return !j.invoiced; });
+  owOperatorClose();
+  if (typeof goPage === 'function') goPage('invoices');
+  setTimeout(function () {
+    if (typeof invOpenNew !== 'function') return;
+    invOpenNew();
+    invSetMode('bespoke');
+    document.getElementById('inv-rec-name').value    = op.company || op.full_name || '';
+    document.getElementById('inv-rec-email').value   = op.email || '';
+    document.getElementById('inv-rec-phone').value   = op.phone || '';
+    document.getElementById('inv-rec-address').value = [op.address_line1, op.address_line2, op.postcode].filter(Boolean).join('\n');
+    var sc = document.getElementById('inv-save-customer');
+    if (sc) { sc.checked = false; if (sc.parentNode) sc.parentNode.style.display = 'none'; }
+    var box = document.getElementById('ni-items');
+    if (box) box.innerHTML = '';
+    _INV_BOOKING_IDS = jobs.map(function (j) { return j.id; });
+    jobs.forEach(function (j) {
+      invAddItem(j.date || '', j.pickup || '', Number(j.fare) || 0, j.destination || '', 0, 0,
+                 { ref: j.ref || null, time: j.time || null });
+    });
+    if (!jobs.length) invAddItem();
+    invCalcTotal();
+    if (!jobs.length) showToast('Nothing new to invoice — add the lines by hand');
+  }, 80);
+}
+
+var _OW_DRV_ALL = false;
+/* The two lists share a page, so switching is a pane swap rather than a route:
+   the owner is one tap from either, and nothing reloads. */
+function owSetPeopleTab(which) {
+  var d = document.getElementById('drivers-pane'), o = document.getElementById('operators-pane');
+  var td = document.getElementById('tab-drivers'), to = document.getElementById('tab-operators');
+  var on = 'var(--westmere-navy,#102a43)', off = 'rgba(27,27,26,.45)';
+  if (which === 'operators') {
+    if (d) d.style.display = 'none'; if (o) o.style.display = '';
+    if (td) { td.className = 'wm-tab'; td.style.color = off; }
+    if (to) { to.className = 'wm-tab on'; to.style.color = on; }
+    if (typeof owLoadOperators === 'function') owLoadOperators();
+    /* THE SUBTITLE BELONGS TO THE TAB. Left alone it told the owner he was
+       looking at onboarding and document review while showing him a list of
+       firms that have neither. */
+    var sub1 = document.getElementById('people-sub');
+    if (sub1) sub1.textContent = 'Another firm — settled by invoice';
+  } else {
+    if (d) d.style.display = ''; if (o) o.style.display = 'none';
+    if (td) { td.className = 'wm-tab on'; td.style.color = on; }
+    if (to) { to.className = 'wm-tab'; to.style.color = off; }
+    var sub2 = document.getElementById('people-sub');
+    if (sub2) sub2.textContent = 'Onboarding & document review';
+  }
 }
 
 var _drvDocsOpen={};
@@ -6016,7 +6334,10 @@ async function dispLoadDrivers(){
    It is a DISPATCH. The job is given, not offered: no accept, no decline. The
    driver is told it is his and what it pays, and the customer is told who is
    coming. GUARDRAIL: server/tests/driver-dispatch.test.js */
-var _DISPATCH = { bookingId: null, drivers: [] };
+/* WHO A JOB CAN GO TO. One of our drivers, on commission — or another firm,
+   which is settled by invoice and takes no commission at all. The sheet asks
+   first and then shows the half that applies. */
+var _DISPATCH = { bookingId: null, drivers: [], operators: [], kind: 'driver' };
 
 /* Take the sheet off the screen. NO history — dispOpen() calls this to replace
    an already-open sheet, and unwinding there would fight the entry it is about
@@ -6086,11 +6407,17 @@ async function dispOffer(bookingId) {
 async function dispOpen(bookingId, job, opts) {
   _DISPATCH.bookingId = bookingId;
   _DISPATCH.job = job || {};
+  _DISPATCH.kind = 'driver';
   try {
     var r = await fetch('/api/drivers', { credentials: 'include' });
     var d = await r.json();
     _DISPATCH.drivers = (d.drivers || []).filter(function (x) { return !x.is_default_driver; });
   } catch (e) { _DISPATCH.drivers = []; }
+  try {
+    var ro = await fetch('/api/operators', { credentials: 'include' });
+    var dobj = await ro.json();
+    _DISPATCH.operators = dobj.operators || [];
+  } catch (e) { _DISPATCH.operators = []; }
   dispRemove();
 
   var opts = ['<option value="">— someone new —</option>'].concat(
@@ -6098,6 +6425,15 @@ async function dispOpen(bookingId, job, opts) {
       return '<option value="' + d.id + '">' + (d.full_name || ('Driver ' + d.id))
            + (d.reg ? ' · ' + d.reg : '') + '</option>';
     })).join('');
+  var opOpts = ['<option value="">— choose an operator —</option>'].concat(
+    _DISPATCH.operators.map(function (o) {
+      return '<option value="' + o.id + '">' + owEsc(o.company || o.full_name || ('Operator ' + o.id)) + '</option>';
+    })).join('');
+  var kindBtn = function (kind, label) {
+    var on = kind === 'driver';
+    return '<button type="button" id="disp-kind-' + kind + '" class="wm-seg' + (on ? ' on' : '') + '" '
+      + 'onclick="dispSetKind(\'' + kind + '\')" style="flex:1;padding:.55rem;font-size:.78rem">' + label + '</button>';
+  };
 
   var el = document.createElement('div');
   el.id = 'dispatch-sheet';
@@ -6105,11 +6441,22 @@ async function dispOpen(bookingId, job, opts) {
   el.innerHTML =
     '<div style="background:var(--westmere-white,#fff);width:100%;max-width:32rem;max-height:92vh;overflow:auto;border-radius:14px 14px 0 0;padding:1.1rem 1.1rem 1.4rem">' +
       '<div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.9rem">' +
-        '<div style="flex:1;font-family:var(--serif);font-size:1.06rem;color:#1a1a1a">Send this job to a driver</div>' +
+        '<div style="flex:1;font-family:var(--serif);font-size:1.06rem;color:#1a1a1a" id="disp-head">Send this job</div>' +
         '<button type="button" id="disp-x" style="background:transparent;border:none;font-size:1.5rem;line-height:1;cursor:pointer;color:#1a1a1a">&times;</button>' +
       '</div>' +
-      '<label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.55);margin:.5rem 0 .25rem">Saved driver</label>' +
-      '<select id="disp-saved" style="width:100%;padding:.6rem;font-size:.95rem;border:1px solid rgba(27,27,26,.2);border-radius:7px;background:#fff">' + opts + '</select>' +
+      /* THE FIRST QUESTION, because everything below it depends on the answer —
+         a driver is on commission, an operator is invoiced. */
+      '<div style="display:flex;gap:.5rem;margin-bottom:.3rem">' + kindBtn('driver', 'A driver') + kindBtn('operator', 'An operator') + '</div>' +
+      '<div id="disp-saved-wrap">' +
+        '<label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.55);margin:.5rem 0 .25rem">Saved driver</label>' +
+        '<select id="disp-saved" style="width:100%;padding:.6rem;font-size:.95rem;border:1px solid rgba(27,27,26,.2);border-radius:7px;background:#fff">' + opts + '</select>' +
+      '</div>' +
+      '<div id="disp-op-wrap" style="display:none">' +
+        '<label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.55);margin:.5rem 0 .25rem">Operator</label>' +
+        '<select id="disp-operator" style="width:100%;padding:.6rem;font-size:.95rem;border:1px solid rgba(27,27,26,.2);border-radius:7px;background:#fff">' + opOpts + '</select>' +
+        '<p style="margin:.45rem 0 0;font-size:.8rem;color:rgba(27,27,26,.6);line-height:1.5">No commission is taken on an operator job — the two firms settle by invoice. '
+          + (_DISPATCH.operators.length ? '' : 'No operators are flagged yet: mark a customer as an operator on their record first.') + '</p>' +
+      '</div>' +
       '<label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.55);margin:.9rem 0 .25rem">Name *</label>' +
       '<input id="disp-name" autocomplete="off" style="width:100%;padding:.6rem;font-size:.95rem;border:1px solid rgba(27,27,26,.2);border-radius:7px">' +
       '<label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.55);margin:.9rem 0 .25rem">Email *</label>' +
@@ -6129,7 +6476,7 @@ async function dispOpen(bookingId, job, opts) {
          time, and the owner saw a bare tick box. Every other line in this sheet
          already uses a literal colour, which is why only this one vanished.
          GUARDRAIL: server/tests/driver-dispatch.test.js */
-      '<label for="disp-save" style="display:flex;align-items:center;gap:.55rem;margin:1rem 0 .2rem;font-size:.9rem;color:#1a1a1a;cursor:pointer">' +
+      '<label for="disp-save" id="disp-save-wrap" style="display:flex;align-items:center;gap:.55rem;margin:1rem 0 .2rem;font-size:.9rem;color:#1a1a1a;cursor:pointer">' +
         '<input id="disp-save" type="checkbox" style="width:17px;height:17px;flex:0 0 auto">' +
         '<span>Save this driver for future work</span></label>' +
       '<p id="disp-err" style="display:none;margin:.7rem 0 0;font-size:.85rem;color:#8B2222"></p>' +
@@ -6159,9 +6506,122 @@ async function dispOpen(bookingId, job, opts) {
     document.getElementById('disp-save').checked = false;
   };
   document.getElementById('disp-next').onclick = dispReview;
+  /* Picking an operator fills the form the same way a saved driver does. */
+  document.getElementById('disp-operator').onchange = function () {
+    var o = _DISPATCH.operators.filter(function (x) { return String(x.id) === this.value; }.bind(this))[0];
+    if (!o) return;
+    document.getElementById('disp-name').value  = o.company || o.full_name || '';
+    document.getElementById('disp-email').value = o.email || '';
+    document.getElementById('disp-phone').value = o.phone || '';
+  };
+  dispSetKind('driver');
 }
 
-function dispReview() {
+/* A DRIVER OR ANOTHER FIRM. The form is the same — a name, an email, a phone
+   number and whichever car turns up — so switching shows and hides rather than
+   redrawing anything the owner has already typed. */
+function dispSetKind(kind) {
+  _DISPATCH.kind = (kind === 'operator') ? 'operator' : 'driver';
+  var op = _DISPATCH.kind === 'operator';
+  var dw = document.getElementById('disp-saved-wrap'), ow = document.getElementById('disp-op-wrap');
+  if (dw) dw.style.display = op ? 'none' : '';
+  if (ow) ow.style.display = op ? '' : 'none';
+  /* SAVING AN OPERATOR AS A DRIVER would put another firm in the driver list
+     and give it a commission rate — the one thing an operator does not have. */
+  var sw = document.getElementById('disp-save-wrap');
+  if (sw) sw.style.display = op ? 'none' : 'flex';
+  var head = document.getElementById('disp-head');
+  if (head) head.textContent = op ? 'Pass this job to another operator' : 'Send this job to a driver';
+  [['disp-kind-driver', !op], ['disp-kind-operator', op]].forEach(function (p) {
+    var b = document.getElementById(p[0]);
+    if (b) b.className = 'wm-seg' + (p[1] ? ' on' : '');
+  });
+}
+
+/* ── THE PER-JOB COMMISSION CHOICE ───────────────────────────────────────────
+   A cover job — a favour, or one the owner could have driven himself — goes out
+   at nothing. A commission job charges the rate. The driver's own default is
+   only what this opens on; the choice belongs to the JOB and is recorded with
+   it, so his statement, his balance and the turnover all follow from it.
+   Every figure shown here was worked out by the server.
+   GUARDRAIL: server/tests/driver-ledger.test.js */
+function dispMoney(n) {
+  return (n === null || n === undefined || isNaN(n)) ? 'not set yet' : '£' + Number(n).toFixed(2);
+}
+function dispCommHtml() {
+  var s = _DISPATCH.splits || {};
+  var pct = (s.pct === null || s.pct === undefined) ? 10 : s.pct;
+  var on = 'border:var(--border-strong,1.5px) solid var(--westmere-navy,#102a43);background:#F6F8FA';
+  var off = 'border:1px solid rgba(27,27,26,.18)';
+  var opt = function (id, sel, title, note) {
+    return '<div id="' + id + '" style="' + (sel ? on : off) + ';border-radius:9px;padding:.7rem .8rem;margin-bottom:.5rem;cursor:pointer">'
+      + '<div style="display:flex;align-items:flex-start;gap:.6rem">'
+      + '<span style="width:15px;height:15px;border-radius:50%;flex:0 0 auto;margin-top:.18rem;'
+      + (sel ? 'border:5px solid var(--westmere-navy,#102a43)' : 'border:1.5px solid rgba(27,27,26,.3)') + '"></span>'
+      + '<div style="flex:1"><div style="font-size:.95rem;color:var(--westmere-navy,#102a43)">' + title + '</div>'
+      + '<div style="margin-top:.2rem;font-size:.8rem;color:rgba(27,27,26,.6);line-height:1.5">' + note + '</div></div></div></div>';
+  };
+  var ch = s.charge || {}, no = s.none || {};
+  return opt('disp-comm-yes', !!_DISPATCH.charge, 'Charge commission &mdash; ' + pct + '%',
+             dispMoney(ch.commission) + ' to you, ' + dispMoney(ch.payout) + ' to him.')
+       + opt('disp-comm-no', !_DISPATCH.charge, 'No commission &mdash; cover job',
+             'Nothing to you, the full ' + dispMoney(no.payout) + ' to him.');
+}
+function dispMoneyHtml() {
+  var s = _DISPATCH.splits || {};
+  var sp = _DISPATCH.charge ? (s.charge || {}) : (s.none || {});
+  var job = _DISPATCH.job || {};
+  var cash = String(job.payment || '').toLowerCase() === 'cash';
+  var known = sp.fare !== null && sp.fare !== undefined && !isNaN(sp.fare);
+  var row = function (label, value, strong) {
+    return '<div style="display:flex;justify-content:space-between;padding:.15rem 0' + (strong ? ';border-top:1px solid rgba(27,27,26,.12);margin-top:.35rem;padding-top:.35rem;font-weight:500' : '') + '">'
+      + '<span style="color:' + (strong ? 'var(--westmere-navy,#102a43)' : 'rgba(27,27,26,.65)') + '">' + label + '</span><span>' + value + '</span></div>';
+  };
+  return '<div style="border:1px solid rgba(27,27,26,.15);border-radius:9px;padding:.85rem 1rem;margin-top:.5rem;font-size:.95rem">'
+    + row('Fare', dispMoney(sp.fare))
+    + row(_DISPATCH.charge ? 'Your commission' : 'Commission &mdash; cover job', dispMoney(sp.commission))
+    + row('He receives', dispMoney(sp.payout), true)
+    + '<div style="margin-top:.6rem;font-size:.84rem;color:rgba(27,27,26,.6);line-height:1.6">'
+    + (!known ? 'THIS JOB HAS NO FARE YET. Price it before you send it, or he is being asked to drive for nothing.'
+       : !_DISPATCH.charge ? 'A cover job — recorded against this job, so his statement and your turnover both show it. His default is untouched.'
+       : cash ? 'CASH — he collects ' + dispMoney(sp.fare) + ' in the car and keeps it; your ' + dispMoney(sp.commission) + ' nets off his next payout.'
+              : 'PREPAID — the customer has already paid you; you owe him ' + dispMoney(sp.payout) + '.')
+    + '</div></div>';
+}
+/* AN OPERATOR JOB'S MONEY: the fare, and the fact that none of it is taken.
+   The figures still come from the server — asked for at a rate of nought — so
+   this screen cannot invent a number the books disagree with. */
+function dispOperatorMoneyHtml() {
+  var s = _DISPATCH.splits || {};
+  var sp = s.none && s.none.driver_pay != null ? s.none : (s.charge || {});
+  var job = _DISPATCH.job || {};
+  var fare = (job.fare != null) ? job.fare : sp.driver_pay;
+  var row = function (k, v, strong) {
+    return '<div style="display:flex;justify-content:space-between;gap:.6rem;padding:.3rem 0;'
+      + (strong ? 'font-size:1rem;color:#1a1a1a' : 'font-size:.9rem;color:rgba(27,27,26,.65)') + '">'
+      + '<span>' + k + '</span><span style="font-family:var(--serif)">' + v + '</span></div>';
+  };
+  return '<div style="border:1px solid rgba(27,27,26,.15);border-radius:9px;padding:.8rem 1rem">'
+    + row('Fare on the job', dispMoney(fare), true)
+    + row('Commission', 'none — settled by invoice')
+    + '<div style="margin-top:.5rem;padding-top:.5rem;border-top:1px solid rgba(27,27,26,.1);font-size:.82rem;color:rgba(27,27,26,.6);line-height:1.5">'
+    + 'An operator has no commission balance. What they owe is the invoices they have not paid.</div>'
+    + '</div>';
+}
+
+function dispSetComm(charge) {
+  _DISPATCH.charge = !!charge;
+  var c = document.getElementById('disp-comm'); if (c) c.innerHTML = dispCommHtml();
+  var m = document.getElementById('disp-money'); if (m) m.innerHTML = dispMoneyHtml();
+  dispBindComm();
+}
+function dispBindComm() {
+  var y = document.getElementById('disp-comm-yes'), n = document.getElementById('disp-comm-no');
+  if (y) y.onclick = function () { dispSetComm(true); };
+  if (n) n.onclick = function () { dispSetComm(false); };
+}
+
+async function dispReview() {
   var v = function (id) { return (document.getElementById(id).value || '').trim(); };
   var err = document.getElementById('disp-err');
   var name = v('disp-name'), email = v('disp-email');
@@ -6176,23 +6636,51 @@ function dispReview() {
      to store the split, so this screen and the driver's email cannot disagree.
      A missing split means the fare is genuinely unknown — say so rather than
      print £0.00, which reads as a real number and a free job. */
-  var sp = job._split || {};
-  var known = sp.fare !== null && sp.fare !== undefined && !isNaN(sp.fare);
-  var fare = known ? Number(sp.fare) : null;
-  var commission = known ? Number(sp.commission) : null;
-  var payout = known ? Number(sp.payout) : null;
-  var cash = String(job.payment || '').toLowerCase() === 'cash';
-  var m = function (n) { return (n === null || n === undefined || isNaN(n)) ? 'not set yet' : '£' + Number(n).toFixed(2); };
+  var operator = null;
+  if (_DISPATCH.kind === 'operator') {
+    var oid = document.getElementById('disp-operator').value;
+    operator = _DISPATCH.operators.filter(function (x) { return String(x.id) === String(oid); })[0];
+    if (!operator) { err.textContent = 'Choose which operator this job is going to.'; err.style.display = 'block'; return; }
+  }
+  var sel = operator ? null
+          : _DISPATCH.drivers.filter(function (x) { return String(x.id) === document.getElementById('disp-saved').value; })[0];
+
+  /* ── WHAT THIS JOB IS WORTH, BOTH WAYS ────────────────────────────────────
+     Commission is decided per job, so the screen has to show the two answers
+     side by side: charged at the rate on offer, or nothing at all because it is
+     a cover job. BOTH COME FROM THE SERVER. The browser does no arithmetic here
+     — that is how the confirm screen and the books come to disagree — so it asks
+     for the job once and then only chooses between the figures it was given. */
+  /* AN OPERATOR JOB HAS NO SPLIT TO ASK FOR. The question is not "charge or
+     cover" but "whose books does this settle on", and the answer is the
+     invoice — so the rate is not fetched, not offered and not sent. */
+  var q = '/api/bookings/' + _DISPATCH.bookingId + (operator ? '?commission_pct=0' : (sel ? ('?driver_id=' + sel.id) : ''));
+  try {
+    var sr = await fetch(q, { credentials: 'include' });
+    var sd = await sr.json();
+    _DISPATCH.splits = { charge: sd.split || {}, none: sd.split_none || {}, pct: operator ? 0 : sd.commission_pct };
+  } catch (e) { _DISPATCH.splits = { charge: job._split || {}, none: {}, pct: operator ? 0 : 10 }; }
+  /* A driver we take nothing from opens on the cover-job answer, so the screen
+     never offers "charge 0%" as though it were a choice. */
+  _DISPATCH.charge = Number(_DISPATCH.splits.pct) > 0;
 
   /* WHAT IS ABOUT TO LEAVE THE BUILDING, spelled out: the job, the address it
      is going to, and the money. The commission is shown because the driver's
      email shows it — the two should not be the first place they disagree. */
-  var sel = _DISPATCH.drivers.filter(function (x) { return String(x.id) === document.getElementById('disp-saved').value; })[0];
-  _DISPATCH.payload = {
+  _DISPATCH.operator = operator || null;
+  _DISPATCH.payload = operator ? {
+    operator_id: operator.id,
+    name: name, email: email, phone: v('disp-phone'),
+    reg: v('disp-reg').toUpperCase(), car: v('disp-car')
+  } : {
     driver_id: sel ? sel.id : null,
     name: name, email: email, phone: v('disp-phone'),
     reg: v('disp-reg').toUpperCase(), car: v('disp-car'),
-    save_driver: document.getElementById('disp-save').checked
+    save_driver: document.getElementById('disp-save').checked,
+    /* The job carries its own answer. `charge_commission:false` says cover job
+       without naming a number; the rate rides along when we are charging. */
+    charge_commission: !!_DISPATCH.charge,
+    commission_pct: _DISPATCH.charge ? ((_DISPATCH.splits || {}).pct) : 0
   };
 
   var el = document.getElementById('dispatch-sheet');
@@ -6204,17 +6692,17 @@ function dispReview() {
       '<div style="color:rgba(27,27,26,.65)">' + (job.pickup || '') + ' → ' + (job.destination || '') + '</div>' +
       '<div style="margin-top:.5rem;font-size:.85rem;color:rgba(27,27,26,.6)">' + email + (v('disp-phone') ? ' · ' + v('disp-phone') : '') + '</div>' +
     '</div>' +
-    '<div style="border:1px solid rgba(27,27,26,.15);border-radius:9px;padding:.85rem 1rem;margin-top:.7rem;font-size:.95rem">' +
-      '<div style="display:flex;justify-content:space-between;padding:.15rem 0"><span style="color:rgba(27,27,26,.65)">Fare</span><span>' + m(fare) + '</span></div>' +
-      '<div style="display:flex;justify-content:space-between;padding:.15rem 0"><span style="color:rgba(27,27,26,.65)">Your commission (10%)</span><span>' + m(commission) + '</span></div>' +
-      '<div style="display:flex;justify-content:space-between;padding:.35rem 0 0;border-top:1px solid rgba(27,27,26,.12);margin-top:.35rem;font-weight:500"><span>Driver payout</span><span>' + m(payout) + '</span></div>' +
-      '<div style="margin-top:.6rem;font-size:.84rem;color:rgba(27,27,26,.6);line-height:1.6">' +
-        (!known ? 'THIS JOB HAS NO FARE YET. Price it before you send it, or he is being asked to drive for nothing.'
-          : cash ? 'CASH — he collects ' + m(fare) + ' in the car and keeps it; your ' + m(commission) + ' nets off his next payout.'
-                 : 'PREPAID — the customer has already paid you; you owe him ' + m(payout) + '.') +
-      '</div>' +
-    '</div>' +
-    '<p style="margin:.8rem 0 0;font-size:.85rem;color:rgba(27,27,26,.6);line-height:1.6">He is emailed the trip, the passenger’s name and number, and the payout. The customer is told who is picking them up.</p>' +
+    (operator
+      ? '<p class="wm-lab" style="margin:1rem 0 .4rem">How this one settles</p><div class="wm-rule"></div>'
+        /* ITS OWN ID. The two branches are exclusive at run time, but the same
+           id written twice in one template is indistinguishable from the real
+           bug the duplicate-id guard is there to catch. */
+        + '<div id="disp-op-money">' + dispOperatorMoneyHtml() + '</div>'
+        + '<p style="margin:.8rem 0 0;font-size:.85rem;color:rgba(27,27,26,.6);line-height:1.6">They are emailed the trip, the passenger’s name and number, and the fare. The customer is told who is picking them up. Nothing is netted off any balance — raise the invoice when you are ready.</p>'
+      : '<p class="wm-lab" style="margin:1rem 0 .4rem">Commission on this job</p><div class="wm-rule"></div>'
+        + '<div id="disp-comm">' + dispCommHtml() + '</div>'
+        + '<div id="disp-money">' + dispMoneyHtml() + '</div>'
+        + '<p style="margin:.8rem 0 0;font-size:.85rem;color:rgba(27,27,26,.6);line-height:1.6">He is emailed the trip, the passenger’s name and number, and the payout. The customer is told who is picking them up.</p>') +
     '<p id="disp-err2" style="display:none;margin:.7rem 0 0;font-size:.85rem;color:#8B2222"></p>' +
     '<div style="display:flex;gap:.6rem;margin-top:1.1rem">' +
       '<button type="button" id="disp-back" style="flex:1;padding:.75rem;border:1px solid rgba(27,27,26,.25);background:transparent;border-radius:8px;font-size:.85rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer">Back</button>' +
@@ -6225,6 +6713,7 @@ function dispReview() {
      same door, so both routes behave identically. */
   dispPush();
   document.getElementById('disp-back').onclick = function () { history.back(); };
+  if (!operator) dispBindComm();
   document.getElementById('disp-send').onclick = dispSend;
 }
 
@@ -6239,10 +6728,14 @@ async function dispSend() {
     });
     var d = await r.json();
     if (r.ok && d.ok) {
-      dispClose();
-      showToast('Sent to ' + d.driver.name + (d.saved ? ' · saved' : ''));
       if (typeof loadOwnerBookings === 'function') loadOwnerBookings();
       else if (typeof loadBookings === 'function') loadBookings();
+      /* THE INVOICE IS THE REST OF THE ERRAND. Passing the job to another firm
+         is only half of it — the money still has to be billed — so the sheet
+         offers it there and then rather than leaving him to remember. */
+      if (d.operator) { dispOperatorSent(d); return; }
+      dispClose();
+      showToast('Sent to ' + d.driver.name + (d.saved ? ' · saved' : ''));
     } else {
       var e = document.getElementById('disp-err2');
       e.textContent = d.error || ('Could not send (' + r.status + ')'); e.style.display = 'block';
@@ -6253,6 +6746,28 @@ async function dispSend() {
     e2.textContent = 'Network error — nothing was sent.'; e2.style.display = 'block';
     btn.disabled = false; btn.textContent = 'Confirm & send';
   }
+}
+
+/* SENT — and the one thing left to do, on the screen that just did the other
+   one. "Later" is a real answer: the job is stamped with the operator, so the
+   invoice can be raised from their page whenever he gets to it. */
+function dispOperatorSent(d) {
+  var el = document.getElementById('dispatch-sheet');
+  if (!el) return;
+  var op = d.operator || {};
+  el.querySelector('div').innerHTML =
+    '<div style="font-family:var(--serif);font-size:1.06rem;color:#1a1a1a;margin-bottom:.5rem">Sent to ' + owEsc(op.name || 'the operator') + '</div>' +
+    '<p style="margin:0 0 1rem;font-size:.9rem;color:rgba(27,27,26,.65);line-height:1.6">They have the job, the road and the passenger’s details. '
+      + owEsc(d.ref || 'The job') + ' is waiting to be invoiced — no commission was taken.</p>' +
+    '<div style="display:flex;gap:.6rem">' +
+      '<button type="button" id="disp-done" style="flex:1;padding:.75rem;border:1px solid rgba(27,27,26,.25);background:transparent;border-radius:8px;font-size:.85rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer">Later</button>' +
+      '<button type="button" id="disp-invoice" class="btn-primary" style="flex:2;padding:.75rem;border-radius:8px;font-size:.85rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer">Create invoice</button>' +
+    '</div>';
+  document.getElementById('disp-done').onclick = function () { dispClose(); showToast('Sent to ' + (op.name || 'the operator')); };
+  document.getElementById('disp-invoice').onclick = function () {
+    dispClose();
+    owOperatorInvoiceFor(op.id);
+  };
 }
 
 async function dispReclaim(id){
@@ -6670,6 +7185,29 @@ function invLoad(){
 }
 
 function invOpenNew(){
+  /* THE RESET, for both errands. invEditOpen() calls this first and then fills
+     the form in, so there is one place that clears it and one place that loads
+     the customer list. */
+  _INV_FORM_ID=null; _INV_FORM_CUST=null; _INV_BOOKING_IDS=[];
+  var t=document.getElementById('inv-sheet-title'); if(t) t.textContent='New Invoice';
+  var nl=document.getElementById('inv-sheet-no-line'); if(nl) nl.style.display='none';
+  var sb=document.getElementById('inv-send-btn'); if(sb) sb.style.display='';
+  var eb=document.getElementById('inv-edit-save'); if(eb) eb.style.display='none';
+  var pv=document.getElementById('inv-preview-btn'); if(pv) pv.style.display='';
+  var ad=document.getElementById('inv-adjust'); if(ad) ad.open=false;
+  ['inv-edit-fees','inv-edit-fees-label','inv-edit-total'].forEach(function(k){
+    var el=document.getElementById(k); if(el) el.value='';
+  });
+  var mn=document.getElementById('inv-edit-manual'); if(mn) mn.checked=false;
+  /* ISSUED TODAY, DUE IN FOURTEEN DAYS — what the server does with a new one,
+     shown rather than left blank so the dates in the section are the dates on
+     the invoice. */
+  var today=new Date(), due=new Date(today.getTime()+14*864e5);
+  var iso=function(d){return d.toISOString().slice(0,10);};
+  var is=document.getElementById('inv-edit-issued'); if(is) is.value=iso(today);
+  var du=document.getElementById('inv-edit-due'); if(du) du.value=iso(due);
+  var scw=document.getElementById('inv-save-customer');
+  if(scw&&scw.parentNode) scw.parentNode.style.display='';
   var sel=document.getElementById('inv-customer');
   sel.innerHTML='<option value="">Loading…</option>';
   document.getElementById('inv-err').style.display='none';
@@ -6711,6 +7249,10 @@ function invOpenNew(){
       _INV_CUST_IDX[c.id]=c;
     });
     sel.innerHTML=opts.join('');
+    /* A CORRECTION OPENED BEFORE THIS LANDED. The invoice names its account and
+       the <select> had nothing in it yet; re-applied here, or the customer
+       silently reverted to none on save. */
+    if(_INV_FORM_CUST) sel.value=String(_INV_FORM_CUST);
     var pre=document.getElementById('inv-rec-prefill');if(pre)pre.innerHTML=prefillOpts.join('');
   })
   .catch(function(){sel.innerHTML='<option value="">Error loading customers</option>';});
@@ -6726,19 +7268,28 @@ function invSetMode(mode){
   var accFields=document.getElementById('inv-account-fields');
   var bsFields=document.getElementById('inv-bespoke-fields');
   document.getElementById('inv-err').style.display='none';
+  /* THE CHOSEN HALF IS A CLASS, not an inline colour. Painted inline it was
+     thrown away by the app-wide "no fills" net and the form opened with neither
+     mode looking selected. */
   if(mode==='bespoke'){
-    accBtn.style.background='transparent';accBtn.style.color='var(--navy)';
-    bsBtn.style.background='var(--navy)';bsBtn.style.color='#fff';
+    accBtn.className='wm-seg'; bsBtn.className='wm-seg on';
     accFields.style.display='none';
     bsFields.style.display='';
     invRelayout();
     invLoadRecipients();
   } else {
-    bsBtn.style.background='transparent';bsBtn.style.color='var(--navy)';
-    accBtn.style.background='var(--navy)';accBtn.style.color='#fff';
+    bsBtn.className='wm-seg'; accBtn.className='wm-seg on';
     accFields.style.display='';
     bsFields.style.display='none';
   }
+  /* THE TRIPS belong to the invoice, not to the mode: hidden while an account
+     invoice is being RAISED (the server gathers the bookings), shown while one
+     is being CORRECTED (they are what he is correcting). */
+  var lines=document.getElementById('inv-lines-block');
+  if(lines) lines.style.display=(mode==='bespoke'||_INV_FORM_ID)?'':'none';
+  var cap=document.getElementById('ni-items-cap');
+  if(cap) cap.textContent=(mode==='bespoke')?'Line Items *':'Journeys on this invoice';
+  invSyncTotal();
 }
 
 /* ── THE COLUMNS, DEFINED ONCE ────────────────────────────────────────────
@@ -6766,7 +7317,12 @@ function invOperatorMode(){
    disagree — and the disagreement shows up in somebody's accounts department,
    not here. GUARDRAIL: server/tests/invoice-table.test.js */
 function invOperatorMaths(rows,pct){ return WMInvoiceMaths.compute(rows,pct); }
-function invAddItem(date,desc,amt,to,toll,collected){
+/* ORIG is the line as it was SAVED — a booking's reference, its time, its
+   flight number. The form shows four of its fields and the PDF prints seven;
+   read back from the boxes alone, a correction quietly emptied the Ref and
+   Time columns of every journey on the invoice. It rides on the row, survives
+   a relayout, and the four edited fields are written over it. */
+function invAddItem(date,desc,amt,to,toll,collected,orig){
   var wrap=document.getElementById('ni-items');
   if(!wrap)return;
   var row=document.createElement('div');
@@ -6829,6 +7385,7 @@ function invAddItem(date,desc,amt,to,toll,collected){
      taken was silently paid over a second time. The box writes here; the
      read-back falls back here when there is no box to ask. */
   if(collected) row.dataset.collected='1';
+  if(orig) row._wmLine=orig;
   wrap.appendChild(row);
   /* The lookup is attached AFTER the row is in the document — it measures the
      field to place its dropdown. */
@@ -6856,7 +7413,8 @@ function invRowsFromDom(){
       from:window.WMLookup?WMLookup.full(fr):((fr&&fr.value)||''),
       to:  window.WMLookup?WMLookup.full(to):((to&&to.value)||''),
       fare:a?a.value:'', toll:fe?fe.value:'',
-      collected: c ? !!c.checked : (row_collected(r))
+      collected: c ? !!c.checked : (row_collected(r)),
+      orig: r._wmLine||null
     });
   });
   return out;
@@ -6869,11 +7427,9 @@ function invRowsFromDom(){
 function invRelayout(){
   var rows=invRowsFromDom();
   var op=invOperatorMode();
-  var hs=document.getElementById('ni-head-simple');
   var oh=document.getElementById('ni-op-head');
   var ot=document.getElementById('ni-op-totals');
   var inner=document.getElementById('ni-op-inner');
-  if(hs) hs.style.display=op?'none':'grid';
   if(oh){ oh.style.display=op?'':'none'; if(op) oh.innerHTML=invOpHeadHtml(); }
   if(ot) ot.style.display=op?'':'none';
   var pay=document.getElementById('ni-op-payout');
@@ -6883,7 +7439,7 @@ function invRelayout(){
   var wrap=document.getElementById('ni-items');
   if(wrap) wrap.innerHTML='';
   if(!rows.length) rows=[{}];
-  rows.forEach(function(r){ invAddItem(r.date,r.from,r.fare,r.to,r.toll,r.collected); });
+  rows.forEach(function(r){ invAddItem(r.date,r.from,r.fare,r.to,r.toll,r.collected,r.orig); });
   invCalcTotal();
 }
 /* THE COLUMNS AND THE TOTALS come from the shared module too — the headings,
@@ -6958,6 +7514,8 @@ function invCalcTotal(){
       bd.innerHTML='Fares £'+m.fares.toFixed(2)+'  ·  Fees £'+m.tolls.toFixed(2);
     } else bd.style.display='none';
   }
+  /* ONE PASS, ONE SET OF FIGURES: the adjustments read from the same maths. */
+  invSyncTotal();
 }
 
 function invGetItems(){
@@ -6989,9 +7547,10 @@ function invGetItems(){
     if(!from&&!to)return;
     if(amt<=0&&fee<=0)return;
     var desc=(from&&to)?(from+' \u2192 '+to):(from||to);
-    items.push({date:date||null,description:desc,amount:amt,
+    items.push(Object.assign({}, r._wmLine||{}, {
+                date:date||null,description:desc,amount:amt,
                 pickup:from||null,destination:to||null,fee:fee>0?Math.round(fee*100)/100:0,
-                collected_direct:collected});
+                collected_direct:collected}));
   });
   return items;
 }
@@ -7001,9 +7560,9 @@ function invSetPeriod(type){
   var from=document.getElementById('inv-from');
   var to=document.getElementById('inv-to');
   if(!from||!to)return;
-  document.querySelectorAll('#inv-btn-week,#inv-btn-month').forEach(function(b){b.style.background='transparent';b.style.color='var(--navy)';});
+  document.querySelectorAll('#inv-btn-week,#inv-btn-month').forEach(function(b){b.className='wm-seg';});
   var btn=document.getElementById('inv-btn-'+type);
-  if(btn){btn.style.background='var(--navy)';btn.style.color='#fff';}
+  if(btn) btn.className='wm-seg on';
   if(type==='week'){
     var weekEnd=new Date(now);weekEnd.setDate(weekEnd.getDate()-weekEnd.getDay());
     var weekStart=new Date(weekEnd);weekStart.setDate(weekStart.getDate()-6);
@@ -7109,7 +7668,13 @@ function invBuildRequest(sendEmail){
     if(saveCustomer&&!email){err.textContent='Add a recipient email to save them as a customer (or untick "Save this recipient as a customer").';err.style.display='';return null;}
     var cb=document.getElementById('ni-commission');
     var commissionPct=(cb&&cb.checked)?invCommissionPct():0;
-    return{url:'/api/invoices/bespoke',body:{recipient:{name:name,email:email,phone:phone,address:address},items:items,notes:notes,send_email:sendEmail,commission_pct:commissionPct},saveCustomer:saveCustomer,recipient:{name:name,email:email,phone:phone,address:address}};
+    var body={recipient:{name:name,email:email,phone:phone,address:address},items:items,notes:notes,send_email:sendEmail,commission_pct:commissionPct,
+              fees:invFees(),fees_label:document.getElementById('inv-edit-fees-label').value.trim()};
+    /* THE JOBS BEING BILLED, when this form was filled from an operator's page.
+       The route stamps them, so the next "Create invoice" does not offer the
+       same journeys again. */
+    if(_INV_BOOKING_IDS&&_INV_BOOKING_IDS.length) body.booking_ids=_INV_BOOKING_IDS;
+    return{url:'/api/invoices/bespoke',body:body,saveCustomer:saveCustomer,recipient:{name:name,email:email,phone:phone,address:address}};
   } else {
     var cid=document.getElementById('inv-customer').value;
     var dates=invGetDates();
@@ -7585,208 +8150,238 @@ function invDetailPreview(){invOpenPdf(_INV_DETAIL_ID);}
    number and the lines stop touching it. That distinction is the feature — a
    single editable total field could not tell "he typed this" from "it happens
    to equal the sum today". */
+/* ── ONE FORM, FILLED FROM A SAVED INVOICE ────────────────────────────────
+   Correcting an invoice asks for the same four things as raising one — who it
+   is for, which journeys, what they cost, what is owed — so it is the same
+   screen. It used to be a second one, and the two drifted: the create form
+   grew the address lookup and the operator's job-sheet layout, and the edit
+   form kept a plain text box, so a corrected journey lost the resolved
+   address that the original had.
+
+   What `invEditOpen` does is fill #inv-sheet in and change two labels. The
+   only state that distinguishes the errands is _INV_FORM_ID. */
+var _INV_FORM_ID=null;     // null while raising a new one, the invoice's id while correcting
+/* THE JOBS THIS INVOICE IS BILLING, when it was opened from an operator's page.
+   Sent with the invoice so the bookings are stamped and cannot be billed twice. */
+var _INV_BOOKING_IDS=[];
+var _INV_FORM_CUST=null;   // the account to re-select once the customer list has loaded
+
 function invEditOpen(){
   var inv=_INV_EDIT_ROW;
   if(!inv){ showToast('Open an invoice first'); return; }
   var bespoke=inv.kind==='bespoke';
-  var items=(inv.line_items||[]).map(function(it){
-    return bespoke
-      ? {date:it.date||'',description:it.description||'',amount:+it.amount||0}
-      : Object.assign({},it,{amount:+it.fare||0,fee:+it.fee||0,collected_direct:+it.collected_direct||0});
-  });
-  _INV_EDIT_STATE={inv:inv,bespoke:bespoke,items:items,manual:!!inv.total_manual,total:+inv.total||0};
+  invOpenNew();                       // the same form, cleared, with the customer list on its way
+  /* The sheet he pressed Edit on is still open underneath — left showing, the
+     invoice appeared twice down one scroll. */
+  document.getElementById('inv-detail-sheet').style.display='none';
+  _INV_FORM_ID=inv.id;
+  document.getElementById('inv-sheet-title').textContent='Correct this invoice';
+  document.getElementById('inv-sheet-no-line').style.display='';
   document.getElementById('inv-edit-no').textContent=inv.invoice_no||'';
-  document.getElementById('inv-edit-name').value=inv.recipient_name||'';
-  document.getElementById('inv-edit-email').value=inv.recipient_email||'';
-  document.getElementById('inv-edit-phone').value=inv.recipient_phone||'';
-  document.getElementById('inv-edit-addr').value=inv.recipient_addr||'';
+  document.getElementById('inv-send-btn').style.display='none';
+  document.getElementById('inv-edit-save').style.display='';
+  /* NO PREVIEW BUTTON ON A CORRECTION. It would render what is SAVED, not what
+     is on screen — a PDF that looks right while the correction is still
+     untyped. The detail sheet it came from has the real document. */
+  document.getElementById('inv-preview-btn').style.display='none';
+  /* THE ARRANGEMENT FIRST, because it decides the layout: the job sheet and
+     the plain stack are different markup and invAddItem draws whichever is
+     current. Setting it after the rows went in redrew them from the DOM and
+     lost the Card ticks. */
+  var pct=+inv.commission_pct||0;
+  var cb=document.getElementById('ni-commission'); if(cb) cb.checked=pct>0;
+  var pe=document.getElementById('ni-commission-pct'); if(pe) pe.value=pct>0?pct:10;
+  invSetMode(bespoke?'bespoke':'account');
+  if(bespoke){
+    document.getElementById('inv-rec-name').value=inv.recipient_name||'';
+    document.getElementById('inv-rec-email').value=inv.recipient_email||'';
+    document.getElementById('inv-rec-phone').value=inv.recipient_phone||'';
+    document.getElementById('inv-rec-address').value=inv.recipient_addr||'';
+    var sc=document.getElementById('inv-save-customer');
+    if(sc){ sc.checked=false; sc.parentNode.style.display='none'; }  // already a customer or deliberately not one
+  } else {
+    /* The list is still loading — remembered, and applied when it lands. */
+    _INV_FORM_CUST=inv.customer_id||null;
+    var sel=document.getElementById('inv-customer'); if(sel&&_INV_FORM_CUST) sel.value=String(_INV_FORM_CUST);
+    if(inv.period_from) document.getElementById('inv-from').value=inv.period_from;
+    if(inv.period_to)   document.getElementById('inv-to').value=inv.period_to;
+    document.querySelectorAll('#inv-btn-week,#inv-btn-month').forEach(function(b){b.className='wm-seg';});
+  }
+  document.getElementById('ni-notes').value=inv.notes||'';
+  /* THE LINES, through the SAME row builder the create form uses — which is
+     what puts the address lookup on a correction. */
+  var box=document.getElementById('ni-items'); if(box) box.innerHTML='';
+  (inv.line_items||[]).forEach(function(it){
+    invAddItem(it.date||'',
+               bespoke?(it.description||''):(it.pickup||''),
+               bespoke?(+it.amount||0):(+it.fare||0),
+               bespoke?'':(it.destination||''),
+               +it.fee||0,
+               (+it.collected_direct)?1:0,
+               it);
+  });
+  if(!document.querySelectorAll('#ni-items .ni-item').length) invAddItem();
   document.getElementById('inv-edit-issued').value=inv.issued_date||'';
   document.getElementById('inv-edit-due').value=inv.due_date||'';
-  document.getElementById('inv-edit-notes').value=inv.notes||'';
-  document.getElementById('inv-edit-manual').checked=!!inv.total_manual;
-  var pct=+inv.commission_pct||0;
-  document.getElementById('inv-edit-commission').checked=pct>0;
-  document.getElementById('inv-edit-commission-pct').value=pct>0?pct:10;
-  document.getElementById('inv-edit-fees').value=(+inv.fees>0)?(+inv.fees).toFixed(2):'';
   document.getElementById('inv-edit-fees-label').value=inv.fees_label||'';
-  invEditRenderLines();
-  document.getElementById('inv-edit-sheet').style.display='flex';
+  var fb=document.getElementById('inv-edit-fees');
+  fb.value=(+inv.fees>0)?(+inv.fees).toFixed(2):'';
+  document.getElementById('inv-edit-manual').checked=!!inv.total_manual;
+  if(inv.total_manual) document.getElementById('inv-edit-total').value=(+inv.total||0).toFixed(2);
+  /* OPENED ONLY IF SOMETHING IN IT WAS USED. The section exists so the trips
+     are what the form opens on; an invoice with a hand-set total or a named
+     fee is one he has already been into, so it is shown as he left it. */
+  document.getElementById('inv-adjust').open=!!(inv.total_manual||(+inv.fees>0&&inv.fees_label));
+  invCalcTotal();
 }
-function invEditClose(){ document.getElementById('inv-edit-sheet').style.display='none'; }
-var _INV_EDIT_STATE=null;
 
-function invEditLineSum(){
-  if(!_INV_EDIT_STATE)return 0;
-  return Math.round(_INV_EDIT_STATE.items.reduce(function(s,it){return s+(+it.amount||0);},0)*100)/100;
-}
-/* THE FEES, FROM ONE PLACE OR THE OTHER — never both.
-   On an ACCOUNT invoice they are the sum of what was paid out on each trip,
-   typed beside each journey's fare. On a BESPOKE one there is a single figure
-   for the whole document. The server derives the account figure the same way
-   and ignores anything sent in the single field, so no arrangement of the two
-   can charge the same parking twice. */
-function invEditPerTripFees(){
-  var st=_INV_EDIT_STATE; if(!st)return 0;
-  return Math.round(st.items.reduce(function(t,it){return t+(+it.fee||0);},0)*100)/100;
-}
-function invEditFees(){
-  var st=_INV_EDIT_STATE;
-  if(st&&!st.bespoke) return invEditPerTripFees();
-  var v=parseFloat(document.getElementById('inv-edit-fees').value);
-  return (isNaN(v)||v<0)?0:Math.round(v*100)/100;
-}
-/* Fees are part of the bill, so they are part of the sum the total tracks. */
-/* fares − commission + fees, the same arithmetic the invoice will do. */
-function invEditCommissionPct(){
-  var cb=document.getElementById('inv-edit-commission');
-  if(!cb||!cb.checked) return 0;
-  var v=parseFloat((document.getElementById('inv-edit-commission-pct')||{}).value);
-  if(!isFinite(v)||v<0||v>=100) return 10;
-  return Math.round(v*100)/100;
-}
-function invEditCommission(){
-  return Math.round(invEditLineSum()*(invEditCommissionPct()/100)*100)/100;
-}
-/* What the driver already took: in the commission base, out of the payout. */
-function invEditCollected(){
-  var st=_INV_EDIT_STATE; if(!st)return 0;
-  return Math.round(st.items.reduce(function(t,it){
-    return t+((+it.collected_direct)?(+it.amount||0):0);},0)*100)/100;
-}
-function invEditAutoSum(){
-  return Math.round((invEditLineSum()-invEditCommission()+invEditFees()-invEditCollected())*100)/100;
-}
-function invEditRenderLines(){
-  var st=_INV_EDIT_STATE; if(!st)return;
-  var box=document.getElementById('inv-edit-lines');
-  box.innerHTML=st.items.map(function(it,i){
-    var label=st.bespoke?(it.description||''):((it.pickup||'')+' → '+(it.destination||''));
-    var meta=st.bespoke?(it.date||''):((it.date||'')+(it.ref?'  ·  '+it.ref:''));
-    var NUM='width:100%;box-sizing:border-box;padding:.4rem;font-size:.85rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:5px;text-align:right';
-    var CAP='font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(27,27,26,.4);text-align:right;margin-bottom:.1rem';
-    /* THE JOURNEY GETS THE WIDTH. On an account invoice it is text he cannot
-       edit — it comes from the booking — so it belongs on its own line above
-       the figures, not squeezed into a column beside them. Boxed in at about
-       two hundred pixels a real route wrapped to nine lines and the row became
-       taller than the screen. The two NUMBERS are what he is here to type, and
-       they sit together on the line below. */
-    return '<div style="padding:.5rem 0;border-bottom:1px solid rgba(27,27,26,.06)">'
-      +(meta?'<div style="font-size:.7rem;color:rgba(27,27,26,.45);margin-bottom:.15rem">'+owEsc(meta)+'</div>':'')
-      +(st.bespoke
-        ?'<textarea data-i="'+i+'" data-f="description" rows="3" style="width:100%;box-sizing:border-box;padding:.4rem;font-size:.85rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:5px;resize:vertical;margin-bottom:.4rem">'+owEsc(label)+'</textarea>'
-        :'<div style="font-size:.88rem;color:var(--navy);line-height:1.35;margin-bottom:.4rem">'+owEsc(label)+'</div>')
-      +'<div style="display:flex;gap:.4rem;align-items:flex-end;justify-content:flex-end">'
-      +(st.bespoke?''
-        :'<div style="width:86px"><div style="'+CAP+'">Fee</div>'
-         +'<input data-i="'+i+'" data-f="fee" type="number" step="0.01" placeholder="0.00" value="'+((+it.fee>0)?(+it.fee).toFixed(2):'')+'" style="'+NUM+'"></div>')
-      +'<div style="width:96px"><div style="'+CAP+'">'+(st.bespoke?'Amount':'Fare')+'</div>'
-       +'<input data-i="'+i+'" data-f="amount" type="number" step="0.01" value="'+(+it.amount||0).toFixed(2)+'" style="'+NUM+'"></div>'
-      +'<button onclick="invEditRemove('+i+')" title="Remove this line" style="padding:.4rem .55rem;border:1px solid rgba(27,27,26,.18);background:#fff;border-radius:5px;cursor:pointer;color:#8a1c1c">&times;</button>'
-      +'</div>'
-      /* PAID AT THE KERB. The operator still takes commission on this fare but
-         does not pay it over — the driver has it already. Its toll is still
-         owed. Only meaningful on an operator invoice. */
-      +(st.bespoke?''
-        :'<label style="display:flex;align-items:center;gap:.4rem;margin-top:.35rem;font-size:.78rem;color:rgba(27,27,26,.55);cursor:pointer">'
-         +'<input data-i="'+i+'" data-f="collected" type="checkbox" '+((+it.collected_direct)?'checked':'')+' style="width:14px;height:14px">'
-         +'Driver collected this fare (card / cash)</label>')
-      +'</div>';
-  }).join('')||'<div style="padding:.8rem;text-align:center;font-size:.85rem;color:rgba(27,27,26,.4)">No lines</div>';
-  box.querySelectorAll('[data-i]').forEach(function(el){
-    el.oninput=function(){
-      var it=st.items[+el.getAttribute('data-i')]; if(!it)return;
-      var f=el.getAttribute('data-f');
-      if(f==='collected') it.collected_direct = el.checked ? 1 : 0;
-      else it[f]= (f==='amount'||f==='fee') ? (+el.value||0) : el.value;
-      invEditSyncTotal();
-    };
+/* ── THE FORM'S ARITHMETIC, ASKED OF THE ONE MODULE ──────────────────────
+   Every figure below comes from WMInvoiceMaths — the same module the admin app
+   and the invoice PDF agree with. The edit sheet used to carry its own five
+   functions computing the same four numbers, which is how £616.50 and £675
+   came out of the same seven jobs. */
+function invMathsRows(){
+  var rows=[];
+  document.querySelectorAll('#ni-items .ni-item').forEach(function(r){
+    var a=r.querySelector('.ni-amt'), fe=r.querySelector('.ni-fee'), c=r.querySelector('.ni-collected');
+    rows.push({fare:a?(parseFloat(a.value)||0):0,
+               toll:fe?(parseFloat(fe.value)||0):0,
+               /* REMEMBERED IN BOTH LAYOUTS, APPLIED IN ONLY ONE. A customer
+                  invoice has no driver-collected concept and shows no Card
+                  column — so a tick left over from the job sheet must not
+                  quietly take £50 off a total with nothing on screen to say
+                  why. It is kept, and it comes back when the toggle does. */
+               collected:invOperatorMode()&&(c?!!c.checked:(r.dataset.collected==='1'))});
   });
-  invEditSyncTotal();
+  return rows;
 }
-function invEditRemove(i){ _INV_EDIT_STATE.items.splice(i,1); invEditRenderLines(); }
-function invEditAdd(){
-  var st=_INV_EDIT_STATE;
-  if(!st.bespoke){ alert('Journeys come from the bookings on the account. Correct the amounts here, or set the total by hand.'); return; }
-  st.items.push({date:'',description:'',amount:0}); invEditRenderLines();
+function invFormMaths(){ return invOperatorMaths(invMathsRows(), invOperatorMode()?invCommissionPct():0); }
+function invPerTripFees(){ return invFormMaths().tolls; }
+/* THE FEE COMES FROM ONE PLACE OR THE OTHER — never both.
+   Any trip carrying a fee makes the column the authority and the single box a
+   read-out of it: two editable routes to one number is how a bill ends up
+   charging the same parking twice. With no trip fees, a one-off invoice may
+   name one figure for the whole document. Both server routes apply exactly
+   this rule, so the screen and the PDF cannot disagree. */
+function invFees(){
+  var per=invPerTripFees();
+  if(per>0) return per;
+  if(_INV_MODE!=='bespoke') return 0;
+  var el=document.getElementById('inv-edit-fees');
+  if(!el||String(el.value||'').trim()==='') return 0;
+  var v=parseFloat(el.value);
+  return (!isFinite(v)||v<0)?0:Math.round(v*100)/100;
+}
+/* fares − commission + fees − collected, the arithmetic the invoice does. */
+function invAutoSum(){
+  var m=invFormMaths();
+  return Math.round((m.fares-m.commission+invFees()-m.collected)*100)/100;
 }
 /* The total field mirrors the lines while it is theirs, and stops the moment
    the owner takes it over. */
-function invEditSyncTotal(){
-  var st=_INV_EDIT_STATE; if(!st)return;
-  var manual=document.getElementById('inv-edit-manual').checked;
+function invSyncTotal(){
+  var mb=document.getElementById('inv-edit-manual');
   var f=document.getElementById('inv-edit-total');
+  if(!mb||!f)return;
+  var manual=mb.checked;
   f.disabled=!manual;
   f.style.background=manual?'#fff':'rgba(27,27,26,.05)';
   f.style.color=manual?'var(--navy)':'rgba(27,27,26,.45)';
-  if(!manual) f.value=invEditAutoSum().toFixed(2);
-  var note=document.getElementById('inv-edit-sumnote');
-  var sum=invEditAutoSum();
-  var fees=invEditFees();
-  var lines=invEditLineSum();
-  var pct=invEditCommissionPct();
-  var comm=invEditCommission();
-  var rw=document.getElementById('inv-edit-rate-wrap');
-  if(rw) rw.style.display=pct>0?'flex':'none';
-  var breakdown=st.items.length+' line'+(st.items.length===1?'':'s')+' £'+lines.toFixed(2)
+  var sum=invAutoSum();
+  if(!manual) f.value=sum.toFixed(2);
+  var m=invFormMaths();
+  var fees=invFees(), lines=m.fares, pct=m.pct, comm=m.commission;
+  var n=document.querySelectorAll('#ni-items .ni-item').length;
+  var breakdown=n+' line'+(n===1?'':'s')+' £'+lines.toFixed(2)
     +(fees>0?' + fees £'+fees.toFixed(2):'')
-    +(pct>0?' − '+pct+'% commission £'+comm.toFixed(2):'');
-  note.textContent=manual
-    ? ('The invoice adds up to £'+sum.toFixed(2)+' ('+breakdown+'). It will show the figure above.')
-    : (breakdown+'.');
-  note.style.color=manual?'var(--amber,#6a6a6a)':'rgba(27,27,26,.5)';
-  /* The single fee box belongs to a BESPOKE invoice. On an account invoice the
-     figure comes from the rows, so the box shows the sum and is not typeable —
-     two editable routes to one number is how they end up disagreeing. */
+    +(pct>0?' − '+pct+'% commission £'+comm.toFixed(2):'')
+    +(m.collected>0?' − collected £'+m.collected.toFixed(2):'');
+  var note=document.getElementById('inv-edit-sumnote');
+  if(note){
+    note.textContent=manual
+      ? ('The invoice adds up to £'+sum.toFixed(2)+' ('+breakdown+'). It will show the figure above.')
+      : (breakdown+'.');
+    note.style.color=manual?'var(--amber,#6a6a6a)':'rgba(27,27,26,.5)';
+  }
+  /* THE SINGLE FEE BOX follows the rule in invFees(): a read-out while the
+     trips own the figure, typeable only on a one-off with no trip fees. */
+  var per=invPerTripFees();
   var fnote=document.getElementById('inv-edit-feesnote');
   var fbox=document.getElementById('inv-edit-fees');
   var flab=document.getElementById('inv-edit-fees-label');
-  if(st.bespoke){
-    fbox.disabled=false; fbox.style.background='#fff'; fbox.style.color='var(--navy)';
-    flab.style.display='';
-    fnote.textContent = fees>0 ? 'Shown on the invoice as a row above the total.'
-                               : 'Leave blank for none — no row is printed.';
-  } else {
-    fbox.disabled=true; fbox.value=fees>0?fees.toFixed(2):'';
+  var derived=(per>0)||(_INV_MODE!=='bespoke');
+  if(derived){
+    fbox.disabled=true; fbox.value=per>0?per.toFixed(2):'';
     fbox.style.background='rgba(27,27,26,.05)'; fbox.style.color='rgba(27,27,26,.45)';
-    flab.style.display='none';
-    var n=st.items.filter(function(it){return +it.fee>0;}).length;
-    fnote.textContent = fees>0
-      ? ('Added up from the '+n+' trip'+(n===1?'':'s')+' with a fee above.')
+    var k=invMathsRows().filter(function(r){return r.toll>0;}).length;
+    if(fnote) fnote.textContent = per>0
+      ? ('Added up from the '+k+' trip'+(k===1?'':'s')+' with a fee above.')
       : 'Type a fee beside any trip that carried one.';
+  } else {
+    fbox.disabled=false; fbox.style.background='#fff'; fbox.style.color='var(--navy)';
+    if(fnote) fnote.textContent = fees>0 ? 'Shown on the invoice as a row above the total.'
+                                         : 'One figure for the whole invoice, or type one beside a trip.';
   }
+  /* AND ITS NAME ONLY WHERE IT CAN BE GIVEN ONE. An account invoice's fee row
+     is named after the column it is summed from, so a box the owner can type
+     into here would be thrown away by the route that saves it. */
+  if(flab) flab.style.display=(!derived&&fees>0)?'':'none';
+  /* THE HAND-SET TOTAL is a correction, not a way to raise an invoice: a new
+     one is the sum of what is on it. The row is absent rather than dead. */
+  var mrow=mb.parentNode;
+  if(mrow) mrow.style.display=_INV_FORM_ID?'flex':'none';
+  var iss=document.getElementById('inv-edit-issued');
+  if(iss){ iss.disabled=!_INV_FORM_ID; iss.style.background=_INV_FORM_ID?'#fff':'rgba(27,27,26,.05)'; }
+  var hint=document.getElementById('inv-adjust-hint');
+  if(hint) hint.textContent=_INV_FORM_ID
+    ? ('· total £'+sum.toFixed(2)+(manual?' (set by hand)':''))
+    : '· issued today, due in 14 days';
 }
+
 async function invEditSave(){
-  var st=_INV_EDIT_STATE; if(!st)return;
+  if(!_INV_FORM_ID){ return invSend(); }   // the same button, on a form that has no invoice yet
   var manual=document.getElementById('inv-edit-manual').checked;
   var typed=parseFloat(document.getElementById('inv-edit-total').value);
   if(manual&&(isNaN(typed)||typed<0)){ alert('That total is not a number.'); return; }
+  var err=document.getElementById('inv-err'); err.style.display='none';
+  var items=invGetItems();
+  if(!items.length){ err.textContent='An invoice needs at least one line.'; err.style.display=''; return; }
   var body={
-    recipient_name:document.getElementById('inv-edit-name').value.trim(),
-    recipient_email:document.getElementById('inv-edit-email').value.trim(),
-    recipient_phone:document.getElementById('inv-edit-phone').value.trim(),
-    recipient_addr:document.getElementById('inv-edit-addr').value.trim(),
+    kind:_INV_MODE,
+    notes:document.getElementById('ni-notes').value.trim(),
     issued_date:document.getElementById('inv-edit-issued').value.trim(),
     due_date:document.getElementById('inv-edit-due').value.trim(),
-    notes:document.getElementById('inv-edit-notes').value.trim(),
-    line_items:st.items,          // each carries its own fee on an account invoice
-    commission_pct: invEditCommissionPct(),
-    fees: invEditFees(),
+    line_items:items,                       // each carries its own fee and Card tick
+    commission_pct: invOperatorMode()?invCommissionPct():0,
+    fees: invFees(),
     fees_label: document.getElementById('inv-edit-fees-label').value.trim(),
     total_override: manual ? typed : null
   };
+  if(_INV_MODE==='bespoke'){
+    body.recipient_name =document.getElementById('inv-rec-name').value.trim();
+    body.recipient_email=document.getElementById('inv-rec-email').value.trim();
+    body.recipient_phone=document.getElementById('inv-rec-phone').value.trim();
+    body.recipient_addr =document.getElementById('inv-rec-address').value.trim();
+  } else {
+    var cid=document.getElementById('inv-customer').value;
+    if(cid) body.customer_id=cid;
+    body.period_from=document.getElementById('inv-from').value||null;
+    body.period_to  =document.getElementById('inv-to').value||null;
+  }
   var btn=document.getElementById('inv-edit-save');
   btn.disabled=true; btn.textContent='Saving…';
+  var id=_INV_FORM_ID;
   try{
-    var r=await fetch('/api/invoices/'+st.inv.id,{method:'PATCH',credentials:'include',
+    var r=await fetch('/api/invoices/'+id,{method:'PATCH',credentials:'include',
       headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     var d=await r.json();
     if(r.ok&&d.ok){
-      showToast(st.inv.invoice_no+' corrected');
-      invEditClose();
-      invViewDetail(st.inv.id);      // reload the sheet from the saved row
+      showToast((document.getElementById('inv-edit-no').textContent||'Invoice')+' corrected');
+      invCloseSheet();
+      invViewDetail(id);             // reload the sheet from the saved row
       if(typeof loadInvoices==='function')loadInvoices();
-    } else showToast(d.error||'Could not save');
-  }catch(e){ showToast('Network error'); }
+    } else { err.textContent=(d&&d.error)||'Could not save'; err.style.display=''; }
+  }catch(e){ err.textContent='Network error. Please try again.'; err.style.display=''; }
   btn.disabled=false; btn.textContent='Save Correction';
 }
 

@@ -151,10 +151,24 @@ for (const [file, label] of APPS) {
   test(label + ': the confirmation shows the money before it sends', () => {
     const s = app(file);
     assert.ok(/function dispReview/.test(s), label + ' has no confirmation step');
-    for (const shown of ['Your commission (10%)', 'Driver payout', 'Fare']) {
+    /* The label used to read "Your commission (10%)" and this guard pinned it
+       word for word. The rate is a per-JOB choice now — a cover job takes
+       nothing, and another driver may be on a different percentage — so a
+       hard-coded 10% in the label would be a lie on most screens. What the
+       guard is for is unchanged: the owner sees the money before anything is
+       sent. The rate is shown on the choice itself, which is asserted below. */
+    for (const shown of ['Fare', 'Your commission', 'He receives']) {
       assert.ok(s.indexOf(shown) !== -1,
         label + ": the confirmation does not show '" + shown + "' — the driver's email does");
     }
+    /* And the choice is offered, with both answers, before it goes. */
+    assert.ok(/Charge commission/.test(s) && /No commission/.test(s),
+      label + ': the confirmation does not offer the per-job commission choice');
+    assert.ok(/charge_commission:/.test(s),
+      label + ': the choice is shown but never sent with the job');
+    assert.ok(!/\*\s*0\.1\b|\*\s*0\.9\b/.test(s.replace(/\/\*[\s\S]*?\*\//g, ' ')),
+      label + ' works the commission out in the browser — the screen and the books would be '
+      + 'free to disagree');
     assert.ok(/id="disp-send"/.test(s) && /dispSend/.test(s),
       label + ': nothing sends from the confirmation');
   });

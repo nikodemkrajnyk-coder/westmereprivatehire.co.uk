@@ -27,6 +27,16 @@
    ========================================================= */
 :root {
   --westmere-navy: #102a43;
+  /* GOLD, BACK BY DECISION. The accent was stripped to navy in an earlier
+     re-skin; the owner found the result too faint to read at a glance and asked
+     for blue, gold and white. Two values, because one gold cannot do both jobs:
+     --westmere-gold is the ACCENT — rules, active underlines, rings, the edge of
+     a chip — where it sits against white at large sizes. --westmere-gold-ink is
+     the darker one for TYPE, which has to clear 4.5:1 on white; the accent does
+     not and must never be used for small text.
+     GUARDRAIL: server/tests/button-style.test.js */
+  --westmere-gold: #C9A227;
+  --westmere-gold-ink: #8A6A12;
   --westmere-navy-deep: #0c2237;
   --westmere-navy-soft: #173b5e;
   --westmere-text: #102a43;
@@ -954,6 +964,13 @@ textarea,
 #admin-app .wm-btn.is-pressed, #admin-app .btn-main.is-pressed,
 #admin-login .ls-btn:active, #admin-login .btn:active, #admin-login .ls-btn.is-pressed,
 #login-screen .ls-btn:active, #login-screen .btn:active, #login-screen .ls-btn.is-pressed,
+/* THE TWO THINGS THAT REST ON A FILL (§20.1): the one primary action, and the
+   chosen half of a segmented control. Both are navy slabs, so both need their
+   label back — without this the invoice form showed an empty navy block where
+   "Account customer" should have been, and the send sheet's chosen half went
+   blank the moment it was selected. */
+#scr-app .btn-primary, #admin-app .btn-primary,
+#scr-app .wm-seg.on, #admin-app .wm-seg.on,
 .wm-btn.is-pressed {
   color: var(--westmere-white) !important;
   -webkit-text-fill-color: var(--westmere-white) !important;
@@ -1344,12 +1361,35 @@ input, select, textarea {
 
 /* 20.1 — Every button in the staff apps and My Account is a frame at rest,
    whatever classes it does or does not carry. */
-#scr-app button,
-#admin-app button,
-#login-screen button,
-#admin-login button {
+/* TWO THINGS MAY FILL, and they are named rather than guessed at:
+     .btn-primary  the one deliberate primary action on a screen, which the
+                   owner asked for filled;
+     .wm-seg.on    the chosen half of a segmented control — "account / one-off",
+                   "a driver / an operator". A segment that cannot fill cannot
+                   show which one is chosen, and the apps were setting an inline
+                   navy background that this rule then silently threw away: the
+                   invoice form opened with neither mode looking selected.
+   Everything else is still caught, which is what this net is for. */
+#scr-app button:not(.btn-primary):not(.wm-seg.on),
+#admin-app button:not(.btn-primary):not(.wm-seg.on),
+#login-screen button:not(.btn-primary):not(.wm-seg.on),
+#admin-login button:not(.btn-primary):not(.wm-seg.on) {
   background-color: transparent !important;
   background-image: none !important;
+}
+
+/* 20.1a — THE SEGMENTED CONTROL. One of two (or three) answers, chosen. The
+   frame is the same as every other control; the fill is the answer. */
+.wm-seg{
+  font-family: var(--sans); letter-spacing: .08em; text-transform: uppercase;
+  border: var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9);
+  border-radius: 6px; background: transparent; color: var(--westmere-navy, #102a43);
+  cursor: pointer;
+}
+.wm-seg.on{
+  background-color: var(--westmere-navy, #102a43);
+  border-color: var(--westmere-navy, #102a43);
+  color: var(--westmere-white, #ffffff);
 }
 /* …and fills for the length of a press. This is the one legitimate fill: it
    is momentary, and on a phone there is no hover to fall back on. The white
@@ -1802,3 +1842,56 @@ nav > .navlinks { margin-left: auto; }
 @media (max-width: 900px) {
   .hero.center h1 { margin-right: -0.055em; }
 }
+
+/* ── GOLD, AS COMPONENTS ─────────────────────────────────────────────────────
+   The accent appears in four places and nowhere else, so that "add a bit of
+   gold" is never a decision taken per screen: a section label, the hairline
+   under it, the ring around a list avatar, and the underline on the active tab.
+   Labels take --westmere-gold-ink because they are TYPE; the rule, ring and
+   underline take --westmere-gold because they are not.
+   GUARDRAIL: server/tests/button-style.test.js */
+.wm-lab{
+  font-family: var(--sans); font-size: 10px; font-weight: 600;
+  letter-spacing: .2em; text-transform: uppercase;
+  color: var(--westmere-gold-ink); margin: 20px 0 8px;
+}
+.wm-rule{ height: 1px; background: var(--westmere-gold); opacity: .55; margin: 0 0 2px; }
+.wm-ring{
+  border: 1.5px solid var(--westmere-gold); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--westmere-navy); flex: 0 0 auto;
+}
+.wm-tab{
+  font-family: var(--sans); font-size: 11px; font-weight: 600;
+  letter-spacing: .16em; text-transform: uppercase;
+  padding: 9px 0 10px; border-bottom: 3px solid transparent;
+  /* ON WHITE. These sit above a list on the page ground, not on the navy bar —
+     written in the bar's ink the unselected tab was white on white, and the
+     only reason the live screen reads is that the page re-states both colours
+     inline. A class whose own rendering is invisible is a trap for the next
+     place it is used. */
+  color: rgba(27,27,26,.45); background: transparent;
+}
+.wm-tab.on{ color: var(--westmere-navy); border-bottom-color: var(--westmere-gold); }
+
+/* The balance pill on a people list: gold when money is owed out, plain when it
+   is not. Here rather than in the page because a colour typed into markup is how
+   a palette grows a sixth gold. */
+.wm-pill{
+  padding: .22rem .55rem; border-radius: 20px; white-space: nowrap;
+  font-family: var(--sans); font-size: .76rem;
+  border: 1px solid var(--westmere-line-strong); color: var(--westmere-navy);
+}
+.wm-pill.owed{ border-color: var(--westmere-gold); color: var(--westmere-gold-ink); }
+
+/* A registration is a code read off a car on a kerb, not prose, so it is spaced
+   out to be read character by character. It is NOT set in a monospace face: this
+   system has one typeface by the owner's own instruction, with a single
+   documented exception for Google's own letterform, and a plate is not worth a
+   second. The mockup showed mono; the house rule wins.
+   GUARDRAIL: server/tests/button-style.test.js */
+.wm-plate{ letter-spacing: .12em; font-variant-numeric: tabular-nums; }
+
+/* A figure that is outstanding — money owed in or out. Gold ink, so it reads as
+   the one number on the screen that is waiting on somebody. */
+.wm-owing{ color: var(--westmere-gold-ink); }

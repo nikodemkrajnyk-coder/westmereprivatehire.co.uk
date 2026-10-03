@@ -568,48 +568,192 @@ for (const [file, label] of APPS) {
   });
 }
 
-test('the owner ledger sheet does not depend on a string match to stay visible', () => {
-  /* WHAT THE THEME ACTUALLY DOES. The owner app's white-surfaces restyle sets
-     --navy to #ffffff !important, then rescues text with attribute selectors —
-     [style*="color:var(--navy)"] { color:#111 !important } — which match the
-     inline style STRING, not the colour. So `color:var(--navy)` is visible and
-     `color:var(--navy,#102a43)` is white on white. That second spelling is what
-     hid the dispatch sheet's save-tick label, and nothing about it looks wrong.
+test('no stylesheet forces a token to white, and nothing relies on being rescued', () => {
+  /* WHAT THIS GUARD WAS, AND WHY IT HAD TO CHANGE TWICE.
 
-     This sheet was first built with four `color:var(--navy)` lines. They were
-     VISIBLE — the exact string was rescued; an earlier note here said otherwise
-     and was wrong. They were moved to --westmere-navy anyway, which the theme
-     does not whiten, so the sheet's legibility no longer rests on nobody ever
-     adding a fallback or a space inside a colour declaration.
+     The owner app once carried an all-white restyle: it set --navy to #ffffff
+     and rescued text with [style*="color:var(--navy)"] selectors that matched
+     the inline STRING rather than the colour. Anything spelled differently —
+     var(--navy,#102a43), or a space after the colon — went white on white, which
+     is how the dispatch sheet's save-tick label vanished. This test forbade the
+     ledger sheet from colouring text with any whitened variable.
 
-     Hence the guard: no whitened variable is used for colour in the sheet at
-     all. The admin app is not held to this — its theme forces `body *` black,
-     which reaches its modal whatever the spelling. */
-  const raw = src('westmere-owner.html');
+     That block is gone with the return of blue, gold and white, so no variable
+     is whitened any more — and the test went on PASSING for the wrong reason: it
+     scanned the raw file for a whitened --navy and found the token name inside
+     the comment explaining the hazard. A guard that reads its own prose proves
+     nothing, so comments are stripped first.
+
+     With the premise gone the rule is stated the durable way: the hostile block
+     must not come back, and if any variable ever is forced white again, the
+     ledger sheet must not colour text with it. */
+  const strip = (c) => c.replace(/\/\*[\s\S]*?\*\//g, ' ')
+                        .replace(/<!--[\s\S]*?-->/g, ' ')
+                        .replace(/(^|[^:])\/\/.*$/gm, '$1');
+  /* Raw text to FIND the block — its landmarks are comments — and stripped text
+     to JUDGE it, so no assertion can be satisfied by prose. */
+  const rawSrc = src('westmere-owner.html');
+  const raw = strip(rawSrc);
+
+  /* 1. The string-matching rescue machinery stays gone. It is the mechanism, not
+        the symptom: while it exists, legibility depends on how a style is spelt. */
+  assert.ok(!/\[style\*=["']color:var\(/.test(raw),
+    'the [style*="color:var(--navy)"] rescue selectors are back — with them, whether text is '
+    + 'visible depends on how the inline style happens to be written');
+
+  /* 2. And no token is forced white. */
   const whitened = [];
   const re = /--([a-z0-9-]+)\s*:\s*#(fff|ffffff)\s*!important/gi;
   let m;
   while ((m = re.exec(raw)) !== null) whitened.push('--' + m[1]);
-  assert.ok(whitened.indexOf('--navy') !== -1,
-    'the white theme no longer whitens --navy — re-read this guard before trusting it');
+  assert.deepStrictEqual(whitened, [],
+    'a stylesheet forces ' + whitened.join(', ') + ' to white again — the palette is navy, gold '
+    + 'and white, and a whitened token is how text disappears');
 
-  const a = raw.indexOf('THE BALANCE, ON THE CARD');
-  const b = raw.indexOf('var _drvDocsOpen={};', a);
+  /* 3. The sheet itself is still on the body, outside any app-level ink rule, so
+        it must carry its own colour rather than inherit one. */
+  const a = rawSrc.indexOf('THE BALANCE, ON THE CARD');
+  const b = rawSrc.indexOf('var _drvDocsOpen={};', a);
   assert.ok(a > -1 && b > a, 'the owner ledger block could not be found');
-  const block = raw.slice(a, b);
+  const block = strip(rawSrc.slice(a, b));
   assert.ok(/document\.body\.appendChild\(ov\)/.test(block),
-    'the sheet is no longer appended to body — the premise of this guard changed');
+    'the sheet is no longer appended to body — re-read this guard before trusting it');
+  assert.ok(/color:\s*var\(--westmere-navy/.test(block),
+    'the ledger sheet no longer sets its own ink');
+});
 
-  const used = [];
-  const cre = /color:\s*var\((--[a-z0-9-]+)/gi;
-  while ((m = cre.exec(block)) !== null) used.push(m[1]);
-  assert.ok(used.length, 'no colour variables found — the extraction proved nothing');
-  const bad = used.filter((v) => whitened.indexOf(v) !== -1);
-  assert.deepStrictEqual(bad, [],
-    'the ledger sheet colours text with ' + bad.join(', ') + ', which the white theme sets to '
-    + '#ffffff. It is only visible while the inline string exactly matches one of the '
-    + "theme's [style*=...] rescue selectors — add a fallback or a space and it goes white "
-    + 'on white, which is how the dispatch label vanished');
+console.log('\nCommission is a choice, made per job');
+
+test('the rate is a parameter of the split, not a second function', () => {
+  assert.deepStrictEqual(ledger.computeSplit(96), { driver_pay: 86.4, admin_fee: 9.6 },
+    'left out, a job is still worth the house rate');
+  assert.deepStrictEqual(ledger.computeSplit(96, 0), { driver_pay: 96, admin_fee: 0 },
+    'a cover job pays him the fare and takes nothing');
+  assert.deepStrictEqual(ledger.computeSplit(96, 0.15), { driver_pay: 81.6, admin_fee: 14.4 });
+  assert.deepStrictEqual(ledger.computeSplit(null, 0), { driver_pay: null, admin_fee: null },
+    'an unpriced job has no split whatever the rate');
+});
+
+test('a missing per-driver default is the house rate, not nothing', () => {
+  /* The difference that would quietly stop the business charging commission:
+     every driver saved before the column existed has NULL, and reading that as
+     zero would make every one of them free. 0 is a real answer and only ever
+     arrives by being chosen. */
+  assert.strictEqual(ledger.rateForDriver({}), 0.10, 'no column yet → the house rate');
+  assert.strictEqual(ledger.rateForDriver({ commission_pct: null }), 0.10);
+  assert.strictEqual(ledger.rateForDriver({ commission_pct: '' }), 0.10);
+  assert.strictEqual(ledger.rateForDriver({ commission_pct: 0 }), 0, 'zero is deliberate');
+  assert.strictEqual(ledger.rateForDriver({ commission_pct: 10 }), 0.10);
+  assert.strictEqual(ledger.rateForDriver({ commission_pct: 7.5 }), 0.075);
+  assert.strictEqual(ledger.rateForDriver({ commission_pct: 900 }), 1, 'nonsense is clamped, not stored as given');
+});
+
+test('a COVER JOB stores nothing taken, and every figure follows', async () => {
+  /* The owner just sent one of these: a job passed on as a favour. What matters
+     is that one choice at send time reaches his balance, his statement and the
+     turnover without being entered anywhere a second time. */
+  const express = require('express');
+  const drv = mkDriver('Cover Driver');
+  const b = mkJob({ date: '2027-01-05', fare: 96, payment: 'card', paid_at: '2027-01-05 09:00' });
+  const app = express();
+  app.use(express.json());
+  app.use((q, _r, n) => { q.auth = { id: 1, role: 'owner', type: 'user' }; n(); });
+  app.use('/api', require('../offer-routes'));
+  const srv = app.listen(0);
+  try {
+    const r = await fetch('http://127.0.0.1:' + srv.address().port + '/api/bookings/' + b.id + '/dispatch', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ driver_id: drv, name: 'Cover Driver', email: 'coverdriver@example.com',
+                             charge_commission: false })
+    });
+    assert.strictEqual(r.status, 200, 'the dispatch was refused: ' + JSON.stringify(await r.json()));
+  } finally { srv.close(); }
+
+  const row = db.prepare('SELECT fare, admin_fee, driver_pay FROM bookings WHERE id = ?').get(b.id);
+  assert.strictEqual(row.admin_fee, 0, 'a cover job must record nothing taken');
+  assert.strictEqual(row.driver_pay, 96, 'and the whole fare going to him');
+  assert.strictEqual(ledger.westmereIncome(db.prepare('SELECT * FROM bookings WHERE id = ?').get(b.id)), 0,
+    'a cover job earns Westmere nothing — it must not reach turnover');
+  assert.strictEqual(ledger.balanceDelta(db.prepare('SELECT * FROM bookings WHERE id = ?').get(b.id)), 96,
+    'and he is owed the fare in full');
+
+  /* The SQL half must agree, or the dashboard and the ledger tell two stories. */
+  const sql = db.prepare(
+    `SELECT COALESCE(SUM(${ledger.incomeSql()}),0) t FROM bookings WHERE id = ?`).get(b.id).t;
+  assert.strictEqual(sql, 0, 'the turnover expression still charges commission on a cover job');
+});
+
+test('the per-job choice overrides the driver default, both ways', async () => {
+  const express = require('express');
+  const app = express();
+  app.use(express.json());
+  app.use((q, _r, n) => { q.auth = { id: 1, role: 'owner', type: 'user' }; n(); });
+  app.use('/api', require('../offer-routes'));
+  const srv = app.listen(0);
+  const send = (id, body) => fetch('http://127.0.0.1:' + srv.address().port + '/api/bookings/' + id + '/dispatch', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  try {
+    /* A driver we normally take nothing from, sent a commission job. */
+    const free = mkDriver('Zero Driver');
+    db.prepare('UPDATE users SET commission_pct = 0 WHERE id = ?').run(free);
+    const b1 = mkJob({ date: '2027-02-01', fare: 100, payment: 'card', paid_at: '2027-02-01 09:00' });
+    await send(b1.id, { driver_id: free, name: 'Zero Driver', email: 'zerodriver@example.com', commission_pct: 10 });
+    const r1 = db.prepare('SELECT admin_fee, driver_pay FROM bookings WHERE id = ?').get(b1.id);
+    assert.deepStrictEqual(r1, { admin_fee: 10, driver_pay: 90 },
+      'the job asked for 10% and must get it, whatever his default says');
+
+    /* And his default when the job does not say. */
+    const b2 = mkJob({ date: '2027-02-02', fare: 100, payment: 'card', paid_at: '2027-02-02 09:00' });
+    await send(b2.id, { driver_id: free, name: 'Zero Driver', email: 'zerodriver@example.com' });
+    const r2 = db.prepare('SELECT admin_fee, driver_pay FROM bookings WHERE id = ?').get(b2.id);
+    assert.deepStrictEqual(r2, { admin_fee: 0, driver_pay: 100 }, 'his 0% default applies when the job is silent');
+
+    /* A rate nobody could mean is refused rather than stored. */
+    const b3 = mkJob({ date: '2027-02-03', fare: 100, payment: 'card', paid_at: '2027-02-03 09:00' });
+    const bad = await send(b3.id, { driver_id: free, name: 'Zero Driver', email: 'zerodriver@example.com', commission_pct: 250 });
+    assert.strictEqual(bad.status, 400, 'a commission of 250% was accepted');
+    const r3 = db.prepare('SELECT admin_fee, passed_at FROM bookings WHERE id = ?').get(b3.id);
+    assert.strictEqual(r3.passed_at, null, 'and the job must not have been sent at all');
+  } finally { srv.close(); }
+});
+
+test('the default is settable, and clearing it is not the same as zero', async () => {
+  const express = require('express');
+  const drv = mkDriver('Default Driver');
+  const app = express();
+  app.use(express.json());
+  app.use((q, _r, n) => { q.auth = { id: 1, role: 'owner', type: 'user' }; n(); });
+  app.use('/api', require('../api'));
+  const srv = app.listen(0);
+  const patch = (body) => fetch('http://127.0.0.1:' + srv.address().port + '/api/drivers/' + drv, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const rateNow = () => ledger.rateForDriver(db.prepare('SELECT * FROM users WHERE id = ?').get(drv));
+  try {
+    assert.strictEqual((await patch({ commission_pct: 0 })).status, 200);
+    assert.strictEqual(rateNow(), 0, 'set to zero, we take nothing from him');
+    assert.strictEqual((await patch({ commission_pct: '' })).status, 200);
+    assert.strictEqual(rateNow(), 0.10, 'cleared, he is back on the house rate — not on zero');
+    assert.strictEqual((await patch({ commission_pct: 101 })).status, 400, 'a rate over 100% was accepted');
+    assert.strictEqual(rateNow(), 0.10, 'and nothing was written');
+  } finally { srv.close(); }
+});
+
+test('the drivers list carries each default, so the send sheet can offer it', async () => {
+  const express = require('express');
+  const drv = mkDriver('Listed Driver');
+  db.prepare('UPDATE users SET commission_pct = 0 WHERE id = ?').run(drv);
+  const app = express();
+  app.use(express.json());
+  app.use((q, _r, n) => { q.auth = { id: 1, role: 'owner', type: 'user' }; n(); });
+  app.use('/api', require('../api'));
+  const srv = app.listen(0);
+  try {
+    const j = await (await fetch('http://127.0.0.1:' + srv.address().port + '/api/drivers')).json();
+    const mine = (j.drivers || []).filter((d) => d.id === drv)[0];
+    assert.ok(mine, 'the driver is missing from the list');
+    assert.strictEqual(mine.commission_pct, 0,
+      'the list drops commission_pct, so the send sheet cannot show what it would charge');
+  } finally { srv.close(); }
 });
 
 test('this guardrail is wired into npm test', () => {

@@ -92,6 +92,9 @@ function seed(kind, items, extra) {
     (extra && extra.notes) || 'Thank you.', JSON.stringify(items), total);
   return db.prepare('SELECT * FROM invoices WHERE invoice_no = ?').get(no);
 }
+/* seed() hands back the row; most of this file wants the row, the unified-payload
+   guards want the key they would be patched by. */
+const seedId = (kind, items, extra) => seed(kind, items, extra).id;
 const BESPOKE_ITEMS = [
   { date: '2026-08-03', description: 'Brighton to Gatwick', amount: 95 },
   { date: '2026-08-07', description: 'Hove to Heathrow T5', amount: 120 }
@@ -553,18 +556,21 @@ test('adding fees changes the cache key — even when the TOTAL does not move', 
     'renaming the fees row changes what is printed, so it must change the key');
 });
 
-test('the edit sheet has a fees field that feeds the total', () => {
+test('the form has a fees field that feeds the total', () => {
   const H = read('westmere-owner.html');
   assert.ok(/id="inv-edit-fees"/.test(H) && /id="inv-edit-fees-label"/.test(H), 'no fees field');
-  const sum = /function invEditAutoSum\(\)\{[\s\S]*?\n\}/.exec(H)[0].replace(/\s/g, '');
-  /* fares − commission + fees, the same arithmetic the invoice does. The fees
-     half is what this test was written for; the commission joined it when the
-     rate became adjustable, and the screen has to agree with the document on
-     both or the owner is looking at a number nobody will be billed. */
-  assert.ok(/invEditLineSum\(\)-invEditCommission\(\)\+invEditFees\(\)/.test(sum),
-    'the on-screen total must be fares − commission + fees: ' + sum);
+  const sum = /function invAutoSum\(\)\{[\s\S]*?\n\}/.exec(H)[0].replace(/\s/g, '');
+  /* fares − commission + fees − collected, the same arithmetic the invoice
+     does. The fees half is what this test was written for; the commission
+     joined it when the rate became adjustable, and the screen has to agree
+     with the document on both or the owner is looking at a number nobody will
+     be billed. The figures now come from WMInvoiceMaths — the module the
+     admin app and the PDF agree with — instead of a second set of functions
+     the edit sheet kept for itself. */
+  assert.ok(/m\.fares-m\.commission\+invFees\(\)-m\.collected/.test(sum),
+    'the on-screen total must be fares − commission + fees − collected: ' + sum);
   const save = /async function invEditSave\(\)\{[\s\S]*?\n\}/.exec(H)[0];
-  assert.ok(/fees: invEditFees\(\)/.test(save) && /fees_label:/.test(save), 'the save must send them');
+  assert.ok(/fees: invFees\(\)/.test(save) && /fees_label:/.test(save), 'the save must send them');
 });
 
 // ── 3. NO STALE PDF ──────────────────────────────────────────────────────
@@ -675,28 +681,48 @@ test('the correction is written to the audit log', async () => {
 // ── 5. THE OWNER APP ─────────────────────────────────────────────────────
 console.log('\nThe screen the owner uses');
 
-test('there is an Edit control, and it opens the sheet', () => {
+test('there is an Edit control, and it opens the ONE form', () => {
+  /* There were two forms: #inv-sheet to raise an invoice and #inv-edit-sheet to
+     correct one, each with its own lines renderer and its own arithmetic. They
+     drifted — the create form grew the address lookup and the operator's job
+     sheet, the edit form kept a plain text box — so a corrected journey lost
+     the resolved address the original had. There is one now, and a correction
+     is the same screen with a different button on it. */
   const H = read('westmere-owner.html');
   assert.ok(/onclick="invEditOpen\(\)"/.test(H), 'no Edit button');
-  assert.ok(/id="inv-edit-sheet"/.test(H), 'no edit sheet');
-  for (const id of ['inv-edit-name', 'inv-edit-email', 'inv-edit-addr', 'inv-edit-issued',
-                    'inv-edit-due', 'inv-edit-notes', 'inv-edit-lines', 'inv-edit-total', 'inv-edit-manual']) {
-    assert.ok(new RegExp('id="' + id + '"').test(H), 'the sheet has no ' + id);
+  assert.ok(!/id="inv-edit-sheet"/.test(H), 'the second form is back');
+  assert.ok(/id="inv-sheet"/.test(H), 'no invoice form at all');
+  /* Everything a correction has to reach, on the one form: who it is for, the
+     journeys, the dates, the fee, the total and the override. */
+  for (const id of ['inv-rec-name', 'inv-rec-email', 'inv-rec-address', 'inv-customer',
+                    'inv-from', 'inv-to', 'ni-items', 'ni-notes', 'inv-edit-issued',
+                    'inv-edit-due', 'inv-edit-total', 'inv-edit-manual', 'inv-edit-save']) {
+    assert.ok(new RegExp('id="' + id + '"').test(H), 'the form has no ' + id);
   }
+  const open = /function invEditOpen\(\)\{[\s\S]*?\n\}/.exec(H)[0];
+  assert.ok(/invOpenNew\(\)/.test(open), 'a correction must start from the same reset as a new invoice');
+  assert.ok(/invAddItem\(/.test(open),
+    'the lines must go in through the shared row builder — that is what puts the address lookup on a correction');
+  assert.ok(/WMLookup\.attach/.test(/function invAddItem\([\s\S]*?\n\}/.exec(H)[0]),
+    'and that builder must still attach the lookup');
 });
 
 test('it PATCHes the same invoice rather than creating one', () => {
   const H = read('westmere-owner.html');
   const fn = /async function invEditSave\(\)\{[\s\S]*?\n\}/.exec(H)[0];
   assert.ok(/method:'PATCH'/.test(fn), 'a correction must not POST a new invoice');
-  assert.ok(/\/api\/invoices\/'\+st\.inv\.id/.test(fn), 'and it must address the invoice by id');
+  assert.ok(/\/api\/invoices\/'\+id/.test(fn), 'and it must address the invoice by id');
+  /* THE SAME BUTTON ON A FORM WITH NO INVOICE YET raises one. Without this the
+     one form had one dead button on it depending on how it was opened. */
+  assert.ok(/if\(!_INV_FORM_ID\)\{\s*return invSend\(\);/.test(fn.replace(/\n\s*/g, '')),
+    'with no invoice open the save must fall through to creating one');
   assert.ok(/total_override: manual \? typed : null/.test(fn),
     'the override is sent as a number or an explicit null — never omitted, or it could not be cleared');
 });
 
 test('the number is shown and not editable', () => {
   const H = read('westmere-owner.html');
-  const sheet = H.slice(H.indexOf('id="inv-edit-sheet"'), H.indexOf('New Booking Form Sheet'));
+  const sheet = H.slice(H.indexOf('id="inv-sheet"'), H.indexOf('Invoice Detail'));
   assert.ok(/id="inv-edit-no"/.test(sheet), 'the number should be visible — it is how it is matched');
   assert.ok(!/<input[^>]*id="inv-edit-no"/.test(sheet), 'but not an input');
 });
@@ -705,7 +731,7 @@ test('the owner is told when a total was set by hand', () => {
   const H = read('westmere-owner.html');
   assert.ok(/id="inv-det-manual"/.test(H), 'the detail sheet has no override note');
   assert.ok(/the lines may not sum to it/i.test(H), 'and it must say why that matters');
-  const sync = /function invEditSyncTotal\(\)\{[\s\S]*?\n\}/.exec(H)[0];
+  const sync = /function invSyncTotal\(\)\{[\s\S]*?\n\}/.exec(H)[0];
   /* The wording moved when fees arrived — it now names the split (lines, then
      fees) rather than just "the lines". What must hold is that the figure he
      is overriding is stated, whatever it is made of. */
@@ -924,9 +950,13 @@ test('the form defaults the toggle to OFF and posts the choice', () => {
   assert.ok(!/\bchecked\b/.test(box[0]), 'it must not be ticked by default: ' + box[0]);
   assert.ok(/Leave off for a normal customer or business invoice/.test(H),
     'and it must say plainly what off means');
-  const build = H.slice(H.indexOf("return{url:'/api/invoices/bespoke'") - 400, H.indexOf("return{url:'/api/invoices/bespoke'") + 400);
-  assert.ok(/commissionPct=\(cb&&cb\.checked\)\?invCommissionPct\(\):0/.test(build.replace(/\s/g, '')),
+  /* THE WHOLE FUNCTION, not a few hundred characters either side of the
+     return. Bounded by a character count this passed or failed on how long the
+     comments above the line happened to be. */
+  const build = /function invBuildRequest\(sendEmail\)\{[\s\S]*?\n\}/.exec(H)[0].replace(/\s/g, '');
+  assert.ok(/commissionPct=\(cb&&cb\.checked\)\?invCommissionPct\(\):0/.test(build),
     'the choice — and the RATE he typed — must reach the request');
+  assert.ok(/commission_pct:commissionPct/.test(build), 'and be sent');
   assert.ok(/commission_pct:commissionPct/.test(build.replace(/\s/g, '')), 'as commission_pct');
 });
 
@@ -1086,15 +1116,19 @@ test('the line NAMES the rate that was used', async () => {
   }
 });
 
-test('both forms expose the rate, and neither hard-codes it', () => {
+test('the rate is editable, read from the field, and never hard-coded', () => {
   const H = read('westmere-owner.html');
-  for (const id of ['ni-commission-pct', 'inv-edit-commission-pct']) {
-    assert.ok(new RegExp('id="' + id + '"').test(H), id + ' is missing — the rate is not editable there');
-  }
+  assert.ok(/id="ni-commission-pct"/.test(H), 'ni-commission-pct is missing — the rate is not editable');
+  /* ONE CONTROL AND ONE READER. The edit sheet used to carry its own rate box
+     and its own copy of this function; two of each is how a correction ends up
+     deducting a different percentage from the invoice it is correcting. */
+  assert.ok(!/id="inv-edit-commission-pct"/.test(H), 'a second rate field is back');
+  assert.ok(!/function invEditCommissionPct\(/.test(H), 'a second reader of it is back');
   const create = /function invCommissionPct\(\)\{[\s\S]*?\n\}/.exec(H)[0].replace(/\s/g, '');
-  const edit = /function invEditCommissionPct\(\)\{[\s\S]*?\n\}/.exec(H)[0].replace(/\s/g, '');
-  for (const [name, fn, field] of [['create', create, 'ni-commission-pct'],
-                                   ['edit', edit, 'inv-edit-commission-pct']]) {
+  const save = /async function invEditSave\(\)\{[\s\S]*?\n\}/.exec(H)[0];
+  assert.ok(/commission_pct: invOperatorMode\(\)\?invCommissionPct\(\):0/.test(save),
+    'the correction must send the rate the one control holds');
+  for (const [name, fn, field] of [['the form', create, 'ni-commission-pct']]) {
     /* It must READ the field. Checking only for the "return 10" fallback let a
        version through that ignored the input and always returned ten. */
     assert.ok(fn.includes(field), name + ' does not read ' + field);
@@ -1519,31 +1553,221 @@ test('an invoice with no line items is skipped, not crashed on', () => {
   assert.doesNotThrow(() => runFeeMigration(), 'malformed JSON must not stop the boot');
 });
 
-test('the edit form has a fee field on every journey, beside its fare', () => {
+test('the form has a fee field on every journey, beside its fare', () => {
   const H = read('westmere-owner.html');
-  const fn = /function invEditRenderLines\(\)\{[\s\S]*?\n\}/.exec(H)[0];
-  assert.ok(/data-f="fee"/.test(fn), 'no per-journey fee input');
-  assert.ok(/data-f="amount"/.test(fn), 'and the fare is still there');
-  assert.ok(fn.indexOf('data-f="fee"') < fn.indexOf('data-f="amount"'),
-    'the fee sits beside the fare, before it in the row');
-  assert.ok(/st\.bespoke\?''/.test(fn.replace(/\s/g, '')),
-    'and only on an account invoice — a bespoke one has a single fee for the document');
-  const sync = /function invEditSyncTotal\(\)\{[\s\S]*?\n\}/.exec(H)[0];
+  const fn = /function invAddItem\([\s\S]*?\n\}/.exec(H)[0];
+  assert.ok(/class="fi ni-fee"/.test(fn), 'no per-journey fee input');
+  assert.ok(/class="fi ni-amt"/.test(fn), 'and the fare is still there');
+  /* BOTH LAYOUTS CARRY IT — the plain stack and the operator's job sheet. The
+     order differs because the job sheet's columns are decided by the shared
+     maths module, but a journey always has a box for what was paid out on it. */
+  assert.strictEqual((fn.match(/class="fi ni-fee"/g) || []).length, 2, 'both layouts need one');
+  assert.strictEqual((fn.match(/class="fi ni-amt"/g) || []).length, 2, 'beside the fare in both');
+  const simple = fn.slice(fn.lastIndexOf('} else {'));
+  assert.ok(simple.indexOf('ni-fee') < simple.indexOf('ni-amt'),
+    'on the plain stack the fee sits beside the fare, before it in the row');
+  const sync = /function invSyncTotal\(\)\{[\s\S]*?\n\}/.exec(H)[0];
   assert.ok(/fbox\.disabled=true/.test(sync.replace(/\s/g, '')),
-    'the single fee box must be read-only on an account invoice, or the two figures can disagree');
+    'the single fee box must be read-only while the trips own the figure, or the two can disagree');
 });
 
 test('the client adds the fees up the same way the server does', () => {
   /* Two independent sums of the same money is how a screen and a document end
      up disagreeing about what is owed. */
   const H = read('westmere-owner.html');
-  assert.ok(/function invEditPerTripFees\(\)/.test(H), 'the client needs the per-trip sum');
-  const fees = /function invEditFees\(\)\{[\s\S]*?\n\}/.exec(H)[0];
-  assert.ok(/!st\.bespoke\)\s*return invEditPerTripFees\(\)/.test(fees.replace(/\s+/g, ' ')),
-    'an account invoice must take its fees from the trips, not the box');
+  assert.ok(/function invPerTripFees\(\)/.test(H), 'the client needs the per-trip sum');
+  const fees = /function invFees\(\)\{[\s\S]*?\n\}/.exec(H)[0];
+  /* ONE FIGURE, FROM ONE PLACE. Any trip carrying a fee makes the column the
+     authority and the single box a read-out of it; with no trip fees a one-off
+     invoice may name one figure for the whole document. Two editable routes to
+     the same money is how a bill charges the same parking twice. */
+  assert.ok(/var per=invPerTripFees\(\); if\(per>0\) return per;/.test(fees.replace(/\s+/g, ' ')),
+    'the trips must win whenever any of them carries a fee');
+  assert.ok(/if\(_INV_MODE!=='bespoke'\) return 0;/.test(fees.replace(/\s+/g, ' ')),
+    'and an account invoice must never take its fees from the box');
   const src = read('server/api.js').replace(/\/\*[\s\S]*?\*\//g, ' ');
   assert.ok(/const perTripFees = /.test(src) && /if \(isAccount\) \{\s*fees = perTripFees;/.test(src),
     'and the server must derive it the same way');
+});
+
+console.log('\nOne form, both ways');
+
+test('the mode can be corrected, and the lines are read in the new shape', async () => {
+  /* An invoice raised against the wrong arrangement used to mean deleting it and
+     issuing a new number — the one thing an accounts department that has already
+     filed the first one should never receive. */
+  const id = seedId('bespoke', [{ date: '2026-09-01', description: 'Horsham to Gatwick', amount: 96 }]);
+  const r = await call('patch', '/invoices/:id', { params: { id: String(id) }, body: {
+    kind: 'account',
+    line_items: [{ date: '2026-09-01', pickup: 'Horsham', destination: 'Gatwick', fare: 96, fee: 4 }]
+  }});
+  assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
+  const row = db.prepare('SELECT kind, line_items_json FROM invoices WHERE id = ?').get(id);
+  assert.strictEqual(row.kind, 'account', 'the mode did not change');
+  const line = JSON.parse(row.line_items_json)[0];
+  assert.strictEqual(line.pickup, 'Horsham',
+    'the journey was flattened — the line was read in the OLD kind’s shape, so the PDF loses its column');
+  assert.strictEqual(line.fee, 4, 'the per-trip fee did not survive the change of mode');
+  assert.strictEqual((await call('patch', '/invoices/:id', { params: { id: String(id) }, body: { kind: 'neither' } })).statusCode, 400,
+    'a mode nobody could mean was accepted');
+});
+
+test('changing the mode carries the FEE RULE with it', async () => {
+  /* An account invoice derives its fee from the column of per-trip fees; a
+     one-off names a single figure by hand. Reading the mode off the stored row
+     while writing the lines in the new one billed the parking under whichever
+     rule the invoice used to be under. */
+  const id = seedId('bespoke', [{ date: '2026-09-01', description: 'Horsham to Gatwick', amount: 96 }], null);
+  await call('patch', '/invoices/:id', { params: { id: String(id) }, body: { fees: 25, fees_label: 'Meet & greet' } });
+  assert.strictEqual(db.prepare('SELECT fees FROM invoices WHERE id = ?').get(id).fees, 25);
+
+  const r = await call('patch', '/invoices/:id', { params: { id: String(id) }, body: {
+    kind: 'account',
+    line_items: [{ date: '2026-09-01', pickup: 'Horsham', destination: 'Gatwick', fare: 96, fee: 4 }]
+  }});
+  assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
+  const row = db.prepare('SELECT fees, fees_label, total FROM invoices WHERE id = ?').get(id);
+  assert.strictEqual(row.fees, 4,
+    'the single hand-typed fee survived the change of mode — the parking is now billed twice over');
+  assert.strictEqual(row.fees_label, 'Fees (parking & tolls)',
+    'an account fee names itself after the column it is summed from');
+  assert.strictEqual(row.total, 100, 'fares 96 + fees 4');
+});
+
+test('who it is addressed to is editable, and must exist', async () => {
+  const id = seedId('account', [{ date: '2026-09-01', pickup: 'A', destination: 'B', fare: 50 }]);
+  const cust = db.prepare("INSERT INTO customers (full_name,email,password,active) VALUES ('Airport Direct','ops@apd.test','x',1)").run().lastInsertRowid;
+  let r = await call('patch', '/invoices/:id', { params: { id: String(id) }, body: { customer_id: cust } });
+  assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
+  assert.strictEqual(db.prepare('SELECT customer_id FROM invoices WHERE id = ?').get(id).customer_id, cust);
+
+  r = await call('patch', '/invoices/:id', { params: { id: String(id) }, body: { customer_id: 999999 } });
+  assert.strictEqual(r.statusCode, 404,
+    'an invoice was pointed at a customer who does not exist — it would never appear on an account again');
+  assert.strictEqual(db.prepare('SELECT customer_id FROM invoices WHERE id = ?').get(id).customer_id, cust,
+    'and the old customer must survive the refusal');
+});
+
+test('the period is editable, and dates are checked', async () => {
+  const id = seedId('account', [{ date: '2026-09-01', pickup: 'A', destination: 'B', fare: 50 }]);
+  let r = await call('patch', '/invoices/:id', { params: { id: String(id) },
+    body: { period_from: '2026-09-01', period_to: '2026-09-30', period_label: 'September 2026' } });
+  assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
+  const row = db.prepare('SELECT period_from, period_to, period_label FROM invoices WHERE id = ?').get(id);
+  assert.deepStrictEqual([row.period_from, row.period_to, row.period_label],
+    ['2026-09-01', '2026-09-30', 'September 2026']);
+  r = await call('patch', '/invoices/:id', { params: { id: String(id) }, body: { period_from: '01/09/2026' } });
+  assert.strictEqual(r.statusCode, 400, 'a date in the wrong format was stored');
+});
+
+test('the CREATE payload shape is accepted too — that is what lets one form serve both', async () => {
+  /* Creating posted recipient:{name,...} and `items`; editing patched
+     recipient_name and `line_items`. The same concepts under two sets of names,
+     which is the reason there were two screens. */
+  const id = seedId('bespoke', [{ date: '2026-09-01', description: 'One trip', amount: 10 }]);
+  const r = await call('patch', '/invoices/:id', { params: { id: String(id) }, body: {
+    recipient: { name: 'Sussex Executive', email: 'ops@sx.test', phone: '01273 000111', address: '1 Mill Road' },
+    items: [{ date: '2026-09-02', description: 'Two trips', amount: 20 }],
+    from: '2026-09-01', to: '2026-09-30'
+  }});
+  assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
+  const row = db.prepare('SELECT recipient_name, recipient_email, recipient_addr, period_from, period_to, line_items_json, total FROM invoices WHERE id = ?').get(id);
+  assert.strictEqual(row.recipient_name, 'Sussex Executive', 'recipient{} was ignored');
+  assert.strictEqual(row.recipient_email, 'ops@sx.test');
+  assert.strictEqual(row.recipient_addr, '1 Mill Road');
+  assert.strictEqual(row.period_from, '2026-09-01', 'from/to were ignored');
+  assert.strictEqual(JSON.parse(row.line_items_json).length, 1, '`items` was ignored, so the lines were lost');
+  assert.strictEqual(row.total, 20, 'the total did not follow the new lines');
+});
+
+test('the form opens on the trips — the rest is folded away', () => {
+  /* Nine invoices in ten are sent without touching the dates, the fee or the
+     total: the invoice is issued today, due in fourteen days and comes to what
+     the lines add up to. Those three were the first things on the old edit
+     sheet and the journeys were below the fold. */
+  const H = read('westmere-owner.html');
+  const open = /<details id="inv-adjust"[^>]*>/.exec(H);
+  assert.ok(open, 'no Adjustments section');
+  assert.ok(!/\bopen\b/.test(open[0]), 'it must start folded: ' + open[0]);
+  const adj = H.slice(H.indexOf('<details id="inv-adjust"'), H.indexOf('</details>'));
+  for (const id of ['inv-edit-issued', 'inv-edit-due', 'inv-edit-fees', 'inv-edit-total',
+                    'inv-edit-fees-label', 'inv-edit-manual']) {
+    assert.ok(adj.includes('id="' + id + '"'), id + ' belongs inside Adjustments');
+  }
+  /* And the trips stay out of it — they are the form, not an adjustment. */
+  assert.ok(!adj.includes('id="ni-items"'), 'the journeys must not be folded away');
+  const opener = /function invEditOpen\(\)\{[\s\S]*?\n\}/.exec(H)[0];
+  assert.ok(/inv-adjust'\)\.open=!!\(inv\.total_manual/.test(opener),
+    'an invoice whose total was set by hand must open showing that, not hiding it');
+});
+
+test('correcting an ACCOUNT invoice shows its journeys', () => {
+  /* The trips block sat inside the one-off branch, because raising an account
+     invoice does not list them — the customer and the month are chosen and the
+     server gathers the bookings. Correcting one is the opposite case: the
+     journeys exist, and they are usually the reason he is here. Left where it
+     was, a correction showed a customer, a month, and nothing to fix. */
+  const H = read('westmere-owner.html');
+  const lines = H.indexOf('id="inv-lines-block"');
+  const bespoke = H.indexOf('id="inv-bespoke-fields"');
+  assert.ok(lines > 0, 'the trips have no block of their own');
+  assert.ok(lines > bespoke, 'it should come after the one-off fields');
+  const mode = /function invSetMode\(mode\)\{[\s\S]*?\n\}/.exec(H)[0].replace(/\s/g, '');
+  assert.ok(/lines\.style\.display=\(mode==='bespoke'\|\|_INV_FORM_ID\)/.test(mode),
+    'the trips must show for a one-off OR for any invoice being corrected: ' + mode);
+});
+
+test('a correction keeps the parts of a journey the form does not show', () => {
+  /* The form has four boxes per trip; the PDF prints seven fields. Read back
+     from the boxes alone, a correction emptied the Ref and Time columns of
+     every journey on the invoice — a column of blanks on a document somebody
+     has already filed against their own records. */
+  const H = read('westmere-owner.html');
+  const add = /function invAddItem\([\s\S]*?\n\}/.exec(H)[0];
+  assert.ok(/row\._wmLine=orig/.test(add), 'the saved line must be kept on the row');
+  const get = /function invGetItems\(\)\{[\s\S]*?\n\}/.exec(H)[0].replace(/\s+/g, ' ');
+  assert.ok(/Object\.assign\(\{\}, r\._wmLine\|\|\{\}, \{/.test(get),
+    'and the edited fields must be written OVER it, not instead of it');
+  const dom = /function invRowsFromDom\(\)\{[\s\S]*?\n\}/.exec(H)[0];
+  assert.ok(/orig: ?r\._wmLine\|\|null/.test(dom),
+    'and it must survive the relayout the commission toggle does');
+  /* The server end of the same promise, executed above in “EVERY variable…”:
+     the account branch Object.assigns onto the line it was given. */
+  const src = read('server/api.js').replace(/\/\*[\s\S]*?\*\//g, ' ');
+  assert.ok(/return Object\.assign\(\{\}, it, \{\s*fare:/.test(src),
+    'the route must preserve the rest of the line too');
+});
+
+test('RAISING an invoice takes a document fee, the same way correcting one does', async () => {
+  /* It did not. The create route summed the per-trip fees and ignored a single
+     figure; the edit route took the single figure. The same fee therefore
+     printed in two different places depending on which screen it was typed on
+     — and once the two screens became one form, one of them was lying. */
+  const r = await call('post', '/invoices/bespoke', { body: {
+    recipient: { name: 'Lancing Hotel', email: 'accounts@lancing.test', address: '1 Sea Road' },
+    items: [{ date: '2026-09-04', description: 'Brighton to Gatwick', amount: 90 }],
+    fees: 12.5, fees_label: 'Meet & greet', send_email: false
+  }});
+  assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
+  const row = db.prepare('SELECT fees, fees_label, total FROM invoices WHERE invoice_no = ?').get(r.body.invoiceNo);
+  assert.strictEqual(row.fees, 12.5, 'the document fee was dropped on the way in');
+  assert.strictEqual(row.fees_label, 'Meet & greet', 'and it must be able to name itself');
+  assert.strictEqual(row.total, 102.5, 'and the total must include it: 90 + 12.50');
+  /* Absent, the trips are summed exactly as they always were. */
+  const r2 = await call('post', '/invoices/bespoke', { body: {
+    recipient: { name: 'Lancing Hotel', email: 'accounts@lancing.test' },
+    items: [{ date: '2026-09-05', description: 'Gatwick to Brighton', amount: 90, fee: 6 }],
+    send_email: false
+  }});
+  assert.strictEqual(r2.statusCode, 200, JSON.stringify(r2.body));
+  const row2 = db.prepare('SELECT fees, total FROM invoices WHERE invoice_no = ?').get(r2.body.invoiceNo);
+  assert.strictEqual(row2.fees, 6, 'the per-trip sum must still be the fallback');
+  assert.strictEqual(row2.total, 96);
+  // and nonsense is refused rather than stored
+  assert.strictEqual((await call('post', '/invoices/bespoke', { body: {
+    recipient: { name: 'X', email: 'x@y.test' },
+    items: [{ description: 'One', amount: 10 }], fees: 'lots', send_email: false } })).statusCode, 400,
+    'a fee that is not a number must be refused');
 });
 
 test('this guardrail is wired into npm test', () => {

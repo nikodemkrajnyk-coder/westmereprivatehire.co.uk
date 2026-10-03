@@ -43,13 +43,39 @@ const { getDb } = require('./db');
    its own copy. It wrote three. */
 const ADMIN_FEE_PCT = 0.10;
 
-/** The split of a fare into what Westmere keeps and what the driver is paid. */
-function computeSplit(fare) {
+/**
+ * The split of a fare into what Westmere keeps and what the driver is paid.
+ *
+ * `rate` is a FRACTION (0.10, not 10) and is optional: left out, a job is worth
+ * the house rate, which is what every caller meant before commission became a
+ * choice. Passed as 0 it is a cover job — a favour, or one he could have driven
+ * himself — and the driver keeps the fare.
+ *
+ * The rate is a parameter rather than a second function because there is one
+ * definition of what a job is worth; "no commission" is a value of it, not an
+ * exception to it. GUARDRAIL: server/tests/driver-ledger.test.js
+ */
+function computeSplit(fare, rate) {
   if (fare == null || isNaN(fare)) return { driver_pay: null, admin_fee: null };
+  const r = (rate === null || rate === undefined || isNaN(rate)) ? ADMIN_FEE_PCT : Number(rate);
   const f = Number(fare);
-  const fee = Math.round(f * ADMIN_FEE_PCT * 100) / 100;
+  const fee = Math.round(f * r * 100) / 100;
   const pay = Math.round((f - fee) * 100) / 100;
   return { driver_pay: pay, admin_fee: fee };
+}
+
+/**
+ * The rate to OFFER for a job going to this driver, as a fraction.
+ *
+ * NULL is not zero. A driver saved before the column existed has no default and
+ * takes the house rate; a driver deliberately set to 0 is one we charge nothing.
+ * Reading a missing column as zero would quietly stop charging commission for
+ * every driver already on file.
+ */
+function rateForDriver(driver) {
+  const pct = driver && driver.commission_pct;
+  if (pct === null || pct === undefined || pct === '' || isNaN(pct)) return ADMIN_FEE_PCT;
+  return Math.max(0, Math.min(100, Number(pct))) / 100;
 }
 
 /** Did the driver take the money at the kerb? */
@@ -242,6 +268,7 @@ function driverBalance(driverId) {
 module.exports = {
   ADMIN_FEE_PCT,
   computeSplit,
+  rateForDriver,
   commissionSql,
   incomeSql,
   driverSettlements,

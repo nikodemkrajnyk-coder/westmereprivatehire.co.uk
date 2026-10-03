@@ -40,8 +40,17 @@ const BUTTONS = read('wm-buttons.css');
 const SITE = read('styles.css');
 
 // The token block: everything from :root to the end of the master token section.
-const TOKEN_BLOCK = THEME.slice(THEME.indexOf(':root'), THEME.indexOf('2. GLOBAL RESET') !== -1
-  ? THEME.indexOf('2. GLOBAL RESET') : THEME.indexOf(':root') + 6000);
+/* BOUNDED BY THE END OF THE RULE, not by a character count. This read
+   ':root' + 6000 characters, because the '2. GLOBAL RESET' landmark it looked
+   for first has never existed in this file — so the fallback was always the
+   live path. --westmere-type sat at +5909, ninety-one characters inside the
+   window: adding a comment to the token block pushed it out and the guard
+   reported a token missing that was six lines further down. A token block is
+   bounded by its own closing brace, so that is what bounds it here. The same
+   file already does this for the button tokens, two tests below. */
+const TOKEN_END = THEME.indexOf('\n}', THEME.indexOf(':root'));
+const TOKEN_BLOCK = THEME.slice(THEME.indexOf(':root'),
+  TOKEN_END !== -1 ? TOKEN_END : THEME.length);
 
 console.log('\nDesign tokens — one place to change the look');
 

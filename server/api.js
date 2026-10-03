@@ -1386,8 +1386,31 @@ router.get('/bookings/:id', (req, res) => {
   const booking = getDb().prepare('SELECT * FROM bookings WHERE id = ?').get(id);
   if (!booking) return res.status(404).json({ error: 'Booking not found' });
 
+  /* THE TWO ANSWERS THE SEND SHEET HAS TO SHOW. Commission is chosen per job,
+     so the screen needs both figures at once: what it is worth at the rate on
+     offer, and what it is worth as a cover job. Both are worked out HERE — the
+     browser must never do money arithmetic, or the confirm screen and the books
+     are free to disagree, which is the fault this endpoint was added to fix.
+     `driver_id` names whose default to offer; `commission_pct` overrides it, so
+     the sheet can re-ask when the owner types a different rate.
+     GUARDRAIL: server/tests/driver-ledger.test.js */
+  const ledger = require('./driver-ledger');
   const { computeSplit } = require('./offer-routes');
-  const split = computeSplit(booking.fare);
+  let rate = ledger.ADMIN_FEE_PCT;
+  const drvId = parseInt(req.query.driver_id, 10);
+  if (!isNaN(drvId)) {
+    const d = getDb().prepare("SELECT commission_pct FROM users WHERE id = ?").get(drvId);
+    if (d) rate = ledger.rateForDriver(d);
+  }
+  if (req.query.commission_pct !== undefined && req.query.commission_pct !== '') {
+    const pct = Number(req.query.commission_pct);
+    if (isNaN(pct) || pct < 0 || pct > 100) {
+      return res.status(400).json({ error: 'Commission must be a percentage between 0 and 100' });
+    }
+    rate = pct / 100;
+  }
+  const split = computeSplit(booking.fare, rate);
+  const zero = computeSplit(booking.fare, 0);
   res.json({
     ok: true,
     booking,
@@ -1399,7 +1422,15 @@ router.get('/bookings/:id', (req, res) => {
         ? null : Number(booking.fare),
       commission: split.admin_fee,
       payout: split.driver_pay
-    }
+    },
+    /* The same job as a cover job — nothing taken, the fare to him. */
+    split_none: {
+      fare: (booking.fare === null || booking.fare === undefined || booking.fare === '')
+        ? null : Number(booking.fare),
+      commission: zero.admin_fee,
+      payout: zero.driver_pay
+    },
+    commission_pct: Math.round(rate * 1000) / 10
   });
 });
 
@@ -2224,6 +2255,15 @@ router.patch('/customers/:id', (req, res) => {
     'address_line1', 'address_line2', 'postcode',
     'bank_name', 'bank_sort_code', 'bank_account_no', 'bank_account_name'
   ];
+  /* WHETHER WE PASS WORK TO THEM. Coerced to 0/1 rather than passed through:
+     this is a flag on a customer, and 'false' arriving as a string would set it.
+     GUARDRAIL: server/tests/operators.test.js */
+  if (body.is_operator !== undefined) {
+    const on = (body.is_operator === true || body.is_operator === 1 ||
+                body.is_operator === '1' || body.is_operator === 'true') ? 1 : 0;
+    updates.push('is_operator = ?'); values.push(on);
+  }
+  const _plainFieldsEnd = true;
   for (const f of plainFields) {
     if (body[f] !== undefined) {
       updates.push(`${f} = ?`);
@@ -2567,7 +2607,26 @@ router.post('/invoices/bespoke', async (req, res) => {
        commission on               → fares − 10% of the fares + fees
      Fees are the optional per-trip amounts, passed through whole; a trip that
      carried none contributes nothing and prints nothing. */
-  const newFees = Math.round(cleanItems.reduce((t, it) => t + (Number(it.fee) || 0), 0) * 100) / 100;
+  const perTripFees = Math.round(cleanItems.reduce((t, it) => t + (Number(it.fee) || 0), 0) * 100) / 100;
+  /* THE DOCUMENT'S OWN FEE. A one-off invoice may carry a single figure for the
+     whole job — "Meet & greet", "Parking & tolls" — named once rather than trip
+     by trip. The EDIT route has always taken one; creating an invoice could only
+     reach it through a trip row, so the same fee landed in two different places
+     depending on which screen it was typed on. Given here it wins; absent, the
+     trips are summed exactly as before. Now that create and edit are one form,
+     they have to be one rule. */
+  let newFees = perTripFees;
+  let newFeesLabel = null;
+  if (req.body && req.body.fees !== undefined && req.body.fees !== null && req.body.fees !== '') {
+    const f = Number(req.body.fees);
+    if (isNaN(f) || f < 0) return res.status(400).json({ error: 'Those fees are not a number: ' + req.body.fees });
+    if (f > 1000000) return res.status(400).json({ error: 'Those fees look wrong' });
+    newFees = Math.round(f * 100) / 100;
+  }
+  if (req.body && req.body.fees_label !== undefined) {
+    newFeesLabel = String(req.body.fees_label || '').trim().slice(0, 60) || null;
+  }
+  if (newFees <= 0) { newFees = 0; newFeesLabel = null; }
   const newCommissionPct = (() => {
     const p = Number(req.body && req.body.commission_pct);
     return (isFinite(p) && p > 0 && p < 100) ? Math.round(p * 100) / 100 : 0;
@@ -2609,7 +2668,7 @@ router.post('/invoices/bespoke', async (req, res) => {
          attached to the email — printed a correct total with nothing above it
          explaining how it got there, and only a later re-render (which reads
          them off the stored row) showed the fees and the commission. */
-      fees: newFees, commissionPct: newCommissionPct,
+      fees: newFees, feesLabel: newFeesLabel || '', commissionPct: newCommissionPct,
       period: { issuedDate, dueDate, label: '' }
     });
     // Written under the TEMPLATE-VERSIONED name the readers look for; an
@@ -2642,19 +2701,43 @@ router.post('/invoices/bespoke', async (req, res) => {
     db.prepare(`
       INSERT INTO invoices
         (invoice_no, kind, recipient_name, recipient_email, recipient_phone, recipient_addr,
-         issued_date, due_date, notes, line_items_json, journey_json, total, fees, commission_pct,
+         issued_date, due_date, notes, line_items_json, journey_json, total, fees, fees_label, commission_pct,
            emailed, created_by)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     `).run(
       invoiceNo, 'bespoke', cleanRecipient.name, cleanRecipient.email, cleanRecipient.phone, cleanRecipient.address,
       issuedDate, dueDate, notes || null,
       JSON.stringify(cleanItems),
       // Kept, so a send NEXT WEEK shows the same trip block as a send today.
       journeyForEmail ? JSON.stringify(journeyForEmail) : null,
-      total, newFees, newCommissionPct, shouldEmail ? 1 : 0, req.auth.id
+      total, newFees, newFeesLabel, newCommissionPct, shouldEmail ? 1 : 0, req.auth.id
     );
   } catch (e) {
     console.error('[INVOICE] persist bespoke failed:', e.message);
+  }
+
+  /* ── THE JOBS THIS INVOICE BILLED ────────────────────────────────────────
+     Sent when the invoice was raised from an operator's page: the bookings the
+     lines came from. Stamped with the invoice so the same journey cannot be
+     billed twice — without it, "Create invoice" would re-offer every job it
+     had already invoiced and the only defence would be the owner's memory.
+     Stamped AFTER the row is written, so a failure to persist cannot mark the
+     work as billed by an invoice that does not exist.
+     GUARDRAIL: server/tests/operator-dispatch.test.js */
+  try {
+    const ids = Array.isArray(req.body && req.body.booking_ids) ? req.body.booking_ids : [];
+    if (ids.length) {
+      const inv = db.prepare('SELECT id FROM invoices WHERE invoice_no = ?').get(invoiceNo);
+      if (inv) {
+        const stamp = db.prepare('UPDATE bookings SET operator_invoice_id = ? WHERE id = ? AND operator_invoice_id IS NULL');
+        ids.forEach((bid) => {
+          const n = parseInt(bid, 10);
+          if (!isNaN(n)) stamp.run(inv.id, n);
+        });
+      }
+    }
+  } catch (e) {
+    console.error('[INVOICE] could not mark operator jobs as billed:', e.message);
   }
 
   // Upsert recipient into saved recipients for future auto-fill
@@ -2874,8 +2957,55 @@ router.patch('/invoices/:id', async (req, res) => {
   const row = db.prepare('SELECT * FROM invoices WHERE id = ?').get(id);
   if (!row) return res.status(404).json({ error: 'Invoice not found' });
 
-  const b = req.body || {};
+  /* ── ONE PAYLOAD SHAPE, BOTH WAYS ─────────────────────────────────────────
+     Creating an invoice posted `recipient: {name,email,...}` and `items`;
+     editing one patched `recipient_name`, `recipient_addr` and `line_items`.
+     The same concepts under two sets of names, which is why the create screen
+     and the edit screen had to be two screens. Both are accepted here, so one
+     form can serve both.
+     GUARDRAIL: server/tests/invoice-edit.test.js */
+  const raw = req.body || {};
+  const b = Object.assign({}, raw);
+  if (raw.recipient && typeof raw.recipient === 'object') {
+    if (b.recipient_name === undefined)  b.recipient_name  = raw.recipient.name;
+    if (b.recipient_email === undefined) b.recipient_email = raw.recipient.email;
+    if (b.recipient_phone === undefined) b.recipient_phone = raw.recipient.phone;
+    if (b.recipient_addr === undefined)  b.recipient_addr  = raw.recipient.address;
+  }
+  if (!Array.isArray(b.line_items) && Array.isArray(raw.items)) b.line_items = raw.items;
+  if (b.period_from === undefined && raw.from !== undefined) b.period_from = raw.from;
+  if (b.period_to === undefined && raw.to !== undefined) b.period_to = raw.to;
   const str = (v, fallback) => (v === undefined || v === null) ? fallback : String(v).trim();
+
+  /* ── WHAT KIND OF INVOICE THIS IS ─────────────────────────────────────────
+     The mode could be chosen when the invoice was created and never afterwards,
+     so a one-off raised against the wrong arrangement had to be deleted and
+     retyped. It is editable now, and the line items below are read in the NEW
+     kind's shape — an account line is a journey, a one-off line is a
+     description — so switching mode converts the invoice rather than leaving it
+     half in each. */
+  let kind = row.kind;
+  if (b.kind !== undefined && b.kind !== null && b.kind !== '') {
+    if (!['account', 'bespoke'].includes(String(b.kind))) {
+      return res.status(400).json({ error: 'An invoice is either account or bespoke' });
+    }
+    kind = String(b.kind);
+  }
+
+  /* WHO IT IS ADDRESSED TO. Checked against the customers table rather than
+     written as given: an invoice pointing at a customer who does not exist is
+     one that never appears on their account again. */
+  let customerId = row.customer_id;
+  if (Object.prototype.hasOwnProperty.call(b, 'customer_id')) {
+    if (b.customer_id === null || b.customer_id === '') customerId = null;
+    else {
+      const cid = parseInt(b.customer_id, 10);
+      if (isNaN(cid)) return res.status(400).json({ error: 'Invalid customer' });
+      const c = db.prepare('SELECT id FROM customers WHERE id = ?').get(cid);
+      if (!c) return res.status(404).json({ error: 'That customer does not exist' });
+      customerId = cid;
+    }
+  }
 
   // ── The line items ──
   let lineItems = null;
@@ -2883,7 +3013,7 @@ router.patch('/invoices/:id', async (req, res) => {
     if (b.line_items.length > 200) return res.status(400).json({ error: 'Too many lines on one invoice' });
     lineItems = b.line_items.map((it) => {
       const amount = Number(it && it.amount);
-      if (row.kind === 'bespoke') {
+      if (kind === 'bespoke') {
         /* THE WHOLE LINE SURVIVES THE CORRECTION, not three fields of it.
            This used to return date/description/amount and nothing else, which
            quietly destroyed two things every time a one-off operator invoice
@@ -2917,14 +3047,16 @@ router.patch('/invoices/:id', async (req, res) => {
         collected_direct: (it && (it.collected_direct === 1 || it.collected_direct === true)) ? 1 : 0
       });
     });
-    if (row.kind === 'bespoke' && lineItems.some((it) => !it.description)) {
+    /* `kind`, not `row.kind` — the lines arriving belong to the mode the form is
+       now in, not the one the invoice was saved in. */
+    if (kind === 'bespoke' && lineItems.some((it) => !it.description)) {
       return res.status(400).json({ error: 'Every line needs a description' });
     }
   }
 
   const items = lineItems || (() => { try { return JSON.parse(row.line_items_json || '[]'); } catch (_) { return []; } })();
   const lineSum = Math.round(items.reduce((s, it) =>
-    s + (Number(row.kind === 'bespoke' ? it.amount : it.fare) || 0), 0) * 100) / 100;
+    s + (Number(kind === 'bespoke' ? it.amount : it.fare) || 0), 0) * 100) / 100;
 
   /* THE FEES. Parking, tolls, waiting time — set here or cleared here.
        fees: a number  → that is the figure;
@@ -2940,7 +3072,9 @@ router.patch('/invoices/:id', async (req, res) => {
      is DERIVED from the rows and a directly-supplied figure is ignored, so
      there is no arrangement in which both can count. */
   const perTripFees = Math.round(items.reduce((t, it) => t + (Number(it && it.fee) || 0), 0) * 100) / 100;
-  const isAccount = row.kind !== 'bespoke';
+  /* The mode the invoice is in AFTER this patch — the fee rule below belongs to
+     the arrangement the owner has just chosen, not the one he is correcting. */
+  const isAccount = kind !== 'bespoke';
 
   let fees = +row.fees || 0;
   let feesLabel = row.fees_label || null;
@@ -2996,7 +3130,7 @@ router.patch('/invoices/:id', async (req, res) => {
        payout = fares − commission + fees − collected */
   const collectedDirect = Math.round(items.reduce((t, it) =>
     t + ((it && (it.collected_direct === 1 || it.collected_direct === true))
-          ? (Number(row.kind === 'bespoke' ? it.amount : it.fare) || 0) : 0), 0) * 100) / 100;
+          ? (Number(kind === 'bespoke' ? it.amount : it.fare) || 0) : 0), 0) * 100) / 100;
 
   /* fares − commission + fees. With no commission this is the sum it always
      was, so nothing about an ordinary invoice moves. */
@@ -3027,6 +3161,11 @@ router.patch('/invoices/:id', async (req, res) => {
   const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
   const issued = str(b.issued_date, row.issued_date);
   const due = str(b.due_date, row.due_date);
+  const periodFrom = str(b.period_from, row.period_from);
+  const periodTo = str(b.period_to, row.period_to);
+  for (const [label, v] of [['Period from', periodFrom], ['Period to', periodTo]]) {
+    if (v && !DATE_RE.test(v)) return res.status(400).json({ error: label + ' must be YYYY-MM-DD' });
+  }
   if (issued && !DATE_RE.test(issued)) return res.status(400).json({ error: 'Issued date must be YYYY-MM-DD' });
   if (due && !DATE_RE.test(due)) return res.status(400).json({ error: 'Due date must be YYYY-MM-DD' });
 
@@ -3034,6 +3173,7 @@ router.patch('/invoices/:id', async (req, res) => {
   db.prepare(`
     UPDATE invoices
        SET recipient_name  = ?, recipient_email = ?, recipient_phone = ?, recipient_addr = ?,
+           kind = ?, customer_id = ?, period_from = ?, period_to = ?,
            issued_date = ?, due_date = ?, period_label = ?, notes = ?,
            line_items_json = ?, total = ?, total_manual = ?,
            fees = ?, fees_label = ?, commission_pct = ?,
@@ -3044,6 +3184,7 @@ router.patch('/invoices/:id', async (req, res) => {
     email || null,
     str(b.recipient_phone, row.recipient_phone) || null,
     str(b.recipient_addr, row.recipient_addr) || null,
+    kind, customerId, periodFrom || null, periodTo || null,
     issued || row.issued_date, due || null,
     str(b.period_label, row.period_label) || null,
     str(b.notes, row.notes) || null,
@@ -4086,7 +4227,7 @@ router.get('/drivers', (req, res) => {
     SELECT id, username, full_name, email, phone, role, active, has_login,
            license_no, license_expiry, dbs_no, dbs_expiry, vehicle, reg,
            phv_no, insurance_no, driver_notes, photo, is_default_driver,
-           max_passengers, max_bags, luggage_notes,
+           max_passengers, max_bags, luggage_notes, commission_pct,
            onboarding_status, created_at
     FROM users WHERE role IN ('driver','owner') AND active = 1 ORDER BY created_at DESC
   `).all().map(sanitizeDriver);
@@ -4125,6 +4266,85 @@ router.get('/drivers', (req, res) => {
    REGISTERED BEFORE '/drivers/:id'. Express matches in order, so '/balances'
    has to be declared above the parameterised route or it arrives as a driver
    whose id is the word "balances".  */
+/* ── OPERATORS ────────────────────────────────────────────────────────────────
+   Fellow firms. The relationship is NOT the drivers' one: nothing is netted off
+   a running balance, because work passed to an operator is settled by invoice —
+   which this system already issues, already marks paid, and already addresses to
+   a customer record.
+
+   So "what they owe" is not a new sum to keep: it is the total of their invoices
+   that are not paid. Nothing to reconcile, nothing to drift, and marking an
+   invoice paid is already the one action that changes it.
+   GUARDRAIL: server/tests/operators.test.js */
+router.get('/operators', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const db = getDb();
+  const rows = db.prepare(
+    "SELECT id, full_name, company, email, phone, account_type FROM customers WHERE is_operator = 1 AND active = 1 ORDER BY full_name"
+  ).all();
+  const operators = rows.map((r) => {
+    const agg = db.prepare(
+      `SELECT COUNT(*) AS invoices,
+              COALESCE(SUM(CASE WHEN COALESCE(paid,0) = 0 THEN total ELSE 0 END), 0) AS owed,
+              COALESCE(SUM(CASE WHEN COALESCE(paid,0) = 0 THEN 1 ELSE 0 END), 0) AS unpaid
+         FROM invoices WHERE customer_id = ?`
+    ).get(r.id);
+    /* WORK PASSED AND NOT YET BILLED. It belongs on the list because it is the
+       thing that needs doing — an operator with three un-invoiced jobs is a
+       different row from one who is simply waiting to pay. */
+    const waiting = db.prepare(
+      `SELECT COUNT(*) AS n FROM bookings
+        WHERE operator_id = ? AND operator_invoice_id IS NULL
+          AND COALESCE(status,'') != 'cancelled'`
+    ).get(r.id);
+    return Object.assign({}, r, {
+      invoices: agg.invoices, unpaid: agg.unpaid,
+      uninvoiced: Number(waiting.n) || 0,
+      owed: Math.round(Number(agg.owed) * 100) / 100
+    });
+  });
+  res.json({ ok: true, operators });
+});
+
+/** One operator, with every invoice we have raised against them. */
+router.get('/operators/:id', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid operator ID' });
+  const db = getDb();
+  const operator = db.prepare(
+    'SELECT id, full_name, company, email, phone, address_line1, address_line2, postcode, account_type, is_operator FROM customers WHERE id = ?'
+  ).get(id);
+  if (!operator) return res.status(404).json({ error: 'Operator not found' });
+  const invoices = db.prepare(
+    `SELECT id, invoice_no, issued_date, due_date, period_label, total, paid, paid_at, emailed
+       FROM invoices WHERE customer_id = ? ORDER BY COALESCE(issued_date, created_at) DESC LIMIT 100`
+  ).all(id);
+  const owed = invoices.reduce((t, i) => t + (Number(i.paid) ? 0 : (Number(i.total) || 0)), 0);
+  /* ── THE WORK WE HAVE PASSED THEM ────────────────────────────────────────
+     Every job sent to this operator, newest first, and whether it has been
+     billed yet. The un-billed ones are what "Create invoice" fills the form
+     with — without this the owner would be retyping journeys that are already
+     in the system, and billing one twice would be a matter of remembering. */
+  const jobs = db.prepare(
+    `SELECT id, ref, date, time, pickup, destination, fare, payment, status,
+            passed_at, operator_invoice_id
+       FROM bookings
+      WHERE operator_id = ? AND COALESCE(status,'') != 'cancelled'
+      ORDER BY date DESC, time DESC LIMIT 200`
+  ).all(id).map((j) => Object.assign({}, j, { invoiced: !!j.operator_invoice_id }));
+  res.json({
+    ok: true, operator, invoices, jobs,
+    uninvoiced: jobs.filter((j) => !j.invoiced).length,
+    owed: Math.round(owed * 100) / 100,
+    unpaid: invoices.filter((i) => !Number(i.paid)).length
+  });
+});
+
 router.get('/drivers/balances', (req, res) => {
   if (!['admin', 'owner'].includes(req.auth.role)) {
     return res.status(403).json({ error: 'Admin access required' });
@@ -4325,6 +4545,22 @@ router.patch('/drivers/:id', (req, res) => {
     'vehicle', 'reg', 'phv_no', 'insurance_no', 'driver_notes', 'photo',
     'max_passengers', 'max_bags', 'luggage_notes'
   ];
+  /* HIS DEFAULT SHARE. Validated rather than passed through: a rate outside
+     0-100 would be written into every job sent to him afterwards, and '' clears
+     it back to the house rate rather than setting zero — those are different
+     answers and the form must not conflate them.
+     GUARDRAIL: server/tests/driver-ledger.test.js */
+  if (body.commission_pct !== undefined) {
+    if (body.commission_pct === '' || body.commission_pct === null) {
+      updates.push('commission_pct = ?'); values.push(null);
+    } else {
+      const pct = Number(body.commission_pct);
+      if (isNaN(pct) || pct < 0 || pct > 100) {
+        return res.status(400).json({ error: 'Commission must be a percentage between 0 and 100' });
+      }
+      updates.push('commission_pct = ?'); values.push(pct);
+    }
+  }
   for (const f of plainFields) {
     if (body[f] !== undefined) {
       updates.push(`${f} = ?`);
