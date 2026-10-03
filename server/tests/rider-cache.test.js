@@ -82,9 +82,18 @@ test('rider My Account pickers/inputs are light + readable (color-scheme light)'
     "must declare color-scheme 'only light' — plain 'light' still lets Android auto-dark repaint the page (see payment-settled.test.js)");
   // The custom date/time/pick dropdowns + form inputs force a light scheme so
   // native controls and text render dark-on-light (the dark/unreadable picker bug).
+  //
+  // ONLY light. The meta two lines above has said so since 8e609d1; these
+  // elements were left on plain `light`, which is not a weaker version of the
+  // same thing — it is the opposite. It tells Android Chrome's Auto Dark Theme
+  // that this subtree MAY be repainted, and it then repaints it, whatever
+  // background the rule goes on to declare. On the booking page the same
+  // keyword turned every field into a black box.
+  // GUARDRAIL for the whole class: server/tests/booking-dark-mode.test.js
   for (const cls of ['.cal-drop', '.time-drop', '.pick-drop', '.fi']) {
     const m = riderHtml.match(new RegExp(cls.replace('.', '\\.') + '\\{[^}]*\\}'));
-    assert.ok(m && /color-scheme:\s*light/.test(m[0]), cls + ' must set color-scheme:light for readable pickers');
+    assert.ok(m && /color-scheme:\s*only light/.test(m[0]),
+      cls + ' must set color-scheme:only light — plain `light` invites the repaint it is meant to prevent');
   }
 });
 test('the SW can NEVER respond with undefined (the blank-page outage)', () => {

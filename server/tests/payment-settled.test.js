@@ -94,9 +94,17 @@ test('no unpaid booking is ever locked as "paid"', () => {
   assert.deepStrictEqual(bad, []);
 });
 
+/* A DATE THAT IS STILL IN FRONT OF US, and will be. This booking was written
+   with a date a few weeks ahead; the weeks passed, the date became the past,
+   and the card backfill further down — which stamps card bookings that have
+   already travelled — started matching this row too and reporting two changes
+   where the test demanded one. A fixture whose meaning depends on the day it
+   is run is a test that fails by appointment. */
+const FUTURE = '2099-03-01';
+
 test('an unpaid CARD booking is payable on every surface', async () => {
   const b = { ref: 'WM-UNPAID', name: 'Lap Shing Chan', email: 'b@e.com',
-              pickup: 'Morden', destination: 'Bolney', date: '2026-09-20', time: '07:00',
+              pickup: 'Morden', destination: 'Bolney', date: FUTURE, time: '07:00',
               passengers: 1, fare: 96, payment: 'card', paid_at: null,
               status: 'confirmed', pay_token: 'tok9' };
 
@@ -115,7 +123,7 @@ test('an unpaid CARD booking is payable on every surface', async () => {
   const pub = require('../public-api');
   db.prepare(`INSERT INTO bookings (ref,pickup,destination,date,time,passengers,fare,payment,status,pay_token)
               VALUES (?,?,?,?,?,?,?,?,?,?)`)
-    .run('WM-UNPAID', 'Morden', 'Bolney', '2026-09-20', '07:00', 1, 96, 'card', 'confirmed', 'tok9');
+    .run('WM-UNPAID', 'Morden', 'Bolney', FUTURE, '07:00', 1, 96, 'card', 'confirmed', 'tok9');
   const r = await call(pub, 'get', '/pay/:ref/cash', { params: { ref: 'WM-UNPAID' }, query: { t: 'tok9' } });
   assert.ok(!/already been paid/i.test(String(r.body || '')),
     'the cash link still tells him the journey is paid: ' + String(r.body || '').slice(0, 120));

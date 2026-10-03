@@ -543,7 +543,21 @@ nav,
 input,
 select,
 textarea {
-  color-scheme: light !important;
+  /* ONLY LIGHT, AND THE KEYWORD IS THE WHOLE BUG.
+     `light` says "this CAN be shown light", which is exactly the invitation
+     Android Chrome's Auto Dark Theme accepts — it then repaints the control
+     itself, and the explicit white background on the next line does not stop
+     it. §2 opted the document out with `only light !important`; this rule
+     re-opened the hole for every form control on the site, and because it is
+     !important no page could close it.
+
+     Measured in Chrome with Auto Dark on: every field of the booking form —
+     name, phone, flight number, passengers, luggage — rendered as a black box,
+     and so did the date popup a customer could not read. One word, and they
+     render white again. Commit 8e609d1 fixed the document and said element
+     declarations were "a different job"; this is that job.
+     GUARDRAIL: server/tests/booking-dark-mode.test.js */
+  color-scheme: only light !important;
   background: var(--westmere-white) !important;
   color: var(--westmere-navy) !important;
   font-family: var(--sans) !important;

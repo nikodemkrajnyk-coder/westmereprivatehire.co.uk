@@ -36,15 +36,34 @@ nav{height:78px;display:flex;align-items:center;justify-content:space-between;pa
    of OS/browser dark mode. Colours are hard-coded (not theme vars) so it is
    bulletproof even where the page is force-darkened. */
 .wm-native-hidden{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;opacity:0;pointer-events:none}
-.wm-field{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;font-family:var(--sans);font-size:.9rem;line-height:1.2;padding:14px;background:var(--westmere-white, #ffffff);color:var(--westmere-ink-legacy, #1b1b1a);border:1px solid var(--westmere-line-strong, #c8d1d9);cursor:pointer;text-align:left;-webkit-appearance:none;appearance:none;color-scheme:light}
+/* ── WHY `only` ──────────────────────────────────────────────────────────
+   `color-scheme: light` says "this can be SHOWN light", which is precisely the
+   invitation Android Chrome's Auto Dark Theme accepts: it repaints a page that
+   only knows how to be light, guessing the colours itself. `only light` forbids
+   the override.
+
+   The pages opted out in 8e609d1 and the ELEMENTS were left behind — and an
+   element-level `light` punches a hole straight back through the page's opt-out
+   for its own subtree. Measured in Chrome with Auto Dark on: the booking form's
+   every field rendered as a black box, and the date popup as the black
+   rectangle a customer could not read ("I guessed where to press to continue").
+   Everything beside them, which declares nothing and inherits the root's `only
+   light`, stayed white. The keyword is the whole bug.
+   GUARDRAIL: server/tests/booking-dark-mode.test.js */
+.wm-field{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;font-family:var(--sans);font-size:.9rem;line-height:1.2;padding:14px;background:var(--westmere-white, #ffffff);color:var(--westmere-ink-legacy, #1b1b1a);border:1px solid var(--westmere-line-strong, #c8d1d9);cursor:pointer;text-align:left;-webkit-appearance:none;appearance:none;color-scheme:only light}
 .wm-field:focus-visible{outline:2px solid var(--westmere-navy, #102a43);outline-offset:1px}
 .wm-field .wm-field-val{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wm-field.is-empty .wm-field-val{color:var(--westmere-muted, #657485)}
 .wm-field .wm-field-ic{flex-shrink:0;color:var(--westmere-navy, #102a43);display:flex}
 .wm-field .wm-field-ic svg{width:18px;height:18px;display:block}
-.wm-pop-backdrop{position:fixed;inset:0;z-index:2000;background:rgba(15,18,21,.5);display:flex;align-items:center;justify-content:center;padding:20px;color-scheme:light}
-.wm-pop{background:var(--westmere-white, #ffffff);color:var(--westmere-ink-legacy, #1b1b1a);color-scheme:light;width:min(348px,100%);max-height:calc(100vh - 40px);overflow:auto;border-radius:var(--radius-xl, 14px);box-shadow:0 24px 60px rgba(0,0,0,.35);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+.wm-pop-backdrop{position:fixed;inset:0;z-index:2000;background:rgba(15,18,21,.5);display:flex;align-items:center;justify-content:center;padding:20px;color-scheme:only light}
+.wm-pop{background:var(--westmere-white, #ffffff);color:var(--westmere-ink-legacy, #1b1b1a);color-scheme:only light;width:min(348px,100%);max-height:calc(100vh - 40px);overflow:auto;border-radius:var(--radius-xl, 14px);border:1px solid var(--westmere-line-strong, #c8d1d9);box-shadow:0 24px 60px rgba(0,0,0,.35);font-family:var(--sans);-webkit-font-smoothing:antialiased}
 .wm-pop-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:16px 16px 10px}
+/* The footer the date popup gained: what to do, and how to leave. A frame,
+   like every other control in the system. */
+.wm-pop-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px 16px;border-top:1px solid var(--westmere-line, #dfe5ea);margin-top:6px}
+.wm-pop-hint{font-family:var(--sans);font-size:.72rem;letter-spacing:.02em;color:var(--westmere-ink-muted, #657485)}
+.wm-pop-cancel{font-family:var(--sans);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;padding:9px 16px;background:var(--westmere-white, #ffffff);color:var(--westmere-navy, #102a43);border:1px solid var(--westmere-line-strong, #c8d1d9);border-radius:var(--radius-md, 8px);cursor:pointer}
 .wm-pop-title{font-family:var(--serif);font-size:1.35rem;font-weight:500;color:var(--westmere-ink-legacy, #1b1b1a)}
 .wm-nav{background:var(--westmere-white, #ffffff);border:none;width:38px;height:38px;border-radius:var(--radius-round, 50%);cursor:pointer;font-size:1.2rem;color:var(--westmere-ink-legacy, #1b1b1a);display:flex;align-items:center;justify-content:center;line-height:1;flex-shrink:0}
 .wm-nav:hover:not(:disabled){background:rgba(16,42,67,.05)}

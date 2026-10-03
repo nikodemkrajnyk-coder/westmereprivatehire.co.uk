@@ -34,7 +34,11 @@
    the native picker dark while the site forces dark text → invisible
    dark-on-dark calendar (the reported "date stuck on today" bug). */
 :root{color-scheme:only light}
-.book-form-col input,.book-form-col select,.book-form-col textarea{color-scheme:light}
+/* ONLY light, not light. `light` is the invitation Android Chrome's Auto Dark
+   Theme accepts — with it, every field on this form rendered as a black box on
+   a phone in dark mode. The page said `only light`; each field quietly said it
+   could be repainted. GUARDRAIL: server/tests/booking-dark-mode.test.js */
+.book-form-col input,.book-form-col select,.book-form-col textarea{color-scheme:only light}
 .book-form-col input[type="date"],.book-form-col input[type="time"]{color:var(--ink);accent-color:var(--navy)}
 .book-form-col input[type="date"]::-webkit-datetime-edit,
 .book-form-col input[type="time"]::-webkit-datetime-edit{color:var(--ink)}

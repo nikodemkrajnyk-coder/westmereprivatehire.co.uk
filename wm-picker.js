@@ -103,11 +103,19 @@
         html += '<button type="button" class="' + cls + '" data-day="' + dnum + '" ' + (dis ? 'disabled' : '') + '>' + dnum + '</button>';
       }
       html += '</div>';
+      /* A WAY OUT THAT IS VISIBLE. Tapping a day is how this closes, and tapping
+         the scrim is how you leave it alone — neither is on the screen. A
+         customer who could not read the popup told us he "guessed where to
+         press"; a labelled footer is the answer to that, and it matches the
+         time wheel, which has had one all along. */
+      html += '<div class="wm-pop-foot"><span class="wm-pop-hint">Tap a day to choose it</span>'
+        + '<button type="button" class="wm-pop-cancel" data-cancel>Cancel</button></div>';
       pop.innerHTML = html;
 
       var prev = pop.querySelector('[data-prev]');
       if (prev) prev.addEventListener('click', function () { if (!prevDisabled) { view = new Date(y, mo - 1, 1); render(); } });
       pop.querySelector('[data-next]').addEventListener('click', function () { view = new Date(y, mo + 1, 1); render(); });
+      pop.querySelector('[data-cancel]').addEventListener('click', closePopup);
       Array.prototype.forEach.call(pop.querySelectorAll('[data-day]'), function (b) {
         b.addEventListener('click', function () {
           var d = new Date(y, mo, +b.getAttribute('data-day'));
