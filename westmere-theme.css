@@ -51,6 +51,17 @@
      its exact value: this refactor changes no pixels. Re-point it at
      --westmere-navy when the owner wants that popup to match the rest. */
   --westmere-ink-legacy: #1b1b1a;
+  /* SECONDARY TYPE THAT IS STILL TYPE. A date, a reference, the working under a
+     figure — quieter than the heading above it, and still readable at ten
+     pixels. Measured: 5.35:1 on white, 5.22:1 on the #F6F8FA card a settled job
+     sits on, against the 4.5 that small text needs.
+
+     It exists because the layers the owner reads money on — the driver page,
+     the operator page, the send sheet — are appended to document.body, OUTSIDE
+     #scr-app, so §15.2's blanket navy never reaches them and whatever ink the
+     markup names is what renders. They named .45 and .5, which measure 2.8 and
+     3.3. GUARDRAIL: server/tests/legibility.test.js */
+  --westmere-ink-soft: rgba(27, 27, 26, .65);
   --westmere-line-inverse: #ddd;   /* hairlines ON a dark photo band */
 
   /* ── STATE COLOURS ──────────────────────────────────────────────────────

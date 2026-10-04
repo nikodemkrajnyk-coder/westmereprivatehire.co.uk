@@ -43,30 +43,47 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
    background above it. Anything over a background IMAGE is skipped — the
    photograph is the contrast and this cannot measure a photograph. */
 const SWEEP = `(function(){
- function lum(c){var m=/rgba?\\((\\d+), ?(\\d+), ?(\\d+)(?:, ?([\\d.]+))?\\)/.exec(c);if(!m)return null;
-   var a=m[4]===undefined?1:+m[4]; if(a<0.1)return null;
-   var f=[+m[1],+m[2],+m[3]].map(function(v){v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);});
+ /* ALPHA COMPOSITES IN CHANNEL SPACE, then converts. Blending the two
+    LUMINANCES is a different and much darker answer — rgba(27,27,26,.65) on
+    white is 5.3:1, and blending luminances calls it 2.6:1. An earlier draft of
+    this sweep did that and would have had us darkening type that reads
+    perfectly well, while the arithmetic looked rigorous. */
+ function parse(c){var m=/rgba?\\((\\d+), ?(\\d+), ?(\\d+)(?:, ?([\\d.]+))?\\)/.exec(c);
+   if(!m)return null; return {r:+m[1],g:+m[2],b:+m[3],a:(m[4]===undefined?1:+m[4])};}
+ function lum(c){var f=[c.r,c.g,c.b].map(function(v){v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);});
    return 0.2126*f[0]+0.7152*f[1]+0.0722*f[2];}
- function ground(el){var e=el;while(e&&e!==document.documentElement){var cs=getComputedStyle(e);
-   if(cs.backgroundImage&&cs.backgroundImage!=='none')return {img:true};
-   var l=lum(cs.backgroundColor); if(l!==null)return {l:l}; e=e.parentElement;}return {l:1};}
+ function over(f,b){ if(f.a>=1) return f;
+   return {r:f.r*f.a+b.r*(1-f.a), g:f.g*f.a+b.g*(1-f.a), b:f.b*f.a+b.b*(1-f.a), a:1}; }
+ function ground(el){var e=el, stack=[], img=false;
+   while(e&&e!==document.documentElement){var cs=getComputedStyle(e);
+     var c=parse(cs.backgroundColor);
+     if(c&&c.a>0){ stack.push(c); if(c.a>=1) break; }
+     /* A photograph ends the walk — but only if nothing opaque was found under
+        it. Giving up at the app's background image reported an empty page. */
+     if(cs.backgroundImage&&cs.backgroundImage!=='none'){ img=true; break; }
+     e=e.parentElement;}
+   var out={r:255,g:255,b:255,a:1};
+   for(var i=stack.length-1;i>=0;i--) out=over(stack[i],out);
+   return {c:out, overImage: img && !stack.some(function(x){return x.a>=1;})};}
  var bad=[];
  document.querySelectorAll('body *').forEach(function(el){
    var r=el.getBoundingClientRect(); if(r.width<8||r.height<8)return;
-   var cs=getComputedStyle(el); if(cs.visibility==='hidden'||cs.display==='none')return;
+   var cs=getComputedStyle(el);
+   if(cs.visibility==='hidden'||cs.display==='none'||+cs.opacity<0.1)return;
    var own=Array.prototype.filter.call(el.childNodes,function(n){return n.nodeType===3&&n.textContent.trim();}).length;
    var isField=/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName);
    if(!own&&!isField)return;
-   /* A DISABLED CONTROL IS MEANT TO BE FAINT. The dates before today are greyed
-      on purpose — that greyness IS the message, and WCAG exempts inactive
-      components for the same reason. Anything a customer is expected to read
-      or type into is still measured. */
+   /* A disabled control is meant to be faint — that greyness IS the message,
+      and WCAG exempts inactive components for the same reason. */
    if(el.disabled||el.getAttribute('aria-disabled')==='true')return;
-   var g=ground(el); if(g.img)return;
-   var fg=lum(cs.color); if(fg===null)return;
-   var ratio=(Math.max(fg,g.l)+0.05)/(Math.min(fg,g.l)+0.05);
-   if(ratio<3)bad.push(el.tagName+(typeof el.className==='string'&&el.className?'.'+el.className.split(' ')[0]:'')
-     +' at '+ratio.toFixed(2)+':1  ink '+cs.color+'  paper '+g.l.toFixed(3)
+   var g=ground(el); if(g.overImage)return;
+   var fgc=parse(cs.color); if(!fgc||fgc.a<0.05)return;
+   var ink=over(fgc,g.c), L1=lum(ink), L2=lum(g.c);
+   var ratio=(Math.max(L1,L2)+0.05)/(Math.min(L1,L2)+0.05);
+   var px=parseFloat(cs.fontSize)||14, bold=(+cs.fontWeight>=600);
+   var need=((px>=24)||(px>=18.66&&bold))?3:4.5;
+   if(ratio<need)bad.push(el.tagName+(typeof el.className==='string'&&el.className?'.'+el.className.split(' ')[0]:'')
+     +' at '+ratio.toFixed(2)+':1 (needs '+need+')  ink '+cs.color+'  paper rgb('+[g.c.r,g.c.g,g.c.b].map(Math.round).join(',')+')'
      +(el.textContent?('  «'+el.textContent.trim().slice(0,30)+'»'):''));
  });
  return bad;

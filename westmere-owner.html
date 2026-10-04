@@ -2476,8 +2476,8 @@ async function owDriverLoad() {
     return '<div style="padding:.6rem 0;border-top:1px solid var(--westmere-line,#dfe5ea)' + (it.paid ? ';background:#F6F8FA' : '') + '">'
       + '<div style="display:flex;gap:.6rem">'
         + '<div style="flex:1;min-width:0"><div style="font-size:.93rem;color:var(--westmere-navy,#102a43);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + owEsc(it.route) + '</div>'
-        + '<div class="wm-lab" style="margin:.15rem 0 0;color:rgba(27,27,26,.5)">' + owEsc(it.date) + ' · ' + (it.paymentType === 'cash' ? 'cash' : 'prepaid') + (cover ? ' · cover job' : '') + '</div></div>'
-        + '<div style="text-align:right;white-space:nowrap"><div style="font-family:var(--sans);font-size:.76rem;' + (neg ? 'color:#9b1c1c' : 'color:rgba(27,27,26,.55)') + '">' + (neg ? '−' : '+') + owMoney(it.delta) + '</div>'
+        + '<div class="wm-lab" style="margin:.15rem 0 0;color:var(--westmere-ink-soft)">' + owEsc(it.date) + ' · ' + (it.paymentType === 'cash' ? 'cash' : 'prepaid') + (cover ? ' · cover job' : '') + '</div></div>'
+        + '<div style="text-align:right;white-space:nowrap"><div style="font-family:var(--sans);font-size:.76rem;' + (neg ? 'color:#9b1c1c' : 'color:var(--westmere-ink-soft)') + '">' + (neg ? '−' : '+') + owMoney(it.delta) + '</div>'
         + '<div style="font-size:.9rem;color:var(--westmere-navy,#102a43)">' + (Number(it.balanceAfter) < 0 ? '−' : '') + owMoney(it.balanceAfter) + '</div></div>'
       + '</div>'
       /* THE WORKING, so a changed rate is checkable against the figure beside
@@ -2486,7 +2486,7 @@ async function owDriverLoad() {
         /* ON A CASH JOB HE ALREADY HAS THE FARE. "£189 to him" is true of a
            prepaid job and nonsense on a cash one — he was paid at the kerb and
            what moves is the commission he owes back. */
-        + '<span class="wm-lab" style="margin:0;color:rgba(27,27,26,.45)">' + owMoney(it.fare) + ' fare · '
+        + '<span class="wm-lab" style="margin:0;color:var(--westmere-ink-soft)">' + owMoney(it.fare) + ' fare · '
           + (Number(it.commission) ? owMoney(it.commission) + ' at ' + it.commission_pct + '%' : 'no commission')
           + ' · ' + (it.paymentType === 'cash'
               ? (Number(it.commission) ? 'he owes you ' + owMoney(it.commission) : 'nothing to settle')
@@ -2521,7 +2521,7 @@ async function owDriverLoad() {
   var paid = (led.settlements || []).map(function (st) {
     return '<div style="display:flex;gap:.6rem;padding:.6rem 0;border-top:1px solid var(--westmere-line,#dfe5ea);background:#F6F8FA">'
       + '<div style="flex:1"><div style="font-size:.93rem;color:var(--westmere-navy,#102a43)">Paid' + (st.method ? ' · ' + owEsc(st.method) : '') + '</div>'
-      + '<div class="wm-lab" style="margin:.15rem 0 0;color:rgba(27,27,26,.5)">' + owEsc(st.paid_on) + '</div></div>'
+      + '<div class="wm-lab" style="margin:.15rem 0 0;color:var(--westmere-ink-soft)">' + owEsc(st.paid_on) + '</div></div>'
       + '<div style="text-align:right"><div style="font-family:var(--sans);font-size:.76rem;color:#9b1c1c">−' + owMoney(st.amount) + '</div>'
       + '<div onclick="owUndoSettlement(' + st.id + ')" style="font-family:var(--sans);font-size:.74rem;color:#9b1c1c;text-decoration:underline;cursor:pointer">undo</div></div></div>';
   }).join('');
@@ -2537,8 +2537,8 @@ async function owDriverLoad() {
     + '</div>'
     + '<div onclick="toggleDriverDocs(' + _OWDRV + ')" style="margin-top:.6rem;border:1px solid var(--westmere-line,#dfe5ea);border-radius:9px;padding:.7rem .8rem;display:flex;align-items:center;gap:.6rem;cursor:pointer;background:#F6F8FA">'
       + '<div style="flex:1"><div class="wm-lab" style="margin:0">Documents</div>'
-      + '<div style="font-family:var(--sans);font-size:.78rem;color:rgba(27,27,26,.55);margin-top:.2rem">Licence, insurance and PHV — tap to review</div></div>'
-      + '<span style="color:rgba(27,27,26,.35);font-size:1.05rem">›</span></div>'
+      + '<div style="font-family:var(--sans);font-size:.78rem;color:var(--westmere-ink-soft);margin-top:.2rem">Licence, insurance and PHV — tap to review</div></div>'
+      + '<span style="color:var(--westmere-ink-soft);font-size:1.05rem">›</span></div>'
     + '<div id="drv-docs-' + _OWDRV + '" style="display:none"></div>'
 
     + '<p class="wm-lab">Default commission</p><div class="wm-rule"></div>'
@@ -2549,7 +2549,7 @@ async function owDriverLoad() {
         + '<span onclick="owSetCommission(0)" style="flex:1;text-align:center;padding:.55rem .2rem;border-radius:7px;cursor:pointer;font-family:var(--sans);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;'
           + (pct === 0 ? 'border:var(--border-strong,1.5px) solid var(--westmere-navy,#102a43);background:var(--westmere-navy,#102a43);color:#fff' : 'border:1px solid var(--westmere-line-strong,#c8d1d9);color:var(--westmere-navy,#102a43)') + '">No commission</span>'
       + '</div>'
-      + '<div style="font-family:var(--sans);font-size:.76rem;color:rgba(27,27,26,.55);line-height:1.5;margin-top:.55rem">His default only. Every job asks again when you send it, so a cover job can go out at nothing without changing this.</div>'
+      + '<div style="font-family:var(--sans);font-size:.76rem;color:var(--westmere-ink-soft);line-height:1.5;margin-top:.55rem">His default only. Every job asks again when you send it, so a cover job can go out at nothing without changing this.</div>'
     + '</div>'
 
     + '<p class="wm-lab">Balance</p><div class="wm-rule"></div>'
@@ -2560,7 +2560,7 @@ async function owDriverLoad() {
       /* WHAT THE FIGURE IS MADE OF, named on the screen it is shown on. It is
          the jobs below that are not ticked — not a running total with payments
          subtracted from somewhere else — so it can always be pointed at. */
-      + '<div style="font-family:var(--sans);font-size:.76rem;color:rgba(27,27,26,.55);margin-top:.4rem;line-height:1.5">'
+      + '<div style="font-family:var(--sans);font-size:.76rem;color:var(--westmere-ink-soft);margin-top:.4rem;line-height:1.5">'
         + unpaidCount + ' unpaid job' + (unpaidCount === 1 ? '' : 's')
         + (tot.settledJobs ? ' · ' + tot.settledJobs + ' settled' : '')
         + '. Tick a job below as you pay it.</div>'
@@ -2575,7 +2575,7 @@ async function owDriverLoad() {
     + '</div>'
 
     + '<p class="wm-lab">Work history</p><div class="wm-rule"></div>'
-    + (hist || '<div style="font-family:var(--sans);font-size:.8rem;color:rgba(27,27,26,.45);padding:.6rem 0">No jobs passed to him yet.</div>') + paid
+    + (hist || '<div style="font-family:var(--sans);font-size:.8rem;color:var(--westmere-ink-soft);padding:.6rem 0">No jobs passed to him yet.</div>') + paid
 
     + '<p class="wm-lab">Weekly statement</p><div class="wm-rule"></div>'
     + '<div style="display:flex;gap:.4rem">'
@@ -2593,7 +2593,7 @@ async function owDriverLoad() {
     + '<div style="display:flex;gap:.5rem"><input id="ow-settle-amt" type="number" step="0.01" inputmode="decimal" placeholder="Amount" style="width:120px;padding:.55rem .6rem;font-family:inherit;font-size:.95rem;border:1px solid var(--westmere-line-strong,#c8d1d9);border-radius:7px">'
       + '<input id="ow-settle-method" type="text" placeholder="Bank transfer" style="flex:1;min-width:120px;padding:.55rem .6rem;font-family:inherit;font-size:.95rem;border:1px solid var(--westmere-line-strong,#c8d1d9);border-radius:7px"></div>'
     + '<div onclick="owRecordSettlement()" class="btn-primary" style="display:inline-block;margin-top:.55rem;padding:.6rem 1rem;border-radius:7px;font-family:var(--sans);font-size:.76rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Record</div>'
-    + '<div style="font-family:var(--sans);font-size:.76rem;color:rgba(27,27,26,.55);margin-top:.5rem;line-height:1.5">'
+    + '<div style="font-family:var(--sans);font-size:.76rem;color:var(--westmere-ink-soft);margin-top:.5rem;line-height:1.5">'
       + 'The amount is spent against his oldest unpaid jobs and ticks them off — so the balance and the list never disagree. '
       + 'A payment to the driver is a positive amount; cash he hands back is negative.</div>';
 
@@ -2899,7 +2899,7 @@ async function owOperatorLoad() {
       + '<div style="flex:1;min-width:0"><div style="font-size:.93rem;color:var(--westmere-navy,#102a43);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'
       + owEsc(_shortAddr(j.pickup || '')) + ' → '
       + owEsc(_shortAddr(j.destination || '')) + '</div>'
-      + '<div class="wm-lab" style="margin:.15rem 0 0;color:rgba(27,27,26,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + owEsc((j.date || '') + (j.time ? ' · ' + j.time : '') + ' · ' + (j.ref || '')) + '</div></div>'
+      + '<div class="wm-lab" style="margin:.15rem 0 0;color:var(--westmere-ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + owEsc((j.date || '') + (j.time ? ' · ' + j.time : '') + ' · ' + (j.ref || '')) + '</div></div>'
       + '<span class="wm-pill' + (billed ? '' : ' owed') + '">' + (billed ? 'Invoiced' : 'To invoice') + '</span>'
       + '<div style="width:4.6rem;text-align:right;font-size:.95rem;color:var(--westmere-navy,#102a43)">£' + (Number(j.fare) || 0).toFixed(2) + '</div></div>';
   }).join('');
@@ -2907,7 +2907,7 @@ async function owOperatorLoad() {
     var paid = !!Number(i.paid);
     return '<div style="display:flex;gap:.6rem;align-items:center;padding:.6rem 0;border-top:1px solid var(--westmere-line,#dfe5ea)">'
       + '<div style="flex:1;min-width:0"><div style="font-size:.93rem;color:var(--westmere-navy,#102a43)">' + owEsc(i.invoice_no || '—') + '</div>'
-      + '<div class="wm-lab" style="margin:.15rem 0 0;color:rgba(27,27,26,.5)">' + owEsc(i.period_label || i.issued_date || '') + '</div></div>'
+      + '<div class="wm-lab" style="margin:.15rem 0 0;color:var(--westmere-ink-soft)">' + owEsc(i.period_label || i.issued_date || '') + '</div></div>'
       + '<span class="wm-pill' + (paid ? '' : ' owed') + '">' + (paid ? 'Paid' : 'Unpaid') + '</span>'
       + '<div style="width:5.2rem;text-align:right;font-size:.95rem;color:var(--westmere-navy,#102a43)">£' + (Number(i.total) || 0).toFixed(2) + '</div></div>';
   }).join('');
@@ -2929,13 +2929,13 @@ async function owOperatorLoad() {
     + '<div style="border:1px solid var(--westmere-line,#dfe5ea);border-radius:9px;padding:.8rem 1rem;display:flex;align-items:baseline;gap:.6rem">'
       + '<div class="wm-lab" style="margin:0;flex:1">' + (d.unpaid ? d.unpaid + (d.unpaid === 1 ? ' unpaid invoice' : ' unpaid invoices') : 'All settled') + '</div>'
       + '<div class="' + (Number(d.owed) > 0 ? 'wm-owing' : '') + '" style="font-family:var(--serif);font-size:1.6rem;color:var(--westmere-navy,#102a43)">£' + (Number(d.owed) || 0).toFixed(2) + '</div></div>'
-    + '<div style="font-family:var(--sans);font-size:.76rem;color:rgba(27,27,26,.55);margin-top:.45rem;line-height:1.5">Work passed to an operator is settled by invoice, not netted off a balance — so this is simply the invoices they have not paid.</div>'
+    + '<div style="font-family:var(--sans);font-size:.76rem;color:var(--westmere-ink-soft);margin-top:.45rem;line-height:1.5">Work passed to an operator is settled by invoice, not netted off a balance — so this is simply the invoices they have not paid.</div>'
     + '<p class="wm-lab">Jobs passed to them</p><div class="wm-rule"></div>'
-    + (jobs || '<div style="font-family:var(--sans);font-size:.8rem;color:rgba(27,27,26,.45);padding:.6rem 0">No jobs sent yet.</div>')
-    + (Number(d.uninvoiced) ? '<div style="font-family:var(--sans);font-size:.76rem;color:rgba(27,27,26,.55);margin-top:.45rem;line-height:1.5">'
+    + (jobs || '<div style="font-family:var(--sans);font-size:.8rem;color:var(--westmere-ink-soft);padding:.6rem 0">No jobs sent yet.</div>')
+    + (Number(d.uninvoiced) ? '<div style="font-family:var(--sans);font-size:.76rem;color:var(--westmere-ink-soft);margin-top:.45rem;line-height:1.5">'
         + d.uninvoiced + (d.uninvoiced === 1 ? ' job has' : ' jobs have') + ' not been invoiced yet — Create invoice below fills the form with them.</div>' : '')
     + '<p class="wm-lab">Invoices</p><div class="wm-rule"></div>'
-    + (invoices || '<div style="font-family:var(--sans);font-size:.8rem;color:rgba(27,27,26,.45);padding:.6rem 0">No invoices raised yet.</div>')
+    + (invoices || '<div style="font-family:var(--sans);font-size:.8rem;color:var(--westmere-ink-soft);padding:.6rem 0">No invoices raised yet.</div>')
     + '<p class="wm-lab">Actions</p><div class="wm-rule"></div>'
     + '<div style="display:flex;gap:.5rem">'
       + '<div onclick="owOperatorSendJob()" class="btn-primary" style="flex:1;text-align:center;padding:.6rem;border-radius:7px;font-family:var(--sans);font-size:.76rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Send a job</div>'
@@ -6682,25 +6682,25 @@ async function dispOpen(bookingId, job, opts) {
          a driver is on commission, an operator is invoiced. */
       '<div style="display:flex;gap:.5rem;margin-bottom:.3rem">' + kindBtn('driver', 'A driver') + kindBtn('operator', 'An operator') + '</div>' +
       '<div id="disp-saved-wrap">' +
-        '<label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.55);margin:.5rem 0 .25rem">Saved driver</label>' +
+        '<label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--westmere-ink-soft);margin:.5rem 0 .25rem">Saved driver</label>' +
         '<select id="disp-saved" style="width:100%;padding:.6rem;font-size:.95rem;border:1px solid rgba(27,27,26,.2);border-radius:7px;background:#fff">' + opts + '</select>' +
       '</div>' +
       '<div id="disp-op-wrap" style="display:none">' +
-        '<label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.55);margin:.5rem 0 .25rem">Operator</label>' +
+        '<label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--westmere-ink-soft);margin:.5rem 0 .25rem">Operator</label>' +
         '<select id="disp-operator" style="width:100%;padding:.6rem;font-size:.95rem;border:1px solid rgba(27,27,26,.2);border-radius:7px;background:#fff">' + opOpts + '</select>' +
-        '<p style="margin:.45rem 0 0;font-size:.8rem;color:rgba(27,27,26,.6);line-height:1.5">No commission is taken on an operator job — the two firms settle by invoice. '
+        '<p style="margin:.45rem 0 0;font-size:.8rem;color:var(--westmere-ink-soft);line-height:1.5">No commission is taken on an operator job — the two firms settle by invoice. '
           + (_DISPATCH.operators.length ? '' : 'No operators are flagged yet: mark a customer as an operator on their record first.') + '</p>' +
       '</div>' +
-      '<label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.55);margin:.9rem 0 .25rem">Name *</label>' +
+      '<label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--westmere-ink-soft);margin:.9rem 0 .25rem">Name *</label>' +
       '<input id="disp-name" autocomplete="off" style="width:100%;padding:.6rem;font-size:.95rem;border:1px solid rgba(27,27,26,.2);border-radius:7px">' +
-      '<label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.55);margin:.9rem 0 .25rem">Email *</label>' +
+      '<label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--westmere-ink-soft);margin:.9rem 0 .25rem">Email *</label>' +
       '<input id="disp-email" type="email" autocomplete="off" style="width:100%;padding:.6rem;font-size:.95rem;border:1px solid rgba(27,27,26,.2);border-radius:7px">' +
-      '<label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.55);margin:.9rem 0 .25rem">Phone number</label>' +
+      '<label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--westmere-ink-soft);margin:.9rem 0 .25rem">Phone number</label>' +
       '<input id="disp-phone" type="tel" autocomplete="off" style="width:100%;padding:.6rem;font-size:.95rem;border:1px solid rgba(27,27,26,.2);border-radius:7px">' +
       '<div style="display:flex;gap:.6rem">' +
-        '<div style="flex:1"><label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.55);margin:.9rem 0 .25rem">Registration</label>' +
+        '<div style="flex:1"><label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--westmere-ink-soft);margin:.9rem 0 .25rem">Registration</label>' +
         '<input id="disp-reg" autocomplete="off" style="width:100%;padding:.6rem;font-size:.95rem;border:1px solid rgba(27,27,26,.2);border-radius:7px;text-transform:uppercase"></div>' +
-        '<div style="flex:1"><label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(27,27,26,.55);margin:.9rem 0 .25rem">Car</label>' +
+        '<div style="flex:1"><label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--westmere-ink-soft);margin:.9rem 0 .25rem">Car</label>' +
         '<input id="disp-car" autocomplete="off" placeholder="Skoda Superb, grey" style="width:100%;padding:.6rem;font-size:.95rem;border:1px solid rgba(27,27,26,.2);border-radius:7px"></div>' +
       '</div>' +
       /* LITERAL INK, NOT var(--navy). The white-surfaces restyle sets
@@ -6793,7 +6793,7 @@ function dispCommHtml() {
       + '<span style="width:15px;height:15px;border-radius:50%;flex:0 0 auto;margin-top:.18rem;'
       + (sel ? 'border:5px solid var(--westmere-navy,#102a43)' : 'border:1.5px solid rgba(27,27,26,.3)') + '"></span>'
       + '<div style="flex:1"><div style="font-size:.95rem;color:var(--westmere-navy,#102a43)">' + title + '</div>'
-      + '<div style="margin-top:.2rem;font-size:.8rem;color:rgba(27,27,26,.6);line-height:1.5">' + note + '</div></div></div></div>';
+      + '<div style="margin-top:.2rem;font-size:.8rem;color:var(--westmere-ink-soft);line-height:1.5">' + note + '</div></div></div></div>';
   };
   var ch = s.charge || {}, no = s.none || {};
   return opt('disp-comm-yes', !!_DISPATCH.charge, 'Charge commission &mdash; ' + pct + '%',
@@ -6815,7 +6815,7 @@ function dispMoneyHtml() {
     + row('Fare', dispMoney(sp.fare))
     + row(_DISPATCH.charge ? 'Your commission' : 'Commission &mdash; cover job', dispMoney(sp.commission))
     + row('He receives', dispMoney(sp.payout), true)
-    + '<div style="margin-top:.6rem;font-size:.84rem;color:rgba(27,27,26,.6);line-height:1.6">'
+    + '<div style="margin-top:.6rem;font-size:.84rem;color:var(--westmere-ink-soft);line-height:1.6">'
     + (!known ? 'THIS JOB HAS NO FARE YET. Price it before you send it, or he is being asked to drive for nothing.'
        : !_DISPATCH.charge ? 'A cover job — recorded against this job, so his statement and your turnover both show it. His default is untouched.'
        : cash ? 'CASH — he collects ' + dispMoney(sp.fare) + ' in the car and keeps it; your ' + dispMoney(sp.commission) + ' nets off his next payout.'
@@ -6838,7 +6838,7 @@ function dispOperatorMoneyHtml() {
   return '<div style="border:1px solid rgba(27,27,26,.15);border-radius:9px;padding:.8rem 1rem">'
     + row('Fare on the job', dispMoney(fare), true)
     + row('Commission', 'none — settled by invoice')
-    + '<div style="margin-top:.5rem;padding-top:.5rem;border-top:1px solid rgba(27,27,26,.1);font-size:.82rem;color:rgba(27,27,26,.6);line-height:1.5">'
+    + '<div style="margin-top:.5rem;padding-top:.5rem;border-top:1px solid rgba(27,27,26,.1);font-size:.82rem;color:var(--westmere-ink-soft);line-height:1.5">'
     + 'An operator has no commission balance. What they owe is the invoices they have not paid.</div>'
     + '</div>';
 }
@@ -6924,7 +6924,7 @@ async function dispReview() {
     '<div style="border:1px solid rgba(27,27,26,.15);border-radius:9px;padding:.85rem 1rem;font-size:.92rem;color:#1a1a1a;line-height:1.7">' +
       '<div>' + (job.date || '') + (job.time ? ' · ' + job.time : '') + '</div>' +
       '<div style="color:rgba(27,27,26,.65)">' + (job.pickup || '') + ' → ' + (job.destination || '') + '</div>' +
-      '<div style="margin-top:.5rem;font-size:.85rem;color:rgba(27,27,26,.6)">' + email + (v('disp-phone') ? ' · ' + v('disp-phone') : '') + '</div>' +
+      '<div style="margin-top:.5rem;font-size:.85rem;color:var(--westmere-ink-soft)">' + email + (v('disp-phone') ? ' · ' + v('disp-phone') : '') + '</div>' +
     '</div>' +
     (operator
       ? '<p class="wm-lab" style="margin:1rem 0 .4rem">How this one settles</p><div class="wm-rule"></div>'
@@ -6932,11 +6932,11 @@ async function dispReview() {
            id written twice in one template is indistinguishable from the real
            bug the duplicate-id guard is there to catch. */
         + '<div id="disp-op-money">' + dispOperatorMoneyHtml() + '</div>'
-        + '<p style="margin:.8rem 0 0;font-size:.85rem;color:rgba(27,27,26,.6);line-height:1.6">They are emailed the trip, the passenger’s name and number, and the fare. The customer is told who is picking them up. Nothing is netted off any balance — raise the invoice when you are ready.</p>'
+        + '<p style="margin:.8rem 0 0;font-size:.85rem;color:var(--westmere-ink-soft);line-height:1.6">They are emailed the trip, the passenger’s name and number, and the fare. The customer is told who is picking them up. Nothing is netted off any balance — raise the invoice when you are ready.</p>'
       : '<p class="wm-lab" style="margin:1rem 0 .4rem">Commission on this job</p><div class="wm-rule"></div>'
         + '<div id="disp-comm">' + dispCommHtml() + '</div>'
         + '<div id="disp-money">' + dispMoneyHtml() + '</div>'
-        + '<p style="margin:.8rem 0 0;font-size:.85rem;color:rgba(27,27,26,.6);line-height:1.6">He is emailed the trip, the passenger’s name and number, and the payout. The customer is told who is picking them up.</p>') +
+        + '<p style="margin:.8rem 0 0;font-size:.85rem;color:var(--westmere-ink-soft);line-height:1.6">He is emailed the trip, the passenger’s name and number, and the payout. The customer is told who is picking them up.</p>') +
     '<p id="disp-err2" style="display:none;margin:.7rem 0 0;font-size:.85rem;color:#8B2222"></p>' +
     '<div style="display:flex;gap:.6rem;margin-top:1.1rem">' +
       '<button type="button" id="disp-back" style="flex:1;padding:.75rem;border:1px solid rgba(27,27,26,.25);background:transparent;border-radius:8px;font-size:.85rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer">Back</button>' +
