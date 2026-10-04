@@ -164,9 +164,9 @@ test('the screen has a Toll column of its own, beside Fare and Com.', () => {
   }
   /* And a box to type it into, distinct from the fare box. */
   const row = fnBlock(OWNER, 'invAddItem');
-  assert.ok(/class="fi ni-fee"/.test(row) && /class="fi ni-amt"/.test(row),
+  assert.ok(/class="fi ni-fee\b/.test(row) && /class="fi ni-amt\b/.test(row),
     'fare and toll must be two separate inputs');
-  assert.ok(/class="ni-com"/.test(row), 'the per-row commission cell is missing');
+  assert.ok(/class="ni-com\b/.test(row), 'the per-row commission cell is missing');
   assert.ok(/class="ni-collected"/.test(row), 'the Card tick is missing');
 });
 
@@ -622,7 +622,12 @@ test('the totals row names all four figures, and the pay-out line the fifth', ()
    is one: `+toll>0?…` — ends a naive `[^>]*>` match early, and the handler that
    follows it falls outside the window. Bounded by the NEXT field instead. */
 function fieldSrc(src, cls) {
-  const i = src.indexOf('class="' + cls + '"');
+  /* A class LIST, not an exact attribute. The sheet's cells carry their grid
+     classes alongside their name — class="fi ni-amt num" — and matching the
+     whole attribute meant the helper stopped finding the field the day a
+     layout class was added to it. */
+  const m = new RegExp('class="[^"]*\\b' + cls.replace(/\s+/g, '\\s+') + '\\b[^"]*"').exec(src);
+  const i = m ? m.index : -1;
   assert.ok(i !== -1, 'no field with class ' + cls);
   const rest = src.slice(i + 6);
   const j = rest.indexOf('class="');
@@ -630,8 +635,10 @@ function fieldSrc(src, cls) {
 }
 
 test('the tick, the fare and the toll all redraw the totals as he types', () => {
-  const row = fnBlock(OWNER, 'invAddItem');
-  const op = row.slice(0, row.indexOf('} else {'));
+  /* One row builder now — the two layouts folded into a single grid
+     (server/tests/invoice-sheet.test.js), so there is no `} else {` to slice
+     at and the whole builder is the subject. */
+  const op = fnBlock(OWNER, 'invAddItem');
   assert.ok(/oninput="invCalcTotal\(\)"/.test(fieldSrc(op, 'fi ni-amt')), 'the fare box is not live');
   assert.ok(/oninput="invCalcTotal\(\)"/.test(fieldSrc(op, 'fi ni-fee')), 'the toll box is not live');
   /* The tick goes through invSetCollected — it records the flag on the row and
@@ -748,10 +755,14 @@ test('admin has the toggle, the rate and the seven columns', () => {
   for (const cls of ['ni-date', 'ni-from', 'ni-to', 'ni-collected', 'ni-amt', 'ni-com', 'ni-fee']) {
     assert.ok(row.indexOf(cls) !== -1, 'admin\'s job-sheet row has no ' + cls);
   }
-  /* Flat, not folded: this is a desktop modal and the sheet is landscape. */
-  assert.ok(/ADM_GRID/.test(row) && /mode:'flat'/.test(ADMIN),
-    'admin must lay the columns across one row per job');
-  assert.ok(/WMLookup\.attach/.test(row), 'From and To must use the same address lookup');
+  /* ONE ROW PER JOB, on the grid both apps share — §29 of the theme rather
+     than a width typed into this file. The rule is unchanged: the columns lie
+     across one row and line up with their heading.
+     GUARDRAIL: server/tests/invoice-sheet.test.js */
+  assert.ok(/wm-sheet-row/.test(row), 'admin must lay the columns across one row per job');
+  assert.ok(/mode:'flat'/.test(ADMIN), 'and the shared maths must still describe a flat sheet');
+  assert.ok(/admCellEdit\(this/.test(row),
+    'From and To must reach the same address lookup — now through the pop-out cell');
 });
 
 test('a toll survives the toggle in admin too', () => {
@@ -760,11 +771,14 @@ test('a toll survives the toggle in admin too', () => {
      blank and £59 of barrier charges disappeared on the way — the payout came
      out £59 short with nothing on screen to say why. Both layouts carry the
      box, exactly as the owner app's two do. */
+  /* ONE ROW BUILDER NOW, so there is no second layout to lose a toll on the
+     way through: the toggle changes which columns are VISIBLE, not which boxes
+     exist. GUARDRAIL: server/tests/invoice-sheet.test.js */
   const row = fnBlock(ADMIN, 'addBespokeItem');
-  const simple = row.slice(row.indexOf('} else {'));
-  assert.ok(/class="fi ni-fee"/.test(simple),
-    'the plain admin row has nowhere to keep a toll — it will be lost on the toggle');
-  assert.ok(/Fee £/.test(ADMIN), 'and the plain heading must name the column');
+  assert.ok(!/} else {/.test(row), 'the two row builders are back — that is how a toll went missing');
+  assert.ok(/class="fi ni-fee\b/.test(row),
+    'the row has nowhere to keep a toll — it will be lost on the toggle');
+  assert.ok(/>Toll</.test(ADMIN), 'and the heading must name the column');
   const rows = fnBlock(ADMIN, 'admRowsFromDom');
   assert.ok(/\.ni-fee/.test(rows) && /toll:fe\?fe\.value/.test(rows),
     'the redraw must read the toll back off the row');
@@ -845,23 +859,30 @@ test('the pay-out cannot scroll off the edge of the phone', () => {
   assert.ok(/invOpPayoutHtml\(m\)/.test(calc), 'the pay-out is not drawn from the totals');
 });
 
-test('the simple layout keeps its stacked row and gains no columns', () => {
+test('a customer invoice shows no commission and no Card tick', () => {
+  /* THE RULE IS THE SAME; the way it is kept changed. There were two row
+     builders — a stacked one for a customer, a flat job sheet for an operator
+     — and between them the editor wrapped into ragged half-rows, which is what
+     the owner reported. There is one grid now, and on a customer invoice the
+     Com. and Card columns COLLAPSE rather than standing empty: what Westmere
+     keeps on a trip, and whether another firm's driver took the fare at the
+     kerb, are nobody's business on an invoice to a passenger.
+     GUARDRAIL: server/tests/invoice-sheet.test.js */
   const row = fnBlock(OWNER, 'invAddItem');
-  const i = row.indexOf('} else {');
-  assert.ok(i !== -1, 'the two layouts are gone');
-  const simple = row.slice(i);
-  assert.ok(/Pickup — start typing/.test(simple), 'the simple row lost its labelled fields');
-  assert.ok(!/ni-collected/.test(simple), 'a customer invoice must not ask who collected the fare');
-  assert.ok(!/ni-com/.test(simple), 'a customer invoice must not show a commission column');
-  /* AND NO HEADING STRIP ABOVE IT. There was one — DATE · DESCRIPTION · AMT £ —
-     from when a line was three boxes on one row. The row is a journey now and
-     every box carries its own caption, so the strip named three columns that
-     were not there and sat left of the ones that were. The job sheet's heading
-     is a different thing: it labels a real grid, and is still asserted above. */
-  assert.ok(!/id="ni-head-simple"/.test(OWNER),
-    'the stacked row has a column strip above it again — it cannot line up with captioned fields');
-  assert.ok(/From</.test(simple) && /To</.test(simple) && /Fare</.test(simple),
-    'the row must carry its own captions, since nothing above it does');
+  assert.ok(!/} else {/.test(row), 'the two row builders are back — that is what made it wrap');
+  /* The tick is rendered ONLY in operator mode… */
+  assert.ok(/op\s*\?[\s\S]{0,200}ni-collected/.test(row),
+    'the Card tick must be conditional on the operator sheet');
+  /* …and the two columns close up in CSS rather than sitting empty. */
+  const theme = read('westmere-theme.css');
+  assert.ok(/\.wm-sheet:not\(\.wm-sheet-op\) \.wm-sheet-row > :nth-child\(5\)[\s\S]{0,120}display: none/.test(theme),
+    'the commission column must collapse on a customer invoice');
+  assert.ok(/classList\.toggle\('wm-sheet-op'/.test(OWNER),
+    'and the sheet must be told which shape it is');
+  /* AND THE HEADING IS THE ROW'S OWN GRID. The old stacked layout captioned
+     every box because nothing above it lined up; there is one heading now and
+     it shares the grid, so it cannot drift. */
+  assert.ok(/wm-sheet-row wm-sheet-head/.test(OWNER), 'the sheet lost its heading row');
 });
 
 test('a stray tick cannot take money off a customer invoice', async () => {

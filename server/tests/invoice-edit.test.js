@@ -703,8 +703,8 @@ test('there is an Edit control, and it opens the ONE form', () => {
   assert.ok(/invOpenNew\(\)/.test(open), 'a correction must start from the same reset as a new invoice');
   assert.ok(/invAddItem\(/.test(open),
     'the lines must go in through the shared row builder — that is what puts the address lookup on a correction');
-  assert.ok(/WMLookup\.attach/.test(/function invAddItem\([\s\S]*?\n\}/.exec(H)[0]),
-    'and that builder must still attach the lookup');
+  assert.ok(/invCellEdit\(this/.test(/function invAddItem\([\s\S]*?\n\}/.exec(H)[0]),
+    'and that builder must still reach the address picker — now through the pop-out cell');
 });
 
 test('it PATCHes the same invoice rather than creating one', () => {
@@ -1039,7 +1039,7 @@ test('a trip created on the form keeps its RESOLVED addresses', () => {
 test('a FEE is optional per trip — blank is not zero', () => {
   const H = read('westmere-owner.html');
   const row = /function invAddItem\([\s\S]*?\n\}/.exec(H)[0];
-  assert.ok(/class="fi ni-fee"/.test(row), 'every trip row needs a fee box');
+  assert.ok(/class="fi ni-fee\b/.test(row), 'every trip row needs a fee box');
   assert.ok(/placeholder=""/.test(row) || /placeholder=\x27\x27/.test(row),
     'and it must start empty, not at 0.00');
   const get = /function invGetItems\(\)\{[\s\S]*?\n\}/.exec(H)[0];
@@ -1053,14 +1053,27 @@ test('a FEE is optional per trip — blank is not zero', () => {
 test('FROM and TO go through the address lookup, and the RESOLVED address is stored', () => {
   const H = read('westmere-owner.html');
   assert.ok(/src="\/wm-address-lookup\.js(\?v=[^"]*)?"/.test(H), 'the owner app must load the lookup');
+  /* THE LOOKUP MOVED INTO THE POP-OUT, and the rule did not change: an address
+     on an invoice is a resolved place, not whatever was half-typed. A
+     spreadsheet column has no room for an address box, so the cell is a button
+     and the picker opens with it (§29 of the theme, and WMAsk.prompt's
+     `lookup` option). See server/tests/invoice-sheet.test.js */
   const row = /function invAddItem\([\s\S]*?\n\}/.exec(H)[0];
-  assert.ok(/class="fi ni-from"/.test(row) && /class="fi ni-to"/.test(row), 'the row needs From and To');
-  assert.ok(/WMLookup\.attach\(row\.querySelector\('\.ni-from'\)\)/.test(row),
-    'and both must be wired to it');
-  assert.ok(/WMLookup\.attach\(row\.querySelector\('\.ni-to'\)\)/.test(row));
+  assert.ok(/class="wm-cell ni-from/.test(row) && /class="wm-cell ni-to/.test(row),
+    'the row needs From and To cells');
+  assert.ok(/invCellEdit\(this,\\?'From\\?'\)/.test(row) && /invCellEdit\(this,\\?'To\\?'\)/.test(row),
+    'and both must open the pop-out editor');
+  const pop = /async function invCellEdit\([\s\S]*?\n\}/.exec(H)[0];
+  assert.ok(/lookup: true/.test(pop), 'the pop-out must carry the booking address picker');
+  const ask = read('wm-ask.js');
+  assert.ok(/o\.lookup && window\.WMLookup/.test(ask) && /WMLookup\.attach\(input\)/.test(ask),
+    'and WMAsk must actually attach it');
+  assert.ok(/WMLookup\.full\(el\)/.test(ask),
+    'the PRECISE address is what comes back — the cell only shows the short form');
   const get = /function invGetItems\(\)\{[\s\S]*?\n\}/.exec(H)[0];
-  assert.ok(/WMLookup\.full\(fromEl\)/.test(get) && /WMLookup\.full\(toEl\)/.test(get),
-    'the PRECISE address is what the invoice carries — the box only shows the short form');
+  assert.ok(/fromEl&&fromEl\.dataset\.full/.test(get.replace(/\s/g, '')) &&
+            /toEl&&toEl\.dataset\.full/.test(get.replace(/\s/g, '')),
+    'and the invoice must carry the resolved address the cell is holding');
 });
 
 test('the lookup component behaves like the booking form\'s', () => {
@@ -1556,16 +1569,16 @@ test('an invoice with no line items is skipped, not crashed on', () => {
 test('the form has a fee field on every journey, beside its fare', () => {
   const H = read('westmere-owner.html');
   const fn = /function invAddItem\([\s\S]*?\n\}/.exec(H)[0];
-  assert.ok(/class="fi ni-fee"/.test(fn), 'no per-journey fee input');
-  assert.ok(/class="fi ni-amt"/.test(fn), 'and the fare is still there');
-  /* BOTH LAYOUTS CARRY IT — the plain stack and the operator's job sheet. The
-     order differs because the job sheet's columns are decided by the shared
-     maths module, but a journey always has a box for what was paid out on it. */
-  assert.strictEqual((fn.match(/class="fi ni-fee"/g) || []).length, 2, 'both layouts need one');
-  assert.strictEqual((fn.match(/class="fi ni-amt"/g) || []).length, 2, 'beside the fare in both');
-  const simple = fn.slice(fn.lastIndexOf('} else {'));
-  assert.ok(simple.indexOf('ni-fee') < simple.indexOf('ni-amt'),
-    'on the plain stack the fee sits beside the fare, before it in the row');
+  assert.ok(/class="fi ni-fee\b/.test(fn), 'no per-journey fee input');
+  assert.ok(/class="fi ni-amt\b/.test(fn), 'and the fare is still there');
+  /* ONE LAYOUT NOW. There were two — a plain stack and the operator's job
+     sheet — each with its own widths, and between them the editor wrapped into
+     ragged half-rows. One grid serves both; the only difference is whether the
+     Card cell has a tick in it. GUARDRAIL: server/tests/invoice-sheet.test.js */
+  assert.strictEqual((fn.match(/class="fi ni-fee\b/g) || []).length, 1, 'one row builder, one fee box');
+  assert.strictEqual((fn.match(/class="fi ni-amt\b/g) || []).length, 1, 'and one fare box');
+  assert.ok(fn.indexOf('ni-amt') < fn.indexOf('ni-fee'),
+    'the fare comes before the toll in the row, as the heading says');
   const sync = /function invSyncTotal\(\)\{[\s\S]*?\n\}/.exec(H)[0];
   assert.ok(/fbox\.disabled=true/.test(sync.replace(/\s/g, '')),
     'the single fee box must be read-only while the trips own the figure, or the two can disagree');

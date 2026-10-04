@@ -1300,7 +1300,18 @@ select:-webkit-autofill:focus{
             <div id="ni-op-wrap" style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:.5rem">
               <div id="ni-op-inner">
                 <div id="ni-op-head" style="display:none"></div>
-                <div id="ni-items" style="display:flex;flex-direction:column;gap:.35rem"></div>
+                <!-- ONE GRID, ONE HEADING. The heading row is the same
+                     .wm-sheet-row as every trip below it, so a column cannot
+                     drift out of line with its own label (§29 of the theme).
+                     GUARDRAIL: server/tests/invoice-sheet.test.js -->
+                <div class="wm-sheet" id="ni-sheet">
+                  <div class="wm-sheet-row wm-sheet-head" id="ni-head" aria-hidden="true">
+                    <span>Date</span><span>From</span><span>To</span>
+                    <span class="num">Fare</span><span class="num">Com.</span><span class="num">Toll</span>
+                    <span class="mid">Card</span><span></span>
+                  </div>
+                  <div id="ni-items"></div>
+                </div>
                 <div id="ni-op-totals" style="display:none"></div>
               </div>
             </div>
@@ -8006,63 +8017,75 @@ function invOperatorMaths(rows,pct){ return WMInvoiceMaths.compute(rows,pct); }
    read back from the boxes alone, a correction quietly emptied the Ref and
    Time columns of every journey on the invoice. It rides on the row, survives
    a relayout, and the four edited fields are written over it. */
+/* ── THE POP-OUT CELL ──────────────────────────────────────────────────────
+   A spreadsheet row has no room for an address, and trying to fit one is what
+   made this editor wrap into two ragged half-rows. The cell is a button
+   showing the short label; tapping it enlarges into the shared pop-out
+   (WMAsk.prompt, with the booking form's own address picker attached), and the
+   answer collapses back into the row.
+
+   The FULL address lives on the button's dataset and the SHORT one is what is
+   drawn — the same split the invoice itself uses.
+   GUARDRAIL: server/tests/invoice-sheet.test.js */
+async function invCellEdit(btn, label) {
+  if (!btn) return;
+  var full = btn.dataset.full || '';
+  var v = await WMAsk.prompt(label, {
+    title: 'Journey', value: full, lookup: true, ok: 'OK', cancel: 'Cancel',
+    placeholder: label === 'From' ? 'Pickup — start typing' : 'Drop-off — start typing'
+  });
+  if (v === null) return;                       // cancelled: the cell is unchanged
+  invCellSet(btn, v);
+  invCalcTotal();
+}
+/** Put a resolved address into a cell: full on the row, short on the face. */
+function invCellSet(btn, full) {
+  if (!btn) return;
+  var f = String(full == null ? '' : full).trim();
+  btn.dataset.full = f;
+  var shown = f ? _invShort(f) : '';
+  btn.textContent = shown || (btn.dataset.label || '');
+  btn.classList.toggle('empty', !f);
+  btn.title = f;
+}
+
 function invAddItem(date,desc,amt,to,toll,collected,orig){
   var wrap=document.getElementById('ni-items');
   if(!wrap)return;
   var row=document.createElement('div');
-  row.className='ni-item';
-  /* A TRIP, not a line of text. The owner builds these by hand for a customer
-     who is not on an account, so the row asks for what a journey actually is —
-     where from, where to, when, what it cost, and what he paid out on it.
+  row.className='ni-item wm-sheet-row';
+  /* ── ONE TRIP, ONE ROW ──────────────────────────────────────────────────
+     Date · From · To · Fare · Com. · Toll · Card · remove, on the single grid
+     declared in §29 of westmere-theme.css — so the heading above and every row
+     below sit on the same columns. This used to be two flex rows of different
+     widths and it did not line up with itself, let alone with its heading.
 
-     FROM and TO go through the same address lookup the booking form uses, so
-     what lands on the invoice is a resolved place rather than whatever was
-     half-typed. The FEE is optional and blank by default: most journeys carry
-     none, and a column of £0.00 is a column of noise. */
+     The two place cells are buttons that open the pop-out; everything else is
+     a figure small enough to type in place. COM. is not typed — it is this
+     row's share of the commission, shown because the owner checks it against
+     the operator's own sheet. The toll is blank by default: most journeys
+     carry none, and a column of £0.00 is a column of noise.
+     GUARDRAIL: server/tests/invoice-sheet.test.js */
   var today=new Date().toISOString().slice(0,10);
-  var FI='width:100%;box-sizing:border-box;padding:.4rem;font-size:.88rem;font-family:var(--sans);border:1px solid rgba(27,27,26,.2);border-radius:5px;background:#fff';
-  var CAP='font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(27,27,26,.4);margin-bottom:.1rem';
-  var X='<button onclick="invRemoveItem(this.closest(\'.ni-item\'))" title="Remove this trip" style="padding:.4rem .55rem;border:1px solid rgba(27,27,26,.18);background:#fff;border-radius:5px;cursor:pointer;color:#8a1c1c">&times;</button>';
-  if(invOperatorMode()){
-    /* THE OPERATOR'S ROW — the journey, then the sheet's own figures beneath it.
-       CARD is the tick for a job the driver was already paid for at the kerb:
-       the fare still earns its commission, and it still is not paid over.
-       COM. is not typed — it is this row's share of the commission, shown
-       because the sheet shows it and the owner checks it off against theirs. */
-    var FIS=FI+';padding:.35rem;font-size:.82rem';
-    row.style.cssText='padding:.45rem 0;border-bottom:1px solid rgba(27,27,26,.06)';
-    row.innerHTML=
-       '<div style="display:flex;gap:.3rem;margin-bottom:.3rem">'
-      +'<input class="fi ni-date" type="date" style="'+FIS+';width:'+NI_TRIP+';flex:0 0 '+NI_TRIP+'" value="'+(date||today)+'">'
-      +'<div style="flex:1;min-width:0;position:relative"><input class="fi ni-from" placeholder="From" style="'+FIS+'"></div>'
-      +'<div style="flex:1;min-width:0;position:relative"><input class="fi ni-to" placeholder="To" style="'+FIS+'"></div>'
-      +'</div>'
-      +'<div style="display:grid;grid-template-columns:'+NI_MONEY+';gap:.25rem;justify-content:end;align-items:center">'
-      +'<div style="text-align:center"><input class="ni-collected" type="checkbox" '+(collected?'checked':'')+' onchange="invSetCollected(this)" title="The driver was paid this fare directly (card or cash)" style="width:15px;height:15px;cursor:pointer"></div>'
-      +'<input class="fi ni-amt" type="number" step="0.01" min="0" placeholder="0.00" style="'+FIS+';text-align:right" value="'+((amt||amt===0)?amt:'')+'" oninput="invCalcTotal()">'
-      +'<div class="ni-com" style="text-align:right;font-family:var(--serif);font-size:.86rem;color:rgba(27,27,26,.55)">&mdash;</div>'
-      +'<input class="fi ni-fee" type="number" step="0.01" min="0" placeholder="" style="'+FIS+';text-align:right" value="'+((toll||toll===0)&&+toll>0?toll:'')+'" oninput="invCalcTotal()">'
-      +X
-      +'</div>';
-  } else {
-    row.style.cssText='padding:.5rem 0;border-bottom:1px solid rgba(27,27,26,.06)';
-    row.innerHTML=
-       '<div style="display:flex;gap:.4rem;margin-bottom:.35rem">'
-      +'<div style="flex:1;min-width:0;position:relative"><div style="'+CAP+'">From</div>'
-        +'<input class="fi ni-from" placeholder="Pickup — start typing" style="'+FI+'"></div>'
-      +'<div style="flex:1;min-width:0;position:relative"><div style="'+CAP+'">To</div>'
-        +'<input class="fi ni-to" placeholder="Drop-off — start typing" style="'+FI+'"></div>'
-      +'</div>'
-      +'<div style="display:flex;gap:.4rem;align-items:flex-end">'
-      +'<div style="flex:1;min-width:0"><div style="'+CAP+'">Date</div>'
-        +'<input class="fi ni-date" type="date" style="'+FI+'" value="'+(date||today)+'"></div>'
-      +'<div style="width:78px"><div style="'+CAP+'">Fee <span style="text-transform:none;letter-spacing:0">(opt.)</span></div>'
-        +'<input class="fi ni-fee" type="number" step="0.01" min="0" placeholder="" style="'+FI+';text-align:right" value="'+((toll||toll===0)&&+toll>0?toll:'')+'" oninput="invCalcTotal()"></div>'
-      +'<div style="width:88px"><div style="'+CAP+'">Fare</div>'
-        +'<input class="fi ni-amt" type="number" step="0.01" min="0" placeholder="0.00" style="'+FI+';text-align:right" value="'+((amt||amt===0)?amt:'')+'" oninput="invCalcTotal()"></div>'
-      +X
-      +'</div>';
-  }
+  var op=invOperatorMode();
+  row.innerHTML=
+     '<input class="fi ni-date" type="date" value="'+(date||today)+'" aria-label="Date">'
+    +'<button type="button" class="wm-cell ni-from empty" data-label="From" aria-label="Pickup"'
+      +' onclick="invCellEdit(this,\'From\')">From</button>'
+    +'<button type="button" class="wm-cell ni-to empty" data-label="To" aria-label="Drop-off"'
+      +' onclick="invCellEdit(this,\'To\')">To</button>'
+    +'<input class="fi ni-amt num" type="number" step="0.01" min="0" placeholder="0.00" aria-label="Fare"'
+      +' value="'+((amt||amt===0)?amt:'')+'" oninput="invCalcTotal()">'
+    +'<div class="ni-com wm-sheet-com">&mdash;</div>'
+    +'<input class="fi ni-fee num" type="number" step="0.01" min="0" placeholder="" aria-label="Toll or parking"'
+      +' value="'+(((toll||toll===0)&&+toll>0)?toll:'')+'" oninput="invCalcTotal()">'
+    +'<div class="mid">'+(op
+        ? '<input class="ni-collected" type="checkbox" '+(collected?'checked':'')+' onchange="invSetCollected(this)"'
+          +' aria-label="Paid to the driver at the kerb" title="The driver was paid this fare directly">'
+        : '')+'</div>'
+    +'<button type="button" class="wm-sheet-x" title="Remove this trip" aria-label="Remove this trip"'
+      +' onclick="invRemoveItem(this.closest(\'.ni-item\'))">&times;</button>';
+
   /* THE TICK IS KEPT ON THE ROW, not only in the checkbox. The simple layout
      has no Card column, so a trip through it read every tick back as false —
      turn the toggle off and on again and a £50 fare the driver had already
@@ -8071,11 +8094,10 @@ function invAddItem(date,desc,amt,to,toll,collected,orig){
   if(collected) row.dataset.collected='1';
   if(orig) row._wmLine=orig;
   wrap.appendChild(row);
-  /* The lookup is attached AFTER the row is in the document — it measures the
-     field to place its dropdown. */
-  if(window.WMLookup){ WMLookup.attach(row.querySelector('.ni-from')); WMLookup.attach(row.querySelector('.ni-to')); }
-  if(desc){ var f=row.querySelector('.ni-from'); if(window.WMLookup) WMLookup.set(f,desc); else f.value=desc; }
-  if(to){ var t=row.querySelector('.ni-to'); if(window.WMLookup) WMLookup.set(t,to); else t.value=to; }
+  /* The places go in as cells — full address on the row, short label on the
+     face. The lookup now lives in the pop-out, so nothing is attached here. */
+  invCellSet(row.querySelector('.ni-from'), desc || '');
+  invCellSet(row.querySelector('.ni-to'), to || '');
   invCalcTotal();
 }
 
@@ -8094,8 +8116,10 @@ function invRowsFromDom(){
     var row_collected=function(el){ return el.dataset.collected==='1'; };
     out.push({
       date:d?d.value:'',
-      from:window.WMLookup?WMLookup.full(fr):((fr&&fr.value)||''),
-      to:  window.WMLookup?WMLookup.full(to):((to&&to.value)||''),
+      /* THE CELL CARRIES ITS OWN FULL ADDRESS now — the pop-out put it there.
+         There is no input left to ask the lookup about. */
+      from:(fr&&fr.dataset.full)||'',
+      to:  (to&&to.dataset.full)||'',
       fare:a?a.value:'', toll:fe?fe.value:'',
       collected: c ? !!c.checked : (row_collected(r)),
       orig: r._wmLine||null
@@ -8114,7 +8138,12 @@ function invRelayout(){
   var oh=document.getElementById('ni-op-head');
   var ot=document.getElementById('ni-op-totals');
   var inner=document.getElementById('ni-op-inner');
-  if(oh){ oh.style.display=op?'':'none'; if(op) oh.innerHTML=invOpHeadHtml(); }
+  /* THE SHEET CARRIES ITS OWN HEADING NOW, on the same grid as its rows
+     (§29 of the theme). The old strip was a separate element with its own
+     widths, and with both on screen the editor had two sets of column labels
+     that did not line up with each other, let alone with the row.
+     GUARDRAIL: server/tests/invoice-sheet.test.js */
+  if(oh){ oh.style.display='none'; oh.innerHTML=''; }
   if(ot) ot.style.display=op?'':'none';
   var pay=document.getElementById('ni-op-payout');
   if(pay) pay.style.display=op?'':'none';
@@ -8182,6 +8211,10 @@ function invCalcTotal(){
   /* One total, in one place. On the job sheet PAY OUT is the figure; repeating
      it in small print beside the Add button invites the reading that they are
      two different numbers. */
+  /* WHICH SHAPE THE SHEET IS. The grid closes up over Com. and Card on a
+     customer invoice — they are a settlement's business, not a passenger's. */
+  var sheet=document.getElementById('ni-sheet');
+  if(sheet) sheet.classList.toggle('wm-sheet-op', !!op);
   var tl=document.getElementById('ni-total-line');
   if(tl) tl.style.visibility=op?'hidden':'visible';
   var ot=document.getElementById('ni-op-totals');
@@ -8239,8 +8272,8 @@ function invGetItems(){
        seven-part Heathrow address turn four journeys into a page.
        The full string stays on the booking; the invoice carries the short
        form the rest of the app shows. GUARDRAIL: server/tests/invoice-lines.test.js */
-    var fromFull=window.WMLookup?WMLookup.full(fromEl):((fromEl&&fromEl.value)||'').trim();
-    var toFull  =window.WMLookup?WMLookup.full(toEl)  :((toEl  &&toEl.value)  ||'').trim();
+    var fromFull=((fromEl&&fromEl.dataset.full)||'').trim();
+    var toFull  =((toEl  &&toEl.dataset.full)  ||'').trim();
     var from=_invShort(fromFull), to=_invShort(toFull);
     var amt=parseFloat(amtEl.value)||0;
     /* BLANK IS NOT ZERO. An empty fee box means this trip carried none and no

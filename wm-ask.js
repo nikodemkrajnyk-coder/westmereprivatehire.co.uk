@@ -94,6 +94,12 @@
         + (o.title ? '<p class="wm-ask-t">' + esc(o.title) + '</p>' : '')
         + '<p class="wm-ask-m">' + esc(message) + '</p>'
         + (isPrompt
+            /* THE POP-OUT CELL. A spreadsheet row has no room for an address,
+               so the cell is a button and THIS is where it is typed: one field,
+               full width, with the booking form's own lookup on it when the
+               caller asks. Same light card as every other dialog here — the
+               owner's "tap it, it enlarges, fill it, it goes back".
+               GUARDRAIL: server/tests/invoice-sheet.test.js */
             ? '<input class="wm-ask-in" id="wm-ask-input" type="' + esc(o.type || 'text') + '"'
               + (o.inputmode ? ' inputmode="' + esc(o.inputmode) + '"' : '')
               + (o.placeholder ? ' placeholder="' + esc(o.placeholder) + '"' : '')
@@ -117,7 +123,11 @@
 
     function yes() {
       if (!isPrompt) return close(true);
-      var v = back.querySelector('#wm-ask-input').value;
+      var el = back.querySelector('#wm-ask-input');
+      /* THE RESOLVED ADDRESS, not what is showing in the box — the same rule
+         the booking form follows: the picker's answer wins, and what was typed
+         is the fallback when nothing was picked. */
+      var v = (o.lookup && window.WMLookup) ? WMLookup.full(el) : el.value;
       close(v);
     }
     back.querySelector('[data-yes]').addEventListener('click', yes);
@@ -134,6 +144,15 @@
     if (isPrompt) {
       var input = back.querySelector('#wm-ask-input');
       if (o.value !== undefined && o.value !== null) input.value = o.value;
+      /* THE BOOKING FORM'S OWN PICKER, in the pop-out. An address typed into a
+         bare box is whatever was typed; attached, it resolves to a real place —
+         which is what the rest of the system expects to be given. */
+      if (o.lookup && window.WMLookup) {
+        try {
+          WMLookup.attach(input);
+          if (o.value && WMLookup.set) WMLookup.set(input, o.value);
+        } catch (e) {}
+      }
       setTimeout(function () { try { input.focus(); input.select(); } catch (e) {} }, 30);
     } else {
       setTimeout(function () { try { back.querySelector('[data-yes]').focus(); } catch (e) {} }, 30);

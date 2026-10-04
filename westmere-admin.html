@@ -1721,7 +1721,18 @@ select:-webkit-autofill:focus{
             <div></div>
           </div>
           <div id="ni-op-head" style="display:none"></div>
-          <div id="ni-items" style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:.5rem"></div>
+          <!-- ONE GRID, ONE HEADING — the same .wm-sheet the owner app uses
+               (§29 of the theme), so a column cannot drift out of line with
+               its own label. GUARDRAIL: server/tests/invoice-sheet.test.js -->
+          <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:.5rem" class="wm-sheet-scroll"><div class="wm-sheet" id="ni-sheet">
+            <div class="wm-sheet-row wm-sheet-head" aria-hidden="true">
+              <span>Date</span><span>From</span><span>To</span>
+              <span class="num">Fare</span><span class="num">Com.</span><span class="num">Toll</span>
+              <span class="mid">Card</span><span></span>
+            </div>
+            <div id="ni-items"></div>
+            </div>
+          </div>
           <div id="ni-op-totals" style="display:none"></div>
           <div id="ni-op-payout" style="display:none"></div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.4rem">
@@ -5352,46 +5363,67 @@ function admCommissionPct(){
   return Math.round(v*100)/100;
 }
 
+/* ── THE POP-OUT CELL ──────────────────────────────────────────────────────
+   A spreadsheet row has no room for an address, and trying to fit one is what
+   made this editor wrap. The cell is a button showing the short label; tapping
+   it enlarges into the shared pop-out (WMAsk.prompt with the booking form's
+   address picker on it) and the answer collapses back into the row.
+   Owner parity. GUARDRAIL: server/tests/invoice-sheet.test.js */
+async function admCellEdit(btn,label){
+  if(!btn)return;
+  var v=await WMAsk.prompt(label,{
+    title:'Journey', value:btn.dataset.full||'', lookup:true, ok:'OK', cancel:'Cancel',
+    placeholder:label==='From'?'Pickup — start typing':'Drop-off — start typing'});
+  if(v===null)return;
+  admCellSet(btn,v);
+  updateBespokeTotal();
+}
+/** Full address on the row, short label on the face — the invoice's own split. */
+function admCellSet(btn,full){
+  if(!btn)return;
+  var f=String(full==null?'':full).trim();
+  btn.dataset.full=f;
+  var shown=f?((window.WMAddr?WMAddr.shortDisplay(f):'')||f):'';
+  btn.textContent=shown||(btn.dataset.label||'');
+  btn.classList.toggle('empty',!f);
+  btn.title=f;
+}
+
 function addBespokeItem(date,desc,amt,to,toll,collected){
   var wrap=document.getElementById('ni-items');
   var row=document.createElement('div');
-  row.className='ni-item';
+  row.className='ni-item wm-sheet-row';
+  /* ── ONE TRIP, ONE ROW ──────────────────────────────────────────────────
+     Date · From · To · Fare · Com. · Toll · Card · remove, on the single grid
+     declared in §29 of westmere-theme.css, shared with the heading above and
+     with the owner app. There were two builders here with different widths,
+     and between them the editor wrapped into ragged half-rows.
+     GUARDRAIL: server/tests/invoice-sheet.test.js */
   var today=new Date().toISOString().slice(0,10);
-  if(admOperatorMode()){
-    var FS='font-size:.9rem;padding:.4rem';
-    row.style.cssText='display:grid;grid-template-columns:'+ADM_GRID+';gap:.35rem;align-items:center';
-    row.innerHTML=
-       '<input class="fi ni-date" type="date" style="'+FS+'" value="'+(date||today)+'">'
-      +'<div style="position:relative"><input class="fi ni-from" placeholder="From" style="'+FS+'"></div>'
-      +'<div style="position:relative"><input class="fi ni-to" placeholder="To" style="'+FS+'"></div>'
-      +'<div style="text-align:center"><input class="ni-collected" type="checkbox" '+(collected?'checked':'')
-        +' onchange="admSetCollected(this)" title="The driver was paid this fare directly (card or cash)" style="width:15px;height:15px;cursor:pointer"></div>'
-      +'<input class="fi ni-amt" type="number" step="0.01" min="0" placeholder="0.00" style="'+FS+';text-align:right" value="'+((amt||amt===0)?amt:'')+'" oninput="updateBespokeTotal()">'
-      +'<div class="ni-com" style="text-align:right;font-family:var(--serif);font-size:.9rem;color:var(--westmere-ink-soft)">&mdash;</div>'
-      +'<input class="fi ni-fee" type="number" step="0.01" min="0" placeholder="" style="'+FS+';text-align:right" value="'+(((toll||toll===0)&&+toll>0)?toll:'')+'" oninput="updateBespokeTotal()">'
-      +'<button onclick="admRemoveItem(this)" title="Remove" style="background:transparent;border:none;color:#c0392b;cursor:pointer;font-size:1.1rem;line-height:1">&times;</button>';
-    if(collected) row.dataset.collected='1';
-  } else {
-    /* THE FEE BOX IS HERE TOO, the way it is on the owner app's plain form.
-       Without it the simple layout had nowhere to hold a toll, so switching the
-       operator toggle off and on again silently threw every one of them away —
-       £59 of barrier charges, and a payout £59 short, with nothing on screen to
-       say where they went. */
-    row.style.cssText='display:grid;grid-template-columns:110px 1fr 84px 100px 28px;gap:.35rem;align-items:center';
-    row.innerHTML='<input class="fi ni-date" type="date" style="font-size:.92rem;padding:.45rem .4rem" value="'+(date||today)+'">'
-      +'<input class="fi ni-desc" placeholder="e.g. Horsham → Gatwick" style="font-size:.95rem" value="'+escTo(desc||'')+'">'
-      +'<input class="fi ni-fee" type="number" step="0.01" min="0" placeholder="Fee" title="Fee or toll paid out on this trip (optional)" style="font-size:.95rem;text-align:right" value="'+(((toll||toll===0)&&+toll>0)?toll:'')+'" oninput="updateBespokeTotal()">'
-      +'<input class="fi ni-amt" type="number" step="0.01" min="0" placeholder="0.00" style="font-size:.95rem;text-align:right" value="'+((amt||amt===0)?amt:'')+'" oninput="updateBespokeTotal()">'
-      +'<button onclick="admRemoveItem(this)" title="Remove" style="background:transparent;border:none;color:#c0392b;cursor:pointer;font-size:1.1rem;line-height:1">&times;</button>';
-    if(collected) row.dataset.collected='1';
-  }
+  var op=admOperatorMode();
+  row.innerHTML=
+     '<input class="fi ni-date" type="date" value="'+(date||today)+'" aria-label="Date">'
+    +'<button type="button" class="wm-cell ni-from empty" data-label="From" aria-label="Pickup"'
+      +' onclick="admCellEdit(this,\'From\')">From</button>'
+    +'<button type="button" class="wm-cell ni-to empty" data-label="To" aria-label="Drop-off"'
+      +' onclick="admCellEdit(this,\'To\')">To</button>'
+    +'<input class="fi ni-amt num" type="number" step="0.01" min="0" placeholder="0.00" aria-label="Fare"'
+      +' value="'+((amt||amt===0)?amt:'')+'" oninput="updateBespokeTotal()">'
+    +'<div class="ni-com wm-sheet-com">&mdash;</div>'
+    +'<input class="fi ni-fee num" type="number" step="0.01" min="0" placeholder="" aria-label="Toll or parking"'
+      +' title="Fee or toll paid out on this trip (optional)"'
+      +' value="'+(((toll||toll===0)&&+toll>0)?toll:'')+'" oninput="updateBespokeTotal()">'
+    +'<div class="mid">'+(op
+        ? '<input class="ni-collected" type="checkbox" '+(collected?'checked':'')+' onchange="admSetCollected(this)"'
+          +' aria-label="Paid to the driver at the kerb" title="The driver was paid this fare directly (card or cash)">'
+        : '')+'</div>'
+    +'<button type="button" class="wm-sheet-x" title="Remove this trip" aria-label="Remove this trip"'
+      +' onclick="admRemoveItem(this)">&times;</button>';
+  if(collected) row.dataset.collected='1';
   wrap.appendChild(row);
-  /* The lookup is attached after the row is in the document — it measures the
-     field to place its dropdown. */
-  var fr=row.querySelector('.ni-from'), tt=row.querySelector('.ni-to');
-  if(window.WMLookup&&fr){ WMLookup.attach(fr); WMLookup.attach(tt); }
-  if(desc&&fr){ if(window.WMLookup) WMLookup.set(fr,desc); else fr.value=desc; }
-  if(to&&tt){ if(window.WMLookup) WMLookup.set(tt,to); else tt.value=to; }
+  /* The places go in as cells; the lookup lives in the pop-out now. */
+  admCellSet(row.querySelector('.ni-from'), desc||'');
+  admCellSet(row.querySelector('.ni-to'), to||'');
   updateBespokeTotal();
 }
 function admRemoveItem(btn){
@@ -5421,8 +5453,9 @@ function admRowsFromDom(){
     var de=r.querySelector('.ni-desc'), a=r.querySelector('.ni-amt'), fe=r.querySelector('.ni-fee');
     out.push({
       date:d?d.value:'',
-      from:fr?(window.WMLookup?WMLookup.full(fr):fr.value):(de?de.value:''),
-      to:  to?(window.WMLookup?WMLookup.full(to):to.value):'',
+      /* THE CELL CARRIES ITS OWN FULL ADDRESS — the pop-out put it there. */
+      from:(fr&&fr.dataset.full)||(de?de.value:''),
+      to:  (to&&to.dataset.full)||'',
       fare:a?a.value:'', toll:fe?fe.value:'',
       collected:admRowCollected(r)
     });
@@ -5479,6 +5512,9 @@ function updateBespokeTotal(){
   if(pay&&op) pay.innerHTML=WMInvoiceMaths.payoutHtml(m);
   /* One total, in one place: on the job sheet PAY OUT is the figure, and
      repeating it in small print invites the reading that they are two. */
+  /* Which shape the sheet is: Com. and Card collapse on a customer invoice. */
+  var sheet=document.getElementById('ni-sheet');
+  if(sheet) sheet.classList.toggle('wm-sheet-op', !!admOperatorMode());
   var tl=document.getElementById('ni-total-line');
   if(tl) tl.style.visibility=op?'hidden':'visible';
   /* ONE PASS, ONE SET OF FIGURES: the adjustments read the same maths. */
@@ -5494,10 +5530,14 @@ function getBespokeItems(){
     var date=dateEl?dateEl.value.trim():'';
     var fromEl=r.querySelector('.ni-from'), toEl=r.querySelector('.ni-to');
     var descEl=r.querySelector('.ni-desc');
-    /* THE RESOLVED ADDRESS, not what is showing in the box — the field displays
-       the short form, the invoice carries what the geocoder returned. */
-    var from=fromEl?(window.WMLookup?WMLookup.full(fromEl):fromEl.value.trim()):'';
-    var to  =toEl  ?(window.WMLookup?WMLookup.full(toEl)  :toEl.value.trim())  :'';
+    /* THE RESOLVED ADDRESS, from the cell the pop-out wrote it into — the face
+       shows the short form, this is the precise one. The SHORT form is what the
+       invoice line carries (server/tests/invoice-lines.test.js): the owner
+       asked twice for the bill not to print a geocoded paragraph. */
+    var fromFull=((fromEl&&fromEl.dataset.full)||'').trim();
+    var toFull  =((toEl  &&toEl.dataset.full)  ||'').trim();
+    var shortOf=function(a){ if(!a)return ''; try{ return (window.WMAddr?WMAddr.shortDisplay(a):'')||String(a).trim(); }catch(e){ return String(a).trim(); } };
+    var from=shortOf(fromFull), to=shortOf(toFull);
     var desc=descEl?descEl.value.trim():((from&&to)?(from+' → '+to):(from||to));
     var amtEl=r.querySelector('.ni-amt');
     var amt=amtEl?(parseFloat(amtEl.value)||0):0;
