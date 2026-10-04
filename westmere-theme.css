@@ -2060,7 +2060,13 @@ nav > .navlinks { margin-left: auto; }
   /* …and the same four, tighter, when a sixth column has to fit because the
      month contains a cancelled trip. The status column gets the room it needs
      to print the whole word: "CANC…" is not a label, and a row the owner has
-     to widen his phone to read is not marked at all. */
+     to widen his phone to read is not marked at all.
+
+     AND THE TABLE KEEPS A FLOOR. Six columns in 390 pixels left the two place
+     names at about fifty pixels each — "Steyn…", "Southa…" — which is not a
+     place, it is a hint. It slides sideways instead, the way the invoice sheet
+     does and the way a spreadsheet is expected to. */
+  .wm-ctab-history-mixed{ min-width: 27rem; }
   .wm-ctab-history-mixed col:nth-child(2){ width: 17% !important; }
   .wm-ctab-history-mixed col:nth-child(3){ width: 24% !important; }
   .wm-ctab-history-mixed col:nth-child(4){ width: 17% !important; }
@@ -2386,3 +2392,52 @@ nav > .navlinks { margin-left: auto; }
 .cal-day, .adm-cal-day{ border-color: var(--westmere-line) !important; }
 .cal-day.today, .adm-cal-day.today{ box-shadow: inset 0 0 0 1.5px var(--westmere-gold); }
 .cal-dnum, .adm-cal-dnum{ font-family: var(--sans); font-size: .76rem; color: var(--westmere-text); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   §31  A JOB IS A CARD
+   ═══════════════════════════════════════════════════════════════════════
+   Every job list in both apps drew its rows as a bare border-top: no edge, no
+   paper, nothing to say where one job ended and the next began. Beside the
+   redesigned screens it read exactly as the owner put it — blunt.
+
+   The composition goes on the WRAPPER, not inside it. What a job card says,
+   and in what order — when, then who, then where — is the owner's own
+   decision from an earlier pass and is already right; this gives it an edge to
+   sit on, a rhythm down the page, and the gold hairline under the glance row
+   that the rest of the app uses to separate a heading from its detail.
+   GUARDRAIL: server/tests/design-consistency.test.js */
+.wm-job{
+  background: var(--westmere-white);
+  border: var(--border-hair) solid var(--westmere-line);
+  border-radius: 11px;
+  margin-bottom: .55rem;
+  overflow: hidden;
+  transition: border-color .12s ease, box-shadow .12s ease;
+}
+.wm-job:last-child{ margin-bottom: 0; }
+.wm-job:hover{ border-color: var(--westmere-line-strong); box-shadow: 0 1px 3px rgba(16,42,67,.06); }
+/* The tappable head of the card — the part that opens the trip. */
+.wm-job-tap{ padding: .8rem 1rem; cursor: pointer; }
+.wm-job-tap:active{ background: var(--westmere-press); }
+/* THE GOLD HAIRLINE UNDER THE GLANCE. The same move the section headings and
+   the sheet make: the big line is the heading, and a rule separates it from
+   what explains it. */
+.wm-job .wm-glance{
+  margin-top: 0;
+  padding-bottom: .4rem;
+  border-bottom: var(--border-hair) solid var(--westmere-gold);
+  margin-bottom: .5rem;
+}
+/* A cancelled job is a record, not a job — the same quieting the compact list
+   gives it, so the two surfaces agree. */
+.wm-job.is-cancelled{ background: var(--westmere-hover); }
+
+/* ── THE DETAIL TABLE, wherever a page lists a job's facts ───────────────
+   Label and value were the same grey at the same size, so nothing on the page
+   led and the eye had nowhere to start. The label is the house eyebrow; the
+   value is navy at reading size; a hairline between rows lets the eye run
+   down them. Part of §30's structural pass.
+   GUARDRAIL: server/tests/design-consistency.test.js */
+.wm-detail td{ vertical-align: top; }
+.wm-detail tr + tr td{ border-top: 1px solid var(--westmere-line); }
+.wm-detail td:last-child{ color: var(--westmere-text); padding: .4rem 0; }

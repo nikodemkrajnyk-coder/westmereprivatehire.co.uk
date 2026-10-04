@@ -3143,7 +3143,10 @@ function admJobRow(b){
   if(A.message)acts+='<button class="btn btn-ghost btn-sm" onclick="wmMessageOpen('+b.id+')">Message</button> ';
   // A cancelled booking is a record only — the operator removes it by hand.
   if(A.del)acts+='<button class="btn btn-red btn-sm" onclick="admDeleteBooking('+b.id+')">Delete</button>';
-  return '<div style="padding:.75rem 1rem;border-top:1px solid rgba(27,27,26,.08)">'
+  /* A JOB IS A CARD — the same composition as the owner app's, from the same
+     class (§31 of westmere-theme.css). It was a bare border-top between rows.
+     GUARDRAIL: server/tests/design-consistency.test.js */
+  return '<div class="wm-job">'
 
     // AT A GLANCE — date, time and fare at --text-xl navy, the same row and the
     // same classes the owner app uses (§19 of westmere-theme.css). Parity is

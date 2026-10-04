@@ -62,16 +62,22 @@ nav#nav{display:none}
 .bottom-nav{background:#ffffff;border-top:1px solid rgba(106,106,106,.2);box-shadow:0 -1px 8px rgba(0,0,0,.25);display:flex;flex-direction:column;padding-bottom:var(--safe-bottom);flex-shrink:0;z-index:60}
 .bn-row{display:flex;width:100%}
 /* ── TRIP HISTORY: a month at a time ── */
-.tm-head{display:flex;align-items:baseline;gap:.55rem;width:100%;padding:.7rem 1rem .55rem;
-  background:#ffffff;border:none;border-bottom:1px solid var(--rule);cursor:pointer;text-align:left;
+/* A MONTH IS A SECTION, so it is headed like one: the gold rule the rest of
+   the app puts under a heading, and the month's figures as the house eyebrow
+   rather than grey small print. The caret is the only thing that stays quiet —
+   it is an affordance, not information. */
+.tm-head{display:flex;align-items:baseline;gap:.55rem;width:100%;padding:.85rem 1rem .5rem;
+  background:#ffffff;border:none;border-bottom:var(--border-hair,1px) solid var(--westmere-gold);cursor:pointer;text-align:left;
   font-family:inherit;-webkit-tap-highlight-color:transparent}
-.tm-head:active{background:rgba(16,42,67,.04)}
-.tm-head:focus-visible{outline:2px solid var(--westmere-navy,#102a43);outline-offset:-2px}
+.tm-head:active{background:var(--westmere-press,rgba(16,42,67,.07))}
+.tm-head:focus-visible{outline:2px solid var(--westmere-gold);outline-offset:-2px}
 .tm-caret{display:inline-block;font-family:var(--serif);font-size:1.05rem;line-height:1;
-  color:rgba(27,27,26,.4);transition:transform .18s;flex-shrink:0}
+  color:var(--westmere-muted,#657485);transition:transform .18s;flex-shrink:0}
 .tm-caret.on{transform:rotate(90deg)}
-.tm-label{flex:1;font-family:var(--serif);font-size:1.02rem;font-weight:500;letter-spacing:.05em;color:var(--navy)}
-.tm-meta{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:rgba(27,27,26,.45);white-space:nowrap}
+.tm-label{flex:1;font-family:var(--serif);font-size:1.08rem;font-weight:500;letter-spacing:.04em;color:var(--westmere-navy,#102a43)}
+.tm-meta{font-family:var(--sans);font-size:.68rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--westmere-gold-ink);white-space:nowrap}
+.tm-body{padding-bottom:.5rem}
 .tm-body[hidden]{display:none}
 /* ── THE LEFT DRAWER ──────────────────────────────────────────────────────
    The bottom bar had grown to nine tabs across two rows and was eating the
@@ -4671,8 +4677,14 @@ function jobCardHtml(j){
   var stLabel=_st.label,stCls=_st.cls;
 
   var detailId='uj-det-'+j.id;
-  var html='<div style="border-top:1px solid var(--rule)">'
-    +'<div style="padding:.8rem 1rem;cursor:pointer" onclick="openTripPage(\''+j.id+'\')">'
+  /* A JOB IS A CARD, not a line in a ledger. It was a bare border-top between
+     rows — the composition the owner called blunt: no edge, no paper, nothing
+     to say where one job ended and the next began except a hairline. The class
+     carries all of that (§31 of westmere-theme.css); what is INSIDE the card is
+     untouched, because the order of it is his own and already right.
+     GUARDRAIL: server/tests/design-consistency.test.js */
+  var html='<div class="wm-job">'
+    +'<div class="wm-job-tap" onclick="openTripPage(\''+j.id+'\')">'
       // WHEN, THEN WHO, THEN WHERE.
       //
       // The date and time lead the card. The owner's first question of any job
@@ -4718,21 +4730,26 @@ function jobCardHtml(j){
          money. GUARDRAIL: server/tests/compact-history.test.js */
       +(WMCompact.isCancelled(j)?'<div style="margin:.7rem 0 .2rem;padding:.55rem .7rem;background:#ffffff;border-left:3px solid var(--westmere-navy, #102a43);border-radius:4px;font-size:.86rem;line-height:1.5;color:#1b1b1a">'
         +'<b>This journey was cancelled.</b> It did not run, so it counts nothing towards your income.</div>':'')
-      +'<table style="width:100%;font-size:.88rem;color:rgba(27,27,26,.7);border-collapse:collapse;margin-bottom:.7rem">'
-        +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4);width:80px">From</td><td>'+escH(j.pickup||'—')+'</td></tr>'
-        +(j.stop_address?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Stop</td><td>'+escH(j.stop_address)+'</td></tr>':'')
-        +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">To</td><td>'+escH(j.dest||j.destination||'—')+'</td></tr>'
-        +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Date</td><td>'+escH(_fmtLongDate(j.date)||'—')+(j.time?' &middot; '+escH(j.time):'')+'</td></tr>'
-        +(j.phone?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Phone</td><td><a href="tel:'+escH(j.phone)+'" style="color:var(--navy)">'+escH(j.phone)+'</a></td></tr>':'')
-        +(j.fare?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Fare</td><td style="font-weight:600;color:var(--navy)">£'+Number(j.fare).toFixed(2)+'</td></tr>':'')
-        +(j.apiStatus==='pending'&&j.suggestedFare!=null?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Suggested</td><td style="font-weight:600;color:#555555">£'+Number(j.suggestedFare).toFixed(2)+'</td></tr>':'')
-        +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Passengers</td><td>'+(j.pax||1)+'</td></tr>'
-        +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Luggage</td><td>'+escH(_bagsLabel(j.bags))+'</td></tr>'
-        +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Payment</td><td>'+wmPayBadge(j)+'</td></tr>'
-        +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Paid</td><td style="color:#1b1b1a">'+escH(WMCompact.paidLine(j))+(j.paid_at?' <span style="color:rgba(27,27,26,.45)">on '+escH(_fmtLongDate(String(j.paid_at).slice(0,10))||String(j.paid_at).slice(0,10))+'</span>':'')+'</td></tr>'
+      /* THE DETAIL TABLE. Labels are the house eyebrow — gold ink, small caps —
+         and the values are navy at reading size, with a hairline between rows
+         so the eye can run down them. It was grey labels and grey values at
+         the same size, which is why nothing on the page led.
+         GUARDRAIL: server/tests/design-consistency.test.js */
+      +'<table class="wm-detail" style="width:100%;font-size:.9rem;color:var(--westmere-text);border-collapse:collapse;margin-bottom:.7rem">'
+        +'<tr><td style="padding:.4rem .6rem .4rem 0;font-family:var(--sans);font-size:.64rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--westmere-gold-ink);white-space:nowrap;width:80px">From</td><td>'+escH(j.pickup||'—')+'</td></tr>'
+        +(j.stop_address?'<tr><td style="padding:.4rem .6rem .4rem 0;font-family:var(--sans);font-size:.64rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--westmere-gold-ink);white-space:nowrap">Stop</td><td>'+escH(j.stop_address)+'</td></tr>':'')
+        +'<tr><td style="padding:.4rem .6rem .4rem 0;font-family:var(--sans);font-size:.64rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--westmere-gold-ink);white-space:nowrap">To</td><td>'+escH(j.dest||j.destination||'—')+'</td></tr>'
+        +'<tr><td style="padding:.4rem .6rem .4rem 0;font-family:var(--sans);font-size:.64rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--westmere-gold-ink);white-space:nowrap">Date</td><td>'+escH(_fmtLongDate(j.date)||'—')+(j.time?' &middot; '+escH(j.time):'')+'</td></tr>'
+        +(j.phone?'<tr><td style="padding:.4rem .6rem .4rem 0;font-family:var(--sans);font-size:.64rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--westmere-gold-ink);white-space:nowrap">Phone</td><td><a href="tel:'+escH(j.phone)+'" style="color:var(--navy)">'+escH(j.phone)+'</a></td></tr>':'')
+        +(j.fare?'<tr><td style="padding:.4rem .6rem .4rem 0;font-family:var(--sans);font-size:.64rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--westmere-gold-ink);white-space:nowrap">Fare</td><td style="font-weight:600;color:var(--navy)">£'+Number(j.fare).toFixed(2)+'</td></tr>':'')
+        +(j.apiStatus==='pending'&&j.suggestedFare!=null?'<tr><td style="padding:.4rem .6rem .4rem 0;font-family:var(--sans);font-size:.64rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--westmere-gold-ink);white-space:nowrap">Suggested</td><td style="font-weight:600;color:#555555">£'+Number(j.suggestedFare).toFixed(2)+'</td></tr>':'')
+        +'<tr><td style="padding:.4rem .6rem .4rem 0;font-family:var(--sans);font-size:.64rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--westmere-gold-ink);white-space:nowrap">Passengers</td><td>'+(j.pax||1)+'</td></tr>'
+        +'<tr><td style="padding:.4rem .6rem .4rem 0;font-family:var(--sans);font-size:.64rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--westmere-gold-ink);white-space:nowrap">Luggage</td><td>'+escH(_bagsLabel(j.bags))+'</td></tr>'
+        +'<tr><td style="padding:.4rem .6rem .4rem 0;font-family:var(--sans);font-size:.64rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--westmere-gold-ink);white-space:nowrap">Payment</td><td>'+wmPayBadge(j)+'</td></tr>'
+        +'<tr><td style="padding:.4rem .6rem .4rem 0;font-family:var(--sans);font-size:.64rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--westmere-gold-ink);white-space:nowrap">Paid</td><td style="color:#1b1b1a">'+escH(WMCompact.paidLine(j))+(j.paid_at?' <span style="color:rgba(27,27,26,.45)">on '+escH(_fmtLongDate(String(j.paid_at).slice(0,10))||String(j.paid_at).slice(0,10))+'</span>':'')+'</td></tr>'
         +(dispStateRow(j))
-        +(ownerNoteOf(j)?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4);vertical-align:top">Notes</td><td style="white-space:pre-line">'+escH(ownerNoteOf(j))+'</td></tr>':'')
-        +(j.customer_note?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.55);vertical-align:top;font-weight:600">Special req.</td><td style="color:#1b1b1a;background:rgba(27,27,26,.04);border-left:2px solid rgba(27,27,26,.55);padding:.3rem .5rem">'+escH(j.customer_note)+'</td></tr>':'')
+        +(ownerNoteOf(j)?'<tr><td style="padding:.4rem .6rem .4rem 0;font-family:var(--sans);font-size:.64rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--westmere-gold-ink);white-space:nowrap;vertical-align:top">Notes</td><td style="white-space:pre-line">'+escH(ownerNoteOf(j))+'</td></tr>':'')
+        +(j.customer_note?'<tr><td style="padding:.4rem .6rem .4rem 0;font-family:var(--sans);font-size:.64rem;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--westmere-gold-ink);vertical-align:top;white-space:nowrap">Special req.</td><td style="color:#1b1b1a;background:rgba(27,27,26,.04);border-left:2px solid rgba(27,27,26,.55);padding:.3rem .5rem">'+escH(j.customer_note)+'</td></tr>':'')
       +'</table>'
       +'<div style="display:flex;gap:.4rem;flex-wrap:wrap">';
   // WHICH ACTIONS ARE ALLOWED is decided by the shared lifecycle module, so the
@@ -6979,7 +6996,7 @@ function dispStateRow(j){
        from memory, and the card is the only place he can check it went where he
        meant — there is no account behind the name to look up. */
     if(j.offeredIsAdhoc&&j.offeredToEmail)who+=' ('+j.offeredToEmail+')';
-    return '<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Dispatch</td>'
+    return '<tr><td style="padding:.4rem .6rem .4rem 0;font-family:var(--sans);font-size:.64rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--westmere-gold-ink);white-space:nowrap">Dispatch</td>'
       +'<td style="color:var(--westmere-navy,#102a43)">Offered to '+escH(who)+' &middot; awaiting reply</td></tr>';
   }
   /* The DEFAULT driver is not news — it is every job. Saying "Nikodem ·
@@ -6989,7 +7006,7 @@ function dispStateRow(j){
     /* Somebody outside the system took it: they were quoted the FARE, so the
        card must not report a commission split that was never agreed. */
     var adhoc=!j.driverId&&!!j.assignedToName;
-    return '<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Driver</td>'
+    return '<tr><td style="padding:.4rem .6rem .4rem 0;font-family:var(--sans);font-size:.64rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--westmere-gold-ink);white-space:nowrap">Driver</td>'
       +'<td style="color:var(--westmere-navy,#102a43)">'+escH(j.driverName||j.assignedToName)+' &middot; accepted'
       +(adhoc?' &middot; not a registered driver'
              :(j.driverPay!=null?(' &middot; '+fmtMoney(j.driverPay)+' to him'):''))+'</td></tr>';
