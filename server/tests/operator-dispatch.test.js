@@ -299,15 +299,17 @@ test('a DRIVER’s email still names the rate that was actually charged', async 
   await dispatch(b.id, { driver_id: drv.id, commission_pct: 12.5 });
   const m = mailTo(drv.email);
   assert.ok(m, 'the driver was not emailed');
-  assert.ok(/Commission \(12\.5%\)/.test(m.html), 'the email names a rate that was not charged');
+  /* The breakdown is one line now — the owner asked for the short form — but
+     the rate still has to be HIS. See server/tests/card-received.test.js */
+  assert.ok(/commission \(12\.5%\)/i.test(m.html), 'the email names a rate that was not charged');
   assert.ok(/£25\.00/.test(m.html), 'and the figure beside it: 12.5% of £200');
 
   const b2 = seedBooking({ fare: 200 });
   SENT.length = 0;
   await dispatch(b2.id, { driver_id: drv.id, charge_commission: false });
   const m2 = mailTo(drv.email);
-  assert.ok(!/Commission/.test(m2.html),
-    'a cover job printed a commission row — "Commission (10%) −£0.00" is a contradiction');
+  assert.ok(!/commission/i.test(m2.html),
+    'a cover job mentioned commission — "commission (10%) −£0.00" is a contradiction');
   assert.ok(/£200\.00/.test(m2.html), 'the whole fare reaches him');
 });
 

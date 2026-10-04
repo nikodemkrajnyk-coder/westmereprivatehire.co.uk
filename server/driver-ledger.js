@@ -95,6 +95,56 @@ function rateForDriver(driver) {
   return Math.max(0, Math.min(100, Number(pct))) / 100;
 }
 
+/* ── WHAT ACTUALLY LANDED FROM A CARD PAYMENT ─────────────────────────────
+   Stripe takes its cut whoever drove the job: a £96 fare arrives as about £93.
+   On a job passed on for NO commission nothing covered that, and the owner was
+   paying it out of his own pocket on work he kept nothing from.
+
+   HE TYPES THE AMOUNT RECEIVED, not a fee and not a rate. That is the number
+   on his statement, so it is the one he can check without doing arithmetic
+   first — and the fee is simply the difference from the fare. An earlier pass
+   estimated it at 1.5% + 20p; his answer was that he would rather key in the
+   real one. There is no rate in this file to fall back on.
+
+   NULL means he has not said, and the driver is paid on the whole fare.
+
+   ONLY ON A CARD PAYMENT. A debit card is a card as far as Stripe is
+   concerned. Cash, account and invoice cost nothing to collect, and `pending`
+   means no method has been chosen — a deduction taken on a guess is money off
+   a driver for a payment that may never be made by card. A figure left on a
+   job whose method later changes is ignored rather than applied.
+   GUARDRAIL: server/tests/card-received.test.js */
+
+/** Was this fare taken by card (or debit card)? The only method Stripe bills us for. */
+function isCardJob(b) {
+  return String((b && b.payment) || '').toLowerCase() === 'card';
+}
+
+/** What actually landed, as the owner typed it. The FARE when he has not said,
+    or when the job was not paid by card — never more than the fare, never less
+    than nothing. */
+function receivedOn(b) {
+  const fare = Number(b && b.fare) || 0;
+  if (!b || !isCardJob(b)) return fare;
+  /* NULL IS NOT ZERO, and here the difference is the driver's whole payout.
+     The column is NULL until the owner says what landed, and `Number(null)` is
+     0 — which read as "nothing arrived", made the fee the entire fare and paid
+     the driver £0 on every card job in the system. The column has to be
+     checked for emptiness before it is turned into a number. */
+  const raw = b.card_received;
+  if (raw === null || raw === undefined || raw === '') return fare;
+  const v = Number(raw);
+  if (!isFinite(v) || v < 0) return fare;
+  return Math.min(Math.round(v * 100) / 100, fare);
+}
+
+/** The difference — what the card cost. Shown, never stored: one figure is
+    typed and the other is derived from it, so the two can never disagree. */
+function cardFeeOn(b) {
+  const fare = Number(b && b.fare) || 0;
+  return Math.round((fare - receivedOn(b)) * 100) / 100;
+}
+
 /** Did the driver take the money at the kerb? */
 function isCashJob(b) {
   return String((b && b.payment) || '').toLowerCase() === 'cash';
@@ -105,12 +155,23 @@ function isCashJob(b) {
 function jobSplit(b) {
   const fare = Number(b && b.fare) || 0;
   const derived = computeSplit(fare);
-  const commission = (b && b.admin_fee != null) ? Number(b.admin_fee) : (derived.admin_fee || 0);
-  const payout = (b && b.driver_pay != null) ? Number(b.driver_pay) : (derived.driver_pay || 0);
+  const commission = Math.round(((b && b.admin_fee != null) ? Number(b.admin_fee) : (derived.admin_fee || 0)) * 100) / 100;
+  const before = Math.round(((b && b.driver_pay != null) ? Number(b.driver_pay) : (derived.driver_pay || 0)) * 100) / 100;
+  /* THE DRIVER IS PAID OUT OF WHAT ARRIVED. The owner's words: the payout is
+     worked out from the real received amount, then less commission if it is a
+     commission job. Derived rather than stored, because a booking only reads
+     `card` once Stripe says the payment succeeded — which can be after the job
+     was passed, and a payout frozen at dispatch would be wrong the moment it
+     is. `payout_before_fee` is kept so the email and the trip page can show the
+     subtraction instead of a number nobody can check. */
+  const fee = cardFeeOn(b);
   return {
     fare,
-    commission: Math.round(commission * 100) / 100,
-    payout: Math.round(payout * 100) / 100
+    commission,
+    received: receivedOn(b),
+    card_fee: fee,
+    payout_before_fee: before,
+    payout: Math.round((before - fee) * 100) / 100
   };
 }
 
@@ -186,6 +247,10 @@ function historyRow(b) {
     fare: s.fare,
     paymentType: cash ? 'cash' : 'prepaid',
     commission: s.commission,
+    /* What arrived, what the card cost, and what he would have had without it. */
+    received: s.received,
+    card_fee: s.card_fee,
+    payout_before_fee: s.payout_before_fee,
     payout: s.payout,
     /* What this line does to the running figure — the sign is the whole story,
        so it is carried rather than left to be re-derived by each reader. */
@@ -344,7 +409,7 @@ function recordSettlement(driverId, amount, opts) {
 function driverBalance(driverId) {
   const db = getDb();
   const rows = db.prepare(
-    `SELECT fare, payment, driver_pay, admin_fee, driver_settled FROM bookings
+    `SELECT fare, payment, driver_pay, admin_fee, card_received, driver_settled FROM bookings
       WHERE driver_id = ? AND passed_at IS NOT NULL AND COALESCE(status,'') <> 'cancelled'`
   ).all(driverId);
   return rows.reduce((t, b) => Math.round((t + outstandingOn(b)) * 100) / 100, 0);
@@ -529,6 +594,9 @@ function settleBatch(driverId, jobIds, opts) {
 
 module.exports = {
   ADMIN_FEE_PCT,
+  isCardJob,
+  receivedOn,
+  cardFeeOn,
   unpaidUpTo,
   settleBatch,
   unapplyPayment,

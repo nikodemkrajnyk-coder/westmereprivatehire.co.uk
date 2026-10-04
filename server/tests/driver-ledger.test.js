@@ -129,10 +129,19 @@ console.log('\nWhat a job is worth');
 
 test('the stored figures win over the derived ones', () => {
   const b = { fare: 100, admin_fee: 4, driver_pay: 96, payment: 'card' };
-  assert.deepStrictEqual(ledger.jobSplit(b), { fare: 100, commission: 4, payout: 96 },
+  assert.deepStrictEqual(ledger.jobSplit(b),
+    { fare: 100, commission: 4, received: 100, card_fee: 0, payout_before_fee: 96, payout: 96 },
     'a hand-adjusted payout must never be silently recomputed out from under the driver');
   assert.deepStrictEqual(ledger.jobSplit({ fare: 100, payment: 'card' }),
-    { fare: 100, commission: 10, payout: 90 }, 'and the fallback is the ledger rate');
+    { fare: 100, commission: 10, received: 100, card_fee: 0, payout_before_fee: 90, payout: 90 },
+    'and the fallback is the ledger rate');
+  /* NOTHING IS ESTIMATED. A card job where the owner has not said what landed
+     is paid on the whole fare — there is no rate anywhere to fall back on,
+     which is his whole point. GUARDRAIL: server/tests/card-received.test.js */
+  const typed = ledger.jobSplit({ fare: 100, admin_fee: 0, driver_pay: 100, payment: 'card', card_received: 97 });
+  assert.strictEqual(typed.received, 97, 'what he typed, to the penny');
+  assert.strictEqual(typed.card_fee, 3, 'and the fee is the difference, not a second figure');
+  assert.strictEqual(typed.payout, 97, 'the driver is paid out of what arrived');
 });
 
 test('prepaid moves the balance to the driver, cash moves it to Westmere', () => {

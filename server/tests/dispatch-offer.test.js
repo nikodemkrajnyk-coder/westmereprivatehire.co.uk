@@ -106,12 +106,23 @@ test('the email shows the NET pay, never the gross fare', async () => {
     passengers: b.passengers, bags: b.bags, offer_token: sp.token });
   const m = SENT[0];
   assert.ok(m, 'nothing was sent');
-  assert.ok(/£135\.00 to you/.test(m.html), 'the headline figure must be the NET pay');
+  /* "Payout", not "£135.00 to you" — the owner asked for the driver-facing
+     wording to read like a payment record, not a conversation.
+     GUARDRAIL for the wording: server/tests/card-received.test.js */
+  assert.ok(/Payout for this job/.test(m.html), 'the figure must be labelled');
+  assert.ok(/£135\.00/.test(m.html), 'the headline figure must be the NET pay');
+  assert.ok(!/\bto you\b|\byou get\b|\byou receive\b/i.test(m.html),
+    'and no second person around the money');
   assert.ok(/£135\.00/.test(m.subject), 'and the subject must carry it too');
   const text = m.html.replace(/<[^>]+>/g, ' ');
   assert.ok(/Fare £150\.00/.test(text) && /10% commission already deducted/.test(text),
     'the gross and the deduction must be stated, so the number is not a mystery');
-  assert.ok(!/£150\.00 to you/.test(m.html), 'the GROSS must never be presented as his pay');
+  /* The gross must never be the headline. It appears once, in the note under
+     the figure ("Fare £150.00 · 10% commission already deducted"), and the big
+     number must not be it. */
+  const headline = /font-size:34px[^>]*>([^<]*)</.exec(m.html);
+  assert.ok(headline, 'the headline figure is gone');
+  assert.ok(!/150\.00/.test(headline[1]), 'the GROSS must never be presented as his pay: ' + headline[1]);
 });
 
 test('the pay in the email always equals computeSplit', async () => {
@@ -123,7 +134,11 @@ test('the pay in the email always equals computeSplit', async () => {
     await email.sendDriverJobOffer({ driver_name: drv.full_name, driver_email: drv.email, ref: b.ref,
       pickup: b.pickup, destination: b.destination, date: b.date, time: b.time,
       fare, driver_pay: sp.driver_pay, offer_token: sp.token });
-    assert.ok(SENT[0].html.indexOf('£' + sp.driver_pay.toFixed(2) + ' to you') !== -1,
+    /* The headline figure, whatever it is labelled — the point is that it
+       equals computeSplit and is not the gross. */
+    const headline = /font-size:34px[^>]*>([^<]*)</.exec(SENT[0].html);
+    assert.ok(headline, 'fare ' + fare + ' → the headline figure is gone');
+    assert.strictEqual(headline[1].trim(), '£' + sp.driver_pay.toFixed(2),
       'fare ' + fare + ' → expected £' + sp.driver_pay.toFixed(2));
   }
 });

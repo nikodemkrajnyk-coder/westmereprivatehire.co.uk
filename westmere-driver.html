@@ -846,7 +846,7 @@ function buildOffered(){
       var conflict=checkConflict(j);
       var pay=(j.driverPay!=null)?j.driverPay:(j.fare?(Math.round(j.fare*0.9*100)/100):null);
       var gross=j.fare||0;
-      var payLine=(pay!=null)?('<div class="ss-n" style="color:'+s.col+'">\u00a3'+esc(pay)+' to you</div><div style="font-size:.68rem;color:var(--text-light);text-align:right">gross \u00a3'+esc(gross)+' \u00b7 10% fee</div>'):('<div class="ss-n" style="color:'+s.col+'">\u00a3'+esc(s.net)+' net</div>');
+      var payLine=(pay!=null)?('<div class="ss-n" style="color:'+s.col+'">Payout \u00a3'+esc(pay)+'</div><div style="font-size:.68rem;color:var(--text-light);text-align:right">gross \u00a3'+esc(gross)+' \u00b7 10% fee</div>'):('<div class="ss-n" style="color:'+s.col+'">\u00a3'+esc(s.net)+' net</div>');
       var strip='<div class="score-strip" style="background:'+s.bg+';border-bottom:1px solid '+s.col+'30">'
         +'<div><div class="ss-v" style="color:'+s.col+'">'+esc(s.v)+'</div><div class="ss-d">'+esc(s.dead)+' dead mi \u00b7 ~'+esc(s.jmi)+' mi job</div></div>'
         +'<div>'+payLine+'</div></div>';

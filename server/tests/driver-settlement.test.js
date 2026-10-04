@@ -385,11 +385,15 @@ test('the rate is typed in place, not into a native prompt', () => {
 });
 
 test('a cash job does not claim the fare is going to him', () => {
-  /* He was paid at the kerb. "£189.00 to him" is true of a prepaid job and
-     nonsense on a cash one, where what moves is the commission he owes back. */
+  /* He was paid at the kerb. A payout line is true of a prepaid job and
+     nonsense on a cash one, where what moves is the commission he owes back.
+     The labels are the professional ones now — "Payout" and "Due from driver"
+     — but the DISTINCTION is the point and must stay.
+     See server/tests/card-received.test.js */
   const fn = fnBody(strip(read('westmere-owner.html')), 'owDrvTripHtml');
-  assert.ok(/cash \?[\s\S]{0,80}He owes you/.test(fn),
+  assert.ok(/cash \?[\s\S]{0,80}Due from driver/.test(fn),
     'the working line reads the same for cash and prepaid');
+  assert.ok(/'Payout'/.test(fn), 'and a prepaid job still names the payout');
 });
 
 test('a payment with nowhere to go is reported, and stays out of the balance', () => {

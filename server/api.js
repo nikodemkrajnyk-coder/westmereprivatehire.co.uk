@@ -4895,6 +4895,85 @@ router.get('/drivers/:id/ledger', (req, res) => {
   });
 });
 
+/* ── WHAT ACTUALLY LANDED, TYPED IN BY HAND ──────────────────────────────
+   Stripe takes its cut, so a £96 fare arrives as about £93. The owner reads
+   that figure off his statement and keys it in; the fee is the difference, and
+   the driver is paid out of what arrived. Body is either:
+ 
+     { received: 93 }   what landed — the number he has in front of him
+     { fee: 3 }         what it cost, if that is the figure he has instead
+ 
+   Both store the same thing: ONE figure on the row, so the two can never
+   disagree. Passing neither (or null) clears it, and the driver is paid on the
+   whole fare again. Nothing is estimated from a rate.
+ 
+   CARD ONLY. Cash, account and invoice cost nothing to collect, and `pending`
+   means no method has been chosen yet — so the route refuses rather than
+   storing a figure that would be silently ignored, which is worse than saying
+   no. A settled job is refused for the same reason it refuses a change of
+   commission: the money has already moved.
+   GUARDRAIL: server/tests/card-received.test.js */
+router.patch('/bookings/:id/card-received', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+  const db = getDb();
+  const b = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+  if (!b) return res.status(404).json({ error: 'Booking not found' });
+  if (!b.passed_at || !b.driver_id) {
+    return res.status(409).json({ error: 'This job was not passed to a driver, so there is no payout to adjust' });
+  }
+  if (!ledger.isCardJob(b)) {
+    return res.status(409).json({
+      error: 'That journey was not paid by card, so there is nothing to take off the fare.' });
+  }
+  if (ledger.isSettled(b)) {
+    return res.status(409).json({
+      error: 'That job is marked paid. Mark it unpaid first, then change what was received.' });
+  }
+
+  const body = req.body || {};
+  const fare = Math.round((Number(b.fare) || 0) * 100) / 100;
+  const given = (k) => body[k] !== undefined && body[k] !== null && body[k] !== '';
+
+  let received;
+  if (!given('received') && !given('fee')) {
+    received = null;                                  // cleared — paid on the whole fare
+  } else if (given('received')) {
+    const v = Number(body.received);
+    if (!isFinite(v) || v < 0) return res.status(400).json({ error: 'The amount received must be a number' });
+    if (v > fare) {
+      return res.status(400).json({
+        error: '£' + v.toFixed(2) + ' is more than the £' + fare.toFixed(2) + ' fare.' });
+    }
+    received = Math.round(v * 100) / 100;
+  } else {
+    /* THE OTHER FIGURE HE MIGHT HAVE. Stored as the amount received either
+       way, so there is one number on the row and no second opinion. */
+    const v = Number(body.fee);
+    if (!isFinite(v) || v < 0) return res.status(400).json({ error: 'The card fee must be a number' });
+    if (v > fare) {
+      return res.status(400).json({
+        error: 'A fee of £' + v.toFixed(2) + ' is more than the £' + fare.toFixed(2) + ' fare.' });
+    }
+    received = Math.round((fare - v) * 100) / 100;
+  }
+
+  /* The fare itself is not a deduction — storing it would print "card fee
+     −£0.00" on the driver's email for ever. */
+  db.prepare("UPDATE bookings SET card_received = ?, updated_at = datetime('now') WHERE id = ?")
+    .run(received === null || received === fare ? null : received, id);
+  const after = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run(req.auth.type || 'user', req.auth.id, 'card_received_set',
+           (b.ref || id) + ' ' + (received === null ? 'cleared' : received.toFixed(2)), req.ip);
+  } catch (_) {}
+  res.json({ ok: true, job: ledger.historyRow(after), balance: ledger.driverBalance(after.driver_id) });
+});
+
 /* ── CORRECTING ONE JOB, AFTER THE FACT ───────────────────────────────────
    The commission is chosen when the job is sent, from what is known then. A
    week later the owner finds out it was a favour, or that he quoted the firm a

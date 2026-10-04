@@ -997,7 +997,17 @@ function migrate() {
     const bi = db.prepare("PRAGMA table_info(bookings)").all();
     for (const [n, t] of [['paid_amount','REAL'],['fare_adjust_kind','TEXT'],['fare_adjust_amount','REAL'],
                           ['fare_adjust_paid','REAL'],['fare_adjust_at','TEXT'],['fare_adjust_method','TEXT'],
-                          ['fare_adjust_settled_at','TEXT'],['fare_adjust_ref','TEXT']]) {
+                          ['fare_adjust_settled_at','TEXT'],['fare_adjust_ref','TEXT'],
+                          /* ── WHAT ACTUALLY LANDED, AS THE OWNER TYPED IT ───────────────
+                             Stripe takes its cut whoever drove the job, so a £96 fare
+                             arrives as about £93. The owner reads the real figure off his
+                             statement and keys THAT in — not the fee, and not a rate: the
+                             amount received is the number he has in front of him, and the
+                             fee is the difference.
+                             NULL means he has not said, and the driver is paid on the
+                             whole fare. Never computed, never estimated.
+                             GUARDRAIL: server/tests/card-received.test.js */
+                          ['card_received','REAL']]) {
       if (!bi.find(c => c.name === n)) { db.exec(`ALTER TABLE bookings ADD COLUMN ${n} ${t}`); console.log('[DB] Added ' + n + ' column to bookings'); }
     }
   } catch(e) { console.error('[DB] fare-adjust column migration failed:', e.message); }

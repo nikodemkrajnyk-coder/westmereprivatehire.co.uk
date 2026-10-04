@@ -70,15 +70,17 @@
   /* ── THE WEEKLY PAYOUT LIST ──────────────────────────────────────────────
      What the owner is looking at on a Monday with his banking app open: the
      jobs that have piled up unpaid, and what each one puts into the transfer.
-     "To him" is the job's own net — the whole fare on a cover job, the fare
+     "Payout" is the job's own net — the whole fare on a cover job, the fare
      less the rate on a commission one, and NEGATIVE on a cash job, where the
-     driver is holding our money and the commission comes off the transfer. */
+     driver is holding our money and the commission comes off the transfer.
+     Labelled plainly rather than conversationally: this is a payment record,
+     and the owner asked for the driver-facing wording to read like one. */
   var PAYOUT_COLUMNS = [
     { key: 'ref',    label: 'Ref',       w: '17%' },
     { key: 'date',   label: 'Date',      w: '14%' },
     { key: 'name',   label: 'Passenger', w: '29%' },
     { key: 'fare',   label: 'Fare',      w: '18%', num: true },
-    { key: 'net',    label: 'To him',    w: '22%', num: true }
+    { key: 'net',    label: 'Payout',    w: '22%', num: true }
   ];
 
   function esc(s) {

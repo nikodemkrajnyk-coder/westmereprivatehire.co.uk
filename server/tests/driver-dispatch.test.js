@@ -211,18 +211,23 @@ test('both emails leave from the one action', async () => {
   assert.ok(subjects.some((s) => /Your driver/.test(s)),
     'the customer was not told who is picking them up: ' + JSON.stringify(subjects));
   const driverMail = SENT.find((e) => /Your job/.test(e.subject || ''));
-  /* THE BREAKDOWN, PLAINLY. Three figures he can check — fare, the ten per
-     cent, what reaches him — and one short status line. Not a paragraph: an
-     earlier version explained each case in a sentence and a half, and a driver
-     reading a job at six in the morning wants the number and the word. */
-  assert.ok(/Fare/.test(driverMail.html), "the driver's email does not show the fare");
-  assert.ok(driverMail.html.indexOf('£96.00') !== -1, 'the fare figure is missing');
-  assert.ok(/Commission \(10%\)/.test(driverMail.html),
-    'the commission line is missing or no longer names the rate');
-  assert.ok(driverMail.html.indexOf('\u2212£9.60') !== -1,
-    'the commission is not shown as a deduction');
-  assert.ok(/Total/.test(driverMail.html) && driverMail.html.indexOf('£86.40') !== -1,
-    'the total the driver is paid is missing');
+  /* THE BREAKDOWN, ON ONE LINE. Every figure he can check — fare, HIS rate,
+     what reaches him — in the short form the owner asked for twice. It used to
+     be an itemised table AND a line saying the same thing; two renderings of
+     one sum is what he was getting rid of.
+     The rule itself: server/tests/card-received.test.js */
+  const line = (/Fare [^<]*/.exec(driverMail.html) || [''])[0].replace(/&middot;/g, '·');
+  assert.ok(line, "the driver's email has no breakdown line");
+  assert.ok(/£96\.00/.test(line), 'the fare figure is missing from the line: ' + line);
+  assert.ok(/Commission \(10%\)/.test(line),
+    'the commission is missing or no longer names the rate — a driver on 12.5% must not read 10%: ' + line);
+  assert.ok(line.indexOf('\u2212£9.60') !== -1,
+    'the commission is not shown as a deduction: ' + line);
+  /* "Payout", not "you get" — the owner asked for the driver-facing wording to
+     read like a payment record. GUARDRAIL: server/tests/card-received.test.js */
+  assert.ok(/Payout £86\.40/.test(line), 'the line must end on the payout: ' + line);
+  assert.ok(!/you get|you receive/i.test(line), 'no second person in the breakdown: ' + line);
+  assert.ok(driverMail.html.indexOf('£86.40') !== -1, 'and the figure must be on the page');
   assert.ok(/Prepaid/.test(driverMail.html),
     'a prepaid job must say so — one word, not a paragraph');
   for (const gone of ['already settled with Westmere', 'take no money in the car', 'nothing to hand over']) {

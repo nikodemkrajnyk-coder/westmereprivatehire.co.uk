@@ -1278,7 +1278,7 @@ async function sendDriverDispatch(d) {
   const money = (n) => '£' + Number(n).toFixed(2);
   const cash = String(d.payment || '').toLowerCase() === 'cash';
   const commission = (d.admin_fee != null) ? Number(d.admin_fee) : null;
-  const payout = (d.driver_pay != null) ? Number(d.driver_pay) : null;
+  const payoutBeforeFee = (d.driver_pay != null) ? Number(d.driver_pay) : null;
   /* ANOTHER FIRM, NOT ONE OF OUR DRIVERS. The job and the road are identical;
      the money is not. An operator has no commission and no payout — the two
      firms settle on an invoice — so the block states the fare and says so,
@@ -1290,6 +1290,29 @@ async function sendDriverDispatch(d) {
      — read a percentage that was not his. */
   const commPct = (d.commission_pct === null || d.commission_pct === undefined || isNaN(d.commission_pct))
     ? null : Number(d.commission_pct);
+  /* ── WHAT THE CARD COST ────────────────────────────────────────────────
+     The owner types the amount that actually LANDED off his Stripe statement —
+     £93 on a £96 fare — and the fee is the difference. Nothing is computed
+     from a rate, so the driver reads the real figure.
+     ONLY on a card or debit payment: cash, account and invoice cost nothing to
+     collect. Shown whether or not commission was charged — on a cover job it
+     is the whole reason the payout is not the fare, and on a commission job he
+     can still see where the rest went.
+     GUARDRAIL: server/tests/card-received.test.js */
+  const isCard = String(d.payment || '').toLowerCase() === 'card';
+  const fareNum = (fare === null || isNaN(fare)) ? null : Number(fare);
+  const received = (isCard && d.card_received != null && isFinite(Number(d.card_received)))
+    ? Math.min(Math.max(Number(d.card_received), 0), fareNum == null ? Number(d.card_received) : fareNum)
+    : null;
+  const cardFee = (received != null && fareNum != null)
+    ? Math.round((fareNum - received) * 100) / 100 : 0;
+  /* THE TOTAL IS WHAT HE ACTUALLY GETS. The stored driver_pay is the figure
+     BEFORE the card fee — the fee is a deduction on top, because a booking only
+     reads `card` once Stripe confirms the payment, which can be after the job
+     was passed. Printing the stored figure would show a driver a breakdown that
+     does not add up to its own total. */
+  const payout = (payoutBeforeFee === null) ? null
+    : Math.round((payoutBeforeFee - cardFee) * 100) / 100;
 
   let rows = jobDetailRows(d);
   if (d.driver_reg || d.driver_car) {
@@ -1322,18 +1345,33 @@ async function sendDriverDispatch(d) {
         : 'Prepaid. Settled by invoice — no commission is taken on this job.')
     : cash
     ? 'Cash — collect ' + (fare === null || isNaN(fare) ? 'the fare' : money(fare))
-      + '.' + (commission ? (' Your ' + money(commission) + ' fee carries to your next payout.') : '')
+      + '.' + (commission ? (' Commission of ' + money(commission) + ' carries to the next payout.') : '')
     : 'Prepaid';
 
   const payBlock = ((asOperator ? (fare === null || isNaN(fare)) : (payout === null || isNaN(payout)))) ? '' : `
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${ACCENT};margin:20px 0 4px">
     <tr><td style="padding:16px 18px">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-        ${asOperator ? payRow('Fare', money(fare), true) : `
-        ${fare === null || isNaN(fare) ? '' : payRow('Fare', money(fare))}
-        ${(commission == null || !commission) ? '' : payRow('Commission' + (commPct ? ' (' + commPct + '%)' : ''), '−' + money(commission))}
-        ${payRow('Total', money(payout), true)}`}
+        ${asOperator ? payRow('Fare', money(fare), true)
+                     : payRow('Payout', money(payout), true)}
       </table>
+      ${(asOperator || payout === null) ? '' : `
+      <p style="margin:8px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.5">
+        ${[
+          /* PLAIN LABELS, NOT A SENTENCE. This read "…you get £93.00", and the
+             owner wants the document his drivers are paid from to sound like a
+             document. Every part is Label + figure, capitalised, and the last
+             one is the payout. No second person anywhere.
+             GUARDRAIL: server/tests/card-received.test.js */
+          'Fare ' + (fareNum === null ? '—' : money(fareNum)),
+          /* THE RATE TRAVELS WITH THE DEDUCTION. A driver on 12.5% read a
+             hard-coded ten per cent once; the line is short but it still has
+             to be HIS number. */
+          (commission ? 'Commission' + (commPct ? ' (' + commPct + '%)' : '') + ' −' + money(commission) : null),
+          (cardFee > 0 ? 'Card fee −' + money(cardFee) : null),
+          'Payout ' + money(payout)
+        ].filter(Boolean).join(' &middot; ')}
+      </p>`}
       <p style="margin:12px 0 0;padding-top:10px;border-top:1px solid ${ACCENT};font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_MUTED};line-height:1.5">${escHtml(statusLine)}</p>
     </td></tr>
   </table>`;
@@ -1350,7 +1388,7 @@ async function sendDriverDispatch(d) {
   const payStr = (payout === null || isNaN(payout)) ? null : money(payout);
   const subject = asOperator
     ? ('Job request' + (fare === null || isNaN(fare) ? '' : ' — ' + money(fare)) + ' · ' + d.ref)
-    : 'Your job' + (payStr ? ' — ' + payStr + ' to you' : '') + ' · ' + d.ref;
+    : 'Your job' + (payStr ? ' — payout ' + payStr : '') + ' · ' + d.ref;
   const preheader = formatDate(d.date) + ' · ' + dispAddr(d.pickup) + ' to ' + dispAddr(d.destination);
   const attachments = icsAttachment(d);
   const ok = await sendEmail(to, subject, html, 'Westmere Private Hire', preheader,
@@ -1395,12 +1433,12 @@ async function sendDriverJobOffer(d) {
   const payBlock = payStr ? `
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${ACCENT};margin:20px 0 4px">
     <tr><td style="padding:16px 18px;text-align:center">
-      <div style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${INK_MUTED}">Your pay for this job</div>
-      <div style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:34px;line-height:1.15;color:${INK};margin-top:4px">${escHtml(payStr)} to you</div>
+      <div style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${INK_MUTED}">Payout for this job</div>
+      <div style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:34px;line-height:1.15;color:${INK};margin-top:4px">${escHtml(payStr)}</div>
       <div style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:12px;color:${INK_MUTED};margin-top:4px">Fare £${Number(d.fare || 0).toFixed(2)} &middot; 10% commission already deducted</div>
     </td></tr>
   </table>` : `
-  <p style="margin:20px 0 4px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK_MUTED};text-align:center">The fare for this job is not set yet &mdash; we will confirm your pay before it runs.</p>`;
+  <p style="margin:20px 0 4px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK_MUTED};text-align:center">The fare for this job is not set yet &mdash; the payout will be confirmed before it runs.</p>`;
 
   let actions = '';
   if (d.offer_token) {
@@ -1422,8 +1460,8 @@ async function sendDriverJobOffer(d) {
   <p style="margin:22px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">You can also accept or decline in the driver app. Any questions, call 07930&nbsp;342593.</p>`;
 
   const html = letterEmail(body, { title: 'A job for you — ' + d.ref });
-  const subject = 'Job offer' + (payStr ? ' — ' + payStr + ' to you' : '') + ' · ' + d.ref;
-  const preheader = dateStr + ' · ' + shortDisplay(d.pickup) + ' → ' + shortDisplay(d.destination) + (payStr ? ' · ' + payStr + ' to you' : '');
+  const subject = 'Job offer' + (payStr ? ' — payout ' + payStr : '') + ' · ' + d.ref;
+  const preheader = dateStr + ' · ' + shortDisplay(d.pickup) + ' → ' + shortDisplay(d.destination) + (payStr ? ' · payout ' + payStr : '');
   const attachments = icsAttachment(d);
   const ok = await sendEmail(to, subject, html, 'Westmere Dispatch', preheader,
     attachments ? { attachments } : undefined);
