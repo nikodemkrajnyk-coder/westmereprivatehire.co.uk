@@ -463,12 +463,23 @@ test('the changed table cannot serve a PDF drawn by the old one', () => {
 // ── ADMIN CAN CORRECT AN INVOICE ─────────────────────────────────────────
 console.log('\nA wrong invoice is corrected in admin, not re-issued');
 
-test('admin has a correction sheet, on the same route as the owner app', () => {
-  assert.ok(/id="modal-edit-invoice"/.test(ADMIN), 'admin has no correction sheet');
+test('admin corrects an invoice on the form that raises one', () => {
+  /* IT USED TO BE A SECOND SHEET — #modal-edit-invoice — which could not change
+     the mode, the customer or the period, so a correction needing any of those
+     meant deleting the invoice and issuing a new number. The owner app
+     unified its two forms; this is that change in admin, and the guard now
+     asks for one form rather than for the second one. */
+  assert.ok(!/id="modal-edit-invoice"/.test(ADMIN), 'the second invoice form is back');
+  assert.ok(/id="modal-new-invoice"/.test(ADMIN), 'admin has no invoice form at all');
   assert.ok(/id="mid-edit-btn"[^>]*onclick="ieOpen\(\)"/.test(ADMIN),
     'there is no way to reach it from an invoice');
+  const open = fnBlock(ADMIN, 'ieOpen');
+  assert.ok(/openNewInvoice\(\)/.test(open),
+    'a correction must start from the same reset as a new invoice');
+  assert.ok(/addBespokeItem\(/.test(open),
+    'the lines must go in through the shared row builder — that is what puts the address lookup on a correction');
   const save = fnBlock(ADMIN, 'ieSave').replace(/\s/g, '');
-  assert.ok(/'\/api\/invoices\/'\+_IE\.id/.test(save), 'the correction must go to /invoices/:id');
+  assert.ok(/'\/api\/invoices\/'\+id/.test(save), 'the correction must go to /invoices/:id');
   assert.ok(/method:'PATCH'/.test(save), 'a correction is a PATCH, not a new invoice');
   for (const f of ['line_items', 'commission_pct', 'fees', 'fees_label', 'total_override']) {
     assert.ok(save.indexOf(f) !== -1, 'the correction does not send ' + f);
@@ -514,12 +525,25 @@ test('correcting a one-off invoice does not destroy its tolls and ticks', async 
 test('the correction sheet totals through the shared module, not its own sum', () => {
   const m = fnBlock(ADMIN, 'ieMaths').replace(/\s/g, '');
   assert.ok(/WMInvoiceMaths\.compute\(/.test(m), 'the correction sheet does its own arithmetic');
+  /* The sum moved into its own function when the two forms became one — the
+     figure it produces is what both the screen and the route must agree on. */
+  const sum = fnBlock(ADMIN, 'ieAutoSum').replace(/\s/g, '');
+  assert.ok(/m\.fares-m\.commission\+ieFees\(\)-m\.collected/.test(sum),
+    'the corrected total must be fares − commission + fees − collected: ' + sum);
   const sync = fnBlock(ADMIN, 'ieSync').replace(/\s/g, '');
-  assert.ok(/m\.fares-m\.commission\+fees-m\.collected/.test(sync),
-    'the corrected total must be fares − commission + fees − collected');
-  assert.ok(/WMInvoiceMaths\.totalsHtml\(/.test(sync) && /WMInvoiceMaths\.payoutHtml\(/.test(sync),
-    'the correction sheet must draw the same totals and payout as the create form');
-  assert.ok(/WMInvoiceMaths\.headHtml\(/.test(fnBlock(ADMIN, 'ieRender')),
+  assert.ok(/ieAutoSum\(\)/.test(sync), 'the screen must show the figure that function returns');
+  /* The totals strip and the pay-out line are drawn ONCE, by the form both
+     errands now share — the correction inherits them rather than keeping a
+     second copy, which is the whole point of there being one form. */
+  const draw = fnBlock(ADMIN, 'updateBespokeTotal').replace(/\s/g, '');
+  assert.ok(/WMInvoiceMaths\.totalsHtml\(/.test(draw) && /WMInvoiceMaths\.payoutHtml\(/.test(draw),
+    'the form does not draw the shared totals and payout');
+  assert.ok(/ieSync\(\)/.test(draw),
+    'the adjustments must be redrawn in the same pass, or the two halves of the screen disagree');
+  /* The column headings come from the same module too, drawn by the form's own
+     relayout — ieRender was the second renderer and is gone with the second
+     form. */
+  assert.ok(/WMInvoiceMaths\.headHtml\(/.test(fnBlock(ADMIN, 'admInvRelayout')),
     'and the same column headings');
 });
 

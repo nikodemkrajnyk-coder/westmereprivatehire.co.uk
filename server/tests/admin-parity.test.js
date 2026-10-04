@@ -27,6 +27,7 @@ function test(name, fn) { queue.push({ name, fn }); }
 function read(rel) { return fs.readFileSync(path.join(__dirname, '..', '..', rel), 'utf8'); }
 
 const LC = require('../../wm-lifecycle');
+const { fnBlock } = require('./_source');
 const ADMIN = read('westmere-admin.html');
 const OWNER = read('westmere-owner.html');
 
@@ -424,6 +425,60 @@ test('a driver added in admin can be given his rate', () => {
   assert.ok(save, 'the rate is asked for and then not sent');
   assert.ok(/'dm-commission'/.test(ADMIN.slice(ADMIN.indexOf("'dm-insurance'"))),
     'it is not cleared with the rest of the form, so it carries into the next driver');
+});
+
+test('a driver history row can be corrected and ticked off, as in the owner app', () => {
+  for (const fn of ['admJobPaid', 'admJobCommission', 'admJobRateOpen', 'admJobRateSave']) {
+    assert.ok(new RegExp('function\\s+' + fn + '\\b').test(ADMIN), 'admin has no ' + fn);
+  }
+  const ledger = /async function dmLoadLedger\(\)\{[\s\S]*?\n\}/.exec(ADMIN)[0];
+  assert.ok(/admJobPaid\(/.test(ledger), 'no paid/unpaid toggle on a history row');
+  assert.ok(/admJobCommission\(/.test(ledger), 'no way to make a job a cover job');
+  assert.ok(/it\.commission_pct/.test(ledger), 'the row must say what rate it is on');
+  assert.ok(/unpaid job/.test(ledger), 'the balance does not say it is the unpaid jobs');
+  /* The same endpoints the owner app uses — one model, two screens. */
+  assert.ok(/\/driver-settled/.test(ADMIN) && /\/commission/.test(ADMIN),
+    'the row actions do not reach the shared routes');
+  /* And the rate is typed on the row, not into a dialog the OS draws. */
+  assert.ok(!/prompt\(/.test(fnBlock(ADMIN, 'admJobRateSave')),
+    'the rate still comes from a native prompt');
+});
+
+test('admin has an operator page, on the shared endpoint', () => {
+  assert.ok(/async function admOperatorLoad/.test(ADMIN), 'admin has no operator page');
+  const fn = /async function admOperatorLoad\(\)\{[\s\S]*?\n\}/.exec(ADMIN)[0];
+  assert.ok(/\/api\/operators\//.test(fn), 'it does not read the shared endpoint');
+  assert.ok(/Jobs passed to them/.test(fn), 'it does not show the work passed to them');
+  assert.ok(/invoices they have not paid/i.test(fn),
+    'it must say what the owed figure is made of — an operator has no balance of its own');
+  assert.ok(!/\/settlements|\/ledger/.test(fn), 'the operator page is reading a driver ledger');
+});
+
+test('the send sheet offers an operator here too', () => {
+  assert.ok(/function dispSetKind/.test(ADMIN), 'admin cannot pass a job to another firm');
+  assert.ok(/kindBtn\('operator', 'An operator'\)/.test(ADMIN), 'there is no choice of recipient');
+  const review = fnBlock(ADMIN, 'dispReview');
+  assert.ok(/operator_id: operator\.id/.test(review), 'the payload does not name the operator');
+  assert.ok(/dispOperatorMoneyHtml\(\)/.test(review), 'no money block for an operator job');
+});
+
+test('the invoice form carries Adjustments, folded away', () => {
+  const open = /<details id="ni-adjust"[^>]*>/.exec(ADMIN);
+  assert.ok(open, 'admin has no Adjustments section');
+  assert.ok(!/\bopen\b/.test(open[0]), 'it must start folded: ' + open[0]);
+  const adj = ADMIN.slice(ADMIN.indexOf('<details id="ni-adjust"'), ADMIN.indexOf('</details>'));
+  for (const id of ['ie-issued', 'ie-due', 'ie-fees', 'ie-total', 'ie-fees-label', 'ie-manual']) {
+    assert.ok(adj.includes('id="' + id + '"'), id + ' belongs inside Adjustments');
+  }
+  assert.ok(!adj.includes('id="ni-items"'), 'the journeys must not be folded away');
+});
+
+test('an operator invoice is filled from the jobs that have not been billed', () => {
+  const fn = /async function admInvoiceForOperator\([\s\S]*?\n\}/.exec(ADMIN)[0];
+  assert.ok(/filter\(function \(j\) \{ return !j\.invoiced; \}\)|filter\(function\(j\)\{return !j\.invoiced;\}\)/.test(fn),
+    'it must offer only the jobs not yet invoiced');
+  assert.ok(/_NI_BOOKING_IDS\s*=\s*jobs\.map/.test(fn), 'it must remember which jobs, so the invoice can stamp them');
+  assert.ok(/booking_ids=_NI_BOOKING_IDS/.test(ADMIN.replace(/\s/g, '')), 'and the request must carry them');
 });
 
 (async () => {

@@ -1594,8 +1594,9 @@ select:-webkit-autofill:focus{
           <input id="dm-settle-method" type="text" placeholder="Bank transfer" style="width:150px;padding:.4rem .6rem;font-family:inherit;font-size:.86rem;border:1px solid rgba(27,27,26,.2);border-radius:5px">
           <button type="button" class="btn btn-ghost btn-sm" onclick="dmRecordSettlement()" style="font-size:.78rem;padding:.4rem .8rem">Record payment</button>
           <a id="dm-stmt-pdf" href="#" target="_blank" rel="noopener" class="btn btn-ghost btn-sm" style="font-size:.78rem;padding:.4rem .8rem;text-decoration:none">Statement PDF</a>
-        </div>
-        <div style="margin-top:.5rem;font-size:.78rem;color:var(--westmere-ink-soft)">A payment TO the driver is a positive amount; cash he hands back is negative.</div>
+        
+          <div style="font-size:.78rem;color:var(--westmere-ink-soft);margin-top:.5rem;line-height:1.5;flex-basis:100%">The amount is spent against his oldest unpaid jobs and ticks them off — so the balance and the list never disagree. A payment to the driver is a positive amount; cash he hands back is negative.</div></div>
+        
       </div>
 
       <div id="dm-err" style="display:none;margin-top:.8rem;padding:.6rem .8rem;background:rgba(156,40,40,.08);color:#9C2828;font-size:.88rem;border-radius:6px"></div>
@@ -1655,8 +1656,8 @@ select:-webkit-autofill:focus{
     </div>
     <div class="modal-body">
       <div style="display:flex;gap:.4rem;margin-bottom:1.2rem;border-bottom:1px solid rgba(27,27,26,.08);padding-bottom:.8rem">
-        <button class="btn btn-ghost btn-sm" id="ni-mode-account" onclick="setInvoiceMode('account')" style="flex:1;font-size:.82rem;padding:.6rem">Account Customer</button>
-        <button class="btn btn-ghost btn-sm" id="ni-mode-bespoke" onclick="setInvoiceMode('bespoke')" style="flex:1;font-size:.82rem;padding:.6rem">One-off Invoice</button>
+        <button class="wm-seg on" id="ni-mode-account" onclick="setInvoiceMode('account')" style="flex:1;font-size:.82rem;padding:.6rem">Account Customer</button>
+        <button class="wm-seg" id="ni-mode-bespoke" onclick="setInvoiceMode('bespoke')" style="flex:1;font-size:.82rem;padding:.6rem">One-off Invoice</button>
       </div>
 
       <!-- Account customer mode -->
@@ -1742,95 +1743,62 @@ select:-webkit-autofill:focus{
 <div class="fg"><label class="fl">Notes (optional)</label><textarea class="fi" id="ni-notes" rows="2" placeholder="Additional notes shown on the invoice" style="resize:vertical;min-height:60px"></textarea></div>
       </div>
 
+      <!-- ── ADJUSTMENTS ─────────────────────────────────────────────
+           Everything here has a right answer the screen already knows: issued
+           today, due in fourteen days, and the total is what the lines add up
+           to. Folded away so the form opens on the trips, which is the part
+           actually being typed. The fee and the total sit side by side: the fee
+           is the reason the total is not the sum of the lines.
+           GUARDRAIL: server/tests/admin-parity.test.js -->
+      <details id="ni-adjust" style="margin-top:.9rem;border:1px solid var(--westmere-line,#dfe5ea);border-radius:8px;background:rgba(27,27,26,.02)">
+        <summary style="padding:.6rem .7rem;cursor:pointer;font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--westmere-ink-soft);font-family:var(--sans)">Adjustments <span id="ni-adjust-hint" style="text-transform:none;letter-spacing:0"></span></summary>
+        <div style="padding:0 .7rem .7rem">
+          <div style="display:flex;gap:.6rem;margin-bottom:.8rem">
+            <div style="flex:1"><label class="fl">Issued</label><input class="fi" type="date" id="ie-issued"></div>
+            <div style="flex:1"><label class="fl">Due</label><input class="fi" type="date" id="ie-due"></div>
+          </div>
+          <div style="display:flex;gap:.7rem;align-items:flex-end">
+            <div style="flex:1;min-width:0"><label class="fl">Fees</label>
+              <div style="display:flex;gap:.4rem;align-items:center">
+                <span style="font-family:var(--serif);font-size:1.1rem;color:var(--navy)">&pound;</span>
+                <input class="fi" id="ie-fees" type="number" step="0.01" placeholder="0.00" oninput="ieSync()" style="text-align:right">
+              </div>
+            </div>
+            <div style="flex:1;min-width:0"><label class="fl">Total</label>
+              <div style="display:flex;gap:.4rem;align-items:center">
+                <span style="font-family:var(--serif);font-size:1.1rem;color:var(--navy)">&pound;</span>
+                <input class="fi" id="ie-total" type="number" step="0.01" style="text-align:right">
+              </div>
+            </div>
+          </div>
+          <input class="fi" id="ie-fees-label" placeholder="What the fee is for &mdash; e.g. Parking &amp; tolls" oninput="ieSync()" style="margin-top:.5rem">
+          <label style="display:flex;align-items:center;gap:.5rem;margin-top:.6rem;font-size:.88rem;color:var(--navy);cursor:pointer">
+            <input id="ie-manual" type="checkbox" onchange="ieSync()" style="width:16px;height:16px">
+            Set the total by hand
+          </label>
+          <div id="ie-fees-note" style="margin-top:.4rem;font-size:.78rem;color:var(--westmere-ink-soft)">Leave the fee blank for none.</div>
+          <div id="ie-sum" style="margin-top:.4rem;font-size:.78rem;color:var(--westmere-ink-soft)"></div>
+        </div>
+      </details>
+
       <div id="ni-err" style="display:none;margin-top:.6rem;padding:.55rem .8rem;background:rgba(156,40,40,.08);color:#9C2828;font-size:.88rem;border-radius:6px"></div>
     </div>
     <div class="modal-foot" style="flex-wrap:wrap">
       <button class="btn btn-ghost" onclick="closeModal('modal-new-invoice')">Cancel</button>
       <button class="btn btn-ghost" id="ni-preview-btn" onclick="previewInvoice()" style="border:1px solid rgba(27,27,26,.2)">Preview / Download</button>
       <button class="btn btn-navy" id="ni-send-btn" onclick="submitNewInvoice()">Send to Email</button>
+      <button class="btn btn-navy" id="ie-save" onclick="ieSave()" style="display:none">Save Correction</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL: CORRECT AN INVOICE ─────────────────────────────────────────────
-     A CORRECTION, not a new invoice. The number is shown and cannot be changed:
-     somebody may already have filed this document, and the number is how they
-     match the corrected one to it. Kind and customer are not here either — an
-     edit screen that could re-point an invoice at another customer is a way to
-     bill the wrong person.
-
-     Admin had no edit at all. A wrong figure meant deleting the invoice and
-     issuing a new number, which is exactly what an accounts department that has
-     already filed the first one should never receive. The owner app has had
-     this since August; this is the same correction, on the same route, through
-     the same arithmetic — so a figure corrected here and a figure corrected
-     there are the same figure. -->
-<div class="overlay" id="modal-edit-invoice">
-  <div class="modal" id="modal-edit-invoice-box" style="max-width:620px">
-    <div class="modal-hd">
-      <div>
-        <div class="modal-title">Correct this invoice</div>
-        <div style="font-size:.78rem;color:var(--westmere-ink-soft);margin-top:.2rem">Same number &mdash; <span id="ie-no" style="letter-spacing:.06em;color:var(--navy)"></span></div>
-      </div>
-      <button class="modal-x" onclick="closeModal('modal-edit-invoice')">&times;</button>
-    </div>
-    <div class="modal-body">
-      <div class="fg"><label class="fl">Recipient Name</label><input class="fi" id="ie-name"></div>
-      <div class="fg"><label class="fl">Recipient Email</label><input class="fi" id="ie-email" type="email"></div>
-      <div class="fg"><label class="fl">Recipient Phone</label><input class="fi" id="ie-phone"></div>
-      <div class="fg"><label class="fl">Recipient Address</label><textarea class="fi" id="ie-addr" rows="3"></textarea></div>
-      <div style="display:flex;gap:.8rem">
-        <div class="fg" style="flex:1"><label class="fl">Issued</label><input class="fi" id="ie-issued" type="date"></div>
-        <div class="fg" style="flex:1"><label class="fl">Due</label><input class="fi" id="ie-due" type="date"></div>
-      </div>
-      <div class="fg">
-        <label class="fl">Lines</label>
-        <div id="ie-head" style="display:none"></div>
-        <div id="ie-lines"></div>
-        <div id="ie-totals" style="display:none"></div>
-        <div id="ie-payout" style="display:none"></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.5rem">
-          <button class="btn btn-ghost btn-sm" id="ie-add" onclick="ieAdd()" style="font-size:.8rem;padding:.4rem .8rem">+ Add line</button>
-          <div id="ie-sum-line" style="font-size:.88rem;color:rgba(27,27,26,.7)">Total: <strong id="ie-sum" style="color:var(--navy)">£0.00</strong></div>
-        </div>
-      </div>
-      <!-- THE FEE FIGURE belongs to a BESPOKE invoice, where it is typed. Where
-           the lines carry their own tolls it is their sum, shown and not typed:
-           two editable routes to one number is how they end up disagreeing. -->
-      <div class="fg">
-        <label class="fl">Fees</label>
-        <div style="display:flex;gap:.6rem;align-items:center">
-          <input class="fi" id="ie-fees" type="number" step="0.01" placeholder="0.00" oninput="ieSync()" style="width:120px;text-align:right">
-          <input class="fi" id="ie-fees-label" placeholder="What the fee is for — e.g. Parking &amp; tolls" oninput="ieSync()" style="flex:1">
-        </div>
-        <div id="ie-fees-note" style="font-size:.78rem;color:var(--westmere-ink-soft);margin-top:.3rem"></div>
-      </div>
-      <label style="display:flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--navy);cursor:pointer;margin-top:.4rem">
-        <input id="ie-commission" type="checkbox" onchange="ieRender()" style="width:16px;height:16px">
-        Operator invoice &mdash; deduct commission
-      </label>
-      <div id="ie-rate-wrap" style="display:none;align-items:center;gap:.4rem;margin-top:.45rem">
-        <span style="font-size:.82rem;color:var(--westmere-ink-soft)">Rate</span>
-        <input class="fi" id="ie-commission-pct" type="number" step="0.5" min="0" max="99.9" value="10" oninput="ieSync()" style="width:80px;text-align:right;padding:.35rem .4rem">
-        <span style="font-size:.95rem;color:var(--navy)">%</span>
-        <span style="font-size:.8rem;color:var(--westmere-ink-soft)">of the fares &mdash; never of the fees</span>
-      </div>
-      <label style="display:flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--navy);cursor:pointer;margin-top:.6rem">
-        <input id="ie-manual" type="checkbox" onchange="ieSync()" style="width:16px;height:16px">
-        Set the total by hand
-      </label>
-      <div class="fg" style="margin-top:.4rem"><label class="fl">Total</label>
-        <input class="fi" id="ie-total" type="number" step="0.01" style="width:140px;text-align:right"></div>
-      <div id="ie-note" style="font-size:.8rem;color:var(--westmere-ink-soft);margin-top:.2rem"></div>
-      <div class="fg" style="margin-top:.6rem"><label class="fl">Notes</label><textarea class="fi" id="ie-notes" rows="3"></textarea></div>
-      <div id="ie-err" style="display:none;margin-top:.6rem;padding:.55rem .8rem;background:rgba(156,40,40,.08);color:#9C2828;font-size:.88rem;border-radius:6px"></div>
-    </div>
-    <div class="modal-foot">
-      <button class="btn btn-ghost" onclick="closeModal('modal-edit-invoice')">Cancel</button>
-      <button class="btn btn-navy" id="ie-save" onclick="ieSave()">Save Correction</button>
-    </div>
-  </div>
-</div>
+<!-- The invoice EDIT sheet was here: a second form with its own lines
+     renderer and its own arithmetic, for the same four things the create form
+     already asks for — and it could not change the mode, the customer or the
+     period, so a correction needing one of those meant deleting the invoice
+     and issuing a new number. There is one form now (#modal-new-invoice);
+     ieOpen() fills it in and ieSave() PATCHes.
+     GUARDRAIL: server/tests/admin-parity.test.js -->
 
 <!-- MODAL: INVOICE DETAIL -->
 <div class="overlay" id="modal-invoice-detail">
@@ -2622,14 +2590,72 @@ async function dispOffer(bookingId) {
   return dispOpen(bookingId, job);
 }
 
+function dispSetKind(kind) {
+  _DISPATCH.kind = (kind === 'operator') ? 'operator' : 'driver';
+  var op = _DISPATCH.kind === 'operator';
+  var dw = document.getElementById('disp-saved-wrap'), ow = document.getElementById('disp-op-wrap');
+  if (dw) dw.style.display = op ? 'none' : '';
+  if (ow) ow.style.display = op ? '' : 'none';
+  /* SAVING AN OPERATOR AS A DRIVER would put another firm in the driver list
+     and give it a commission rate — the one thing an operator does not have. */
+  var sw = document.getElementById('disp-save-wrap');
+  if (sw) sw.style.display = op ? 'none' : 'flex';
+  var head = document.getElementById('disp-head');
+  if (head) head.textContent = op ? 'Pass this job to another operator' : 'Send this job to a driver';
+  [['disp-kind-driver', !op], ['disp-kind-operator', op]].forEach(function (p) {
+    var b = document.getElementById(p[0]);
+    if (b) b.className = 'wm-seg' + (p[1] ? ' on' : '');
+  });
+}
+function dispOperatorMoneyHtml() {
+  var s = _DISPATCH.splits || {};
+  var sp = s.none && s.none.driver_pay != null ? s.none : (s.charge || {});
+  var job = _DISPATCH.job || {};
+  var fare = (job.fare != null) ? job.fare : sp.driver_pay;
+  var row = function (k, v, strong) {
+    return '<div style="display:flex;justify-content:space-between;gap:.6rem;padding:.3rem 0;'
+      + (strong ? 'font-size:1rem;color:#1a1a1a' : 'font-size:.9rem;color:rgba(27,27,26,.65)') + '">'
+      + '<span>' + k + '</span><span style="font-family:var(--serif)">' + v + '</span></div>';
+  };
+  return '<div style="border:1px solid rgba(27,27,26,.15);border-radius:9px;padding:.8rem 1rem">'
+    + row('Fare on the job', dispMoney(fare), true)
+    + row('Commission', 'none — settled by invoice')
+    + '<div style="margin-top:.5rem;padding-top:.5rem;border-top:1px solid rgba(27,27,26,.1);font-size:.82rem;color:var(--westmere-ink-soft);line-height:1.5">'
+    + 'An operator has no commission balance. What they owe is the invoices they have not paid.</div>'
+    + '</div>';
+}
+function dispOperatorSent(d) {
+  var el = document.getElementById('dispatch-sheet');
+  if (!el) return;
+  var op = d.operator || {};
+  el.querySelector('div').innerHTML =
+    '<div style="font-family:var(--serif);font-size:1.06rem;color:#1a1a1a;margin-bottom:.5rem">Sent to ' + owEsc(op.name || 'the operator') + '</div>' +
+    '<p style="margin:0 0 1rem;font-size:.9rem;color:rgba(27,27,26,.65);line-height:1.6">They have the job, the road and the passenger’s details. '
+      + owEsc(d.ref || 'The job') + ' is waiting to be invoiced — no commission was taken.</p>' +
+    '<div style="display:flex;gap:.6rem">' +
+      '<button type="button" id="disp-done" style="flex:1;padding:.75rem;border:1px solid rgba(27,27,26,.25);background:transparent;border-radius:8px;font-size:.85rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer">Later</button>' +
+      '<button type="button" id="disp-invoice" class="btn-primary" style="flex:2;padding:.75rem;border-radius:8px;font-size:.85rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer">Create invoice</button>' +
+    '</div>';
+  document.getElementById('disp-done').onclick = function () { dispClose(); showToast('Sent to ' + (op.name || 'the operator')); };
+  document.getElementById('disp-invoice').onclick = function () {
+    dispClose();
+    owOperatorInvoiceFor(op.id);
+  };
+}
 async function dispOpen(bookingId, job, opts) {
   _DISPATCH.bookingId = bookingId;
   _DISPATCH.job = job || {};
+  _DISPATCH.kind = 'driver';
   try {
     var r = await fetch('/api/drivers', { credentials: 'include' });
     var d = await r.json();
     _DISPATCH.drivers = (d.drivers || []).filter(function (x) { return !x.is_default_driver; });
   } catch (e) { _DISPATCH.drivers = []; }
+  try {
+    var ro = await fetch('/api/operators', { credentials: 'include' });
+    var dobj = await ro.json();
+    _DISPATCH.operators = dobj.operators || [];
+  } catch (e) { _DISPATCH.operators = []; }
   dispRemove();
 
   var opts = ['<option value="">— someone new —</option>'].concat(
@@ -2637,18 +2663,38 @@ async function dispOpen(bookingId, job, opts) {
       return '<option value="' + d.id + '">' + (d.full_name || ('Driver ' + d.id))
            + (d.reg ? ' · ' + d.reg : '') + '</option>';
     })).join('');
+  var opOpts = ['<option value="">— choose an operator —</option>'].concat(
+    _DISPATCH.operators.map(function (o) {
+      return '<option value="' + o.id + '">' + owEsc(o.company || o.full_name || ('Operator ' + o.id)) + '</option>';
+    })).join('');
+  var kindBtn = function (kind, label) {
+    var on = kind === 'driver';
+    return '<button type="button" id="disp-kind-' + kind + '" class="wm-seg' + (on ? ' on' : '') + '" '
+      + 'onclick="dispSetKind(\'' + kind + '\')" style="flex:1;padding:.55rem;font-size:.78rem">' + label + '</button>';
+  };
 
   var el = document.createElement('div');
   el.id = 'dispatch-sheet';
   el.style.cssText = 'position:fixed;inset:0;z-index:4200;background:rgba(16,26,36,.45);display:flex;align-items:flex-end;justify-content:center';
   el.innerHTML =
-    '<div style="background:var(--westmere-white,#fff);width:100%;max-width:32rem;max-height:92vh;overflow:auto;border-radius:14px 14px 0 0;padding:1.1rem 1.1rem 1.4rem">' +
+    '<div class="wm-sheet-top-cap" style="background:var(--westmere-white,#fff);width:100%;max-width:32rem;max-height:92vh;overflow:auto;border-radius:14px 14px 0 0;padding:1.1rem 1.1rem 1.4rem">' +
       '<div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.9rem">' +
-        '<div style="flex:1;font-family:var(--serif);font-size:1.06rem;color:#1a1a1a">Send this job to a driver</div>' +
+        '<div style="flex:1;font-family:var(--serif);font-size:1.06rem;color:#1a1a1a" id="disp-head">Send this job</div>' +
         '<button type="button" id="disp-x" style="background:transparent;border:none;font-size:1.5rem;line-height:1;cursor:pointer;color:#1a1a1a">&times;</button>' +
       '</div>' +
-      '<label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--westmere-ink-soft);margin:.5rem 0 .25rem">Saved driver</label>' +
-      '<select id="disp-saved" style="width:100%;padding:.6rem;font-size:.95rem;border:1px solid rgba(27,27,26,.2);border-radius:7px;background:#fff">' + opts + '</select>' +
+      /* THE FIRST QUESTION, because everything below it depends on the answer —
+         a driver is on commission, an operator is invoiced. */
+      '<div style="display:flex;gap:.5rem;margin-bottom:.3rem">' + kindBtn('driver', 'A driver') + kindBtn('operator', 'An operator') + '</div>' +
+      '<div id="disp-saved-wrap">' +
+        '<label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--westmere-ink-soft);margin:.5rem 0 .25rem">Saved driver</label>' +
+        '<select id="disp-saved" style="width:100%;padding:.6rem;font-size:.95rem;border:1px solid rgba(27,27,26,.2);border-radius:7px;background:#fff">' + opts + '</select>' +
+      '</div>' +
+      '<div id="disp-op-wrap" style="display:none">' +
+        '<label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--westmere-ink-soft);margin:.5rem 0 .25rem">Operator</label>' +
+        '<select id="disp-operator" style="width:100%;padding:.6rem;font-size:.95rem;border:1px solid rgba(27,27,26,.2);border-radius:7px;background:#fff">' + opOpts + '</select>' +
+        '<p style="margin:.45rem 0 0;font-size:.8rem;color:var(--westmere-ink-soft);line-height:1.5">No commission is taken on an operator job — the two firms settle by invoice. '
+          + (_DISPATCH.operators.length ? '' : 'No operators are flagged yet: mark a customer as an operator on their record first.') + '</p>' +
+      '</div>' +
       '<label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--westmere-ink-soft);margin:.9rem 0 .25rem">Name *</label>' +
       '<input id="disp-name" autocomplete="off" style="width:100%;padding:.6rem;font-size:.95rem;border:1px solid rgba(27,27,26,.2);border-radius:7px">' +
       '<label style="display:block;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--westmere-ink-soft);margin:.9rem 0 .25rem">Email *</label>' +
@@ -2668,7 +2714,7 @@ async function dispOpen(bookingId, job, opts) {
          time, and the owner saw a bare tick box. Every other line in this sheet
          already uses a literal colour, which is why only this one vanished.
          GUARDRAIL: server/tests/driver-dispatch.test.js */
-      '<label for="disp-save" style="display:flex;align-items:center;gap:.55rem;margin:1rem 0 .2rem;font-size:.9rem;color:#1a1a1a;cursor:pointer">' +
+      '<label for="disp-save" id="disp-save-wrap" style="display:flex;align-items:center;gap:.55rem;margin:1rem 0 .2rem;font-size:.9rem;color:#1a1a1a;cursor:pointer">' +
         '<input id="disp-save" type="checkbox" style="width:17px;height:17px;flex:0 0 auto">' +
         '<span>Save this driver for future work</span></label>' +
       '<p id="disp-err" style="display:none;margin:.7rem 0 0;font-size:.85rem;color:#8B2222"></p>' +
@@ -2698,6 +2744,15 @@ async function dispOpen(bookingId, job, opts) {
     document.getElementById('disp-save').checked = false;
   };
   document.getElementById('disp-next').onclick = dispReview;
+  /* Picking an operator fills the form the same way a saved driver does. */
+  document.getElementById('disp-operator').onchange = function () {
+    var o = _DISPATCH.operators.filter(function (x) { return String(x.id) === this.value; }.bind(this))[0];
+    if (!o) return;
+    document.getElementById('disp-name').value  = o.company || o.full_name || '';
+    document.getElementById('disp-email').value = o.email || '';
+    document.getElementById('disp-phone').value = o.phone || '';
+  };
+  dispSetKind('driver');
 }
 
 /* ── THE PER-JOB COMMISSION CHOICE ───────────────────────────────────────────
@@ -2777,7 +2832,14 @@ async function dispReview() {
      to store the split, so this screen and the driver's email cannot disagree.
      A missing split means the fare is genuinely unknown — say so rather than
      print £0.00, which reads as a real number and a free job. */
-  var sel = _DISPATCH.drivers.filter(function (x) { return String(x.id) === document.getElementById('disp-saved').value; })[0];
+  var operator = null;
+  if (_DISPATCH.kind === 'operator') {
+    var oid = document.getElementById('disp-operator').value;
+    operator = _DISPATCH.operators.filter(function (x) { return String(x.id) === String(oid); })[0];
+    if (!operator) { err.textContent = 'Choose which operator this job is going to.'; err.style.display = 'block'; return; }
+  }
+  var sel = operator ? null
+          : _DISPATCH.drivers.filter(function (x) { return String(x.id) === document.getElementById('disp-saved').value; })[0];
 
   /* ── WHAT THIS JOB IS WORTH, BOTH WAYS ────────────────────────────────────
      Commission is decided per job, so the screen has to show the two answers
@@ -2785,12 +2847,15 @@ async function dispReview() {
      a cover job. BOTH COME FROM THE SERVER. The browser does no arithmetic here
      — that is how the confirm screen and the books come to disagree — so it asks
      for the job once and then only chooses between the figures it was given. */
-  var q = '/api/bookings/' + _DISPATCH.bookingId + (sel ? ('?driver_id=' + sel.id) : '');
+  /* AN OPERATOR JOB HAS NO SPLIT TO ASK FOR. The question is not "charge or
+     cover" but "whose books does this settle on", and the answer is the
+     invoice — so the rate is not fetched, not offered and not sent. */
+  var q = '/api/bookings/' + _DISPATCH.bookingId + (operator ? '?commission_pct=0' : (sel ? ('?driver_id=' + sel.id) : ''));
   try {
     var sr = await fetch(q, { credentials: 'include' });
     var sd = await sr.json();
-    _DISPATCH.splits = { charge: sd.split || {}, none: sd.split_none || {}, pct: sd.commission_pct };
-  } catch (e) { _DISPATCH.splits = { charge: job._split || {}, none: {}, pct: 10 }; }
+    _DISPATCH.splits = { charge: sd.split || {}, none: sd.split_none || {}, pct: operator ? 0 : sd.commission_pct };
+  } catch (e) { _DISPATCH.splits = { charge: job._split || {}, none: {}, pct: operator ? 0 : 10 }; }
   /* A driver we take nothing from opens on the cover-job answer, so the screen
      never offers "charge 0%" as though it were a choice. */
   _DISPATCH.charge = Number(_DISPATCH.splits.pct) > 0;
@@ -2798,7 +2863,12 @@ async function dispReview() {
   /* WHAT IS ABOUT TO LEAVE THE BUILDING, spelled out: the job, the address it
      is going to, and the money. The commission is shown because the driver's
      email shows it — the two should not be the first place they disagree. */
-  _DISPATCH.payload = {
+  _DISPATCH.operator = operator || null;
+  _DISPATCH.payload = operator ? {
+    operator_id: operator.id,
+    name: name, email: email, phone: v('disp-phone'),
+    reg: v('disp-reg').toUpperCase(), car: v('disp-car')
+  } : {
     driver_id: sel ? sel.id : null,
     name: name, email: email, phone: v('disp-phone'),
     reg: v('disp-reg').toUpperCase(), car: v('disp-car'),
@@ -2818,10 +2888,17 @@ async function dispReview() {
       '<div style="color:rgba(27,27,26,.65)">' + (job.pickup || '') + ' → ' + (job.destination || '') + '</div>' +
       '<div style="margin-top:.5rem;font-size:.85rem;color:var(--westmere-ink-soft)">' + email + (v('disp-phone') ? ' · ' + v('disp-phone') : '') + '</div>' +
     '</div>' +
-    '<p class="wm-lab" style="margin:1rem 0 .4rem">Commission on this job</p><div class="wm-rule"></div>' +
-    '<div id="disp-comm">' + dispCommHtml() + '</div>' +
-    '<div id="disp-money">' + dispMoneyHtml() + '</div>' +
-    '<p style="margin:.8rem 0 0;font-size:.85rem;color:var(--westmere-ink-soft);line-height:1.6">He is emailed the trip, the passenger’s name and number, and the payout. The customer is told who is picking them up.</p>' +
+    (operator
+      ? '<p class="wm-lab" style="margin:1rem 0 .4rem">How this one settles</p><div class="wm-rule"></div>'
+        /* ITS OWN ID. The two branches are exclusive at run time, but the same
+           id written twice in one template is indistinguishable from the real
+           bug the duplicate-id guard is there to catch. */
+        + '<div id="disp-op-money">' + dispOperatorMoneyHtml() + '</div>'
+        + '<p style="margin:.8rem 0 0;font-size:.85rem;color:var(--westmere-ink-soft);line-height:1.6">They are emailed the trip, the passenger’s name and number, and the fare. The customer is told who is picking them up. Nothing is netted off any balance — raise the invoice when you are ready.</p>'
+      : '<p class="wm-lab" style="margin:1rem 0 .4rem">Commission on this job</p><div class="wm-rule"></div>'
+        + '<div id="disp-comm">' + dispCommHtml() + '</div>'
+        + '<div id="disp-money">' + dispMoneyHtml() + '</div>'
+        + '<p style="margin:.8rem 0 0;font-size:.85rem;color:var(--westmere-ink-soft);line-height:1.6">He is emailed the trip, the passenger’s name and number, and the payout. The customer is told who is picking them up.</p>') +
     '<p id="disp-err2" style="display:none;margin:.7rem 0 0;font-size:.85rem;color:#8B2222"></p>' +
     '<div style="display:flex;gap:.6rem;margin-top:1.1rem">' +
       '<button type="button" id="disp-back" style="flex:1;padding:.75rem;border:1px solid rgba(27,27,26,.25);background:transparent;border-radius:8px;font-size:.85rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer">Back</button>' +
@@ -2832,7 +2909,7 @@ async function dispReview() {
      same door, so both routes behave identically. */
   dispPush();
   document.getElementById('disp-back').onclick = function () { history.back(); };
-  dispBindComm();
+  if (!operator) dispBindComm();
   document.getElementById('disp-send').onclick = dispSend;
 }
 
@@ -2847,10 +2924,14 @@ async function dispSend() {
     });
     var d = await r.json();
     if (r.ok && d.ok) {
-      dispClose();
-      showToast('Sent to ' + d.driver.name + (d.saved ? ' · saved' : ''));
       if (typeof loadOwnerBookings === 'function') loadOwnerBookings();
       else if (typeof loadBookings === 'function') loadBookings();
+      /* THE INVOICE IS THE REST OF THE ERRAND. Passing the job to another firm
+         is only half of it — the money still has to be billed — so the sheet
+         offers it there and then rather than leaving him to remember. */
+      if (d.operator) { dispOperatorSent(d); return; }
+      dispClose();
+      showToast('Sent to ' + d.driver.name + (d.saved ? ' · saved' : ''));
     } else {
       var e = document.getElementById('disp-err2');
       e.textContent = d.error || ('Could not send (' + r.status + ')'); e.style.display = 'block';
@@ -3909,19 +3990,54 @@ async function dmLoadLedger(){
        miss, and it is the one thing on this panel that decides which way the
        money goes. */
     var owed=Number(d.balance)>=0;
-    document.getElementById('dm-bal-label').textContent=owed?'You owe this driver':'This driver owes you';
+    var unpaid=(d.items||[]).filter(function(i){return !i.paid;}).length;
+    var settled=(d.totals&&d.totals.settledJobs)||0;
+    document.getElementById('dm-bal-label').textContent=(owed?'You owe this driver':'This driver owes you')
+      +' · '+unpaid+' unpaid job'+(unpaid===1?'':'s')+(settled?' · '+settled+' settled':'');
     var fig=document.getElementById('dm-bal-figure');
     fig.textContent=dmMoney(d.balance);
     fig.style.color=owed?'var(--navy)':'#9C2828';
 
+    /* ── A JOB, AND THE TWO THINGS THAT CAN STILL CHANGE ABOUT IT ────────
+       The commission was decided when the job was sent, from what was known
+       then; a week later it turns out to have been a favour, or the rate was
+       wrong. And whether it has been paid is the other half of the same row —
+       the balance IS the jobs that have not been, so the tick is the money.
+       Both are on the row, as in the owner app: reconciling a list should not
+       mean opening each item to do it. */
     var rows=(d.items||[]).map(function(it){
-      return '<div style="display:grid;grid-template-columns:76px 1fr auto;gap:.5rem;padding:.45rem 0;border-bottom:1px solid rgba(27,27,26,.05)">'
-        +'<div style="color:rgba(27,27,26,.72);font-size:.82rem">'+escTo(it.date)+'</div>'
-        +'<div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escTo(it.route)+'">'+escTo(it.ref)+' · '+escTo(it.route)
-        +'<span style="color:var(--westmere-ink-soft)"> · '+(it.paymentType==='cash'?'cash':'prepaid')+'</span></div>'
-        +'<div style="text-align:right;white-space:nowrap;font-size:.84rem">'
-        +'<span style="color:var(--westmere-ink-soft)">'+(Number(it.delta)<0?'−':'+')+dmMoney(it.delta)+'</span>'
-        +' <span style="color:var(--navy);font-weight:500">'+(Number(it.balanceAfter)<0?'−':'')+dmMoney(it.balanceAfter)+'</span></div>'
+      var part=!it.paid&&Math.abs(Number(it.settled)||0)>0.005;
+      return '<div style="padding:.5rem 0;border-bottom:1px solid rgba(27,27,26,.05)'+(it.paid?';background:#F6F8FA':'')+'">'
+        +'<div style="display:grid;grid-template-columns:76px 1fr auto;gap:.5rem">'
+          +'<div style="color:var(--westmere-ink-soft);font-size:.82rem">'+escTo(it.date)+'</div>'
+          +'<div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escTo(it.route)+'">'+escTo(it.ref)+' · '+escTo(it.route)
+          +'<span style="color:var(--westmere-ink-soft)"> · '+(it.paymentType==='cash'?'cash':'prepaid')+'</span></div>'
+          +'<div style="text-align:right;white-space:nowrap;font-size:.84rem">'
+          +'<span style="color:var(--westmere-ink-soft)">'+(Number(it.delta)<0?'−':'+')+dmMoney(it.delta)+'</span>'
+          +' <span style="color:var(--navy);font-weight:500">'+(Number(it.balanceAfter)<0?'−':'')+dmMoney(it.balanceAfter)+'</span></div>'
+        +'</div>'
+        +'<div style="display:flex;flex-wrap:wrap;align-items:center;gap:.4rem;margin-top:.4rem">'
+          +'<span class="wm-lab" style="margin:0;color:var(--westmere-ink-soft)">'+dmMoney(it.fare)+' fare · '
+            +(Number(it.commission)?dmMoney(it.commission)+' at '+it.commission_pct+'%':'no commission')
+            +' · '+(it.paymentType==='cash'
+                ? (Number(it.commission)?'he owes you '+dmMoney(it.commission):'nothing to settle')
+                : dmMoney(it.payout)+' to him')+'</span>'
+          +'<span style="flex:1"></span>'
+          +'<span onclick="admJobCommission('+it.id+','+(Number(it.commission)?0:1)+')" class="wm-seg" style="padding:.28rem .55rem;font-size:.64rem">'
+            +(Number(it.commission)?'Make it a cover job':'Charge commission')+'</span>'
+          +'<span onclick="admJobRateOpen('+it.id+','+(Number(it.commission_pct)||10)+')" class="wm-seg" id="admjr-btn-'+it.id+'" style="padding:.28rem .55rem;font-size:.64rem">Rate…</span>'
+          +'<span onclick="admJobPaid('+it.id+','+(it.paid?'false':'true')+')" class="wm-seg'+(it.paid?' on':'')+'" style="padding:.28rem .65rem;font-size:.64rem">'
+            +(it.paid?'Paid':'Mark paid')+'</span>'
+        +'</div>'
+        +'<div id="admjr-box-'+it.id+'" style="display:none;align-items:center;gap:.4rem;margin-top:.4rem">'
+          +'<span class="wm-lab" style="margin:0">Rate</span>'
+          +'<input id="admjr-pct-'+it.id+'" type="number" step="0.5" min="0" max="99.9" inputmode="decimal" class="fi" style="width:84px;padding:.3rem .45rem">'
+          +'<span style="font-family:var(--serif);color:var(--navy)">%</span>'
+          +'<span onclick="admJobRateSave('+it.id+')" class="wm-seg on" style="padding:.28rem .65rem;font-size:.64rem">Save</span>'
+          +'<span onclick="admJobRateClose('+it.id+')" class="wm-seg" style="padding:.28rem .55rem;font-size:.64rem">Cancel</span>'
+        +'</div>'
+        +(part?'<div class="wm-lab wm-owing" style="margin:.3rem 0 0">Part paid — '
+            +dmMoney(Math.abs(it.settled))+' of '+dmMoney(Math.abs(it.delta))+', '+dmMoney(Math.abs(it.outstanding))+' still owing</div>':'')
       +'</div>';
     });
     (d.settlements||[]).forEach(function(st){
@@ -3935,6 +4051,57 @@ async function dmLoadLedger(){
     });
     list.innerHTML=rows.join('')||'<div style="color:var(--westmere-ink-soft);padding:.4rem 0">No passed jobs yet.</div>';
   }catch(e){list.innerHTML='<div style="color:#9C2828;padding:.4rem 0">Network error</div>';}
+}
+
+/* ── THE TWO THINGS A HISTORY ROW CAN CHANGE ─────────────────────────────
+   Both go to the server and both redraw the panel from it, so the row, the
+   running balance beside it and the figure at the top cannot disagree about
+   what just happened. The same endpoints the owner app uses.
+   GUARDRAIL: server/tests/admin-parity.test.js */
+async function admJobPaid(jobId,paid){
+  try{
+    var r=await fetch('/api/bookings/'+jobId+'/driver-settled',{method:'PATCH',credentials:'include',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({settled:!!paid})});
+    var d=await r.json();
+    if(r.ok&&d.ok){showToast(paid?'Marked paid':'Marked unpaid');dmLoadLedger();}
+    else showToast(d.error||'Could not change it');
+  }catch(e){showToast('Network error');}
+}
+async function admJobCommission(jobId,charge){
+  try{
+    var r=await fetch('/api/bookings/'+jobId+'/commission',{method:'PATCH',credentials:'include',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify(charge?{charge_commission:true}:{charge_commission:false})});
+    var d=await r.json();
+    if(r.ok&&d.ok){showToast(charge?'Commission charged — '+dmMoney(d.job.commission):'Cover job — nothing taken');dmLoadLedger();}
+    else showToast(d.error||'Could not change it');
+  }catch(e){showToast('Network error');}
+}
+/* The rate is typed on the row. A native prompt is the control this system
+   spent a release removing — see wm-ask.js. */
+function admJobRateOpen(jobId,pct){
+  var box=document.getElementById('admjr-box-'+jobId), btn=document.getElementById('admjr-btn-'+jobId),
+      inp=document.getElementById('admjr-pct-'+jobId);
+  if(!box)return;
+  box.style.display='flex'; if(btn)btn.style.display='none';
+  if(inp){inp.value=pct;inp.focus();inp.select();}
+}
+function admJobRateClose(jobId){
+  var box=document.getElementById('admjr-box-'+jobId), btn=document.getElementById('admjr-btn-'+jobId);
+  if(box)box.style.display='none'; if(btn)btn.style.display='';
+}
+async function admJobRateSave(jobId){
+  var inp=document.getElementById('admjr-pct-'+jobId);
+  var v=inp?String(inp.value).trim():'';
+  if(v===''){admJobRateClose(jobId);return;}
+  var pct=Number(v);
+  if(!isFinite(pct)||pct<0||pct>100){showToast('A rate is a number between 0 and 100');return;}
+  try{
+    var r=await fetch('/api/bookings/'+jobId+'/commission',{method:'PATCH',credentials:'include',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({commission_pct:pct})});
+    var d=await r.json();
+    if(r.ok&&d.ok){showToast(pct+'% — '+dmMoney(d.job.commission)+' to you');dmLoadLedger();}
+    else showToast(d.error||'Could not change it');
+  }catch(e){showToast('Network error');}
 }
 
 async function dmRecordSettlement(){
@@ -4177,6 +4344,124 @@ async function admCreateOperator(){
     if(!r.ok||!d.ok){err.textContent=d.error||'Could not add them';err.style.color='#9C2828';return;}
     _ADM_OP_ADD_OPEN=false; showToast(company+' added'); admLoadOperators();
   }catch(e){err.textContent='Network error';err.style.color='#9C2828';}
+}
+
+/* ══ ONE OPERATOR ════════════════════════════════════════════════════════
+   What they owe is the invoices they have not paid — derived, never a balance
+   of its own — plus the jobs we have passed them and whether each has been
+   billed. The same page the owner app shows, on the same endpoint.
+   GUARDRAIL: server/tests/admin-parity.test.js */
+var ADM_OP_ID=null;
+
+async function admOperatorOpen(id){
+  ADM_OP_ID=id;
+  var m=document.getElementById('modal-operator');
+  if(!m){
+    m=document.createElement('div');
+    m.id='modal-operator'; m.className='overlay';
+    /* The app's own modal furniture — an invented one came out as a title with
+       the close button underneath it. */
+    m.innerHTML='<div class="modal" style="max-width:720px"><div class="modal-head">'
+      +'<div class="modal-title" id="adm-op-title">Operator</div>'
+      +'<button class="modal-x" onclick="closeModal(\'modal-operator\')">&times;</button></div>'
+      +'<div class="modal-body" id="adm-op-body">Loading…</div></div>';
+    document.body.appendChild(m);
+  }
+  openModal('modal-operator');
+  admOperatorLoad();
+}
+
+async function admOperatorLoad(){
+  var body=document.getElementById('adm-op-body');
+  if(!body||!ADM_OP_ID)return;
+  var d={};
+  try{
+    var r=await fetch('/api/operators/'+ADM_OP_ID,{credentials:'include'});
+    d=await r.json();
+    if(!r.ok||!d.ok)throw new Error(d.error||'Could not load this operator');
+  }catch(e){ body.innerHTML='<div style="color:#9C2828">'+escTo(e.message)+'</div>'; return; }
+  var op=d.operator||{};
+  var name=op.company||op.full_name||'Operator';
+  var t=document.getElementById('adm-op-title'); if(t)t.textContent=name;
+  var row=function(k,v){
+    return '<div style="display:flex;gap:.6rem;padding:.5rem 0;border-top:1px solid var(--westmere-line,#dfe5ea)">'
+      +'<div class="wm-lab" style="margin:0;width:104px;flex:0 0 auto">'+k+'</div>'
+      +'<div style="flex:1;font-size:.95rem;color:var(--navy)">'+v+'</div></div>';
+  };
+  var jobs=(d.jobs||[]).map(function(j){
+    var billed=!!j.invoiced;
+    return '<div style="display:flex;gap:.6rem;align-items:center;padding:.55rem 0;border-top:1px solid var(--westmere-line,#dfe5ea)">'
+      +'<div style="flex:1;min-width:0"><div style="font-size:.92rem;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'
+      +escTo(j.pickup||'')+' → '+escTo(j.destination||'')+'</div>'
+      +'<div class="wm-lab" style="margin:.15rem 0 0;color:var(--westmere-ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'
+      +escTo((j.date||'')+(j.time?' · '+j.time:'')+' · '+(j.ref||''))+'</div></div>'
+      +'<span class="wm-pill'+(billed?'':' owed')+'">'+(billed?'Invoiced':'To invoice')+'</span>'
+      +'<div style="width:4.6rem;text-align:right;font-size:.95rem;color:var(--navy)">£'+(Number(j.fare)||0).toFixed(2)+'</div></div>';
+  }).join('');
+  var invoices=(d.invoices||[]).map(function(i){
+    var paid=!!Number(i.paid);
+    return '<div style="display:flex;gap:.6rem;align-items:center;padding:.55rem 0;border-top:1px solid var(--westmere-line,#dfe5ea)">'
+      +'<div style="flex:1;min-width:0"><div style="font-size:.92rem;color:var(--navy)">'+escTo(i.invoice_no||'—')+'</div>'
+      +'<div class="wm-lab" style="margin:.15rem 0 0;color:var(--westmere-ink-soft)">'+escTo(i.period_label||i.issued_date||'')+'</div></div>'
+      +'<span class="wm-pill'+(paid?'':' owed')+'">'+(paid?'Paid':'Unpaid')+'</span>'
+      +'<div style="width:5.2rem;text-align:right;font-size:.95rem;color:var(--navy)">£'+(Number(i.total)||0).toFixed(2)+'</div></div>';
+  }).join('');
+
+  body.innerHTML=
+    '<div style="border:1px solid var(--westmere-line,#dfe5ea);border-radius:9px;padding:.2rem .8rem .6rem">'
+      +row('Contact',escTo(op.full_name||'—'))+row('Phone',escTo(op.phone||'—'))
+      +row('Email',escTo(op.email||'—'))
+      +row('Address',escTo([op.address_line1,op.address_line2,op.postcode].filter(Boolean).join(', ')||'—'))
+    +'</div>'
+    +'<p class="wm-lab">What they owe</p><div class="wm-rule"></div>'
+    +'<div style="border:1px solid var(--westmere-line,#dfe5ea);border-radius:9px;padding:.8rem 1rem;display:flex;align-items:baseline;gap:.6rem">'
+      +'<div class="wm-lab" style="margin:0;flex:1">'+(d.unpaid?d.unpaid+(d.unpaid===1?' unpaid invoice':' unpaid invoices'):'All settled')+'</div>'
+      +'<div class="'+(Number(d.owed)>0?'wm-owing':'')+'" style="font-family:var(--serif);font-size:1.6rem;color:var(--navy)">£'+(Number(d.owed)||0).toFixed(2)+'</div></div>'
+    +'<div style="font-size:.78rem;color:var(--westmere-ink-soft);margin-top:.45rem;line-height:1.5">Work passed to an operator is settled by invoice, not netted off a balance — so this is simply the invoices they have not paid.</div>'
+    +'<p class="wm-lab">Jobs passed to them</p><div class="wm-rule"></div>'
+    +(jobs||'<div style="font-size:.85rem;color:var(--westmere-ink-soft);padding:.6rem 0">No jobs sent yet.</div>')
+    +(Number(d.uninvoiced)?'<div style="font-size:.78rem;color:var(--westmere-ink-soft);margin-top:.45rem">'
+        +d.uninvoiced+(d.uninvoiced===1?' job has':' jobs have')+' not been invoiced yet — Create invoice below fills the form with them.</div>':'')
+    +'<p class="wm-lab">Invoices</p><div class="wm-rule"></div>'
+    +(invoices||'<div style="font-size:.85rem;color:var(--westmere-ink-soft);padding:.6rem 0">No invoices raised yet.</div>')
+    +'<div style="display:flex;gap:.5rem;margin-top:1.1rem">'
+      +'<button class="btn btn-ghost" onclick="admOperatorSendJob()">Send a job</button>'
+      +'<button class="btn btn-navy" onclick="admOperatorInvoice()">Create invoice</button>'
+    +'</div>';
+}
+
+async function admOperatorSendJob(){
+  /* The same sheet the job cards open, with this operator already chosen. */
+  var opId=ADM_OP_ID;
+  if(!opId)return;
+  var list=[];
+  try{
+    var r=await fetch('/api/bookings',{credentials:'include'});
+    var d=await r.json();
+    var today=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/London'});
+    list=(d.bookings||[]).filter(function(b){
+      return String(b.status||'')!=='cancelled'&&!b.driver_id&&!b.operator_id&&String(b.date||'')>=today;
+    }).sort(function(a,b){return String(a.date).localeCompare(String(b.date));}).slice(0,25);
+  }catch(e){ showToast('Could not load the diary'); return; }
+  if(!list.length){ showToast('No upcoming jobs are waiting to be passed on'); return; }
+  var pick=await WMAsk.prompt('Which job? Type the reference.\n\n'+list.slice(0,8).map(function(b){
+    return b.ref+'  '+(b.date||'')+'  '+(b.pickup||'').slice(0,22)+' → '+(b.destination||'').slice(0,22);
+  }).join('\n'),{title:'Pass a job to this operator',placeholder:'WPH-…',ok:'Open the send sheet'});
+  if(!pick)return;
+  var job=list.filter(function(b){return String(b.ref||'').toUpperCase()===String(pick).trim().toUpperCase();})[0];
+  if(!job){ showToast('No upcoming job with that reference'); return; }
+  closeModal('modal-operator');
+  /* The same send sheet the job cards open — admin and the owner app share it
+     function for function — with this operator already chosen. */
+  await dispOpen(job.id, job);
+  dispSetKind('operator');
+  var sel=document.getElementById('disp-operator');
+  if(sel){ sel.value=String(opId); if(sel.onchange)sel.onchange(); }
+}
+
+function admOperatorInvoice(){
+  closeModal('modal-operator');
+  admInvoiceForOperator(ADM_OP_ID);
 }
 
 async function admLoadOperators(){
@@ -4685,15 +4970,13 @@ function setInvoiceMode(mode){
   var bsFields=document.getElementById('ni-bespoke-fields');
   document.getElementById('ni-err').style.display='none';
   if(mode==='bespoke'){
-    accBtn.style.background='';accBtn.style.color='';
-    bsBtn.style.background='var(--navy)';bsBtn.style.color='#fff';
+    accBtn.className='wm-seg'; bsBtn.className='wm-seg on';
     accFields.style.display='none';
     bsFields.style.display='';
     admInvRelayout();
     loadSavedRecipients();
   } else {
-    bsBtn.style.background='';bsBtn.style.color='';
-    accBtn.style.background='var(--navy)';accBtn.style.color='#fff';
+    bsBtn.className='wm-seg'; accBtn.className='wm-seg on';
     accFields.style.display='';
     bsFields.style.display='none';
   }
@@ -4852,6 +5135,8 @@ function updateBespokeTotal(){
      repeating it in small print invites the reading that they are two. */
   var tl=document.getElementById('ni-total-line');
   if(tl) tl.style.visibility=op?'hidden':'visible';
+  /* ONE PASS, ONE SET OF FIGURES: the adjustments read the same maths. */
+  if(typeof ieSync==='function') ieSync();
 }
 
 function getBespokeItems(){
@@ -4909,6 +5194,22 @@ function setInvoicePeriod(type){
 }
 
 function openNewInvoice(){
+  /* THE RESET, for both errands — ieOpen() calls this first and then fills the
+     form in, so there is one place that clears it. */
+  _NI_EDIT_ID=null; _NI_BOOKING_IDS=[];
+  var t=document.getElementById('ni-title'); if(t) t.textContent='New Invoice';
+  var nl=document.getElementById('ni-no-line'); if(nl) nl.style.display='none';
+  var sb=document.getElementById('ni-send-btn'); if(sb) sb.style.display='';
+  var pv=document.getElementById('ni-preview-btn'); if(pv) pv.style.display='';
+  var es=document.getElementById('ie-save'); if(es) es.style.display='none';
+  var ad=document.getElementById('ni-adjust'); if(ad) ad.open=false;
+  ['ie-fees','ie-fees-label','ie-total'].forEach(function(k){var e=document.getElementById(k); if(e) e.value='';});
+  var mn=document.getElementById('ie-manual'); if(mn) mn.checked=false;
+  /* Issued today, due in fourteen days — what the route does with a new one,
+     shown rather than left blank. */
+  var today=new Date(), due=new Date(today.getTime()+14*864e5), iso=function(d){return d.toISOString().slice(0,10);};
+  var is=document.getElementById('ie-issued'); if(is) is.value=iso(today);
+  var du=document.getElementById('ie-due'); if(du) du.value=iso(due);
   var sel=document.getElementById('ni-customer');
   sel.innerHTML='<option value="">Loading...</option>';
   var err=document.getElementById('ni-err');err.style.display='none';
@@ -5066,6 +5367,12 @@ function buildInvoiceRequest(sendEmail){
     var body={recipient:{name:name,email:email,phone:phone,address:address},
               items:items,notes:notes,send_email:sendEmail};
     if(admOperatorMode()) body.commission_pct=admCommissionPct();
+    body.fees=ieFees();
+    body.fees_label=(document.getElementById('ie-fees-label').value||'').trim();
+    /* THE JOBS BEING BILLED, when this form was filled from an operator's page.
+       The route stamps them, so the next Create invoice does not offer the same
+       journeys again. */
+    if(_NI_BOOKING_IDS&&_NI_BOOKING_IDS.length) body.booking_ids=_NI_BOOKING_IDS;
     return{ url:'/api/invoices/bespoke', body:body };
   } else {
     var cid=document.getElementById('ni-customer').value;
@@ -5552,179 +5859,239 @@ function admInvLeadIn(data, lines){
    correction made here and one made there produce the same figures. The layout
    is admin's — flat columns — but the headings, the totals and the payout come
    out of WMInvoiceMaths exactly as they do on the create form. */
-var _IE=null;
+/* ══ CORRECTING AN INVOICE, ON THE FORM THAT RAISES ONE ═════════════════
+   There were two forms here, as there were in the owner app: #modal-new-invoice
+   to raise an invoice and a second sheet to correct one, each with its own
+   lines renderer and its own arithmetic. The second could not change the mode,
+   the customer or the period, so a correction needing any of those meant
+   deleting the invoice and issuing a new number — the one thing an accounts
+   department that has already filed the first should never receive.
+
+   One form now. ieOpen() fills it from the saved invoice and changes two
+   labels; the rest of the screen is the screen that raises one.
+   GUARDRAIL: server/tests/admin-parity.test.js */
+var _NI_EDIT_ID = null;
+
 function ieOpen(){
   var d=_MID_PRINT_DATA, id=_MID_INVOICE_ID;
   if(!d||!id){ showToast('Open an invoice first.'); return; }
   if(d.legacy){ showToast('This invoice predates the stored records — it cannot be corrected.'); return; }
   var bespoke=!!d.bespoke;
-  var items=(bespoke?(d.items||[]):(d.bookings||[])).map(function(it){
-    return Object.assign({},it,{
-      amount: bespoke?(+it.amount||0):(+it.fare||0),
-      fee:+it.fee||0,
-      collected_direct:+it.collected_direct||0});
-  });
-  _IE={id:id,no:d.invoiceNo,bespoke:bespoke,items:items};
+  closeModal('modal-invoice-detail');
+  openNewInvoice();                 // the same reset, and the customer list on its way
+  _NI_EDIT_ID=id;
+  document.getElementById('ni-title').textContent='Correct this invoice';
+  document.getElementById('ni-no-line').style.display='';
   document.getElementById('ie-no').textContent=d.invoiceNo||'';
-  var r=d.recipient||d.customer||{};
-  document.getElementById('ie-name').value=r.name||r.full_name||'';
-  document.getElementById('ie-email').value=r.email||'';
-  document.getElementById('ie-phone').value=r.phone||'';
-  document.getElementById('ie-addr').value=r.address||'';
-  document.getElementById('ie-issued').value=(d.period&&d.period.issuedDate)||'';
-  document.getElementById('ie-due').value=(d.period&&d.period.dueDate)||'';
-  document.getElementById('ie-notes').value=(d.period&&d.period.notes)||'';
-  document.getElementById('ie-fees').value=(+d.fees>0)?(+d.fees).toFixed(2):'';
+  document.getElementById('ni-send-btn').style.display='none';
+  document.getElementById('ni-preview-btn').style.display='none';
+  document.getElementById('ie-save').style.display='';
+
+  /* THE ARRANGEMENT FIRST, because it decides the layout: the job sheet and the
+     plain stack are different markup, and the row builder draws whichever is
+     current. */
+  var pct=+d.commissionPct||0;
+  var cb=document.getElementById('ni-commission'); if(cb) cb.checked=pct>0;
+  var pe=document.getElementById('ni-commission-pct'); if(pe) pe.value=pct>0?pct:10;
+  setInvoiceMode(bespoke?'bespoke':'account');
+  if(bespoke){
+    var rec=d.recipient||{};
+    document.getElementById('ni-rec-name').value=rec.name||'';
+    document.getElementById('ni-rec-email').value=rec.email||'';
+    document.getElementById('ni-rec-phone').value=rec.phone||'';
+    document.getElementById('ni-rec-address').value=rec.address||'';
+  } else if(d.customer_id){
+    var sel=document.getElementById('ni-customer');
+    if(sel) sel.value=String(d.customer_id);
+  }
+  var notes=document.getElementById('ni-notes');
+  if(notes) notes.value=(d.period&&d.period.notes)||'';
+
+  /* The lines through the SAME row builder the create form uses — which is what
+     puts the address lookup on a correction. */
+  var box=document.getElementById('ni-items'); if(box) box.innerHTML='';
+  var items=(bespoke?(d.items||[]):(d.bookings||[]));
+  items.forEach(function(it){
+    addBespokeItem(it.date||'',
+                   bespoke?(it.description||''):(it.pickup||''),
+                   bespoke?(+it.amount||0):(+it.fare||0),
+                   bespoke?'':(it.destination||''),
+                   +it.fee||0,
+                   (+it.collected_direct)?1:0);
+  });
+  if(!document.querySelectorAll('#ni-items .ni-item').length) addBespokeItem();
+
+  var per=d.period||{};
+  document.getElementById('ie-issued').value=per.issuedDate||'';
+  document.getElementById('ie-due').value=per.dueDate||'';
   document.getElementById('ie-fees-label').value=d.feesLabel||'';
-  document.getElementById('ie-commission').checked=(+d.commissionPct>0);
-  document.getElementById('ie-commission-pct').value=(+d.commissionPct>0)?d.commissionPct:10;
-  document.getElementById('ie-manual').checked=false;
-  document.getElementById('ie-total').value=(+d.total||0).toFixed(2);
-  document.getElementById('ie-err').style.display='none';
-  /* Journeys on an account invoice come from the bookings: the amounts are
-     correctable, the route is not inventable. */
-  document.getElementById('ie-add').style.display=bespoke?'':'none';
-  ieRender();
-  openModal('modal-edit-invoice');
+  var fb=document.getElementById('ie-fees');
+  fb.value=(+d.fees>0)?(+d.fees).toFixed(2):'';
+  document.getElementById('ie-manual').checked=!!d.totalManual;
+  if(d.totalManual) document.getElementById('ie-total').value=(+d.total||0).toFixed(2);
+  /* Opened only if something in it was used — an invoice with a hand-set total
+     or a named fee is one he has already been into. */
+  document.getElementById('ni-adjust').open=!!(d.totalManual||(+d.fees>0&&d.feesLabel));
+  updateBespokeTotal();
 }
-function iePct(){
-  var cb=document.getElementById('ie-commission');
-  if(!cb||!cb.checked)return 0;
-  var v=parseFloat(document.getElementById('ie-commission-pct').value);
-  if(!isFinite(v)||v<0||v>=100) return 10;
-  return Math.round(v*100)/100;
+
+/* ── THE FORM'S ARITHMETIC, ASKED OF THE ONE MODULE ────────────────────
+   WMInvoiceMaths, which the owner app and the invoice PDF also ask. The edit
+   sheet used to carry its own copy of the same four figures. */
+function ieRows(){
+  var rows=[];
+  document.querySelectorAll('#ni-items .ni-item').forEach(function(r){
+    var a=r.querySelector('.ni-amt'), fe=r.querySelector('.ni-fee');
+    rows.push({fare:a?(parseFloat(a.value)||0):0,
+               toll:fe?(parseFloat(fe.value)||0):0,
+               collected:admOperatorMode()&&admRowCollected(r)});
+  });
+  return rows;
 }
-function ieMaths(){
-  if(!_IE)return WMInvoiceMaths.compute([],0);
-  return WMInvoiceMaths.compute(_IE.items.map(function(it){
-    return {fare:+it.amount||0,toll:+it.fee||0,collected:!!(+it.collected_direct)};
-  }), iePct());
-}
-/* THE LUMP FEE belongs to a bespoke invoice with nothing on its lines. Where
-   the lines carry tolls, their sum is the figure and the box only reports it. */
+function iePct(){ return admOperatorMode()?admCommissionPct():0; }
+function ieMaths(){ return WMInvoiceMaths.compute(ieRows(), iePct()); }
+/* THE FEE COMES FROM ONE PLACE OR THE OTHER — never both. Any trip carrying a
+   fee makes the column the authority and the box a read-out of it; with none,
+   a one-off invoice may name one figure for the whole document. Both server
+   routes apply exactly this rule. */
 function ieFees(){
   var m=ieMaths();
   if(m.tolls>0) return m.tolls;
-  if(_IE&&!_IE.bespoke) return 0;
-  var v=parseFloat(document.getElementById('ie-fees').value);
-  return (isFinite(v)&&v>0)?Math.round(v*100)/100:0;
+  if(INVOICE_MODE!=='bespoke') return 0;
+  var el=document.getElementById('ie-fees');
+  if(!el||String(el.value||'').trim()==='') return 0;
+  var v=parseFloat(el.value);
+  return (!isFinite(v)||v<0)?0:Math.round(v*100)/100;
 }
-function ieRender(){
-  if(!_IE)return;
-  var op=iePct()>0;
-  var head=document.getElementById('ie-head');
-  if(head){ head.style.display=op?'':'none';
-            if(op) head.innerHTML=WMInvoiceMaths.headHtml(ADM_LAYOUT); }
-  var FS='font-size:.9rem;padding:.38rem .42rem';
-  document.getElementById('ie-lines').innerHTML=_IE.items.map(function(it,i){
-    var label=_IE.bespoke?(it.description||''):((it.pickup||'')+' → '+(it.destination||''));
-    var meta=(it.date||'')+(it.ref?'  ·  '+it.ref:'');
-    var kill=_IE.bespoke
-      ?'<button onclick="ieRemove('+i+')" title="Remove" style="background:transparent;border:none;color:#c0392b;cursor:pointer;font-size:1.1rem">&times;</button>'
-      :'<div></div>';
-    if(op){
-      return '<div class="ie-item" style="display:grid;grid-template-columns:'+ADM_GRID+';gap:.35rem;align-items:center;padding:.2rem 0">'
-        +'<div style="font-size:.78rem;color:var(--westmere-ink-soft)">'+escTo(it.date||'')+'</div>'
-        +'<div style="grid-column:2 / span 2;font-size:.9rem;color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escTo(label)+'">'+escTo(label)+'</div>'
-        +'<div style="text-align:center"><input data-i="'+i+'" data-f="collected" type="checkbox" '+((+it.collected_direct)?'checked':'')+' style="width:15px;height:15px;cursor:pointer"></div>'
-        +'<input class="fi" data-i="'+i+'" data-f="amount" type="number" step="0.01" style="'+FS+';text-align:right" value="'+(+it.amount||0).toFixed(2)+'">'
-        +'<div class="ie-com" style="text-align:right;font-size:.9rem;color:var(--westmere-ink-soft)">—</div>'
-        +'<input class="fi" data-i="'+i+'" data-f="fee" type="number" step="0.01" placeholder="" style="'+FS+';text-align:right" value="'+((+it.fee>0)?(+it.fee).toFixed(2):'')+'">'
-        +kill+'</div>';
-    }
-    return '<div class="ie-item" style="padding:.4rem 0;border-bottom:1px solid rgba(27,27,26,.06)">'
-      +(meta.trim()?'<div style="font-size:.76rem;color:var(--westmere-ink-soft);margin-bottom:.15rem">'+escTo(meta)+'</div>':'')
-      +(_IE.bespoke
-        ?'<textarea class="fi" data-i="'+i+'" data-f="description" rows="2" style="width:100%;font-size:.9rem;margin-bottom:.3rem">'+escTo(label)+'</textarea>'
-        :'<div style="font-size:.9rem;color:var(--navy);margin-bottom:.3rem">'+escTo(label)+'</div>')
-      +'<div style="display:flex;gap:.4rem;justify-content:flex-end;align-items:center">'
-      +'<input class="fi" data-i="'+i+'" data-f="fee" type="number" step="0.01" placeholder="Fee" style="width:96px;text-align:right;font-size:.9rem" value="'+((+it.fee>0)?(+it.fee).toFixed(2):'')+'">'
-      +'<input class="fi" data-i="'+i+'" data-f="amount" type="number" step="0.01" style="width:110px;text-align:right;font-size:.9rem" value="'+(+it.amount||0).toFixed(2)+'">'
-      +(_IE.bespoke?kill:'')
-      +'</div></div>';
-  }).join('')||'<div style="padding:.8rem;text-align:center;font-size:.88rem;color:var(--westmere-ink-soft)">No lines</div>';
-  document.querySelectorAll('#ie-lines [data-i]').forEach(function(el){
-    var h=function(){
-      var it=_IE.items[+el.getAttribute('data-i')]; if(!it)return;
-      var f=el.getAttribute('data-f');
-      if(f==='collected') it.collected_direct=el.checked?1:0;
-      else it[f]=(f==='amount'||f==='fee')?(parseFloat(el.value)||0):el.value;
-      ieSync();
-    };
-    el.oninput=h; el.onchange=h;
-  });
-  ieSync();
+function ieAutoSum(){
+  var m=ieMaths();
+  return Math.round((m.fares-m.commission+ieFees()-m.collected)*100)/100;
 }
-function ieRemove(i){ if(!_IE)return; _IE.items.splice(i,1); ieRender(); }
-function ieAdd(){ if(!_IE||!_IE.bespoke)return;
-  _IE.items.push({date:'',description:'',amount:0,fee:0,collected_direct:0}); ieRender(); }
+/* The total field mirrors the lines while it is theirs, and stops the moment
+   the owner takes it over. */
 function ieSync(){
-  if(!_IE)return;
-  var m=ieMaths(), op=m.pct>0, fees=ieFees();
-  var rw=document.getElementById('ie-rate-wrap'); if(rw) rw.style.display=op?'flex':'none';
-  document.querySelectorAll('#ie-lines .ie-com').forEach(function(el,k){
-    el.textContent=(m.rows[k]&&m.rows[k].fare>0)?WMInvoiceMaths.money(m.rows[k].commission):'—';
-  });
-  /* fares − commission + fees − collected, the same order the invoice bills. */
-  var auto=Math.round((m.fares-m.commission+fees-m.collected)*100)/100;
-  var manual=document.getElementById('ie-manual').checked;
-  var tf=document.getElementById('ie-total');
-  tf.disabled=!manual;
-  if(!manual) tf.value=auto.toFixed(2);
-  var sum=document.getElementById('ie-sum'); if(sum) sum.textContent=WMInvoiceMaths.money(auto);
-  var sl=document.getElementById('ie-sum-line'); if(sl) sl.style.visibility=op?'hidden':'visible';
-  var t=document.getElementById('ie-totals'), p=document.getElementById('ie-payout');
-  var shown={rows:m.rows,fares:m.fares,tolls:fees,commission:m.commission,
-             collected:m.collected,pct:m.pct,total:auto};
-  if(t){ t.style.display=op?'':'none'; if(op) t.innerHTML=WMInvoiceMaths.totalsHtml(shown,ADM_LAYOUT); }
-  if(p){ p.style.display=op?'':'none'; if(op) p.innerHTML=WMInvoiceMaths.payoutHtml(shown); }
-  var fbox=document.getElementById('ie-fees'), fnote=document.getElementById('ie-fees-note');
-  var perTrip=m.tolls>0;
-  fbox.disabled=perTrip;
-  if(perTrip) fbox.value=fees>0?fees.toFixed(2):'';
-  if(fnote) fnote.textContent=perTrip
-    ? 'Added up from the tolls on the lines above.'
-    : 'Leave blank for none — no row is printed.';
-  var note=document.getElementById('ie-note');
+  var mb=document.getElementById('ie-manual'), f=document.getElementById('ie-total');
+  if(!mb||!f)return;
+  var manual=mb.checked;
+  f.disabled=!manual;
+  f.style.background=manual?'#fff':'rgba(27,27,26,.05)';
+  var sum=ieAutoSum();
+  if(!manual) f.value=sum.toFixed(2);
+  var m=ieMaths(), fees=ieFees();
+  var n=document.querySelectorAll('#ni-items .ni-item').length;
+  var breakdown=n+' line'+(n===1?'':'s')+' £'+m.fares.toFixed(2)
+    +(fees>0?' + fees £'+fees.toFixed(2):'')
+    +(m.pct>0?' − '+m.pct+'% commission £'+m.commission.toFixed(2):'')
+    +(m.collected>0?' − collected £'+m.collected.toFixed(2):'');
+  var note=document.getElementById('ie-sum');
   if(note) note.textContent=manual
-    ? ('The lines come to '+WMInvoiceMaths.money(auto)+'. The invoice will show the figure above.')
-    : '';
+    ? ('The invoice adds up to £'+sum.toFixed(2)+' ('+breakdown+'). It will show the figure above.')
+    : (breakdown+'.');
+  var per=m.tolls, derived=(per>0)||(INVOICE_MODE!=='bespoke');
+  var fbox=document.getElementById('ie-fees'), flab=document.getElementById('ie-fees-label'),
+      fnote=document.getElementById('ie-fees-note');
+  if(derived){
+    fbox.disabled=true; fbox.value=per>0?per.toFixed(2):'';
+    fbox.style.background='rgba(27,27,26,.05)';
+    var k=ieRows().filter(function(r){return r.toll>0;}).length;
+    if(fnote) fnote.textContent=per>0
+      ? ('Added up from the '+k+' trip'+(k===1?'':'s')+' with a fee above.')
+      : 'Type a fee beside any trip that carried one.';
+  } else {
+    fbox.disabled=false; fbox.style.background='#fff';
+    if(fnote) fnote.textContent=fees>0?'Shown on the invoice as a row above the total.'
+                                      :'One figure for the whole invoice, or type one beside a trip.';
+  }
+  if(flab) flab.style.display=(!derived&&fees>0)?'':'none';
+  /* A hand-set total is a correction, not a way to raise an invoice. */
+  var mrow=mb.parentNode; if(mrow) mrow.style.display=_NI_EDIT_ID?'flex':'none';
+  var iss=document.getElementById('ie-issued');
+  if(iss){ iss.disabled=!_NI_EDIT_ID; }
+  var hint=document.getElementById('ni-adjust-hint');
+  if(hint) hint.textContent=_NI_EDIT_ID
+    ? ('· total £'+sum.toFixed(2)+(manual?' (set by hand)':''))
+    : '· issued today, due in 14 days';
 }
+
 async function ieSave(){
-  if(!_IE)return;
-  var err=document.getElementById('ie-err'); err.style.display='none';
+  if(!_NI_EDIT_ID){ return submitNewInvoice(); }
   var manual=document.getElementById('ie-manual').checked;
   var typed=parseFloat(document.getElementById('ie-total').value);
-  if(manual&&(!isFinite(typed)||typed<0)){ err.textContent='That total is not a number.'; err.style.display=''; return; }
+  var err=document.getElementById('ni-err'); err.style.display='none';
+  if(manual&&(isNaN(typed)||typed<0)){ err.textContent='That total is not a number.'; err.style.display=''; return; }
+  var items=getBespokeItems();
+  if(!items.length){ err.textContent='An invoice needs at least one line.'; err.style.display=''; return; }
   var body={
-    recipient_name:document.getElementById('ie-name').value.trim(),
-    recipient_email:document.getElementById('ie-email').value.trim(),
-    recipient_phone:document.getElementById('ie-phone').value.trim(),
-    recipient_addr:document.getElementById('ie-addr').value.trim(),
-    issued_date:document.getElementById('ie-issued').value.trim(),
-    due_date:document.getElementById('ie-due').value.trim(),
-    notes:document.getElementById('ie-notes').value.trim(),
-    line_items:_IE.items,
+    kind:INVOICE_MODE,
+    notes:(document.getElementById('ni-notes').value||'').trim(),
+    issued_date:(document.getElementById('ie-issued').value||'').trim(),
+    due_date:(document.getElementById('ie-due').value||'').trim(),
+    line_items:items,
     commission_pct:iePct(),
     fees:ieFees(),
-    fees_label:document.getElementById('ie-fees-label').value.trim(),
-    total_override: manual?typed:null
+    fees_label:(document.getElementById('ie-fees-label').value||'').trim(),
+    total_override: manual ? typed : null
   };
+  if(INVOICE_MODE==='bespoke'){
+    body.recipient_name =(document.getElementById('ni-rec-name').value||'').trim();
+    body.recipient_email=(document.getElementById('ni-rec-email').value||'').trim();
+    body.recipient_phone=(document.getElementById('ni-rec-phone').value||'').trim();
+    body.recipient_addr =(document.getElementById('ni-rec-address').value||'').trim();
+  } else {
+    var cid=document.getElementById('ni-customer').value;
+    if(cid) body.customer_id=cid;
+    body.period_from=document.getElementById('ni-from').value||null;
+    body.period_to  =document.getElementById('ni-to').value||null;
+  }
   var btn=document.getElementById('ie-save');
   btn.disabled=true; btn.textContent='Saving…';
+  var id=_NI_EDIT_ID;
   try{
-    var r=await fetch('/api/invoices/'+_IE.id,{method:'PATCH',credentials:'include',
+    var r=await fetch('/api/invoices/'+id,{method:'PATCH',credentials:'include',
       headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     var d=await r.json();
     if(r.ok&&d.ok){
-      showToast(_IE.no+' corrected');
-      closeModal('modal-edit-invoice');
-      viewInvoice(_IE.id);            // reload the sheet from the saved row
-      if(typeof loadInvoiceHistory==='function')loadInvoiceHistory();
-    } else { err.textContent=d.error||'Could not save'; err.style.display=''; }
-  }catch(e){ err.textContent='Network error'; err.style.display=''; }
+      showToast((document.getElementById('ie-no').textContent||'Invoice')+' corrected');
+      closeModal('modal-new-invoice');
+      _NI_EDIT_ID=null;
+      if(typeof loadInvoices==='function')loadInvoices();
+      if(typeof viewInvoice==='function')viewInvoice(id);
+    } else { err.textContent=(d&&d.error)||'Could not save'; err.style.display=''; }
+  }catch(e){ err.textContent='Network error. Please try again.'; err.style.display=''; }
   btn.disabled=false; btn.textContent='Save Correction';
 }
+
+/* ── BILLING WHAT WAS PASSED TO AN OPERATOR ────────────────────────────
+   The jobs are already in the system, so the form opens with them in it. Only
+   the ones not already invoiced, and the booking ids ride along so the invoice
+   stamps them when it is raised. */
+var _NI_BOOKING_IDS = [];
+async function admInvoiceForOperator(id){
+  if(!id)return;
+  var d={};
+  try{
+    var r=await fetch('/api/operators/'+id,{credentials:'include'});
+    d=await r.json();
+    if(!r.ok||!d.ok)throw new Error(d.error||'Could not load this operator');
+  }catch(e){ showToast(e.message); return; }
+  var op=d.operator||{};
+  var jobs=(d.jobs||[]).filter(function(j){return !j.invoiced;});
+  nav('invoices');
+  openNewInvoice();
+  setInvoiceMode('bespoke');
+  document.getElementById('ni-rec-name').value=op.company||op.full_name||'';
+  document.getElementById('ni-rec-email').value=op.email||'';
+  document.getElementById('ni-rec-phone').value=op.phone||'';
+  document.getElementById('ni-rec-address').value=[op.address_line1,op.address_line2,op.postcode].filter(Boolean).join('\n');
+  var box=document.getElementById('ni-items'); if(box) box.innerHTML='';
+  _NI_BOOKING_IDS=jobs.map(function(j){return j.id;});
+  jobs.forEach(function(j){
+    addBespokeItem(j.date||'', j.pickup||'', Number(j.fare)||0, j.destination||'', 0, 0);
+  });
+  if(!jobs.length){ addBespokeItem(); showToast('Nothing new to invoice — add the lines by hand'); }
+  updateBespokeTotal();
+}
+
 
 function midOpenPrint(){
   invOpenPdf(_MID_INVOICE_ID);
