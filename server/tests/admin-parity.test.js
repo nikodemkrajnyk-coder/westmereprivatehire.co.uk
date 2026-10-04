@@ -339,13 +339,30 @@ test('the "Completed" tab is gone from the admin sidebar', () => {
     'the sidebar entry is Trip History');
   assert.ok(/id="view-history"/.test(ADMIN), 'the Trip History view must exist');
 });
-test('admin has a Cancelled view with a manual Delete', () => {
-  const fn = ADMIN.match(/function buildAdmCancelled[\s\S]*?\n\}/);
-  assert.ok(fn, 'buildAdmCancelled not found');
-  assert.ok(/'cancelled'/.test(fn[0]), 'the Cancelled view must select cancelled bookings');
-  assert.ok(/id="adm-cancelled-list"/.test(ADMIN), 'the Cancelled view needs its list container');
+test('cancelled bookings live in Trip History, with the manual Delete intact', () => {
+  /* There is no Cancelled view any more, and no Completed one: ONE Trip
+     History holds everything finished, with the cancelled trips marked inside
+     it. The rule this test exists for is unchanged — a cancelled booking is
+     never hard-deleted behind the operator's back, stays visible, and carries
+     a Delete he performs himself. Only where it lives changed.
+     See also: server/tests/compact-history.test.js */
+  assert.ok(!/id="view-cancelled"/.test(ADMIN), 'the separate Cancelled view must be gone');
+  assert.ok(!/nav\('cancelled'/.test(ADMIN), 'no sidebar entry may open a Cancelled page');
+  assert.ok(!/function buildAdmCancelled\b/.test(ADMIN), 'buildAdmCancelled must be gone with its view');
+  assert.ok(!/id="adm-cancelled-list"/.test(ADMIN), 'its list container must be gone too');
+
+  const fn = ADMIN.match(/function buildAdmHistory[\s\S]*?\n\}/);
+  assert.ok(fn && /st==='completed'\|\|st==='cancelled'/.test(fn[0]),
+    'Trip History must select BOTH outcomes');
+
   const del = ADMIN.match(/async function admDeleteBooking[\s\S]*?\n\}/);
   assert.ok(del && /method:'DELETE'/.test(del[0]), 'Delete must hard-remove via the shared DELETE route');
+  // …and it is reachable: the trip page offers it on anything the lifecycle
+  // module allows, which is every booking except a completed one.
+  assert.ok(/A\.del\)acts\+='<button class="btn btn-red btn-sm" onclick="admDeleteBooking/.test(ADMIN),
+    'the trip detail page must carry the hand Delete');
+  assert.strictEqual(LC.actionsFor({ status: 'cancelled' }).del, true,
+    'a cancelled booking must still be deletable by hand');
 });
 test('a cancelled booking offers no Edit and no Message, in both apps', () => {
   const a = LC.actionsFor({ status: 'cancelled', customer_email: 'a@b.com' });

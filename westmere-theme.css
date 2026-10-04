@@ -1998,6 +1998,28 @@ nav > .navlinks { margin-left: auto; }
 .wm-ctab-c:first-child{ font-variant-numeric: tabular-nums; color: var(--westmere-ink-soft); }
 /* The passenger is who the row is ABOUT. */
 .wm-ctab-c:nth-child(3){ font-weight: 600; }
+/* ── A CANCELLED TRIP, INSIDE THE ONE LIST ──────────────────────────────
+   Trip History holds everything finished, so a journey that never ran has to
+   be unmistakable at a glance and still readable — not hidden, and not a
+   greyed-out row the eye skips. Three signals, none of them colour alone:
+   the route is struck through, the row sits on a tint, and it carries the word
+   "Cancelled" in its own column. */
+.wm-ctab-r.is-cancelled > .wm-ctab-c{ background: rgba(16, 42, 67, .035); }
+.wm-ctab-r.is-cancelled > .wm-ctab-c:nth-child(4),
+.wm-ctab-r.is-cancelled > .wm-ctab-c:nth-child(5){
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  color: var(--westmere-ink-soft);
+}
+/* The word itself stays full-strength type: it is the answer to the question
+   the owner opened the list with. */
+.wm-ctab-r.is-cancelled > .wm-ctab-c:nth-child(6){
+  color: var(--westmere-text);
+  font-size: .74rem;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
 .wm-ctab-r{ cursor: pointer; }
 .wm-ctab-r:hover > .wm-ctab-c{ background: var(--westmere-hover); }
 .wm-ctab-r:active > .wm-ctab-c{ background: var(--westmere-press); }
@@ -2035,6 +2057,23 @@ nav > .navlinks { margin-left: auto; }
   .wm-ctab-history col:nth-child(3){ width: 25% !important; }
   .wm-ctab-history col:nth-child(4){ width: 27% !important; }
   .wm-ctab-history col:nth-child(5){ width: 29% !important; }
+  /* …and the same four, tighter, when a sixth column has to fit because the
+     month contains a cancelled trip. The status column gets the room it needs
+     to print the whole word: "CANC…" is not a label, and a row the owner has
+     to widen his phone to read is not marked at all. */
+  .wm-ctab-history-mixed col:nth-child(2){ width: 17% !important; }
+  .wm-ctab-history-mixed col:nth-child(3){ width: 24% !important; }
+  .wm-ctab-history-mixed col:nth-child(4){ width: 17% !important; }
+  .wm-ctab-history-mixed col:nth-child(5){ width: 20% !important; }
+  .wm-ctab-history-mixed col:nth-child(6){ width: 22% !important; }
+  /* Six columns in 390px: the gutters give before the words do. The date and
+     the passenger have to be readable whole — they are how he finds the trip —
+     and the two place labels ellipsis, which is what the detail page is for. */
+  .wm-ctab-history-mixed .wm-ctab-h,
+  .wm-ctab-history-mixed .wm-ctab-c{ padding-left: .35rem; padding-right: .35rem; }
+  .wm-ctab-history-mixed .wm-ctab-h:nth-child(6),
+  .wm-ctab-history-mixed .wm-ctab-c:nth-child(6){ padding-left: .2rem; padding-right: .15rem; }
+  .wm-ctab-r.is-cancelled > .wm-ctab-c:nth-child(6){ font-size: .58rem; letter-spacing: .01em; }
   .wm-ctab-trips col:nth-child(2){ width: 21% !important; }
   .wm-ctab-trips col:nth-child(3){ width: 35% !important; }
   .wm-ctab-trips col:nth-child(4){ width: 24% !important; }

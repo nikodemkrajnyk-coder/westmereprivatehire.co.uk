@@ -34,6 +34,7 @@ const strip = (c) => c.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*
    the fallback path rather than the one that ships. */
 global.WMAddr = require('../../address-normalize');
 const C = require('../../wm-compact');
+const LC = require('../../wm-lifecycle');
 const OWNER = strip(read('westmere-owner.html'));
 const ADMIN = strip(read('westmere-admin.html'));
 const THEME = read('westmere-theme.css');
@@ -167,6 +168,23 @@ test('the paid line says whether the money arrived, not only what was asked', ()
     'an unpaid fare must say so — the gap is what the owner is looking for');
   assert.ok(/Cash to the driver/.test(C.paidLine({ fare: 120, paid_at: 'x', payment: 'cash' })),
     'the method travels with the fact');
+});
+
+test('the paid line and the payment badge cannot disagree', () => {
+  /* A booking only ever reads `card` because a Stripe payment succeeded
+     (CLAUDE.md payment invariant #1), and the shared badge says "Prepaid ✓" on
+     that alone. Reading `paid_at` by itself put "not paid yet" directly
+     underneath that badge on the same screen. One test, both places. */
+  const card = { fare: 85, payment: 'card', paid_at: null };
+  assert.strictEqual(LC.payStatus(card).key, 'prepaid');
+  assert.strictEqual(C.isPaid(card), true, 'a card booking is paid, badge and sentence alike');
+  assert.ok(/paid ·/.test(C.paidLine(card)) && !/not paid/.test(C.paidLine(card)));
+  // …and nothing else is paid without the stamp.
+  for (const p of ['cash', 'account', 'invoice', 'pending']) {
+    assert.strictEqual(C.isPaid({ fare: 85, payment: p }), false, p + ' must not read as paid');
+    assert.strictEqual(C.isPaid({ fare: 85, payment: p, paid_at: '2026-09-01' }), true,
+      p + ' with a stamp IS paid');
+  }
 });
 
 // ── 4. THE ROW OPENS A PAGE ───────────────────────────────────────────────
@@ -332,6 +350,113 @@ test('"Completed" is not a page in either app any more', () => {
   assert.ok(!/nav\('completed'/.test(ADMIN), 'no admin sidebar entry may open a Completed page');
   assert.ok(/Trip <em>History<\/em>/.test(ADMIN) && /Trip <em>History<\/em>/.test(OWNER),
     'both apps call it Trip History');
+});
+
+// ── 8. ONE LIST, BOTH OUTCOMES ───────────────────────────────────────────
+// The owner's final call on the tabs: no Completed tab AND no Cancelled tab.
+// One Trip History holding everything finished, with the cancelled trips
+// marked inside it. His question of an old booking is "what happened to it",
+// and the answer used to depend on guessing which of two tabs to open.
+console.log('\nOne Trip History, holding both outcomes');
+
+test('neither app has a Cancelled view left', () => {
+  assert.ok(!/id="view-cancelled"/.test(ADMIN), 'the admin Cancelled view must be gone');
+  assert.ok(!/nav\('cancelled'/.test(ADMIN), 'no admin sidebar entry may open a Cancelled page');
+  assert.ok(!/function buildAdmCancelled\b/.test(ADMIN), 'its builder must be gone with it');
+  assert.ok(!/id="cancelled-section"/.test(OWNER), 'the owner Cancelled section must be gone');
+  assert.ok(!/function buildCancelled\b/.test(OWNER), 'its builder must be gone with it');
+  // Exactly one history pane survives in each app.
+  assert.strictEqual((ADMIN.match(/id="adm-history-list"/g) || []).length, 1);
+  assert.strictEqual((OWNER.match(/id="completed-list"/g) || []).length, 1);
+});
+
+test('the ONE list is built from completed AND cancelled, in both apps', () => {
+  const o = fnBlock(OWNER, 'buildCompleted');
+  assert.ok(/COMPLETED_JOBS\|\|\[\]\)\.concat\(CANCELLED_JOBS/.test(o),
+    'the owner Trip History must hold both outcomes');
+  const a = fnBlock(ADMIN, 'buildAdmHistory');
+  assert.ok(/st==='completed'\|\|st==='cancelled'/.test(a),
+    'the admin Trip History must hold both outcomes');
+});
+
+test('a cancelled row is LABELLED, and reads as cancelled', () => {
+  const done = { id: 1, ref: 'W1', date: '2026-10-02', customer_name: 'Mrs Hall',
+                 pickup: 'Steyning', destination: 'Gatwick', status: 'completed' };
+  const gone = { id: 2, ref: 'W2', date: '2026-10-03', customer_name: 'Mr Vane',
+                 pickup: 'Hove', destination: 'Heathrow', status: 'cancelled' };
+  const html = C.historyTable([done, gone], 'openTripPage');
+  assert.ok(/>Cancelled</.test(html), 'the row must carry the word, not a colour alone');
+  assert.ok(/class="wm-ctab-r is-cancelled"/.test(html), 'the row must be marked for the stylesheet');
+  assert.ok(/aria-label="[^"]*cancelled[^"]*"/.test(html), 'a screen reader must be told too');
+  // The completed row beside it is NOT marked.
+  const rows = html.split('<tr class="wm-ctab-r');
+  assert.strictEqual(rows.filter((r) => r.startsWith(' is-cancelled')).length, 1,
+    'exactly one of the two rows is the cancelled one');
+  // The Status column appears only when there is something to say.
+  assert.strictEqual(C.historyColumnsFor([done]).length, 5, 'no empty Status column on a clean month');
+  assert.strictEqual(C.historyColumnsFor([done, gone]).length, 6, 'a cancelled trip earns the column');
+  assert.ok(!/Status/.test(C.historyTable([done], 'openTripPage')));
+});
+
+test('the owner app\'s own job shape is read correctly', () => {
+  /* In the owner app the server\'s status lives on `apiStatus` and `status` is
+     the driver-facing stage ("done", "enroute"). Reading the wrong one marks
+     nothing, or marks everything. */
+  assert.strictEqual(C.isCancelled({ apiStatus: 'cancelled', status: 'done' }), true);
+  assert.strictEqual(C.isCancelled({ apiStatus: 'completed', status: 'done' }), false);
+  assert.strictEqual(C.isCancelled({ status: 'cancelled' }), true);
+  assert.strictEqual(C.isCancelled({}), false);
+  assert.strictEqual(C.isCancelled(null), false);
+});
+
+test('a cancelled trip earns NOTHING towards the month', () => {
+  /* The month header sums the fares in its group. Once the cancelled trips
+     joined the list, the fare of a journey that never ran would have gone
+     straight into the takings at the top of the month. */
+  const g = LC.groupByMonth([
+    { date: '2026-09-02', fare: 100, status: 'completed' },
+    { date: '2026-09-05', fare: 80, status: 'cancelled' },
+    { date: '2026-09-09', fare: 60, status: 'completed' }
+  ])[0];
+  assert.strictEqual(g.takings, 160, 'a cancelled fare must not be in the takings');
+  assert.strictEqual(g.jobs, 2, 'a cancelled trip is not a job that was done');
+  assert.strictEqual(g.cancelled, 1);
+  assert.strictEqual(g.items.length, 3, 'but it is still IN the list');
+  // Both apps print those three figures rather than re-deriving them.
+  for (const [who, fn] of [['owner', fnBlock(OWNER, 'buildCompleted')],
+                           ['admin', fnBlock(ADMIN, 'buildAdmHistory')]]) {
+    assert.ok(/g\.jobs/.test(fn), who + ' must count the jobs that ran, not the rows');
+    assert.ok(/g\.cancelled/.test(fn), who + ' must say how many were cancelled');
+    assert.ok(!/g\.items\.length\+?\(?.{0,12}' job'/.test(fn),
+      who + ' must not count cancelled rows as jobs done');
+  }
+});
+
+test('the detail page says it was cancelled, in a sentence', () => {
+  for (const [who, src] of [['owner', OWNER], ['admin', ADMIN]]) {
+    assert.ok(/WMCompact\.isCancelled\((?:j|b)\)\?/.test(src),
+      who + ' detail page must branch on whether the trip was cancelled');
+    assert.ok(/This journey was cancelled/.test(src),
+      who + ' detail page must say so in words, not a chip alone');
+    assert.ok(/counts nothing towards (?:your |the )income/.test(src),
+      who + ' must say what that means for the money');
+  }
+});
+
+test('a cancelled row still opens its page — it is not in the live job list', () => {
+  /* OFFERED_JOBS deliberately excludes cancelled bookings so they never reach
+     the schedule. The trip page looked there and only there, so every cancelled
+     row in the new list would have opened nothing at all. */
+  const fn = fnBlock(OWNER, 'tripById');
+  assert.ok(/OFFERED_JOBS/.test(fn) && /CANCELLED_JOBS/.test(fn),
+    'the trip page must look in both lists');
+  assert.ok(/var j=tripById\(id\)/.test(fnBlock(OWNER, 'openTripPage')),
+    'openTripPage must use it');
+  assert.ok(/var still=tripById\(_tripPageId\)/.test(fnBlock(OWNER, 'refreshTripPage')),
+    'and so must the refresh, or an open page drops its own trip');
+  // Admin reads one list of every booking, so it needs no second lookup.
+  assert.ok(/ALL_BOOKINGS\|\|\[\]\)\.find/.test(fnBlock(ADMIN, 'admOpenTrip')),
+    'the admin trip page reads the full bookings list');
 });
 
 (async () => {

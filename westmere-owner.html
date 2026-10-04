@@ -968,19 +968,19 @@ select:-webkit-autofill:focus{
       <div id="toconfirm-list"></div>
     </div>
 
-    <!-- Trip History (status: completed — for his records). The id stays
-         `completed`: the label changed, the state machine did not. -->
+    <!-- TRIP HISTORY — everything finished, in ONE list.
+         Completed AND cancelled together, newest month first, each row tapping
+         through to its own page. There is no Completed tab and no Cancelled
+         tab: the owner's question of an old booking is "what happened to it",
+         and the answer used to depend on guessing which of two tabs to open.
+         A cancelled trip is marked as such on the row and on its page, and
+         earns nothing towards the month's takings.
+         The pane id stays `completed`: the label changed, the state machine
+         did not. GUARDRAIL: server/tests/compact-history.test.js -->
     <div class="pg" id="pg-completed">
       <div class="sec-title">Trip <em>History</em></div>
-      <div class="sec-sub">Finished jobs, for your records</div>
+      <div class="sec-sub">Everything finished &mdash; tap a trip for the full details</div>
       <div id="completed-list"></div>
-
-      <!-- Cancelled bookings (status: cancelled) — kept on file, deleted by hand -->
-      <div id="cancelled-section" style="display:none;margin-top:1.6rem">
-        <div class="sec-title" style="font-size:1.15rem"><em>Cancelled</em></div>
-        <div class="sec-sub">Cancelled by the customer — delete once you're done with them</div>
-        <div id="cancelled-list"></div>
-      </div>
     </div>
 
 
@@ -4202,8 +4202,15 @@ function wmFillFareStep(id){
    collide with the card still sitting in the list behind it.
    GUARDRAIL: server/tests/owner-trip-page.test.js */
 var _tripPageId=null;
+/* OFFERED_JOBS deliberately excludes cancelled bookings — they must never
+   reach the schedule — so a cancelled row in Trip History would open nothing
+   at all if this looked in one list. It looks in both. */
+function tripById(id){
+  return (OFFERED_JOBS||[]).find(function(x){return String(x.id)===String(id);})
+      || (CANCELLED_JOBS||[]).find(function(x){return String(x.id)===String(id);});
+}
 function openTripPage(id){
-  var j=(OFFERED_JOBS||[]).find(function(x){return String(x.id)===String(id);});
+  var j=tripById(id);
   if(!j)return;
   var page=document.getElementById('trip-page'),body=document.getElementById('trip-page-body');
   if(!page||!body)return;
@@ -4227,7 +4234,7 @@ function closeTripPage(){
 // mark paid): the list reloads underneath, so re-render from the fresh job.
 function refreshTripPage(){
   if(_tripPageId==null)return;
-  var still=(OFFERED_JOBS||[]).find(function(x){return String(x.id)===String(_tripPageId);});
+  var still=tripById(_tripPageId);
   if(!still){closeTripPage();return;}
   openTripPage(_tripPageId);
 }
@@ -4403,6 +4410,13 @@ function jobCardHtml(j){
     + wmChangeBlock(j)
     + wmFareStep(j)
     +'<div id="'+detailId+'" style="display:none;padding:0 1rem .9rem;border-top:1px solid rgba(27,27,26,.06);background:rgba(27,27,26,.02)">'
+      /* A CANCELLED TRIP SAYS SO, IN A SENTENCE. Trip History is one list of
+         everything finished, so the page a row opens has to answer "did this
+         one actually run" before anything else on it is worth reading. The
+         status chip at the top says the word; this says what it means for the
+         money. GUARDRAIL: server/tests/compact-history.test.js */
+      +(WMCompact.isCancelled(j)?'<div style="margin:.7rem 0 .2rem;padding:.55rem .7rem;background:#ffffff;border-left:3px solid var(--westmere-navy, #102a43);border-radius:4px;font-size:.86rem;line-height:1.5;color:#1b1b1a">'
+        +'<b>This journey was cancelled.</b> It did not run, so it counts nothing towards your income.</div>':'')
       +'<table style="width:100%;font-size:.88rem;color:rgba(27,27,26,.7);border-collapse:collapse;margin-bottom:.7rem">'
         +'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4);width:80px">From</td><td>'+escH(j.pickup||'—')+'</td></tr>'
         +(j.stop_address?'<tr><td style="padding:.3rem 0;color:rgba(27,27,26,.4)">Stop</td><td>'+escH(j.stop_address)+'</td></tr>':'')
@@ -4653,7 +4667,11 @@ function tripMonthToggle(key){
 function buildCompleted(){
   var list=document.getElementById('completed-list');
   if(!list)return;
-  var jobs=(COMPLETED_JOBS||[]).slice();
+  /* EVERYTHING FINISHED. A completed trip and a cancelled one are both
+     answers to "what happened to that booking", so they share a list. The
+     cancelled ones are marked on the row (/wm-compact.js) and earn nothing
+     towards the month's takings (/wm-lifecycle.js). */
+  var jobs=(COMPLETED_JOBS||[]).concat(CANCELLED_JOBS||[]);
   if(!jobs.length){
     list.innerHTML='<div class="empty"><div class="empty-title">No trips yet</div><div class="empty-sub">Finished journeys appear here &mdash; tap one to see everything about it</div></div>';
     return;
@@ -4674,7 +4692,11 @@ function buildCompleted(){
     html+='<button type="button" class="tm-head" aria-expanded="'+(open?'true':'false')+'" aria-controls="tm-'+g.key+'" onclick="tripMonthToggle(\''+g.key+'\')">'
       +'<span class="tm-caret'+(open?' on':'')+'" aria-hidden="true">&rsaquo;</span>'
       +'<span class="tm-label">'+escH(g.label)+'</span>'
-      +'<span class="tm-meta">'+g.items.length+(g.items.length===1?' job':' jobs')+' &middot; £'+g.takings.toFixed(0)+'</span>'
+      /* THE MONTH IN THREE FIGURES: what ran, what it took, and — only when
+         there were any — how many were cancelled. A cancelled trip is not a
+         job he did and its fare is not money he has. */
+      +'<span class="tm-meta">'+g.jobs+(g.jobs===1?' job':' jobs')+' &middot; £'+g.takings.toFixed(0)
+        +(g.cancelled?' &middot; '+g.cancelled+' cancelled':'')+'</span>'
       +'</button>'
       +'<div class="tm-body" id="tm-'+g.key+'"'+(open?'':' hidden')+'>'
       /* A SPREADSHEET, NOT A STACK OF CARDS. Five short columns — reference,
@@ -4684,33 +4706,17 @@ function buildCompleted(){
          what method. The owner's rule: less on each page, then click to
          expand. The columns are defined once, in /wm-compact.js, so this and
          the admin app cannot drift. */
-      +WMCompact.historyTable(g.items,'openTripPage',{label:g.label+' — completed trips'})
+      +WMCompact.historyTable(g.items,'openTripPage',{label:g.label+' — finished trips'})
       +'</div>';
   });
   list.innerHTML=html;
-
-  buildCancelled();
 }
 
-// Cancelled bookings — kept on file (a customer cancel sets status='cancelled'
-// but never hard-deletes the row). Listed newest first so the owner can review
-// and DELETE each one himself (the only hard-delete). Hidden entirely when
-// there are none, so it never clutters the Completed page.
-function buildCancelled(){
-  var sec=document.getElementById('cancelled-section');
-  var list=document.getElementById('cancelled-list');
-  if(!sec||!list)return;
-  if(!(CANCELLED_JOBS&&CANCELLED_JOBS.length)){
-    sec.style.display='none';
-    list.innerHTML='';
-    return;
-  }
-  sec.style.display='';
-  return renderJobList(list, CANCELLED_JOBS, {
-    includePersonal:false, order:'desc',
-    emptyTitle:'No cancelled bookings', emptySub:''
-  });
-}
+/* The Cancelled list used to live here, below the completed ones, as a
+   separate section with its own heading. It is gone: a cancelled booking is
+   part of Trip History now, marked as cancelled in the one list, and the hand
+   Delete that was its only reason to be a section of its own is on the trip's
+   own page — where every other thing you can do to a booking already was. */
 
 function upcomingToggle(detailId){
   var el=document.getElementById(detailId);if(!el)return;

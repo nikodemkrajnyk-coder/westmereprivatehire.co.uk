@@ -618,7 +618,6 @@ select:-webkit-autofill:focus{
     <button class="sb-item" onclick="openModal('modal-book')"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>New Booking</button>
     <button class="sb-item" onclick="nav('all-jobs',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span>All Journeys<span class="sb-badge" id="sb-toconfirm-badge" style="display:none"></span></button>
     <button class="sb-item" onclick="nav('history',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>Trip History</button>
-    <button class="sb-item" onclick="nav('cancelled',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></span>Cancelled</button>
     <button class="sb-item" onclick="nav('calendar',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>Calendar</button>
   </div>
 
@@ -776,21 +775,10 @@ select:-webkit-autofill:focus{
     <div class="view" id="view-history">
       <div class="page-hd">
         <div class="page-title">Trip <em>History</em></div>
-        <div class="page-sub">Finished trips by month &mdash; click a row for the full details</div>
+        <div class="page-sub">Every finished journey &mdash; completed and cancelled, by month. Click a row for the full details</div>
       </div>
       <div class="card">
         <div id="adm-history-list"></div>
-      </div>
-    </div>
-
-    <!-- ══ CANCELLED — record only, with a manual Delete (owner parity) ══ -->
-    <div class="view" id="view-cancelled">
-      <div class="page-hd">
-        <div class="page-title">Cancelled <em>Bookings</em></div>
-        <div class="page-sub">Kept as a record — remove one by hand with Delete</div>
-      </div>
-      <div class="card">
-        <div id="adm-cancelled-list"></div>
       </div>
     </div>
 
@@ -3165,9 +3153,17 @@ function admJobRow(b){
 function buildAdmHistory(){
   var list=document.getElementById('adm-history-list');
   if(!list)return;
-  var jobs=(ALL_BOOKINGS||[]).filter(function(b){return WMLifecycle.statusOf(b)==='completed';});
+  /* EVERYTHING FINISHED, IN ONE LIST. A completed trip and a cancelled one are
+     both answers to "what happened to that booking", and they used to live in
+     two tabs you had to guess between. The cancelled ones are marked on the row
+     (/wm-compact.js) and earn nothing towards the month's takings
+     (/wm-lifecycle.js). */
+  var jobs=(ALL_BOOKINGS||[]).filter(function(b){
+    var st=WMLifecycle.statusOf(b);
+    return st==='completed'||st==='cancelled';
+  });
   if(!jobs.length){
-    list.innerHTML='<div style="text-align:center;padding:2rem;color:var(--westmere-ink-soft);font-size:.95rem">No finished trips yet &mdash; they appear here once a job is marked completed</div>';
+    list.innerHTML='<div style="text-align:center;padding:2rem;color:var(--westmere-ink-soft);font-size:.95rem">No finished trips yet &mdash; completed and cancelled journeys both appear here</div>';
     return;
   }
   var html='';
@@ -3177,7 +3173,10 @@ function buildAdmHistory(){
   WMLifecycle.groupByMonth(jobs).forEach(function(g){
     html+='<div style="display:flex;justify-content:space-between;align-items:baseline;gap:.6rem;padding:.7rem 1rem .5rem;background:transparent;border-bottom:1px solid rgba(27,27,26,.18)">'
       +'<span style="font-family:var(--serif);font-size:1.02rem;font-weight:500;color:var(--navy)">'+escTo(g.label)+'</span>'
-      +'<span style="font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--westmere-ink-soft);white-space:nowrap">'+g.items.length+(g.items.length===1?' job':' jobs')+' · £'+g.takings.toFixed(0)+'</span>'
+      /* What ran, what it took, and — only when there were any — how many were
+         cancelled. A cancelled trip is not a job that was done and its fare is
+         not money anybody has. */
+      +'<span style="font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--westmere-ink-soft);white-space:nowrap">'+g.jobs+(g.jobs===1?' job':' jobs')+' · £'+g.takings.toFixed(0)+(g.cancelled?' · '+g.cancelled+' cancelled':'')+'</span>'
       +'</div>';
     /* FIVE SHORT COLUMNS, and the row opens the rest. Same module as the
        owner app (/wm-compact.js), so the two cannot drift: reference, date,
@@ -3233,6 +3232,12 @@ function admTripRender(b){
   if(A.del)acts+='<button class="btn btn-red btn-sm" onclick="admDeleteBooking('+b.id+')">Delete</button>';
 
   body.innerHTML=''
+    /* A CANCELLED TRIP SAYS SO, IN A SENTENCE. Trip History is one list of
+       everything finished, so the page a row opens answers "did this one
+       actually run" before anything else on it is worth reading.
+       GUARDRAIL: server/tests/compact-history.test.js */
+    +(WMCompact.isCancelled(b)?'<div style="margin:0 0 .9rem;padding:.6rem .8rem;background:#ffffff;border-left:3px solid var(--navy);border-radius:4px;font-size:.9rem;line-height:1.5;color:var(--navy)">'
+      +'<b>This journey was cancelled.</b> It did not run, so it counts nothing towards the income.</div>':'')
     // WHAT THE MONEY DID, first and in words. On a finished trip it is the
     // only open question, and a badge does not answer it.
     +'<div style="display:flex;flex-wrap:wrap;gap:.6rem 1.6rem;align-items:baseline;padding:.2rem 0 .9rem">'
@@ -3258,16 +3263,10 @@ async function admUnmarkCompleted(bookingId){
   }catch(e){showToast('Network error');console.error('[admUnmarkCompleted]',e);}
 }
 
-// Cancelled — kept as a record, removed only by an explicit manual Delete.
-function buildAdmCancelled(){
-  var list=document.getElementById('adm-cancelled-list');
-  if(!list)return;
-  var jobs=(ALL_BOOKINGS||[]).filter(function(b){return WMLifecycle.statusOf(b)==='cancelled';})
-    .sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''));});
-  list.innerHTML=jobs.length
-    ? jobs.map(admJobRow).join('')
-    : '<div style="text-align:center;padding:2rem;color:var(--westmere-ink-soft);font-size:.95rem">No cancelled bookings</div>';
-}
+/* The Cancelled view used to be built here, as a list of its own. It is gone:
+   a cancelled booking is part of Trip History now, marked as cancelled in the
+   one list, and the hand Delete that was its only reason to be a view of its
+   own is on the trip's own page with every other action. */
 
 // Hard delete — the same shared route the owner app's Delete uses.
 async function admDeleteBooking(bookingId){
@@ -3537,9 +3536,8 @@ function loadLiveBookings(){
     });
     populateRecordMonths();
 
-    // Keep the weekly Completed ledger and the Cancelled record in step.
+    // Keep the one Trip History ledger in step — it holds both outcomes now.
     if(typeof buildAdmHistory==='function')buildAdmHistory();
-    if(typeof buildAdmCancelled==='function')buildAdmCancelled();
   }).catch(function(e){console.warn('[BOOKINGS]',e);});
 
   // ── Load customers ──
@@ -4726,7 +4724,7 @@ function tick(){const n=new Date();document.getElementById('clock').textContent=
 setInterval(tick,10000);
 
 // ── NAV ──
-const TITLES={dashboard:'Dashboard',today:"Today's Jobs",notifications:'Notifications',inbox:'Inbox','all-jobs':'All Journeys',history:'Trip History',cancelled:'Cancelled Bookings',calendar:'Calendar',customers:'Customers',invoices:'Invoices','time-off':'Time Off',fares:'Fare Editor','record-book':'Record Book',drivers:'Drivers',settings:'Settings',analytics:'Reports & Analytics',spend:'Customer Spend'};
+const TITLES={dashboard:'Dashboard',today:"Today's Jobs",notifications:'Notifications',inbox:'Inbox','all-jobs':'All Journeys',history:'Trip History',calendar:'Calendar',customers:'Customers',invoices:'Invoices','time-off':'Time Off',fares:'Fare Editor','record-book':'Record Book',drivers:'Drivers',settings:'Settings',analytics:'Reports & Analytics',spend:'Customer Spend'};
 
 /* ── CUSTOMER SPEND ─────────────────────────────────────────────────────
    Reads GET /api/customer-spend (staff-only) and paints a ranked table plus a
@@ -4799,7 +4797,6 @@ function nav(id,btn){
   if(id==='time-off'&&typeof loadTimeOff==='function')loadTimeOff();
   if(id==='all-jobs'&&typeof loadFlaggedBookings==='function')loadFlaggedBookings();
   if(id==='history'&&typeof buildAdmHistory==='function')buildAdmHistory();
-  if(id==='cancelled'&&typeof buildAdmCancelled==='function')buildAdmCancelled();
   if(id==='invoices'&&typeof loadInvoiceHistory==='function')loadInvoiceHistory();
   if(id==='settings'&&typeof loadInvoiceSettings==='function'){loadInvoiceSettings();loadAdminDocs();}
   if(id==='today'&&typeof loadFlaggedBookings==='function')loadFlaggedBookings();

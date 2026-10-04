@@ -278,22 +278,31 @@ test('buildCompleted groups jobs by ISO week rather than a flat list', () => {
   assert.strictEqual(weeks[0].takings, 75, "a week's takings is the sum of its fares");
 });
 
-// ── 8. Cancelled bookings view (owner deletes by hand) ───────────────────
+// ── 8. Cancelled bookings stay VISIBLE (owner deletes by hand) ───────────
 // Owner spec: a customer cancel sets status='cancelled' (never a hard-delete),
-// and the owner deletes it himself. So cancelled bookings must be VISIBLE in a
-// dedicated view with a Delete action — and Delete must hard-remove the row.
-console.log('\nCancelled bookings view (owner spec)');
-test('owner app collects cancelled bookings into a Cancelled view', () => {
+// and the owner deletes it himself. So a cancelled booking must still be
+// collected, still be VISIBLE, and still carry a Delete.
+//
+// WHERE it is visible changed on his final call: there is no Cancelled tab any
+// more, and no Completed tab either. There is ONE Trip History holding
+// everything finished, with the cancelled ones marked inside it. The rule this
+// test exists for — nothing is hard-deleted behind his back, and he can always
+// find and remove one himself — is unchanged.
+// See also: server/tests/compact-history.test.js
+console.log('\nCancelled bookings stay visible (owner spec)');
+test('owner app collects cancelled bookings and shows them in Trip History', () => {
   const src = read('westmere-owner.html');
   const flat = src.replace(/\s+/g, ' ');
   assert.ok(/CANCELLED_JOBS=bookings\.filter\(function\(b\)\{return b\.status==='cancelled';\}\)/.test(flat),
     'CANCELLED_JOBS must be filled from status==="cancelled" bookings');
-  assert.ok(/id="cancelled-section"/.test(src) && /id="cancelled-list"/.test(src),
-    'the Cancelled section + list markup must exist');
-  const fn = src.match(/function buildCancelled[\s\S]*?\n\}/);
-  assert.ok(fn, 'buildCancelled not found');
-  assert.ok(/CANCELLED_JOBS/.test(fn[0]) && /cancelled-list/.test(fn[0]),
-    'buildCancelled must render CANCELLED_JOBS into #cancelled-list');
+  const fn = src.match(/function buildCompleted\(\)\{[\s\S]*?\n\}/);
+  assert.ok(fn, 'buildCompleted not found');
+  assert.ok(/COMPLETED_JOBS\|\|\[\]\)\.concat\(CANCELLED_JOBS/.test(fn[0]),
+    'Trip History must hold BOTH outcomes — completed and cancelled in one list');
+  // …and no separate section survives to hide half of them again.
+  assert.ok(!/id="cancelled-section"/.test(src) && !/id="cancelled-list"/.test(src),
+    'the separate Cancelled section must be gone — one list holds everything finished');
+  assert.ok(!/function buildCancelled\b/.test(src), 'buildCancelled must be gone with its section');
 });
 test('a cancelled card shows a Cancelled label and a Delete action (no Edit)', () => {
   const src = read('westmere-owner.html');

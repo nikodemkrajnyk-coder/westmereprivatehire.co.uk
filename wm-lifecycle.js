@@ -437,7 +437,17 @@
         if (dc !== 0) return -dc;
         return String(b.time || '').localeCompare(String(a.time || ''));
       });
-      g.takings = g.items.reduce(function (s, j) { return s + (Number(j.fare) || 0); }, 0);
+      /* A CANCELLED TRIP EARNED NOTHING. Trip History is now ONE list holding
+         everything finished — completed AND cancelled together — so the
+         month's takings have to say which of them was money. Summing every
+         fare in the group would have put the fare of a journey that never
+         happened into the figure at the top of the month.
+         GUARDRAIL: server/tests/compact-history.test.js */
+      g.cancelled = g.items.filter(function (x) { return statusOf(x) === 'cancelled'; }).length;
+      g.jobs = g.items.length - g.cancelled;
+      g.takings = g.items.reduce(function (s, j) {
+        return statusOf(j) === 'cancelled' ? s : s + (Number(j.fare) || 0);
+      }, 0);
       return g;
     });
   }

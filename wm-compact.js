@@ -28,6 +28,18 @@
   // Short, and short on purpose. `num` right-aligns and uses tabular figures;
   // `hide` drops the column on a narrow phone, where five columns of text do
   // not fit however small the type is.
+  /* ONE LIST, TWO OUTCOMES. Trip History holds everything finished — the trips
+     that ran and the ones that were cancelled — because the owner's question is
+     "what happened to that booking", and the answer used to live in whichever
+     of two tabs he guessed right. A cancelled row has to be unmistakable inside
+     the one list, so it carries this column AND reads differently: the route is
+     struck through and the row is quieter (§28 of westmere-theme.css).
+
+     It appears ONLY when the list actually holds a cancelled trip. A month in
+     which nothing was cancelled is not given a column of empty cells to
+     explain. */
+  var STATUS_COLUMN = { key: 'status', label: 'Status', w: '12%' };
+
   var HISTORY_COLUMNS = [
     { key: 'ref',      label: 'Ref',       w: '13%' },
     { key: 'date',     label: 'Date',      w: '11%' },
@@ -45,6 +57,15 @@
     { key: 'fare',     label: 'Fare',      w: '19%', num: true },
     { key: 'paid',     label: 'Paid',      w: '15%' }
   ];
+
+  /* WHICH OUTCOME THIS IS. Reads the same field the lifecycle module reads,
+     and copes with the owner app's own job shape, where the server's status
+     lives on `apiStatus` and `status` is the driver-facing stage. */
+  function isCancelled(j) {
+    if (!j) return false;
+    var st = String(j.apiStatus || j.status || '').toLowerCase();
+    return st === 'cancelled';
+  }
 
   function esc(s) {
     return String(s == null ? '' : s)
@@ -117,9 +138,18 @@
   // What the customer actually handed over, and when. A fare is what we asked
   // for; `paid_at` is what we got. The detail page shows both, because the gap
   // between them is the thing the owner is looking for.
+  /* WHETHER THE MONEY ARRIVED — the SAME test the payment badge makes, so the
+     badge and the sentence under it cannot disagree. A booking only ever reads
+     `card` because a Stripe payment_intent succeeded (CLAUDE.md payment
+     invariant #1), so a card job is paid whether or not an old row happens to
+     carry the stamp. Reading `paid_at` alone put "not paid yet" underneath a
+     "Prepaid ✓" badge on the same screen. */
+  function isPaid(j) {
+    return !!(j && (j.paid_at || payMethod(j) === 'card'));
+  }
   function paidLine(j) {
     if (!j) return 'Not paid';
-    if (j.paid_at) return money(j.fare) + ' paid · ' + payMethodLabel(j);
+    if (isPaid(j)) return money(j.fare) + ' paid · ' + payMethodLabel(j);
     return money(j.fare) + ' — not paid yet · ' + payMethodLabel(j);
   }
 
@@ -130,7 +160,8 @@
       date: shortDate(j.date),
       name: j.name || j.customer_name || j.passenger_name || 'Guest',
       pickup: shortPlace(j.pickup),
-      dropoff: shortPlace(j.destination || j.dest || j.dropoff)
+      dropoff: shortPlace(j.destination || j.dest || j.dropoff),
+      status: isCancelled(j) ? 'Cancelled' : ''
     };
   }
   function driverTripCells(j) {
@@ -175,8 +206,9 @@
          attribute it sits in. One without the other and a quote in an id ends
          the attribute early. */
       var id = esc(JSON.stringify(String(j.id)));
-      return '<tr class="wm-ctab-r" tabindex="0" role="button"'
-        + ' aria-label="' + esc((v.name || '') + ' ' + (v.date || '') + ' ' + (v.ref || '') + ' — open the full details') + '"'
+      return '<tr class="wm-ctab-r' + (isCancelled(j) ? ' is-cancelled' : '') + '" tabindex="0" role="button"'
+        + ' aria-label="' + esc((v.name || '') + ' ' + (v.date || '') + ' ' + (v.ref || '')
+            + (isCancelled(j) ? ' — cancelled' : '') + ' — open the full details') + '"'
         + ' onclick="' + open + '(' + id + ')"'
         + ' onkeydown="if(event.key===&#39;Enter&#39;||event.key===&#39; &#39;){event.preventDefault();' + open + '(' + id + ');}">'
         + cols.map(function (c) {
@@ -195,10 +227,16 @@
      five columns, and which four — and how wide — depends on what the table is
      of: a history is two place names, a driver's trips are two short figures.
      The widths live in §28 of westmere-theme.css, keyed on these. */
+  function historyColumnsFor(items) {
+    var any = (items || []).some(isCancelled);
+    return any ? HISTORY_COLUMNS.concat([STATUS_COLUMN]) : HISTORY_COLUMNS;
+  }
   function historyTable(items, open, opts) {
     var o = {}; for (var k in (opts || {})) o[k] = opts[k];
+    var list = items || [];
     o.kind = 'history';
-    return tableHtml(HISTORY_COLUMNS, items || [], historyCells, open, o);
+    if (list.some(isCancelled)) o.kind = 'history wm-ctab-history-mixed';
+    return tableHtml(historyColumnsFor(list), list, historyCells, open, o);
   }
   function driverTripTable(items, open, opts) {
     var o = {}; for (var k in (opts || {})) o[k] = opts[k];
@@ -208,6 +246,9 @@
 
   return {
     HISTORY_COLUMNS: HISTORY_COLUMNS,
+    STATUS_COLUMN: STATUS_COLUMN,
+    historyColumnsFor: historyColumnsFor,
+    isCancelled: isCancelled,
     DRIVER_TRIP_COLUMNS: DRIVER_TRIP_COLUMNS,
     PAY_LABELS: PAY_LABELS,
     shortDate: shortDate,
@@ -216,6 +257,7 @@
     payMethodLabel: payMethodLabel,
     money: money,
     paidLine: paidLine,
+    isPaid: isPaid,
     historyCells: historyCells,
     driverTripCells: driverTripCells,
     tableHtml: tableHtml,
