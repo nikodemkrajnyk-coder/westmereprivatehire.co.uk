@@ -359,6 +359,73 @@ test('admin keeps a Message Customer action (shared with owner)', () => {
     'both apps must offer Send Message to the customer');
 });
 
+/* ══ THE REDESIGN: ADMIN MATCHES THE OWNER APP ═══════════════════════════
+   The owner asked whether the new colour reached this app. It did not: admin
+   loaded the same token layer and used none of it — no gold anywhere, a
+   five-colour rainbow of card rules that meant nothing, and a `.s-gold` class
+   painting navy, which is the restyle's fingerprint. These assert the parity
+   chunk by chunk so it cannot quietly drift apart again. */
+console.log('\nThe admin app wears the same clothes');
+
+test('the card rules are gold, and the rainbow is gone', () => {
+  const rule = /\.stat::before\{([^}]*)\}/.exec(ADMIN);
+  assert.ok(rule, 'the stat rule is gone');
+  assert.ok(/var\(--westmere-gold\)/.test(rule[1]), 'the rule on a card is not gold: ' + rule[1]);
+  for (const dead of ['#3B82F6', 'var(--purple)']) {
+    assert.ok(!new RegExp('s-(blue|purple)::before\\{background:' + dead.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(ADMIN),
+      'a card still carries ' + dead + ' — five accents across one row of figures say nothing');
+  }
+  /* The name was the intent; the colour was the accident. */
+  assert.ok(!/\.stat\.s-gold::before\{background:var\(--navy\)\}/.test(ADMIN),
+    '.s-gold is painting navy again');
+});
+
+test('gold comes from the token, never typed in', () => {
+  /* The literal in a var() fallback is still a literal, and the design guard
+     counts it as one — which is how this was caught the first time. */
+  assert.ok(!/#C9A227|#8A6A12/.test(ADMIN), 'admin types a gold literal instead of using the token');
+  assert.ok(/var\(--westmere-gold\)/.test(ADMIN) && /var\(--westmere-gold-ink\)/.test(ADMIN),
+    'admin uses no gold at all — the palette has not reached it');
+});
+
+test('the people page has both lists, behind one tab bar', () => {
+  for (const id of ['adm-tab-drivers', 'adm-tab-operators', 'adm-drivers-pane', 'adm-operators-pane']) {
+    assert.ok(ADMIN.includes('id="' + id + '"'), 'admin has no ' + id);
+  }
+  assert.ok(/function admSetPeopleTab/.test(ADMIN), 'the tabs do not switch anything');
+  assert.ok(/class="wm-tab on" id="adm-tab-drivers"/.test(ADMIN),
+    'the tab bar must be the house component, or the gold underline is reinvented');
+  /* The driver counts belong to the drivers half — they went on counting
+     drivers while the owner read a list of firms. */
+  const pane = ADMIN.slice(ADMIN.indexOf('id="adm-drivers-pane"'), ADMIN.indexOf('id="adm-operators-pane"'));
+  assert.ok(/id="drv-active"/.test(pane) && /id="drv-total"/.test(pane),
+    'the driver counts sit outside the drivers pane');
+});
+
+test('the operators list reads the shared endpoint, not a second source', () => {
+  const fn = /async function admLoadOperators\(\)\{[\s\S]*?\n\}/.exec(ADMIN.replace(/\r/g, ''));
+  assert.ok(fn, 'admLoadOperators is missing');
+  assert.ok(/\/api\/operators/.test(fn[0]), 'it does not ask the same endpoint the owner app does');
+  assert.ok(/wm-ring/.test(fn[0]) && /wm-pill/.test(fn[0]),
+    'the row must use the house components so the two apps cannot drift apart');
+});
+
+test('an operator can be added here too, as a flagged customer', () => {
+  assert.ok(/function admCreateOperator/.test(ADMIN), 'admin cannot add an operator');
+  const fn = /async function admCreateOperator\(\)\{[\s\S]*?\n\}/.exec(ADMIN);
+  assert.ok(/is_operator:\s*true/.test(fn[0]), 'it does not flag them');
+  assert.ok(/\/api\/customers/.test(fn[0]),
+    'an operator is a customers row — a second table is the thing this model exists to avoid');
+});
+
+test('a driver added in admin can be given his rate', () => {
+  assert.ok(/id="dm-commission"/.test(ADMIN), 'the driver form never asks for the commission');
+  const save = /commission_pct:\(document\.getElementById\('dm-commission'\)/.test(ADMIN.replace(/\s/g, ''));
+  assert.ok(save, 'the rate is asked for and then not sent');
+  assert.ok(/'dm-commission'/.test(ADMIN.slice(ADMIN.indexOf("'dm-insurance'"))),
+    'it is not cleared with the rest of the form, so it carries into the next driver');
+});
+
 (async () => {
   for (const { name, fn } of queue) {
     try { await fn(); console.log('  ✓ ' + name); passed++; }
