@@ -27,7 +27,7 @@ const { fnBlock } = require('./_source');
 
 const ROOT = path.join(__dirname, '..', '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
-const strip = (c) => c.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1');
+const { stripComments: strip } = require('./_source');
 
 /* The apps load /address-normalize.js before /wm-compact.js, and the short
    place labels come from it. Mirror that here, or this file would be guarding

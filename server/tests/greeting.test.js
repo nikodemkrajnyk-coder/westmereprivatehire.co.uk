@@ -23,6 +23,7 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
+const { stripComments } = require('./_source');
 
 const ROOT = path.join(__dirname, '..', '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -75,7 +76,7 @@ test('an unusable name falls back rather than greeting nobody', () => {
 });
 
 test('every email goes through the ONE helper — no template keeps its own copy', () => {
-  const body = SRC.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const body = stripComments(SRC);
   const strays = [...body.matchAll(/split\(' '\)\[0\]/g)];
   assert.strictEqual(strays.length, 0,
     'a template is back to splitting the name itself — ' + strays.length + ' occurrence(s); ' +

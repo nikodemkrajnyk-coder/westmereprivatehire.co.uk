@@ -26,6 +26,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const assert = require('assert');
+const { stripComments } = require('./_source');
 
 const TMP = path.join(os.tmpdir(), 'wm-invoice-table-' + process.pid + '.db');
 try { fs.unlinkSync(TMP); } catch (_) {}
@@ -687,7 +688,7 @@ test('neither page keeps a second copy of the settlement', () => {
      was not shared, so only one screen was ever fixed. */
   const settlement = /fares\s*-\s*[\w.]*[cC]ommission\s*\+\s*[\w.]*[tT]olls?\s*-\s*[\w.]*[cC]ollected/;
   const commissionOnFares = /[\w.]*fares\s*\*\s*\(\s*rate\s*\/\s*100\s*\)/;
-  const strip = (t) => t.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
+  const strip = (t) => stripComments(t);
   for (const [name, src] of [['owner', OWNER], ['admin', ADMIN]]) {
     const code = strip(src);
     assert.ok(!settlement.test(code),

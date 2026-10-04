@@ -35,6 +35,7 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
+const { stripComments } = require('./_source');
 
 const ROOT = path.join(__dirname, '..', '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -44,7 +45,7 @@ const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
    fails on the explanation. That has now happened five times in this codebase;
    it is stripped at the door here rather than worked around per assertion.
    Newlines are preserved so nothing else shifts. */
-const strip = (css) => css.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '));
+const strip = (css) => stripComments(css, { blank: true });
 const THEME_RAW = read('westmere-theme.css');
 const THEME = strip(THEME_RAW);
 const STYLES = strip(read('styles.css'));

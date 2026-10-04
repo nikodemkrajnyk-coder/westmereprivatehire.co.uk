@@ -13,6 +13,11 @@ const events = require('./events');
    COMMISSION_RATE. GUARDRAIL: server/tests/driver-ledger.test.js */
 const ledger = require('./driver-ledger');
 
+/* The status ladder, the ACTION rules and the pay-week maths the staff apps
+   read — one module, so a week drawn on the server and a week drawn in the
+   browser are the same week. */
+const LC = require('../wm-lifecycle');
+
 /* Invoices live wherever server/invoice-pdf.js says they do — this file used
    to derive its own answer from the database directory, which agreed with the
    other one only on the deploy box. */
@@ -4466,6 +4471,42 @@ router.get('/drivers/balances', (req, res) => {
   res.json({ ok: true, drivers });
 });
 
+/* ── THE MONDAY ROUND, FOR EVERY DRIVER AT ONCE ──────────────────────────
+   One figure per driver: what to transfer to clear him. Declared before
+   /drivers/:id or Express would read "payouts" as an id.
+   GUARDRAIL: server/tests/weekly-payout.test.js */
+router.get('/drivers/payouts', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const week = LC.weekBounds(req.query.week);
+  const db = getDb();
+  const rows = db.prepare(
+    "SELECT id, full_name FROM users WHERE role IN ('driver','owner') AND active = 1 ORDER BY full_name"
+  ).all();
+  const drivers = rows.map((r) => {
+    try {
+      const p = ledger.unpaidUpTo(r.id, week.to, { from: week.from });
+      return { id: r.id, full_name: r.full_name, jobs: p.items.length, total: p.total, carried: p.carried };
+    } catch (e) {
+      console.error('[PAYOUT] failed for driver', r.id, e.message);
+      return { id: r.id, full_name: r.full_name, jobs: null, total: null, error: true };
+    }
+  });
+  const toPay = drivers.filter((d) => Number(d.total) > 0);
+  res.json({
+    ok: true,
+    week: Object.assign({}, week, { label: LC.payWeekLabel(week) }),
+    drivers,
+    /* What the Monday actually costs: drivers he owes, and the sum of it. The
+       ones who owe HIM are not netted into this — that is money to collect,
+       not money to send, and one figure covering both would be a number he
+       cannot transfer. */
+    to_pay: toPay.length,
+    to_pay_total: Math.round(toPay.reduce((t, d) => t + d.total, 0) * 100) / 100
+  });
+});
+
 router.get('/drivers/:id', (req, res) => {
   if (!['admin', 'owner'].includes(req.auth.role)) {
     return res.status(403).json({ error: 'Access denied' });
@@ -4895,6 +4936,112 @@ router.patch('/bookings/:id/driver-settled', (req, res) => {
            (b.ref || id) + ' ' + Number(ledger.balanceDelta(b)).toFixed(2), req.ip);
   } catch (_) {}
   res.json({ ok: true, job: ledger.historyRow(after), balance: ledger.driverBalance(b.driver_id) });
+});
+
+/* ── ONE DRIVER'S PAY WEEK ───────────────────────────────────────────────
+   What he has to transfer, and the jobs it is made of. `week` is any date in
+   the week he is looking at (default: this one, UK wall-clock).
+
+   The batch is everything STILL UNPAID up to the end of that week, not only
+   the jobs dated inside it — a job missed a fortnight ago is money he still
+   owes, and a payout that stepped over it would leave a "paid up" driver with
+   a balance that never reaches zero. The ones from before the week are counted
+   separately so the screen can say so.
+   GUARDRAIL: server/tests/weekly-payout.test.js */
+router.get('/drivers/:id/payout', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid driver ID' });
+  const db = getDb();
+  const driver = db.prepare('SELECT id, full_name, email, phone FROM users WHERE id = ?').get(id);
+  if (!driver) return res.status(404).json({ error: 'Driver not found' });
+  if (req.query.week && !/^\d{4}-\d{2}-\d{2}$/.test(String(req.query.week))) {
+    return res.status(400).json({ error: 'week must be YYYY-MM-DD' });
+  }
+
+  const week = LC.weekBounds(req.query.week);
+  const p = ledger.unpaidUpTo(id, week.to, { from: week.from });
+  res.json({
+    ok: true,
+    driver,
+    week: Object.assign({}, week, { label: LC.payWeekLabel(week) }),
+    items: p.items,
+    job_ids: p.items.map((i) => i.id),
+    /* THE FIGURE HE TYPES INTO HIS BANK. Already net of each job's own
+       commission — a cover job is the whole fare because its commission is
+       zero, and a cash job pulls the other way because he is holding our
+       money. Nothing on the screen adds anything up again. */
+    total: p.total,
+    carried: p.carried,
+    carried_total: p.carriedTotal,
+    /* The whole relationship, so the screen can say when a payout does not
+       clear him — the week's cut-off leaves later jobs out of this one. */
+    balance: ledger.driverBalance(id)
+  });
+});
+
+/* Mark the week paid: one act, one receipt, every job in it ticked.
+   The client sends the job ids it had on screen and the server re-derives the
+   same set — if the two disagree the payout is refused rather than settling a
+   list the owner never saw. A job completed between the screen loading and the
+   button being pressed is exactly that case. */
+router.post('/drivers/:id/payout', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid driver ID' });
+  const db = getDb();
+  const driver = db.prepare('SELECT id, full_name FROM users WHERE id = ?').get(id);
+  if (!driver) return res.status(404).json({ error: 'Driver not found' });
+
+  const body = req.body || {};
+  if (body.week && !/^\d{4}-\d{2}-\d{2}$/.test(String(body.week))) {
+    return res.status(400).json({ error: 'week must be YYYY-MM-DD' });
+  }
+  const week = LC.weekBounds(body.week);
+  const p = ledger.unpaidUpTo(id, week.to, { from: week.from });
+  if (!p.items.length) {
+    return res.status(409).json({ error: 'There is nothing unpaid for that week.' });
+  }
+
+  const sent = Array.isArray(body.job_ids) ? body.job_ids.map((x) => parseInt(x, 10)).filter((x) => !isNaN(x)) : null;
+  if (sent) {
+    const mine = p.items.map((i) => i.id).sort((a, b) => a - b).join(',');
+    if (sent.slice().sort((a, b) => a - b).join(',') !== mine) {
+      return res.status(409).json({
+        error: 'That week has changed since you opened it — reopen the payout and check the total before paying.' });
+    }
+  }
+
+  let out;
+  try {
+    out = ledger.settleBatch(id, p.items.map((i) => i.id), {
+      method: body.method ? String(body.method).slice(0, 60) : 'Bank transfer',
+      note: body.note ? String(body.note).slice(0, 200) : ('Week ' + week.from + ' → ' + week.to),
+      paid_on: body.paid_on && /^\d{4}-\d{2}-\d{2}$/.test(String(body.paid_on)) ? body.paid_on : undefined,
+      created_by: req.auth.id
+    });
+  } catch (e) {
+    console.error('[PAYOUT] batch failed for driver', id, e.message);
+    return res.status(409).json({ error: e.message });
+  }
+
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run(req.auth.type || 'user', req.auth.id, 'driver_week_paid',
+           driver.full_name + ' ' + week.from + '→' + week.to + ' '
+           + Number(out.total).toFixed(2) + ' across ' + out.settled.length + ' job(s)', req.ip);
+  } catch (_) {}
+  console.log('[PAYOUT] ' + driver.full_name + ' week ' + week.from + '→' + week.to
+    + ': £' + Number(out.total).toFixed(2) + ' across ' + out.settled.length + ' job(s), balance now '
+    + Number(out.balance).toFixed(2));
+
+  res.json({ ok: true, week: Object.assign({}, week, { label: LC.payWeekLabel(week) }),
+             settled: out.settled, total: out.total, balance: out.balance,
+             settlement_id: out.receipt && out.receipt.id });
 });
 
 /** Record a payment to a driver (or cash he hands back). Body: { amount, method, note, paid_on }. */

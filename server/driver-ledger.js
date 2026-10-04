@@ -311,7 +311,13 @@ function driverSettlements(driverId, opts) {
 function recordSettlement(driverId, amount, opts) {
   const o = opts || {};
   const amt = Math.round(Number(amount) * 100) / 100;
-  if (!isFinite(amt) || amt === 0) throw new Error('A settlement needs a non-zero amount');
+  /* A PAYMENT of nothing is a mistake; a BATCH that nets to nothing is not.
+     A week of one prepaid job and one cash job of the same commission squares
+     itself — no transfer leaves the bank, and the jobs still have to be marked
+     paid and the act still has to be undoable. Only the batch passes
+     allowZero, and it always carries the jobs it settled. */
+  if (!isFinite(amt)) throw new Error('A settlement needs an amount');
+  if (amt === 0 && !o.allowZero) throw new Error('A settlement needs a non-zero amount');
   const db = getDb();
   const paidOn = o.paid_on || new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/London' });
   const info = db.prepare(
@@ -430,8 +436,101 @@ function unapplyPayment(receipt, driverId) {
   return reopened;
 }
 
+/* ── THE WEEKLY PAYOUT ─────────────────────────────────────────────────────
+   The owner pays his drivers by bank transfer, usually on a Monday. Through
+   the week the jobs pile up unpaid; on Monday he wants ONE figure per driver,
+   makes one transfer by hand, and ticks the lot off in one action.
+   
+   WHAT GOES IN THE BATCH is everything still unpaid up to the end of the
+   chosen week — not only the jobs dated inside it. A job missed a fortnight
+   ago is money he still owes, and a payout that left it behind would be a
+   "paid up" driver with a balance that never reaches zero. Anything older than
+   the week is counted separately so the screen can say so.
+   
+   THE TOTAL IS NOT TYPED. It is the sum of what each job is still worth —
+   outstandingOn — which is already net of that job's own commission: a cover
+   job pays the whole fare because its commission is zero, and a cash job pulls
+   the other way because the driver is holding our money. One transfer settles
+   both directions, which is exactly what the owner does at the bank.
+   GUARDRAIL: server/tests/weekly-payout.test.js */
+
+/** Every unpaid job for this driver up to (and including) `to`, oldest first. */
+function unpaidUpTo(driverId, to, opts) {
+  const o = opts || {};
+  const db = getDb();
+  const params = [driverId];
+  let where = "driver_id = ? AND passed_at IS NOT NULL AND COALESCE(status,'') <> 'cancelled'";
+  if (to) { where += ' AND date <= ?'; params.push(to); }
+  const rows = db.prepare(`SELECT * FROM bookings WHERE ${where} ORDER BY date, time, id`).all(...params);
+
+  const items = [];
+  let total = 0, carried = 0, carriedTotal = 0;
+  for (const b of rows) {
+    const left = outstandingOn(b);
+    if (left === 0) continue;                 // already settled, in full
+    const row = historyRow(b);
+    row.outstanding = left;
+    /* FROM BEFORE THIS WEEK. Not a different kind of money — it is in the
+       total like everything else — but the screen owes him the fact that this
+       payout is clearing more than the week he is looking at. */
+    row.carried = !!(o.from && String(b.date || '') < o.from);
+    if (row.carried) { carried++; carriedTotal = Math.round((carriedTotal + left) * 100) / 100; }
+    total = Math.round((total + left) * 100) / 100;
+    items.push(row);
+  }
+  return { items, total, carried, carriedTotal };
+}
+
+/**
+ * Mark a batch of jobs paid in one act, and keep ONE receipt for the lot.
+ *
+ * The amount is never passed in: each job is settled for exactly what it was
+ * still worth, and the receipt's total is their sum. That is what keeps the
+ * batch and the per-job ticks the same fact rather than two — mark a week
+ * paid and every one of its jobs reads "Paid", because that is literally what
+ * happened to them.
+ *
+ * Undo is the existing unapplyPayment: the receipt lists the amount that
+ * landed on each job, so taking the week back puts exactly those jobs back
+ * where they were and leaves any other payment on them alone.
+ */
+function settleBatch(driverId, jobIds, opts) {
+  const o = opts || {};
+  const ids = (jobIds || []).map((x) => parseInt(x, 10)).filter((x) => !isNaN(x));
+  if (!ids.length) throw new Error('A payout needs at least one job');
+  const db = getDb();
+  const get = db.prepare(
+    `SELECT * FROM bookings WHERE id = ? AND driver_id = ?
+       AND passed_at IS NOT NULL AND COALESCE(status,'') <> 'cancelled'`);
+  const stamp = db.prepare("UPDATE bookings SET driver_settled = ?, updated_at = datetime('now') WHERE id = ?");
+
+  const settled = [];
+  let total = 0;
+  const run = db.transaction(() => {
+    for (const id of ids) {
+      const b = get.get(id, driverId);
+      if (!b) throw new Error('Job ' + id + ' is not one of this driver\'s jobs');
+      const left = outstandingOn(b);
+      if (left === 0) throw new Error('Job ' + (b.ref || id) + ' has already been paid');
+      stamp.run(Math.round((settledOn(b) + left) * 100) / 100, id);
+      settled.push({ id: b.id, ref: b.ref, amount: left });
+      total = Math.round((total + left) * 100) / 100;
+    }
+  });
+  run();
+
+  const receipt = recordSettlement(driverId, total, Object.assign({}, o, {
+    allowZero: true,
+    note: o.note || null,
+    applied: { jobs: settled.map((j) => ({ id: j.id, amount: j.amount })), unapplied: 0, batch: true }
+  }));
+  return { settled, total, receipt, balance: driverBalance(driverId) };
+}
+
 module.exports = {
   ADMIN_FEE_PCT,
+  unpaidUpTo,
+  settleBatch,
   unapplyPayment,
   settledOn,
   outstandingOn,

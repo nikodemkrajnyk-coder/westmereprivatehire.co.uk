@@ -31,7 +31,7 @@ const assert = require('assert');
 
 const ROOT = path.join(__dirname, '..', '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
-const strip = (c) => c.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1');
+const { stripComments: strip } = require('./_source');
 
 let passed = 0, failed = 0;
 const queue = [];

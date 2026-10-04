@@ -56,7 +56,7 @@ const APPS = [['westmere-owner.html', 'the owner app'], ['westmere-admin.html', 
 const app = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
 /* Comments are prose, not behaviour: a guard that finds the thing it forbids
    inside the comment explaining why it is forbidden has proved nothing. */
-const strip = (c) => c.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1');
+const { stripComments: strip } = require('./_source');
 /* One shipped function, bounded at its own closing brace in column 0 — the way
    the rest of the suite reads a handler out of an app. */
 function fnBody(code, name) {

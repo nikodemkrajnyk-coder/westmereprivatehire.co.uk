@@ -62,4 +62,37 @@ function fnBlock(src, name) {
   return src.slice(start, src.indexOf('{', start)) + '{' + braceBody(src, start) + '}';
 }
 
-module.exports = { regionFrom, routeBlock, braceBody, fnBlock };
+/**
+ * STRIP COMMENTS — without eating the file.
+ *
+ * Guards read the shipped source and must not match their own explanatory
+ * comments, so they strip them first. Every one of them did it with
+ *
+ *     src.replace(/\/\*[\s\S]*?\*\//g, ' ')
+ *
+ * and in an HTML file that is not safe. `accept="image/*"` opens a block
+ * comment that nothing closes until the next real `*​/` a hundred kilobytes
+ * later — westmere-admin.html lost 102KB of its own markup that way, so every
+ * assertion over that region was passing on text that was not there. A guard
+ * that cannot fail is worse than no guard: it reports green for ever.
+ *
+ * A real block comment's `/*` is preceded by whitespace, a line start, or one
+ * of `{;(,:>`. A `/*` inside a token — `image/*`, a URL, a regex — is not, so
+ * it is left alone. Line comments keep the existing `[^:]` rule, which is what
+ * stops `https://` being read as one.
+ *
+ * GUARDRAIL: server/tests/guard-hygiene.test.js
+ */
+function stripComments(src, opts) {
+  const o = opts || {};
+  /* `blank` keeps the line structure — a guard that reports a line number, or
+     one that asserts on a region bounded by line counts, needs the comment
+     replaced by its own width in spaces rather than collapsed away. */
+  const gone = (m, lead) => lead + (o.blank ? m.slice(lead.length).replace(/[^\n]/g, ' ') : ' ');
+  let out = String(src == null ? '' : src)
+    .replace(/(^|[\s{;(,:>])\/\*[\s\S]*?\*\//g, (m, lead) => gone(m, lead));
+  if (o.html) out = out.replace(/<!--[\s\S]*?-->/g, (m) => (o.blank ? m.replace(/[^\n]/g, ' ') : ' '));
+  return out.replace(/(^|[^:])\/\/.*$/gm, '$1');
+}
+
+module.exports = { regionFrom, routeBlock, braceBody, fnBlock, stripComments };

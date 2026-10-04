@@ -1236,6 +1236,10 @@ select:-webkit-autofill:focus{
           <div class="stat"><div class="sv">0</div><div class="sl">On a Job</div><div class="ss">Right now</div></div>
           <div class="stat"><div class="sv" id="drv-total">0</div><div class="sl">Total Drivers</div><div class="ss">On the roster</div></div>
         </div>
+        <!-- MONDAY, AT A GLANCE — what the whole round costs this week, from
+             /api/drivers/payouts (server/driver-ledger.js). Owner parity.
+             GUARDRAIL: server/tests/weekly-payout.test.js -->
+        <div id="adm-week-round" style="display:none;margin-top:1rem;padding:.8rem 1rem;border:1px solid var(--westmere-line,#dfe5ea);border-radius:6px;background:#fff;color-scheme:only light"></div>
         <div class="card" style="margin-top:1rem">
           <div class="ch">
             <div class="ct">Driver Roster</div>
@@ -1582,6 +1586,14 @@ select:-webkit-autofill:focus{
           <div style="font-size:.8rem;letter-spacing:.18em;text-transform:uppercase;color:var(--navy);font-weight:600" id="dm-bal-label">Balance</div>
           <div style="font-family:var(--serif);font-size:1.5rem;color:var(--navy)" id="dm-bal-figure">—</div>
         </div>
+        <!-- ── THE MONDAY TRANSFER ───────────────────────────────────────
+             The owner pays his drivers by hand, usually on a Monday: one
+             figure, one bank transfer, one button to tick the week off. The
+             figure is the sum of what the unpaid jobs are worth, already net of
+             each job's own commission, and it comes from
+             /api/drivers/:id/payout — nothing is added up in the browser.
+             GUARDRAIL: server/tests/weekly-payout.test.js -->
+        <div id="dm-payout" style="margin:0 0 .9rem;padding:.8rem .9rem;border:1px solid var(--westmere-line,#dfe5ea);border-radius:6px;background:#fff;color-scheme:only light"></div>
         <div id="dm-bal-list" style="max-height:200px;overflow-y:auto;border-top:1px solid rgba(27,27,26,.08);padding-top:.6rem;font-size:.86rem"></div>
         <div style="display:flex;gap:.5rem;margin-top:.8rem;flex-wrap:wrap;align-items:center">
           <input id="dm-settle-amt" type="number" step="0.01" placeholder="Amount paid" style="width:130px;padding:.4rem .6rem;font-family:inherit;font-size:.86rem;border:1px solid rgba(27,27,26,.2);border-radius:5px">
@@ -4114,7 +4126,90 @@ async function dmLoadLedger(){
       list.insertAdjacentHTML('beforeend','<div style="font-size:.78rem;color:var(--westmere-ink-soft);line-height:1.5;margin-top:.5rem">Click a trip for the full details &mdash; the commission, the payment method, and whether you have paid him for it.</div>');
     }
     admDrvTripRefresh();
+    dmPayoutLoad();
   }catch(e){list.innerHTML='<div style="color:#9C2828;padding:.4rem 0">Network error</div>';}
+}
+
+/* ── THE WEEKLY PAYOUT ──────────────────────────────────────────────────────
+   The admin counterpart of the owner app's payout block, on the same route and
+   the same rules: the jobs that have piled up unpaid, the one figure to
+   transfer, and one button that ticks them all off once the transfer is made.
+   Marking the week paid IS the per-job tick applied to a known set of jobs —
+   not a second record of the same money — with one receipt kept beside them so
+   the act can be taken back whole.
+   GUARDRAIL: server/tests/weekly-payout.test.js */
+var ADM_DRV_WEEK=null;
+var ADM_DRV_PAYOUT=null;
+async function dmPayoutLoad(){
+  var box=document.getElementById('dm-payout');
+  if(!box||!DRIVER_EDIT_ID)return;
+  try{
+    var r=await fetch('/api/drivers/'+DRIVER_EDIT_ID+'/payout'+(ADM_DRV_WEEK?'?week='+ADM_DRV_WEEK:''),{credentials:'include'});
+    var d=await r.json();
+    if(!r.ok||!d.ok)throw new Error(d.error||'Could not load the week');
+    ADM_DRV_PAYOUT=d;
+    box.innerHTML=dmPayoutHtml(d);
+  }catch(e){
+    box.innerHTML='<div style="font-size:.84rem;color:#9C2828">'+escTo(e.message||'Network error')+'</div>';
+  }
+}
+function dmPayoutWeek(delta){
+  var w=(ADM_DRV_PAYOUT&&ADM_DRV_PAYOUT.week)?ADM_DRV_PAYOUT.week.from:null;
+  ADM_DRV_WEEK=delta===0?null:WMLifecycle.weekShift(w,delta).from;
+  dmPayoutLoad();
+}
+function dmPayoutHtml(d){
+  var owed=Number(d.total)>=0;
+  var n=(d.items||[]).length;
+  var nav=function(delta,label,title){
+    return '<span onclick="dmPayoutWeek('+delta+')" class="wm-seg" style="padding:.32rem .6rem;font-size:.7rem;cursor:pointer" title="'+title+'">'+label+'</span>';
+  };
+  return ''
+    +'<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.7rem">'
+      +nav(-1,'&lsaquo;','The week before')
+      +'<div style="flex:1;min-width:0;text-align:center;font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escTo(d.week.label)+'</div>'
+      +nav(1,'&rsaquo;','The week after')
+      +(ADM_DRV_WEEK?nav(0,'This week','Back to the current week'):'')
+    +'</div>'
+    /* THE FIGURE HE TYPES INTO THE BANK. */
+    +'<div style="display:flex;align-items:baseline;gap:.6rem">'
+      +'<div class="wm-lab" style="margin:0;flex:1">'+(owed?'To transfer':'He owes you')+'</div>'
+      +'<div style="font-family:var(--serif);font-size:1.5rem;color:'+(owed?'var(--navy)':'#9C2828')+'">'+dmMoney(Math.abs(d.total))+'</div>'
+    +'</div>'
+    +'<div style="font-size:.78rem;color:var(--westmere-ink-soft);margin-top:.35rem;line-height:1.5">'
+      +(n?n+' unpaid job'+(n===1?'':'s')+', net of commission on each':'Nothing unpaid in this week')
+      +(d.carried?'. Includes '+d.carried+' from earlier weeks ('+dmMoney(Math.abs(d.carried_total))+')':'')
+      +'.</div>'
+    +(Math.abs(Number(d.balance)-Number(d.total))>0.005
+        ?'<div class="wm-lab wm-owing" style="margin:.45rem 0 0">His whole balance is '+dmMoney(Math.abs(d.balance))+' &mdash; the rest is dated after this week</div>':'')
+    +(n?'<div style="margin:.7rem -.9rem 0">'+WMCompact.payoutTable(d.items,'admDrvTripOpen',{label:'Unpaid jobs in this payout'})+'</div>':'')
+    /* THE BUTTON IS THE LAST STEP: transfer the money, then tell the system. */
+    +(n?'<div style="margin-top:.8rem">'
+        +'<button type="button" class="btn btn-navy btn-sm" onclick="dmPayoutSettle()" style="width:100%;padding:.6rem">Mark week as paid &middot; '+dmMoney(Math.abs(d.total))+'</button>'
+        +'<div style="font-size:.76rem;color:var(--westmere-ink-soft);line-height:1.5;margin-top:.5rem">Make the bank transfer first, then press this. It ticks all '+n+' job'+(n===1?'':'s')+' off at once &mdash; the same as marking each one paid &mdash; and it can be undone from the list below.</div>'
+      +'</div>':'');
+}
+async function dmPayoutSettle(){
+  var d=ADM_DRV_PAYOUT;
+  if(!d||!(d.items||[]).length)return;
+  var owed=Number(d.total)>=0;
+  var msg=owed
+    ?'Mark this week as paid? It ticks off '+d.items.length+' job'+(d.items.length===1?'':'s')+' and assumes '+dmMoney(d.total)+' has been transferred.'
+    :'Settle this week? He owes you '+dmMoney(Math.abs(d.total))+', so nothing leaves the account.';
+  if(!await WMAsk.confirm(msg,{ok:'Mark as paid',cancel:'Not yet'}))return;
+  try{
+    var r=await fetch('/api/drivers/'+DRIVER_EDIT_ID+'/payout',{method:'POST',credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      /* The ids on screen travel with the request: a job that landed since the
+         panel loaded makes the server refuse rather than settle a list nobody
+         read. */
+      body:JSON.stringify({week:d.week.from,job_ids:d.job_ids,method:'Bank transfer'})});
+    var out=await r.json();
+    if(r.ok&&out.ok){
+      showToast('Week marked paid \u2014 '+dmMoney(Math.abs(out.total))+' across '+out.settled.length+' job'+(out.settled.length===1?'':'s'));
+      dmLoadLedger();
+    }else showToast(out.error||('Failed ('+r.status+')'));
+  }catch(e){showToast('Network error');console.error('[dmPayoutSettle]',e);}
 }
 
 /* ── ONE OF HIS TRIPS, IN FULL ─────────────────────────────────────────────
@@ -4668,9 +4763,30 @@ async function admLoadOperators(){
           +'An operator is a firm you pass work to and settle by invoice. Add one above, or tick &ldquo;they are an operator&rdquo; on a customer you already have.</div></div>');
 }
 
+/* THE MONDAY ROUND — the admin counterpart of the owner app's line above the
+   roster, on the same route and the same figures. */
+async function admWeekRound(){
+  var box=document.getElementById('adm-week-round');
+  if(!box)return;
+  try{
+    var r=await fetch('/api/drivers/payouts',{credentials:'include'});
+    var d=await r.json();
+    if(!r.ok||!d.ok)throw new Error(d.error||'');
+    if(!d.to_pay){box.style.display='none';return;}
+    box.style.display='';
+    box.innerHTML='<div style="display:flex;align-items:baseline;gap:.6rem">'
+      +'<div class="wm-lab" style="margin:0;flex:1">To pay this week</div>'
+      +'<div style="font-family:var(--serif);font-size:1.35rem;color:var(--navy)">'+dmMoney(d.to_pay_total)+'</div></div>'
+      +'<div style="font-size:.78rem;color:var(--westmere-ink-soft);margin-top:.3rem;line-height:1.5">'
+      +'Across '+d.to_pay+' driver'+(d.to_pay===1?'':'s')+' \u00b7 '+escTo(d.week.label)
+      +'. Open a driver to see the jobs and mark the week paid.</div>';
+  }catch(e){ box.style.display='none'; }
+}
+
 function buildDrivers(){
   var grid=document.getElementById('driver-grid');
   if(!grid)return;
+  admWeekRound();
   if(!DRIVERS.length){
     grid.innerHTML='<div style="grid-column:1/-1;padding:2rem;text-align:center;font-size:.92rem;color:var(--text-light)">No drivers added yet. Click "+ Add Driver" to start.</div>';
     return;

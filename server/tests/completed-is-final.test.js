@@ -49,7 +49,7 @@ const ledger = require('../driver-ledger');
 
 const ROOT = path.join(__dirname, '..', '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
-const strip = (c) => c.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1');
+const { stripComments: strip } = require('./_source');
 
 function res() {
   return { statusCode: 200, body: null,

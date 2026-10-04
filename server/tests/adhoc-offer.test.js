@@ -41,6 +41,7 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
+const { stripComments } = require('./_source');
 
 const ROOT = path.join(__dirname, '..', '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -435,7 +436,7 @@ test('a job can be sent to somebody who is not on the system', () => {
      someone who has no account, that the address is checked before it goes, and
      that he sees what is about to leave the building. The form does all three.
      GUARDRAIL for the form itself: server/tests/driver-dispatch.test.js */
-  const s = OWNER.replace(/\/\*[\s\S]*?\*\//g, ' ');
+  const s = stripComments(OWNER);
   assert.ok(/— someone new —/.test(s) || /someone new/i.test(s),
     'there is no way to send a job to somebody who is not a saved driver');
   const open = s.slice(s.indexOf('function dispOpen'), s.indexOf('function dispReview'));
@@ -450,7 +451,7 @@ test('a job can be sent to somebody who is not on the system', () => {
 });
 
 test('the form asks for the CAR as well — the customer has to find it', () => {
-  const s = OWNER.replace(/\/\*[\s\S]*?\*\//g, ' ');
+  const s = stripComments(OWNER);
   const open = s.slice(s.indexOf('function dispOpen'), s.indexOf('function dispReview'));
   assert.ok(open.indexOf('disp-reg') !== -1, 'the registration is not asked for');
   assert.ok(open.indexOf('disp-car') !== -1, 'nor the make and model');
@@ -615,7 +616,7 @@ test('a REGISTERED accept overrides the default too', () => {
 });
 
 test('the BUTTON shows on a job the default driver holds, and hides once a real one does', () => {
-  const fn = /function jobCardHtml\(j\)\{[\s\S]*?\n\}/.exec(OWNER)[0].replace(/\/\*[\s\S]*?\*\//g, '');
+  const fn = /function jobCardHtml\(j\)\{[\s\S]*?\n\}/.exec(stripComments(OWNER))[0];
   assert.ok(/dispHeldByOther\s*=\s*\(!!j\.driverId&&!j\.driverIsDefault\)\|\|!!j\.assignedToName/.test(fn),
     'held-by-somebody-else is the test, not has-a-driver');
   assert.ok(/dispCanOffer=\(j\.apiStatus==='confirmed'\|\|j\.apiStatus==='active'\)&&!dispHeldByOther/.test(fn),
@@ -636,7 +637,7 @@ test('the flag reaches the card from the API, not guessed from a name', () => {
 });
 
 test('the card stops announcing the default driver on every job', () => {
-  const fn = /function dispStateRow\(j\)\{[\s\S]*?\n\}/.exec(OWNER)[0].replace(/\/\*[\s\S]*?\*\//g, '');
+  const fn = /function dispStateRow\(j\)\{[\s\S]*?\n\}/.exec(stripComments(OWNER))[0];
   assert.ok(/j\.driverIsDefault&&!j\.assignedToName\)return ''/.test(fn),
     '"Nikodem · accepted" on all of them buries the ones somebody else took');
 });

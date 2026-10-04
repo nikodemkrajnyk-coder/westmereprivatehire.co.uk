@@ -116,6 +116,55 @@ test('the cross-cutting guards enumerate their surfaces, and miss none', () => {
     'a system-wide rule is pinned to a hand-written list of screens:\n      ' + offenders.join('\n      '));
 });
 
+// ── STRIPPING COMMENTS MUST NOT EAT THE FILE ─────────────────────────────
+// A guard reads the shipped source and strips the comments so it does not
+// match its own explanation. Every one of them used the same blunt regex, and
+// in an HTML file it is not safe: `accept="image/*"` opens a block comment
+// that nothing closes for a hundred kilobytes. westmere-admin.html lost 102KB
+// of its own markup that way — so every absence-assertion over that region was
+// passing on text that was not in the string at all. A guard that cannot fail
+// is worse than no guard.
+test('the shared comment stripper leaves the markup it is handed', () => {
+  const { stripComments } = require('./_source');
+  // It still does its job…
+  assert.ok(!stripComments('a; /* gone */ b;').includes('gone'), 'a real block comment must go');
+  assert.ok(!stripComments('var a=1; // gone\nvar b=2;').includes('gone'), 'a real line comment must go');
+  assert.ok(stripComments('var u = "https://x.co/y";').includes('x.co/y'), 'a URL is not a comment');
+  // …without opening one inside a token.
+  assert.ok(stripComments('<input accept="image/*"><div id="after"></div>').includes('id="after"'),
+    'accept="image/*" must not swallow the rest of the file');
+  // And on the real files, where this actually bit.
+  for (const f of ['westmere-admin.html', 'westmere-owner.html', 'book.html']) {
+    const raw = read(f);
+    const out = stripComments(raw);
+    const tags = (s) => (s.match(/<div\b/g) || []).length;
+    assert.ok(tags(out) >= tags(raw) * 0.9,
+      f + ': stripping comments removed ' + (tags(raw) - tags(out)) + ' of ' + tags(raw)
+      + ' <div> tags — the stripper is eating markup, and every guard over it is blind');
+  }
+});
+
+test('no guard strips an HTML app with a regex of its own', () => {
+  /* Where it bites is an APP source: `accept="image/*"` opens a block comment
+     that the blunt regex closes a hundred kilobytes later, and every assertion
+     over that stretch is then reading a string the markup is not in. A guard
+     that cannot fail reports green for ever.
+     
+     Stripping a snippet, a stylesheet or an extracted function body by hand is
+     harmless and left alone — this pins the case that was actually broken. */
+  const BLUNT = /replace\(\/\\\/\\\*\[\\s\\S\]\*\?\\\*\\\//;
+  const APP = /read\('[^']*\.html'\)|\b(OWNER|ADMIN|RIDER|APP|SRC)\b/;
+  const offenders = [];
+  for (const f of TESTS) {
+    read(path.join('server/tests', f)).split('\n').forEach((line, i) => {
+      if (BLUNT.test(line) && APP.test(line)) offenders.push(f + ':' + (i + 1));
+    });
+  }
+  assert.deepStrictEqual(offenders, [],
+    'these strip a whole app source by hand instead of _source.stripComments:\n      '
+      + offenders.join('\n      '));
+});
+
 test('this guardrail is wired into npm test', () => {
   assert.ok(/guard-hygiene\.test\.js/.test(read('package.json')));
 });

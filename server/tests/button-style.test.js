@@ -35,6 +35,7 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
+const { stripComments } = require('./_source');
 
 const ROOT = path.join(__dirname, '..', '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -610,8 +611,8 @@ test('no header or footer anywhere carries a solid fill', () => {
      a rule whose comment merely mentions the topbar is read as a topbar rule.
      A modal scrim explaining why it sits under the topbar was reported as a
      filled header. The same fix is in no-fills.test.js, for the same reason. */
-  const strip = (t) => t.replace(/\/\*[\s\S]*?\*\//g,
-    (c) => c.replace(/[^\n]/g, ' '));
+  // Blanked, not collapsed: this guard reports the line a bad colour is on.
+  const strip = (t) => stripComments(t, { blank: true });
   for (const f of files) {
     const src = strip(read(f));
     const lineAt = (idx) => src.slice(0, idx).split('\n').length;

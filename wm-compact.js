@@ -67,6 +67,20 @@
     return st === 'cancelled';
   }
 
+  /* ── THE WEEKLY PAYOUT LIST ──────────────────────────────────────────────
+     What the owner is looking at on a Monday with his banking app open: the
+     jobs that have piled up unpaid, and what each one puts into the transfer.
+     "To him" is the job's own net — the whole fare on a cover job, the fare
+     less the rate on a commission one, and NEGATIVE on a cash job, where the
+     driver is holding our money and the commission comes off the transfer. */
+  var PAYOUT_COLUMNS = [
+    { key: 'ref',    label: 'Ref',       w: '17%' },
+    { key: 'date',   label: 'Date',      w: '14%' },
+    { key: 'name',   label: 'Passenger', w: '29%' },
+    { key: 'fare',   label: 'Fare',      w: '18%', num: true },
+    { key: 'net',    label: 'To him',    w: '22%', num: true }
+  ];
+
   function esc(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -164,6 +178,20 @@
       status: isCancelled(j) ? 'Cancelled' : ''
     };
   }
+  function payoutCells(j) {
+    var net = Number(j.outstanding);
+    if (!isFinite(net)) net = Number(j.delta) || 0;
+    return {
+      ref: j.ref || '—',
+      date: shortDate(j.date),
+      name: j.name || j.customer_name || j.passenger_name || 'Guest',
+      fare: money(j.fare),
+      /* The sign is the whole story on a cash job, so it is printed rather
+         than left to be inferred from a column heading. */
+      net: (net < 0 ? '\u2212' : '') + money(Math.abs(net))
+    };
+  }
+
   function driverTripCells(j) {
     return {
       ref: j.ref || '—',
@@ -238,6 +266,11 @@
     if (list.some(isCancelled)) o.kind = 'history wm-ctab-history-mixed';
     return tableHtml(historyColumnsFor(list), list, historyCells, open, o);
   }
+  function payoutTable(items, open, opts) {
+    var o = {}; for (var k in (opts || {})) o[k] = opts[k];
+    o.kind = 'trips';
+    return tableHtml(PAYOUT_COLUMNS, items || [], payoutCells, open, o);
+  }
   function driverTripTable(items, open, opts) {
     var o = {}; for (var k in (opts || {})) o[k] = opts[k];
     o.kind = 'trips';
@@ -250,6 +283,9 @@
     historyColumnsFor: historyColumnsFor,
     isCancelled: isCancelled,
     DRIVER_TRIP_COLUMNS: DRIVER_TRIP_COLUMNS,
+    PAYOUT_COLUMNS: PAYOUT_COLUMNS,
+    payoutCells: payoutCells,
+    payoutTable: payoutTable,
     PAY_LABELS: PAY_LABELS,
     shortDate: shortDate,
     shortPlace: shortPlace,

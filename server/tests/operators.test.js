@@ -24,6 +24,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const assert = require('assert');
+const { stripComments } = require('./_source');
 
 const TMP = path.join(os.tmpdir(), 'wm-op-' + process.pid + '.db');
 try { fs.unlinkSync(TMP); } catch (_) {}
@@ -44,8 +45,7 @@ const { getDb } = require('../db');
 const db = getDb();
 const ROOT = path.join(__dirname, '..', '..');
 const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
-const strip = (c) => c.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/<!--[\s\S]*?-->/g, ' ')
-                      .replace(/(^|[^:])\/\/.*$/gm, '$1');
+const strip = (c) => stripComments(c, { html: true });
 
 function app(role) {
   const a = express();

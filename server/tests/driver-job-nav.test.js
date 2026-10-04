@@ -26,6 +26,7 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
+const { stripComments } = require('./_source');
 const Module = require('module');
 
 const ROOT = path.join(__dirname, '..', '..');
@@ -210,7 +211,7 @@ test('the greeting helper is not left behind unused', () => {
   /* `first` was only ever used by the sentence that has gone. An orphan that
      computes a driver's name and throws it away is the kind of thing that gets
      re-wired to something later. */
-  const code = SRC.replace(/\/\*[\s\S]*?\*\//g, '');
+  const code = stripComments(SRC);
   for (const [fn, next] of [['sendAdhocJobOffer', 'sendDriverJobOffer'],
                             ['sendDriverJobOffer', 'sendDriverMessage']]) {
     const blk = code.slice(code.indexOf('async function ' + fn), code.indexOf('async function ' + next));
@@ -238,7 +239,7 @@ test('accept and decline are still there, still tokenised', async () => {
 });
 
 test('the helpers are shared, not copied into each email', () => {
-  const code = SRC.replace(/\/\*[\s\S]*?\*\//g, '');
+  const code = stripComments(SRC);
   assert.strictEqual((code.match(/function wazeUrl\(/g) || []).length, 1, 'one wazeUrl');
   assert.strictEqual((code.match(/function icsForJob\(/g) || []).length, 1, 'one icsForJob');
   assert.strictEqual((code.match(/function navAddrRow\(/g) || []).length, 1, 'one navAddrRow');

@@ -362,6 +362,54 @@
     return x;
   }
 
+  /* ── THE PAY WEEK, AS WALL-CLOCK DATES ──────────────────────────────────
+     Monday to Sunday, in and out as literal YYYY-MM-DD. Every other week
+     helper here builds a local Date from a y/m/d triple, which is fine for
+     grouping a list in a browser; this one draws the line a batch of money is
+     settled on, and that line must be the same on the owner's phone, on the
+     admin desktop and on a Railway box running UTC.
+
+     So it is UTC arithmetic on the components and never a parsed instant —
+     the timezone invariant in CLAUDE.md. `new Date('2026-08-16')` read back
+     locally is Saturday the 15th west of UTC, and a pay week off by a day puts
+     a job in the wrong transfer.
+     GUARDRAIL: server/tests/weekly-payout.test.js */
+  function weekBounds(ymd) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(ymd || ''));
+    var t;
+    if (m) t = Date.UTC(+m[1], +m[2] - 1, +m[3]);
+    else {
+      // No date given: this week, by UK wall-clock today.
+      var today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/London' }).split('-');
+      t = Date.UTC(+today[0], +today[1] - 1, +today[2]);
+    }
+    var dow = (new Date(t).getUTCDay() + 6) % 7;          // Monday = 0
+    var from = t - dow * 86400000;
+    var to = from + 6 * 86400000;
+    var iso = function (ms) { return new Date(ms).toISOString().slice(0, 10); };
+    return { from: iso(from), to: iso(to) };
+  }
+
+  /** Shift a pay week by whole weeks. weekShift('2026-10-05', -1) → last week. */
+  function weekShift(ymd, delta) {
+    var b = weekBounds(ymd);
+    var p = b.from.split('-');
+    var t = Date.UTC(+p[0], +p[1] - 1, +p[2]) + (delta || 0) * 7 * 86400000;
+    return weekBounds(new Date(t).toISOString().slice(0, 10));
+  }
+
+  /** "Mon 29 Sep – Sun 5 Oct 2026", built from the components, not a locale. */
+  function payWeekLabel(bounds) {
+    var mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    var one = function (ymd, withYear) {
+      var p = String(ymd).split('-');
+      var d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2]));
+      return wd[(d.getUTCDay() + 6) % 7] + ' ' + (+p[2]) + ' ' + mo[(+p[1]) - 1] + (withYear ? ' ' + p[0] : '');
+    };
+    return one(bounds.from, false) + ' \u2013 ' + one(bounds.to, true);
+  }
+
   function weekRangeLabel(start) {
     var end = new Date(start); end.setDate(end.getDate() + 6);
     var wd = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -474,6 +522,9 @@
     toConfirmCount: toConfirmCount,
     isAwaitingPayment: isAwaitingPayment,
     isoWeekStart: isoWeekStart,
+    weekBounds: weekBounds,
+    weekShift: weekShift,
+    payWeekLabel: payWeekLabel,
     weekRangeLabel: weekRangeLabel,
     groupByWeek: groupByWeek,
     groupByMonth: groupByMonth,

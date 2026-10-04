@@ -1135,6 +1135,10 @@ select:-webkit-autofill:focus{
 
       <input id="drv-search" type="search" placeholder="Search drivers…" oninput="loadDriversList()"
              style="width:100%;margin:.75rem 0 .2rem;padding:.6rem .7rem;font-family:inherit;font-size:.95rem;border:1px solid var(--westmere-line-strong,#c8d1d9);border-radius:7px">
+      <!-- MONDAY, AT A GLANCE. What the whole round costs this week, before he
+           opens anybody: the figure comes from /api/drivers/payouts, which is
+           server/driver-ledger.js. GUARDRAIL: server/tests/weekly-payout.test.js -->
+      <div id="drv-week" style="display:none;margin:.6rem 0 .2rem;padding:.7rem .8rem;border:1px solid var(--westmere-line,#dfe5ea);border-radius:9px;background:var(--westmere-white,#fff);color-scheme:only light"></div>
       <div id="drv-count" class="wm-lab" style="margin:.5rem .1rem .2rem"></div>
       <!-- Driver list -->
       <div id="drivers-list">
@@ -2284,9 +2288,31 @@ function _docBadge(status){
 
 var DOC_LABELS={dbs:'DBS',insurance:'Insurance',mot:'MOT',dvla_front:'Licence (F)',dvla_back:'Licence (B)',phv_driver:'PHV Driver',phv_vehicle:'PHV Vehicle'};
 
+/* THE MONDAY ROUND. One line above the roster: what the week costs in total,
+   and across how many drivers. It is the same unpaid-jobs sum each driver page
+   shows, asked for all of them at once — nothing here adds anything up. */
+async function owWeekRound(){
+  var box=document.getElementById('drv-week');
+  if(!box)return;
+  try{
+    var r=await fetch('/api/drivers/payouts',{credentials:'include'});
+    var d=await r.json();
+    if(!r.ok||!d.ok)throw new Error(d.error||'');
+    if(!d.to_pay){box.style.display='none';return;}
+    box.style.display='';
+    box.innerHTML='<div style="display:flex;align-items:baseline;gap:.6rem">'
+      +'<div class="wm-lab" style="margin:0;flex:1">To pay this week</div>'
+      +'<div style="font-family:var(--serif);font-size:1.35rem;color:var(--westmere-navy,#102a43)">'+owMoney(d.to_pay_total)+'</div></div>'
+      +'<div style="font-family:var(--sans);font-size:.76rem;color:var(--westmere-ink-soft);margin-top:.3rem;line-height:1.5">'
+      +'Across '+d.to_pay+' driver'+(d.to_pay===1?'':'s')+' \u00b7 '+owEsc(d.week.label)
+      +'. Open a driver to see the jobs and mark the week paid.</div>';
+  }catch(e){ box.style.display='none'; }
+}
+
 async function loadDriversList(){
   var el=document.getElementById('drivers-list');
   if(!el)return;
+  owWeekRound();
   try{
     var r=await fetch('/api/drivers',{credentials:'include'});
     var data=await r.json();
@@ -2436,6 +2462,11 @@ async function owDriverOpen(id) {
    from what is already loaded rather than refetching one job. Refreshed on
    every owDriverLoad(), which is what every money action calls. */
 var _OWDRV_ITEMS = [];
+/* The pay week the owner is looking at — any date inside it; the server draws
+   the Monday–Sunday bounds from it so the two cannot disagree about where the
+   week starts. Null means "this week", resolved server-side in UK time. */
+var _OWDRV_WEEK = null;
+var _OWDRV_PAYOUT = null;
 var _OWDRV_TRIP = null;
 var _OWDRV_POPPED = false;
 function owDriverClose(fromPop) {
@@ -2563,6 +2594,16 @@ async function owDriverLoad() {
           + owMoney(Math.abs(unapplied)) + ' paid that no job claimed — it is not in the figure above</div>' : '')
     + '</div>'
 
+    /* ── THE MONDAY TRANSFER ───────────────────────────────────────────────
+       The jobs pile up through the week; on a Monday he wants ONE figure, makes
+       ONE bank transfer by hand, and ticks the lot off with ONE button rather
+       than tapping twelve rows. The figure is the sum of what the jobs are
+       worth — already net of each job's own commission.
+       GUARDRAIL: server/tests/weekly-payout.test.js */
+    + '<p class="wm-lab">Weekly payout</p><div class="wm-rule"></div>'
+    + '<div id="ow-payout" style="border:1px solid var(--westmere-line,#dfe5ea);border-radius:9px;padding:.8rem;color-scheme:only light;background:var(--westmere-white,#fff)">'
+      + '<div style="font-family:var(--sans);font-size:.8rem;color:var(--westmere-ink-soft)">Loading the week\u2026</div></div>'
+
     + '<p class="wm-lab">His trips</p><div class="wm-rule"></div>'
     + (hist || '<div style="font-family:var(--sans);font-size:.8rem;color:var(--westmere-ink-soft);padding:.6rem 0">No jobs passed to him yet.</div>')
     + (hist ? '<div style="font-family:var(--sans);font-size:.76rem;color:var(--westmere-ink-soft);line-height:1.5;margin-top:.5rem">Tap a trip for the full details &mdash; the commission, the payment method, and whether you have paid him for it.</div>' : '')
@@ -2588,6 +2629,7 @@ async function owDriverLoad() {
       + 'The amount is spent against his oldest unpaid jobs and ticks them off — so the balance and the list never disagree. '
       + 'A payment to the driver is a positive amount; cash he hands back is negative.</div>';
 
+  owPayoutLoad();
   owSetPeriod(_OWDRV_PERIOD, true);
   /* A money action reloads the ledger underneath; if a trip page is open it
      re-renders from the fresh row rather than sitting on a stale figure. */
@@ -2656,6 +2698,109 @@ async function owRecordSettlement() {
    Both go to the server and both come back with the whole page reloaded, so
    the row, the running balance beside it and the figure at the top cannot
    disagree about what just happened. */
+/* ── THE WEEKLY PAYOUT ──────────────────────────────────────────────────────
+   "Jobs accumulate through the week; on Monday I settle up." This is that
+   screen: the week, what has piled up in it unpaid, the one figure to transfer,
+   and the one button that ticks them all off once the transfer is made.
+
+   It is NOT a second way of recording money. Marking the week paid is the
+   per-job tick applied to a known set of jobs — the same fact the row ticks
+   are — with one receipt kept beside them so the whole act can be taken back.
+   The figure is never typed: the server sums what each job is still worth.
+   GUARDRAIL: server/tests/weekly-payout.test.js */
+async function owPayoutLoad() {
+  var box = document.getElementById('ow-payout');
+  if (!box || !_OWDRV) return;
+  try {
+    var r = await fetch('/api/drivers/' + _OWDRV + '/payout' + (_OWDRV_WEEK ? '?week=' + _OWDRV_WEEK : ''),
+      { credentials: 'include' });
+    var d = await r.json();
+    if (!r.ok || !d.ok) throw new Error(d.error || 'Could not load the week');
+    _OWDRV_PAYOUT = d;
+    box.innerHTML = owPayoutHtml(d);
+  } catch (e) {
+    box.innerHTML = '<div style="font-family:var(--sans);font-size:.82rem;color:#9b1c1c">'
+      + owEsc(e.message || 'Network error') + '</div>';
+  }
+}
+function owPayoutWeek(delta) {
+  var w = (_OWDRV_PAYOUT && _OWDRV_PAYOUT.week) ? _OWDRV_PAYOUT.week.from : null;
+  _OWDRV_WEEK = delta === 0 ? null : WMLifecycle.weekShift(w, delta).from;
+  owPayoutLoad();
+}
+function owPayoutHtml(d) {
+  var owed = Number(d.total) >= 0;
+  var n = (d.items || []).length;
+  var nav = function (delta, label, title) {
+    return '<span onclick="owPayoutWeek(' + delta + ')" class="wm-seg" style="padding:.4rem .7rem;font-size:.72rem;cursor:pointer" title="' + title + '">' + label + '</span>';
+  };
+  return ''
+    + '<div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.7rem">'
+      + nav(-1, '&lsaquo;', 'The week before')
+      + '<div style="flex:1;min-width:0;text-align:center;font-family:var(--sans);font-size:.76rem;letter-spacing:.06em;text-transform:uppercase;color:var(--westmere-navy,#102a43);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'
+        + owEsc(d.week.label) + '</div>'
+      + nav(1, '&rsaquo;', 'The week after')
+    + '</div>'
+    + (_OWDRV_WEEK ? '<div style="text-align:center;margin-bottom:.6rem">'
+        + '<span onclick="owPayoutWeek(0)" class="wm-seg" style="padding:.3rem .7rem;font-size:.68rem;cursor:pointer">Back to this week</span></div>' : '')
+
+    /* THE FIGURE HE TYPES INTO HIS BANK, with nothing beside it competing. */
+    + '<div style="display:flex;align-items:baseline;gap:.6rem">'
+      + '<div class="wm-lab" style="margin:0;flex:1">' + (owed ? 'To transfer' : 'He owes you') + '</div>'
+      + '<div style="font-family:var(--serif);font-size:1.7rem;color:' + (owed ? 'var(--westmere-navy,#102a43)' : '#9b1c1c') + '">'
+        + owMoney(Math.abs(d.total)) + '</div>'
+    + '</div>'
+    + '<div style="font-family:var(--sans);font-size:.76rem;color:var(--westmere-ink-soft);margin-top:.35rem;line-height:1.5">'
+      + (n ? n + ' unpaid job' + (n === 1 ? '' : 's') + ', net of commission on each' : 'Nothing unpaid in this week')
+      /* WHAT THIS PAYOUT CLEARS BEYOND THE WEEK ON SCREEN. A job missed a
+         fortnight ago is in the figure — it is money he is owed — and saying so
+         is the difference between a total he trusts and one he queries. */
+      + (d.carried ? '. Includes ' + d.carried + ' from earlier weeks (' + owMoney(Math.abs(d.carried_total)) + ')' : '')
+      + '.</div>'
+    + (Math.abs(Number(d.balance) - Number(d.total)) > 0.005
+        ? '<div class="wm-lab wm-owing" style="margin:.45rem 0 0">His whole balance is ' + owMoney(Math.abs(d.balance))
+          + ' \u2014 the rest is dated after this week</div>' : '')
+
+    + (n ? '<div style="margin:.7rem -.8rem 0">'
+        + WMCompact.payoutTable(d.items, 'owDrvTripOpen', { label: 'Unpaid jobs in this payout' })
+        + '</div>' : '')
+
+    /* THE BUTTON IS THE LAST STEP, NOT THE FIRST. He transfers the money in his
+       banking app and then tells the system — so the label says so, and the
+       confirmation names the figure he should just have sent. */
+    + (n ? '<div style="margin-top:.8rem">'
+        + '<div onclick="owPayoutSettle()" class="btn-primary" style="text-align:center;padding:.7rem;border-radius:7px;font-family:var(--sans);font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:center">'
+          + 'Mark week as paid &middot; ' + owMoney(Math.abs(d.total)) + '</div>'
+        + '<div style="font-family:var(--sans);font-size:.74rem;color:var(--westmere-ink-soft);line-height:1.5;margin-top:.5rem">'
+          + 'Make the bank transfer first, then tap this. It ticks all ' + n + ' job'
+          + (n === 1 ? '' : 's') + ' off at once \u2014 the same as marking each one paid \u2014 and you can undo it from the list below.</div>'
+      + '</div>' : '');
+}
+async function owPayoutSettle() {
+  var d = _OWDRV_PAYOUT;
+  if (!d || !(d.items || []).length) return;
+  var owed = Number(d.total) >= 0;
+  var msg = owed
+    ? 'Mark this week as paid? It ticks off ' + d.items.length + ' job'
+      + (d.items.length === 1 ? '' : 's') + ' and assumes you have transferred ' + owMoney(d.total) + '.'
+    : 'Settle this week? He owes you ' + owMoney(Math.abs(d.total)) + ', so nothing leaves your account.';
+  if (!await WMAsk.confirm(msg, { ok: 'Mark as paid', cancel: 'Not yet' })) return;
+  try {
+    var r = await fetch('/api/drivers/' + _OWDRV + '/payout', {
+      method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+      /* The ids he is looking at travel with the request: if a job landed
+         between the screen loading and this tap, the server refuses rather
+         than settling a list he never saw. */
+      body: JSON.stringify({ week: d.week.from, job_ids: d.job_ids, method: 'Bank transfer' })
+    });
+    var out = await r.json();
+    if (r.ok && out.ok) {
+      showToast('Week marked paid \u2014 ' + owMoney(Math.abs(out.total)) + ' across ' + out.settled.length + ' job' + (out.settled.length === 1 ? '' : 's'));
+      owDriverLoad();
+    } else showToast(out.error || ('Failed (' + r.status + ')'));
+  } catch (e) { showToast('Network error'); console.error('[owPayoutSettle]', e); }
+}
+
 /* ── ONE TRIP, IN FULL ────────────────────────────────────────────────────
    The page behind a row of the driver's trips table. It carries what the list
    deliberately leaves out: the whole route, when it ran, how the CUSTOMER paid

@@ -65,7 +65,7 @@ const mailTo = (addr) => SENT.filter((m) => []
 const ROOT = path.join(__dirname, '..', '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 /* Comments are prose, not behaviour. */
-const strip = (c) => c.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1');
+const { stripComments: strip } = require('./_source');
 function fnBody(code, name) {
   const i = code.indexOf('function ' + name + '(');
   assert.ok(i > -1, name + ' is gone');

@@ -29,6 +29,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const assert = require('assert');
+const { stripComments } = require('./_source');
 
 const TMP = path.join(os.tmpdir(), 'wm-ledger-' + process.pid + '.db');
 try { fs.unlinkSync(TMP); } catch (_) {}
@@ -605,9 +606,7 @@ test('no stylesheet forces a token to white, and nothing relies on being rescued
      With the premise gone the rule is stated the durable way: the hostile block
      must not come back, and if any variable ever is forced white again, the
      ledger sheet must not colour text with it. */
-  const strip = (c) => c.replace(/\/\*[\s\S]*?\*\//g, ' ')
-                        .replace(/<!--[\s\S]*?-->/g, ' ')
-                        .replace(/(^|[^:])\/\/.*$/gm, '$1');
+  const strip = (c) => stripComments(c, { html: true });
   /* Raw text to FIND the block — its landmarks are comments — and stripped text
      to JUDGE it, so no assertion can be satisfied by prose. */
   const rawSrc = src('westmere-owner.html');

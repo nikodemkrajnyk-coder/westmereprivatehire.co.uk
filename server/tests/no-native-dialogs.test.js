@@ -29,7 +29,7 @@ const ROOT = path.join(__dirname, '..', '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 /* Comments are prose. A guard that finds the thing it forbids inside the
    comment explaining why it is forbidden has proved nothing. */
-const strip = (c) => c.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1');
+const { stripComments: strip } = require('./_source');
 
 let passed = 0, failed = 0;
 const queue = [];

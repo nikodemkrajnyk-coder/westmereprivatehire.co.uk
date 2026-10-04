@@ -24,6 +24,7 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
+const { stripComments } = require('./_source');
 
 const ROOT = path.join(__dirname, '..', '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -137,7 +138,7 @@ test('nothing anywhere matches the owner by name', () => {
   assert.ok(!/Nikodem|Krajnyk/i.test(q),
     'the query must not name a person — that breaks the day a customer shares the name, ' +
     'and breaks silently the day the owner changes his');
-  const app = OWNER.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+  const app = stripComments(OWNER);
   const near = app.match(/invoiceable[\s\S]{0,200}/g) || [];
   for (const n of near) {
     assert.ok(!/Nikodem|Krajnyk/i.test(n), 'the picker must not filter by name either');

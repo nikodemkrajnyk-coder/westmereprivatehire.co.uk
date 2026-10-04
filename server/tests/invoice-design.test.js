@@ -26,6 +26,7 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
+const { stripComments } = require('./_source');
 
 /* ── THE PAYMENT DETAILS, WHEREVER THEY LIVE ───────────────────────────────
    They used to be a tinted box in the body, under the notes. With the account
@@ -123,7 +124,7 @@ test('NO VAT line when the business is not registered', async () => {
 test('nothing hardcodes a zero-rate line any more', () => {
   // Comments stripped: the file NAMES the old line in order to explain why it
   // went, and a guard that cannot tell prose from code fails on the apology.
-  const code = SRC.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+  const code = stripComments(SRC);
   assert.ok(!/VAT \(0%\)/.test(code), 'the hardcoded "VAT (0%)" must be gone');
   assert.ok(/vat_number/.test(SRC) && /vat_rate/.test(SRC), 'VAT must come from settings');
 });
@@ -268,7 +269,7 @@ test('the TOTAL is the biggest thing on the page', () => {
      found the phrase inside a comment explaining the totals block, then
      measured four hundred characters of prose. The same trap the rest of this
      suite already guards against. */
-  const code = SRC.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^[ \t]*\/\/.*$/gm, ' ');
+  const code = stripComments(SRC);
   /* Anchored on the totals BLOCK rather than one label. The label is no longer
      a single literal — an operator settlement names who the money is due to, so
      "TOTAL DUE" appears only on a plain customer invoice. What must stay true is
