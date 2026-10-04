@@ -292,6 +292,63 @@
     return clip(tidyCase(tokens[i] || tokens[0]), 18);
   }
 
+  /**
+   * CODE LABEL — the shortest honest name for a place, for a cell that has
+   * about fifty pixels of width.
+   *
+   * WHY IT EXISTS: the owner's month grid on a phone. `tinyLabel` already cuts
+   * "London Gatwick Airport, South Terminal" down to "Gatwick" — and at the
+   * size a month cell allows even that renders as "Gatwi…", which tells him
+   * nothing he did not know from the day being busy. Nearly all of this work
+   * is airport runs, and he reads LGW and LHR faster than he reads the words,
+   * SO AN AIRPORT BECOMES ITS IATA CODE and keeps its terminal: "LGW S",
+   * "LHR T5". That is three to six characters for the two facts that matter.
+   *
+   * Anything that is not an airport falls back to tinyLabel's locality and, if
+   * that is still long, to its first word — "Haywards Heath" → "Haywards".
+   *
+   * DISPLAY ONLY, like every other label in this file. The booking keeps the
+   * whole address, and so does navigation.
+   */
+  var AIRPORT_IATA = [
+    [/gatwick/i, 'LGW'],
+    [/heathrow/i, 'LHR'],
+    [/stansted/i, 'STN'],
+    [/\bluton\b/i, 'LTN'],
+    [/london city airport|\bcity airport\b/i, 'LCY'],
+    [/southampton airport/i, 'SOU'],
+    [/\bbristol airport\b/i, 'BRS'],
+    [/\bbirmingham airport\b/i, 'BHX'],
+    [/\bmanchester airport\b/i, 'MAN'],
+    [/\bfarnborough airport\b/i, 'FAB'],
+    [/\bbiggin hill\b/i, 'BQH']
+  ];
+
+  function codeLabel(raw, maxChars) {
+    if (raw == null) return '';
+    var s = preClean(raw);
+    if (!s) return '';
+    var max = maxChars > 0 ? maxChars : 9;
+    for (var i = 0; i < AIRPORT_IATA.length; i++) {
+      if (AIRPORT_IATA[i][0].test(s)) {
+        var code = AIRPORT_IATA[i][1];
+        var t = TERMINAL.exec(s);
+        if (!t) return code;
+        if (/north/i.test(t[0])) return code + ' N';
+        if (/south/i.test(t[0])) return code + ' S';
+        var num = t[2] || t[3];
+        return num ? code + ' T' + num : code;
+      }
+    }
+    var tiny = tinyLabel(s);
+    if (tiny.length <= max) return tiny;
+    /* Drop to the first word rather than slicing mid-word: "Haywards Heath"
+       reads as "Haywards", which is a place. A long single word is handed
+       back whole and left to the cell's own ellipsis — "Southampt" is a
+       typo, "Southamp…" is a label that ran out of room. */
+    return tiny.split(/[\s,]+/)[0];
+  }
+
   // BRIEF: shortDisplay, then capped to a handful of words.
   //
   // The booking form's autocomplete lists raw Nominatim `display_name` strings,
@@ -331,6 +388,7 @@
     shortDisplay: shortDisplay,
     briefDisplay: briefDisplay,
     tinyLabel: tinyLabel,
+    codeLabel: codeLabel,
     findAirport: findAirport,
     isAirport: isAirport,
     isAirportRun: isAirportRun,

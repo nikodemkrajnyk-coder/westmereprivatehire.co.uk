@@ -68,7 +68,8 @@ const S30 = section('§30  THE HOUSE TREATMENT', SECTION_HEAD);
 const S31 = section('§31  A JOB IS A CARD', SECTION_HEAD);
 const S32 = section('§32  THE CALENDARS', SECTION_HEAD);
 const S33 = section('§33  THE FIGURES', SECTION_HEAD);
-const DESIGN_PASS = S30 + S31 + S32 + S33;
+const S34 = section('§34  THE ADMIN\'S OWN FOUR SCREENS', SECTION_HEAD);
+const DESIGN_PASS = S30 + S31 + S32 + S33 + S34;
 
 /* The selector side of a rule block, with declarations removed. */
 const selectorsOf = (css) => css.replace(/\{[^}]*\}/g, '\n');
@@ -194,11 +195,37 @@ test('the admin personal-event line takes the navy from the token, not from #102
     'the external-event line is not coloured from the token layer');
 });
 
-test('nothing in the design pass writes a gold literal', () => {
-  // Exactly two golds exist, both as tokens; see §1. A literal here is how the
-  // third gold gets in.
-  const lits = [...DESIGN_PASS.matchAll(/#(?:C9A227|8A6A12)/gi)].map((m) => m[0]);
-  assert.deepStrictEqual(lits, [], 'gold written out by hand in the design pass: ' + lits.join(', '));
+test('nothing in the design pass writes a colour by hand', () => {
+  /* THE WHOLE POINT OF A TOKEN LAYER is that a colour is named once. Every
+     section of this pass began by typing one out anyway — #102a43 in the
+     admin month, #c8d1d9 for the flagged ring, two near-misses of
+     --westmere-danger (#9b1c1c, where the token is #9C2828) in three places.
+     None of them looked wrong; all of them were a second definition of a
+     colour that already had a name. So: NO HEX AT ALL in these sections, and
+     an rgba only as a tint of a base this file already names. */
+  const hex = [...DESIGN_PASS.matchAll(/#[0-9a-f]{3,8}\b/gi)].map((m) => m[0]);
+  assert.deepStrictEqual(hex, [], 'colour written out by hand in the design pass: ' + hex.join(', '));
+  const ALLOWED_TINTS = [
+    '16, 42, 67',    // --westmere-navy, the ramp and every press/hover
+    '156, 40, 40'    // --westmere-danger, the time-off hatch
+  ];
+  const rgba = [...DESIGN_PASS.matchAll(/rgba?\(([^)]*)\)/g)]
+    .map((m) => m[1].split(',').slice(0, 3).map((n) => n.trim()).join(', '))
+    .filter((base) => !ALLOWED_TINTS.includes(base));
+  assert.deepStrictEqual([...new Set(rgba)], [],
+    'an rgba tint of something that is not a named token: ' + [...new Set(rgba)].join(' | '));
+});
+
+test('the tints really are the tokens they claim to be', () => {
+  // A tint only counts as "the token, quieter" if the numbers match it.
+  const tok = (name) => {
+    const m = new RegExp('--westmere-' + name + ':\\s*(#[0-9a-f]{6})', 'i').exec(THEME);
+    assert.ok(m, '--westmere-' + name + ' is not defined');
+    const h = m[1];
+    return [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)).join(', ');
+  };
+  assert.strictEqual(tok('navy'), '16, 42, 67', '--westmere-navy moved; the ramp is now a different blue');
+  assert.strictEqual(tok('danger'), '156, 40, 40', '--westmere-danger moved; the time-off hatch is a second red');
 });
 
 // ── 3. §30 AND §31 STILL SAY WHAT THEY CLAIM ──────────────────────────────
@@ -247,7 +274,7 @@ test('the navy ramp exists, is one hue, and is ordered', () => {
   }
   // Every step is the house navy — as a tint of it, or the ink itself.
   const alpha = steps.map((v) => {
-    if (/^#102a43$/i.test(v)) return 1;
+    if (/^var\(--westmere-navy[^)]*\)$/i.test(v)) return 1;
     const m = /^rgba\(\s*16,\s*42,\s*67,\s*([\d.]+)\s*\)$/.exec(v);
     assert.ok(m, 'a ramp step is not a tint of --westmere-navy: ' + v);
     return parseFloat(m[1]);
@@ -389,6 +416,67 @@ test('the owner earnings trio is three white cards, not two and a navy gradient'
     'the card that matters has no emphasis at all now');
   assert.ok(/\.earn-stat-card::before\{[^}]*display:\s*none/.test(S33),
     'the diagonal hatch over the earnings cards is back');
+});
+
+// ── 6. §34 THE ADMIN'S OWN FOUR SCREENS ───────────────────────────────────
+
+test('the two bespoke tables lost their grey heading slab', () => {
+  const head = regionFrom(S34, '.jtable th, .fare-table th{', [/\n\.[a-z]/]);
+  assert.ok(/background:\s*var\(--westmere-white\)/.test(head), 'a column heading fills again');
+  assert.ok(/border-bottom:[^;]*var\(--westmere-gold\)/.test(head), 'the heading row lost its gold rule');
+  assert.ok(/color:\s*var\(--westmere-gold-ink\)/.test(head), 'a column heading is not the house eyebrow');
+  // The page's own rules are what the theme is overriding; if they go, say so.
+  assert.ok(/\.jtable th\{/.test(ADMIN) && /\.fare-table th\{/.test(ADMIN),
+    'the admin no longer carries these tables — the §34 override is dressing nothing');
+});
+
+test('loading, empty and failed are one state, not three inline styles each', () => {
+  assert.ok(/\.wm-state\{/.test(S34) && /\.wm-state\.is-bad\{/.test(S34), 'the shared state class is gone');
+  assert.ok(/var\(--westmere-danger\)/.test(S34), 'the failed state is not the named danger colour');
+  // The four screens must actually use it.
+  const screens = ['view-settings', 'view-record-book', 'view-time-off', 'view-fares'];
+  const used = screens.filter((v) => {
+    const i = ADMIN.indexOf('id="' + v + '"');
+    const j = ADMIN.indexOf('<div class="view" id="view-', i + 10);
+    return /wm-state|wm-hint|wm-subhead|ch-note/.test(ADMIN.slice(i, j === -1 ? undefined : j));
+  });
+  assert.ok(used.length >= 3, 'only ' + used.length + ' of the four admin screens use the shared furniture');
+});
+
+test('no emoji is left standing in for a label on these screens', () => {
+  // 📄 💾 🖨 ＋ were the loudest things on four otherwise quiet screens.
+  const emoji = /[\u{1F300}-\u{1FAFF}\u{2190}-\u{21FF}\u{2600}-\u{27BF}\u{FF01}-\u{FF5E}]/u;
+  for (const v of ['view-record-book', 'view-time-off', 'view-fares']) {
+    const i = ADMIN.indexOf('id="' + v + '"');
+    const j = ADMIN.indexOf('<div class="view" id="view-', i + 10);
+    const labels = [...ADMIN.slice(i, j === -1 ? undefined : j).matchAll(/<button[^>]*>([^<]*)</g)].map((m) => m[1]);
+    const loud = labels.filter((t) => emoji.test(t));
+    assert.deepStrictEqual(loud, [], v + ' still labels a button with an emoji: ' + loud.join(', '));
+  }
+});
+
+test('the settings sliders are not left on the browser\'s own blue', () => {
+  assert.ok(/input\[type="range"\]\{/.test(S34), 'the range inputs are unstyled');
+  assert.ok(/::-webkit-slider-thumb\{[^}]*var\(--westmere-gold\)/.test(S34) &&
+            /::-moz-range-thumb\{[^}]*var\(--westmere-gold\)/.test(S34),
+    'the thumb is themed in only one engine — it will be blue in the other');
+});
+
+test('a wide table scrolls itself, and does not take the window with it', () => {
+  /* MEASURED at 1280px: the admin document was 1373 wide and the topbar's New
+     Job button sat off the right edge of every screen. The record book's
+     fourteen columns were propagating their intrinsic width out through
+     `.main`, a flex child, which does not shrink below its content unless it
+     is allowed to. Same bug as §29's grid tracks, different box model. */
+  for (const sel of ['.main', '.content']) {
+    assert.ok(new RegExp('\\' + sel + '\\{[^}]*min-width:\\s*0').test(S34),
+      sel + ' may not shrink below its content again — the page will scroll sideways');
+  }
+  // And the thing that needs to scroll still says so.
+  const i = ADMIN.indexOf('id="rb-table"');
+  assert.ok(i !== -1, 'the record book table is gone');
+  assert.ok(/overflow-x:\s*auto/.test(ADMIN.slice(Math.max(0, i - 400), i)),
+    'the record book table is no longer inside an overflow container');
 });
 
 // ── NEGATIVE: prove each detector can fail ────────────────────────────────

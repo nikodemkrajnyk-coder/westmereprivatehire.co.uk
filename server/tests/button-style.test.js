@@ -800,8 +800,20 @@ test('the theme carries ONE canonical picker selected-state for all surfaces', (
                      '.wm-time.is-selected', '.time-opt.t-sel', '.pick-opt.p-sel']) {
     assert.ok(block.includes(sel), 'the shared picker definition is missing ' + sel);
   }
-  assert.ok(/background:\s*transparent\s*!important/.test(block), 'the shared day rule must clear the fill');
+  /* THE RULE IS "NO FILL", NOT "THE LITERAL WORD transparent". This pinned the
+     keyword, and the keyword turned out to be wrong on the one surface it most
+     mattered for: a calendar grid paints --westmere-line behind every cell to
+     draw its own gap lines, so `transparent` let that grey show and the day the
+     owner had just tapped became the only filled slab in the month. White is
+     the page's own colour and is "not a fill" everywhere else in this suite
+     (NOT_A_FILL in no-fills.test.js), so either value satisfies the intent.
+     What must never appear is a COLOUR. */
+  const dayRule = /\.cal-day\.selected\s*\{([^}]*)\}/.exec(block);
+  assert.ok(dayRule, 'the shared day rule is gone');
+  assert.ok(/background:\s*(transparent|var\(--westmere-white[^)]*\)|#fff(?:fff)?)\s*!important/i.test(dayRule[1]),
+    'the shared day rule must clear the fill — transparent, or the page white');
   assert.ok(!/background:\s*var\(--westmere-navy\)/.test(block), 'the shared rule must never re-fill navy');
+  assert.ok(!/background:\s*var\(--westmere-gold[^)]*\)/.test(block), 'the shared rule must never fill gold either');
 });
 
 test('every selected picker item is an outlined frame, not a filled block', () => {

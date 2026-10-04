@@ -963,13 +963,13 @@ select:-webkit-autofill:focus{
     <div class="view" id="view-fares">
       <div class="page-hd"><div class="page-title">Fare <em>Editor</em></div></div>
       <div class="card">
-        <div class="ch"><div class="ct">Airport Fares — Town Centre Rates</div><button class="btn btn-navy btn-sm" onclick="showToast('Fares saved. Estimator updated.')">💾 Save Fares</button></div>
+        <div class="ch"><div class="ct">Airport Fares — Town Centre Rates</div><button class="btn btn-navy btn-sm" onclick="showToast('Fares saved. Estimator updated.')">Save Fares</button></div>
         <div class="cb" style="overflow-x:auto">
           <table class="fare-table" id="fare-tbody-wrap" style="min-width:560px">
             <thead><tr><th style="text-align:left">From</th><th>Gatwick</th><th>Heathrow</th><th>Stansted</th><th>Luton</th><th>Southampton</th><th>City</th></tr></thead>
             <tbody id="fare-tbody"></tbody>
           </table>
-          <p style="font-size:.84rem;color:var(--text-light);margin-top:1rem">Click any fare to edit it. Address adjustments calculated at <strong style="color:var(--navy)">£2.80/mile</strong> above town centre rates.</p>
+          <p class="wm-hint" style="margin-top:1rem">Click any fare to edit it. Address adjustments calculated at <strong>&pound;2.80/mile</strong> above town centre rates.</p>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.2rem" class="g3r">
@@ -994,8 +994,8 @@ select:-webkit-autofill:focus{
             <div class="fg"><label class="fl">Postcode</label><input class="fi" id="is-postcode" placeholder="BN7 1XG"></div>
             <div class="fg"><label class="fl">Phone</label><input class="fi" id="is-phone" placeholder="07930 342593"></div>
             <div class="fg"><label class="fl">Email</label><input class="fi" id="is-email" placeholder="bookings@westmereprivatehire.co.uk"></div>
-            <div style="border-top:1px solid rgba(27,27,26,.08);margin:1.2rem 0;padding-top:1rem">
-              <div style="font-size:.84rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);margin-bottom:.8rem">Bank Details (shown on invoices)</div>
+            <div style="margin:1.2rem 0 0">
+              <div class="wm-subhead">Bank Details <span class="wm-subhead-note">shown on invoices</span></div>
               <div class="fg"><label class="fl">Bank Name</label><input class="fi" id="is-bank-name" placeholder="e.g. Starling Bank"></div>
               <div class="fg"><label class="fl">Account Name</label><input class="fi" id="is-account-name" placeholder="e.g. N Krajnyk"></div>
               <div class="fg"><label class="fl">Sort Code</label><input class="fi" id="is-sort-code" placeholder="00-00-00"></div>
@@ -1039,7 +1039,7 @@ select:-webkit-autofill:focus{
         </div>
         <div class="card" style="grid-column:1/-1">
           <div class="ch"><div class="ct">My Documents</div><button class="btn btn-ghost btn-sm" onclick="loadAdminDocs()">Refresh</button></div>
-          <div class="cb" id="admin-docs-list"><div style="color:var(--westmere-ink-soft);font-size:.95rem;padding:.5rem">Loading…</div></div>
+          <div class="cb" id="admin-docs-list"><div class="wm-state">Loading&hellip;</div></div>
         </div>
         <div class="card" style="grid-column:1/-1">
           <div class="ch"><div class="ct">Download All Data</div></div>
@@ -1127,8 +1127,8 @@ select:-webkit-autofill:focus{
             <div class="fg" style="margin:0;grid-column:1/-1"><label class="fl">Reason (optional)</label><input class="fi" id="to-reason" placeholder="e.g. Family weekend / vehicle service"></div>
           </div>
           <div style="margin-top:1rem;display:flex;gap:.6rem;align-items:center">
-            <button class="btn btn-navy" onclick="addTimeOff()">＋ Block this window</button>
-            <span style="font-size:.84rem;color:var(--text-light)">Leave times blank for a full-day block</span>
+            <button class="btn btn-navy" onclick="addTimeOff()">Block this window</button>
+            <span class="wm-hint">Leave times blank for a full-day block</span>
           </div>
         </div>
       </div>
@@ -1136,7 +1136,7 @@ select:-webkit-autofill:focus{
       <div class="card">
         <div class="ch"><div class="ct">Current Blackouts</div></div>
         <div class="cb" id="to-list">
-          <div style="text-align:center;padding:2rem;color:var(--westmere-ink-soft);font-size:.95rem">Loading…</div>
+          <div class="wm-state">Loading&hellip;</div>
         </div>
       </div>
     </div>
@@ -1165,8 +1165,8 @@ select:-webkit-autofill:focus{
             <option value="">Select year...</option>
           </select>
         </div>
-        <button class="btn btn-navy" onclick="downloadRecordBook()">📄 Download PDF</button>
-        <button class="btn btn-ghost" onclick="printRecordBook()">🖨 Print</button>
+        <button class="btn btn-navy" onclick="downloadRecordBook()">Download PDF</button>
+        <button class="btn btn-ghost" onclick="printRecordBook()">Print</button>
       </div>
 
       <!-- Printable record -->
@@ -1174,7 +1174,7 @@ select:-webkit-autofill:focus{
         <div class="card" id="rb-card">
           <div class="ch">
             <div class="ct">Journey Record — <span id="rb-period">March 2025</span></div>
-            <div style="font-size:.8rem;color:var(--text-light)">Westmere Private Hire · Licensed by Lewes District Council</div>
+            <div class="ch-note">Westmere Private Hire &middot; Licensed by Lewes District Council</div>
           </div>
           <div style="overflow-x:auto">
             <table class="jtable" id="rb-table">
@@ -7296,21 +7296,21 @@ function admEnrichNotes(text){
 async function loadTimeOff(){
   var list=document.getElementById('to-list');
   if(!list)return;
-  list.innerHTML='<div style="text-align:center;padding:2rem;color:var(--westmere-ink-soft);font-size:.95rem">Loading…</div>';
+  list.innerHTML='<div class="wm-state">Loading&hellip;</div>';
   try{
     var r=await fetch('/api/intake/time-off',{credentials:'include'});
     var d=await r.json();
-    if(!d.ok){list.innerHTML='<div style="padding:1.4rem;color:#a33">'+escTo(d.error||'Error')+'</div>';return;}
-    if(!d.timeOff.length){list.innerHTML='<div style="text-align:center;padding:2rem;color:var(--westmere-ink-soft);font-size:.95rem">No blackouts set. The smart intake will treat every day as available.</div>';return;}
+    if(!d.ok){list.innerHTML='<div class="wm-state is-bad">'+escTo(d.error||'Error')+'</div>';return;}
+    if(!d.timeOff.length){list.innerHTML='<div class="wm-state">No blackouts set. The smart intake will treat every day as available.</div>';return;}
     list.innerHTML=d.timeOff.map(function(t){
       var range=t.end_date&&t.end_date!==t.date?(t.date+' → '+t.end_date):t.date;
       var hrs=(t.start_time||t.end_time)?((t.start_time||'00:00')+'–'+(t.end_time||'23:59')):'All day';
-      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:.8rem 1rem;border-bottom:1px solid var(--rule)">'
-        +'<div><div style="font-weight:600;color:var(--navy);font-size:.94rem">'+escTo(range)+' · '+escTo(hrs)+'</div>'
-        +'<div style="font-size:.86rem;color:var(--text-light);margin-top:.2rem">'+escTo(t.reason||'(no reason)')+(t.driver_name?' · '+escTo(t.driver_name):'')+'</div></div>'
+      return '<div class="wm-listrow">'
+        +'<div class="wm-listrow-main"><div class="wm-listrow-t">'+escTo(range)+' \u00b7 '+escTo(hrs)+'</div>'
+        +'<div class="wm-listrow-s">'+escTo(t.reason||'No reason given')+(t.driver_name?' \u00b7 '+escTo(t.driver_name):'')+'</div></div>'
         +'<button class="btn btn-ghost btn-sm" onclick="delTimeOff('+t.id+')">Remove</button></div>';
     }).join('');
-  }catch(e){list.innerHTML='<div style="padding:1.4rem;color:#a33">Failed to load: '+escTo(e.message)+'</div>';}
+  }catch(e){list.innerHTML='<div class="wm-state is-bad">Failed to load: '+escTo(e.message)+'</div>';}
 }
 async function addTimeOff(){
   var date=document.getElementById('to-date').value;
@@ -7638,18 +7638,30 @@ function buildAdminCalendar(){
 
     var inner='<div class="adm-cal-num">'+d+'</div>';
     if(jobs.length){
+      /* THIS CELL HAS 170 PIXELS, not the phone's 50, so it can carry the whole
+         reading: how many, how much, and then each job as when → where → what
+         it is worth. The pill used to say "1 job" and the lines underneath
+         dropped the fare, so the one figure the owner looks for was the one
+         thing the month did not show him. */
+      var dayFare=0;
+      jobs.forEach(function(j){dayFare+=Number(j.fare)||0;});
       var pillCls=flagged?'warn':'';
-      inner+='<div class="adm-cal-pill '+pillCls+'">'+jobs.length+' job'+(jobs.length>1?'s':'')+'</div>';
-      // Show top 2 mini lines
-      jobs.slice(0,2).forEach(function(j){
-        var t=(j.time||'').slice(0,5);
+      inner+='<div class="adm-cal-pill '+pillCls+'">'+jobs.length+' job'+(jobs.length>1?'s':'')
+        +(dayFare?' \u00b7 \u00a3'+dayFare.toFixed(0):'')+'</div>';
+      var sortedJ=jobs.slice().sort(function(a,b){return String(a.time||'').localeCompare(String(b.time||''));});
+      sortedJ.slice(0,3).forEach(function(j){
+        var t=(j.time||'').slice(0,5)||'ASAP';
         var pu=_admTinyAddr(j.pickup||'');
         var de=_admTinyAddr(j.destination||'');
-        var fare=(j.fare!=null&&j.fare!=='')?' £'+Number(j.fare).toFixed(0):'';
-        var label=t+(pu&&de?' '+pu+'→'+de:(' '+(j.customer_name||'')))+fare;
-        inner+='<div class="adm-cal-job-mini">'+escTo(label)+'</div>';
+        var fare=(j.fare!=null&&j.fare!=='')?'\u00a3'+Number(j.fare).toFixed(0):'';
+        var where=(pu&&de)?(pu+' \u2192 '+de):(j.customer_name||de||pu||'');
+        var full=t+(where?' '+where:'')+(fare?' '+fare:'');
+        inner+='<div class="adm-cal-job-mini" title="'+escTo(full)+'">'
+          +'<b>'+escTo(t)+'</b> <span class="adm-cal-where">'+escTo(where)+'</span>'
+          +(fare?'<span class="adm-cal-fare">'+escTo(fare)+'</span>':'')
+          +'</div>';
       });
-      if(jobs.length>2)inner+='<div class="adm-cal-more">+'+(jobs.length-2)+' more</div>';
+      if(jobs.length>3)inner+='<div class="adm-cal-more">+'+(jobs.length-3)+' more</div>';
     }
     if(off.length&&!jobs.length){
       inner+='<div class="adm-cal-pill off">Time off</div>';
