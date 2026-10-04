@@ -2620,7 +2620,24 @@ router.post('/invoices/bespoke', async (req, res) => {
                      line, so a later correction still knows which fares the
                      driver had already taken. */
                   collected_direct: (it.collected_direct === 1 || it.collected_direct === true) ? 1 : 0 }))
-    .filter(it => it.description && it.amount > 0);
+    .filter(it => it.description);
+  /* ── A JOURNEY WORTH NOTHING IS REFUSED, NOT DROPPED ────────────────────
+     This filtered on `amount > 0`, so a job with no fare recorded was taken
+     off the invoice in silence: the owner saw a row with nothing in it on the
+     preview, the saved document had one line fewer than the work he had done,
+     and the journey stayed un-billed with nobody told. Dropping a line is the
+     one thing a billing system must never do quietly.
+ 
+     A line that is purely a FEE — a toll, a car park, with no fare against it —
+     is a real thing to bill and is kept. GUARDRAIL: server/tests/invoice-lines.test.js */
+  const valueless = cleanItems.filter((it) => !(it.amount > 0) && !(it.fee > 0));
+  if (valueless.length) {
+    const names = valueless.slice(0, 3).map((it) => (it.date || it.description || 'a journey').slice(0, 40));
+    return res.status(400).json({
+      error: valueless.length + (valueless.length === 1 ? ' journey has' : ' journeys have')
+           + ' no amount on them (' + names.join(', ') + (valueless.length > 3 ? ', …' : '')
+           + '). Put a fare on them, or take them off this invoice.' });
+  }
   if (!cleanItems.length) {
     return res.status(400).json({ error: 'Items must have description and positive amount' });
   }
@@ -3068,6 +3085,33 @@ router.patch('/invoices/:id', async (req, res) => {
   let lineItems = null;
   if (Array.isArray(b.line_items)) {
     if (b.line_items.length > 200) return res.status(400).json({ error: 'Too many lines on one invoice' });
+    /* ── A LINE WORTH NOTHING IS NOT A LINE ────────────────────────────────
+       A job with no fare recorded arrived as an amount of zero, printed as a
+       row with nothing in it, and was then dropped on save — so the journey
+       stayed un-billed and nobody was told. Both halves are wrong: a bill must
+       not carry a line it cannot charge for, and work must not fall out of the
+       system in silence.
+ 
+       So it is refused, by reference, and the owner prices the job and comes
+       back. A line that is purely a fee (a toll with no fare) is a real thing
+       and still allowed. GUARDRAIL: server/tests/invoice-lines.test.js */
+    /* A TYPED LINE CARRIES `amount`; A JOURNEY CARRIES `fare`. The two shapes
+       share this table and always have — reading only one of them would have
+       refused every account invoice in the system as valueless. */
+    const valueless = b.line_items.filter((it) => {
+      const amt = Number(it && (it.amount != null ? it.amount : it.fare));
+      const fee = Number(it && it.fee);
+      const hasText = !!String((it && (it.description || it.pickup)) || '').trim();
+      return hasText && !(amt > 0) && !(fee > 0);
+    });
+    if (valueless.length) {
+      const names = valueless.slice(0, 3).map((it) =>
+        String((it && (it.ref || it.date || it.description)) || 'a journey').slice(0, 40));
+      return res.status(400).json({
+        error: valueless.length + (valueless.length === 1 ? ' journey has' : ' journeys have')
+             + ' no amount on them (' + names.join(', ')
+             + (valueless.length > 3 ? ', …' : '') + '). Put a fare on them, or take them off this invoice.' });
+    }
     lineItems = b.line_items.map((it) => {
       const amount = Number(it && it.amount);
       if (kind === 'bespoke') {

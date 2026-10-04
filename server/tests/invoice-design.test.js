@@ -530,8 +530,9 @@ console.log('\nThe cache cannot outlive the template — again');
    TEMPLATE_VERSION would have orphaned every cached PDF to regenerate an
    identical page. Same reasoning as the cache-plumbing carve-out below.
    A change that actually moves ink still has to do both. */
-const LAYOUT_HASH = '96d3c0798646';
-const LAYOUT_VERSION = 16;  // 16: payment details move to the footer band  // 15: ACCOUNT/CARD on the booking-generated invoice  // 14: the amount always has a column of its own  // 13: the total names who it is payable to
+const LAYOUT_HASH = '3713503aeae7';
+const LAYOUT_VERSION = 17;  // 17: short journeys, date order, the gold back, cleaner columns
+                            // 16: payment details move to the footer band  // 15: ACCOUNT/CARD on the booking-generated invoice  // 14: the amount always has a column of its own  // 13: the total names who it is payable to
                             // 12: a FEE column on the one-off table
                             // 11: the driver-collected line
                             // 6: the two greys darkened for contrast
@@ -583,13 +584,22 @@ test('the drawing code and TEMPLATE_VERSION move together', () => {
 
 console.log('\nThe brand');
 
-test('still navy, still Cormorant, still no gold and no cream', () => {
+test('still navy, still Cormorant, and gold only from the token layer', () => {
   assert.ok(/#102a43/.test(SRC), 'the navy must be the house navy');
   assert.ok(/Cormorant-Regular\.ttf/.test(SRC) && /Cormorant-SemiBold\.ttf/.test(SRC),
     'the brand face must still be embedded');
-  // The dedicated hue guard lives in button-style.test.js; this is the cheap
-  // local check that nobody has reintroduced a literal.
-  assert.ok(!/#[cC]{1}[a-fA-F0-9]{5}|goldenrod|#[dD][aA]?[aA]520/.test(SRC), 'no gold literals');
+  /* The owner asked for the invoice to join the blue/gold/white redesign the
+     rest of the app moved to, so the two theme golds are allowed — and ONLY
+     those two, declared once. Anything else warm is somebody's own gold; the
+     hue sweep in button-style.test.js is the one that catches it. */
+  const golds = [...SRC.matchAll(/#[0-9a-fA-F]{6}/g)].map((m) => m[0].toUpperCase())
+    .filter((h) => {
+      const r = parseInt(h.slice(1, 3), 16), g = parseInt(h.slice(3, 5), 16), b = parseInt(h.slice(5, 7), 16);
+      return r > b + 24 && g > b + 8;            // warm: red and green over blue
+    });
+  const strays = [...new Set(golds)].filter((h) => !['#C9A227', '#8A6A12'].includes(h));
+  assert.deepStrictEqual(strays, [], 'gold must come from the token layer: ' + strays.join(', '));
+  assert.ok(/goldenrod/.test(SRC) === false, 'no named golds');
 });
 
 test('both shapes still build, and the maths is untouched', async () => {

@@ -74,10 +74,27 @@ const { shortDisplay, flightFor } = require('../address-normalize');
    GUARDRAIL: server/tests/invoice-contrast.test.js measures the rendered
    colours, so a pale grey introduced anywhere fails. */
 const NAVY   = '#102a43';   // --westmere-navy · 14.6:1 on white, 13.4:1 on tint
-const ACCENT = '#102a43';   // was gold; the accent is navy now
+/* ── THE GOLD IS BACK, AND IT KNOWS ITS PLACE ─────────────────────────────
+   The accent was stripped to navy in an earlier pass and the invoice has been
+   black and white ever since, while every other surface moved to blue, gold
+   and white. The owner wants the document to match the rest of the redesign.
+
+   TWO GOLDS, as in westmere-theme.css §1, because one cannot do both jobs:
+     ACCENT   is the ORNAMENT — rules, the masthead line, the mark beside a
+              note. It sits against white as a line or at large sizes, where
+              its contrast is not what carries the meaning.
+     GOLD_INK is for TYPE — the small-cap section labels and column headings,
+              which have to clear 4.5:1 on white and on the tint.
+   Body type stays navy. A gold paragraph is a pale paragraph, and this
+   document is read by somebody checking figures.
+   GUARDRAIL: server/tests/invoice-contrast.test.js measures what is rendered,
+   so a gold used where it cannot be read fails. */
+const ACCENT   = '#C9A227';   // --westmere-gold · rules and ornament only
+const GOLD_INK = '#8A6A12';   // --westmere-gold-ink · 5.4:1 on white, 5.0:1 on tint
 const SOFT   = '#2E4257';   // secondary type · 10.3:1 / 9.4:1  (was #3B5268)
 const MUTED  = '#42525F';   // labels, refs, small caps · 8.1:1 / 7.4:1  (was #657485)
 const HAIR   = '#dfe5ea';   // --westmere-line · a rule, never type
+const LINE   = '#c8d1d9';   // --westmere-line-strong · the dash in an empty cell
 const TINT   = '#F2F5F8';   // cool zebra tint (was ivory)
 
 // ── Page geometry ──────────────────────────────────────────────────────────
@@ -105,7 +122,7 @@ function fmtDate(d) {
    VISIBLE design changes; nothing else needs to be cleared, and the owner's
    existing files are left alone rather than deleted.
    GUARDRAIL: server/tests/invoice-paths.test.js */
-const TEMPLATE_VERSION = 16;  // 16: payment details move to the footer band  // 15: ACCOUNT/CARD on the booking-generated invoice  // 14: the amount always has a column of its own
+const TEMPLATE_VERSION = 17;  // 17: short journeys, date order, the gold back, cleaner columns  // 16: payment details move to the footer band  // 15: ACCOUNT/CARD on the booking-generated invoice  // 14: the amount always has a column of its own
                               // 13: the total names who it is payable to
                               // 12: a FEE column on the one-off table too
                               // 11: fare/toll split, and what the driver already collected
@@ -196,7 +213,7 @@ function drawMasthead(doc, y) {
   centredWide(doc, 'WESTMERE', 30, BODY, EMAIL_TRACK, y, NAVY);
   y += 34;
   // The strapline — the email tracks this one harder, 5px on 10px.
-  centredWide(doc, 'PRIVATE HIRE · SUSSEX', 8, BOLD, 5 / 10, y, ACCENT);
+  centredWide(doc, 'PRIVATE HIRE · SUSSEX', 8, BOLD, 5 / 10, y, GOLD_INK);
   y += 16;
   // The short centred hairline the email closes its header with.
   doc.save()
@@ -205,7 +222,73 @@ function drawMasthead(doc, y) {
   return y + 26;
 }
 
-function buildInvoicePdf(data) {
+/* ── WHAT THE DOCUMENT IS ALLOWED TO SAY ABOUT A JOURNEY ──────────────────
+   THE SHORT FORM, the same one the booking system shows. The owner has asked
+   for this twice. A line that reads
+ 
+     "12 Puttock Billingshurst via Mannings heath via Warninglid → Heathrow
+      Airport, Eastern Perimeter Road, Hatton Cross, London Borough of
+      Hillingdon, Greater London, England, TW5 9SH, United Kingdom"
+ 
+   is the geocoder's answer, not a description of a journey, and it turns a
+   four-line invoice into a page. The full address belongs on the booking,
+   where somebody is driving to it; on an invoice it is noise that costs the
+   reader the thing they came for.
+ 
+   Applied at RENDER, not only at creation, so the invoices already raised with
+   the long form print short from now on — which is the one the owner is
+   looking at. Display only: nothing is rewritten in the database.
+   GUARDRAIL: server/tests/invoice-lines.test.js */
+function shortJourney(text) {
+  const raw = String(text == null ? '' : text).trim();
+  if (!raw) return '';
+  /* ONLY WHERE IT IS A JOURNEY. The arrow is how the app builds "from → to",
+     and it is the only shape this may touch: shortDisplay is an ADDRESS
+     normaliser, and run over a free-text line — "Wedding car for the day,
+     including waiting at the church" — it would cut a sentence down to a word
+     it mistook for a town. A bespoke invoice carries both kinds of line, so
+     anything without an arrow is left exactly as it was typed. */
+  const parts = raw.split(/\s*(?:\u2192|->)\s*/);
+  if (parts.length < 2) return raw;
+  return parts.map((p) => shortDisplay(p) || p).join(' \u2192 ');
+}
+
+/* ── THE ORDER THE WORK WAS DONE IN ───────────────────────────────────────
+   A bill is read down the month. The owner's preview came out 21 Sep, 25 Sep,
+   27 Sep, 17 Sep — which is not a sort anybody can explain, and an unexplained
+   order makes a reader check every line twice.
+ 
+   Sorted on the DATE'S OWN COMPONENTS, never a parsed instant (the timezone
+   invariant in CLAUDE.md) and never the raw string: a row dated 2026-9-7
+   rather than 2026-09-07 sorts after everything as text, which is exactly the
+   shape of the odd one out. Undated lines keep their position at the end
+   rather than being thrown to the top. */
+function journeyKey(d) {
+  const m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(String(d || '').trim());
+  if (!m) return Infinity;
+  return (+m[1]) * 10000 + (+m[2]) * 100 + (+m[3]);
+}
+function inDateOrder(list) {
+  return (list || []).map((x, i) => ({ x, i }))
+    .sort((a, b) => (journeyKey(a.x && a.x.date) - journeyKey(b.x && b.x.date)) || (a.i - b.i))
+    .map((w) => w.x);
+}
+
+/* Both passes — the measure and the draw — must see the SAME lines, or the
+   document is laid out for one set of strings and printed with another. */
+function normaliseInvoiceData(data) {
+  const d = Object.assign({}, data || {});
+  if (Array.isArray(d.items)) {
+    d.items = inDateOrder(d.items).map((it) => Object.assign({}, it, {
+      description: shortJourney(it && it.description)
+    }));
+  }
+  if (Array.isArray(d.bookings)) d.bookings = inDateOrder(d.bookings);
+  return d;
+}
+
+function buildInvoicePdf(rawData) {
+  const data = normaliseInvoiceData(rawData);
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
       size: 'A4',
@@ -500,12 +583,18 @@ function drawInvoice(doc, data, slack) {
   const MID  = M + CW / 2;
   const COLW = CW / 2 - 10;
 
-  doc.font(BOLD).fontSize(7.5).fillColor(MUTED)
-     .text('FROM', M, y, { lineBreak: false });
-  doc.font(BOLD).fontSize(7.5).fillColor(MUTED)
-     .text('BILL TO', MID, y, { lineBreak: false });
+  /* The two section labels are the house `wm-lab`: gold ink, small caps, with
+     a hairline under each column so the block reads as two panels rather than
+     two paragraphs that happen to sit side by side. */
+  doc.font(BOLD).fontSize(7.5).fillColor(GOLD_INK)
+     .text('FROM', M, y, { characterSpacing: 0.9, lineBreak: false });
+  doc.font(BOLD).fontSize(7.5).fillColor(GOLD_INK)
+     .text('BILL TO', MID, y, { characterSpacing: 0.9, lineBreak: false });
+  doc.save().lineWidth(0.6).strokeColor(ACCENT)
+     .moveTo(M, y + 10).lineTo(M + COLW, y + 10)
+     .moveTo(MID, y + 10).lineTo(MID + COLW, y + 10).stroke().restore();
 
-  y += 13;
+  y += 17;
   let leftY  = y;
   let rightY = y;
 
@@ -632,21 +721,25 @@ function drawInvoice(doc, data, slack) {
        arithmetic predictable and nobody had a tall row to test it with. */
     const BSP_LIMIT = PAGE_H - M - 18 - 34;
     const bspHead = () => {
-      vbox(doc, M, y, CW, 22, '#EEF2F5');
-      doc.font(BOLD).fontSize(8).fillColor(MUTED).text('DESCRIPTION', M + 6, y + 7, { lineBreak: false });
+      /* White paper under the headings, with the gold hairline below doing the
+         work the grey slab used to. It reads cleaner — the owner asked for the
+         document to look less cramped — and it is what lets the gold-ink
+         headings be read at all: on the old #EEF2F5 band they measured 4.49:1,
+         a hair under the floor, and the contrast guard said so. */
+      doc.font(BOLD).fontSize(8).fillColor(GOLD_INK).text('DESCRIPTION', M + 6, y + 7, { lineBreak: false });
       if (anyFee) {
-        doc.font(BOLD).fontSize(8).fillColor(MUTED)
+        doc.font(BOLD).fontSize(8).fillColor(GOLD_INK)
            .text('FEE', BSP_EX, y + 7, { width: BSP_EW - 6, align: 'right', characterSpacing: 0.8, lineBreak: false });
       }
-      doc.font(BOLD).fontSize(8).fillColor(MUTED)
+      doc.font(BOLD).fontSize(8).fillColor(GOLD_INK)
          .text(anyDirect ? 'ACCOUNT' : 'AMOUNT', BSP_AX, y + 7,
                { width: BSP_AWIDTH, align: 'right', lineBreak: false });
       if (anyDirect) {
-        doc.font(BOLD).fontSize(8).fillColor(MUTED)
+        doc.font(BOLD).fontSize(8).fillColor(GOLD_INK)
            .text('CARD/CASH', BSP_DX, y + 7, { width: BSP_DW - 6, align: 'right', lineBreak: false });
       }
       if (anyComm) {
-        doc.font(BOLD).fontSize(8).fillColor(MUTED)
+        doc.font(BOLD).fontSize(8).fillColor(GOLD_INK)
            .text('COMMISSION', BSP_CX, y + 7, { width: BSP_CW - 6, align: 'right', lineBreak: false });
       }
       y += 22;
@@ -697,6 +790,16 @@ function drawInvoice(doc, data, slack) {
          .text('£' + (+it.amount || 0).toFixed(2),
                paidDirect ? BSP_DX : BSP_AX, y + descTop,
                { width: (paidDirect ? BSP_DW : BSP_AW) - 6, align: 'right', lineBreak: false });
+      /* ── AND A DASH IN THE COLUMN IT IS NOT IN ──────────────────────────
+         A journey whose fare sits in CARD/CASH left the ACCOUNT cell empty,
+         and an empty cell on a bill reads as a mistake — it is what the owner
+         reported as "no amount" on the fourth row. One character says the gap
+         is deliberate and keeps the eye on the column. */
+      if (anyDirect) {
+        doc.font(BODY).fontSize(11).fillColor(LINE)
+           .text('\u2014', paidDirect ? BSP_AX : BSP_DX, y + descTop,
+                 { width: (paidDirect ? BSP_AW : BSP_DW) - 6, align: 'right', lineBreak: false });
+      }
       /* This trip's share of the commission. Taken on the fare whichever column
          it sits in — a job settled in the car still earned the operator's
          commission, which is why the column adds up to more than a tenth of the
@@ -808,18 +911,22 @@ function drawInvoice(doc, data, slack) {
        drawing downwards, off the paper. */
     const BK_LIMIT = PAGE_H - M - 18 - 34;
     const bkHead = () => {
-      vbox(doc, M, y, CW, 22, '#EEF2F5');
-      doc.font(BOLD).fontSize(8).fillColor(MUTED)
+      /* White paper under the headings, with the gold hairline below doing the
+         work the grey slab used to. It reads cleaner — the owner asked for the
+         document to look less cramped — and it is what lets the gold-ink
+         headings be read at all: on the old #EEF2F5 band they measured 4.49:1,
+         a hair under the floor, and the contrast guard said so. */
+      doc.font(BOLD).fontSize(8).fillColor(GOLD_INK)
          .text('DATE / REF', M + 8, y + 7, { characterSpacing: 0.8, lineBreak: false });
-      doc.font(BOLD).fontSize(8).fillColor(MUTED)
+      doc.font(BOLD).fontSize(8).fillColor(GOLD_INK)
          .text('JOURNEY', JX, y + 7, { characterSpacing: 0.8, lineBreak: false });
-      doc.font(BOLD).fontSize(8).fillColor(MUTED)
+      doc.font(BOLD).fontSize(8).fillColor(GOLD_INK)
          .text('FEE', EX, y + 7, { width: EW - 6, align: 'right', characterSpacing: 0.8, lineBreak: false });
-      doc.font(BOLD).fontSize(8).fillColor(MUTED)
+      doc.font(BOLD).fontSize(8).fillColor(GOLD_INK)
          .text(anyDirectRow ? 'ACCOUNT' : 'FARE', FX, y + 7,
                { width: FW - 6, align: 'right', characterSpacing: 0.8, lineBreak: false });
       if (anyDirectRow) {
-        doc.font(BOLD).fontSize(8).fillColor(MUTED)
+        doc.font(BOLD).fontSize(8).fillColor(GOLD_INK)
            .text('CARD', PX, y + 7, { width: PW - 6, align: 'right', characterSpacing: 0.8, lineBreak: false });
       }
       y += 22;
@@ -1356,7 +1463,7 @@ module.exports = {
 /* The shared furniture, so a second document type prints on the same paper. */
 module.exports.sheet = {
   PAGE_W, PAGE_H, M, CW,
-  NAVY, ACCENT, SOFT, MUTED, HAIR, TINT,
+  NAVY, ACCENT, GOLD_INK, SOFT, MUTED, HAIR, LINE, TINT,
   BODY, BOLD, MONO,
   registerFonts, drawMasthead, hline, vbox, fmtDate, fmtShortDate
 };

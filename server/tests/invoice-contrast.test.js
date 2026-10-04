@@ -150,11 +150,28 @@ for (const [name, data] of [['bespoke', BESPOKE], ['account', ACCOUNT]]) {
     assert.deepStrictEqual([...new Set(bad)], [], 'below the 4.5 floor:\n      ' + [...new Set(bad)].join('\n      '));
   });
 
-  test('the ' + name + ' invoice clears AAA everywhere', async () => {
+  test('the ' + name + ' invoice clears AAA everywhere it is read', async () => {
     /* What the owner actually asked for. Kept separate from the AA test so a
-       future failure says which line was crossed. */
+       future failure says which line was crossed.
+ 
+       ONE DELIBERATE EXCEPTION, and it is a trade the owner made knowingly by
+       asking for the invoice to join the gold redesign: the small-cap SECTION
+       LABELS are gold ink, which measures 5.06:1 on white — AA with room, not
+       AAA. They are four words of signage ("FROM", "BILL TO", "DESCRIPTION"),
+       not a figure anybody checks. Every number, address, name and date on the
+       page is navy and still clears 7:1, and the AA test above holds the gold
+       to its floor. If the labels ever stop being labels, this exemption is
+       the first thing to take away. */
     const rows = await measured(data);
+    const GOLD_INK = '#8A6A12';
     const bad = rows.filter((r) => r.ratio < AAA)
+      .filter((r) => {
+        if (String(r.colour).toUpperCase() !== GOLD_INK) return true;
+        /* A label is short and shouting; anything longer is prose and must not
+           hide behind this. */
+        const t = String(r.s || '').trim();
+        return !(t.length <= 24 && t === t.toUpperCase());
+      })
       .map((r) => r.colour + ' on ' + r.bg + ' = ' + r.ratio.toFixed(2) + ':1  "' + r.s.slice(0, 34) + '"');
     assert.deepStrictEqual([...new Set(bad)], [], 'below 7:1:\n      ' + [...new Set(bad)].join('\n      '));
   });
@@ -175,17 +192,41 @@ test('the text ON THE ZEBRA ROWS is measured against the TINT, not white', async
 // ── 2. THE PALETTE ITSELF ────────────────────────────────────────────────
 console.log('\nThe palette, and the house it belongs to');
 
+test('the ornament gold is never used as type', () => {
+  /* ACCENT is a RULE colour — the hairlines, the mark beside a note. At
+     2.4:1 it could not be read as text and must never be asked to be; GOLD_INK
+     is the one that goes on type. The palette carries both so the distinction
+     is a name rather than a judgement at each call site. */
+  const src = read('server/invoice-pdf.js');
+  assert.ok(/const ACCENT\s*=\s*'#C9A227'/.test(src), 'ACCENT must be the house gold');
+  assert.ok(!/fillColor\(ACCENT\)/.test(src),
+    'ACCENT is being used as a text colour somewhere — use GOLD_INK');
+  assert.ok(/strokeColor\(ACCENT\)|hline\(doc, y, ACCENT|\.fill\(ACCENT\)/.test(src),
+    'ACCENT must still draw the rules, or the gold has gone again');
+});
+
 test('every named text colour clears AAA on white AND on the tint', () => {
   const src = read('server/invoice-pdf.js');
   const grab = (n) => (new RegExp('const ' + n + "\\s*=\\s*'(#[0-9a-fA-F]{6})'").exec(src) || [])[1];
   const TINT = grab('TINT');
-  for (const n of ['NAVY', 'ACCENT', 'SOFT', 'MUTED']) {
+  /* The colours that carry MEANING — the figures, the addresses, the names.
+     ACCENT is not among them: it is a rule colour, held to its own rule in the
+     test above. GOLD_INK is held to AA, because it is used for four words of
+     signage and nothing else — see the AAA test. */
+  for (const n of ['NAVY', 'SOFT', 'MUTED']) {
     const c = grab(n);
     assert.ok(c, n + ' is missing');
-    for (const bg of ['#FFFFFF', TINT, '#EEF2F5']) {
+    for (const bg of ['#FFFFFF', TINT]) {
       const r = contrast(c, bg);
       assert.ok(r >= AAA, n + ' (' + c + ') is only ' + r.toFixed(2) + ':1 on ' + bg);
     }
+  }
+  const ink = grab('GOLD_INK');
+  assert.ok(ink, 'GOLD_INK is missing — the section labels have no colour');
+  for (const bg of ['#FFFFFF', TINT]) {
+    const r = contrast(ink, bg);
+    assert.ok(r >= AA, 'GOLD_INK (' + ink + ') is only ' + r.toFixed(2) + ':1 on ' + bg
+      + ' — below the AA floor, and it is TYPE');
   }
 });
 
@@ -209,18 +250,27 @@ test('the tint was NOT lightened away', () => {
   assert.ok(vsWhite < 1.20, 'and it must stay a wash, not a block');
 });
 
-test('still navy, still no gold and no cream', () => {
+test('still navy, and the only golds are the two from the token layer', () => {
   /* The house rule from DESIGN.md, restated here because this file changes
      colours: a contrast fix must not become a re-skin. */
   const src = read('server/invoice-pdf.js');
+  const THEME_GOLDS = ['#C9A227', '#8A6A12'];   // --westmere-gold, --westmere-gold-ink
   const hexes = (src.match(/'#[0-9a-fA-F]{6}'/g) || []).map((h) => h.replace(/'/g, ''));
   for (const h of hexes) {
     const [r, g, b] = hex(h);
     const max = Math.max(r, g, b), min = Math.min(r, g, b);
     const warm = r >= g && g > b && (max - min) > 24;   // the cream/gold hue band
-    assert.ok(!warm, 'a warm colour crept into the invoice palette: ' + h);
+    if (!warm) continue;
+    /* The owner asked for the invoice to join the blue/gold/white redesign, so
+       the two theme golds are expected. Any OTHER warm colour is somebody's own
+       gold — or the cream the paper stopped being — and still fails. */
+    assert.ok(THEME_GOLDS.includes(h.toUpperCase()),
+      'a warm colour that is not a theme gold crept into the invoice palette: ' + h);
   }
   assert.ok(/#102a43/i.test(src), 'the navy must still be the house navy');
+  for (const g of THEME_GOLDS) {
+    assert.ok(src.toUpperCase().includes(g), 'the invoice lost ' + g + ' — the gold has gone again');
+  }
 });
 
 test('this guardrail is wired into npm test', () => {

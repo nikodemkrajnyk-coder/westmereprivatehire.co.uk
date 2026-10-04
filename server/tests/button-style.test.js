@@ -371,30 +371,63 @@ test('cream is still gone, and every gold comes from the token layer', () => {
 // a link in an email, so a mismatch there is the most jarring one in the system.
 const SERVER_SURFACES = ['server/email.js', 'server/invoice-pdf.js', 'server/public-api.js'];
 
-test('the emails and the invoice PDF carry no cream or gold either', () => {
+/* THE INVOICE IS BACK IN THE PALETTE THE REST OF THE APP MOVED TO. When this
+   was written the whole site had been stripped to navy on white, so "no gold
+   anywhere" was the rule. The owner then asked for blue, gold and white — the
+   apps were re-skinned and the invoice was the one surface left behind, which
+   is what he reported: a black-and-white document beside a gold app.
+
+   The rule that still matters is the one underneath: no CREAM (the paper is
+   white), and no gold INVENTED at the call site. So the invoice may use
+   exactly the two theme golds, declared once at the top of the file where the
+   contrast guard can find them — and nothing else warm. The emails stay navy:
+   nobody has asked to change them, and an email client is not a place to
+   discover a new palette. */
+const THEME_GOLDS = ['#C9A227', '#8A6A12'];   // --westmere-gold, --westmere-gold-ink
+
+test('no cream anywhere, and gold only where the owner asked for it', () => {
   const found = [];
   for (const f of SERVER_SURFACES) {
+    const invoice = /invoice-pdf/.test(f);
+    const lines = read(f).split('\n');
     for (const c of coloursIn(read(f))) {
       const hue = warmHue(c.r, c.g, c.b);
-      if (hue !== null) {
-        const kind = (c.r > 0xdf && c.g > 0xdf && c.b > 0xdf) ? 'cream' : 'gold';
-        found.push(f + ':' + c.line + '  ' + c.value + '  (' + kind + ', hue ' + hue.toFixed(0) + '°)');
+      if (hue === null) continue;
+      if (c.r > 0xdf && c.g > 0xdf && c.b > 0xdf) {
+        found.push(f + ':' + c.line + '  ' + c.value + '  (cream — the paper is white)');
+        continue;
       }
+      if (invoice && THEME_GOLDS.includes(String(c.value).toUpperCase())) {
+        /* …and only as a named constant, never typed into a draw call. */
+        const decl = /^const\s+(ACCENT|GOLD_INK)\s*=/.test((lines[c.line - 1] || '').trim());
+        if (decl) continue;
+        found.push(f + ':' + c.line + '  ' + c.value + '  (gold typed in — use ACCENT or GOLD_INK)');
+        continue;
+      }
+      found.push(f + ':' + c.line + '  ' + c.value + '  (gold, hue ' + hue.toFixed(0) + '°)');
     }
   }
   assert.deepStrictEqual(found, [],
-    'the emails and the invoice must match the site — navy on white, no gold:\n      ' +
+    'cream must not exist, and only the two theme golds may appear, on the invoice only:\n      ' +
     found.slice(0, 20).join('\n      '));
 });
 
-test('no GOLD constant survives in the email or invoice palette', () => {
-  // Re-pointing a constant called GOLD at navy is not enough: the name is how a
-  // gold creeps back in. Both files declare ACCENT instead.
+test('the palette is declared once, by name, in each file', () => {
+  /* A colour typed into a draw call is a colour nothing can audit. Both files
+     declare ACCENT; the invoice also declares GOLD_INK, because type and
+     ornament cannot share one gold — the ornament does not have to be legible
+     and the type does. A bare `GOLD` is still refused: the name is how an
+     unmeasured gold gets used for small text. */
   for (const f of ['server/email.js', 'server/invoice-pdf.js']) {
     const src = read(f);
-    assert.ok(!/\bconst\s+GOLD\b/.test(src), f + ' still declares a GOLD constant');
-    assert.ok(/\bconst\s+ACCENT\b/.test(src), f + ' should declare ACCENT (the navy accent) instead of GOLD');
+    assert.ok(!/\bconst\s+GOLD\b\s*=/.test(src), f + ' declares a bare GOLD — say ACCENT or GOLD_INK');
+    assert.ok(/\bconst\s+ACCENT\b/.test(src), f + ' should declare ACCENT');
   }
+  const inv = read('server/invoice-pdf.js');
+  assert.ok(/const\s+ACCENT\s*=\s*'#C9A227'/.test(inv), 'the invoice ornament must be --westmere-gold');
+  assert.ok(/const\s+GOLD_INK\s*=\s*'#8A6A12'/.test(inv), 'and its type gold must be --westmere-gold-ink');
+  assert.ok(!/fillColor\('#C9A227'\)|fillColor\('#c9a227'\)/.test(inv),
+    'the ornament gold must never be used as TYPE — it does not clear 4.5:1');
   // The served pages carry their palette as CSS custom properties instead.
   const api = read('server/public-api.js');
   assert.ok(!/--gold\b/.test(api), 'server/public-api.js still defines or uses a --gold token');

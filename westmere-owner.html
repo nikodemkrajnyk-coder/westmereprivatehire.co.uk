@@ -3305,7 +3305,22 @@ async function owOperatorInvoiceFor(id) {
     if (!r.ok || !d.ok) throw new Error(d.error || 'Could not load this operator');
   } catch (e) { showToast(e.message); return; }
   var op = d.operator || {};
-  var jobs = (d.jobs || []).filter(function (j) { return !j.invoiced; });
+  /* ── EVERY UN-BILLED JOB, IN THE ORDER THE WORK WAS DONE ────────────────
+     The operator page lists newest first, which is right for a page you scan
+     and wrong for a bill you read down. Sorted on the date's own components —
+     never the raw string, because a row stored 2026-9-7 rather than 2026-09-07
+     sorts after everything as text, which is what put 17 September below 27
+     September on the owner's preview. GUARDRAIL: server/tests/invoice-lines.test.js */
+  var jobs = (d.jobs || []).filter(function (j) { return !j.invoiced; }).sort(function (a, b) {
+    return _invDateKey(a && a.date) - _invDateKey(b && b.date);
+  });
+  /* ── AND A JOB WITH NO FARE IS NOT SILENTLY BILLED AT NOTHING ───────────
+     It arrived as `Number(j.fare) || 0`, which put a zero in the amount box —
+     and the save then dropped the line for having no amount, leaving the job
+     un-billed with nobody told. The owner saw it as a row with nothing in it.
+     It is still listed, because it IS work he has not been paid for, and he is
+     told it needs a price before this invoice can carry it. */
+  var unpriced = jobs.filter(function (j) { return !(Number(j.fare) > 0); });
   owOperatorClose();
   if (typeof goPage === 'function') goPage('invoices');
   setTimeout(function () {
@@ -3328,6 +3343,10 @@ async function owOperatorInvoiceFor(id) {
     if (!jobs.length) invAddItem();
     invCalcTotal();
     if (!jobs.length) showToast('Nothing new to invoice — add the lines by hand');
+    else if (unpriced.length) {
+      showToast(unpriced.length + (unpriced.length === 1 ? ' job has' : ' jobs have')
+        + ' no fare yet — put a price in before you send this');
+    }
   }, 80);
 }
 
@@ -8091,6 +8110,21 @@ function invCalcTotal(){
   invSyncTotal();
 }
 
+/* The same shortening the booking lists use — one normaliser, so an address
+   reads the same on the invoice as it does in Trip History. */
+/* A date sorted on its components, never parsed as an instant and never
+   compared as raw text. See the timezone invariant in CLAUDE.md. */
+function _invDateKey(d){
+  var m=/^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(String(d||'').trim());
+  return m ? ((+m[1])*10000+(+m[2])*100+(+m[3])) : Infinity;
+}
+
+function _invShort(a){
+  if(!a)return '';
+  try{ return (window.WMAddr?WMAddr.shortDisplay(a):'')||String(a).trim(); }
+  catch(e){ return String(a).trim(); }
+}
+
 function invGetItems(){
   var rows=document.querySelectorAll('#ni-items .ni-item');
   var items=[];
@@ -8106,8 +8140,16 @@ function invGetItems(){
        the short form; the precise string the geocoder returned is what the
        invoice carries — and what it falls back to if the owner typed it by
        hand and never picked a suggestion. */
-    var from=window.WMLookup?WMLookup.full(fromEl):((fromEl&&fromEl.value)||'').trim();
-    var to  =window.WMLookup?WMLookup.full(toEl)  :((toEl  &&toEl.value)  ||'').trim();
+    /* THE SHORT FORM GOES ON THE INVOICE. This took the resolved geocoder
+       string — the precise one, which is the right answer for a BOOKING,
+       because somebody is driving to it — and printed it on a bill, where
+       "12 Puttock Billingshurst via Mannings heath via Warninglid" and a
+       seven-part Heathrow address turn four journeys into a page.
+       The full string stays on the booking; the invoice carries the short
+       form the rest of the app shows. GUARDRAIL: server/tests/invoice-lines.test.js */
+    var fromFull=window.WMLookup?WMLookup.full(fromEl):((fromEl&&fromEl.value)||'').trim();
+    var toFull  =window.WMLookup?WMLookup.full(toEl)  :((toEl  &&toEl.value)  ||'').trim();
+    var from=_invShort(fromFull), to=_invShort(toFull);
     var amt=parseFloat(amtEl.value)||0;
     /* BLANK IS NOT ZERO. An empty fee box means this trip carried none and no
        fee is shown for it; it must not become a £0.00 the invoice prints. */
@@ -8122,7 +8164,11 @@ function invGetItems(){
     var desc=(from&&to)?(from+' \u2192 '+to):(from||to);
     items.push(Object.assign({}, r._wmLine||{}, {
                 date:date||null,description:desc,amount:amt,
-                pickup:from||null,destination:to||null,fee:fee>0?Math.round(fee*100)/100:0,
+                pickup:from||null,destination:to||null,
+                /* Kept, not printed: where the job came from, if anybody ever
+                   has to check which address was billed. */
+                pickup_full:fromFull||null,destination_full:toFull||null,
+                fee:fee>0?Math.round(fee*100)/100:0,
                 collected_direct:collected}));
   });
   return items;

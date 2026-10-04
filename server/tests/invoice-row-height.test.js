@@ -97,6 +97,12 @@ async function draw(data) {
   return ops;
 }
 
+/* These wrap and must GO ON wrapping. The invoice shortens a journey now —
+   "from → to" comes out as town → town (server/tests/invoice-lines.test.js) —
+   but only a line with an arrow in it, because shortDisplay is an address
+   normaliser and a bespoke line is as often a sentence as a journey. Neither
+   of these carries an arrow, so both reach the page as typed, which is what
+   this file measures. */
 const LONG = 'Weppons Farm, Chanctonbury Ring Road, Wiston BN44 3DN - Gatwick Airport (parking £6.00)';
 const LONGER = 'Weppons Farm, Chanctonbury Ring Road, Wiston BN44 3DN - London City Airport (parking £11.50) including meet and greet and one hour of waiting time';
 const SETTINGS = { company_name: 'Westmere Private Hire' };
