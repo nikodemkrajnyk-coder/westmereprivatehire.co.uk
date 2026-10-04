@@ -321,7 +321,7 @@ test('the admin job row shows the same glance, for parity', () => {
 
 test('both apps load the theme, or the glance has no sizes at all', () => {
   for (const [name, src] of [['westmere-owner.html', OWNER], ['westmere-admin.html', ADMIN]]) {
-    assert.ok(/<link[^>]+href="\/westmere-theme\.css"/.test(src),
+    assert.ok(/<link[^>]+href="\/westmere-theme\.css(\?v=[^"]*)?"/.test(src),
       name + ' does not load /westmere-theme.css — the glance classes would be unstyled');
   }
 });

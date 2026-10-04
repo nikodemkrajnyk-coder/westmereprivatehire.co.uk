@@ -34,8 +34,8 @@ const OWNER = read('westmere-owner.html');
 // ── 1. The shared module is the single source of truth ────────────────────
 console.log('\nShared lifecycle module is wired into BOTH staff apps');
 test('both apps load /wm-lifecycle.js', () => {
-  assert.ok(/<script src="\/wm-lifecycle\.js"><\/script>/.test(OWNER), 'owner app must load the shared lifecycle module');
-  assert.ok(/<script src="\/wm-lifecycle\.js"><\/script>/.test(ADMIN), 'admin app must load the shared lifecycle module');
+  assert.ok(/<script src="\/wm-lifecycle\.js(\?v=[^"]*)?"><\/script>/.test(OWNER), 'owner app must load the shared lifecycle module');
+  assert.ok(/<script src="\/wm-lifecycle\.js(\?v=[^"]*)?"><\/script>/.test(ADMIN), 'admin app must load the shared lifecycle module');
 });
 test('both apps take the STATUS badge from the shared module', () => {
   assert.ok(/WMLifecycle\.statusLabel\(/.test(OWNER), 'owner must use WMLifecycle.statusLabel');

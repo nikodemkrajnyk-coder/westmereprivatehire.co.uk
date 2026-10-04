@@ -100,7 +100,7 @@ test('every app renders luggage through the shared helper, never the raw value',
                              ['westmere-rider.html', RIDER], ['westmere-driver.html', DRIVER]]) {
     assert.ok(/WMLifecycle\.bags(Text|Label|Count)\(/.test(src),
       name + ' must take its luggage label from the shared WMLifecycle helper');
-    assert.ok(/<script src="\/wm-lifecycle\.js">/.test(src), name + ' must load /wm-lifecycle.js');
+    assert.ok(/<script src="\/wm-lifecycle\.js(\?v=[^"]*)?">/.test(src), name + ' must load /wm-lifecycle.js');
     // The raw column value must never be concatenated with the word "bag(s)".
     assert.ok(!/\.bags\s*\+\s*'\s*bags?/.test(src) && !/\.bags\s*\+\s*"\s*bags?/.test(src),
       name + ' still builds a luggage label out of the raw bags value');

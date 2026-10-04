@@ -231,7 +231,7 @@ console.log('\nBoth staff apps read the same module');
 
 test('both apps load wm-compact.js', () => {
   for (const [f, src] of [['owner', OWNER], ['admin', ADMIN]]) {
-    assert.ok(/<script src="\/wm-compact\.js">/.test(src), f + ' does not load the shared module');
+    assert.ok(/<script src="\/wm-compact\.js(\?v=[^"]*)?">/.test(src), f + ' does not load the shared module');
   }
 });
 

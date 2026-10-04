@@ -1052,7 +1052,7 @@ test('a FEE is optional per trip — blank is not zero', () => {
 
 test('FROM and TO go through the address lookup, and the RESOLVED address is stored', () => {
   const H = read('westmere-owner.html');
-  assert.ok(/src="\/wm-address-lookup\.js"/.test(H), 'the owner app must load the lookup');
+  assert.ok(/src="\/wm-address-lookup\.js(\?v=[^"]*)?"/.test(H), 'the owner app must load the lookup');
   const row = /function invAddItem\([\s\S]*?\n\}/.exec(H)[0];
   assert.ok(/class="fi ni-from"/.test(row) && /class="fi ni-to"/.test(row), 'the row needs From and To');
   assert.ok(/WMLookup\.attach\(row\.querySelector\('\.ni-from'\)\)/.test(row),

@@ -2,20 +2,51 @@
 // returning devices re-run install and drop the stale copy in activate().
 // GUARDRAIL: server/tests/rider-cache.test.js pins this to the rider-html hash
 // below — if you edit westmere-rider.html without bumping both, `npm test` fails.
-// rider-html-sha256: 2b51a045ed6406797c13a03221dce287d668efe5d885bb18f729f280b6de6077
-var CACHE = 'westmere-rider-v51';
+// rider-html-sha256: 489f9b7f7815060d3c62232a098c41296debacfa523fa16cac0ef850a32ce1fc
+var CACHE = 'westmere-rider-v52';
+/* THE RIDER APP'S OWN PAGE AND ASSETS, at the URLs the page actually asks for.
+   The assets carry the release in their query now (see
+   server/tests/asset-version.test.js); precaching the bare paths would store
+   copies nothing ever asks for again, and — worse — copies that could be
+   handed to a DIFFERENT app that asks for the bare path. */
+var VERSION = '2026-10-04a';
+var CACHE_BUST = '?v=' + VERSION;
 var PRECACHE = [
   '/westmere-rider.html',
-  '/config.js',
-  '/address-normalize.js',
-  '/wm-lifecycle.js',
-  '/wm-timewheel.js',
-  '/wm-buttons.css',
-  '/westmere-theme.css',
+  '/config.js' + CACHE_BUST,
+  '/address-normalize.js' + CACHE_BUST,
+  '/wm-lifecycle.js' + CACHE_BUST,
+  '/wm-timewheel.js' + CACHE_BUST,
+  '/wm-ask.js' + CACHE_BUST,
+  '/wm-buttons.css' + CACHE_BUST,
+  '/westmere-theme.css' + CACHE_BUST,
   '/rider-manifest.json',
   '/rider-icon-192.svg',
   '/rider-icon-512.svg'
 ];
+
+/* ── THIS WORKER BELONGS TO THE RIDER APP, AND ONLY TO IT ──────────────────
+   A service worker's scope is the directory it is served from, and this one
+   sits at the root — so it controls westmere-owner.html, westmere-admin.html,
+   the booking form and the marketing site as well as the page it was written
+   for. Nothing above limited what it would handle, so it cached every
+   same-origin GET the device made, for any app, and answered from that cache
+   whenever the network wavered.
+   
+   That is how the owner's iPhone kept showing the pre-redesign app for days
+   after the redesign was live and verified on the server: his phone was being
+   handed the rider worker's months-old copy of westmere-owner.html and
+   westmere-theme.css. Black and white, no gold, and nothing wrong with the
+   deploy at all. The eviction code in the new page could not help — the new
+   page was exactly what never loaded.
+   
+   So the worker now answers for the rider app and passes everything else
+   straight to the network, where the app's own no-store headers decide.
+   GUARDRAIL: server/tests/rider-cache.test.js */
+function riderOwns(pathname, search) {
+  if (pathname === '/westmere-rider.html') return true;
+  return PRECACHE.indexOf(pathname + (search || '')) !== -1;
+}
 
 self.addEventListener('install', function (e) {
   e.waitUntil(
@@ -48,6 +79,8 @@ self.addEventListener('fetch', function (e) {
   // requests go straight to the network. GUARDRAIL: rider-cache.test.js.
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
+  /* Another app's page or assets: not this worker's business. See riderOwns. */
+  if (!riderOwns(url.pathname, url.search)) return;
 
   // HTML/navigation: bypass the BROWSER HTTP CACHE, not just our own cache.
   // express.static sends no Cache-Control for .html — only ETag/Last-Modified —

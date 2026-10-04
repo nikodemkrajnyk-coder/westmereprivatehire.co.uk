@@ -230,7 +230,7 @@ test('owner + admin + rider + driver apps and the pay page load the normalizer',
   for (const f of ['westmere-owner.html', 'westmere-admin.html', 'westmere-rider.html',
                    'westmere-driver.html', 'westmere-pay.html']) {
     const src = read(f);
-    assert.ok(/<script src="\/address-normalize\.js">/.test(src), f + ' must load /address-normalize.js');
+    assert.ok(/<script src="\/address-normalize\.js(\?v=[^"]*)?">/.test(src), f + ' must load /address-normalize.js');
     assert.ok(/WMAddr\.shortDisplay/.test(src), f + ' must delegate its short-address helper to WMAddr.shortDisplay');
   }
 });

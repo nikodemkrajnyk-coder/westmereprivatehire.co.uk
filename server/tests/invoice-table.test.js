@@ -674,7 +674,7 @@ console.log('\nThe owner app and the admin app cannot drift apart');
 
 test('both pages load the shared arithmetic', () => {
   for (const [name, src] of [['owner', OWNER], ['admin', ADMIN]]) {
-    assert.ok(/<script src="\/wm-invoice-maths\.js"><\/script>/.test(src),
+    assert.ok(/<script src="\/wm-invoice-maths\.js(\?v=[^"]*)?"><\/script>/.test(src),
       name + ' does not load wm-invoice-maths.js');
   }
 });

@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<script src="/address-normalize.js"></script>
-<script src="/wm-address-lookup.js"></script>
-<script src="/wm-invoice-maths.js"></script>
-<script src="/wm-lifecycle.js"></script>
-<script src="/wm-compact.js"></script>
+<script src="/address-normalize.js?v=2026-10-04a"></script>
+<script src="/wm-address-lookup.js?v=2026-10-04a"></script>
+<script src="/wm-invoice-maths.js?v=2026-10-04a"></script>
+<script src="/wm-lifecycle.js?v=2026-10-04a"></script>
+<script src="/wm-compact.js?v=2026-10-04a"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"/>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -674,9 +674,9 @@ select:-webkit-autofill:focus{
   caret-color:#102a43;
   transition:background-color 9999s ease-in-out 0s;
 }
-</style><link rel="stylesheet" href="/wm-buttons.css">
-<link rel="stylesheet" href="/westmere-theme.css">
-<script src="/wm-ask.js"></script>
+</style><link rel="stylesheet" href="/wm-buttons.css?v=2026-10-04a">
+<link rel="stylesheet" href="/westmere-theme.css?v=2026-10-04a">
+<script src="/wm-ask.js?v=2026-10-04a"></script>
 <link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"></head>
 <body>
 
@@ -820,6 +820,19 @@ select:-webkit-autofill:focus{
         <button onclick="closeSettings()" style="background:transparent;border:none;font-size:1.4rem;cursor:pointer;color:rgba(27,27,26,.5)">&times;</button>
       </div>
 
+
+      <!-- WHICH VERSION THIS PHONE IS ACTUALLY RUNNING.
+           The owner reported the old black-and-white app on his iPhone days
+           after the redesign went live, and there was no way to tell from the
+           outside whether he was looking at a stale copy or at something else
+           entirely. Now he can read it back. If this does not say the version
+           below, the device is serving a cached app and the fix is to close
+           the home-screen app and reopen it (or remove and re-add the icon).
+           GUARDRAIL: server/tests/asset-version.test.js -->
+      <div style="margin-top:1.2rem;padding-top:.9rem;border-top:1px solid var(--westmere-line,#dfe5ea);text-align:center">
+        <div style="font-family:var(--sans);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--westmere-ink-soft)">Version <span id="app-version">2026-10-04a</span></div>
+        <div onclick="owForceRefresh()" style="display:inline-block;margin-top:.6rem;padding:.5rem .9rem;border:1px solid var(--westmere-line-strong,#c8d1d9);border-radius:7px;font-family:var(--sans);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--westmere-navy,#102a43);cursor:pointer">Reload the app</div>
+      </div>
       <!-- Owner Profile -->
       <div id="sett-owner-profile" style="background:transparent;border-radius:12px;padding:1.1rem 1rem;margin-bottom:1rem">
         <div style="font-size:.8rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(27,27,26,.5);margin-bottom:.9rem">My Profile</div>
@@ -1653,6 +1666,27 @@ if ('serviceWorker' in navigator) {
   caches.keys().then(function(keys) {
     keys.forEach(function(k) { caches.delete(k); });
   });
+}
+
+/* THE LAST RESORT, ON THE DEVICE. Unregisters any service worker, empties
+   every cache the app can see, and reloads past the HTTP cache. The owner
+   should never need it — the assets carry a version in their URL now, so a
+   stale copy cannot be served for them — but when a phone IS stuck this is
+   one tap instead of deleting and re-adding the home-screen icon. */
+async function owForceRefresh(){
+  try{
+    if('serviceWorker' in navigator){
+      var regs=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(function(r){return r.unregister();}));
+    }
+  }catch(e){}
+  try{
+    var keys=await caches.keys();
+    await Promise.all(keys.map(function(k){return caches.delete(k);}));
+  }catch(e){}
+  /* A query the device has never seen defeats anything still holding the old
+     page — including an installed home-screen app's own copy. */
+  location.replace(location.pathname + '?fresh=' + Date.now());
 }
 
 // ── DISPLAY PREFERENCES (font size / brightness / contrast) ──────────────────
@@ -9065,7 +9099,7 @@ setInterval(function(){
 }, 30000);
 </script>
 
-<script src="/config.js"></script>
-<script src="/wm-realtime.js"></script>
+<script src="/config.js?v=2026-10-04a"></script>
+<script src="/wm-realtime.js?v=2026-10-04a"></script>
 </body>
 </html>

@@ -87,7 +87,9 @@ test('it is a light card that refuses the repaint', () => {
 
 test('every app loads it', () => {
   for (const f of ['westmere-owner.html', 'westmere-admin.html', 'westmere-driver.html', 'westmere-rider.html']) {
-    assert.ok(/<script src="\/wm-ask\.js"><\/script>/.test(read(f)),
+    /* The query is the release (see server/tests/asset-version.test.js), so
+       the tag is matched up to it rather than character for character. */
+    assert.ok(/<script src="\/wm-ask\.js(\?v=[^"]*)?"><\/script>/.test(read(f)),
       f + ' calls WMAsk but never loads it');
   }
 });

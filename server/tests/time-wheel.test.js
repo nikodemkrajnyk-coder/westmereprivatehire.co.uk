@@ -80,7 +80,7 @@ test('BOTH surfaces call the shared wheel — neither has its own time picker', 
 
 test('every surface with a time field loads /wm-timewheel.js', () => {
   for (const f of ['book.html', 'index.html', 'westmere-rider.html']) {
-    assert.ok(/<script src="\/wm-timewheel\.js"><\/script>/.test(read(f)),
+    assert.ok(/<script src="\/wm-timewheel\.js(\?v=[^"]*)?"><\/script>/.test(read(f)),
       f + ' does not load /wm-timewheel.js — the time field would do nothing');
   }
   assert.ok(read('rider-sw.js').includes('/wm-timewheel.js'),

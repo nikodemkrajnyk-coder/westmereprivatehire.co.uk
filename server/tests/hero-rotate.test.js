@@ -54,7 +54,7 @@ test('every hero page carries a photo list and loads the script', () => {
     const src = read(p);
     assert.ok(/data-hero-photos=/.test(src), p + ' has no data-hero-photos list');
     assert.ok(/hero-rotate\.js/.test(src), p + ' never loads hero-rotate.js, so its list does nothing');
-    assert.ok(/<script defer src="\/hero-rotate\.js">/.test(src),
+    assert.ok(/<script defer src="\/hero-rotate\.js(\?v=[^"]*)?">/.test(src),
       p + ' loads the rotation without defer — it must not compete with first paint');
   }
 });

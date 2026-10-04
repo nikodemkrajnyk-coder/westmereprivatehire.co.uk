@@ -61,6 +61,64 @@ test('fetch handler has a same-origin guard (never proxies Stripe/fonts/cross-or
     'the cross-origin guard must come BEFORE respondWith(), or cross-origin requests still get proxied');
 });
 
+test('the rider worker never touches another app — the owner-iPhone outage', () => {
+  /* WHAT HAPPENED: this worker is registered from the rider page at the site
+     ROOT, so its scope is every page on the domain — the owner app, the admin
+     app, the booking form, the marketing site. Nothing limited what it would
+     handle, so it cached every same-origin GET any of them made and answered
+     from that cache whenever the network wavered.
+
+     The owner's iPhone therefore went on being handed this worker's months-old
+     copy of westmere-owner.html and westmere-theme.css for days after the
+     redesign was live and verified byte-for-byte on the server: black and
+     white, no gold, and nothing wrong with the deploy. The eviction code in
+     the new owner page could not help — the new page was exactly what never
+     loaded.
+
+     It answers for the rider app and nothing else now. Driven, not read:
+     every other app's URL must leave respondWith uncalled. */
+  const vm = require('vm');
+  const handlerSrc = sw.slice(sw.indexOf("self.addEventListener('fetch'"));
+  const body = handlerSrc.slice(handlerSrc.indexOf('{', handlerSrc.indexOf('function (e)')) + 1,
+    handlerSrc.lastIndexOf('});'));
+
+  function handles(url, mode) {
+    let called = false;
+    const sandbox = {
+      URL, Response: class {}, Promise,
+      caches: { match: () => Promise.resolve(undefined), open: () => Promise.resolve({ put() {} }) },
+      fetch: () => Promise.resolve({ ok: true, clone() { return this; } }),
+      self: { location: { origin: 'https://westmereprivatehire.co.uk' }, addEventListener() {}, skipWaiting() {}, clients: { claim() {} } },
+      console: { log() {}, warn() {}, error() {} },
+      e: { request: { url, method: 'GET', mode: mode || 'navigate' }, respondWith: () => { called = true; } }
+    };
+    vm.createContext(sandbox);
+    vm.runInContext(sw.slice(0, sw.indexOf("self.addEventListener('fetch'")), sandbox);
+    vm.runInContext('(function(e){' + body + '})(e)', sandbox);
+    return called;
+  }
+
+  const H = 'https://westmereprivatehire.co.uk';
+  for (const other of ['/westmere-owner.html', '/westmere-admin.html', '/westmere-driver.html',
+                       '/westmere-pay.html', '/book.html', '/index.html', '/']) {
+    assert.strictEqual(handles(H + other), false,
+      'the rider worker still answers for ' + other + ' — that is the stale-app bug');
+  }
+  /* And the shared assets, which is how a new page ended up wearing an old
+     stylesheet: another app asks for them at a versioned URL this worker has
+     never cached, and it must not intercept them even so. */
+  for (const asset of ['/westmere-theme.css?v=9999-99-99', '/wm-buttons.css?v=9999-99-99',
+                       '/wm-lifecycle.js?v=9999-99-99', '/wm-compact.js?v=2026-10-04a']) {
+    assert.strictEqual(handles(H + asset, 'no-cors'), false,
+      'the rider worker still answers for ' + asset);
+  }
+  // …while its own page and its own versioned assets are still its business.
+  assert.strictEqual(handles(H + '/westmere-rider.html'), true,
+    'the rider worker must still serve the rider app');
+  const own = /'\/westmere-theme\.css' \+ CACHE_BUST/.test(sw);
+  assert.ok(own, 'the rider precache must list its assets at the versioned URLs the page asks for');
+});
+
 test('activate() deletes every cache except the current CACHE', () => {
   assert.ok(/keys\.filter\([^)]*\)[\s\S]*?k !== CACHE[\s\S]*?caches\.delete/.test(sw),
     'activate() must delete stale caches so returning users get fresh HTML');
@@ -123,7 +181,7 @@ test('the SW can NEVER respond with undefined (the blank-page outage)', () => {
         open: () => Promise.resolve({ put: () => Promise.resolve() })
       },
       fetch: () => networkFails ? Promise.reject(new Error('offline')) : Promise.resolve({ ok: true, clone() { return this; } }),
-      self: { location: { origin: 'https://westmereprivatehire.co.uk' } },
+      self: { location: { origin: 'https://westmereprivatehire.co.uk' }, addEventListener() {}, skipWaiting() {}, clients: { claim() {} } },
       console: { log() {}, warn() {}, error() {} },
       e: {
         request: { url: requestUrl, method: 'GET', mode: mode || 'navigate' },
@@ -131,6 +189,10 @@ test('the SW can NEVER respond with undefined (the blank-page outage)', () => {
       }
     };
     vm.createContext(sandbox);
+    /* Run the worker's OWN top-level first — CACHE, PRECACHE, riderOwns and
+       anything added later — so this harness drives the shipped definitions
+       instead of a copy of them that can drift. */
+    vm.runInContext(sw.slice(0, sw.indexOf("self.addEventListener('fetch'")), sandbox);
     vm.runInContext('(function(e){' + body + '})(e)', sandbox);
     return responded;
   }
@@ -206,7 +268,7 @@ test('a navigation is NEVER answered with a redirected response (Safari outage)'
         return Promise.resolve({ type: 'basic', status: 200, ok: true, redirected: true,
           headers: {}, clone() { return this; }, blob() { return Promise.resolve('followed-bytes'); } });
       },
-      self: { location: { origin: 'https://westmereprivatehire.co.uk' } },
+      self: { location: { origin: 'https://westmereprivatehire.co.uk' }, addEventListener() {}, skipWaiting() {}, clients: { claim() {} } },
       console: { log() {}, warn() {}, error() {} },
       e: {
         request: { url: requestUrl, method: 'GET', mode: mode || 'navigate' },
@@ -214,16 +276,25 @@ test('a navigation is NEVER answered with a redirected response (Safari outage)'
       }
     };
     vm.createContext(sandbox);
+    /* Run the worker's OWN top-level first — CACHE, PRECACHE, riderOwns and
+       anything added later — so this harness drives the shipped definitions
+       instead of a copy of them that can drift. */
+    vm.runInContext(sw.slice(0, sw.indexOf("self.addEventListener('fetch'")), sandbox);
     vm.runInContext('(function(e){' + body + '})(e)', sandbox);
     return { responded, opts: () => fetchOpts };
   }
 
-  const ACCOUNT = 'https://westmereprivatehire.co.uk/westmere-account.html';
+  /* The worker only answers for the rider app now (see riderOwns in
+     rider-sw.js), so the navigation it must get right is the rider page
+     itself. /westmere-account.html, which 301s here, is no longer handled at
+     all — the browser follows that redirect on its own, which is strictly
+     safer and is asserted separately below. */
+  const RIDER = 'https://westmereprivatehire.co.uk/westmere-rider.html';
   const cases = [
-    { label: 'navigating to the redirecting /westmere-account.html', requestUrl: ACCOUNT },
-    { label: 'navigating to the site root', requestUrl: 'https://westmereprivatehire.co.uk/' },
+    { label: 'navigating to the rider app', requestUrl: RIDER },
+    { label: 'navigating to the rider app with a query string', requestUrl: RIDER + '?verified=1' },
     { label: 'navigation falling back to a REDIRECTED cached copy',
-      requestUrl: ACCOUNT, redirectMode: 'network-down', cachedIsRedirected: true }
+      requestUrl: RIDER, redirectMode: 'network-down', cachedIsRedirected: true }
   ];
 
   return Promise.all(cases.map(c => {
