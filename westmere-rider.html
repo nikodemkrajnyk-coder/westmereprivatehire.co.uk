@@ -1090,6 +1090,7 @@ select:-webkit-autofill:focus{
 }
 </style><link rel="stylesheet" href="/wm-buttons.css">
 <link rel="stylesheet" href="/westmere-theme.css">
+<script src="/wm-ask.js"></script>
 <link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"></head>
 <body>
 
@@ -2947,7 +2948,7 @@ function filterTrips(filter,btn){
    refuses trips that are already underway, notifies and clears the calendar —
    and the local copy is only updated once the server has confirmed. */
 async function cancelTrip(id,ref){
-  if(!confirm('Cancel booking '+ref+'?\n\nWe will confirm by email.'))return;
+  if(!await WMAsk.confirm('Cancel booking '+ref+'?\n\nWe will confirm by email.'))return;
   if(!id){
     // A row that has not yet come back from the server has no id to cancel by.
     showToast('Please call us on 07930 342593 to cancel this booking.','error');
@@ -3138,7 +3139,7 @@ async function payTripByCard(id){
    it here locks card payment there, and vice versa. */
 async function payTripCash(id,ref){
   if(!id){showToast('Please call us on 07930 342593.','error');return;}
-  if(!confirm('Pay your driver on the day?\n\nYou will settle the fare directly with your driver, by cash or card.'))return;
+  if(!await WMAsk.confirm('Pay your driver on the day?\n\nYou will settle the fare directly with your driver, by cash or card.'))return;
   try{
     var r=await fetch('/api/customer/bookings/'+encodeURIComponent(id)+'/choose-cash',{
       method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}

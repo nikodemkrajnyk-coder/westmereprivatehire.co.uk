@@ -278,6 +278,7 @@ footer.mini-foot{padding:1rem 6%;text-align:center;font-family:var(--sans);font-
 <meta name="twitter:title" content="Westmere Driver">
 <meta name="twitter:description" content="Westmere Driver — dispatch interface for Westmere Private Hire drivers.">
 <link rel="stylesheet" href="/westmere-theme.css">
+<script src="/wm-ask.js"></script>
 <link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"></head>
 <body>
 
@@ -876,7 +877,7 @@ async function acceptJob(id){
   }catch(e){showToast('Network error');}
 }
 async function declineJob(id){
-  var reason=prompt('Reason (optional \u2014 admin will see this):','')||'';
+  var reason=await WMAsk.prompt('Reason (optional \u2014 admin will see this):','')||'';
   try{
     var res=await fetch('/api/driver/offers/'+id+'/decline',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason:reason})});
     var d=await res.json();
@@ -919,8 +920,8 @@ function sendArrival(job){
 
 async function cancelJob(id){
   var job=TODAY_JOBS.find(function(j){return j.id===id;});if(!job)return;
-  if(!confirm('Cancel job for '+job.name+'?\n\nThe customer will be emailed an apology.'))return;
-  var reason=prompt('Reason for cancellation (shown to admin; apology to customer is generic):','')||'Cancelled by driver';
+  if(!await WMAsk.confirm('Cancel job for '+job.name+'?\n\nThe customer will be emailed an apology.'))return;
+  var reason=await WMAsk.prompt('Reason for cancellation (shown to admin; apology to customer is generic):','')||'Cancelled by driver';
   try{
     var res=await fetch('/api/driver/jobs/'+id+'/cancel',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason:reason})});
     var d=await res.json();

@@ -512,6 +512,7 @@ select:-webkit-autofill:focus{
 }
 </style><link rel="stylesheet" href="/wm-buttons.css">
 <link rel="stylesheet" href="/westmere-theme.css">
+<script src="/wm-ask.js"></script>
 <link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"></head>
 <body>
 
@@ -2226,7 +2227,7 @@ function checkGoogleCalendarStatus(){
     if(d&&d.connected){
       btn.textContent='Disconnect';
       btn.className='btn btn-ghost btn-sm';
-      btn.onclick=function(){if(confirm('Disconnect Google Calendar?'))fetch('/api/google/disconnect',{method:'POST'}).then(function(){checkGoogleCalendarStatus();showToast('Google Calendar disconnected');});};
+      btn.onclick=async function(){if(await WMAsk.confirm('Disconnect Google Calendar?'))fetch('/api/google/disconnect',{method:'POST'}).then(function(){checkGoogleCalendarStatus();showToast('Google Calendar disconnected');});};
       if(sub)sub.innerHTML='Connected'+(d.email?' as <span style="color:var(--navy)">'+d.email+'</span>':'')+' &middot; <a href="#" onclick="syncGoogleCalendar(event)" style="color:var(--navy);text-decoration:none">Sync now</a>';
     } else {
       btn.textContent='Connect';
@@ -3067,7 +3068,7 @@ function buildAdmCancelled(){
 
 // Hard delete — the same shared route the owner app's Delete uses.
 async function admDeleteBooking(bookingId){
-  if(!confirm('Delete this booking permanently?'))return;
+  if(!await WMAsk.confirm('Delete this booking permanently?'))return;
   try{
     var r=await fetch('/api/bookings/'+bookingId,{method:'DELETE',credentials:'include'});
     var d=await r.json();
@@ -3425,7 +3426,7 @@ function markJobDone(id,btn){
 // the owner app uses (POST /bookings/:id/mark-paid). The route stamps paid_at
 // and promotes the status; it deliberately sends no extra customer email.
 async function admMarkPaid(bookingId){
-  if(!confirm('Mark this booking as paid? This confirms the ride.'))return;
+  if(!await WMAsk.confirm('Mark this booking as paid? This confirms the ride.'))return;
   try{
     var r=await fetch('/api/bookings/'+bookingId+'/mark-paid',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}});
     var d=await r.json();
@@ -3439,7 +3440,7 @@ async function admMarkPaid(bookingId){
 // endpoints — so whichever app the operator happens to be in, the customer
 // gets the same outcome. Only Accept ever touches the booking.
 async function _admChangeAction(bookingId,path,confirmMsg,okMsg){
-  if(confirmMsg&&!confirm(confirmMsg))return;
+  if(confirmMsg&&!await WMAsk.confirm(confirmMsg))return;
   try{
     var r=await fetch('/api/bookings/'+bookingId+path,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}});
     var d=await r.json();
@@ -3486,7 +3487,7 @@ async function admSendReEstimate(bookingId){
   var already=(_admFareCache[bookingId]||{}).prior_payment;
   var warn='Re-send the estimate at £'+fare.toFixed(2)+'?\n\nThe customer will be asked to confirm and pay the updated trip as normal. Nothing is charged or refunded now.';
   if(already&&already.amount)warn+='\n\nNote: £'+Number(already.amount).toFixed(2)+' has already been collected on this booking.';
-  if(!confirm(warn))return;
+  if(!await WMAsk.confirm(warn))return;
   try{
     var r=await fetch('/api/bookings/'+bookingId+'/re-estimate',{
       method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},
@@ -3504,7 +3505,7 @@ async function admSendReEstimate(bookingId){
 // Chase an unpaid booking (e.g. a card customer who abandoned checkout) — the
 // same shared route + branded email the owner app sends.
 async function admSendPayReminder(bookingId){
-  if(!confirm('Send payment reminder email to the customer?'))return;
+  if(!await WMAsk.confirm('Send payment reminder email to the customer?'))return;
   try{
     var r=await fetch('/api/bookings/'+bookingId+'/payment-reminder',{method:'POST',credentials:'include'});
     var d=await r.json();
@@ -3512,15 +3513,15 @@ async function admSendPayReminder(bookingId){
     else showToast(d.error||'Failed to send reminder');
   }catch(e){showToast('Network error');console.error('[admPayReminder]',e);}
 }
-function cancelJob(id,btn){
-  if(!confirm('Are you sure you want to cancel this booking?'))return;
+async function cancelJob(id,btn){
+  if(!await WMAsk.confirm('Are you sure you want to cancel this booking?'))return;
   fetch('/api/bookings/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'cancelled'})})
     .then(function(r){return r.json();})
     .then(function(d){if(d.ok){showToast(admSaved(d,'Booking cancelled'));loadLiveBookings();}else{showToast(d.error||'Error cancelling');}})
     .catch(function(){showToast('Error cancelling booking');});
 }
-function deleteJob(id,btn){
-  if(!confirm('Permanently delete this cancelled booking?'))return;
+async function deleteJob(id,btn){
+  if(!await WMAsk.confirm('Permanently delete this cancelled booking?'))return;
   fetch('/api/bookings/'+id,{method:'DELETE',headers:{'Content-Type':'application/json'}})
     .then(function(r){return r.json();})
     .then(function(d){if(d.ok){showToast('Booking deleted');loadLiveBookings();}else{showToast(d.error||'Error deleting');}})
@@ -3528,8 +3529,8 @@ function deleteJob(id,btn){
 }
 // Cancel Trip: unpaid booking is removed entirely; a paid booking is marked
 // cancelled and flagged "refund due £X" (the button then becomes Refund).
-function cancelTrip(id,btn){
-  if(!confirm('Cancel this trip?\n\n• If it is UNPAID it will be removed from the system.\n• If it was PAID it will be marked cancelled and you can then refund the customer.'))return;
+async function cancelTrip(id,btn){
+  if(!await WMAsk.confirm('Cancel this trip?\n\n• If it is UNPAID it will be removed from the system.\n• If it was PAID it will be marked cancelled and you can then refund the customer.'))return;
   if(btn){btn.disabled=true;btn.textContent='…';}
   fetch('/api/bookings/'+id+'/cancel',{method:'POST',headers:{'Content-Type':'application/json'}})
     .then(function(r){return r.json();})
@@ -3544,8 +3545,8 @@ function cancelTrip(id,btn){
 }
 // Refund: real Stripe refund if a card charge is on file, otherwise recorded as
 // a manual refund (owner returns the money by hand). Marks the booking Refunded.
-function refundTrip(id,btn){
-  if(!confirm('Refund this customer?\n\n• Paid by card → issues a REAL Stripe refund now.\n• Cash / marked-paid → records it as refunded; you must return the money by hand.'))return;
+async function refundTrip(id,btn){
+  if(!await WMAsk.confirm('Refund this customer?\n\n• Paid by card → issues a REAL Stripe refund now.\n• Cash / marked-paid → records it as refunded; you must return the money by hand.'))return;
   if(btn){btn.disabled=true;btn.textContent='…';}
   fetch('/api/bookings/'+id+'/refund',{method:'POST',headers:{'Content-Type':'application/json'}})
     .then(function(r){return r.json();})
@@ -3900,7 +3901,7 @@ async function dmRecordSettlement(){
   var amt=parseFloat(document.getElementById('dm-settle-amt').value);
   if(!isFinite(amt)||amt===0){showToast('Enter the amount you paid');return;}
   var method=(document.getElementById('dm-settle-method').value||'').trim();
-  if(!confirm('Record '+dmMoney(amt)+(amt<0?' received from':' paid to')+' this driver?'))return;
+  if(!await WMAsk.confirm('Record '+dmMoney(amt)+(amt<0?' received from':' paid to')+' this driver?'))return;
   try{
     var r=await fetch('/api/drivers/'+DRIVER_EDIT_ID+'/settlements',{method:'POST',credentials:'include',
       headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:amt,method:method||null})});
@@ -3915,7 +3916,7 @@ async function dmRecordSettlement(){
 
 async function dmUndoSettlement(sid){
   if(!DRIVER_EDIT_ID)return;
-  if(!confirm('Remove this payment? The balance goes back up by that amount.'))return;
+  if(!await WMAsk.confirm('Remove this payment? The balance goes back up by that amount.'))return;
   try{
     var r=await fetch('/api/drivers/'+DRIVER_EDIT_ID+'/settlements/'+sid,{method:'DELETE',credentials:'include'});
     var d=await r.json();
@@ -3927,7 +3928,7 @@ async function dmUndoSettlement(sid){
 async function dmSendStatement(){
   if(!DRIVER_EDIT_ID)return;
   var range=dmEarnRange('last-week');
-  if(!confirm('Email a weekly statement to this driver for '+range.from+' → '+range.to+'?'))return;
+  if(!await WMAsk.confirm('Email a weekly statement to this driver for '+range.from+' → '+range.to+'?'))return;
   try{
     var r=await fetch('/api/drivers/'+DRIVER_EDIT_ID+'/statement',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({from:range.from,to:range.to})});
     var d=await r.json();
@@ -4017,7 +4018,7 @@ async function saveDriver(){
 
 async function revokeDriverLogin(){
   if(!DRIVER_EDIT_ID)return;
-  if(!confirm('Revoke this driver\u2019s app access? They will no longer be able to log in.'))return;
+  if(!await WMAsk.confirm('Revoke this driver\u2019s app access? They will no longer be able to log in.'))return;
   try{
     var r=await fetch('/api/drivers/'+DRIVER_EDIT_ID,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({revoke_login:true})});
     var d=await r.json();
@@ -4100,7 +4101,7 @@ function buildDrivers(){
 }
 
 async function deleteDriver(id,name){
-  if(!confirm('Delete driver "'+name+'"?\n\nThis cannot be undone.'))return;
+  if(!await WMAsk.confirm('Delete driver "'+name+'"?\n\nThis cannot be undone.'))return;
   try{
     var r=await fetch('/api/drivers/'+id,{method:'DELETE',credentials:'include'});
     var d=await r.json();
@@ -4486,7 +4487,7 @@ async function saveEditCustomer(){
 }
 
 async function deleteCustomer(id,name){
-  if(!confirm('Delete customer account for '+(name||'this customer')+'?\n\nTheir booking history will be preserved but the account will be deactivated.'))return;
+  if(!await WMAsk.confirm('Delete customer account for '+(name||'this customer')+'?\n\nTheir booking history will be preserved but the account will be deactivated.'))return;
   try{
     var r=await fetch('/api/customers/'+id,{method:'DELETE',credentials:'include'});
     var d=await r.json();
@@ -5152,7 +5153,7 @@ function loadInvoiceHistory(){
 }
 
 async function deleteInvoice(id, invoiceNo){
-  if(!confirm('Delete invoice '+invoiceNo+'? This cannot be undone.'))return;
+  if(!await WMAsk.confirm('Delete invoice '+invoiceNo+'? This cannot be undone.'))return;
   try{
     var r=await fetch('/api/invoices/'+encodeURIComponent(id),{method:'DELETE',credentials:'include'});
     var d=await r.json();
@@ -5573,14 +5574,14 @@ function midDownloadPdf(){
 }
 
 // ── SEND INVOICE (from customer card) ──
-function sendInvoice(customerId, customerName){
+async function sendInvoice(customerId, customerName){
   var now=new Date();
   var y=now.getMonth()===0?now.getFullYear()-1:now.getFullYear();
   var m=now.getMonth()===0?12:now.getMonth();
   var from=y+'-'+String(m).padStart(2,'0')+'-01';
   var lastDay=new Date(y,m,0).getDate();
   var to=y+'-'+String(m).padStart(2,'0')+'-'+String(lastDay).padStart(2,'0');
-  if(!confirm('Send invoice to '+customerName+' for last month?\n\n'+from+' to '+to))return;
+  if(!await WMAsk.confirm('Send invoice to '+customerName+' for last month?\n\n'+from+' to '+to))return;
   showToast('Sending invoice...');
   var toExcl=new Date(to+'T00:00:00');toExcl.setDate(toExcl.getDate()+1);
   fetch('/api/customers/'+customerId+'/invoice',{
@@ -6391,7 +6392,7 @@ async function addTimeOff(){
   }catch(e){showToast('Failed: '+e.message);}
 }
 async function delTimeOff(id){
-  if(!confirm('Remove this blackout?'))return;
+  if(!await WMAsk.confirm('Remove this blackout?'))return;
   var r=await fetch('/api/intake/time-off/'+id,{method:'DELETE',credentials:'include'});
   var d=await r.json();
   if(d.ok){showToast('Removed');loadTimeOff();}
@@ -6474,7 +6475,7 @@ async function rsAssign(){
 }
 
 async function reclaimOffer(bookingId){
-  if(!confirm('Retract this offer? The driver will lose the job and it returns to you.'))return;
+  if(!await WMAsk.confirm('Retract this offer? The driver will lose the job and it returns to you.'))return;
   var r=await fetch('/api/bookings/'+bookingId+'/reclaim',{method:'POST',credentials:'include'});
   var d=await r.json();
   if(d.ok){showToast('Offer reclaimed');if(typeof loadAdminCalendar==='function')loadAdminCalendar();loadFlaggedBookings();}
@@ -6488,7 +6489,7 @@ async function reclaimOffer(bookingId){
 async function admSendEstimate(bookingId){
   var j=FLAGGED_CACHE[bookingId]||{};
   var cur=j&&j.fare?Number(j.fare):'';
-  var v=prompt('Estimated fare to email the customer (£). The booking stays pending until they pay or accept:',cur);
+  var v=await WMAsk.prompt('Estimated fare to email the customer (£). The booking stays pending until they pay or accept:',cur);
   if(v===null)return;
   var fare=parseFloat(String(v).replace(/[^0-9.]/g,''));
   if(!fare||fare<=0){showToast('Enter a valid fare amount');return;}

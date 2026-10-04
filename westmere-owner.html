@@ -675,6 +675,7 @@ select:-webkit-autofill:focus{
 }
 </style><link rel="stylesheet" href="/wm-buttons.css">
 <link rel="stylesheet" href="/westmere-theme.css">
+<script src="/wm-ask.js"></script>
 <link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"></head>
 <body>
 
@@ -1911,10 +1912,10 @@ async function connectGoogleCalendar(){
     if(res.ok&&data.ok&&data.url){
       window.location.href=data.url;
     } else {
-      alert(data.error||'Google Calendar is not configured on the server yet.');
+      WMAsk.tell(data.error||'Google Calendar is not configured on the server yet.');
     }
   }catch(e){
-    alert('Unable to start Google Calendar connection. Please try again.');
+    WMAsk.tell('Unable to start Google Calendar connection. Please try again.');
   }
 }
 async function checkGoogleCalendarStatus(){
@@ -1962,7 +1963,7 @@ async function checkGoogleCalendarStatus(){
   }
 }
 async function disconnectGoogleCalendar(){
-  if(!confirm('Disconnect Google Calendar?'))return;
+  if(!await WMAsk.confirm('Disconnect Google Calendar?'))return;
   try{
     await fetch('/api/google/disconnect',{method:'POST'});
     checkGoogleCalendarStatus();
@@ -2059,8 +2060,8 @@ var HOME_BASE = '';
    Guardrail: server/tests/owner-nav.test.js */
 // The owner app has never had a sign-out; the drawer's footer is the first place
 // it has had room for one. Confirm first — see the note on the markup.
-function ownerSignOut(){
-  if(!confirm('Sign out of the Westmere Owner app?'))return;
+async function ownerSignOut(){
+  if(!await WMAsk.confirm('Sign out of the Westmere Owner app?'))return;
   fetch('/api/auth/logout',{method:'POST',credentials:'include'})
     .catch(function(){})
     .then(function(){ try{location.reload();}catch(e){} });
@@ -2634,7 +2635,7 @@ async function owEmailStatement() {
   if (!_OWDRV) return;
   var r = owPeriodRange(_OWDRV_PERIOD);
   if (!r.from) { showToast('Choose a week or a month first'); return; }
-  if (!confirm('Email this statement to the driver for ' + r.from + ' → ' + r.to + '?')) return;
+  if (!await WMAsk.confirm('Email this statement to the driver for ' + r.from + ' → ' + r.to + '?')) return;
   try {
     var res = await fetch('/api/drivers/' + _OWDRV + '/statement', { method: 'POST', credentials: 'include',
       headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ from: r.from, to: r.to }) });
@@ -2660,7 +2661,7 @@ async function owRecordSettlement() {
   var amt = parseFloat(document.getElementById('ow-settle-amt').value);
   if (!isFinite(amt) || amt === 0) { showToast('Enter the amount you paid'); return; }
   var method = (document.getElementById('ow-settle-method').value || '').trim();
-  if (!confirm('Record ' + owMoney(amt) + (amt < 0 ? ' received from' : ' paid to') + ' this driver?')) return;
+  if (!await WMAsk.confirm('Record ' + owMoney(amt) + (amt < 0 ? ' received from' : ' paid to') + ' this driver?')) return;
   try {
     var r = await fetch('/api/drivers/' + _OWDRV + '/settlements', { method: 'POST', credentials: 'include',
       headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: amt, method: method || null }) });
@@ -2737,7 +2738,7 @@ async function owJobRateSave(jobId) {
 
 async function owUndoSettlement(sid) {
   if (!_OWDRV) return;
-  if (!confirm('Remove this payment? The balance goes back up by that amount.')) return;
+  if (!await WMAsk.confirm('Remove this payment? The balance goes back up by that amount.')) return;
   try {
     var r = await fetch('/api/drivers/' + _OWDRV + '/settlements/' + sid, { method: 'DELETE', credentials: 'include' });
     var d = await r.json();
@@ -3149,7 +3150,7 @@ async function toggleDriverDocs(drvId){
 async function reviewDoc(drvId,docId,action){
   var note='';
   if(action==='reject'){
-    note=prompt('Rejection reason (optional, shown to driver):');
+    note=await WMAsk.prompt('Rejection reason (optional, shown to driver):');
     if(note===null)return; // cancelled
   }
   try{
@@ -3162,7 +3163,7 @@ async function reviewDoc(drvId,docId,action){
 }
 
 async function approveDriver(drvId){
-  if(!confirm('Approve this driver? They will gain full access to jobs.'))return;
+  if(!await WMAsk.confirm('Approve this driver? They will gain full access to jobs.'))return;
   try{
     var r=await fetch('/api/drivers/'+drvId+'/approve',{method:'POST',credentials:'include'});
     var d=await r.json();
@@ -3172,7 +3173,7 @@ async function approveDriver(drvId){
 }
 
 async function deleteDriver(drvId,name){
-  if(!confirm('Remove '+name+' from the roster?\n\nThis deactivates the account. Their booking history is preserved.'))return;
+  if(!await WMAsk.confirm('Remove '+name+' from the roster?\n\nThis deactivates the account. Their booking history is preserved.'))return;
   try{
     var r=await fetch('/api/drivers/'+drvId,{method:'DELETE',credentials:'include'});
     var d=await r.json();
@@ -3503,7 +3504,7 @@ function oSendMessage(){
   var to=document.getElementById('oc-to').value.trim();
   var subject=document.getElementById('oc-subject').value.trim();
   var body=document.getElementById('oc-body').value;
-  if(!to){alert('Recipient required');return;}
+  if(!to){WMAsk.tell('Recipient required');return;}
   var mc=document.getElementById('ov-inbox-compose');
   var payload={to:to,subject:subject,text:body,html:'<pre style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;white-space:pre-wrap">'+oEscHtml(body)+'</pre>'};
   if(mc.dataset.threadId)payload.threadId=mc.dataset.threadId;
@@ -3511,8 +3512,8 @@ function oSendMessage(){
   if(mc.dataset.references)payload.references=mc.dataset.references;
   fetch('/api/gmail/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(function(r){return r.json();}).then(function(d){
     if(d&&d.ok){oCloseCompose();oLoadInbox();}
-    else{alert((d&&d.error)||'Send failed');}
-  }).catch(function(){alert('Network error');});
+    else{WMAsk.tell((d&&d.error)||'Send failed');}
+  }).catch(function(){WMAsk.tell('Network error');});
 }
 function oReconnectForGmail(){fetch('/api/google/disconnect',{method:'POST'}).then(function(){connectGoogleCalendar();});}
 
@@ -4609,7 +4610,8 @@ function upcomingToggle(detailId){
 async function ownerSendEstimate(bookingId){
   var j=OFFERED_JOBS.find(function(x){return String(x.id)===String(bookingId);});
   var cur=j&&j.fare?Number(j.fare):'';
-  var v=prompt('Estimated fare to email the customer (£). The booking stays pending until they pay or accept:',cur);
+  var v=await WMAsk.prompt('The booking stays pending until they pay or accept.',
+    {title:'Estimate to email the customer (£)', value:cur, type:'number', step:'0.01', inputmode:'decimal', ok:'Send estimate'});
   if(v===null)return;
   var fare=parseFloat(String(v).replace(/[^0-9.]/g,''));
   if(!fare||fare<=0){showToast('Enter a valid fare amount');return;}
@@ -4622,7 +4624,7 @@ async function ownerSendEstimate(bookingId){
 }
 
 async function upcomingCancel(bookingId){
-  if(!confirm('Cancel this booking permanently?'))return;
+  if(!await WMAsk.confirm('Cancel this booking permanently?', {ok:'Cancel the booking', cancel:'Keep it', danger:true}))return;
   try{
     var r=await fetch('/api/bookings/'+bookingId,{method:'DELETE',credentials:'include'});
     var d=await r.json();
@@ -4632,7 +4634,7 @@ async function upcomingCancel(bookingId){
 }
 
 async function upcomingDelete(bookingId){
-  if(!confirm('Delete this booking permanently?'))return;
+  if(!await WMAsk.confirm('Delete this booking permanently?', {ok:'Delete', cancel:'Keep it', danger:true}))return;
   try{
     var r=await fetch('/api/bookings/'+bookingId,{method:'DELETE',credentials:'include'});
     var d=await r.json();
@@ -4856,7 +4858,7 @@ async function ebApplyPaymentOption(id){
     // The server asks before un-settling a trip somebody already reconciled.
     // The owner answers that question, not the app.
     if(d.needsConfirm&&attempt===0){
-      if(!confirm(d.error))return false;
+      if(!await WMAsk.confirm(d.error))return false;
       body.confirm=true;
       continue;
     }
@@ -5089,7 +5091,7 @@ async function ownerNewBookingSubmit(){
 
 // ── QUICK INVOICE FROM JOB CARD ──────────────────────────────────────────────
 async function ownerQuickInvoice(bookingId,name,email,fare,pickup,dest,date){
-  if(!confirm('Create invoice for '+name+' — £'+fare+'?'))return;
+  if(!await WMAsk.confirm('Create invoice for '+name+' — £'+fare+'?'))return;
   try{
     var desc=pickup+' → '+dest;
     if(date)desc+=' ('+date+')';
@@ -5113,7 +5115,7 @@ async function ownerQuickInvoice(bookingId,name,email,fare,pickup,dest,date){
          again with send_email set, purely to flip one boolean — losing the row,
          its id and its created_at, and losing the invoice altogether if the
          second call failed. POST /invoices/:id/send exists now. */
-      if(email&&d.invoiceId&&confirm('Send invoice to '+email+'?')){
+      if(email&&d.invoiceId&&await WMAsk.confirm('Send invoice to '+email+'?')){
         var sr=await fetch('/api/invoices/'+d.invoiceId+'/send',{method:'POST',credentials:'include'});
         var sd=await sr.json();
         if(sr.ok&&sd.ok)showToast('Invoice sent to '+sd.to);
@@ -5127,7 +5129,7 @@ async function ownerQuickInvoice(bookingId,name,email,fare,pickup,dest,date){
 
 // ── MARK COMPLETED / MARK PAID ───────────────────────────────────────────────
 async function ownerMarkCompleted(bookingId){
-  if(!confirm('Mark this job as completed?'))return;
+  if(!await WMAsk.confirm('Mark this job as completed?'))return;
   try{
     var r=await fetch('/api/bookings/'+bookingId,{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'completed'})});
     var d=await r.json();
@@ -5147,9 +5149,9 @@ async function ownerMarkPaid(bookingId){
      payment door on the customer. Settling is one act now: the method is sent
      with the fact, and the server stamps them together.
      Cancel = don't settle at all; the two buttons are the two methods. */
-  var method = confirm('Mark this booking as paid.\n\nOK = paid by CARD (you took it yourself)\nCancel = choose cash instead')
+  var method = await WMAsk.confirm('Mark this booking as paid.\n\nOK = paid by CARD (you took it yourself)\nCancel = choose cash instead')
     ? 'card'
-    : (confirm('Paid in CASH to the driver?\n\nOK = record as cash\nCancel = do nothing') ? 'cash' : null);
+    : (await WMAsk.confirm('Paid in CASH to the driver?\n\nOK = record as cash\nCancel = do nothing') ? 'cash' : null);
   if(!method) return;
   try{
     var r=await fetch('/api/bookings/'+bookingId+'/mark-paid',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({method:method})});
@@ -5163,7 +5165,7 @@ async function ownerMarkPaid(bookingId){
 // Three separate acts, and only ONE of them touches the booking. The
 // change_requests rows are kept for good; only their status moves.
 async function _ownerChangeAction(bookingId,path,confirmMsg,okMsg){
-  if(confirmMsg&&!confirm(confirmMsg))return;
+  if(confirmMsg&&!await WMAsk.confirm(confirmMsg))return;
   try{
     var r=await fetch('/api/bookings/'+bookingId+path,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'}});
     var d=await r.json();
@@ -5216,7 +5218,7 @@ async function ownerSendReEstimate(bookingId){
   var already=cached.prior_payment;
   var warn='Re-send the estimate at £'+fare.toFixed(2)+'?\n\nThe customer will be asked to confirm and pay the updated trip as normal. Nothing is charged or refunded now.';
   if(already&&already.amount)warn+='\n\nNote: £'+Number(already.amount).toFixed(2)+' has already been collected on this booking.';
-  if(!confirm(warn))return;
+  if(!await WMAsk.confirm(warn))return;
   try{
     var r=await fetch('/api/bookings/'+bookingId+'/re-estimate',{
       method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},
@@ -5243,7 +5245,7 @@ async function ownerTogglePaid(bookingId,currentlyPaid){
 
 // ── SEND PAYMENT REMINDER ────────────────────────────────────────────────────
 async function ownerSendPayReminder(bookingId){
-  if(!confirm('Send payment reminder email to the customer?'))return;
+  if(!await WMAsk.confirm('Send payment reminder email to the customer?'))return;
   try{
     var r=await fetch('/api/bookings/'+bookingId+'/payment-reminder',{method:'POST',credentials:'include'});
     var d=await r.json();
@@ -5342,9 +5344,9 @@ function clearNotifs() {
   _renderNotifBadge();
   _renderNotifFeed();
 }
-function cancelJ(id){
+async function cancelJ(id){
   var job=TODAY_JOBS.find(function(j){return j.id===id;});
-  if(!job||!confirm('Delete job for '+job.name+'?'))return;
+  if(!job||!await WMAsk.confirm('Delete job for '+job.name+'?'))return;
   TODAY_JOBS=TODAY_JOBS.filter(function(j){return j.id!==id;});
   buildToday();showToast('Booking deleted');
   fetch('/api/bookings/'+id,{method:'DELETE'}).catch(function(){});
@@ -5861,7 +5863,7 @@ function renderSDJobs(){
   if(!SD_JOBS.length){el.innerHTML='<div style="padding:1rem 1.1rem;font-size:.88rem;color:rgba(27,27,26,.4);text-align:center">No bookings — tap Example or add manually</div>';return;}
   el.innerHTML=SD_JOBS.map(function(j){return '<div class="sd-row"><div class="sd-time">'+j.time+'</div><div class="sd-info"><div class="sd-name">'+j.name+'</div><div class="sd-route">'+j.pickup+' → '+j.dest+'</div></div><div class="sd-fare">£'+j.fare+'</div><button onclick="SD_JOBS=SD_JOBS.filter(function(x){return x.id!==\''+j.id+'\'});renderSDJobs()" class="sd-del">✕</button></div>';}).join('');
 }
-function addSDJob(){var t=prompt('Time (HH:MM):','09:00');if(!t)return;var pu=prompt('Pickup:','Lewes');if(!pu)return;var dst=prompt('Destination:','Gatwick');if(!dst)return;var f=parseFloat(prompt('Fare £:','75')||0);var n=prompt('Name:','Customer')||'Customer';SD_JOBS.push({id:'sd'+Date.now(),time:t,name:n,pickup:pu,dest:dst,pax:1,fare:f,payment:'Cash'});renderSDJobs();}
+async function addSDJob(){var t=await WMAsk.prompt('Time (HH:MM):','09:00');if(!t)return;var pu=await WMAsk.prompt('Pickup:','Lewes');if(!pu)return;var dst=await WMAsk.prompt('Destination:','Gatwick');if(!dst)return;var f=parseFloat(await WMAsk.prompt('Fare £:','75')||0);var n=await WMAsk.prompt('Name:','Customer')||'Customer';SD_JOBS.push({id:'sd'+Date.now(),time:t,name:n,pickup:pu,dest:dst,pax:1,fare:f,payment:'Cash'});renderSDJobs();}
 async function runSmartDay(){
   if(!SD_JOBS.length){showToast('Add bookings first');return;}
   document.getElementById('sd-output').style.display='none';
@@ -7025,7 +7027,7 @@ function dispOperatorSent(d) {
 }
 
 async function dispReclaim(id){
-  if(!confirm('Take this job back?\n\nThe offer is withdrawn and the link in the driver’s email stops working.'))return;
+  if(!await WMAsk.confirm('Take this job back?\n\nThe offer is withdrawn and the link in the driver’s email stops working.'))return;
   try{
     var r=await fetch('/api/bookings/'+id+'/reclaim',{method:'POST',credentials:'include'});
     var d=await r.json();
@@ -7035,7 +7037,7 @@ async function dispReclaim(id){
 }
 
 async function dispMessageDriver(id,name){
-  var msg=prompt('Message to '+(name||'this driver')+':');
+  var msg=await WMAsk.prompt('Message to '+(name||'this driver')+':');
   if(msg===null||!msg.trim())return;
   try{
     var r=await fetch('/api/drivers/'+id+'/message',{method:'POST',credentials:'include',
@@ -7154,7 +7156,7 @@ function wmShort(a){ try{ return esc((window.WMAddr && WMAddr.shortDisplay) ? WM
 async function custRemove(id){
   var c=CUSTOMERS.filter(function(x){return x.id===id;})[0];
   var who=(c&&c.name)?c.name:'this customer';
-  if(!confirm('Remove '+who+' from your customer list?\n\nTheir bookings, invoices and earnings are NOT deleted. You can add them again any time from one of their bookings.'))return;
+  if(!await WMAsk.confirm('Remove '+who+' from your customer list?\n\nTheir bookings, invoices and earnings are NOT deleted. You can add them again any time from one of their bookings.'))return;
   try{
     var r=await fetch('/api/customer-directory/'+id,{method:'DELETE',credentials:'include'});
     var d=await r.json();
@@ -8599,7 +8601,7 @@ async function invEditSave(){
   if(!_INV_FORM_ID){ return invSend(); }   // the same button, on a form that has no invoice yet
   var manual=document.getElementById('inv-edit-manual').checked;
   var typed=parseFloat(document.getElementById('inv-edit-total').value);
-  if(manual&&(isNaN(typed)||typed<0)){ alert('That total is not a number.'); return; }
+  if(manual&&(isNaN(typed)||typed<0)){ WMAsk.tell('That total is not a number.'); return; }
   var err=document.getElementById('inv-err'); err.style.display='none';
   var items=invGetItems();
   if(!items.length){ err.textContent='An invoice needs at least one line.'; err.style.display=''; return; }
@@ -8646,7 +8648,7 @@ async function invDetailSend(){
   if(!_INV_DETAIL_ID){showToast('No invoice open');return;}
   var to=(_INV_PRINT_DATA&&_INV_PRINT_DATA.recipientEmail)||'';
   if(!to){showToast('No email address on this invoice');return;}
-  if(!confirm('Email invoice '+((_INV_PRINT_DATA&&_INV_PRINT_DATA.invoiceNo)||'')+' to '+to+'?\n\nThe PDF is attached.'))return;
+  if(!await WMAsk.confirm('Email invoice '+((_INV_PRINT_DATA&&_INV_PRINT_DATA.invoiceNo)||'')+' to '+to+'?\n\nThe PDF is attached.'))return;
   var btn=document.getElementById('inv-det-send-btn');
   if(btn){btn.disabled=true;btn.textContent='Sending…';}
   try{
@@ -8660,7 +8662,7 @@ async function invDetailSend(){
 
 async function invDetailDelete(){
   if(!_INV_DETAIL_ID)return;
-  if(!confirm('Delete this invoice? This cannot be undone.'))return;
+  if(!await WMAsk.confirm('Delete this invoice? This cannot be undone.'))return;
   try{
     var r=await fetch('/api/invoices/'+_INV_DETAIL_ID,{method:'DELETE',credentials:'include'});
     var d=await r.json();
@@ -8670,7 +8672,7 @@ async function invDetailDelete(){
 }
 
 async function invDelete(id,invoiceNo){
-  if(!confirm('Delete invoice '+invoiceNo+'? This cannot be undone.'))return;
+  if(!await WMAsk.confirm('Delete invoice '+invoiceNo+'? This cannot be undone.'))return;
   try{
     var r=await fetch('/api/invoices/'+id,{method:'DELETE',credentials:'include'});
     var d=await r.json();
