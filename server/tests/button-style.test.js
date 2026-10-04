@@ -787,7 +787,14 @@ test('SELECTED and TODAY are different in KIND, not just in weight', () => {
 
 test('the theme carries ONE canonical picker selected-state for all surfaces', () => {
   const theme = read('westmere-theme.css');
-  const block = theme.slice(theme.indexOf('18. PICKERS'));
+  /* BOUNDED AT THE NEXT SECTION, not at the end of the file. This read from
+     "18. PICKERS" to EOF, so every section appended to the theme afterwards
+     fell inside the window — and a five-pixel navy dot in the calendar failed
+     a rule about how a SELECTED DAY is filled. An unbounded slice has the same
+     flaw as a character count, in the other direction: it grows to cover code
+     it was never about. server/tests/guard-hygiene.test.js */
+  const { regionFrom } = require('./_source');
+  const block = regionFrom(theme, '18. PICKERS', [/\n   \d+\. [A-Z]/, /\n   §\d+ /]);
   assert.ok(block.length > 200, 'the theme must define the shared picker selected-state');
   for (const sel of ['.wm-day.is-selected', '.cal-day.cal-sel', '.cal-day.selected',
                      '.wm-time.is-selected', '.time-opt.t-sel', '.pick-opt.p-sel']) {

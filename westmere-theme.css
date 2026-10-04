@@ -2380,18 +2380,15 @@ nav > .navlinks { margin-left: auto; }
 .tl-route{ font-family: var(--sans); font-size: .84rem; color: var(--westmere-ink-soft); }
 
 /* ── THE CALENDAR ────────────────────────────────────────────────────────
-   Its own grid, but the same ink and the same rules as everything else. */
-.cal-head, .adm-cal-head{
-  font-family: var(--sans);
-  font-size: .66rem;
-  font-weight: 600;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: var(--westmere-gold-ink);
-}
+   Only the cell edges here. The rest of the month — the weekday strip, the
+   number, today, selected, and what is written inside a day — is §32, which
+   is where it belongs and, more to the point, where the class names are the
+   ones the two apps actually emit. This block first went out addressing
+   .cal-head and .cal-dnum, which exist in neither app; the calendar was
+   therefore the one screen §30 never reached, which is exactly how it came
+   back from the owner still looking like the old app. Guarded now: every
+   selector in §30 and §32 must name a class one of the apps writes. */
 .cal-day, .adm-cal-day{ border-color: var(--westmere-line) !important; }
-.cal-day.today, .adm-cal-day.today{ box-shadow: inset 0 0 0 1.5px var(--westmere-gold); }
-.cal-dnum, .adm-cal-dnum{ font-family: var(--sans); font-size: .76rem; color: var(--westmere-text); }
 
 /* ═══════════════════════════════════════════════════════════════════════
    §31  A JOB IS A CARD
@@ -2441,3 +2438,208 @@ nav > .navlinks { margin-left: auto; }
 .wm-detail td{ vertical-align: top; }
 .wm-detail tr + tr td{ border-top: 1px solid var(--westmere-line); }
 .wm-detail td:last-child{ color: var(--westmere-text); padding: .4rem 0; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   §32  THE CALENDARS
+   ═══════════════════════════════════════════════════════════════════════
+   Both calendars were built before the palette and kept their own: grey
+   weekday headings, a grey wash for today, grey dots, a grey nav button. The
+   grid itself is sound — seven columns, a cell per day — so this is ink and
+   edges, not a rebuild. Nothing about which day is which, or what is in it,
+   changes.
+
+   TODAY IS MARKED IN GOLD, and that is the one real decision here. It was a
+   grey fill in admin and a small grey dot in the owner app, and on a month of
+   white cells neither read as "you are here". Gold is the accent this palette
+   has for exactly that, and as a RING rather than a fill — the owner's
+   standing rule that nothing highlights by filling (§20).
+   GUARDRAIL: server/tests/design-consistency.test.js */
+
+/* ── The month, and the arrows either side of it ─────────────────────── */
+.cal-month, .adm-cal-month{
+  font-family: var(--serif);
+  font-weight: 400;
+  color: var(--westmere-navy);
+  letter-spacing: .02em;
+}
+.cal-nav, .adm-cal-nav{ padding-bottom: .55rem; border-bottom: var(--border-hair) solid var(--westmere-gold); margin-bottom: .7rem; }
+.cal-nav-btn, .adm-cal-nav button{
+  background: var(--westmere-white);
+  border: var(--border-hair) solid var(--westmere-line-strong);
+  border-radius: 7px;
+  color: var(--westmere-navy);
+}
+.cal-nav-btn:hover, .adm-cal-nav button:hover{ border-color: var(--westmere-navy); }
+
+/* ── The weekday strip is a row of labels, so it is the house eyebrow ── */
+.cal-hd, .adm-cal-hd{
+  font-family: var(--sans);
+  font-size: .62rem;
+  font-weight: 600;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--westmere-gold-ink);
+  background: var(--westmere-white);
+  border-bottom: var(--border-hair) solid var(--westmere-gold);
+}
+
+/* ── The grid ─────────────────────────────────────────────────────────── */
+.cal-grid, .adm-cal-grid{
+  border: var(--border-hair) solid var(--westmere-line);
+  border-radius: 10px;
+  background: var(--westmere-line);
+}
+.cal-day, .adm-cal-day{ background: var(--westmere-white); }
+/* The hover tint and the out-of-month cell are both TRANSLUCENT values, and the
+   grid paints --westmere-line behind every cell to draw its own gap lines. A
+   translucent background on a cell therefore shows the grid's grey, not the
+   page's white: the last day of September came out a solid blue-grey slab, two
+   shades darker than anything else on the screen and the heaviest thing in the
+   month. Composite over white explicitly. */
+.cal-day:hover, .adm-cal-day:hover{
+  background-color: var(--westmere-white);
+  background-image: linear-gradient(var(--westmere-hover), var(--westmere-hover));
+}
+.cal-num, .adm-cal-num{ font-family: var(--sans); font-size: .86rem; font-weight: 500; color: var(--westmere-text); }
+/* A day from the month either side is the same paper — only its number is
+   quieter. That is the whole signal, and it does not need a fill. */
+.cal-day.other, .adm-cal-day.other{ background: var(--westmere-white); opacity: 1; }
+.cal-day.other .cal-num, .adm-cal-day.other .adm-cal-num{ color: var(--westmere-muted); }
+
+/* TODAY: a gold ring, not a grey wash. */
+.cal-day.today, .adm-cal-day.today{ background: var(--westmere-white); box-shadow: inset 0 0 0 2px var(--westmere-gold); }
+.cal-day.today::after{ display: none; }
+.cal-today-label{ font-family: var(--sans); font-size: .58rem; font-weight: 600; letter-spacing: .1em; color: var(--westmere-gold-ink); }
+/* SELECTED is the navy ring — the thing you chose, against the thing today is. */
+.cal-day.selected, .adm-cal-day.selected{ background: var(--westmere-white); box-shadow: inset 0 0 0 2px var(--westmere-navy); }
+.cal-day.today.selected, .adm-cal-day.today.selected{ box-shadow: inset 0 0 0 2px var(--westmere-navy), inset 0 0 0 4px var(--westmere-gold); }
+
+/* What is IN a day. (.cal-job-count, .cal-dots and .cal-summary are NOT here:
+   the owner app carries rules for all three and emits none of them — the month
+   grid writes job lines, and the month's figures go in the .sec-sub §30 already
+   dresses. Styling a class nothing writes is how the calendar missed §30.) */
+.adm-cal-pill{
+  font-family: var(--sans);
+  font-size: .66rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  color: var(--westmere-navy);
+  background: var(--westmere-white);
+  border: 1px solid var(--westmere-line-strong);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+/* A day with nobody on it, and a day somebody is off, keep their own meaning —
+   but say it in this palette rather than in two reds nothing else uses. */
+.adm-cal-pill.warn{ background: var(--westmere-white); border-color: var(--westmere-gold); color: var(--westmere-gold-ink); }
+.adm-cal-pill.off{ background: var(--westmere-white); border-color: #9b1c1c; color: #9b1c1c; }
+
+/* ── What is written INSIDE a day ─────────────────────────────────────────
+   Each job in a day was a grey-blue filled pill with its own inline style,
+   and a day that had any was washed grey behind them. Two fills, where the
+   house marks things with a rule and an edge. So: the wash goes, and the job
+   becomes a line of type stood against a gold rule — the same gesture the
+   job cards use (§31), at the size a 50px cell allows. A day that holds
+   something now says so in its own content and in the weight of its number,
+   which is the quiet signal; nothing fills. */
+.cal-chip{
+  font-family: var(--sans);
+  font-size: .68rem;
+  line-height: 1.5;
+  color: var(--westmere-navy);
+  background: var(--westmere-white);
+  border-left: 2px solid var(--westmere-gold);
+  padding: 1px 3px 1px 4px;
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* A calendar event that is not one of ours is quieter, and its rule is grey. */
+.cal-chip.ext{ border-left-color: var(--westmere-line-strong); color: var(--westmere-ink-soft); }
+.cal-chip.ext b{ font-weight: 600; color: var(--westmere-text); }
+.cal-more{
+  font-family: var(--sans);
+  font-size: .64rem;
+  letter-spacing: .02em;
+  color: var(--westmere-muted);
+  margin-top: 3px;
+}
+/* The day's number carries the fact that the day is busy. */
+.cal-day.has .cal-num{ color: var(--westmere-navy); font-weight: 600; }
+
+/* ── The admin month says the same things in the same way ───────────────
+   Its day cells carried the identical two habits: a job line in plain grey
+   with nothing holding it, and a personal event drawing its own navy with a
+   literal. Same treatment as the owner's chips above, at the admin's size. */
+.adm-cal-job-mini{
+  font-family: var(--sans);
+  font-size: .72rem;
+  line-height: 1.25;
+  color: var(--westmere-navy);
+  border-left: 2px solid var(--westmere-gold);
+  padding-left: .32rem;
+}
+.adm-cal-job-mini.ext{ border-left-color: var(--westmere-line-strong); color: var(--westmere-ink-soft); }
+.adm-cal-more{
+  font-family: var(--sans);
+  font-size: .72rem;
+  letter-spacing: .02em;
+  color: var(--westmere-muted);
+  margin-top: .18rem;
+}
+.adm-cal-day.has .adm-cal-num{ color: var(--westmere-navy); font-weight: 600; }
+/* THE RING LADDER, stated once so the combinations cannot argue. An admin day
+   can be today AND selected AND flagged at the same time, and each of those
+   wanted the same box-shadow. The order of precedence is: what you chose beats
+   where you are, and both beat a day that needs a driver — which keeps a ring
+   so it is still findable, from the token rather than a literal, and says the
+   actual words in its warn pill. */
+.adm-cal-day.flagged{ box-shadow: inset 0 0 0 2px var(--westmere-line-strong); }
+.adm-cal-day.today, .adm-cal-day.today.flagged{ box-shadow: inset 0 0 0 2px var(--westmere-gold); }
+.adm-cal-day.selected, .adm-cal-day.selected.flagged{ box-shadow: inset 0 0 0 2px var(--westmere-navy); }
+.adm-cal-day.today.selected, .adm-cal-day.today.selected.flagged{
+  box-shadow: inset 0 0 0 2px var(--westmere-navy), inset 0 0 0 4px var(--westmere-gold);
+}
+/* Time off stays striped — it is the one thing on this grid that is an absence
+   rather than a job — but in the same red the Off pill uses. The white has to
+   be a background-COLOUR under the gradient, not a stop inside it: the grid
+   paints its gap lines by showing through, so a translucent red stop over that
+   grey came out as grey bunting rather than a red stripe. */
+.adm-cal-day.blocked{
+  background-color: var(--westmere-white);
+  background-image: repeating-linear-gradient(45deg,
+    transparent, transparent 6px,
+    rgba(155, 28, 28, .12) 6px, rgba(155, 28, 28, .12) 12px);
+}
+
+/* ── The key under the grid ──────────────────────────────────────────────
+   Three swatches that are supposed to show you what a cell looks like. They
+   showed a white square, a #555 grey slab and a red hatch — only the last of
+   which matched its cell. Each swatch is now the cell it names. */
+.adm-cal-key{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.1rem;
+  margin-top: .8rem;
+  font-family: var(--sans);
+  font-size: .78rem;
+  color: var(--westmere-ink-soft);
+}
+.adm-cal-sw{
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  vertical-align: -1px;
+  margin-right: .15rem;
+  border-radius: 2px;
+  background: var(--westmere-white);
+  border: 1px solid var(--westmere-line);
+}
+.adm-cal-sw.flagged{ border: 2px solid var(--westmere-line-strong); }
+.adm-cal-sw.off{
+  border-color: var(--westmere-line);
+  background-image: repeating-linear-gradient(45deg,
+    transparent, transparent 3px,
+    rgba(155, 28, 28, .35) 3px, rgba(155, 28, 28, .35) 6px);
+}

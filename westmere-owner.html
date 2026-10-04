@@ -6409,8 +6409,7 @@ function buildCalendar(){
     var jobs=CAL_JOBS[key];var n=jobs?jobs.length:0;
     var ext=CAL_EXTERNAL[key];var nExt=ext?ext.length:0;
     var hasEvents=n>0||nExt>0;
-    var bgStyle=hasEvents&&!isToday&&!isSel?'background:rgba(106,106,106,.07);':'';
-    var cls='cal-day'+(isToday?' today':'')+(isSel?' selected':'');
+    var cls='cal-day'+(hasEvents?' has':'')+(isToday?' today':'')+(isSel?' selected':'');
     var pills='';
     if(jobs){
       var sortedJ=jobs.slice().sort(function(a,b){return toMins(a.time)-toMins(b.time);});
@@ -6420,21 +6419,25 @@ function buildCalendar(){
         var pu=_tinyAddr(j.pickup||'');
         var de=_tinyAddr(j.dest||'');
         var fare=(j.fare!=null&&j.fare!=='')?' £'+j.fare:'';
+        // A month cell is about fifty pixels wide on a phone. The route and the
+        // fare never fitted — they were ellipsised away mid-word, so the chip
+        // read "16:30…" and the dots were the only thing the truncation added.
+        // The grid carries the TIME; the day below it carries the journey.
         var label=t+(pu&&de?' '+pu+'→'+de:'')+fare;
-        return '<div style="margin-top:2px;padding:1px 3px;background:rgba(106,106,106,.22);border-radius:2px;font-size:13px;line-height:1.45;color:#1b1b1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(label)+'</div>';
+        return '<div class="cal-chip" title="'+escH(label)+'">'+escH(t)+'</div>';
       }).join('');
       var remaining=(n-shown.length)+(nExt>0?nExt:0);
-      if(remaining>0)pills+='<div style="font-size:13px;color:rgba(27,27,26,.45);margin-top:2px">+'+remaining+' more</div>';
+      if(remaining>0)pills+='<div class="cal-more">+'+remaining+' more</div>';
     }else if(nExt>0){
       var extShown=ext.slice(0,2);
       pills+=extShown.map(function(ev){
         var t='';try{if(!ev.allDay&&ev.start){var ed=new Date(ev.start);t=String(ed.getHours()).padStart(2,'0')+':'+String(ed.getMinutes()).padStart(2,'0');}}catch(e){}
         var title=(ev.title||'Event').slice(0,14);
-        return '<div style="margin-top:2px;padding:1px 3px;background:rgba(27,27,26,.08);border-radius:2px;font-size:13px;line-height:1.4;color:rgba(27,27,26,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(t?'<b>'+escH(t)+'</b> ':'')+escH(title)+'</div>';
+        return '<div class="cal-chip ext" title="'+escH((t?t+' ':'')+title)+'">'+escH(t||title)+'</div>';
       }).join('');
-      if(nExt>2)pills+='<div style="font-size:13px;color:rgba(27,27,26,.45);margin-top:2px">+'+(nExt-2)+' more</div>';
+      if(nExt>2)pills+='<div class="cal-more">+'+(nExt-2)+' more</div>';
     }
-    html+='<div class="'+cls+'" style="'+bgStyle+'" onclick="selectCalDay(\''+key+'\')">'
+    html+='<div class="'+cls+'" onclick="selectCalDay(\''+key+'\')">'
       +'<div class="cal-num">'+d+'</div>'
       +(isToday?'<div class="cal-today-label">Today</div>':'')
       +pills

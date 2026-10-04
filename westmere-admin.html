@@ -799,10 +799,10 @@ select:-webkit-autofill:focus{
             </div>
           </div>
           <div class="adm-cal-grid" id="adm-cal-grid"></div>
-          <div style="display:flex;gap:1rem;margin-top:.8rem;font-size:.82rem;color:var(--text-light);flex-wrap:wrap">
-            <span><span style="display:inline-block;width:10px;height:10px;background:#ffffff;border-radius:2px;vertical-align:middle"></span> Confirmed/pending</span>
-            <span><span style="display:inline-block;width:10px;height:10px;background:#555555;border-radius:2px;vertical-align:middle"></span> Needs reassignment</span>
-            <span><span style="display:inline-block;width:10px;height:10px;background:repeating-linear-gradient(45deg,#fff,#fff 3px,rgba(176,42,42,.4) 3px,rgba(176,42,42,.4) 6px);border:1px solid rgba(0,0,0,.1);vertical-align:middle"></span> Time off</span>
+          <div class="adm-cal-key">
+            <span><i class="adm-cal-sw"></i> Confirmed/pending</span>
+            <span><i class="adm-cal-sw flagged"></i> Needs reassignment</span>
+            <span><i class="adm-cal-sw off"></i> Time off</span>
           </div>
         </div>
       </div>
@@ -7605,6 +7605,7 @@ function buildAdminCalendar(){
     if(key===todayKey)cls+=' today';
     if(key===ADM_CAL_SELECTED)cls+=' selected';
     if(off.length)cls+=' blocked';
+    if(jobs.length||ext.length)cls+=' has';
     if(flagged)cls+=' flagged';
 
     var inner='<div class="adm-cal-num">'+d+'</div>';
@@ -7620,7 +7621,7 @@ function buildAdminCalendar(){
         var label=t+(pu&&de?' '+pu+'→'+de:(' '+(j.customer_name||'')))+fare;
         inner+='<div class="adm-cal-job-mini">'+escTo(label)+'</div>';
       });
-      if(jobs.length>2)inner+='<div class="adm-cal-job-mini" style="color:var(--navy)">+'+(jobs.length-2)+' more</div>';
+      if(jobs.length>2)inner+='<div class="adm-cal-more">+'+(jobs.length-2)+' more</div>';
     }
     if(off.length&&!jobs.length){
       inner+='<div class="adm-cal-pill off">Time off</div>';
@@ -7632,9 +7633,9 @@ function buildAdminCalendar(){
       var maxShow=jobs.length?1:2;
       ext.slice(0,maxShow).forEach(function(ev){
         var t=ev.allDay?'':_evRange(ev).split(' ')[0];
-        inner+='<div class="adm-cal-job-mini" style="color:#102a43;border-left:2px solid #102a43;padding-left:.3rem">'+escTo((t?t+' ':'')+ev.title)+'</div>';
+        inner+='<div class="adm-cal-job-mini ext">'+escTo((t?t+' ':'')+ev.title)+'</div>';
       });
-      if(ext.length>maxShow)inner+='<div class="adm-cal-job-mini" style="color:#102a43">+'+(ext.length-maxShow)+' personal</div>';
+      if(ext.length>maxShow)inner+='<div class="adm-cal-more">+'+(ext.length-maxShow)+' personal</div>';
     }
     html+='<div class="'+cls+'" onclick="admSelectDay(\''+key+'\')">'+inner+'</div>';
   }
