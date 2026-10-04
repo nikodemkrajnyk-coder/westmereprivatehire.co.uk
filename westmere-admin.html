@@ -6,6 +6,7 @@
 <script src="/wm-address-lookup.js"></script>
 <script src="/wm-invoice-maths.js"></script>
 <script src="/wm-lifecycle.js"></script>
+<script src="/wm-compact.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -616,7 +617,7 @@ select:-webkit-autofill:focus{
     <span class="sb-label">Bookings</span>
     <button class="sb-item" onclick="openModal('modal-book')"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>New Booking</button>
     <button class="sb-item" onclick="nav('all-jobs',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span>All Journeys<span class="sb-badge" id="sb-toconfirm-badge" style="display:none"></span></button>
-    <button class="sb-item" onclick="nav('completed',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>Completed</button>
+    <button class="sb-item" onclick="nav('history',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>Trip History</button>
     <button class="sb-item" onclick="nav('cancelled',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></span>Cancelled</button>
     <button class="sb-item" onclick="nav('calendar',this)"><span class="sb-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>Calendar</button>
   </div>
@@ -766,14 +767,19 @@ select:-webkit-autofill:focus{
       </div>
     </div>
 
-    <!-- ══ COMPLETED — grouped by week, with weekly takings (owner parity) ══ -->
-    <div class="view" id="view-completed">
+    <!-- ══ TRIP HISTORY — a spreadsheet of finished trips (owner parity) ══
+         There is no "Completed" page any more: a finished job is history, and
+         it lives in exactly one place. The list is five short columns and the
+         row opens the detail page — the owner's rule, "less information on
+         each page, then click to expand".
+         GUARDRAIL: server/tests/compact-history.test.js -->
+    <div class="view" id="view-history">
       <div class="page-hd">
-        <div class="page-title">Completed <em>Journeys</em></div>
-        <div class="page-sub">Finished jobs, grouped by week with the week's takings</div>
+        <div class="page-title">Trip <em>History</em></div>
+        <div class="page-sub">Finished trips by month &mdash; click a row for the full details</div>
       </div>
       <div class="card">
-        <div id="adm-completed-list"></div>
+        <div id="adm-history-list"></div>
       </div>
     </div>
 
@@ -3079,9 +3085,9 @@ function bookingDetailHtml(b){
     +_jdField('Phone',escTo(b.customer_phone||b.passenger_phone||''))
     +_jdField('Email',escTo(b.customer_email||b.passenger_email||''))
     // Short display form; the full address is kept for navigation.
-    +_jdField('Pickup',escTo(_admShortAddr(b.pickup)))
-    +_jdField('Stop on the way',escTo(_admShortAddr(b.stop_address)))
-    +_jdField('Destination',escTo(_admShortAddr(b.destination)))
+    +_jdField('Pickup',escTo(b.pickup))
+    +_jdField('Stop on the way',escTo(b.stop_address))
+    +_jdField('Destination',escTo(b.destination))
     +_jdField('Date',escTo(_admLongDate(b.date))+(b.time?' \u00b7 '+escTo(b.time):''))
     +_jdField('Time',escTo(b.time||'ASAP'))
     +_jdField('Passengers',escTo(b.passengers))
@@ -3090,7 +3096,9 @@ function bookingDetailHtml(b){
     +_jdField('Trip type',escTo(tripType))
     +_jdField('Fare',money(b.fare))
     +_jdField('Suggested fare',money(b.suggested_fare))
-    +_jdField('Payment',escTo(b.payment||''))
+    /* IN WORDS, from the shared module — "account" is a database value, not a
+       sentence, and this panel is read by a person. */
+    +_jdField('Payment',escTo(WMCompact.payMethodLabel(b)))
     +_jdField('Paid at',escTo(b.paid_at))
     +_jdField('Confirmation sent',escTo(b.confirmation_sent_at)||'—')
     +(b.refund_status?_jdField('Refund',(b.refund_status==='due'?'Due £'+Number(b.refund_amount!=null?b.refund_amount:(b.fare||0)).toFixed(2):('Refunded £'+Number(b.refund_amount!=null?b.refund_amount:(b.fare||0)).toFixed(2)+(b.refund_method?' ('+b.refund_method+')':'')+(b.refunded_at?' · '+escTo(b.refunded_at):'')))):'')
@@ -3153,13 +3161,13 @@ function admJobRow(b){
     +'</div>';
 }
 
-// Completed — grouped by ISO week with that week's takings (owner parity).
-function buildAdmCompleted(){
-  var list=document.getElementById('adm-completed-list');
+// TRIP HISTORY — grouped by month with that month's takings (owner parity).
+function buildAdmHistory(){
+  var list=document.getElementById('adm-history-list');
   if(!list)return;
   var jobs=(ALL_BOOKINGS||[]).filter(function(b){return WMLifecycle.statusOf(b)==='completed';});
   if(!jobs.length){
-    list.innerHTML='<div style="text-align:center;padding:2rem;color:var(--westmere-ink-soft);font-size:.95rem">No completed jobs yet</div>';
+    list.innerHTML='<div style="text-align:center;padding:2rem;color:var(--westmere-ink-soft);font-size:.95rem">No finished trips yet &mdash; they appear here once a job is marked completed</div>';
     return;
   }
   var html='';
@@ -3171,9 +3179,83 @@ function buildAdmCompleted(){
       +'<span style="font-family:var(--serif);font-size:1.02rem;font-weight:500;color:var(--navy)">'+escTo(g.label)+'</span>'
       +'<span style="font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--westmere-ink-soft);white-space:nowrap">'+g.items.length+(g.items.length===1?' job':' jobs')+' · £'+g.takings.toFixed(0)+'</span>'
       +'</div>';
-    html+=g.items.map(admJobRow).join('');
+    /* FIVE SHORT COLUMNS, and the row opens the rest. Same module as the
+       owner app (/wm-compact.js), so the two cannot drift: reference, date,
+       passenger, pickup, drop-off — and the full addresses, the phone number,
+       the fare, what was actually paid and by what method all live on the
+       detail page behind the row. */
+    html+=WMCompact.historyTable(g.items,'admOpenTrip',{label:g.label+' — finished trips'});
   });
   list.innerHTML=html;
+}
+
+/* ── THE TRIP DETAIL PAGE ──────────────────────────────────────────────────
+   Everything the compact list deliberately left out: the full addresses, the
+   passenger's phone and email, the fare, what was actually PAID and by what
+   method, the flight, the notes — and the actions the lifecycle module allows
+   on a finished trip. The admin app's "page" is its own wide modal, the same
+   furniture the operator and driver pages use, so this does not invent a
+   second kind of overlay. GUARDRAIL: server/tests/compact-history.test.js */
+var ADM_TRIP_ID=null;
+function admOpenTrip(id){
+  var b=(ALL_BOOKINGS||[]).find(function(x){return String(x.id)===String(id);})
+       ||FLAGGED_CACHE[id];
+  if(!b)return;
+  ADM_TRIP_ID=b.id;
+  var m=document.getElementById('modal-trip');
+  if(!m){
+    m=document.createElement('div');
+    m.id='modal-trip'; m.className='overlay';
+    m.innerHTML='<div class="modal" style="max-width:860px"><div class="modal-hd">'
+      +'<div class="modal-title" id="adm-trip-title">Trip</div>'
+      +'<button class="modal-x" onclick="closeModal(\'modal-trip\')">&times;</button></div>'
+      +'<div class="modal-body" id="adm-trip-body">Loading…</div></div>';
+    document.body.appendChild(m);
+  }
+  openModal('modal-trip');
+  admTripRender(b);
+}
+function admTripRender(b){
+  var t=document.getElementById('adm-trip-title');
+  if(t)t.textContent=(b.customer_name||b.passenger_name||'Trip')+(b.ref?' · '+b.ref:'');
+  var body=document.getElementById('adm-trip-body');
+  if(!body)return;
+  var A=WMLifecycle.actionsFor(b);
+  var acts='';
+  if(A.togglePaid&&!b.paid_at)acts+='<button class="btn btn-navy btn-sm" onclick="admMarkPaid('+b.id+')">Mark as Paid</button> ';
+  if(A.sendReminder)acts+='<button class="btn btn-ghost btn-sm" onclick="admSendPayReminder('+b.id+')">Send Reminder</button> ';
+  if(A.message)acts+='<button class="btn btn-ghost btn-sm" onclick="wmMessageOpen('+b.id+')">Message</button> ';
+  // NOT COMPLETED — the one way back out. A completed trip counts towards the
+  // income, so it can be neither cancelled nor deleted; this takes it out of
+  // the income again and makes it a live booking.
+  if(A.unmarkCompleted)acts+='<button class="btn btn-ghost btn-sm" onclick="admUnmarkCompleted('+b.id+')">Not Completed</button> ';
+  if(A.cancel)acts+='<button class="btn btn-cancel-trip btn-sm" onclick="cancelTrip('+b.id+',this)">Cancel Trip</button> ';
+  if(A.del)acts+='<button class="btn btn-red btn-sm" onclick="admDeleteBooking('+b.id+')">Delete</button>';
+
+  body.innerHTML=''
+    // WHAT THE MONEY DID, first and in words. On a finished trip it is the
+    // only open question, and a badge does not answer it.
+    +'<div style="display:flex;flex-wrap:wrap;gap:.6rem 1.6rem;align-items:baseline;padding:.2rem 0 .9rem">'
+      +'<div><div class="wm-lab" style="margin:0">Fare</div><div style="font-size:1.5rem;color:var(--navy);font-family:var(--serif)">'+escTo(WMCompact.money(b.fare))+'</div></div>'
+      +'<div><div class="wm-lab" style="margin:0">Paid</div><div style="font-size:.95rem;color:var(--navy)">'+escTo(WMCompact.paidLine(b))+'</div></div>'
+      +'<div><div class="wm-lab" style="margin:0">Method</div><div style="font-size:.95rem;color:var(--navy)">'+escTo(WMCompact.payMethodLabel(b))+'</div></div>'
+    +'</div>'
+    +bookingDetailHtml(b)
+    +(acts?'<div style="margin-top:1rem;display:flex;gap:.4rem;flex-wrap:wrap">'+acts+'</div>':'')
+    +(A.del?'':'<div style="margin-top:.8rem;font-size:.84rem;color:var(--westmere-ink-soft);line-height:1.5">This job is completed, so it counts towards your income and cannot be cancelled or deleted. Mark it not completed first if that is wrong.</div>');
+}
+
+// UNDO a completion — its own server route, because nothing in a staff app may
+// PATCH a booking to confirmed (that is the customer's act). Restoring the
+// status a finished job already held is a correction, and the server owns it.
+async function admUnmarkCompleted(bookingId){
+  if(!await WMAsk.confirm('Mark this job as NOT completed? It will come out of the income figures and go back to confirmed.',{ok:'Not completed',cancel:'Leave it'}))return;
+  try{
+    var r=await fetch('/api/bookings/'+bookingId+'/unmark-completed',{method:'POST',credentials:'include'});
+    var d=await r.json();
+    if(r.ok&&d.ok){showToast('Job is no longer completed');closeModal('modal-trip');loadLiveBookings();}
+    else showToast(d.error||('Failed ('+r.status+')'));
+  }catch(e){showToast('Network error');console.error('[admUnmarkCompleted]',e);}
 }
 
 // Cancelled — kept as a record, removed only by an explicit manual Delete.
@@ -3280,7 +3362,7 @@ function loadLiveBookings(){
           if(A.markPaid)acts+='<button class="btn btn-navy btn-sm" onclick="admMarkPaid('+b.id+')">Mark as Paid</button>';
           if(A.markCompleted)acts+='<button class="btn btn-green btn-sm" onclick="markJobDone('+b.id+',this)">\u2713 Done</button>';
           if(A.sendReminder)acts+='<button class="btn btn-ghost btn-sm" onclick="admSendPayReminder('+b.id+')">Send Reminder</button>';
-          if(A.edit)acts+='<button class="btn btn-red btn-sm" onclick="cancelJob('+b.id+',this)">\u2715 Cancel</button>';
+          if(A.cancel)acts+='<button class="btn btn-red btn-sm" onclick="cancelJob('+b.id+',this)">\u2715 Cancel</button>';
           return '<div class="tl-item"><div class="tl-time-col"><div class="tl-time">'+(b.time||'ASAP')+'</div>'+(i<sorted.length-1?'<div class="tl-line"></div>':'')+'</div>'
             +'<div class="tl-card active"><div class="tl-top"><div class="tl-name">'+escTo(b.customer_name||'')+'</div>'+statusTag+'</div>'
             +'<div class="tl-route">'+escTo(_admShortAddr(b.pickup))+' \u2192 '+escTo(_admShortAddr(b.destination))+'</div>'
@@ -3348,9 +3430,15 @@ function loadLiveBookings(){
           if(ACT.message){
             actionBtns+='<button class="btn btn-ghost btn-sm" onclick="wmMessageOpen('+b.id+')">Message</button> ';
           }
-          if(!isCancelled){
+          if(ACT.cancel){
             // Cancel: unpaid -> deleted; paid -> cancelled + Refund button appears.
             actionBtns+='<button class="btn btn-cancel-trip btn-sm" onclick="cancelTrip('+b.id+',this)">Cancel Trip</button>';
+          }else if(ACT.unmarkCompleted){
+            // A FINISHED TRIP IS NOT CANCELLABLE. It counts towards the income,
+            // so the only way out of a wrong completion is to un-complete it
+            // first — which is what this offers instead of a Cancel the server
+            // would refuse. GUARDRAIL: server/tests/completed-is-final.test.js
+            actionBtns+='<button class="btn btn-ghost btn-sm" onclick="admUnmarkCompleted('+b.id+')">Not Completed</button>';
           }else if(refundSt==='due'){
             actionBtns+='<button class="btn btn-refund btn-sm" onclick="refundTrip('+b.id+',this)">Refund £'+refundAmt.toFixed(0)+'</button>';
           }else if(refundSt==='refunded'){
@@ -3450,7 +3538,7 @@ function loadLiveBookings(){
     populateRecordMonths();
 
     // Keep the weekly Completed ledger and the Cancelled record in step.
-    if(typeof buildAdmCompleted==='function')buildAdmCompleted();
+    if(typeof buildAdmHistory==='function')buildAdmHistory();
     if(typeof buildAdmCancelled==='function')buildAdmCancelled();
   }).catch(function(e){console.warn('[BOOKINGS]',e);});
 
@@ -3998,48 +4086,22 @@ async function dmLoadLedger(){
     fig.textContent=dmMoney(d.balance);
     fig.style.color=owed?'var(--navy)':'#9C2828';
 
-    /* ── A JOB, AND THE TWO THINGS THAT CAN STILL CHANGE ABOUT IT ────────
-       The commission was decided when the job was sent, from what was known
-       then; a week later it turns out to have been a favour, or the rate was
-       wrong. And whether it has been paid is the other half of the same row —
-       the balance IS the jobs that have not been, so the tick is the money.
-       Both are on the row, as in the owner app: reconciling a list should not
-       mean opening each item to do it. */
-    var rows=(d.items||[]).map(function(it){
-      var part=!it.paid&&Math.abs(Number(it.settled)||0)>0.005;
-      return '<div style="padding:.5rem 0;border-bottom:1px solid rgba(27,27,26,.05)'+(it.paid?';background:#F6F8FA':'')+'">'
-        +'<div style="display:grid;grid-template-columns:76px 1fr auto;gap:.5rem">'
-          +'<div style="color:var(--westmere-ink-soft);font-size:.82rem">'+escTo(it.date)+'</div>'
-          +'<div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escTo(it.route)+'">'+escTo(it.ref)+' · '+escTo(it.route)
-          +'<span style="color:var(--westmere-ink-soft)"> · '+(it.paymentType==='cash'?'cash':'prepaid')+'</span></div>'
-          +'<div style="text-align:right;white-space:nowrap;font-size:.84rem">'
-          +'<span style="color:var(--westmere-ink-soft)">'+(Number(it.delta)<0?'−':'+')+dmMoney(it.delta)+'</span>'
-          +' <span style="color:var(--navy);font-weight:500">'+(Number(it.balanceAfter)<0?'−':'')+dmMoney(it.balanceAfter)+'</span></div>'
-        +'</div>'
-        +'<div style="display:flex;flex-wrap:wrap;align-items:center;gap:.4rem;margin-top:.4rem">'
-          +'<span class="wm-lab" style="margin:0;color:var(--westmere-ink-soft)">'+dmMoney(it.fare)+' fare · '
-            +(Number(it.commission)?dmMoney(it.commission)+' at '+it.commission_pct+'%':'no commission')
-            +' · '+(it.paymentType==='cash'
-                ? (Number(it.commission)?'he owes you '+dmMoney(it.commission):'nothing to settle')
-                : dmMoney(it.payout)+' to him')+'</span>'
-          +'<span style="flex:1"></span>'
-          +'<span onclick="admJobCommission('+it.id+','+(Number(it.commission)?0:1)+')" class="wm-seg" style="padding:.28rem .55rem;font-size:.64rem">'
-            +(Number(it.commission)?'Make it a cover job':'Charge commission')+'</span>'
-          +'<span onclick="admJobRateOpen('+it.id+','+(Number(it.commission_pct)||10)+')" class="wm-seg" id="admjr-btn-'+it.id+'" style="padding:.28rem .55rem;font-size:.64rem">Rate…</span>'
-          +'<span onclick="admJobPaid('+it.id+','+(it.paid?'false':'true')+')" class="wm-seg'+(it.paid?' on':'')+'" style="padding:.28rem .65rem;font-size:.64rem">'
-            +(it.paid?'Paid':'Mark paid')+'</span>'
-        +'</div>'
-        +'<div id="admjr-box-'+it.id+'" style="display:none;align-items:center;gap:.4rem;margin-top:.4rem">'
-          +'<span class="wm-lab" style="margin:0">Rate</span>'
-          +'<input id="admjr-pct-'+it.id+'" type="number" step="0.5" min="0" max="99.9" inputmode="decimal" class="fi" style="width:84px;padding:.3rem .45rem">'
-          +'<span style="font-family:var(--serif);color:var(--navy)">%</span>'
-          +'<span onclick="admJobRateSave('+it.id+')" class="wm-seg on" style="padding:.28rem .65rem;font-size:.64rem">Save</span>'
-          +'<span onclick="admJobRateClose('+it.id+')" class="wm-seg" style="padding:.28rem .55rem;font-size:.64rem">Cancel</span>'
-        +'</div>'
-        +(part?'<div class="wm-lab wm-owing" style="margin:.3rem 0 0">Part paid — '
-            +dmMoney(Math.abs(it.settled))+' of '+dmMoney(Math.abs(it.delta))+', '+dmMoney(Math.abs(it.outstanding))+' still owing</div>':'')
-      +'</div>';
-    });
+    /* ── HIS TRIPS, AS A SPREADSHEET ─────────────────────────────────────
+       Five short columns — reference, date, passenger, fare, paid — and the row
+       opens the trip's own page, which carries the working, the payment method
+       and the two things that can still CHANGE about a job: the commission and
+       whether he has been paid for it.
+
+       Those controls used to sit on the row, on the argument that reconciling
+       a list should not mean opening each item. The row then grew a route, a
+       running balance, the working, three buttons and a rate box, and stopped
+       being a row. The owner's rule settles it, in both apps: less information
+       on each page, then click to expand.
+       GUARDRAIL: server/tests/compact-history.test.js */
+    ADM_DRV_ITEMS=(d.items||[]).slice();
+    var rows=ADM_DRV_ITEMS.length
+      ? [WMCompact.driverTripTable(ADM_DRV_ITEMS,'admDrvTripOpen',{label:'Trips passed to this driver'})]
+      : [];
     (d.settlements||[]).forEach(function(st){
       rows.push('<div style="display:grid;grid-template-columns:76px 1fr auto;gap:.5rem;padding:.45rem 0;border-bottom:1px solid rgba(27,27,26,.05);background:rgba(16,42,67,.04)">'
         +'<div style="color:rgba(27,27,26,.72);font-size:.82rem">'+escTo(st.paid_on)+'</div>'
@@ -4050,13 +4112,117 @@ async function dmLoadLedger(){
       +'</div>');
     });
     list.innerHTML=rows.join('')||'<div style="color:var(--westmere-ink-soft);padding:.4rem 0">No passed jobs yet.</div>';
+    if(ADM_DRV_ITEMS.length){
+      list.insertAdjacentHTML('beforeend','<div style="font-size:.78rem;color:var(--westmere-ink-soft);line-height:1.5;margin-top:.5rem">Click a trip for the full details &mdash; the commission, the payment method, and whether you have paid him for it.</div>');
+    }
+    admDrvTripRefresh();
   }catch(e){list.innerHTML='<div style="color:#9C2828;padding:.4rem 0">Network error</div>';}
 }
 
-/* ── THE TWO THINGS A HISTORY ROW CAN CHANGE ─────────────────────────────
-   Both go to the server and both redraw the panel from it, so the row, the
-   running balance beside it and the figure at the top cannot disagree about
-   what just happened. The same endpoints the owner app uses.
+/* ── ONE OF HIS TRIPS, IN FULL ─────────────────────────────────────────────
+   The page behind a row of the driver's trips table, and the exact counterpart
+   of the owner app's (owDrvTripOpen). It carries what the list deliberately
+   leaves out: the whole route, when it ran, how the CUSTOMER paid, the working
+   that turns a fare into a payout, and the two things about a job that can
+   still change — the commission and whether the driver has been paid.
+   GUARDRAIL: server/tests/compact-history.test.js */
+var ADM_DRV_ITEMS=[];
+var ADM_DRV_TRIP=null;
+function admDrvTrip(id){
+  return (ADM_DRV_ITEMS||[]).find(function(x){return String(x.id)===String(id);});
+}
+function admDrvTripOpen(id){
+  var it=admDrvTrip(id);
+  if(!it)return;
+  ADM_DRV_TRIP=String(id);
+  var m=document.getElementById('modal-drvtrip');
+  if(!m){
+    m=document.createElement('div');
+    m.id='modal-drvtrip'; m.className='overlay';
+    m.innerHTML='<div class="modal" style="max-width:720px"><div class="modal-hd">'
+      +'<div class="modal-title" id="adm-drvtrip-title">Trip</div>'
+      +'<button class="modal-x" onclick="admDrvTripClose()">&times;</button></div>'
+      +'<div class="modal-body" id="adm-drvtrip-body">Loading…</div></div>';
+    document.body.appendChild(m);
+  }
+  openModal('modal-drvtrip');
+  var t=document.getElementById('adm-drvtrip-title');
+  if(t)t.textContent=(it.name||'Trip')+(it.ref?' · '+it.ref:'');
+  var body=document.getElementById('adm-drvtrip-body');
+  if(body)body.innerHTML=admDrvTripHtml(it);
+}
+function admDrvTripClose(){
+  closeModal('modal-drvtrip');
+  ADM_DRV_TRIP=null;
+}
+/* Keep the page honest: every money action reloads the ledger, and the open
+   trip re-renders from the fresh row instead of showing a stale figure. */
+function admDrvTripRefresh(){
+  if(ADM_DRV_TRIP==null)return;
+  var still=admDrvTrip(ADM_DRV_TRIP);
+  if(!still){admDrvTripClose();return;}
+  admDrvTripOpen(ADM_DRV_TRIP);
+}
+function admDrvTripHtml(it){
+  var neg=Number(it.delta)<0;
+  var cash=it.paymentType==='cash';
+  var cover=Number(it.commission)===0;
+  var part=!it.paid&&Math.abs(Number(it.settled)||0)>0.005;
+  var line=function(k,v,big){
+    return '<div style="display:flex;gap:.6rem;padding:.5rem 0;border-top:1px solid var(--westmere-line,#dfe5ea)">'
+      +'<div class="wm-lab" style="margin:0;width:112px;flex:0 0 auto">'+k+'</div>'
+      +'<div style="flex:1;font-size:'+(big?'1.05rem':'.95rem')+';color:var(--navy)">'+v+'</div></div>';
+  };
+  return ''
+    +'<div style="border:1px solid var(--westmere-line,#dfe5ea);border-radius:9px;padding:.2rem .8rem .6rem">'
+      /* THE WHOLE ADDRESS. The list shortens it; this is the page an operator
+         opens to read a door number back to somebody on the phone. */
+      +line('From',escTo(it.pickup||'—'))
+      +line('To',escTo(it.destination||'—'))
+      /* The date the operator reads, from the shared formatter — the literal
+         components, never a parsed instant (CLAUDE.md timezone invariant). */
+      +line('When',escTo(_admLongDate(it.date)||it.date||'—')+(it.time?' · '+escTo(it.time):''))
+      +line('Passenger',escTo(it.name||'—'))
+      +line('Payment',escTo(WMCompact.payMethodLabel(it)))
+      +line('Paid',escTo(WMCompact.paidLine(it)))
+    +'</div>'
+    +'<p class="wm-lab" style="margin-top:1rem">The money on this job</p><div class="wm-rule"></div>'
+    +'<div style="border:1px solid var(--westmere-line,#dfe5ea);border-radius:9px;padding:.2rem .8rem .7rem">'
+      +line('Fare',dmMoney(it.fare),true)
+      +line('Commission',(Number(it.commission)?dmMoney(it.commission)+' at '+it.commission_pct+'%':'No commission — a cover job'))
+      /* ON A CASH JOB HE ALREADY HAS THE FARE: what moves is the commission he
+         owes back, not a payout. */
+      +line(cash?'He owes you':'To him',
+            cash?(Number(it.commission)?dmMoney(it.commission):'Nothing to settle'):dmMoney(it.payout))
+      +line('This job','<span style="'+(neg?'color:#9C2828':'')+'">'+(neg?'−':'')+dmMoney(Math.abs(it.delta))+' '+(neg?'off the balance':'onto the balance')+'</span>')
+      +(part?'<div class="wm-lab wm-owing" style="margin:.5rem 0 0">Part paid — '
+          +dmMoney(Math.abs(it.settled))+' of '+dmMoney(Math.abs(it.delta))+', '+dmMoney(Math.abs(it.outstanding))+' still owing</div>':'')
+    +'</div>'
+    +'<p class="wm-lab" style="margin-top:1rem">Change this job</p><div class="wm-rule"></div>'
+    +'<div style="display:flex;flex-wrap:wrap;align-items:center;gap:.5rem">'
+      +'<span onclick="admJobCommission('+it.id+','+(cover?1:0)+')" class="wm-seg" style="padding:.4rem .75rem;font-size:.7rem">'
+        +(cover?'Charge commission':'Make it a cover job')+'</span>'
+      +'<span onclick="admJobRateOpen('+it.id+','+(Number(it.commission_pct)||10)+')" class="wm-seg" id="admjr-btn-'+it.id+'" style="padding:.4rem .75rem;font-size:.7rem">Change the rate</span>'
+      +'<span onclick="admJobPaid('+it.id+','+(it.paid?'false':'true')+')" class="wm-seg'+(it.paid?' on':'')+'" style="padding:.4rem .85rem;font-size:.7rem">'
+        +(it.paid?'Paid':'Mark paid')+'</span>'
+    +'</div>'
+    /* The rate box is empty until it is asked for. A native prompt is the
+       control this system spent a release removing — see wm-ask.js. */
+    +'<div id="admjr-box-'+it.id+'" style="display:none;align-items:center;gap:.4rem;margin-top:.6rem">'
+      +'<span class="wm-lab" style="margin:0">Rate</span>'
+      +'<input id="admjr-pct-'+it.id+'" type="number" step="0.5" min="0" max="99.9" inputmode="decimal" class="fi" style="width:84px;padding:.3rem .45rem">'
+      +'<span style="font-family:var(--serif);color:var(--navy)">%</span>'
+      +'<span onclick="admJobRateSave('+it.id+')" class="wm-seg on" style="padding:.3rem .65rem;font-size:.7rem">Save</span>'
+      +'<span onclick="admJobRateClose('+it.id+')" class="wm-seg" style="padding:.3rem .55rem;font-size:.7rem">Cancel</span>'
+    +'</div>'
+    +'<div style="font-size:.78rem;color:var(--westmere-ink-soft);line-height:1.5;margin-top:.7rem">'
+      +'A job marked paid cannot have its commission changed — mark it unpaid first, so the correction and the re-payment are both deliberate.</div>';
+}
+
+/* ── THE TWO THINGS A TRIP PAGE CAN CHANGE ───────────────────────────────
+   Both go to the server and both redraw the panel from it, so the trip page,
+   the list behind it and the figure at the top cannot disagree about what just
+   happened. The same endpoints the owner app uses.
    GUARDRAIL: server/tests/admin-parity.test.js */
 async function admJobPaid(jobId,paid){
   try{
@@ -4361,7 +4527,7 @@ async function admOperatorOpen(id){
     m.id='modal-operator'; m.className='overlay';
     /* The app's own modal furniture — an invented one came out as a title with
        the close button underneath it. */
-    m.innerHTML='<div class="modal" style="max-width:720px"><div class="modal-head">'
+    m.innerHTML='<div class="modal" style="max-width:720px"><div class="modal-hd">'
       +'<div class="modal-title" id="adm-op-title">Operator</div>'
       +'<button class="modal-x" onclick="closeModal(\'modal-operator\')">&times;</button></div>'
       +'<div class="modal-body" id="adm-op-body">Loading…</div></div>';
@@ -4560,7 +4726,7 @@ function tick(){const n=new Date();document.getElementById('clock').textContent=
 setInterval(tick,10000);
 
 // ── NAV ──
-const TITLES={dashboard:'Dashboard',today:"Today's Jobs",notifications:'Notifications',inbox:'Inbox','all-jobs':'All Journeys',completed:'Completed Journeys',cancelled:'Cancelled Bookings',calendar:'Calendar',customers:'Customers',invoices:'Invoices','time-off':'Time Off',fares:'Fare Editor','record-book':'Record Book',drivers:'Drivers',settings:'Settings',analytics:'Reports & Analytics',spend:'Customer Spend'};
+const TITLES={dashboard:'Dashboard',today:"Today's Jobs",notifications:'Notifications',inbox:'Inbox','all-jobs':'All Journeys',history:'Trip History',cancelled:'Cancelled Bookings',calendar:'Calendar',customers:'Customers',invoices:'Invoices','time-off':'Time Off',fares:'Fare Editor','record-book':'Record Book',drivers:'Drivers',settings:'Settings',analytics:'Reports & Analytics',spend:'Customer Spend'};
 
 /* ── CUSTOMER SPEND ─────────────────────────────────────────────────────
    Reads GET /api/customer-spend (staff-only) and paints a ranked table plus a
@@ -4632,7 +4798,7 @@ function nav(id,btn){
   if(id==='inbox'&&typeof loadInbox==='function')loadInbox();
   if(id==='time-off'&&typeof loadTimeOff==='function')loadTimeOff();
   if(id==='all-jobs'&&typeof loadFlaggedBookings==='function')loadFlaggedBookings();
-  if(id==='completed'&&typeof buildAdmCompleted==='function')buildAdmCompleted();
+  if(id==='history'&&typeof buildAdmHistory==='function')buildAdmHistory();
   if(id==='cancelled'&&typeof buildAdmCancelled==='function')buildAdmCancelled();
   if(id==='invoices'&&typeof loadInvoiceHistory==='function')loadInvoiceHistory();
   if(id==='settings'&&typeof loadInvoiceSettings==='function'){loadInvoiceSettings();loadAdminDocs();}

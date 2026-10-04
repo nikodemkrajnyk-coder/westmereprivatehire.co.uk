@@ -902,6 +902,13 @@ router.get('/cancel/:ref', (req, res) => {
     if (!b || !b.pay_token || b.pay_token !== token) {
       return res.status(404).send(actionPage('Link not available', "We couldn't find this booking. The link may have expired.", null, '', 'error'));
     }
+    /* A FINISHED JOURNEY HAS NO CANCEL SCREEN. Offering the button and then
+       refusing the press is worse than saying so here. */
+    if (b.status === 'completed') {
+      return res.status(409).send(actionPage('That journey has already taken place',
+        'It cannot be cancelled now. If something is wrong with it, call us on 07930 342593 and we will put it right.',
+        null, '', 'error'));
+    }
     if (b.status === 'cancelled') {
       return res.send(actionPage('Already cancelled', 'This request has already been cancelled. If this was a mistake, please call us and we will be glad to help.', b.ref, '', 'ok'));
     }
@@ -937,6 +944,16 @@ router.post('/cancel/:ref', (req, res) => {
     const b = db.prepare(`SELECT * FROM bookings WHERE ref = ?`).get(ref);
     if (!b || !b.pay_token || b.pay_token !== token) {
       return res.status(404).send(actionPage('Link not available', "We couldn't find this booking.", null, '', 'error'));
+    }
+    /* A FINISHED JOURNEY CANNOT BE CANCELLED FROM AN EMAIL LINK EITHER. The
+       link lives in the customer's inbox for ever; clicking it a week after
+       the trip would strike a completed job — and its money — out of the
+       books. He is told it has already happened instead.
+       GUARDRAIL: server/tests/completed-is-final.test.js */
+    if (b.status === 'completed') {
+      return res.status(409).send(actionPage('That journey has already taken place',
+        'It cannot be cancelled now. If something is wrong with it, call us on 07930 342593 and we will put it right.',
+        null, '', 'error'));
     }
     if (b.status !== 'cancelled') {
       db.prepare(`UPDATE bookings SET status = 'cancelled', cancellation_reason = CASE WHEN cancellation_reason IS NULL OR cancellation_reason = '' THEN 'Cancelled by customer from email' ELSE cancellation_reason END, updated_at = datetime('now') WHERE id = ?`).run(b.id);

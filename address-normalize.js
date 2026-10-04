@@ -217,6 +217,12 @@
   }
 
   // PRIMARY: the short display form (owner's spec). Airports special-cased.
+  /* A WHOLE postcode at the end of a part — "…, Steyning BN44 3GG". Only the
+     full form: an outward code on its own ("BN44") is a place as often as it
+     is a postcode, and cutting it would lose the only locality some addresses
+     carry. */
+  var FULL_POSTCODE_TAIL = /\s*\b[A-Z]{1,2}\d[A-Z\d]?\s+\d[A-Z]{2}\s*$/i;
+
   function shortDisplay(raw) {
     if (raw == null) return '';
     var s = preClean(raw);
@@ -248,6 +254,20 @@
     if (detail.length) out.push(capWords(detail.join(' ')));
     if (town) out.push(capWords(town));
     if (postcode) out.push(postcode);
+    /* THE POSTCODE IS EMITTED ONCE, AT THE END. When the town and the postcode
+       share a comma-part — "Steyning High Street, Steyning BN44 3GG" — the town
+       token keeps the postcode and it was then appended again, giving
+       "Steyning High Street, Steyning BN44 3GG, BN44 3GG" on every list that
+       shows that address. The consecutive-duplicate filter below never caught
+       it, because the two were not equal. */
+    if (postcode) {
+      out = out.map(function (v) {
+        if (POSTCODE_TOKEN.test(v)) return v;
+        var cut = v.replace(FULL_POSTCODE_TAIL, '').trim();
+        return cut || v;
+      });
+    }
+
     // Drop accidental consecutive duplicates, then tidy the casing of any
     // part that was typed in lowercase.
     return out.filter(function (v, idx) { return v && v !== out[idx - 1]; })

@@ -307,13 +307,31 @@
       sendEstimate: st === 'pending',
       markPaid: st === 'awaiting_payment',
       markCompleted: st === 'confirmed' || st === 'active',
+      // THE WAY OUT OF A MISTAKE. Because a completed job can no longer be
+      // cancelled or deleted (see below), there has to be a door back: this
+      // puts the job on 'confirmed' again, which takes it out of the income
+      // figures and makes it cancellable. Completed only — it is an undo, not
+      // a status picker.
+      unmarkCompleted: st === 'completed',
       togglePaid: st === 'confirmed' || st === 'active' || st === 'completed',
       sendReminder: !isPaid && hasEmail && hasFare &&
         (st === 'completed' || st === 'confirmed' || st === 'awaiting_payment'),
       invoice: (st === 'confirmed' || st === 'active' || st === 'completed') && hasFare,
       message: hasEmail && live,
       edit: live,
-      del: true,
+      // ── COMPLETED IS FINAL ────────────────────────────────────────────
+      // A completed job counts towards the owner's income. Cancelling or
+      // deleting it would take that money out of the books by the back door,
+      // so neither is offered. If a job was marked completed by mistake the
+      // way out is to mark it NOT completed first, and then cancel it.
+      //
+      // The server refuses the same thing on every door that could do it
+      // (PATCH/cancel/DELETE /bookings/:id, the customer's /cancel/:ref, and
+      // the driver's cancel) — see server/tests/completed-is-final.test.js.
+      // These two flags only stop the app from offering a button the server
+      // is going to reject.
+      cancel: live && st !== 'completed',
+      del: st !== 'completed',
       reviewChange: crStage === 'early',
       acceptChange: crStage === 'decision',
       declineChange: crStage === 'decision',
@@ -435,6 +453,8 @@
     bagsLabel: bagsLabel,
     bagsText: bagsText,
     actionsFor: actionsFor,
+    canCancel: function (j) { return actionsFor(j).cancel; },
+    canDelete: function (j) { return actionsFor(j).del; },
     CHANGE_FIELDS: CHANGE_FIELDS,
     PRICE_FIELDS: PRICE_FIELDS,
     changeAffectsPrice: changeAffectsPrice,

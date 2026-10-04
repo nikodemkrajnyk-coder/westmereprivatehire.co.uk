@@ -326,6 +326,26 @@ router.patch('/bookings/:id', async (req, res) => {
   if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
   const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
   if (!booking) return res.status(404).json({ error: 'Booking not found' });
+  /* ── A COMPLETED JOB CANNOT BE CANCELLED ──────────────────────────────
+     A completed booking is a record of work done and money earned: it is what
+     the turnover is summed from, what a driver's balance is built on, and what
+     an invoice may already have billed. Cancelling one does not undo the
+     journey — it quietly removes the money from every total that has already
+     counted it, and nothing on the screen says so.
+
+     The way back is deliberate rather than forbidden: mark it not-completed
+     first, which is a visible act in its own right, and then cancel it. Same
+     shape as a settled job refusing a change of commission.
+
+     The owner's words: "a job that is COMPLETED in the system (the ones that
+     count toward income) CANNOT be cancelled."
+     GUARDRAIL: server/tests/completed-is-final.test.js */
+  if (req.body.status === 'cancelled' && booking.status === 'completed') {
+    return res.status(409).json({
+      error: 'This job is completed, so it counts towards your income and cannot be cancelled. '
+           + 'Mark it not completed first if that is wrong.' });
+  }
+
 
   if (role === 'driver' && booking.driver_id !== req.auth.id) {
     return res.status(403).json({ error: 'You can only update your own bookings' });
@@ -1862,6 +1882,17 @@ router.delete('/bookings/:id', (req, res) => {
   const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
   if (!booking) return res.status(404).json({ error: 'Booking not found' });
 
+  /* DELETING A COMPLETED JOB IS CANCELLING IT, AND MORE. It leaves no row at
+     all, so the turnover, the driver's balance and any statement that has
+     already counted the work simply disagree with the books from then on.
+     Refused for the same reason and with the same way out.
+     GUARDRAIL: server/tests/completed-is-final.test.js */
+  if (booking.status === 'completed') {
+    return res.status(409).json({
+      error: 'This job is completed, so it counts towards your income and cannot be deleted. '
+           + 'Mark it not completed first if that is wrong.' });
+  }
+
   if (booking.calendar_event_id) {
     gcal.deleteEvent(booking.calendar_event_id).catch(() => {});
   }
@@ -1925,6 +1956,16 @@ router.post('/bookings/:id/cancel', (req, res) => {
   if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
   const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
   if (!booking) return res.status(404).json({ error: 'Booking not found' });
+
+  /* A COMPLETED JOB IS NOT CANCELLABLE — not here either. This route refunds
+     and cancels; on a completed job it would take money that has already been
+     counted back out of the books with nothing on screen to say so.
+     GUARDRAIL: server/tests/completed-is-final.test.js */
+  if (booking.status === 'completed') {
+    return res.status(409).json({
+      error: 'This job is completed, so it counts towards your income and cannot be cancelled. '
+           + 'Mark it not completed first if that is wrong.' });
+  }
 
   // Remove it from the calendar either way — the trip is not happening.
   if (booking.calendar_event_id) gcal.deleteEvent(booking.calendar_event_id).catch(() => {});
@@ -3570,6 +3611,47 @@ router.post('/bookings/:id/send-message', async (req, res) => {
     console.error('[API] send-message failed:', e.message);
     res.status(500).json({ error: 'Failed to send message' });
   }
+});
+
+// ── Un-complete a booking — the ONE way out of a wrong completion ────────
+// A completed job counts towards the owner's income, so nothing may cancel or
+// delete it (PATCH, /cancel, DELETE and the customer's own /cancel/:ref all
+// return 409 on a completed booking). That rule needs a door back, or a job
+// marked completed by mistake would be stuck in the income figures for good.
+//
+// This is that door, and it is deliberately NOT a general status setter: it
+// only moves 'completed' → 'confirmed', which takes the trip out of the income
+// and makes it cancellable like any other live booking. It touches neither
+// paid_at nor payment — the money that arrived still arrived, and un-settling
+// it is a separate, explicit act.
+//
+// It lives in its own route rather than as a PATCH from the apps because
+// nothing in a staff app may PATCH status:'confirmed' (CLAUDE.md invariant #3,
+// guarded in server/tests/admin-parity.test.js): confirming is the customer's
+// act. Restoring a status the booking already held is a correction, not a
+// confirmation, and the distinction belongs on the server where it can be
+// audited. GUARDRAIL: server/tests/completed-is-final.test.js
+router.post('/bookings/:id/unmark-completed', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+
+  const b = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+  if (!b) return res.status(404).json({ error: 'Booking not found' });
+  if (b.status !== 'completed') {
+    return res.status(409).json({ error: 'That job is not marked completed.' });
+  }
+
+  db.prepare("UPDATE bookings SET status = 'confirmed', updated_at = datetime('now') WHERE id = ? AND status = 'completed'").run(id);
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run(req.auth.type || 'user', req.auth.id, 'completion_undone', b.ref, req.ip);
+  } catch (_) {}
+  console.log('[API] completion undone on ' + b.ref + ' — it is out of the income figures again');
+  res.json({ ok: true, status: 'confirmed' });
 });
 
 // ── Mark a booking's payment as received → CONFIRMED ─────────────────────

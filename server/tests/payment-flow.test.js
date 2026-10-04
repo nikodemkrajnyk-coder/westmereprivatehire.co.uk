@@ -750,13 +750,31 @@ test('owner _shortAddr falls back to a LOCAL shortener, never the raw address', 
   assert.ok(/function _tinyAddr\(a\)\{\s*return window\.WMAddr \? WMAddr\.tinyLabel\(a\) : _localTiny\(a\);\s*\}/.test(src),
     '_tinyAddr must also fall back locally');
 });
-test('owner card detail rows shorten From/Stop/To via _shortAddr', () => {
+// The original bug was a LIST row rendering "Bolney, West Sussex, England".
+// That rule still holds for every list and every card summary — and it is the
+// summary line this now pins.
+//
+// The DETAIL PAGE is the opposite case, and deliberately so. The owner's rule
+// for history is "less information on each page, then click to expand": the
+// list carries a short label, and the page you open from it carries the whole
+// address, because reading a door number back to a customer on the phone is
+// exactly what he opens it for. Shortening there was the answer missing.
+test('owner card SUMMARY shortens the route; the DETAIL rows carry the full address', () => {
   const src = read('westmere-owner.html');
   const fn = src.match(/function jobCardHtml[\s\S]*?\n\}/);
   assert.ok(fn, 'jobCardHtml not found');
-  assert.ok(/From<\/td><td>'\+escH\(_shortAddr\(j\.pickup\)/.test(fn[0]), 'detail From row must use _shortAddr');
-  assert.ok(/To<\/td><td>'\+escH\(_shortAddr\(j\.dest\)/.test(fn[0]), 'detail To row must use _shortAddr');
-  assert.ok(/Stop<\/td><td>'\+escH\(_shortAddr\(j\.stop_address\)/.test(fn[0]), 'detail Stop row must use _shortAddr');
+  // SUMMARY — the scannable line, still shortened (this is the regression).
+  assert.ok(/_shortAddr\(j\.pickup\|\|''\)/.test(fn[0]),
+    'the card summary route must still shorten the pickup');
+  assert.ok(!/margin-bottom:\.15rem">'\+escH\(j\.pickup\)/.test(fn[0]),
+    'the card summary must never render the raw long-form address');
+  // DETAIL — the full thing, on purpose.
+  assert.ok(/From<\/td><td>'\+escH\(j\.pickup\|\|'—'\)/.test(fn[0]),
+    'the detail From row must show the FULL pickup address');
+  assert.ok(/To<\/td><td>'\+escH\(j\.dest\|\|j\.destination\|\|'—'\)/.test(fn[0]),
+    'the detail To row must show the FULL destination');
+  assert.ok(/Stop<\/td><td>'\+escH\(j\.stop_address\)/.test(fn[0]),
+    'the detail Stop row must show the FULL stop address');
 });
 
 // ── Manual (owner-created) booking → Send Estimate must email reliably ────

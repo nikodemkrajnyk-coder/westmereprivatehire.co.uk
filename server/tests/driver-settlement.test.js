@@ -339,37 +339,56 @@ test('settlements recorded under the old model are spent across the jobs', () =>
 });
 
 // ── 5. THE SCREEN ────────────────────────────────────────────────────────
-console.log('\nThe row the owner clicks');
+// The controls live on the TRIP PAGE, not on the list row. The owner's rule
+// for every history surface: the list is a few short columns, and the row
+// opens the page that carries everything else — the working, the payment
+// method, the commission and the paid tick. What must not change is that all
+// of it still EXISTS and is one click away.
+// See also: server/tests/compact-history.test.js
+console.log('\nThe trip page the owner opens from the list');
 
-test('each history row carries the toggle and the rate controls', () => {
+test('the trip page carries the toggle and the rate controls', () => {
   const H = strip(read('westmere-owner.html'));
-  const fn = fnBody(H, 'owDriverLoad');
-  assert.ok(/owJobPaid\(/.test(fn), 'no paid/unpaid toggle on the row');
+  const fn = fnBody(H, 'owDrvTripHtml');
+  assert.ok(/owJobPaid\(/.test(fn), 'no paid/unpaid toggle on the trip page');
   assert.ok(/owJobCommission\(/.test(fn), 'no way to make a job a cover job');
   assert.ok(/owJobRateOpen\(/.test(fn), 'no way to set the rate on one job');
-  assert.ok(/it\.commission_pct/.test(fn), 'the row must say what rate it is on');
+  assert.ok(/it\.commission_pct/.test(fn), 'the trip page must say what rate it is on');
+  // …and the list row is what opens it.
+  const list = fnBody(H, 'owDriverLoad');
+  assert.ok(/owDrvTripOpen/.test(list), 'the trips list must open the trip page');
   /* The figure at the top and the ticks below it are the same fact, so the
      page says so rather than leaving the owner to wonder. */
-  assert.ok(/unpaid job/.test(fn), 'the balance does not say it is the unpaid jobs');
+  assert.ok(/unpaid job/.test(list), 'the balance does not say it is the unpaid jobs');
 });
 
-test('the rate is typed on the row, not into a native prompt', () => {
+test('the list row stays COMPACT — the money controls are not on it', () => {
+  /* The row carried a route, a running balance, the working, three buttons and
+     a rate box, and stopped being a row. If any of that comes back to the
+     list, this fails. */
+  const list = fnBody(strip(read('westmere-owner.html')), 'owDriverLoad');
+  for (const ctl of ['owJobPaid(', 'owJobCommission(', 'owJobRateOpen(', 'jr-pct-']) {
+    assert.ok(!list.includes(ctl), 'the compact trips list must not carry ' + ctl);
+  }
+});
+
+test('the rate is typed in place, not into a native prompt', () => {
   /* prompt() is the control this app spent a release removing: it cannot be
      styled, it stops the page, and on a phone it is a grey box that says
-     "Enter a number". The rate box is part of the row and opens in place. */
+     "Enter a number". The rate box is part of the trip page and opens in place. */
   const H = strip(read('westmere-owner.html'));
   for (const fn of ['owJobRateOpen', 'owJobRateSave', 'owJobRateClose']) {
     assert.ok(H.includes('function ' + fn + '('), fn + ' is missing');
   }
   assert.ok(!/prompt\(/.test(fnBody(H, 'owJobRateSave')), 'the rate still comes from a prompt box');
-  assert.ok(/jr-pct-/.test(fnBody(H, 'owDriverLoad')), 'the row has no rate input to open');
+  assert.ok(/jr-pct-/.test(fnBody(H, 'owDrvTripHtml')), 'the trip page has no rate input to open');
 });
 
 test('a cash job does not claim the fare is going to him', () => {
   /* He was paid at the kerb. "£189.00 to him" is true of a prepaid job and
      nonsense on a cash one, where what moves is the commission he owes back. */
-  const fn = fnBody(strip(read('westmere-owner.html')), 'owDriverLoad');
-  assert.ok(/paymentType === 'cash'[\s\S]{0,160}he owes you/.test(fn),
+  const fn = fnBody(strip(read('westmere-owner.html')), 'owDrvTripHtml');
+  assert.ok(/cash \?[\s\S]{0,80}He owes you/.test(fn),
     'the working line reads the same for cash and prepaid');
 });
 

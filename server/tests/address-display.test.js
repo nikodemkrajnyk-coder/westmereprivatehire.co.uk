@@ -67,6 +67,29 @@ test('short output never contains a stripped region/country fragment', () => {
   }
 });
 
+test('the postcode is printed ONCE, even when it shares a part with the town', () => {
+  /* "Steyning High Street, Steyning BN44 3GG" came out as
+     "Steyning High Street, Steyning BN44 3GG, BN44 3GG" on every list that
+     shows an address: the town token kept the postcode, and the postcode was
+     then appended in its own right. The consecutive-duplicate filter never
+     caught it, because the two parts were not equal. */
+  assert.strictEqual(addr.shortDisplay('Steyning High Street, Steyning BN44 3GG'),
+    'Steyning High Street, Steyning, BN44 3GG');
+  assert.strictEqual(addr.shortDisplay('Henfield BN5 9HP'), 'Henfield, BN5 9HP');
+  for (const raw of ['Steyning High Street, Steyning BN44 3GG', 'Henfield BN5 9HP',
+                     'Worthing Pier, Marine Parade, Worthing BN11 3PX']) {
+    const out = addr.shortDisplay(raw);
+    const pcs = out.match(/\b[A-Z]{1,2}\d[A-Z\d]?\s+\d[A-Z]{2}\b/gi) || [];
+    assert.ok(pcs.length <= 1, 'the postcode is printed twice: ' + out);
+  }
+  // A postcode that is ALL there is must survive — cutting it would leave
+  // nothing at all.
+  assert.strictEqual(addr.shortDisplay('BN44 3GG'), 'BN44 3GG');
+  // And an outward code on its own is a place as often as a postcode, so it
+  // is never cut.
+  assert.ok(/Hove/.test(addr.shortDisplay('12 High St, Hove, BN3 1AA')));
+});
+
 // ── (a2) OLD RECORDS — messy typed free text must shorten too ────────────
 // The first pass only really bit on the comma-separated geocoder strings NEW
 // bookings store. Older rows hold typed free text ("302 bishopsford Morden via

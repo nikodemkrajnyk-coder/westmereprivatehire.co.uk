@@ -167,9 +167,22 @@ function historyRow(b) {
     ref: b.ref,
     date: b.date,
     time: b.time || 'ASAP',
+    /* WHO IT WAS. A compact trips list is read by passenger — "that Gatwick
+       run for Mrs Hall" — and the name was the one thing a history row could
+       not say, so the list had to carry the route instead and stopped being
+       compact. */
+    name: b.customer_name || b.passenger_name || 'Guest',
     route: [b.pickup, b.destination].filter(Boolean).join(' → '),
     pickup: b.pickup,
     destination: b.destination,
+    /* HOW THE CUSTOMER PAID, as stored (pending|card|cash|account|invoice).
+       `paymentType` below is the LEDGER's question — did the driver take the
+       money at the kerb — and the two are not the same: an account job and a
+       card job are both 'prepaid' to the ledger and different things on the
+       trip's detail page. Never defaulted to cash (CLAUDE.md invariant #1). */
+    payment: b.payment || 'pending',
+    paid_at: b.paid_at || null,
+    paid_amount: (b.paid_amount === null || b.paid_amount === undefined) ? null : Math.round(Number(b.paid_amount) * 100) / 100,
     fare: s.fare,
     paymentType: cash ? 'cash' : 'prepaid',
     commission: s.commission,

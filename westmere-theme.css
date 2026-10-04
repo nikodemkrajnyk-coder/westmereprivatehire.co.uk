@@ -1933,3 +1933,121 @@ nav > .navlinks { margin-left: auto; }
 /* A sheet that rises from the bottom must stop short of the notch rather than
    sliding under it when its content is tall. */
 .wm-sheet-top-cap{ max-height: calc(100vh - env(safe-area-inset-top, 0px) - 10px); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   §28  THE COMPACT LIST — A SPREADSHEET YOU CAN TAP
+   ═══════════════════════════════════════════════════════════════════════
+   The owner's rule for history: "less information on each page, then click to
+   expand." A list is a few short columns and one line per row; the full
+   addresses, the phone number, what was paid and how, and the driver's
+   commission all live on the detail page the row opens.
+
+   Markup comes from /wm-compact.js, so both staff apps get the same table and
+   a guard can assert the columns. Rows are real tab stops with role=button —
+   the spreadsheet is navigable by keyboard, not only by thumb.
+
+   NOT translucent, NOT inherited: explicit white paper and explicit ink, with
+   `color-scheme: only light`, because these tables render inside overlays that
+   Android's Auto Dark would otherwise repaint to black-on-black. */
+.wm-ctab-wrap{
+  color-scheme: only light;
+  background: var(--westmere-white);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.wm-ctab{
+  width: 100%;
+  border-collapse: collapse;
+  /* The columns are the ones declared in /wm-compact.js, not the ones the
+     longest cell asks for. Auto sizing is what pushed the drop-off — half the
+     journey — off the right-hand edge of a phone. */
+  table-layout: fixed;
+  background: var(--westmere-white);
+  color: var(--westmere-text);
+  font-size: .86rem;
+  /* A spreadsheet does not wrap. A row that wraps is two rows, and the eye
+     loses the column. */
+  white-space: nowrap;
+}
+.wm-ctab-h{
+  text-align: left;
+  padding: .45rem .7rem;
+  font-size: .68rem;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--westmere-ink-soft);
+  background: var(--westmere-white);
+  border-bottom: var(--border-hair) solid var(--westmere-line-strong);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.wm-ctab-colchev{ width: 1.6rem; }
+.wm-ctab-c{
+  padding: .62rem .7rem;
+  border-bottom: 1px solid var(--westmere-line);
+  color: var(--westmere-text);
+  max-width: 11rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wm-ctab-h.num, .wm-ctab-c.num{ text-align: right; font-variant-numeric: tabular-nums; }
+/* The reference is the thing he reads off an email, so it stays in figures that
+   line up down the column. */
+.wm-ctab-c:first-child{ font-variant-numeric: tabular-nums; color: var(--westmere-ink-soft); }
+/* The passenger is who the row is ABOUT. */
+.wm-ctab-c:nth-child(3){ font-weight: 600; }
+.wm-ctab-r{ cursor: pointer; }
+.wm-ctab-r:hover > .wm-ctab-c{ background: var(--westmere-hover); }
+.wm-ctab-r:active > .wm-ctab-c{ background: var(--westmere-press); }
+.wm-ctab-r:focus-visible{ outline: 2px solid var(--westmere-gold); outline-offset: -2px; }
+/* The affordance: every row says it opens something. */
+.wm-ctab-chev{
+  width: 1.4rem;
+  padding-left: 0;
+  padding-right: .55rem;
+  text-align: right;
+  color: var(--westmere-ink-soft);
+  font-size: 1.05rem;
+  line-height: 1;
+}
+/* A PHONE. Five columns of prose do not fit in 390px however small the type
+   gets, so the two addresses stack into one cell-width and the reference
+   column — which he almost never reads off the list — gives up its room. */
+@media (max-width: 480px){
+  .wm-ctab{ font-size: .82rem; }
+  .wm-ctab-h, .wm-ctab-c{ padding-left: .5rem; padding-right: .5rem; }
+  /* The column heading gives way before the data does — "PASSENGE|" was one
+     letter short of its own label while the names underneath it fitted. */
+  .wm-ctab-h{ font-size: .62rem; letter-spacing: .05em; }
+  .wm-ctab-c{ max-width: none; }
+  /* THE REFERENCE GIVES UP ITS COLUMN. Five columns of prose do not fit in
+     390px however small the type gets, and of the five the reference is the
+     one he reads off an email rather than off this list — where the drop-off
+     is half the journey and was the half falling off the right-hand edge. It
+     is on the detail page, with everything else. */
+  /* WHAT THE REMAINING FOUR GET. Freeing the reference's share does not
+     redistribute it — a declared width is a declared width — so the phone
+     widths are stated, per kind of table. A history is two place names and
+     needs them wide; a driver's trips are two short figures and do not. */
+  .wm-ctab-history col:nth-child(2){ width: 19% !important; }
+  .wm-ctab-history col:nth-child(3){ width: 25% !important; }
+  .wm-ctab-history col:nth-child(4){ width: 27% !important; }
+  .wm-ctab-history col:nth-child(5){ width: 29% !important; }
+  .wm-ctab-trips col:nth-child(2){ width: 21% !important; }
+  .wm-ctab-trips col:nth-child(3){ width: 35% !important; }
+  .wm-ctab-trips col:nth-child(4){ width: 24% !important; }
+  .wm-ctab-trips col:nth-child(5){ width: 20% !important; }
+  /* The column is collapsed to nothing rather than removed: `display:none`
+     takes the cell out of the row, every later cell shifts up one, and each of
+     them inherits the width of the column before it — the date column
+     disappeared and the passenger came out as "M…". Zero width with the
+     content clipped keeps cell and column in step. The widths are declared
+     inline from the column data, so this has to outrank them. */
+  .wm-ctab col:first-child{ width: 0 !important; }
+  .wm-ctab-h:first-child, .wm-ctab-c:first-child{
+    width: 0; padding-left: 0; padding-right: 0;
+    overflow: hidden; white-space: nowrap; text-indent: -999px;
+  }
+}

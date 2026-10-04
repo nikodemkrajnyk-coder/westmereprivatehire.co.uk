@@ -286,9 +286,17 @@ test('admin renders addresses through the shared WMAddr normalizer', () => {
   // The journeys table, the timelines and the detail panel must all shorten.
   assert.ok(/_admShortAddr\(b\.pickup\)/.test(ADMIN), 'the journeys table must shorten the pickup');
   assert.ok(/_admShortAddr\(b\.destination\)/.test(ADMIN), 'the journeys table must shorten the destination');
+  // The DETAIL PANEL is the exception, and deliberately so: the lists shorten
+  // (that is the regression this test exists for), and the page you open from
+  // a list carries the WHOLE address — reading a door number back to a
+  // customer on the phone is what the operator opens it for. Same split as the
+  // owner app. GUARDRAIL: server/tests/compact-history.test.js
   const detail = ADMIN.match(/function bookingDetailHtml[\s\S]*?\n\}/);
-  assert.ok(detail && /_admShortAddr\(b\.pickup\)/.test(detail[0]) && /_admShortAddr\(b\.destination\)/.test(detail[0]),
-    'the booking detail panel must shorten From/To');
+  assert.ok(detail, 'bookingDetailHtml not found');
+  assert.ok(/_jdField\('Pickup',escTo\(b\.pickup\)\)/.test(detail[0]),
+    'the detail panel must show the FULL pickup address');
+  assert.ok(/_jdField\('Destination',escTo\(b\.destination\)\)/.test(detail[0]),
+    'the detail panel must show the FULL destination');
 });
 test('admin no longer prints raw long addresses in the journeys table', () => {
   const code = ADMIN.replace(/^\s*\/\/.*$/gm, '');
@@ -312,14 +320,24 @@ test('the luggage rule is shared and identical', () => {
   assert.strictEqual(LC.bagsText('0s+0l'), '', 'the empty compound form renders empty');
 });
 
-// ── 11. Completed (weekly + takings) and Cancelled (manual delete) views ──
-console.log('\nAdmin has the weekly Completed ledger and the Cancelled record');
-test('admin has a Completed view grouped by week with takings', () => {
-  const fn = ADMIN.match(/function buildAdmCompleted[\s\S]*?\n\}/);
-  assert.ok(fn, 'buildAdmCompleted not found');
+// ── 11. Trip History (monthly + takings) and Cancelled (manual delete) ────
+// There is no "Completed" page in either app any more: a finished job is
+// HISTORY, and it lives in exactly one place. The view, its id and its builder
+// all say so — if "Completed" comes back as a tab, this fails.
+console.log('\nAdmin has the monthly Trip History ledger and the Cancelled record');
+test('admin has a Trip History view grouped by month with takings', () => {
+  const fn = ADMIN.match(/function buildAdmHistory[\s\S]*?\n\}/);
+  assert.ok(fn, 'buildAdmHistory not found');
   assert.ok(/WMLifecycle\.groupByMonth\(/.test(fn[0]), 'Trip History must group by the shared month function');
-  assert.ok(/g\.takings/.test(fn[0]), "each week must show that week's takings");
-  assert.ok(/id="adm-completed-list"/.test(ADMIN), 'the Completed view needs its list container');
+  assert.ok(/g\.takings/.test(fn[0]), "each month must show that month's takings");
+  assert.ok(/id="adm-history-list"/.test(ADMIN), 'the Trip History view needs its list container');
+});
+test('the "Completed" tab is gone from the admin sidebar', () => {
+  assert.ok(!/id="view-completed"/.test(ADMIN), 'the Completed view must be gone — history is the one place');
+  assert.ok(!/nav\('completed'/.test(ADMIN), 'no sidebar entry may navigate to a Completed page');
+  assert.ok(/nav\('history'/.test(ADMIN) && /Trip History<\/button>/.test(ADMIN),
+    'the sidebar entry is Trip History');
+  assert.ok(/id="view-history"/.test(ADMIN), 'the Trip History view must exist');
 });
 test('admin has a Cancelled view with a manual Delete', () => {
   const fn = ADMIN.match(/function buildAdmCancelled[\s\S]*?\n\}/);
@@ -427,19 +445,30 @@ test('a driver added in admin can be given his rate', () => {
     'it is not cleared with the rest of the form, so it carries into the next driver');
 });
 
-test('a driver history row can be corrected and ticked off, as in the owner app', () => {
+test("a driver's trip can be corrected and ticked off, as in the owner app", () => {
   for (const fn of ['admJobPaid', 'admJobCommission', 'admJobRateOpen', 'admJobRateSave']) {
     assert.ok(new RegExp('function\\s+' + fn + '\\b').test(ADMIN), 'admin has no ' + fn);
   }
+  /* The controls live on the TRIP PAGE, as in the owner app: the list is five
+     short columns and the row opens the page carrying the working, the payment
+     method, the commission and the paid tick. All of it must still exist and
+     be one click away. See server/tests/compact-history.test.js */
+  const trip = fnBlock(ADMIN, 'admDrvTripHtml');
+  assert.ok(/admJobPaid\(/.test(trip), 'no paid/unpaid toggle on the trip page');
+  assert.ok(/admJobCommission\(/.test(trip), 'no way to make a job a cover job');
+  assert.ok(/admJobRateOpen\(/.test(trip), 'no way to set the rate on one job');
+  assert.ok(/it\.commission_pct/.test(trip), 'the trip page must say what rate it is on');
   const ledger = /async function dmLoadLedger\(\)\{[\s\S]*?\n\}/.exec(ADMIN)[0];
-  assert.ok(/admJobPaid\(/.test(ledger), 'no paid/unpaid toggle on a history row');
-  assert.ok(/admJobCommission\(/.test(ledger), 'no way to make a job a cover job');
-  assert.ok(/it\.commission_pct/.test(ledger), 'the row must say what rate it is on');
+  assert.ok(/admDrvTripOpen/.test(ledger), 'the trips list must open the trip page');
   assert.ok(/unpaid job/.test(ledger), 'the balance does not say it is the unpaid jobs');
+  /* And the list stays a list — if the controls creep back onto the row, fail. */
+  for (const ctl of ['admJobPaid(', 'admJobCommission(', 'admJobRateOpen(', 'admjr-pct-']) {
+    assert.ok(!ledger.includes(ctl), 'the compact trips list must not carry ' + ctl);
+  }
   /* The same endpoints the owner app uses — one model, two screens. */
   assert.ok(/\/driver-settled/.test(ADMIN) && /\/commission/.test(ADMIN),
     'the row actions do not reach the shared routes');
-  /* And the rate is typed on the row, not into a dialog the OS draws. */
+  /* And the rate is typed in place, not into a dialog the OS draws. */
   assert.ok(!/prompt\(/.test(fnBlock(ADMIN, 'admJobRateSave')),
     'the rate still comes from a native prompt');
 });
