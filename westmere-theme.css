@@ -62,6 +62,12 @@
      markup names is what renders. They named .45 and .5, which measure 2.8 and
      3.3. GUARDRAIL: server/tests/legibility.test.js */
   --westmere-ink-soft: rgba(27, 27, 26, .65);
+  /* THE STATUS BLUE, dark enough to be read on the pale blue chip it is always
+     printed on. #60A5FA was a dark-mode blue carried over from the old palette:
+     on its own .06–.1 tint it measures 2.3–2.4:1, and it only ever looked
+     all right because §15.2's blanket repainted it navy inside the apps. A
+     colour that depends on being overridden is not a colour. 6.2:1. */
+  --westmere-status-blue: #1D4ED8;
   --westmere-line-inverse: #ddd;   /* hairlines ON a dark photo band */
 
   /* ── STATE COLOURS ──────────────────────────────────────────────────────

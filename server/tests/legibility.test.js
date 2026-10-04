@@ -41,6 +41,9 @@ const queue = [];
 function test(name, fn) { queue.push({ name, fn }); }
 
 // ── The same arithmetic the browser sweep uses ───────────────────────────
+const rgba = (r, g, b, a) => ({ r, g, b, a: a === undefined ? 1 : a });
+const WHITE = rgba(255, 255, 255);
+
 function lum(c) {
   const f = [c.r, c.g, c.b].map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
   return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2];
@@ -51,11 +54,15 @@ function over(f, b) {
   return { r: f.r * f.a + b.r * (1 - f.a), g: f.g * f.a + b.g * (1 - f.a), b: f.b * f.a + b.b * (1 - f.a), a: 1 };
 }
 function ratio(ink, paper) {
-  const L1 = lum(over(ink, paper)), L2 = lum(paper);
+  /* THE PAPER IS FLATTENED FIRST. A six-per-cent wash of near-black is a very
+     pale grey on a white page, not a near-black surface — judging the ink
+     against its raw colour called every tinted chip in My Account a 1:1
+     failure. Flatten the paper onto white, then composite the ink onto that. */
+  const p = over(paper, WHITE);
+  const L1 = lum(over(ink, p)), L2 = lum(p);
   return (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05);
 }
-const rgba = (r, g, b, a) => ({ r, g, b, a: a === undefined ? 1 : a });
-const WHITE = rgba(255, 255, 255);
+
 const CARD  = rgba(246, 248, 250);   // #F6F8FA — a settled job, and the money panel
 
 test('the arithmetic is right — channels composited, then converted', () => {
@@ -146,6 +153,88 @@ test('NEGATIVE: the reader catches a faint grey, and passes a readable one', () 
   INK.lastIndex = 0;
   const ok = INK.exec("'<div style=\"color:rgba(27,27,26,.7)\">x</div>'");
   assert.ok(ratio(rgba(+ok[2], +ok[3], +ok[4], +ok[5]), WHITE) >= 4.5, 'and must not condemn a readable one');
+});
+
+// ── 3. ANYTHING THAT DECLARES BOTH MUST BE READABLE AS WRITTEN ───────────
+console.log('\nNothing names an ink it cannot be read in');
+
+/* THE BLACK BOX. The owner photographed the confirmation that an estimate had
+   gone out: near-black ink on near-black paper. It was not the phone and it was
+   not night mode — #toast had `background: rgba(27,27,26,.92)` with
+   `color:#1a1a1a`, 1.27:1, since the restyle flipped the ink and left the
+   paper. It had been that way in every mode, on every device.
+
+   So: when a rule or an inline style names BOTH its paper and its ink, it is
+   declaring a self-contained surface, and it must be readable on its own terms.
+   Not "readable once §15.2's blanket repaints the ink navy" — the toast sits
+   outside #scr-app where the blanket never reaches, and navy on that paper is
+   1.07:1 anyway. A colour that depends on being overridden is not a colour. */
+function pairs(file) {
+  const src = read(file);
+  const out = [];
+  const chunks = [...src.matchAll(/style="([^"]*)"/g)].map((m) => [m[1], m.index])
+    .concat([...src.matchAll(/\{([^{}]*)\}/g)].map((m) => [m[1], m.index]));
+  for (const [decl, idx] of chunks) {
+    const bg = /(?:^|;)\s*background(?:-color)?\s*:\s*([^;!]+)/i.exec(decl);
+    const fg = /(?:^|;)\s*color\s*:\s*([^;!]+)/i.exec(decl);
+    if (!bg || !fg) continue;
+    const paper = css(bg[1]), ink = css(fg[1]);
+    if (!paper || !ink) continue;          // a var() or a keyword — not ours to judge
+    out.push({ line: src.slice(0, idx).split('\n').length, ink: fg[1].trim(), paper: bg[1].trim(),
+               ratio: ratio(ink, paper) });
+  }
+  return out;
+}
+function css(v) {
+  v = (v || '').trim();
+  let m = /^#([0-9a-f]{6})$/i.exec(v);
+  if (m) { const n = parseInt(m[1], 16); return rgba((n >> 16) & 255, (n >> 8) & 255, n & 255); }
+  m = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?\s*\)$/i.exec(v);
+  if (m) return rgba(+m[1], +m[2], +m[3], m[4] === undefined ? 1 : +m[4]);
+  return null;
+}
+
+for (const file of ['westmere-owner.html', 'westmere-admin.html', 'westmere-driver.html',
+                    'westmere-rider.html', 'book.html', 'index.html', 'westmere-pay.html']) {
+  test(file + ': every surface can be read on its own paper', () => {
+    const bad = pairs(file).filter((p) => p.ratio < 3)
+      .map((p) => file + ':' + p.line + '  ' + p.ratio.toFixed(2) + ':1  ' + p.ink + ' on ' + p.paper);
+    assert.deepStrictEqual(bad, [],
+      'these name an ink and a paper that cannot be read together:\n      ' + bad.join('\n      '));
+  });
+}
+
+test('the confirmation after an estimate is a light card', () => {
+  /* The exact surface he photographed, named rather than swept for: it is the
+     one the owner sees most, and it is outside the app root where nothing else
+     will catch it. */
+  const H = read('westmere-owner.html');
+  const i = H.indexOf('#toast{');
+  assert.ok(i > -1, 'the toast is gone');
+  const rule = H.slice(i, H.indexOf('}', i));
+  const bg = css((/background\s*:\s*[^;]*?(#[0-9a-f]{6})/i.exec(rule) || [])[1] || '');
+  assert.ok(bg && lum(bg) > 0.7, 'the confirmation is not on light paper: ' + rule);
+  assert.ok(/color-scheme\s*:\s*only light/.test(rule),
+    'and it must refuse the phone\'s repaint like every other layer outside the app');
+  assert.ok(/border\s*:\s*1px solid/.test(rule), 'a card needs a rim to read as one against the page');
+  /* The tick beside the message is navy on that paper — it was navy on black. */
+  assert.ok(/<div id="toast"><span style="color:var\(--navy\)/.test(H), 'the tick lost its colour');
+});
+
+test('both staff apps still have a toast at all', () => {
+  /* Deleting it would pass every assertion above. */
+  for (const [f, sel] of [['westmere-owner.html', '#toast{'], ['westmere-admin.html', '.toast{']]) {
+    assert.ok(read(f).includes(sel), f + ' no longer has a confirmation surface');
+  }
+});
+
+test('NEGATIVE: the pair reader catches the bug it was written for', () => {
+  const t = pairs('westmere-owner.html');
+  assert.ok(t.length > 20, 'the reader found almost no pairs — it is not reading the file');
+  /* The toast as it was. */
+  assert.ok(ratio(css('#1a1a1a'), css('rgba(27,27,26,.92)')) < 1.5,
+    'the reader would not have called the black box a black box');
+  assert.ok(ratio(css('#102a43'), css('#ffffff')) > 14, 'and it must pass the colours the app actually uses');
 });
 
 test('this guardrail is wired into npm test', () => {

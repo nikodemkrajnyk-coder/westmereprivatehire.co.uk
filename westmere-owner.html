@@ -210,7 +210,7 @@ nav#nav{display:none}
 .jd-val.accent{font-family:var(--serif);font-size:1.1rem}
 .fp{display:inline-block;font-size:.8rem;font-weight:500;letter-spacing:.08em;padding:.18rem .6rem;border:1px solid}
 .fp-ontime{color:var(--green);border-color:rgba(45,110,71,.4);background:var(--green-bg)}
-.fp-landed{color:#60A5FA;border-color:rgba(96,165,250,.25);background:rgba(96,165,250,.06)}
+.fp-landed{color:var(--westmere-status-blue,#1D4ED8);border-color:rgba(96,165,250,.25);background:rgba(96,165,250,.06)}
 .fp-delayed{color:var(--navy);border-color:rgba(106,106,106,.3);background:var(--amber-bg)}
 .jc-contact{display:flex;gap:1px;border-bottom:1px solid rgba(27,27,26,.06);background:rgba(27,27,26,.04)}
 .jcc{flex:1;padding:.85rem;background:transparent;border:var(--border-hair,1px) solid var(--westmere-line-strong,#c8d1d9);font-family:var(--sans);font-size:.88rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.55);cursor:pointer;transition:all .25s;text-decoration:none;display:flex;align-items:center;justify-content:center}
@@ -218,7 +218,7 @@ nav#nav{display:none}
 .jc-actions{padding:.8rem 1rem;display:flex;flex-wrap:wrap;gap:.5rem}
 .sbt{font-family:var(--sans);font-size:.88rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.75rem 1rem;cursor:pointer;border:none;transition:all .2s;flex:1;min-width:100px;min-height:50px}
 .sbt-enroute{background:var(--navy);color:var(--navy)}.sbt-enroute:hover{background:var(--navy2);color:var(--navy)}
-.sbt-atpickup{background:rgba(96,165,250,.1);color:#60A5FA;border:1px solid rgba(96,165,250,.2)}
+.sbt-atpickup{background:rgba(96,165,250,.1);color:var(--westmere-status-blue,#1D4ED8);border:1px solid rgba(96,165,250,.2)}
 .sbt-onboard{background:var(--amber-bg);color:var(--navy);border:1px solid rgba(106,106,106,.3)}
 .sbt-dropoff{background:var(--green-bg);color:var(--green);border:1px solid rgba(45,110,71,.3)}
 .sbt-cancel{background:transparent;color:rgba(27,27,26,.4);border:1px solid rgba(27,27,26,.12)}
@@ -229,9 +229,9 @@ nav#nav{display:none}
 .nav-addr:active{opacity:.6}
 .trip-status{padding:.55rem 1.1rem;font-size:.84rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;text-align:center}
 .ts-enroute{background:var(--amber-bg);color:var(--navy)}
-.ts-atpickup{background:rgba(96,165,250,.08);color:#60A5FA}
+.ts-atpickup{background:rgba(96,165,250,.08);color:var(--westmere-status-blue,#1D4ED8)}
 .ts-onboard{background:var(--green-bg);color:var(--green)}
-.ts-done{background:rgba(27,27,26,.04);color:rgba(27,27,26,.4)}
+.ts-done{background:rgba(27,27,26,.04);color:var(--westmere-ink-soft)}
 .jc-passenger{padding:.7rem 1.1rem;border-bottom:1px solid rgba(27,27,26,.06)}
 .jc-passenger .jc-name{font-size:1.05rem;font-weight:500;color:var(--navy);font-family:var(--serif)}
 .jc-passenger .jc-phone{font-size:.92rem;color:rgba(27,27,26,.5);margin-top:.15rem}
@@ -278,7 +278,7 @@ nav#nav{display:none}
 .jc2-bd-enroute{background:rgba(96,165,250,.1);color:#2563EB}
 .jc2-bd-atpickup{background:rgba(16,42,67,.1);color:#555555}
 .jc2-bd-onboard{background:rgba(45,110,71,.1);color:var(--green)}
-.jc2-bd-done{background:rgba(27,27,26,.05);color:rgba(27,27,26,.38)}
+.jc2-bd-done{background:rgba(27,27,26,.05);color:var(--westmere-ink-soft)}
 
 /* Progress track */
 .jc2-prog{display:flex;align-items:center;padding:0 1.15rem .7rem}
@@ -359,7 +359,7 @@ nav#nav{display:none}
 .msg-pill{font-size:.79rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:.25rem .7rem;border:1px solid}
 .pill-ok{color:var(--green);border-color:rgba(45,110,71,.4);background:var(--green-bg)}
 .pill-flag{color:var(--navy);border-color:rgba(106,106,106,.3);background:var(--amber-bg)}
-.pill-enquiry{color:rgba(27,27,26,.4);border-color:rgba(27,27,26,.1);background:rgba(27,27,26,.04)}
+.pill-enquiry{color:var(--westmere-ink-soft);border-color:rgba(27,27,26,.1);background:rgba(27,27,26,.04)}
 .msg-text{font-size:1.01rem;color:rgba(27,27,26,.65);font-weight:300;line-height:1.6;font-style:italic;border-left:2px solid rgba(27,27,26,.15);padding-left:.75rem;margin:.5rem 0}
 .msg-extract{font-size:.96rem;color:rgba(27,27,26,.65);font-weight:300;background:rgba(27,27,26,.04);padding:.7rem .9rem;margin:.5rem 0;line-height:1.75}
 .msg-conflict{font-size:.94rem;color:var(--navy);font-weight:300;background:var(--amber-bg);border:1px solid rgba(106,106,106,.25);padding:.6rem .9rem;margin:.5rem 0}
@@ -437,7 +437,24 @@ nav#nav{display:none}
 .nb-close:hover{color:var(--navy);border-color:rgba(27,27,26,.25)}
 
 /* ── TOAST ── */
-#toast{position:fixed;bottom:calc(4.5rem + var(--safe-bottom));left:1rem;right:1rem;background:rgba(27,27,26,.92);backdrop-filter:blur(16px);border:1px solid rgba(106,106,106,.25);padding:.95rem 1.3rem;font-size:.98rem;color:#1a1a1a;display:none;font-family:var(--sans);font-weight:300;z-index:100001;max-width:360px;margin:0 auto}
+/* ── THE BLACK BOX ───────────────────────────────────────────────────────
+   This is the message that confirms an estimate has gone out, and it was
+   near-black ink on near-black paper: rgb(45,45,44) under #1a1a1a, which
+   measures 1.27:1. The owner photographed it in night mode and reasonably
+   assumed the phone had done it — it had not. The toast was dark-on-dark in
+   every mode, on every device, since the restyle flipped its INK to dark and
+   left its PAPER dark.
+
+   It is also outside #scr-app — a sibling of the app, so it can sit above
+   everything — which is why §15.2's blanket navy never reached in to rescue
+   it. And navy on that paper is 1.07:1, so being rescued would not have
+   helped: the paper was the problem.
+
+   A light card, like every other surface in this app: white paper, navy ink,
+   a rim so it reads as a card against the page, and only-light so no phone
+   can decide otherwise. Measures 14.6:1.
+   GUARDRAIL: server/tests/legibility.test.js */
+#toast{position:fixed;bottom:calc(4.5rem + var(--safe-bottom));left:1rem;right:1rem;background:var(--westmere-white,#ffffff);backdrop-filter:blur(16px);border:1px solid var(--westmere-line-strong,#c8d1d9);box-shadow:0 10px 30px rgba(16,42,67,.18);border-radius:10px;padding:.95rem 1.3rem;font-size:.98rem;color:var(--westmere-navy,#102a43);color-scheme:only light;display:none;font-family:var(--sans);font-weight:400;z-index:100001;max-width:360px;margin:0 auto}
 #toast.on{display:flex;align-items:center;gap:.6rem;animation:tIn .25s ease}
 @keyframes tIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
@@ -786,7 +803,10 @@ select:-webkit-autofill:focus{
   </div>
 
   <!-- DOCUMENT EXPIRY WARNING BAR -->
-  <div id="doc-expiry-warn" style="display:none;background:#555555;color:#1a1a1a;font-size:.82rem;text-align:center;padding:.3rem 1rem;letter-spacing:.05em;cursor:pointer;flex-shrink:0" onclick="openSettings()">
+  <!-- A WARNING HAS TO BE READABLE TO BE ONE. Near-black on mid-grey is
+           2.33:1, and the blanket navy over the top of it is 2.1:1. White on
+           the grey is 7.4:1. -->
+      <div id="doc-expiry-warn" style="display:none;background:#555555;color:var(--westmere-white,#ffffff);font-size:.82rem;text-align:center;padding:.3rem 1rem;letter-spacing:.05em;cursor:pointer;flex-shrink:0" onclick="openSettings()">
     &#9888; Documents expiring soon — tap to review
   </div>
 
@@ -2257,7 +2277,7 @@ function _docBadge(status){
   if(status==='approved')return '<span style="font-size:.7rem;padding:.12rem .4rem;background:var(--green-bg);color:var(--green);border-radius:3px;font-weight:500">Approved</span>';
   if(status==='rejected')return '<span style="font-size:.7rem;padding:.12rem .4rem;background:var(--red-bg);color:var(--red);border-radius:3px;font-weight:500">Rejected</span>';
   if(status==='pending')return '<span style="font-size:.7rem;padding:.12rem .4rem;background:rgba(106,106,106,.12);color:var(--navy);border-radius:3px;font-weight:500">Review</span>';
-  return '<span style="font-size:.7rem;padding:.12rem .4rem;background:rgba(27,27,26,.06);color:rgba(27,27,26,.35);border-radius:3px;font-weight:500">Missing</span>';
+  return '<span style="font-size:.7rem;padding:.12rem .4rem;background:rgba(27,27,26,.06);color:var(--westmere-ink-soft);border-radius:3px;font-weight:500">Missing</span>';
 }
 
 var DOC_LABELS={dbs:'DBS',insurance:'Insurance',mot:'MOT',dvla_front:'Licence (F)',dvla_back:'Licence (B)',phv_driver:'PHV Driver',phv_vehicle:'PHV Vehicle'};
@@ -2744,7 +2764,7 @@ var _addOpOpen = false;
 function owAddOperatorHtml() {
   var f = function (label, id, type, ph) {
     return '<div style="margin-bottom:.6rem">'
-      + '<div style="font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,27,26,.45);margin-bottom:.22rem">' + label + '</div>'
+      + '<div style="font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;color:var(--westmere-ink-soft);margin-bottom:.22rem">' + label + '</div>'
       /* The id is written with JSON.stringify rather than quoted inline: two
          builders in this file emitting the same `id="' + id + '"` source read
          to the duplicate-id scanner as one id used twice. The rendered markup

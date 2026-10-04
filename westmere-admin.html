@@ -180,7 +180,7 @@ body.full-view .content{padding:1.4rem 1.9rem;max-width:100%}
 /* hover/press for .btn-refund come from the shared danger style. */
 .btn-refund:hover{-webkit-text-fill-color:currentColor!important}
 .tag-refunded{display:inline-block;padding:.28rem .6rem;font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
-.btn-blue{background:rgba(59,130,246,.08);color:#60A5FA;border:1px solid rgba(59,130,246,.2)}.btn-blue:hover{background:rgba(59,130,246,.15)}
+.btn-blue{background:rgba(59,130,246,.08);color:var(--westmere-status-blue,#1D4ED8);border:1px solid rgba(59,130,246,.2)}.btn-blue:hover{background:rgba(59,130,246,.15)}
 .btn-full{width:100%;padding:.85rem}
 .btn-sm{padding:.38rem .8rem;font-size:.72rem}
 .btn-lg{padding:.9rem 2rem;font-size:.84rem}
@@ -272,7 +272,12 @@ textarea.fi{resize:vertical;min-height:80px}
 .modal-body{padding:1.5rem}
 .modal-foot{padding:1rem 1.5rem;border-top:1px solid rgba(27,27,26,.08);display:flex;gap:.6rem;justify-content:flex-end}
 /* TOAST */
-.toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:300;background:rgba(27,27,26,.92);border:1px solid var(--navy);padding:.85rem 1.2rem;font-size:.88rem;color:#1a1a1a;display:none;max-width:340px;backdrop-filter:blur(10px)}
+/* THE SAME BLACK BOX AS THE OWNER APP'S. Near-black ink on near-black paper
+   — 1.27:1 — since the restyle flipped the ink and left the paper. It is
+   inside #admin-app, so the blanket navy does reach it, which makes it
+   1.07:1 instead: the paper was always the problem.
+   GUARDRAIL: server/tests/legibility.test.js */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:300;background:var(--westmere-white,#ffffff);border:1px solid var(--westmere-line-strong,#c8d1d9);box-shadow:0 10px 30px rgba(16,42,67,.18);border-radius:10px;padding:.85rem 1.2rem;font-size:.88rem;color:var(--westmere-navy,#102a43);color-scheme:only light;display:none;max-width:340px;backdrop-filter:blur(10px)}
 .toast.on{display:flex;align-items:center;gap:.5rem;animation:sl .3s ease}
 .toast .ti{color:var(--navy);flex-shrink:0}
 /* CUSTOMER CARDS */
@@ -282,7 +287,7 @@ textarea.fi{resize:vertical;min-height:80px}
 .cc-name{font-size:.98rem;font-weight:500;color:var(--navy);margin-bottom:.2rem}
 .cc-type{display:inline-block;font-size:.69rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.12rem .45rem;margin-bottom:.4rem}
 .cc-business{background:var(--purple-bg);color:var(--purple)}
-.cc-personal{background:rgba(59,130,246,.08);color:#60A5FA}
+.cc-personal{background:rgba(59,130,246,.08);color:var(--westmere-status-blue,#1D4ED8)}
 .cc-meta{font-size:.84rem;color:rgba(27,27,26,.66);font-weight:300}
 .cc-actions{margin-top:.75rem;padding-top:.65rem;border-top:1px solid rgba(27,27,26,.06);display:flex;gap:.4rem}
 .cc-btn{flex:1;padding:.5rem .6rem;background:transparent;color:var(--navy);border:1px solid rgba(27,27,26,.15);border-radius:6px;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .2s}
@@ -375,7 +380,9 @@ textarea.fi{resize:vertical;min-height:80px}
 .email-btn-gold{background:rgba(27,27,26,.55);color:var(--navy)!important}
 .email-btn-navy{background:#ffffff;color:#1a1a1a!important}
 .email-btn-outline{background:transparent;color:var(--navy)!important;border:1px solid rgba(27,27,26,.2)}
-.email-btn-green{background:#2D6E47;color:#1a1a1a!important}
+/* WHITE ON THE GREEN, not near-black: #1a1a1a on #2D6E47 is 2.85:1, and the
+   !important meant no blanket could save it. White is 5.1:1. */
+.email-btn-green{background:#2D6E47;color:var(--westmere-white,#ffffff)!important}
 .email-buttons{display:flex;gap:.5rem;justify-content:center;margin:1.2rem 0;flex-wrap:wrap}
 .email-map-placeholder{background:#ffffff;border:1px solid rgba(27,27,26,.1);padding:2rem;text-align:center;margin:1rem 0;font-size:.88rem;color:#657485}
 .email-map-placeholder svg{display:block;margin:0 auto .5rem;opacity:.3}
