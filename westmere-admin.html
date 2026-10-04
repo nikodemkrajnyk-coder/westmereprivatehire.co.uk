@@ -19,7 +19,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-:root{--navy:#1b1b1a;--navy2:#173b5e;--text:#1b1b1a;--muted:rgba(27,27,26,.72);--border:rgba(27,27,26,.12);
+:root{--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);--navy:#1b1b1a;--navy2:#173b5e;--text:#1b1b1a;--muted:rgba(27,27,26,.72);--border:rgba(27,27,26,.12);
 --green:#2D6E47;--green-bg:rgba(45,110,71,.18);--red:#8B2222;--red-bg:rgba(139,34,34,.15);--amber:#6a6a6a;--amber-bg:rgba(106,106,106,.1);--purple:#9B7FD4;--purple-bg:rgba(155,127,212,.1);--text-light:rgba(27,27,26,.68);--text-mid:rgba(27,27,26,.8);--rule:rgba(27,27,26,.08);}
 html{font-size:16px;scroll-behavior:smooth}
 body{font-family:var(--sans);font-weight:300;color:var(--navy);background:#ffffff;line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh;display:flex}
@@ -71,7 +71,11 @@ a{color:var(--navy)}
 .sb-version{font-size:.7rem;color:rgba(27,27,26,.6);letter-spacing:.08em}
 /* MAIN */
 .main{margin-left:220px;flex:1;min-height:100vh;display:flex;flex-direction:column}
-.topbar{background:rgba(255,255,255,.92)!important;backdrop-filter:blur(16px)!important;border-bottom:1px solid rgba(27,27,26,.06)!important;box-shadow:0 1px 8px rgba(27,27,26,.04)!important;padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:64px;position:sticky;top:0;z-index:40;flex-shrink:0}
+/* THE CLOCK AND THE NOTCH OWN THE TOP OF THE PHONE. The owner app learned
+   this; this one had no safe-area handling at all, so its header — and the
+   controls in it — sat behind the status bar on an iPhone.
+   GUARDRAIL: server/tests/safe-area.test.js */
+.topbar{background:rgba(255,255,255,.92)!important;backdrop-filter:blur(16px)!important;border-bottom:1px solid rgba(27,27,26,.06)!important;box-shadow:0 1px 8px rgba(27,27,26,.04)!important;padding:var(--safe-top) 2rem 0;display:flex;align-items:center;justify-content:space-between;height:calc(64px + var(--safe-top));position:sticky;top:0;z-index:40;flex-shrink:0}
 .tb-left{display:flex;align-items:center;gap:1rem}
 .mob-menu-btn{display:none;background:none;border:none;cursor:pointer;flex-direction:column;gap:4px;padding:4px}
 .mob-menu-btn span{display:block;width:20px;height:1.5px;background:#ffffff}
@@ -253,7 +257,7 @@ textarea.fi{resize:vertical;min-height:80px}
 .sr-title{font-size:.94rem;color:var(--navy);font-weight:400}
 .sr-sub{font-size:.82rem;color:rgba(27,27,26,.66);margin-top:.08rem;font-weight:300}
 /* MODAL */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:flex-start;justify-content:center;padding:1.5rem;overflow-y:auto}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:flex-start;justify-content:center;padding:calc(1.5rem + var(--safe-top)) 1.5rem 1.5rem;overflow-y:auto}
 .overlay.on{display:flex;animation:fadeIn .2s ease}
 .modal{background:#fff;border:1px solid rgba(27,27,26,.1);width:100%;max-width:600px;margin:auto 0}
 .modal .btn-ghost{color:rgba(27,27,26,.7);border-color:rgba(27,27,26,.2)}
@@ -434,7 +438,7 @@ textarea.fi{resize:vertical;min-height:80px}
 .offer-wait{display:inline-block;font-size:.76rem;font-weight:600;letter-spacing:.04em;color:#2A3A66;background:#E8EEFB;padding:2px 7px;border-radius:3px;margin-left:.4rem;vertical-align:middle}
 .offer-timer{font-variant-numeric:tabular-nums;margin-left:.35rem;color:#657485}
 @media(max-width:900px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main{margin-left:0}.mob-menu-btn{display:flex}.stats{grid-template-columns:1fr 1fr}.cust-grid{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}
-@media(max-width:600px){.content{padding:1.2rem 1rem}.stats{grid-template-columns:1fr 1fr}.cust-grid{grid-template-columns:1fr}.r2,.r3{grid-template-columns:1fr}.pb-row{grid-template-columns:1fr 1fr}.topbar{padding:0 1rem}}
+@media(max-width:600px){.content{padding:1.2rem 1rem}.stats{grid-template-columns:1fr 1fr}.cust-grid{grid-template-columns:1fr}.r2,.r3{grid-template-columns:1fr}.pb-row{grid-template-columns:1fr 1fr}.topbar{padding:var(--safe-top) 1rem 0}}
 .sug-drop{display:none;position:absolute;left:0;right:0;top:100%;z-index:350;background:rgba(255,255,255,.97);backdrop-filter:blur(28px);border:1px solid rgba(106,106,106,.35);border-radius:0 0 10px 10px;max-height:360px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(106,106,106,.3) transparent}
 .sug-drop.open{display:block}
 .sug-item{padding:.7rem 1rem;cursor:pointer;border-bottom:1px solid rgba(27,27,26,.05);transition:background .15s}
@@ -5034,6 +5038,9 @@ function invPreviewOpen(url, title){
   o.id = 'pdf-preview-overlay';
   o.setAttribute('role', 'dialog');
   o.setAttribute('aria-label', title || 'Invoice preview');
+  /* Its Back button is a top-left control on a full-screen layer — the one
+     the owner could not reach on a preview. */
+  o.className = 'wm-safe-top';
   o.style.cssText = 'position:fixed;inset:0;z-index:4000;background:var(--westmere-white,#ffffff);display:flex;flex-direction:column';
   o.innerHTML =
     '<div style="display:flex;align-items:center;gap:.75rem;padding:.7rem 1rem;background:#fff;' +

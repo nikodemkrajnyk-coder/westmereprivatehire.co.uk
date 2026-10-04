@@ -1895,3 +1895,24 @@ nav > .navlinks { margin-left: auto; }
 /* A figure that is outstanding — money owed in or out. Gold ink, so it reads as
    the one number on the screen that is waiting on somebody. */
 .wm-owing{ color: var(--westmere-gold-ink); }
+
+/* ── THE TOP OF THE PHONE BELONGS TO THE PHONE ───────────────────────────
+   A full-screen layer pinned to inset:0 starts at the physical top of the
+   display, which on an iPhone is behind the clock and the notch. The back
+   control is the first thing in it, so the first thing in it is the thing you
+   cannot tap — reported on the driver page and on every preview.
+
+   The page header got this right years ago (`--safe-top`); layers opened on
+   top of it did not, because each one sets its own inline geometry and there
+   was nothing to inherit. This is that padding as a class, so a new overlay
+   gets it by saying so rather than by remembering a calc().
+
+   `env(safe-area-inset-top)` is zero on a desktop and on a phone with no
+   notch, so this costs nothing where it is not needed — but it is zero on an
+   iPhone too unless the page asks for `viewport-fit=cover`, which the staff
+   apps do. GUARDRAIL: server/tests/safe-area.test.js */
+.wm-safe-top{ padding-top: env(safe-area-inset-top, 0px); }
+
+/* A sheet that rises from the bottom must stop short of the notch rather than
+   sliding under it when its content is tall. */
+.wm-sheet-top-cap{ max-height: calc(100vh - env(safe-area-inset-top, 0px) - 10px); }

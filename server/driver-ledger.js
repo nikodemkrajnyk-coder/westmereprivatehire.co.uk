@@ -29,6 +29,23 @@
  * the moment a fare is corrected. Re-priced trip, re-priced payout, no
  * reconciliation step.
  *
+ * THE JOB IS THE UNIT OF SETTLEMENT, and that is the whole reconciliation.
+ *   Each job carries `driver_settled`: how much of its movement has changed
+ *   hands, signed the same way the movement is. The balance is what is left:
+ *
+ *       balance = Σ (delta(job) − settled(job))
+ *
+ *   A lump payment is not a second figure that pulls against this. Paying a
+ *   driver £300 SPENDS that £300 across his oldest unsettled jobs and stamps
+ *   them; the receipt (driver_settlements) records that money moved, when and
+ *   by what method, and the balance never reads it. There is therefore one
+ *   place to look when the driver disagrees — his jobs — and the receipt
+ *   tells him which payment cleared which.
+ *
+ *   This is the operator model with the invoice swapped for the job: an
+ *   operator owes the invoices they have not paid, a driver is owed the jobs
+ *   that have not been settled. Two relationships, one shape.
+ *
  * GUARDRAIL: server/tests/driver-ledger.test.js
  */
 'use strict';
@@ -107,6 +124,24 @@ function balanceDelta(b) {
   return isCashJob(b) ? -s.commission : s.payout;
 }
 
+/** How much of this job's movement has already changed hands. Signed like the
+    delta: positive where we paid him, negative where he handed cash back. */
+function settledOn(b) {
+  const v = b && b.driver_settled;
+  return (v === null || v === undefined || isNaN(v)) ? 0 : Math.round(Number(v) * 100) / 100;
+}
+
+/** What is still outstanding on this job — the balance is the sum of these. */
+function outstandingOn(b) {
+  return Math.round((balanceDelta(b) - settledOn(b)) * 100) / 100;
+}
+
+/** Settled in full when nothing is left on it. A job worth nothing either way
+    — a cover job the driver was paid for in cash — is settled by definition. */
+function isSettled(b) {
+  return Math.abs(outstandingOn(b)) < 0.005;
+}
+
 /**
  * Westmere's income from this job. On a passed job the fare belongs to the
  * driver and only the commission is turnover; a job nobody was passed is
@@ -141,7 +176,17 @@ function historyRow(b) {
     payout: s.payout,
     /* What this line does to the running figure — the sign is the whole story,
        so it is carried rather than left to be re-derived by each reader. */
-    delta: balanceDelta(b)
+    delta: balanceDelta(b),
+    /* …and how much of it has been squared. The screen shows a job as paid or
+       not; a part-payment is the rare case and says how far it got. */
+    settled: settledOn(b),
+    outstanding: outstandingOn(b),
+    paid: isSettled(b),
+    /* The rate actually charged on this job, so the row can offer to change it
+       without re-deriving it from two figures and a guess. */
+    commission_pct: (Number(b.fare) > 0)
+      ? Math.round((jobSplit(b).commission / Number(b.fare)) * 1000) / 10
+      : 0
   };
 }
 
@@ -203,8 +248,13 @@ function driverHistory(driverId, opts) {
     fares: Math.round((t.fares + r.fare) * 100) / 100,
     commission: Math.round((t.commission + r.commission) * 100) / 100,
     payout: Math.round((t.payout + (r.paymentType === 'cash' ? 0 : r.payout)) * 100) / 100,
-    cashCommission: Math.round((t.cashCommission + (r.paymentType === 'cash' ? r.commission : 0)) * 100) / 100
-  }), { jobs: 0, fares: 0, commission: 0, payout: 0, cashCommission: 0 });
+    cashCommission: Math.round((t.cashCommission + (r.paymentType === 'cash' ? r.commission : 0)) * 100) / 100,
+    /* WHAT IS ACTUALLY LEFT. `balance` below is every job in the period
+       whether or not it has been paid — it is what the statement walks
+       through. This is the figure the owner owes today. */
+    outstanding: Math.round((t.outstanding + r.outstanding) * 100) / 100,
+    settledJobs: t.settledJobs + (r.paid ? 1 : 0)
+  }), { jobs: 0, fares: 0, commission: 0, payout: 0, cashCommission: 0, outstanding: 0, settledJobs: 0 });
   totals.balance = running;
   return { items, totals };
 }
@@ -232,9 +282,16 @@ function driverSettlements(driverId, opts) {
   if (o.from) { where += ' AND paid_on >= ?'; params.push(o.from); }
   if (o.to)   { where += ' AND paid_on <= ?'; params.push(o.to); }
   return db.prepare(
-    `SELECT id, driver_id, amount, method, note, paid_on, created_at
+    `SELECT id, driver_id, amount, method, note, paid_on, created_at, applied_json
        FROM driver_settlements WHERE ${where} ORDER BY paid_on, id`
-  ).all(...params).map((r) => Object.assign({}, r, { amount: Math.round(Number(r.amount) * 100) / 100 }));
+  ).all(...params).map((r) => {
+    /* WHAT IT PAID FOR, parsed for the reader. The screen states any part of a
+       payment that no job claimed — it is out of the balance by design, and
+       out of sight would be money lost. */
+    let applied = null;
+    try { applied = r.applied_json ? JSON.parse(r.applied_json) : null; } catch (_) { applied = null; }
+    return Object.assign({}, r, { amount: Math.round(Number(r.amount) * 100) / 100, applied });
+  });
 }
 
 /** Record one. Returns the row as stored. */
@@ -245,28 +302,129 @@ function recordSettlement(driverId, amount, opts) {
   const db = getDb();
   const paidOn = o.paid_on || new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/London' });
   const info = db.prepare(
-    `INSERT INTO driver_settlements (driver_id, amount, method, note, paid_on, created_by)
-     VALUES (?,?,?,?,?,?)`
-  ).run(driverId, amt, o.method || null, o.note || null, paidOn, o.created_by || null);
+    `INSERT INTO driver_settlements (driver_id, amount, method, note, paid_on, created_by, applied_json)
+     VALUES (?,?,?,?,?,?,?)`
+  ).run(driverId, amt, o.method || null, o.note || null, paidOn, o.created_by || null,
+        o.applied ? JSON.stringify(o.applied) : null);
   return db.prepare('SELECT * FROM driver_settlements WHERE id = ?').get(info.lastInsertRowid);
 }
 
 /**
- * The single running figure for a driver, across everything: what the jobs owe
- * him, less what has already been handed over.
+ * The single running figure for a driver: the jobs that have not been settled.
  *
  *   positive → Westmere owes the driver
  *   negative → the driver owes Westmere
+ *
+ * IT DOES NOT READ THE SETTLEMENTS TABLE, and that is the point. It used to be
+ * "every job, less every payment", which is two records of the same money and
+ * no way to answer "which jobs is this £300 for?". A payment now spends itself
+ * across the jobs it pays for (see applyPayment) and the receipt is kept
+ * beside them. One place to look, and a driver querying a figure can be shown
+ * the jobs it is made of. GUARDRAIL: server/tests/driver-settlement.test.js
  */
 function driverBalance(driverId) {
-  const jobs = driverHistory(driverId).totals.balance;
-  const paid = driverSettlements(driverId)
-    .reduce((t, s) => Math.round((t + s.amount) * 100) / 100, 0);
-  return Math.round((jobs - paid) * 100) / 100;
+  const db = getDb();
+  const rows = db.prepare(
+    `SELECT fare, payment, driver_pay, admin_fee, driver_settled FROM bookings
+      WHERE driver_id = ? AND passed_at IS NOT NULL AND COALESCE(status,'') <> 'cancelled'`
+  ).all(driverId);
+  return rows.reduce((t, b) => Math.round((t + outstandingOn(b)) * 100) / 100, 0);
+}
+
+/**
+ * Square one job, or re-open it. `paid` true stamps the whole of its movement
+ * as settled; false clears it. The amount is never typed — it is what the job
+ * is worth, so a toggle cannot introduce a figure that disagrees with the job.
+ */
+function setJobSettled(jobId, paid) {
+  const db = getDb();
+  const b = db.prepare('SELECT * FROM bookings WHERE id = ?').get(jobId);
+  if (!b) return null;
+  const amount = paid ? balanceDelta(b) : null;
+  db.prepare('UPDATE bookings SET driver_settled = ?, updated_at = datetime(\'now\') WHERE id = ?')
+    .run(amount, jobId);
+  return db.prepare('SELECT * FROM bookings WHERE id = ?').get(jobId);
+}
+
+/**
+ * Spend a payment across the jobs it pays for, oldest first, and keep the
+ * receipt. Returns the jobs it cleared and anything it could not place.
+ *
+ * OLDEST FIRST, because that is the order a driver chases them in, and whole
+ * jobs before part ones: a payment that runs out mid-job part-settles that one
+ * rather than rounding in anybody's favour. A payment pulling the wrong way
+ * for a job (money out against a job he owes us) skips it — handing a driver
+ * cash does not clear the commission he owes on a different job, and netting
+ * the two silently is how a statement stops being checkable.
+ */
+function applyPayment(driverId, amount, opts) {
+  const o = opts || {};
+  let credit = Math.round(Number(amount) * 100) / 100;
+  if (!isFinite(credit) || credit === 0) throw new Error('A payment needs a non-zero amount');
+  const db = getDb();
+  const jobs = db.prepare(
+    `SELECT * FROM bookings
+      WHERE driver_id = ? AND passed_at IS NOT NULL AND COALESCE(status,'') <> 'cancelled'
+      ORDER BY date, time, id`
+  ).all(driverId);
+  const stamp = db.prepare('UPDATE bookings SET driver_settled = ? WHERE id = ?');
+  const cleared = [];
+  for (const b of jobs) {
+    const left = outstandingOn(b);
+    if (left === 0) continue;
+    if ((credit > 0) !== (left > 0)) continue;
+    const take = (Math.abs(credit) + 0.0001 >= Math.abs(left)) ? left : credit;
+    stamp.run(Math.round((settledOn(b) + take) * 100) / 100, b.id);
+    cleared.push({ id: b.id, ref: b.ref, amount: take, whole: take === left });
+    credit = Math.round((credit - take) * 100) / 100;
+    if (credit === 0) break;
+  }
+  /* THE AMOUNT PER JOB, not just which ones. Two payments can land on the same
+     job — fifty pounds off a ninety-pound job, then the forty — and undoing
+     the first must take back fifty, not wipe the job clean and lose the other
+     payment with it. */
+  const receipt = recordSettlement(driverId, amount, Object.assign({}, o, {
+    applied: { jobs: cleared.map((c) => ({ id: c.id, amount: c.amount })), unapplied: credit }
+  }));
+  return { cleared, unapplied: credit, receipt, balance: driverBalance(driverId) };
+}
+
+/**
+ * Take a payment back off the jobs it was applied to. The receipt says how
+ * much landed on each, so this subtracts rather than clearing — a job that two
+ * payments touched keeps the other one.
+ */
+function unapplyPayment(receipt, driverId) {
+  const db = getDb();
+  let applied = null;
+  try { applied = receipt && receipt.applied_json ? JSON.parse(receipt.applied_json) : null; } catch (_) { applied = null; }
+  const jobs = (applied && Array.isArray(applied.jobs)) ? applied.jobs : [];
+  let reopened = 0;
+  for (const j of jobs) {
+    /* Older receipts (and the migration) recorded bare ids. Those were the
+       whole of what was on the job, so clearing it is the right reversal. */
+    const id = (j && typeof j === 'object') ? j.id : j;
+    const amount = (j && typeof j === 'object') ? Number(j.amount) : null;
+    const b = db.prepare('SELECT * FROM bookings WHERE id = ? AND driver_id = ?').get(id, driverId);
+    if (!b) continue;
+    const left = (amount === null || isNaN(amount))
+      ? null
+      : Math.round((settledOn(b) - amount) * 100) / 100;
+    db.prepare('UPDATE bookings SET driver_settled = ? WHERE id = ?')
+      .run((left === null || Math.abs(left) < 0.005) ? null : left, id);
+    reopened++;
+  }
+  return reopened;
 }
 
 module.exports = {
   ADMIN_FEE_PCT,
+  unapplyPayment,
+  settledOn,
+  outstandingOn,
+  isSettled,
+  setJobSettled,
+  applyPayment,
   computeSplit,
   rateForDriver,
   commissionSql,

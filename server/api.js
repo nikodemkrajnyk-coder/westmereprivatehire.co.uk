@@ -2115,8 +2115,15 @@ router.post('/customers', (req, res) => {
   const {
     email, full_name, phone,
     address_line1, address_line2, postcode,
-    bank_name, bank_sort_code, bank_account_no, bank_account_name
+    bank_name, bank_sort_code, bank_account_no, bank_account_name,
+    company, is_operator
   } = req.body || {};
+  /* ANOTHER FIRM IS A CUSTOMER WITH A FLAG. Adding one from the Operators tab
+     posts here with is_operator set, rather than through a table of its own —
+     the invoices, the account and the address are the same machinery, and that
+     is the whole reason an operator was modelled this way.
+     GUARDRAIL: server/tests/operators.test.js */
+  const operator = (is_operator === true || is_operator === 1 || is_operator === '1') ? 1 : 0;
   if (!email || !full_name) {
     return res.status(400).json({ error: 'Email and full name are required' });
   }
@@ -2137,17 +2144,21 @@ router.post('/customers', (req, res) => {
     result = db.prepare(`
       INSERT INTO customers (email, password, full_name, phone, account_type,
                              address_line1, address_line2, postcode,
-                             bank_name, bank_sort_code, bank_account_no, bank_account_name)
-      VALUES (?, ?, ?, ?, 'personal', ?, ?, ?, ?, ?, ?, ?)
+                             bank_name, bank_sort_code, bank_account_no, bank_account_name,
+                             company, is_operator)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       cleanEmail, unusableHash, full_name.trim(), phone || null,
+      operator ? 'business' : 'personal',
       (address_line1 || '').trim() || null,
       (address_line2 || '').trim() || null,
       (postcode || '').trim() || null,
       (bank_name || '').trim() || null,
       (bank_sort_code || '').trim() || null,
       (bank_account_no || '').trim() || null,
-      (bank_account_name || '').trim() || null
+      (bank_account_name || '').trim() || null,
+      (company || '').trim() || null,
+      operator
     );
   } catch (e) {
     console.error('[API] customer insert failed:', e.message);
@@ -4403,8 +4414,28 @@ router.post('/drivers', (req, res) => {
     username, password, full_name, email, phone, role, active,
     license_no, license_expiry, dbs_no, dbs_expiry,
     vehicle, reg, phv_no, insurance_no, driver_notes, photo,
-    max_passengers, max_bags, luggage_notes
+    max_passengers, max_bags, luggage_notes, commission_pct
   } = req.body;
+  /* ── A RECORD, OR A RECORD WITH A LOGIN ───────────────────────────────────
+     Most drivers added from the Drivers tab are subcontractors: the owner wants
+     somewhere to put the name, the car and the rate so he can send them work.
+     They do not want a portal account, and they certainly do not want a
+     "welcome to the Westmere driver app" email with a password in it.
+
+     So the login is a choice, defaulting to one. `with_login: false` makes the
+     same record the dispatch form already makes when it saves a new driver —
+     no credentials, no email. GUARDRAIL: server/tests/driver-settlement.test.js */
+  const wantsLogin = !(req.body && req.body.with_login === false);
+  /* His default share, validated here the same way PATCH validates it: out of
+     range is refused, blank means the house rate rather than nothing. */
+  let defaultPct = null;
+  if (commission_pct !== undefined && commission_pct !== null && commission_pct !== '') {
+    const pct = Number(commission_pct);
+    if (isNaN(pct) || pct < 0 || pct > 100) {
+      return res.status(400).json({ error: 'Commission must be a percentage between 0 and 100' });
+    }
+    defaultPct = Math.round(pct * 100) / 100;
+  }
 
   if (!full_name || !String(full_name).trim()) {
     return res.status(400).json({ error: 'Full name required' });
@@ -4452,12 +4483,13 @@ router.post('/drivers', (req, res) => {
         (username, password, role, full_name, email, phone, active, has_login,
          license_no, license_expiry, dbs_no, dbs_expiry,
          vehicle, reg, phv_no, insurance_no, driver_notes, photo,
-         max_passengers, max_bags, luggage_notes, onboarding_status, calendar_token)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+         max_passengers, max_bags, luggage_notes, onboarding_status, calendar_token,
+         commission_pct)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     `).run(
       finalUsername, finalHash, role || 'driver', full_name.trim(),
       email || null, phone || null,
-      active === 0 ? 0 : 1, 1,  // has_login always 1 — they get real credentials
+      active === 0 ? 0 : 1, wantsLogin ? 1 : 0,
       license_no || null, license_expiry || null,
       dbs_no || null, dbs_expiry || null,
       vehicle || null, reg || null,
@@ -4466,8 +4498,9 @@ router.post('/drivers', (req, res) => {
       max_passengers == null || max_passengers === '' ? null : parseInt(max_passengers, 10),
       max_bags == null || max_bags === '' ? null : parseInt(max_bags, 10),
       luggage_notes || null,
-      'pending',
-      calendarToken
+      wantsLogin ? 'pending' : 'approved',
+      calendarToken,
+      defaultPct
     );
   } catch (e) {
     console.error('[API] driver insert failed:', e.message);
@@ -4479,8 +4512,9 @@ router.post('/drivers', (req, res) => {
       .run('user', req.auth.id, 'driver_created', full_name, req.ip);
   } catch (e) { /* audit failure must not block response */ }
 
-  // Send welcome email if driver has an email address
-  if (email) {
+  // Send welcome email if driver has an email address — and if he has a login
+  // to be welcomed to. A subcontractor added for dispatch gets nothing.
+  if (email && wantsLogin) {
     const { sendDriverWelcome } = require('./email');
     sendDriverWelcome({
       email,
@@ -4494,10 +4528,11 @@ router.post('/drivers', (req, res) => {
     ok: true,
     driver: {
       id: result.lastInsertRowid,
-      username: finalUsername,
-      temp_password: tempPassword,   // null if admin supplied their own password
-      has_login: true,
-      onboarding_status: 'pending',
+      username: wantsLogin ? finalUsername : null,
+      temp_password: wantsLogin ? tempPassword : null,
+      has_login: wantsLogin,
+      commission_pct: defaultPct,
+      onboarding_status: wantsLogin ? 'pending' : 'approved',
       app_url: '/westmere-driver.html'
     }
   });
@@ -4693,6 +4728,93 @@ router.get('/drivers/:id/ledger', (req, res) => {
   });
 });
 
+/* ── CORRECTING ONE JOB, AFTER THE FACT ───────────────────────────────────
+   The commission is chosen when the job is sent, from what is known then. A
+   week later the owner finds out it was a favour, or that he quoted the firm a
+   different rate — and until now the only way to say so was to re-send a job
+   that has already been driven.
+
+   The FARE is not touched here, only the split of it. Recomputed by the same
+   computeSplit every other path uses, so a corrected job's payout, the
+   driver's balance and the turnover all move together and none of them is
+   typed in by hand. GUARDRAIL: server/tests/driver-settlement.test.js */
+router.patch('/bookings/:id/commission', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+  const db = getDb();
+  const b = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+  if (!b) return res.status(404).json({ error: 'Booking not found' });
+  if (!b.passed_at || !b.driver_id) {
+    return res.status(409).json({ error: 'This job was not passed to a driver, so there is no commission on it' });
+  }
+  /* A SETTLED JOB IS A RECEIPT. Changing what it was worth after the money has
+     changed hands leaves the two disagreeing with nothing on the screen to say
+     which is right — so it is refused, and the owner re-opens the job first.
+     That way the correction and the re-payment are both deliberate. */
+  if (ledger.isSettled(b)) {
+    return res.status(409).json({
+      error: 'That job is marked paid. Mark it unpaid first, then change the commission.' });
+  }
+
+  const body = req.body || {};
+  let rate;
+  if (body.charge_commission === false) rate = 0;
+  else if (body.commission_pct !== undefined && body.commission_pct !== null && body.commission_pct !== '') {
+    const pct = Number(body.commission_pct);
+    if (isNaN(pct) || pct < 0 || pct > 100) {
+      return res.status(400).json({ error: 'Commission must be a percentage between 0 and 100' });
+    }
+    rate = pct / 100;
+  } else if (body.charge_commission === true) {
+    const drv = db.prepare('SELECT commission_pct FROM users WHERE id = ?').get(b.driver_id);
+    rate = ledger.rateForDriver(drv);
+  } else {
+    return res.status(400).json({ error: 'Say whether to charge commission, and at what rate' });
+  }
+
+  const split = ledger.computeSplit(b.fare, rate);
+  db.prepare("UPDATE bookings SET driver_pay = ?, admin_fee = ?, updated_at = datetime('now') WHERE id = ?")
+    .run(split.driver_pay, split.admin_fee, id);
+  const after = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run(req.auth.type || 'user', req.auth.id, 'job_commission_changed',
+           (b.ref || id) + ': ' + Number(b.admin_fee || 0).toFixed(2) + ' → ' + Number(split.admin_fee).toFixed(2)
+           + ' (' + Math.round(rate * 1000) / 10 + '%)', req.ip);
+  } catch (_) {}
+  res.json({ ok: true, job: ledger.historyRow(after), balance: ledger.driverBalance(b.driver_id) });
+});
+
+/* ── SQUARING ONE JOB ─────────────────────────────────────────────────────
+   The toggle on a history row. No amount is sent: a job is worth what it is
+   worth, and the only question is whether it has been paid. */
+router.patch('/bookings/:id/driver-settled', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+  const db = getDb();
+  const b = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+  if (!b) return res.status(404).json({ error: 'Booking not found' });
+  if (!b.passed_at || !b.driver_id) {
+    return res.status(409).json({ error: 'This job was not passed to a driver, so there is nothing to settle' });
+  }
+  const want = req.body && req.body.settled;
+  if (want !== true && want !== false) return res.status(400).json({ error: 'settled must be true or false' });
+
+  const after = ledger.setJobSettled(id, want);
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run(req.auth.type || 'user', req.auth.id, want ? 'job_marked_paid' : 'job_marked_unpaid',
+           (b.ref || id) + ' ' + Number(ledger.balanceDelta(b)).toFixed(2), req.ip);
+  } catch (_) {}
+  res.json({ ok: true, job: ledger.historyRow(after), balance: ledger.driverBalance(b.driver_id) });
+});
+
 /** Record a payment to a driver (or cash he hands back). Body: { amount, method, note, paid_on }. */
 router.post('/drivers/:id/settlements', (req, res) => {
   if (!['admin', 'owner'].includes(req.auth.role)) {
@@ -4715,7 +4837,10 @@ router.post('/drivers/:id/settlements', (req, res) => {
     return res.status(400).json({ error: 'paid_on must be YYYY-MM-DD' });
   }
 
-  const row = ledger.recordSettlement(id, amt, {
+  /* THE PAYMENT IS SPENT, not merely recorded. It clears his oldest unsettled
+     jobs and the receipt says which — so the balance and the row ticks are the
+     same fact, and "what is this £300 for?" has an answer on the screen. */
+  const applied = ledger.applyPayment(id, amt, {
     method: method ? String(method).slice(0, 60) : null,
     note: note ? String(note).slice(0, 200) : null,
     paid_on: paid_on || undefined,
@@ -4723,8 +4848,10 @@ router.post('/drivers/:id/settlements', (req, res) => {
   });
   db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
     .run(req.auth.type || 'user', req.auth.id, 'driver_settlement',
-         driver.full_name + ' ' + amt.toFixed(2), req.ip);
-  res.json({ ok: true, settlement: row, balance: ledger.driverBalance(id) });
+         driver.full_name + ' ' + amt.toFixed(2) + ' → ' + applied.cleared.length + ' job(s)'
+         + (applied.unapplied ? ', ' + applied.unapplied.toFixed(2) + ' unapplied' : ''), req.ip);
+  res.json({ ok: true, settlement: applied.receipt, cleared: applied.cleared,
+             unapplied: applied.unapplied, balance: applied.balance });
 });
 
 /** Undo one. A mistyped payment is worse than no payment — it silently clears
@@ -4739,11 +4866,18 @@ router.delete('/drivers/:id/settlements/:sid', (req, res) => {
   const db = getDb();
   const row = db.prepare('SELECT * FROM driver_settlements WHERE id = ? AND driver_id = ?').get(sid, id);
   if (!row) return res.status(404).json({ error: 'Settlement not found' });
+  /* THE JOBS IT CLEARED GO BACK TO UNPAID. Deleting the receipt alone would
+     leave the money unrecorded and the jobs still ticked — the balance would
+     keep a payment that, as far as every other screen is concerned, never
+     happened. */
+  let reopened = 0;
+  try { reopened = ledger.unapplyPayment(row, id); }
+  catch (e) { console.error('[LEDGER] could not re-open the jobs for settlement', sid, e.message); }
   db.prepare('DELETE FROM driver_settlements WHERE id = ?').run(sid);
   db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
     .run(req.auth.type || 'user', req.auth.id, 'driver_settlement_deleted',
-         'driver ' + id + ' ' + Number(row.amount).toFixed(2), req.ip);
-  res.json({ ok: true, balance: ledger.driverBalance(id) });
+         'driver ' + id + ' ' + Number(row.amount).toFixed(2) + ', ' + reopened + ' job(s) re-opened', req.ip);
+  res.json({ ok: true, reopened, balance: ledger.driverBalance(id) });
 });
 
 /** The statement, as a PDF. */

@@ -1145,6 +1145,10 @@ function migrate() {
     `);
   } catch (e) { console.error('[DB] driver_settlements table failed:', e.message); }
 
+  /* WHICH JOBS A PAYMENT CLEARED. A settlement is a receipt now, not a figure
+     the balance reads — so it records what it was for. */
+  try { db.exec(`ALTER TABLE driver_settlements ADD COLUMN applied_json TEXT`); } catch(_){}
+
   // Denormalised flag + human-readable summary of the LATEST open change
   // request, carried on the booking row itself. Deliberate duplication: the
   // owner and admin lists both read `SELECT b.*`, so the "Change requested"
@@ -1207,6 +1211,20 @@ function migrate() {
   // recognises the quote as the answer to the change THEY asked for.
   try { db.exec(`ALTER TABLE bookings ADD COLUMN re_estimated_at TEXT`); } catch(_){}
 
+  /* ── WHAT HAS BEEN SETTLED ON THIS JOB ───────────────────────────────────
+     The portion of this job's balance movement that has already changed hands,
+     SIGNED THE SAME WAY the movement is: positive on a prepaid job (we paid him
+     his share), negative on a cash job (he handed our commission back). A job
+     is settled when this equals its delta, outstanding when it is null or
+     short.
+
+     THE JOB IS THE UNIT OF SETTLEMENT, and this column is the single truth
+     about it. driver_settlements stays as the receipt of money handed over —
+     when, how much, by what method — but the balance no longer reads it, so
+     the two can never disagree. See server/driver-ledger.js.
+     GUARDRAIL: server/tests/driver-settlement.test.js */
+  try { db.exec(`ALTER TABLE bookings ADD COLUMN driver_settled REAL`); } catch(_){}
+
   // ── WORK PASSED TO ANOTHER FIRM ──────────────────────────────────────────
   // A job can go to one of our drivers or to another operator, and the two are
   // settled differently: a driver's commission is netted against his balance,
@@ -1218,6 +1236,15 @@ function migrate() {
   try { db.exec(`ALTER TABLE bookings ADD COLUMN operator_id INTEGER`); } catch(_){}
   // The invoice that finally billed it, so the same job is not invoiced twice.
   try { db.exec(`ALTER TABLE bookings ADD COLUMN operator_invoice_id INTEGER`); } catch(_){}
+
+  /* LAST, because it READS the columns everything above adds. Run from where it
+     was first written — beside the settlements table, seventy lines before
+     `bookings.driver_settled` is added — it threw on the very first boot after
+     the deploy, swallowed its own error, and left every driver's balance
+     showing the payments they had already been given.
+     That is the one boot that matters, and it is the one it got wrong.
+     GUARDRAIL: server/tests/driver-settlement.test.js */
+  runSettlementMigration();
 }
 
 function seedDefaults() {
@@ -1303,4 +1330,73 @@ function seedDefaults() {
   // server start / redeploy, so all customer seeding has been removed.
 }
 
-module.exports = { getDb, DATA_DIR };
+/* ── ONE TRUTH, WITHOUT MOVING ANYBODY'S BALANCE ───────────────────────────
+   The balance used to be "every job, less every settlement". It is now "the
+   jobs that have not been settled". Those two agree only if the settlements
+   already recorded are applied to the jobs they paid for — otherwise every
+   driver who has ever been paid would wake up owed that money a second time.
+
+   So, once: walk each driver's unapplied settlements, spend the total across
+   his jobs oldest-first, and stamp each job it covers. A job is only stamped
+   whole when the credit covers it; a part-covered job keeps what the credit
+   reached, which is the truth about it. A settlement already carrying an
+   applied_json is left alone, so a second boot changes nothing.
+   GUARDRAIL: server/tests/driver-settlement.test.js */
+function runSettlementMigration() {
+  const db = getDb();
+  /* IT MAKES ITS OWN GROUND. The column it reads is added by migrate() above,
+     and this used to run before that line — ordering is not something a
+     migration should have to trust, so it asks for the column itself. Both are
+     idempotent; between them the order no longer decides whether a balance is
+     right. */
+  try { db.exec(`ALTER TABLE bookings ADD COLUMN driver_settled REAL`); } catch(_){}
+  try { db.exec(`ALTER TABLE driver_settlements ADD COLUMN applied_json TEXT`); } catch(_){}
+  try {
+    const pending = db.prepare(`
+      SELECT s.driver_id AS id, SUM(s.amount) AS paid
+        FROM driver_settlements s
+       WHERE COALESCE(s.applied_json,'') = ''
+       GROUP BY s.driver_id`).all();
+    for (const d of pending) {
+      let credit = Math.round(Number(d.paid) * 100) / 100;
+      if (!isFinite(credit) || credit === 0) continue;
+      const jobs = db.prepare(`
+        SELECT id, fare, payment, driver_pay, admin_fee FROM bookings
+         WHERE driver_id = ? AND passed_at IS NOT NULL
+           AND COALESCE(status,'') <> 'cancelled' AND driver_settled IS NULL
+         ORDER BY date, time, id`).all(d.id);
+      const applied = [];
+      const stamp = db.prepare('UPDATE bookings SET driver_settled = ? WHERE id = ?');
+      for (const b of jobs) {
+        const cash = String(b.payment || '').toLowerCase() === 'cash';
+        const fee  = b.admin_fee != null ? Number(b.admin_fee) : Math.round((Number(b.fare) || 0) * 0.10 * 100) / 100;
+        const pay  = b.driver_pay != null ? Number(b.driver_pay) : Math.round(((Number(b.fare) || 0) - fee) * 100) / 100;
+        const delta = Math.round((cash ? -fee : pay) * 100) / 100;
+        if (delta === 0) continue;
+        /* The credit and the job must pull the same way: money paid OUT clears
+           a job we owe, money handed BACK clears one he owes. */
+        if ((credit > 0) !== (delta > 0)) continue;
+        if (Math.abs(credit) + 0.0001 >= Math.abs(delta)) {
+          stamp.run(delta, b.id);
+          credit = Math.round((credit - delta) * 100) / 100;
+          applied.push(b.id);
+        } else {
+          stamp.run(credit, b.id);   // part-paid: what reached it, and no more
+          applied.push(b.id);
+          credit = 0;
+        }
+        if (credit === 0) break;
+      }
+      db.prepare(`UPDATE driver_settlements SET applied_json = ? WHERE driver_id = ? AND COALESCE(applied_json,'') = ''`)
+        .run(JSON.stringify({ migrated: true, jobs: applied, unapplied: credit }), d.id);
+      console.log('[DB] driver ' + d.id + ': settlements applied to ' + applied.length + ' job(s)'
+        + (credit ? ', ' + credit.toFixed(2) + ' left unapplied' : ''));
+    }
+  } catch (e) {
+    /* LOUD. This one failing quietly is what put every paid job back on the
+       books; a boot that cannot reconcile the ledger is not a detail. */
+    console.error('[DB] SETTLEMENT MIGRATION FAILED — driver balances may show payments already made:', e.message);
+  }
+}
+
+module.exports = { getDb, DATA_DIR, runSettlementMigration };

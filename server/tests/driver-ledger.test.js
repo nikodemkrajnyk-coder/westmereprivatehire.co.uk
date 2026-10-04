@@ -257,18 +257,34 @@ test('a passed job contributes its commission only, through the API', async () =
 
 console.log('\nWhat has actually been paid');
 
-test('a settlement reduces the balance, and undoing it puts it back', () => {
+test('a payment reduces the balance by paying for jobs, and is reversible', () => {
+  /* THE PAYMENT IS SPENT, NOT SUBTRACTED. It used to be a figure taken off a
+     running total, which left "which jobs is this £50 for?" unanswerable and
+     allowed a second truth once jobs could be ticked off individually. It now
+     settles the jobs it covers — part-settling the one it runs out on — and
+     the balance is simply what is left unsettled.
+     GUARDRAIL for the whole model: server/tests/driver-settlement.test.js */
   const drv = mkDriver('Settle Driver');
   mkJob({ date: '2026-06-01', fare: 100, payment: 'card', paid_at: '2026-06-01 09:00',
           passed_at: '2026-06-01 06:00', driver_id: drv });
   assert.strictEqual(ledger.driverBalance(drv), 90, 'a £100 prepaid job owes him £90');
 
-  const s = ledger.recordSettlement(drv, 50, { method: 'Bank transfer', paid_on: '2026-06-02' });
+  const first = ledger.applyPayment(drv, 50, { method: 'Bank transfer', paid_on: '2026-06-02' });
   assert.strictEqual(ledger.driverBalance(drv), 40, 'paying him £50 must leave £40 owing');
+  assert.strictEqual(first.cleared.length, 1, 'and it must say which job it went against');
+  assert.strictEqual(first.cleared[0].whole, false, 'a £50 payment does not clear a £90 job');
 
-  ledger.recordSettlement(drv, 40, { method: 'Cash', paid_on: '2026-06-03' });
+  ledger.applyPayment(drv, 40, { method: 'Cash', paid_on: '2026-06-03' });
   assert.strictEqual(ledger.driverBalance(drv), 0, 'paying the rest must clear it');
 
+  /* Reversing one is the route's job — it re-opens the jobs the receipt
+     cleared. A bare DELETE leaves the stamps behind, which is why the balance
+     no longer reads this table at all. */
+  const s = getDb().prepare('SELECT * FROM driver_settlements WHERE driver_id = ? ORDER BY id').get(drv);
+  const applied = JSON.parse(s.applied_json || '{}');
+  assert.ok(Array.isArray(applied.jobs) && applied.jobs.length,
+    'the receipt must record what it paid for, or it cannot be undone');
+  ledger.unapplyPayment(s, drv);
   getDb().prepare('DELETE FROM driver_settlements WHERE id = ?').run(s.id);
   assert.strictEqual(ledger.driverBalance(drv), 50,
     'removing a £50 payment must put £50 back — a mistyped payment has to be reversible');
@@ -375,7 +391,9 @@ test('the PDF renders, and its figures are the ledger\'s', async () => {
   mkJob({ date: '2026-04-01', fare: 96, payment: 'card', paid_at: '2026-04-01 09:00',
           passed_at: '2026-04-01 06:00', driver_id: drv, admin_fee: 9.6, driver_pay: 86.4 });
   mkJob({ date: '2026-04-02', fare: 150, payment: 'cash', passed_at: '2026-04-02 06:00', driver_id: drv });
-  ledger.recordSettlement(drv, 20, { method: 'Cash', paid_on: '2026-04-03' });
+  /* Paid, the way a payment is made now: spent against his jobs. A bare
+     receipt no longer moves the balance — that was the second truth. */
+  ledger.applyPayment(drv, 20, { method: 'Cash', paid_on: '2026-04-03' });
 
   const data = stmt.statementData(drv, {});
   assert.strictEqual(data.totals.jobs, 2);
