@@ -279,6 +279,36 @@
     return tableHtml(DRIVER_TRIP_COLUMNS, items || [], driverTripCells, open, o);
   }
 
+  /**
+   * THE COMPARISON LINE — one sentence under the stats, in both apps.
+   *
+   * It is deliberately a sentence and not a fourth stat card. The owner asked
+   * to be able to GLANCE at how the week is going against the last one; a card
+   * invites you to study it, and a card with a green arrow in it invites you to
+   * feel something about it. Running type, the two figures in navy, the change
+   * in words.
+   *
+   * NO RED AND GREEN. A quieter week is not an error and a busier one is not a
+   * success — and this system spends colour on exactly two things, gold for
+   * ornament and red for an absence. "Up" and "down" are words.
+   *
+   * Takes what WMLifecycle.weekCompare returns.
+   */
+  function compareLine(cmp) {
+    if (!cmp) return '';
+    var fig = function (n) { return '<b>' + esc(n > 0 ? money(n) : '£0') + '</b>'; };
+    var head = (cmp.partial ? 'This week so far ' : 'This week ') + fig(cmp.thisWeek.total);
+    if (!cmp.lastWeek.jobs) {
+      return head + ' &middot; nothing in the same stretch last week';
+    }
+    var was = (cmp.partial ? 'same point last week ' : 'last week ') + fig(cmp.lastWeek.total);
+    var change;
+    if (cmp.direction === 'level') change = 'level';
+    else change = (cmp.direction === 'up' ? 'up ' : 'down ') + esc(money(Math.abs(cmp.delta))) +
+                  (cmp.pct == null ? '' : ' (' + Math.abs(cmp.pct) + '%)');
+    return head + ' &middot; ' + was + ' &middot; <span class="wm-compare-d">' + change + '</span>';
+  }
+
   return {
     HISTORY_COLUMNS: HISTORY_COLUMNS,
     STATUS_COLUMN: STATUS_COLUMN,
@@ -301,6 +331,7 @@
     tableHtml: tableHtml,
     historyTable: historyTable,
     driverTripTable: driverTripTable,
+    compareLine: compareLine,
     _spec: 'list = a few short columns; the row opens a detail page carrying everything else'
   };
 }));

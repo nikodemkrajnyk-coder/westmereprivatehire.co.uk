@@ -1042,9 +1042,11 @@ select:-webkit-autofill:focus{
         </div>
       </div>
 
+      <div class="wm-compare" id="earn-compare"></div>
+
       <!-- Mileage stats -->
       <div style="margin-bottom:1rem">
-        <div style="font-family:var(--serif);font-size:1.01rem;color:#1a1a1a;margin-bottom:.5rem;font-weight:300">Mileage</div>
+        <div class="wm-subhead">Mileage</div>
         <div id="mileage-trio" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:.5rem">
           <div class="earn-stat-card" id="mile-stat-today">
             <div class="esk-label">Today</div>
@@ -1059,9 +1061,9 @@ select:-webkit-autofill:focus{
             <div class="esk-amount" style="font-size:1.1rem">— mi</div>
           </div>
         </div>
-        <div id="mile-tax-year" style="display:flex;justify-content:space-between;align-items:center;padding:.6rem .8rem;background:#ffffff;border:1px solid rgba(106,106,106,.2);border-radius:8px">
-          <span style="font-size:.76rem;letter-spacing:.12em;text-transform:uppercase;color:#1a1a1a;font-family:var(--sans)">Tax Year Total</span>
-          <span style="font-family:var(--serif);font-size:1.1rem;color:var(--navy)">— miles</span>
+        <div class="wm-figline" id="mile-tax-year">
+          <span class="wm-figline-l">Tax Year Total</span>
+          <span class="wm-figline-v">— miles</span>
         </div>
       </div>
 
@@ -3644,6 +3646,16 @@ function buildEarnings(){
   setStatCard('earn-stat-week',thisWeek.total,thisWeek.jobs);
   setStatCard('earn-stat-month',monthTotal,monthBookings.length);
 
+  // One line under the trio: how the week is going against the last one, cut
+  // at the same weekday so a Tuesday is compared with a Tuesday. `bookings` is
+  // already filtered to isEarning, so the same money the cards count.
+  var cmpEl=document.getElementById('earn-compare');
+  if(cmpEl&&window.WMLifecycle&&window.WMCompact){
+    cmpEl.innerHTML=WMCompact.compareLine(WMLifecycle.weekCompare(bookings,function(b){
+      return Number(b.fare)||0;
+    }));
+  }
+
   // Load mileage stats
   fetch('/api/mileage',{credentials:'include'}).then(function(r){return r.json();}).then(function(d){
     if(!d.ok||!d.mileage)return;
@@ -3660,28 +3672,33 @@ function buildEarnings(){
     if(tyEl){
       var tyStart=m.tax_year.start||'';
       var tyLabel='Tax Year'+(tyStart?' (from '+tyStart+')':'');
-      tyEl.innerHTML='<span style="font-size:.76rem;letter-spacing:.12em;text-transform:uppercase;color:#1a1a1a;font-family:var(--sans)">'+tyLabel+'</span>'
-        +'<span style="font-family:var(--serif);font-size:1.1rem;color:var(--navy)">'+m.tax_year.total_miles.toFixed(1)+' miles</span>';
+      tyEl.innerHTML='<span class="wm-figline-l">'+tyLabel+'</span>'
+        +'<span class="wm-figline-v">'+m.tax_year.total_miles.toFixed(1)+' miles</span>';
     }
   }).catch(function(){});
 
   var avg=thisWeek.jobs?(thisWeek.total/thisWeek.jobs):0;
 
   // This-week detail card
+  // THE WEEK'S FIGURE. It was white paper under a diagonal hatch with two grey
+  // slabs under it; the hatch and the slabs go, the figure stays the biggest
+  // thing on the page, and the two readings beneath it sit in a plain pair of
+  // cells divided by a rule. Nothing fills — §20.
   document.getElementById('earn-this-week').innerHTML=
-    '<div style="background:#ffffff;border:1px solid rgba(27,27,26,.08);padding:1.5rem;margin-bottom:.85rem;position:relative;overflow:hidden">'
-    +'<div style="position:absolute;inset:0;background-image:repeating-linear-gradient(-45deg,transparent,transparent 60px,rgba(106,106,106,.02) 60px,rgba(106,106,106,.02) 61px);pointer-events:none"></div>'
-    +'<span style="font-size:.67rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(27,27,26,.35);margin-bottom:.2rem;display:block;position:relative">This Week · '+fmtRange(thisWeek.start)+'</span>'
-    +'<span style="font-family:var(--serif);font-size:3rem;color:var(--navy);line-height:1;display:block;position:relative">'+fmtMoney(thisWeek.total)+'</span>'
-    +'<div style="font-size:.84rem;color:rgba(27,27,26,.45);font-weight:300;margin-top:.3rem;position:relative">Next payment '+nextPayLabel+'</div>'
-    +'<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:rgba(106,106,106,.1);margin-top:1.2rem;border:1px solid rgba(106,106,106,.1);position:relative">'
-      +'<div style="padding:.7rem;background:rgba(27,27,26,.04);text-align:center"><div style="font-family:var(--serif);font-size:1.3rem;color:var(--navy);font-weight:300">'+thisWeek.jobs+'</div><div style="font-size:.63rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.35);margin-top:.15rem">Jobs</div></div>'
-      +'<div style="padding:.7rem;background:rgba(27,27,26,.04);text-align:center"><div style="font-family:var(--serif);font-size:1.3rem;color:var(--navy);font-weight:300">'+fmtMoney(avg)+'</div><div style="font-size:.63rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(27,27,26,.35);margin-top:.15rem">Avg</div></div>'
+    '<div class="wm-weekcard">'
+    +'<div class="wm-weekcard-k">This Week \u00b7 '+fmtRange(thisWeek.start)+'</div>'
+    +'<div class="wm-weekcard-v">'+fmtMoney(thisWeek.total)+'</div>'
+    +'<div class="wm-weekcard-s">Next payment '+nextPayLabel+'</div>'
+    +'<div class="wm-weekcard-pair">'
+      +'<div><div class="wm-weekcard-n">'+thisWeek.jobs+'</div><div class="wm-weekcard-l">Jobs</div></div>'
+      +'<div><div class="wm-weekcard-n">'+fmtMoney(avg)+'</div><div class="wm-weekcard-l">Avg</div></div>'
     +'</div>'
     +'</div>';
 
-  // Previous weeks (excluding current; show last 6)
-  var prevKeys=Object.keys(weeks).filter(function(k){return k!==thisKey;}).sort().reverse().slice(0,6);
+  // PREVIOUS weeks: the ones BEFORE this one. The filter was `k !== thisKey`,
+  // which also let through every week AFTER it — a booking taken for next
+  // month put a future week at the top of a list headed "Previous Weeks".
+  var prevKeys=Object.keys(weeks).filter(function(k){return k<thisKey;}).sort().reverse().slice(0,6);
   var prevEl=document.getElementById('earn-prev-weeks');
   if(prevKeys.length){
     prevEl.innerHTML=prevKeys.map(function(k){
@@ -3743,13 +3760,14 @@ async function loadStripeBalance(){
           +'</div>'
         +'</div>'
       : '<div style="text-align:center;font-size:.88rem;color:rgba(27,27,26,.4);padding:.3rem 0;border-top:1px solid rgba(27,27,26,.06);margin-top:.85rem;padding-top:.85rem">No available balance to pay out</div>';
+    // Two readings of one thing, so they sit in the same pair of cells the
+    // week card uses — the labels were on one baseline and the figures on two,
+    // which read as a mistake rather than as a hierarchy.
     balEl.innerHTML=
       '<div style="padding:1rem 1.2rem">'
-      +'<div style="display:flex;justify-content:space-between;align-items:baseline">'
-        +'<div><div style="font-size:.67rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(27,27,26,.35);margin-bottom:.15rem">Available</div>'
-        +'<div style="font-family:var(--serif);font-size:2.2rem;color:var(--navy);font-weight:300">'+fmtPence(avail)+'</div></div>'
-        +'<div style="text-align:right"><div style="font-size:.67rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(27,27,26,.35);margin-bottom:.15rem">Pending</div>'
-        +'<div style="font-family:var(--serif);font-size:1.2rem;color:rgba(27,27,26,.5);font-weight:300">'+fmtPence(pend)+'</div></div>'
+      +'<div class="wm-weekcard-pair" style="margin-top:0;padding-top:0;border-top:none">'
+        +'<div><div class="wm-weekcard-n">'+fmtPence(avail)+'</div><div class="wm-weekcard-l">Available</div></div>'
+        +'<div><div class="wm-weekcard-n">'+fmtPence(pend)+'</div><div class="wm-weekcard-l">Pending</div></div>'
       +'</div>'
       +controls
       +'</div>';

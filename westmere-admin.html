@@ -674,7 +674,7 @@ select:-webkit-autofill:focus{
     <!-- ══ DASHBOARD ══ -->
     <div class="view on" id="view-dashboard">
       <div class="page-hd">
-        <div class="page-title">Good morning, <em>Westmere</em></div>
+        <div class="page-title" id="dash-greeting">Good morning, <em>Westmere</em></div>
         <div class="page-sub">Here is your operation at a glance</div>
       </div>
 
@@ -695,6 +695,7 @@ select:-webkit-autofill:focus{
           <div class="sv" id="dash-cust-count">0</div><div class="sl">Customers</div><div class="ss" id="dash-cust-sub">—</div>
         </div>
       </div>
+      <div class="wm-compare" id="dash-compare"></div>
 
       <div class="g2">
         <div class="card">
@@ -3343,6 +3344,23 @@ function loadLiveBookings(){
       var sorted=todayJobs.slice().sort(function(a,b){return(a.time||'').localeCompare(b.time||'');});
       el('dash-today-next').textContent='Next: '+(sorted[0].time||'ASAP')+' \u2192';
     }
+    // How the week is going against the last one, to the same weekday. Money
+    // actually received, the same rule the cards above it use.
+    // THE GREETING WAS A STRING IN THE MARKUP. It said "Good morning" at ten
+    // at night and at three in the morning, every day, because nothing ever
+    // changed it. UK wall-clock hour, like everything else here.
+    var gEl=el('dash-greeting');
+    if(gEl){
+      var hr=+new Date().toLocaleString('en-GB',{timeZone:'Europe/London',hour:'2-digit',hour12:false});
+      var word=hr<12?'Good morning':hr<18?'Good afternoon':'Good evening';
+      gEl.innerHTML=word+', <em>Westmere</em>';
+    }
+    var cmpEl=el('dash-compare');
+    if(cmpEl&&window.WMLifecycle&&window.WMCompact){
+      cmpEl.innerHTML=WMCompact.compareLine(WMLifecycle.weekCompare(bookings,function(b){
+        return (b.status!=='cancelled'&&isReceived(b))?(Number(b.fare)||0):null;
+      }));
+    }
     // Today badge in sidebar
     var badge=el('sb-today-badge');
     if(badge){badge.textContent=todayJobs.length;badge.style.display=todayJobs.length?'':'none';}
@@ -3533,9 +3551,19 @@ function loadLiveBookings(){
     if(bookings.length){
       var recent=bookings.slice(0,8);
       var html=recent.map(function(b){
+        // A booking with no created_at gave an Invalid Date, and Math.floor(NaN)
+        // does not throw — so the catch never fired and the dashboard printed
+        // "NaN days ago" against it. Say nothing rather than nonsense.
         var ago='';
-        try{var mins=Math.floor((Date.now()-new Date(b.created_at).getTime())/60000);ago=mins<60?mins+' min ago':mins<1440?Math.floor(mins/60)+' hours ago':Math.floor(mins/1440)+' days ago';}catch(e){ago='';}
-        return '<div class="notif"><div class="notif-dot" style="background:var(--navy)"></div><div><div class="notif-text"><strong>'+escTo(b.ref)+'</strong> \u2014 '+escTo(b.customer_name||'')+', '+escTo(_admShortAddr(b.pickup))+' \u2192 '+escTo(_admShortAddr(b.destination))+(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')+'</div><div class="notif-time">'+ago+'</div></div></div>';
+        var _t=b.created_at?new Date(String(b.created_at).replace(' ','T')).getTime():NaN;
+        if(isFinite(_t)){
+          var mins=Math.floor((Date.now()-_t)/60000);
+          if(mins<0)mins=0;
+          ago=mins<60?mins+' min ago':mins<1440?Math.floor(mins/60)+' hours ago':Math.floor(mins/1440)+' days ago';
+        }
+        // A booking with no name on it printed "WPH-7F2K — , Weppons Farm".
+        var who=b.customer_name?escTo(b.customer_name)+', ':'';
+        return '<div class="notif"><div class="notif-dot"></div><div><div class="notif-text"><strong>'+escTo(b.ref)+'</strong> \u2014 '+who+escTo(_admShortAddr(b.pickup))+' \u2192 '+escTo(_admShortAddr(b.destination))+(b.fare?' \u00b7 \u00a3'+Number(b.fare).toFixed(0):'')+'</div><div class="notif-time">'+ago+'</div></div></div>';
       }).join('');
       if(actDiv)actDiv.innerHTML=html;
       if(notifDiv)notifDiv.innerHTML=html;
@@ -7875,19 +7903,25 @@ function _renderChart(weeks) {
   const PAD = 0.6; // gap between bars (%)
   const H = 140; // chart height px
 
-  let bars = '';
+  // A BASELINE, so twelve bars read as a chart and not as a row of blocks —
+  // and so a week that took nothing still has somewhere to sit.
+  let bars = `<line x1="0" y1="${H + 0.5}" x2="100%" y2="${H + 0.5}" stroke="var(--westmere-line)" stroke-width="1"/>`;
   weeks.forEach((w, i) => {
     const pct = w.total / max;
-    const bh = Math.max(pct * H, w.total > 0 ? 4 : 0);
+    // A WEEK WITH NOTHING IN IT IS STILL A WEEK. Drawn at zero it left a hole
+    // in the run and the eye read the chart as eleven weeks, not twelve.
+    const bh = w.total > 0 ? Math.max(pct * H, 4) : 3;
     const x = i * W + PAD / 2;
     const bw = W - PAD;
     const y = H - bh;
-    const gold = '#6a6a6a';
-    const light = 'rgba(106,106,106,.18)';
-    bars += `<rect x="${x}%" y="${y}" width="${bw}%" height="${bh}" fill="${w.total > 0 ? gold : light}" rx="2"/>`;
+    // ONE HUE, VARYING IN VALUE (§33). Every bar on this chart is the same
+    // kind of thing — a week's takings — so a second colour would be saying
+    // something the chart does not mean. The tall weeks are darker, which is
+    // what lets the eye find them without reading a single label.
+    bars += `<rect class="wm-chart-bar" x="${x}%" y="${y}" width="${bw}%" height="${bh}" fill="var(--wm-ramp-${wmRampStep(pct, w.total)})" rx="2"/>`;
     if (w.total > 0) {
       const label = w.total >= 1000 ? '£' + (w.total/1000).toFixed(1) + 'k' : '£' + Math.round(w.total);
-      bars += `<text x="${(x + bw/2)}%" y="${y - 4}" text-anchor="middle" font-size="9" fill="rgba(27,27,26,.55)" font-family="inherit">${label}</text>`;
+      bars += `<text class="wm-chart-val" x="${(x + bw/2)}%" y="${y - 4}" text-anchor="middle">${label}</text>`;
     }
   });
   svg.setAttribute('height', H + 16);
@@ -7895,38 +7929,64 @@ function _renderChart(weeks) {
 
   // X-axis labels (show every 3rd week)
   labels.innerHTML = weeks.map((w, i) => {
-    const d = new Date(w.weekStart);
-    const lbl = i % 3 === 0 ? d.toLocaleDateString('en-GB', {day:'numeric',month:'short'}) : '';
-    return `<span style="font-size:.76rem;color:var(--westmere-ink-soft);flex:1;text-align:center">${lbl}</span>`;
+    const d = _anWallDate(w.weekStart);
+    const lbl = i % 3 === 0 && d ? d.toLocaleDateString('en-GB', {day:'numeric',month:'short',timeZone:'UTC'}) : '';
+    return `<span class="wm-chart-lbl">${lbl}</span>`;
   }).join('');
 }
 
+/* A week start is a wall-clock YYYY-MM-DD, not an instant. `new Date(str)`
+   parses it as UTC midnight and reads it back local, so west of London the
+   axis labelled every Monday as the Sunday before. Build it from the literal
+   components and format in UTC. See the timezone invariant in CLAUDE.md. */
+function _anWallDate(s) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(s || ''));
+  return m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])) : null;
+}
+
+/* Which step of the navy ramp a proportion lands on: 0 for nothing at all,
+   then 1–5 across the range. Shared by the chart and the heatmap so the two
+   read as one scale. */
+function wmRampStep(pct, raw) {
+  if ((raw !== undefined ? raw : pct) <= 0) return 0;
+  if (pct >= 0.82) return 5;
+  if (pct >= 0.58) return 4;
+  if (pct >= 0.36) return 3;
+  if (pct >= 0.16) return 2;
+  return 1;
+}
+
 function _renderBreakdown(byStatus, byPayment) {
-  const statusColors = {pending:'#6a6a6a',offered:'#2A3A66',confirmed:'#3b82f6',active:'#10b981',completed:'#059669',cancelled:'rgba(27,27,26,.3)'};
+  /* THE KEY WAS SIX UNRELATED HUES — a tailwind blue, two different greens, a
+     navy, a grey — for six values of one field. They were never a legend
+     anybody read; they were decoration that happened to be colour. The swatch
+     now carries the only thing it can honestly say, which is how big the
+     share is: the same navy ramp the chart and the heatmap use (§33). */
   const total = byStatus.reduce((s,r) => s + r.count, 0) || 1;
+  const biggest = Math.max.apply(null, byStatus.map(r => r.count).concat([1]));
 
   let sh = '';
   byStatus.sort((a,b) => b.count - a.count).forEach(r => {
     const pct = Math.round(r.count / total * 100);
-    const col = statusColors[r.status] || 'rgba(27,27,26,.4)';
-    sh += `<div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.35rem">
-      <div style="width:10px;height:10px;border-radius:2px;background:${col};flex-shrink:0"></div>
-      <div style="flex:1;font-size:.88rem;color:var(--navy);text-transform:capitalize">${_anEsc(r.status)}</div>
-      <div style="font-size:.88rem;font-weight:500;color:var(--navy);font-variant-numeric:tabular-nums">${r.count}</div>
-      <div style="font-size:.82rem;color:var(--westmere-ink-soft);width:32px;text-align:right">${pct}%</div>
+    const step = wmRampStep(r.count / biggest, r.count);
+    sh += `<div class="wm-key-row">
+      <div class="wm-key-sw" style="background:var(--wm-ramp-${step})"></div>
+      <div class="wm-key-name">${_anEsc(r.status)}</div>
+      <div class="wm-key-n">${r.count}</div>
+      <div class="wm-key-pct">${pct}%</div>
     </div>`;
   });
-  document.getElementById('an-by-status').innerHTML = sh || '<div style="color:rgba(27,27,26,.64);font-size:.88rem">No data</div>';
+  document.getElementById('an-by-status').innerHTML = sh || '<div class="wm-key-row"><div class="wm-key-name">No data</div></div>';
 
   let ph = '';
   byPayment.sort((a,b) => b.count - a.count).forEach(r => {
-    ph += `<div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.35rem">
-      <div style="flex:1;font-size:.88rem;color:var(--navy);text-transform:capitalize">${_anEsc(r.payment||'unknown')}</div>
-      <div style="font-size:.88rem;font-weight:500;color:var(--navy);font-variant-numeric:tabular-nums">${r.count} jobs</div>
-      <div style="font-size:.88rem;color:var(--navy);font-variant-numeric:tabular-nums;min-width:70px;text-align:right">${_anFmt(r.total)}</div>
+    ph += `<div class="wm-key-row">
+      <div class="wm-key-name">${_anEsc(r.payment||'unknown')}</div>
+      <div class="wm-key-n">${r.count} jobs</div>
+      <div class="wm-key-money">${_anFmt(r.total)}</div>
     </div>`;
   });
-  document.getElementById('an-by-payment').innerHTML = ph || '<div style="color:rgba(27,27,26,.64);font-size:.88rem">No completed bookings</div>';
+  document.getElementById('an-by-payment').innerHTML = ph || '<div class="wm-key-row"><div class="wm-key-name">No completed bookings</div></div>';
 }
 
 function _renderHeatmap(heatmap) {
@@ -7936,20 +7996,20 @@ function _renderHeatmap(heatmap) {
   const hours = [6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23];
   const max = Math.max(...heatmap.flat(), 1);
 
-  let html = '<table style="border-collapse:collapse;font-size:.76rem;width:100%"><thead><tr>';
-  html += '<th style="padding:.2rem .4rem;text-align:left;color:var(--westmere-ink-soft);font-weight:400;white-space:nowrap"></th>';
-  hours.forEach(h => {
-    html += `<th style="padding:.15rem .25rem;text-align:center;color:var(--westmere-ink-soft);font-weight:400;min-width:22px">${h}:00</th>`;
-  });
+  // Same five steps as the chart, so a busy hour and a big week look alike.
+  // The class is picked out of a list rather than built with `lv${n}`: a
+  // constructed class name cannot be found by anything reading the source, and
+  // design-consistency.test.js is supposed to be able to tell a styled class
+  // from a dressed-but-never-written one.
+  const LV = ['lv0', 'lv1', 'lv2', 'lv3', 'lv4', 'lv5'];
+  let html = '<table class="wm-heat"><thead><tr><th class="wm-heat-day"></th>';
+  hours.forEach(h => { html += `<th>${h}</th>`; });
   html += '</tr></thead><tbody>';
   heatmap.forEach((row, di) => {
-    html += `<tr><td style="padding:.25rem .4rem;color:rgba(27,27,26,.74);font-weight:500;white-space:nowrap">${days[di]}</td>`;
+    html += `<tr><th class="wm-heat-day">${days[di]}</th>`;
     hours.forEach(h => {
       const v = row[h] || 0;
-      const alpha = v === 0 ? 0 : Math.max(0.08, v / max);
-      const bg = v === 0 ? 'transparent' : `rgba(106,106,106,${alpha.toFixed(2)})`;
-      const txt = v === 0 ? '' : String(v);
-      html += `<td style="padding:.2rem;text-align:center;background:${bg};border-radius:3px;color:${v>0?'var(--navy)':'transparent'};font-variant-numeric:tabular-nums">${txt}</td>`;
+      html += `<td class="${LV[wmRampStep(v / max, v)]}">${v === 0 ? '' : v}</td>`;
     });
     html += '</tr>';
   });

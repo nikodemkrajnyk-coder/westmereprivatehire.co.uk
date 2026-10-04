@@ -67,7 +67,8 @@ const SECTION_HEAD = [/\n   §\d+ {1,2}[A-Z]/, /\n   \d+\. [A-Z]/];
 const S30 = section('§30  THE HOUSE TREATMENT', SECTION_HEAD);
 const S31 = section('§31  A JOB IS A CARD', SECTION_HEAD);
 const S32 = section('§32  THE CALENDARS', SECTION_HEAD);
-const DESIGN_PASS = S30 + S31 + S32;
+const S33 = section('§33  THE FIGURES', SECTION_HEAD);
+const DESIGN_PASS = S30 + S31 + S32 + S33;
 
 /* The selector side of a rule block, with declarations removed. */
 const selectorsOf = (css) => css.replace(/\{[^}]*\}/g, '\n');
@@ -76,7 +77,8 @@ const selectorsOf = (css) => css.replace(/\{[^}]*\}/g, '\n');
    one of these writes it as a whole word inside quotes or whitespace — which
    is what `class="x"`, `class="a x"` and `cls+=' x'` all look like. */
 const SHIPPED = ['westmere-owner.html', 'westmere-admin.html', 'westmere-rider.html',
-                 'westmere-driver.html', 'westmere-pay.html', 'wm-compact.js', 'wm-lifecycle.js']
+                 'westmere-driver.html', 'westmere-pay.html', 'wm-compact.js', 'wm-lifecycle.js',
+                 'wm-buttons.css']
   .filter((f) => fs.existsSync(path.join(ROOT, f)))
   .map(read);
 
@@ -228,6 +230,165 @@ test('a job is a card: an edge, a rhythm, and the gold hairline under the glance
 
 test('a cancelled job is quieted, and says so on both surfaces', () => {
   assert.ok(/\.wm-job\.is-cancelled\{/.test(S31), 'a cancelled job reads exactly like a live one');
+});
+
+// ── 4. §33 THE FIGURES: ONE HUE, VARYING IN VALUE ─────────────────────────
+
+const adminChart = fnBlock(stripComments(ADMIN, { html: true }), '_renderChart');
+const adminBreak = fnBlock(stripComments(ADMIN, { html: true }), '_renderBreakdown');
+const adminHeat  = fnBlock(stripComments(ADMIN, { html: true }), '_renderHeatmap');
+
+test('the navy ramp exists, is one hue, and is ordered', () => {
+  const steps = [];
+  for (let i = 0; i <= 5; i++) {
+    const m = new RegExp('--wm-ramp-' + i + ':\\s*([^;]+);').exec(S33);
+    assert.ok(m, 'step ' + i + ' of the ramp is missing');
+    steps[i] = m[1].trim();
+  }
+  // Every step is the house navy — as a tint of it, or the ink itself.
+  const alpha = steps.map((v) => {
+    if (/^#102a43$/i.test(v)) return 1;
+    const m = /^rgba\(\s*16,\s*42,\s*67,\s*([\d.]+)\s*\)$/.exec(v);
+    assert.ok(m, 'a ramp step is not a tint of --westmere-navy: ' + v);
+    return parseFloat(m[1]);
+  });
+  for (let i = 1; i < alpha.length; i++) {
+    assert.ok(alpha[i] > alpha[i - 1], 'the ramp is not monotonic at step ' + i);
+  }
+});
+
+test('the heatmap ink flips where the ramp gets dark, and only there', () => {
+  // A heat cell carries its count, so each step has to hold type. Navy is
+  // legible to step 3; white takes over at 4.
+  assert.ok(/\.wm-heat td\.lv4, \.wm-heat td\.lv5\{[^}]*color:\s*var\(--westmere-white\)/.test(S33),
+    'the dark steps do not flip to white ink — the count on them is unreadable');
+  for (const lv of ['lv1', 'lv2', 'lv3']) {
+    assert.ok(new RegExp('\\.wm-heat td\\.' + lv + '\\{[^}]*color:\\s*var\\(--westmere-navy\\)').test(S33),
+      'the ' + lv + ' cell does not state navy ink');
+  }
+});
+
+test('the revenue chart draws one hue from the ramp, not a grey and a tailwind blue', () => {
+  assert.ok(/var\(--wm-ramp-\$\{/.test(adminChart), 'the chart no longer fills from the ramp');
+  for (const lit of ['#6a6a6a', 'rgba(106,106,106', '#3b82f6', '#10b981', '#059669']) {
+    assert.ok(!adminChart.includes(lit), 'the chart still writes ' + lit);
+    assert.ok(!adminBreak.includes(lit), 'the breakdown key still writes ' + lit);
+    assert.ok(!adminHeat.includes(lit), 'the heatmap still writes ' + lit);
+  }
+  assert.ok(!/statusColors/.test(adminBreak),
+    'the six-hue status palette is back — six colours for six values of one field');
+});
+
+test('the chart and the heatmap read off the SAME scale', () => {
+  assert.ok(/wmRampStep\(/.test(adminChart) && /wmRampStep\(/.test(adminHeat) && /wmRampStep\(/.test(adminBreak),
+    'the three figures no longer share one step function, so a busy hour and a big week stop looking alike');
+  const step = fnBlock(stripComments(ADMIN, { html: true }), 'wmRampStep');
+  assert.ok(/return 0;/.test(step), 'nothing at all must land on step 0, not on the lightest tint');
+  assert.ok(/return 5;/.test(step) && /return 1;/.test(step), 'the step function no longer spans the ramp');
+});
+
+test('a week start on the chart axis is read as a wall-clock date', () => {
+  // `new Date('2026-10-05')` is parsed UTC and read local: west of London the
+  // axis labelled every Monday as the Sunday before. CLAUDE.md, timezone.
+  assert.ok(!/new Date\(w\.weekStart\)/.test(adminChart),
+    'the axis parses a YYYY-MM-DD as an instant again');
+  assert.ok(/_anWallDate\(/.test(adminChart), 'the axis no longer builds its label from the components');
+  const wall = fnBlock(stripComments(ADMIN, { html: true }), '_anWallDate');
+  assert.ok(/Date\.UTC\(/.test(wall), '_anWallDate does not use Date.UTC');
+  assert.ok(/timeZone:\s*'UTC'/.test(adminChart), 'the label is not formatted in UTC');
+});
+
+// ── 5. THE COMPARISON LINE ────────────────────────────────────────────────
+
+const LIFECYCLE = require(path.join(ROOT, 'wm-lifecycle.js'));
+const COMPACT = require(path.join(ROOT, 'wm-compact.js'));
+
+test('last week is cut at the same weekday, so a Tuesday is compared with a Tuesday', () => {
+  const c = LIFECYCLE.weekCompare([], () => 0);
+  const days = (a, b) => Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 86400000);
+  assert.strictEqual(days(c.from, c.to), days(c.lastFrom, c.lastTo),
+    'the two windows are different lengths — a running week measured against a finished one');
+  assert.strictEqual(days(c.lastFrom, c.from), 7, 'last week is not the week before this one');
+});
+
+test('the comparison counts only the jobs inside each window', () => {
+  const c = LIFECYCLE.weekCompare([], () => 0);
+  const jobs = [
+    { date: c.from, fare: 100 },                 // this week
+    { date: c.to, fare: 50 },                    // this week, today
+    { date: c.lastFrom, fare: 40 },              // last week, in window
+    { date: c.lastTo, fare: 30 },                // last week, on the cut
+    { date: '1999-01-01', fare: 9999 }           // long ago
+  ];
+  const r = LIFECYCLE.weekCompare(jobs, (j) => Number(j.fare) || 0);
+  assert.strictEqual(r.thisWeek.total, 150, 'this week counted the wrong jobs');
+  assert.strictEqual(r.lastWeek.total, 70, 'last week counted the wrong jobs');
+  assert.strictEqual(r.delta, 80);
+  assert.strictEqual(r.direction, 'up');
+});
+
+test('a day past the cut in last week is NOT counted', () => {
+  const c = LIFECYCLE.weekCompare([], () => 0);
+  if (c.lastTo >= c.lastFrom && c.partial) {
+    const after = new Date(Date.parse(c.lastTo + 'T00:00:00Z') + 86400000).toISOString().slice(0, 10);
+    const r = LIFECYCLE.weekCompare([{ date: after, fare: 500 }], (j) => Number(j.fare) || 0);
+    assert.strictEqual(r.lastWeek.total, 0,
+      'last week is being counted past the point this week has reached');
+  }
+});
+
+test('valueOf decides what counts, and null means it does not', () => {
+  const c = LIFECYCLE.weekCompare([], () => 0);
+  const r = LIFECYCLE.weekCompare(
+    [{ date: c.from, fare: 100, paid: 1 }, { date: c.from, fare: 400, paid: 0 }],
+    (j) => (j.paid ? Number(j.fare) : null));
+  assert.strictEqual(r.thisWeek.total, 100, 'an uncounted job still reached the total');
+  assert.strictEqual(r.thisWeek.jobs, 1);
+});
+
+test('no percentage is claimed against a week of nothing', () => {
+  const c = LIFECYCLE.weekCompare([], () => 0);
+  const r = LIFECYCLE.weekCompare([{ date: c.from, fare: 100 }], (j) => Number(j.fare) || 0);
+  assert.strictEqual(r.pct, null, 'a percentage off a base of zero');
+  assert.ok(!/%/.test(COMPACT.compareLine(r)), 'the line prints a percentage it cannot have');
+  assert.ok(/nothing in the same stretch last week/.test(COMPACT.compareLine(r)),
+    'a week with nothing in it is not said in words');
+});
+
+test('the line says up and down in WORDS, never in red and green', () => {
+  const c = LIFECYCLE.weekCompare([], () => 0);
+  const down = COMPACT.compareLine(LIFECYCLE.weekCompare(
+    [{ date: c.from, fare: 50 }, { date: c.lastFrom, fare: 200 }], (j) => Number(j.fare) || 0));
+  assert.ok(/down/.test(down), 'a quieter week is not said');
+  for (const colour of ['green', 'red', '#0', '#1', '#2', '#d', '#e', '#f', 'rgb']) {
+    assert.ok(!down.toLowerCase().includes(colour.toLowerCase()) || colour.length > 4,
+      'the comparison line is writing colour: ' + colour);
+  }
+  assert.ok(!/style=/.test(down), 'the comparison line carries an inline style');
+  assert.ok(!/[▲▼↑↓]/.test(down), 'the comparison line is using an arrow instead of a word');
+});
+
+test('both apps draw the comparison line, from the shared module', () => {
+  for (const [who, src] of [['owner', OWNER], ['admin', ADMIN]]) {
+    assert.ok(/class="wm-compare"/.test(src), who + ' has no place to put the comparison line');
+    assert.ok(/WMCompact\.compareLine\(WMLifecycle\.weekCompare\(/.test(src),
+      who + ' is not building the line from the shared module');
+  }
+  assert.ok(/\.wm-compare\{/.test(S33), 'the comparison line is unstyled');
+});
+
+test('the owner earnings trio is three white cards, not two and a navy gradient', () => {
+  // The middle card was filled with a navy gradient and printed its figure in
+  // --navy on top of it. It only showed up at all because §15.2 repaints ink
+  // inside the app and happened to reach it.
+  const accent = regionFrom(S33, '.earn-stat-card.esk-accent{', [/\n\.[a-z]/]);
+  assert.ok(/background:\s*var\(--westmere-white\)/.test(accent),
+    'the middle earnings card fills again');
+  assert.ok(!/gradient/i.test(accent), 'the navy gradient is back on the middle card');
+  assert.ok(/border-top:[^;]*var\(--westmere-gold\)/.test(accent),
+    'the card that matters has no emphasis at all now');
+  assert.ok(/\.earn-stat-card::before\{[^}]*display:\s*none/.test(S33),
+    'the diagonal hatch over the earnings cards is back');
 });
 
 // ── NEGATIVE: prove each detector can fail ────────────────────────────────

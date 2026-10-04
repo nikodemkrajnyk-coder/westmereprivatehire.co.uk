@@ -398,6 +398,68 @@
     return weekBounds(new Date(t).toISOString().slice(0, 10));
   }
 
+  /**
+   * THIS WEEK AGAINST LAST WEEK, TO THE SAME POINT IN THE WEEK.
+   *
+   * The whole value of the comparison is that it is like for like. A running
+   * week measured against a FINISHED one is not a comparison, it is an
+   * arithmetic accident: on a Tuesday morning it reads "£240 against £1,100"
+   * and says the business has collapsed, every Monday, for ever. So last week
+   * is cut at the same weekday and no further — Tuesday against Tuesday.
+   *
+   * `valueOf(job)` returns the money this job contributes, or null/0 for one
+   * that does not count. The two apps disagree about what counts (the admin
+   * dashboard counts money actually received; the owner's earnings page has
+   * its own rule) and that disagreement is theirs to keep, so it is a
+   * parameter rather than a decision taken here.
+   *
+   * Dates are wall-clock YYYY-MM-DD throughout — compared as strings, never
+   * parsed into instants. See the timezone invariant in CLAUDE.md.
+   */
+  function weekCompare(jobs, valueOf) {
+    var now = weekBounds();
+    var prev = weekShift(now.from, -1);
+    var today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/London' });
+    // How far into the week we are, 0 (Monday) to 6 (Sunday).
+    var p = now.from.split('-');
+    var t = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/London' }).split('-');
+    var dow = Math.round((Date.UTC(+t[0], +t[1] - 1, +t[2]) -
+                          Date.UTC(+p[0], +p[1] - 1, +p[2])) / 86400000);
+    if (!(dow >= 0 && dow <= 6)) dow = 6;
+    var q = prev.from.split('-');
+    var prevCut = new Date(Date.UTC(+q[0], +q[1] - 1, +q[2]) + dow * 86400000)
+      .toISOString().slice(0, 10);
+
+    var sum = function (from, to) {
+      var total = 0, n = 0;
+      (jobs || []).forEach(function (j) {
+        var d = j && j.date ? String(j.date).slice(0, 10) : '';
+        if (!d || d < from || d > to) return;
+        var v = valueOf ? valueOf(j) : (Number(j.fare) || 0);
+        if (v == null) return;
+        total += Number(v) || 0;
+        n++;
+      });
+      return { total: Math.round(total * 100) / 100, jobs: n };
+    };
+
+    var a = sum(now.from, today);
+    var b = sum(prev.from, prevCut);
+    var delta = Math.round((a.total - b.total) * 100) / 100;
+    return {
+      thisWeek: a,
+      lastWeek: b,
+      from: now.from, to: today,
+      lastFrom: prev.from, lastTo: prevCut,
+      partial: dow < 6,
+      delta: delta,
+      /* No percentage off a base of nothing: "up ∞%" after a quiet week is
+         worse than saying the figure. */
+      pct: b.total > 0 ? Math.round((a.total - b.total) / b.total * 100) : null,
+      direction: delta > 0 ? 'up' : delta < 0 ? 'down' : 'level'
+    };
+  }
+
   /** "Mon 29 Sep – Sun 5 Oct 2026", built from the components, not a locale. */
   function payWeekLabel(bounds) {
     var mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -524,6 +586,7 @@
     isoWeekStart: isoWeekStart,
     weekBounds: weekBounds,
     weekShift: weekShift,
+    weekCompare: weekCompare,
     payWeekLabel: payWeekLabel,
     weekRangeLabel: weekRangeLabel,
     groupByWeek: groupByWeek,
