@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<script src="/address-normalize.js?v=2026-10-06b"></script>
-<script src="/wm-address-lookup.js?v=2026-10-06b"></script>
-<script src="/wm-invoice-maths.js?v=2026-10-06b"></script>
-<script src="/wm-lifecycle.js?v=2026-10-06b"></script>
-<script src="/wm-compact.js?v=2026-10-06b"></script>
+<script src="/address-normalize.js?v=2026-10-07a"></script>
+<script src="/wm-address-lookup.js?v=2026-10-07a"></script>
+<script src="/wm-invoice-maths.js?v=2026-10-07a"></script>
+<script src="/wm-lifecycle.js?v=2026-10-07a"></script>
+<script src="/wm-compact.js?v=2026-10-07a"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"/>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -680,9 +680,9 @@ select:-webkit-autofill:focus{
   caret-color:#102a43;
   transition:background-color 9999s ease-in-out 0s;
 }
-</style><link rel="stylesheet" href="/wm-buttons.css?v=2026-10-06b">
-<link rel="stylesheet" href="/westmere-theme.css?v=2026-10-06b">
-<script src="/wm-ask.js?v=2026-10-06b"></script>
+</style><link rel="stylesheet" href="/wm-buttons.css?v=2026-10-07a">
+<link rel="stylesheet" href="/westmere-theme.css?v=2026-10-07a">
+<script src="/wm-ask.js?v=2026-10-07a"></script>
 <link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"></head>
 <body>
 
@@ -844,7 +844,7 @@ select:-webkit-autofill:focus{
            the home-screen app and reopen it (or remove and re-add the icon).
            GUARDRAIL: server/tests/asset-version.test.js -->
       <div style="margin-top:1.2rem;padding-top:.9rem;border-top:1px solid var(--westmere-line,#dfe5ea);text-align:center">
-        <div style="font-family:var(--sans);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--westmere-ink-soft)">Version <span id="app-version">2026-10-06b</span></div>
+        <div style="font-family:var(--sans);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--westmere-ink-soft)">Version <span id="app-version">2026-10-07a</span></div>
         <div onclick="owForceRefresh()" style="display:inline-block;margin-top:.6rem;padding:.5rem .9rem;border:1px solid var(--westmere-line-strong,#c8d1d9);border-radius:7px;font-family:var(--sans);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--westmere-navy,#102a43);cursor:pointer">Reload the app</div>
       </div>
       <!-- Owner Profile -->
@@ -1032,7 +1032,7 @@ select:-webkit-autofill:focus{
     <!-- Earnings -->
     <div class="pg" id="pg-earnings">
       <div class="sec-title">Your <em>Earnings</em></div>
-      <div class="sec-sub">Completed &amp; paid bookings only</div>
+      <div class="sec-sub">What you earned &mdash; your share, not the drivers'</div>
 
       <!-- Today / Week / Month stat trio -->
       <div id="earn-trio" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:1rem">
@@ -1054,6 +1054,39 @@ select:-webkit-autofill:focus{
       </div>
 
       <div class="wm-compare" id="earn-compare"></div>
+
+      <!-- ══ WORK HE DID THAT DID NOT COME THROUGH WESTMERE ══════════════
+           He drives for other operators too, and that money is his earnings
+           as much as a Westmere job is. It was nowhere in this system, so the
+           figure above was his Westmere earnings being read as his day.
+
+           IT IS ADDED, AND IT IS NAMED. The three cards show his real total;
+           this card shows which part of it came from elsewhere and who it was
+           for. Kept visibly apart rather than quietly folded in, because the
+           Westmere figure is the one his books are made of.
+           GUARDRAIL: server/tests/external-earnings.test.js -->
+      <div class="card" id="earn-external">
+        <div class="ch"><span>Outside <em>Westmere</em></span></div>
+        <div class="cb">
+          <div class="ext-add">
+            <div class="ext-f">
+              <label class="ext-l" for="ext-amount">Amount</label>
+              <input id="ext-amount" class="fi" type="number" step="0.01" inputmode="decimal" placeholder="0.00">
+            </div>
+            <div class="ext-f">
+              <label class="ext-l" for="ext-source">Who for</label>
+              <input id="ext-source" class="fi" type="text" list="ext-sources" placeholder="Uber, Sussex, Southern…" autocomplete="off">
+              <datalist id="ext-sources"></datalist>
+            </div>
+            <div class="ext-f">
+              <label class="ext-l" for="ext-date">Date</label>
+              <input id="ext-date" class="fi" type="date">
+            </div>
+            <button type="button" class="wm-primary ext-add-btn" onclick="extAdd()">Add</button>
+          </div>
+          <div id="ext-list"></div>
+        </div>
+      </div>
 
       <!-- Mileage stats -->
       <div style="margin-bottom:1rem">
@@ -2184,7 +2217,10 @@ function goPage(id,btn){
   if(id==='completed')buildCompleted();
   if(id==='inbox')oLoadInbox();
   if(id==='calendar')loadCalendarExternal();
-  if(id==='earnings')buildEarnings();
+  /* The outside entries are fetched before the page is drawn, so the three
+     cards are never briefly wrong — a figure that corrects itself a moment
+     after it appears is worse than one that waits. */
+  if(id==='earnings')extLoad().then(buildEarnings);
   if(id==='drivers')loadDriversList();
   if(id==='invoices')invLoad();
   if(id==='customers')custLoad();
@@ -3615,10 +3651,148 @@ function isEarning(b){
   // counted here — invoice income is tracked separately via the paid flag
   // on invoices (so account jobs aren't double-counted).
   if(!b||!b.date)return false;
+  /* ── A CANCELLED JOURNEY EARNED NOTHING ────────────────────────────────
+     This tested only whether money had ARRIVED, and a cancelled booking that
+     had been paid for still carries its paid_at — so a journey that never ran
+     was counted as a day's earnings until somebody got round to refunding it.
+     Found while checking that his figures are his own: a cancelled £85 was
+     sitting in today's total. Trip History has said "it did not run, so it
+     counts nothing" for months; this is the same rule, where the money is
+     added up. GUARDRAIL: server/tests/income-parity.test.js */
+  if(WMLifecycle.statusOf(b)==='cancelled')return false;
   var cashCompleted=(String(b.payment||'').toLowerCase()==='cash' && b.status==='completed');
   var paidOnline=!!b.paid_at;
   return cashCompleted || paidOnline;
 }
+/* ── EARNINGS FROM OUTSIDE WESTMERE ───────────────────────────────────────
+   He drives for other operators as well, and that money is his earnings too —
+   it was simply nowhere in this system, so the figure he read at the end of a
+   day was his Westmere earnings being mistaken for his day.
+
+   HELD SEPARATELY, ON PURPOSE. These are not bookings: no passenger, no fare,
+   no commission, nothing to invoice. They add to HIS total and to nothing else
+   — not turnover, not the ledger, not an operator report — and every screen
+   that shows one shows who it was for and when, so a year later it is still
+   obvious which money was whose.
+   GUARDRAIL: server/tests/external-earnings.test.js */
+var EXTERNAL_EARNINGS=[];
+
+async function extLoad(){
+  try{
+    var r=await fetch('/api/external-earnings',{credentials:'include'});
+    var d=await r.json();
+    EXTERNAL_EARNINGS=(r.ok&&d.ok&&d.entries)?d.entries:[];
+  }catch(e){ EXTERNAL_EARNINGS=[]; }
+  return EXTERNAL_EARNINGS;
+}
+
+/* What he earned outside Westmere between two dates, inclusive. Wall-clock
+   string comparison, like every other date in this app — no Date objects, so
+   no host timezone can move a day. */
+function extTotalBetween(from,to){
+  var t=(EXTERNAL_EARNINGS||[]).reduce(function(s,e){
+    var d=String(e.earned_on||'');
+    if(from&&d<from)return s;
+    if(to&&d>to)return s;
+    return s+(Number(e.amount)||0);
+  },0);
+  return Math.round(t*100)/100;
+}
+function extTotalOn(day){ return extTotalBetween(day,day); }
+
+/* Fold the outside work into a week-against-last-week comparison. The ranges
+   come from WMLifecycle, which already knows how far into the week we are and
+   where to cut last week to match; only the totals and what follows from them
+   are recomputed here. */
+function extIntoCompare(cmp){
+  if(!cmp)return cmp;
+  cmp.thisWeek.total=Math.round((cmp.thisWeek.total+extTotalBetween(cmp.from,cmp.to))*100)/100;
+  cmp.lastWeek.total=Math.round((cmp.lastWeek.total+extTotalBetween(cmp.lastFrom,cmp.lastTo))*100)/100;
+  cmp.delta=Math.round((cmp.thisWeek.total-cmp.lastWeek.total)*100)/100;
+  cmp.pct=cmp.lastWeek.total>0?Math.round((cmp.thisWeek.total-cmp.lastWeek.total)/cmp.lastWeek.total*100):null;
+  cmp.direction=cmp.delta>0?'up':cmp.delta<0?'down':'level';
+  return cmp;
+}
+
+function extRenderList(){
+  var box=document.getElementById('ext-list');
+  if(!box)return;
+  var list=(EXTERNAL_EARNINGS||[]).slice(0,40);
+  if(!list.length){
+    box.innerHTML='<div class="ext-none">Nothing added yet. Work you do for anybody else &mdash; Uber, Sussex, Southern &mdash; goes in here and counts towards your totals above.</div>';
+  }else{
+    box.innerHTML=list.map(function(e){
+      return '<div class="ext-row">'
+        +'<span class="ext-row-amt">'+escH(fmtMoney(Number(e.amount)||0))+'</span>'
+        +'<span class="ext-row-who" title="'+escH((e.source||'')+(e.note?' — '+e.note:''))+'">'+escH(e.source||'')+(e.note?' <span style="color:var(--westmere-ink-soft)">'+escH(e.note)+'</span>':'')+'</span>'
+        +'<span class="ext-row-when">'+escH(_extDay(e.earned_on))+'</span>'
+        +'<button type="button" class="ext-row-x" onclick="extRemove('+Number(e.id)+')">Remove</button>'
+        +'</div>';
+    }).join('')
+      +'<div class="ext-total"><span class="ext-total-l">Outside, all time</span>'
+      +'<span class="ext-total-v">'+escH(fmtMoney(extTotalBetween(null,null)))+'</span></div>';
+  }
+  /* The names he has used before, offered back. He types the same half-dozen
+     for years, and a typo makes a second operator out of one. */
+  var dl=document.getElementById('ext-sources');
+  if(dl){
+    var seen={},opts='';
+    (EXTERNAL_EARNINGS||[]).forEach(function(e){
+      var n=String(e.source||'').trim();
+      if(!n||seen[n])return; seen[n]=1; opts+='<option value="'+escH(n)+'"></option>';
+    });
+    dl.innerHTML=opts;
+  }
+}
+
+/* The literal components, never new Date('2026-10-05') — CLAUDE.md. */
+function _extDay(ymd){
+  var p=String(ymd||'').split('-');
+  if(p.length!==3)return String(ymd||'');
+  var d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2]));
+  if(isNaN(d.getTime()))return String(ymd);
+  /* Built from the components, not from the locale: en-GB now renders
+     September as "Sept", which sits beside "5 Oct" looking like a different
+     system wrote it. Every other short date in this app uses these three
+     letters. */
+  var M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return d.getUTCDate()+' '+M[d.getUTCMonth()];
+}
+
+async function extAdd(){
+  var a=document.getElementById('ext-amount'), srcEl=document.getElementById('ext-source'), dEl=document.getElementById('ext-date');
+  if(!a||!srcEl||!dEl)return;
+  var amount=String(a.value||'').trim();
+  var source=String(srcEl.value||'').trim();
+  var date=String(dEl.value||'').trim();
+  if(!amount||!Number(amount)){ showToast('Enter an amount'); a.focus(); return; }
+  if(!source){ showToast('Say who the work was for'); srcEl.focus(); return; }
+  if(!date){ showToast('Pick a date'); dEl.focus(); return; }
+  try{
+    var r=await fetch('/api/external-earnings',{method:'POST',credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({amount:amount,source:source,date:date})});
+    var d=await r.json();
+    if(!r.ok||!d.ok){ showToast(d.error||'Could not add that'); return; }
+    a.value='';
+    showToast('Added '+fmtMoney(Number(d.entry.amount)||0)+' from '+(d.entry.source||''));
+    await extLoad();
+    buildEarnings();
+  }catch(e){ showToast('Network error — nothing was added'); }
+}
+
+async function extRemove(id){
+  if(!await WMAsk.confirm('Remove this outside entry? It comes straight back out of your totals.',{ok:'Remove',cancel:'Keep it'}))return;
+  try{
+    var r=await fetch('/api/external-earnings/'+id,{method:'DELETE',credentials:'include'});
+    var d=await r.json();
+    if(!r.ok||!d.ok){ showToast(d.error||'Could not remove that'); return; }
+    showToast('Removed');
+    await extLoad();
+    buildEarnings();
+  }catch(e){ showToast('Network error — nothing was removed'); }
+}
+
 function buildEarnings(){
   var bookings=(ALL_BOOKINGS_CACHE||[]).filter(isEarning);
   var now=new Date();
@@ -3666,24 +3840,50 @@ function buildEarnings(){
   var monthTotal=sumEarned(monthBookings);
 
   // Populate trio stat cards
-  function setStatCard(id,amount,jobs){
+  /* ── THE TOTAL IS EVERYTHING HE EARNED ─────────────────────────────────
+     Westmere work plus whatever he did for anybody else in the same stretch.
+     The card shows the one figure, because that is the question — what did I
+     make today — and the sub-line says how much of it came from elsewhere, so
+     the number can always be taken apart again. Nothing at all when there was
+     no outside work: there is no split to explain. */
+  function setStatCard(id,amount,jobs,outside){
     var el=document.getElementById(id);
     if(!el)return;
-    el.querySelector('.esk-amount').textContent='£'+amount.toFixed(2);
-    el.querySelector('.esk-jobs').textContent=jobs+' job'+(jobs===1?'':'s');
+    el.querySelector('.esk-amount').textContent='£'+(Math.round((amount+(outside||0))*100)/100).toFixed(2);
+    el.querySelector('.esk-jobs').textContent=jobs+' job'+(jobs===1?'':'s')
+      +(outside?' · £'+Math.round(outside)+' outside':'');
   }
-  setStatCard('earn-stat-today',todayTotal,todayBookings.length);
-  setStatCard('earn-stat-week',thisWeek.total,thisWeek.jobs);
-  setStatCard('earn-stat-month',monthTotal,monthBookings.length);
+  var _wkEnd=new Date(thisWeekStart);_wkEnd.setDate(_wkEnd.getDate()+6);
+  var _wkStartStr=thisWeekStart.toLocaleDateString('sv-SE');
+  var _wkEndStr=_wkEnd.toLocaleDateString('sv-SE');
+  var extToday=extTotalOn(todayStr);
+  var extWeek=extTotalBetween(_wkStartStr,_wkEndStr);
+  var extMonth=extTotalBetween(monthPrefix+'-01',monthPrefix+'-31');
+  setStatCard('earn-stat-today',todayTotal,todayBookings.length,extToday);
+  setStatCard('earn-stat-week',thisWeek.total,thisWeek.jobs,extWeek);
+  setStatCard('earn-stat-month',monthTotal,monthBookings.length,extMonth);
+  extRenderList();
+  /* The date field opens on the day he is looking at, so the common case —
+     "I did a Sussex job tonight" — is two fields and a tap. */
+  var _ed=document.getElementById('ext-date');
+  if(_ed&&!_ed.value)_ed.value=todayStr;
 
   // One line under the trio: how the week is going against the last one, cut
   // at the same weekday so a Tuesday is compared with a Tuesday. `bookings` is
   // already filtered to isEarning, so the same money the cards count.
   var cmpEl=document.getElementById('earn-compare');
   if(cmpEl&&window.WMLifecycle&&window.WMCompact){
-    cmpEl.innerHTML=WMCompact.compareLine(WMLifecycle.weekCompare(bookings,function(b){
-      return Number(b.fare)||0;
-    }));
+    /* THE SAME MONEY AS THE CARDS ABOVE IT. This line still added FARES up
+       while the three figures over it had moved to what he actually earns, so
+       one screen gave two answers to "how is the week going" — and the bigger,
+       wrong one was the one in the sentence. */
+    /* …AND THE OUTSIDE WORK, because the cards above it include it and a
+       sentence that reads £106.50 under a card reading £154.50 is a screen
+       disagreeing with itself. The week maths stays WMLifecycle's — this takes
+       the two ranges it has already worked out and adds what he earned
+       elsewhere inside each of them, then re-derives the three figures that
+       follow from the totals. */
+    cmpEl.innerHTML=WMCompact.compareLine(extIntoCompare(WMLifecycle.weekCompare(bookings,earned)));
   }
 
   // Load mileage stats
@@ -3716,7 +3916,11 @@ function buildEarnings(){
   // cells divided by a rule. Nothing fills — §20.
   document.getElementById('earn-this-week').innerHTML=
     '<div class="wm-weekcard">'
-    +'<div class="wm-weekcard-k">This Week \u00b7 '+fmtRange(thisWeek.start)+'</div>'
+    /* WESTMERE, SAID OUT LOUD. This figure is what the week's Westmere work
+       earned and what the next payment is drawn from; the cards at the top of
+       the page include his outside work as well, and two different figures
+       both called "this week" is how a page stops being trusted. */
+    +'<div class="wm-weekcard-k">This Week \u00b7 Westmere \u00b7 '+fmtRange(thisWeek.start)+'</div>'
     +'<div class="wm-weekcard-v">'+fmtMoney(thisWeek.total)+'</div>'
     +'<div class="wm-weekcard-s">Next payment '+nextPayLabel+'</div>'
     +'<div class="wm-weekcard-pair">'
@@ -3748,7 +3952,9 @@ function buildEarnings(){
   var totalJobs=bookings.length;
   var allEl=document.getElementById('earn-alltime');
   allEl.innerHTML=
-    '<div class="row"><span class="row-k">Total earned</span><span class="row-v" style="color:var(--navy)">'+fmtMoney(totalRev)+'</span></div>'
+    '<div class="row"><span class="row-k">Westmere</span><span class="row-v">'+fmtMoney(totalRev)+'</span></div>'
+    +'<div class="row"><span class="row-k">Outside Westmere</span><span class="row-v">'+fmtMoney(extTotalBetween(null,null))+'</span></div>'
+    +'<div class="row"><span class="row-k">Total earned</span><span class="row-v" style="color:var(--navy)">'+fmtMoney(Math.round((totalRev+extTotalBetween(null,null))*100)/100)+'</span></div>'
     +'<div class="row"><span class="row-k">Total jobs</span><span class="row-v">'+totalJobs+'</span></div>'
     +'<div class="row"><span class="row-k">Average fare</span><span class="row-v">'+fmtMoney(totalJobs?totalFares/totalJobs:0)+'</span></div>';
 
@@ -8266,7 +8472,7 @@ async function loadOwnerBookings(){
     if(_onPg('toconfirm'))buildToConfirm();
     if(_onPg('completed'))buildCompleted();
     if(_onPg('calendar'))buildCalendar();
-    if(_onPg('earnings'))buildEarnings();
+    if(_onPg('earnings'))extLoad().then(buildEarnings);
     // ...and the full-screen trip page, which sits OVER all of them. Without
     // this the owner taps Delete (or Mark as Paid, or Send Estimate) on the
     // trip page, the server does the work, the list rebuilds underneath — and
@@ -9758,7 +9964,7 @@ setInterval(function(){
 }, 30000);
 </script>
 
-<script src="/config.js?v=2026-10-06b"></script>
-<script src="/wm-realtime.js?v=2026-10-06b"></script>
+<script src="/config.js?v=2026-10-07a"></script>
+<script src="/wm-realtime.js?v=2026-10-07a"></script>
 </body>
 </html>

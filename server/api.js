@@ -5721,6 +5721,94 @@ router.get('/stats', (req, res) => {
   });
 });
 
+/* ── EARNINGS FROM OUTSIDE WESTMERE ───────────────────────────────────────
+   He drives for other operators as well, and that money is his earnings too.
+   It was nowhere in this system, so the figure he read every evening was his
+   Westmere earnings being mistaken for his day.
+
+   THESE ARE NOT BOOKINGS AND MUST NEVER BECOME ONE. A row here has no
+   passenger, no fare, no commission, nothing to invoice and nothing a driver
+   is owed out of it. It adds to HIS total and to nothing else — not turnover,
+   not the ledger, not an operator report — which is the whole reason it has a
+   table of its own. Every screen that shows one shows it named and dated, so a
+   year later it is still obvious which money was whose.
+   GUARDRAIL: server/tests/external-earnings.test.js */
+router.get('/external-earnings', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const db = getDb();
+  const from = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.from || '')) ? req.query.from : null;
+  const to   = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.to   || '')) ? req.query.to   : null;
+  let sql = 'SELECT * FROM external_earnings';
+  const args = [];
+  if (from && to) { sql += ' WHERE earned_on >= ? AND earned_on <= ?'; args.push(from, to); }
+  else if (from)  { sql += ' WHERE earned_on >= ?'; args.push(from); }
+  else if (to)    { sql += ' WHERE earned_on <= ?'; args.push(to); }
+  sql += ' ORDER BY earned_on DESC, id DESC LIMIT 500';
+  const rows = db.prepare(sql).all(...args);
+  const total = Math.round(rows.reduce((t, r) => t + (Number(r.amount) || 0), 0) * 100) / 100;
+  res.json({ ok: true, entries: rows, total });
+});
+
+router.post('/external-earnings', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const b = req.body || {};
+  /* A UK WALL-CLOCK DATE, like every other date in this system. Defaulting to
+     "today" here would default to the SERVER's today, which on Railway is UTC —
+     an entry added at half past midnight would land on yesterday. The app sends
+     the date it is showing him. */
+  const date = String(b.date || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return res.status(400).json({ error: 'A date is needed, as YYYY-MM-DD' });
+  }
+  const amount = Math.round(Number(String(b.amount).replace(/[^0-9.\-]/g, '')) * 100) / 100;
+  if (!isFinite(amount) || amount === 0) {
+    return res.status(400).json({ error: 'Enter an amount' });
+  }
+  /* NEGATIVE IS ALLOWED, because a correction has to be possible and editing a
+     figure in place would leave no trace of what it used to say. It is bounded
+     so a slipped keyboard cannot put six figures into his year. */
+  if (Math.abs(amount) > 100000) {
+    return res.status(400).json({ error: 'That amount looks wrong — check it' });
+  }
+  const source = String(b.source || '').trim().slice(0, 60);
+  if (!source) {
+    return res.status(400).json({ error: 'Say who the work was for — Uber, Sussex, Southern…' });
+  }
+  const note = String(b.note || '').trim().slice(0, 200) || null;
+  const db = getDb();
+  const id = db.prepare(`INSERT INTO external_earnings (earned_on, amount, source, note, created_by)
+                         VALUES (?,?,?,?,?)`)
+    .run(date, amount, source, note, req.auth.id).lastInsertRowid;
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run(req.auth.type || 'user', req.auth.id, 'external_earning_added',
+           date + ' ' + source + ' £' + amount.toFixed(2), req.ip);
+  } catch (_) {}
+  res.json({ ok: true, entry: db.prepare('SELECT * FROM external_earnings WHERE id = ?').get(id) });
+});
+
+router.delete('/external-earnings/:id', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid id' });
+  const db = getDb();
+  const row = db.prepare('SELECT * FROM external_earnings WHERE id = ?').get(id);
+  if (!row) return res.status(404).json({ error: 'Not found' });
+  db.prepare('DELETE FROM external_earnings WHERE id = ?').run(id);
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run(req.auth.type || 'user', req.auth.id, 'external_earning_removed',
+           row.earned_on + ' ' + row.source + ' £' + Number(row.amount).toFixed(2), req.ip);
+  } catch (_) {}
+  res.json({ ok: true });
+});
+
 // ── Mileage stats (for tax / HMRC purposes) ─────────────────────────────
 // Returns trip miles + dead miles for today, this week, this month,
 // this tax year (6 Apr → 5 Apr), and all-time. Includes only non-cancelled

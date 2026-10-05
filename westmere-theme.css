@@ -3292,3 +3292,102 @@ input[type="range"]:focus-visible{ outline: 2px solid var(--westmere-gold); outl
    once the name and the payout have had their share. */
 .wm-drv-acts{ display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .4rem; }
 .wm-drv-acts .wm-adjust{ margin-left: 0; }
+
+
+/* ══ §36 · EARNINGS FROM OUTSIDE WESTMERE ════════════════════════════════
+   A short form he fills in at the end of a day — amount, who it was for, and
+   the day it was. On a phone the three fields stack and the button is full
+   width; there is nothing here that needs to be side by side, and a row of
+   three 100px inputs is how a form stops being fillable with a thumb.
+
+   NAMED, NOT HIGHLIGHTED. An outside entry is not an exception or a warning,
+   so it is not coloured: it carries a gold rule at its head like any other
+   section (§20 — nothing highlights by filling), and the source name does the
+   distinguishing. The TOTAL line is the one piece of emphasis, because it is
+   the answer he came to the page for.
+   GUARDRAIL: server/tests/external-earnings.test.js */
+.ext-add{ display: grid; gap: .55rem; padding: .2rem 0 .9rem; }
+.ext-f{ display: flex; flex-direction: column; gap: .25rem; }
+.ext-l{
+  font-family: var(--sans);
+  font-size: .72rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--westmere-gold-ink);
+}
+.ext-add .fi{ min-height: 44px; font-size: 1rem; }
+.ext-add-btn{
+  width: 100%;
+  min-height: 46px;
+  padding: .6rem 1rem;
+  border-radius: 8px;
+  font-family: var(--sans);
+  font-size: .82rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  background: var(--westmere-white);
+  color: var(--westmere-navy);
+  border: var(--border-strong, 1.5px) solid var(--westmere-navy);
+  cursor: pointer;
+}
+@media (min-width: 560px){
+  .ext-add{ grid-template-columns: 7rem 1fr 9.5rem auto; align-items: end; }
+  .ext-add-btn{ width: auto; }
+}
+
+/* One entry: what it was worth, who it was for, and the day — with a quiet
+   way to take it off again, because the only correction for a typed figure is
+   removing it and typing it once more. */
+.ext-row{
+  display: flex;
+  align-items: baseline;
+  gap: .6rem;
+  padding: .55rem 0;
+  border-top: var(--border-hair) solid var(--westmere-line);
+}
+.ext-row-amt{
+  font-family: var(--serif);
+  font-size: 1.02rem;
+  color: var(--westmere-navy);
+  white-space: nowrap;
+}
+.ext-row-who{ flex: 1; min-width: 0; font-size: .92rem; color: var(--westmere-navy);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ext-row-when{
+  font-family: var(--sans);
+  font-size: .74rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--westmere-muted);
+  white-space: nowrap;
+}
+.ext-row-x{
+  background: transparent;
+  border: var(--border-hair) solid var(--westmere-line-strong);
+  border-radius: 6px;
+  padding: .1rem .45rem;
+  font-family: var(--sans);
+  font-size: .72rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--westmere-navy);
+  cursor: pointer;
+}
+.ext-total{
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: .6rem;
+  margin-top: .7rem;
+  padding-top: .6rem;
+  border-top: var(--border-hair) solid var(--westmere-gold);
+}
+.ext-total-l{
+  font-family: var(--sans);
+  font-size: .74rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--westmere-gold-ink);
+}
+.ext-total-v{ font-family: var(--serif); font-size: 1.18rem; color: var(--westmere-navy); }
+.ext-none{ padding: .8rem 0 .2rem; font-size: .88rem; color: var(--westmere-ink-soft); line-height: 1.5; }

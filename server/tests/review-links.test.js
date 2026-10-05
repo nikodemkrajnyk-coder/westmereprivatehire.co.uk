@@ -73,8 +73,19 @@ test('both are framed emailBtn buttons — no fill, no gold, and green ONLY on T
      navy one. Nothing else in this email may wear a brand colour — gold, the
      WhatsApp green and Instagram pink all still fail, and the green itself is
      allowed only on the Trustpilot CTA. */
-  const BANNED = /#b78635|#c9a227|#d4af37|#25D366|#2D6E47|#e1306c|goldenrod/i;
-  assert.ok(!BANNED.test(HTML), 'a brand or gold colour is in the review email');
+  /* The "no gold" half of this dates from when the emails were monochrome.
+     They carry the house palette again — a gold rule under the wordmark, gold
+     eyebrows — so the rule is now the one it was always for: no BUTTON wears a
+     brand colour, and no gold outside the two the theme declares.
+     GUARDRAIL: server/tests/button-style.test.js owns the palette itself. */
+  const BANNED = /#b78635|#d4af37|#25D366|#2D6E47|#e1306c|goldenrod/i;
+  assert.ok(!BANNED.test(HTML), 'a brand or off-palette colour is in the review email');
+  const btns = [...HTML.matchAll(/<td[^>]*style="([^"]*)"[^>]*>\s*(?:<!--[\s\S]*?-->\s*)?<a\b/g)].map((m) => m[1]);
+  assert.ok(btns.length >= 2, 'the review email has fewer than two framed buttons');
+  for (const b of btns) {
+    assert.ok(!/#C9A227|#8A6A12/i.test(b),
+      'a review button has been dressed in gold — the CTAs are frames: ' + b.slice(0, 90));
+  }
   // The green appears, and only inside the Trustpilot button.
   assert.ok(/#00B67A/i.test(HTML), 'the Trustpilot button lost its brand green');
   const tpBtn = /<td[^>]*>[\s\S]{0,900}?Review us on Trustpilot[\s\S]{0,60}?<\/a>/.exec(HTML);

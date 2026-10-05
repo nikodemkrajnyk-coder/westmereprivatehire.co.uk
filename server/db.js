@@ -1171,6 +1171,36 @@ function migrate() {
      the balance reads — so it records what it was for. */
   try { db.exec(`ALTER TABLE driver_settlements ADD COLUMN applied_json TEXT`); } catch(_){}
 
+  /* ── WORK HE DID THAT DID NOT COME THROUGH WESTMERE ───────────────────────
+     He drives for other operators as well — Uber, Sussex, Southern — and that
+     money is his earnings too. It was nowhere in this system, so the figure he
+     looked at every evening was his Westmere earnings being read as his day.
+
+     ITS OWN TABLE, NOT A BOOKING. A row here is not a journey: there is no
+     passenger, no fare, no commission, nothing to invoice and nothing a driver
+     is owed out of it. Writing it as a booking would put work Westmere never
+     did into the turnover, the VAT position and every operator report — which
+     is the opposite of the point. Kept separate, it adds to HIS total and to
+     nothing else, and a year later it is still obvious which money was whose.
+
+     `earned_on` is a UK wall-clock date (YYYY-MM-DD), like bookings.date — see
+     the timezone invariant in CLAUDE.md. created_at is a real instant, for audit.
+     GUARDRAIL: server/tests/external-earnings.test.js */
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS external_earnings (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        earned_on  TEXT    NOT NULL,
+        amount     REAL    NOT NULL,
+        source     TEXT    NOT NULL,
+        note       TEXT,
+        created_at TEXT    NOT NULL DEFAULT (datetime('now')),
+        created_by INTEGER REFERENCES users(id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_external_earnings_date ON external_earnings(earned_on);
+    `);
+  } catch (e) { console.error('[DB] external_earnings table failed:', e.message); }
+
   // Denormalised flag + human-readable summary of the LATEST open change
   // request, carried on the booking row itself. Deliberate duplication: the
   // owner and admin lists both read `SELECT b.*`, so the "Change requested"

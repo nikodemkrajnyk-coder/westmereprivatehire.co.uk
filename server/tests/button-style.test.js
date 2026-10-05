@@ -378,17 +378,24 @@ const SERVER_SURFACES = ['server/email.js', 'server/invoice-pdf.js', 'server/pub
    is what he reported: a black-and-white document beside a gold app.
 
    The rule that still matters is the one underneath: no CREAM (the paper is
-   white), and no gold INVENTED at the call site. So the invoice may use
-   exactly the two theme golds, declared once at the top of the file where the
-   contrast guard can find them — and nothing else warm. The emails stay navy:
-   nobody has asked to change them, and an email client is not a place to
-   discover a new palette. */
+   white), and no gold INVENTED at the call site. So a surface may use exactly
+   the two theme golds, declared once at the top of the file where the contrast
+   guard can find them — and nothing else warm.
+
+   THE EMAILS WERE THE LAST ONE LEFT BEHIND. This file used to say they stayed
+   navy because nobody had asked; the owner has now asked, for the same reason
+   he asked about the invoice — a plain document arriving from a business whose
+   every other surface is navy, gold and white. So they are held to the invoice's
+   rule rather than to a rule of their own: two golds, declared by name, and the
+   ornament gold never used as type. */
 const THEME_GOLDS = ['#C9A227', '#8A6A12'];   // --westmere-gold, --westmere-gold-ink
 
 test('no cream anywhere, and gold only where the owner asked for it', () => {
   const found = [];
   for (const f of SERVER_SURFACES) {
-    const invoice = /invoice-pdf/.test(f);
+    /* The two surfaces the owner asked to carry the palette. public-api.js
+       serves PAGES, which take their gold from the stylesheet like any page. */
+    const themed = /invoice-pdf|email\.js/.test(f);
     const lines = read(f).split('\n');
     for (const c of coloursIn(read(f))) {
       const hue = warmHue(c.r, c.g, c.b);
@@ -397,9 +404,11 @@ test('no cream anywhere, and gold only where the owner asked for it', () => {
         found.push(f + ':' + c.line + '  ' + c.value + '  (cream — the paper is white)');
         continue;
       }
-      if (invoice && THEME_GOLDS.includes(String(c.value).toUpperCase())) {
+      if (themed && THEME_GOLDS.includes(String(c.value).toUpperCase())) {
         /* …and only as a named constant, never typed into a draw call. */
-        const decl = /^const\s+(ACCENT|GOLD_INK)\s*=/.test((lines[c.line - 1] || '').trim());
+        const line = (lines[c.line - 1] || '').trim();
+        const decl = /^const\s+(ACCENT|GOLD_INK)\s*=/.test(line)
+                  || /^GOLD_INK\s+#8A6A12|^ACCENT\s+#C9A227/.test(line);   /* the palette note above them */
         if (decl) continue;
         found.push(f + ':' + c.line + '  ' + c.value + '  (gold typed in — use ACCENT or GOLD_INK)');
         continue;
@@ -408,7 +417,7 @@ test('no cream anywhere, and gold only where the owner asked for it', () => {
     }
   }
   assert.deepStrictEqual(found, [],
-    'cream must not exist, and only the two theme golds may appear, on the invoice only:\n      ' +
+    'cream must not exist, and only the two theme golds may appear, declared by name:\n      ' +
     found.slice(0, 20).join('\n      '));
 });
 
@@ -428,6 +437,15 @@ test('the palette is declared once, by name, in each file', () => {
   assert.ok(/const\s+GOLD_INK\s*=\s*'#8A6A12'/.test(inv), 'and its type gold must be --westmere-gold-ink');
   assert.ok(!/fillColor\('#C9A227'\)|fillColor\('#c9a227'\)/.test(inv),
     'the ornament gold must never be used as TYPE — it does not clear 4.5:1');
+  /* The same rule in the emails. ACCENT there is 2.4:1 on white: it draws the
+     rule under the wordmark and the border round the payout block, and if it
+     ever reaches a `color:` the message has unreadable type in it. */
+  const em = read('server/email.js');
+  assert.ok(/const\s+ACCENT\s*=\s*'#C9A227'/.test(em), 'the email ornament must be --westmere-gold');
+  assert.ok(/const\s+GOLD_INK\s*=\s*'#8A6A12'/.test(em), 'and its type gold must be --westmere-gold-ink');
+  assert.ok(!/color:\$\{ACCENT\}/.test(em),
+    'the ornament gold is being used as type in an email — it does not clear 4.5:1');
+  assert.ok(/color:\$\{GOLD_INK\}/.test(em), 'no email uses the legible gold at all — the eyebrows are plain');
   // The served pages carry their palette as CSS custom properties instead.
   const api = read('server/public-api.js');
   assert.ok(!/--gold\b/.test(api), 'server/public-api.js still defines or uses a --gold token');

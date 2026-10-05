@@ -388,9 +388,26 @@ test('the template renders through the shipped sender', async () => {
   assert.ok(RENDERED.length > 2000, 'the email rendered empty');
 });
 
-test('no gold and no green anywhere in it', () => {
-  const BANNED = /#b78635|#c9a227|#d4af37|#25D366|#2D6E47|goldenrod/i;
-  assert.ok(!BANNED.test(RENDERED), 'a gold or green value is in the booking-updated email');
+test('nothing in the diff is COLOURED to rank it', () => {
+  /* This read "no gold anywhere", from when the emails were monochrome. They
+     carry the brand again now — a gold rule under the wordmark, gold eyebrows —
+     and the rule that actually matters here is narrower and unchanged: in a
+     "this was X, it is now Y" line, nothing is coloured to say which one is
+     good news. A strike-through and a weight carry the whole message, and they
+     are the only pair of signals every mail client renders.
+
+     So: no green anywhere (there is no green in this system at all), and no
+     colour of any kind inside a diff row. */
+  assert.ok(!/#25D366|#2D6E47|green/i.test(RENDERED), 'a green value is in the booking-updated email');
+  assert.ok(!/#b78635|#d4af37|goldenrod/i.test(RENDERED),
+    'a gold that is not one of the two theme golds is in the email');
+
+  const diffs = [...RENDERED.matchAll(/<td[^>]*>\s*<span[^>]*line-through[\s\S]*?<\/td>/g)].map((m) => m[0]);
+  assert.ok(diffs.length >= 1, 'the rendered email has no diff rows to check');
+  for (const row of diffs) {
+    assert.ok(!/#C9A227|#8A6A12/i.test(row),
+      'a diff row is picked out in gold — the strike-through and the weight say it: ' + row.slice(0, 120));
+  }
 });
 
 test('every button is a frame — a white cell with a navy border, never a fill', () => {

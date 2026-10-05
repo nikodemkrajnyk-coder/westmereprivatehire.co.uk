@@ -152,12 +152,34 @@ test("the owner's earnings page asks the same rule", () => {
       name + ' is still a sum of fares');
   }
   assert.ok(/weeks\[k\]\.total\+=earned\(b\)/.test(fn), 'the weekly totals still add fares up');
+  /* THE SENTENCE UNDER THE CARDS COUNTS TOO. This line was still adding fares
+     up after the three figures above it had moved, so one screen gave two
+     answers to "how is the week going" — and the bigger, wrong one was the one
+     written out in words. */
+  assert.ok(/weekCompare\(bookings,earned\)/.test(fn),
+    'the week-against-last-week line still compares FARES while the cards show income');
+  assert.ok(!/weekCompare\([^)]*Number\(b\.fare\)/.test(fn), 'the fare comparison is back');
   /* THE AVERAGE FARE IS STILL A FARE. What a journey costs a customer and what
      the firm keeps of it are different questions; this row asks the first. */
   assert.ok(/totalFares/.test(fn) && /totalFares\/totalJobs/.test(fn),
     'the average fare must still average FARES, not income');
   assert.ok(/toLocaleDateString\('sv-SE',\{timeZone:'Europe\/London'\}\)/.test(fn),
     "the earnings page's today is still the host's, not the UK's");
+});
+
+test('a cancelled journey earns nothing, even when it was paid for', () => {
+  /* A cancelled booking keeps its paid_at until somebody refunds it, and the
+     owner's earnings test asked only whether the money had ARRIVED — so a
+     journey that never ran sat in the day's total. Trip History has said "it
+     did not run, so it counts nothing" for months; this is the same rule where
+     the money is added up. Found while checking his figures were his own. */
+  const fn = fnBlock(strip(read('westmere-owner.html')), 'isEarning');
+  assert.ok(fn, 'isEarning is gone');
+  assert.ok(/statusOf\(b\)==='cancelled'\)return false/.test(fn),
+    'a cancelled booking that was paid for still counts as earnings');
+  const cancelledPaid = { date: '2026-10-05', fare: 85, status: 'cancelled', paid_at: '2026-09-30 11:20' };
+  /* and the shared rule agrees about what it is */
+  assert.strictEqual(LC.statusOf(cancelledPaid), 'cancelled');
 });
 
 test('this guardrail is wired into npm test', () => {

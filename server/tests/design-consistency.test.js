@@ -398,7 +398,12 @@ test('the line says up and down in WORDS, never in red and green', () => {
 test('both apps draw the comparison line, from the shared module', () => {
   for (const [who, src] of [['owner', OWNER], ['admin', ADMIN]]) {
     assert.ok(/class="wm-compare"/.test(src), who + ' has no place to put the comparison line');
-    assert.ok(/WMCompact\.compareLine\(WMLifecycle\.weekCompare\(/.test(src),
+    /* The owner's line is wrapped in extIntoCompare, which adds the work he
+       did outside Westmere into the two ranges the module worked out — the
+       cards above it include that money, so the sentence has to. What this
+       test is for is unchanged: neither app may compute a week of its own.
+       GUARDRAIL: server/tests/external-earnings.test.js */
+    assert.ok(/WMCompact\.compareLine\((?:extIntoCompare\()?WMLifecycle\.weekCompare\(/.test(src),
       who + ' is not building the line from the shared module');
   }
   assert.ok(/\.wm-compare\{/.test(S33), 'the comparison line is unstyled');

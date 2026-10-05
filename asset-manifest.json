@@ -1,8 +1,8 @@
 {
-  "version": "2026-10-06b",
+  "version": "2026-10-07a",
   "files": {
     "address-normalize.js": "41ca552da0603d87",
-    "westmere-theme.css": "364823c3b76832e7",
+    "westmere-theme.css": "085d7cb3b5cdab35",
     "wm-address-lookup.js": "f8bd86d85c1ef50c",
     "wm-ask.js": "4cfa2ee242ddfc78",
     "wm-buttons.css": "10f915186fe5294b",

@@ -252,6 +252,33 @@ test('the shell carries the colour-scheme opt-outs and the dark overrides', () =
   assert.ok(/<body[^>]*bgcolor="#EEF2F5"/.test(html), 'the body must state its own background');
 });
 
+test('the gold survives a client that recolours the message', () => {
+  /* THE EMAILS CARRY THE HOUSE PALETTE AGAIN and gold is the one colour in them
+     that is not navy — which makes it the one a dark-mode client is most likely
+     to take. Every piece of gold TYPE wears .wm-gold, and both override blocks
+     put it back; otherwise the eyebrows are the first thing to go illegible,
+     which is the exact failure a customer photographed.
+
+     And it must be put back as the LEGIBLE gold. #8A6A12 is 4.7:1 on white;
+     the ornament gold is 2.4:1 and has no business in a colour rule. */
+  for (const [name] of CUSTOMER_EMAILS) {
+    const html = RENDERED[name];
+    assert.ok(/\.wm-gold\{color:#8A6A12!important\}/i.test(html),
+      name + ': the dark-mode block does not restore the gold');
+    assert.ok(/\[data-ogsc\] \.wm-gold,\[data-ogsb\] \.wm-gold\{color:#8A6A12!important\}/i.test(html),
+      name + ': Outlook.com would keep its own colour on the eyebrows');
+    const css = html.slice(0, html.indexOf('</style>') + 8);
+    const body = html.slice(html.indexOf('</style>') + 8);
+    assert.ok(!/#C9A227[^;]*!important/i.test(css),
+      name + ': the ORNAMENT gold is in a colour rule — it does not clear 4.5:1');
+    /* Every gold-typed element in the body carries the class. */
+    for (const m of body.matchAll(/<([a-z]+)([^>]*)style="([^"]*color:#8A6A12[^"]*)"/gi)) {
+      assert.ok(/class="[^"]*wm-gold/.test(m[2]),
+        name + ': gold type with no .wm-gold on it — <' + m[1] + ' ' + m[3].slice(0, 60) + '>');
+    }
+  }
+});
+
 test('the card and its cells state a background as an ATTRIBUTE too', () => {
   /* bgcolor survives clients that strip or rewrite inline CSS. */
   const html = RENDERED['acknowledgement'];

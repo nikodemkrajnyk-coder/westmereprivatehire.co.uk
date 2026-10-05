@@ -627,7 +627,16 @@ test('both money emails keep the house style — framed, no gold, no green, no f
   for (const [fare, adj] of [[30, { kind: 'refund', amount: 12, paid: 42, method: 'stripe' }],
                              [57.5, { kind: 'topup', amount: 15.5, paid: 42 }]]) {
     const html = await render(fare, adj);
-    assert.ok(!/#b78635|#c9a227|#d4af37|#25D366|#2D6E47|goldenrod/i.test(html), 'gold or green in a money email');
+    /* The emails carry the house palette again — a gold rule under the
+       wordmark, gold eyebrows — so this bans what it was always for: a colour
+       from outside the theme, and no colour at all on the FIGURES. A money
+       email must not say "good news" with a hue; the amount says it.
+       GUARDRAIL: server/tests/button-style.test.js owns the palette. */
+    assert.ok(!/#b78635|#d4af37|#25D366|#2D6E47|goldenrod/i.test(html), 'an off-palette colour in a money email');
+    for (const m of html.matchAll(/<(strong|b)[^>]*style="([^"]*)"/g)) {
+      assert.ok(!/#C9A227|#8A6A12/i.test(m[2]),
+        'a figure in a money email is picked out in gold: ' + m[2].slice(0, 90));
+    }
     for (const m of html.matchAll(/<td[^>]*style="([^"]*border:\d+px solid[^"]*)"[^>]*>\s*<a\b/g)) {
       assert.ok(/background-color:#ffffff/i.test(m[1]), 'a button cell is filled: ' + m[1].slice(0, 80));
     }

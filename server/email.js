@@ -178,7 +178,7 @@ function driverBlockHtml(d) {
   const serif = 'Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif';
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #dfe5ea;margin-top:2px">
   <tr><td style="padding:14px 0 0">
-    <p style="margin:0 0 4px;font-family:${serif};font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Your driver and car</p>
+    <p class="wm-gold" style="margin:0 0 4px;font-family:${serif};font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">Your driver and car</p>
     <p style="margin:0;font-family:${serif};font-size:15px;color:${INK};line-height:1.5">${escHtml(dv.name)}${dv.vehicle ? ' &mdash; ' + escHtml(dv.vehicle) : ''}</p>
     ${dv.known
       ? (dv.reg ? `<p style="margin:2px 0 0;font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:1px;color:${INK_MUTED}">${escHtml(dv.reg)}</p>` : '')
@@ -440,18 +440,35 @@ async function sendEmail(to, subject, html, fromLabel, preheader, opts) {
   }
 }
 
-// ── Palette: navy on white, no gold, no cream ────────────────────────────
-// The single source of truth is westmere-theme.css; these are its tokens
-// transcribed for email, where CSS custom properties cannot be relied on.
-// There is deliberately no gold: accent = navy, and emphasis comes from
-// weight and scale. (Guardrail: button-style.test.js scans this file for any
-// colour in the cream/gold hue band.)
+/* ── Palette: navy ink, white paper, gold accents ─────────────────────────
+   The single source of truth is westmere-theme.css; these are its tokens
+   transcribed for email, where CSS custom properties cannot be relied on.
+
+   THE EMAILS WERE THE LAST SURFACE STILL IN THE OLD MONOCHROME. When the site
+   was stripped to navy on white, "no gold anywhere" was the rule and these
+   went with it. The owner then asked for blue, gold and white, the apps and
+   the invoice were re-skinned, and the emails were left behind — which is what
+   he reported: a plain document arriving from a gold business.
+
+   TWO GOLDS, AND THEY ARE NOT INTERCHANGEABLE. This is the rule the whole
+   system runs on (westmere-theme.css §1):
+
+     ACCENT   #C9A227  ornament ONLY — rules, borders, the hairline under the
+                       wordmark. It is 2.4:1 on white and must never be type.
+     GOLD_INK #8A6A12  the gold that is LEGIBLE — 4.7:1 on white, for the
+                       eyebrows and section labels, and nothing larger.
+
+   Body type stays navy. A gold email is a navy email with gold ornament, not
+   a gold-coloured one — and in a mail client, which may recolour anything it
+   thinks is unstyled, that distinction is what keeps it readable.
+   GUARDRAIL: server/tests/button-style.test.js, email-dark-mode.test.js */
 const BG_OUTER    = '#EEF2F5';   // cool page tint behind the card
 const BG_CARD     = '#FFFFFF';   // letter card
 const INK         = '#102a43';   // --westmere-navy — primary type
 const INK_SOFT    = '#3B5268';   // secondary type
 const INK_MUTED   = '#657485';   // --westmere-muted — labels & footer
-const ACCENT      = '#102a43';   // was gold; the accent is navy now
+const ACCENT      = '#C9A227';   // --westmere-gold — ORNAMENT ONLY, never type
+const GOLD_INK    = '#8A6A12';   // --westmere-gold-ink — the gold that reads as type
 const HAIRLINE    = 'rgba(16,42,67,0.12)';
 const HAIRLINE_S  = '#c8d1d9';   // --westmere-line-strong, solid: VML strokecolor
 // Trustpilot's own green. The ONE third-party colour in this file, and only
@@ -467,7 +484,13 @@ const TRUSTPILOT_GREEN = '#00B67A';
 function detailRow(label, value, opts) {
   opts = opts || {};
   const valSize = opts.large ? 15 : 13;
-  const valColor = opts.gold ? ACCENT : INK;
+  /* ── A VALUE IS NAVY, WHATEVER IT IS ────────────────────────────────────
+     This read opts.gold, and with the palette back in the emails it put a
+     whole data value — "Friday, 9 October 2026 · 05:30" — in gold beside
+     navy ones, which reads as something being WRONG with that row rather than
+     important. Gold is the labels and the rules. Emphasis on a value is
+     weight and size, which is what `large` already does. */
+  const valColor = INK;
   const valWeight = opts.large ? 500 : 400;
   const valStyle = `font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:${valSize}px;color:${valColor};font-weight:${valWeight};line-height:1.45`;
   return `<tr>
@@ -503,7 +526,7 @@ function diffRow(label, wasHtml, nowHtml) {
   <td style="padding:10px 0 10px 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;line-height:1.5;color:${INK}">
     <span style="color:${INK_MUTED};text-decoration:line-through">${wasHtml}</span>
     <span style="color:${INK_MUTED};padding:0 6px">&rarr;</span>
-    <strong style="color:${ACCENT};font-weight:600">${nowHtml}</strong>
+    <strong style="color:${INK};font-weight:600">${nowHtml}</strong>
   </td>
 </tr>`;
 }
@@ -827,6 +850,10 @@ function heroShell(innerHtml, opts) {
   .wm-card,.wm-pad,.wm-cell{background-color:#FFFFFF!important}
   .wm-ink,.wm-ink a{color:#102a43!important}
   .wm-muted{color:#657485!important}
+  /* The eyebrows are the ONE place gold is used as type, and a client that
+     recolours "unstyled" text would take them with it. 8A6A12 is the legible
+     gold — 4.7:1 on white — and the ornament gold must never appear here. */
+  .wm-gold{color:${GOLD_INK}!important}
 }
 [data-ogsc] body,[data-ogsb] body{background:#EEF2F5!important}
 [data-ogsc] .wm-card,[data-ogsb] .wm-card,
@@ -834,6 +861,7 @@ function heroShell(innerHtml, opts) {
 [data-ogsc] .wm-cell,[data-ogsb] .wm-cell{background-color:#FFFFFF!important}
 [data-ogsc] .wm-ink,[data-ogsb] .wm-ink{color:#102a43!important}
 [data-ogsc] .wm-muted,[data-ogsb] .wm-muted{color:#657485!important}
+[data-ogsc] .wm-gold,[data-ogsb] .wm-gold{color:${GOLD_INK}!important}
 @media(max-width:600px){.wm-pad{padding-left:22px!important;padding-right:22px!important}.wm-copy{display:block!important;width:100%!important}.wm-badge{display:block!important;width:100%!important;max-width:100%!important;text-align:left!important;padding:14px 0 0 0!important}.wm-badge p{letter-spacing:1.2px!important}}</style>
 </head>
 <body class="wm-body" bgcolor="#EEF2F5" style="margin:0;padding:0;background:#EEF2F5;background-color:#EEF2F5;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%">
@@ -846,7 +874,11 @@ function heroShell(innerHtml, opts) {
   <div style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:22px;color:#102a43;letter-spacing:1px;line-height:1">W</div>
   <div style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:29px;letter-spacing:11px;color:#102a43;font-weight:400;margin-top:6px">WESTMERE</div>
   <div style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:10px;letter-spacing:5px;color:#102a43;text-transform:uppercase;margin-top:9px">Private Hire &middot; Sussex</div>
-  <div style="width:60px;height:1px;background:#c8d1d9;line-height:1px;font-size:0;margin:14px auto 0">&nbsp;</div>
+  <!-- THE GOLD RULE UNDER THE WORDMARK. The one ornament every email carries,
+       and the thing that makes an envelope from this firm recognisable before
+       a word of it is read. Ornament gold, never type gold: it does not have
+       to be legible, it has to be the brand. -->
+  <div style="width:60px;height:1px;background:${ACCENT};line-height:1px;font-size:0;margin:14px auto 0">&nbsp;</div>
 </td></tr>
 
 
@@ -1072,7 +1104,7 @@ function calendarBlock(d, opts) {
   <p style="margin:22px 0 0"><a href="${escHtml(g)}" style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:${INK};text-decoration:none;border-bottom:1px solid ${ACCENT}">Add to calendar &rarr;</a></p>` : '';
   }
   return `
-  <p style="margin:22px 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Add to calendar</p>
+  <p class="wm-gold" style="margin:22px 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">Add to calendar</p>
   <p style="margin:0 0 8px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">The job is attached as a calendar file &mdash; open <strong style="color:${INK}">${escHtml((d.ref || 'job') + '.ics')}</strong> and it goes straight into your diary${asap ? ' as an all-day entry, because this one is ASAP' : ''}.${g ? ' Or add it to Google Calendar:' : ''}</p>
   ${g ? `<p style="margin:0"><a href="${escHtml(g)}" style="font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:${INK_MUTED};text-decoration:none;border-bottom:1px solid ${HAIRLINE};padding-bottom:2px">Add to Google Calendar &rarr;</a></p>` : ''}`;
 }
@@ -1098,7 +1130,7 @@ function jobDetailRows(d) {
   const dateStr = formatDate(d.date, d.time);
   let rows = '';
   rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:' + INK + '">' + escHtml(d.ref) + '</span>');
-  rows += detailRow('Date & Time', escHtml(dateStr), { gold: true });
+  rows += detailRow('Date & Time', escHtml(dateStr));
   rows += rowDivider();
   rows += navAddrRow('Pickup', d.pickup, d.pickup_lat, d.pickup_lng);
   if (d.stop_address) rows += navAddrRow('Stop', d.stop_address, d.stop_lat, d.stop_lng);
@@ -1123,7 +1155,7 @@ function passengerBlockHtml(d) {
   const cPhone = String(d.customer_phone || '').trim();
   if (!cName && !cPhone) return '';
   return `
-  <p style="margin:22px 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Your passenger</p>
+  <p class="wm-gold" style="margin:22px 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">Your passenger</p>
   ${buildDetailsTable(
       (cName ? detailRow('Name', escHtml(cName)) : '') +
       (cName && cPhone ? rowDivider() : '') +
@@ -1195,7 +1227,7 @@ async function sendAdhocJobOffer(d) {
   }
 
   const body = `
-  <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Job Request</p>
+  <p class="wm-gold" style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">Job Request</p>
   ${buildDetailsTable(rows)}
   ${fareBlock}
   ${clientBlock}
@@ -1251,7 +1283,7 @@ async function sendCustomerDriverAssigned(booking) {
   if (!to) return false;
   const when = formatDate(booking.date) + (booking.time && booking.time !== 'ASAP' ? ' at ' + booking.time : '');
   const body = `
-  <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${INK_MUTED}">Your driver · ${escHtml(booking.ref || '')}</p>
+  <p class="wm-gold" style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">Your driver · ${escHtml(booking.ref || '')}</p>
   <p style="margin:0 0 16px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:16px;color:${INK};line-height:1.6">Your car for ${escHtml(when)} is arranged. Here is who will be collecting you.</p>
   ${driverBlockHtml(booking)}
   ${buildDetailsTable(jobDetailRows(booking))}
@@ -1414,7 +1446,7 @@ function buildDriverDispatch(d) {
   </table>`;
 
   const body = `
-  <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${INK_MUTED}">${asOperator ? 'Job request' : 'Your job'} · ${escHtml(d.ref || '')}</p>
+  <p class="wm-gold" style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">${asOperator ? 'Job request' : 'Your job'} · ${escHtml(d.ref || '')}</p>
   ${buildDetailsTable(rows)}
   ${payBlock}
   ${passengerBlockHtml(d)}
@@ -1517,7 +1549,7 @@ async function sendDriverPayoutChanged(d, previous) {
   const dateStr = formatDate(d.date, d.time);
 
   const body = `
-  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT}">Payout updated &middot; ${escHtml(d.ref || '')}</p>
+  <p class="wm-gold" style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK}">Payout updated &middot; ${escHtml(d.ref || '')}</p>
   <p style="margin:0 0 16px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:18px;color:${INK};line-height:1.4">The payout on one of your jobs has been ${up ? 'increased' : 'changed'}.</p>
   ${buildDetailsTable(jobDetailRows(d))}
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${ACCENT};margin:20px 0 4px">
@@ -1552,7 +1584,7 @@ async function sendDriverJobReminder(d) {
   const dateStr = formatDate(d.date, d.time);
 
   const body = `
-  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Reminder</p>
+  <p class="wm-gold" style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">Reminder</p>
   <p style="margin:0 0 16px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:18px;color:${INK};line-height:1.4">You have a job coming up.</p>
   ${buildDetailsTable(jobDetailRows(d))}
   ${driverPayBlockHtml(d)}
@@ -1602,7 +1634,7 @@ async function sendDriverJobOffer(d) {
   }
 
   const body = `
-  <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Job Request</p>
+  <p class="wm-gold" style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">Job Request</p>
   ${buildDetailsTable(rows)}
   ${payBlock}
   ${calendarBlock(d)}
@@ -1633,7 +1665,7 @@ async function sendDriverMessage(driver, message, opts) {
     `<p style="margin:0 0 16px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};line-height:1.75">${p.replace(/\n/g, '<br>')}</p>`
   ).join('');
   const html = letterEmail(`
-  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">A message from Westmere</p>
+  <p class="wm-gold" style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">A message from Westmere</p>
   <p style="margin:0 0 16px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};line-height:1.55">${escHtml(first)},</p>
   ${paras}
   <p style="margin:20px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">Reply to this email or call 07930&nbsp;342593.</p>`,
@@ -1665,7 +1697,7 @@ async function sendOutreachMessage(to, subject, message, opts) {
   ).join('');
 
   const html = letterEmail(`
-  <p style="margin:0 0 18px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">${escHtml(o.eyebrow || 'A note from Westmere')}</p>
+  <p class="wm-gold" style="margin:0 0 18px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">${escHtml(o.eyebrow || 'A note from Westmere')}</p>
   ${paras}`, { title: subj });
 
   // Replies come back to Westmere, not to the void — sendEmail sets Reply-To
@@ -2126,7 +2158,7 @@ async function sendAdminAlert(booking) {
   const puWaze    = 'https://waze.com/ul?q=' + puQ + '&navigate=yes';
   const routeWaze = 'https://waze.com/ul?q=' + deQ + '&navigate=yes';
   const navLink = (url) =>
-    ' <a href="' + url + '" style="color:' + ACCENT + ';font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:10px;letter-spacing:.5px;text-decoration:none;margin-left:8px">Waze</a>';
+    ' <a href="' + url + '" style="color:' + INK + ';font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:10px;letter-spacing:.5px;text-decoration:none;margin-left:8px">Waze</a>';
   // DISPLAY is shortened; the Waze q= above keeps the FULL address for routing.
   rows += detailRow('Pickup', dispAddr(pickup) + navLink(puWaze));
   if (stop_address) {
@@ -2143,12 +2175,12 @@ async function sendAdminAlert(booking) {
   const alertBags = bagsText(bags);
   if (alertBags) rows += detailRow('Luggage', escHtml(alertBags));
   rows += rowDivider();
-  rows += detailRow('Fare', fareStr, { gold: true, large: true });
+  rows += detailRow('Fare', fareStr, { large: true });
   rows += detailRow('Payment', payment === 'card' ? 'Paid online' : (payment === 'cash' ? 'Cash on the day' : 'To be decided'));
   if (notes) { rows += rowDivider(); rows += detailRow('Notes', escHtml(notes)); }
 
   const body = `
-  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">New booking</p>
+  <p class="wm-gold" style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">New booking</p>
   <p style="margin:0 0 22px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">A new booking has just landed. Full details below.</p>
   ${buildDetailsTable(rows)}`;
 
@@ -2198,7 +2230,7 @@ async function sendCustomerJourneyReminder(booking, opts) {
 
   let rows = '';
   rows += detailRow('Reference', '<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:' + INK + '">' + escHtml(ref) + '</span>');
-  rows += detailRow('Date & Time', escHtml(dateStr), { gold: true });
+  rows += detailRow('Date & Time', escHtml(dateStr));
   rows += rowDivider();
   rows += detailRow('Pickup', dispAddr(pickup));
   if (stop_address) rows += detailRow('Stop', dispAddr(stop_address));
@@ -2238,7 +2270,7 @@ async function sendCustomerJourneyReminder(booking, opts) {
   }
 
   const body = `
-  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Your journey</p>
+  <p class="wm-gold" style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">Your journey</p>
   <p style="margin:0 0 8px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:18px;color:${INK};font-weight:400;line-height:1.4">Dear ${escHtml(firstName)}, your journey with us is coming up.</p>
   <p style="margin:0 0 20px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Everything is arranged and we are looking forward to taking you. Your details are below &mdash; do check them over.</p>
   ${buildDetailsTable(rows)}
@@ -2290,12 +2322,12 @@ async function sendOwnerBookingReminder(booking, ownerEmail, nowMs) {
   rows += rowDivider();
   const puWaze = 'https://waze.com/ul?q=' + encodeURIComponent(pickup || '') + '&navigate=yes';
   const deWaze = 'https://waze.com/ul?q=' + encodeURIComponent(destination || '') + '&navigate=yes';
-  const nav = (u) => ' <a href="' + u + '" style="color:' + ACCENT + ';font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:10px;letter-spacing:.5px;text-decoration:none;margin-left:8px">Waze</a>';
+  const nav = (u) => ' <a href="' + u + '" style="color:' + INK + ';font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:10px;letter-spacing:.5px;text-decoration:none;margin-left:8px">Waze</a>';
   rows += detailRow('Pickup', dispAddr(pickup) + nav(puWaze));
   if (stop_address) rows += detailRow('Stop', dispAddr(stop_address));
   rows += detailRow('Drop-off', dispAddr(destination) + nav(deWaze));
   rows += rowDivider();
-  rows += detailRow('Date & Time', escHtml(dateStr), { gold: true });
+  rows += detailRow('Date & Time', escHtml(dateStr));
   const remFlight = dispFlight(booking);
   if (remFlight) rows += detailRow('Flight', escHtml(remFlight));
   if (passengers) rows += detailRow('Passengers', String(passengers));
@@ -2306,7 +2338,7 @@ async function sendOwnerBookingReminder(booking, ownerEmail, nowMs) {
   rows += detailRow('Payment', payment === 'card' ? 'Paid by card' : (payment === 'cash' ? 'Cash on the day' : 'To be decided'));
 
   const body = `
-  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Pickup reminder</p>
+  <p class="wm-gold" style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">Pickup reminder</p>
   <p style="margin:0 0 8px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:18px;color:${INK};font-weight:400;line-height:1.4">A booking is coming up.</p>
   <p style="margin:0 0 22px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Full details below.</p>
   ${buildDetailsTable(rows)}`;
@@ -2428,7 +2460,7 @@ async function sendCustomerWelcome(customer) {
   const firstName = greetingName(full_name);
 
   const body = `
-  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Account opened</p>
+  <p class="wm-gold" style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">Account opened</p>
   <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
   <p style="margin:0 0 18px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Thank you for choosing Westmere Private Hire. Your account has been opened and is ready to use.</p>
 
@@ -2675,7 +2707,7 @@ async function sendInvoiceReminder(recipient, invoiceNo, total, payUrl, accessTo
   </div>` : '';
 
   const body = `
-  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Payment reminder</p>
+  <p class="wm-gold" style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">Payment reminder</p>
   <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
   <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">This is a gentle reminder that invoice <span style="font-family:Menlo,Consolas,monospace;font-size:13px">${escHtml(invoiceNo || '')}</span> for <strong style="color:${INK}">&pound;${totalStr}</strong> remains outstanding.</p>
   <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">If you&rsquo;ve already made payment, please disregard this message &mdash; and thank you.</p>
@@ -2708,7 +2740,7 @@ async function sendPasswordResetEmail(customer, token) {
   const resetUrl = `https://westmereprivatehire.co.uk/westmere-rider.html?reset_token=${token}`;
 
   const body = `
-  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Password reset</p>
+  <p class="wm-gold" style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">Password reset</p>
   <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
   <p style="margin:0 0 22px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">We received a request to reset the password on your Westmere account. Click the button below to choose a new one.</p>
 
@@ -2740,7 +2772,7 @@ async function sendAdminPasswordResetEmail(user, token) {
   const resetUrl = `https://westmereprivatehire.co.uk/westmere-admin.html?reset_token=${token}`;
 
   const body = `
-  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Admin password reset</p>
+  <p class="wm-gold" style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">Admin password reset</p>
   <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
   <p style="margin:0 0 22px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">We received a request to reset the password for your Westmere admin account. Click the button below to choose a new one.</p>
 
@@ -2786,7 +2818,7 @@ async function sendCustomerCancellation(booking) {
     : '';
 
   const body = `
-  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Cancellation</p>
+  <p class="wm-gold" style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">Cancellation</p>
   <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
   <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Unfortunately we\u2019re unable to accommodate your booking. We apologise for the inconvenience.</p>
   ${reasonBlock}
@@ -2868,9 +2900,9 @@ async function sendDriverWelcome(driver) {
   ${buildDetailsTable(
     detailRow('Username', `<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:${INK}">${escHtml(username)}</span>`) +
     rowDivider() +
-    detailRow('Password', `<span style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:${ACCENT}">${escHtml(temp_password || '(use the password you were given)')}</span>`) +
+    detailRow('Password', `<span class="wm-gold" style="font-family:Menlo,Consolas,monospace;font-size:13px;letter-spacing:.5px;color:${GOLD_INK}">${escHtml(temp_password || '(use the password you were given)')}</span>`) +
     rowDivider() +
-    detailRow('Driver App', `<a href="${appUrl}" style="color:${ACCENT};text-decoration:none">westmereprivatehire.co.uk/westmere-driver.html</a>`)
+    detailRow('Driver App', `<a href="${appUrl}" style="color:${INK};text-decoration:none">westmereprivatehire.co.uk/westmere-driver.html</a>`)
   )}
   <p style="margin:22px 0 10px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:${INK_MUTED};font-weight:600">Getting started</p>
   <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.7">1. Open the driver app on your phone and log in with the credentials above.</p>
@@ -2894,7 +2926,7 @@ async function sendVerificationEmail(customer, token) {
   const verifyUrl = `https://westmereprivatehire.co.uk/api/auth/customer/verify?token=${token}`;
 
   const body = `
-  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Verify your email</p>
+  <p class="wm-gold" style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">Verify your email</p>
   <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
   <p style="margin:0 0 22px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};font-style:italic;line-height:1.65">Thank you for creating a Westmere account. Please verify your email address to activate it.</p>
 
@@ -2907,7 +2939,7 @@ async function sendVerificationEmail(customer, token) {
   </table>
 
   <p style="margin:0 0 8px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">If the button above does not work, copy and paste this link into your browser:</p>
-  <p style="margin:0 0 22px;font-family:Menlo,Consolas,monospace;font-size:11px;color:${ACCENT};word-break:break-all;line-height:1.6">${escHtml(verifyUrl)}</p>
+  <p class="wm-gold" style="margin:0 0 22px;font-family:Menlo,Consolas,monospace;font-size:11px;color:${GOLD_INK};word-break:break-all;line-height:1.6">${escHtml(verifyUrl)}</p>
 
   <p style="margin:0 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:12px;color:${INK_MUTED};line-height:1.6">This link will remain valid until your account is verified. If you did not create a Westmere account, you can safely ignore this email.</p>`;
 
@@ -2925,7 +2957,7 @@ async function sendRecommendation(recipientEmail) {
   if (!recipientEmail) return false;
 
   const body = `
-  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">You've been recommended</p>
+  <p class="wm-gold" style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">You've been recommended</p>
   <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Hello,</p>
   <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Someone you know thought you&rsquo;d appreciate our private hire service. We provide premium private-hire transfers across Sussex &mdash; airport runs to Gatwick and Heathrow, corporate travel, special occasions, and reliable local journeys.</p>
   <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">Licensed by Lewes District Council. Professional, punctual, and always at your service.</p>
@@ -2977,10 +3009,10 @@ async function sendPaymentReminder(booking) {
   }
 
   const body = `
-  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Payment reminder</p>
+  <p class="wm-gold" style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">Payment reminder</p>
   <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
   <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Thank you for travelling with us. We noticed that payment for your recent journey has not yet been completed.</p>
-  <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Your trip from <strong>${dispAddr(pickup)}</strong> to <strong>${dispAddr(destination)}</strong> on ${dateStr}${fareStr ? ' for <strong style="color:' + ACCENT + '">' + fareStr + '</strong>' : ''} is still outstanding.</p>
+  <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">Your trip from <strong>${dispAddr(pickup)}</strong> to <strong>${dispAddr(destination)}</strong> on ${dateStr}${fareStr ? ' for <strong style="color:' + INK + '">' + fareStr + '</strong>' : ''} is still outstanding.</p>
   <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">If you&rsquo;ve already made payment, please disregard this message. Otherwise, you can pay online now or simply settle with your driver on the day &mdash; whichever suits you.</p>
   ${payBlock}
   <p style="margin:20px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">If you have any questions, please don&rsquo;t hesitate to get in touch.</p>`;
@@ -3001,13 +3033,13 @@ async function sendPartnershipOutreach(recipientEmail, companyName) {
   const contactName = companyName || 'there';
 
   const body = `
-  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Introduction</p>
+  <p class="wm-gold" style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">Introduction</p>
   <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(contactName)},</p>
   <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">I hope this message finds you well. My name is Nikodem Krajnyk and I am the owner and operator of <strong style="color:${INK}">Westmere Private Hire</strong>, a licensed driver service based in Sussex.</p>
   <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">I&rsquo;m reaching out to introduce myself and to offer my services should you ever find yourself in need of additional driver support during busy periods, overflow work, or when covering a wider area. I understand the demands of running a private hire business and I&rsquo;m always happy to help fellow operators.</p>
 
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;border-top:1px solid ${HAIRLINE};border-bottom:1px solid ${HAIRLINE}">
-    <tr><td style="padding:14px 0 4px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">What I offer</td></tr>
+    <tr><td class="wm-gold" style="padding:14px 0 4px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">What I offer</td></tr>
     <tr><td style="padding:4px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK};line-height:1.7">&bull; Premium saloon vehicle (Tesla Model S)</td></tr>
     <tr><td style="padding:4px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK};line-height:1.7">&bull; Fully licensed by Lewes District Council</td></tr>
     <tr><td style="padding:4px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK};line-height:1.7">&bull; Professional, reliable, well-presented</td></tr>
@@ -3028,8 +3060,8 @@ async function sendPartnershipOutreach(recipientEmail, companyName) {
   <span style="color:${INK_SOFT}">Owner &amp; Operator</span><br>
   <span style="color:${INK_SOFT}">Westmere Private Hire</span></p>
   <p style="margin:8px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:12px;color:${INK_MUTED};line-height:1.6">
-  <a href="tel:+447930342593" style="color:${ACCENT};text-decoration:none">07930 342 593</a> &nbsp;&middot;&nbsp;
-  <a href="mailto:westmereprivatehire@gmail.com" style="color:${ACCENT};text-decoration:none">westmereprivatehire@gmail.com</a><br>
+  <a href="tel:+447930342593" style="color:${INK};text-decoration:none">07930 342 593</a> &nbsp;&middot;&nbsp;
+  <a href="mailto:westmereprivatehire@gmail.com" style="color:${INK};text-decoration:none">westmereprivatehire@gmail.com</a><br>
   66 High Street, Lewes, BN7 1XG &nbsp;&middot;&nbsp; Licensed by Lewes District Council</p>`;
 
   const html = heroEmail(body);
@@ -3046,13 +3078,13 @@ async function sendCorporateIntro(recipientEmail, companyName) {
   const greeting = companyName ? `Dear ${escHtml(companyName)} Team` : 'Good afternoon';
 
   const body = `
-  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Introduction</p>
+  <p class="wm-gold" style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">Introduction</p>
   <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">${greeting},</p>
   <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">My name is Nikodem Krajnyk and I am the owner of <strong style="color:${INK}">Westmere Private Hire</strong>, a licensed driver service based locally in Sussex.</p>
   <p style="margin:0 0 12px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.65">I&rsquo;m writing to introduce our services, which are ideally suited for businesses in the Horsham and Crawley area. Whether your team needs reliable airport transfers, client pickups, or comfortable transport for meetings and events, we provide a discreet, professional service at competitive corporate rates.</p>
 
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;border-top:1px solid ${HAIRLINE};border-bottom:1px solid ${HAIRLINE}">
-    <tr><td style="padding:14px 0 4px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Our services</td></tr>
+    <tr><td class="wm-gold" style="padding:14px 0 4px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">Our services</td></tr>
     <tr><td style="padding:4px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK};line-height:1.7">&bull; Airport transfers &mdash; Gatwick, Heathrow, Stansted, Luton, Southampton &amp; London City</td></tr>
     <tr><td style="padding:4px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK};line-height:1.7">&bull; Premium saloon vehicle (Tesla Model S) &mdash; comfortable, quiet, zero-emission</td></tr>
     <tr><td style="padding:4px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK};line-height:1.7">&bull; Corporate account with monthly invoicing &mdash; no upfront payments needed</td></tr>
@@ -3072,8 +3104,8 @@ async function sendCorporateIntro(recipientEmail, companyName) {
   <span style="color:${INK_SOFT}">Owner &amp; Operator</span><br>
   <span style="color:${INK_SOFT}">Westmere Private Hire</span></p>
   <p style="margin:8px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:12px;color:${INK_MUTED};line-height:1.6">
-  <a href="tel:+447930342593" style="color:${ACCENT};text-decoration:none">07930 342 593</a> &nbsp;&middot;&nbsp;
-  <a href="mailto:westmereprivatehire@gmail.com" style="color:${ACCENT};text-decoration:none">westmereprivatehire@gmail.com</a><br>
+  <a href="tel:+447930342593" style="color:${INK};text-decoration:none">07930 342 593</a> &nbsp;&middot;&nbsp;
+  <a href="mailto:westmereprivatehire@gmail.com" style="color:${INK};text-decoration:none">westmereprivatehire@gmail.com</a><br>
   66 High Street, Lewes, BN7 1XG &nbsp;&middot;&nbsp; Licensed by Lewes District Council</p>`;
 
   const html = heroEmail(body);
@@ -3153,7 +3185,7 @@ async function sendOwnerCancelledRequest(booking) {
   if (fareStr) { rows += rowDivider(); rows += detailRow('Quoted fare', fareStr); }
 
   const body = `
-  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Request cancelled</p>
+  <p class="wm-gold" style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">Request cancelled</p>
   <p style="margin:0 0 18px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">The customer has cancelled the request.</p>
   <p style="margin:0 0 22px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">They clicked <strong>Cancel Request</strong> in their email — the booking has been marked cancelled. No further action is needed unless you wish to follow up.</p>
   ${buildDetailsTable(rows)}
@@ -3184,7 +3216,7 @@ async function sendOwnerCustomerNote(booking, note) {
   rows += detailRow('Date', dateStr);
 
   const body = `
-  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Special requirement</p>
+  <p class="wm-gold" style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">Special requirement</p>
   <p style="margin:0 0 18px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">The customer has left a note for their journey.</p>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 22px"><tr><td style="padding:14px 16px;background:#F0F4F7;border-left:2px solid ${ACCENT}">
     <p style="margin:0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};line-height:1.6">${escHtml(note).replace(/\n/g, '<br>')}</p>
@@ -3283,7 +3315,7 @@ async function sendOwnerChangeRequest(booking, cr) {
   <p style="margin:0 0 26px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65">They did not edit any of the journey fields — see their note above.</p>`;
 
   const body = `
-  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Change requested &middot; ${escHtml(ref)}</p>
+  <p class="wm-gold" style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">Change requested &middot; ${escHtml(ref)}</p>
   <p style="margin:0 0 18px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">The customer has asked to change this booking.</p>
   <p style="margin:0 0 24px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.65"><strong style="color:${INK}">Nothing has been altered.</strong> Booking ${escHtml(ref)} is exactly as it was &mdash; same journey, same fare, same status. Apply the amendment by hand in the owner app if you are happy with it, then let them know.</p>
   ${noteBlock}
@@ -3342,7 +3374,7 @@ async function sendCustomerMessage(booking, message, opts) {
   }
 
   const body = `
-  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">A message from Westmere${ref ? ' · ' + escHtml(ref) : ''}</p>
+  <p class="wm-gold" style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">A message from Westmere${ref ? ' · ' + escHtml(ref) : ''}</p>
   <p style="margin:0 0 14px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK};font-weight:400;line-height:1.55">Dear ${escHtml(firstName)},</p>
   <p style="margin:0 0 22px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK};line-height:1.7">${escHtml(message).replace(/\n/g, '<br>')}</p>
   <p style="margin:0 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">You can simply reply to this email or call us on <a href="tel:+447930342593" style="color:${INK};text-decoration:none">07930 342593</a>.</p>
