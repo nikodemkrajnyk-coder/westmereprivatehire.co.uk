@@ -5057,6 +5057,212 @@ router.patch('/bookings/:id/commission', (req, res) => {
   res.json({ ok: true, job: ledger.historyRow(after), balance: ledger.driverBalance(b.driver_id) });
 });
 
+/* ── CHANGING WHAT A DRIVER IS PAID, AFTER THE JOB WAS GIVEN TO HIM ───────
+   The amount is settled when the job is sent — from the rate, or from a figure
+   the two of them agreed. Afterwards it moves: the run was longer than it
+   looked, a favour is returned, the driver asks and the owner says yes. Until
+   now the only way to say so was to change the COMMISSION and let the payout
+   fall out of it backwards, which is arithmetic performed in the wrong
+   direction on the one number the driver actually cares about.
+
+   IT IS THE SAME MECHANISM AS THE SEND SHEET, not a second one.
+   driver_payout_set records that he decided it, driver_pay carries it for
+   every reader that already looks there, and admin_fee becomes whatever is
+   left of the fare — so commission + payout = fare and the turnover SQL needs
+   to know nothing. One figure, in the places it already lived.
+
+   A SETTLED JOB IS A RECEIPT, and is refused for the same reason the
+   commission correction refuses one: changing what a job was worth after the
+   money has changed hands leaves two numbers disagreeing with nothing on the
+   screen to say which is right. He marks it unpaid first, and both the
+   correction and the re-payment are deliberate.
+   GUARDRAIL: server/tests/driver-payout-set.test.js */
+router.patch('/bookings/:id/driver-payout', async (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+  const db = getDb();
+  const b = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+  if (!b) return res.status(404).json({ error: 'Booking not found' });
+  if (b.operator_id) {
+    return res.status(409).json({ error: 'That job went to another firm — it settles on the invoice, not on a payout' });
+  }
+  if (!b.passed_at || !b.driver_id) {
+    return res.status(409).json({ error: 'This job was not passed to a driver, so there is no payout to adjust' });
+  }
+  if (ledger.isSettled(b)) {
+    return res.status(409).json({
+      error: 'That job is marked paid. Mark it unpaid first, then change what he is paid.' });
+  }
+
+  const fareNum = Number(b.fare);
+  if (b.fare === null || b.fare === undefined || !isFinite(fareNum)) {
+    return res.status(400).json({ error: 'Price the job before setting what the driver receives' });
+  }
+  const fare = Math.round(fareNum * 100) / 100;
+  const raw = (req.body || {}).payout;
+  const before = ledger.jobSplit(b).payout;
+
+  let payoutSet, split;
+  if (raw === undefined || raw === null || String(raw).trim() === '') {
+    /* CLEARED — back to the rate. The override is removed and the split is
+       recomputed from the driver's own percentage, so "undo" lands exactly
+       where the send sheet would have left it. */
+    payoutSet = null;
+    const drv = db.prepare('SELECT commission_pct FROM users WHERE id = ?').get(b.driver_id);
+    split = ledger.computeSplit(fare, ledger.rateForDriver(drv));
+  } else {
+    const n = Number(raw);
+    if (!isFinite(n) || n < 0) {
+      return res.status(400).json({ error: 'The amount the driver receives must be a number, and not a negative one' });
+    }
+    const amount = Math.round(n * 100) / 100;
+    if (amount > fare) {
+      return res.status(400).json({
+        error: 'The driver cannot receive more than the fare — £' + amount.toFixed(2)
+             + ' was set against a fare of £' + fare.toFixed(2) });
+    }
+    payoutSet = amount;
+    split = { driver_pay: amount, admin_fee: Math.round((fare - amount) * 100) / 100 };
+  }
+
+  db.prepare(`UPDATE bookings SET driver_payout_set = ?, driver_pay = ?, admin_fee = ?,
+                                  updated_at = datetime('now')
+               WHERE id = ?`).run(payoutSet, split.driver_pay, split.admin_fee, id);
+  const after = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+  const now = ledger.jobSplit(after).payout;
+
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run(req.auth.type || 'user', req.auth.id, 'driver_payout_changed',
+           (b.ref || id) + ': ' + Number(before).toFixed(2) + ' → ' + Number(now).toFixed(2), req.ip);
+  } catch (_) {}
+
+  /* ── AND THE DRIVER IS TOLD ───────────────────────────────────────────────
+     He accepted a job on a figure. Finding out it had changed by noticing his
+     statement is the wrong way round, so a changed payout sends him a short
+     note naming the job and the new amount. Only when it actually MOVED —
+     re-saving the same number is not news — and a failure to send never fails
+     the change, which is already recorded. */
+  let told = false;
+  if (Math.abs(Number(now) - Number(before)) >= 0.005) {
+    try {
+      const to = db.prepare('SELECT email FROM users WHERE id = ?').get(b.driver_id);
+      const addr = (to && to.email) || b.assigned_to_email || null;
+      if (addr) told = await require('./email').sendDriverPayoutChanged(
+        Object.assign({}, after, { driver_email: addr }), before);
+    } catch (e) { console.error('[PAYOUT] driver note failed:', e.message); }
+  }
+
+  res.json({ ok: true, job: ledger.historyRow(after), balance: ledger.driverBalance(b.driver_id),
+             payout: now, previous: before, driver_told: told });
+});
+
+/* ── WHAT THE DRIVER WAS ACTUALLY SENT ────────────────────────────────────
+   The owner can see the job, the payout and whether the reminder went — but
+   not the document the driver is working from. "Did he get the right address"
+   and "does he know what it pays" were questions only the driver could answer.
+
+   IT IS THE REAL EMAIL, not a description of it. buildDriverDispatch is the
+   same function the sender uses (server/email.js); this route asks it for the
+   same parts and returns them unsent. A preview assembled any other way is a
+   second document that happens to look similar, and the day the two diverge is
+   the day he is reassured by the wrong one.
+
+   BUILT FROM THE ROW AS IT STANDS NOW, so after the payout is adjusted this
+   shows the new figure — which is the point of being able to resend.
+   GUARDRAIL: server/tests/driver-email-view.test.js */
+function driverEmailPayload(db, b) {
+  const joined = db.prepare(`
+    SELECT b.*,
+           COALESCE(c.full_name, b.passenger_name)  AS customer_name,
+           COALESCE(c.email,     b.passenger_email) AS customer_email,
+           COALESCE(c.phone,     b.passenger_phone) AS customer_phone,
+           u.full_name AS u_name, u.email AS u_email, u.vehicle AS u_vehicle, u.reg AS u_reg
+      FROM bookings b LEFT JOIN customers c ON b.customer_id = c.id
+                      LEFT JOIN users u     ON b.driver_id   = u.id
+     WHERE b.id = ?`).get(b.id);
+  const fare = Number(joined.fare);
+  /* THE RATE THAT WAS ACTUALLY CHARGED, derived from the stored commission —
+     not the driver's current default, which may have changed since. With an
+     agreed payout the email prints no rate at all, so this is unused there. */
+  const pct = (isFinite(fare) && fare > 0 && joined.admin_fee != null)
+    ? Math.round((Number(joined.admin_fee) / fare) * 1000) / 10 : 0;
+  return Object.assign({}, joined, {
+    driver_email: joined.assigned_to_email || joined.u_email || '',
+    driver_name:  joined.assigned_to_name  || joined.u_name  || '',
+    driver_car:   joined.assigned_to_car   || joined.u_vehicle || '',
+    driver_reg:   joined.assigned_to_reg   || joined.u_reg   || '',
+    commission_pct: pct,
+    as_operator: !!joined.operator_id
+  });
+}
+
+router.get('/bookings/:id/driver-email', (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+  const db = getDb();
+  const b = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+  if (!b) return res.status(404).json({ error: 'Booking not found' });
+  if (!b.passed_at) {
+    return res.status(409).json({ error: 'This job has not been passed to anybody, so no job email was sent' });
+  }
+  const payload = driverEmailPayload(db, b);
+  const em = require('./email');
+  const built = em.buildDriverDispatch(payload);
+  /* FINISHED THE SAME WAY IT WOULD BE SENT — the hidden preheader and the
+     painted backgrounds. Skipping that step would show him a document the
+     driver never received, and specifically one without the dark-mode handling
+     that exists because a customer photographed an unreadable email. */
+  res.json({ ok: true, to: built.to || null, subject: built.subject,
+             html: em.finaliseEmailHtml(built.html, built.preheader),
+             sent_at: b.passed_at, has_calendar: !!built.attachments });
+});
+
+/* ── SENDING IT AGAIN ─────────────────────────────────────────────────────
+   He missed it, or the payout has moved since. Rebuilt from the row as it
+   stands, so a resent email cannot name a figure the ledger disagrees with —
+   the whole reason for sending it again. Audited, because "did that go?" is
+   not a question to answer by looking in a log.
+   GUARDRAIL: server/tests/driver-email-view.test.js */
+router.post('/bookings/:id/driver-email/resend', async (req, res) => {
+  if (!['admin', 'owner'].includes(req.auth.role)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid booking ID' });
+  const db = getDb();
+  const b = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+  if (!b) return res.status(404).json({ error: 'Booking not found' });
+  if (String(b.status || '') === 'cancelled') {
+    return res.status(409).json({ error: 'This booking is cancelled — there is nothing to send' });
+  }
+  if (!b.passed_at) {
+    return res.status(409).json({ error: 'This job has not been passed to anybody' });
+  }
+  const payload = driverEmailPayload(db, b);
+  if (!payload.driver_email) {
+    return res.status(409).json({ error: 'There is no address on file for whoever has this job' });
+  }
+  let ok = false;
+  try { ok = await require('./email').sendDriverDispatch(payload); }
+  catch (e) { console.error('[RESEND] driver email failed:', e.message); }
+  if (!ok) return res.status(502).json({ error: 'The email did not go — nothing was sent' });
+
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run(req.auth.type || 'user', req.auth.id, 'driver_email_resent',
+           (b.ref || id) + ' to ' + payload.driver_email
+           + ' (payout ' + Number(ledger.jobSplit(b).payout).toFixed(2) + ')', req.ip);
+  } catch (_) {}
+  res.json({ ok: true, to: payload.driver_email, payout: ledger.jobSplit(b).payout });
+});
+
 /* ── SQUARING ONE JOB ─────────────────────────────────────────────────────
    The toggle on a history row. No amount is sent: a job is worth what it is
    worth, and the only question is whether it has been paid. */

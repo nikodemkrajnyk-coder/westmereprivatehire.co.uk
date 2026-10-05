@@ -115,9 +115,19 @@ test('the PREHEADER is escaped too — the hole beside the body', async () => {
   assert.ok(hidden, 'the preheader div is missing');
   assert.ok(!/<img/.test(hidden[1]), 'no live tag may reach the preheader');
   assert.ok(/&lt;img/.test(hidden[1]), 'it must be escaped');
+  /* IT HAPPENS ON THE PATH sendEmail TAKES — which is the thing that matters,
+     not which function the line currently sits in. The preheader and the
+     background painting were lifted out of sendEmail into finaliseEmailHtml so
+     the owner's preview of a driver's job email could be finished the same way
+     the sent one is; the escaping went with them, and the runtime assertions
+     above still prove it works. */
   const src = read('server/email.js');
   const fn = /async function sendEmail\([\s\S]*?\n\}/.exec(src)[0];
-  assert.ok(/escHtml\(preheader\)/.test(fn),
+  const finalise = /function finaliseEmailHtml\([\s\S]*?\n\}/.exec(src);
+  assert.ok(finalise, 'the finalising step is gone');
+  assert.ok(/finaliseEmailHtml\(html, preheader\)/.test(fn),
+    'sendEmail no longer finishes its html through the one place that escapes the preheader');
+  assert.ok(/escHtml\(preheader\)/.test(finalise[0]),
     'sendEmail must escape the preheader for every caller, not just this one');
 });
 

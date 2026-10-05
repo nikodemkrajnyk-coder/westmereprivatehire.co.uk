@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<script src="/address-normalize.js?v=2026-10-05b"></script>
-<script src="/wm-address-lookup.js?v=2026-10-05b"></script>
-<script src="/wm-invoice-maths.js?v=2026-10-05b"></script>
-<script src="/wm-lifecycle.js?v=2026-10-05b"></script>
-<script src="/wm-compact.js?v=2026-10-05b"></script>
+<script src="/address-normalize.js?v=2026-10-06a"></script>
+<script src="/wm-address-lookup.js?v=2026-10-06a"></script>
+<script src="/wm-invoice-maths.js?v=2026-10-06a"></script>
+<script src="/wm-lifecycle.js?v=2026-10-06a"></script>
+<script src="/wm-compact.js?v=2026-10-06a"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"/>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -680,9 +680,9 @@ select:-webkit-autofill:focus{
   caret-color:#102a43;
   transition:background-color 9999s ease-in-out 0s;
 }
-</style><link rel="stylesheet" href="/wm-buttons.css?v=2026-10-05b">
-<link rel="stylesheet" href="/westmere-theme.css?v=2026-10-05b">
-<script src="/wm-ask.js?v=2026-10-05b"></script>
+</style><link rel="stylesheet" href="/wm-buttons.css?v=2026-10-06a">
+<link rel="stylesheet" href="/westmere-theme.css?v=2026-10-06a">
+<script src="/wm-ask.js?v=2026-10-06a"></script>
 <link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"></head>
 <body>
 
@@ -844,7 +844,7 @@ select:-webkit-autofill:focus{
            the home-screen app and reopen it (or remove and re-add the icon).
            GUARDRAIL: server/tests/asset-version.test.js -->
       <div style="margin-top:1.2rem;padding-top:.9rem;border-top:1px solid var(--westmere-line,#dfe5ea);text-align:center">
-        <div style="font-family:var(--sans);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--westmere-ink-soft)">Version <span id="app-version">2026-10-05b</span></div>
+        <div style="font-family:var(--sans);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--westmere-ink-soft)">Version <span id="app-version">2026-10-06a</span></div>
         <div onclick="owForceRefresh()" style="display:inline-block;margin-top:.6rem;padding:.5rem .9rem;border:1px solid var(--westmere-line-strong,#c8d1d9);border-radius:7px;font-family:var(--sans);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--westmere-navy,#102a43);cursor:pointer">Reload the app</div>
       </div>
       <!-- Owner Profile -->
@@ -4809,6 +4809,7 @@ function jobCardHtml(j){
         +'<tr><td style="padding:.4rem .6rem .4rem 0;font-family:var(--sans);font-size:.64rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--westmere-gold-ink);white-space:nowrap">Payment</td><td>'+wmPayBadge(j)+'</td></tr>'
         +'<tr><td style="padding:.4rem .6rem .4rem 0;font-family:var(--sans);font-size:.64rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--westmere-gold-ink);white-space:nowrap">Paid</td><td style="color:#1b1b1a">'+escH(WMCompact.paidLine(j))+(j.paid_at?' <span style="color:rgba(27,27,26,.45)">on '+escH(_fmtLongDate(String(j.paid_at).slice(0,10))||String(j.paid_at).slice(0,10))+'</span>':'')+'</td></tr>'
         +(dispStateRow(j))
+        +(wmRemindersRow(j))
         +(ownerNoteOf(j)?'<tr><td style="padding:.4rem .6rem .4rem 0;font-family:var(--sans);font-size:.64rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--westmere-gold-ink);white-space:nowrap;vertical-align:top">Notes</td><td style="white-space:pre-line">'+escH(ownerNoteOf(j))+'</td></tr>':'')
         +(j.customer_note?'<tr><td style="padding:.4rem .6rem .4rem 0;font-family:var(--sans);font-size:.64rem;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--westmere-gold-ink);vertical-align:top;white-space:nowrap">Special req.</td><td style="color:#1b1b1a;background:rgba(27,27,26,.04);border-left:2px solid rgba(27,27,26,.55);padding:.3rem .5rem">'+escH(j.customer_note)+'</td></tr>':'')
       +'</table>'
@@ -7157,6 +7158,107 @@ function custRenderDetail(d){
    Guardrail: server/tests/dispatch-offer.test.js */
 var DISP_DRIVERS=[];
 
+/* ── HAVE THE REMINDERS GONE? ─────────────────────────────────────────────
+   The sweeper sends the rider theirs and the driver his twelve hours out, and
+   until now the only way to know either had happened was to go and look in the
+   database. Two small marks on the card: a tick when it has gone, a plain dash
+   when it has not.
+
+   THE DRIVER'S ONLY APPEARS ON A PASSED JOB. With nobody else driving, the
+   owner IS the driver and his reminder is the owner reminder — a second mark
+   saying "driver reminded" about himself is noise.
+
+   It says nothing at all on a job that is not going ahead yet: a reminder that
+   has not gone for a booking nobody has confirmed is not news.
+   GUARDRAIL: server/tests/reminder-indicator.test.js */
+function wmRemindersRow(j){
+  if(!j) return '';
+  var st=String(j.apiStatus||'').toLowerCase();
+  if(['confirmed','awaiting_payment','active'].indexOf(st)===-1) return '';
+  var mark=function(label,at){
+    var on=!!at;
+    return '<span class="wm-rem'+(on?' on':'')+'" title="'+escH(label+(on?' reminded '+String(at).slice(0,16):' not reminded yet'))+'">'
+      +'<span class="wm-rem-t">'+(on?'✓':'—')+'</span>'+escH(label)+'</span>';
+  };
+  var passed=!!j.passedAt&&!j.operatorId;
+  return '<tr><td style="padding:.4rem .6rem .4rem 0;font-family:var(--sans);font-size:.64rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--westmere-gold-ink);white-space:nowrap;vertical-align:top">12h reminder</td>'
+    +'<td>'+mark('Rider',j.riderRemindedAt)+(passed?mark('Driver',j.driverRemindedAt):'')+'</td></tr>';
+}
+
+/* ── CHANGING WHAT THE DRIVER IS PAID, AFTER IT WAS GIVEN TO HIM ──────────
+   The amount is settled when the job is sent. Afterwards it moves — a longer
+   run, a favour returned, the driver asked. The only way to say so used to be
+   to change the COMMISSION and let the payout fall out of it backwards, which
+   is arithmetic in the wrong direction on the one number he cares about.
+
+   The same mechanism as the send sheet, so there is one figure and not two:
+   whatever is typed here is what his statement, his balance and the week's
+   transfer use, and he is sent a short note saying it moved.
+   GUARDRAIL: server/tests/driver-payout-set.test.js */
+/* ── WHAT THE DRIVER IS WORKING FROM ──────────────────────────────────────
+   The owner could see the job, the payout and whether the reminder went — but
+   not the document in the driver's inbox. "Has he got the right address" and
+   "does he know what it pays" were questions only the driver could answer.
+
+   It is the REAL email: the server builds it with the same function the sender
+   uses, from the row as it stands now, so after the payout is adjusted this is
+   what a resend would deliver.
+   GUARDRAIL: server/tests/driver-email-view.test.js */
+async function ownerViewDriverEmail(id){
+  try{
+    var r=await fetch('/api/bookings/'+id+'/driver-email',{credentials:'include'});
+    var d=await r.json();
+    if(!r.ok||!d.ok){ showToast(d.error||'Could not load the driver email'); return; }
+    invPreviewOpen('', d.subject||'Driver email', { html: d.html });
+  }catch(e){ showToast('Network error — could not load the email'); }
+}
+
+/* ── SENDING IT AGAIN ─────────────────────────────────────────────────────
+   He missed it, or the payout has moved. Rebuilt server-side from the current
+   row, so a resent email cannot name a figure the ledger disagrees with. */
+async function ownerResendDriverEmail(id, opts){
+  var o=opts||{};
+  if(!o.silent){
+    var yes=await WMAsk.confirm('Send the job email to the driver again?');
+    if(!yes) return false;
+  }
+  try{
+    var r=await fetch('/api/bookings/'+id+'/driver-email/resend',{method:'POST',credentials:'include'});
+    var d=await r.json();
+    if(!r.ok||!d.ok){ showToast(d.error||'The email did not go'); return false; }
+    showToast('Job email sent to '+d.to);
+    return true;
+  }catch(e){ showToast('Network error — nothing was sent'); return false; }
+}
+
+async function ownerAdjustPayout(id){
+  var j=tripById(id)||{};
+  var now=(j.driverPay!=null)?Number(j.driverPay).toFixed(2):'';
+  var v=await WMAsk.prompt('What should '+(j.driverName||j.assignedToName||'the driver')
+    +' receive for this job?'+(j.fare?' The fare is £'+Number(j.fare).toFixed(2)+'.':''), now);
+  if(v===null||v===undefined) return;
+  try{
+    var r=await fetch('/api/bookings/'+id+'/driver-payout',{method:'PATCH',credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({payout:String(v).trim()})});
+    var d=await r.json();
+    if(!r.ok||!d.ok){ showToast(d.error||'Could not change the payout'); return; }
+    showToast('Payout £'+Number(d.payout).toFixed(2)
+      +(d.driver_told?' · driver told':''));
+    /* THE JOB EMAIL STILL SHOWS THE OLD FIGURE. He has had the short note that
+       it moved; offer him the job itself again so what is in his inbox matches
+       what he is being paid. Only when it actually changed. */
+    if(d.previous!==d.payout){
+      var again=await WMAsk.confirm('The payout changed from £'+Number(d.previous).toFixed(2)
+        +' to £'+Number(d.payout).toFixed(2)+'. Send him the job email again with the new figure?');
+      if(again) await ownerResendDriverEmail(id,{silent:true});
+    }
+    if(typeof loadOwnerBookings==='function')loadOwnerBookings();
+    else if(typeof loadBookings==='function')loadBookings();
+    if(typeof refreshTripPage==='function')refreshTripPage();
+  }catch(e){ showToast('Network error — the payout was not changed'); }
+}
+
 function dispStateRow(j){
   if(j.apiStatus==='offered'){
     var who=j.offeredToName||'a driver';
@@ -7177,7 +7279,20 @@ function dispStateRow(j){
     return '<tr><td style="padding:.4rem .6rem .4rem 0;font-family:var(--sans);font-size:.64rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--westmere-gold-ink);white-space:nowrap">Driver</td>'
       +'<td style="color:var(--westmere-navy,#102a43)">'+escH(j.driverName||j.assignedToName)+' &middot; accepted'
       +(adhoc?' &middot; not a registered driver'
-             :(j.driverPay!=null?(' &middot; '+fmtMoney(j.driverPay)+' to him'):''))+'</td></tr>';
+             :(j.driverPay!=null?(' &middot; '+fmtMoney(j.driverPay)+' to him'):''))
+      +((!adhoc&&j.driverId&&j.passedAt&&!j.operatorId)
+        ? ' <button type="button" class="wm-adjust" onclick="event.stopPropagation();ownerAdjustPayout('+j.id+')">Adjust</button>'
+        : '')
+      /* WHAT HE WAS SENT, AND SEND IT AGAIN. Beside the name, because that is
+         where the owner is already looking when the question comes up — and on
+         any passed job, a driver or a firm, because both were emailed one. */
+      +(j.passedAt
+        ? '<div class="wm-drv-acts">'
+          + '<button type="button" class="wm-adjust" onclick="event.stopPropagation();ownerViewDriverEmail('+j.id+')">View driver email</button>'
+          + '<button type="button" class="wm-adjust" onclick="event.stopPropagation();ownerResendDriverEmail('+j.id+')">Resend to driver</button>'
+          + '</div>'
+        : '')
+      +'</td></tr>';
   }
   return '';
 }
@@ -8057,6 +8172,12 @@ async function loadOwnerBookings(){
         // own plate; the operator's name is the other half, because a job sent
         // to another firm is not a driver job.
         passedAt:b.passed_at||null,
+        /* HAS THE 12-HOUR REMINDER GONE? Two independent latches on the row
+           (server/reminder.js). The card shows them so he can see at a glance
+           that the rider and the driver have both been told, without opening
+           anything. */
+        riderRemindedAt:b.customer_reminder_sent_at||null,
+        driverRemindedAt:b.driver_reminder_sent_at||null,
         operatorId:b.operator_id||null,
         operatorName:b.operator_name||'',
         driverPay:(b.driver_pay==null?null:Number(b.driver_pay)),
@@ -8852,7 +8973,12 @@ function invPreviewClose(fromPop){
   _PDF_PREVIEW_POPPED = false;
 }
 function _invPreviewKey(e){ if (e.key === 'Escape') invPreviewClose(); }
-function invPreviewOpen(url, title){
+/* Also shows a document we HAVE rather than one behind a URL — the driver's
+   job email, handed over as HTML. Same chrome, same Back, same device-Back
+   handling; an iframe srcdoc so the email's own styles cannot touch the app.
+   GUARDRAIL: server/tests/driver-email-view.test.js */
+function invPreviewOpen(url, title, opts){
+  var o_ = opts || {};
   invPreviewClose();
   var o = document.createElement('div');
   o.id = 'pdf-preview-overlay';
@@ -8870,12 +8996,12 @@ function invPreviewOpen(url, title){
         'font-family:var(--sans);font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--navy,#102a43)">' +
         '← Back</button>' +
       '<div style="flex:1;font-family:var(--serif);font-size:.98rem;color:#1a1a1a">' + (title || 'Preview') + '</div>' +
-      '<a id="pdf-preview-open" href="' + url + '"' + (_wmStandalone() ? ' download' : ' target="_blank" rel="noopener"') + ' ' +
+      (o_.html ? '' : '<a id="pdf-preview-open" href="' + url + '"' + (_wmStandalone() ? ' download' : ' target="_blank" rel="noopener"') + ' ' +
         'style="font-family:var(--sans);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;' +
         'color:var(--navy,#102a43);text-decoration:none;border-bottom:1px solid rgba(16,42,67,.3)">'
-        + (_wmStandalone() ? 'Save the PDF' : 'Open the PDF') + '</a>' +
+        + (_wmStandalone() ? 'Save the PDF' : 'Open the PDF') + '</a>') +
     '</div>' +
-    '<iframe id="pdf-preview-frame" src="' + url + '" title="' + (title || 'Invoice preview') + '" ' +
+    '<iframe id="pdf-preview-frame" ' + (o_.html ? 'srcdoc="' + String(o_.html).replace(/"/g,'&quot;') + '"' : 'src="' + url + '"') + ' title="' + (title || 'Invoice preview') + '" ' +
       'style="flex:1 1 auto;width:100%;border:none;background:var(--westmere-white,#ffffff)"></iframe>' +
     '<noscript></noscript>';
   document.body.appendChild(o);
@@ -9554,7 +9680,7 @@ setInterval(function(){
 }, 30000);
 </script>
 
-<script src="/config.js?v=2026-10-05b"></script>
-<script src="/wm-realtime.js?v=2026-10-05b"></script>
+<script src="/config.js?v=2026-10-06a"></script>
+<script src="/wm-realtime.js?v=2026-10-06a"></script>
 </body>
 </html>

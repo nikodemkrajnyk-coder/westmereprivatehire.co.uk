@@ -357,6 +357,31 @@ function paintBackgrounds(html) {
   return out;
 }
 
+/**
+ * THE LAST THING DONE TO AN EMAIL BEFORE IT LEAVES.
+ *
+ * The hidden preheader, and then every background written down (see
+ * paintBackgrounds). Extracted from sendEmail because the owner can now LOOK at
+ * a driver's job email, and a preview that skips this step shows him a document
+ * the driver never received — different bytes, and specifically different in
+ * the dark-mode handling that was added because a customer photographed an
+ * unreadable one.
+ * GUARDRAIL: server/tests/driver-email-view.test.js
+ */
+function finaliseEmailHtml(html, preheader) {
+  let out = html;
+  if (preheader) {
+    /* ESCAPED. The preheader is the one place in this file where caller text was
+       being injected into markup raw, and several callers pass text a human
+       typed — the owner's Send Message, and the outreach letter. The BODY of
+       those emails has always been escaped; this was the hole beside it.
+       Found by server/tests/outreach.test.js. */
+    const hidden = `<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#FFFFFF;opacity:0">${escHtml(preheader)}</div>`;
+    out = html.replace('<body', hidden + '<body').replace(/<body([^>]*)>/, '<body$1>' + hidden);
+  }
+  return paintBackgrounds(out);
+}
+
 async function sendEmail(to, subject, html, fromLabel, preheader, opts) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -372,21 +397,7 @@ async function sendEmail(to, subject, html, fromLabel, preheader, opts) {
   // with REPLY_TO only if it is another on-domain address.
   const replyTo = process.env.REPLY_TO || 'bookings@westmereprivatehire.co.uk';
 
-  let finalHtml = html;
-  if (preheader) {
-    /* ESCAPED. The preheader is the one place in this file where caller text was
-       being injected into markup raw, and several callers pass text a human
-       typed — the owner's Send Message, and now the outreach letter. The BODY
-       of those emails has always been escaped; this was the hole beside it.
-       Found by server/tests/outreach.test.js. */
-    const hidden = `<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#FFFFFF;opacity:0">${escHtml(preheader)}</div>`;
-    finalHtml = html.replace('<body', hidden + '<body').replace(/<body([^>]*)>/, '<body$1>' + hidden);
-  }
-
-  /* THE PAPER, WRITTEN DOWN. Last thing before it goes, so every email — this
-     file's and any added later — leaves with its backgrounds stated rather
-     than inherited. See paintBackgrounds(). */
-  finalHtml = paintBackgrounds(finalHtml);
+  const finalHtml = finaliseEmailHtml(html, preheader);
 
   // Plain-text alternative part (preheader first, then the body text).
   const bodyText = (opts && opts.text) || htmlToText(html);
@@ -1270,9 +1281,22 @@ async function sendCustomerDriverAssigned(booking) {
    difference decides what he does when the passenger gets out — so it is said
    in words, not left to be worked out from the payment method.
    GUARDRAIL: server/tests/driver-dispatch.test.js */
-async function sendDriverDispatch(d) {
-  const to = String(d.driver_email || '').trim();
-  if (!to) return false;
+/**
+ * THE DRIVER'S JOB EMAIL, BUILT ONCE — SENT, OR SHOWN.
+ *
+ * The owner asked to SEE exactly what a driver was sent, and to send it again
+ * after changing what the job pays. A preview that rebuilds the email its own
+ * way is not a preview: it is a second document that happens to look similar,
+ * and the day the two diverge is the day he is reassured by the wrong one.
+ *
+ * So everything the email is — the body, the subject, the preheader, the
+ * calendar file — is made here, and both the sender and the preview ask this
+ * one function for it. sendDriverDispatch is the four lines that hand the
+ * result to Resend.
+ * GUARDRAIL: server/tests/driver-email-view.test.js
+ */
+function buildDriverDispatch(d) {
+  const to = String((d && d.driver_email) || '').trim();
 
   const fare = (d.fare === null || d.fare === undefined || d.fare === '') ? null : Number(d.fare);
   const money = (n) => '£' + Number(n).toFixed(2);
@@ -1404,9 +1428,15 @@ async function sendDriverDispatch(d) {
     : 'Your job' + (payStr ? ' — payout ' + payStr : '') + ' · ' + d.ref;
   const preheader = formatDate(d.date) + ' · ' + dispAddr(d.pickup) + ' to ' + dispAddr(d.destination);
   const attachments = icsAttachment(d);
-  const ok = await sendEmail(to, subject, html, 'Westmere Private Hire', preheader,
-    attachments ? { attachments } : undefined);
-  if (ok) console.log('[EMAIL] Dispatch', d.ref, 'sent to', to, attachments ? '(with .ics)' : '');
+  return { to, subject, html, preheader, attachments: attachments || null };
+}
+
+async function sendDriverDispatch(d) {
+  const b = buildDriverDispatch(d);
+  if (!b.to) return false;
+  const ok = await sendEmail(b.to, b.subject, b.html, 'Westmere Private Hire', b.preheader,
+    b.attachments ? { attachments: b.attachments } : undefined);
+  if (ok) console.log('[EMAIL] Dispatch', d.ref, 'sent to', b.to, b.attachments ? '(with .ics)' : '');
   return ok;
 }
 
@@ -1460,6 +1490,60 @@ function driverPayBlockHtml(d) {
       <p style="margin:12px 0 0;padding-top:10px;border-top:1px solid ${ACCENT};font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_MUTED};line-height:1.5">${escHtml(cash ? 'Cash \u2014 collect ' + money(s.fare) + ' from the passenger.' : 'Prepaid')}</p>
     </td></tr>
   </table>`;
+}
+
+/**
+ * WHAT HE IS PAID HAS CHANGED, AND HE HEARS IT FROM US.
+ *
+ * A driver accepts a job on a figure. If the owner moves it afterwards — the
+ * run was longer than it looked, a favour is returned, the driver asked and he
+ * said yes — the wrong way for the driver to find out is by noticing his
+ * statement. Short, specific, and it names both numbers so there is nothing to
+ * work out.
+ *
+ * The new figure comes from the ledger, like every other payout in this system
+ * (server/driver-ledger.js), so this note cannot name an amount the statement
+ * and the weekly payout disagree with.
+ * GUARDRAIL: server/tests/driver-payout-set.test.js
+ */
+async function sendDriverPayoutChanged(d, previous) {
+  const to = d && d.driver_email;
+  if (!to || !d.ref) return false;
+  let s;
+  try { s = require('./driver-ledger').jobSplit(d); } catch (e) { return false; }
+  if (!s || s.payout === null || isNaN(s.payout)) return false;
+  const money = (n) => '\u00a3' + Number(n).toFixed(2);
+  const up = Number(s.payout) > Number(previous);
+  const dateStr = formatDate(d.date, d.time);
+
+  const body = `
+  <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT}">Payout updated &middot; ${escHtml(d.ref || '')}</p>
+  <p style="margin:0 0 16px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:18px;color:${INK};line-height:1.4">The payout on one of your jobs has been ${up ? 'increased' : 'changed'}.</p>
+  ${buildDetailsTable(jobDetailRows(d))}
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${ACCENT};margin:20px 0 4px">
+    <tr><td style="padding:16px 18px">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="padding:4px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK}">Payout</td>
+          <td align="right" style="padding:4px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:18px;color:${INK}">${escHtml(money(s.payout))}</td>
+        </tr>
+      </table>
+      <p style="margin:8px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.5">Previously ${escHtml(money(previous))} &middot; now ${escHtml(money(s.payout))}</p>
+      <p style="margin:12px 0 0;padding-top:10px;border-top:1px solid ${ACCENT};font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_MUTED};line-height:1.5">This is what will go out on the next payout for this job.</p>
+    </td></tr>
+  </table>
+  <p style="margin:22px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">If that is not what you were expecting, call 07930 342593.</p>`;
+
+  const html = letterEmail(body, { title: 'Payout updated — ' + d.ref });
+  const ok = await sendEmail(to, 'Payout updated — ' + d.ref, html, 'Westmere Dispatch',
+    dateStr + ' \u00b7 ' + money(previous) + ' \u2192 ' + money(s.payout));
+  if (ok) console.log('[EMAIL] Payout change told to ' + to + ' (' + d.ref + ': '
+    + money(previous) + ' \u2192 ' + money(s.payout) + ')');
+  /* A BOOLEAN, not Resend's id. Every other sender here returns whatever
+     sendEmail gave back and every caller only tests it for truth — but this
+     one's answer is handed to the browser as `driver_told`, and "x" is not an
+     answer to "was he told". */
+  return !!ok;
 }
 
 async function sendDriverJobReminder(d) {
@@ -3275,7 +3359,7 @@ async function sendCustomerMessage(booking, message, opts) {
 module.exports = {
   sendCustomerAcknowledgement, sendCustomerConfirmed, sendCustomerEstimate, sendAdminAlert,
   sendOwnerCancelledRequest, sendOwnerCustomerNote, sendOwnerChangeRequest, sendCustomerMessage,
-  sendOutreachMessage, letterEmail, sendDriverJobOffer, sendAdhocJobOffer, sendDriverJobReminder, sendDriverMessage,
+  sendOutreachMessage, letterEmail, sendDriverJobOffer, sendAdhocJobOffer, sendDriverJobReminder, sendDriverPayoutChanged, buildDriverDispatch, finaliseEmailHtml, sendDriverMessage,
   sendDriverDispatch,
   sendCustomerDriverAssigned,
   sendCustomerJourneyReminder, airportBlockHtml, flightTrackUrl, driverBlockHtml, driverDetails, cancelLinkHtml,

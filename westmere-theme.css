@@ -3239,3 +3239,57 @@ input[type="range"]:focus-visible{ outline: 2px solid var(--westmere-gold); outl
 }
 .wm-who.firm{ border-color: var(--westmere-line-strong); }
 .wm-who.firm .wm-who-k{ color: var(--westmere-muted); }
+
+/* ── TWO MARKS THAT SAY THE REMINDERS WENT ───────────────────────────────
+   The sweeper tells the rider and the driver twelve hours out, and the only
+   way to know either had happened was to look in the database. A tick when it
+   has gone, a dash when it has not — an outline either way, because this is a
+   fact about the job and not a state to be shouted (§20).
+   GUARDRAIL: server/tests/reminder-indicator.test.js */
+.wm-rem{
+  display: inline-flex;
+  align-items: center;
+  gap: .28rem;
+  margin: 0 .35rem .25rem 0;
+  padding: .12rem .5rem;
+  border: var(--border-hair) solid var(--westmere-line-strong);
+  border-radius: 999px;
+  background: var(--westmere-white);
+  font-family: var(--sans);
+  font-size: .66rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--westmere-muted);
+  white-space: nowrap;
+}
+/* SENT takes the gold edge and the gold-ink tick — the house's way of saying
+   a thing is done, without filling anything. */
+.wm-rem.on{ border-color: var(--westmere-gold); color: var(--westmere-navy); }
+.wm-rem-t{ font-size: .78rem; line-height: 1; color: var(--westmere-muted); }
+.wm-rem.on .wm-rem-t{ color: var(--westmere-gold-ink); }
+
+/* ── ADJUST, beside what the driver is paid ──────────────────────────────── */
+.wm-adjust{
+  display: inline-block;
+  margin-left: .4rem;
+  padding: .12rem .5rem;
+  border: var(--border-hair) solid var(--westmere-line-strong);
+  border-radius: 6px;
+  background: var(--westmere-white);
+  font-family: var(--sans);
+  font-size: .62rem;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--westmere-navy);
+  cursor: pointer;
+  min-height: 0;
+}
+.wm-adjust:hover{ border-color: var(--westmere-navy); }
+.adm-rem-row{ display: flex; flex-wrap: wrap; align-items: center; margin-top: .3rem; }
+/* The two document actions sit under the driver's name rather than beside it:
+   "View driver email" and "Resend to driver" are longer than the row has left
+   once the name and the payout have had their share. */
+.wm-drv-acts{ display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .4rem; }
+.wm-drv-acts .wm-adjust{ margin-left: 0; }

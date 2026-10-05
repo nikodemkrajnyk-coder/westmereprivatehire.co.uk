@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<script src="/address-normalize.js?v=2026-10-05b"></script>
-<script src="/wm-address-lookup.js?v=2026-10-05b"></script>
-<script src="/wm-invoice-maths.js?v=2026-10-05b"></script>
-<script src="/wm-lifecycle.js?v=2026-10-05b"></script>
-<script src="/wm-compact.js?v=2026-10-05b"></script>
+<script src="/address-normalize.js?v=2026-10-06a"></script>
+<script src="/wm-address-lookup.js?v=2026-10-06a"></script>
+<script src="/wm-invoice-maths.js?v=2026-10-06a"></script>
+<script src="/wm-lifecycle.js?v=2026-10-06a"></script>
+<script src="/wm-compact.js?v=2026-10-06a"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -467,7 +467,7 @@ textarea.fi{resize:vertical;min-height:80px}
 
 footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);font-size:.78rem;letter-spacing:.1em;color:var(--westmere-ink-soft);background:transparent;border-top:1px solid rgba(27,27,26,.06);position:relative;z-index:1}.mini-legal{margin-left:.6rem}.mini-legal a{color:var(--westmere-ink-soft);text-decoration:none;margin-left:.5rem;transition:color .2s;letter-spacing:.08em}.mini-legal a:hover{color:rgba(106,106,106,.8)}
 </style>
-<script src="/config.js?v=2026-10-05b"></script>
+<script src="/config.js?v=2026-10-06a"></script>
 <script>
 // Force-evict stale service worker cache
 if ('serviceWorker' in navigator) {
@@ -521,9 +521,9 @@ select:-webkit-autofill:focus{
   caret-color:#1b1b1a;
   transition:background-color 9999s ease-in-out 0s;
 }
-</style><link rel="stylesheet" href="/wm-buttons.css?v=2026-10-05b">
-<link rel="stylesheet" href="/westmere-theme.css?v=2026-10-05b">
-<script src="/wm-ask.js?v=2026-10-05b"></script>
+</style><link rel="stylesheet" href="/wm-buttons.css?v=2026-10-06a">
+<link rel="stylesheet" href="/westmere-theme.css?v=2026-10-06a">
+<script src="/wm-ask.js?v=2026-10-06a"></script>
 <link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"></head>
 <body>
 
@@ -6023,7 +6023,12 @@ function invPreviewClose(fromPop){
   _PDF_PREVIEW_POPPED = false;
 }
 function _invPreviewKey(e){ if (e.key === 'Escape') invPreviewClose(); }
-function invPreviewOpen(url, title){
+/* Also shows a document we HAVE rather than one behind a URL — the driver's
+   job email, handed over as HTML. Same chrome, same Back, same device-Back
+   handling; an iframe srcdoc so the email's own styles cannot touch the app.
+   GUARDRAIL: server/tests/driver-email-view.test.js */
+function invPreviewOpen(url, title, opts){
+  var o_ = opts || {};
   invPreviewClose();
   var o = document.createElement('div');
   o.id = 'pdf-preview-overlay';
@@ -6041,12 +6046,12 @@ function invPreviewOpen(url, title){
         'font-family:var(--sans);font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--navy,#102a43)">' +
         '← Back</button>' +
       '<div style="flex:1;font-family:var(--serif);font-size:.98rem;color:#1a1a1a">' + (title || 'Preview') + '</div>' +
-      '<a id="pdf-preview-open" href="' + url + '"' + (_wmStandalone() ? ' download' : ' target="_blank" rel="noopener"') + ' ' +
+      (o_.html ? '' : '<a id="pdf-preview-open" href="' + url + '"' + (_wmStandalone() ? ' download' : ' target="_blank" rel="noopener"') + ' ' +
         'style="font-family:var(--sans);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;' +
         'color:var(--navy,#102a43);text-decoration:none;border-bottom:1px solid rgba(16,42,67,.3)">'
-        + (_wmStandalone() ? 'Save the PDF' : 'Open the PDF') + '</a>' +
+        + (_wmStandalone() ? 'Save the PDF' : 'Open the PDF') + '</a>') +
     '</div>' +
-    '<iframe id="pdf-preview-frame" src="' + url + '" title="' + (title || 'Invoice preview') + '" ' +
+    '<iframe id="pdf-preview-frame" ' + (o_.html ? 'srcdoc="' + String(o_.html).replace(/"/g,'&quot;') + '"' : 'src="' + url + '"') + ' title="' + (title || 'Invoice preview') + '" ' +
       'style="flex:1 1 auto;width:100%;border:none;background:var(--westmere-white,#ffffff)"></iframe>' +
     '<noscript></noscript>';
   document.body.appendChild(o);
@@ -7908,6 +7913,7 @@ function admShowDay(key){
           +'<div class="adm-cal-name">'+escTo(j.ref||'')+' \u00b7 '+escTo(j.customer_name||'')+waiting+'</div>'
           +'<div class="adm-cal-route" title="'+escTo((j.pickup||'')+' \u2192 '+(j.destination||''))+'">'+escTo(_admShortAddr(j.pickup||''))+' \u2192 '+escTo(_admShortAddr(j.destination||''))+'</div>'
           +'<div style="margin-top:.25rem">'+payChip+ovChip+'</div>'
+          +admRemindersHtml(j)
           +notesHtml
         +'</div>'
         +'<div class="adm-cal-status '+stCls+'">'+escTo(stTxt)+'</div>'
@@ -7918,6 +7924,96 @@ function admShowDay(key){
   det.innerHTML=html;
   // Make sure flagged cache is populated for the Resolve buttons
   jobs.forEach(function(j){FLAGGED_CACHE[j.id]=j;});
+}
+
+/* ── THE OWNER APP'S TWO MARKS, HERE TOO ──────────────────────────────────
+   Whether the 12-hour reminder has reached the rider and the driver, from the
+   two latches the sweeper stamps (server/reminder.js). The driver's mark only
+   appears on a job passed to one — with nobody else driving, the owner IS the
+   driver and his reminder is the owner reminder.
+   GUARDRAIL: server/tests/reminder-indicator.test.js */
+function admRemindersHtml(j){
+  if(!j) return '';
+  var st=String(j.status||'').toLowerCase();
+  if(['confirmed','awaiting_payment','active'].indexOf(st)===-1) return '';
+  var mark=function(label,at){
+    var on=!!at;
+    return '<span class="wm-rem'+(on?' on':'')+'" title="'+escTo(label+(on?' reminded '+String(at).slice(0,16):' not reminded yet'))+'">'
+      +'<span class="wm-rem-t">'+(on?'✓':'—')+'</span>'+escTo(label)+'</span>';
+  };
+  var passed=!!j.passed_at&&!j.operator_id;
+  return '<div class="adm-rem-row">'+mark('Rider',j.customer_reminder_sent_at)
+    +(passed?mark('Driver',j.driver_reminder_sent_at):'')
+    +((passed&&j.driver_id)
+      ? '<button type="button" class="wm-adjust" onclick="event.stopPropagation();admAdjustPayout('+j.id+')">Adjust payout</button>'
+      : '')
+    +(j.passed_at
+      ? '<button type="button" class="wm-adjust" onclick="event.stopPropagation();admViewDriverEmail('+j.id+')">View driver email</button>'
+        + '<button type="button" class="wm-adjust" onclick="event.stopPropagation();admResendDriverEmail('+j.id+')">Resend to driver</button>'
+      : '')
+    +'</div>';
+}
+
+/* Changing what the driver is paid, after the job was given to him. The same
+   endpoint and the same single figure as the owner app's — his statement, his
+   balance and the week's transfer all take it, and he is told it moved. */
+/* ── WHAT THE DRIVER IS WORKING FROM ──────────────────────────────────────
+   The owner could see the job, the payout and whether the reminder went — but
+   not the document in the driver's inbox. "Has he got the right address" and
+   "does he know what it pays" were questions only the driver could answer.
+
+   It is the REAL email: the server builds it with the same function the sender
+   uses, from the row as it stands now, so after the payout is adjusted this is
+   what a resend would deliver.
+   GUARDRAIL: server/tests/driver-email-view.test.js */
+async function admViewDriverEmail(id){
+  try{
+    var r=await fetch('/api/bookings/'+id+'/driver-email',{credentials:'include'});
+    var d=await r.json();
+    if(!r.ok||!d.ok){ showToast(d.error||'Could not load the driver email'); return; }
+    invPreviewOpen('', d.subject||'Driver email', { html: d.html });
+  }catch(e){ showToast('Network error — could not load the email'); }
+}
+
+/* ── SENDING IT AGAIN ─────────────────────────────────────────────────────
+   He missed it, or the payout has moved. Rebuilt server-side from the current
+   row, so a resent email cannot name a figure the ledger disagrees with. */
+async function admResendDriverEmail(id, opts){
+  var o=opts||{};
+  if(!o.silent){
+    var yes=await WMAsk.confirm('Send the job email to the driver again?');
+    if(!yes) return false;
+  }
+  try{
+    var r=await fetch('/api/bookings/'+id+'/driver-email/resend',{method:'POST',credentials:'include'});
+    var d=await r.json();
+    if(!r.ok||!d.ok){ showToast(d.error||'The email did not go'); return false; }
+    showToast('Job email sent to '+d.to);
+    return true;
+  }catch(e){ showToast('Network error — nothing was sent'); return false; }
+}
+
+async function admAdjustPayout(id){
+  var j=FLAGGED_CACHE[id]||{};
+  var now=(j.driver_pay!=null)?Number(j.driver_pay).toFixed(2):'';
+  var v=await WMAsk.prompt('What should '+(j.driver_name||j.assigned_to_name||'the driver')
+    +' receive for this job?'+(j.fare?' The fare is £'+Number(j.fare).toFixed(2)+'.':''), now);
+  if(v===null||v===undefined) return;
+  try{
+    var r=await fetch('/api/bookings/'+id+'/driver-payout',{method:'PATCH',credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({payout:String(v).trim()})});
+    var d=await r.json();
+    if(!r.ok||!d.ok){ showToast(d.error||'Could not change the payout'); return; }
+    showToast('Payout £'+Number(d.payout).toFixed(2)+(d.driver_told?' · driver told':''));
+    if(d.previous!==d.payout){
+      var again=await WMAsk.confirm('The payout changed from £'+Number(d.previous).toFixed(2)
+        +' to £'+Number(d.payout).toFixed(2)+'. Send him the job email again with the new figure?');
+      if(again) await admResendDriverEmail(id,{silent:true});
+    }
+    if(typeof loadAdminCalendar==='function')loadAdminCalendar();
+    if(typeof loadLiveBookings==='function')loadLiveBookings();
+  }catch(e){ showToast('Network error — the payout was not changed'); }
 }
 
 // Refresh calendar when bookings change
@@ -8165,6 +8261,6 @@ function _renderCustomerTable(customers) {
 }
 
 </script>
-<script src="/wm-realtime.js?v=2026-10-05b"></script>
+<script src="/wm-realtime.js?v=2026-10-06a"></script>
 </body>
 </html>

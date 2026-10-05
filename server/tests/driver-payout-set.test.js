@@ -280,6 +280,143 @@ test('…and the same row settles to nothing once it is paid', () => {
   assert.strictEqual(ledger.unpaidUpTo(d, '2026-12-31').total, 0, 'and the week still wants to pay it again');
 });
 
+// ── 2c. CHANGING IT AFTER THE JOB WAS GIVEN TO HIM ────────────────────────
+console.log('\nAdjusting the payout later moves the ledger, and only the ledger');
+
+const api = require('../api');
+function resp() {
+  return { statusCode: 200, body: null,
+    status(c) { this.statusCode = c; return this; },
+    json(b) { this.body = b; return this; }, send(b) { this.body = b; return this; },
+    setHeader() { return this; } };
+}
+async function patch(routePath, params, body) {
+  const l = api.stack.find((x) => x.route && x.route.path === routePath && x.route.methods.patch);
+  assert.ok(l, 'PATCH ' + routePath + ' is missing');
+  const req = { params, query: {}, body, ip: '::1', auth: { role: 'owner', id: 1, type: 'user' } };
+  const r = resp();
+  for (const h of l.route.stack.map((x) => x.handle)) {
+    let next = false;
+    await h(req, r, () => { next = true; });
+    if (!next) break;
+  }
+  return r;
+}
+function passedJob(over) {
+  const o = over || {};
+  const d = seedDriver(o.pct === undefined ? 10 : o.pct);
+  const b = seedBooking({ fare: o.fare == null ? 100 : o.fare, payment: o.payment || 'card' });
+  const split = ledger.computeSplit(b.fare, (o.pct === undefined ? 10 : o.pct) / 100);
+  db.prepare(`UPDATE bookings SET driver_id = ?, driver_pay = ?, admin_fee = ?,
+                                  passed_at = datetime('now') WHERE id = ?`)
+    .run(d, split.driver_pay, split.admin_fee, b.id);
+  return { driver: d, id: b.id, row: () => rowOf(b.id) };
+}
+
+test('adjusting the payout moves the balance and the weekly payout together', async () => {
+  const j = passedJob({ fare: 100, pct: 10 });
+  assert.strictEqual(ledger.driverBalance(j.driver), 90, 'the job did not start where expected');
+
+  const r = await patch('/bookings/:id/driver-payout', { id: String(j.id) }, { payout: 70 });
+  assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
+  const row = j.row();
+  assert.strictEqual(row.driver_payout_set, 70, 'the decision was not recorded');
+  assert.strictEqual(row.driver_pay, 70);
+  assert.strictEqual(row.admin_fee, 30, 'commission must be WHAT IS LEFT, or the fare stops adding up');
+  assert.strictEqual(ledger.jobSplit(row).payout, 70);
+  assert.strictEqual(ledger.driverBalance(j.driver), 70, 'the balance screen did not follow');
+  assert.strictEqual(ledger.unpaidUpTo(j.driver, '2099-01-01').total, 70, 'the weekly payout did not follow');
+  assert.strictEqual(r.body.payout, 70);
+  assert.strictEqual(r.body.previous, 90, 'the response does not say what it was');
+});
+
+test('NO SECOND FIGURE EXISTS — commission + payout is still the fare', async () => {
+  const j = passedJob({ fare: 100, pct: 10 });
+  await patch('/bookings/:id/driver-payout', { id: String(j.id) }, { payout: 62.5 });
+  const row = j.row();
+  assert.strictEqual(Math.round((row.admin_fee + row.driver_pay) * 100) / 100, row.fare,
+    'commission + payout no longer equals the fare');
+  const sql = db.prepare(`SELECT COALESCE(SUM(${ledger.incomeSql()}),0) t FROM bookings WHERE id = ?`)
+    .get(j.id).t;
+  assert.strictEqual(sql, 37.5, 'the turnover SQL disagrees with the row');
+  assert.strictEqual(ledger.westmereIncome(row), 37.5, 'and the ledger disagrees with itself');
+});
+
+test('clearing it puts the rate back, exactly where the send sheet would', async () => {
+  const j = passedJob({ fare: 100, pct: 10 });
+  await patch('/bookings/:id/driver-payout', { id: String(j.id) }, { payout: 70 });
+  const r = await patch('/bookings/:id/driver-payout', { id: String(j.id) }, { payout: '' });
+  assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
+  const row = j.row();
+  assert.strictEqual(row.driver_payout_set, null, 'the override is still recorded');
+  assert.strictEqual(row.driver_pay, 90);
+  assert.strictEqual(row.admin_fee, 10);
+  assert.strictEqual(ledger.driverBalance(j.driver), 90);
+});
+
+test('a SETTLED job is refused — a receipt is not edited in place', async () => {
+  const j = passedJob({ fare: 100, pct: 10 });
+  ledger.settleBatch(j.driver, [j.id]);
+  const r = await patch('/bookings/:id/driver-payout', { id: String(j.id) }, { payout: 70 });
+  assert.strictEqual(r.statusCode, 409, JSON.stringify(r.body));
+  assert.ok(/unpaid first/.test(r.body.error), r.body.error);
+  assert.strictEqual(j.row().driver_pay, 90, 'the settled job was changed anyway');
+});
+
+test('more than the fare, an operator job and an unpassed job are all refused', async () => {
+  const j = passedJob({ fare: 95, pct: 10 });
+  const over = await patch('/bookings/:id/driver-payout', { id: String(j.id) }, { payout: 950 });
+  assert.strictEqual(over.statusCode, 400);
+  assert.ok(/950\.00/.test(over.body.error) && /95\.00/.test(over.body.error), over.body.error);
+
+  const plain = seedBooking({ fare: 100 });
+  const unpassed = await patch('/bookings/:id/driver-payout', { id: String(plain.id) }, { payout: 50 });
+  assert.strictEqual(unpassed.statusCode, 409, 'a job nobody was passed accepted a payout');
+
+  const op = db.prepare(`INSERT INTO customers (full_name,email,password,is_operator,active)
+                         VALUES ('Firm','f@x.co.uk','',1,1)`).run().lastInsertRowid;
+  const ob = seedBooking({ fare: 100 });
+  db.prepare("UPDATE bookings SET operator_id = ?, passed_at = datetime('now') WHERE id = ?").run(op, ob.id);
+  const opr = await patch('/bookings/:id/driver-payout', { id: String(ob.id) }, { payout: 50 });
+  assert.strictEqual(opr.statusCode, 409, 'an operator job accepted a payout');
+  assert.ok(/invoice/i.test(opr.body.error));
+});
+
+test('the driver is TOLD when it moves, and not when it does not', async () => {
+  SENT.length = 0;
+  const j = passedJob({ fare: 100, pct: 10 });
+  const addr = db.prepare('SELECT email FROM users WHERE id = ?').get(j.driver).email;
+  const r = await patch('/bookings/:id/driver-payout', { id: String(j.id) }, { payout: 70 });
+  assert.strictEqual(r.body.driver_told, true, 'the driver was not told his pay changed');
+  const mail = SENT.filter((m) => [].concat(m.to || []).join(',') === addr)[0];
+  assert.ok(mail, 'nothing reached the driver');
+  const t = String(mail.html).replace(/<[^>]+>/g, ' ').replace(/&pound;/g, '£').replace(/\s+/g, ' ');
+  assert.ok(/£70\.00/.test(t), 'the note does not name the new figure');
+  assert.ok(/£90\.00/.test(t), 'the note does not say what it was');
+
+  // Re-saving the same number is not news.
+  SENT.length = 0;
+  const again = await patch('/bookings/:id/driver-payout', { id: String(j.id) }, { payout: 70 });
+  assert.strictEqual(again.body.driver_told, false, 'the driver was emailed about nothing changing');
+  assert.strictEqual(SENT.length, 0);
+});
+
+test('both apps offer it, on a passed job only, through the one endpoint', () => {
+  for (const [who, file] of [['owner', 'westmere-owner.html'], ['admin', 'westmere-admin.html']]) {
+    const src = strip(read(file), { html: true });
+    const fn = fnBlock(src, who === 'owner' ? 'ownerAdjustPayout' : 'admAdjustPayout');
+    assert.ok(/\/driver-payout/.test(fn), who + ' does not call the payout endpoint');
+    assert.ok(/method:\s*'PATCH'/.test(fn), who + ' is not PATCHing');
+    assert.ok(/WMAsk\.prompt/.test(fn), who + ' uses something other than the house prompt');
+    assert.ok(/wm-adjust/.test(src), who + ' has no control to start it from');
+    // …and only where there is a driver to pay.
+    const guard = who === 'owner'
+      ? /j\.driverId&&j\.passedAt&&!j\.operatorId/
+      : /passed&&j\.driver_id/;
+    assert.ok(guard.test(src), who + ' offers Adjust on a job with no driver');
+  }
+});
+
 // ── 3. THE DRIVER'S EMAIL SHOWS THE FIGURE HE SET ─────────────────────────
 console.log('\nThe email says what was agreed');
 
