@@ -137,6 +137,74 @@ test('the staff apps evict a worker they find, on every load', () => {
   }
 });
 
+/* ════════════════════════════════════════════════════════════════════════
+   A SHARED ASSET MAY NOT CHANGE WITHOUT THE RELEASE TOKEN MOVING.
+   ════════════════════════════════════════════════════════════════════════
+   THIS IS THE HOLE THAT LET THE BUG THROUGH, and it is worth stating exactly.
+   Everything above checks that the token is PRESENT, that it is the SAME
+   everywhere, and that the files it names EXIST. Not one of those notices the
+   failure that actually happens: a release edits wm-compact.js, wm-lifecycle.js,
+   address-normalize.js and westmere-theme.css, ships new HTML that references
+   them at the OLD ?v= — and every check stays green while every warm browser
+   keeps serving yesterday's copies against today's page.
+
+   That is not a theoretical cache problem. The owner reported it once already
+   ("the app still looks black and white on my iPhone"), and the consequences
+   are worse than a stale look: the new HTML calls WMCompact.compareLine(),
+   which does not exist in a cached wm-compact.js, and the handler throws
+   part-way through rendering the page.
+
+   So: a manifest of content hashes, checked in beside the token. Change a
+   versioned file and this fails until the manifest is regenerated — and the
+   manifest carries the token, so regenerating it is where you notice the token
+   has to move too.
+
+       node server/tests/asset-version.test.js --write    # regenerate
+*/
+const MANIFEST = 'asset-manifest.json';
+const sha = (rel) => require('crypto').createHash('sha256')
+  .update(fs.readFileSync(path.join(ROOT, rel))).digest('hex').slice(0, 16);
+
+if (process.argv.includes('--write')) {
+  const m = JSON.parse(read(MANIFEST));
+  m.version = (/[?&]v=([\d-]+[a-z]?)/.exec(read('westmere-owner.html')) || [])[1] || m.version;
+  Object.keys(m.files).forEach((f) => { m.files[f] = sha(f); });
+  fs.writeFileSync(path.join(ROOT, MANIFEST), JSON.stringify(m, null, 2) + '\n');
+  console.log('asset-manifest.json rewritten at version ' + m.version);
+  process.exit(0);
+}
+
+test('every versioned asset still hashes to what the manifest recorded', () => {
+  const m = JSON.parse(read(MANIFEST));
+  const drifted = Object.keys(m.files).filter((f) => sha(f) !== m.files[f]);
+  assert.deepStrictEqual(drifted, [],
+    'these shipped files changed but the release token did not move, so warm '
+    + 'browsers will keep the old copies: ' + drifted.join(', ')
+    + '\n      → bump ?v= in every app, then: node server/tests/asset-version.test.js --write');
+});
+
+test('the manifest records the token the apps are actually serving', () => {
+  const m = JSON.parse(read(MANIFEST));
+  const inApp = (/[?&]v=([\d-]+[a-z]?)/.exec(read('westmere-owner.html')) || [])[1];
+  assert.strictEqual(m.version, inApp,
+    'the manifest was regenerated without the token being bumped — which is the '
+    + 'whole point of regenerating it');
+});
+
+test('the manifest covers every asset the apps load with a version', () => {
+  const m = JSON.parse(read(MANIFEST));
+  const referenced = new Set();
+  for (const app of ['westmere-owner.html', 'westmere-admin.html', 'westmere-rider.html', 'westmere-driver.html']) {
+    if (!fs.existsSync(path.join(ROOT, app))) continue;
+    for (const hit of read(app).matchAll(/(?:src|href)="\/([A-Za-z0-9._-]+)\?v=/g)) referenced.add(hit[1]);
+  }
+  // config.js is generated per-request by the server, so it has no file to hash.
+  referenced.delete('config.js');
+  const missing = [...referenced].filter((f) => !(f in m.files));
+  assert.deepStrictEqual(missing, [],
+    'a versioned asset nothing is watching: ' + missing.join(', '));
+});
+
 test('this guardrail is wired into npm test', () => {
   assert.ok(/asset-version\.test\.js/.test(read('package.json')),
     'add it to npm test or it will not run again');
