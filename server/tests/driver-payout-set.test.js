@@ -221,6 +221,65 @@ test('zero is accepted — it is a real answer, not a missing one', async () => 
   assert.strictEqual(row.admin_fee, 100);
 });
 
+// ── 2b. THROUGH A REAL ROW, WHICH IS WHERE IT WENT WRONG ──────────────────
+console.log('\nEvery screen reads the same figure off the same row');
+
+/* THE BLIND SPOT THIS SECTION EXISTS FOR.
+   Everything above tested the arithmetic on OBJECT LITERALS — and an object
+   literal always has the key you just wrote into it. The database does not.
+   driverBalance selected six columns by name and `driver_payout_set` was not
+   among them, so jobSplit saw undefined, fell back to the derived figure, and
+   the same job showed £97 on the balance screen and £100 on the weekly payout.
+   Nothing in the suite noticed, because nothing drove driverBalance through a
+   stored row.
+
+   This is the second time the shape of the test hid the bug: the NULL
+   card_received case was missed the same way. So these run against the DB. */
+
+test('an agreed card job: balance, weekly payout and the row all say the same thing', () => {
+  const d = seedDriver(10);
+  const ref = 'WPH-R' + (++seq);
+  db.prepare(`INSERT INTO bookings (ref,pickup,destination,date,time,passengers,fare,payment,status,
+                                    driver_id,driver_pay,admin_fee,driver_payout_set,card_received,passed_at)
+              VALUES (?,?,?,?,?,1,?,?,'completed',?,?,?,?,?,?)`)
+    .run(ref, 'Steyning', 'Gatwick', '2026-10-12', '07:00', 100, 'card', d,
+         100, 0, 100, 97, '2026-10-12');
+  const row = db.prepare('SELECT * FROM bookings WHERE ref = ?').get(ref);
+
+  const agreed = 100;
+  assert.strictEqual(ledger.jobSplit(row).payout, agreed, 'the row itself');
+  assert.strictEqual(ledger.driverBalance(d), agreed,
+    'THE BALANCE SCREEN disagrees with the row — driverBalance is not reading the whole row');
+  assert.strictEqual(ledger.unpaidUpTo(d, '2026-12-31').total, agreed,
+    'the weekly payout disagrees with the row');
+  // And the three agree with each other, which is the thing the owner sees.
+  assert.strictEqual(ledger.driverBalance(d), ledger.unpaidUpTo(d, '2026-12-31').total,
+    'the balance screen and the weekly payout show different figures for the same job');
+});
+
+test('driverBalance reads the WHOLE row, so the next column cannot be forgotten', () => {
+  /* The fix is not "add one more column name" — it is to stop keeping a second
+     list of them. Every other reader in this file already does. */
+  const fn = fnBlock(strip(read('server/driver-ledger.js')), 'driverBalance');
+  assert.ok(/SELECT \* FROM bookings/.test(fn),
+    'driverBalance names its columns again — the next one added will be missed too');
+});
+
+test('…and the same row settles to nothing once it is paid', () => {
+  const d = seedDriver(10);
+  const ref = 'WPH-R' + (++seq);
+  db.prepare(`INSERT INTO bookings (ref,pickup,destination,date,time,passengers,fare,payment,status,
+                                    driver_id,driver_pay,admin_fee,driver_payout_set,card_received,passed_at)
+              VALUES (?,?,?,?,?,1,?,?,'completed',?,?,?,?,?,?)`)
+    .run(ref, 'Steyning', 'Gatwick', '2026-10-12', '07:00', 100, 'card', d,
+         100, 0, 100, 97, '2026-10-12');
+  const row = db.prepare('SELECT * FROM bookings WHERE ref = ?').get(ref);
+  assert.strictEqual(ledger.driverBalance(d), 100);
+  ledger.settleBatch(d, [row.id]);
+  assert.strictEqual(ledger.driverBalance(d), 0, 'paying the agreed amount left a balance behind');
+  assert.strictEqual(ledger.unpaidUpTo(d, '2026-12-31').total, 0, 'and the week still wants to pay it again');
+});
+
 // ── 3. THE DRIVER'S EMAIL SHOWS THE FIGURE HE SET ─────────────────────────
 console.log('\nThe email says what was agreed');
 

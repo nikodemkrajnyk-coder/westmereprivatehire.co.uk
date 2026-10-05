@@ -435,8 +435,16 @@ function recordSettlement(driverId, amount, opts) {
  */
 function driverBalance(driverId) {
   const db = getDb();
+  /* SELECT *, LIKE EVERY OTHER READER IN THIS FILE — and that is the point.
+     This named its six columns, which made it a SECOND PLACE to remember a
+     column, and the day `driver_payout_set` arrived nobody remembered. The row
+     came back without it, jobSplit saw undefined, and the balance quietly fell
+     back to the derived figure: the same job showed £97 on the balance screen
+     and £100 on the weekly payout. A list of columns is a promise to keep
+     updating a list of columns, and the ledger already has one place where
+     money is decided. */
   const rows = db.prepare(
-    `SELECT fare, payment, driver_pay, admin_fee, card_received, driver_settled FROM bookings
+    `SELECT * FROM bookings
       WHERE driver_id = ? AND passed_at IS NOT NULL AND COALESCE(status,'') <> 'cancelled'`
   ).all(driverId);
   return rows.reduce((t, b) => Math.round((t + outstandingOn(b)) * 100) / 100, 0);
