@@ -1410,6 +1410,58 @@ async function sendDriverDispatch(d) {
   return ok;
 }
 
+/**
+ * WHAT HE IS BEING PAID, ON THE REMINDER AS WELL AS THE OFFER.
+ *
+ * The reminder told a driver where to be and said nothing about the money. He
+ * accepted the job on a figure, twelve hours pass, and the document that
+ * arrives to remind him leaves the one number he would check off it — so the
+ * only way to see what a job is worth the morning of it was to go back and
+ * find the original dispatch email.
+ *
+ * THE FIGURE COMES FROM THE LEDGER, not from arithmetic repeated here.
+ * jobSplit is the single authority for what a job pays (server/driver-ledger.js)
+ * — it already knows about commission, a cover job, the card fee and an amount
+ * the owner agreed by hand — so the reminder cannot disagree with the dispatch
+ * email, the driver's statement or the weekly payout.
+ *
+ * ONLY ON A JOB THAT WAS PASSED. With nobody assigned the owner is the driver,
+ * and "Payout" on his own fare is not a thing that means anything.
+ * GUARDRAIL: server/tests/reminder.test.js
+ */
+function driverPayBlockHtml(d) {
+  if (!d || !d.passed_at) return '';
+  if (!(d.driver_id || d.assigned_to_name || d.driver_name)) return '';
+  let s;
+  try { s = require('./driver-ledger').jobSplit(d); } catch (e) { return ''; }
+  if (!s || s.payout === null || isNaN(s.payout)) return '';
+  /* `money` is a LOCAL in each of the other builders, not a module helper — the
+     first version of this block borrowed the name and threw at send time, which
+     the sweeper caught and logged while the driver got nothing and the latch
+     stayed open. Its own, here. */
+  const money = (n) => '\u00a3' + Number(n).toFixed(2);
+  const cash = String(d.payment || '').toLowerCase() === 'cash';
+  const line = [
+    'Fare ' + money(s.fare),
+    (s.commission ? 'Commission \u2212' + money(s.commission) : null),
+    ((!s.payout_set && s.card_fee > 0) ? 'Card fee \u2212' + money(s.card_fee) : null),
+    'Payout ' + money(s.payout) + (s.payout_set ? ' (agreed)' : '')
+  ].filter(Boolean).join(' &middot; ');
+  return `
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${ACCENT};margin:20px 0 4px">
+    <tr><td style="padding:16px 18px">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="padding:4px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:15px;color:${INK}">Payout</td>
+          <td align="right" style="padding:4px 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:18px;color:${INK}">${escHtml(money(s.payout))}</td>
+        </tr>
+      </table>
+      <p style="margin:8px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:14px;color:${INK_SOFT};line-height:1.5">${line}</p>
+      <p style="margin:12px 0 0;padding-top:10px;border-top:1px solid ${ACCENT};font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_MUTED};line-height:1.5">${escHtml(cash ? 'Cash \u2014 collect ' + money(s.fare) + ' from the passenger.' : 'Prepaid')}</p>
+    </td></tr>
+  </table>`;
+}
+
 async function sendDriverJobReminder(d) {
   const to = d && d.driver_email;
   if (!to || !d.ref) return false;
@@ -1419,6 +1471,7 @@ async function sendDriverJobReminder(d) {
   <p style="margin:0 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT};font-weight:600">Reminder</p>
   <p style="margin:0 0 16px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:18px;color:${INK};line-height:1.4">You have a job coming up.</p>
   ${buildDetailsTable(jobDetailRows(d))}
+  ${driverPayBlockHtml(d)}
   ${passengerBlockHtml(d)}
   ${calendarBlock(d)}
   <p style="margin:22px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_SOFT};line-height:1.6">Nothing to do here &mdash; this is a reminder, not a new offer. If anything has changed, call 07930&nbsp;342593.</p>`;

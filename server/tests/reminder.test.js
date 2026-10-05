@@ -31,6 +31,29 @@ const queue = [];
 function test(name, fn) { queue.push({ name, fn }); }
 function read(rel) { return fs.readFileSync(path.join(__dirname, '..', '..', rel), 'utf8'); }
 
+/* THE EMAILS THEMSELVES, CAPTURED. Everything below this had been assertions
+   about the sweeper's SHAPE — its window, its latches, the SQL it runs. None of
+   it ever sent one, so a reminder that threw at send time looked identical to a
+   reminder that went: the sweeper catches, logs and moves on, and the latch
+   stays open for a retry that fails the same way for ever.
+   That is not hypothetical. Adding the payout to the driver reminder borrowed a
+   `money` helper that is a LOCAL in the other builders, and the driver reminder
+   stopped sending entirely — caught here, by a test that actually runs it. */
+const SENT = [];
+const realFetch = global.fetch;
+/* INSTALLED PER TEST, not once at the top: this file already replaces
+   global.fetch three times further down for its own captures, and whichever
+   ran last wins. Calling capture() at the start of a test takes the stub back
+   and empties the record. */
+function capture() {
+  SENT.length = 0;
+  global.fetch = async (u, o) => {
+    if (!/resend\.com/.test(String(u))) return realFetch(u, o);
+    try { SENT.push(JSON.parse(o.body)); } catch (e) {}
+    return { ok: true, status: 200, json: async () => ({ id: 'x' }) };
+  };
+}
+
 const reminder = require('../reminder');
 const { getDb } = require('../db');
 
@@ -242,6 +265,165 @@ test('sendOwnerBookingReminder renders a branded owner email with details', asyn
     'a genuine 12h gap reads the same as every other — the window fired, the email says nothing about it');
   assert.ok(!/12 hours/.test(cap.html), 'and never names the window');
 });
+// ── BOTH REMINDERS, ACTUALLY SENT ────────────────────────────────────────
+console.log('\nBoth reminders, driven through the real sweeper');
+
+/* A booking due in ~11.5h, built from UK wall-clock components so the sweeper's
+   own clock reading agrees with it (CLAUDE.md timezone invariant). */
+function dueBooking(ref, over) {
+  const o = over || {};
+  const db = getDb();
+  const sv = new Date(Date.now() + 11.5 * 3600 * 1000)
+    .toLocaleString('sv-SE', { timeZone: 'Europe/London' });
+  const date = sv.slice(0, 10), time = sv.slice(11, 16);
+  db.prepare(`INSERT INTO bookings
+      (ref,passenger_name,passenger_email,passenger_phone,pickup,destination,date,time,
+       passengers,bags,fare,payment,status,driver_id,driver_pay,admin_fee,passed_at,
+       assigned_to_name,assigned_to_email,paid_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+    .run(ref, 'Mrs Hall', o.custEmail === null ? null : (o.custEmail || 'hall@example.com'),
+         '07700 900101', 'Weppons Farm, Wiston BN44 3DN', 'Gatwick Airport, South Terminal',
+         date, time, 2, 2, o.fare == null ? 95 : o.fare, o.payment || 'card', 'confirmed',
+         o.driver_id || null, o.driver_pay == null ? null : o.driver_pay,
+         o.admin_fee == null ? null : o.admin_fee, o.passed_at || null,
+         o.an || null, o.ae || null, '2026-01-01 00:00');
+  return db.prepare('SELECT * FROM bookings WHERE ref = ?').get(ref);
+}
+function seedDriver() {
+  return getDb().prepare(`INSERT INTO users (username,password,role,full_name,email,phone,vehicle,reg,active,has_login)
+      VALUES (?, '', 'driver', 'Gary Mitchell', ?, '07700 900411', 'Mercedes E-Class', 'WM70 XYZ', 1, 0)`)
+    .run('g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+         'gary' + Math.random().toString(36).slice(2, 6) + '@example.com').lastInsertRowid;
+}
+const to = (m) => [].concat(m.to || []).join(',');
+const textOf = (m) => String(m.html || '').replace(/<style[\s\S]*?<\/style>/gi, ' ')
+  .replace(/<!--[\s\S]*?-->/g, ' ').replace(/<[^>]+>/g, ' ')
+  .replace(/&pound;/g, '£').replace(/&middot;/g, '·').replace(/&[a-z]+;/g, ' ')
+  .replace(/\s+/g, ' ');
+
+test('THE CUSTOMER REMINDER IS ACTUALLY SENT, and names the driver and car', async () => {
+  capture();
+  const d = seedDriver();
+  const drv = getDb().prepare('SELECT email FROM users WHERE id = ?').get(d).email;
+  dueBooking('WPH-RT1', { driver_id: d, driver_pay: 85.5, admin_fee: 9.5, passed_at: 'x' });
+  const r = await reminder.sweepDueReminders();
+  assert.ok(r.sentCustomer >= 1, 'no customer reminder was sent: ' + JSON.stringify(r));
+  const mail = SENT.filter((m) => /hall@example\.com/.test(to(m)))[0];
+  assert.ok(mail, 'nothing reached the customer; went to: ' + SENT.map(to).join(' | '));
+  const t = textOf(mail);
+  assert.ok(/Gary Mitchell/.test(t), 'the customer is not told who is picking them up');
+  assert.ok(/Mercedes E-Class/.test(t) && /WM70 XYZ/.test(t), 'the car and plate are missing');
+  assert.ok(/Gatwick/.test(t) && /05|0\d:|\d\d:\d\d/.test(t), 'the journey itself is missing');
+  assert.ok(!/undefined|NaN|\[object/.test(t), 'the customer email has a hole in it: ' + t.slice(0, 200));
+});
+
+test('THE DRIVER REMINDER IS ACTUALLY SENT, with the job and the payout', async () => {
+  capture();
+  const d = seedDriver();
+  const drvEmail = getDb().prepare('SELECT email FROM users WHERE id = ?').get(d).email;
+  dueBooking('WPH-RT2', { driver_id: d, driver_pay: 85.5, admin_fee: 9.5, passed_at: 'x' });
+  const r = await reminder.sweepDueReminders();
+  assert.strictEqual(r.sentDriver, 1, 'the driver reminder did not send: ' + JSON.stringify(r));
+  const mail = SENT.filter((m) => to(m) === drvEmail)[0];
+  assert.ok(mail, 'nothing reached the driver');
+  const t = textOf(mail);
+  assert.ok(/Payout/.test(t), 'THE DRIVER IS REMINDED OF A JOB WITHOUT BEING TOLD WHAT IT PAYS');
+  assert.ok(/£85\.50/.test(t), 'the payout figure is wrong or missing: ' + (t.match(/Payout[^·]*/) || []));
+  assert.ok(/Fare £95\.00/.test(t) && /Commission/.test(t), 'the working is gone');
+  assert.ok(/Gatwick/.test(t), 'the job itself is missing');
+  assert.ok(!/undefined|NaN|\[object/.test(t), 'the driver email has a hole in it: ' + t.slice(0, 200));
+});
+
+test('the payout on the reminder is the LEDGER\'s, including an agreed amount', async () => {
+  capture();
+  const d = seedDriver();
+  const drvEmail = getDb().prepare('SELECT email FROM users WHERE id = ?').get(d).email;
+  dueBooking('WPH-RT3', { driver_id: d, driver_pay: 70, admin_fee: 25, passed_at: 'x', fare: 95 });
+  getDb().prepare("UPDATE bookings SET driver_payout_set = 70 WHERE ref = 'WPH-RT3'").run();
+  await reminder.sweepDueReminders();
+  const mail = SENT.filter((m) => to(m) === drvEmail)[0];
+  const t = textOf(mail);
+  const row = getDb().prepare("SELECT * FROM bookings WHERE ref = 'WPH-RT3'").get();
+  const split = require('../driver-ledger').jobSplit(row);
+  assert.strictEqual(split.payout, 70);
+  assert.ok(/£70\.00/.test(t), 'the reminder disagrees with the ledger about the payout');
+  assert.ok(/agreed/.test(t), 'an agreed amount is not named as one');
+  assert.ok(!/Card fee/.test(t), 'an agreed payout must not show a card-fee deduction');
+});
+
+test('a job NOBODY was passed shows no payout — it is the owner\'s own fare', async () => {
+  capture();
+  dueBooking('WPH-RT4', {});                       // nobody assigned, never passed
+  await reminder.sweepDueReminders();
+  const owner = SENT.filter((m) => /nikodem/.test(to(m)))[0];
+  assert.ok(owner, 'the owner was not reminded at all');
+  assert.ok(!/Payout/.test(textOf(owner)), 'the owner is being shown a payout on his own job');
+});
+
+test('the three latches are independent — one sent does not block the others', async () => {
+  capture();
+  const d = seedDriver();
+  const drvEmail = getDb().prepare('SELECT email FROM users WHERE id = ?').get(d).email;
+  dueBooking('WPH-RT5', { driver_id: d, driver_pay: 85.5, admin_fee: 9.5, passed_at: 'x' });
+  // The owner's has already gone; the other two must still fire.
+  getDb().prepare("UPDATE bookings SET reminder_sent_at = datetime('now') WHERE ref = 'WPH-RT5'").run();
+  const r = await reminder.sweepDueReminders();
+  assert.strictEqual(r.sent, 0, 'the owner was reminded twice');
+  assert.ok(r.sentCustomer >= 1, 'the customer was blocked by the owner latch');
+  assert.strictEqual(r.sentDriver, 1, 'the driver was blocked by the owner latch');
+  assert.ok(SENT.some((m) => to(m) === drvEmail), 'nothing reached the driver');
+});
+
+test('a second sweep sends nothing — every latch holds', async () => {
+  capture();
+  const r = await reminder.sweepDueReminders();
+  assert.strictEqual(r.sent, 0);
+  assert.strictEqual(r.sentCustomer, 0);
+  assert.strictEqual(r.sentDriver, 0);
+  assert.strictEqual(SENT.length, 0, 'a reminder went out twice');
+});
+
+test('a booking made LESS than 12h out is still reminded, on the next sweep', async () => {
+  capture();
+  const db = getDb();
+  const sv = new Date(Date.now() + 2 * 3600 * 1000).toLocaleString('sv-SE', { timeZone: 'Europe/London' });
+  db.prepare(`INSERT INTO bookings (ref,passenger_name,passenger_email,pickup,destination,date,time,
+                                    passengers,fare,payment,status,paid_at)
+              VALUES ('WPH-RT6','Late Booker','late@example.com','Hove','Gatwick',?,?,1,60,'card','confirmed','2026-01-01')`)
+    .run(sv.slice(0, 10), sv.slice(11, 16));
+  const r = await reminder.sweepDueReminders();
+  assert.ok(r.sentCustomer >= 1, 'a job two hours away was never reminded');
+  assert.ok(SENT.some((m) => /late@example\.com/.test(to(m))), 'the late booker heard nothing');
+});
+
+test('nothing fails silently — a send that throws leaves the latch OPEN', () => {
+  /* The sweeper catches per-reminder so one bad address cannot stop the sweep.
+     The latch is only stamped on a truthy send, so the next pass retries —
+     which is what made the `money is not defined` bug recoverable rather than
+     permanent, and why these tests have to run the sender rather than read it. */
+  const rem = read('server/reminder.js');
+  for (const col of ['reminder_sent_at', 'customer_reminder_sent_at', 'driver_reminder_sent_at']) {
+    const sites = [...rem.matchAll(new RegExp('SET ' + col + " = datetime\\('now'\\)", 'g'))]
+      .map((m) => m.index);
+    assert.ok(sites.length, col + ' is never stamped');
+    /* AT LEAST ONE stamp must sit behind `if (ok)` — that is the send path.
+       The driver column has a SECOND site with no send behind it, and that one
+       is deliberate: when nobody is assigned the owner is the driver and has
+       just had the owner reminder for the same job, so the latch is closed
+       without a second email. A decision, not a failure. */
+    assert.ok(sites.some((i) => /if \(ok\)/.test(rem.slice(Math.max(0, i - 260), i))),
+      col + ' is never stamped behind a successful send');
+    for (const i of sites) {
+      const before = rem.slice(Math.max(0, i - 420), i);
+      if (!/await send[A-Za-z]+\(/.test(before)) continue;      // not a send site
+      assert.ok(/if \(ok\)/.test(before),
+        col + ' is stamped after a send without checking the send succeeded');
+    }
+  }
+  assert.ok(/catch \(e\) \{[\s\S]{0,120}console\.error\('\[REMINDER\]/.test(rem),
+    'a failed send is swallowed without a word');
+});
+
 test('the reminder sweeper is started server-side (index.js) and has no Claude dependency', () => {
   const idx = read('server/index.js');
   assert.ok(/require\('\.\/reminder'\)\.startBookingReminders\(\)/.test(idx), 'index.js must start the reminder sweeper');
