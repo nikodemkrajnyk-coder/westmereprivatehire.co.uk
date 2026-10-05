@@ -110,7 +110,24 @@ function normalizeTime(t) {
 router.post('/events', requireStaff, async (req, res) => {
   if (!gcal.isConfigured()) return res.status(503).json({ error: 'Google Calendar not configured' });
   const status = gcal.getStatus();
-  if (!status.connected) return res.status(503).json({ error: 'Google Calendar not connected. Connect Google Calendar in Settings first.' });
+  /* ── TWO DIFFERENT PROBLEMS, TWO DIFFERENT SENTENCES ──────────────────────
+     "Not connected" was one message for two situations that need opposite
+     things from the owner: a calendar that was never linked, and one Google
+     has since signed him out of. The second is the common one — a grant lapses
+     on its own — and being told to "connect in Settings first" sends a man who
+     HAS connected looking for a button that says Disconnect.
+     The flag travels so the screen can say the right thing and offer the right
+     action, instead of leaving him at a dead end.
+     GUARDRAIL: server/tests/assistant-calendar.test.js */
+  if (!status.connected) {
+    return res.status(503).json({
+      error: status.needsReconnect
+        ? 'Google has signed you out of your calendar. Reconnect it in Settings and this will go on automatically.'
+        : 'Google Calendar is not connected yet. Connect it in Settings and jobs will go on automatically.',
+      reason: status.needsReconnect ? 'needs_reconnect' : 'not_connected',
+      needsReconnect: !!status.needsReconnect
+    });
+  }
 
   const { title, date, time, pickup, destination, name, phone, fare, notes } = req.body;
   if (!date) return res.status(400).json({ error: 'date is required' });

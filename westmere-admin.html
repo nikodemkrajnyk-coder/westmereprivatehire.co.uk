@@ -176,8 +176,8 @@ body.full-view .content{padding:1.4rem 1.9rem;max-width:100%}
 /* BUTTONS */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;font-family:var(--sans);font-size:.76rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;padding:.6rem 1.2rem;cursor:pointer;border:none;transition:all .2s;text-decoration:none;white-space:nowrap}
 .btn:active{transform:scale(.97)}
-.btn-gold{background:rgba(27,27,26,.55);color:var(--navy);border:1px solid rgba(27,27,26,.55)}.btn-gold:hover{background:rgba(27,27,26,.06)}
-.btn-navy{color:var(--navy);border:1px solid rgba(27,27,26,.15);background:transparent}.btn-navy:hover{background:rgba(27,27,26,.55);border-color:rgba(27,27,26,.55);color:var(--navy)}
+.btn-gold{background:var(--navy);color:var(--westmere-white, #ffffff);border:1px solid var(--navy)}.btn-gold:hover{background:rgba(27,27,26,.06)}
+.btn-navy{color:var(--navy);border:1px solid rgba(27,27,26,.15);background:transparent}.btn-navy:hover{background:var(--navy);border-color:var(--navy);color:var(--westmere-white, #ffffff)}
 .btn-ghost{background:transparent;color:rgba(27,27,26,.78);border:1px solid rgba(27,27,26,.18)}.btn-ghost:hover{color:var(--navy);border-color:rgba(27,27,26,.4);background:rgba(27,27,26,.03)}
 .btn-green{background:var(--green-bg);color:var(--green);border:1px solid rgba(45,110,71,.3)}.btn-green:hover{background:rgba(45,110,71,.25)}
 .btn-red{background:var(--red-bg);color:var(--red);border:1px solid rgba(139,34,34,.3)}.btn-red:hover{background:rgba(139,34,34,.25)}
@@ -239,7 +239,7 @@ textarea.fi{resize:vertical;min-height:80px}
 .no-name{font-size:.92rem;font-weight:400;color:var(--navy)}
 .no-sub{font-size:.84rem;color:var(--westmere-ink-soft);margin-top:.05rem}
 .no-chk{width:18px;height:18px;border-radius:50%;border:1px solid rgba(27,27,26,.15);background:rgba(27,27,26,.04);display:flex;align-items:center;justify-content:center;font-size:.72rem;margin-left:auto;flex-shrink:0;transition:all .2s;color:transparent}
-.notify-opt.on .no-chk{background:var(--navy);border-color:var(--navy);color:var(--navy);font-weight:700}
+.notify-opt.on .no-chk{background:var(--navy);border-color:var(--navy);color:var(--westmere-white, #ffffff);font-weight:700}
 /* JOBS TABLE */
 .jtable{width:100%;border-collapse:collapse}
 .jtable th{font-size:.7rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--westmere-ink-soft);padding:.6rem .8rem;border-bottom:1px solid rgba(27,27,26,.08);text-align:left;white-space:nowrap;background:rgba(27,27,26,.03)}
@@ -304,7 +304,7 @@ textarea.fi{resize:vertical;min-height:80px}
 .cc-btn{flex:1;padding:.5rem .6rem;background:transparent;color:var(--navy);border:1px solid rgba(27,27,26,.15);border-radius:6px;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .2s}
 .cc-btn:hover{background:rgba(27,27,26,.55);color:#1a1a1a;border-color:rgba(27,27,26,.55)}
 .cc-btn-del{color:var(--red)!important;border-color:rgba(139,34,34,.2)!important}
-.cc-btn-del:hover{background:var(--red)!important;border-color:var(--red)!important;color:#1a1a1a!important}
+.cc-btn-del:hover{background:var(--red)!important;border-color:var(--red)!important;color:var(--westmere-white, #ffffff)!important}
 .cc-stats{display:flex;gap:.8rem;margin-top:.45rem}
 .cc-stat{font-size:.8rem;color:var(--westmere-ink-soft)}
 .cc-stat span{color:var(--navy);font-weight:500}
@@ -388,7 +388,7 @@ textarea.fi{resize:vertical;min-height:80px}
 .email-fare-total .edl{font-weight:500;color:var(--navy)}
 .email-fare-total .edv{font-family:var(--serif);font-size:1.2rem;color:var(--navy);font-weight:500}
 .email-btn{display:inline-block;font-family:var(--sans);font-size:.76rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;padding:.7rem 1.4rem;text-decoration:none;text-align:center;cursor:pointer;border:none;transition:opacity .2s}
-.email-btn-gold{background:rgba(27,27,26,.55);color:var(--navy)!important}
+.email-btn-gold{background:var(--navy);color:var(--westmere-white, #ffffff)!important}
 .email-btn-navy{background:#ffffff;color:#1a1a1a!important}
 .email-btn-outline{background:transparent;color:var(--navy)!important;border:1px solid rgba(27,27,26,.2)}
 /* WHITE ON THE GREEN, not near-black: #1a1a1a on #2D6E47 is 2.85:1, and the
@@ -1890,7 +1890,7 @@ select:-webkit-autofill:focus{
 .aa-in{padding:.85rem 1rem;border-top:1px solid rgba(27,27,26,.08);display:flex;gap:.5rem;background:#fff}
 .aa-in textarea{flex:1;resize:none;font-family:inherit;font-size:.95rem;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.15);border-radius:6px;outline:none;background:#fafafa;color:var(--navy);min-height:42px;max-height:110px;line-height:1.4}
 .aa-in textarea:focus{border-color:var(--navy);background:#fff}
-.aa-send{background:var(--navy);color:var(--navy);border:none;padding:0 1rem;font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;font-weight:600;cursor:pointer;border-radius:4px}
+.aa-send{background:var(--navy);color:var(--westmere-white, #ffffff);border:none;padding:0 1rem;font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;font-weight:600;cursor:pointer;border-radius:4px}
 .aa-send:disabled{opacity:.5;cursor:not-allowed}
 .aa-hint{font-size:.78rem;color:var(--westmere-ink-soft);padding:.5rem 1.2rem .7rem;background:#fafaf7;border-top:1px solid rgba(27,27,26,.06)}
 .aa-img-btn{background:none;border:1px solid rgba(27,27,26,.15);color:rgba(27,27,26,.7);width:34px;height:34px;border-radius:6px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:border-color .15s,color .15s}
@@ -1900,7 +1900,7 @@ select:-webkit-autofill:focus{
 .aa-booking-card .abc-row{display:flex;gap:.4rem;margin:.1rem 0}
 .aa-booking-card .abc-lbl{color:rgba(27,27,26,.7);min-width:70px;flex-shrink:0}
 .aa-booking-card .abc-val{color:var(--navy);font-weight:500}
-.aa-booking-card .abc-btn{margin-top:.75rem;width:100%;background:rgba(27,27,26,.55);color:var(--navy);border:none;padding:.55rem;font-weight:700;font-size:.88rem;border-radius:6px;cursor:pointer;letter-spacing:.03em}
+.aa-booking-card .abc-btn{margin-top:.75rem;width:100%;background:var(--navy);color:var(--westmere-white, #ffffff);border:none;padding:.55rem;font-weight:700;font-size:.88rem;border-radius:6px;cursor:pointer;letter-spacing:.03em}
 .aa-booking-card .abc-btn:hover{opacity:.88}
 .aa-img-thumb{max-width:100%;max-height:140px;border-radius:6px;margin:.3rem 0;border:1px solid rgba(27,27,26,.1)}
 </style>

@@ -27,6 +27,7 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
+const { stripComments } = require('./_source');
 
 const ROOT = path.join(__dirname, '..', '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -98,6 +99,130 @@ test('the one permitted fill is legible — white on the house navy', () => {
     'a navy fill with dark ink must still be caught');
   assert.ok(fillIn('background:var(--westmere-navy);color:#fff') === null,
     'a navy fill with white ink is the permitted primary');
+});
+
+/* ════════════════════════════════════════════════════════════════════════
+   A LABEL ON A DARK FILL MUST BE LIGHT — WHEREVER THE RULE IS WRITTEN
+   ════════════════════════════════════════════════════════════════════════
+   THE HOLE THIS CLOSES, exactly. Everything below inspects INLINE styles —
+   `<button style="background:…">` — because that is where the offenders were
+   the day this guard was written, and an inline background outranks a
+   stylesheet anyway. It never looked at a CSS RULE.
+
+   So this went out and stayed out:
+
+       .mba-confirm{background:var(--navy);color:var(--navy);border:none}
+
+   Navy ink on a navy fill. 1.00:1. The Confirm & Book button on the Assistant
+   screen was a solid dark box with no readable label on it, the owner
+   photographed it, and not one assertion in this file could see it — it is a
+   class in a stylesheet, not an inline style, and no guard read stylesheet
+   rules for this at all. It was not alone: the same pairing was sitting in
+   twelve rules across three apps, because somebody had once replaced an ink
+   colour wholesale with var(--navy).
+
+   WHY THE RULE IS JUDGED, NOT THE RENDERED PAGE. Several of those twelve are
+   rescued at run time — wm-buttons.css repaints whole button families, and the
+   theme's blanket repaints ink inside the apps — so a browser would have shown
+   some of them as fine. That is not a defence. A rule that declares dark ink
+   on a dark fill is broken on its own terms, and stays broken until the thing
+   that happens to be rescuing it is removed by someone who has no idea it was
+   load-bearing. The declaration is the bug.
+
+   WHAT IT ASKS: if a rule sets a background darker than 0.25 relative
+   luminance AND sets a colour in the same rule, that colour must clear 4.5:1
+   against it. Rules that set no colour at all are not judged — a dot, a bar or
+   a progress pip has no label to lose.
+   GUARDRAIL: this is the guard. */
+test('no stylesheet rule puts dark ink on a dark fill, in any app or sheet', () => {
+  const SHEETS = APPS.concat(['westmere-theme.css', 'wm-buttons.css', 'book.html', 'index.html'])
+    .filter((f) => { try { read(f); return true; } catch (e) { return false; } });
+
+  /* Custom properties resolved across every file, so var(--navy) is a colour
+     and not an opaque string. */
+  const VARS = {};
+  for (const f of SHEETS) {
+    for (const m of read(f).matchAll(/--([\w-]+)\s*:\s*([^;}]+)[;}]/g)) {
+      if (!(m[1] in VARS)) VARS[m[1]] = m[2].trim();
+    }
+  }
+  const resolve = (v, d) => {
+    if ((d || 0) > 4 || !v) return v || '';
+    return String(v).replace(/var\(\s*--([\w-]+)\s*(?:,[^)]*)?\)/g,
+      (_, n) => resolve(VARS[n] || '', (d || 0) + 1)).trim();
+  };
+  const lum = (hex) => {
+    const n = parseInt(hex.slice(1), 16);
+    const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+      .map((v) => v / 255).map((v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)));
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  };
+  const ratio = (a, b) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+
+  const offenders = [];
+  for (const f of SHEETS) {
+    const src = stripComments(read(f), { html: true });
+    for (const m of src.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+      const body = m[2];
+      if (!/background(-color)?\s*:/.test(body)) continue;
+      const bgRaw = (/background(?:-color)?\s*:\s*([^;]+)/.exec(body) || [])[1];
+      const fgRaw = (/(?:^|[;{\s])color\s*:\s*([^;]+)/.exec(body) || [])[1];
+      if (!bgRaw || !fgRaw) continue;                     // no label to lose
+      /* A FILL IS NOT ALWAYS A HEX. The Assistant's own Send button was
+         `background:rgba(27,27,26,.55); color:var(--navy)` — a 55% black slab
+         with navy ink on it, 2.9:1, sitting on the same screen as the button
+         the owner photographed. A first version of this guard read only hex
+         and walked straight past it. An rgba is composited over the page's
+         white, which is what the eye sees. */
+      const toLum = (raw) => {
+        const v = resolve(raw);
+        const hex = (/#[0-9a-f]{6}/i.exec(v) || [])[0];
+        if (hex) return lum(hex);
+        const m = /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?\s*\)/i.exec(v);
+        if (!m) return null;
+        const a = m[4] === undefined ? 1 : parseFloat(m[4]);
+        if (!isFinite(a)) return null;
+        const over = (c) => Math.round(parseInt(c, 10) * a + 255 * (1 - a));
+        const h = '#' + [over(m[1]), over(m[2]), over(m[3])]
+          .map((n) => n.toString(16).padStart(2, '0')).join('');
+        return lum(h);
+      };
+      const bgL = toLum(bgRaw), fgL = toLum(fgRaw);
+      if (bgL === null || fgL === null) continue;
+      const bg = resolve(bgRaw).trim(), fg = resolve(fgRaw).trim();
+      const bl = bgL;
+      if (bl > 0.25) continue;                            // only DARK fills
+      const r = ratio(bl, fgL);
+      if (r >= 4.5) continue;
+      const line = src.slice(0, m.index).split('\n').length;
+      offenders.push(`${f}:${line}  ${m[1].trim().split('\n').pop().trim()}  ${bg} on ${fg} = ${r.toFixed(2)}:1`);
+    }
+  }
+  assert.deepStrictEqual(offenders, [],
+    'these rules print dark ink on a dark fill — the label cannot be read:\n      '
+    + offenders.join('\n      '));
+});
+
+test('and the Assistant screen is inside that scope, by name', () => {
+  /* The owner found this one on the Assistant, and the reason it survived was
+     that nothing had ever looked there. Name its controls, so "is the
+     Assistant covered" is answered by a test rather than by hoping. */
+  const owner = read('westmere-owner.html');
+  const admin = read('westmere-admin.html');
+  for (const [file, src, sel] of [['westmere-owner.html', owner, '.mba-confirm'],
+                                  ['westmere-owner.html', owner, '.mba-cancel'],
+                                  ['westmere-admin.html', admin, '.aa-send']]) {
+    const rule = new RegExp(sel.replace('.', '\\.') + '\\{([^}]*)\\}').exec(src);
+    assert.ok(rule, file + ': ' + sel + ' is gone — the Assistant buttons were renamed without this moving');
+    const body = rule[1];
+    if (!/background(-color)?\s*:/.test(body)) continue;
+    if (/background[^;]*transparent/.test(body)) continue;
+    assert.ok(/color\s*:\s*(var\(--westmere-white|#fff)/i.test(body),
+      file + ': ' + sel + ' fills but does not set a light label — this is the bug the owner photographed');
+  }
+  // The Assistant's own send button and its booking-card actions exist at all.
+  assert.ok(/class="mba-confirm"/.test(owner) && /class="msg-booking-actions"/.test(owner),
+    'the Assistant booking card no longer renders its actions');
 });
 
 // ── 1. BUTTONS ──────────────────────────────────────────────────────────
