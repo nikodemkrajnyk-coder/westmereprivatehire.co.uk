@@ -8977,6 +8977,47 @@ function _invPreviewKey(e){ if (e.key === 'Escape') invPreviewClose(); }
    job email, handed over as HTML. Same chrome, same Back, same device-Back
    handling; an iframe srcdoc so the email's own styles cannot touch the app.
    GUARDRAIL: server/tests/driver-email-view.test.js */
+/* AMPERSAND FIRST, THEN THE QUOTE. A srcdoc attribute is HTML-decoded once on
+   its way into the frame, so escaping only the quote hands the document one
+   decode it never asked for: the email's own &pound; survives by luck, but
+   anything the SERVER escaped — a note containing <, a passenger called
+   "Marks & Co" — comes back one level short, which is both the wrong bytes and
+   a tag the driver's email client would never have run. Escaping & first means
+   the frame receives exactly what the route returned, which is the only claim
+   this preview makes.
+   GUARDRAIL: server/tests/driver-email-view.test.js */
+/* Lay the email out at its own width, then scale the whole frame down to the
+   width we have. Measured from the document rather than assumed: a 600px email
+   and a 640px one are both real, and a guessed number crops one of them. */
+function _fitPreviewFrame(){
+  var wrap = document.getElementById('pdf-preview-wrap');
+  var fit  = document.getElementById('pdf-preview-fit');
+  var f    = document.getElementById('pdf-preview-frame');
+  if (!wrap || !fit || !f) return;
+  var natural = 600, h = 900;
+  try {
+    var d = f.contentDocument;
+    if (d && d.documentElement) {
+      /* While the frame is narrow this reports the width the content WANTS. */
+      natural = Math.max(320, Math.min(1000,
+        Math.max(d.documentElement.scrollWidth || 0, d.body ? d.body.scrollWidth : 0) || 600));
+      f.style.width = natural + 'px';
+      h = Math.max(320, Math.max(d.documentElement.scrollHeight || 0,
+                                 d.body ? d.body.scrollHeight : 0) || 900);
+    }
+  } catch (e) { f.style.width = natural + 'px'; }
+  var s = Math.min(1, (wrap.clientWidth || natural) / natural);
+  f.style.height = h + 'px';
+  f.style.transform = 'scale(' + s + ')';
+  /* A transform does not change layout size, so the scroller is given the
+     scaled height explicitly or the email ends in a long empty tail. */
+  fit.style.height = Math.ceil(h * s) + 'px';
+}
+
+function _srcdocAttr(html){
+  return String(html).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+}
+
 function invPreviewOpen(url, title, opts){
   var o_ = opts || {};
   invPreviewClose();
@@ -9001,13 +9042,39 @@ function invPreviewOpen(url, title, opts){
         'color:var(--navy,#102a43);text-decoration:none;border-bottom:1px solid rgba(16,42,67,.3)">'
         + (_wmStandalone() ? 'Save the PDF' : 'Open the PDF') + '</a>') +
     '</div>' +
-    '<iframe id="pdf-preview-frame" ' + (o_.html ? 'srcdoc="' + String(o_.html).replace(/"/g,'&quot;') + '"' : 'src="' + url + '"') + ' title="' + (title || 'Invoice preview') + '" ' +
-      'style="flex:1 1 auto;width:100%;border:none;background:var(--westmere-white,#ffffff)"></iframe>' +
+    /* ONE FRAME, WRAPPED OR NOT. An email is a 600px document, and an iframe is
+       not a top-level browsing context, so it does not honour the viewport meta
+       that makes the same email fit a phone in Mail. Shown as it came, the
+       right-hand edge simply falls off the screen — the masthead, the end of
+       the payout line, the footer. So a held document is laid out at its own
+       width inside a scroller and the whole frame is SCALED to fit. Scaled,
+       not reflowed: the bytes are the entire claim this preview makes, and a
+       document re-flowed to 390px is not the one that was sent.
+       GUARDRAIL: server/tests/driver-email-view.test.js */
+    (o_.html ? '<div id="pdf-preview-wrap" style="flex:1 1 auto;overflow:auto;' +
+       '-webkit-overflow-scrolling:touch;background:var(--westmere-white,#ffffff)">' +
+       '<div id="pdf-preview-fit" style="position:relative;width:100%">' : '') +
+    '<iframe id="pdf-preview-frame" ' +
+      (o_.html ? 'srcdoc="' + _srcdocAttr(o_.html) + '"' : 'src="' + url + '"') +
+      ' title="' + (title || 'Invoice preview') + '" ' +
+      'style="' + (o_.html
+        ? 'position:absolute;top:0;left:0;transform-origin:top left'
+        : 'flex:1 1 auto;width:100%') +
+      ';border:none;background:var(--westmere-white,#ffffff)"></iframe>' +
+    (o_.html ? '</div></div>' : '') +
     '<noscript></noscript>';
   document.body.appendChild(o);
   document.body.style.overflow = 'hidden';
   document.getElementById('pdf-preview-back').onclick = function(){ invPreviewClose(); };
   document.addEventListener('keydown', _invPreviewKey);
+  if (o_.html) {
+    var _f = document.getElementById('pdf-preview-frame');
+    _fitPreviewFrame();
+    if (_f) _f.onload = _fitPreviewFrame;
+    /* Twice more: a web font landing after first paint changes the height. */
+    setTimeout(_fitPreviewFrame, 160); setTimeout(_fitPreviewFrame, 700);
+    window.addEventListener('resize', _fitPreviewFrame);
+  }
   /* The device Back button closes the preview rather than leaving the app. */
   try { history.pushState({ pdfPreview: true }, '', location.href); _PDF_PREVIEW_POPPED = true; } catch (e) {}
 }

@@ -119,18 +119,69 @@ test('the preview returns the SAME BYTES the sender would put on the wire', asyn
   assert.strictEqual(pv.body.to, [].concat(actual.to)[0], 'the preview names a different recipient');
 });
 
-test('the preview carries the things the owner wants to check', async () => {
+/* ── EVERY PART OF THE REAL DOCUMENT ──────────────────────────────────────
+   A PREVIEW SHOWING THE ROUTE AND THE PAYOUT PASSED REVIEW ONCE. It looked
+   plausible — a header, the towns, the figure — and the owner said, correctly,
+   that it was not the email: no masthead, no reference, no Waze links, no car,
+   no passenger phone, no calendar link, no footer. What was wrong that day was
+   the render fixture rather than the route, but the lesson is that "looks like
+   the email" is not a thing a person can check by eye at a glance.
+
+   So this names every part of the document the driver actually receives, and a
+   trimmed one cannot pass by carrying the two parts that are easy to notice.
+   Each entry is what the owner listed, in his order. */
+const EMAIL_PARTS = [
+  ['the WESTMERE masthead',        (h, t) => /WESTMERE/.test(t)],
+  ['the reference',                (h, t) => /Reference/.test(t) && /WPH-V/.test(t)],
+  ['the date and time',            (h, t) => /Date & Time/.test(t) && /05:30/.test(t)],
+  ['the pickup, in full',          (h, t) => /Pickup/.test(t) && /Weppons Farm/.test(t)],
+  ['the drop-off, in full',        (h, t) => /Drop-off/.test(t) && /Gatwick/.test(t)],
+  ['a Waze link on EACH address',  (h) => (h.match(/waze\.com/g) || []).length >= 2],
+  ['the passenger count',          (h, t) => /Passengers/.test(t) && /\b2\b/.test(t)],
+  ['the luggage',                  (h, t) => /Luggage/.test(t)],
+  ['the car and its registration', (h, t) => /Your car/.test(t) && /WM70 XYZ/.test(t)],
+  ['the payout figure',            (h, t) => /Payout/.test(t) && /£85\.50/.test(t)],
+  ['the fare and commission',      (h, t) => /Fare £95\.00/.test(t) && /Commission/.test(t) && /£9\.50/.test(t)],
+  ['prepaid or cash, in words',    (h, t) => /Prepaid|Cash —/.test(t)],
+  ['the passenger by name',        (h, t) => /Mrs Hall/.test(t)],
+  ['the passenger\'s phone',       (h, t) => /07700 900101/.test(t)],
+  ['a phone LINK, not just text',  (h) => /href="tel:/.test(h)],
+  ['the add-to-calendar link',     (h, t) => /Add to calendar/i.test(t)],
+  ['the footer',                   (h, t) => /With kind regards/.test(t) && /07930/.test(t)]
+];
+
+test('the preview is the WHOLE email — every part of it', async () => {
   const j = passedJob({});
   const pv = await call('get', '/bookings/:id/driver-email', { id: String(j.row.id) });
-  const t = text(pv.body.html);
-  assert.ok(/Weppons Farm/.test(t) && /Gatwick/.test(t), 'the trip is not in the preview');
-  assert.ok(/Payout/.test(t) && /£85\.50/.test(t), 'the payout line is missing');
-  assert.ok(/Prepaid|Cash/.test(t), 'the payment type is missing');
-  assert.ok(/Mrs Hall/.test(t), 'the passenger is missing');
-  assert.ok(/waze/i.test(pv.body.html), 'the Waze links are gone');
+  assert.strictEqual(pv.statusCode, 200, JSON.stringify(pv.body));
+  const h = String(pv.body.html), t = text(h);
+  const missing = EMAIL_PARTS.filter(([, has]) => !has(h, t)).map(([name]) => name);
+  assert.deepStrictEqual(missing, [],
+    'the preview is a cut-down version of the driver email. Missing: ' + missing.join('; '));
   assert.strictEqual(pv.body.has_calendar, true, 'the calendar file is not attached');
   assert.ok(!/undefined|NaN|\[object/.test(t), 'the preview has a hole in it: ' + t.slice(0, 200));
 });
+
+test('a trimmed document could not pass the part census above', () => {
+  /* The fixture that fooled the eye: a header, the route, a payout box. If the
+     census can be satisfied by this, it is not doing its job. */
+  const trimmed = '<body><div><p>Your job · WPH-V1</p><h2>Weppons Farm → Gatwick Airport</h2>'
+    + '<p>Monday, 12 October 2026 · 05:30</p><table><tr><td><b>Payout</b> £85.50'
+    + '<p>Fare £95.00 · Commission −£9.50 · Payout £85.50</p><p>Prepaid</p></td></tr></table></div></body>';
+  const missing = EMAIL_PARTS.filter(([, has]) => !has(trimmed, text(trimmed))).map(([n]) => n);
+  assert.ok(missing.length >= 6,
+    'the census passes a document with no masthead, addresses, car, passenger or footer');
+});
+
+test('the email the route returns is a full document, not a fragment', async () => {
+  const j = passedJob({});
+  const pv = await call('get', '/bookings/:id/driver-email', { id: String(j.row.id) });
+  const h = String(pv.body.html);
+  assert.ok(/<html/i.test(h) && /<\/html>/i.test(h), 'the preview is a body fragment');
+  assert.ok(h.length > 8000, 'the driver email is suspiciously short at ' + h.length
+    + ' bytes — the trimmed card that started this was under 1kB');
+});
+
 
 test('it is built from the row AS IT STANDS — an adjusted payout shows', async () => {
   const j = passedJob({});
@@ -142,6 +193,63 @@ test('it is built from the row AS IT STANDS — an adjusted payout shows', async
   assert.ok(/agreed/.test(t), 'an adjusted payout is not named as agreed');
   const row = db.prepare('SELECT * FROM bookings WHERE id = ?').get(j.row.id);
   assert.strictEqual(ledger.jobSplit(row).payout, 70, 'the ledger and the preview disagree');
+});
+
+test('both apps hand the WHOLE document to the frame, unaltered', () => {
+  for (const file of ['westmere-owner.html', 'westmere-admin.html']) {
+    const src = read(file);
+    const open = fnBlock(strip(src), 'invPreviewOpen');
+    assert.ok(/srcdoc="' \+ _srcdocAttr\(o_\.html\)/.test(open),
+      file + ': the preview frame is not being filled with the escaped document');
+    assert.ok(!/o_\.html\)?\.(slice|substr|substring)\(/.test(open),
+      file + ': the preview is cutting the email short');
+    /* AND THE ESCAPING IS LOSSLESS. A srcdoc attribute is decoded once on the
+       way in, so escaping the quote alone silently unescapes everything the
+       server escaped — the wrong bytes, and a live tag out of text the driver
+       saw as text. Run the shipped function over the awkward cases and decode
+       it back the way the parser would. */
+    const fn = fnBlock(strip(src), '_srcdocAttr');
+    assert.ok(fn, file + ': _srcdocAttr is gone');
+    const attr = new Function(fn + '; return _srcdocAttr;')();
+    const decode = (v) => String(v).replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+    for (const raw of ['&pound;85.50', '&lt;script&gt;alert(1)&lt;/script&gt;',
+                       'Marks &amp; Co', 'style="color:red"', 'a &middot; b']) {
+      assert.strictEqual(decode(attr(raw)), raw,
+        file + ': the frame would receive different bytes than the driver did, for: ' + raw);
+    }
+    assert.ok(!/<script/i.test(decode(attr('&lt;script&gt;'))),
+      file + ': escaped text comes back as a live tag');
+  }
+});
+
+test('both apps show the email WHOLE on a phone, scaled rather than cropped', () => {
+  for (const file of ['westmere-owner.html', 'westmere-admin.html']) {
+    const src = strip(read(file));
+    const open = fnBlock(src, 'invPreviewOpen');
+    assert.ok(/pdf-preview-wrap/.test(open) && /pdf-preview-fit/.test(open),
+      file + ': the email frame has no scroller to scale inside');
+    assert.ok(/transform-origin:top left/.test(open),
+      file + ': the frame would scale about its middle');
+    assert.ok(/_fitPreviewFrame\(\)/.test(open), file + ': nothing fits the frame when it opens');
+    assert.ok(/addEventListener\('resize', _fitPreviewFrame\)/.test(open),
+      file + ': turning the phone would crop the email again');
+
+    const fit = fnBlock(src, '_fitPreviewFrame');
+    assert.ok(fit, file + ': _fitPreviewFrame is gone');
+    /* SCALED, NOT REFLOWED. An email laid out at the phone's width is a
+       different document from the one that was sent — which is the one claim
+       this screen makes. The frame is given the width the CONTENT wants, and
+       the whole frame is then scaled. */
+    assert.ok(/scrollWidth/.test(fit),
+      file + ': the natural width is assumed rather than measured, so one email or the other gets cropped');
+    assert.ok(/f\.style\.width = natural/.test(fit), file + ': the frame is not laid out at the email\'s own width');
+    assert.ok(/transform = 'scale\(/.test(fit), file + ': the frame is not scaled');
+    assert.ok(/Math\.min\(1,/.test(fit), file + ': a narrow email would be blown up past its own size');
+    assert.ok(/fit\.style\.height/.test(fit),
+      file + ': a transform does not change layout size — the email would end in a long empty tail');
+    assert.ok(!/contentDocument\.(body|write)\b[^;]*=\s*/.test(fit) && !/document\.write/.test(fit),
+      file + ': the preview is editing the email to make it fit');
+  }
 });
 
 // ── 2. THE RESEND ─────────────────────────────────────────────────────────
