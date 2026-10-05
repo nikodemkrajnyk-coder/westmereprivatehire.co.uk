@@ -736,6 +736,14 @@ select:-webkit-autofill:focus{
     <div class="trip-page-body" id="trip-page-body"></div>
   </div>
 
+  <div class="trip-page" id="cal-day-page" role="dialog" aria-modal="true" aria-label="Day detail">
+    <div class="trip-page-hd">
+      <button class="trip-back" type="button" aria-label="Back to calendar" onclick="closeCalDay()">&#8249;</button>
+      <div class="trip-page-title" id="cal-day-page-title">Day</div>
+    </div>
+    <div class="trip-page-body" id="cal-day-page-body"></div>
+  </div>
+
   <div class="side-scrim" id="side-scrim" onclick="closeSideMenu()"></div>
 
   <aside class="side" id="side-nav" aria-label="Owner sections">
@@ -1004,18 +1012,21 @@ select:-webkit-autofill:focus{
 
 
     <!-- Calendar -->
-    <div class="pg" id="pg-calendar" style="max-width:100%;padding-left:.5rem;padding-right:.5rem">
-      <div class="sec-title"><em>Calendar</em></div>
-      <div class="sec-sub" id="cal-sub">Your booked jobs at a glance</div>
-      <div class="card" style="margin-bottom:.85rem">
-        <div class="cal-nav">
-          <button class="cal-nav-btn" onclick="calNav(-1)">&larr; Prev</button>
+    <!-- THE CALENDAR IS THE PAGE. It used to open on a title, a summary line
+         and a card, and the month itself started a third of the way down the
+         screen. There is nothing above the grid now but the month and its two
+         arrows; the grid takes the rest of the height, and a day opens as a
+         page of its own rather than as a panel below the fold. -->
+    <div class="pg pg-cal" id="pg-calendar">
+      <div class="cal-nav">
+        <button class="cal-nav-btn" onclick="calNav(-1)">&larr;</button>
+        <div class="cal-head-c">
           <div class="cal-month" id="cal-month"></div>
-          <button class="cal-nav-btn" onclick="calNav(1)">Next &rarr;</button>
+          <div class="cal-month-sub" id="cal-sub"></div>
         </div>
-        <div class="cal-grid" id="cal-grid"></div>
+        <button class="cal-nav-btn" onclick="calNav(1)">&rarr;</button>
       </div>
-      <div id="cal-detail"></div>
+      <div class="cal-grid" id="cal-grid"></div>
     </div>
 
     <!-- Earnings -->
@@ -6490,26 +6501,57 @@ function buildCalendar(){
   for(var d=1;d<=fill;d++){html+='<div class="cal-day other"><div class="cal-num">'+d+'</div></div>';}
   grid.innerHTML=html;
 
-  document.getElementById('cal-sub').innerHTML=monthJobs?'<strong>'+monthJobs+' job'+(monthJobs>1?'s':'')+'</strong> this month · <strong>£'+monthEarn+'</strong> booked':'No jobs booked this month';
+  // The month's two figures, under its name in the nav. They used to be a
+  // sentence on a line of their own above the grid; in the nav they have room
+  // for the numbers and nothing else, which is all they were ever read for.
+  var subEl=document.getElementById('cal-sub');
+  if(subEl)subEl.innerHTML=monthJobs
+    ?('<strong>'+monthJobs+'</strong> job'+(monthJobs>1?'s':'')+(monthEarn?' \u00b7 <strong>\u00a3'+monthEarn+'</strong>':''))
+    :'Nothing booked';
 
-  if(calSelected)showCalDay(calSelected);
-  else if(calMonth===today.getMonth()&&calYear===today.getFullYear())showCalDay(todayKey);
-  else document.getElementById('cal-detail').innerHTML='';
+  // NOTHING OPENS ON ITS OWN. The day panel used to render under the grid on
+  // every build — today's, or whatever was last selected. It is a page of its
+  // own now, and a page opens because he tapped a day, not because he arrived.
 }
-/* TAPPING A DAY IS THE DRILL-IN. The day panel lives under the grid, and on a
-   phone the grid fills the screen — so a tap used to redraw a panel the owner
-   could not see and nothing appeared to happen. Bring it into view, the same
-   way the compact lists open a detail. The grid is redrawn first so the navy
-   ring lands on the day he chose before the scroll starts. */
+/* TAPPING A DAY POPS IT OUT. The grid now fills the screen, so a panel under
+   it was a panel below the fold: the tap redrew something the owner could not
+   see and nothing appeared to happen. The day opens as a page of its own —
+   the same .trip-page chrome the trip and customer details already use, so it
+   gets the same back control, the same Escape, and the same behaviour on a
+   home-screen app. The grid is still redrawn first, so the navy ring is on the
+   day he chose when he closes the page again. */
+var _calDayKey=null;
 function selectCalDay(key){
   calSelected=key;
   buildCalendar();
-  var panel=document.getElementById('cal-detail');
-  if(panel&&panel.firstElementChild){
-    try{panel.scrollIntoView({behavior:'smooth',block:'start'});}
-    catch(e){panel.scrollIntoView();}
-  }
+  openCalDay(key);
 }
+function openCalDay(key){
+  var page=document.getElementById('cal-day-page'),body=document.getElementById('cal-day-page-body');
+  if(!page||!body)return;
+  showCalDay(key);
+  var ttl=document.getElementById('cal-day-page-title');
+  if(ttl)ttl.textContent=calDayLabel(key);
+  page.classList.add('on');
+  try{document.body.style.overflow='hidden';}catch(e){}
+  _calDayKey=key;
+  try{body.scrollTop=0;}catch(e){}
+}
+function closeCalDay(){
+  var page=document.getElementById('cal-day-page');
+  if(page)page.classList.remove('on');
+  try{document.body.style.overflow='';}catch(e){}
+  _calDayKey=null;
+}
+/* An action taken on the page (marked paid, estimate sent) reloads the list
+   underneath, so redraw from the fresh job rather than leaving a stale card. */
+function refreshCalDayPage(){
+  if(_calDayKey==null)return;
+  openCalDay(_calDayKey);
+}
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&_calDayKey!=null)closeCalDay();
+});
 function enrichNotes(text){
   if(!text)return '';
   var s=escH(text);
@@ -6631,28 +6673,35 @@ function jobDetailCard(j){
   h+='</div>';
   return h;
 }
+/* "Friday 2 Oct", from the literal components of the wall-clock date. Never
+   `new Date(key)` — that parses as UTC midnight and reads back local, which
+   renders the day before anywhere west of London. CLAUDE.md, timezone. */
+function calDayLabel(key){
+  var p=String(key||'').split('-');
+  if(p.length<3)return '';
+  var d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2]));
+  var dayName=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][d.getUTCDay()];
+  return dayName+' '+(+p[2])+' '+MONTHS_S[+p[1]-1];
+}
 function showCalDay(key){
-  var detail=document.getElementById('cal-detail');
+  var detail=document.getElementById('cal-day-page-body');
+  if(!detail)return;
   var jobs=CAL_JOBS[key]||[];
   var ext=(CAL_EXTERNAL[key]||[]).slice().sort(function(a,b){
     if(a.allDay&&!b.allDay)return -1;if(!a.allDay&&b.allDay)return 1;
     return (a.start||'').localeCompare(b.start||'');
   });
-  var parts=key.split('-');
-  var dayNum=parseInt(parts[2]);var mon=MONTHS_S[parseInt(parts[1])-1];
-  var dateObj=new Date(parseInt(parts[0]),parseInt(parts[1])-1,dayNum);
-  var dayName=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dateObj.getDay()];
-  var label=dayName+' '+dayNum+' '+mon;
+  var label=calDayLabel(key);
 
   if(!jobs.length&&!ext.length){
-    detail.innerHTML='<div class="card cal-day-detail"><div class="ch">'+label+'</div><div class="cal-empty">Nothing scheduled</div></div>';
+    detail.innerHTML='<div class="card cal-day-detail"><div class="cal-empty">Nothing scheduled</div></div>';
     return;
   }
   var sorted=jobs.slice().sort(function(a,b){return toMins(a.time)-toMins(b.time);});
   var totalFare=sorted.reduce(function(s,j){return s+(j.fare||0);},0);
-  var html='<div class="card cal-day-detail"><div class="ch">'+label
-    +(sorted.length?('<span class="cal-day-count">'+sorted.length+' job'+(sorted.length>1?'s':'')+'</span>'
-                     +'<span class="cal-day-total">\u00a3'+totalFare+'</span>'):'')+'</div>';
+  var html='<div class="card cal-day-detail">'
+    +(sorted.length?('<div class="ch"><span class="cal-day-count">'+sorted.length+' job'+(sorted.length>1?'s':'')+'</span>'
+                     +'<span class="cal-day-total">\u00a3'+totalFare+'</span></div>'):'');
   // Overlap check — warn if two pickups fall within ~2h of each other.
   var _ov=wmFindOverlaps(sorted);
   if(Object.keys(_ov).length){

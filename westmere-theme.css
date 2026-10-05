@@ -2645,7 +2645,14 @@ nav > .navlinks { margin-left: auto; }
 }
 .adm-cal-job-mini b{ font-weight: 600; font-variant-numeric: tabular-nums; flex-shrink: 0; }
 .adm-cal-where{ flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--westmere-ink-soft); }
-.adm-cal-fare{ flex-shrink: 0; font-variant-numeric: tabular-nums; color: var(--westmere-navy); font-weight: 600; }
+.adm-cal-mini-fare{
+  flex-shrink: 0;
+  font-family: var(--sans);
+  font-size: .72rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--westmere-navy);
+}
 .adm-cal-day{ min-height: 108px; }
 .adm-cal-job-mini.ext{ border-left-color: var(--westmere-line-strong); color: var(--westmere-ink-soft); }
 .adm-cal-more{
@@ -3099,3 +3106,82 @@ input[type="range"]:focus-visible{ outline: 2px solid var(--westmere-gold); outl
 .main{ min-width: 0; }
 .content{ min-width: 0; }
 .jtable{ width: 100%; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   §35  THE CALENDAR IS THE PAGE
+   ═══════════════════════════════════════════════════════════════════════
+   The owner opened the month and found a title, a summary sentence and a card
+   edge above it: the grid itself began a third of the way down a phone
+   screen, and then only six short rows of it fitted. A calendar is the one
+   screen in this app that is ALL content — there is nothing to introduce and
+   nothing to filter — so it gets the whole page.
+
+   What is left above the grid is the month, its two arrows, and the month's
+   own two figures under its name. The card went: a card is a way of saying
+   "this is one thing among several on this page", and there is nothing else
+   on this page.
+
+   AND A DAY OPENS AS A PAGE. The old day panel rendered under the grid, which
+   worked when the grid was short and stopped working the moment it filled the
+   screen — the tap redrew something below the fold and nothing appeared to
+   happen. A day now uses .trip-page, the same full-screen chrome the trip and
+   customer details already use, so it inherits the back control, Escape, and
+   the behaviour a home-screen app needs from the device Back button.
+   GUARDRAIL: server/tests/calendar-page.test.js */
+.pg.pg-cal{
+  max-width: 760px;
+  padding: .55rem .5rem 0;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+.pg.pg-cal.on{ display: flex; flex-direction: column; }
+
+/* THE GRID TAKES THE REST OF THE HEIGHT. The first row is the weekday strip
+   and must stay the size of its own type, so it is named explicitly; every
+   day row after it shares what is left, down to the floor a stacked chip and
+   the day's figures need. On a short screen the floor wins and the page
+   scrolls, which is the right way round. */
+.pg-cal .cal-grid{
+  flex: 1;
+  grid-template-rows: auto;
+  grid-auto-rows: minmax(94px, 1fr);
+  margin-bottom: .5rem;
+}
+.pg-cal .cal-nav{ padding: .35rem 0 .5rem; margin-bottom: .55rem; }
+.cal-head-c{ text-align: center; min-width: 0; }
+.cal-month-sub{
+  font-family: var(--sans);
+  font-size: .62rem;
+  font-weight: 500;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--westmere-gold-ink);
+  margin-top: .1rem;
+  white-space: nowrap;
+}
+.cal-month-sub strong{ font-weight: 700; }
+/* The arrows are now a glyph each, so they are square rather than wide. */
+.pg-cal .cal-nav-btn{ min-width: 44px; padding: .5rem .7rem; font-size: 1.05rem; }
+
+/* ── The day, popped out ────────────────────────────────────────────────
+   The page title carries the date, so the body leads with the two figures
+   instead of repeating it. */
+#cal-day-page .cal-day-detail{ margin-top: 0; }
+#cal-day-page .ch{ display: flex; align-items: baseline; gap: .6rem; }
+.cal-empty{ font-family: var(--sans); color: var(--westmere-muted); }
+
+/* ── The same page, in the admin ────────────────────────────────────────
+   Its grid has the window's height rather than a phone's, and its cells are
+   170px wide rather than 50, so it needs no new ideas — only the same removal
+   of everything above the month, and the same rule that a day opens over the
+   grid instead of under it. */
+.view.view-cal{ display: none; }
+.view.view-cal.on{ display: flex; flex-direction: column; min-height: calc(100vh - 11rem); }
+.view-cal .adm-cal-grid{ flex: 1; grid-template-rows: auto; grid-auto-rows: minmax(108px, 1fr); }
+.view-cal .adm-cal-nav{ padding-bottom: .5rem; }
+.modal.modal-wide{ max-width: 820px; }
+
+/* The day page repeats nothing the page title already says: on a single day's
+   page the date beside every job is the date in the heading. */
+#cal-day-page .wm-glance-date{ display: none; }
+#cal-day-page .wm-glance-when::before{ content: none; }
