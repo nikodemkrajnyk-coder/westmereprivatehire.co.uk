@@ -3189,3 +3189,53 @@ input[type="range"]:focus-visible{ outline: 2px solid var(--westmere-gold); outl
    page the date beside every job is the date in the heading. */
 #cal-day-page .wm-glance-date{ display: none; }
 #cal-day-page .wm-glance-when::before{ content: none; }
+
+/* ── WHO IS DRIVING IT ───────────────────────────────────────────────────
+   A job the owner has passed on looked exactly like one still on his own
+   plate — every confirmed job carries his own driver_id from the moment it is
+   confirmed, so "has a driver" never distinguished them. The name of whoever
+   has it now rides on the card, beside the status chip.
+
+   AN OUTLINE, NOT A SLAB (§20), and the label above the name is the house
+   eyebrow — so it reads as a fact about the job rather than another status.
+   A firm takes the navy edge; one of his own drivers takes the gold.
+   GUARDRAIL: server/tests/passed-job-name.test.js */
+.wm-who{
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  /* IT GIVES WAY BEFORE THE STATUS CHIP DOES. At flex-shrink:0 a long firm
+     name — "Harding Executive Travel" — pushed CONFIRMED clean off the right
+     edge of a 390px card. The name is the new information; the chip is the one
+     the owner has always read. So this shrinks and ellipsises, and the chip
+     keeps its place. */
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 8.2rem;
+  padding: .18rem .5rem;
+  border: var(--border-hair) solid var(--westmere-gold);
+  border-radius: 7px;
+  background: var(--westmere-white);
+  line-height: 1.2;
+}
+.wm-who-k{
+  font-family: var(--sans);
+  font-size: .56rem;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--westmere-gold-ink);
+}
+.wm-who-n{
+  font-family: var(--sans);
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--westmere-navy);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.wm-who.firm{ border-color: var(--westmere-line-strong); }
+.wm-who.firm .wm-who-k{ color: var(--westmere-muted); }

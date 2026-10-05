@@ -277,8 +277,20 @@ test('every un-billed job for the operator reaches the form, once', () => {
 
 test('raising the invoice stamps the jobs so they cannot be billed again', () => {
   const src = strip(read('server/api.js'));
-  assert.ok(/UPDATE bookings SET operator_invoice_id = \? WHERE id = \? AND operator_invoice_id IS NULL/.test(src),
-    'the stamp must refuse a job that already carries an invoice');
+  /* THE RULE IS "A JOB ALREADY BILLED IS NOT RE-BILLED", and it was pinned
+     here as one exact UPDATE. The statement gained a second column — income
+     now needs to know which invoice settles a job, not just whether an
+     operator job has been billed — so the guard checks the PROPERTY instead:
+     neither column may be overwritten once it is set, whether that is said
+     with a WHERE or with a COALESCE. */
+  const stamp = /UPDATE bookings SET operator_invoice_id[\s\S]{0,220}?WHERE id = \?/.exec(src);
+  assert.ok(stamp, 'the operator invoice no longer stamps its jobs at all');
+  const keepsOperator = /operator_invoice_id IS NULL/.test(stamp[0])
+                     || /operator_invoice_id = COALESCE\(operator_invoice_id,/.test(stamp[0]);
+  assert.ok(keepsOperator, 'the stamp must refuse a job that already carries an invoice');
+  const keepsInvoice = /invoice_id = COALESCE\(invoice_id,/.test(stamp[0])
+                    || /AND invoice_id IS NULL/.test(stamp[0]);
+  assert.ok(keepsInvoice, 'the income link can be overwritten by a second invoice');
 });
 
 test('this guardrail is wired into npm test', () => {

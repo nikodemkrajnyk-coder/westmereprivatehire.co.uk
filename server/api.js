@@ -65,11 +65,17 @@ router.get('/bookings', (req, res) => {
                 somebody else". The owner app needs to tell them apart to know
                 whether to offer the job on. */
              u.is_default_driver as driver_is_default,
-             od.full_name as offered_driver_name
+             od.full_name as offered_driver_name,
+             /* AND THE FIRM, when the job went to one. The owner's list could
+                say which of his drivers had a job but not which operator, so a
+                job passed to another company looked like one still sitting on
+                his own plate. */
+             COALESCE(op.company, op.full_name) as operator_name
       FROM bookings b
       LEFT JOIN customers c ON b.customer_id = c.id
       LEFT JOIN users u ON b.driver_id = u.id
       LEFT JOIN users od ON b.offered_to_driver_id = od.id
+      LEFT JOIN customers op ON b.operator_id = op.id
       ORDER BY b.date DESC, b.time DESC
       LIMIT 200
     `).all();
@@ -2578,6 +2584,19 @@ router.post('/customers/:id/invoice', async (req, res) => {
 
   // Auto-file (non-blocking)
   const invRow = db.prepare('SELECT * FROM invoices WHERE invoice_no = ?').get(invoiceNo);
+  /* ── EVERY JOB ON THIS INVOICE IS LINKED TO IT ────────────────────────────
+     The invoice already recorded its journeys as a list of refs inside
+     booking_ids_json, which nothing can join or count. Income now has to ask
+     "has the money for this job arrived", and for account work only the
+     invoice knows — so the link goes on the booking, the same way an operator
+     job has always carried one.
+     GUARDRAIL: server/tests/invoiced-income.test.js */
+  if (invRow) {
+    try {
+      const stamp = db.prepare('UPDATE bookings SET invoice_id = ? WHERE id = ? AND invoice_id IS NULL');
+      bookings.forEach((b) => { if (b && b.id) stamp.run(invRow.id, b.id); });
+    } catch (e) { console.error('[INVOICE] could not link jobs to the invoice:', e.message); }
+  }
   if (invRow) autoFile.fileInvoice(invoiceNo, invRow, pdfBuffer);
 
   res.json({
@@ -2803,10 +2822,14 @@ router.post('/invoices/bespoke', async (req, res) => {
     if (ids.length) {
       const inv = db.prepare('SELECT id FROM invoices WHERE invoice_no = ?').get(invoiceNo);
       if (inv) {
-        const stamp = db.prepare('UPDATE bookings SET operator_invoice_id = ? WHERE id = ? AND operator_invoice_id IS NULL');
+        /* Both columns: operator_invoice_id is what the operator screens read
+           for "billed yet", invoice_id is what income reads for "paid yet". */
+        const stamp = db.prepare(`UPDATE bookings SET operator_invoice_id = COALESCE(operator_invoice_id, ?),
+                                                     invoice_id = COALESCE(invoice_id, ?)
+                                   WHERE id = ?`);
         ids.forEach((bid) => {
           const n = parseInt(bid, 10);
-          if (!isNaN(n)) stamp.run(inv.id, n);
+          if (!isNaN(n)) stamp.run(inv.id, inv.id, n);
         });
       }
     }
@@ -5471,7 +5494,11 @@ router.get('/stats', (req, res) => {
   // or any booking with paid_at set (Stripe / online / marked paid). Pending or
   // unpaid account/invoice bookings are NOT counted (invoice income is tracked
   // via the paid flag on invoices).
-  const RECEIVED = "((LOWER(payment)='cash' AND status='completed') OR paid_at IS NOT NULL)";
+  /* ONE DEFINITION OF "THE MONEY ARRIVED", in the ledger with everything else
+     that decides money. It was written out here and again below, and neither
+     copy knew about an invoice — so invoiced work could never count.
+     GUARDRAIL: server/tests/invoiced-income.test.js */
+  const RECEIVED = ledger.receivedSql();
   /* TURNOVER IS NOT THE SUM OF THE FARES. On a job passed to another driver the
      fare is collected on his behalf and paid straight back out; only the ten per
      cent is ours. Summing fares overstated turnover by every payout we have ever
@@ -5583,7 +5610,7 @@ router.get('/analytics', (req, res) => {
   // unpaid account/invoice bookings are NOT counted (invoice income is tracked
   // separately via the paid flag on invoices). `p` prefixes the columns when the
   // bookings table is aliased (e.g. 'b.').
-  const recv = (p='') => `((LOWER(${p}payment)='cash' AND ${p}status='completed') OR ${p}paid_at IS NOT NULL)`;
+  const recv = (p='') => ledger.receivedSql(p);
 
   // Revenue overview. INCOME, not fares — a passed job contributes its
   // commission only (server/driver-ledger.js). See the note on /stats.

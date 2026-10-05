@@ -235,9 +235,24 @@ function isSettled(b) {
  * driver and only the commission is turnover; a job nobody was passed is
  * Westmere's own work and the whole fare is.
  */
+/* ── PASSED, FOR THE PURPOSE OF INCOME ────────────────────────────────────
+   Not the same question as "was this job sent to somebody else". A job passed
+   to a DRIVER pays money out — his payout — so only the commission was ever
+   ours. A job passed to an OPERATOR pays nothing out through this system: the
+   other firm drives it and WE INVOICE THEM, so the whole of what we bill is
+   ours and there is no payout to net off.
+
+   Reading operator jobs as "passed" made their income the commission, which is
+   zero on an operator job by design — so every job sent to another firm
+   counted as nothing at all, however much was billed and collected for it.
+   GUARDRAIL: server/tests/invoiced-income.test.js */
+function paysSomebodyOut(b) {
+  return isPassed(b) && !(b && b.operator_id);
+}
+
 function westmereIncome(b) {
   if (!b) return 0;
-  if (!isPassed(b)) return Math.round((Number(b.fare) || 0) * 100) / 100;
+  if (!paysSomebodyOut(b)) return Math.round((Number(b.fare) || 0) * 100) / 100;
   return jobSplit(b).commission;
 }
 
@@ -321,9 +336,40 @@ function commissionSql(p) {
  */
 function incomeSql(p) {
   const q = p || '';
-  return `(CASE WHEN ${q}passed_at IS NOT NULL`
+  /* The SQL twin of westmereIncome, including the operator rule: a job sent to
+     another FIRM pays nothing out, so the whole of it is ours. */
+  return `(CASE WHEN ${q}passed_at IS NOT NULL AND ${q}operator_id IS NULL`
     + ` THEN ${commissionSql(p)}`
     + ` ELSE COALESCE(${q}fare, 0) END)`;
+}
+
+/**
+ * HAS THE MONEY FOR THIS JOB ACTUALLY ARRIVED?
+ *
+ * One expression, in one place, because this is the gate every revenue figure
+ * stands behind and it had been written inline where it was used.
+ *
+ *   • cash collected on a completed job — he had it in his hand;
+ *   • paid_at set — Stripe, or marked paid by hand;
+ *   • OR THE INVOICE THAT SETTLES IT HAS BEEN PAID. That third one is new.
+ *     Account work and work passed to another firm are both settled by
+ *     invoice, and until now neither could ever satisfy this test — so every
+ *     penny of invoiced income was missing from turnover.
+ *
+ * WHY THIS AND NOT "ADD UP THE INVOICES". Because a job must count ONCE. If
+ * invoice totals were summed as well, an account job whose booking also had
+ * paid_at set would be counted twice, and the two mechanisms would have to be
+ * kept in step for ever. Here the invoice only answers WHEN; the job itself
+ * still answers HOW MUCH, through incomeSql — so a job passed to a driver on
+ * an account invoice still contributes the commission and not the fare, and
+ * nothing anywhere adds a second figure for the same work.
+ * GUARDRAIL: server/tests/invoiced-income.test.js
+ */
+function receivedSql(p) {
+  const q = p || '';
+  return `((LOWER(COALESCE(${q}payment,'')) = 'cash' AND ${q}status = 'completed')`
+    + ` OR ${q}paid_at IS NOT NULL`
+    + ` OR EXISTS (SELECT 1 FROM invoices i WHERE i.id = ${q}invoice_id AND COALESCE(i.paid,0) = 1))`;
 }
 
 /**
@@ -645,6 +691,8 @@ module.exports = {
   rateForDriver,
   commissionSql,
   incomeSql,
+  receivedSql,
+  paysSomebodyOut,
   driverSettlements,
   recordSettlement,
   isCashJob,

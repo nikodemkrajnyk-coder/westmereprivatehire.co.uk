@@ -2,14 +2,14 @@
 // returning devices re-run install and drop the stale copy in activate().
 // GUARDRAIL: server/tests/rider-cache.test.js pins this to the rider-html hash
 // below — if you edit westmere-rider.html without bumping both, `npm test` fails.
-// rider-html-sha256: 8edd1d90d639f3100bce718f348125f23b974d8558149c2e45ee22f27731fb2b
-var CACHE = 'westmere-rider-v53';
+// rider-html-sha256: a61d25383547f9d419b908d261e588f5172afb5b29877a63b33f11d40eb07d9c
+var CACHE = 'westmere-rider-v54';
 /* THE RIDER APP'S OWN PAGE AND ASSETS, at the URLs the page actually asks for.
    The assets carry the release in their query now (see
    server/tests/asset-version.test.js); precaching the bare paths would store
    copies nothing ever asks for again, and — worse — copies that could be
    handed to a DIFFERENT app that asks for the bare path. */
-var VERSION = '2026-10-05a';
+var VERSION = '2026-10-05b';
 var CACHE_BUST = '?v=' + VERSION;
 var PRECACHE = [
   '/westmere-rider.html',

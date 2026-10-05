@@ -1258,6 +1258,44 @@ function migrate() {
   try { db.exec(`ALTER TABLE bookings ADD COLUMN operator_id INTEGER`); } catch(_){}
   // The invoice that finally billed it, so the same job is not invoiced twice.
   try { db.exec(`ALTER TABLE bookings ADD COLUMN operator_invoice_id INTEGER`); } catch(_){}
+  /* ── WHICH INVOICE SETTLES THIS JOB ──────────────────────────────────────
+     One column for both kinds. An operator job already had its own
+     (operator_invoice_id) and an account job had only a list of REFS inside
+     the invoice's booking_ids_json — which cannot be joined, indexed or
+     counted in SQL. Income now has to ask "has the money for this job
+     arrived", and for invoiced work the invoice is the only thing that knows.
+     Backfilled from booking_ids_json below, so historic invoices reconcile.
+     GUARDRAIL: server/tests/invoiced-income.test.js */
+  try { db.exec(`ALTER TABLE bookings ADD COLUMN invoice_id INTEGER`); } catch(_){}
+  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_bookings_invoice ON bookings(invoice_id)`); } catch(_){}
+  try {
+    const needs = db.prepare(
+      `SELECT COUNT(*) AS n FROM bookings WHERE invoice_id IS NULL AND operator_invoice_id IS NOT NULL`
+    ).get().n;
+    if (needs) {
+      db.exec(`UPDATE bookings SET invoice_id = operator_invoice_id
+                WHERE invoice_id IS NULL AND operator_invoice_id IS NOT NULL`);
+      console.log('[DB] linked ' + needs + ' operator-invoiced bookings to their invoice');
+    }
+    /* Account invoices recorded their jobs as a JSON array of REFS. Walk them
+       once and write the link properly; a ref that no longer matches a booking
+       is skipped rather than guessed at. */
+    const rows = db.prepare(`SELECT id, booking_ids_json FROM invoices
+                              WHERE booking_ids_json IS NOT NULL AND booking_ids_json <> ''`).all();
+    const byRef = db.prepare('UPDATE bookings SET invoice_id = ? WHERE ref = ? AND invoice_id IS NULL');
+    const byId  = db.prepare('UPDATE bookings SET invoice_id = ? WHERE id = ? AND invoice_id IS NULL');
+    let linked = 0;
+    for (const r of rows) {
+      let list; try { list = JSON.parse(r.booking_ids_json); } catch (_) { continue; }
+      if (!Array.isArray(list)) continue;
+      for (const v of list) {
+        const info = (typeof v === 'number' || /^\d+$/.test(String(v)))
+          ? byId.run(r.id, parseInt(v, 10)) : byRef.run(r.id, String(v));
+        linked += info.changes;
+      }
+    }
+    if (linked) console.log('[DB] linked ' + linked + ' account-invoiced bookings to their invoice');
+  } catch (e) { console.error('[DB] invoice_id backfill failed:', e.message); }
 
   /* LAST, because it READS the columns everything above adds. Run from where it
      was first written — beside the settlements table, seventy lines before
