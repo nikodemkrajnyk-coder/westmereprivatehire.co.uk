@@ -7272,10 +7272,8 @@ var _ADM_PC=/^[A-Z]{1,2}\d[A-Z\d]?(\s*\d[A-Z]{2})?$/i;
 // the single source of truth also used by the emails + owner app.
 function _admShortAddr(a){ return window.WMAddr ? WMAddr.shortDisplay(a) : (a||''); }
 function _admTinyAddr(a){ return window.WMAddr ? WMAddr.tinyLabel(a) : (a||''); }
-/* The shortest honest name — an airport becomes its code and keeps its
-   terminal. For a month cell, where even 270px is not enough for
-   "16:30 Weppons Farm → Gatwick £165" and the route was the half that got cut. */
-function _admCodeAddr(a){ return (window.WMAddr && WMAddr.codeLabel) ? WMAddr.codeLabel(a) : _admTinyAddr(a); }
+/* The TOWN at one end of a journey — what the month grid reads. */
+function _admTownAddr(a,max){ return (window.WMAddr && WMAddr.townLabel) ? WMAddr.townLabel(a,max) : _admTinyAddr(a); }
 // Flight number — AIRPORT RUNS ONLY. Returns '' for a town-to-town job so the
 // caller renders no flight field at all. (It used to be printed as a bare line
 // under the pickup address in the jobs table, where it read like part of the
@@ -7655,32 +7653,23 @@ function buildAdminCalendar(){
          it is worth. The pill used to say "1 job" and the lines underneath
          dropped the fare, so the one figure the owner looks for was the one
          thing the month did not show him. */
-      var dayFare=0;
-      jobs.forEach(function(j){dayFare+=Number(j.fare)||0;});
       var pillCls=flagged?'warn':'';
-      inner+='<div class="adm-cal-pill '+pillCls+'">'+jobs.length+' job'+(jobs.length>1?'s':'')
-        +(dayFare?' \u00b7 \u00a3'+dayFare.toFixed(0):'')+'</div>';
+      inner+='<div class="adm-cal-pill '+pillCls+'">'+jobs.length+' job'+(jobs.length>1?'s':'')+'</div>';
       var sortedJ=jobs.slice().sort(function(a,b){return String(a.time||'').localeCompare(String(b.time||''));});
       sortedJ.slice(0,3).forEach(function(j){
         var t=(j.time||'').slice(0,5)||'ASAP';
-        /* MEASURED: this cell is 173px, not the 270 it looks like on a 2x
-           screenshot, and the line has to carry a time and a fare as well. The
-           full route needs 153px of that on its own, so it was the half that
-           got cut — and a route cut after the pickup is the half that matters
-           least. The cell carries where he is driving TO; the whole journey is
-           in the title and in the day, one click away. */
-        var pu=_admTinyAddr(j.pickup||'');
-        var de=_admCodeAddr(j.destination||'');
-        var fare=(j.fare!=null&&j.fare!=='')?'\u00a3'+Number(j.fare).toFixed(0):'';
-        var where=de||j.customer_name||pu||'';
-        var full=t+((pu&&_admTinyAddr(j.destination||''))?' '+pu+' \u2192 '+_admTinyAddr(j.destination||''):(where?' '+where:''))+(fare?' '+fare:'');
+        /* THE SAME RULE AS THE PHONE: the time and the journey town to town,
+           and nothing else. This cell is 173px — measured, not the 270 it
+           looks like on a 2x screenshot — and "16:30 Worthing → Gatwick" fits
+           that on one line where the fare as well did not. The fare, the
+           passenger and the terminal are in the day, one click away. */
+        var pu=_admTownAddr(j.pickup||'');
+        var de=_admTownAddr(j.destination||'');
+        var where=(pu&&de)?(pu+' \u2192 '+de):(de||pu||j.customer_name||'');
+        var full=t+' '+_admShortAddr(j.pickup||'')+' \u2192 '+_admShortAddr(j.destination||'')
+          +((j.fare!=null&&j.fare!=='')?' \u00a3'+Number(j.fare).toFixed(0):'');
         inner+='<div class="adm-cal-job-mini" title="'+escTo(full)+'">'
           +'<b>'+escTo(t)+'</b> <span class="adm-cal-where">'+escTo(where)+'</span>'
-          /* NOT .adm-cal-fare — that class already belongs to the day-detail
-             row, where it is a 1.01rem serif figure, and reusing the name here
-             made the month cell's fare twice the size of its own line and ate
-             the route. A different thing gets a different name. */
-          +(fare?'<span class="adm-cal-mini-fare">'+escTo(fare)+'</span>':'')
           +'</div>';
       });
       if(jobs.length>3)inner+='<div class="adm-cal-more">+'+(jobs.length-3)+' more</div>';

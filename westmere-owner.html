@@ -2218,10 +2218,10 @@ function _localTiny(a){
 function _shortAddr(a){ return window.WMAddr ? WMAddr.shortDisplay(a) : _localShort(a); }
 // Single distinctive token (airport or town) for tight spaces like calendar cells.
 function _tinyAddr(a){ return window.WMAddr ? WMAddr.tinyLabel(a) : _localTiny(a); }
-/* The shortest honest name for a place — an airport becomes its code and keeps
-   its terminal ("LGW S", "LHR T5"). For the month grid, where a cell is about
-   fifty pixels wide and "Gatwi…" is not information. */
-function _codeAddr(a){ return (window.WMAddr && WMAddr.codeLabel) ? WMAddr.codeLabel(a) : _tinyAddr(a); }
+/* The TOWN at one end of a journey. The month grid reads town-to-town —
+   "Worthing → Gatwick" — because that is the shape of a week; the premise, the
+   street and the terminal are the detail of a job and belong in the day. */
+function _townAddr(a,max){ return (window.WMAddr && WMAddr.townLabel) ? WMAddr.townLabel(a,max) : _tinyAddr(a); }
 
 // Luggage label from the stored `bags` value. Web + manual forms store it as a
 // count string ("0","1".."4+"); '0'/'' means no large luggage. Returns '' when
@@ -6443,32 +6443,33 @@ function buildCalendar(){
     var ext=CAL_EXTERNAL[key];var nExt=ext?ext.length:0;
     var hasEvents=n>0||nExt>0;
     var cls='cal-day'+(hasEvents?' has':'')+(isToday?' today':'')+(isSel?' selected':'');
-    /* WHAT A FIFTY-PIXEL CELL CAN ACTUALLY HOLD.
-       A phone month cell is about 50px of usable width. One line of
-       "16:30 Weppons Farm→Gatwick £95" is nearer 180px, so it was ellipsised
-       mid-word and the cell read "16:30…" — the dots were the only thing the
-       truncation added. Stacking the chip in TWO lines buys the width back:
-       the time on one, where he is driving TO on the next, which between them
-       answer "when, and where" without a single character cut off.
-       Then a footer with the day's count and takings, so the cell also answers
-       "how many and how much". The whole journey, the passenger and the fare
-       are one tap away in the day panel underneath. */
+    /* WHAT THE CELL SAYS, AND WHAT IT DOES NOT.
+       The owner's rule: the time, and the journey as TOWN → TOWN. Nothing
+       else — the fare, the passenger, the terminal and the day's totals are
+       all one tap away, and a month grid is where he reads the shape of a
+       week rather than the detail of a job.
+
+       THREE LINES, NOT TWO, AND THAT IS A MEASUREMENT. A phone month cell has
+       about 44px of usable width. "Worthing → Gatwick" is eighteen characters
+       — some 60px at the smallest size that is still readable — so it cannot
+       share a line however it is set. One town per line keeps both whole;
+       putting them on one line would cut one of them in half, which is the
+       thing he asked not to see. */
     var pills='';
-    var dayFare=0;
     if(jobs){
       var sortedJ=jobs.slice().sort(function(a,b){return toMins(a.time)-toMins(b.time);});
-      sortedJ.forEach(function(j){dayFare+=Number(j.fare)||0;});
       var shown=sortedJ.slice(0,2);
       pills+=shown.map(function(j){
         var t=(j.time||'').slice(0,5)||'ASAP';
-        var pu=_tinyAddr(j.pickup||'');
-        var de=_tinyAddr(j.dest||'');
-        var fare=(j.fare!=null&&j.fare!=='')?' £'+j.fare:'';
-        var label=t+(pu&&de?' '+pu+'\u2192'+de:'')+fare;
-        var cell=_codeAddr(j.dest||'')||_codeAddr(j.pickup||'');
-        return '<div class="cal-chip" title="'+escH(label)+'">'
+        // Eight characters is what 43px of a 52px cell holds at this size —
+        // measured, not chosen. Over it the town drops to its first word.
+        var pu=_townAddr(j.pickup||'',8);
+        var de=_townAddr(j.dest||'',8);
+        var full=t+((pu&&de)?' '+_shortAddr(j.pickup||'')+' \u2192 '+_shortAddr(j.dest||''):'');
+        return '<div class="cal-chip" title="'+escH(full)+'">'
           +'<span class="cal-chip-t">'+escH(t)+'</span>'
-          +(cell?'<span class="cal-chip-w">'+escH(cell)+'</span>':'')
+          +(pu?'<span class="cal-chip-w">'+escH(pu)+'</span>':'')
+          +(de?'<span class="cal-chip-w to">'+escH(de)+'</span>':'')
           +'</div>';
       }).join('');
     }
@@ -6483,14 +6484,12 @@ function buildCalendar(){
           +'</div>';
       }).join('');
     }
+    /* The day's count and takings USED to sit here on a hairline. They are out
+       again at the owner's word: the cell carries the time and the journey and
+       nothing else, and the day's figures are the first thing the pop-out
+       shows. The only thing left is how many did not fit. */
     var hidden=(n-(jobs?Math.min(n,2):0))+(nExt-(nExt?Math.min(nExt,jobs?1:2):0));
     if(hidden>0)pills+='<div class="cal-more">+'+hidden+'</div>';
-    // The day's own figures. The count is the job count, not the events —
-    // an appointment is not a fare and must not be totted up with one.
-    if(n>0){
-      pills+='<div class="cal-sum" title="'+escH(n+' job'+(n>1?'s':'')+(dayFare?' \u00b7 \u00a3'+dayFare:''))+'">'
-        +n+(dayFare?' \u00b7 \u00a3'+dayFare:'')+'</div>';
-    }
     html+='<div class="'+cls+'" onclick="selectCalDay(\''+key+'\')">'
       +'<div class="cal-num">'+d+'</div>'
       +(isToday?'<div class="cal-today-label">Today</div>':'')

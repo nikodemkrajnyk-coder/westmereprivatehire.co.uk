@@ -293,60 +293,72 @@
   }
 
   /**
-   * CODE LABEL — the shortest honest name for a place, for a cell that has
-   * about fifty pixels of width.
+   * TOWN LABEL — the TOWN at one end of a journey, and nothing else.
    *
-   * WHY IT EXISTS: the owner's month grid on a phone. `tinyLabel` already cuts
-   * "London Gatwick Airport, South Terminal" down to "Gatwick" — and at the
-   * size a month cell allows even that renders as "Gatwi…", which tells him
-   * nothing he did not know from the day being busy. Nearly all of this work
-   * is airport runs, and he reads LGW and LHR faster than he reads the words,
-   * SO AN AIRPORT BECOMES ITS IATA CODE and keeps its terminal: "LGW S",
-   * "LHR T5". That is three to six characters for the two facts that matter.
+   * The owner reads his month as town-to-town: "Worthing → Gatwick". Not the
+   * premise ("Weppons Farm"), not the street ("Norton Road"), and not the
+   * airport code — he asked for the codes to come back out, because a month
+   * grid is the one place he is reading the SHAPE of a week rather than the
+   * detail of a job, and towns are what that shape is made of.
    *
-   * Anything that is not an airport falls back to tinyLabel's locality and, if
-   * that is still long, to its first word — "Haywards Heath" → "Haywards".
+   * tinyLabel is close but not this: it answers "the shortest thing that
+   * identifies this address", which for a named property is the property.
+   * This walks in from the END instead, because an address is written
+   * detail-first and the town is the last thing before the county and the
+   * postcode — and skips a street line if the address ends on one.
    *
-   * DISPLAY ONLY, like every other label in this file. The booking keeps the
-   * whole address, and so does navigation.
+   * A place that is named after its town keeps the town: "Lewes Station" →
+   * "Lewes", "Hove Town Hall" → "Hove", "Worthing Pier" → "Worthing".
+   *
+   * `max` is a budget in characters, not a slice. Over it, the label drops to
+   * its first word — "Haywards Heath" → "Haywards", "Shoreham-by-Sea" →
+   * "Shoreham". It is never cut mid-word; a long single word comes back whole
+   * and the cell's own ellipsis deals with it.
+   *
+   * DISPLAY ONLY. The booking keeps the whole address, and so does navigation.
    */
-  var AIRPORT_IATA = [
-    [/gatwick/i, 'LGW'],
-    [/heathrow/i, 'LHR'],
-    [/stansted/i, 'STN'],
-    [/\bluton\b/i, 'LTN'],
-    [/london city airport|\bcity airport\b/i, 'LCY'],
-    [/southampton airport/i, 'SOU'],
-    [/\bbristol airport\b/i, 'BRS'],
-    [/\bbirmingham airport\b/i, 'BHX'],
-    [/\bmanchester airport\b/i, 'MAN'],
-    [/\bfarnborough airport\b/i, 'FAB'],
-    [/\bbiggin hill\b/i, 'BQH']
-  ];
+  var PLACE_SUFFIX = /\s+(station|airport|air\s*port|town hall|civic centre|pier|cruise terminal|terminal|hospital|university|college|school|church|cathedral|hotel|inn|interchange|services|retail park|business park|industrial estate|docks?|harbour|marina)\b[\s\S]*$/i;
 
-  function codeLabel(raw, maxChars) {
+  function townLabel(raw, max) {
     if (raw == null) return '';
     var s = preClean(raw);
     if (!s) return '';
-    var max = maxChars > 0 ? maxChars : 9;
-    for (var i = 0; i < AIRPORT_IATA.length; i++) {
-      if (AIRPORT_IATA[i][0].test(s)) {
-        var code = AIRPORT_IATA[i][1];
-        var t = TERMINAL.exec(s);
-        if (!t) return code;
-        if (/north/i.test(t[0])) return code + ' N';
-        if (/south/i.test(t[0])) return code + ' S';
-        var num = t[2] || t[3];
-        return num ? code + ' T' + num : code;
-      }
+    var budget = max > 0 ? max : 12;
+    var ap = findAirport(s);
+    if (ap) return trimTown(ap.replace(/ Airport$/, ''), budget);
+
+    /* THE POSTCODE COMES OFF BEFORE THE COUNTY FILTER, not after. Geocoders
+       write "West Sussex RH16 1EA" as ONE comma-token, and a county with a
+       postcode stuck to it matches neither the county pattern nor the postcode
+       one — so it survived as a token and "Haywards Heath" lost to it. */
+    var tokens = String(s).split(',')
+      .map(function (t) { return t.replace(FULL_POSTCODE_TAIL, '').trim(); })
+      .filter(Boolean)
+      .filter(function (t) { return !isNoiseToken(t); });
+    if (!tokens.length) return trimTown(tidyCase(String(s).split(',')[0].trim()), budget);
+
+    /* From the end: the town is the last token that is not a street line, a
+       door number or a bare numbered detail ("Dock Gate 4"). If every token is
+       one of those, the first token is all the address has. */
+    var pick = tokens[0];
+    for (var i = tokens.length - 1; i >= 0; i--) {
+      var t = tokens[i];
+      if (isDetailToken(t) || HOUSE_NUM.test(t) || SUBPREMISE.test(t) || /\s\d+[a-z]?$/i.test(t)) continue;
+      pick = t;
+      break;
     }
-    var tiny = tinyLabel(s);
-    if (tiny.length <= max) return tiny;
-    /* Drop to the first word rather than slicing mid-word: "Haywards Heath"
-       reads as "Haywards", which is a place. A long single word is handed
-       back whole and left to the cell's own ellipsis — "Southampt" is a
-       typo, "Southamp…" is a label that ran out of room. */
-    return tiny.split(/[\s,]+/)[0];
+    return trimTown(tidyCase(pick), budget);
+  }
+
+  function trimTown(v, budget) {
+    var t = String(v || '').replace(PLACE_SUFFIX, '').trim();
+    if (!t) t = String(v || '').trim();
+    if (t.length <= budget) return t;
+    var first = t.split(/[\s,]+/)[0];
+    if (first.length <= budget) return first;
+    // "Shoreham-by-Sea" is one word to a space-splitter.
+    var head = first.split('-')[0];
+    return head.length <= budget ? head : first;
   }
 
   // BRIEF: shortDisplay, then capped to a handful of words.
@@ -388,7 +400,7 @@
     shortDisplay: shortDisplay,
     briefDisplay: briefDisplay,
     tinyLabel: tinyLabel,
-    codeLabel: codeLabel,
+    townLabel: townLabel,
     findAirport: findAirport,
     isAirport: isAirport,
     isAirportRun: isAirportRun,

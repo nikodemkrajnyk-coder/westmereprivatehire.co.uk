@@ -2551,14 +2551,19 @@ nav > .navlinks { margin-left: auto; }
    job cards use (§31), at the size a 50px cell allows. A day that holds
    something now says so in its own content and in the weight of its number,
    which is the quiet signal; nothing fills. */
+/* EVERY PIXEL OF THE 52 IS SPOKEN FOR. Measured: the cell is 52px wide, its
+   own padding takes 4, the gold rule 2 and the chip's indent 3 — which leaves
+   43 for the type, and 43 is eight characters at this size. That is why the
+   towns are budgeted at eight, and why this padding is as tight as it is. */
 .cal-chip{
   font-family: var(--sans);
   background: var(--westmere-white);
   border-left: 2px solid var(--westmere-gold);
-  padding: 1px 2px 1px 4px;
+  padding: 1px 0 1px 3px;
   margin-top: 3px;
   min-width: 0;
 }
+.cal-day{ padding-left: .12rem; padding-right: .12rem; }
 /* TWO LINES, BECAUSE THE WIDTH IS NOT THERE AND THE HEIGHT IS. A phone cell
    has about 50px across; "16:30 Weppons Farm→Gatwick £95" needs 180 and was
    cut to "16:30…". Stacked, the same cell says WHEN on one line and WHERE TO
@@ -2593,21 +2598,17 @@ nav > .navlinks { margin-left: auto; }
   color: var(--westmere-muted);
   margin-top: 2px;
 }
-/* HOW MANY, AND HOW MUCH — the two readings the chips above cannot give,
-   sat on a hairline at the foot of the cell. Figures, so tabular. */
-.cal-sum{
-  font-family: var(--sans);
-  font-size: .58rem;
-  font-weight: 600;
-  letter-spacing: .02em;
-  font-variant-numeric: tabular-nums;
-  color: var(--westmere-gold-ink);
-  margin-top: 3px;
-  padding-top: 2px;
-  border-top: var(--border-hair) solid var(--westmere-line);
-  white-space: nowrap;
-  overflow: hidden;
-}
+/* The destination line. The arrow leads it, so the two towns read as a
+   journey down the cell rather than as two unrelated places. */
+/* NO ARROW ON THIS LINE, and that is a measurement rather than a preference.
+   The town line has 43px. "Heathrow" needs all 43 of them; an arrow, however
+   it is set — a character, a ::before, an absolute mark in a gutter — costs
+   seven or eight, and the only thing it can take them from is the place name.
+   The journey reads down the cell, which is the order a journey is in: the
+   top line is where he starts and the bottom line is where he ends. The
+   explicit "Wiston → Heathrow" is in the cell's tooltip and in the day.
+   The two lines are told apart by weight and ink instead. */
+.cal-chip-w.to{ color: var(--westmere-navy); font-weight: 600; letter-spacing: 0; }
 /* The day's number carries the fact that the day is busy. */
 .cal-day.has .cal-num{ color: var(--westmere-navy); font-weight: 600; }
 /* Room for two stacked chips and the footer, which is what a day with a
@@ -2631,27 +2632,30 @@ nav > .navlinks { margin-left: auto; }
    Its day cells carried the identical two habits: a job line in plain grey
    with nothing holding it, and a personal event drawing its own navy with a
    literal. Same treatment as the owner's chips above, at the admin's size. */
+/* TWO LINES HERE TOO, AND NOT BY CHOICE. Measured: the line is 157px wide,
+   the time takes 42 of it, and "Haywards → Gatwick" needs 126 of the 115 that
+   are left — so on one line the second town was always going to be cut. The
+   obvious fix, smaller type, is not available: §16.3 holds this class at a
+   12px floor because the house face is a didone and cannot hold less, and
+   that floor was the owner's own legibility pass. So the time takes a line
+   and the journey takes the one under it, which is what the phone does. */
 .adm-cal-job-mini{
-  display: flex;
-  align-items: baseline;
-  gap: .3rem;
+  display: block;
   font-family: var(--sans);
-  font-size: .72rem;
-  line-height: 1.3;
+  line-height: 1.35;
   color: var(--westmere-navy);
   border-left: 2px solid var(--westmere-gold);
   padding-left: .32rem;
-  margin-top: .18rem;
+  margin-top: .3rem;
 }
-.adm-cal-job-mini b{ font-weight: 600; font-variant-numeric: tabular-nums; flex-shrink: 0; }
-.adm-cal-where{ flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--westmere-ink-soft); }
-.adm-cal-mini-fare{
-  flex-shrink: 0;
-  font-family: var(--sans);
-  font-size: .72rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--westmere-navy);
+.adm-cal-job-mini b{ display: block; font-weight: 600; font-variant-numeric: tabular-nums; }
+.adm-cal-where{
+  display: block;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--westmere-ink-soft);
 }
 .adm-cal-day{ min-height: 108px; }
 .adm-cal-job-mini.ext{ border-left-color: var(--westmere-line-strong); color: var(--westmere-ink-soft); }

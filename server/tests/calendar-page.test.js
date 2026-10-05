@@ -167,33 +167,101 @@ test('the day label is built from the components, never parsed as an instant', (
 
 // ── 4. THE CELL KEEPS WHAT IT LEARNED ─────────────────────────────────────
 
-test('a day cell still says when, where and how much', () => {
+test('a day cell says the time and the journey, town to town, and NOTHING else', () => {
+  /* THE OWNER'S RULE, in his words: the time, and the route as pickup town →
+     destination town. Not the premise, not the terminal, not the airport code
+     — that was my fix for a width problem and he reversed it — and not the
+     fare or the day's totals either. A month grid is where he reads the SHAPE
+     of a week; everything else is one tap away in the day. */
   const build = fnBlock(OWNER_JS, 'buildCalendar');
   assert.ok(/class="cal-chip-t"/.test(build), 'the time line is gone from the chip');
-  assert.ok(/class="cal-chip-w"/.test(build), 'the destination line is gone from the chip');
-  assert.ok(/_codeAddr\(/.test(build), 'the destination is no longer shortened to a code');
-  assert.ok(/class="cal-sum"/.test(build), "the day's count and takings are gone");
+  assert.ok((build.match(/class="cal-chip-w/g) || []).length >= 2,
+    'the chip no longer carries BOTH towns');
+  assert.ok(/_townAddr\(/.test(build), 'the cell is not reading town labels');
+  assert.ok(!/_codeAddr\(/.test(build), 'the airport-code form is back in the cell');
+  assert.ok(!/class="cal-sum"/.test(build), "the day's count and takings are back in the cell");
+  assert.ok(!/cal-chip[^>]*>[^<]*£/.test(build) && !/chip-w">'\+escH\(fare/.test(build),
+    'a fare is back in the cell');
   const adm = fnBlock(ADMIN_JS, 'buildAdminCalendar');
-  assert.ok(/adm-cal-where/.test(adm) && /adm-cal-mini-fare/.test(adm),
-    'the admin cell lost its route or its fare');
-  /* NOT .adm-cal-fare: that name already belongs to the day-detail row, where
-     it is a 1.01rem serif figure. Borrowed for the month cell it rendered the
-     fare at twice the size of its own line and pushed the route out. */
+  assert.ok(/_admTownAddr\(/.test(adm), 'the admin cell is not reading town labels');
+  assert.ok(!/adm-cal-mini-fare/.test(adm), 'the fare is back in the admin cell');
   assert.ok(!/class="adm-cal-fare"/.test(adm),
     'the month cell is borrowing the day-detail fare class again');
 });
 
-test('an airport is its code, and a long name is never cut mid-word', () => {
+test('the abandoned airport-code scheme is gone, not left lying about', () => {
+  // It was written for a width problem and the owner reversed the decision.
+  // Left exported it is an invitation to put LGW S back in a cell.
   const WMAddr = require(path.join(ROOT, 'address-normalize.js'));
-  assert.strictEqual(WMAddr.codeLabel('London Gatwick Airport, South Terminal'), 'LGW S');
-  assert.strictEqual(WMAddr.codeLabel('London Heathrow, Terminal 5, Longford TW6 2GA'), 'LHR T5');
-  assert.strictEqual(WMAddr.codeLabel('Stansted Airport, Bassingbourn Road'), 'STN');
-  assert.strictEqual(WMAddr.codeLabel('14 Queens Road, Haywards Heath, RH16 1EA'), 'Haywards');
-  assert.strictEqual(WMAddr.codeLabel(''), '');
-  assert.strictEqual(WMAddr.codeLabel(null), '');
-  // A long single word comes back whole — "Southampt" is a typo, the cell's
-  // own ellipsis is a label that ran out of room.
-  assert.strictEqual(WMAddr.codeLabel('Southampton Cruise Terminal, Dock Gate 4'), 'Southampton');
+  assert.ok(!WMAddr.codeLabel, 'codeLabel is still exported, with nothing calling it');
+  for (const [who, src] of [['owner', OWNER], ['admin', ADMIN]]) {
+    assert.ok(!/codeLabel/.test(src), who + ' still references codeLabel');
+  }
+});
+
+test('a town label is the TOWN — not the premise, the street or the county', () => {
+  const WMAddr = require(path.join(ROOT, 'address-normalize.js'));
+  const t = (s, n) => WMAddr.townLabel(s, n);
+  assert.strictEqual(t('London Gatwick Airport, South Terminal'), 'Gatwick');
+  assert.strictEqual(t('London Heathrow, Terminal 5, Longford TW6 2GA'), 'Heathrow');
+  // The premise is not the town; the town is further in.
+  assert.strictEqual(t('Weppons Farm, Chanctonbury Ring Road, Wiston BN44 3DN'), 'Wiston');
+  // A street at the end is skipped, and a place named after its town keeps it.
+  assert.strictEqual(t('Hove Town Hall, Norton Road'), 'Hove');
+  assert.strictEqual(t('Lewes Station, Station Road, Lewes BN7 2UB'), 'Lewes');
+  assert.strictEqual(t('Worthing Pier, Marine Parade, Worthing BN11 3PX'), 'Worthing');
+  // A numbered detail at the end ("Dock Gate 4") is not a town either.
+  assert.strictEqual(t('Southampton Cruise Terminal, Dock Gate 4'), 'Southampton');
+  assert.strictEqual(t('Flat 2, 14 Queens Road, Brighton BN1 1AA'), 'Brighton');
+  assert.strictEqual(t(''), '');
+  assert.strictEqual(t(null), '');
+});
+
+test('A COUNTY WITH A POSTCODE STUCK TO IT IS STILL A COUNTY', () => {
+  /* Geocoders write "West Sussex RH16 1EA" as one comma-token, which matches
+     neither the county pattern nor the postcode one. It therefore survived the
+     noise filter and won the "last token" race — the cell said "West Sussex"
+     where the town was Haywards Heath. The postcode comes off FIRST now. */
+  const WMAddr = require(path.join(ROOT, 'address-normalize.js'));
+  assert.strictEqual(WMAddr.townLabel('14 Queens Road, Haywards Heath, West Sussex RH16 1EA', 20),
+    'Haywards Heath');
+  assert.strictEqual(WMAddr.townLabel('High Street, Billingshurst, Surrey GU1 1AA', 20), 'Billingshurst');
+});
+
+test('a long town is abbreviated to a word, never cut mid-word', () => {
+  const WMAddr = require(path.join(ROOT, 'address-normalize.js'));
+  // Over the budget it drops to the first word...
+  assert.strictEqual(WMAddr.townLabel('14 Queens Road, Haywards Heath, West Sussex RH16 1EA', 8),
+    'Haywards');
+  // ...including across a hyphen, which a space-splitter would miss.
+  assert.strictEqual(WMAddr.townLabel('Shoreham-by-Sea, Brunswick Road BN43 5WB', 8), 'Shoreham');
+  // ...and a long single word comes back WHOLE rather than sliced: a cell's
+  // own ellipsis is a label that ran out of room; "Hurstpierp" is a typo.
+  const long = WMAddr.townLabel('Hurstpierpoint, High Street BN6 9RG', 8);
+  assert.strictEqual(long, 'Hurstpierpoint');
+  assert.ok(!/^Hurstpier.$/.test(long), 'the label was cut mid-word');
+});
+
+test('the cell is budgeted at the width that was measured, not a round number', () => {
+  // 52px cell − 4 padding − 2 rule − 3 indent = 43px of type, which is eight
+  // characters at this size. If the padding grows, the budget has to shrink.
+  const build = fnBlock(OWNER_JS, 'buildCalendar');
+  assert.ok(/_townAddr\([^)]*,\s*8\)/.test(build), 'the eight-character budget is gone');
+  const chip = regionFrom(THEME, '.cal-chip{', [/\n\.[a-z#]/]);
+  assert.ok(/padding:\s*1px 0 1px 3px/.test(chip), 'the chip indent changed without the budget changing');
+  assert.ok(/border-left:\s*2px/.test(chip), 'the gold rule changed width without the budget changing');
+});
+
+test('nothing on the destination line competes with the place name', () => {
+  /* An arrow costs seven or eight of the forty-three pixels the town needs,
+     however it is drawn — as a character, a ::before, or an absolute mark. The
+     journey reads DOWN the cell instead, and the explicit route is in the
+     tooltip. */
+  const toRule = regionFrom(THEME, '.cal-chip-w.to{', [/\n\.[a-z#]/]);
+  assert.ok(!/content:/.test(toRule), 'an arrow is back on the destination line');
+  const build = fnBlock(OWNER_JS, 'buildCalendar');
+  assert.ok(!/chip-w to">\\u2192|chip-w to">→/.test(build), 'an arrow is back in the destination text');
+  assert.ok(/title="'\+escH\(full\)/.test(build), 'the full route is no longer in the tooltip');
 });
 
 // ── NEGATIVE ──────────────────────────────────────────────────────────────
