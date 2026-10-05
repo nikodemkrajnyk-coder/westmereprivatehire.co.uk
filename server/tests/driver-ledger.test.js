@@ -130,10 +130,13 @@ console.log('\nWhat a job is worth');
 test('the stored figures win over the derived ones', () => {
   const b = { fare: 100, admin_fee: 4, driver_pay: 96, payment: 'card' };
   assert.deepStrictEqual(ledger.jobSplit(b),
-    { fare: 100, commission: 4, received: 100, card_fee: 0, payout_before_fee: 96, payout: 96 },
+    /* `payout_set` joined the shape when the owner asked to be able to type the
+       amount himself (server/tests/driver-payout-set.test.js). False here: this
+       job's figures were stored by the rate, not agreed. */
+    { fare: 100, commission: 4, received: 100, card_fee: 0, payout_set: false, payout_before_fee: 96, payout: 96 },
     'a hand-adjusted payout must never be silently recomputed out from under the driver');
   assert.deepStrictEqual(ledger.jobSplit({ fare: 100, payment: 'card' }),
-    { fare: 100, commission: 10, received: 100, card_fee: 0, payout_before_fee: 90, payout: 90 },
+    { fare: 100, commission: 10, received: 100, card_fee: 0, payout_set: false, payout_before_fee: 90, payout: 90 },
     'and the fallback is the ledger rate');
   /* NOTHING IS ESTIMATED. A card job where the owner has not said what landed
      is paid on the whole fare — there is no rate anywhere to fall back on,

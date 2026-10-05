@@ -228,7 +228,51 @@ router.post('/bookings/:id/dispatch', staffOnly, async (req, res) => {
     }
     rate = pct / 100;
   }
-  const split = computeSplit(b.fare, rate);
+  let split = computeSplit(b.fare, rate);
+
+  /* ── OR THE NUMBER THE TWO OF THEM AGREED ─────────────────────────────────
+     The rate answers most jobs. Sometimes it does not — a long one, a favour
+     returned, a driver who will not do it for the ten per cent — and then the
+     owner sets the amount himself on the send sheet. Whatever he sets IS the
+     payout: it is what the driver's email says, what his statement says, what
+     his balance does and what goes out in the week's transfer.
+
+     STORED THREE WAYS ON PURPOSE. `driver_payout_set` records that he decided
+     it, so nothing downstream re-derives the figure and quietly disagrees;
+     `driver_pay` carries it so every reader that already looks there is right
+     without being taught; and `admin_fee` becomes whatever is LEFT of the fare,
+     so commission + payout = fare and the turnover SQL — which knows nothing
+     about any of this — stays correct.
+
+     REFUSED ABOVE THE FARE. Not because paying a driver more than the customer
+     paid is unthinkable, but because £950 typed into a £95 job looks exactly
+     like this and would ride into the weekly transfer. The error names both
+     numbers so a caller that meant it can see what it asked for.
+     GUARDRAIL: server/tests/driver-payout-set.test.js */
+  let payoutSet = null;
+  const rawPayout = body.driver_payout;
+  if (rawPayout !== undefined && rawPayout !== null && String(rawPayout).trim() !== '') {
+    if (operatorRow) {
+      return res.status(400).json({ error: 'Operators are settled by invoice — set the amount on the invoice, not on the job' });
+    }
+    const n = Number(rawPayout);
+    if (!isFinite(n) || n < 0) {
+      return res.status(400).json({ error: 'The amount the driver receives must be a number, and not a negative one' });
+    }
+    const fareNum = Number(b.fare);
+    if (b.fare === null || b.fare === undefined || !isFinite(fareNum)) {
+      return res.status(400).json({ error: 'Price the job before setting what the driver receives — there is no fare to take it out of' });
+    }
+    const amount = Math.round(n * 100) / 100;
+    if (amount > Math.round(fareNum * 100) / 100) {
+      return res.status(400).json({
+        error: 'The driver cannot receive more than the fare — £' + amount.toFixed(2)
+             + ' was set against a fare of £' + fareNum.toFixed(2)
+      });
+    }
+    payoutSet = amount;
+    split = { driver_pay: amount, admin_fee: Math.round((fareNum - amount) * 100) / 100 };
+  }
 
   /* SAVE HIM FOR NEXT TIME, if asked. A driver record is internal data — no
      login, no welcome email, nothing lands in his inbox because of this tick.
@@ -261,13 +305,13 @@ router.post('/bookings/:id/dispatch', staffOnly, async (req, res) => {
   db.prepare(`UPDATE bookings
                  SET driver_id = ?, operator_id = ?, assigned_to_name = ?, assigned_to_email = ?,
                      assigned_to_reg = ?, assigned_to_car = ?,
-                     driver_pay = ?, admin_fee = ?,
+                     driver_pay = ?, admin_fee = ?, driver_payout_set = ?,
                      passed_at = COALESCE(passed_at, datetime('now')),
                      updated_at = datetime('now')
                WHERE id = ?`)
     .run(savedDriverId, operatorRow ? operatorRow.id : null,
          name, email, reg || null, car || null,
-         split.driver_pay, split.admin_fee, id);
+         split.driver_pay, split.admin_fee, payoutSet, id);
 
   /* The customer's address lives on the CUSTOMER, not always on the booking —
      a raw bookings row has passenger_email only when one was typed. Read it the
@@ -294,6 +338,8 @@ router.post('/bookings/:id/dispatch', staffOnly, async (req, res) => {
          `as_operator`, which replaces the payout block with the fare and says
          the job is settled on an invoice. */
       commission_pct: Math.round(rate * 1000) / 10,
+      /* The agreed figure travels with the email, or it prints the derived one. */
+      driver_payout_set: payoutSet,
       as_operator: !!operatorRow
     }));
   } catch (e) { console.error('[DISPATCH] driver email failed:', e.message); }

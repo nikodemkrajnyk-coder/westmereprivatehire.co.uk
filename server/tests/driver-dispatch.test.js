@@ -157,10 +157,17 @@ for (const [file, label] of APPS) {
        hard-coded 10% in the label would be a lie on most screens. What the
        guard is for is unchanged: the owner sees the money before anything is
        sent. The rate is shown on the choice itself, which is asserted below. */
-    for (const shown of ['Fare', 'Your commission', 'He receives']) {
+    /* "He receives" was pinned here as a LABEL. It is a FIELD now — the owner
+       asked to be able to set the amount rather than only read it — so the
+       words moved to "Driver receives" above an input. The intent is unchanged
+       and is what is checked: the fare, the commission, and what the driver
+       gets are all on the screen before anything is sent. */
+    for (const shown of ['Fare', 'Your commission', 'Driver receives']) {
       assert.ok(s.indexOf(shown) !== -1,
         label + ": the confirmation does not show '" + shown + "' — the driver's email does");
     }
+    assert.ok(/id="disp-payout"/.test(s),
+      label + ': the amount the driver receives is no longer something he can set');
     /* And the choice is offered, with both answers, before it goes. */
     assert.ok(/Charge commission/.test(s) && /No commission/.test(s),
       label + ': the confirmation does not offer the per-job commission choice');

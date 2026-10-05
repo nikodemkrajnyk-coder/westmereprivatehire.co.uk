@@ -1007,7 +1007,19 @@ function migrate() {
                              NULL means he has not said, and the driver is paid on the
                              whole fare. Never computed, never estimated.
                              GUARDRAIL: server/tests/card-received.test.js */
-                          ['card_received','REAL']]) {
+                          ['card_received','REAL'],
+                          /* ── THE AMOUNT THE OWNER AGREED WITH THE DRIVER ──────────────
+                             Passing a job is a conversation, not a formula: sometimes it
+                             is the rate, sometimes it is a number the two of them settled
+                             on. This is that number, as typed on the send sheet.
+
+                             NULL means he did not override, and everything is derived the
+                             way it always was. SET means it WINS — it is the payout in his
+                             email, on his statement, in his balance and in the week's
+                             transfer — and the commission stored beside it is whatever is
+                             left of the fare, so the books still add up to the fare.
+                             GUARDRAIL: server/tests/driver-payout-set.test.js */
+                          ['driver_payout_set','REAL']]) {
       if (!bi.find(c => c.name === n)) { db.exec(`ALTER TABLE bookings ADD COLUMN ${n} ${t}`); console.log('[DB] Added ' + n + ' column to bookings'); }
     }
   } catch(e) { console.error('[DB] fare-adjust column migration failed:', e.message); }

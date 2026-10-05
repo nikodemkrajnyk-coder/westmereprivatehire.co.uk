@@ -397,8 +397,18 @@ test('the confirm step does not offer a commission on an operator job', () => {
   const H = read('westmere-owner.html');
   const review = fnBody(strip(H), 'dispReview');
   assert.ok(/dispOperatorMoneyHtml\(\)/.test(review), 'the operator has no money block of its own');
-  assert.ok(/if \(!operator\) dispBindComm\(\)/.test(review),
-    'the commission chooser must not be wired up for an operator');
+  /* BOTH DRIVER CONTROLS, BEHIND THE SAME GUARD. This pinned the one-liner
+     `if (!operator) dispBindComm()`; a second control joined it when the owner
+     asked to set the payout amount himself, and the thing being enforced is
+     unchanged: neither of them exists on an operator job, because an operator
+     settles by invoice and has no payout and no commission. */
+  const gate = (/if \(!operator\) \{([^}]*dispBindComm\(\)[^}]*)\}/.exec(review) || [])[1];
+  assert.ok(gate, 'the commission chooser must not be wired up for an operator');
+  assert.ok(/dispBindPayout\(\)/.test(gate),
+    'the payout field must not be wired up for an operator either');
+  // …and neither is bound anywhere else in the function.
+  assert.strictEqual((review.match(/dispBindComm\(\)/g) || []).length, 1, 'dispBindComm is bound twice');
+  assert.strictEqual((review.match(/dispBindPayout\(\)/g) || []).length, 1, 'dispBindPayout is bound twice');
   const payload = review.slice(review.indexOf('_DISPATCH.payload'));
   assert.ok(/operator_id: operator\.id/.test(payload), 'the payload must name the operator');
   /* AND NOT THE OTHER THING. A commission field in the operator branch would

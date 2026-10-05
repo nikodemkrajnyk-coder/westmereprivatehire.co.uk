@@ -152,11 +152,35 @@ function isCashJob(b) {
 
 /** The split for one job — the stored figures win, so a hand-adjusted payout
     is never silently recomputed out from under the driver. */
+/**
+ * THE AMOUNT THE OWNER AGREED WITH THE DRIVER, if he set one.
+ *
+ * Passing a job is a conversation. Most of the time the rate answers it, and
+ * this is null; sometimes the two of them settle on a number instead, and then
+ * that number is the answer — not a starting point the arithmetic can erode.
+ *
+ * WHICH IS WHY IT BEATS THE CARD FEE TOO. The fee normally comes off the
+ * driver's side (the owner's own rule), but an agreed figure is a figure he has
+ * given a man: if Stripe's cut turns up three days later, the shortfall is the
+ * firm's, not a quiet £3 off what was promised. The commission stored beside it
+ * is whatever is left of the fare, so the fare still equals commission + payout
+ * and the turnover SQL needs to know nothing about any of this.
+ * GUARDRAIL: server/tests/driver-payout-set.test.js
+ */
+function manualPayoutOn(b) {
+  const v = b && b.driver_payout_set;
+  if (v === null || v === undefined || v === '') return null;
+  const n = Number(v);
+  if (!isFinite(n) || n < 0) return null;
+  return Math.round(n * 100) / 100;
+}
+
 function jobSplit(b) {
   const fare = Number(b && b.fare) || 0;
   const derived = computeSplit(fare);
   const commission = Math.round(((b && b.admin_fee != null) ? Number(b.admin_fee) : (derived.admin_fee || 0)) * 100) / 100;
   const before = Math.round(((b && b.driver_pay != null) ? Number(b.driver_pay) : (derived.driver_pay || 0)) * 100) / 100;
+  const manual = manualPayoutOn(b);
   /* THE DRIVER IS PAID OUT OF WHAT ARRIVED. The owner's words: the payout is
      worked out from the real received amount, then less commission if it is a
      commission job. Derived rather than stored, because a booking only reads
@@ -165,13 +189,16 @@ function jobSplit(b) {
      is. `payout_before_fee` is kept so the email and the trip page can show the
      subtraction instead of a number nobody can check. */
   const fee = cardFeeOn(b);
+  /* The card fee is still reported — it is a fact about the job, and the trip
+     page shows it — but it does not come off an agreed figure. */
   return {
     fare,
     commission,
     received: receivedOn(b),
     card_fee: fee,
-    payout_before_fee: before,
-    payout: Math.round((before - fee) * 100) / 100
+    payout_set: manual !== null,
+    payout_before_fee: manual !== null ? manual : before,
+    payout: manual !== null ? manual : Math.round((before - fee) * 100) / 100
   };
 }
 
@@ -596,6 +623,7 @@ module.exports = {
   ADMIN_FEE_PCT,
   isCardJob,
   receivedOn,
+  manualPayoutOn,
   cardFeeOn,
   unpaidUpTo,
   settleBatch,

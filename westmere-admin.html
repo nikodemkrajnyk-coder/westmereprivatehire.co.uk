@@ -2820,22 +2820,97 @@ function dispMoneyHtml() {
     return '<div style="display:flex;justify-content:space-between;padding:.15rem 0' + (strong ? ';border-top:1px solid rgba(27,27,26,.12);margin-top:.35rem;padding-top:.35rem;font-weight:500' : '') + '">'
       + '<span style="color:' + (strong ? 'var(--westmere-navy,#102a43)' : 'rgba(27,27,26,.65)') + '">' + label + '</span><span>' + value + '</span></div>';
   };
+  /* ── THE AMOUNT HE RECEIVES IS A FIELD, NOT A RESULT ──────────────────────
+     Passing a job is a conversation. The rate answers most of them and the box
+     opens with that answer already in it, so the ordinary job is still one tap;
+     but when the two of them have settled on a number instead, he types it, and
+     THAT is what goes out — the driver's email, his statement, his balance and
+     the week's transfer all take it from here.
+     The figure above it is left showing so the two are side by side: this is
+     what the rate says, this is what you are sending.
+     GUARDRAIL: server/tests/driver-payout-set.test.js */
+  var dflt = (sp.payout === null || sp.payout === undefined || isNaN(sp.payout)) ? '' : Number(sp.payout).toFixed(2);
   return '<div style="border:1px solid rgba(27,27,26,.15);border-radius:9px;padding:.85rem 1rem;margin-top:.5rem;font-size:.95rem">'
     + row('Fare', dispMoney(sp.fare))
     + row(_DISPATCH.charge ? 'Your commission' : 'Commission &mdash; cover job', dispMoney(sp.commission))
-    + row('He receives', dispMoney(sp.payout), true)
-    + '<div style="margin-top:.6rem;font-size:.84rem;color:var(--westmere-ink-soft);line-height:1.6">'
-    + (!known ? 'THIS JOB HAS NO FARE YET. Price it before you send it, or he is being asked to drive for nothing.'
-       : !_DISPATCH.charge ? 'A cover job — recorded against this job, so his statement and your turnover both show it. His default is untouched.'
-       : cash ? 'CASH — he collects ' + dispMoney(sp.fare) + ' in the car and keeps it; your ' + dispMoney(sp.commission) + ' nets off his next payout.'
-              : 'PREPAID — the customer has already paid you; you owe him ' + dispMoney(sp.payout) + '.')
+    + '<div class="wm-rule" style="margin:.45rem 0 .55rem"></div>'
+    + '<label for="disp-payout" class="wm-lab" style="display:block;margin:0 0 .35rem">Driver receives</label>'
+    + '<div style="display:flex;align-items:center;gap:.5rem">'
+    +   '<span style="font-family:var(--serif);font-size:1.2rem;color:var(--westmere-navy,#102a43)">\u00a3</span>'
+    +   '<input id="disp-payout" type="number" inputmode="decimal" min="0" step="0.01" value="' + dflt + '"'
+    +     ' style="flex:1;min-width:0;padding:.6rem .7rem;border:var(--border-strong,1.5px) solid var(--westmere-navy,#102a43);border-radius:7px;'
+    +     'font-family:var(--serif);font-size:1.2rem;color:var(--westmere-navy,#102a43);background:#ffffff;box-sizing:border-box">'
+    +   '<button type="button" id="disp-payout-reset" style="flex:0 0 auto;padding:.55rem .7rem;border:1px solid rgba(27,27,26,.25);background:transparent;border-radius:7px;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;white-space:nowrap">Reset</button>'
+    + '</div>'
+    + '<div id="disp-payout-note" style="margin-top:.35rem;font-size:.8rem;color:var(--westmere-ink-soft);line-height:1.5">Pre-filled from the rate. Type any amount to set it yourself.</div>'
+    /* THE SENTENCE UNDER IT FOLLOWS THE FIELD. It named the derived payout and
+       stayed on it after he typed — so the screen said he was setting £70 and
+       owed £85.50 in the same breath. dispPayoutStatus() is the one place that
+       sentence is written, and it is re-run on every keystroke. */
+    + '<div id="disp-money-note" style="margin-top:.6rem;font-size:.84rem;color:var(--westmere-ink-soft);line-height:1.6">'
+    + dispPayoutStatus(sp.payout)
     + '</div></div>';
+}
+
+/* What happens to the money, said for the amount CURRENTLY in the box. */
+function dispPayoutStatus(amount) {
+  var s = _DISPATCH.splits || {};
+  var sp = _DISPATCH.charge ? (s.charge || {}) : (s.none || {});
+  var job = _DISPATCH.job || {};
+  var cash = String(job.payment || '').toLowerCase() === 'cash';
+  var known = sp.fare !== null && sp.fare !== undefined && !isNaN(sp.fare);
+  var pay = (amount === null || amount === undefined || isNaN(Number(amount))) ? sp.payout : Number(amount);
+  var keep = (known && pay !== null && !isNaN(pay)) ? Math.round((Number(sp.fare) - pay) * 100) / 100 : null;
+  if (!known) return 'THIS JOB HAS NO FARE YET. Price it before you send it, or he is being asked to drive for nothing.';
+  if (cash) return 'CASH — he collects ' + dispMoney(sp.fare) + ' in the car'
+    + (keep ? '; ' + dispMoney(keep) + ' comes back to you off his next payout.' : ' and keeps it.');
+  return 'PREPAID — the customer has already paid you; you owe him ' + dispMoney(pay) + '.';
 }
 function dispSetComm(charge) {
   _DISPATCH.charge = !!charge;
+  /* SWITCHING THE RATE RE-FILLS THE BOX — unless he has already typed in it.
+     Both halves of that matter: the ordinary job must follow the toggle, and a
+     number he has decided on must not be wiped by a stray tap on the option
+     above it. */
+  var typed = _DISPATCH.payoutTyped;
   var c = document.getElementById('disp-comm'); if (c) c.innerHTML = dispCommHtml();
   var m = document.getElementById('disp-money'); if (m) m.innerHTML = dispMoneyHtml();
+  if (typed) {
+    var f = document.getElementById('disp-payout');
+    if (f) f.value = _DISPATCH.payoutValue;
+    _DISPATCH.payoutTyped = true;
+  }
   dispBindComm();
+  dispBindPayout();
+}
+function dispBindPayout() {
+  var f = document.getElementById('disp-payout');
+  if (!f) return;
+  var note = document.getElementById('disp-payout-note');
+  var reset = document.getElementById('disp-payout-reset');
+  var dflt = f.value;
+  if (!_DISPATCH.payoutTyped) _DISPATCH.payoutValue = dflt;
+  var paint = function () {
+    _DISPATCH.payoutValue = f.value;
+    var n = Number(f.value);
+    var sp = _DISPATCH.charge ? ((_DISPATCH.splits || {}).charge || {}) : ((_DISPATCH.splits || {}).none || {});
+    var fare = Number(sp.fare);
+    if (!note) return;
+    if (f.value === '' || !isFinite(n)) {
+      note.textContent = 'Put in what he is to receive.';
+    } else if (isFinite(fare) && n > fare) {
+      note.textContent = 'That is more than the fare of ' + dispMoney(fare) + ' — he cannot receive more than came in.';
+    } else if (String(Number(n).toFixed(2)) === String(Number(dflt || 0).toFixed(2))) {
+      note.textContent = 'Pre-filled from the rate. Type any amount to set it yourself.';
+    } else {
+      note.textContent = 'Set by you' + (isFinite(fare) ? ' — ' + dispMoney(Math.round((fare - n) * 100) / 100) + ' stays with Westmere.' : '.');
+    }
+    var sline = document.getElementById('disp-money-note');
+    if (sline) sline.innerHTML = dispPayoutStatus(isFinite(n) && f.value !== '' ? n : null);
+  };
+  f.oninput = function () { _DISPATCH.payoutTyped = true; paint(); };
+  if (reset) reset.onclick = function () { _DISPATCH.payoutTyped = false; f.value = dflt; paint(); };
+  paint();
 }
 function dispBindComm() {
   var y = document.getElementById('disp-comm-yes'), n = document.getElementById('disp-comm-no');
@@ -2935,18 +3010,34 @@ async function dispReview() {
      same door, so both routes behave identically. */
   dispPush();
   document.getElementById('disp-back').onclick = function () { history.back(); };
-  if (!operator) dispBindComm();
+  if (!operator) { dispBindComm(); dispBindPayout(); }
   document.getElementById('disp-send').onclick = dispSend;
 }
 
 async function dispSend() {
   var btn = document.getElementById('disp-send');
   btn.disabled = true; btn.textContent = 'Sending…';
+  /* WHAT IS IN THE BOX IS WHAT IS SENT. Read at the moment of sending, not at
+     the moment it was drawn, so the last thing he typed is the thing that
+     goes. An operator job has no such field and sends nothing. */
+  var payload = _DISPATCH.payload;
+  var pf = document.getElementById('disp-payout');
+  if (pf && !_DISPATCH.operator) {
+    var raw = String(pf.value || '').trim();
+    if (raw === '' || !isFinite(Number(raw)) || Number(raw) < 0) {
+      var e0 = document.getElementById('disp-err2');
+      e0.textContent = 'Put in what he is to receive, or press Reset for the figure from the rate.';
+      e0.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Confirm & send';
+      return;
+    }
+    payload = Object.assign({}, payload, { driver_payout: Math.round(Number(raw) * 100) / 100 });
+  }
   try {
     var r = await fetch('/api/bookings/' + _DISPATCH.bookingId + '/dispatch', {
       method: 'POST', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(_DISPATCH.payload)
+      body: JSON.stringify(payload)
     });
     var d = await r.json();
     if (r.ok && d.ok) {

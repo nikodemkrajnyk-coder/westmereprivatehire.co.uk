@@ -1311,7 +1311,19 @@ async function sendDriverDispatch(d) {
      reads `card` once Stripe confirms the payment, which can be after the job
      was passed. Printing the stored figure would show a driver a breakdown that
      does not add up to its own total. */
-  const payout = (payoutBeforeFee === null) ? null
+  /* ── OR THE AMOUNT THE OWNER AGREED ───────────────────────────────────────
+     When he set the figure himself on the send sheet, that figure is the
+     payout and the card fee does not touch it: an agreed number is one he has
+     given a man, and Stripe's cut arriving three days later is the firm's
+     problem, not a quiet deduction from what was promised. The breakdown below
+     then reads Fare · Commission · Payout, which still adds up, and says the
+     amount was agreed rather than worked out.
+     GUARDRAIL: server/tests/driver-payout-set.test.js */
+  const agreed = (d.driver_payout_set === null || d.driver_payout_set === undefined
+                  || d.driver_payout_set === '' || !isFinite(Number(d.driver_payout_set)))
+    ? null : Math.round(Number(d.driver_payout_set) * 100) / 100;
+  const payout = (agreed !== null) ? agreed
+    : (payoutBeforeFee === null) ? null
     : Math.round((payoutBeforeFee - cardFee) * 100) / 100;
 
   let rows = jobDetailRows(d);
@@ -1367,9 +1379,10 @@ async function sendDriverDispatch(d) {
           /* THE RATE TRAVELS WITH THE DEDUCTION. A driver on 12.5% read a
              hard-coded ten per cent once; the line is short but it still has
              to be HIS number. */
-          (commission ? 'Commission' + (commPct ? ' (' + commPct + '%)' : '') + ' −' + money(commission) : null),
-          (cardFee > 0 ? 'Card fee −' + money(cardFee) : null),
-          'Payout ' + money(payout)
+          /* An AGREED payout does not name a rate: there was not one. */
+          (commission ? 'Commission' + ((commPct && agreed === null) ? ' (' + commPct + '%)' : '') + ' −' + money(commission) : null),
+          ((cardFee > 0 && agreed === null) ? 'Card fee −' + money(cardFee) : null),
+          'Payout ' + money(payout) + (agreed !== null ? ' (agreed)' : '')
         ].filter(Boolean).join(' &middot; ')}
       </p>`}
       <p style="margin:12px 0 0;padding-top:10px;border-top:1px solid ${ACCENT};font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_MUTED};line-height:1.5">${escHtml(statusLine)}</p>
