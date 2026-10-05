@@ -329,15 +329,27 @@ test('admin has a Trip History view grouped by month with takings', () => {
   const fn = ADMIN.match(/function buildAdmHistory[\s\S]*?\n\}/);
   assert.ok(fn, 'buildAdmHistory not found');
   assert.ok(/WMLifecycle\.groupByMonth\(/.test(fn[0]), 'Trip History must group by the shared month function');
-  assert.ok(/g\.takings/.test(fn[0]), "each month must show that month's takings");
+  /* THE MONTH HEADER SAYS WHAT WAS EARNED, NOT WHAT WAS TAKEN. A journey
+     driven by somebody else brought in its commission and no more — printing
+     the fares beside a column of other people's names is the same mistake the
+     dashboard was making when it told the owner he had earned the whole of a
+     fare he paid most of away. groupByMonth still works both figures out;
+     this is the one the screen shows.
+     GUARDRAIL: server/tests/income-parity.test.js */
+  assert.ok(/g\.income/.test(fn[0]), "each month must show what that month EARNED");
   assert.ok(/id="adm-history-list"/.test(ADMIN), 'the Trip History view needs its list container');
 });
 test('the "Completed" tab is gone from the admin sidebar', () => {
   assert.ok(!/id="view-completed"/.test(ADMIN), 'the Completed view must be gone — history is the one place');
   assert.ok(!/nav\('completed'/.test(ADMIN), 'no sidebar entry may navigate to a Completed page');
-  assert.ok(/nav\('history'/.test(ADMIN) && /Trip History<\/button>/.test(ADMIN),
-    'the sidebar entry is Trip History');
-  assert.ok(/id="view-history"/.test(ADMIN), 'the Trip History view must exist');
+  /* And there is now ONE journeys entry rather than two. The second — an
+     eleven-column table of every booking — was both a duplicate and cropped
+     off the right of the page under about 1240px.
+     GUARDRAIL: server/tests/admin-journeys.test.js */
+  assert.ok(/nav\('history'/.test(ADMIN) && /Journeys<span class="sb-badge"/.test(ADMIN),
+    'the sidebar entry is Journeys');
+  assert.ok(!/nav\('all-jobs'/.test(ADMIN), 'there are two journeys entries again');
+  assert.ok(/id="view-history"/.test(ADMIN), 'the journeys view must exist');
 });
 test('cancelled bookings live in Trip History, with the manual Delete intact', () => {
   /* There is no Cancelled view any more, and no Completed one: ONE Trip
@@ -351,8 +363,10 @@ test('cancelled bookings live in Trip History, with the manual Delete intact', (
   assert.ok(!/function buildAdmCancelled\b/.test(ADMIN), 'buildAdmCancelled must be gone with its view');
   assert.ok(!/id="adm-cancelled-list"/.test(ADMIN), 'its list container must be gone too');
 
+  /* The one list holds EVERY journey now, which is more than both outcomes —
+     so the test is that it filters nothing out at all. */
   const fn = ADMIN.match(/function buildAdmHistory[\s\S]*?\n\}/);
-  assert.ok(fn && /st==='completed'\|\|st==='cancelled'/.test(fn[0]),
+  assert.ok(fn && !/\.filter\(/.test(fn[0]),
     'Trip History must select BOTH outcomes');
 
   const del = ADMIN.match(/async function admDeleteBooking[\s\S]*?\n\}/);

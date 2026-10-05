@@ -120,6 +120,17 @@ test('the mark is an outline, and SENT is the gold one', () => {
     'the tick is not the gold ink');
 });
 
+test('admin shows them on the journey page, not only on the day view', () => {
+  /* The day view was the only place they appeared, so the page that holds
+     everything else about a journey — now the one place admin does anything to
+     a booking — was the one place you could not see whether the reminders had
+     gone. GUARDRAIL: server/tests/admin-journeys.test.js */
+  const page = fnBlock(ADMIN, 'admTripRender');
+  assert.ok(page, 'admTripRender is gone');
+  assert.ok(/admRemindersHtml\(b\)/.test(page),
+    'the journey page does not show whether the reminders went');
+});
+
 test('this guardrail is wired into npm test', () => {
   assert.ok(/reminder-indicator\.test\.js/.test(read('package.json')),
     'reminder-indicator.test.js is not in the npm test chain — an unrun guard is no guard');

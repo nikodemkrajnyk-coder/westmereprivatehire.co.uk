@@ -154,29 +154,37 @@ test('flightFor returns the flight ONLY on an airport run', () => {
 });
 
 test('THE REPORTED BUG: the admin list never prints the flight under the address', () => {
-  const start = ADMIN.indexOf('var tbody=el(\'jobs-tbody\')');
-  assert.ok(start !== -1, 'the admin All Journeys table renderer moved');
-  const end = ADMIN.indexOf('jdetail-row', start);
-  assert.ok(end !== -1, 'the All Journeys row template moved');
-  const block = ADMIN.slice(start, end);
-  // The pickup cell must not carry a bare flight sub-line (that is what read as
-  // part of the address).
-  assert.ok(!/b\.flight\?'<div class="sub-v">'\+escTo\(b\.flight\)/.test(block),
-    'the flight number is being printed as a bare sub-line under the pickup address again');
-  assert.ok(!/_admShortAddr\(b\.pickup\)[\s\S]{0,240}?_admFlight\(b\)[\s\S]{0,80}?<\/td>/.test(block),
-    'the flight number must not sit inside the pickup cell at all');
-  // It has its own labelled column instead.
-  assert.ok(/<th>Flight<\/th>/.test(ADMIN), 'the jobs table must have its own Flight column header');
-  assert.ok(/\+'<td>'\+\(_admFlight\(b\)\?/.test(block), 'the Flight column must render via _admFlight');
+  /* THE ELEVEN-COLUMN TABLE THIS TESTED IS GONE. It was both a duplicate of
+     the journeys list and cropped off the right of the page, and admin now has
+     one list built from the shared compact module.
+
+     The bug it guarded is unchanged and still worth guarding: the flight
+     number was printed as a bare sub-line under the pickup, where it read as
+     another line of the address — "…, Horsham / BA2678". So the rule now is
+     that the list's address cells carry NOTHING but the address, and the
+     flight appears only where it is labelled.
+     GUARDRAIL: server/tests/admin-journeys.test.js */
+  const C = require('../../wm-compact');
+  assert.ok(C.JOURNEY_COLUMNS.every((c) => c.key !== 'flight'),
+    'the journeys list has grown a flight column — it belongs on the page the row opens');
+  const cells = C.journeyCells({ ref: 'A', date: '2026-10-09', fare: 95,
+    pickup: 'Weppons Farm, Wiston BN44 3DN',
+    destination: 'Gatwick Airport, South Terminal', flight: 'BA2678' });
+  assert.ok(!/BA2678/.test(cells.pickup + ' ' + cells.dropoff),
+    'the flight number is back inside an address cell: ' + cells.pickup + ' / ' + cells.dropoff);
+  assert.ok(!/BA2678/.test(Object.keys(cells).map((k) => cells[k]).join(' ')),
+    'the flight number is somewhere in the row, unlabelled');
 });
 
-test('the admin Flight column count matches the table header and the detail colspan', () => {
-  const header = ADMIN.match(/<thead><tr><th>Ref<\/th>[\s\S]*?<\/tr><\/thead>/);
-  assert.ok(header, 'jobs table header not found');
-  const cols = (header[0].match(/<th[ >]/g) || []).length;
-  assert.strictEqual(cols, 11, 'the jobs table should have 11 columns (Flight added)');
-  assert.ok(new RegExp('colspan="' + cols + '"').test(ADMIN),
-    'the detail row colspan must match the ' + cols + '-column table');
+test('where admin DOES show a flight, it is labelled and gated on an airport run', () => {
+  /* On the page a row opens, and in the day view — both through the shared
+     airport rule, so a town-to-town job never shows one. */
+  assert.ok(/_jdField\('Flight',escTo\(_admFlight\(b\)\)\)/.test(ADMIN),
+    'the journey page must print the flight in its own labelled field');
+  assert.ok(/function _admFlight\(b\)\{ return window\.WMAddr \? WMAddr\.flightFor\(b\) : ''; \}/.test(ADMIN),
+    'admin must read the flight through the shared airport rule, not b.flight directly');
+  assert.ok(!/<th>Flight<\/th>/.test(ADMIN),
+    'a hand-written jobs table with a Flight column is back');
 });
 
 test('every app gates its flight display on the shared airport rule', () => {

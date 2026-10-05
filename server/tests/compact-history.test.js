@@ -241,8 +241,14 @@ test('trip history is a compact table in BOTH apps, not a stack of cards', () =>
   assert.ok(!/jobCardHtml/.test(o), 'the owner trip history must not stack full job cards any more');
   assert.ok(/openTripPage/.test(o), 'the owner rows must open the trip page');
 
+  /* ADMIN IS A DESK AND HAS THE WIDTH FOR MORE COLUMNS — it renders
+     journeyTable rather than historyTable. Same module, same cells, same
+     escaping and the same row-opens-the-page behaviour; what differs is how
+     many of the columns the window has room for. The thing this test exists to
+     prevent is a stack of cards, or a hand-written table in one app that can
+     drift from the other's. Both still come from wm-compact.js. */
   const a = fnBlock(ADMIN, 'buildAdmHistory');
-  assert.ok(/WMCompact\.historyTable\(/.test(a), 'the admin trip history must render the compact table');
+  assert.ok(/WMCompact\.journeyTable\(/.test(a), 'the admin journeys list must render a shared table');
   assert.ok(!/admJobRow/.test(a), 'the admin trip history must not stack full job rows any more');
   assert.ok(/admOpenTrip/.test(a), 'the admin rows must open the trip page');
 });
@@ -348,8 +354,14 @@ test('"Completed" is not a page in either app any more', () => {
   // for the concept gone, not renamed in one app and kept in the other.
   assert.ok(!/id="view-completed"/.test(ADMIN), 'the admin Completed view must be gone');
   assert.ok(!/nav\('completed'/.test(ADMIN), 'no admin sidebar entry may open a Completed page');
-  assert.ok(/Trip <em>History<\/em>/.test(ADMIN) && /Trip <em>History<\/em>/.test(OWNER),
-    'both apps call it Trip History');
+  /* The owner's phone calls it Trip History; admin's one list holds every
+     journey, finished or not, so it is called Journeys. What matters here is
+     that NEITHER calls anything "Completed" — a finished job is not a category
+     of its own, which is the thing the owner asked to be rid of. */
+  assert.ok(/Trip <em>History<\/em>/.test(OWNER), 'the owner app must call it Trip History');
+  assert.ok(/<em>Journeys<\/em>/.test(ADMIN), 'the admin app must call its one list Journeys');
+  assert.ok(!/>Completed</.test(ADMIN.replace(/Mark Completed/g, '')),
+    'admin has a page or tab called Completed again');
 });
 
 // ── 8. ONE LIST, BOTH OUTCOMES ───────────────────────────────────────────
@@ -374,9 +386,14 @@ test('the ONE list is built from completed AND cancelled, in both apps', () => {
   const o = fnBlock(OWNER, 'buildCompleted');
   assert.ok(/COMPLETED_JOBS\|\|\[\]\)\.concat\(CANCELLED_JOBS/.test(o),
     'the owner Trip History must hold both outcomes');
+  /* Admin's list now holds MORE than both outcomes — it holds every journey,
+     because a list he has to leave to find a booking that has not happened yet
+     is a list he has to leave. So the test is that it filters NOTHING out:
+     cancelled journeys cannot be hidden in a page of their own again. */
   const a = fnBlock(ADMIN, 'buildAdmHistory');
-  assert.ok(/st==='completed'\|\|st==='cancelled'/.test(a),
-    'the admin Trip History must hold both outcomes');
+  assert.ok(/ALL_BOOKINGS\|\|\[\]\)\.slice\(\)/.test(a),
+    'the admin journeys list has started filtering, which is how a second page gets born');
+  assert.ok(!/\.filter\(/.test(a), 'the admin journeys list drops some journeys: ' + a.slice(0, 200));
 });
 
 test('a cancelled row is LABELLED, and reads as cancelled', () => {

@@ -307,12 +307,23 @@
       sendEstimate: st === 'pending',
       markPaid: st === 'awaiting_payment',
       markCompleted: st === 'confirmed' || st === 'active',
-      // THE WAY OUT OF A MISTAKE. Because a completed job can no longer be
-      // cancelled or deleted (see below), there has to be a door back: this
-      // puts the job on 'confirmed' again, which takes it out of the income
-      // figures and makes it cancellable. Completed only — it is an undo, not
-      // a status picker.
-      unmarkCompleted: st === 'completed',
+      /* ── NO UN-COMPLETING ─────────────────────────────────────────────
+         There was a door back: a button that put a completed job on
+         'confirmed' again, out of the income figures and cancellable. The
+         owner has closed it. His words: a completed job is completed.
+
+         It is a decision about the books, not about the screen. A finished
+         job is money that has been counted, and a control that quietly takes
+         it back out is a control that can be pressed by mistake — on the
+         wrong row, on a phone, months later — with nothing to show it ever
+         happened. A job marked finished in error is still EDITABLE, which is
+         the ordinary way to correct a detail; what is gone is the one button
+         that moved money off the books in a single tap.
+
+         Left here as false rather than deleted so that the rule has somewhere
+         to be read, and so no app grows its own version of it.
+         GUARDRAIL: server/tests/completed-is-final.test.js */
+      unmarkCompleted: false,
       togglePaid: st === 'confirmed' || st === 'active' || st === 'completed',
       sendReminder: !isPaid && hasEmail && hasFare &&
         (st === 'completed' || st === 'confirmed' || st === 'awaiting_payment'),
@@ -322,8 +333,8 @@
       // ── COMPLETED IS FINAL ────────────────────────────────────────────
       // A completed job counts towards the owner's income. Cancelling or
       // deleting it would take that money out of the books by the back door,
-      // so neither is offered. If a job was marked completed by mistake the
-      // way out is to mark it NOT completed first, and then cancel it.
+      // so neither is offered — and since the owner closed the un-complete
+      // door above, a finished job is finished. Correct one by editing it.
       //
       // The server refuses the same thing on every door that could do it
       // (PATCH/cancel/DELETE /bookings/:id, the customer's /cancel/:ref, and
@@ -558,8 +569,80 @@
       g.takings = g.items.reduce(function (s, j) {
         return statusOf(j) === 'cancelled' ? s : s + (Number(j.fare) || 0);
       }, 0);
+      /* AND WHAT WAS OURS OF IT. `takings` is what came through the business —
+         the fares — and on a job passed to a driver most of it went straight
+         back out again. A month header reading £4,100 beside a column of other
+         people's names is the same mistake the dashboard was making when it
+         told the owner he had earned the whole of a fare he paid £86 of away.
+         Both figures are kept because they answer different questions; the
+         screens that say "earned" use this one.
+         GUARDRAIL: server/tests/income-parity.test.js */
+      g.income = Math.round(g.items.reduce(function (s, j) {
+        return statusOf(j) === 'cancelled' ? s : s + westmereIncome(j);
+      }, 0) * 100) / 100;
       return g;
     });
+  }
+
+
+  /* THE HOUSE RATE, and the only place this module names a number about
+     money. It is server/driver-ledger.js ADMIN_FEE_PCT, and the parity guard
+     reads both files and fails if they drift apart.
+     GUARDRAIL: server/tests/income-parity.test.js */
+  var ADMIN_FEE_PCT = 0.10;
+
+  /* ── WHO ACTUALLY DID THE JOB ─────────────────────────────────────────────
+     EVERY CONFIRMED JOB HAS A DRIVER ON IT — him. So "has a driver_id" cannot
+     answer the question, and the admin list could not say which of a month's
+     work he drove and which he paid somebody else to drive. passed_at is the
+     question; who it went to is the answer, and a firm is not a driver.
+
+     Reads both spellings because the two apps hold a booking differently: the
+     owner app camel-cases the row on its way in, the admin app uses it raw.
+     One rule either way, so the two can never give different answers.
+     GUARDRAIL: server/tests/passed-job-name.test.js */
+  function whoDrove(j) {
+    if (!j) return { kind: 'own', name: '' };
+    var passed = j.passedAt || j.passed_at;
+    if (!passed) return { kind: 'own', name: '' };
+    var firmId   = j.operatorId   || j.operator_id;
+    var firmName = j.operatorName || j.operator_name;
+    var assigned = j.assignedToName || j.assigned_to_name;
+    if (firmId || firmName) {
+      return { kind: 'firm', name: String(firmName || assigned || 'Another firm') };
+    }
+    return { kind: 'driver',
+             name: String(j.driverName || j.driver_name || assigned || 'Another driver') };
+  }
+
+  /* ── WHAT THE FIRM MADE ON A JOB ──────────────────────────────────────────
+     NOT THE FARE. On a job passed to a driver the fare is collected on his
+     behalf and paid straight back out; only the commission was ever ours. The
+     admin dashboard added fares up and told the owner he had earned £192 on a
+     day when one of the two jobs was driven by somebody he then had to pay £86
+     of it to.
+
+     A job passed to an OPERATOR is different and must not be lumped in: the
+     other firm drives it and we INVOICE them, so nothing is paid out through
+     this system and the whole of what we bill is ours.
+
+     This is server/driver-ledger.js westmereIncome(), in the browser, for the
+     tiles that are drawn from a list the page already has rather than fetched
+     as a total. The two are driven over the same table of jobs and required to
+     give the same answer to the penny.
+     GUARDRAIL: server/tests/income-parity.test.js */
+  function westmereIncome(j) {
+    if (!j) return 0;
+    var fare = Number(j.fare);
+    if (!isFinite(fare)) fare = 0;
+    var round = function (n) { return Math.round(n * 100) / 100; };
+    if (whoDrove(j).kind !== 'driver') return round(fare);
+    /* The commission as STORED, which is what the job was actually passed on
+       at — a driver on a different rate, or a cover job at nothing, is not the
+       house ten per cent. Only a job with nothing stored falls back to it. */
+    var fee = (j.admin_fee != null && j.admin_fee !== '' && isFinite(Number(j.admin_fee)))
+      ? Number(j.admin_fee) : (fare * ADMIN_FEE_PCT);
+    return round(fee);
   }
 
   return {
@@ -591,6 +674,9 @@
     weekRangeLabel: weekRangeLabel,
     groupByWeek: groupByWeek,
     groupByMonth: groupByMonth,
+    ADMIN_FEE_PCT: ADMIN_FEE_PCT,
+    whoDrove: whoDrove,
+    westmereIncome: westmereIncome,
     _spec: 'estimate-first; no staff auto-confirm; payment never defaults to cash'
   };
 }));

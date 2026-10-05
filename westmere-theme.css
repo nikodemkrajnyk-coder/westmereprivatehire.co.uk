@@ -1236,12 +1236,12 @@ input, select, textarea {
    heavier stem costs no layout, whereas a size floor would reflow the tables.
    (Measured at 14px/300 for the trip route before this.) */
 .tb-date, .sec-sub, .dp-note, .drow-v, .drow-arrow,
-.trip-route, .tc-route, .aj-meta-v, .main-v, .sub-v, .jd-val,
+.trip-route, .tc-route, .aj-meta-v, .sub-v, .jd-val,
 .side-id-sub, .side-id, .btn-main, .drow-tag {
   font-weight: 500 !important;
 }
 /* The route line and the table values are the content people actually read. */
-.drow-v, .main-v, .tc-route, .trip-route { font-weight: 600 !important; }
+.drow-v, .tc-route, .trip-route { font-weight: 600 !important; }
 
 /* 16.7 — the last few micro-labels the app scan turned up. */
 .side-pill, .sb-pill { font-size: max(0.72rem, 11.5px) !important; font-weight: 600 !important; }
@@ -2984,7 +2984,6 @@ nav > .navlinks { margin-left: auto; }
   padding: .6rem .8rem;
 }
 .jtable tr:hover td{ background: var(--westmere-hover); }
-.jtable .main-v{ color: var(--westmere-navy); font-weight: 600; }
 .jtable .sub-v{ font-size: .76rem; color: var(--westmere-muted); }
 .fare-table td{
   border: var(--border-hair) solid var(--westmere-line);

@@ -40,6 +40,39 @@
      explain. */
   var STATUS_COLUMN = { key: 'status', label: 'Status', w: '12%' };
 
+
+  /* ── THE DESKTOP JOURNEYS LIST ────────────────────────────────────────────
+     Admin is the owner's desk, not his pocket, and it had TWO lists of the same
+     journeys: a compact five-column history and an eleven-column table of
+     everything, which at anything under about 1240px put its last two columns —
+     Status and the actions — off the right-hand edge behind an inner scrollbar.
+     He reported that as not being able to see the full page, and he was right.
+
+     ONE LIST, with the columns a desk has room for. Still short of what a row
+     could hold: the addresses are shortened, the passenger's phone, the flight,
+     what was actually paid and every action all live on the page the row opens.
+     The widths are fixed and add to 100, because a browser left to size columns
+     by content lets one long drop-off push the right-hand column off the screen
+     — which is the bug this replaces.
+     GUARDRAIL: server/tests/admin-journeys.test.js */
+  var JOURNEY_COLUMNS = [
+    { key: 'date',    label: 'Date',      w: '9%'  },
+    { key: 'time',    label: 'Time',      w: '6%'  },
+    { key: 'ref',     label: 'Ref',       w: '10%' },
+    { key: 'name',    label: 'Passenger', w: '14%' },
+    { key: 'pickup',  label: 'Pickup',    w: '16%' },
+    { key: 'dropoff', label: 'Drop-off',  w: '16%' },
+    /* WHO DROVE IT. The column the owner asked for, and the one question a
+       list of his own work could never answer: every confirmed job carries him
+       as its driver, so a job he had passed on looked exactly like a job he
+       did himself. His own jobs stay BLANK — a list where most rows say "me"
+       is a list with a column of noise down the middle of it, and the thing he
+       is scanning for is the exception. */
+    { key: 'driver',  label: 'Driver',    w: '11%' },
+    { key: 'fare',    label: 'Fare',      w: '7%', num: true },
+    { key: 'state',   label: 'Status',    w: '11%' }
+  ];
+
   var HISTORY_COLUMNS = [
     { key: 'ref',      label: 'Ref',       w: '13%' },
     { key: 'date',     label: 'Date',      w: '11%' },
@@ -257,6 +290,42 @@
      five columns, and which four — and how wide — depends on what the table is
      of: a history is two place names, a driver's trips are two short figures.
      The widths live in §28 of westmere-theme.css, keyed on these. */
+
+  /* The lifecycle module, however this file was loaded. Admin's journeys list
+     needs two of its answers — what state a booking is in, and who drove it —
+     and both must be ITS answers: a second opinion about either is exactly the
+     drift this module and that one exist to prevent. */
+  function lifecycle() {
+    if (typeof WMLifecycle !== 'undefined' && WMLifecycle) return WMLifecycle;
+    if (typeof self !== 'undefined' && self && self.WMLifecycle) return self.WMLifecycle;
+    if (typeof require === 'function') { try { return require('./wm-lifecycle.js'); } catch (e) {} }
+    return null;
+  }
+
+  function journeyCells(j) {
+    var LC = lifecycle();
+    var who = LC ? LC.whoDrove(j) : { kind: 'own', name: '' };
+    return {
+      date: shortDate(j.date),
+      time: j.time || 'ASAP',
+      ref: j.ref || '—',
+      name: j.name || j.customer_name || j.passenger_name || 'Guest',
+      pickup: shortPlace(j.pickup),
+      dropoff: shortPlace(j.destination || j.dest || j.dropoff),
+      driver: who.kind === 'own' ? '' : who.name,
+      fare: money(j.fare),
+      state: LC ? LC.statusLabel(j).label : (isCancelled(j) ? 'Cancelled' : '')
+    };
+  }
+
+  function journeyTable(items, open, opts) {
+    var o = {}; for (var k in (opts || {})) o[k] = opts[k];
+    var list = items || [];
+    o.kind = 'history';
+    if (list.some(isCancelled)) o.kind = 'history wm-ctab-history-mixed';
+    return tableHtml(JOURNEY_COLUMNS, list, journeyCells, open, o);
+  }
+
   function historyColumnsFor(items) {
     var any = (items || []).some(isCancelled);
     return any ? HISTORY_COLUMNS.concat([STATUS_COLUMN]) : HISTORY_COLUMNS;
@@ -330,6 +399,9 @@
     driverTripCells: driverTripCells,
     tableHtml: tableHtml,
     historyTable: historyTable,
+    JOURNEY_COLUMNS: JOURNEY_COLUMNS,
+    journeyTable: journeyTable,
+    journeyCells: journeyCells,
     driverTripTable: driverTripTable,
     compareLine: compareLine,
     _spec: 'list = a few short columns; the row opens a detail page carrying everything else'

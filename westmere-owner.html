@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<script src="/address-normalize.js?v=2026-10-06a"></script>
-<script src="/wm-address-lookup.js?v=2026-10-06a"></script>
-<script src="/wm-invoice-maths.js?v=2026-10-06a"></script>
-<script src="/wm-lifecycle.js?v=2026-10-06a"></script>
-<script src="/wm-compact.js?v=2026-10-06a"></script>
+<script src="/address-normalize.js?v=2026-10-06b"></script>
+<script src="/wm-address-lookup.js?v=2026-10-06b"></script>
+<script src="/wm-invoice-maths.js?v=2026-10-06b"></script>
+<script src="/wm-lifecycle.js?v=2026-10-06b"></script>
+<script src="/wm-compact.js?v=2026-10-06b"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"/>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -680,9 +680,9 @@ select:-webkit-autofill:focus{
   caret-color:#102a43;
   transition:background-color 9999s ease-in-out 0s;
 }
-</style><link rel="stylesheet" href="/wm-buttons.css?v=2026-10-06a">
-<link rel="stylesheet" href="/westmere-theme.css?v=2026-10-06a">
-<script src="/wm-ask.js?v=2026-10-06a"></script>
+</style><link rel="stylesheet" href="/wm-buttons.css?v=2026-10-06b">
+<link rel="stylesheet" href="/westmere-theme.css?v=2026-10-06b">
+<script src="/wm-ask.js?v=2026-10-06b"></script>
 <link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"></head>
 <body>
 
@@ -844,7 +844,7 @@ select:-webkit-autofill:focus{
            the home-screen app and reopen it (or remove and re-add the icon).
            GUARDRAIL: server/tests/asset-version.test.js -->
       <div style="margin-top:1.2rem;padding-top:.9rem;border-top:1px solid var(--westmere-line,#dfe5ea);text-align:center">
-        <div style="font-family:var(--sans);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--westmere-ink-soft)">Version <span id="app-version">2026-10-06a</span></div>
+        <div style="font-family:var(--sans);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--westmere-ink-soft)">Version <span id="app-version">2026-10-06b</span></div>
         <div onclick="owForceRefresh()" style="display:inline-block;margin-top:.6rem;padding:.5rem .9rem;border:1px solid var(--westmere-line-strong,#c8d1d9);border-radius:7px;font-family:var(--sans);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--westmere-navy,#102a43);cursor:pointer">Reload the app</div>
       </div>
       <!-- Owner Profile -->
@@ -3622,11 +3622,26 @@ function isEarning(b){
 function buildEarnings(){
   var bookings=(ALL_BOOKINGS_CACHE||[]).filter(isEarning);
   var now=new Date();
-  var todayStr=now.toISOString().slice(0,10);
+  /* THE UK CALENDAR DAY. toISOString() is UTC, so between midnight and one in
+     the morning through the summer this read YESTERDAY and the day's figure was
+     a day behind. CLAUDE.md, the timezone invariant. */
+  var todayStr=now.toLocaleDateString('sv-SE',{timeZone:'Europe/London'});
+
+  /* ── EARNED, NOT TAKEN ──────────────────────────────────────────────────
+     These added the FARES up. On a job passed to a driver the fare is
+     collected on his behalf and paid straight back out — only the commission
+     was ever ours — so every payout ever made was being counted as income on
+     this page. WMLifecycle.westmereIncome is server/driver-ledger.js
+     westmereIncome() in the browser, and a guard requires the two to agree to
+     the penny. GUARDRAIL: server/tests/income-parity.test.js */
+  var earned=function(b){return WMLifecycle.westmereIncome(b);};
+  var sumEarned=function(list){
+    return Math.round(list.reduce(function(s,b){return s+earned(b);},0)*100)/100;
+  };
 
   // Today
   var todayBookings=bookings.filter(function(b){return b.date===todayStr;});
-  var todayTotal=todayBookings.reduce(function(s,b){return s+(+b.fare||0);},0);
+  var todayTotal=sumEarned(todayBookings);
 
   // This week (Mon–Sun)
   var thisWeekStart=isoWeekStart(now);
@@ -3639,7 +3654,7 @@ function buildEarnings(){
     var ws=isoWeekStart(d);
     var k=ws.toISOString().slice(0,10);
     if(!weeks[k])weeks[k]={start:ws,total:0,jobs:0};
-    weeks[k].total+=(+b.fare||0);
+    weeks[k].total+=earned(b);
     weeks[k].jobs+=1;
   });
   var thisKey=thisWeekStart.toISOString().slice(0,10);
@@ -3648,7 +3663,7 @@ function buildEarnings(){
   // This month
   var monthPrefix=todayStr.slice(0,7); // YYYY-MM
   var monthBookings=bookings.filter(function(b){return b.date&&b.date.slice(0,7)===monthPrefix;});
-  var monthTotal=monthBookings.reduce(function(s,b){return s+(+b.fare||0);},0);
+  var monthTotal=sumEarned(monthBookings);
 
   // Populate trio stat cards
   function setStatCard(id,amount,jobs){
@@ -3725,13 +3740,17 @@ function buildEarnings(){
   }
 
   // All-time totals
-  var totalRev=bookings.reduce(function(s,b){return s+(+b.fare||0);},0);
+  var totalRev=sumEarned(bookings);
+  /* THE AVERAGE FARE IS STILL A FARE. What a journey costs a customer and what
+     the firm keeps of it are two different questions, and this row asks the
+     first one — so it keeps adding fares up while the row above it does not. */
+  var totalFares=bookings.reduce(function(s,b){return s+(+b.fare||0);},0);
   var totalJobs=bookings.length;
   var allEl=document.getElementById('earn-alltime');
   allEl.innerHTML=
-    '<div class="row"><span class="row-k">Total revenue</span><span class="row-v" style="color:var(--navy)">'+fmtMoney(totalRev)+'</span></div>'
+    '<div class="row"><span class="row-k">Total earned</span><span class="row-v" style="color:var(--navy)">'+fmtMoney(totalRev)+'</span></div>'
     +'<div class="row"><span class="row-k">Total jobs</span><span class="row-v">'+totalJobs+'</span></div>'
-    +'<div class="row"><span class="row-k">Average fare</span><span class="row-v">'+fmtMoney(totalJobs?totalRev/totalJobs:0)+'</span></div>';
+    +'<div class="row"><span class="row-k">Average fare</span><span class="row-v">'+fmtMoney(totalJobs?totalFares/totalJobs:0)+'</span></div>';
 
   // Load Stripe balance (earnings page is admin-only now)
   loadStripeBalance();
@@ -4898,22 +4917,18 @@ function jobCardHtml(j){
   }else if(dispCanOffer){
     html+='<button style="padding:.6rem .85rem;font-size:.79rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;border:var(--border-strong,1.5px) solid var(--westmere-navy,#102a43);color:var(--westmere-navy,#102a43)" onclick="dispOffer('+j.id+')">Offer to driver</button>';
   }
-  // NOT COMPLETED — the only way back out of a finished job. Cancelling and
-  // deleting are both refused on a completed trip because it counts towards
-  // the income; this takes it OUT of the income again (back to confirmed),
-  // after which it can be cancelled like any other live booking.
-  if(ACT.unmarkCompleted){
-    html+='<button style="padding:.6rem .85rem;font-size:.79rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;background:#ffffff;color:var(--navy);border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)" onclick="ownerUnmarkCompleted('+j.id+')">Not Completed</button>';
-  }
+  // NOT COMPLETED stood here. A completed job is completed — the owner's
+  // decision. See the note further down where its handler used to be.
   // DELETE — but never on a completed job. A finished trip counts towards the
   // owner's income, and deleting it would take that money off the books by the
   // back door. The shared lifecycle module decides (ACT.del), the server
-  // refuses the same thing with a 409, and the way out of a mistake is to mark
-  // the job NOT completed first. GUARDRAIL: server/tests/completed-is-final.test.js
+  // refuses the same thing with a 409. There is no un-complete button any
+  // more, so a finished job stays finished.
+  // GUARDRAIL: server/tests/completed-is-final.test.js
   if(ACT.del){
     html+='<button style="padding:.6rem .85rem;font-size:.79rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border-radius:7px;cursor:pointer;min-height:40px;border:var(--border-hair, 1px) solid var(--westmere-line-strong, #c8d1d9)" onclick="upcomingDelete('+j.id+')">Delete</button>';
   }else{
-    html+='<div style="width:100%;margin-top:.35rem;font-size:.78rem;color:var(--westmere-ink-soft, rgba(27,27,26,.65));line-height:1.5">This job is completed, so it counts towards your income and cannot be cancelled or deleted. Mark it not completed first if that is wrong.</div>';
+    html+='<div style="width:100%;margin-top:.35rem;font-size:.78rem;color:var(--westmere-ink-soft, rgba(27,27,26,.65));line-height:1.5">This job is completed, so it counts towards your income and cannot be cancelled or deleted.</div>';
   }
   // Email sent indicator
   if(j.email&&(j.apiStatus==='confirmed'||j.apiStatus==='active'||j.apiStatus==='completed')){
@@ -5640,21 +5655,17 @@ async function ownerMarkCompleted(bookingId){
   }catch(e){showToast('Network error');console.error('[ownerMarkCompleted]',e);}
 }
 
-// UNDO a completion. Puts the job back on 'confirmed', which takes it out of
-// the income figures and makes it cancellable again. Spelled out in the
-// confirmation, because this moves money off the books.
-async function ownerUnmarkCompleted(bookingId){
-  if(!await WMAsk.confirm('Mark this job as NOT completed? It will come out of your income figures and go back to confirmed.',{ok:'Not completed',cancel:'Leave it'}))return;
-  try{
-    // Its own route, not a PATCH: nothing in a staff app may set a booking to
-    // confirmed (that is the customer's act). Restoring the status a completed
-    // job already held is a correction, and the server owns the distinction.
-    var r=await fetch('/api/bookings/'+bookingId+'/unmark-completed',{method:'POST',credentials:'include'});
-    var d=await r.json();
-    if(r.ok&&d.ok){showToast('Job is no longer completed');loadOwnerBookings();}
-    else showToast(d.error||('Failed ('+r.status+')'));
-  }catch(e){showToast('Network error');console.error('[ownerUnmarkCompleted]',e);}
-}
+/* ── THE UN-COMPLETE BUTTON IS GONE ───────────────────────────────────────
+   It put a finished job back on 'confirmed', out of the income figures and
+   cancellable again. The owner has decided against it: a completed job is
+   completed.
+
+   The server route stays. It is the one thing that can put a wrongly finished
+   job right, and taking it out would mean a bad row could only be fixed by
+   hand in the database — but it is no longer one tap away from a list of every
+   journey, which is what he objected to.
+   GUARDRAIL: server/tests/completed-is-final.test.js */
+
 
 // Settle an AWAITING-PAYMENT booking: records the payment as received and
 // CONFIRMS the ride (server: POST /bookings/:id/mark-paid). This is the only
@@ -9747,7 +9758,7 @@ setInterval(function(){
 }, 30000);
 </script>
 
-<script src="/config.js?v=2026-10-06a"></script>
-<script src="/wm-realtime.js?v=2026-10-06a"></script>
+<script src="/config.js?v=2026-10-06b"></script>
+<script src="/wm-realtime.js?v=2026-10-06b"></script>
 </body>
 </html>

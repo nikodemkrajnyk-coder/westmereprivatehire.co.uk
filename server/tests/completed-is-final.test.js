@@ -94,7 +94,11 @@ test('PATCH cannot cancel it', async () => {
   const r = await call(api, 'patch', '/bookings/:id', { params: { id: String(b.id) }, body: { status: 'cancelled' } });
   assert.strictEqual(r.statusCode, 409, JSON.stringify(r.body));
   assert.ok(/income/i.test(r.body.error), 'it must say why: ' + r.body.error);
-  assert.ok(/not completed first/i.test(r.body.error), 'and how to proceed: ' + r.body.error);
+  /* AND IT SAYS WHERE IT STANDS. The refusal used to end "mark it not
+     completed first", which was a pointer to a button the owner has since
+     removed — so the sentence is now the plain fact instead of directions to
+     somewhere that no longer exists. */
+  assert.ok(/finished job stays finished/i.test(r.body.error), 'and why: ' + r.body.error);
   assert.strictEqual(rowOf(b.id).status, 'completed', 'and the job must be untouched');
 });
 
@@ -170,7 +174,15 @@ test('the shared lifecycle module refuses cancel and delete on a completed job',
   const done = LC.actionsFor({ status: 'completed', customer_email: 'a@b.com', fare: 120 });
   assert.strictEqual(done.cancel, false, 'a completed job must not offer Cancel');
   assert.strictEqual(done.del, false, 'a completed job must not offer Delete');
-  assert.strictEqual(done.unmarkCompleted, true, 'there must be a way back out of a wrong completion');
+  /* THERE IS NO WAY BACK OUT ANY MORE, and that is now the rule rather than an
+     omission. The owner closed the door: a completed job is completed. This
+     file still guards everything it guarded before — a finished job cannot be
+     cancelled, deleted, or walked backwards by any route — and now also that
+     the one control which could undo a completion in a single tap is not
+     offered by either app. The server route survives, as the only way to put a
+     wrongly finished job right; what is gone is the button. */
+  assert.strictEqual(done.unmarkCompleted, false,
+    'the un-complete button is the owner\'s decision to remove — a completed job is completed');
   assert.strictEqual(LC.canCancel({ status: 'completed' }), false);
   assert.strictEqual(LC.canDelete({ status: 'completed' }), false);
 
@@ -179,11 +191,22 @@ test('the shared lifecycle module refuses cancel and delete on a completed job',
     assert.strictEqual(LC.actionsFor({ status: st }).cancel, true, st + ' must still be cancellable');
     assert.strictEqual(LC.actionsFor({ status: st }).del, true, st + ' must still be deletable');
     assert.strictEqual(LC.actionsFor({ status: st }).unmarkCompleted, false,
-      st + ' is not completed, so there is nothing to undo');
+      st + ' is not completed, and nothing offers to un-complete anything now');
   }
   const cancelled = LC.actionsFor({ status: 'cancelled' });
   assert.strictEqual(cancelled.cancel, false, 'a cancelled booking cannot be cancelled again');
   assert.strictEqual(cancelled.del, true, 'a cancelled booking is still deleted by hand');
+});
+
+test('nothing anywhere still tells him to mark it not completed first', () => {
+  /* The advice outlived the button once already: three server refusals and
+     both apps ended their explanation with "mark it not completed first",
+     which is now instructions for a control that does not exist. */
+  for (const f of ['westmere-owner.html', 'westmere-admin.html', 'server/api.js', 'wm-lifecycle.js']) {
+    const src = read(f);
+    assert.ok(!/[Mm]ark it not completed first/.test(strip(src)),
+      f + ' still tells the owner to use a button that has been removed');
+  }
 });
 
 test('neither app offers to cancel or delete a completed job', () => {
@@ -195,17 +218,20 @@ test('neither app offers to cancel or delete a completed job', () => {
   assert.ok(/if\(ACT\.del\)\{/.test(owner), 'the owner Delete must be gated on ACT.del');
   assert.ok(/counts towards your income and cannot be cancelled/.test(owner),
     'the owner app must SAY why there is no Cancel, not just hide it');
-  assert.ok(/ACT\.unmarkCompleted/.test(owner), 'the owner app must offer the way back');
+  assert.ok(!/onclick="ownerUnmarkCompleted/.test(owner),
+    'the owner app still has a Not Completed button — the owner asked for it to go');
 
   // ADMIN — the same, on all three places a Cancel is offered.
   assert.ok(/if\(A\.cancel\)acts\+=/.test(admin),
     "the admin day view's Cancel must be gated on A.cancel, not on A.edit");
-  assert.ok(/if\(ACT\.cancel\)\{/.test(admin), "the All Journeys Cancel Trip must be gated on ACT.cancel");
+  /* The All Journeys table that carried the third Cancel is gone — one
+     journeys list now, and its Cancel is the trip page's. */
   assert.ok(/A\.cancel\)acts\+='<button class="btn btn-cancel-trip/.test(admin),
     'the trip detail page must gate its Cancel Trip too');
   assert.ok(/counts towards your income and cannot be cancelled/.test(admin),
     'the admin app must SAY why there is no Cancel');
-  assert.ok(/admUnmarkCompleted/.test(admin), 'the admin app must offer the way back');
+  assert.ok(!/onclick="admUnmarkCompleted/.test(admin),
+    'the admin app still has a Not Completed button — the owner asked for it to go');
 
   // Nothing may test "not cancelled" and call that permission to cancel: a
   // COMPLETED job is not cancelled either, which is how this shipped.
@@ -253,7 +279,9 @@ test('neither app PATCHes status:confirmed to do it — that invariant still hol
     const code = strip(read(f));
     assert.ok(!/JSON\.stringify\(\{\s*status:\s*'confirmed'\s*\}\)/.test(code),
       f + ' must reach the un-complete ROUTE, not PATCH a booking to confirmed');
-    assert.ok(/\/unmark-completed/.test(code), f + ' must call the un-complete route');
+    /* It no longer CALLS that route — the button is gone — but the invariant
+       this test exists for is the other half: a staff app must never put a
+       booking back to 'confirmed' itself, whatever the reason. */
   }
 });
 

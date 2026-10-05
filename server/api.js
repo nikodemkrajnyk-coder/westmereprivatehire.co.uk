@@ -354,7 +354,7 @@ router.patch('/bookings/:id', async (req, res) => {
   if (req.body.status === 'cancelled' && booking.status === 'completed') {
     return res.status(409).json({
       error: 'This job is completed, so it counts towards your income and cannot be cancelled. '
-           + 'Mark it not completed first if that is wrong.' });
+           + 'A finished job stays finished.' });
   }
 
 
@@ -1901,7 +1901,7 @@ router.delete('/bookings/:id', (req, res) => {
   if (booking.status === 'completed') {
     return res.status(409).json({
       error: 'This job is completed, so it counts towards your income and cannot be deleted. '
-           + 'Mark it not completed first if that is wrong.' });
+           + 'A finished job stays finished.' });
   }
 
   if (booking.calendar_event_id) {
@@ -1975,7 +1975,7 @@ router.post('/bookings/:id/cancel', (req, res) => {
   if (booking.status === 'completed') {
     return res.status(409).json({
       error: 'This job is completed, so it counts towards your income and cannot be cancelled. '
-           + 'Mark it not completed first if that is wrong.' });
+           + 'A finished job stays finished.' });
   }
 
   // Remove it from the calendar either way — the trip is not happening.
