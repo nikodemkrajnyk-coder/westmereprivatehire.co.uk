@@ -294,7 +294,29 @@ textarea.fi{resize:vertical;min-height:80px}
    rather than a screen below it. Below 1080px it is one column again, which is
    the same page in a narrower window.
    GUARDRAIL: server/tests/admin-full-view.test.js */
-.overlay.ov-full{padding:0;align-items:stretch}
+/* ── THE DARK BAND BELOW THE FORM ─────────────────────────────────────────
+   STRETCH WAS A CAP, NOT A FLOOR. A full-view overlay is a flex container one
+   viewport tall that scrolls; `align-items:stretch` sizes its item to the
+   CONTAINER — 100vh — and min-height:100vh agreed with it. A form taller than
+   the window then overflowed its own white box, and the 386 pixels past the end
+   of it were the overlay's dark scrim. Which is exactly what the owner saw:
+   scroll down the New Booking form, or the driver editor, and the background
+   goes dark below the content.
+
+   flex-start sizes the item to its CONTENT and lets min-height do what it was
+   written for — a floor, so a short form still fills the window.
+
+   AND THE OVERLAY ITSELF IS PAPER HERE. In full view there is no page behind
+   to dim: the modal IS the page. A 70%-black scrim under a white sheet that
+   covers the whole window is a dark edge waiting for the next layout change to
+   reveal it, so the scrim goes and only-light stops anything repainting it.
+   GUARDRAIL: server/tests/admin-full-view.test.js */
+.overlay.ov-full{
+  padding:0;
+  align-items:flex-start;
+  background:var(--westmere-white,#ffffff);
+  color-scheme:only light;
+}
 .overlay.ov-full .modal{max-width:none;width:100%;min-height:100vh;margin:0;border:none;display:flex;flex-direction:column}
 .overlay.ov-full .modal-hd{padding:1.1rem 2rem}
 .overlay.ov-full .modal-body{padding:1.6rem 2rem;flex:1 1 auto}
@@ -1400,6 +1422,14 @@ select:-webkit-autofill:focus{
       <button class="modal-x" onclick="closeModal('modal-book')">✕</button>
     </div>
     <div class="modal-body">
+      <!-- THE JOURNEY ON THE LEFT, WHO AND WHAT IT COSTS ON THE RIGHT. Taking
+           the window gave every single-field row the whole 1800px of it: a
+           postcode box the width of a desk, and the Email sitting in a half
+           row with a hand's breadth of nothing beside it. A field is as wide as
+           what goes in it. Two columns under 1080px become one, which is the
+           same form in a narrower window. -->
+      <div class="mf-cols">
+      <div class="mf-main">
       <div class="r2">
         <div class="fg"><label class="fl">Date</label><input class="fi" type="date" id="nb-date" onchange="nbCheck()"></div>
         <div class="fg"><label class="fl">Pickup Time</label><input class="fi" type="time" id="nb-time" onchange="nbCheck()"></div>
@@ -1419,6 +1449,9 @@ select:-webkit-autofill:focus{
           <select class="fi" id="nb-bags" onchange="nbCapacityCheck()"><option value="0" selected>No luggage</option><option value="1">1 bag</option><option value="2">2 bags</option><option value="3">3 bags</option><option value="4+">4+ bags</option></select></div>
       </div>
       <div id="nb-capacity-warn" style="display:none;padding:.6rem .8rem;margin-bottom:.6rem;background:rgba(156,40,40,.08);border:1px solid rgba(156,40,40,.25);color:#9C2828;font-size:.88rem;border-radius:4px"></div>
+      </div><!-- /mf-main -->
+
+      <div class="mf-side">
       <div class="r2">
         <div class="fg"><label class="fl">Passenger Name</label><input class="fi" type="text" id="nb-name" placeholder="Full name"></div>
         <div class="fg"><label class="fl">Mobile</label><input class="fi" type="tel" id="nb-phone" placeholder="+44 7700..."></div>
@@ -1477,6 +1510,8 @@ select:-webkit-autofill:focus{
           </div>
         </div>
       </div>
+      </div><!-- /mf-side -->
+      </div><!-- /mf-cols -->
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-book')">Cancel</button>
