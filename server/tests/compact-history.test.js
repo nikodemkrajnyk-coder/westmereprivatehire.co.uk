@@ -332,8 +332,17 @@ test('the compact table does not wrap, and scrolls rather than squashing', () =>
      rather than off this list — the drop-off is half the journey and was the
      half falling off the right-hand edge. */
   const phone = sec.slice(sec.indexOf('@media (max-width: 480px)'));
-  assert.ok(/\.wm-ctab col:first-child\{ width: 0 !important; \}/.test(phone),
-    'the phone layout must drop the reference column, not clip the drop-off');
+  /* …on the tables whose first column IS the reference, which is not all of
+     them. Written as `.wm-ctab col:first-child` this reached every table in the
+     system, and the saved-customers list — whose first column is the NAME —
+     came out with a blank column down its left-hand side.
+     GUARDRAIL: server/tests/customer-spend-table.test.js */
+  for (const kind of ['history', 'history-mixed', 'trips']) {
+    assert.ok(new RegExp('\\.wm-ctab-' + kind + ' col:first-child').test(phone),
+      'the phone layout must drop the reference column on a ' + kind + ' table');
+  }
+  assert.ok(!/^\s*\.wm-ctab col:first-child/m.test(phone),
+    'the first column is collapsed on EVERY table — including ones whose first column is the subject');
   /* COLLAPSED, NOT REMOVED. `display:none` takes the cell out of the row and
      every later cell inherits the width of the column before it — the date
      column vanished and the passenger came out as "M…". */

@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<script src="/address-normalize.js?v=2026-10-07a"></script>
-<script src="/wm-address-lookup.js?v=2026-10-07a"></script>
-<script src="/wm-invoice-maths.js?v=2026-10-07a"></script>
-<script src="/wm-lifecycle.js?v=2026-10-07a"></script>
-<script src="/wm-compact.js?v=2026-10-07a"></script>
+<script src="/address-normalize.js?v=2026-10-07b"></script>
+<script src="/wm-address-lookup.js?v=2026-10-07b"></script>
+<script src="/wm-invoice-maths.js?v=2026-10-07b"></script>
+<script src="/wm-lifecycle.js?v=2026-10-07b"></script>
+<script src="/wm-compact.js?v=2026-10-07b"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"/>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -680,9 +680,9 @@ select:-webkit-autofill:focus{
   caret-color:#102a43;
   transition:background-color 9999s ease-in-out 0s;
 }
-</style><link rel="stylesheet" href="/wm-buttons.css?v=2026-10-07a">
-<link rel="stylesheet" href="/westmere-theme.css?v=2026-10-07a">
-<script src="/wm-ask.js?v=2026-10-07a"></script>
+</style><link rel="stylesheet" href="/wm-buttons.css?v=2026-10-07b">
+<link rel="stylesheet" href="/westmere-theme.css?v=2026-10-07b">
+<script src="/wm-ask.js?v=2026-10-07b"></script>
 <link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"></head>
 <body>
 
@@ -844,7 +844,7 @@ select:-webkit-autofill:focus{
            the home-screen app and reopen it (or remove and re-add the icon).
            GUARDRAIL: server/tests/asset-version.test.js -->
       <div style="margin-top:1.2rem;padding-top:.9rem;border-top:1px solid var(--westmere-line,#dfe5ea);text-align:center">
-        <div style="font-family:var(--sans);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--westmere-ink-soft)">Version <span id="app-version">2026-10-07a</span></div>
+        <div style="font-family:var(--sans);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--westmere-ink-soft)">Version <span id="app-version">2026-10-07b</span></div>
         <div onclick="owForceRefresh()" style="display:inline-block;margin-top:.6rem;padding:.5rem .9rem;border:1px solid var(--westmere-line-strong,#c8d1d9);border-radius:7px;font-family:var(--sans);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--westmere-navy,#102a43);cursor:pointer">Reload the app</div>
       </div>
       <!-- Owner Profile -->
@@ -8174,24 +8174,18 @@ function custRender(){
       +(CUSTOMERS.length?'No match.':'Open any booking and tap &ldquo;Add to list&rdquo; to save that customer here.')+'</div>';
     return;
   }
-  list.innerHTML=rows.map(function(c){
-    var addr=c.home_address?wmShort(c.home_address):'<span style="color:rgba(27,27,26,.35)">No address yet</span>';
-    return '<div style="border:1px solid rgba(27,27,26,.1);border-radius:12px;padding:.75rem .85rem;margin-bottom:.6rem;background:#ffffff">'
-      +'<div onclick="custOpenDetail('+c.id+')" style="cursor:pointer">'
-      +'<div style="display:flex;justify-content:space-between;align-items:baseline;gap:.6rem">'
-      +'<div style="font-family:var(--serif);font-size:1.05rem;color:var(--navy)">'+esc(c.name||'—')+'</div>'
-      +'<div style="font-size:.74rem;color:rgba(27,27,26,.45);white-space:nowrap">'+c.booking_count+' trips</div></div>'
-      +'<div style="font-size:.86rem;color:var(--navy);margin-top:.25rem">'
-      + (c.phone?('<a href="tel:'+esc(c.phone)+'" style="color:var(--navy);text-decoration:none">'+esc(c.phone)+'</a>'):'<span style="color:rgba(27,27,26,.35)">No phone</span>')
-      +'</div>'
-      +'<div style="font-size:.84rem;color:rgba(27,27,26,.6);word-break:break-all">'+(c.email?esc(c.email):'<span style="color:rgba(27,27,26,.35)">No email</span>')+'</div>'
-      +'<div style="font-size:.84rem;color:rgba(27,27,26,.6);margin-top:.2rem">'+addr+'</div>'
-      +'</div>'
-      +'<div style="display:flex;gap:.45rem;margin-top:.6rem">'
-      +'<button onclick="custEdit('+c.id+')" style="flex:1;padding:.45rem;background:transparent;border:1px solid rgba(27,27,26,.15);border-radius:8px;font-family:inherit;font-size:.84rem;color:var(--navy);cursor:pointer">Edit</button>'
-      +'<button onclick="custBookFor('+c.id+')" style="flex:1;padding:.45rem;background:transparent;border:1px solid var(--westmere-navy,#102a43);border-radius:8px;font-family:inherit;font-size:.84rem;color:var(--navy);cursor:pointer">New booking</button>'
-      +'</div></div>';
-  }).join('');
+  /* ── THE SAME SPREADSHEET, IN A POCKET ──────────────────────────────────
+     This was a stack of cards: a name, a number, an address and two buttons
+     each, so four customers filled the screen and none of them said what any
+     of it was worth. The owner's word for what he wanted was "spreadsheet".
+
+     Four columns — who, how many, what they have spent, when they were last in
+     the car — and the row opens the customer, where the phone number, the
+     address, every journey and the two buttons already live. The columns come
+     from the same module as Trip History and the admin spend report, so the
+     three cannot drift about what a row says.
+     GUARDRAIL: server/tests/customer-spend-table.test.js */
+  list.innerHTML=WMCompact.customerTable(rows,'custOpenDetail',{label:'Saved customers'});
 }
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
 // The exported name is shortDisplay — there is no `short` export, and calling
@@ -9964,7 +9958,7 @@ setInterval(function(){
 }, 30000);
 </script>
 
-<script src="/config.js?v=2026-10-07a"></script>
-<script src="/wm-realtime.js?v=2026-10-07a"></script>
+<script src="/config.js?v=2026-10-07b"></script>
+<script src="/wm-realtime.js?v=2026-10-07b"></script>
 </body>
 </html>

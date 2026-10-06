@@ -2099,8 +2099,17 @@ nav > .navlinks { margin-left: auto; }
      disappeared and the passenger came out as "M…". Zero width with the
      content clipped keeps cell and column in step. The widths are declared
      inline from the column data, so this has to outrank them. */
-  .wm-ctab col:first-child{ width: 0 !important; }
-  .wm-ctab-h:first-child, .wm-ctab-c:first-child{
+  /* …AND ONLY ON THE TABLES WHOSE FIRST COLUMN IS THE REFERENCE. This was
+     written as `.wm-ctab col:first-child`, which is every table there is — so
+     the saved-customers list, whose first column is the NAME, came out with a
+     blank column down the left and no way to tell one row from another. Named
+     by kind, so a table whose first column matters keeps it. */
+  .wm-ctab-history col:first-child,
+  .wm-ctab-history-mixed col:first-child,
+  .wm-ctab-trips col:first-child{ width: 0 !important; }
+  .wm-ctab-history .wm-ctab-h:first-child, .wm-ctab-history .wm-ctab-c:first-child,
+  .wm-ctab-history-mixed .wm-ctab-h:first-child, .wm-ctab-history-mixed .wm-ctab-c:first-child,
+  .wm-ctab-trips .wm-ctab-h:first-child, .wm-ctab-trips .wm-ctab-c:first-child{
     width: 0; padding-left: 0; padding-right: 0;
     overflow: hidden; white-space: nowrap; text-indent: -999px;
   }
@@ -3391,3 +3400,152 @@ input[type="range"]:focus-visible{ outline: 2px solid var(--westmere-gold); outl
 }
 .ext-total-v{ font-family: var(--serif); font-size: 1.18rem; color: var(--westmere-navy); }
 .ext-none{ padding: .8rem 0 .2rem; font-size: .88rem; color: var(--westmere-ink-soft); line-height: 1.5; }
+
+
+/* ══ §37 · CUSTOMER SPEND ════════════════════════════════════════════════
+   THIS PAGE HAD NO DESIGN AT ALL. Not a dated one — none: .sp-totals,
+   .sp-table, .sp-bar-row and the rest were written by the app and dressed by
+   nothing, so the browser's defaults drew the whole report. The owner's words
+   were "isn't well organised"; what he was looking at was unstyled HTML.
+
+   Worth saying why it survived four design passes: the guard that checks this
+   sort of thing (design-consistency) looks for selectors the THEME dresses and
+   no app writes — a rule with nothing to style. The opposite — a class the app
+   writes and the theme has never heard of — looked like every utility class in
+   the system and so looked like nothing. §37 and its guard close that.
+
+   The table itself is no longer here: it is the shared spreadsheet (§28), the
+   same one Trip History and the journeys list are drawn from.
+   GUARDRAIL: server/tests/customer-spend-table.test.js */
+
+/* The three figures at the head of the report. A row of plain readings under a
+   gold rule — no cards, no fills; the numbers are the thing. */
+.sp-totals{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: .6rem 2rem;
+  padding: 0 0 1rem;
+  margin-bottom: 1.1rem;
+  border-bottom: var(--border-hair) solid var(--westmere-gold);
+}
+.sp-tot-k{
+  font-family: var(--sans);
+  font-size: .72rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--westmere-gold-ink);
+}
+.sp-tot-v{
+  font-family: var(--serif);
+  font-size: 1.6rem;
+  line-height: 1.2;
+  color: var(--westmere-navy);
+  margin-top: .15rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The top ten, as bars. The ramp is §33's — a chart comparing like with like
+   is one colour at different strengths, because the eye is being asked to read
+   a SIZE and a second hue only gets in the way of that. */
+.sp-chart-wrap{ margin-bottom: 1.3rem; }
+.sp-chart-hd{
+  font-family: var(--sans);
+  font-size: .72rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--westmere-gold-ink);
+  margin-bottom: .6rem;
+}
+.sp-bar-row{
+  display: grid;
+  grid-template-columns: minmax(0, 11rem) 1fr minmax(0, 6rem);
+  align-items: center;
+  gap: .8rem;
+  padding: .3rem 0;
+}
+.sp-bar-name{
+  font-size: .88rem;
+  color: var(--westmere-navy);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-bar-track{
+  height: .55rem;
+  background: var(--wm-ramp-0);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.sp-bar-fill{
+  height: 100%;
+  background: var(--wm-ramp-4);
+  border-radius: 2px;
+}
+.sp-bar-val{
+  font-family: var(--serif);
+  font-size: .96rem;
+  color: var(--westmere-navy);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+@media (max-width: 560px){
+  .sp-bar-row{ grid-template-columns: minmax(0, 7rem) 1fr minmax(0, 4.5rem); gap: .5rem; }
+}
+
+.sp-empty{
+  padding: 1.4rem 0;
+  text-align: center;
+  font-size: .9rem;
+  color: var(--westmere-ink-soft);
+}
+/* The definition, which is the part people argue about. Set as a note, under a
+   rule, in the soft ink — present when it is wanted and quiet when it is not. */
+.sp-note{
+  margin-top: 1rem;
+  padding-top: .8rem;
+  border-top: var(--border-hair) solid var(--westmere-line);
+  font-size: .84rem;
+  line-height: 1.6;
+  color: var(--westmere-ink-soft);
+}
+.sp-note b{ color: var(--westmere-navy); font-weight: 600; }
+
+/* WHICH COLUMN IS THE ROW ABOUT. §28 bolds the third column and sets the
+   first in the soft ink, because in a history the third is the passenger and
+   the first is a reference. Neither holds here: on the spend report the second
+   column is the customer and the third is their email, and on the saved list
+   the FIRST column is the name. Said explicitly rather than left to a position
+   that means something different in each table. */
+.wm-ctab-spend .wm-ctab-c:nth-child(2){ font-weight: 600; color: var(--westmere-navy); }
+.wm-ctab-spend .wm-ctab-c:nth-child(3){ font-weight: 400; color: var(--westmere-ink-soft); }
+.wm-ctab-customers .wm-ctab-c:first-child{
+  font-weight: 600;
+  color: var(--westmere-navy);
+  font-variant-numeric: normal;
+}
+/* A customer with nothing settled shows an em dash, not a nought — and it
+   reads as an absence rather than as a figure. */
+.wm-ctab-spend .wm-ctab-c:nth-child(7){ color: var(--westmere-ink-soft); }
+
+/* A REPORT ROW IS NOT A BUTTON. Spend is grouped by email and name rather than
+   by a saved customer, so these rows have nowhere to go — no chevron, no tab
+   stop, and the pointer must not promise one. */
+.wm-ctab-r.is-report{ cursor: default; }
+.wm-ctab-r.is-report:hover > .wm-ctab-c,
+.wm-ctab-r.is-report:active > .wm-ctab-c{ background: var(--westmere-white); }
+
+/* The saved-customers list on a phone: four columns, and the name gets the
+   room because it is how he finds the person. */
+@media (max-width: 480px){
+  /* "TRIPS" came out as "TRIP" — the heading was a letter short of its own
+     label while the figures under it had room to spare. §28 already gives the
+     heading the first squeeze; this gives the column the width. */
+  .wm-ctab-customers col:nth-child(1){ width: 40% !important; }
+  .wm-ctab-customers col:nth-child(2){ width: 16% !important; }
+  .wm-ctab-customers col:nth-child(3){ width: 23% !important; }
+  .wm-ctab-customers col:nth-child(4){ width: 21% !important; }
+  /* Eight columns of a spend report do not fit a phone and are not asked to:
+     it slides sideways, the way the invoice sheet does. */
+  .wm-ctab-spend{ min-width: 46rem; }
+}

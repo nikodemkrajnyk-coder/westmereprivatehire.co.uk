@@ -255,7 +255,17 @@ console.log('\nThe page itself');
 const OWNER = read('westmere-owner.html');
 
 test('a customer row opens the detail page', () => {
-  assert.ok(/onclick="custOpenDetail\('\+c\.id\+'\)"/.test(OWNER), 'the row must be tappable');
+  /* The list is the shared spreadsheet now, not a stack of cards, so the row
+     is built by wm-compact rather than written out here — and it is the MODULE
+     that makes a row a real tab stop with a real role. What this test is for is
+     unchanged: tapping a customer opens their page. */
+  assert.ok(/WMCompact\.customerTable\(rows,'custOpenDetail'/.test(OWNER),
+    'the customer list does not hand the detail page to the table');
+  const compact = fs.readFileSync(path.join(ROOT, 'wm-compact.js'), 'utf8');
+  assert.ok(/onclick="' \+ open \+ '\(' \+ id \+ '\)"/.test(compact),
+    'the shared table no longer opens anything');
+  assert.ok(/tabindex="0" role="button"/.test(compact),
+    'the row is not reachable by keyboard');
   assert.ok(/id="cust-page"/.test(OWNER), 'the detail page must exist');
   assert.ok(/onclick="custCloseDetail\(\)"/.test(OWNER), 'with a way back to the list');
 });

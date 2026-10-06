@@ -178,10 +178,22 @@
   }
   function payMethodLabel(j) { return PAY_LABELS[payMethod(j)]; }
 
+  /* A FIGURE IN A COLUMN IS READ, NOT PARSED. Pence are dropped when there are
+     none, because a column of trailing .00 is noise — and thousands are grouped,
+     because the first thing the eye does with £1182 is count the digits. The
+     spend report is where that showed: the chart beside the table wrote
+     £1,182.00 and the table wrote £1182, one figure in two spellings a foot
+     apart. Nothing below a thousand changes.
+     An absence is an em dash. Nought pounds is not a figure anybody wants to
+     read down a column. */
   function money(n) {
     var v = Number(n);
     if (!isFinite(v) || !n) return '—';
-    return '£' + v.toFixed(2).replace(/\.00$/, '');
+    var neg = v < 0;
+    var s2 = Math.abs(v).toFixed(2).replace(/\.00$/, '');
+    var parts = s2.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return (neg ? '\u2212£' : '£') + parts.join('.');
   }
 
   // What the customer actually handed over, and when. A fare is what we asked
@@ -201,6 +213,41 @@
     if (isPaid(j)) return money(j.fare) + ' paid · ' + payMethodLabel(j);
     return money(j.fare) + ' — not paid yet · ' + payMethodLabel(j);
   }
+
+
+  /* ── WHAT EACH CUSTOMER IS WORTH ──────────────────────────────────────────
+     Customer Spend was a hand-written table with no declared widths, so every
+     column was sized by its longest cell and the whole thing moved shape as
+     the data did — a long email address shunted the money out of line and the
+     figures stopped being comparable down the page, which is the one thing a
+     spend report is for. The owner's word for what he wanted was "spreadsheet".
+
+     So it is the same table as Trip History and the journeys list: fixed
+     widths that add to 100, tabular figures, the money right-aligned, one row
+     per customer. Ranked by what they have spent, because that is the order he
+     reads it in and the reason it is sorted at all.
+     GUARDRAIL: server/tests/customer-spend-table.test.js */
+  var SPEND_COLUMNS = [
+    { key: 'rank',     label: '#',           w: '5%'  },
+    { key: 'name',     label: 'Customer',    w: '22%' },
+    { key: 'email',    label: 'Email',       w: '24%' },
+    { key: 'trips',    label: 'Trips',       w: '7%',  num: true },
+    { key: 'spent',    label: 'Total spent', w: '13%', num: true },
+    { key: 'avg',      label: 'Avg / trip',  w: '12%', num: true },
+    { key: 'quoted',   label: 'Quoted',      w: '9%',  num: true },
+    { key: 'lastTrip', label: 'Last trip',   w: '8%'  }
+  ];
+
+  /* THE SAME REPORT IN A POCKET. The owner's phone cannot hold eight columns,
+     and of the eight it is the email, the average and the quoted figure he
+     reads on the detail page rather than down a list. Four columns, the same
+     cells, and the row opens the customer. */
+  var CUSTOMER_COLUMNS = [
+    { key: 'name',     label: 'Customer',  w: '42%' },
+    { key: 'trips',    label: 'Trips',     w: '13%', num: true },
+    { key: 'spent',    label: 'Spent',     w: '24%', num: true },
+    { key: 'lastTrip', label: 'Last',      w: '21%' }
+  ];
 
   // ── THE ROW ─────────────────────────────────────────────────────────────
   function historyCells(j) {
@@ -254,13 +301,20 @@
        which is exactly what it did on a phone. The widths are part of the
        column definition, so a guard can read them and the two apps cannot
        drift. */
+    /* SOME TABLES ARE REPORTS. Customer Spend on the desktop is read, not
+       opened — its rows are grouped by email and name rather than by a saved
+       customer, so there is no page behind them to go to. A row with no
+       destination must not be dressed as a button: no chevron, no tab stop, no
+       role, and the pointer stays an arrow. Passing no `open` says so. */
+    var clickable = !!open;
+
     var cols_ = '<colgroup>' + cols.map(function (c) {
       return '<col style="width:' + (c.w || 'auto') + '">';
-    }).join('') + '<col class="wm-ctab-colchev"></colgroup>';
+    }).join('') + (clickable ? '<col class="wm-ctab-colchev">' : '') + '</colgroup>';
 
     var head = '<thead><tr>' + cols.map(function (c) {
       return '<th class="wm-ctab-h' + (c.num ? ' num' : '') + '">' + esc(c.label) + '</th>';
-    }).join('') + '<th class="wm-ctab-h wm-ctab-chev" aria-hidden="true"></th></tr></thead>';
+    }).join('') + (clickable ? '<th class="wm-ctab-h wm-ctab-chev" aria-hidden="true"></th>' : '') + '</tr></thead>';
 
     var body = '<tbody>' + items.map(function (j) {
       var v = cells(j);
@@ -269,15 +323,20 @@
          attribute it sits in. One without the other and a quote in an id ends
          the attribute early. */
       var id = esc(JSON.stringify(String(j.id)));
-      return '<tr class="wm-ctab-r' + (isCancelled(j) ? ' is-cancelled' : '') + '" tabindex="0" role="button"'
-        + ' aria-label="' + esc((v.name || '') + ' ' + (v.date || '') + ' ' + (v.ref || '')
-            + (isCancelled(j) ? ' — cancelled' : '') + ' — open the full details') + '"'
-        + ' onclick="' + open + '(' + id + ')"'
-        + ' onkeydown="if(event.key===&#39;Enter&#39;||event.key===&#39; &#39;){event.preventDefault();' + open + '(' + id + ');}">'
+      return '<tr class="wm-ctab-r' + (clickable ? '' : ' is-report')
+          + (isCancelled(j) ? ' is-cancelled' : '') + '"'
+        + (clickable
+            ? ' tabindex="0" role="button"'
+              + ' aria-label="' + esc((v.name || '') + ' ' + (v.date || '') + ' ' + (v.ref || '')
+                  + (isCancelled(j) ? ' — cancelled' : '') + ' — open the full details') + '"'
+              + ' onclick="' + open + '(' + id + ')"'
+              + ' onkeydown="if(event.key===&#39;Enter&#39;||event.key===&#39; &#39;){event.preventDefault();' + open + '(' + id + ');}"'
+            : '')
+        + '>'
         + cols.map(function (c) {
             return '<td class="wm-ctab-c' + (c.num ? ' num' : '') + '">' + esc(v[c.key] == null ? '' : v[c.key]) + '</td>';
           }).join('')
-        + '<td class="wm-ctab-c wm-ctab-chev" aria-hidden="true">›</td>'
+        + (clickable ? '<td class="wm-ctab-c wm-ctab-chev" aria-hidden="true">›</td>' : '')
       + '</tr>';
     }).join('') + '</tbody>';
 
@@ -324,6 +383,51 @@
     o.kind = 'history';
     if (list.some(isCancelled)) o.kind = 'history wm-ctab-history-mixed';
     return tableHtml(JOURNEY_COLUMNS, list, journeyCells, open, o);
+  }
+
+
+  /* One customer, however the two screens hold them: the spend report groups
+     by email and spells its fields one way, the saved directory carries a row
+     id and spells them another. One reader, so the two lists can never put a
+     different figure against the same person. */
+  function spendCells(c) {
+    var spent = (c.totalSpent != null) ? c.totalSpent : c.total_spent;
+    var trips = (c.trips != null) ? c.trips : c.booking_count;
+    var last  = c.lastTrip || c.last_booking;
+    var avg   = (c.avgPerTrip != null) ? c.avgPerTrip
+              : ((Number(trips) > 0 && spent != null) ? (Number(spent) / Number(trips)) : null);
+    return {
+      rank: c._rank == null ? '' : String(c._rank),
+      name: c.name || c.email || '—',
+      email: c.email || '—',
+      trips: String(Number(trips) || 0),
+      spent: money(spent),
+      avg: money(avg),
+      /* A customer with nothing settled yet has no quoted figure to print, and
+         a column of £0.00 reads as money rather than as an absence. */
+      quoted: Number(c.quotedUnpaid) ? money(c.quotedUnpaid) : '—',
+      lastTrip: last ? shortDate(last) : '—'
+    };
+  }
+
+  /* The desktop report. No `open`: these rows are grouped by email and name,
+     not by a saved customer, so there is no page behind them. */
+  function spendTable(items, opts) {
+    var o = {}; for (var k in (opts || {})) o[k] = opts[k];
+    o.kind = 'spend';
+    var ranked = (items || []).map(function (c, i) {
+      var r = {}; for (var k2 in c) r[k2] = c[k2];
+      r._rank = i + 1;
+      return r;
+    });
+    return tableHtml(SPEND_COLUMNS, ranked, spendCells, null, o);
+  }
+
+  /* The phone list. These ARE saved customers, so the row opens one. */
+  function customerTable(items, open, opts) {
+    var o = {}; for (var k in (opts || {})) o[k] = opts[k];
+    o.kind = 'customers';
+    return tableHtml(CUSTOMER_COLUMNS, items || [], spendCells, open, o);
   }
 
   function historyColumnsFor(items) {
@@ -401,6 +505,11 @@
     historyTable: historyTable,
     JOURNEY_COLUMNS: JOURNEY_COLUMNS,
     journeyTable: journeyTable,
+    SPEND_COLUMNS: SPEND_COLUMNS,
+    CUSTOMER_COLUMNS: CUSTOMER_COLUMNS,
+    spendTable: spendTable,
+    customerTable: customerTable,
+    spendCells: spendCells,
     journeyCells: journeyCells,
     driverTripTable: driverTripTable,
     compareLine: compareLine,

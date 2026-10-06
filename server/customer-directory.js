@@ -275,24 +275,36 @@ function remove(db, id) {
  * quietly drift for ever. Cancelled trips do not count.
  */
 function tripStats(db) {
+  /* …AND WHAT THEY HAVE SPENT. The saved list could say how many trips
+     somebody had taken but not what any of it was worth, so the owner's
+     customers screen and the Customer Spend report were two different
+     questions about the same people and only one of them answered money.
+
+     Settled by the SAME rule the spend report uses — isSettledForSpend, right
+     here in this file — so the two screens cannot quote different figures for
+     one person, which is the whole reason that function was pulled out.
+     GUARDRAIL: server/tests/customer-spend-table.test.js */
   const rows = db.prepare(`
-    SELECT b.date,
+    SELECT b.date, b.fare, b.status, b.paid_at,
            COALESCE(NULLIF(TRIM(c.phone), ''), b.passenger_phone) AS phone,
            COALESCE(NULLIF(TRIM(c.email), ''), b.passenger_email) AS email
       FROM bookings b LEFT JOIN customers c ON b.customer_id = c.id
      WHERE COALESCE(b.status, '') <> 'cancelled'
   `).all();
   const byPhone = new Map(), byEmail = new Map();
-  const bump = (map, key, date) => {
+  const bump = (map, key, r) => {
     if (!key) return;
-    const cur = map.get(key) || { n: 0, last: null };
-    cur.n++; if (date && (!cur.last || date > cur.last)) cur.last = date;
+    const cur = map.get(key) || { n: 0, last: null, spent: 0 };
+    cur.n++;
+    if (r.date && (!cur.last || r.date > cur.last)) cur.last = r.date;
+    const fare = Number(r.fare);
+    if (isFinite(fare) && fare > 0 && isSettledForSpend(r)) cur.spent += fare;
     map.set(key, cur);
   };
   for (const r of rows) {
     const pk = normPhone(r.phone), ek = normEmail(r.email);
-    bump(byPhone, pk, r.date);
-    if (!pk) bump(byEmail, ek, r.date);   // only count by email when there is no number, or they'd double
+    bump(byPhone, pk, r);
+    if (!pk) bump(byEmail, ek, r);   // only count by email when there is no number, or they'd double
   }
   return { byPhone, byEmail };
 }
@@ -307,7 +319,11 @@ function list(db, q) {
   `).all().map((r) => {
     const s = (r.phone_key || normPhone(r.phone)) ? stats.byPhone.get(normPhone(r.phone)) : null;
     const e = s || stats.byEmail.get(normEmail(r.email));
-    return Object.assign({}, r, { booking_count: (e && e.n) || 0, last_booking: (e && e.last) || null });
+    return Object.assign({}, r, {
+      booking_count: (e && e.n) || 0,
+      last_booking: (e && e.last) || null,
+      total_spent: e ? Math.round(e.spent * 100) / 100 : 0
+    });
   });
   rows.sort((a, b) => {
     if (!!a.last_booking !== !!b.last_booking) return a.last_booking ? -1 : 1;

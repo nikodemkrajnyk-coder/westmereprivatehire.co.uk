@@ -1,12 +1,12 @@
 {
-  "version": "2026-10-07a",
+  "version": "2026-10-07b",
   "files": {
     "address-normalize.js": "41ca552da0603d87",
-    "westmere-theme.css": "085d7cb3b5cdab35",
+    "westmere-theme.css": "346787b99015d6df",
     "wm-address-lookup.js": "f8bd86d85c1ef50c",
     "wm-ask.js": "4cfa2ee242ddfc78",
     "wm-buttons.css": "10f915186fe5294b",
-    "wm-compact.js": "9fa6d377eb5a55c4",
+    "wm-compact.js": "f7467e5ff9a4cd3f",
     "wm-invoice-maths.js": "0db6e81847c50e66",
     "wm-lifecycle.js": "b7980f96ea49b60f",
     "wm-realtime.js": "8ef7eb0455e96b64",

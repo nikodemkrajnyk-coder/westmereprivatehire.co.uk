@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<script src="/address-normalize.js?v=2026-10-07a"></script>
-<script src="/wm-address-lookup.js?v=2026-10-07a"></script>
-<script src="/wm-invoice-maths.js?v=2026-10-07a"></script>
-<script src="/wm-lifecycle.js?v=2026-10-07a"></script>
-<script src="/wm-compact.js?v=2026-10-07a"></script>
+<script src="/address-normalize.js?v=2026-10-07b"></script>
+<script src="/wm-address-lookup.js?v=2026-10-07b"></script>
+<script src="/wm-invoice-maths.js?v=2026-10-07b"></script>
+<script src="/wm-lifecycle.js?v=2026-10-07b"></script>
+<script src="/wm-compact.js?v=2026-10-07b"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -489,7 +489,7 @@ textarea.fi{resize:vertical;min-height:80px}
 
 footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);font-size:.78rem;letter-spacing:.1em;color:var(--westmere-ink-soft);background:transparent;border-top:1px solid rgba(27,27,26,.06);position:relative;z-index:1}.mini-legal{margin-left:.6rem}.mini-legal a{color:var(--westmere-ink-soft);text-decoration:none;margin-left:.5rem;transition:color .2s;letter-spacing:.08em}.mini-legal a:hover{color:rgba(106,106,106,.8)}
 </style>
-<script src="/config.js?v=2026-10-07a"></script>
+<script src="/config.js?v=2026-10-07b"></script>
 <script>
 // Force-evict stale service worker cache
 if ('serviceWorker' in navigator) {
@@ -543,9 +543,9 @@ select:-webkit-autofill:focus{
   caret-color:#1b1b1a;
   transition:background-color 9999s ease-in-out 0s;
 }
-</style><link rel="stylesheet" href="/wm-buttons.css?v=2026-10-07a">
-<link rel="stylesheet" href="/westmere-theme.css?v=2026-10-07a">
-<script src="/wm-ask.js?v=2026-10-07a"></script>
+</style><link rel="stylesheet" href="/wm-buttons.css?v=2026-10-07b">
+<link rel="stylesheet" href="/westmere-theme.css?v=2026-10-07b">
+<script src="/wm-ask.js?v=2026-10-07b"></script>
 <link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"></head>
 <body>
 
@@ -1276,7 +1276,12 @@ select:-webkit-autofill:focus{
         <div class="sp-chart-hd">Top spenders</div>
         <div id="sp-chart"></div>
       </div>
-      <div class="sp-table-wrap"><table class="sp-table" id="sp-table"></table></div>
+      <!-- THE SPREADSHEET. It was a hand-written table with no declared widths,
+           so every column was sized by its longest cell and the figures stopped
+           lining up down the page — which is the one thing a spend report is
+           for. Same table as Trip History and the journeys list now.
+           GUARDRAIL: server/tests/customer-spend-table.test.js -->
+      <div id="sp-table"></div>
       <div class="sp-note">
         <b>What counts:</b> a trip is counted once it is <b>paid</b> (card, or marked paid) or
         <b>completed</b> (cash collected on the day). Cancelled trips and bookings with no fare
@@ -5019,14 +5024,18 @@ var SPEND=null;
 async function loadSpend(){
   var tbl=document.getElementById('sp-table'),chart=document.getElementById('sp-chart'),tot=document.getElementById('sp-totals');
   if(!tbl)return;
-  tbl.innerHTML='<tr><td class="sp-empty">Loading…</td></tr>';
+  tbl.innerHTML='<div class="sp-empty">Loading…</div>';
   try{
     var r=await fetch('/api/customer-spend',{credentials:'include'});
-    if(!r.ok){tbl.innerHTML='<tr><td class="sp-empty">Could not load spend ('+r.status+').</td></tr>';return;}
+    if(!r.ok){tbl.innerHTML='<div class="sp-empty">Could not load spend ('+r.status+').</div>';return;}
     SPEND=await r.json();
-  }catch(e){ tbl.innerHTML='<tr><td class="sp-empty">No connection.</td></tr>'; return; }
+  }catch(e){ tbl.innerHTML='<div class="sp-empty">No connection.</div>'; return; }
   var cs=(SPEND&&SPEND.customers)||[];
-  var money=function(n){return '\u00a3'+Number(n||0).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});};
+  /* THE SAME MONEY THE TABLE WRITES. This rendered £1,182.00 beside the
+     table's £1182 on one page — one figure, two spellings, a foot apart. The
+     shared module is what the spreadsheet uses, so the chart and the totals use
+     it too. */
+  var money=function(n){return WMCompact.money(n);};
 
   if(tot&&SPEND&&SPEND.totals){
     tot.innerHTML=
@@ -5036,7 +5045,7 @@ async function loadSpend(){
   }
   if(!cs.length){
     if(chart)chart.innerHTML='<div class="sp-empty">No paid trips yet.</div>';
-    tbl.innerHTML='<tr><td class="sp-empty">No customer spend to show yet.</td></tr>';
+    tbl.innerHTML='<div class="sp-empty">No customer spend to show yet.</div>';
     return;
   }
   // Bars, scaled to the biggest spender.
@@ -5050,20 +5059,13 @@ async function loadSpend(){
     +'</div>';
   }).join('');
 
-  tbl.innerHTML='<tr><th class="sp-rank">#</th><th>Customer</th><th>Email</th><th>Total paid</th>'
-    +'<th>Trips</th><th>Avg / trip</th><th>Quoted</th><th>Last trip</th></tr>'
-    +cs.map(function(c,i){
-      return '<tr>'
-        +'<td class="sp-rank">'+(i+1)+'</td>'
-        +'<td>'+escTo(c.name||'—')+'</td>'
-        +'<td>'+escTo(c.email||'—')+'</td>'
-        +'<td class="sp-money">'+money(c.totalSpent)+'</td>'
-        +'<td>'+c.trips+'</td>'
-        +'<td>'+money(c.avgPerTrip)+'</td>'
-        +'<td class="sp-quoted">'+(c.quotedUnpaid?money(c.quotedUnpaid):'—')+'</td>'
-        +'<td>'+escTo(c.lastTrip||'—')+'</td>'
-      +'</tr>';
-    }).join('');
+  /* ONE ROW PER CUSTOMER, in the house spreadsheet — the same module Trip
+     History and the journeys list are drawn from, so the three tables cannot
+     drift in how a row reads or what a column is worth. The rows are a REPORT
+     and do not open: spend is grouped by email and name rather than by a saved
+     customer, so there is nothing behind them to go to, and a row dressed as a
+     button that does nothing is worse than a row that is plainly a figure. */
+  tbl.innerHTML=WMCompact.spendTable(cs,{label:'Customer spend, highest first'});
 }
 
 function nav(id,btn){
@@ -8271,6 +8273,6 @@ function _renderCustomerTable(customers) {
 }
 
 </script>
-<script src="/wm-realtime.js?v=2026-10-07a"></script>
+<script src="/wm-realtime.js?v=2026-10-07b"></script>
 </body>
 </html>

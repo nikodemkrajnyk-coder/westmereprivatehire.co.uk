@@ -79,9 +79,14 @@ function makeDb() {
   const db = new Database(':memory:');
   db.exec(`
     CREATE TABLE customers (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, full_name TEXT, phone TEXT);
+    /* fare and paid_at are here because the list now carries what each
+       customer has SPENT, settled by the same rule the spend report uses. A
+       fixture narrower than the real table is a fixture that passes while the
+       shipped query cannot run. */
     CREATE TABLE bookings (
       id INTEGER PRIMARY KEY AUTOINCREMENT, ref TEXT UNIQUE, customer_id INTEGER,
       pickup TEXT, destination TEXT, date TEXT, time TEXT, status TEXT DEFAULT 'confirmed',
+      fare REAL, paid_at TEXT,
       passenger_name TEXT, passenger_phone TEXT, passenger_email TEXT);
     CREATE TABLE audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, user_type TEXT, user_id INTEGER,
       action TEXT, detail TEXT, ip TEXT, created_at TEXT DEFAULT (datetime('now')));
@@ -92,10 +97,11 @@ let refN = 0;
 function book(db, o) {
   o = o || {};
   const info = db.prepare(`INSERT INTO bookings (ref, customer_id, pickup, destination, date, time, status,
-              passenger_name, passenger_phone, passenger_email)
-              VALUES (?,?,?,?,?,?,?,?,?,?)`).run(
+              fare, paid_at, passenger_name, passenger_phone, passenger_email)
+              VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(
     'R' + (++refN), o.customer_id || null, o.pickup || 'Somewhere', o.destination || 'Gatwick',
     o.date || '2026-01-0' + ((refN % 9) + 1), '09:00', o.status || 'confirmed',
+    o.fare == null ? null : o.fare, o.paid_at || null,
     o.name || null, o.phone || null, o.email || null);
   return info.lastInsertRowid;
 }
