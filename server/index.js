@@ -135,6 +135,16 @@ app.use('/api/public', apiLimiter, publicApiRouter);
    a readable page rather than the white screen a bare 500 gives you in a new
    tab.
    GUARDRAILS: server/tests/invoice-access.test.js, invoice-paths.test.js */
+/* A token comparison that takes the same time whichever way it goes. The
+   difference is unmeasurable over the internet for a 32-character hex string,
+   but a timing-safe compare costs nothing and removes the question. */
+function tokensMatch(given, want) {
+  const a = Buffer.from(String(given));
+  const b = Buffer.from(String(want));
+  if (a.length !== b.length) return false;
+  try { return require('crypto').timingSafeEqual(a, b); } catch (e) { return false; }
+}
+
 app.get('/api/public/invoice/:invoiceNo/pdf', apiLimiter, async (req, res) => {
   const { resolveInvoicePdf } = require('./invoice-pdf');
 
@@ -162,8 +172,26 @@ app.get('/api/public/invoice/:invoiceNo/pdf', apiLimiter, async (req, res) => {
     const db = getDb();
     const row = db.prepare('SELECT * FROM invoices WHERE invoice_no = ?').get(safeNo);
     if (!row) return refuse();
-    /* `t=` is accepted and ignored — links already sent carry one, and they
-       must keep working whichever way this decision goes next. */
+
+    /* ── THE TOKEN IS CHECKED NOW ──────────────────────────────────────────
+       It used to be accepted and ignored, and the row was found by its number
+       alone. Invoice numbers run INV-YYYYMM-0001, -0002, … so anybody could
+       count up and fetch a stranger's invoice — a customer's name, address and
+       journeys, and this firm's own bank details, to whoever was counting.
+
+       Every invoice already has an access_token (minted in server/db.js,
+       backfilled, and never re-minted), invoicePublicUrl() has always appended
+       it, and the reminder email already refuses to draw a button without one.
+       So the links already in people's inboxes keep working and only the
+       guessed ones stop.
+
+       ONE ANSWER FOR EVERY FAILURE. The same 404 page for a number that does
+       not exist, a missing token and a wrong token — anything else tells the
+       person counting which numbers are real.
+       GUARDRAIL: server/tests/invoice-access.test.js */
+    const given = String(req.query.t || '');
+    const want = String(row.access_token || '');
+    if (!want || !tokensMatch(given, want)) return refuse();
 
     const buf = await resolveInvoicePdf(db, row);
     res.setHeader('Content-Type', 'application/pdf');
@@ -206,8 +234,19 @@ app.use('/api/intake', apiLimiter, requireAuth, intakeRouter);
 // Protected driver-offer workflow (offer/accept/decline/done/cancel)
 app.use('/api', apiLimiter, requireAuth, offerRouter);
 
-// Protected assistant (voice booking helper)
-app.use('/api/assistant', apiLimiter, requireAuth, assistantRouter);
+/* ── THE ASSISTANT IS A BACK-OFFICE TOOL, AND WAS OPEN TO ANY LOGIN ───────
+   It was mounted behind requireAuth alone, which accepts ANY valid token —
+   and anyone may register a customer account at /api/auth/customer/register.
+   Its tools search bookings, list invoices, create bookings and invoices and
+   write to the calendar, all with full back-office capability. A self-
+   registered stranger could ask it to read every customer's name, number,
+   address and journeys, and to alter the books.
+
+   Every other staff route in this system guards itself with the same
+   ['admin','owner'] test; this one did not. requireRole has existed in
+   server/middleware.js the whole time.
+   GUARDRAIL: server/tests/assistant-access.test.js */
+app.use('/api/assistant', apiLimiter, requireAuth, requireRole('admin', 'owner'), assistantRouter);
 
 // Protected backup routes (export/save/list)
 app.use('/api/backup', apiLimiter, requireAuth, backupRouter);

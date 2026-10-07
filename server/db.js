@@ -50,6 +50,8 @@ function getDb() {
     initSchema();
     migrate();
     seedDefaults();
+    /* …and then say what is actually in there, which seeding cannot. */
+    warnOnDefaultPasswords();
   }
   return db;
 }
@@ -1400,12 +1402,76 @@ function migrate() {
   runSettlementMigration();
 }
 
+/* ── THE TWO PASSWORDS THAT SHIP IN THE SOURCE ────────────────────────────
+   The staff accounts are seeded with ADMIN_DEFAULT_PASSWORD and
+   OWNER_DEFAULT_PASSWORD, and they fell back to strings that are printed in
+   this file and in the public repository. The usernames are predictable and
+   the login page is public, so a seeded-and-never-changed account is a
+   complete compromise of every customer, booking, invoice and driver record.
+
+   TWO THINGS HAPPEN NOW.
+
+   1. IN PRODUCTION THE SEED REFUSES THE FALLBACK. Creating an account with a
+      published password is never the right outcome: better no account, loudly,
+      than a back door quietly. Local development is unaffected.
+
+   2. EVERY BOOT CHECKS WHAT IS ACTUALLY THERE. Refusing to seed does nothing
+      about an account seeded months ago, which is the real question and the
+      one the code cannot answer by reading itself. So each staff login is
+      compared against the two known defaults and a banner is printed when one
+      matches.
+
+   IT WARNS RATHER THAN REFUSING TO BOOT. Dying here would take a live booking
+   system off the air to fix a password — the outage would be certain and the
+   compromise is not. The warning is impossible to miss in the deploy log, and
+   it names the account and what to do.
+   GUARDRAIL: server/tests/default-password.test.js */
+const DEFAULT_PASSWORDS = ['changeme-admin', 'changeme-owner'];
+
+function assertNotDefaultPassword(which, envName, value) {
+  if (value) return value;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      '[DB] REFUSING TO SEED THE ' + which + ' ACCOUNT. ' + envName + ' is not set, and the '
+      + 'fallback password is published in the source. Set ' + envName + ' in the deploy '
+      + 'environment and restart.');
+  }
+  return null;
+}
+
+/* Read every staff login and say so if one still opens with a published
+   password. Cheap: a handful of bcrypt compares, once, at boot. */
+function warnOnDefaultPasswords() {
+  let rows = [];
+  try { rows = db.prepare("SELECT username, role, password FROM users WHERE active = 1").all(); }
+  catch (e) { return; }
+  const bad = [];
+  for (const u of rows) {
+    for (const guess of DEFAULT_PASSWORDS) {
+      let hit = false;
+      try { hit = bcrypt.compareSync(guess, u.password || ''); } catch (e) {}
+      if (hit) { bad.push(u.username + ' (' + u.role + ')'); break; }
+    }
+  }
+  if (!bad.length) return;
+  const line = '═'.repeat(72);
+  console.error('\n' + line);
+  console.error('  SECURITY: ' + bad.length + ' staff account(s) still use a password that is');
+  console.error('  published in the source code: ' + bad.join(', '));
+  console.error('');
+  console.error('  Anyone can read it and sign in as that account. Sign in and change it');
+  console.error('  now, and set ADMIN_DEFAULT_PASSWORD / OWNER_DEFAULT_PASSWORD in the');
+  console.error('  deploy environment so a fresh database cannot be seeded with it again.');
+  console.error(line + '\n');
+}
+
 function seedDefaults() {
   const userCount = db.prepare('SELECT COUNT(*) as c FROM users').get().c;
   if (userCount === 0) {
     // Default admin password: read from env var, fall back to a local-dev default.
     // In production set ADMIN_DEFAULT_PASSWORD as a Railway env var.
-    const adminPw = process.env.ADMIN_DEFAULT_PASSWORD || 'changeme-admin';
+    const adminPw = assertNotDefaultPassword('ADMIN', 'ADMIN_DEFAULT_PASSWORD',
+      process.env.ADMIN_DEFAULT_PASSWORD) || 'changeme-admin';
     const hash = bcrypt.hashSync(adminPw, 12);
     db.prepare(`
       INSERT INTO users (username, password, role, full_name, email)
@@ -1421,7 +1487,8 @@ function seedDefaults() {
     if (!owner) {
       // Owner password: read from env var, fall back to a local-dev default.
       // In production set OWNER_DEFAULT_PASSWORD as a Railway env var.
-      const ownerPw = process.env.OWNER_DEFAULT_PASSWORD || 'changeme-owner';
+      const ownerPw = assertNotDefaultPassword('OWNER', 'OWNER_DEFAULT_PASSWORD',
+        process.env.OWNER_DEFAULT_PASSWORD) || 'changeme-owner';
       const hash = bcrypt.hashSync(ownerPw, 12);
       db.prepare(`
         INSERT INTO users (username, password, role, full_name, email, phone, active, has_login, vehicle, is_default_driver, max_passengers, max_bags)
