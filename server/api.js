@@ -1849,6 +1849,75 @@ router.patch('/customer/profile', (req, res) => {
   res.json({ ok: true, profile: row, emailChanged });
 });
 
+/* ── CLOSING YOUR OWN ACCOUNT ──────────────────────────────────────────────
+   The privacy policy says a customer can ask us to delete their data. Until
+   now the only "delete" in the codebase was the admin's, and it set active = 0
+   and left the row full of their name, phone, home address and bank details —
+   so the promise was not kept by any code, and the customer had to email and
+   wait regardless.
+
+   TWO ROUTES, DELIBERATELY. The GET shows exactly what will happen, counted
+   from the database, so nobody presses the button on a guess; the POST does it,
+   and only when the typed confirmation matches. There is no undo and the screen
+   says so — pretending otherwise would mean keeping a copy, which is the thing
+   being asked for.
+
+   Both are scoped to req.auth.id. A customer can erase themselves and nobody
+   else, whatever is in the body.
+   GUARDRAIL: server/tests/erasure.test.js */
+
+// Customer: what closing my account would do (nothing is written).
+router.get('/customer/erase/preview', (req, res) => {
+  if (req.auth.type !== 'customer') return res.status(403).json({ error: 'Customer access required' });
+  const plan = require('./erasure').erasurePlan(getDb(), req.auth.id);
+  if (!plan) return res.status(404).json({ error: 'Account not found' });
+  if (plan.refused === 'business') {
+    return res.status(409).json({
+      error: 'business',
+      message: 'This is a company account in the name of ' + (plan.company || 'your company')
+             + '. Its invoices are the company\'s records, so it cannot be closed from here — '
+             + 'email info@westmereprivatehire.co.uk and we will deal with it properly.'
+    });
+  }
+  res.json({ ok: true, plan: plan });
+});
+
+// Customer: close my account for good.
+router.post('/customer/erase', (req, res) => {
+  if (req.auth.type !== 'customer') return res.status(403).json({ error: 'Customer access required' });
+  const db = getDb();
+  const erasure = require('./erasure');
+
+  /* THE TYPED CONFIRMATION. Not a nicety: this request destroys data and
+     cannot be undone, and a stray POST — a double tap, a replayed fetch, a
+     page left open on a shared laptop — must not be enough to trigger it. */
+  const typed = String((req.body && req.body.confirm) || '').trim().toUpperCase();
+  if (typed !== 'DELETE') {
+    return res.status(400).json({ error: 'Type DELETE to confirm you want the account closed.' });
+  }
+
+  const plan = erasure.erasurePlan(db, req.auth.id);
+  if (!plan) return res.status(404).json({ error: 'Account not found' });
+  if (plan.refused === 'business') {
+    return res.status(409).json({ error: 'business', message: 'Company accounts are closed by arrangement — please email us.' });
+  }
+
+  let done = null;
+  try { done = erasure.eraseCustomer(db, req.auth.id); }
+  catch (e) {
+    console.error('[ERASE] failed:', e.message);
+    return res.status(500).json({ error: 'Something went wrong closing the account. Nothing has been deleted — please email us and we will do it by hand.' });
+  }
+
+  /* The session goes with the account: erasure deletes the customer's session
+     rows, and the cookie is cleared here so the browser is not left holding a
+     token for a row that no longer describes anybody. */
+  /* Same options as /logout in auth.js — a clearCookie whose attributes do not
+     match the Set-Cookie that created it leaves the cookie in place. */
+  try { res.clearCookie('wph_token', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict' }); } catch (_) {}
+  res.json({ ok: true, done: done });
+});
+
 // Customer: download one of their own invoices as a PDF.
 // Mirrors the owner route below, but scoped to the caller: the invoice must be
 // theirs by customer_id OR by the email on their account (invoices raised

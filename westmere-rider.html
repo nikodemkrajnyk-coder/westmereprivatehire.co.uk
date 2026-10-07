@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<script src="/address-normalize.js?v=2026-10-08a"></script>
-<script src="/wm-timewheel.js?v=2026-10-08a"></script>
-<script src="/wm-lifecycle.js?v=2026-10-08a"></script>
+<script src="/address-normalize.js?v=2026-10-08b"></script>
+<script src="/wm-timewheel.js?v=2026-10-08b"></script>
+<script src="/wm-lifecycle.js?v=2026-10-08b"></script>
 <!-- THE SHARED SPREADSHEET. The business account reads its rides in the same
      table the owner and admin apps use, so a row means the same thing on every
      screen in the system. GUARDRAIL: server/tests/business-account.test.js -->
-<script src="/wm-compact.js?v=2026-10-08a"></script>
+<script src="/wm-compact.js?v=2026-10-08b"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
 <meta name="color-scheme" content="only light"/>
 <meta name="mobile-web-app-capable" content="yes">
@@ -450,7 +450,7 @@ body.mode-day #stripe-card-el.StripeElement--focus{border-bottom-color:#102a43}
   .page-content{max-width:1420px}
 }
 </style>
-<script src="/config.js?v=2026-10-08a"></script>
+<script src="/config.js?v=2026-10-08b"></script>
 <script src="https://js.stripe.com/v3/" async></script>
 <meta name="description" content="Westmere My Account — book private hire journeys across Sussex with real-time tracking, fixed quotes and premium drivers.">
 
@@ -848,6 +848,38 @@ body::after{
   .md-grid .fg:first-child{grid-column:1 / -1}}
 .md-save{max-width:280px;margin-top:1.2rem}
 .md-msg{display:none;margin-top:1rem;font-size:.8rem;line-height:1.6;padding:.7rem .9rem;border-radius:4px}
+/* ── CLOSING AN ACCOUNT ──
+   §20: nothing highlights by filling. The panel is the same white card as every
+   other, marked by a single rule in danger ink rather than a red box — the copy
+   is what carries the weight, and a red-washed card would read as an error the
+   customer had hit rather than a choice they are making. */
+.ca-panel .dp-head{border-bottom-color:rgba(156,40,40,.3);color:rgba(156,40,40,.75)}
+.ca-lede{font-size:.88rem;line-height:1.65;color:rgba(27,27,26,.7);font-weight:300;margin-bottom:1rem}
+.ca-rule{height:1px;background:rgba(156,40,40,.22);margin:.2rem 0 1.1rem}
+.ca-detail{margin-top:1.1rem}
+.ca-what{font-family:var(--serif);font-size:1.02rem;font-style:italic;color:var(--navy);line-height:1.6;margin-bottom:.9rem}
+.ca-list{list-style:none;padding:0;margin:0 0 1.3rem}
+.ca-list li{position:relative;padding-left:1.1rem;font-size:.84rem;line-height:1.65;font-weight:300;color:rgba(27,27,26,.72);margin-bottom:.6rem}
+.ca-list li::before{content:"";position:absolute;left:0;top:.62em;width:5px;height:1px;background:rgba(156,40,40,.5)}
+.ca-list strong{font-weight:500;color:var(--navy)}
+.ca-type{max-width:18rem;margin-bottom:.4rem}
+#ca-confirm{letter-spacing:.18em;text-transform:uppercase}
+.ca-msg{display:none;margin:.9rem 0 0;font-size:.82rem;line-height:1.6}
+.ca-msg.show{display:block}
+.ca-msg.bad{color:var(--westmere-danger, #9C2828)}
+.ca-msg.ok{color:var(--navy)}
+.ca-actions{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.2rem}
+/* Doubled class, like .wm-btn.wm-btn-primary in wm-buttons.css: that sheet is
+   linked AFTER this block, so a single-class rule here loses the colour to it
+   and the destructive button comes out reading exactly like Save. */
+.wm-btn.wm-btn-danger{background:transparent;border-color:rgba(156,40,40,.55);color:var(--westmere-danger, #9C2828)}
+.wm-btn.wm-btn-danger:hover:not([disabled]){background:var(--westmere-danger-wash, #fbf6f5);border-color:var(--westmere-danger, #9C2828)}
+.wm-btn.wm-btn-danger[disabled]{opacity:.42;cursor:not-allowed}
+@media(max-width:600px){.ca-actions .wm-btn{width:100%}}
+/* A company account cannot be closed from here at all — the server refuses the
+   route and this keeps the door out of sight too. Belt as well as braces,
+   because the panel's copy promises an erasure the route will not perform. */
+body.is-business #ca-panel{display:none!important}
 .md-msg.show{display:block}
 .md-msg.good{color:var(--green);background:var(--green-bg);border:1px solid rgba(45,110,71,.25)}
 .md-msg.bad{color:var(--red);background:var(--red-bg);border:1px solid rgba(139,34,34,.25)}
@@ -1092,9 +1124,9 @@ select:-webkit-autofill:focus{
   caret-color:#1b1b1a;
   transition:background-color 9999s ease-in-out 0s;
 }
-</style><link rel="stylesheet" href="/wm-buttons.css?v=2026-10-08a">
-<link rel="stylesheet" href="/westmere-theme.css?v=2026-10-08a">
-<script src="/wm-ask.js?v=2026-10-08a"></script>
+</style><link rel="stylesheet" href="/wm-buttons.css?v=2026-10-08b">
+<link rel="stylesheet" href="/westmere-theme.css?v=2026-10-08b">
+<script src="/wm-ask.js?v=2026-10-08b"></script>
 <link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"></head>
 <body>
 
@@ -1565,6 +1597,44 @@ select:-webkit-autofill:focus{
           </div>
           <div class="md-msg" id="md-msg"></div>
           <button class="btn-main md-save" id="md-save" onclick="saveMyDetails()">Save Changes</button>
+        </div>
+      </div>
+
+      <!-- ─── CLOSE MY ACCOUNT ───
+           The privacy policy says a customer may ask us to delete their data,
+           and until now the only way to ask was to email and wait. This is the
+           asking, done here.
+
+           IT OPENS CLOSED, AND IT COUNTS BEFORE IT ASKS. Nothing destructive
+           sits one tap away: the summary is fetched from the server first, so
+           the numbers on screen are the database's and not a guess, and the
+           button stays disabled until the word is typed. There is no undo and
+           the panel says so plainly rather than softening it. -->
+      <div class="dpanel ca-panel" id="ca-panel" style="display:none">
+        <div class="dp-head"><span>Closing your account</span></div>
+        <div class="dp-body">
+          <p class="ca-lede">You can close this account yourself, at once. It cannot be undone — we keep no copy to put back.</p>
+          <button class="wm-btn wm-btn-ghost ca-open" id="ca-open" onclick="caOpen()">Close my account&hellip;</button>
+
+          <div class="ca-detail" id="ca-detail" hidden>
+            <div class="ca-rule"></div>
+            <div class="ca-what" id="ca-what">Checking what you have with us&hellip;</div>
+            <ul class="ca-list">
+              <li><strong>Your account is overwritten</strong> — name, email, phone, home address and password. Not hidden, not disabled: gone. Nobody can sign in with it again and we cannot restore it.</li>
+              <li><strong>Your past journeys stay on as anonymous records.</strong> The date, route and fare remain for the six years our licence and HMRC require; your name, number, email and any notes are removed, so the journey can no longer be connected to you.</li>
+              <li><strong>Invoices already issued are kept as issued</strong> — they are tax documents — but they stop pointing at an account.</li>
+              <li><strong>Any upcoming journey still happens.</strong> If you want it cancelled too, cancel it first.</li>
+            </ul>
+            <div class="fg ca-type">
+              <label class="fl" for="ca-confirm">Type DELETE to confirm</label>
+              <input class="fi" type="text" id="ca-confirm" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="DELETE" oninput="caTyped()">
+            </div>
+            <div class="ca-msg" id="ca-msg"></div>
+            <div class="ca-actions">
+              <button class="wm-btn wm-btn-danger" id="ca-go" onclick="caGo()" disabled>Close my account for good</button>
+              <button class="wm-btn wm-btn-ghost" onclick="caCancel()">Keep my account</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -4251,6 +4321,106 @@ function updateProfileUI(){
   }else{
     if(loginBtn)loginBtn.style.display='block';
     if(logoutBtn)logoutBtn.style.display='none';
+  }
+  /* The close-account panel only exists for somebody who has an account to
+     close. A company account is not one person's to close either — its
+     invoices are the company's records — so the panel stays away there and the
+     server refuses the route as well; this hides a door that is already
+     locked, rather than relying on hiding it. */
+  var ca=document.getElementById('ca-panel');
+  if(ca){
+    var biz=!!(typeof BIZ!=='undefined'&&BIZ);
+    ca.style.display=(_currentUser.loggedIn&&!biz)?'block':'none';
+    if(!_currentUser.loggedIn)caCancel();
+  }
+}
+
+/* ── CLOSING AN ACCOUNT ─────────────────────────────────────────────────────
+   caOpen asks the SERVER what this account holds and prints that; it does not
+   count anything itself. A screen that says "3 journeys" from its own cached
+   list, while the route detaches five, is a screen that lies at exactly the
+   moment it matters most.
+   GUARDRAIL: server/tests/erasure.test.js */
+function caOpen(){
+  var d=document.getElementById('ca-detail');
+  var o=document.getElementById('ca-open');
+  if(!d)return;
+  d.hidden=false; if(o)o.style.display='none';
+  caMsg('');
+  var w=document.getElementById('ca-what');
+  fetch('/api/customer/erase/preview',{credentials:'include'})
+    .then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j};});})
+    .then(function(x){
+      if(!x.ok){
+        if(w)w.textContent='';
+        caMsg(x.j&&x.j.message?x.j.message:'We could not check your account just now. Please try again, or email us and we will do it by hand.','bad');
+        var g=document.getElementById('ca-go');if(g)g.disabled=true;
+        return;
+      }
+      var p=x.j.plan||{};
+      var bits=[];
+      bits.push(p.journeys===1?'1 journey':(p.journeys||0)+' journeys');
+      if(p.invoices)bits.push(p.invoices===1?'1 invoice':p.invoices+' invoices');
+      if(w)w.textContent='We hold '+bits.join(' and ')+' against this account.';
+    })
+    .catch(function(){
+      if(w)w.textContent='';
+      caMsg('We could not reach the server to check your account. Please try again.','bad');
+    });
+}
+function caCancel(){
+  var d=document.getElementById('ca-detail');
+  var o=document.getElementById('ca-open');
+  var c=document.getElementById('ca-confirm');
+  if(d)d.hidden=true;
+  if(o)o.style.display='';
+  if(c)c.value='';
+  var g=document.getElementById('ca-go');if(g)g.disabled=true;
+  caMsg('');
+}
+function caTyped(){
+  var c=document.getElementById('ca-confirm');
+  var g=document.getElementById('ca-go');
+  if(g)g.disabled=!(c&&c.value.trim().toUpperCase()==='DELETE');
+}
+function caMsg(text,kind){
+  var m=document.getElementById('ca-msg');
+  if(!m)return;
+  m.textContent=text||'';
+  m.className='ca-msg'+(text?' show '+(kind||''):'');
+}
+async function caGo(){
+  var c=document.getElementById('ca-confirm');
+  var g=document.getElementById('ca-go');
+  if(!c||c.value.trim().toUpperCase()!=='DELETE'){caMsg('Type DELETE to confirm.','bad');return;}
+  if(g){g.disabled=true;g.textContent='Closing\u2026';}
+  try{
+    var r=await fetch('/api/customer/erase',{
+      method:'POST',credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({confirm:'DELETE'})
+    });
+    var j=await r.json().catch(function(){return {};});
+    if(!r.ok){
+      caMsg(j.message||j.error||'Something went wrong. Nothing has been deleted — please email us.','bad');
+      if(g){g.disabled=false;g.textContent='Close my account for good';}
+      return;
+    }
+    /* The account is gone; so is the session. Say so on a clean screen rather
+       than leaving a signed-in-looking app behind a success message. */
+    var d=document.getElementById('ca-detail');
+    if(d)d.hidden=true;
+    var panel=document.getElementById('ca-panel');
+    if(panel){
+      var body=panel.querySelector('.dp-body');
+      if(body)body.innerHTML='<div class="ca-what">Your account is closed.</div>'+
+        '<p class="ca-lede">Everything that identified you has been overwritten. Your past journeys remain as anonymous records for the six years our licence requires, and nothing on them points back to you. Thank you for travelling with us.</p>';
+    }
+    _currentUser.loggedIn=false;
+    setTimeout(function(){location.href='/index.html';},6000);
+  }catch(e){
+    caMsg('We could not reach the server. Nothing has been deleted.','bad');
+    if(g){g.disabled=false;g.textContent='Close my account for good';}
   }
 }
 if('serviceWorker' in navigator){

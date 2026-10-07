@@ -479,6 +479,21 @@ app.listen(PORT, () => {
 
   try { require('./reminder').startBookingReminders(); }
   catch (e) { console.error('[REMINDER] failed to start:', e.message); }
+
+  /* ── THE SIX-YEAR WINDOW THE PRIVACY POLICY PROMISES ──────────────────────
+     The policy has always said records are kept for six years and then deleted.
+     Nothing deleted anything, so the promise was simply untrue — and an
+     eight-year-old booking carrying a name, a number and a home address is
+     data held with no lawful reason left for holding it. server/erasure.js
+     sweeps it daily, an hour after boot so a deploy is never racing it.
+     Set RETENTION_SWEEP=off to stop the sweeper without changing code.
+     GUARDRAIL: server/tests/erasure.test.js */
+  if (String(process.env.RETENTION_SWEEP || '').toLowerCase() !== 'off') {
+    try { require('./erasure').startRetention(require('./db').getDb()); }
+    catch (e) { console.error('[RETENTION] failed to start:', e.message); }
+  } else {
+    console.log('[RETENTION] sweeper disabled by RETENTION_SWEEP=off');
+  }
 });
 
 module.exports = app;

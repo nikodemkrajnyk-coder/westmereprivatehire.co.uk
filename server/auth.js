@@ -135,11 +135,18 @@ router.post('/customer/register', async (req, res) => {
   const cleanEmail = email.trim().toLowerCase();
   const existing = db.prepare('SELECT id, verified, active FROM customers WHERE email = ?').get(cleanEmail);
   if (existing) {
+    /* ── REGISTERING AGAIN DOES NOT BRING A CLOSED ACCOUNT BACK ────────────
+       This used to overwrite the password, name and phone of a closed account
+       and set it active and verified again — handing it to whoever typed the
+       email. Two separate faults in one branch: anybody who knew a dormant
+       customer's address could take the account over, and a customer who had
+       asked us to erase their data could have it restored by a stranger.
+
+       A closed account is now treated exactly like any other existing one: the
+       same reply, no write of any kind. Reopening is a conversation with us,
+       not a form.
+       GUARDRAIL: server/tests/erasure.test.js */
     if (existing.active === 0) {
-      // Soft-deleted account — reactivate with new credentials
-      const hash = bcrypt.hashSync(password, 12);
-      db.prepare("UPDATE customers SET password = ?, full_name = ?, phone = ?, active = 1, verified = 1, reset_token = NULL, reset_token_expires = NULL, updated_at = datetime('now') WHERE id = ?")
-        .run(hash, full_name.trim(), phone || null, existing.id);
       return res.status(409).json({ error: 'An account with this email already exists. Please sign in.' });
     }
     if (existing.verified === 0) {

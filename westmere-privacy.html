@@ -64,46 +64,81 @@ footer.mini-foot{padding:1.1rem 6%;text-align:center;font-family:var(--sans);fon
 <main>
 <div class="eyebrow">Legal</div>
 <h1>Privacy Policy</h1>
-<div class="upd">Last updated: April 2026</div>
+<div class="upd">Last updated: October 2026</div>
 
 <p>Westmere Private Hire is a sole-trader business operated by Nikodem Krajnyk, trading as Westmere Private Hire. Our registered business address is 66 High Street, Lewes, East Sussex, BN7 1XG. We are the data controller for the personal data described in this policy.</p>
-<p>This policy explains what personal data we collect, how we use it, and the rights you have under the UK GDPR and the Data Protection Act 2018.</p>
+<p>This policy explains what personal data we collect, who we share it with, how long we keep it, and the rights you have under the UK GDPR and the Data Protection Act 2018. It describes what our systems actually do — if you find something here that does not match your experience, please tell us.</p>
 
-<h2>1. Data We Collect</h2>
+<h2>1. Data we collect</h2>
 <ul>
-<li><strong>Booking details:</strong> Name, phone number, email, pickup and destination addresses, date and time of travel, flight numbers (where relevant), and vehicle preferences.</li>
-<li><strong>Payment data:</strong> Card payments are processed by our PCI-DSS compliant payment providers — we do not store full card numbers on our systems.</li>
-<li><strong>Technical data:</strong> Basic web analytics (page views, device type, referrer) to understand how visitors use our website.</li>
+<li><strong>Booking details.</strong> Your name, phone number, email address, pickup and destination addresses (and any intermediate stop), the date and time of travel, number of passengers and bags, flight number where relevant, and anything you write in the notes box.</li>
+<li><strong>Account details.</strong> If you create an account: the above, plus a password (stored only as a one-way hash — we cannot read it), optionally a home address, and the history of journeys booked on the account.</li>
+<li><strong>Payment data.</strong> Card payments are handled entirely by Stripe on their own pages. We never see or store your card number. We keep Stripe's reference for the payment, the amount, and whether it succeeded.</li>
+<li><strong>Invoice and account-customer details.</strong> For customers billed monthly: the billing name, address, email and any purchase-order reference you give us.</li>
+<li><strong>Technical data.</strong> Our server keeps ordinary request logs, which include your IP address, and a record of sign-ins to an account (time, IP, browser). <strong>We do not use website analytics, tracking pixels, advertising tags or any third-party tracker.</strong> There is nothing on this site that follows you between websites.</li>
 </ul>
 
-<h2>2. How We Use Your Data</h2>
+<h2>2. How we use it, and on what lawful basis</h2>
 <ul>
-<li>To confirm, fulfil and invoice your private hire journey.</li>
-<li>To contact you regarding your booking (pickup confirmations, delays, changes).</li>
-<li>To respond to enquiries and complaints.</li>
-<li>To comply with our legal and licensing obligations as a private hire operator.</li>
+<li>To quote, confirm, carry out and invoice your journey — <strong>contract</strong>.</li>
+<li>To contact you about that journey: confirmation, a reminder the day before, a change or a delay — <strong>contract</strong>.</li>
+<li>To take payment and chase an unpaid fare — <strong>contract</strong>, and <strong>legitimate interests</strong> for the chasing.</li>
+<li>To keep our accounts, answer complaints, and satisfy our licensing authority and HMRC — <strong>legal obligation</strong>.</li>
+<li>To keep the booking system secure — sign-in records and rate limits — <strong>legitimate interests</strong>.</li>
+<li>To ask you for a review after a journey, and to remember your details on your own device if you tick the box that offers it — <strong>consent</strong>, which you can withdraw at any time.</li>
 </ul>
 
-<h2>3. Lawful Basis</h2>
-<p>We process booking data under "contract" (to provide the service you requested) and under "legitimate interests" where we need to communicate with you about the journey. Marketing communications — where applicable — are only sent with your consent, which you can withdraw at any time.</p>
+<h2>3. Who else sees your data</h2>
+<p><strong>Your driver.</strong> The driver assigned to your journey is told the pickup and destination, the date and time, the number of passengers and bags, your name, and a phone number to reach you on. Where a company has booked the car for you, the driver is given the booking contact's number instead and never yours — see section 5.</p>
+<p><strong>Our suppliers.</strong> We use the following companies to run the service. Each one only receives what it needs for its own job, and none of them is permitted to use your data for anything else:</p>
+<ul>
+<li><strong>Railway</strong> — hosting. Our booking system and its database run on Railway's infrastructure, so everything in this policy is stored there.</li>
+<li><strong>Resend</strong> — email. Every quote, confirmation, reminder and invoice we email you passes through Resend, including your name, email address and the details of the journey.</li>
+<li><strong>Stripe</strong> — card payments. Stripe is the data controller for your card details; we never receive them.</li>
+<li><strong>Mapbox</strong> — the maps shown in our apps, and some address lookup. Your browser loads map tiles directly from Mapbox, which means Mapbox sees your IP address.</li>
+<li><strong>OpenStreetMap (Nominatim)</strong> — address search. When you type an address into a booking form, that text is sent to the OpenStreetMap Foundation's address service to find it.</li>
+<li><strong>Project OSRM</strong> — distance and route. The pickup and destination are sent to this routing service to work out mileage and drive time for the fare.</li>
+<li><strong>Anthropic</strong> — automated checks. Our system asks Anthropic's Claude service whether a new booking can be fitted around the day's existing jobs, and to draft the apology if we have to decline one. The pickup and destination addresses, the date and time, and sometimes a first name are sent for that purpose. No decision that affects you is taken by it alone: a declined booking is always seen by a person, and you can ask us to reconsider by replying to the email or ringing us.</li>
+<li><strong>Google</strong> — the owner's diary. Confirmed journeys are copied into the business's Google Calendar so the day's driving can be planned, which puts the time, the route and your name into that calendar entry. Separately, this website loads its typefaces from Google Fonts, which means Google sees your IP address when a page loads.</li>
+<li><strong>Meta (WhatsApp Business)</strong> — messaging, where we use it. If we message you on WhatsApp about a booking, Meta processes that message and your number.</li>
+</ul>
+<p><strong>Nobody else.</strong> We do not sell your data, we do not share it with advertisers, and we do not pass it to other operators except where we have to sub-contract your journey — in which case the other operator is told only what a driver would be told. We will disclose data to the police, our licensing authority or another public body where the law requires it.</p>
 
-<h2>4. Sharing Your Data</h2>
-<p>We share the minimum necessary information with the driver assigned to your journey. We do not sell your data. We may share data with law enforcement or regulatory bodies where legally required, including our licensing authority.</p>
+<h2>4. Drivers</h2>
+<p>If you drive for us, we additionally hold your licence and badge details and their expiry dates, your insurance and MOT details, your vehicle registration, your bank details for payment, the jobs you have been offered and completed, and what you have been paid. While you are on a job the driver app records your vehicle's position so the office can see where the car is; that trail is kept only as long as it is operationally useful and is never shown to customers.</p>
 
-<h2>5. How Long We Keep It</h2>
-<p>Booking records are retained for up to six years to meet tax, accounting and licensing requirements. After this, they are securely deleted.</p>
+<h2>5. When somebody else books your car</h2>
+<p>If a company, a hotel or a relative books a journey for you, we are given your name and the addresses — and for a company account we deliberately do <strong>not</strong> ask for or hold your phone number. The driver is given the booking contact's number and rings them on arrival. If you would rather we held your number so the driver can call you directly, tell whoever books for you and they can add it.</p>
 
-<h2>6. Your Rights</h2>
-<p>Under UK GDPR you have the right to access, correct, delete, restrict or object to our processing of your personal data, and the right to data portability. To exercise any of these rights, email <a href="mailto:bookings@westmereprivatehire.co.uk" style="color:var(--navy)">bookings@westmereprivatehire.co.uk</a>.</p>
+<h2>6. How long we keep it</h2>
+<p>Booking and invoice records are kept for <strong>six years</strong> from the date of the journey, which is the period our tax and licensing obligations require. This is now enforced automatically: records older than six years are deleted by the system, not left to be noticed. Sign-in records are deleted when the session expires. If you close your account before the six years are up, see the next section.</p>
 
-<h2>7. Complaints</h2>
-<p>If you have concerns about how we handle your data, please contact us first. You also have the right to lodge a complaint with the UK Information Commissioner's Office (ICO) at <a href="https://ico.org.uk" target="_blank" rel="noopener" style="color:var(--navy)">ico.org.uk</a>.</p>
+<h2>7. Your rights</h2>
+<p>Under the UK GDPR you have the right to see the data we hold about you, to have it corrected, to have it deleted, to restrict or object to what we do with it, to withdraw a consent you have given, and to receive a copy in a portable form. We do not charge for any of this, and we will answer within one month.</p>
+<p><strong>Closing your account yourself.</strong> If you have an account, you can close it from <em>My Account → Close my account</em>. It takes effect immediately and there is no undo. What happens is this:</p>
+<ul>
+<li>Your account and everything on it — name, email, phone, home address, saved details, password — is <strong>overwritten</strong>, not just switched off. We cannot recover it and nobody can sign in with it again.</li>
+<li>Your past journeys are kept as anonymous records: the date, route, fare and driver remain for the six years our licence and HMRC require, with your name, number, email and notes removed. The journey can no longer be connected to you.</li>
+<li>Invoices already issued are kept as they were issued, because they are tax documents, but they no longer link to an account.</li>
+<li>Six years on, those records are deleted along with everything else that old.</li>
+</ul>
+<p>Company accounts are closed by arrangement rather than from the app, because the company's invoices belong to the company and not to the person signed in. Email us and we will deal with it properly.</p>
+<p>To exercise any other right, email <a href="mailto:bookings@westmereprivatehire.co.uk" style="color:var(--navy)">bookings@westmereprivatehire.co.uk</a>.</p>
 
-<h2>8. Security</h2>
-<p>We use reasonable technical and organisational safeguards to protect your personal data, including encrypted transmission and access controls on our booking systems.</p>
+<h2>8. Cookies and storage on your device</h2>
+<p>We set <strong>one</strong> cookie, <strong>wph_token</strong>, and only once you sign in to an account: it is what keeps you signed in. It is marked HttpOnly, Secure and SameSite, so it cannot be read by scripts and is not sent to other websites. There are no advertising or analytics cookies on this site, which is why you are not asked to agree to any. Our apps also keep a few things in your browser's own storage — an unfinished booking so you do not lose it, and your contact details if you tick the box that offers to remember them. The <a href="westmere-cookies.html" style="color:var(--navy)">cookie policy</a> lists all of it.</p>
 
-<h2>9. Changes to This Policy</h2>
-<p>We may update this policy from time to time. The "last updated" date at the top of this page reflects the most recent revision.</p>
+<h2>9. Where your data is held</h2>
+<p>Our systems are hosted in the United Kingdom and the European Union. Some of the suppliers listed in section 3 are based in the United States and will process data there under the safeguards UK law requires for international transfers (the UK Extension to the EU–US Data Privacy Framework, or standard contractual clauses).</p>
+
+<h2>10. Security</h2>
+<p>All traffic to and from the site is encrypted. Passwords are stored only as one-way hashes. Access to the booking system is restricted to the owner and authorised staff, each with their own account, and every sign-in is logged. Links in our emails that act on a booking — paying, cancelling, adding a note, viewing an invoice — carry a secret unique to that booking, so knowing a booking reference is not enough to use them.</p>
+
+<h2>11. Complaints</h2>
+<p>If you are unhappy with how we have handled your data, please tell us first — email <a href="mailto:bookings@westmereprivatehire.co.uk" style="color:var(--navy)">bookings@westmereprivatehire.co.uk</a> or call 07930 342593. You also have the right to complain to the UK Information Commissioner's Office at <a href="https://ico.org.uk" target="_blank" rel="noopener" style="color:var(--navy)">ico.org.uk</a> or on 0303 123 1113.</p>
+
+<h2>12. Changes to this policy</h2>
+<p>We may update this policy. The date at the top of the page is the date of the most recent revision, and we will say what changed if the change is significant.</p>
 </main>
 
 <footer class="mini-foot">&copy; 2026 Westmere Private Hire &middot; All rights reserved &middot; Licensed by Lewes District Council<span class="mini-legal"><a href="westmere-terms.html">Terms</a><a href="westmere-privacy.html">Privacy</a><a href="westmere-cookies.html">Cookies</a></span></footer>

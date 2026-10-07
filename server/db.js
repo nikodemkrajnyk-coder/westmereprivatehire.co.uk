@@ -1188,6 +1188,16 @@ function migrate() {
      offers that today and nothing should.
      GUARDRAIL: server/tests/business-account.test.js */
   try { db.exec(`ALTER TABLE customers ADD COLUMN parent_customer_id INTEGER REFERENCES customers(id)`); } catch(_){}
+
+  /* ── WHEN THIS ACCOUNT WAS ERASED, IF IT WAS ─────────────────────────────
+     A customer who asks to be forgotten does not get active = 0 and a row left
+     full of their name, number, home address and bank details — that is what
+     used to happen, and it is not erasure. server/erasure.js overwrites every
+     identifying field and stamps this column, so the row that remains (it has
+     to: journeys inside the six-year window still reference the id) is plainly
+     a tombstone rather than a dormant account somebody might reactivate.
+     GUARDRAIL: server/tests/erasure.test.js */
+  try { db.exec(`ALTER TABLE customers ADD COLUMN erased_at TEXT`); } catch(_){}
   try { db.exec(`CREATE INDEX IF NOT EXISTS idx_customers_parent ON customers(parent_customer_id)`); } catch(_){}
 
   /* THE BOOKER'S OWN REFERENCE, printed on the invoice line so her finance
