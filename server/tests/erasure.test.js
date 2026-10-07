@@ -443,11 +443,33 @@ test('the privacy policy does not claim analytics we do not run', () => {
 
 test('the privacy policy names the processors that actually see the data', () => {
   const p = read('westmere-privacy.html');
-  for (const who of ['Resend', 'Stripe', 'Mapbox', 'OpenStreetMap', 'OSRM', 'Anthropic', 'Google', 'Railway']) {
+  for (const who of ['Resend', 'Stripe', 'Mapbox', 'OpenStreetMap', 'OSRM', 'Anthropic', 'Google', 'Railway', 'Meta']) {
     assert.ok(new RegExp(who, 'i').test(p), 'the policy must name ' + who + ' — our systems send it personal data');
   }
   assert.ok(/six years/i.test(p), 'the retention period must be stated');
   assert.ok(/Close my account/i.test(p), 'and the self-service erasure must be described');
+});
+
+test('WhatsApp is stated as something we do, not something we might do', () => {
+  /* The first draft hedged — "messaging, where we use it" — because I could not
+     see the Railway variables and would not guess. The owner has since said
+     plainly that he does message customers on WhatsApp, so the hedge is now
+     simply inaccurate: a processor that handles a customer's number and the
+     content of their messages has to be named without a conditional. */
+  const flat = read('westmere-privacy.html').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ');
+  assert.ok(/We use WhatsApp to contact customers/i.test(flat),
+    'the policy must state the WhatsApp channel as a fact');
+  assert.ok(!/where we use it|if we message you on WhatsApp/i.test(flat),
+    'the hedge must be gone — it understates processing that genuinely happens');
+  assert.ok(/WhatsApp/.test(/<li>To contact you about that journey[\s\S]*?<\/li>/.exec(read('westmere-privacy.html'))[0]),
+    'and the channel must be named where the USE is described, not only in the supplier list');
+
+  /* The code is the other half of that claim: if the WhatsApp sender is ever
+     removed, this paragraph becomes an over-statement instead. */
+  assert.ok(fs.existsSync(path.join(ROOT, 'server/whatsapp.js')),
+    'the policy says we message customers on WhatsApp — server/whatsapp.js must still exist');
+  assert.ok(/sendCustomerBookingConfirmedWhatsApp|sendMessage/.test(read('server/whatsapp.js')),
+    'and it must still be able to send one');
 });
 
 test('the retention period in the policy is the one in the code', () => {
