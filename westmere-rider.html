@@ -2,9 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<script src="/address-normalize.js?v=2026-10-07b"></script>
-<script src="/wm-timewheel.js?v=2026-10-07b"></script>
-<script src="/wm-lifecycle.js?v=2026-10-07b"></script>
+<script src="/address-normalize.js?v=2026-10-08a"></script>
+<script src="/wm-timewheel.js?v=2026-10-08a"></script>
+<script src="/wm-lifecycle.js?v=2026-10-08a"></script>
+<!-- THE SHARED SPREADSHEET. The business account reads its rides in the same
+     table the owner and admin apps use, so a row means the same thing on every
+     screen in the system. GUARDRAIL: server/tests/business-account.test.js -->
+<script src="/wm-compact.js?v=2026-10-08a"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
 <meta name="color-scheme" content="only light"/>
 <meta name="mobile-web-app-capable" content="yes">
@@ -446,7 +450,7 @@ body.mode-day #stripe-card-el.StripeElement--focus{border-bottom-color:#102a43}
   .page-content{max-width:1420px}
 }
 </style>
-<script src="/config.js?v=2026-10-07b"></script>
+<script src="/config.js?v=2026-10-08a"></script>
 <script src="https://js.stripe.com/v3/" async></script>
 <meta name="description" content="Westmere My Account — book private hire journeys across Sussex with real-time tracking, fixed quotes and premium drivers.">
 
@@ -1088,9 +1092,9 @@ select:-webkit-autofill:focus{
   caret-color:#1b1b1a;
   transition:background-color 9999s ease-in-out 0s;
 }
-</style><link rel="stylesheet" href="/wm-buttons.css?v=2026-10-07b">
-<link rel="stylesheet" href="/westmere-theme.css?v=2026-10-07b">
-<script src="/wm-ask.js?v=2026-10-07b"></script>
+</style><link rel="stylesheet" href="/wm-buttons.css?v=2026-10-08a">
+<link rel="stylesheet" href="/westmere-theme.css?v=2026-10-08a">
+<script src="/wm-ask.js?v=2026-10-08a"></script>
 <link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"></head>
 <body>
 
@@ -1227,6 +1231,21 @@ select:-webkit-autofill:focus{
     </div>
 
     <nav class="side-list">
+      <!-- Shown only on a business account; the personal items are hidden
+           in their place. There is deliberately nothing here about adding a
+           second booker — that is not a v1 feature. -->
+      <button class="side-item biz-only" id="sd-bizhome" onclick="goPage('bizhome')">
+        <span class="side-mark"></span><span class="side-lbl">Account Home</span>
+      </button>
+      <button class="side-item biz-only" id="sd-bizbook" onclick="goPage('bizbook')">
+        <span class="side-mark"></span><span class="side-lbl">Book a Ride</span>
+      </button>
+      <button class="side-item biz-only" id="sd-bizpeople" onclick="goPage('bizpeople')">
+        <span class="side-mark"></span><span class="side-lbl">Our Passengers</span>
+      </button>
+      <button class="side-item biz-only" id="sd-bizbilling" onclick="goPage('bizbilling')">
+        <span class="side-mark"></span><span class="side-lbl">Invoices &amp; Statements</span>
+      </button>
       <button class="side-item on" id="sd-trips" onclick="goPage('trips')">
         <span class="side-mark"></span><span class="side-lbl">My Trips</span>
       </button>
@@ -1356,6 +1375,106 @@ select:-webkit-autofill:focus{
       </div>
 
       <button class="btn-main" id="bk-calc-btn" onclick="openConfirmModal()">Request an Estimate</button>
+    </div>
+
+    <!-- ══ THE BUSINESS ACCOUNT ══════════════════════════════════════════
+         One company, one responsible contact. These four pages replace the
+         personal ones when the account is a business account — same shell,
+         same panels, same shared table, so there is one app and not two.
+         GUARDRAIL: server/tests/business-account.test.js -->
+
+    <div class="page-content" id="pg-bizhome">
+      <div class="sec-title" id="biz-co-title">Your <em>account</em></div>
+      <div class="sec-sub">Your journeys and your account, in one place</div>
+      <div class="biz-stats" id="biz-home-stats"></div>
+      <div class="card">
+        <div class="biz-ch"><span id="biz-rides-k">Your rides</span><span class="biz-ch-r" id="biz-rides-sum"></span></div>
+        <div id="biz-rides"></div>
+      </div>
+      <div class="card">
+        <div class="biz-ch"><span>Your account</span></div>
+        <div class="biz-cb" id="biz-home-account"></div>
+      </div>
+    </div>
+
+    <div class="page-content" id="pg-bizbook">
+      <div class="sec-title">Book a <em>ride</em></div>
+      <div class="sec-sub">For somebody at your company, or a guest</div>
+      <div class="card">
+        <div class="biz-ch"><span>Who is travelling</span><span class="biz-tag gold">Not you</span></div>
+        <div class="biz-cb">
+          <div class="fg">
+            <label class="fl" for="bz-passenger">Passenger name</label>
+            <input class="fi" type="text" id="bz-passenger" list="bz-people" placeholder="Start typing a name" autocomplete="off">
+            <datalist id="bz-people"></datalist>
+          </div>
+          <div class="fg">
+            <label class="fl">Contact number for the driver</label>
+            <div class="fi biz-locked" id="bz-contact">&mdash;</div>
+          </div>
+          <div class="biz-privacy">
+            <b>The passenger&rsquo;s own number is never given to the driver.</b>
+            Your driver rings you on arrival and you let them know the car is outside.
+            We do not hold a mobile number for them.
+          </div>
+          <div class="fg" style="margin-top:.9rem">
+            <label class="fl" for="bz-ref">Your reference <span class="biz-opt">optional &mdash; appears on the invoice line</span></label>
+            <input class="fi" type="text" id="bz-ref" placeholder="e.g. PO-4471" autocomplete="off">
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="biz-ch"><span>The journey</span></div>
+        <div class="biz-cb">
+          <div class="biz-r2">
+            <div class="fg"><label class="fl" for="bz-date">Date</label><input class="fi" type="date" id="bz-date"></div>
+            <div class="fg"><label class="fl" for="bz-time">Pickup time</label><input class="fi" type="time" id="bz-time"></div>
+          </div>
+          <div class="fg"><label class="fl" for="bz-pickup">Pickup</label><input class="fi" type="text" id="bz-pickup" list="bz-places" placeholder="Address or a saved place" autocomplete="off"><datalist id="bz-places"></datalist></div>
+          <div class="fg"><label class="fl" for="bz-dest">Destination</label><input class="fi" type="text" id="bz-dest" list="bz-places2" placeholder="Airport, address or town" autocomplete="off"><datalist id="bz-places2"></datalist></div>
+          <div class="biz-r2">
+            <div class="fg"><label class="fl" for="bz-pax">Passengers</label><input class="fi" type="number" id="bz-pax" min="1" max="16" value="1"></div>
+            <div class="fg"><label class="fl" for="bz-bags">Luggage</label><input class="fi" type="number" id="bz-bags" min="0" max="20" value="0"></div>
+          </div>
+          <div class="fg"><label class="fl" for="bz-flight">Flight <span class="biz-opt">optional</span></label><input class="fi" type="text" id="bz-flight" placeholder="e.g. BA2731" autocomplete="off"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="biz-ch"><span>How it is paid</span><span class="biz-tag gold">On account</span></div>
+        <div class="biz-cb" id="biz-book-pay"></div>
+      </div>
+      <button class="btn-main" id="bz-submit" onclick="bizSubmitRide()">Request this ride</button>
+    </div>
+
+    <div class="page-content" id="pg-bizpeople">
+      <div class="sec-title">Our <em>passengers</em></div>
+      <div class="sec-sub">The people you book for &mdash; so you never retype a name</div>
+      <div class="card">
+        <div class="biz-ch"><span id="biz-people-k">Saved</span></div>
+        <div class="biz-cb">
+          <div class="biz-r2">
+            <div class="fg"><label class="fl" for="bz-np">Name</label><input class="fi" type="text" id="bz-np" placeholder="e.g. Mr J. Vance" autocomplete="off"></div>
+            <div class="fg"><label class="fl" for="bz-nu">Usual pickup <span class="biz-opt">optional</span></label><input class="fi" type="text" id="bz-nu" placeholder="e.g. Head office" autocomplete="off"></div>
+          </div>
+          <button class="btn-ghost biz-add" onclick="bizAddPassenger()">Add a passenger</button>
+          <div class="biz-note">A passenger here is a name and where they usually start &mdash; not a login, and not a phone number. We do not hold a way to contact them: the driver rings you.</div>
+        </div>
+      </div>
+      <div class="card"><div id="biz-people"></div></div>
+    </div>
+
+    <div class="page-content" id="pg-bizbilling">
+      <div class="sec-title">Invoices &amp; <em>statements</em></div>
+      <div class="sec-sub">One invoice a month &mdash; download whatever your accountant needs</div>
+      <div class="biz-stats" id="biz-bill-stats"></div>
+      <div class="card">
+        <div class="biz-ch"><span>Statements</span></div>
+        <div id="biz-invoices"></div>
+      </div>
+      <div class="card">
+        <div class="biz-ch"><span>For your accountant</span></div>
+        <div class="biz-cb" id="biz-exports"></div>
+      </div>
     </div>
 
     <!-- ─── MY TRIPS ─── -->
@@ -1770,6 +1889,17 @@ async function doLogin(){
     _currentUser={name:data.customer.full_name,email:data.customer.email,phone:'',loggedIn:true};
     bootApp();
     updateProfile();
+    /* A BUSINESS ACCOUNT SWITCHES OVER HERE TOO. The returning-session path
+       does this already; signing in fresh went straight to the personal app
+       and drew an empty company page. The login response does not carry the
+       account, so it is asked for — one call, once, on the way in.
+       GUARDRAIL: server/tests/business-account.test.js */
+    if(String(data.customer.account_type||'')==='business'){
+      try{
+        var _me=await (await fetch('/api/auth/me',{credentials:'include'})).json();
+        if(_me&&_me.business){ await bizBoot(_me.business); goPage('bizhome'); return; }
+      }catch(e){ console.error('[account] business sign-in',e); }
+    }
     // login response omits phone — pull the full profile so the booking form + profile view fill completely
     fetch('/api/customer/profile',{credentials:'include'}).then(function(r){return r.ok?r.json():null;}).then(function(d){if(d&&d.profile){_currentUser.name=d.profile.full_name||_currentUser.name;_currentUser.email=d.profile.email||_currentUser.email;_currentUser.phone=d.profile.phone||'';updateProfile();}}).catch(function(){});
   }catch(e){
@@ -1921,7 +2051,8 @@ function bootApp(){
 /* ── PAGE NAVIGATION ── */
 // The five dashboard sections. 'profile' is kept as an alias of 'details' so
 // any older link/handler that still says goPage('profile') lands somewhere sane.
-var DASH_PAGES=['trips','payments','invoices','details','book','contact','rewards'];
+var DASH_PAGES=['trips','payments','invoices','details','book','contact','rewards',
+                'bizhome','bizbook','bizpeople','bizbilling'];
 /* ── SIDE MENU ──────────────────────────────────────────────────────────
    Below 980px the sidebar is an off-canvas drawer. It must close after a
    selection (or the customer taps a section and still cannot see it), close on
@@ -1956,11 +2087,300 @@ document.addEventListener('keydown',function(e){
   }
 });
 
+/* ══ THE BUSINESS ACCOUNT ══════════════════════════════════════════════════
+   A company holds the account and one responsible person books the cars. She
+   sees the company's rides, not her own, because every ride is written against
+   the company — the server resolves that; this app just asks and draws.
+
+   THE RULE SHE HAS TO SEE, not read in a help page: the driver is given HER
+   number and rings her on arrival. The passenger's own number is never taken
+   and never passed on, and the booking screen says so beside the field rather
+   than leaving it to be discovered.
+   GUARDRAIL: server/tests/business-account.test.js */
+var BIZ = null;            // { company, account_id, contact:{name,phone,email} }
+var BIZ_PEOPLE = [];
+var BIZ_PLACES = [];
+
+function bizMoney(n){
+  if(window.WMCompact) return WMCompact.money(n);
+  var v=Number(n); return (!isFinite(v)||!n)?'—':('£'+v.toFixed(2).replace(/\.00$/,''));
+}
+function bizEsc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];});}
+
+/* Turned on by the sign-in check when /auth/me says this is a business
+   account. Everything personal goes away in the same breath — two sets of
+   navigation for one person is how an app stops making sense. */
+async function bizBoot(business){
+  if(!business) return false;
+  /* ONE SHAPE, WHICHEVER END IT CAME FROM. /auth/me answers with
+     contact_name/contact_phone and /business/me with a contact object; this
+     read the second and was handed the first, which threw on the way in and
+     left the booking screen with no number on it. */
+  BIZ = { company: business.company || '',
+          account_id: business.account_id,
+          contact: business.contact || { name: business.contact_name || '',
+                                         phone: business.contact_phone || '',
+                                         email: business.contact_email || '' } };
+  try{ document.body.classList.add('is-business'); }catch(e){}
+  ['sd-trips','sd-payments','sd-book','sd-rewards','bn-trips','bn-book']
+    .forEach(function(id){ var el=document.getElementById(id); if(el)el.classList.add('personal-only'); });
+  var t=document.getElementById('biz-co-title');
+  if(t) t.innerHTML=bizEsc(business.company||'Your')+' <em>account</em>';
+  var se=document.getElementById('side-email');
+  if(se) se.textContent=business.company||'';
+  await bizLoadRefs();
+  return true;
+}
+
+async function bizLoadRefs(){
+  try{
+    var r=await fetch('/api/business/passengers',{credentials:'include'});
+    var d=await r.json(); BIZ_PEOPLE=(r.ok&&d.ok&&d.passengers)?d.passengers:[];
+  }catch(e){ BIZ_PEOPLE=[]; }
+  try{
+    var r2=await fetch('/api/business/places',{credentials:'include'});
+    var d2=await r2.json(); BIZ_PLACES=(r2.ok&&d2.ok&&d2.places)?d2.places:[];
+  }catch(e){ BIZ_PLACES=[]; }
+  bizFillLists();
+}
+
+/* The names and places she has used before, offered back. She types the same
+   half-dozen for years and a typo makes a second person out of one. */
+function bizFillLists(){
+  var pl=document.getElementById('bz-people');
+  if(pl) pl.innerHTML=BIZ_PEOPLE.map(function(p){return '<option value="'+bizEsc(p.name)+'"></option>';}).join('');
+  var opts=BIZ_PLACES.map(function(p){return '<option value="'+bizEsc(p.address)+'">'+bizEsc(p.label)+'</option>';}).join('');
+  ['bz-places','bz-places2'].forEach(function(id){ var el=document.getElementById(id); if(el)el.innerHTML=opts; });
+  var c=document.getElementById('bz-contact');
+  if(c&&BIZ) c.textContent=(BIZ.contact.name||'')+(BIZ.contact.phone?(' · '+BIZ.contact.phone):' · no number on your account yet');
+  var k=document.getElementById('biz-people-k');
+  if(k) k.textContent=BIZ_PEOPLE.length+' saved';
+}
+
+/* THE RIDES, in the shared spreadsheet — the same table the owner and admin
+   read, so a row means the same thing wherever it is seen. */
+function bizRenderRides(list){
+  var box=document.getElementById('biz-rides'); if(!box)return;
+  var rides=(list||[]).slice(0,60);
+  if(!rides.length){ box.innerHTML='<div class="biz-empty">No rides yet. Book one and it will appear here.</div>'; return; }
+  /* THE PHONE'S OWN COLUMNS, not the desktop's. journeyTable is nine columns
+     wide because an admin screen has room for nine; at 430px it crushed the
+     passenger down to "Ms P. …" and ran off the right-hand edge. historyTable
+     is the five the phone widths in §28 were tuned for, and it is the same
+     module — the row still opens the ride. */
+  box.innerHTML=WMCompact.historyTable(rides.map(function(b){
+    return { id:b.id, ref:b.ref, date:b.date, time:b.time,
+             name:b.passenger_name||'—',
+             pickup:b.pickup||b.from, destination:b.destination||b.dest,
+             fare:b.fare, status:b.status, apiStatus:b.status };
+  }),'bizOpenRide',{label:'Your rides'});
+}
+function bizOpenRide(id){
+  var b=(BIZ_RIDES||[]).filter(function(x){return String(x.id)===String(id);})[0];
+  if(!b)return;
+  var lines=[b.passenger_name||'',(b.pickup||'')+' → '+(b.destination||''),
+             (b.date||'')+(b.time?(' · '+b.time):''),
+             b.fare?('Fare '+bizMoney(b.fare)):'Not priced yet',
+             b.driver_name?('Driver: '+b.driver_name+(b.driver_reg?(' · '+b.driver_reg):'')):''];
+  WMAsk.tell(lines.filter(Boolean).join('\n'),{title:b.ref||'Your ride'});
+}
+
+var BIZ_RIDES=[];
+async function bizBuildHome(){
+  if(!BIZ) return;
+  var rides=[], stmt=null;
+  try{
+    var r=await fetch('/api/bookings',{credentials:'include',cache:'no-store'});
+    var d=await r.json(); rides=(r.ok&&d.bookings)?d.bookings:[];
+  }catch(e){}
+  try{
+    var r2=await fetch('/api/business/statement',{credentials:'include'});
+    var d2=await r2.json(); if(r2.ok&&d2.ok) stmt=d2;
+  }catch(e){}
+  BIZ_RIDES=rides;
+
+  var today=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/London'});
+  var live=rides.filter(function(b){return String(b.status||'').toLowerCase()!=='cancelled';});
+  var todays=live.filter(function(b){return b.date===today;});
+  var upcoming=live.filter(function(b){return b.date>today;});
+  var next=todays.concat(upcoming).sort(function(a,b){
+    return (a.date+(a.time||'')).localeCompare(b.date+(b.time||''));})[0];
+
+  var st=document.getElementById('biz-home-stats');
+  if(st) st.innerHTML=
+     bizStat(String(todays.length),'Travelling today', next&&next.date===today?('Next '+(next.time||'ASAP')+' · '+(next.passenger_name||'')):'Nothing booked')
+    +bizStat(String(upcoming.length),'Upcoming', upcoming.length?('To '+_bizDay(upcoming[upcoming.length-1].date)):'—')
+    +bizStat(stmt?bizMoney(stmt.uninvoiced.total):'—','Running this month', stmt?(stmt.uninvoiced.rides+' rides, not yet invoiced'):'')
+    +bizStat(stmt?bizMoney(stmt.owed):'—','Owed now', stmt&&stmt.owed?'See your statements':'Nothing outstanding');
+
+  var sum=document.getElementById('biz-rides-sum');
+  if(sum) sum.textContent=live.length+(live.length===1?' ride':' rides');
+  bizRenderRides(rides);
+
+  var acc=document.getElementById('biz-home-account');
+  if(acc&&stmt){
+    var open=(stmt.invoices||[]).filter(function(i){return !i.paid;})[0];
+    acc.innerHTML=
+       (open?('<div class="biz-fig"><span class="biz-fig-l">'+bizEsc(open.period_label||'Latest invoice')+'</span><span class="biz-fig-v">'+bizMoney(open.total)+'</span></div>'
+             +'<div class="biz-fig"><span class="biz-fig-l">Due</span><span class="biz-fig-v">'+bizEsc(_bizDay(open.due_date))+'</span></div>')
+            :'<div class="biz-fig"><span class="biz-fig-l">Nothing outstanding</span><span class="biz-fig-v">—</span></div>')
+      +'<div class="biz-fig"><span class="biz-fig-l">This month so far</span><span class="biz-fig-v">'+bizMoney(stmt.uninvoiced.total)+'</span></div>'
+      +'<div class="biz-note">Everything goes on one monthly invoice in the name of <b>'+bizEsc(stmt.company||'')+'</b>. Nobody is asked for money in the car.</div>';
+  }
+}
+
+function bizStat(v,k,s){
+  return '<div class="biz-stat"><div class="biz-stat-v">'+bizEsc(v)+'</div>'
+    +'<div class="biz-stat-k">'+bizEsc(k)+'</div>'
+    +(s?'<div class="biz-stat-s">'+bizEsc(s)+'</div>':'')+'</div>';
+}
+/* The literal components, never new Date('2026-10-09') — CLAUDE.md. */
+function _bizDay(ymd){
+  var p=String(ymd||'').split('-');
+  if(p.length!==3)return String(ymd||'—');
+  var d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2]));
+  if(isNaN(d.getTime()))return String(ymd);
+  var M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return d.getUTCDate()+' '+M[d.getUTCMonth()];
+}
+
+// ── Booking a ride for somebody else ────────────────────────────────────
+function bizBuildBook(){
+  bizFillLists();
+  var d=document.getElementById('bz-date');
+  if(d&&!d.value) d.value=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/London'});
+  var pay=document.getElementById('biz-book-pay');
+  if(pay) pay.innerHTML=
+     '<div class="biz-fig"><span class="biz-fig-l">Billed to</span><span class="biz-fig-v">'+bizEsc(BIZ?BIZ.company:'')+'</span></div>'
+    +'<div class="biz-fig"><span class="biz-fig-l">Goes on</span><span class="biz-fig-v">this month’s statement</span></div>'
+    +'<div class="biz-note">No card and no payment on the day. Your driver is told this is an account ride, so nobody asks your passenger for money. We will price it and confirm it back to you.</div>';
+}
+
+async function bizSubmitRide(){
+  var g=function(id){var el=document.getElementById(id);return el?String(el.value||'').trim():'';};
+  var btn=document.getElementById('bz-submit');
+  var body={ passenger_name:g('bz-passenger'), pickup:g('bz-pickup'), destination:g('bz-dest'),
+             date:g('bz-date'), time:g('bz-time'), passengers:g('bz-pax'), bags:g('bz-bags'),
+             flight:g('bz-flight'), client_ref:g('bz-ref') };
+  if(!body.passenger_name){ _bizSay('Who is travelling?'); return; }
+  if(!body.pickup||!body.destination){ _bizSay('Where from, and where to?'); return; }
+  if(!body.date){ _bizSay('Pick a date'); return; }
+  if(btn){btn.disabled=true;btn.textContent='Sending…';}
+  try{
+    var r=await fetch('/api/business/bookings',{method:'POST',credentials:'include',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var d=await r.json();
+    if(!r.ok||!d.ok){ _bizSay(d.error||'Could not send that'); return; }
+    ['bz-passenger','bz-pickup','bz-dest','bz-flight','bz-ref'].forEach(function(id){
+      var el=document.getElementById(id); if(el)el.value='';});
+    _bizSay('Requested — we will price it and confirm back to you.');
+    goPage('bizhome');
+  }catch(e){ _bizSay('Network error — nothing was sent'); }
+  finally{ if(btn){btn.disabled=false;btn.textContent='Request this ride';} }
+}
+function _bizSay(m){ try{ showToast(m); }catch(e){ try{ WMAsk.tell(m); }catch(_){} } }
+
+// ── Her people ──────────────────────────────────────────────────────────
+async function bizBuildPeople(){
+  await bizLoadRefs();
+  var box=document.getElementById('biz-people'); if(!box)return;
+  if(!BIZ_PEOPLE.length){
+    box.innerHTML='<div class="biz-empty">Nobody saved yet. Add the people you book for and you will never type a name twice.</div>';
+    return;
+  }
+  box.innerHTML=WMCompact.customerTable(BIZ_PEOPLE.map(function(p){
+    return { id:p.id, name:p.name, booking_count:p.rides||0, total_spent:p.spend||0, last_booking:p.last_ride };
+  }),'bizOpenPassenger',{label:'Saved passengers'});
+}
+async function bizOpenPassenger(id){
+  var p=BIZ_PEOPLE.filter(function(x){return String(x.id)===String(id);})[0];
+  if(!p)return;
+  var yes=await WMAsk.confirm((p.name||'')+'\n'+(p.usual_pickup?('Usually from '+p.usual_pickup+'\n'):'')
+    +(p.rides||0)+' rides · '+bizMoney(p.spend)+'\n\nRemove them from your list?',
+    {ok:'Remove',cancel:'Keep'});
+  if(!yes)return;
+  try{
+    var r=await fetch('/api/business/passengers/'+id,{method:'DELETE',credentials:'include'});
+    var d=await r.json();
+    if(r.ok&&d.ok){ _bizSay('Removed'); bizBuildPeople(); } else _bizSay(d.error||'Could not remove that');
+  }catch(e){ _bizSay('Network error'); }
+}
+async function bizAddPassenger(){
+  var n=document.getElementById('bz-np'), u=document.getElementById('bz-nu');
+  var name=n?String(n.value||'').trim():'';
+  if(!name){ _bizSay('A name is needed'); if(n)n.focus(); return; }
+  try{
+    var r=await fetch('/api/business/passengers',{method:'POST',credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name:name,usual_pickup:u?String(u.value||'').trim():''})});
+    var d=await r.json();
+    if(!r.ok||!d.ok){ _bizSay(d.error||'Could not add that'); return; }
+    if(n)n.value=''; if(u)u.value='';
+    _bizSay('Added '+name);
+    bizBuildPeople();
+  }catch(e){ _bizSay('Network error'); }
+}
+
+// ── Invoices, statements and the paperwork she takes herself ────────────
+async function bizBuildBilling(){
+  var stmt=null;
+  try{
+    var r=await fetch('/api/business/statement',{credentials:'include'});
+    var d=await r.json(); if(r.ok&&d.ok) stmt=d;
+  }catch(e){}
+  var st=document.getElementById('biz-bill-stats');
+  if(st&&stmt){
+    var paidThis=(stmt.invoices||[]).reduce(function(t,i){return t+(Number(i.total)||0);},0);
+    st.innerHTML=
+       bizStat(bizMoney(stmt.owed),'Owed now', stmt.owed?'See the statement below':'Nothing outstanding')
+      +bizStat(bizMoney(stmt.uninvoiced.total),'Running this month', stmt.uninvoiced.rides+' rides, not yet invoiced')
+      +bizStat(bizMoney(paidThis),'Invoiced to date',(stmt.invoices||[]).length+' statements');
+  }
+  var box=document.getElementById('biz-invoices');
+  if(box){
+    var inv=(stmt&&stmt.invoices)||[];
+    if(!inv.length){ box.innerHTML='<div class="biz-empty">No statements yet. Your first invoice is raised at the start of next month.</div>'; }
+    else{
+      box.innerHTML=inv.map(function(i){
+        return '<div class="biz-dl">'
+          +'<div><div class="biz-dl-t">'+bizEsc(i.period_label||i.invoice_no)+' · '+bizMoney(i.total)+'</div>'
+          +'<div class="biz-dl-s">'+bizEsc(i.invoice_no)+' · '
+          +(i.paid?('Paid '+bizEsc(_bizDay(i.paid_at))):('Due '+bizEsc(_bizDay(i.due_date))))+'</div></div>'
+          +'<a class="btn-ghost" href="/api/customer/invoices/'+i.id+'/pdf" target="_blank" rel="noopener">Open</a>'
+          +'</div>';
+      }).join('');
+    }
+  }
+  var ex=document.getElementById('biz-exports');
+  if(ex){
+    /* THE TAX YEAR IS 6 APRIL TO 5 APRIL, which is the period her accountant
+       will ask for and the one the mileage report already uses. */
+    var now=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/London'}).split('-');
+    var y=+now[0], m=+now[1], d=+now[2];
+    var tyStart=((m<4)||(m===4&&d<6))?(y-1):y;
+    var from=tyStart+'-04-06', to=(tyStart+1)+'-04-05';
+    ex.innerHTML=
+       '<div class="biz-dl"><div><div class="biz-dl-t">Every ride, this tax year</div>'
+      +'<div class="biz-dl-s">CSV · '+bizEsc(from)+' to '+bizEsc(to)+'</div></div>'
+      +'<a class="btn-ghost" href="/api/business/export?from='+from+'&to='+to+'">Download</a></div>'
+      +'<div class="biz-dl"><div><div class="biz-dl-t">Every ride, all time</div>'
+      +'<div class="biz-dl-s">CSV · date, passenger, route, fare, invoice</div></div>'
+      +'<a class="btn-ghost" href="/api/business/export">Download</a></div>'
+      +'<div class="biz-note">Everything here is yours to take whenever you need it — no need to ring and ask.</div>';
+  }
+}
+
 function goPage(id){
   if(id==='profile')id='details';
   // A selection always dismisses the drawer — otherwise the page it just
   // navigated to is sitting behind a full-height panel.
   _safe('closeSideMenu',function(){closeSideMenu();});
+  /* The business pages build themselves on the way in, like every other page
+     here. GUARDRAIL: server/tests/business-account.test.js */
+  if(id==='bizhome')    setTimeout(function(){ _safe('bizBuildHome', bizBuildHome); },0);
+  if(id==='bizbook')    setTimeout(function(){ _safe('bizBuildBook', bizBuildBook); },0);
+  if(id==='bizpeople')  setTimeout(function(){ _safe('bizBuildPeople', bizBuildPeople); },0);
+  if(id==='bizbilling') setTimeout(function(){ _safe('bizBuildBilling', bizBuildBilling); },0);
   DASH_PAGES.forEach(function(p){
     var el=document.getElementById('pg-'+p);
     if(el){el.classList.remove('on');el.style.display='none';}
@@ -3433,6 +3853,18 @@ async function _autoBoot(){
       var data=await r.json();
       if(data.type==='customer'&&data.customer){
         _currentUser={name:data.customer.full_name,email:data.customer.email,phone:data.customer.phone||'',loggedIn:true};
+        /* A BUSINESS ACCOUNT IS A DIFFERENT APP BEHIND THE SAME DOOR. Switched
+           on before anything is drawn, so she never sees a flash of the
+           personal navigation she does not use.
+           GUARDRAIL: server/tests/business-account.test.js */
+        if(data.business){
+          try{ await bizBoot(data.business); }catch(e){ console.error('[account] business boot',e); }
+          _safe('bootApp',function(){bootApp();});
+          _safe('updateProfile',function(){updateProfile();});
+          goPage('bizhome');
+          _ensureSomethingVisible();
+          return;
+        }
         // Each guarded: bootApp() has already hidden the login card by the time
         // anything inside it can fail, so an unguarded throw here is a blank page.
         _safe('bootApp',function(){bootApp();});

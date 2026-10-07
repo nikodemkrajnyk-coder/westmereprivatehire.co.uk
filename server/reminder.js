@@ -172,7 +172,10 @@ async function sweepDueReminders() {
         db.prepare("UPDATE bookings SET driver_reminder_sent_at = datetime('now') WHERE id = ?").run(b.id);
       } else {
         try {
-          const ok = await sendDriverJobReminder(Object.assign({}, b, { driver_email: who.email }));
+          /* The reminder says the same thing the job email said — including who
+             to ring on a company ride. GUARDRAIL: server/tests/business-account.test.js */
+          const ok = await sendDriverJobReminder(
+            require('./business-account').forDriver(db, Object.assign({}, b, { driver_email: who.email })));
           if (ok) {
             db.prepare("UPDATE bookings SET driver_reminder_sent_at = datetime('now') WHERE id = ?").run(b.id);
             sentDriver++;

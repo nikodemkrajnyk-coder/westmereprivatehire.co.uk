@@ -219,7 +219,19 @@ router.get('/me', (req, res) => {
     if (payload.type === 'customer') {
       const customer = db.prepare('SELECT id, email, full_name, phone, account_type FROM customers WHERE id = ? AND active = 1').get(payload.id);
       if (!customer) return res.status(401).json({ error: 'Account not found' });
-      return res.json({ ok: true, type: 'customer', customer });
+      /* WHICH ACCOUNT SHE IS ACTING FOR. A business contact's own row is not
+         the account — the company's is — and the app has to know that before it
+         draws anything, or it asks for her trips and is handed none.
+         GUARDRAIL: server/tests/business-account.test.js */
+      let business = null;
+      try {
+        const ctx = require('./business-account').contextFor(db, customer.id);
+        if (ctx && ctx.business) {
+          business = { account_id: ctx.accountId, company: ctx.companyName,
+                       contact_name: ctx.contact.full_name, contact_phone: ctx.contact.phone || null };
+        }
+      } catch (e) { console.error('[AUTH] business context failed:', e.message); }
+      return res.json({ ok: true, type: 'customer', customer, business });
     } else {
       const user = db.prepare('SELECT id, username, role, full_name, email, onboarding_status FROM users WHERE id = ? AND active = 1').get(payload.id);
       if (!user) return res.status(401).json({ error: 'Account not found' });

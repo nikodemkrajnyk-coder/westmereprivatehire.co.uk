@@ -331,7 +331,10 @@ router.post('/bookings/:id/dispatch', staffOnly, async (req, res) => {
      go?" is not a question to answer by looking in a log. */
   const sent = { driver: false, customer: false };
   try {
-    sent.driver = await email_.sendDriverDispatch(Object.assign({}, updated, {
+    /* ON A COMPANY RIDE THE DRIVER IS GIVEN THE ACCOUNT CONTACT'S NUMBER and
+       rings her on arrival — never the passenger, whose number we do not hold.
+       GUARDRAIL: server/tests/business-account.test.js */
+    sent.driver = await email_.sendDriverDispatch(require('./business-account').forDriver(db, Object.assign({}, updated, {
       driver_email: email, driver_name: name, driver_car: car, driver_reg: reg,
       /* THE RATE THAT WAS ACTUALLY CHARGED, so the email names it instead of
          printing a hard-coded ten per cent beside some other number — and
@@ -341,7 +344,7 @@ router.post('/bookings/:id/dispatch', staffOnly, async (req, res) => {
       /* The agreed figure travels with the email, or it prints the derived one. */
       driver_payout_set: payoutSet,
       as_operator: !!operatorRow
-    }));
+    })));
   } catch (e) { console.error('[DISPATCH] driver email failed:', e.message); }
 
   try {
@@ -510,7 +513,14 @@ router.post('/bookings/:id/offer', staffOnly, (req, res) => {
          gets his pay after commission; somebody outside the system is being
          quoted a job, and needs the customer's name and number to run it. */
       try {
+        /* A COMPANY RIDE: the number on this email is the account contact's, and
+           the passenger's is not printed at all. Blanked here as well as in the
+           builder, because this payload names customer_phone explicitly and a
+           value passed in is a value somebody can forget to stop passing.
+           GUARDRAIL: server/tests/business-account.test.js */
+        const _bizContact = require('./business-account').driverContactFor(db, row);
         email.sendAdhocJobOffer({
+          account_contact: _bizContact || undefined,
           driver_name: adhocName, driver_email: adhocEmail,
           ref: booking.ref, pickup: booking.pickup, destination: booking.destination,
           stop_address: booking.stop_address, date: booking.date, time: booking.time,
@@ -518,7 +528,7 @@ router.post('/bookings/:id/offer', staffOnly, (req, res) => {
           passengers: booking.passengers, bags: booking.bags, flight: booking.flight,
           notes: booking.notes, customer_note: booking.customer_note,
           customer_name: row.customer_name || booking.passenger_name || '',
-          customer_phone: row.customer_phone || booking.passenger_phone || '',
+          customer_phone: _bizContact ? '' : (row.customer_phone || booking.passenger_phone || ''),
           driver_reg: adhocReg, driver_car: adhocCar,
           offer_token: offerToken
         });

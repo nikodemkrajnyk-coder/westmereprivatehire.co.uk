@@ -1152,15 +1152,37 @@ function jobDetailRows(d) {
    they should not have to be hunted for among the addresses. */
 function passengerBlockHtml(d) {
   const cName = String(d.customer_name || '').trim();
-  const cPhone = String(d.customer_phone || '').trim();
-  if (!cName && !cPhone) return '';
+  /* ── WHO HE RINGS, WHICH IS NOT ALWAYS WHO HE IS COLLECTING ─────────────
+     On a COMPANY account the passenger's own number is never collected and
+     never passed on: the driver rings the account contact — their receptionist
+     — and she tells the passenger the car is outside. So the block prints the
+     passenger's NAME, and then a labelled contact that is explicitly somebody
+     else, because an unlabelled number under a name is a number he will assume
+     belongs to that name.
+
+     `account_contact` is set by the dispatch payload from
+     server/business-account.js driverContactFor(). When it is present the
+     passenger's own phone is not printed at all, whatever the row happens to
+     carry — which is the point: the booking columns exist for ordinary jobs and
+     this must not depend on them being empty.
+     GUARDRAIL: server/tests/business-account.test.js */
+  const contact = d.account_contact || null;
+  const cPhone = contact ? '' : String(d.customer_phone || '').trim();
+  if (!cName && !cPhone && !contact) return '';
+  const telLink = (num, text) =>
+    '<a href="tel:' + escHtml(String(num).replace(/[^0-9+]/g, '')) + '" style="color:' + INK + ';text-decoration:none">' + escHtml(text) + '</a>';
   return `
   <p class="wm-gold" style="margin:22px 0 6px;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${GOLD_INK};font-weight:600">Your passenger</p>
   ${buildDetailsTable(
       (cName ? detailRow('Name', escHtml(cName)) : '') +
-      (cName && cPhone ? rowDivider() : '') +
-      (cPhone ? detailRow('Phone', '<a href="tel:' + escHtml(cPhone.replace(/[^0-9+]/g, '')) + '" style="color:' + INK + ';text-decoration:none">' + escHtml(cPhone) + '</a>') : '')
-    )}`;
+      (cName && (cPhone || contact) ? rowDivider() : '') +
+      (cPhone ? detailRow('Phone', telLink(cPhone, cPhone)) : '') +
+      (contact ? detailRow('Call on arrival',
+          escHtml(contact.name || 'the account contact')
+          + (contact.company ? ', ' + escHtml(contact.company) : '')
+          + '<br>' + telLink(contact.phone, contact.phone)) : '')
+    )}
+  ${contact ? `<p style="margin:10px 0 0;font-family:Cormorant,Cormorant Garamond,Didot,Bodoni MT,Georgia,serif;font-size:13px;color:${INK_MUTED};line-height:1.5">Company account &mdash; ring ${escHtml(contact.name || 'the contact')} when you arrive, not the passenger. We do not hold a number for ${escHtml(cName || 'the passenger')}.</p>` : ''}`;
 }
 
 /* A JOB SENT TO SOMEBODY OUTSIDE THE SYSTEM.

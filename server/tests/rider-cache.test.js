@@ -366,7 +366,12 @@ test('the side menu can be opened, and always closes again', () => {
   assert.ok(/id="side-scrim"[^>]*onclick="closeSideMenu\(\)"/.test(riderHtml), 'the scrim must close the menu');
   assert.ok(/class="side-close"[\s\S]{0,160}onclick="closeSideMenu\(\)"/.test(riderHtml), 'the drawer needs a close button');
   assert.ok(/e\.key==='Escape'[\s\S]{0,120}closeSideMenu\(\)/.test(riderHtml), 'Escape must close the menu');
-  const goPage = riderHtml.slice(riderHtml.indexOf('function goPage(id){'), riderHtml.indexOf('function goPage(id){') + 700);
+  /* THE WHOLE FUNCTION, not the first 700 characters of it. goPage grew four
+     lines and the window stopped reaching the call it was written to find —
+     the silent-pass this suite has a helper to prevent.
+     See server/tests/_source.js. */
+  const goPage = require('./_source').fnBlock(riderHtml, 'goPage');
+  assert.ok(goPage, 'goPage() is gone');
   assert.ok(/closeSideMenu\(\)/.test(goPage),
     'goPage() must close the drawer — otherwise the section it just opened is ' +
     'sitting behind a full-height panel on a phone');

@@ -1171,6 +1171,69 @@ function migrate() {
      the balance reads — so it records what it was for. */
   try { db.exec(`ALTER TABLE driver_settlements ADD COLUMN applied_json TEXT`); } catch(_){}
 
+  /* ── A COMPANY ACCOUNT, AND THE ONE PERSON WHO HOLDS IT ───────────────────
+     A business account is a company — the invoice is in its name, every ride on
+     it bills to one monthly statement — and one responsible person signs in and
+     books the cars. She is a `customers` row like any other, with this column
+     pointing at the company's row.
+
+     WHY A PARENT COLUMN AND NOT A COMPANY TABLE. Every booking on the account
+     carries `customer_id = the company`, so Customer Spend, the invoice run,
+     the trips list, the turnover SQL and every guard over them keep working
+     untouched and see the whole company. A separate table would mean teaching
+     all of them about a second kind of owner. It also means a second booker, if
+     one is ever wanted, is a row rather than a migration — nothing in the app
+     offers that today and nothing should.
+     GUARDRAIL: server/tests/business-account.test.js */
+  try { db.exec(`ALTER TABLE customers ADD COLUMN parent_customer_id INTEGER REFERENCES customers(id)`); } catch(_){}
+  try { db.exec(`CREATE INDEX IF NOT EXISTS idx_customers_parent ON customers(parent_customer_id)`); } catch(_){}
+
+  /* THE BOOKER'S OWN REFERENCE, printed on the invoice line so her finance
+     office can match a ride to a purchase order without ringing anybody.
+     Optional, and the ONLY attribution beyond the company name — there is
+     deliberately no department or cost-centre field. */
+  try { db.exec(`ALTER TABLE bookings ADD COLUMN client_ref TEXT`); } catch(_){}
+
+  /* ── THE COMPANY'S PEOPLE — NAMES, NOT NUMBERS ────────────────────────────
+     Who she books for. NOTE WHAT IS NOT HERE: no phone, no email, no login. On
+     a business account the driver is given the ACCOUNT CONTACT's number and
+     rings her; a passenger's own number is never collected and never passed on.
+     A column to hold one would be a column somebody eventually fills in.
+
+     Deliberately not customer_directory: that is the OWNER's saved list, its
+     phone key is globally unique, and one firm must never see another's people.
+     GUARDRAIL: server/tests/business-account.test.js */
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS company_passengers (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        company_id  INTEGER NOT NULL REFERENCES customers(id),
+        name        TEXT    NOT NULL,
+        usual_pickup TEXT,
+        notes       TEXT,
+        active      INTEGER NOT NULL DEFAULT 1,
+        created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+        created_by  INTEGER REFERENCES customers(id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_company_passengers ON company_passengers(company_id, active);
+    `);
+  } catch (e) { console.error('[DB] company_passengers table failed:', e.message); }
+
+  /* The four or five places their rides actually run between. A label and an
+     address; nothing clever. */
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS company_places (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        company_id  INTEGER NOT NULL REFERENCES customers(id),
+        label       TEXT    NOT NULL,
+        address     TEXT    NOT NULL,
+        created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_company_places ON company_places(company_id);
+    `);
+  } catch (e) { console.error('[DB] company_places table failed:', e.message); }
+
   /* ── WORK HE DID THAT DID NOT COME THROUGH WESTMERE ───────────────────────
      He drives for other operators as well — Uber, Sussex, Southern — and that
      money is his earnings too. It was nowhere in this system, so the figure he

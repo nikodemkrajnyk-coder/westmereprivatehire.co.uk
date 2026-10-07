@@ -3549,3 +3549,137 @@ input[type="range"]:focus-visible{ outline: 2px solid var(--westmere-gold); outl
      it slides sideways, the way the invoice sheet does. */
   .wm-ctab-spend{ min-width: 46rem; }
 }
+
+
+/* ══ §38 · THE BUSINESS ACCOUNT ══════════════════════════════════════════
+   A company's account inside My Account. It borrows the admin's vocabulary —
+   a gold-ruled card head, the stat tiles, the shared spreadsheet — because the
+   person reading it is doing an operator's job: she books the cars, checks the
+   statement and takes the paperwork. The only things declared here are the
+   handful the customer app did not already have.
+
+   Nothing fills to highlight (§20): the account tag is a gold rule round a
+   label, and the privacy note is a gold edge beside the sentence it belongs to.
+   GUARDRAIL: server/tests/business-account.test.js */
+
+.biz-only{ display: none; }
+body.is-business .biz-only{ display: flex; }
+body.is-business .personal-only{ display: none !important; }
+
+/* The three or four readings at the head of a business page. The same shape as
+   the admin's stat tiles, at a width a phone can hold two of. */
+.biz-stats{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: .6rem;
+  margin-bottom: .9rem;
+}
+.biz-stat{
+  background: var(--westmere-white);
+  border: var(--border-hair) solid var(--westmere-line);
+  border-top: 2px solid var(--westmere-gold);
+  padding: .8rem .9rem;
+}
+.biz-stat-v{
+  font-family: var(--serif);
+  font-size: 1.5rem;
+  line-height: 1.1;
+  color: var(--westmere-navy);
+  font-variant-numeric: tabular-nums;
+}
+.biz-stat-k{
+  font-family: var(--sans);
+  font-size: .64rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--westmere-gold-ink);
+  margin-top: .25rem;
+}
+.biz-stat-s{ font-size: .78rem; color: var(--westmere-ink-soft); margin-top: .1rem; line-height: 1.4; }
+
+/* A card head, the admin's one, scaled for a phone. */
+.biz-ch{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .6rem;
+  padding: .75rem 1rem;
+  border-bottom: var(--border-hair) solid var(--westmere-line);
+  font-family: var(--sans);
+  font-size: .66rem;
+  font-weight: 600;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--westmere-navy);
+}
+.biz-ch-r{ color: var(--westmere-muted); font-weight: 400; letter-spacing: .06em; }
+.biz-cb{ padding: .9rem 1rem; }
+
+.biz-tag{
+  display: inline-flex;
+  align-items: center;
+  font-size: .6rem;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: .1rem .45rem;
+  border: var(--border-hair) solid var(--westmere-line-strong);
+  border-radius: 4px;
+  color: var(--westmere-navy);
+  white-space: nowrap;
+}
+.biz-tag.gold{ border-color: var(--westmere-gold); color: var(--westmere-gold-ink); }
+
+/* THE RULE THE WHOLE ACCOUNT TURNS ON, said where it applies rather than in a
+   help page: the driver rings her, not the passenger. */
+.biz-privacy{
+  border-left: 2px solid var(--westmere-gold);
+  padding: .1rem 0 .1rem .75rem;
+  margin-top: .6rem;
+  font-size: .86rem;
+  line-height: 1.55;
+  color: var(--westmere-ink-soft);
+}
+.biz-privacy b{ color: var(--westmere-navy); font-weight: 600; }
+
+/* A field she cannot edit because the answer is not hers to choose. */
+.biz-locked{
+  background: rgba(16, 42, 67, .03) !important;
+  color: var(--westmere-ink-soft) !important;
+  border-bottom-color: var(--westmere-line) !important;
+}
+.biz-opt{ letter-spacing: 0; text-transform: none; color: var(--westmere-muted); font-size: .8rem; }
+.biz-r2{ display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; }
+.biz-add{ width: 100%; margin-top: .3rem; }
+.biz-note{ font-size: .84rem; color: var(--westmere-ink-soft); line-height: 1.55; margin-top: .7rem; }
+
+/* One figure against its label, down a panel. */
+.biz-fig{
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: .8rem;
+  padding: .45rem 0;
+  border-top: var(--border-hair) solid var(--westmere-line);
+}
+.biz-fig:first-child{ border-top: 0; }
+.biz-fig-l{ font-size: .88rem; color: var(--westmere-ink-soft); }
+.biz-fig-v{ font-family: var(--serif); font-size: 1rem; color: var(--westmere-navy); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.biz-fig.total{ border-top: var(--border-hair) solid var(--westmere-gold); margin-top: .4rem; padding-top: .6rem; }
+.biz-fig.total .biz-fig-l{ font-family: var(--sans); font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; color: var(--westmere-gold-ink); }
+.biz-fig.total .biz-fig-v{ font-size: 1.25rem; }
+
+/* A download she can take without asking anybody. */
+.biz-dl{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .8rem;
+  padding: .7rem 0;
+  border-top: var(--border-hair) solid var(--westmere-line);
+}
+.biz-dl:first-child{ border-top: 0; }
+.biz-dl-t{ font-size: .92rem; color: var(--westmere-navy); }
+.biz-dl-s{ font-size: .8rem; color: var(--westmere-ink-soft); line-height: 1.4; }
+.biz-dl a{ white-space: nowrap; }
+.biz-empty{ padding: 1.4rem 1rem; text-align: center; font-size: .9rem; color: var(--westmere-ink-soft); }

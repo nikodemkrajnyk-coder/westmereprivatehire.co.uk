@@ -24,7 +24,7 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
-const { stripComments: strip, fnBlock } = require('./_source');
+const { stripComments: strip, fnBlock, regionFrom } = require('./_source');
 
 let passed = 0, failed = 0;
 const queue = [];
@@ -164,9 +164,11 @@ test('every class the spend page writes is one the theme dresses', () => {
 });
 
 test('§37 takes its colours from the tokens, and nothing fills to highlight', () => {
-  const i = CSS.indexOf('§37 · CUSTOMER SPEND');
-  assert.ok(i !== -1, 'the theme has no section for the spend page');
-  const sec = CSS.slice(i);
+  assert.ok(CSS.indexOf('§37 · CUSTOMER SPEND') !== -1, 'the theme has no section for the spend page');
+  /* BOUNDED BY THE NEXT SECTION, not by the end of the file. Written the lazy
+     way this read §38 as well the moment one existed, and failed on a rule that
+     was never §37's. The project has a helper for exactly this. */
+  const sec = regionFrom(CSS, '§37 · CUSTOMER SPEND', [/══ §\d+ ·/]);
   assert.ok(!/#[0-9a-f]{3,6}/i.test(sec), 'a colour is typed into §37 rather than taken from a token');
   assert.ok(/var\(--westmere-gold-ink\)/.test(sec), 'the labels do not use the readable gold');
   /* The chart is the one thing here that paints an area, and it does it with
@@ -180,8 +182,7 @@ test('§37 takes its colours from the tokens, and nothing fills to highlight', (
 });
 
 test('the spend report fits a desktop, and slides rather than squashing on a phone', () => {
-  const i = CSS.indexOf('§37 · CUSTOMER SPEND');
-  const sec = CSS.slice(i);
+  const sec = regionFrom(CSS, '§37 · CUSTOMER SPEND', [/══ §\d+ ·/]);
   assert.ok(/\.wm-ctab-spend\{ min-width: \d+rem; \}/.test(sec),
     'eight columns would be crushed into 390px instead of sliding');
   const i2 = ADMIN.indexOf('<div class="view" id="view-spend">');

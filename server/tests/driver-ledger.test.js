@@ -209,9 +209,26 @@ test('the SQL takes a table alias, and the rate comes from the ledger', () => {
 console.log('\nTurnover, at every revenue site');
 
 test('no revenue site sums the raw fare any more', () => {
+  /* WHAT WESTMERE EARNED IS NOT THE SUM OF THE FARES — on a passed job most of
+     it goes straight back out. That is the rule, and it is about TURNOVER.
+
+     WHAT A CUSTOMER IS BILLED IS exactly the sum of the fares: commission is
+     none of their business and never appears on their invoice. So a sum that
+     computes a customer's own spend or what they owe is correct, and is marked
+     named `..._billed` at the call site — in the SQL, so it survives comment
+     stripping — and a bare SUM(fare) still fails the way it always did. */
   const c = code('server/api.js');
-  assert.ok(!/SUM\(fare\)/.test(c), 'a SUM(fare) has come back — that is turnover overstated');
-  assert.ok(!/SUM\(b\.fare\)/.test(c), 'an aliased SUM(b.fare) has come back');
+  /* The marker is the column's own NAME, not a comment — this file strips
+     comments before it looks, and a marker that disappears is no marker. */
+  const bare = (line) => /SUM\(\s*b?\.?fare\s*\)/.test(line) && !/_billed\b/.test(line);
+  const offenders = c.split('\n').filter(bare).map((l) => l.trim().slice(0, 90));
+  assert.deepStrictEqual(offenders, [],
+    'a SUM(fare) has come back without saying whose money it is — that is turnover overstated:\n      '
+    + offenders.join('\n      '));
+  /* And the marker cannot be sprinkled about: only the customer's own account
+     surface may carry it. */
+  const marked = c.split('\n').filter((l) => /SUM\(\s*b?\.?fare\s*\)/.test(l) && /_billed\b/.test(l));
+  assert.ok(marked.length <= 3, marked.length + ' customer-billed sums — that exception is spreading');
 });
 
 test('a passed job contributes its commission only, through the API', async () => {

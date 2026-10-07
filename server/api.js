@@ -109,6 +109,11 @@ router.get('/bookings', (req, res) => {
     // Match on the account's verified email as well — the same OR-on-email rule
     // the invoice list already uses below. Read-only: nothing is re-linked here.
     const me = db.prepare('SELECT email FROM customers WHERE id = ?').get(id) || {};
+    /* ON A BUSINESS ACCOUNT, "mine" MEANS THE COMPANY'S. Every ride is written
+       against the company row, so a contact asking for her own id would be
+       handed nothing at all. One call, and the query below is unchanged.
+       GUARDRAIL: server/tests/business-account.test.js */
+    const acctId = require('./business-account').accountIdFor(db, id);
     rows = db.prepare(`
       SELECT b.*, u.full_name as driver_name, u.vehicle as driver_vehicle, u.reg as driver_reg
       FROM bookings b
@@ -117,7 +122,7 @@ router.get('/bookings', (req, res) => {
          OR (b.customer_id IS NULL AND ? <> '' AND LOWER(TRIM(b.passenger_email)) = LOWER(TRIM(?)))
       ORDER BY b.date DESC, b.time DESC
       LIMIT 100
-    `).all(id, me.email || '', me.email || '');
+    `).all(acctId, me.email || '', me.email || '');
   } else {
     return res.status(403).json({ error: 'Access denied' });
   }
@@ -5190,7 +5195,11 @@ function driverEmailPayload(db, b) {
      agreed payout the email prints no rate at all, so this is unused there. */
   const pct = (isFinite(fare) && fare > 0 && joined.admin_fee != null)
     ? Math.round((Number(joined.admin_fee) / fare) * 1000) / 10 : 0;
-  return Object.assign({}, joined, {
+  /* A COMPANY RIDE CARRIES ITS ACCOUNT CONTACT, so the preview and the resend
+     show exactly what the driver was given — her number, not the passenger's.
+     GUARDRAIL: server/tests/business-account.test.js */
+  const biz = require('./business-account').forDriver(db, joined);
+  return Object.assign({}, biz, {
     driver_email: joined.assigned_to_email || joined.u_email || '',
     driver_name:  joined.assigned_to_name  || joined.u_name  || '',
     driver_car:   joined.assigned_to_car   || joined.u_vehicle || '',
@@ -5807,6 +5816,242 @@ router.delete('/external-earnings/:id', (req, res) => {
            row.earned_on + ' ' + row.source + ' £' + Number(row.amount).toFixed(2), req.ip);
   } catch (_) {}
   res.json({ ok: true });
+});
+
+/* ══ THE BUSINESS ACCOUNT ═════════════════════════════════════════════════
+   A company holds the account; one responsible contact signs in, books the
+   cars for other people, and takes her own paperwork. Everything below acts on
+   THE COMPANY — server/business-account.js resolves which that is — so her
+   rides sit beside every other ride on the account and the invoice run, the
+   spend report and the turnover SQL need to know nothing about any of this.
+   GUARDRAIL: server/tests/business-account.test.js */
+const biz = require('./business-account');
+
+/* Staff are not business contacts; this whole surface is the customer's own. */
+function bizCtx(req, res) {
+  if (req.auth.type !== 'customer') { res.status(403).json({ error: 'Account access required' }); return null; }
+  const ctx = biz.contextFor(getDb(), req.auth.id);
+  if (!ctx) { res.status(401).json({ error: 'Account not found' }); return null; }
+  if (!ctx.business) { res.status(403).json({ error: 'This is not a business account' }); return null; }
+  return ctx;
+}
+
+/** Who she is and what the account is called. */
+router.get('/business/me', (req, res) => {
+  const ctx = bizCtx(req, res); if (!ctx) return;
+  res.json({ ok: true,
+    company: ctx.companyName,
+    account_id: ctx.accountId,
+    contact: { name: ctx.contact.full_name, phone: ctx.contact.phone || null, email: ctx.contact.email } });
+});
+
+// ── The company's people ────────────────────────────────────────────────
+router.get('/business/passengers', (req, res) => {
+  const ctx = bizCtx(req, res); if (!ctx) return;
+  const db = getDb();
+  /* Rides and spend per passenger, counted off the bookings themselves — the
+     same settled-money rule the spend report uses, so one person's figure here
+     and on the invoice cannot disagree. */
+  const rows = db.prepare(`
+    SELECT p.*,
+           (SELECT COUNT(*) FROM bookings b
+             WHERE b.customer_id = ? AND LOWER(TRIM(b.passenger_name)) = LOWER(TRIM(p.name))
+               AND COALESCE(b.status,'') <> 'cancelled') AS rides,
+           (SELECT COALESCE(SUM(b.fare),0) AS spend_billed FROM bookings b
+             WHERE b.customer_id = ? AND LOWER(TRIM(b.passenger_name)) = LOWER(TRIM(p.name))
+               AND COALESCE(b.status,'') <> 'cancelled'
+               AND (b.paid_at IS NOT NULL OR b.status = 'completed')) AS spend_billed,
+           (SELECT MAX(b.date) FROM bookings b
+             WHERE b.customer_id = ? AND LOWER(TRIM(b.passenger_name)) = LOWER(TRIM(p.name))
+               AND COALESCE(b.status,'') <> 'cancelled') AS last_ride
+      FROM company_passengers p
+     WHERE p.company_id = ? AND p.active = 1
+     ORDER BY rides DESC, p.name COLLATE NOCASE`).all(ctx.accountId, ctx.accountId, ctx.accountId, ctx.accountId);
+  res.json({ ok: true, passengers: rows });
+});
+
+router.post('/business/passengers', (req, res) => {
+  const ctx = bizCtx(req, res); if (!ctx) return;
+  const b = req.body || {};
+  const name = String(b.name || '').trim();
+  if (!name) return res.status(400).json({ error: 'A name is needed' });
+  /* NO PHONE AND NO EMAIL ARE ACCEPTED, whatever is posted. The driver rings
+     the account contact on a company ride, so a passenger's number has nowhere
+     to go — and a column to hold one is a column somebody fills in. */
+  const db = getDb();
+  const id = db.prepare(`INSERT INTO company_passengers (company_id, name, usual_pickup, notes, created_by)
+                         VALUES (?,?,?,?,?)`)
+    .run(ctx.accountId, name.slice(0, 120),
+         String(b.usual_pickup || '').trim().slice(0, 200) || null,
+         String(b.notes || '').trim().slice(0, 300) || null, ctx.contact.id).lastInsertRowid;
+  res.json({ ok: true, passenger: db.prepare('SELECT * FROM company_passengers WHERE id = ?').get(id) });
+});
+
+router.delete('/business/passengers/:id', (req, res) => {
+  const ctx = bizCtx(req, res); if (!ctx) return;
+  const db = getDb();
+  const row = db.prepare('SELECT * FROM company_passengers WHERE id = ? AND company_id = ?')
+    .get(parseInt(req.params.id, 10), ctx.accountId);
+  if (!row) return res.status(404).json({ error: 'Not found' });
+  /* Kept, not deleted: their name is on rides that are already invoiced. */
+  db.prepare('UPDATE company_passengers SET active = 0 WHERE id = ?').run(row.id);
+  res.json({ ok: true });
+});
+
+// ── The company's places ────────────────────────────────────────────────
+router.get('/business/places', (req, res) => {
+  const ctx = bizCtx(req, res); if (!ctx) return;
+  res.json({ ok: true, places: getDb().prepare(
+    'SELECT * FROM company_places WHERE company_id = ? ORDER BY label COLLATE NOCASE').all(ctx.accountId) });
+});
+
+router.post('/business/places', (req, res) => {
+  const ctx = bizCtx(req, res); if (!ctx) return;
+  const b = req.body || {};
+  const label = String(b.label || '').trim(), address = String(b.address || '').trim();
+  if (!label || !address) return res.status(400).json({ error: 'A name and an address are needed' });
+  const db = getDb();
+  const id = db.prepare('INSERT INTO company_places (company_id, label, address) VALUES (?,?,?)')
+    .run(ctx.accountId, label.slice(0, 60), address.slice(0, 300)).lastInsertRowid;
+  res.json({ ok: true, place: db.prepare('SELECT * FROM company_places WHERE id = ?').get(id) });
+});
+
+router.delete('/business/places/:id', (req, res) => {
+  const ctx = bizCtx(req, res); if (!ctx) return;
+  const db = getDb();
+  const r = db.prepare('DELETE FROM company_places WHERE id = ? AND company_id = ?')
+    .run(parseInt(req.params.id, 10), ctx.accountId);
+  if (!r.changes) return res.status(404).json({ error: 'Not found' });
+  res.json({ ok: true });
+});
+
+/* ── BOOKING A RIDE FOR SOMEBODY ELSE ─────────────────────────────────────
+   The passenger's NAME is recorded so the driver knows who he is collecting.
+   Their phone and email are not taken, not stored, and not asked for.
+
+   The booking is written against THE COMPANY and priced later by the owner, the
+   same as any other request — this route does not set a fare, because a staff
+   app is the only thing that prices work (estimate-first, CLAUDE.md). */
+router.post('/business/bookings', (req, res) => {
+  const ctx = bizCtx(req, res); if (!ctx) return;
+  const b = req.body || {};
+  const pickup = String(b.pickup || '').trim();
+  const destination = String(b.destination || '').trim();
+  const date = String(b.date || '').trim();
+  const passenger = String(b.passenger_name || '').trim();
+  if (!passenger) return res.status(400).json({ error: 'Who is travelling?' });
+  if (!pickup || !destination) return res.status(400).json({ error: 'A pickup and a destination are needed' });
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return res.status(400).json({ error: 'A date is needed' });
+  const time = /^\d{2}:\d{2}$/.test(String(b.time || '')) ? b.time : 'ASAP';
+
+  /* THE ACCOUNT CONTACT MUST BE REACHABLE, because she is the only number the
+     driver will have. An account with no phone on it cannot take a ride. */
+  if (!String(ctx.contact.phone || '').trim()) {
+    return res.status(400).json({ error: 'Add a phone number to your account first — the driver rings you, not the passenger' });
+  }
+
+  /* ON ACCOUNT, SET EXPLICITLY. Never defaulted: the payment invariant exists
+     because a card choice was once recorded as cash. 'account' is a real,
+     deliberate method and it goes through the same assertion as every other. */
+  const payment = require('./payment-methods').assertPaymentMethod('account', 'business booking');
+
+  const db = getDb();
+  /* A REFERENCE THAT CANNOT COLLIDE. A millisecond timestamp alone is unique
+     until somebody books two rides in the same one — which a receptionist
+     working down a list does, and which is how this failed the first time it
+     was tested. Random suffix, and the insert is retried rather than trusted:
+     the column is UNIQUE and the only safe answer to a clash is another go. */
+  const newRef = () => 'WM-' + Date.now().toString(36).toUpperCase().slice(-5)
+                     + Math.floor(Math.random() * 36).toString(36).toUpperCase();
+  const pax = require('./business-account').passengerFieldsFor(passenger);
+  const insert = db.prepare(`
+    INSERT INTO bookings (ref, customer_id, pickup, destination, date, time,
+                          passengers, bags, flight, payment, status,
+                          passenger_name, passenger_phone, passenger_email,
+                          stop_address, client_ref, notes)
+    VALUES (?,?,?,?,?,?,?,?,?,?,'pending',?,?,?,?,?,?)`);
+  let id = null, ref = null, lastErr = null;
+  for (let attempt = 0; attempt < 5 && id === null; attempt++) {
+    ref = newRef();
+    try {
+      id = insert.run(
+        ref, ctx.accountId, pickup.slice(0, 300), destination.slice(0, 300), date, time,
+        Math.max(1, Math.min(16, parseInt(b.passengers, 10) || 1)),
+        String(b.bags == null ? '0' : b.bags).slice(0, 12),
+        String(b.flight || '').trim().slice(0, 20) || null,
+        payment,
+        pax.passenger_name, pax.passenger_phone, pax.passenger_email,
+        String(b.stop_address || '').trim().slice(0, 300) || null,
+        String(b.client_ref || '').trim().slice(0, 60) || null,
+        String(b.notes || '').trim().slice(0, 500) || null
+      ).lastInsertRowid;
+    } catch (e) {
+      lastErr = e;
+      if (!/UNIQUE/i.test(e.message)) break;   // not a clash — do not keep trying
+    }
+  }
+  if (id === null) {
+    console.error('[BIZ] booking insert failed:', lastErr && lastErr.message);
+    return res.status(500).json({ error: 'Could not save that ride — try once more' });
+  }
+
+  try {
+    db.prepare('INSERT INTO audit_log (user_type, user_id, action, detail, ip) VALUES (?,?,?,?,?)')
+      .run('customer', ctx.contact.id, 'business_booking_requested',
+           ref + ' ' + ctx.companyName + ' for ' + passenger, req.ip);
+  } catch (_) {}
+
+  res.json({ ok: true, booking: db.prepare('SELECT * FROM bookings WHERE id = ?').get(id) });
+});
+
+/* ── HER OWN PAPERWORK ────────────────────────────────────────────────────
+   The whole reason the account exists: she takes what her accountant needs
+   without ringing anybody. Every ride on the account in a period, as a CSV her
+   finance office can open — and the same route answers a tax year or any dates
+   she picks. */
+router.get('/business/export', (req, res) => {
+  const ctx = bizCtx(req, res); if (!ctx) return;
+  const ok = (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ''));
+  const from = ok(req.query.from) ? req.query.from : '1900-01-01';
+  const to   = ok(req.query.to)   ? req.query.to   : '2999-12-31';
+  const rows = getDb().prepare(`
+    SELECT b.date, b.time, b.ref, b.passenger_name, b.pickup, b.destination,
+           b.fare, b.status, b.client_ref, i.invoice_no, i.paid
+      FROM bookings b LEFT JOIN invoices i ON b.invoice_id = i.id
+     WHERE b.customer_id = ? AND b.date >= ? AND b.date <= ?
+     ORDER BY b.date, b.time`).all(ctx.accountId, from, to);
+  /* A CSV FIELD IS QUOTED AND ITS QUOTES DOUBLED. An address with a comma in it
+     is the normal case here, not the exception. */
+  const esc = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const head = ['Date','Time','Reference','Passenger','Pickup','Destination','Fare','Status','Your reference','Invoice','Invoice paid'];
+  const body = rows.map((r) => [r.date, r.time, r.ref, r.passenger_name, r.pickup, r.destination,
+    r.fare == null ? '' : Number(r.fare).toFixed(2), r.status, r.client_ref || '',
+    r.invoice_no || '', r.invoice_no ? (r.paid ? 'Yes' : 'No') : ''].map(esc).join(','));
+  const csv = [head.map(esc).join(','), ...body].join('\r\n') + '\r\n';
+  const name = String(ctx.companyName || 'account').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="' + name + '-rides-' + from + '-to-' + to + '.csv"');
+  res.send(csv);
+});
+
+/* What was invoiced and what was paid — the statement of account, as figures
+   rather than a document, so the screen and a download can both read it. */
+router.get('/business/statement', (req, res) => {
+  const ctx = bizCtx(req, res); if (!ctx) return;
+  const db = getDb();
+  const invoices = db.prepare(`SELECT id, invoice_no, period_label, period_from, period_to,
+                                      issued_date, due_date, total, paid, paid_at
+                                 FROM invoices WHERE customer_id = ?
+                                ORDER BY issued_date DESC, id DESC LIMIT 60`).all(ctx.accountId);
+  const rides = db.prepare(`SELECT COUNT(*) c, COALESCE(SUM(fare),0) AS total_billed FROM bookings
+                             WHERE customer_id = ? AND invoice_id IS NULL
+                               AND COALESCE(status,'') <> 'cancelled' AND fare IS NOT NULL`).get(ctx.accountId);
+  const owed = invoices.filter((i) => !i.paid).reduce((t, i) => t + (Number(i.total) || 0), 0);
+  res.json({ ok: true,
+    company: ctx.companyName,
+    invoices,
+    uninvoiced: { rides: rides.c, total: Math.round(rides.total_billed * 100) / 100 },
+    owed: Math.round(owed * 100) / 100 });
 });
 
 // ── Mileage stats (for tax / HMRC purposes) ─────────────────────────────
