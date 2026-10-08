@@ -255,47 +255,84 @@ router.post('/logout', (req, res) => {
   res.json({ ok: true });
 });
 
-// ── Change password ─────────────────────────────────────────────────────
+/* ── CHANGE PASSWORD ──────────────────────────────────────────────────────
+   THIS ROUTE HAS NEVER WORKED. It shipped in the first backend commit, in
+   April, with the new hash written by:
+
+       UPDATE customers SET password = ?, updated_at = datetime("now") ...
+
+   Double quotes. In SQLite a double-quoted token is an IDENTIFIER, so that
+   asks for a column called `now`; there isn't one, and better-sqlite3 — which
+   disables the legacy "fall back to a string literal" misfeature — throws
+   `no such column: "now"`. The throw lands after the new hash is computed and
+   before anything is written, so the password never changed.
+
+   WHAT MADE IT INVISIBLE FOR SIX MONTHS WAS THE ERROR HANDLING, NOT THE TYPO.
+   One try block wrapped the whole route and its catch answered every failure
+   with 401 "Session expired". So a SQL bug was reported to the customer as a
+   login problem: they were told their session had expired, they signed in
+   again, changed the password again, and were locked out again by a password
+   that had never moved. The owner reported it as "logging in doesn't remember
+   properly" — which is exactly what it looks like from the outside.
+
+   So the repair is in two parts, and the second matters more than the first:
+   the quoting is fixed, and the catch no longer launders every error into a
+   session message. Only jwt.verify can produce "session expired" now; anything
+   else is logged with its real message and answered as a 500, so the next bug
+   of this kind shows up as a server error on the first try instead of hiding
+   behind a plausible lie.
+   GUARDRAIL: server/tests/change-password.test.js */
 router.post('/change-password', (req, res) => {
   const token = req.cookies.wph_token;
   if (!token) return res.status(401).json({ error: 'Not authenticated' });
 
+  /* The ONLY thing that may answer "session expired" is a bad token. */
+  let payload;
   try {
-    const payload = jwt.verify(token, JWT_SECRET);
-    const { current_password, new_password } = req.body;
+    payload = jwt.verify(token, JWT_SECRET);
+  } catch (e) {
+    return res.status(401).json({ error: 'Session expired' });
+  }
 
-    if (!current_password || !new_password) {
-      return res.status(400).json({ error: 'Current and new password required' });
-    }
-    if (new_password.length < 8) {
-      return res.status(400).json({ error: 'New password must be at least 8 characters' });
-    }
+  const { current_password, new_password } = req.body || {};
+  if (!current_password || !new_password) {
+    return res.status(400).json({ error: 'Current and new password required' });
+  }
+  if (new_password.length < 8) {
+    return res.status(400).json({ error: 'New password must be at least 8 characters' });
+  }
 
+  const isCustomer = payload.type === 'customer';
+  const table = isCustomer ? 'customers' : 'users';
+
+  try {
     const db = getDb();
-    let record;
-    if (payload.type === 'customer') {
-      record = db.prepare('SELECT * FROM customers WHERE id = ?').get(payload.id);
-    } else {
-      record = db.prepare('SELECT * FROM users WHERE id = ?').get(payload.id);
-    }
-
-    if (!record || !bcrypt.compareSync(current_password, record.password)) {
+    const record = db.prepare('SELECT * FROM ' + table + ' WHERE id = ?').get(payload.id);
+    if (!record || !record.password || !bcrypt.compareSync(current_password, record.password)) {
       return res.status(401).json({ error: 'Current password is incorrect' });
     }
 
     const hash = bcrypt.hashSync(new_password, 12);
-    if (payload.type === 'customer') {
-      db.prepare('UPDATE customers SET password = ?, updated_at = datetime("now") WHERE id = ?').run(hash, payload.id);
-    } else {
-      db.prepare('UPDATE users SET password = ?, updated_at = datetime("now") WHERE id = ?').run(hash, payload.id);
+    const info = db.prepare('UPDATE ' + table + " SET password = ?, updated_at = datetime('now') WHERE id = ?")
+      .run(hash, payload.id);
+
+    /* A write that changed no rows is a failure wearing a success's clothes —
+       and this route's whole history is a failure that looked like a success.
+       Say so rather than replying ok. */
+    if (!info.changes) {
+      console.error('[AUTH] password change wrote no rows for ' + table + ' id ' + payload.id);
+      return res.status(500).json({ error: 'Your password could not be saved. Please try again, or contact us.' });
     }
 
-    db.prepare('INSERT INTO audit_log (user_type, user_id, action, ip) VALUES (?,?,?,?)')
-      .run(payload.type, payload.id, 'password_changed', req.ip);
+    try {
+      db.prepare('INSERT INTO audit_log (user_type, user_id, action, ip) VALUES (?,?,?,?)')
+        .run(payload.type || 'user', payload.id, 'password_changed', req.ip);
+    } catch (e) { /* the password did change; an unwritable audit row must not undo that */ }
 
-    res.json({ ok: true });
+    return res.json({ ok: true });
   } catch (e) {
-    return res.status(401).json({ error: 'Session expired' });
+    console.error('[AUTH] change-password failed for ' + table + ' id ' + payload.id + ':', e.message);
+    return res.status(500).json({ error: 'Your password could not be saved. Please try again, or contact us.' });
   }
 });
 
